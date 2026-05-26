@@ -1,0 +1,1 @@
+export { IrisDatePicker } from './DatePicker'

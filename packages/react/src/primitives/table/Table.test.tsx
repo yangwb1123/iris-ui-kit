@@ -1,0 +1,430 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, fireEvent, render } from '@testing-library/react'
+import { IrisTable } from './Table'
+import { exportCsv } from './exportCsv'
+import type { IrisTableColumn } from './types'
+
+afterEach(() => cleanup())
+
+interface Row extends Record<string, unknown> {
+  id: number
+  name: string
+  age: number
+}
+
+const rows: Row[] = [
+  { id: 1, name: 'Charlie', age: 25 },
+  { id: 2, name: 'Alice', age: 32 },
+  { id: 3, name: 'Bob', age: 28 },
+]
+
+const baseColumns: IrisTableColumn<Row>[] = [
+  { key: 'name', title: 'Name', sortable: true },
+  { key: 'age', title: 'Age', sortable: true, align: 'right' },
+]
+
+function rowEls(): HTMLElement[] {
+  // Exclude the header pseudo-row.
+  return Array.from(
+    document.querySelectorAll('[data-iris-table-row]:not([data-iris-table-row=header])'),
+  )
+}
+
+function headers(): HTMLElement[] {
+  return Array.from(document.querySelectorAll('[data-iris-table-header]'))
+}
+
+describe('@iris-ui/react exportCsv', () => {
+  it('serializes header + rows with comma separator', () => {
+    const csv = exportCsv(rows, baseColumns)
+    expect(csv.split('\n')[0]).toBe('Name,Age')
+    expect(csv.split('\n').length).toBe(4)
+  })
+
+  it('quotes values that contain commas or quotes', () => {
+    const data = [{ id: 1, label: 'hello, world', q: 'a"b' }]
+    const cols: IrisTableColumn<{ id: number; label: string; q: string }>[] = [
+      { key: 'label', title: 'L' },
+      { key: 'q', title: 'Q' },
+    ]
+    const csv = exportCsv(data, cols)
+    expect(csv).toBe('L,Q\n"hello, world","a""b"')
+  })
+})
+
+describe('@iris-ui/react IrisTable', () => {
+  it('renders role="table" + header + row cells', () => {
+    render(<IrisTable columns={baseColumns} data={rows} />)
+    expect(document.querySelector('[role=table]')).not.toBeNull()
+    expect(headers().length).toBe(2)
+    expect(rowEls().length).toBe(3)
+  })
+
+  it('header cells render column titles', () => {
+    render(<IrisTable columns={baseColumns} data={rows} />)
+    expect(headers().some((h) => h.textContent?.includes('Name'))).toBe(true)
+    expect(headers().some((h) => h.textContent?.includes('Age'))).toBe(true)
+  })
+
+  it('clicking a sortable header cycles asc → desc → none', () => {
+    const onSort = vi.fn()
+    render(<IrisTable columns={baseColumns} data={rows} onSortChange={onSort} />)
+    const nameHeader = headers().find((h) => h.textContent?.includes('Name'))!
+    act(() => {
+      fireEvent.click(nameHeader)
+    })
+    expect(onSort).toHaveBeenLastCalledWith({ key: 'name', direction: 'asc' })
+    act(() => {
+      fireEvent.click(nameHeader)
+    })
+    expect(onSort).toHaveBeenLastCalledWith({ key: 'name', direction: 'desc' })
+    act(() => {
+      fireEvent.click(nameHeader)
+    })
+    expect(onSort).toHaveBeenLastCalledWith(null)
+  })
+
+  it('sorted asc reorders rows alphabetically by sort key', () => {
+    render(<IrisTable columns={baseColumns} data={rows} defaultSort={{ key: 'name', direction: 'asc' }} />)
+    const cells = Array.from(document.querySelectorAll('[data-iris-table-cell=name]'))
+    expect(cells.map((c) => c.textContent)).toEqual(['Alice', 'Bob', 'Charlie'])
+  })
+
+  it('sorted desc reverses', () => {
+    render(<IrisTable columns={baseColumns} data={rows} defaultSort={{ key: 'name', direction: 'desc' }} />)
+    const cells = Array.from(document.querySelectorAll('[data-iris-table-cell=name]'))
+    expect(cells.map((c) => c.textContent)).toEqual(['Charlie', 'Bob', 'Alice'])
+  })
+
+  it('numeric sort uses subtraction (not localeCompare)', () => {
+    render(<IrisTable columns={baseColumns} data={rows} defaultSort={{ key: 'age', direction: 'asc' }} />)
+    const cells = Array.from(document.querySelectorAll('[data-iris-table-cell=age]'))
+    expect(cells.map((c) => c.textContent)).toEqual(['25', '28', '32'])
+  })
+
+  it('aria-sort header attribute reflects current sort', () => {
+    render(<IrisTable columns={baseColumns} data={rows} defaultSort={{ key: 'name', direction: 'asc' }} />)
+    const nameHeader = headers().find((h) => h.textContent?.includes('Name'))!
+    expect(nameHeader.getAttribute('aria-sort')).toBe('ascending')
+  })
+
+  it('non-sortable columns have no aria-sort', () => {
+    const cols: IrisTableColumn<Row>[] = [{ key: 'name', title: 'Name' }]
+    render(<IrisTable columns={cols} data={rows} />)
+    expect(headers()[0]?.getAttribute('aria-sort')).toBeNull()
+  })
+
+  it('selectable=single allows one row at a time', () => {
+    const onChange = vi.fn()
+    render(<IrisTable columns={baseColumns} data={rows} selectable="single" onSelectionChange={onChange} />)
+    const checkboxes = Array.from(document.querySelectorAll('input[type=checkbox]'))
+    act(() => {
+      fireEvent.click(checkboxes[0]!)
+    })
+    expect(onChange).toHaveBeenCalledWith([1])
+    act(() => {
+      fireEvent.click(checkboxes[1]!)
+    })
+    expect(onChange).toHaveBeenCalledWith([2])
+  })
+
+  it('selectable=multi tracks an array of selected keys', () => {
+    const onChange = vi.fn()
+    render(<IrisTable columns={baseColumns} data={rows} selectable="multi" onSelectionChange={onChange} />)
+    const checkboxes = Array.from(document.querySelectorAll('input[type=checkbox]'))
+    // First is master, then 3 row checkboxes.
+    act(() => {
+      fireEvent.click(checkboxes[1]!)
+    })
+    expect(onChange).toHaveBeenLastCalledWith([1])
+    act(() => {
+      fireEvent.click(checkboxes[2]!)
+    })
+    expect(onChange).toHaveBeenLastCalledWith([1, 2])
+  })
+
+  it('master checkbox toggles all on then off', () => {
+    const onChange = vi.fn()
+    render(<IrisTable columns={baseColumns} data={rows} selectable="multi" onSelectionChange={onChange} />)
+    const master = document.querySelectorAll('input[type=checkbox]')[0]!
+    act(() => {
+      fireEvent.click(master)
+    })
+    expect(onChange).toHaveBeenLastCalledWith([1, 2, 3])
+    act(() => {
+      fireEvent.click(master)
+    })
+    expect(onChange).toHaveBeenLastCalledWith([])
+  })
+
+  it('custom rowKey is honored', () => {
+    const data = [{ uuid: 'a', name: 'X' }, { uuid: 'b', name: 'Y' }]
+    const cols: IrisTableColumn<{ uuid: string; name: string }>[] = [
+      { key: 'name', title: 'N' },
+    ]
+    const onChange = vi.fn()
+    render(
+      <IrisTable
+        columns={cols}
+        data={data}
+        rowKey="uuid"
+        selectable="multi"
+        onSelectionChange={onChange}
+      />,
+    )
+    const cb = document.querySelectorAll('input[type=checkbox]')
+    act(() => {
+      fireEvent.click(cb[1]!)
+    })
+    expect(onChange).toHaveBeenLastCalledWith(['a'])
+  })
+
+  it('render callback customizes cell content', () => {
+    const cols: IrisTableColumn<Row>[] = [
+      {
+        key: 'name',
+        title: 'Name',
+        render: (v) => <strong data-testid="bolded">{v as string}</strong>,
+      },
+    ]
+    render(<IrisTable columns={cols} data={rows} />)
+    expect(document.querySelectorAll('[data-testid=bolded]').length).toBe(3)
+  })
+
+  it('emptyState renders when data is empty', () => {
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={[]}
+        emptyState={<div data-testid="empty">Nothing here</div>}
+      />,
+    )
+    expect(document.querySelector('[data-testid=empty]')).not.toBeNull()
+  })
+
+  it('aria-selected reflects selection state', () => {
+    render(<IrisTable columns={baseColumns} data={rows} selectable="multi" defaultSelection={[2]} />)
+    const r = document.querySelector('[data-iris-table-row="2"]')!
+    expect(r.getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('striped reflects on data attr', () => {
+    render(<IrisTable columns={baseColumns} data={rows} striped />)
+    expect(document.querySelector('[data-iris-table]')?.getAttribute('data-striped')).toBe('true')
+  })
+
+  it('Enter on a sortable header cycles sort', () => {
+    const onSort = vi.fn()
+    render(<IrisTable columns={baseColumns} data={rows} onSortChange={onSort} />)
+    const nameHeader = headers().find((h) => h.textContent?.includes('Name'))!
+    act(() => {
+      fireEvent.keyDown(nameHeader, { key: 'Enter' })
+    })
+    expect(onSort).toHaveBeenCalledWith({ key: 'name', direction: 'asc' })
+  })
+})
+
+describe('@iris-ui/react IrisTable column resize', () => {
+  function handle(key: string): HTMLElement | null {
+    return document.querySelector(`[data-iris-table-resize-handle][data-column-key="${key}"]`)
+  }
+  function gridCols(): string {
+    // The column template lives on each row's grid (header row here), not the root.
+    return (document.querySelector('[data-iris-table-row="header"]') as HTMLElement).style
+      .gridTemplateColumns
+  }
+
+  it('renders no resize handles unless resizableColumns', () => {
+    render(<IrisTable columns={baseColumns} data={rows} />)
+    expect(document.querySelectorAll('[data-iris-table-resize-handle]').length).toBe(0)
+  })
+
+  it('renders a separator handle per column when resizableColumns', () => {
+    render(<IrisTable columns={baseColumns} data={rows} resizableColumns />)
+    expect(document.querySelectorAll('[data-iris-table-resize-handle]').length).toBe(2)
+    expect(handle('name')!.getAttribute('role')).toBe('separator')
+    expect(handle('name')!.getAttribute('aria-orientation')).toBe('vertical')
+  })
+
+  it('ArrowRight grows the column width (uncontrolled)', () => {
+    render(
+      <IrisTable columns={baseColumns} data={rows} resizableColumns defaultColumnWidths={{ name: 100 }} />,
+    )
+    expect(gridCols()).toContain('100px')
+    act(() => {
+      fireEvent.keyDown(handle('name')!, { key: 'ArrowRight' })
+    })
+    expect(gridCols()).toContain('116px')
+  })
+
+  it('ArrowLeft shrinks but clamps to the column minWidth', () => {
+    const cols: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name', minWidth: 90 },
+      { key: 'age', title: 'Age' },
+    ]
+    render(<IrisTable columns={cols} data={rows} resizableColumns defaultColumnWidths={{ name: 100 }} />)
+    act(() => {
+      fireEvent.keyDown(handle('name')!, { key: 'ArrowLeft' }) // 100-16=84 → clamp to 90
+    })
+    expect(gridCols()).toContain('90px')
+  })
+
+  it('ArrowRight clamps to the column maxWidth', () => {
+    const cols: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name', maxWidth: 110 },
+      { key: 'age', title: 'Age' },
+    ]
+    render(<IrisTable columns={cols} data={rows} resizableColumns defaultColumnWidths={{ name: 100 }} />)
+    act(() => {
+      fireEvent.keyDown(handle('name')!, { key: 'ArrowRight' }) // 100+16=116 → clamp to 110
+    })
+    expect(gridCols()).toContain('110px')
+  })
+
+  it('onColumnWidthsChange fires with the new widths', () => {
+    const onChange = vi.fn()
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        resizableColumns
+        defaultColumnWidths={{ name: 100 }}
+        onColumnWidthsChange={onChange}
+      />,
+    )
+    act(() => {
+      fireEvent.keyDown(handle('name')!, { key: 'ArrowRight' })
+    })
+    expect(onChange).toHaveBeenCalledWith({ name: 116 })
+  })
+
+  it('controlled columnWidths render the given widths', () => {
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        resizableColumns
+        columnWidths={{ name: 150, age: 80 }}
+      />,
+    )
+    expect(gridCols()).toContain('150px')
+    expect(gridCols()).toContain('80px')
+  })
+
+  it('clicking the resize handle does not trigger sort', () => {
+    const onSort = vi.fn()
+    render(<IrisTable columns={baseColumns} data={rows} resizableColumns onSortChange={onSort} />)
+    act(() => {
+      fireEvent.click(handle('name')!)
+    })
+    expect(onSort).not.toHaveBeenCalled()
+  })
+})
+
+describe('@iris-ui/react IrisTable inline editing', () => {
+  const editableCols: IrisTableColumn<Row>[] = [
+    { key: 'name', title: 'Name', editable: true },
+    { key: 'age', title: 'Age', editable: true, editor: 'number' },
+  ]
+  function cell(rowId: string | number, key: string): HTMLElement {
+    return document.querySelector(
+      `[data-iris-table-row="${rowId}"] [data-iris-table-cell="${key}"]`,
+    ) as HTMLElement
+  }
+  function editor(): HTMLInputElement | null {
+    return document.querySelector('[data-iris-table-editor]')
+  }
+
+  it('non-editable cell does not open an editor on double-click', () => {
+    render(<IrisTable columns={baseColumns} data={rows} />)
+    act(() => {
+      fireEvent.doubleClick(cell(1, 'name'))
+    })
+    expect(editor()).toBeNull()
+  })
+
+  it('double-click opens an editor seeded with the cell value', () => {
+    render(<IrisTable columns={editableCols} data={rows} />)
+    act(() => {
+      fireEvent.doubleClick(cell(1, 'name'))
+    })
+    expect(editor()).not.toBeNull()
+    expect(editor()!.value).toBe('Charlie')
+  })
+
+  it('Enter commits + calls onCellEdit with the new value, then closes', () => {
+    const onCellEdit = vi.fn()
+    render(<IrisTable columns={editableCols} data={rows} onCellEdit={onCellEdit} />)
+    act(() => {
+      fireEvent.doubleClick(cell(1, 'name'))
+    })
+    act(() => {
+      fireEvent.change(editor()!, { target: { value: 'Charlie Edited' } })
+      fireEvent.keyDown(editor()!, { key: 'Enter' })
+    })
+    expect(onCellEdit).toHaveBeenCalledWith(
+      expect.objectContaining({ oldValue: 'Charlie', newValue: 'Charlie Edited', rowIndex: 0 }),
+    )
+    expect(editor()).toBeNull()
+  })
+
+  it('Escape cancels without emitting', () => {
+    const onCellEdit = vi.fn()
+    render(<IrisTable columns={editableCols} data={rows} onCellEdit={onCellEdit} />)
+    act(() => {
+      fireEvent.doubleClick(cell(1, 'name'))
+    })
+    act(() => {
+      fireEvent.change(editor()!, { target: { value: 'changed' } })
+      fireEvent.keyDown(editor()!, { key: 'Escape' })
+    })
+    expect(onCellEdit).not.toHaveBeenCalled()
+    expect(editor()).toBeNull()
+  })
+
+  it('number editor coerces the committed value', () => {
+    const onCellEdit = vi.fn()
+    render(<IrisTable columns={editableCols} data={rows} onCellEdit={onCellEdit} />)
+    act(() => {
+      fireEvent.doubleClick(cell(1, 'age'))
+    })
+    act(() => {
+      fireEvent.change(editor()!, { target: { value: '99' } })
+      fireEvent.keyDown(editor()!, { key: 'Enter' })
+    })
+    expect(onCellEdit).toHaveBeenCalledWith(expect.objectContaining({ newValue: 99 }))
+  })
+
+  it('Enter with an unchanged value does not emit', () => {
+    const onCellEdit = vi.fn()
+    render(<IrisTable columns={editableCols} data={rows} onCellEdit={onCellEdit} />)
+    act(() => {
+      fireEvent.doubleClick(cell(1, 'name'))
+    })
+    act(() => {
+      fireEvent.keyDown(editor()!, { key: 'Enter' })
+    })
+    expect(onCellEdit).not.toHaveBeenCalled()
+  })
+})
+
+describe('@iris-ui/react IrisTable virtual scroll', () => {
+  const many: Row[] = Array.from({ length: 50 }, (_, i) => ({ id: i + 1, name: `N${i}`, age: i }))
+
+  it('renders the body inside a virtual scroller', () => {
+    render(<IrisTable columns={baseColumns} data={many} virtualScroll={{ itemHeight: 36, height: 200 }} />)
+    expect(document.querySelector('[data-iris-virtual-scroll]')).not.toBeNull()
+  })
+
+  it('windows the rows (renders far fewer than the full dataset)', () => {
+    render(<IrisTable columns={baseColumns} data={many} virtualScroll={{ itemHeight: 36, height: 200 }} />)
+    const count = rowEls().length
+    expect(count).toBeGreaterThan(0)
+    expect(count).toBeLessThan(50)
+  })
+
+  it('still renders the header alongside the virtual body', () => {
+    render(<IrisTable columns={baseColumns} data={many} virtualScroll={{ itemHeight: 36, height: 200 }} />)
+    expect(headers().length).toBe(2)
+  })
+})

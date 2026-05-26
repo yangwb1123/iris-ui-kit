@@ -1,0 +1,90 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { defineComponent, h, ref, nextTick } from 'vue'
+import { mount } from '@vue/test-utils'
+import { useFloating } from './useFloating'
+
+const TestHarness = defineComponent({
+  setup() {
+    const anchor = ref<HTMLElement | null>(null)
+    const floating = ref<HTMLElement | null>(null)
+    const open = ref(false)
+    const { floatingStyles, finalPlacement, x, y, update } = useFloating({
+      anchor,
+      floating,
+      open,
+      placement: 'bottom',
+      offset: 8,
+    })
+    return { anchor, floating, open, floatingStyles, finalPlacement, x, y, update }
+  },
+  render() {
+    return h('div', [
+      h('div', { ref: 'anchor', class: 'anchor', style: { width: '40px', height: '20px' } }),
+      h(
+        'div',
+        {
+          ref: 'floating',
+          class: 'floating',
+          style: this.floatingStyles,
+        },
+        'content',
+      ),
+    ])
+  },
+})
+
+describe('useFloating', () => {
+  let host: HTMLDivElement
+
+  beforeEach(() => {
+    host = document.createElement('div')
+    document.body.appendChild(host)
+  })
+
+  afterEach(() => {
+    host.remove()
+  })
+
+  it('returns floatingStyles ready to bind to the floating element', async () => {
+    const wrapper = mount(TestHarness, { attachTo: host })
+    await nextTick()
+    const styles = wrapper.vm.floatingStyles
+    expect(styles.position).toBe('absolute')
+    expect(styles.top).toBe('0')
+    expect(styles.left).toBe('0')
+    expect(styles.transform).toMatch(/translate3d/)
+    expect(styles.width).toBe('max-content')
+  })
+
+  it('does not throw when refs are null', async () => {
+    const NullCase = defineComponent({
+      setup() {
+        const anchor = ref<HTMLElement | null>(null)
+        const floating = ref<HTMLElement | null>(null)
+        const open = ref(true)
+        useFloating({ anchor, floating, open })
+        return {}
+      },
+      render() {
+        return h('div')
+      },
+    })
+    expect(() => mount(NullCase)).not.toThrow()
+  })
+
+  it('computes position when open becomes true', async () => {
+    const wrapper = mount(TestHarness, { attachTo: host })
+    await nextTick()
+    wrapper.vm.open = true
+    await nextTick()
+    await wrapper.vm.update()
+    // jsdom returns zero rects, so positions stay zero — but no error means wiring works.
+    expect(typeof wrapper.vm.x).toBe('number')
+    expect(typeof wrapper.vm.y).toBe('number')
+  })
+
+  it('finalPlacement defaults to the input placement', () => {
+    const wrapper = mount(TestHarness, { attachTo: host })
+    expect(wrapper.vm.finalPlacement).toBe('bottom')
+  })
+})

@@ -1,0 +1,5 @@
+export { IrisTabs } from './Tabs'
+export { IrisTabsList } from './TabsList'
+export { IrisTabsTrigger } from './TabsTrigger'
+export { IrisTabsContent } from './TabsContent'
+export { TabsContextKey, type IrisTabsOrientation, type TabsContext } from './context'

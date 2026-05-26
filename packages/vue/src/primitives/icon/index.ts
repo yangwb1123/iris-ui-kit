@@ -1,0 +1,1 @@
+export { IrisIcon } from './Icon'

@@ -4,6 +4,7 @@ import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'
 import { IrisList, type IrisListItem } from '../list/List'
+import { useI18n } from '../../i18n'
 
 export type IrisSelectSize = Size
 
@@ -21,7 +22,7 @@ export const IrisSelect = defineComponent({
   props: {
     items: { type: Array as PropType<IrisListItem<unknown>[]>, required: true },
     modelValue: { type: null as unknown as PropType<unknown> },
-    placeholder: { type: String, default: 'Select…' },
+    placeholder: { type: String, default: undefined },
     size: { type: String as PropType<IrisSelectSize>, default: 'md' },
     disabled: { type: Boolean, default: false },
     placement: { type: String as PropType<Placement>, default: 'bottom-start' },
@@ -35,15 +36,16 @@ export const IrisSelect = defineComponent({
     'update:modelValue': (_value: unknown) => true,
   },
   setup(props, { slots, attrs, emit }) {
+    const { t } = useI18n()
     const open = ref(false)
 
-    const selectedItem = computed(() =>
-      props.items.find((item) => item.value === props.modelValue) ?? null,
+    const selectedItem = computed(
+      () => props.items.find((item) => item.value === props.modelValue) ?? null,
     )
 
     const triggerLabel = computed(() => {
       const item = selectedItem.value
-      if (!item) return props.placeholder
+      if (!item) return props.placeholder ?? t('select.placeholder')
       return item.label ?? String(item.value)
     })
 
@@ -53,11 +55,12 @@ export const IrisSelect = defineComponent({
     }
 
     const sizeStyles = computed(() => {
-      const map: Record<IrisSelectSize, { padding: string; fontSize: string; minHeight: string }> = {
-        sm: { padding: '4px 24px 4px 8px', fontSize: '12px', minHeight: '28px' },
-        md: { padding: '6px 28px 6px 12px', fontSize: '14px', minHeight: '34px' },
-        lg: { padding: '8px 32px 8px 12px', fontSize: '16px', minHeight: '40px' },
-      }
+      const map: Record<IrisSelectSize, { padding: string; fontSize: string; minHeight: string }> =
+        {
+          sm: { padding: '4px 24px 4px 8px', fontSize: '12px', minHeight: '28px' },
+          md: { padding: '6px 28px 6px 12px', fontSize: '14px', minHeight: '34px' },
+          lg: { padding: '8px 32px 8px 12px', fontSize: '16px', minHeight: '40px' },
+        }
       return map[props.size]
     })
 
@@ -118,40 +121,36 @@ export const IrisSelect = defineComponent({
         },
         {
           default: () => [
-            h(
-              IrisPopoverTrigger,
-              { asChild: true },
-              () => [
-                slots.trigger
-                  ? slots.trigger({
-                      value: props.modelValue,
-                      label: triggerLabel.value,
-                      open: open.value,
-                    })
-                  : h(
-                      'button',
-                      {
-                        ...attrs,
-                        type: 'button',
-                        id: props.id,
-                        disabled: props.disabled || undefined,
-                        'data-iris-select-trigger': '',
-                        'data-iris-select-size': props.size,
-                        'data-state': open.value ? 'open' : 'closed',
-                        'aria-invalid': props.invalid ? 'true' : undefined,
-                        'aria-describedby': props.ariaDescribedby,
-                        style: {
-                          ...triggerStyle.value,
-                          ...((attrs.style as Record<string, string> | undefined) ?? {}),
-                        },
+            h(IrisPopoverTrigger, { asChild: true }, () => [
+              slots.trigger
+                ? slots.trigger({
+                    value: props.modelValue,
+                    label: triggerLabel.value,
+                    open: open.value,
+                  })
+                : h(
+                    'button',
+                    {
+                      ...attrs,
+                      type: 'button',
+                      id: props.id,
+                      disabled: props.disabled || undefined,
+                      'data-iris-select-trigger': '',
+                      'data-iris-select-size': props.size,
+                      'data-state': open.value ? 'open' : 'closed',
+                      'aria-invalid': props.invalid ? 'true' : undefined,
+                      'aria-describedby': props.ariaDescribedby,
+                      style: {
+                        ...triggerStyle.value,
+                        ...((attrs.style as Record<string, string> | undefined) ?? {}),
                       },
-                      [
-                        h('span', { style: { flex: '1', minWidth: '0' } }, triggerLabel.value),
-                        chevron(),
-                      ],
-                    ),
-              ],
-            ),
+                    },
+                    [
+                      h('span', { style: { flex: '1', minWidth: '0' } }, triggerLabel.value),
+                      chevron(),
+                    ],
+                  ),
+            ]),
             h(
               IrisPopoverContent,
               {

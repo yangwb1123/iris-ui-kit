@@ -10,6 +10,7 @@ import {
   type PropType,
 } from 'vue'
 import { useBodyScrollLock, useFocusTrap } from '../modal-utils'
+import { useI18n } from '../../i18n'
 import { defaultFilter, type IrisCommandItem } from './types'
 
 /**
@@ -24,9 +25,9 @@ export const IrisCommandPalette = defineComponent({
   props: {
     open: { type: Boolean, default: false },
     items: { type: Array as PropType<IrisCommandItem[]>, required: true },
-    placeholder: { type: String, default: 'Type a command…' },
+    placeholder: { type: String, default: undefined },
     /** Empty state text when no item matches. */
-    emptyText: { type: String, default: 'No results' },
+    emptyText: { type: String, default: undefined },
     /** Custom filter; default is a tolerant subsequence/fuzzy match. */
     filter: {
       type: Function as PropType<(query: string, item: IrisCommandItem) => number | null>,
@@ -38,6 +39,9 @@ export const IrisCommandPalette = defineComponent({
     select: (_item: IrisCommandItem) => true,
   },
   setup(props, { attrs, emit }) {
+    const { t } = useI18n()
+    const resolvedPlaceholder = computed(() => props.placeholder ?? t('commandPalette.placeholder'))
+    const resolvedEmptyText = computed(() => props.emptyText ?? t('commandPalette.empty'))
     const query = ref('')
     const inputRef = ref<HTMLInputElement | null>(null)
     const surfaceRef = ref<HTMLElement | null>(null)
@@ -55,7 +59,8 @@ export const IrisCommandPalette = defineComponent({
 
     const groupedFlat = computed(() => {
       // Preserve sort order but group by `group` label (last-seen wins).
-      const out: ({ kind: 'header'; label: string } | { kind: 'item'; item: IrisCommandItem })[] = []
+      const out: ({ kind: 'header'; label: string } | { kind: 'item'; item: IrisCommandItem })[] =
+        []
       let currentGroup: string | undefined = undefined
       for (const m of matches.value) {
         const g = m.item.group
@@ -215,7 +220,7 @@ export const IrisCommandPalette = defineComponent({
                   },
                   type: 'text',
                   value: query.value,
-                  placeholder: props.placeholder,
+                  placeholder: resolvedPlaceholder.value,
                   'data-iris-command-palette-input': '',
                   'aria-label': 'Search commands',
                   onInput: (e: Event) => {
@@ -260,7 +265,7 @@ export const IrisCommandPalette = defineComponent({
                             fontSize: '13px',
                           },
                         },
-                        props.emptyText,
+                        resolvedEmptyText.value,
                       ),
                     ]
                   : groupedFlat.value.map((row, i) => {
@@ -293,11 +298,7 @@ export const IrisCommandPalette = defineComponent({
                           'aria-selected': isActive ? 'true' : 'false',
                           'aria-disabled': item.disabled ? 'true' : undefined,
                           'data-iris-command-palette-item': item.id,
-                          'data-state': isActive
-                            ? 'active'
-                            : item.disabled
-                              ? 'disabled'
-                              : 'idle',
+                          'data-state': isActive ? 'active' : item.disabled ? 'disabled' : 'idle',
                           onClick: () => {
                             if (item.disabled) return
                             activeIndex.value = enabledIdx

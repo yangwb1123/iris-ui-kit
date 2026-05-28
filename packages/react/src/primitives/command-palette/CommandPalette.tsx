@@ -1,11 +1,14 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
+import { useI18n } from '../../i18n'
 import { useBodyScrollLock } from '../../modal-utils/useBodyScrollLock'
 import { useFocusTrap } from '../../modal-utils/useFocusTrap'
 import { defaultFilter, type IrisCommandItem } from './types'
 
-export interface IrisCommandPaletteProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
+export interface IrisCommandPaletteProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'onSelect'
+> {
   open?: boolean
   onOpenChange?: (open: boolean) => void
   items: IrisCommandItem[]
@@ -29,13 +32,16 @@ export function IrisCommandPalette({
   open = false,
   onOpenChange,
   items,
-  placeholder = 'Type a command…',
-  emptyText = 'No results',
+  placeholder,
+  emptyText,
   filter = defaultFilter,
   onSelect,
   style,
   ...rest
 }: IrisCommandPaletteProps): React.ReactElement | null {
+  const { t } = useI18n()
+  const resolvedPlaceholder = placeholder ?? t('commandPalette.placeholder')
+  const resolvedEmptyText = emptyText ?? t('commandPalette.empty')
   const [query, setQuery] = React.useState('')
   const [activeIndex, setActiveIndex] = React.useState(0)
   const surfaceRef = React.useRef<HTMLDivElement | null>(null)
@@ -183,7 +189,7 @@ export function IrisCommandPalette({
           <input
             type="text"
             value={query}
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             data-iris-command-palette-input=""
             aria-label="Search commands"
             onChange={(e) => setQuery(e.target.value)}
@@ -210,7 +216,7 @@ export function IrisCommandPalette({
               data-iris-command-palette-empty=""
               style={{ padding: 20, textAlign: 'center', color: 'var(--iris-muted)', fontSize: 13 }}
             >
-              {emptyText}
+              {resolvedEmptyText}
             </li>
           ) : (
             groupedFlat.map((row, i) => {

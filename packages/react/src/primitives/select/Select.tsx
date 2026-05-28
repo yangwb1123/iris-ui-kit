@@ -1,5 +1,6 @@
 import * as React from 'react'
 import type { Placement, Size } from '@iris-ui/core'
+import { useI18n } from '../../i18n'
 import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'
@@ -7,7 +8,10 @@ import type { IrisSelectItem } from './types'
 
 export type IrisSelectSize = Size
 
-const SIZE_STYLES: Record<IrisSelectSize, { padding: string; fontSize: number; minHeight: number }> = {
+const SIZE_STYLES: Record<
+  IrisSelectSize,
+  { padding: string; fontSize: number; minHeight: number }
+> = {
   sm: { padding: '4px 24px 4px 8px', fontSize: 12, minHeight: 28 },
   md: { padding: '6px 28px 6px 12px', fontSize: 14, minHeight: 34 },
   lg: { padding: '8px 32px 8px 12px', fontSize: 16, minHeight: 40 },
@@ -43,7 +47,7 @@ export function IrisSelect<T = unknown>({
   value: valueProp,
   defaultValue,
   onValueChange,
-  placeholder = 'Select…',
+  placeholder,
   size = 'md',
   disabled = false,
   placement = 'bottom-start',
@@ -54,13 +58,17 @@ export function IrisSelect<T = unknown>({
   style,
   className,
 }: IrisSelectProps<T>): React.ReactElement {
+  const { t } = useI18n()
+  const resolvedPlaceholder = placeholder ?? t('select.placeholder')
   const isControlled = valueProp !== undefined
   const [internal, setInternal] = React.useState<T | undefined>(defaultValue)
   const value = isControlled ? valueProp : internal
   const [open, setOpen] = React.useState(false)
 
   const selectedItem = items.find((it) => it.value === value) ?? null
-  const label = selectedItem ? selectedItem.label ?? String(selectedItem.value) : placeholder
+  const label = selectedItem
+    ? (selectedItem.label ?? String(selectedItem.value))
+    : resolvedPlaceholder
 
   const setValue = (next: T) => {
     if (!isControlled) setInternal(next)

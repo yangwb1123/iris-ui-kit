@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { IrisCheckbox } from '../checkbox/Checkbox'
+import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import type {
@@ -160,6 +161,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   style,
   className,
 }: IrisTableProps<Row>): React.ReactElement {
+  const { t } = useI18n()
   // Controlled / uncontrolled state.
   const sortControlled = sortProp !== undefined
   const [sortInternal, setSortInternal] = React.useState<IrisTableSortState | null>(
@@ -233,8 +235,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!col) return data
     const dir = sort.direction === 'asc' ? 1 : -1
     const sorter =
-      col.sorter ??
-      ((a: Row, b: Row) => defaultSorter(getCellValue(a, col), getCellValue(b, col)))
+      col.sorter ?? ((a: Row, b: Row) => defaultSorter(getCellValue(a, col), getCellValue(b, col)))
     return [...data].sort((a, b) => sorter(a, b) * dir)
   }, [data, columns, sort])
 
@@ -292,9 +293,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
 
   const allSelected =
-    selectable === 'multi' && sortedData.length > 0 && sortedData.every((r) => selection.includes(rowKeyOf(r)))
+    selectable === 'multi' &&
+    sortedData.length > 0 &&
+    sortedData.every((r) => selection.includes(rowKeyOf(r)))
   const someSelected =
-    selectable === 'multi' && sortedData.some((r) => selection.includes(rowKeyOf(r))) && !allSelected
+    selectable === 'multi' &&
+    sortedData.some((r) => selection.includes(rowKeyOf(r))) &&
+    !allSelected
 
   const gridTemplateColumns = React.useMemo(() => {
     const widths: string[] = []
@@ -372,7 +377,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
               style={{
                 ...baseCellStyle,
                 justifyContent:
-                  col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start',
+                  col.align === 'right'
+                    ? 'flex-end'
+                    : col.align === 'center'
+                      ? 'center'
+                      : 'flex-start',
                 background: striped && idx % 2 === 1 ? 'var(--iris-surface)' : 'transparent',
                 borderBottom: borderStyle,
                 cursor: col.editable ? 'cell' : undefined,
@@ -475,7 +484,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
               key={col.key}
               role="columnheader"
               aria-sort={
-                isSortKey ? (dir === 'asc' ? 'ascending' : 'descending') : col.sortable ? 'none' : undefined
+                isSortKey
+                  ? dir === 'asc'
+                    ? 'ascending'
+                    : 'descending'
+                  : col.sortable
+                    ? 'none'
+                    : undefined
               }
               tabIndex={col.sortable ? 0 : undefined}
               onClick={col.sortable ? () => cycleSort(col) : undefined}
@@ -486,7 +501,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
               style={{
                 ...baseCellStyle,
                 justifyContent:
-                  col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start',
+                  col.align === 'right'
+                    ? 'flex-end'
+                    : col.align === 'center'
+                      ? 'center'
+                      : 'flex-start',
                 background: 'var(--iris-surface)',
                 borderBottom: borderStyle,
                 cursor: col.sortable ? 'pointer' : 'default',
@@ -535,7 +554,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             color: 'var(--iris-muted)',
           }}
         >
-          {emptyState ?? 'No data'}
+          {emptyState ?? t('table.empty')}
         </div>
       ) : virtualScroll ? (
         <IrisVirtualScroll

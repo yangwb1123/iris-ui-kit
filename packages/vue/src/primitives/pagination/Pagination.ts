@@ -1,5 +1,6 @@
 import { computed, defineComponent, h, type PropType } from 'vue'
 import { getPageRange, type IrisPageItem } from './types'
+import { useI18n } from '../../i18n'
 
 export type IrisPaginationSize = 'sm' | 'md'
 
@@ -26,7 +27,10 @@ export const IrisPagination = defineComponent({
     'update:modelValue': (_value: number) => true,
   },
   setup(props, { attrs, emit }) {
-    const totalPages = computed(() => Math.max(1, Math.ceil(props.total / Math.max(1, props.pageSize))))
+    const { t } = useI18n()
+    const totalPages = computed(() =>
+      Math.max(1, Math.ceil(props.total / Math.max(1, props.pageSize))),
+    )
     const current = computed(() => Math.min(totalPages.value, Math.max(1, props.modelValue)))
     const items = computed<IrisPageItem[]>(() =>
       getPageRange(current.value, totalPages.value, props.siblingCount),
@@ -119,7 +123,7 @@ export const IrisPagination = defineComponent({
         'nav',
         {
           ...attrs,
-          'aria-label': 'Pagination',
+          'aria-label': t('pagination.label'),
           'data-iris-pagination': '',
           'data-iris-pagination-size': props.size,
           style: {
@@ -131,20 +135,26 @@ export const IrisPagination = defineComponent({
         },
         [
           props.showFirstLast
-            ? renderBtn(1, 'First page', { kind: 'first', disabled: current.value <= 1 })
+            ? renderBtn(1, t('pagination.first'), { kind: 'first', disabled: current.value <= 1 })
             : null,
-          renderBtn(current.value - 1, 'Previous page', { kind: 'prev', disabled: current.value <= 1 }),
+          renderBtn(current.value - 1, t('pagination.previous'), {
+            kind: 'prev',
+            disabled: current.value <= 1,
+          }),
           ...items.value.map((item) => {
             if (item === 'ellipsis-left') return renderEllipsis('left')
             if (item === 'ellipsis-right') return renderEllipsis('right')
-            return renderBtn(item, `Page ${item}`, { kind: 'page', active: item === current.value })
+            return renderBtn(item, t('pagination.page', { page: item }), {
+              kind: 'page',
+              active: item === current.value,
+            })
           }),
-          renderBtn(current.value + 1, 'Next page', {
+          renderBtn(current.value + 1, t('pagination.next'), {
             kind: 'next',
             disabled: current.value >= totalPages.value,
           }),
           props.showFirstLast
-            ? renderBtn(totalPages.value, 'Last page', {
+            ? renderBtn(totalPages.value, t('pagination.last'), {
                 kind: 'last',
                 disabled: current.value >= totalPages.value,
               })

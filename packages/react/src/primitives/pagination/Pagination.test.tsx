@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { IrisPagination } from './Pagination'
 import { getPageRange } from './types'
+import { IrisI18nProvider } from '../../i18n'
 
 afterEach(() => cleanup())
 
@@ -29,15 +30,7 @@ describe('@iris-ui/react getPageRange', () => {
   })
 
   it('inserts both ellipses when current is in middle', () => {
-    expect(getPageRange(10, 20, 1)).toEqual([
-      1,
-      'ellipsis-left',
-      9,
-      10,
-      11,
-      'ellipsis-right',
-      20,
-    ])
+    expect(getPageRange(10, 20, 1)).toEqual([1, 'ellipsis-left', 9, 10, 11, 'ellipsis-right', 20])
   })
 
   it('inserts left ellipsis when current is near end', () => {
@@ -52,6 +45,18 @@ describe('@iris-ui/react IrisPagination', () => {
     expect(btn('prev')).not.toBeNull()
     expect(btn('next')).not.toBeNull()
     expect(pageButtons().length).toBeGreaterThan(0)
+  })
+
+  it('localizes labels via IrisI18nProvider', () => {
+    const { container } = render(
+      <IrisI18nProvider
+        messages={{ 'pagination.label': 'Seitennummerierung', 'pagination.next': 'Weiter' }}
+      >
+        <IrisPagination total={50} value={1} />
+      </IrisI18nProvider>,
+    )
+    expect(container.querySelector('nav')?.getAttribute('aria-label')).toBe('Seitennummerierung')
+    expect(btn('next')?.getAttribute('aria-label')).toBe('Weiter')
   })
 
   it('marks the current page with aria-current="page"', () => {
@@ -93,9 +98,7 @@ describe('@iris-ui/react IrisPagination', () => {
   it('uncontrolled mode advances internally', () => {
     const { container } = render(<IrisPagination total={50} defaultValue={1} />)
     fireEvent.click(btn('next'))
-    expect(
-      container.querySelector('[data-iris-pagination-active=true]')?.textContent,
-    ).toBe('2')
+    expect(container.querySelector('[data-iris-pagination-active=true]')?.textContent).toBe('2')
   })
 
   it('disabled prop disables all buttons', () => {

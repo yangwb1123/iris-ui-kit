@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
 import { IrisPagination } from './Pagination'
 import { getPageRange } from './types'
+import { IrisI18nProvider } from '../../i18n'
 
 describe('getPageRange', () => {
   it('returns [1] for a single page', () => {
@@ -110,5 +112,20 @@ describe('IrisPagination', () => {
     const w = mount(IrisPagination, { props: { modelValue: 1, total: 10, pageSize: 10 } })
     expect(w.element.tagName).toBe('NAV')
     expect(w.attributes('aria-label')).toBe('Pagination')
+  })
+
+  it('localizes labels via IrisI18nProvider', () => {
+    const w = mount(
+      defineComponent({
+        setup: () => () =>
+          h(
+            IrisI18nProvider,
+            { messages: { 'pagination.label': 'Seitennummerierung', 'pagination.next': 'Weiter' } },
+            { default: () => h(IrisPagination, { modelValue: 1, total: 50 }) },
+          ),
+      }),
+    )
+    expect(w.find('nav').attributes('aria-label')).toBe('Seitennummerierung')
+    expect(w.find('[data-iris-pagination-item="next"]').attributes('aria-label')).toBe('Weiter')
   })
 })

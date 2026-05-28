@@ -1,10 +1,10 @@
 import * as React from 'react'
 import { getPageRange } from './types'
+import { useI18n } from '../../i18n'
 
 export type IrisPaginationSize = 'sm' | 'md'
 
-export interface IrisPaginationProps
-  extends Omit<React.HTMLAttributes<HTMLElement>, 'onChange'> {
+export interface IrisPaginationProps extends Omit<React.HTMLAttributes<HTMLElement>, 'onChange'> {
   /** Current page (1-indexed). Controlled. */
   value?: number
   /** Initial page in uncontrolled mode. */
@@ -36,6 +36,7 @@ export function IrisPagination({
   style,
   ...rest
 }: IrisPaginationProps): React.ReactElement {
+  const { t } = useI18n()
   const isControlled = valueProp !== undefined
   const [internal, setInternal] = React.useState(defaultValue)
   const totalPages = Math.max(1, Math.ceil(total / Math.max(1, pageSize)))
@@ -129,7 +130,7 @@ export function IrisPagination({
   return (
     <nav
       {...rest}
-      aria-label="Pagination"
+      aria-label={t('pagination.label')}
       data-iris-pagination=""
       data-iris-pagination-size={size}
       style={{
@@ -140,13 +141,13 @@ export function IrisPagination({
       }}
     >
       {showFirstLast
-        ? renderBtn(1, 'First page', {
+        ? renderBtn(1, t('pagination.first'), {
             kind: 'first',
             disabled: current <= 1,
             key: 'first',
           })
         : null}
-      {renderBtn(current - 1, 'Previous page', {
+      {renderBtn(current - 1, t('pagination.previous'), {
         kind: 'prev',
         disabled: current <= 1,
         key: 'prev',
@@ -154,19 +155,19 @@ export function IrisPagination({
       {items.map((item) => {
         if (item === 'ellipsis-left') return renderEllipsis('left')
         if (item === 'ellipsis-right') return renderEllipsis('right')
-        return renderBtn(item, `Page ${item}`, {
+        return renderBtn(item, t('pagination.page', { page: item }), {
           kind: 'page',
           active: item === current,
           key: `page-${item}`,
         })
       })}
-      {renderBtn(current + 1, 'Next page', {
+      {renderBtn(current + 1, t('pagination.next'), {
         kind: 'next',
         disabled: current >= totalPages,
         key: 'next',
       })}
       {showFirstLast
-        ? renderBtn(totalPages, 'Last page', {
+        ? renderBtn(totalPages, t('pagination.last'), {
             kind: 'last',
             disabled: current >= totalPages,
             key: 'last',

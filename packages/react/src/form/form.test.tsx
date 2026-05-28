@@ -1,0 +1,104 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import * as React from 'react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { IrisForm } from './Form'
+import { useForm } from './useForm'
+import { useField } from './useField'
+
+afterEach(cleanup)
+
+function NameField() {
+  const field = useField<string>('name')
+  return (
+    <div>
+      <input aria-label="name" {...field.inputProps} />
+      {field.error ? <span role="alert">{field.error}</span> : null}
+      <span data-testid="touched">{String(field.touched)}</span>
+      <span data-testid="dirty">{String(field.dirty)}</span>
+    </div>
+  )
+}
+
+function Demo({ onSubmit }: { onSubmit?: (values: { name: string }) => void }) {
+  const form = useForm({
+    initialValues: { name: '' },
+    validators: { name: (v) => (v ? undefined : 'Required') },
+    onSubmit,
+  })
+  return (
+    <IrisForm form={form.form}>
+      <NameField />
+      <span data-testid="submitting">{String(form.isSubmitting)}</span>
+      <span data-testid="valid">{String(form.isValid)}</span>
+      <button type="submit">Save</button>
+      <button type="button" onClick={() => form.reset()}>
+        Reset
+      </button>
+    </IrisForm>
+  )
+}
+
+describe('@iris-ui/react useForm / useField', () => {
+  it('renders the initial field value', () => {
+    render(<Demo />)
+    expect(screen.getByLabelText<HTMLInputElement>('name').value).toBe('')
+  })
+
+  it('updates the value on change and tracks dirty', () => {
+    render(<Demo />)
+    const input = screen.getByLabelText<HTMLInputElement>('name')
+    fireEvent.change(input, { target: { value: 'ann' } })
+    expect(input.value).toBe('ann')
+    expect(screen.getByTestId('dirty').textContent).toBe('true')
+  })
+
+  it('validates on change and surfaces the error', async () => {
+    render(<Demo />)
+    const input = screen.getByLabelText<HTMLInputElement>('name')
+    fireEvent.change(input, { target: { value: 'ann' } })
+    fireEvent.change(input, { target: { value: '' } })
+    expect((await screen.findByRole('alert')).textContent).toBe('Required')
+  })
+
+  it('marks the field touched on blur', () => {
+    render(<Demo />)
+    fireEvent.blur(screen.getByLabelText('name'))
+    expect(screen.getByTestId('touched').textContent).toBe('true')
+  })
+
+  it('blocks submit and shows errors when invalid', async () => {
+    const onSubmit = vi.fn()
+    render(<Demo onSubmit={onSubmit} />)
+    fireEvent.click(screen.getByText('Save'))
+    expect((await screen.findByRole('alert')).textContent).toBe('Required')
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('calls onSubmit with values when valid', async () => {
+    const onSubmit = vi.fn()
+    render(<Demo onSubmit={onSubmit} />)
+    fireEvent.change(screen.getByLabelText('name'), { target: { value: 'ann' } })
+    fireEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ name: 'ann' }))
+  })
+
+  it('reset restores the initial value', async () => {
+    render(<Demo />)
+    const input = screen.getByLabelText<HTMLInputElement>('name')
+    fireEvent.change(input, { target: { value: 'ann' } })
+    expect(input.value).toBe('ann')
+    fireEvent.click(screen.getByText('Reset'))
+    await waitFor(() => expect(input.value).toBe(''))
+    expect(screen.getByTestId('dirty').textContent).toBe('false')
+  })
+
+  it('useField throws outside an <IrisForm>', () => {
+    const Bad = () => {
+      useField('x')
+      return null
+    }
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(() => render(<Bad />)).toThrow(/within an <IrisForm>/)
+    spy.mockRestore()
+  })
+})

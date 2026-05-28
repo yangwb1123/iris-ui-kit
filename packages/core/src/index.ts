@@ -33,5 +33,11 @@ export {
   type I18nState,
   type I18nMessages,
 } from './i18n'
+export {
+  computeVirtualRange,
+  buildOffsets,
+  type VirtualWindow,
+  type VirtualRangeOptions,
+} from './virtual'
 export type { Side, Align, Placement, Size, Variant } from './types'
 export { composeEventHandlers, mergeProps, generateId } from './utils'

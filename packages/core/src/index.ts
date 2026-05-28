@@ -25,5 +25,13 @@ export {
   type FieldErrors,
   type FieldFlags,
 } from './form'
+export {
+  createI18n,
+  defaultMessages,
+  type I18n,
+  type I18nConfig,
+  type I18nState,
+  type I18nMessages,
+} from './i18n'
 export type { Side, Align, Placement, Size, Variant } from './types'
 export { composeEventHandlers, mergeProps, generateId } from './utils'

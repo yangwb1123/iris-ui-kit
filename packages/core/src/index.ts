@@ -14,5 +14,16 @@ export {
   type FloatingState,
   type FloatingEvent,
 } from './floating'
+export {
+  createFormStore,
+  type FormStore,
+  type FormState,
+  type FormConfig,
+  type FormValues,
+  type FormValidators,
+  type Validator,
+  type FieldErrors,
+  type FieldFlags,
+} from './form'
 export type { Side, Align, Placement, Size, Variant } from './types'
 export { composeEventHandlers, mergeProps, generateId } from './utils'

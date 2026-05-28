@@ -26,6 +26,7 @@
 export * from './theme'
 export * from './machine'
 export * from './form'
+export * from './i18n'
 
 // ── Layer 1 · Meta Primitives ────────────────────────────────────────────────
 export * from './primitives/slot'

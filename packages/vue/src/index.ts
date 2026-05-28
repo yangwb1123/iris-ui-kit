@@ -25,6 +25,7 @@
 // ── Layer 0 ──────────────────────────────────────────────────────────────────
 export * from './theme'
 export * from './machine'
+export * from './form'
 
 // ── Layer 1 · Meta Primitives ────────────────────────────────────────────────
 export * from './primitives/slot'

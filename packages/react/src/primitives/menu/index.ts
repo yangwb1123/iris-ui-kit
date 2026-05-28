@@ -1,6 +1,7 @@
 export { IrisMenu, type IrisMenuProps } from './Menu'
 export { IrisMenuTrigger, type IrisMenuTriggerProps } from './MenuTrigger'
 export { IrisMenuContent, type IrisMenuContentProps } from './MenuContent'
-export { IrisMenuItem, type IrisMenuItemProps } from './MenuItem'
+export { IrisMenuItem, IrisMenuSeparator } from './MenuItem'
+export type { IrisMenuItemProps, IrisMenuSeparatorProps } from './MenuItem'
 export { IrisMenuSub, type IrisMenuSubProps } from './MenuSub'
 export { MenuContext, useMenuContext, type MenuContextValue } from './context'

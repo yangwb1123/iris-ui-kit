@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { IrisMenu } from './Menu'
 import { IrisMenuTrigger } from './MenuTrigger'
 import { IrisMenuContent } from './MenuContent'
-import { IrisMenuItem } from './MenuItem'
+import { IrisMenuItem, IrisMenuSeparator } from './MenuItem'
 import { IrisMenuSub } from './MenuSub'
 
 afterEach(() => cleanup())
@@ -69,6 +69,22 @@ describe('@iris-ui/react IrisMenu', () => {
     })
     expect(onSelect).toHaveBeenCalled()
     expect(menuEl()).toBeNull()
+  })
+
+  it('renders IrisMenuSeparator with role="separator"', () => {
+    render(
+      <IrisMenu defaultOpen>
+        <IrisMenuTrigger>Actions</IrisMenuTrigger>
+        <IrisMenuContent>
+          <IrisMenuItem>A</IrisMenuItem>
+          <IrisMenuSeparator />
+          <IrisMenuItem>B</IrisMenuItem>
+        </IrisMenuContent>
+      </IrisMenu>,
+    )
+    const sep = document.querySelector('[data-iris-menu-separator]')
+    expect(sep).not.toBeNull()
+    expect(sep?.getAttribute('role')).toBe('separator')
   })
 
   it('disabled item is aria-disabled and not clickable', () => {

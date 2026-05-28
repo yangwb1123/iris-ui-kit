@@ -74,3 +74,20 @@ export const IrisMenuItem = React.forwardRef<HTMLDivElement, IrisMenuItemProps>(
     )
   },
 )
+
+/** Visual divider between item groups. */
+export type IrisMenuSeparatorProps = React.HTMLAttributes<HTMLDivElement>
+
+export const IrisMenuSeparator = React.forwardRef<HTMLDivElement, IrisMenuSeparatorProps>(
+  function IrisMenuSeparator({ style, ...rest }, ref) {
+    return (
+      <div
+        {...rest}
+        ref={ref}
+        role="separator"
+        data-iris-menu-separator=""
+        style={{ height: 1, background: 'var(--iris-border)', margin: '4px 0', ...style }}
+      />
+    )
+  },
+)

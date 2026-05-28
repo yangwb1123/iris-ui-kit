@@ -870,9 +870,11 @@
       "group": "primitives",
       "module": "menu",
       "frameworks": [
+        "react",
         "vue"
       ],
       "importFrom": {
+        "react": "@iris-ui/react",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1434,8 +1436,8 @@
   },
   "stats": {
     "total": 95,
-    "both": 94,
+    "both": 95,
     "reactOnly": 0,
-    "vueOnly": 1
+    "vueOnly": 0
   }
 }

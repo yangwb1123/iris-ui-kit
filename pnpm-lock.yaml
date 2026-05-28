@@ -123,6 +123,8 @@ importers:
 
   packages/icons: {}
 
+  packages/manifest: {}
+
   packages/react:
     dependencies:
       '@floating-ui/dom':

@@ -5,3 +5,5 @@ coverage/
 pnpm-lock.yaml
 *.tsbuildinfo
 .changeset/
+manifest.json
+llms.txt

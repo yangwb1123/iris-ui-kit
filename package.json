@@ -15,6 +15,7 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
+    "gen:manifest": "pnpm --filter @iris-ui/manifest build && node packages/manifest/dist/generate.js",
     "format": "prettier --write \"**/*.{ts,tsx,vue,js,json,md,css,html}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,vue,js,json,md,css,html}\"",
     "clean": "turbo run clean && rm -rf node_modules",

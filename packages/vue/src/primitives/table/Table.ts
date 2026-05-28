@@ -1,4 +1,5 @@
 import { computed, defineComponent, h, nextTick, ref, watch, type PropType, type VNode } from 'vue'
+import { useI18n } from '../../i18n'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
@@ -114,6 +115,7 @@ export const IrisTable = defineComponent({
     cellEdit: (_payload: IrisTableCellEditEvent<Record<string, unknown>>) => true,
   },
   setup(props, { slots, attrs, emit }) {
+    const { t } = useI18n()
     // -------- Sort --------
     const internalSortValue = ref<IrisTableSortState | null>(null)
     const internalSort = computed<IrisTableSortState | null>({
@@ -141,8 +143,8 @@ export const IrisTable = defineComponent({
 
     // -------- Selection --------
     const internalSelectionState = ref<Array<string | number>>([])
-    const effectiveSelection = computed<Array<string | number>>(() =>
-      props.selection ?? internalSelectionState.value,
+    const effectiveSelection = computed<Array<string | number>>(
+      () => props.selection ?? internalSelectionState.value,
     )
     const setSelection = (next: Array<string | number>) => {
       if (props.selection === undefined) internalSelectionState.value = next
@@ -164,8 +166,7 @@ export const IrisTable = defineComponent({
     )
     const someSelected = computed(
       () =>
-        !allSelected.value &&
-        allRowIds.value.some((id) => effectiveSelection.value.includes(id)),
+        !allSelected.value && allRowIds.value.some((id) => effectiveSelection.value.includes(id)),
     )
 
     const toggleRow = (id: string | number) => {
@@ -422,7 +423,8 @@ export const IrisTable = defineComponent({
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start',
+                justifyContent:
+                  align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start',
                 padding: '8px var(--iris-padding-md)',
                 cursor: col.sortable ? 'pointer' : 'default',
                 userSelect: col.sortable ? 'none' : 'auto',
@@ -554,7 +556,8 @@ export const IrisTable = defineComponent({
                 style: {
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start',
+                  justifyContent:
+                    align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start',
                   padding: isEditing ? '4px' : '8px var(--iris-padding-md)',
                   borderBottom: '1px solid var(--iris-border)',
                   fontSize: '14px',
@@ -594,7 +597,21 @@ export const IrisTable = defineComponent({
       }
 
       let bodyNode: VNode
-      if (props.virtualScroll) {
+      if (sortedRows.value.length === 0) {
+        bodyNode = h(
+          'div',
+          {
+            role: 'row',
+            'data-iris-table-row': 'empty',
+            style: {
+              padding: '32px 12px',
+              textAlign: 'center',
+              color: 'var(--iris-muted)',
+            },
+          },
+          slots.empty ? slots.empty() : t('table.empty'),
+        )
+      } else if (props.virtualScroll) {
         bodyNode = h(
           IrisVirtualScroll,
           {

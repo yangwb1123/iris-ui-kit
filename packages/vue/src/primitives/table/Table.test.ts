@@ -38,20 +38,45 @@ describe('IrisTable', () => {
   afterEach(() => host.remove())
 
   it('renders header row + one body row per data row', () => {
-    const wrapper = mount(IrisTable, { props: { columns, data: rows, rowKey: 'id' }, attachTo: host })
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: rows, rowKey: 'id' },
+      attachTo: host,
+    })
     expect(wrapper.findAll('[data-iris-table-header-row]').length).toBe(1)
     expect(wrapper.findAll('[data-iris-table-row]').length).toBe(3)
   })
 
   it('renders cell values via dataIndex by default', () => {
-    const wrapper = mount(IrisTable, { props: { columns, data: rows, rowKey: 'id' }, attachTo: host })
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: rows, rowKey: 'id' },
+      attachTo: host,
+    })
     const firstRow = wrapper.findAll('[data-iris-table-row]')[0]!
     expect(firstRow.text()).toContain('Carol')
     expect(firstRow.text()).toContain('31')
   })
 
+  it('renders a localized empty state when data is empty', () => {
+    const wrapper = mount(IrisTable, { props: { columns, data: [], rowKey: 'id' }, attachTo: host })
+    const empty = wrapper.find('[data-iris-table-row="empty"]')
+    expect(empty.exists()).toBe(true)
+    expect(empty.text()).toBe('No data')
+  })
+
+  it('renders a custom #empty slot when provided', () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: [], rowKey: 'id' },
+      slots: { empty: () => 'Nothing here' },
+      attachTo: host,
+    })
+    expect(wrapper.find('[data-iris-table-row="empty"]').text()).toBe('Nothing here')
+  })
+
   it('clicking a sortable header sorts asc', async () => {
-    const wrapper = mount(IrisTable, { props: { columns, data: rows, rowKey: 'id' }, attachTo: host })
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: rows, rowKey: 'id' },
+      attachTo: host,
+    })
     await wrapper.findAll('[role="columnheader"]')[0]!.trigger('click')
     await nextTick()
     const firstCol = wrapper
@@ -61,7 +86,10 @@ describe('IrisTable', () => {
   })
 
   it('clicking the same header again sorts desc', async () => {
-    const wrapper = mount(IrisTable, { props: { columns, data: rows, rowKey: 'id' }, attachTo: host })
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: rows, rowKey: 'id' },
+      attachTo: host,
+    })
     const nameHeader = wrapper.findAll('[role="columnheader"]')[0]!
     await nameHeader.trigger('click')
     await nameHeader.trigger('click')
@@ -73,7 +101,10 @@ describe('IrisTable', () => {
   })
 
   it('clicking a third time clears sort', async () => {
-    const wrapper = mount(IrisTable, { props: { columns, data: rows, rowKey: 'id' }, attachTo: host })
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: rows, rowKey: 'id' },
+      attachTo: host,
+    })
     const nameHeader = wrapper.findAll('[role="columnheader"]')[0]!
     await nameHeader.trigger('click')
     await nameHeader.trigger('click')
@@ -105,7 +136,10 @@ describe('IrisTable', () => {
   })
 
   it('aria-sort reflects current state', async () => {
-    const wrapper = mount(IrisTable, { props: { columns, data: rows, rowKey: 'id' }, attachTo: host })
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: rows, rowKey: 'id' },
+      attachTo: host,
+    })
     expect(wrapper.findAll('[role="columnheader"]')[0]!.attributes('aria-sort')).toBe('none')
     await wrapper.findAll('[role="columnheader"]')[0]!.trigger('click')
     expect(wrapper.findAll('[role="columnheader"]')[0]!.attributes('aria-sort')).toBe('ascending')
@@ -135,8 +169,7 @@ describe('IrisTable', () => {
       },
     })
     const wrapper = mount(Harness, { attachTo: host })
-    const bodyCheckboxes = wrapper
-      .findAll('[data-iris-table-row] [data-iris-checkbox] input')
+    const bodyCheckboxes = wrapper.findAll('[data-iris-table-row] [data-iris-checkbox] input')
     await bodyCheckboxes[1]!.trigger('change')
     expect(selection.value).toEqual([2])
   })
@@ -175,7 +208,10 @@ describe('IrisTable', () => {
   })
 
   it('emits rowClick with the row data and index', async () => {
-    const wrapper = mount(IrisTable, { props: { columns, data: rows, rowKey: 'id' }, attachTo: host })
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: rows, rowKey: 'id' },
+      attachTo: host,
+    })
     await wrapper.findAll('[data-iris-table-row]')[1]!.trigger('click')
     const emit = wrapper.emitted('rowClick')
     expect(emit?.[0]?.[0]).toEqual(rows[1])
@@ -259,9 +295,7 @@ describe('IrisTable', () => {
         props: { columns, data: rows, rowKey: 'id' },
         attachTo: host,
       })
-      const firstCell = wrapper
-        .findAll('[data-iris-table-row]')[0]!
-        .findAll('[role="cell"]')[0]!
+      const firstCell = wrapper.findAll('[data-iris-table-row]')[0]!.findAll('[role="cell"]')[0]!
       await firstCell.trigger('dblclick')
       await nextTick()
       expect(wrapper.find('[data-iris-table-editor]').exists()).toBe(false)
@@ -269,12 +303,14 @@ describe('IrisTable', () => {
 
     it('double-click opens an editor in editable cells', async () => {
       const wrapper = mount(IrisTable, {
-        props: { columns: editableCols as IrisTableColumn<Record<string, unknown>>[], data: rows, rowKey: 'id' },
+        props: {
+          columns: editableCols as IrisTableColumn<Record<string, unknown>>[],
+          data: rows,
+          rowKey: 'id',
+        },
         attachTo: host,
       })
-      const firstCell = wrapper
-        .findAll('[data-iris-table-row]')[0]!
-        .findAll('[role="cell"]')[0]!
+      const firstCell = wrapper.findAll('[data-iris-table-row]')[0]!.findAll('[role="cell"]')[0]!
       await firstCell.trigger('dblclick')
       await nextTick()
       expect(wrapper.find('[data-iris-table-editor]').exists()).toBe(true)
@@ -282,12 +318,14 @@ describe('IrisTable', () => {
 
     it('Enter commits and emits cellEdit with the new value', async () => {
       const wrapper = mount(IrisTable, {
-        props: { columns: editableCols as IrisTableColumn<Record<string, unknown>>[], data: rows, rowKey: 'id' },
+        props: {
+          columns: editableCols as IrisTableColumn<Record<string, unknown>>[],
+          data: rows,
+          rowKey: 'id',
+        },
         attachTo: host,
       })
-      const firstCell = wrapper
-        .findAll('[data-iris-table-row]')[0]!
-        .findAll('[role="cell"]')[0]!
+      const firstCell = wrapper.findAll('[data-iris-table-row]')[0]!.findAll('[role="cell"]')[0]!
       await firstCell.trigger('dblclick')
       await nextTick()
       const editor = wrapper.find('[data-iris-table-editor]')
@@ -303,12 +341,14 @@ describe('IrisTable', () => {
 
     it('Escape cancels without emitting', async () => {
       const wrapper = mount(IrisTable, {
-        props: { columns: editableCols as IrisTableColumn<Record<string, unknown>>[], data: rows, rowKey: 'id' },
+        props: {
+          columns: editableCols as IrisTableColumn<Record<string, unknown>>[],
+          data: rows,
+          rowKey: 'id',
+        },
         attachTo: host,
       })
-      const firstCell = wrapper
-        .findAll('[data-iris-table-row]')[0]!
-        .findAll('[role="cell"]')[0]!
+      const firstCell = wrapper.findAll('[data-iris-table-row]')[0]!.findAll('[role="cell"]')[0]!
       await firstCell.trigger('dblclick')
       await nextTick()
       const editor = wrapper.find('[data-iris-table-editor]')
@@ -321,12 +361,14 @@ describe('IrisTable', () => {
 
     it('number editor coerces the new value', async () => {
       const wrapper = mount(IrisTable, {
-        props: { columns: editableCols as IrisTableColumn<Record<string, unknown>>[], data: rows, rowKey: 'id' },
+        props: {
+          columns: editableCols as IrisTableColumn<Record<string, unknown>>[],
+          data: rows,
+          rowKey: 'id',
+        },
         attachTo: host,
       })
-      const ageCell = wrapper
-        .findAll('[data-iris-table-row]')[0]!
-        .findAll('[role="cell"]')[1]!
+      const ageCell = wrapper.findAll('[data-iris-table-row]')[0]!.findAll('[role="cell"]')[1]!
       await ageCell.trigger('dblclick')
       await nextTick()
       const editor = wrapper.find('[data-iris-table-editor]')
@@ -340,12 +382,14 @@ describe('IrisTable', () => {
 
     it('committing an identical value does not emit', async () => {
       const wrapper = mount(IrisTable, {
-        props: { columns: editableCols as IrisTableColumn<Record<string, unknown>>[], data: rows, rowKey: 'id' },
+        props: {
+          columns: editableCols as IrisTableColumn<Record<string, unknown>>[],
+          data: rows,
+          rowKey: 'id',
+        },
         attachTo: host,
       })
-      const firstCell = wrapper
-        .findAll('[data-iris-table-row]')[0]!
-        .findAll('[role="cell"]')[0]!
+      const firstCell = wrapper.findAll('[data-iris-table-row]')[0]!.findAll('[role="cell"]')[0]!
       await firstCell.trigger('dblclick')
       await nextTick()
       // Default draft value === existing value ("Carol")

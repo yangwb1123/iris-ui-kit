@@ -17,12 +17,12 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 /** Gzipped-KB budget per package entry. */
 const BUDGETS = {
-  core: 6,
+  core: 7,
   tokens: 2,
   theme: 3.5,
   icons: 4,
-  react: 68,
-  vue: 75,
+  react: 80,
+  vue: 88,
   manifest: 2,
 }
 

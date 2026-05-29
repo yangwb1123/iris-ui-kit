@@ -72,7 +72,7 @@
     },
     {
       "group": "primitives",
-      "count": 105,
+      "count": 106,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -155,6 +155,7 @@
         "IrisSlider",
         "IrisSlot",
         "IrisSpinner",
+        "IrisSplitButton",
         "IrisSplitter",
         "IrisStatistic",
         "IrisStepper",
@@ -1413,6 +1414,19 @@
       }
     },
     {
+      "name": "IrisSplitButton",
+      "group": "primitives",
+      "module": "split-button",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
       "name": "IrisSplitter",
       "group": "primitives",
       "module": "splitter",
@@ -1790,8 +1804,8 @@
     ]
   },
   "stats": {
-    "total": 120,
-    "both": 120,
+    "total": 121,
+    "both": 121,
     "reactOnly": 0,
     "vueOnly": 0
   }

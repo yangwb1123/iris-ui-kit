@@ -85,6 +85,7 @@ export const defaultMessages: I18nMessages = {
   'tagInput.remove': 'Remove {tag}',
   'copyButton.copy': 'Copy',
   'copyButton.copied': 'Copied',
+  'splitButton.more': 'More actions',
   'table.empty': 'No data',
   'table.loading': 'Loading…',
   'table.error': 'Failed to load data',

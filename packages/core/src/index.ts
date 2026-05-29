@@ -39,5 +39,12 @@ export {
   type VirtualWindow,
   type VirtualRangeOptions,
 } from './virtual'
+export {
+  createAsyncResource,
+  type AsyncResource,
+  type AsyncState,
+  type AsyncStatus,
+  type AsyncResourceConfig,
+} from './async'
 export type { Side, Align, Placement, Size, Variant } from './types'
 export { composeEventHandlers, mergeProps, generateId } from './utils'

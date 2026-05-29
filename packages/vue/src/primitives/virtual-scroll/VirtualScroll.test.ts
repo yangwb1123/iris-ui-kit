@@ -62,9 +62,13 @@ describe('IrisVirtualScroll', () => {
     const Empty = defineComponent({
       setup() {
         return () =>
-          h(IrisVirtualScroll, { items: [], itemHeight: 40, height: 200 }, {
-            item: () => h('div'),
-          })
+          h(
+            IrisVirtualScroll,
+            { items: [], itemHeight: 40, height: 200 },
+            {
+              item: () => h('div'),
+            },
+          )
       },
     })
     const wrapper = mount(Empty, { attachTo: host })
@@ -149,5 +153,20 @@ describe('IrisVirtualScroll', () => {
     await nextTick()
     // Visual key isn't observable, but render mustn't crash and IDs must show up.
     expect(wrapper.findAll('[data-id]').length).toBeGreaterThan(0)
+  })
+
+  it('supports variable item heights via a size function', async () => {
+    const sizeAt = (i: number) => (i % 2 === 0 ? 30 : 50)
+    const wrapper = mount(Harness({ itemHeight: sizeAt }), { attachTo: host })
+    await nextTick()
+    // total = 500*30 (even) + 500*50 (odd) = 40000
+    expect(wrapper.find('[data-iris-virtual-spacer]').attributes('style')).toContain(
+      'height: 40000px',
+    )
+    const rows = wrapper.findAll('[data-iris-virtual-item]')
+    expect(rows[0]!.attributes('style')).toContain('translateY(0px)')
+    expect(rows[0]!.attributes('style')).toContain('height: 30px')
+    expect(rows[1]!.attributes('style')).toContain('translateY(30px)')
+    expect(rows[1]!.attributes('style')).toContain('height: 50px')
   })
 })

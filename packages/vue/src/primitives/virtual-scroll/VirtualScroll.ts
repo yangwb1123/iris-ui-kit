@@ -9,6 +9,7 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
+import { buildOffsets, computeVirtualRange } from '@iris-ui/core'
 
 export type IrisVirtualScrollAlign = 'start' | 'center' | 'end'
 
@@ -46,8 +47,14 @@ export const IrisVirtualScroll = defineComponent({
   inheritAttrs: false,
   props: {
     items: { type: Array as PropType<readonly unknown[]>, required: true },
-    /** Per-item height in px. All items share this height. */
-    itemHeight: { type: Number, required: true },
+    /**
+     * Per-item height in px (fixed), or a `(index) => px` function for variable
+     * heights (wrapped text, expandable rows).
+     */
+    itemHeight: {
+      type: [Number, Function] as PropType<number | ((index: number) => number)>,
+      required: true,
+    },
     /** Viewport height. Number → px; string → CSS length passed through. */
     height: { type: [Number, String], default: 400 },
     /** Number of extra rows to render above and below the viewport. */
@@ -68,17 +75,38 @@ export const IrisVirtualScroll = defineComponent({
     const viewportHeight = ref(typeof props.height === 'number' ? props.height : 0)
     let rafId: number | null = null
 
-    const totalHeight = computed(() => props.items.length * props.itemHeight)
-
-    const visibleCount = computed(() => {
-      if (props.itemHeight <= 0) return 0
-      return Math.ceil(viewportHeight.value / props.itemHeight)
-    })
+    const sizeFn = computed(() =>
+      typeof props.itemHeight === 'function' ? props.itemHeight : null,
+    )
+    const fixedHeight = computed(() => (sizeFn.value ? 0 : (props.itemHeight as number)))
+    const offsets = computed(() =>
+      sizeFn.value ? buildOffsets(props.items.length, sizeFn.value) : null,
+    )
+    const totalHeight = computed(() =>
+      offsets.value ? offsets.value[props.items.length] : props.items.length * fixedHeight.value,
+    )
+    const offsetOf = (i: number): number =>
+      offsets.value ? offsets.value[i] : i * fixedHeight.value
+    const heightOf = (i: number): number =>
+      offsets.value ? offsets.value[i + 1] - offsets.value[i] : fixedHeight.value
 
     const range = computed(() => {
-      const startRaw = Math.floor(scrollTop.value / Math.max(1, props.itemHeight))
+      const fn = sizeFn.value
+      if (fn) {
+        const w = computeVirtualRange({
+          itemCount: props.items.length,
+          scrollTop: scrollTop.value,
+          viewportSize: viewportHeight.value,
+          itemSize: fn,
+          buffer: props.buffer,
+        })
+        return { start: w.startIndex, end: w.endIndex + 1 }
+      }
+      const startRaw = Math.floor(scrollTop.value / Math.max(1, fixedHeight.value))
+      const visibleCount =
+        fixedHeight.value <= 0 ? 0 : Math.ceil(viewportHeight.value / fixedHeight.value)
       const start = Math.max(0, startRaw - props.buffer)
-      const end = Math.min(props.items.length, startRaw + visibleCount.value + props.buffer)
+      const end = Math.min(props.items.length, startRaw + visibleCount + props.buffer)
       return { start, end }
     })
 
@@ -135,12 +163,13 @@ export const IrisVirtualScroll = defineComponent({
       const el = viewportRef.value
       if (!el) return
       const clamped = Math.max(0, Math.min(props.items.length - 1, index))
-      const itemTop = clamped * props.itemHeight
+      const itemTop = offsetOf(clamped)
+      const itemH = heightOf(clamped)
       let target = itemTop
       if (align === 'center') {
-        target = itemTop - viewportHeight.value / 2 + props.itemHeight / 2
+        target = itemTop - viewportHeight.value / 2 + itemH / 2
       } else if (align === 'end') {
-        target = itemTop - viewportHeight.value + props.itemHeight
+        target = itemTop - viewportHeight.value + itemH
       }
       el.scrollTop = Math.max(0, target)
     }
@@ -186,8 +215,8 @@ export const IrisVirtualScroll = defineComponent({
                 top: '0',
                 left: '0',
                 right: '0',
-                height: `${props.itemHeight}px`,
-                transform: `translateY(${i * props.itemHeight}px)`,
+                height: `${heightOf(i)}px`,
+                transform: `translateY(${offsetOf(i)}px)`,
               },
             },
             slotContent,

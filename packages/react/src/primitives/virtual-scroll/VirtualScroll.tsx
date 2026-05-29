@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { buildOffsets, computeVirtualRange } from '@iris-ui/core'
 
 export type IrisVirtualScrollAlign = 'start' | 'center' | 'end'
 
@@ -9,8 +10,12 @@ export interface IrisVirtualScrollHandle {
 
 export interface IrisVirtualScrollProps<T = unknown> {
   items: readonly T[]
-  /** Per-item height in px. All items share this height. */
-  itemHeight: number
+  /**
+   * Per-item height in px. A number means every row shares that height; pass a
+   * `(index) => px` function for variable heights (wrapped text, expandable
+   * rows). Memoize the function so the offset table isn't rebuilt every render.
+   */
+  itemHeight: number | ((index: number) => number)
   /** Viewport height. Number → px; string → CSS length passed through. */
   height?: number | string
   /** Number of extra rows to render above and below the viewport. */
@@ -52,15 +57,36 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
   )
   const rafRef = React.useRef<number | null>(null)
 
-  const totalHeight = items.length * itemHeight
-  const visibleCount = itemHeight <= 0 ? 0 : Math.ceil(viewportHeight / itemHeight)
+  const sizeFn = typeof itemHeight === 'function' ? itemHeight : null
+  const fixedHeight = typeof itemHeight === 'number' ? itemHeight : 0
+
+  // Variable mode: cumulative offsets (rebuilt when the size fn or count change).
+  const offsets = React.useMemo(
+    () => (sizeFn ? buildOffsets(items.length, sizeFn) : null),
+    [sizeFn, items.length],
+  )
+
+  const totalHeight = offsets ? offsets[items.length] : items.length * fixedHeight
+  const offsetOf = (i: number): number => (offsets ? offsets[i] : i * fixedHeight)
+  const heightOf = (i: number): number => (offsets ? offsets[i + 1] - offsets[i] : fixedHeight)
 
   const range = React.useMemo(() => {
-    const startRaw = Math.floor(scrollTop / Math.max(1, itemHeight))
+    if (sizeFn) {
+      const w = computeVirtualRange({
+        itemCount: items.length,
+        scrollTop,
+        viewportSize: viewportHeight,
+        itemSize: sizeFn,
+        buffer,
+      })
+      return { start: w.startIndex, end: w.endIndex + 1 }
+    }
+    const startRaw = Math.floor(scrollTop / Math.max(1, fixedHeight))
+    const visibleCount = fixedHeight <= 0 ? 0 : Math.ceil(viewportHeight / fixedHeight)
     const start = Math.max(0, startRaw - buffer)
     const end = Math.min(items.length, startRaw + visibleCount + buffer)
     return { start, end }
-  }, [scrollTop, itemHeight, buffer, items.length, visibleCount])
+  }, [sizeFn, scrollTop, viewportHeight, fixedHeight, buffer, items.length])
 
   // Emit range change without firing onScroll's effect prematurely.
   const rangeRef = React.useRef(range)
@@ -121,16 +147,17 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
       const el = viewportRef.current
       if (!el) return
       const clamped = Math.max(0, Math.min(items.length - 1, index))
-      const itemTop = clamped * itemHeight
+      const itemTop = offsets ? offsets[clamped] : clamped * fixedHeight
+      const itemH = offsets ? offsets[clamped + 1] - offsets[clamped] : fixedHeight
       let target = itemTop
       if (align === 'center') {
-        target = itemTop - viewportHeight / 2 + itemHeight / 2
+        target = itemTop - viewportHeight / 2 + itemH / 2
       } else if (align === 'end') {
-        target = itemTop - viewportHeight + itemHeight
+        target = itemTop - viewportHeight + itemH
       }
       el.scrollTop = Math.max(0, target)
     },
-    [items.length, itemHeight, viewportHeight],
+    [items.length, fixedHeight, offsets, viewportHeight],
   )
 
   const refresh = React.useCallback(() => {
@@ -166,8 +193,8 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
           top: 0,
           left: 0,
           right: 0,
-          height: itemHeight,
-          transform: `translateY(${i * itemHeight}px)`,
+          height: heightOf(i),
+          transform: `translateY(${offsetOf(i)}px)`,
         }}
       >
         {renderItem(item, i)}

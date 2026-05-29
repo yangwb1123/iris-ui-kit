@@ -64,9 +64,7 @@ describe('@iris-ui/react IrisVirtualScroll', () => {
       })
     })
     expect(onRange).toHaveBeenCalled()
-    const firstIdx = Number(
-      visibleItems()[0]?.getAttribute('data-iris-virtual-index'),
-    )
+    const firstIdx = Number(visibleItems()[0]?.getAttribute('data-iris-virtual-index'))
     expect(firstIdx).toBeGreaterThan(10)
   })
 
@@ -136,12 +134,7 @@ describe('@iris-ui/react IrisVirtualScroll', () => {
 
   it('shrinking items does not throw; spacer adjusts', () => {
     const { rerender, container } = render(
-      <IrisVirtualScroll
-        items={items}
-        itemHeight={40}
-        height={400}
-        renderItem={renderItem}
-      />,
+      <IrisVirtualScroll items={items} itemHeight={40} height={400} renderItem={renderItem} />,
     )
     rerender(
       <IrisVirtualScroll
@@ -156,14 +149,45 @@ describe('@iris-ui/react IrisVirtualScroll', () => {
     expect(visibleItems().length).toBeLessThanOrEqual(5)
   })
 
-  it('CSS length height passes through verbatim', () => {
+  it('supports variable item heights via a size function', () => {
+    const sizeAt = (i: number) => (i % 2 === 0 ? 30 : 50)
+    const { container } = render(
+      <IrisVirtualScroll items={items} itemHeight={sizeAt} height={400} renderItem={renderItem} />,
+    )
+    // total = 500*30 (even) + 500*50 (odd) = 40000
+    const spacer = container.querySelector('[data-iris-virtual-spacer]') as HTMLDivElement
+    expect(spacer.style.height).toBe('40000px')
+    const rows = visibleItems()
+    expect((rows[0] as HTMLElement).style.transform).toMatch(/translateY\(0px\)/)
+    expect((rows[0] as HTMLElement).style.height).toBe('30px')
+    // second row starts after the first's 30px and is 50px tall
+    expect((rows[1] as HTMLElement).style.transform).toMatch(/translateY\(30px\)/)
+    expect((rows[1] as HTMLElement).style.height).toBe('50px')
+  })
+
+  it('scrollToIndex respects variable offsets', () => {
+    const ref = React.createRef<IrisVirtualScrollHandle>()
+    const sizeAt = (i: number) => (i % 2 === 0 ? 30 : 50)
     const { container } = render(
       <IrisVirtualScroll
+        ref={ref}
         items={items}
-        itemHeight={40}
-        height="50vh"
+        itemHeight={sizeAt}
+        height={400}
         renderItem={renderItem}
       />,
+    )
+    const root = container.querySelector('[data-iris-virtual-scroll]') as HTMLDivElement
+    // offset of index 4 = sizes[0..3] = 30+50+30+50 = 160
+    act(() => {
+      ref.current?.scrollToIndex(4)
+    })
+    expect(root.scrollTop).toBe(160)
+  })
+
+  it('CSS length height passes through verbatim', () => {
+    const { container } = render(
+      <IrisVirtualScroll items={items} itemHeight={40} height="50vh" renderItem={renderItem} />,
     )
     const root = container.querySelector('[data-iris-virtual-scroll]') as HTMLDivElement
     expect(root.style.height).toBe('50vh')

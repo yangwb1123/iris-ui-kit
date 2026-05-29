@@ -106,6 +106,10 @@ export const IrisTable = defineComponent({
       type: Object as PropType<IrisTableVirtualOptions>,
       default: undefined,
     },
+    /** Show the loading state instead of rows. */
+    loading: { type: Boolean, default: false },
+    /** Show the error state instead of rows (takes precedence over loading). */
+    error: { type: Boolean, default: false },
   },
   emits: {
     'update:selection': (_value: Array<string | number>) => true,
@@ -596,19 +600,36 @@ export const IrisTable = defineComponent({
         )
       }
 
+      // State row style shared by error / loading / empty.
+      const stateRowStyle = {
+        padding: '32px 12px',
+        textAlign: 'center',
+        color: 'var(--iris-muted)',
+      }
+
       let bodyNode: VNode
-      if (sortedRows.value.length === 0) {
+      // Precedence: error → loading → empty → rows.
+      if (props.error) {
+        bodyNode = h(
+          'div',
+          { role: 'row', 'data-iris-table-row': 'error', style: stateRowStyle },
+          slots.error ? slots.error() : t('table.error'),
+        )
+      } else if (props.loading) {
         bodyNode = h(
           'div',
           {
             role: 'row',
-            'data-iris-table-row': 'empty',
-            style: {
-              padding: '32px 12px',
-              textAlign: 'center',
-              color: 'var(--iris-muted)',
-            },
+            'aria-busy': 'true',
+            'data-iris-table-row': 'loading',
+            style: stateRowStyle,
           },
+          slots.loading ? slots.loading() : t('table.loading'),
+        )
+      } else if (sortedRows.value.length === 0) {
+        bodyNode = h(
+          'div',
+          { role: 'row', 'data-iris-table-row': 'empty', style: stateRowStyle },
           slots.empty ? slots.empty() : t('table.empty'),
         )
       } else if (props.virtualScroll) {

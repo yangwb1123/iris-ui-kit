@@ -72,6 +72,42 @@ describe('IrisTable', () => {
     expect(wrapper.find('[data-iris-table-row="empty"]').text()).toBe('Nothing here')
   })
 
+  it('renders the localized loading state with aria-busy', () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: [], rowKey: 'id', loading: true },
+      attachTo: host,
+    })
+    const row = wrapper.find('[data-iris-table-row="loading"]')
+    expect(row.exists()).toBe(true)
+    expect(row.attributes('aria-busy')).toBe('true')
+    expect(row.text()).toBe('Loading…')
+  })
+
+  it('error state takes precedence over loading and data', () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: rows, rowKey: 'id', loading: true, error: true },
+      attachTo: host,
+    })
+    expect(wrapper.find('[data-iris-table-row="error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-iris-table-row="loading"]').exists()).toBe(false)
+    expect(wrapper.find('[data-iris-table-row="1"]').exists()).toBe(false)
+  })
+
+  it('renders custom #loading / #error slots', () => {
+    const loadingW = mount(IrisTable, {
+      props: { columns, data: [], rowKey: 'id', loading: true },
+      slots: { loading: () => 'Fetching' },
+      attachTo: host,
+    })
+    expect(loadingW.find('[data-iris-table-row="loading"]').text()).toBe('Fetching')
+    const errorW = mount(IrisTable, {
+      props: { columns, data: [], rowKey: 'id', error: true },
+      slots: { error: () => 'Boom' },
+      attachTo: host,
+    })
+    expect(errorW.find('[data-iris-table-row="error"]').text()).toBe('Boom')
+  })
+
   it('clicking a sortable header sorts asc', async () => {
     const wrapper = mount(IrisTable, {
       props: { columns, data: rows, rowKey: 'id' },

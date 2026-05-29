@@ -85,25 +85,49 @@ describe('@iris-ui/react IrisTable', () => {
   })
 
   it('sorted asc reorders rows alphabetically by sort key', () => {
-    render(<IrisTable columns={baseColumns} data={rows} defaultSort={{ key: 'name', direction: 'asc' }} />)
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        defaultSort={{ key: 'name', direction: 'asc' }}
+      />,
+    )
     const cells = Array.from(document.querySelectorAll('[data-iris-table-cell=name]'))
     expect(cells.map((c) => c.textContent)).toEqual(['Alice', 'Bob', 'Charlie'])
   })
 
   it('sorted desc reverses', () => {
-    render(<IrisTable columns={baseColumns} data={rows} defaultSort={{ key: 'name', direction: 'desc' }} />)
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        defaultSort={{ key: 'name', direction: 'desc' }}
+      />,
+    )
     const cells = Array.from(document.querySelectorAll('[data-iris-table-cell=name]'))
     expect(cells.map((c) => c.textContent)).toEqual(['Charlie', 'Bob', 'Alice'])
   })
 
   it('numeric sort uses subtraction (not localeCompare)', () => {
-    render(<IrisTable columns={baseColumns} data={rows} defaultSort={{ key: 'age', direction: 'asc' }} />)
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        defaultSort={{ key: 'age', direction: 'asc' }}
+      />,
+    )
     const cells = Array.from(document.querySelectorAll('[data-iris-table-cell=age]'))
     expect(cells.map((c) => c.textContent)).toEqual(['25', '28', '32'])
   })
 
   it('aria-sort header attribute reflects current sort', () => {
-    render(<IrisTable columns={baseColumns} data={rows} defaultSort={{ key: 'name', direction: 'asc' }} />)
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        defaultSort={{ key: 'name', direction: 'asc' }}
+      />,
+    )
     const nameHeader = headers().find((h) => h.textContent?.includes('Name'))!
     expect(nameHeader.getAttribute('aria-sort')).toBe('ascending')
   })
@@ -116,7 +140,14 @@ describe('@iris-ui/react IrisTable', () => {
 
   it('selectable=single allows one row at a time', () => {
     const onChange = vi.fn()
-    render(<IrisTable columns={baseColumns} data={rows} selectable="single" onSelectionChange={onChange} />)
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        selectable="single"
+        onSelectionChange={onChange}
+      />,
+    )
     const checkboxes = Array.from(document.querySelectorAll('input[type=checkbox]'))
     act(() => {
       fireEvent.click(checkboxes[0]!)
@@ -130,7 +161,14 @@ describe('@iris-ui/react IrisTable', () => {
 
   it('selectable=multi tracks an array of selected keys', () => {
     const onChange = vi.fn()
-    render(<IrisTable columns={baseColumns} data={rows} selectable="multi" onSelectionChange={onChange} />)
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        selectable="multi"
+        onSelectionChange={onChange}
+      />,
+    )
     const checkboxes = Array.from(document.querySelectorAll('input[type=checkbox]'))
     // First is master, then 3 row checkboxes.
     act(() => {
@@ -145,7 +183,14 @@ describe('@iris-ui/react IrisTable', () => {
 
   it('master checkbox toggles all on then off', () => {
     const onChange = vi.fn()
-    render(<IrisTable columns={baseColumns} data={rows} selectable="multi" onSelectionChange={onChange} />)
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        selectable="multi"
+        onSelectionChange={onChange}
+      />,
+    )
     const master = document.querySelectorAll('input[type=checkbox]')[0]!
     act(() => {
       fireEvent.click(master)
@@ -158,10 +203,11 @@ describe('@iris-ui/react IrisTable', () => {
   })
 
   it('custom rowKey is honored', () => {
-    const data = [{ uuid: 'a', name: 'X' }, { uuid: 'b', name: 'Y' }]
-    const cols: IrisTableColumn<{ uuid: string; name: string }>[] = [
-      { key: 'name', title: 'N' },
+    const data = [
+      { uuid: 'a', name: 'X' },
+      { uuid: 'b', name: 'Y' },
     ]
+    const cols: IrisTableColumn<{ uuid: string; name: string }>[] = [{ key: 'name', title: 'N' }]
     const onChange = vi.fn()
     render(
       <IrisTable
@@ -202,8 +248,35 @@ describe('@iris-ui/react IrisTable', () => {
     expect(document.querySelector('[data-testid=empty]')).not.toBeNull()
   })
 
+  it('renders the localized loading state with aria-busy', () => {
+    render(<IrisTable columns={baseColumns} data={[]} loading />)
+    const row = document.querySelector('[data-iris-table-row="loading"]')
+    expect(row).not.toBeNull()
+    expect(row?.getAttribute('aria-busy')).toBe('true')
+    expect(row?.textContent).toBe('Loading…')
+  })
+
+  it('renders the error state, taking precedence over loading and data', () => {
+    render(<IrisTable columns={baseColumns} data={rows} loading error />)
+    expect(document.querySelector('[data-iris-table-row="error"]')).not.toBeNull()
+    expect(document.querySelector('[data-iris-table-row="loading"]')).toBeNull()
+    // No data rows render while in the error state.
+    expect(document.querySelector('[data-iris-table-row="2"]')).toBeNull()
+  })
+
+  it('errorState/loadingState override the default copy', () => {
+    const { rerender } = render(
+      <IrisTable columns={baseColumns} data={[]} loading loadingState={<span>Fetching</span>} />,
+    )
+    expect(document.querySelector('[data-iris-table-row="loading"]')?.textContent).toBe('Fetching')
+    rerender(<IrisTable columns={baseColumns} data={[]} error errorState={<span>Boom</span>} />)
+    expect(document.querySelector('[data-iris-table-row="error"]')?.textContent).toBe('Boom')
+  })
+
   it('aria-selected reflects selection state', () => {
-    render(<IrisTable columns={baseColumns} data={rows} selectable="multi" defaultSelection={[2]} />)
+    render(
+      <IrisTable columns={baseColumns} data={rows} selectable="multi" defaultSelection={[2]} />,
+    )
     const r = document.querySelector('[data-iris-table-row="2"]')!
     expect(r.getAttribute('aria-selected')).toBe('true')
   })
@@ -248,7 +321,12 @@ describe('@iris-ui/react IrisTable column resize', () => {
 
   it('ArrowRight grows the column width (uncontrolled)', () => {
     render(
-      <IrisTable columns={baseColumns} data={rows} resizableColumns defaultColumnWidths={{ name: 100 }} />,
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        resizableColumns
+        defaultColumnWidths={{ name: 100 }}
+      />,
     )
     expect(gridCols()).toContain('100px')
     act(() => {
@@ -262,7 +340,9 @@ describe('@iris-ui/react IrisTable column resize', () => {
       { key: 'name', title: 'Name', minWidth: 90 },
       { key: 'age', title: 'Age' },
     ]
-    render(<IrisTable columns={cols} data={rows} resizableColumns defaultColumnWidths={{ name: 100 }} />)
+    render(
+      <IrisTable columns={cols} data={rows} resizableColumns defaultColumnWidths={{ name: 100 }} />,
+    )
     act(() => {
       fireEvent.keyDown(handle('name')!, { key: 'ArrowLeft' }) // 100-16=84 → clamp to 90
     })
@@ -274,7 +354,9 @@ describe('@iris-ui/react IrisTable column resize', () => {
       { key: 'name', title: 'Name', maxWidth: 110 },
       { key: 'age', title: 'Age' },
     ]
-    render(<IrisTable columns={cols} data={rows} resizableColumns defaultColumnWidths={{ name: 100 }} />)
+    render(
+      <IrisTable columns={cols} data={rows} resizableColumns defaultColumnWidths={{ name: 100 }} />,
+    )
     act(() => {
       fireEvent.keyDown(handle('name')!, { key: 'ArrowRight' }) // 100+16=116 → clamp to 110
     })
@@ -412,19 +494,37 @@ describe('@iris-ui/react IrisTable virtual scroll', () => {
   const many: Row[] = Array.from({ length: 50 }, (_, i) => ({ id: i + 1, name: `N${i}`, age: i }))
 
   it('renders the body inside a virtual scroller', () => {
-    render(<IrisTable columns={baseColumns} data={many} virtualScroll={{ itemHeight: 36, height: 200 }} />)
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={many}
+        virtualScroll={{ itemHeight: 36, height: 200 }}
+      />,
+    )
     expect(document.querySelector('[data-iris-virtual-scroll]')).not.toBeNull()
   })
 
   it('windows the rows (renders far fewer than the full dataset)', () => {
-    render(<IrisTable columns={baseColumns} data={many} virtualScroll={{ itemHeight: 36, height: 200 }} />)
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={many}
+        virtualScroll={{ itemHeight: 36, height: 200 }}
+      />,
+    )
     const count = rowEls().length
     expect(count).toBeGreaterThan(0)
     expect(count).toBeLessThan(50)
   })
 
   it('still renders the header alongside the virtual body', () => {
-    render(<IrisTable columns={baseColumns} data={many} virtualScroll={{ itemHeight: 36, height: 200 }} />)
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={many}
+        virtualScroll={{ itemHeight: 36, height: 200 }}
+      />,
+    )
     expect(headers().length).toBe(2)
   })
 })

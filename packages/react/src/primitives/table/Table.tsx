@@ -14,6 +14,13 @@ import type {
 
 const RESIZE_STEP = 16
 
+/** Shared style for the full-width empty / loading / error state rows. */
+const STATE_ROW_STYLE: React.CSSProperties = {
+  padding: '32px 12px',
+  textAlign: 'center',
+  color: 'var(--iris-muted)',
+}
+
 /**
  * Focusable resize grip at a column header's trailing edge. Pointer drag (via
  * `useDrag`) or Arrow-Left/Right adjusts the column's pixel width. `role=
@@ -127,6 +134,14 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   virtualScroll?: IrisTableVirtualOptions
   /** Empty state node (replaces the row body when `data` is empty). */
   emptyState?: React.ReactNode
+  /** Show the loading state instead of rows. */
+  loading?: boolean
+  /** Show the error state instead of rows (takes precedence over loading). */
+  error?: boolean
+  /** Custom loading-state node (defaults to the localized `table.loading`). */
+  loadingState?: React.ReactNode
+  /** Custom error-state node (defaults to the localized `table.error`). */
+  errorState?: React.ReactNode
   style?: React.CSSProperties
   className?: string
 }
@@ -158,6 +173,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onCellEdit,
   virtualScroll,
   emptyState,
+  loading = false,
+  error = false,
+  loadingState,
+  errorState,
   style,
   className,
 }: IrisTableProps<Row>): React.ReactElement {
@@ -543,17 +562,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
         })}
       </div>
 
-      {/* Body */}
-      {sortedData.length === 0 ? (
-        <div
-          role="row"
-          data-iris-table-row="empty"
-          style={{
-            padding: '32px 12px',
-            textAlign: 'center',
-            color: 'var(--iris-muted)',
-          }}
-        >
+      {/* Body — state precedence: error → loading → empty → rows. */}
+      {error ? (
+        <div role="row" data-iris-table-row="error" style={STATE_ROW_STYLE}>
+          {errorState ?? t('table.error')}
+        </div>
+      ) : loading ? (
+        <div role="row" aria-busy="true" data-iris-table-row="loading" style={STATE_ROW_STYLE}>
+          {loadingState ?? t('table.loading')}
+        </div>
+      ) : sortedData.length === 0 ? (
+        <div role="row" data-iris-table-row="empty" style={STATE_ROW_STYLE}>
           {emptyState ?? t('table.empty')}
         </div>
       ) : virtualScroll ? (

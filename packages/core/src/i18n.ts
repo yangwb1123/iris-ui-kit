@@ -63,6 +63,8 @@ export const defaultMessages: I18nMessages = {
   'commandPalette.empty': 'No results',
   'fileUpload.browse': 'Browse files',
   'table.empty': 'No data',
+  'table.loading': 'Loading…',
+  'table.error': 'Failed to load data',
   'clearable.clear': 'Clear',
 }
 

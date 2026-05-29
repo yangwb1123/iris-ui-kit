@@ -1,0 +1,1 @@
+export { IrisWatermark } from './Watermark'

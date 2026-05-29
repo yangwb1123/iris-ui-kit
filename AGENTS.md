@@ -112,7 +112,7 @@ Layer 0  主题系统  tokens · theme · icons —— 贯穿层                
 
 - **采用面**：VitePress 文档站（消费 manifest 自动生成 props 表）；changesets release workflow + 首发布。
 - **打包**：每组件子路径 `exports` + CI size-limit 预算门（当前单 barrel 入口）。
-- **数据层**：Vue `VirtualScroll` 接入变高（core 数学已就绪，React 已接入）+ `ResizeObserver` 自动测量；Table/Tree/List 统一异步契约（loading/error/empty + 服务端分页）；宽表横向虚拟化 + 列冻结。
+- **数据层**：变高虚拟化已落地（core 数学 + 两端 `VirtualScroll` 按 size 函数接入）；待补 `ResizeObserver` 自动测量、Table/Tree/List 统一异步契约（loading/error/empty + 服务端分页）、宽表横向虚拟化 + 列冻结。
 - **边界**：RTL / CSS 逻辑属性；内联 `transition` 统一服从 `prefers-reduced-motion`；`prefers-color-scheme` 自动跟随。
 - 更多框架适配器（Solid / Svelte 走同一 core 桥接）；Table 的 xlsx 导出（CSV 已具备）。延后：theme marketplace、Figma 插件、VS Code 扩展。
 

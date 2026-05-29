@@ -3,6 +3,7 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { IrisTable } from './Table'
 import { exportCsv } from './exportCsv'
+import { exportExcel } from './exportExcel'
 import type {
   IrisTableCellEditEvent,
   IrisTableColumn,
@@ -536,5 +537,15 @@ describe('IrisTable pinned columns', () => {
     })
     const nameHeader = wrapper.find('[data-iris-table-header="name"]')
     expect((nameHeader.element as HTMLElement).style.left).toBe('40px')
+  })
+})
+
+describe('exportExcel', () => {
+  it('serializes rows to SpreadsheetML, typing numbers', () => {
+    const xml = exportExcel(rows, columns)
+    expect(xml).toContain('<?mso-application progid="Excel.Sheet"?>')
+    expect(xml).toContain('<Data ss:Type="String">Name</Data>')
+    expect(xml).toContain('<Data ss:Type="String">Carol</Data>')
+    expect(xml).toContain('<Data ss:Type="Number">31</Data>')
   })
 })

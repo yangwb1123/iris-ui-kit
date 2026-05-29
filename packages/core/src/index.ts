@@ -55,5 +55,10 @@ export {
   type PageQuery,
   type PageResult,
 } from './pagination'
+export {
+  toSpreadsheetXml,
+  type TableExportColumn,
+  type SpreadsheetXmlOptions,
+} from './table-export'
 export type { Side, Align, Placement, Size, Variant } from './types'
 export { composeEventHandlers, mergeProps, generateId } from './utils'

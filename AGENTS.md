@@ -113,7 +113,7 @@ Layer 0  主题系统  tokens · theme · icons —— 贯穿层                
 
 ## 未竟事项
 
-- **数据层**：宽表横向虚拟化（列冻结 / pinned 已具备）；Table 的 xlsx 导出（CSV 已具备）。
+- **数据层**：宽表横向虚拟化（列冻结 / pinned 已具备；CSV / Excel 导出已具备）。
 - **生态**：首个 npm 发布（changesets 流水线就绪）；更多框架适配器（Solid / Svelte 走同一 core 桥接）。
 - 延后：theme marketplace、Figma 插件、VS Code 扩展。
 

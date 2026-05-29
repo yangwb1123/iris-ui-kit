@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { IrisTable } from './Table'
 import { exportCsv } from './exportCsv'
+import { exportExcel } from './exportExcel'
 import type { IrisTableColumn } from './types'
 
 afterEach(() => cleanup())
@@ -558,5 +559,19 @@ describe('@iris-ui/react IrisTable pinned columns', () => {
     render(<IrisTable columns={cols} data={rows} selectable="multi" />)
     const nameHeader = document.querySelector('[data-iris-table-header="name"]') as HTMLElement
     expect(nameHeader.style.left).toBe('40px')
+  })
+})
+
+describe('@iris-ui/react exportExcel', () => {
+  it('serializes rows to SpreadsheetML, typing numbers and ignoring render fns', () => {
+    const cols: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name', render: (v) => `<<${v}>>` },
+      { key: 'age', title: 'Age' },
+    ]
+    const xml = exportExcel(rows, cols)
+    expect(xml).toContain('<?mso-application progid="Excel.Sheet"?>')
+    expect(xml).toContain('<Data ss:Type="String">Name</Data>')
+    expect(xml).toContain('<Data ss:Type="String">Charlie</Data>')
+    expect(xml).toContain('<Data ss:Type="Number">25</Data>')
   })
 })

@@ -9,3 +9,4 @@ export {
   type IrisTableSortState,
 } from './types'
 export { exportCsv, downloadCsv } from './exportCsv'
+export { exportExcel, downloadExcel } from './exportExcel'

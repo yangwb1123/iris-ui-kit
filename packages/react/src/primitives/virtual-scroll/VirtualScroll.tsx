@@ -31,9 +31,9 @@ export interface IrisVirtualScrollProps<T = unknown> {
 }
 
 /**
- * Fixed-height virtual scroller. Renders only the visible window of items
- * plus a configurable buffer above and below. Vertical-only; items must
- * have uniform height.
+ * Virtual scroller. Renders only the visible window of items plus a
+ * configurable buffer above and below. Vertical-only. `itemHeight` may be a
+ * fixed number or a `(index) => px` function for variable-height rows.
  */
 export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
   {

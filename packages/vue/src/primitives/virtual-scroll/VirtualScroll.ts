@@ -21,17 +21,16 @@ export interface IrisVirtualScrollExposed {
 }
 
 /**
- * Fixed-height virtual scroller. Renders only the visible window of items
- * plus a configurable buffer above and below, so lists of 10k+ rows stay
- * smooth.
+ * Virtual scroller. Renders only the visible window of items plus a
+ * configurable buffer above and below, so lists of 10k+ rows stay smooth.
  *
  * The container is `overflow: auto` with explicit height; an inner spacer
- * is sized to the full virtual height (`items.length × itemHeight`), and
- * each visible item is absolutely positioned at its natural Y offset. Scroll
- * events are throttled with `requestAnimationFrame` to avoid layout thrash.
+ * is sized to the full virtual height, and each visible item is absolutely
+ * positioned at its natural Y offset. Scroll events are throttled with
+ * `requestAnimationFrame` to avoid layout thrash. `itemHeight` may be a fixed
+ * number or a `(index) => px` function for variable-height rows.
  *
  * **Limitations (intentional in this iteration)**:
- *   - Items must have a uniform `itemHeight` (px).
  *   - Vertical only (no horizontal virtualization).
  *   - Items must be addressable by stable index (`items[index]`).
  *

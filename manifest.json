@@ -72,7 +72,7 @@
     },
     {
       "group": "primitives",
-      "count": 102,
+      "count": 103,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -163,6 +163,7 @@
         "IrisTabsContent",
         "IrisTabsList",
         "IrisTabsTrigger",
+        "IrisTagInput",
         "IrisTextarea",
         "IrisTimeline",
         "IrisTimePicker",
@@ -1526,6 +1527,19 @@
       }
     },
     {
+      "name": "IrisTagInput",
+      "group": "primitives",
+      "module": "tag-input",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
       "name": "IrisTextarea",
       "group": "primitives",
       "module": "textarea",
@@ -1748,8 +1762,8 @@
     ]
   },
   "stats": {
-    "total": 117,
-    "both": 117,
+    "total": 118,
+    "both": 118,
     "reactOnly": 0,
     "vueOnly": 0
   }

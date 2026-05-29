@@ -47,13 +47,16 @@ export const IrisVirtualScroll = defineComponent({
   props: {
     items: { type: Array as PropType<readonly unknown[]>, required: true },
     /**
-     * Per-item height in px (fixed), or a `(index) => px` function for variable
-     * heights (wrapped text, expandable rows).
+     * Per-item height in px (fixed), a `(index) => px` function for known
+     * variable heights, or `'auto'` to measure rendered rows via
+     * `ResizeObserver` and cache them (wrapped text, expandable rows).
      */
     itemHeight: {
-      type: [Number, Function] as PropType<number | ((index: number) => number)>,
+      type: [Number, Function, String] as PropType<number | ((index: number) => number) | 'auto'>,
       required: true,
     },
+    /** Initial row-height estimate before measurement, when `item-height="auto"`. */
+    estimatedItemHeight: { type: Number, default: 40 },
     /** Viewport height. Number → px; string → CSS length passed through. */
     height: { type: [Number, String], default: 400 },
     /** Number of extra rows to render above and below the viewport. */
@@ -74,9 +77,20 @@ export const IrisVirtualScroll = defineComponent({
     const viewportHeight = ref(typeof props.height === 'number' ? props.height : 0)
     let rafId: number | null = null
 
-    const sizeFn = computed(() =>
-      typeof props.itemHeight === 'function' ? props.itemHeight : null,
-    )
+    const auto = computed(() => props.itemHeight === 'auto')
+    // Auto mode: measured row heights cached by index; bumping `measureVersion`
+    // recomputes the offsets/range after a measurement changes.
+    const measuredHeights = new Map<number, number>()
+    const measureVersion = ref(0)
+
+    const sizeFn = computed<((index: number) => number) | null>(() => {
+      if (typeof props.itemHeight === 'function') return props.itemHeight
+      if (auto.value) {
+        void measureVersion.value // track so offsets recompute after a measure
+        return (index: number) => measuredHeights.get(index) ?? props.estimatedItemHeight
+      }
+      return null
+    })
     const fixedHeight = computed(() => (sizeFn.value ? 0 : (props.itemHeight as number)))
     const offsets = computed(() =>
       sizeFn.value ? buildOffsets(props.items.length, sizeFn.value) : null,
@@ -132,11 +146,48 @@ export const IrisVirtualScroll = defineComponent({
 
     let observer: ResizeObserver | null = null
 
+    // Auto-measurement: one ResizeObserver watches rendered rows; measured
+    // heights are cached by index and feed the offset table.
+    let rowObserver: ResizeObserver | null = null
+    const indexByEl = new WeakMap<Element, number>()
+    const elByIndex = new Map<number, HTMLElement>()
+    const rowRef = (index: number) => (el: unknown) => {
+      const node = (el ?? null) as HTMLElement | null
+      const prev = elByIndex.get(index)
+      if (prev && prev !== node) {
+        rowObserver?.unobserve(prev)
+        indexByEl.delete(prev)
+        elByIndex.delete(index)
+      }
+      if (node) {
+        elByIndex.set(index, node)
+        indexByEl.set(node, index)
+        rowObserver?.observe(node)
+      }
+    }
+
     onMounted(() => {
       measureViewport()
       if (typeof ResizeObserver !== 'undefined' && viewportRef.value) {
         observer = new ResizeObserver(measureViewport)
         observer.observe(viewportRef.value)
+      }
+      if (auto.value && typeof ResizeObserver !== 'undefined') {
+        rowObserver = new ResizeObserver((entries) => {
+          let changed = false
+          for (const entry of entries) {
+            const idx = indexByEl.get(entry.target)
+            if (idx === undefined) continue
+            const hgt = (entry.target as HTMLElement).offsetHeight
+            if (hgt > 0 && measuredHeights.get(idx) !== hgt) {
+              measuredHeights.set(idx, hgt)
+              changed = true
+            }
+          }
+          if (changed) measureVersion.value += 1
+        })
+        // Row refs run during mount, before this hook — observe the first window.
+        for (const el of elByIndex.values()) rowObserver.observe(el)
       }
     })
 
@@ -144,6 +195,8 @@ export const IrisVirtualScroll = defineComponent({
       if (rafId !== null) cancelAnimationFrame(rafId)
       observer?.disconnect()
       observer = null
+      rowObserver?.disconnect()
+      rowObserver = null
     })
 
     // Re-clamp scroll if items shrink so the current scrollTop falls past the new totalHeight.
@@ -207,6 +260,7 @@ export const IrisVirtualScroll = defineComponent({
             'div',
             {
               key,
+              ref: auto.value ? rowRef(i) : undefined,
               'data-iris-virtual-item': '',
               'data-iris-virtual-index': i,
               style: {
@@ -214,7 +268,8 @@ export const IrisVirtualScroll = defineComponent({
                 top: '0',
                 left: '0',
                 right: '0',
-                height: `${heightOf(i)}px`,
+                // Auto mode: let content set the height so it can be measured.
+                height: auto.value ? undefined : `${heightOf(i)}px`,
                 transform: `translateY(${offsetOf(i)}px)`,
               },
             },

@@ -170,3 +170,54 @@ describe('IrisVirtualScroll', () => {
     expect(rows[1]!.attributes('style')).toContain('height: 50px')
   })
 })
+
+describe('IrisVirtualScroll auto-measure', () => {
+  it('measures rendered rows via ResizeObserver and applies their heights', async () => {
+    const ros: Array<{ els: Element[]; flush: () => void }> = []
+    const RealRO = globalThis.ResizeObserver
+    class MockRO {
+      els: Element[] = []
+      constructor(public cb: ResizeObserverCallback) {
+        ros.push({ els: this.els, flush: () => this.flush() })
+      }
+      observe(el: Element) {
+        this.els.push(el)
+      }
+      unobserve(el: Element) {
+        this.els = this.els.filter((e) => e !== el)
+      }
+      disconnect() {
+        this.els = []
+      }
+      flush() {
+        this.cb(
+          this.els.map((target) => ({ target }) as ResizeObserverEntry),
+          this as never,
+        )
+      }
+    }
+    globalThis.ResizeObserver = MockRO as unknown as typeof ResizeObserver
+    const heightSpy = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get: () => 50,
+    })
+
+    try {
+      const wrapper = mount(Harness({ itemHeight: 'auto', estimatedItemHeight: 40 }))
+      await nextTick()
+      const row1 = () => wrapper.find('[data-iris-virtual-index="1"]')
+      expect(row1().attributes('style')).toContain('translateY(40px)')
+      const rowRo = ros.find((r) =>
+        r.els.some((e) => (e as HTMLElement).hasAttribute('data-iris-virtual-item')),
+      )
+      expect(rowRo).toBeTruthy()
+      rowRo!.flush()
+      await nextTick()
+      expect(row1().attributes('style')).toContain('translateY(50px)')
+    } finally {
+      if (heightSpy) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', heightSpy)
+      globalThis.ResizeObserver = RealRO
+    }
+  })
+})

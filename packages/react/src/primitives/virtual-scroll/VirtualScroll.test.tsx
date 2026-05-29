@@ -193,3 +193,68 @@ describe('@iris-ui/react IrisVirtualScroll', () => {
     expect(root.style.height).toBe('50vh')
   })
 })
+
+describe('@iris-ui/react IrisVirtualScroll auto-measure', () => {
+  it('measures rendered rows via ResizeObserver and applies their heights', () => {
+    // Mock ResizeObserver to capture observed rows + trigger the callback.
+    const ros: Array<{ cb: ResizeObserverCallback; els: Element[]; flush: () => void }> = []
+    const RealRO = globalThis.ResizeObserver
+    class MockRO {
+      els: Element[] = []
+      constructor(public cb: ResizeObserverCallback) {
+        ros.push({ cb, els: this.els, flush: () => this.flush() })
+      }
+      observe(el: Element) {
+        this.els.push(el)
+      }
+      unobserve(el: Element) {
+        this.els = this.els.filter((e) => e !== el)
+      }
+      disconnect() {
+        this.els = []
+      }
+      flush() {
+        this.cb(
+          this.els.map((target) => ({ target }) as ResizeObserverEntry),
+          this as never,
+        )
+      }
+    }
+    globalThis.ResizeObserver = MockRO as unknown as typeof ResizeObserver
+    // jsdom reports offsetHeight 0; pretend every row is 50px tall.
+    const heightSpy = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get: () => 50,
+    })
+
+    try {
+      render(
+        <IrisVirtualScroll
+          items={items}
+          itemHeight="auto"
+          estimatedItemHeight={40}
+          height={400}
+          renderItem={renderItem}
+        />,
+      )
+      // Find the observer watching rendered rows (not the viewport observer).
+      const rowRo = ros.find((r) =>
+        r.els.some((e) => (e as HTMLElement).hasAttribute('data-iris-virtual-item')),
+      )
+      expect(rowRo).toBeTruthy()
+      // Before measuring, index 1 sits at the 40px estimate.
+      const item1 = () =>
+        document.querySelector('[data-iris-virtual-index="1"]') as HTMLElement | null
+      expect(item1()?.style.transform).toBe('translateY(40px)')
+      // Flush measurements (50px each) → offsets recompute, index 1 moves to 50px.
+      act(() => {
+        rowRo!.flush()
+      })
+      expect(item1()?.style.transform).toBe('translateY(50px)')
+    } finally {
+      if (heightSpy) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', heightSpy)
+      globalThis.ResizeObserver = RealRO
+    }
+  })
+})

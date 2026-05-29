@@ -12,10 +12,13 @@ export interface IrisVirtualScrollProps<T = unknown> {
   items: readonly T[]
   /**
    * Per-item height in px. A number means every row shares that height; pass a
-   * `(index) => px` function for variable heights (wrapped text, expandable
-   * rows). Memoize the function so the offset table isn't rebuilt every render.
+   * `(index) => px` function for known variable heights (memoize it); or
+   * `'auto'` to measure rendered rows via `ResizeObserver` and cache them —
+   * no need to know heights ahead of time (wrapped text, expandable rows).
    */
-  itemHeight: number | ((index: number) => number)
+  itemHeight: number | ((index: number) => number) | 'auto'
+  /** Initial row-height estimate used before measurement, when `itemHeight="auto"`. */
+  estimatedItemHeight?: number
   /** Viewport height. Number → px; string → CSS length passed through. */
   height?: number | string
   /** Number of extra rows to render above and below the viewport. */
@@ -39,6 +42,7 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
   {
     items,
     itemHeight,
+    estimatedItemHeight = 40,
     height = 400,
     buffer = 4,
     keyOf,
@@ -57,13 +61,26 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
   )
   const rafRef = React.useRef<number | null>(null)
 
-  const sizeFn = typeof itemHeight === 'function' ? itemHeight : null
+  const auto = itemHeight === 'auto'
+  // Auto mode: measured row heights cached by index; `measureVersion` bumps to
+  // recompute offsets when a measurement changes.
+  const measuredRef = React.useRef<Map<number, number>>(new Map())
+  const [measureVersion, setMeasureVersion] = React.useState(0)
+
+  const sizeFn: ((index: number) => number) | null =
+    typeof itemHeight === 'function'
+      ? itemHeight
+      : auto
+        ? (index: number) => measuredRef.current.get(index) ?? estimatedItemHeight
+        : null
   const fixedHeight = typeof itemHeight === 'number' ? itemHeight : 0
 
-  // Variable mode: cumulative offsets (rebuilt when the size fn or count change).
+  // Cumulative offsets for variable/auto mode (rebuilt when sizes or count
+  // change; in auto mode `measureVersion` triggers the rebuild after a measure).
+  const userFn = typeof itemHeight === 'function' ? itemHeight : null
   const offsets = React.useMemo(
     () => (sizeFn ? buildOffsets(items.length, sizeFn) : null),
-    [sizeFn, items.length],
+    [items.length, userFn, auto, measureVersion, estimatedItemHeight],
   )
 
   const totalHeight = offsets ? offsets[items.length] : items.length * fixedHeight
@@ -134,6 +151,53 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
     }
   }, [])
 
+  // Auto-measurement: one ResizeObserver watches the rendered rows; each row's
+  // measured height is cached by index and feeds the offset table.
+  const rowObserverRef = React.useRef<ResizeObserver | null>(null)
+  const indexByEl = React.useRef<WeakMap<Element, number>>(new WeakMap())
+  const elByIndex = React.useRef<Map<number, HTMLElement>>(new Map())
+
+  React.useEffect(() => {
+    if (!auto || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver((entries) => {
+      let changed = false
+      for (const entry of entries) {
+        const idx = indexByEl.current.get(entry.target)
+        if (idx === undefined) continue
+        const h = (entry.target as HTMLElement).offsetHeight
+        if (h > 0 && measuredRef.current.get(idx) !== h) {
+          measuredRef.current.set(idx, h)
+          changed = true
+        }
+      }
+      if (changed) setMeasureVersion((v) => v + 1)
+    })
+    rowObserverRef.current = ro
+    // Row ref-callbacks run during commit, before this passive effect — so the
+    // first window of rows is already registered but not yet observed.
+    for (const el of elByIndex.current.values()) ro.observe(el)
+    return () => {
+      ro.disconnect()
+      rowObserverRef.current = null
+    }
+  }, [auto])
+
+  // Ref callback per rendered row (auto mode): (un)observe + track its index.
+  const measureRef = (index: number) => (el: HTMLElement | null) => {
+    const ro = rowObserverRef.current
+    const prev = elByIndex.current.get(index)
+    if (prev && prev !== el) {
+      ro?.unobserve(prev)
+      indexByEl.current.delete(prev)
+      elByIndex.current.delete(index)
+    }
+    if (el) {
+      elByIndex.current.set(index, el)
+      indexByEl.current.set(el, index)
+      ro?.observe(el)
+    }
+  }
+
   // Re-clamp scroll if items shrink past the visible region.
   React.useEffect(() => {
     const el = viewportRef.current
@@ -186,6 +250,7 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
     visible.push(
       <div
         key={key}
+        ref={auto ? measureRef(i) : undefined}
         data-iris-virtual-item=""
         data-iris-virtual-index={i}
         style={{
@@ -193,7 +258,8 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
           top: 0,
           left: 0,
           right: 0,
-          height: heightOf(i),
+          // Auto mode: let content determine height so it can be measured.
+          height: auto ? undefined : heightOf(i),
           transform: `translateY(${offsetOf(i)}px)`,
         }}
       >

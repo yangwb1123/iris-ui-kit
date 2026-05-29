@@ -62,6 +62,7 @@ export const defaultMessages: I18nMessages = {
   'commandPalette.placeholder': 'Type a command…',
   'commandPalette.empty': 'No results',
   'fileUpload.label': 'Click or drop files to upload',
+  'otpInput.cell': 'Character {index} of {total}',
   'table.empty': 'No data',
   'table.loading': 'Loading…',
   'table.error': 'Failed to load data',

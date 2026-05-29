@@ -72,7 +72,7 @@
     },
     {
       "group": "primitives",
-      "count": 112,
+      "count": 113,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -130,6 +130,7 @@
         "IrisKbd",
         "IrisList",
         "IrisMarquee",
+        "IrisMasonry",
         "IrisMentions",
         "IrisMenu",
         "IrisMenuContent",
@@ -1059,6 +1060,19 @@
       }
     },
     {
+      "name": "IrisMasonry",
+      "group": "primitives",
+      "module": "masonry",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
       "name": "IrisMentions",
       "group": "primitives",
       "module": "mentions",
@@ -1888,8 +1902,8 @@
     ]
   },
   "stats": {
-    "total": 127,
-    "both": 127,
+    "total": 128,
+    "both": 128,
     "reactOnly": 0,
     "vueOnly": 0
   }

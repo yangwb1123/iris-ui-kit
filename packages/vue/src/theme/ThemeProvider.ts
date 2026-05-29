@@ -10,7 +10,12 @@ import {
   type PropType,
   type Ref,
 } from 'vue'
-import { applyTheme, type ApplyThemeResult, type ThemeStore } from '@iris-ui/theme'
+import {
+  applyTheme,
+  injectGlobalStyles,
+  type ApplyThemeResult,
+  type ThemeStore,
+} from '@iris-ui/theme'
 import type { IrisTheme } from '@iris-ui/tokens'
 
 export interface IrisThemeContext {
@@ -56,6 +61,7 @@ export const ThemeProvider = defineComponent({
     }
 
     onMounted(() => {
+      injectGlobalStyles()
       applyCurrent()
     })
 

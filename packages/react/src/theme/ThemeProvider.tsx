@@ -1,5 +1,10 @@
 import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react'
-import { applyTheme, type ApplyThemeResult, type ThemeStore } from '@iris-ui/theme'
+import {
+  applyTheme,
+  injectGlobalStyles,
+  type ApplyThemeResult,
+  type ThemeStore,
+} from '@iris-ui/theme'
 import type { IrisTheme } from '@iris-ui/tokens'
 import { useStore } from '../useStore'
 
@@ -29,6 +34,7 @@ export function ThemeProvider({ store, target = null, children }: ThemeProviderP
   const appliedRef = useRef<ApplyThemeResult | null>(null)
 
   useEffect(() => {
+    injectGlobalStyles()
     const el = target ?? document.documentElement
     appliedRef.current?.revert()
     appliedRef.current = applyTheme(current, el)

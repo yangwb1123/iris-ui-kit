@@ -31,6 +31,8 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   /** Maximum width (px) when resizing. Default Infinity. */
   maxWidth?: number
   align?: 'left' | 'center' | 'right'
+  /** Freeze this column to an edge during horizontal scroll (position: sticky). */
+  pinned?: 'left' | 'right'
   /** Allow double-click inline editing of this column's cells. */
   editable?: boolean
   /** Editor kind. Default `'text'`. */

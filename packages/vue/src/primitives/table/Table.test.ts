@@ -511,3 +511,30 @@ describe('IrisTable', () => {
     })
   })
 })
+
+describe('IrisTable pinned columns', () => {
+  const pinnedCols: IrisTableColumn<Row>[] = [
+    { key: 'name', title: 'Name', width: 100, pinned: 'left' },
+    { key: 'age', title: 'Age', width: 80 },
+  ]
+
+  it('makes a pinned header + cell sticky with an edge offset', () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns: pinnedCols, data: rows, rowKey: 'id' },
+    })
+    const nameHeader = wrapper.find('[data-iris-table-header="name"]')
+    expect(nameHeader.attributes('data-iris-table-pinned')).toBe('left')
+    expect((nameHeader.element as HTMLElement).style.position).toBe('sticky')
+    expect((nameHeader.element as HTMLElement).style.left).toBe('0px')
+    const nameCell = wrapper.find('[data-iris-table-cell="name"]')
+    expect((nameCell.element as HTMLElement).style.position).toBe('sticky')
+  })
+
+  it('offsets a left-pinned column by the selection column width', () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns: pinnedCols, data: rows, rowKey: 'id', selectable: 'multi' },
+    })
+    const nameHeader = wrapper.find('[data-iris-table-header="name"]')
+    expect((nameHeader.element as HTMLElement).style.left).toBe('40px')
+  })
+})

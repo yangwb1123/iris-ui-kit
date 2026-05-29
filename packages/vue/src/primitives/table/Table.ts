@@ -304,6 +304,40 @@ export const IrisTable = defineComponent({
       return parts.join(' ')
     })
 
+    // Sticky offsets for pinned columns (mirrors the React adapter): accumulate
+    // resolved widths between each pinned column and its edge (+ selection col).
+    const pinnedOffsets = computed(() => {
+      const map: Record<string, { side: 'left' | 'right'; offset: number }> = {}
+      const widthOf = (col: IrisTableColumn) =>
+        effectiveWidths.value[col.key] ?? resolveInitialWidth(col)
+      let left = props.selectable !== 'none' ? SELECTION_COL_WIDTH : 0
+      for (const col of props.columns) {
+        if (col.pinned === 'left') {
+          map[col.key] = { side: 'left', offset: left }
+          left += widthOf(col)
+        }
+      }
+      let right = 0
+      for (let i = props.columns.length - 1; i >= 0; i -= 1) {
+        const col = props.columns[i]
+        if (col?.pinned === 'right') {
+          map[col.key] = { side: 'right', offset: right }
+          right += widthOf(col)
+        }
+      }
+      return map
+    })
+    const pinnedStyle = (key: string): Record<string, string> => {
+      const p = pinnedOffsets.value[key]
+      if (!p) return {}
+      return {
+        position: 'sticky',
+        [p.side]: `${p.offset}px`,
+        zIndex: '1',
+        background: 'var(--iris-background)',
+      }
+    }
+
     // -------- Resize handle (one ref per column for useDrag) --------
     const resizeHandles = new Map<string, ReturnType<typeof ref<HTMLElement | null>>>()
     const getHandleRef = (key: string) => {
@@ -422,6 +456,8 @@ export const IrisTable = defineComponent({
             {
               key: col.key,
               role: 'columnheader',
+              'data-iris-table-header': col.key,
+              'data-iris-table-pinned': col.pinned,
               onClick: () => onHeaderClick(col),
               style: {
                 position: 'relative',
@@ -440,6 +476,9 @@ export const IrisTable = defineComponent({
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
+                ...(col.pinned
+                  ? { ...pinnedStyle(col.key), background: 'var(--iris-surface)' }
+                  : {}),
               },
               'aria-sort':
                 internalSort.value?.key === col.key
@@ -554,6 +593,8 @@ export const IrisTable = defineComponent({
               {
                 key: col.key,
                 role: 'cell',
+                'data-iris-table-cell': col.key,
+                'data-iris-table-pinned': col.pinned,
                 'data-editable': col.editable ? '' : undefined,
                 'data-editing': isEditing ? '' : undefined,
                 onDblclick: col.editable ? () => beginEdit(row, col, id) : undefined,
@@ -569,6 +610,7 @@ export const IrisTable = defineComponent({
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   cursor: col.editable ? 'cell' : 'default',
+                  ...pinnedStyle(col.key),
                 },
               },
               content as VNode | string,

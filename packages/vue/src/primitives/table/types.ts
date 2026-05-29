@@ -24,6 +24,8 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   maxWidth?: number
   /** Cell alignment. */
   align?: 'left' | 'center' | 'right'
+  /** Freeze this column to an edge during horizontal scroll (position: sticky). */
+  pinned?: 'left' | 'right'
   /** Custom comparator for sorting; defaults to native `<`. */
   sorter?: (a: Row, b: Row) => number
   /** Allow double-click to edit this cell inline. */

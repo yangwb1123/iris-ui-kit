@@ -13,6 +13,8 @@ import type {
 } from './types'
 
 const RESIZE_STEP = 16
+const SELECTION_COL_WIDTH = 40
+const DEFAULT_PINNED_WIDTH = 140
 
 /** Shared style for the full-width empty / loading / error state rows. */
 const STATE_ROW_STYLE: React.CSSProperties = {
@@ -333,6 +335,42 @@ export function IrisTable<Row extends Record<string, unknown>>({
     return widths.join(' ')
   }, [columns, selectable, columnWidths])
 
+  // Sticky offsets for pinned columns: each accumulates the resolved widths of
+  // the pinned columns between it and its edge (plus the selection column on
+  // the left). Requires a numeric width; falls back to a default.
+  const pinnedOffsets = React.useMemo(() => {
+    const map: Record<string, { side: 'left' | 'right'; offset: number }> = {}
+    const widthOf = (col: IrisTableColumn<Row>): number =>
+      columnWidths[col.key] ?? (typeof col.width === 'number' ? col.width : DEFAULT_PINNED_WIDTH)
+    let left = selectable !== 'none' ? SELECTION_COL_WIDTH : 0
+    for (const col of columns) {
+      if (col.pinned === 'left') {
+        map[col.key] = { side: 'left', offset: left }
+        left += widthOf(col)
+      }
+    }
+    let right = 0
+    for (let i = columns.length - 1; i >= 0; i -= 1) {
+      const col = columns[i]
+      if (col?.pinned === 'right') {
+        map[col.key] = { side: 'right', offset: right }
+        right += widthOf(col)
+      }
+    }
+    return map
+  }, [columns, columnWidths, selectable])
+
+  const pinnedStyle = (key: string): React.CSSProperties | null => {
+    const p = pinnedOffsets[key]
+    if (!p) return null
+    return {
+      position: 'sticky',
+      [p.side]: p.offset,
+      zIndex: 1,
+      background: 'var(--iris-background)',
+    }
+  }
+
   const baseCellStyle: React.CSSProperties = {
     padding: '8px 12px',
     display: 'flex',
@@ -390,6 +428,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               key={col.key}
               role="cell"
               data-iris-table-cell={col.key}
+              data-iris-table-pinned={col.pinned}
               data-editable={col.editable ? '' : undefined}
               data-editing={editing ? '' : undefined}
               onDoubleClick={col.editable ? () => beginEdit(row, col, k) : undefined}
@@ -405,6 +444,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 borderBottom: borderStyle,
                 cursor: col.editable ? 'cell' : undefined,
                 ...(editing ? { padding: '4px 8px' } : null),
+                ...pinnedStyle(col.key),
               }}
             >
               {editing ? (
@@ -515,6 +555,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               onClick={col.sortable ? () => cycleSort(col) : undefined}
               onKeyDown={col.sortable ? (e) => onHeaderKeyDown(e, col) : undefined}
               data-iris-table-header={col.key}
+              data-iris-table-pinned={col.pinned}
               data-sortable={col.sortable ? 'true' : undefined}
               data-sort-direction={dir}
               style={{
@@ -531,6 +572,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 fontWeight: 600,
                 userSelect: col.sortable ? 'none' : 'auto',
                 position: 'relative',
+                // Pinned header keeps a solid surface bg + sticky position
+                // (overrides position: relative above for the sticky edge).
+                ...(pinnedStyle(col.key)
+                  ? { ...pinnedStyle(col.key), background: 'var(--iris-surface)' }
+                  : null),
               }}
             >
               <span>{col.title}</span>

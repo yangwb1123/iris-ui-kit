@@ -83,6 +83,8 @@ export const defaultMessages: I18nMessages = {
   'tour.finish': 'Finish',
   'tour.step': 'Step {current} of {total}',
   'tagInput.remove': 'Remove {tag}',
+  'copyButton.copy': 'Copy',
+  'copyButton.copied': 'Copied',
   'table.empty': 'No data',
   'table.loading': 'Loading…',
   'table.error': 'Failed to load data',

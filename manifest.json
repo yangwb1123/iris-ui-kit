@@ -72,7 +72,7 @@
     },
     {
       "group": "primitives",
-      "count": 103,
+      "count": 104,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -95,6 +95,7 @@
         "IrisColorPicker",
         "IrisCombobox",
         "IrisCommandPalette",
+        "IrisCopyButton",
         "IrisCountdown",
         "IrisDatePicker",
         "IrisDateRangePicker",
@@ -477,6 +478,19 @@
     {
       "name": "IrisContainer",
       "group": "layouts",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisCopyButton",
+      "group": "primitives",
+      "module": "copy-button",
       "frameworks": [
         "react",
         "vue"
@@ -1762,8 +1776,8 @@
     ]
   },
   "stats": {
-    "total": 118,
-    "both": 118,
+    "total": 119,
+    "both": 119,
     "reactOnly": 0,
     "vueOnly": 0
   }

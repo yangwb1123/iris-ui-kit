@@ -76,6 +76,7 @@ export const defaultMessages: I18nMessages = {
   'treeSelect.expand': 'Expand',
   'treeSelect.collapse': 'Collapse',
   'image.preview': 'Image preview',
+  'floatButton.actions': 'Actions',
   'table.empty': 'No data',
   'table.loading': 'Loading…',
   'table.error': 'Failed to load data',

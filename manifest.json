@@ -72,7 +72,7 @@
     },
     {
       "group": "primitives",
-      "count": 98,
+      "count": 99,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -117,6 +117,7 @@
         "IrisDropdownTrigger",
         "IrisEmptyState",
         "IrisFileUpload",
+        "IrisFloatButton",
         "IrisFormField",
         "IrisIcon",
         "IrisImage",
@@ -794,6 +795,19 @@
       "name": "IrisFileUpload",
       "group": "primitives",
       "module": "file-upload",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisFloatButton",
+      "group": "primitives",
+      "module": "float-button",
       "frameworks": [
         "react",
         "vue"
@@ -1692,8 +1706,8 @@
     ]
   },
   "stats": {
-    "total": 113,
-    "both": 113,
+    "total": 114,
+    "both": 114,
     "reactOnly": 0,
     "vueOnly": 0
   }

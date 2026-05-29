@@ -27,13 +27,17 @@ describe('@iris-ui/react IrisTextarea', () => {
   it('disabled forwarded + opacity', () => {
     const { container } = render(<IrisTextarea disabled />)
     expect(container.querySelector('textarea')!.disabled).toBe(true)
-    expect(container.querySelector('[data-iris-textarea]')!.getAttribute('style')).toContain('opacity: 0.6')
+    expect(container.querySelector('[data-iris-textarea]')!.getAttribute('style')).toContain(
+      'opacity: 0.6',
+    )
   })
 
   it('invalid sets aria-invalid + data-state', () => {
     const { container } = render(<IrisTextarea invalid />)
     expect(container.querySelector('textarea')!.getAttribute('aria-invalid')).toBe('true')
-    expect(container.querySelector('[data-iris-textarea]')!.getAttribute('data-state')).toBe('invalid')
+    expect(container.querySelector('[data-iris-textarea]')!.getAttribute('data-state')).toBe(
+      'invalid',
+    )
   })
 
   it('ariaDescribedby forwarded', () => {
@@ -45,13 +49,17 @@ describe('@iris-ui/react IrisTextarea', () => {
     const { container } = render(<IrisTextarea />)
     const ta = container.querySelector('textarea')!
     fireEvent.focus(ta)
-    expect(container.querySelector('[data-iris-textarea]')!.getAttribute('data-state')).toBe('focused')
+    expect(container.querySelector('[data-iris-textarea]')!.getAttribute('data-state')).toBe(
+      'focused',
+    )
     fireEvent.blur(ta)
     expect(container.querySelector('[data-iris-textarea]')!.getAttribute('data-state')).toBe('idle')
   })
 
   it('size flips data attr', () => {
     const { container } = render(<IrisTextarea size="lg" />)
-    expect(container.querySelector('[data-iris-textarea]')!.getAttribute('data-iris-textarea-size')).toBe('lg')
+    expect(
+      container.querySelector('[data-iris-textarea]')!.getAttribute('data-iris-textarea-size'),
+    ).toBe('lg')
   })
 })

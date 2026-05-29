@@ -46,7 +46,8 @@ export function OverlayShowcase() {
           <IrisDialogContent>
             <IrisDialogTitle>Confirm action</IrisDialogTitle>
             <IrisDialogDescription>
-              Focus is trapped inside, body scroll is locked, and Escape / backdrop click both dismiss.
+              Focus is trapped inside, body scroll is locked, and Escape / backdrop click both
+              dismiss.
             </IrisDialogDescription>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
               <IrisDialogClose asChild>
@@ -147,7 +148,11 @@ export function OverlayShowcase() {
         <IrisButton size="sm" variant="outline" onClick={() => toast.success({ title: 'Saved!' })}>
           success
         </IrisButton>
-        <IrisButton size="sm" variant="outline" onClick={() => toast.warning({ title: 'Heads up' })}>
+        <IrisButton
+          size="sm"
+          variant="outline"
+          onClick={() => toast.warning({ title: 'Heads up' })}
+        >
           warning
         </IrisButton>
         <IrisButton

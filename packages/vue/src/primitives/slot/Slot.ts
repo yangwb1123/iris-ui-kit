@@ -11,9 +11,7 @@ function isEventListenerKey(key: string): boolean {
  * may be a `Ref<HTMLElement | null>`, a function ref `(el) => void`, or null.
  * All non-null inputs are invoked / assigned with the same element.
  */
-export function composeRefs(
-  ...refs: Array<unknown>
-): (el: unknown) => void {
+export function composeRefs(...refs: Array<unknown>): (el: unknown) => void {
   return (el: unknown) => {
     for (const r of refs) {
       if (r == null) continue
@@ -157,9 +155,7 @@ export function findFirstElement(children: VNode[] | undefined): VNode | null {
     extraCount > 0 &&
     (typeof process === 'undefined' || process.env?.NODE_ENV !== 'production')
   ) {
-    console.warn(
-      `[iris-ui] IrisSlot got ${extraCount + 1} root elements; only the first is used.`,
-    )
+    console.warn(`[iris-ui] IrisSlot got ${extraCount + 1} root elements; only the first is used.`)
   }
 
   return found

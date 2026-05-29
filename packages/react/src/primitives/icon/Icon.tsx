@@ -2,11 +2,10 @@ import * as React from 'react'
 import { defaultIconRegistry, resolveThemedIcon, type IrisIconRegistry } from '@iris-ui/icons'
 import { useThemeOptional } from '../../theme'
 
-export interface IrisIconProps
-  extends Omit<
-    React.SVGAttributes<SVGSVGElement>,
-    'name' | 'children' | 'dangerouslySetInnerHTML' | 'fill'
-  > {
+export interface IrisIconProps extends Omit<
+  React.SVGAttributes<SVGSVGElement>,
+  'name' | 'children' | 'dangerouslySetInnerHTML' | 'fill'
+> {
   /** Semantic icon name resolved via the registry (e.g. 'check', 'chevron-down'). */
   name: string
   /** Width & height (number → px). Default 24. */

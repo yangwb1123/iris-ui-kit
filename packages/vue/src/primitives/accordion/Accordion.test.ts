@@ -4,7 +4,11 @@ import { mount } from '@vue/test-utils'
 import { IrisAccordion } from './Accordion'
 import { IrisAccordionItem } from './AccordionItem'
 
-function tripleHarness(opts?: { defaultValue?: string | string[] | null; multiple?: boolean; collapsible?: boolean }) {
+function tripleHarness(opts?: {
+  defaultValue?: string | string[] | null
+  multiple?: boolean
+  collapsible?: boolean
+}) {
   const o = opts ?? {}
   return defineComponent({
     setup() {
@@ -116,9 +120,7 @@ describe('IrisAccordion', () => {
             IrisAccordion,
             { modelValue: value.value, 'onUpdate:modelValue': onUpdate },
             {
-              default: () => [
-                h(IrisAccordionItem, { value: 'x', title: 'X' }, () => 'body'),
-              ],
+              default: () => [h(IrisAccordionItem, { value: 'x', title: 'X' }, () => 'body')],
             },
           )
       },
@@ -144,10 +146,14 @@ describe('IrisAccordion', () => {
         return () =>
           h(IrisAccordion, null, {
             default: () => [
-              h(IrisAccordionItem, { value: 'a', title: 'prop' }, {
-                title: () => 'slot wins',
-                default: () => 'body',
-              }),
+              h(
+                IrisAccordionItem,
+                { value: 'a', title: 'prop' },
+                {
+                  title: () => 'slot wins',
+                  default: () => 'body',
+                },
+              ),
             ],
           })
       },

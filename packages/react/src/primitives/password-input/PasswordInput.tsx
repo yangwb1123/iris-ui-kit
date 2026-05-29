@@ -1,8 +1,10 @@
 import * as React from 'react'
 import { IrisInput, type IrisInputProps } from '../input/Input'
 
-export interface IrisPasswordInputProps
-  extends Omit<IrisInputProps, 'type' | 'prefix' | 'suffix' | 'children'> {
+export interface IrisPasswordInputProps extends Omit<
+  IrisInputProps,
+  'type' | 'prefix' | 'suffix' | 'children'
+> {
   /** Allow toggling visibility. Default true. */
   showToggle?: boolean
   /** Custom suffix slot (rendered before the toggle). */

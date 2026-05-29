@@ -91,8 +91,7 @@ export const IrisPopoverContent = defineComponent({
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-md)',
             padding: 'var(--iris-padding-md)',
-            boxShadow:
-              '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
             fontSize: '14px',
             zIndex: '1000',
             outline: 'none',

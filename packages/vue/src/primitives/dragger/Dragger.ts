@@ -44,14 +44,8 @@ export const IrisDragger = defineComponent({
     let startPos: IrisDraggerPosition = { x: 0, y: 0 }
 
     const clamp = (pos: IrisDraggerPosition): IrisDraggerPosition => ({
-      x: Math.max(
-        props.bounds.minX ?? -Infinity,
-        Math.min(props.bounds.maxX ?? Infinity, pos.x),
-      ),
-      y: Math.max(
-        props.bounds.minY ?? -Infinity,
-        Math.min(props.bounds.maxY ?? Infinity, pos.y),
-      ),
+      x: Math.max(props.bounds.minX ?? -Infinity, Math.min(props.bounds.maxX ?? Infinity, pos.x)),
+      y: Math.max(props.bounds.minY ?? -Infinity, Math.min(props.bounds.maxY ?? Infinity, pos.y)),
     })
 
     // The handle is either the named slot or the root element.

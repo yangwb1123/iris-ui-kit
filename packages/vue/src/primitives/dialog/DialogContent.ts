@@ -1,13 +1,4 @@
-import {
-  Teleport,
-  defineComponent,
-  h,
-  inject,
-  ref,
-  watch,
-  type PropType,
-  type VNode,
-} from 'vue'
+import { Teleport, defineComponent, h, inject, ref, watch, type PropType, type VNode } from 'vue'
 import { DialogContextKey } from './context'
 import { useFocusTrap, useBodyScrollLock } from '../modal-utils'
 import { findFirstElement, mergeSlotProps } from '../slot/Slot'
@@ -119,8 +110,7 @@ export const IrisDialogContent = defineComponent({
                 border: '1px solid var(--iris-border)',
                 borderRadius: 'var(--iris-radius-lg)',
                 padding: 'var(--iris-padding-lg)',
-                boxShadow:
-                  '0 24px 48px -16px rgba(0,0,0,0.32), 0 8px 16px -4px rgba(0,0,0,0.16)',
+                boxShadow: '0 24px 48px -16px rgba(0,0,0,0.32), 0 8px 16px -4px rgba(0,0,0,0.16)',
                 maxWidth: '90vw',
                 maxHeight: '85vh',
                 overflow: 'auto',

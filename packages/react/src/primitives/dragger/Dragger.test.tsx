@@ -21,32 +21,24 @@ describe('@iris-ui/react IrisDragger', () => {
   })
 
   it('controlled value drives transform', () => {
-    const { container } = render(
-      <IrisDragger value={{ x: 42, y: -7 }}>x</IrisDragger>,
-    )
+    const { container } = render(<IrisDragger value={{ x: 42, y: -7 }}>x</IrisDragger>)
     const el = container.querySelector('[data-iris-dragger]') as HTMLElement
     expect(el.style.transform).toContain('translate3d(42px, -7px, 0)')
   })
 
   it('defaultValue applies for uncontrolled', () => {
-    const { container } = render(
-      <IrisDragger defaultValue={{ x: 5, y: 10 }}>x</IrisDragger>,
-    )
+    const { container } = render(<IrisDragger defaultValue={{ x: 5, y: 10 }}>x</IrisDragger>)
     const el = container.querySelector('[data-iris-dragger]') as HTMLElement
     expect(el.style.transform).toContain('translate3d(5px, 10px, 0)')
   })
 
   it('data-state="idle" initially', () => {
     const { container } = render(<IrisDragger>x</IrisDragger>)
-    expect(
-      container.querySelector('[data-iris-dragger]')?.getAttribute('data-state'),
-    ).toBe('idle')
+    expect(container.querySelector('[data-iris-dragger]')?.getAttribute('data-state')).toBe('idle')
   })
 
   it('renders a separate handle when handle prop is provided', () => {
-    const { container } = render(
-      <IrisDragger handle={<span>≡</span>}>body</IrisDragger>,
-    )
+    const { container } = render(<IrisDragger handle={<span>≡</span>}>body</IrisDragger>)
     expect(container.querySelector('[data-iris-dragger-handle]')).not.toBeNull()
   })
 

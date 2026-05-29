@@ -89,8 +89,7 @@ function Handle(props: HandleProps): React.ReactElement {
     disabled: props.disabled,
     onStart: () => {
       startRef.current = { ...props.sizeRef.current }
-      aspectRef.current =
-        startRef.current.width / Math.max(1, startRef.current.height)
+      aspectRef.current = startRef.current.width / Math.max(1, startRef.current.height)
       props.onResizeStart?.(startRef.current)
     },
     onDrag: ({ dx, dy }) => {
@@ -131,8 +130,10 @@ function Handle(props: HandleProps): React.ReactElement {
   )
 }
 
-export interface IrisResizableProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
+export interface IrisResizableProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'onChange' | 'defaultValue'
+> {
   /** Controlled size. */
   size?: IrisResizableSize
   defaultSize?: IrisResizableSize

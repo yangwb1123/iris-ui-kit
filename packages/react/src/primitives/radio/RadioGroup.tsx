@@ -7,8 +7,10 @@ function generateGroupName(): string {
   return `iris-radio-${__counter}`
 }
 
-export interface IrisRadioGroupProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
+export interface IrisRadioGroupProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'onChange' | 'defaultValue'
+> {
   /** Group name. Auto-generated if omitted. */
   name?: string
   value?: string | null
@@ -44,9 +46,7 @@ export function IrisRadioGroup({
   }
 
   return (
-    <RadioGroupContext.Provider
-      value={{ name: groupName, value: current, setValue, disabled }}
-    >
+    <RadioGroupContext.Provider value={{ name: groupName, value: current, setValue, disabled }}>
       <div
         {...rest}
         role="radiogroup"

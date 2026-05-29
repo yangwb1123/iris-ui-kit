@@ -50,7 +50,8 @@ export const IrisGrid = defineComponent({
   setup(props, { slots, attrs }) {
     const style = computed<Record<string, string>>(() => {
       const colTemplate = resolveColumns(props.columns, props.minColWidth)
-      const rowGap = props.rowGap !== undefined ? toCssSpacing(props.rowGap) : toCssSpacing(props.gap)
+      const rowGap =
+        props.rowGap !== undefined ? toCssSpacing(props.rowGap) : toCssSpacing(props.gap)
       const colGap =
         props.columnGap !== undefined ? toCssSpacing(props.columnGap) : toCssSpacing(props.gap)
       return {

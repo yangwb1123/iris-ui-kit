@@ -33,9 +33,13 @@ describe('@iris-ui/react IrisDivider', () => {
 
   it('spacing sm/md/lg applies margins', () => {
     const { container, rerender } = render(<IrisDivider spacing="sm" />)
-    expect(container.querySelector('[data-iris-divider]')!.getAttribute('style')).toContain('margin: 8px 0')
+    expect(container.querySelector('[data-iris-divider]')!.getAttribute('style')).toContain(
+      'margin: 8px 0',
+    )
     rerender(<IrisDivider spacing="lg" />)
-    expect(container.querySelector('[data-iris-divider]')!.getAttribute('style')).toContain('margin: 24px 0')
+    expect(container.querySelector('[data-iris-divider]')!.getAttribute('style')).toContain(
+      'margin: 24px 0',
+    )
   })
 
   it('vertical applies horizontal margins', () => {

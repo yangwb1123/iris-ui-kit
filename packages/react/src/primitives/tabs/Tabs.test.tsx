@@ -216,9 +216,9 @@ describe('@iris-ui/react IrisTabs', () => {
 
   it('Trigger outside provider throws', () => {
     const e = vi.spyOn(console, 'error').mockImplementation(() => {})
-    expect(() =>
-      render(<IrisTabsTrigger value="x">x</IrisTabsTrigger>),
-    ).toThrow(/must be inside an <IrisTabs>/)
+    expect(() => render(<IrisTabsTrigger value="x">x</IrisTabsTrigger>)).toThrow(
+      /must be inside an <IrisTabs>/,
+    )
     e.mockRestore()
   })
 

@@ -1,7 +1,9 @@
 import * as React from 'react'
 
-export interface IrisHeaderLayoutProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface IrisHeaderLayoutProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'children'
+> {
   /** Header height (px or CSS length). Default `'auto'`. */
   headerHeight?: number | string
   /** Footer height (px or CSS length). Default `'auto'`. */

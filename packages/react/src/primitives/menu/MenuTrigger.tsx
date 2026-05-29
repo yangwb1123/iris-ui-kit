@@ -3,8 +3,10 @@ import { composeEventHandlers } from '@iris-ui/core'
 import { IrisSlot } from '../slot/Slot'
 import { useMenuContext } from './context'
 
-export interface IrisMenuTriggerProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
+export interface IrisMenuTriggerProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'children'
+> {
   asChild?: boolean
   children?: React.ReactNode
 }
@@ -17,7 +19,8 @@ export const IrisMenuTrigger = React.forwardRef<HTMLElement, IrisMenuTriggerProp
       (el: HTMLElement | null) => {
         ctx.triggerRef.current = el
         if (typeof forwardedRef === 'function') forwardedRef(el)
-        else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLElement | null>).current = el
+        else if (forwardedRef)
+          (forwardedRef as React.MutableRefObject<HTMLElement | null>).current = el
       },
       [ctx, forwardedRef],
     )

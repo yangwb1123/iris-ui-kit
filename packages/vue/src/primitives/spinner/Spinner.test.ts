@@ -21,8 +21,16 @@ describe('IrisSpinner', () => {
   })
 
   it('sm/lg map to 14/24', () => {
-    expect(mount(IrisSpinner, { props: { size: 'sm' } }).find('svg').attributes('width')).toBe('14')
-    expect(mount(IrisSpinner, { props: { size: 'lg' } }).find('svg').attributes('width')).toBe('24')
+    expect(
+      mount(IrisSpinner, { props: { size: 'sm' } })
+        .find('svg')
+        .attributes('width'),
+    ).toBe('14')
+    expect(
+      mount(IrisSpinner, { props: { size: 'lg' } })
+        .find('svg')
+        .attributes('width'),
+    ).toBe('24')
   })
 
   it('accepts numeric size', () => {

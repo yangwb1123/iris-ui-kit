@@ -37,7 +37,11 @@ describe('@iris-ui/react IrisBanner', () => {
 
   it('close in controlled mode emits onOpenChange(false) without hiding', () => {
     const onChange = vi.fn()
-    render(<IrisBanner open closable onOpenChange={onChange}>x</IrisBanner>)
+    render(
+      <IrisBanner open closable onOpenChange={onChange}>
+        x
+      </IrisBanner>,
+    )
     const close = document.querySelector('[data-iris-banner-close]') as HTMLButtonElement
     act(() => {
       fireEvent.click(close)
@@ -49,9 +53,9 @@ describe('@iris-ui/react IrisBanner', () => {
 
   it('sticky sets position:sticky', () => {
     render(<IrisBanner sticky>x</IrisBanner>)
-    expect(
-      (document.querySelector('[data-iris-banner]') as HTMLElement).style.position,
-    ).toBe('sticky')
+    expect((document.querySelector('[data-iris-banner]') as HTMLElement).style.position).toBe(
+      'sticky',
+    )
   })
 
   it('renders icon and actions slots', () => {

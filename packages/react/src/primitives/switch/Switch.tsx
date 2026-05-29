@@ -8,8 +8,10 @@ const DIM_MAP: Record<IrisSwitchSize, { width: string; height: string; thumb: st
   lg: { width: '44px', height: '24px', thumb: '20px' },
 }
 
-export interface IrisSwitchProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'size' | 'value' | 'checked' | 'onChange'> {
+export interface IrisSwitchProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'size' | 'value' | 'checked' | 'onChange'
+> {
   checked?: boolean
   defaultChecked?: boolean
   onChange?: (next: boolean, event: React.ChangeEvent<HTMLInputElement>) => void
@@ -57,9 +59,7 @@ export const IrisSwitch = React.forwardRef<HTMLInputElement, IrisSwitchProps>(fu
     opacity: disabled ? 0.6 : 1,
     verticalAlign: 'middle',
   }
-  const thumbOffset = value
-    ? `calc(${dim.width} - ${dim.thumb} - 2px)`
-    : '2px'
+  const thumbOffset = value ? `calc(${dim.width} - ${dim.thumb} - 2px)` : '2px'
 
   const thumbStyle: React.CSSProperties = {
     position: 'absolute',

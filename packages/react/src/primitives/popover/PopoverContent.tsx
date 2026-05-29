@@ -3,8 +3,10 @@ import { createPortal } from 'react-dom'
 import { useFloating } from '../../floating/useFloating'
 import { usePopoverContext } from './context'
 
-export interface IrisPopoverContentProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface IrisPopoverContentProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'children'
+> {
   /** Portal target. `false` renders in place; an HTMLElement renders inside it; default = `document.body`. */
   portalTarget?: HTMLElement | false
   /** Move focus into the content on open (default: true). */
@@ -37,7 +39,8 @@ export const IrisPopoverContent = React.forwardRef<HTMLDivElement, IrisPopoverCo
         innerRef.current = el
         ctx.contentRef.current = el
         if (typeof forwardedRef === 'function') forwardedRef(el)
-        else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
+        else if (forwardedRef)
+          (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
       },
       [ctx, forwardedRef],
     )
@@ -116,8 +119,7 @@ export const IrisPopoverContent = React.forwardRef<HTMLDivElement, IrisPopoverCo
           border: '1px solid var(--iris-border)',
           borderRadius: 'var(--iris-radius-md, 6px)',
           padding: 'var(--iris-padding-md, 12px)',
-          boxShadow:
-            '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
+          boxShadow: '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
           fontSize: 14,
           zIndex: 1000,
           outline: 'none',

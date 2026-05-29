@@ -36,6 +36,7 @@ Read [AGENTS.md](./AGENTS.md) — it is the source of truth for design decisions
 ## Reporting Issues
 
 Open a GitHub issue with:
+
 - A minimal reproduction.
 - Expected vs. actual behavior.
 - Environment (Node version, package manager, OS).

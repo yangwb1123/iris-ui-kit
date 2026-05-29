@@ -51,8 +51,12 @@ describe('IrisProgress', () => {
   })
 
   it('size sm/md changes height', () => {
-    expect(mount(IrisProgress, { props: { value: 0, size: 'sm' } }).attributes('style')).toContain('height: 4px')
-    expect(mount(IrisProgress, { props: { value: 0, size: 'md' } }).attributes('style')).toContain('height: 8px')
+    expect(mount(IrisProgress, { props: { value: 0, size: 'sm' } }).attributes('style')).toContain(
+      'height: 4px',
+    )
+    expect(mount(IrisProgress, { props: { value: 0, size: 'md' } }).attributes('style')).toContain(
+      'height: 8px',
+    )
   })
 
   it('installs the stylesheet once', () => {

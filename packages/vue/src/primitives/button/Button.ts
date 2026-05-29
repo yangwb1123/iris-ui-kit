@@ -164,10 +164,7 @@ export const IrisButton = defineComponent({
           ...baseProps,
           disabled: isInteractive.value ? undefined : true,
         }
-        const merged = mergeSlotProps(
-          parentProps,
-          (root.props ?? {}) as Record<string, unknown>,
-        )
+        const merged = mergeSlotProps(parentProps, (root.props ?? {}) as Record<string, unknown>)
         return h(root.type as string, merged, root.children as unknown as VNode[])
       }
 

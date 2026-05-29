@@ -36,7 +36,13 @@ export function TokensShowcase() {
                 }}
               />
               <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>{token}</span>
-              <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, color: 'var(--iris-muted)' }}>
+              <span
+                style={{
+                  fontFamily: 'ui-monospace, monospace',
+                  fontSize: 11,
+                  color: 'var(--iris-muted)',
+                }}
+              >
                 {theme.colors[token]}
               </span>
             </div>
@@ -75,7 +81,13 @@ export function TokensShowcase() {
                 }}
               />
               <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>{token}</span>
-              <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, color: 'var(--iris-muted)' }}>
+              <span
+                style={{
+                  fontFamily: 'ui-monospace, monospace',
+                  fontSize: 11,
+                  color: 'var(--iris-muted)',
+                }}
+              >
                 {theme.spacing[token]}px
               </span>
             </div>
@@ -114,7 +126,13 @@ export function TokensShowcase() {
                 }}
               />
               <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>{token}</span>
-              <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, color: 'var(--iris-muted)' }}>
+              <span
+                style={{
+                  fontFamily: 'ui-monospace, monospace',
+                  fontSize: 11,
+                  color: 'var(--iris-muted)',
+                }}
+              >
                 {theme.radii[token]}px
               </span>
             </div>

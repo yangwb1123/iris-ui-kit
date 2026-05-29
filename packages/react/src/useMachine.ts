@@ -10,11 +10,7 @@ import { useStore } from './useStore'
  * Pass a **factory** (`() => createMachine(...)`) so each component instance
  * gets its own machine. Internally memoised so re-renders don't re-create.
  */
-export function useMachine<
-  TState extends string,
-  TContext,
-  TEvent extends MachineEvent,
->(
+export function useMachine<TState extends string, TContext, TEvent extends MachineEvent>(
   factory: () => Machine<TState, TContext, TEvent>,
 ): [MachineState<TState, TContext>, (event: TEvent) => void] {
   const machine = useMemo(factory, [])

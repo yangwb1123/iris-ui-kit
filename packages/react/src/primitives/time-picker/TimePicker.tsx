@@ -59,8 +59,7 @@ export function IrisTimePicker({
   }
 
   const meridiem = value.hours >= 12 ? 'PM' : 'AM'
-  const displayH =
-    format === '24h' ? value.hours : value.hours % 12 === 0 ? 12 : value.hours % 12
+  const displayH = format === '24h' ? value.hours : value.hours % 12 === 0 ? 12 : value.hours % 12
 
   const setHours24 = (h24: number) => {
     setValue({ hours: clamp(h24, 0, 23), minutes: value.minutes })

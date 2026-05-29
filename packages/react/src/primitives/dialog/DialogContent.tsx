@@ -6,8 +6,10 @@ import { useFocusTrap } from '../../modal-utils/useFocusTrap'
 import { IrisSlot } from '../slot/Slot'
 import { useDialogContext } from './context'
 
-export interface IrisDialogContentProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface IrisDialogContentProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'children'
+> {
   /** Portal target. `false` renders in place; default = `document.body`. */
   portalTarget?: HTMLElement | false
   children?: React.ReactNode
@@ -26,7 +28,10 @@ export interface IrisDialogContentProps
  *     `<IrisDialogDescription>` are present.
  */
 export const IrisDialogContent = React.forwardRef<HTMLDivElement, IrisDialogContentProps>(
-  function IrisDialogContent({ portalTarget, style, onPointerDown, children, ...rest }, forwardedRef) {
+  function IrisDialogContent(
+    { portalTarget, style, onPointerDown, children, ...rest },
+    forwardedRef,
+  ) {
     const ctx = useDialogContext('IrisDialogContent')
 
     const innerRef = React.useRef<HTMLDivElement | null>(null)
@@ -35,7 +40,8 @@ export const IrisDialogContent = React.forwardRef<HTMLDivElement, IrisDialogCont
         innerRef.current = el
         ctx.contentRef.current = el
         if (typeof forwardedRef === 'function') forwardedRef(el)
-        else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
+        else if (forwardedRef)
+          (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
       },
       [ctx, forwardedRef],
     )
@@ -103,8 +109,7 @@ export const IrisDialogContent = React.forwardRef<HTMLDivElement, IrisDialogCont
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-lg, 8px)',
             padding: 'var(--iris-padding-lg, 20px)',
-            boxShadow:
-              '0 24px 48px -16px rgba(0,0,0,0.32), 0 8px 16px -4px rgba(0,0,0,0.16)',
+            boxShadow: '0 24px 48px -16px rgba(0,0,0,0.32), 0 8px 16px -4px rgba(0,0,0,0.16)',
             maxWidth: '90vw',
             maxHeight: '85vh',
             overflow: 'auto',
@@ -183,8 +188,10 @@ export const IrisDialogDescription = React.forwardRef<HTMLElement, IrisDialogDes
   },
 )
 
-export interface IrisDialogCloseProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
+export interface IrisDialogCloseProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'children'
+> {
   asChild?: boolean
   children?: React.ReactNode
 }

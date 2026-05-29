@@ -53,10 +53,8 @@ export const IrisCheckbox = defineComponent({
       height: dim.value,
       borderRadius: 'var(--iris-radius-sm)',
       border: '1px solid var(--iris-border)',
-      background:
-        state.value === 'unchecked' ? 'var(--iris-background)' : 'var(--iris-primary)',
-      borderColor:
-        state.value === 'unchecked' ? 'var(--iris-border)' : 'var(--iris-primary)',
+      background: state.value === 'unchecked' ? 'var(--iris-background)' : 'var(--iris-primary)',
+      borderColor: state.value === 'unchecked' ? 'var(--iris-border)' : 'var(--iris-primary)',
       color: 'var(--iris-primary-foreground)',
       cursor: props.disabled ? 'not-allowed' : 'pointer',
       opacity: props.disabled ? '0.6' : '1',
@@ -126,7 +124,11 @@ export const IrisCheckbox = defineComponent({
             indeterminate: props.modelValue === 'indeterminate',
             disabled: props.disabled || undefined,
             'aria-checked':
-              state.value === 'indeterminate' ? 'mixed' : state.value === 'checked' ? 'true' : 'false',
+              state.value === 'indeterminate'
+                ? 'mixed'
+                : state.value === 'checked'
+                  ? 'true'
+                  : 'false',
             'aria-describedby': props.ariaDescribedby,
             'aria-invalid': props.invalid ? 'true' : undefined,
             style: {

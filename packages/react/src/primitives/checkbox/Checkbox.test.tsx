@@ -28,7 +28,9 @@ describe('@iris-ui/react IrisCheckbox', () => {
   it('indeterminate state sets aria-checked="mixed"', () => {
     const { container } = render(<IrisCheckbox checked="indeterminate" />)
     expect(container.querySelector('input')!.getAttribute('aria-checked')).toBe('mixed')
-    expect(container.querySelector('[data-iris-checkbox]')!.getAttribute('data-state')).toBe('indeterminate')
+    expect(container.querySelector('[data-iris-checkbox]')!.getAttribute('data-state')).toBe(
+      'indeterminate',
+    )
   })
 
   it('indeterminate flag is applied to the native input', () => {
@@ -56,7 +58,9 @@ describe('@iris-ui/react IrisCheckbox', () => {
 
   it('size flips data attr', () => {
     const { container } = render(<IrisCheckbox size="lg" />)
-    expect(container.querySelector('[data-iris-checkbox]')!.getAttribute('data-iris-checkbox-size')).toBe('lg')
+    expect(
+      container.querySelector('[data-iris-checkbox]')!.getAttribute('data-iris-checkbox-size'),
+    ).toBe('lg')
   })
 
   it('checked indicator renders ✓', () => {

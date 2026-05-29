@@ -10,13 +10,13 @@ AI-native cross-framework component infrastructure. From meta UI primitives to f
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| `@iris-ui/core` | Framework-agnostic store + state machine abstraction |
-| `@iris-ui/tokens` | `IrisTheme` types + Light/Dark default themes |
-| `@iris-ui/theme` | `applyTheme`, `getCssVar`, `createThemeStore` |
-| `@iris-ui/icons` | Icon set interface (implementations TBD) |
-| `@iris-ui/vue` | Vue 3 adapter: `ThemeProvider`, `useTheme`, `useMachine` |
+| Package           | Description                                              |
+| ----------------- | -------------------------------------------------------- |
+| `@iris-ui/core`   | Framework-agnostic store + state machine abstraction     |
+| `@iris-ui/tokens` | `IrisTheme` types + Light/Dark default themes            |
+| `@iris-ui/theme`  | `applyTheme`, `getCssVar`, `createThemeStore`            |
+| `@iris-ui/icons`  | Icon set interface (implementations TBD)                 |
+| `@iris-ui/vue`    | Vue 3 adapter: `ThemeProvider`, `useTheme`, `useMachine` |
 
 ## Quick Start
 

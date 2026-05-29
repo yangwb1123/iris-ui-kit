@@ -60,9 +60,7 @@ describe('@iris-ui/react IrisBreadcrumb', () => {
         <IrisBreadcrumbItem>B</IrisBreadcrumbItem>
       </IrisBreadcrumb>,
     )
-    expect(
-      container.querySelector('[data-iris-breadcrumb-separator]')?.textContent,
-    ).toBe('>')
+    expect(container.querySelector('[data-iris-breadcrumb-separator]')?.textContent).toBe('>')
   })
 
   it('last item marker on the wrapping li', () => {

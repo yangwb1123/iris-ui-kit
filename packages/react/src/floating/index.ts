@@ -1,5 +1,1 @@
-export {
-  useFloating,
-  type UseFloatingOptions,
-  type UseFloatingReturn,
-} from './useFloating'
+export { useFloating, type UseFloatingOptions, type UseFloatingReturn } from './useFloating'

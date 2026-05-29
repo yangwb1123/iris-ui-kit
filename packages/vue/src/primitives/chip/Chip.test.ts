@@ -82,12 +82,18 @@ describe('IrisChip', () => {
   })
 
   it('solid variant uses primary-foreground for text', () => {
-    const w = mount(IrisChip, { props: { variant: 'solid', tone: 'primary' }, slots: { default: 'x' } })
+    const w = mount(IrisChip, {
+      props: { variant: 'solid', tone: 'primary' },
+      slots: { default: 'x' },
+    })
     expect(w.attributes('style')).toContain('--iris-primary-foreground')
   })
 
   it('subtle variant uses color-mix', () => {
-    const w = mount(IrisChip, { props: { variant: 'subtle', tone: 'warning' }, slots: { default: 'x' } })
+    const w = mount(IrisChip, {
+      props: { variant: 'subtle', tone: 'warning' },
+      slots: { default: 'x' },
+    })
     expect(w.attributes('style')).toContain('color-mix')
   })
 })

@@ -78,10 +78,7 @@ export function IrisCard({
         </div>
       ) : null}
       {children !== undefined && children !== null ? (
-        <div
-          data-iris-card-body=""
-          style={{ padding: sectionPadding, flex: 1 }}
-        >
+        <div data-iris-card-body="" style={{ padding: sectionPadding, flex: 1 }}>
           {children}
         </div>
       ) : null}

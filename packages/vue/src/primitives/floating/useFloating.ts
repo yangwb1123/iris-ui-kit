@@ -1,12 +1,4 @@
-import {
-  computed,
-  onScopeDispose,
-  ref,
-  shallowRef,
-  watch,
-  type ComputedRef,
-  type Ref,
-} from 'vue'
+import { computed, onScopeDispose, ref, shallowRef, watch, type ComputedRef, type Ref } from 'vue'
 import {
   autoUpdate,
   computePosition,

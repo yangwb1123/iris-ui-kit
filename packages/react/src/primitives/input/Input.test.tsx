@@ -54,9 +54,13 @@ describe('@iris-ui/react IrisInput', () => {
 
   it('size sm/md/lg flips data attr + font size', () => {
     const { container, rerender } = render(<IrisInput size="sm" />)
-    expect(container.querySelector('[data-iris-input]')!.getAttribute('data-iris-input-size')).toBe('sm')
+    expect(container.querySelector('[data-iris-input]')!.getAttribute('data-iris-input-size')).toBe(
+      'sm',
+    )
     rerender(<IrisInput size="lg" />)
-    expect(container.querySelector('[data-iris-input]')!.getAttribute('style')).toContain('font-size: 16px')
+    expect(container.querySelector('[data-iris-input]')!.getAttribute('style')).toContain(
+      'font-size: 16px',
+    )
   })
 
   it('type prop is honored', () => {

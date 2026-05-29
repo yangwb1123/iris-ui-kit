@@ -46,7 +46,11 @@ export function BehaviorsShowcase() {
             background: 'var(--iris-background)',
           }}
         >
-          <IrisMovable defaultPosition={{ x: 20, y: 20 }} byHandle bounds={{ minX: 0, minY: 0, maxX: 400, maxY: 160 }}>
+          <IrisMovable
+            defaultPosition={{ x: 20, y: 20 }}
+            byHandle
+            bounds={{ minX: 0, minY: 0, maxX: 400, maxY: 160 }}
+          >
             <IrisCard style={{ width: 240, margin: 0, padding: 0 }}>
               <div
                 data-iris-movable-handle
@@ -80,7 +84,13 @@ export function BehaviorsShowcase() {
           Press <code>Esc</code> or <code>⌘/Ctrl + S</code> anywhere on this page.
         </p>
         <IrisHotkey shortcut="Escape" onTrigger={() => toast.info({ title: 'Esc pressed' })}>
-          <IrisHotkey shortcut="Mod+s" onTrigger={(e) => { e.preventDefault(); toast.success({ title: 'Mod+S — Saved' }) }}>
+          <IrisHotkey
+            shortcut="Mod+s"
+            onTrigger={(e) => {
+              e.preventDefault()
+              toast.success({ title: 'Mod+S — Saved' })
+            }}
+          >
             <div />
           </IrisHotkey>
         </IrisHotkey>
@@ -117,8 +127,8 @@ export function BehaviorsShowcase() {
       <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
         <span className="row-label">stacked</span>
         <p style={{ margin: '0 0 8px 0', fontSize: 13, color: 'var(--iris-muted)' }}>
-          <code>{`<Resizable><Movable><Hotkey>…`}</code>—the same UI gets resize + move + Esc to log without any
-          changes to the child component.
+          <code>{`<Resizable><Movable><Hotkey>…`}</code>—the same UI gets resize + move + Esc to log
+          without any changes to the child component.
         </p>
         <div
           style={{
@@ -129,9 +139,20 @@ export function BehaviorsShowcase() {
             background: 'var(--iris-background)',
           }}
         >
-          <IrisMovable defaultPosition={{ x: 30, y: 30 }} byHandle bounds={{ minX: 0, minY: 0, maxX: 380, maxY: 180 }}>
-            <IrisHotkey shortcut="Escape" onTrigger={() => toast.info({ title: 'Esc captured by stacked panel' })}>
-              <IrisResizable defaultSize={{ width: 240, height: 140 }} minWidth={150} minHeight={100}>
+          <IrisMovable
+            defaultPosition={{ x: 30, y: 30 }}
+            byHandle
+            bounds={{ minX: 0, minY: 0, maxX: 380, maxY: 180 }}
+          >
+            <IrisHotkey
+              shortcut="Escape"
+              onTrigger={() => toast.info({ title: 'Esc captured by stacked panel' })}
+            >
+              <IrisResizable
+                defaultSize={{ width: 240, height: 140 }}
+                minWidth={150}
+                minHeight={100}
+              >
                 <IrisCard style={{ margin: 0, padding: 0, width: '100%', height: '100%' }}>
                   <div
                     data-iris-movable-handle

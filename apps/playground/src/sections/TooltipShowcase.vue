@@ -36,9 +36,9 @@ const placements: Placement[] = ['top', 'right', 'bottom', 'left']
       <IrisTooltip :open-delay="100">
         <IrisButton variant="solid" size="sm">rich content</IrisButton>
         <template #content>
-          <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="display: flex; flex-direction: column; gap: 4px">
             <strong>Keyboard shortcut</strong>
-            <span style="opacity:0.7">⌘ + S</span>
+            <span style="opacity: 0.7">⌘ + S</span>
           </div>
         </template>
       </IrisTooltip>

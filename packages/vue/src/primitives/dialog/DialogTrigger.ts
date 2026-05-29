@@ -47,11 +47,7 @@ export const IrisDialogTrigger = defineComponent({
         return h(root.type as string, merged, root.children as unknown as VNode[])
       }
 
-      return h(
-        'button',
-        { type: 'button', ...attrs, ...triggerProps },
-        slots.default?.(),
-      )
+      return h('button', { type: 'button', ...attrs, ...triggerProps }, slots.default?.())
     }
   },
 })

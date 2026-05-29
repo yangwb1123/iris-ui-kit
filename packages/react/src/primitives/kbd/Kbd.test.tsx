@@ -37,6 +37,8 @@ describe('@iris-ui/react IrisKbd', () => {
 
   it('size sm changes font size', () => {
     const { container } = render(<IrisKbd keys="K" size="sm" />)
-    expect(container.querySelector('[data-iris-kbd]')!.getAttribute('style')).toContain('font-size: 10px')
+    expect(container.querySelector('[data-iris-kbd]')!.getAttribute('style')).toContain(
+      'font-size: 10px',
+    )
   })
 })

@@ -38,7 +38,10 @@ export const IrisTextarea = defineComponent({
     const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
     const sizeStyles = computed<{ padding: string; fontSize: string; lineHeight: string }>(() => {
-      const map: Record<IrisTextareaSize, { padding: string; fontSize: string; lineHeight: string }> = {
+      const map: Record<
+        IrisTextareaSize,
+        { padding: string; fontSize: string; lineHeight: string }
+      > = {
         sm: { padding: '6px var(--iris-padding-sm)', fontSize: '12px', lineHeight: '1.5' },
         md: { padding: '8px var(--iris-padding-md)', fontSize: '14px', lineHeight: '1.5' },
         lg: { padding: '10px var(--iris-padding-md)', fontSize: '16px', lineHeight: '1.5' },
@@ -91,9 +94,12 @@ export const IrisTextarea = defineComponent({
       el.style.height = `${Math.min(maxPx, el.scrollHeight)}px`
     }
 
-    watch(() => props.modelValue, () => {
-      if (props.autosize) nextTick(resize)
-    })
+    watch(
+      () => props.modelValue,
+      () => {
+        if (props.autosize) nextTick(resize)
+      },
+    )
     onMounted(() => {
       if (props.autosize) nextTick(resize)
     })
@@ -119,7 +125,10 @@ export const IrisTextarea = defineComponent({
           'data-iris-textarea': '',
           'data-iris-textarea-size': props.size,
           'data-state': props.invalid ? 'invalid' : focused.value ? 'focused' : 'idle',
-          style: { ...wrapperStyle.value, ...((attrs.style as Record<string, string> | undefined) ?? {}) },
+          style: {
+            ...wrapperStyle.value,
+            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+          },
         },
         h('textarea', {
           ref: (el: unknown) => {

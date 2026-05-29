@@ -99,13 +99,13 @@ describe('@iris-ui/vue IrisMovable', () => {
       props: { position: { x: 0, y: 0 } },
       slots: { default: '<span>x</span>' },
     })
-    expect(
-      (wrap.find('[data-iris-movable]').element as HTMLElement).style.transform,
-    ).toContain('translate3d(0px, 0px')
+    expect((wrap.find('[data-iris-movable]').element as HTMLElement).style.transform).toContain(
+      'translate3d(0px, 0px',
+    )
     await wrap.setProps({ position: { x: 50, y: 30 } })
-    expect(
-      (wrap.find('[data-iris-movable]').element as HTMLElement).style.transform,
-    ).toContain('translate3d(50px, 30px')
+    expect((wrap.find('[data-iris-movable]').element as HTMLElement).style.transform).toContain(
+      'translate3d(50px, 30px',
+    )
   })
 
   it('default state is "idle"', () => {
@@ -120,9 +120,7 @@ describe('@iris-ui/vue IrisMovable', () => {
         default: '<span data-iris-movable-handle>handle</span>',
       },
     })
-    expect(
-      (wrap.find('[data-iris-movable]').element as HTMLElement).style.cursor,
-    ).toBe('default')
+    expect((wrap.find('[data-iris-movable]').element as HTMLElement).style.cursor).toBe('default')
   })
 
   it('disabled cursor is not-allowed', () => {
@@ -130,9 +128,9 @@ describe('@iris-ui/vue IrisMovable', () => {
       props: { disabled: true },
       slots: { default: '<span>x</span>' },
     })
-    expect(
-      (wrap.find('[data-iris-movable]').element as HTMLElement).style.cursor,
-    ).toBe('not-allowed')
+    expect((wrap.find('[data-iris-movable]').element as HTMLElement).style.cursor).toBe(
+      'not-allowed',
+    )
   })
 })
 

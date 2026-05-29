@@ -39,8 +39,10 @@ function panelPositionStyle(side: IrisDrawerSide, size: string): React.CSSProper
 
 const EXIT_DURATION_MS = 220
 
-export interface IrisDrawerContentProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface IrisDrawerContentProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'children'
+> {
   portalTarget?: HTMLElement | false
   children?: React.ReactNode
 }
@@ -61,7 +63,8 @@ export const IrisDrawerContent = React.forwardRef<HTMLDivElement, IrisDrawerCont
         innerRef.current = el
         ctx.contentRef.current = el
         if (typeof forwardedRef === 'function') forwardedRef(el)
-        else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
+        else if (forwardedRef)
+          (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
       },
       [ctx, forwardedRef],
     )
@@ -188,8 +191,10 @@ export const IrisDrawerTitle = React.forwardRef<HTMLHeadingElement, IrisDrawerTi
   },
 )
 
-export interface IrisDrawerCloseProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
+export interface IrisDrawerCloseProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'children'
+> {
   asChild?: boolean
   children?: React.ReactNode
 }

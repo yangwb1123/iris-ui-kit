@@ -54,28 +54,20 @@ describe('@iris-ui/vue IrisColorPicker', () => {
 
   it('hex input value reflects modelValue', () => {
     const wrap = mount(IrisColorPicker, { props: { modelValue: '#3366cc' } })
-    const hex = wrap.find('[data-iris-color-picker-hex]')
-      .element as HTMLInputElement
+    const hex = wrap.find('[data-iris-color-picker-hex]').element as HTMLInputElement
     expect(hex.value).toBe('#3366cc')
   })
 
   it('RGB inputs reflect modelValue channels', () => {
     const wrap = mount(IrisColorPicker, { props: { modelValue: '#3366cc' } })
-    expect(
-      (wrap.find('[data-iris-color-picker-r]').element as HTMLInputElement).value,
-    ).toBe('51')
-    expect(
-      (wrap.find('[data-iris-color-picker-g]').element as HTMLInputElement).value,
-    ).toBe('102')
-    expect(
-      (wrap.find('[data-iris-color-picker-b]').element as HTMLInputElement).value,
-    ).toBe('204')
+    expect((wrap.find('[data-iris-color-picker-r]').element as HTMLInputElement).value).toBe('51')
+    expect((wrap.find('[data-iris-color-picker-g]').element as HTMLInputElement).value).toBe('102')
+    expect((wrap.find('[data-iris-color-picker-b]').element as HTMLInputElement).value).toBe('204')
   })
 
   it('changing the hex input emits update:modelValue', async () => {
     const wrap = mount(IrisColorPicker, { props: { modelValue: '#000000' } })
-    const hex = wrap.find('[data-iris-color-picker-hex]')
-      .element as HTMLInputElement
+    const hex = wrap.find('[data-iris-color-picker-hex]').element as HTMLInputElement
     hex.value = '#ff8000'
     await wrap.find('[data-iris-color-picker-hex]').trigger('change')
     const emit = wrap.emitted('update:modelValue')!
@@ -110,9 +102,9 @@ describe('@iris-ui/vue IrisColorPicker', () => {
 
   it('disabled blocks RGB input changes', async () => {
     const wrap = mount(IrisColorPicker, { props: { modelValue: '#000000', disabled: true } })
-    expect(
-      (wrap.find('[data-iris-color-picker-r]').element as HTMLInputElement).disabled,
-    ).toBe(true)
+    expect((wrap.find('[data-iris-color-picker-r]').element as HTMLInputElement).disabled).toBe(
+      true,
+    )
   })
 
   it('cursor position on pad reflects s and v', () => {

@@ -1,5 +1,1 @@
-export {
-  IrisResizer,
-  type IrisResizerHandle,
-  type IrisResizerSize,
-} from './Resizer'
+export { IrisResizer, type IrisResizerHandle, type IrisResizerSize } from './Resizer'

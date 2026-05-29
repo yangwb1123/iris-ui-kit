@@ -52,7 +52,9 @@ const onStackedEsc = () => toast.info({ title: 'Esc captured by stacked panel' }
           <IrisCard style="width: 240px; margin: 0; padding: 0">
             <div data-iris-movable-handle class="handle">≡ Drag me by this title bar</div>
             <div style="padding: 14px">
-              <p class="hint" style="margin: 0">Body content stays still while you drag the handle.</p>
+              <p class="hint" style="margin: 0">
+                Body content stays still while you drag the handle.
+              </p>
             </div>
           </IrisCard>
         </IrisMovable>
@@ -80,15 +82,17 @@ const onStackedEsc = () => toast.info({ title: 'Esc captured by stacked panel' }
           <p class="hint" style="margin: 6px 0 0 0">Try clicking anywhere outside this card.</p>
         </IrisCard>
       </IrisClickOutside>
-      <IrisButton v-else size="sm" variant="outline" @click="showFloating = true">Re-show</IrisButton>
+      <IrisButton v-else size="sm" variant="outline" @click="showFloating = true"
+        >Re-show</IrisButton
+      >
     </div>
 
     <!-- stacked -->
     <div class="row col">
       <span class="row-label">stacked</span>
       <p class="hint">
-        <code>&lt;Movable&gt;&lt;Hotkey&gt;&lt;Resizable&gt;…</code> — the same UI gets move + resize +
-        Esc-to-log, with no change to the child component.
+        <code>&lt;Movable&gt;&lt;Hotkey&gt;&lt;Resizable&gt;…</code> — the same UI gets move +
+        resize + Esc-to-log, with no change to the child component.
       </p>
       <div class="stage" style="height: 280px">
         <IrisMovable
@@ -97,7 +101,11 @@ const onStackedEsc = () => toast.info({ title: 'Esc captured by stacked panel' }
           :bounds="{ minX: 0, minY: 0, maxX: 380, maxY: 180 }"
         >
           <IrisHotkey shortcut="Escape" @trigger="onStackedEsc">
-            <IrisResizable :default-size="{ width: 240, height: 140 }" :min-width="150" :min-height="100">
+            <IrisResizable
+              :default-size="{ width: 240, height: 140 }"
+              :min-width="150"
+              :min-height="100"
+            >
               <IrisCard style="margin: 0; padding: 0; width: 100%; height: 100%">
                 <div data-iris-movable-handle class="handle">≡ Stacked panel</div>
                 <div style="padding: 12px; font-size: 12px; color: var(--iris-muted)">

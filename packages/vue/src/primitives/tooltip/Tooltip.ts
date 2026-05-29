@@ -161,7 +161,9 @@ export const IrisTooltip = defineComponent({
       const root = findFirstElement(slots.default?.())
       if (!root) {
         if (typeof process === 'undefined' || process.env?.NODE_ENV !== 'production') {
-          console.warn('[iris-ui] IrisTooltip requires a single trigger element in the default slot')
+          console.warn(
+            '[iris-ui] IrisTooltip requires a single trigger element in the default slot',
+          )
         }
         return null
       }

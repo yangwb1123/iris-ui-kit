@@ -13,11 +13,10 @@ export interface IrisDraggerBounds {
   maxY?: number
 }
 
-export interface IrisDraggerProps
-  extends Omit<
-    React.HTMLAttributes<HTMLDivElement>,
-    'onChange' | 'defaultValue' | 'onDragStart' | 'onDragEnd'
-  > {
+export interface IrisDraggerProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'onChange' | 'defaultValue' | 'onDragStart' | 'onDragEnd'
+> {
   value?: IrisDraggerPosition
   defaultValue?: IrisDraggerPosition
   onValueChange?: (next: IrisDraggerPosition) => void

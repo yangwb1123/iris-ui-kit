@@ -141,12 +141,7 @@ export function IrisLoginTemplate({
                 {forgot ?? null}
               </div>
             ) : null}
-            <IrisButton
-              type="submit"
-              variant="solid"
-              loading={loading}
-              style={{ width: '100%' }}
-            >
+            <IrisButton type="submit" variant="solid" loading={loading} style={{ width: '100%' }}>
               {submitLabel}
             </IrisButton>
             {footer ? (

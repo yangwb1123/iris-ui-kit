@@ -70,7 +70,7 @@ describe('findFirstElement', () => {
 
   it('skips text-only nodes', () => {
     // Text VNodes have type === Text symbol, which is a symbol — filtered by our check.
-    const text = h('span', null, 'hello')  // wrap text in element instead
+    const text = h('span', null, 'hello') // wrap text in element instead
     expect(findFirstElement([text])?.type).toBe('span')
   })
 })

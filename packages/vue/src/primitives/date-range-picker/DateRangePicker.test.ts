@@ -67,9 +67,7 @@ describe('@iris-ui/vue IrisDateRangePicker', () => {
     })
     await wrap.find('[data-iris-date-range-picker-trigger]').trigger('click')
     await nextTick()
-    const day = document.querySelectorAll(
-      '[data-iris-calendar-day]',
-    )[10] as HTMLButtonElement
+    const day = document.querySelectorAll('[data-iris-calendar-day]')[10] as HTMLButtonElement
     day.click()
     await nextTick()
     const emit = wrap.emitted('update:modelValue')!
@@ -106,8 +104,7 @@ describe('@iris-ui/vue IrisDateRangePicker', () => {
       attachTo: document.body,
     })
     expect(
-      (wrap.find('[data-iris-date-range-picker-trigger]').element as HTMLButtonElement)
-        .disabled,
+      (wrap.find('[data-iris-date-range-picker-trigger]').element as HTMLButtonElement).disabled,
     ).toBe(true)
     wrap.unmount()
   })
@@ -117,9 +114,9 @@ describe('@iris-ui/vue IrisDateRangePicker', () => {
       props: { modelValue: { start: null, end: null }, invalid: true },
       attachTo: document.body,
     })
-    expect(
-      wrap.find('[data-iris-date-range-picker-trigger]').attributes('aria-invalid'),
-    ).toBe('true')
+    expect(wrap.find('[data-iris-date-range-picker-trigger]').attributes('aria-invalid')).toBe(
+      'true',
+    )
     wrap.unmount()
   })
 })

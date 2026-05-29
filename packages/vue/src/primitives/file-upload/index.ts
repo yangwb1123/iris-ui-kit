@@ -1,5 +1,1 @@
-export {
-  IrisFileUpload,
-  formatBytes,
-  type IrisFileUploadFile,
-} from './FileUpload'
+export { IrisFileUpload, formatBytes, type IrisFileUploadFile } from './FileUpload'

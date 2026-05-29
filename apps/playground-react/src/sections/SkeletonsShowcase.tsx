@@ -62,9 +62,7 @@ export function SkeletonsShowcase() {
             />
           </div>
         </IrisCard>
-        <span style={{ fontSize: 12, color: 'var(--iris-muted)' }}>
-          active section → {active}
-        </span>
+        <span style={{ fontSize: 12, color: 'var(--iris-muted)' }}>active section → {active}</span>
       </div>
     </section>
   )

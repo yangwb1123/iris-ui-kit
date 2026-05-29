@@ -84,9 +84,7 @@ describe('@iris-ui/react IrisPopover', () => {
 
   it('controlled open prop overrides internal state', () => {
     const onChange = vi.fn()
-    const { container, rerender } = render(
-      harness({ open: false, onOpenChange: onChange }),
-    )
+    const { container, rerender } = render(harness({ open: false, onOpenChange: onChange }))
     const btn = container.querySelector('button')!
     expect(dialog()).toBeNull()
     rerender(harness({ open: true, onOpenChange: onChange }))

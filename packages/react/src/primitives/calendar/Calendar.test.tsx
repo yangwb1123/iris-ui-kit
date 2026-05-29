@@ -26,9 +26,7 @@ describe('@iris-ui/react IrisCalendar', () => {
 
   it('header reflects visible month', () => {
     render(<IrisCalendar defaultMonth={new Date(2024, 5, 15)} locale="en-US" />)
-    expect(document.querySelector('[data-iris-calendar-title]')?.textContent).toMatch(
-      /June.*2024/,
-    )
+    expect(document.querySelector('[data-iris-calendar-title]')?.textContent).toMatch(/June.*2024/)
   })
 
   it('prev/next buttons advance month', () => {
@@ -37,9 +35,7 @@ describe('@iris-ui/react IrisCalendar', () => {
     act(() => {
       fireEvent.click(next)
     })
-    expect(document.querySelector('[data-iris-calendar-title]')?.textContent).toMatch(
-      /July.*2024/,
-    )
+    expect(document.querySelector('[data-iris-calendar-title]')?.textContent).toMatch(/July.*2024/)
   })
 
   it('clicking a day fires onValueChange', () => {
@@ -53,9 +49,7 @@ describe('@iris-ui/react IrisCalendar', () => {
   })
 
   it('selected day has aria-selected=true', () => {
-    render(
-      <IrisCalendar value={new Date(2024, 5, 10)} defaultMonth={new Date(2024, 5, 1)} />,
-    )
+    render(<IrisCalendar value={new Date(2024, 5, 10)} defaultMonth={new Date(2024, 5, 1)} />)
     expect(day('2024-06-10').getAttribute('aria-selected')).toBe('true')
   })
 
@@ -80,9 +74,7 @@ describe('@iris-ui/react IrisCalendar', () => {
   })
 
   it('ArrowRight moves focus by 1 day', () => {
-    render(
-      <IrisCalendar value={new Date(2024, 5, 10)} defaultMonth={new Date(2024, 5, 1)} />,
-    )
+    render(<IrisCalendar value={new Date(2024, 5, 10)} defaultMonth={new Date(2024, 5, 1)} />)
     act(() => {
       fireEvent.keyDown(document.querySelector('[data-iris-calendar-grid]')!, {
         key: 'ArrowRight',
@@ -94,9 +86,7 @@ describe('@iris-ui/react IrisCalendar', () => {
   })
 
   it('ArrowDown moves focus by 7 days', () => {
-    render(
-      <IrisCalendar value={new Date(2024, 5, 10)} defaultMonth={new Date(2024, 5, 1)} />,
-    )
+    render(<IrisCalendar value={new Date(2024, 5, 10)} defaultMonth={new Date(2024, 5, 1)} />)
     act(() => {
       fireEvent.keyDown(document.querySelector('[data-iris-calendar-grid]')!, {
         key: 'ArrowDown',
@@ -114,9 +104,7 @@ describe('@iris-ui/react IrisCalendar', () => {
         key: 'PageDown',
       })
     })
-    expect(document.querySelector('[data-iris-calendar-title]')?.textContent).toMatch(
-      /July.*2024/,
-    )
+    expect(document.querySelector('[data-iris-calendar-title]')?.textContent).toMatch(/July.*2024/)
   })
 
   it('Enter on grid selects focused date', () => {
@@ -138,9 +126,7 @@ describe('@iris-ui/react IrisCalendar', () => {
   })
 
   it('prev disabled when visible month <= min', () => {
-    render(
-      <IrisCalendar defaultMonth={new Date(2024, 5, 1)} min={new Date(2024, 5, 5)} />,
-    )
+    render(<IrisCalendar defaultMonth={new Date(2024, 5, 1)} min={new Date(2024, 5, 5)} />)
     expect(
       (document.querySelector('[data-iris-calendar-prev]') as HTMLButtonElement).disabled,
     ).toBe(true)
@@ -156,9 +142,7 @@ describe('@iris-ui/react IrisCalendar', () => {
       <IrisCalendar value={new Date(2024, 5, 5)} defaultMonth={new Date(2024, 5, 1)} />,
     )
     expect(day('2024-06-05').getAttribute('aria-selected')).toBe('true')
-    rerender(
-      <IrisCalendar value={new Date(2024, 5, 20)} defaultMonth={new Date(2024, 5, 1)} />,
-    )
+    rerender(<IrisCalendar value={new Date(2024, 5, 20)} defaultMonth={new Date(2024, 5, 1)} />)
     expect(day('2024-06-20').getAttribute('aria-selected')).toBe('true')
   })
 

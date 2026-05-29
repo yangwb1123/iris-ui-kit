@@ -16,10 +16,7 @@ describe('@iris-ui/react IrisDateRangePicker', () => {
 
   it('shows start → … when only start set', () => {
     render(
-      <IrisDateRangePicker
-        value={{ start: new Date(2024, 5, 10), end: null }}
-        locale="en-US"
-      />,
+      <IrisDateRangePicker value={{ start: new Date(2024, 5, 10), end: null }} locale="en-US" />,
     )
     const txt = trig().textContent!
     expect(txt).toContain('→')
@@ -53,9 +50,7 @@ describe('@iris-ui/react IrisDateRangePicker', () => {
     act(() => {
       fireEvent.click(trig())
     })
-    const day = document.querySelectorAll(
-      '[data-iris-calendar-day]',
-    )[10] as HTMLButtonElement
+    const day = document.querySelectorAll('[data-iris-calendar-day]')[10] as HTMLButtonElement
     act(() => {
       fireEvent.click(day)
     })

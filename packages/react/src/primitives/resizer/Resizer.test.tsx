@@ -42,17 +42,13 @@ describe('@iris-ui/react IrisResizer', () => {
 
   it('disabled state reflects on data-state', () => {
     const { container } = render(
-      <IrisResizer
-        value={{ width: 100, height: 100 }}
-        onValueChange={vi.fn()}
-        disabled
-      >
+      <IrisResizer value={{ width: 100, height: 100 }} onValueChange={vi.fn()} disabled>
         <div>x</div>
       </IrisResizer>,
     )
-    expect(
-      container.querySelector('[data-iris-resizer]')?.getAttribute('data-state'),
-    ).toBe('disabled')
+    expect(container.querySelector('[data-iris-resizer]')?.getAttribute('data-state')).toBe(
+      'disabled',
+    )
   })
 
   it('cursor on side handles is ew-resize / ns-resize', () => {

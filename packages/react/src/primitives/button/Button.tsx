@@ -151,12 +151,7 @@ export function IrisButton({
   }
 
   return (
-    <button
-      type={type}
-      disabled={!isInteractive}
-      onClick={handleClick}
-      {...baseProps}
-    >
+    <button type={type} disabled={!isInteractive} onClick={handleClick} {...baseProps}>
       {(loading || leading) && (
         <span className="iris-button-leading">{loading ? <Spinner /> : leading}</span>
       )}

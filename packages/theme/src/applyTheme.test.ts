@@ -19,9 +19,7 @@ describe('applyTheme', () => {
     expect(target.style.getPropertyValue('--iris-background')).toBe(
       lightTheme.colors['iris.background'],
     )
-    expect(target.style.getPropertyValue('--iris-primary')).toBe(
-      lightTheme.colors['iris.primary'],
-    )
+    expect(target.style.getPropertyValue('--iris-primary')).toBe(lightTheme.colors['iris.primary'])
   })
 
   it('writes spacing tokens with px units', () => {

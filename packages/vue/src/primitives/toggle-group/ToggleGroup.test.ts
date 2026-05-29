@@ -138,7 +138,11 @@ describe('IrisToggleGroup', () => {
   })
 
   it('exposes data-iris-toggle-group-type', () => {
-    expect(mount(harness({ type: 'single' })).attributes('data-iris-toggle-group-type')).toBe('single')
-    expect(mount(harness({ type: 'multiple' })).attributes('data-iris-toggle-group-type')).toBe('multiple')
+    expect(mount(harness({ type: 'single' })).attributes('data-iris-toggle-group-type')).toBe(
+      'single',
+    )
+    expect(mount(harness({ type: 'multiple' })).attributes('data-iris-toggle-group-type')).toBe(
+      'multiple',
+    )
   })
 })

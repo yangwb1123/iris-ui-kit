@@ -13,7 +13,9 @@ describe('@iris-ui/react IrisEmptyState', () => {
   it('renders title + description', () => {
     const { container } = render(<IrisEmptyState title="No data" description="Try again" />)
     expect(container.querySelector('[data-iris-empty-state-title]')!.textContent).toBe('No data')
-    expect(container.querySelector('[data-iris-empty-state-description]')!.textContent).toBe('Try again')
+    expect(container.querySelector('[data-iris-empty-state-description]')!.textContent).toBe(
+      'Try again',
+    )
   })
 
   it('icon + action render', () => {
@@ -26,7 +28,9 @@ describe('@iris-ui/react IrisEmptyState', () => {
 
   it('children fall back to description', () => {
     const { container } = render(<IrisEmptyState>Custom body</IrisEmptyState>)
-    expect(container.querySelector('[data-iris-empty-state-description]')!.textContent).toBe('Custom body')
+    expect(container.querySelector('[data-iris-empty-state-description]')!.textContent).toBe(
+      'Custom body',
+    )
   })
 
   it('omits title when not given', () => {

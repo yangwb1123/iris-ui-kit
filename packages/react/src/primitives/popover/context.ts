@@ -16,9 +16,7 @@ export const PopoverContext = React.createContext<PopoverContextValue | null>(nu
 export function usePopoverContext(componentName: string): PopoverContextValue {
   const ctx = React.useContext(PopoverContext)
   if (!ctx) {
-    throw new Error(
-      `[iris-ui] ${componentName} must be a descendant of <IrisPopover>`,
-    )
+    throw new Error(`[iris-ui] ${componentName} must be a descendant of <IrisPopover>`)
   }
   return ctx
 }

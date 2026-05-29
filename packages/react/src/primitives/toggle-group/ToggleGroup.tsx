@@ -112,31 +112,25 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): React.ReactElement
 
   // Registry kept in a ref; reads happen at event time.
   const itemsRef = React.useRef<RegisteredItem[]>([])
-  const registerItem = React.useCallback(
-    (value: string, el: { current: HTMLElement | null }) => {
-      if (!itemsRef.current.find((it) => it.value === value)) {
-        itemsRef.current = [...itemsRef.current, { value, el }]
-      }
-      return () => {
-        itemsRef.current = itemsRef.current.filter((it) => it.value !== value)
-      }
-    },
-    [],
-  )
+  const registerItem = React.useCallback((value: string, el: { current: HTMLElement | null }) => {
+    if (!itemsRef.current.find((it) => it.value === value)) {
+      itemsRef.current = [...itemsRef.current, { value, el }]
+    }
+    return () => {
+      itemsRef.current = itemsRef.current.filter((it) => it.value !== value)
+    }
+  }, [])
 
-  const moveFocus = React.useCallback(
-    (from: string, delta: 1 | -1 | 'home' | 'end') => {
-      const items = itemsRef.current
-      if (items.length === 0) return
-      const idx = items.findIndex((it) => it.value === from)
-      let nextIdx: number
-      if (delta === 'home') nextIdx = 0
-      else if (delta === 'end') nextIdx = items.length - 1
-      else nextIdx = (idx + delta + items.length) % items.length
-      items[nextIdx]?.el.current?.focus()
-    },
-    [],
-  )
+  const moveFocus = React.useCallback((from: string, delta: 1 | -1 | 'home' | 'end') => {
+    const items = itemsRef.current
+    if (items.length === 0) return
+    const idx = items.findIndex((it) => it.value === from)
+    let nextIdx: number
+    if (delta === 'home') nextIdx = 0
+    else if (delta === 'end') nextIdx = items.length - 1
+    else nextIdx = (idx + delta + items.length) % items.length
+    items[nextIdx]?.el.current?.focus()
+  }, [])
 
   const ctx = React.useMemo(
     () => ({
@@ -170,8 +164,7 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): React.ReactElement
           borderRadius: 'var(--iris-radius-md, 6px)',
           overflow: 'hidden',
           background: variant === 'outline' ? 'transparent' : 'var(--iris-surface)',
-          border:
-            variant === 'outline' ? '1px solid var(--iris-border)' : '1px solid transparent',
+          border: variant === 'outline' ? '1px solid var(--iris-border)' : '1px solid transparent',
           ...style,
         }}
       >

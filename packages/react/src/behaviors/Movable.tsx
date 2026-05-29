@@ -13,11 +13,10 @@ export interface IrisMovableBounds {
   maxY?: number
 }
 
-export interface IrisMovableProps
-  extends Omit<
-    React.HTMLAttributes<HTMLDivElement>,
-    'onChange' | 'defaultValue' | 'onDragStart' | 'onDragEnd'
-  > {
+export interface IrisMovableProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'onChange' | 'defaultValue' | 'onDragStart' | 'onDragEnd'
+> {
   position?: IrisMovablePosition
   defaultPosition?: IrisMovablePosition
   onPositionChange?: (next: IrisMovablePosition) => void
@@ -76,9 +75,8 @@ export function IrisMovable({
   // If byHandle, locate `[data-iris-movable-handle]` inside the wrapper.
   React.useEffect(() => {
     if (!byHandle) return
-    handleRef.current = rootRef.current?.querySelector<HTMLElement>(
-      '[data-iris-movable-handle]',
-    ) ?? null
+    handleRef.current =
+      rootRef.current?.querySelector<HTMLElement>('[data-iris-movable-handle]') ?? null
   })
 
   const dragTargetRef = byHandle
@@ -104,9 +102,7 @@ export function IrisMovable({
       onDragStart?.(positionRef.current)
     },
     onDrag: ({ dx, dy }) => {
-      setPosition(
-        clamp({ x: startRef.current.x + dx, y: startRef.current.y + dy }),
-      )
+      setPosition(clamp({ x: startRef.current.x + dx, y: startRef.current.y + dy }))
     },
     onEnd: () => {
       setDragging(false)

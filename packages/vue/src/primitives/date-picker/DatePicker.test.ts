@@ -63,9 +63,7 @@ describe('@iris-ui/vue IrisDatePicker', () => {
       props: { modelValue: null, invalid: true },
       attachTo: document.body,
     })
-    expect(
-      wrap.find('[data-iris-date-picker-trigger]').attributes('aria-invalid'),
-    ).toBe('true')
+    expect(wrap.find('[data-iris-date-picker-trigger]').attributes('aria-invalid')).toBe('true')
     wrap.unmount()
   })
 

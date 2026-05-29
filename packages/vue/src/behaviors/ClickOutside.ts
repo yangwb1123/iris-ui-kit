@@ -1,12 +1,4 @@
-import {
-  defineComponent,
-  h,
-  onBeforeUnmount,
-  ref,
-  watchEffect,
-  type PropType,
-  type Ref,
-} from 'vue'
+import { defineComponent, h, onBeforeUnmount, ref, watchEffect, type PropType, type Ref } from 'vue'
 
 /**
  * Behavior wrapper: fires `outside` when a `pointerdown` happens outside the

@@ -46,7 +46,11 @@ export const IrisSpinner = defineComponent({
           role: 'status',
           'aria-live': 'polite',
           'data-iris-spinner-wrap': '',
-          style: { display: 'inline-flex', alignItems: 'center', ...((attrs.style as Record<string, string>) ?? {}) },
+          style: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            ...((attrs.style as Record<string, string>) ?? {}),
+          },
         },
         [
           h(

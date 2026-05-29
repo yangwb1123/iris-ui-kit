@@ -1,15 +1,10 @@
 import * as React from 'react'
-import {
-  clamp01,
-  hexToRgba,
-  hsvaToRgba,
-  rgbToHex,
-  rgbaToHsva,
-  type IrisHsva,
-} from './colorUtils'
+import { clamp01, hexToRgba, hsvaToRgba, rgbToHex, rgbaToHsva, type IrisHsva } from './colorUtils'
 
-export interface IrisColorPickerProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
+export interface IrisColorPickerProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'onChange' | 'defaultValue'
+> {
   /** HEX string (`#rgb` / `#rrggbb` / `#rrggbbaa`). */
   value?: string
   defaultValue?: string
@@ -49,8 +44,8 @@ export function IrisColorPicker({
   ...rest
 }: IrisColorPickerProps): React.ReactElement {
   const initialHex = value ?? defaultValue ?? '#000000'
-  const [hsva, setHsva] = React.useState<IrisHsva>(
-    () => rgbaToHsva(hexToRgba(initialHex) ?? { r: 0, g: 0, b: 0, a: 1 }),
+  const [hsva, setHsva] = React.useState<IrisHsva>(() =>
+    rgbaToHsva(hexToRgba(initialHex) ?? { r: 0, g: 0, b: 0, a: 1 }),
   )
   const [hexDraft, setHexDraft] = React.useState<string | null>(null)
 

@@ -9,11 +9,10 @@ const DIM_MAP: Record<IrisRadioSize, string> = {
   lg: '22px',
 }
 
-export interface IrisRadioProps
-  extends Omit<
-    React.InputHTMLAttributes<HTMLInputElement>,
-    'type' | 'size' | 'value' | 'checked' | 'onChange' | 'defaultChecked'
-  > {
+export interface IrisRadioProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'size' | 'value' | 'checked' | 'onChange' | 'defaultChecked'
+> {
   value: string
   size?: IrisRadioSize
   children?: React.ReactNode

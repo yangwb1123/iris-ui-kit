@@ -157,9 +157,7 @@ export const IrisSlider = defineComponent({
         borderRadius: '9999px',
         cursor: props.disabled ? 'not-allowed' : 'pointer',
         opacity: props.disabled ? '0.6' : '1',
-        ...(horiz
-          ? { width: '100%', height: '6px' }
-          : { width: '6px', height: '120px' }),
+        ...(horiz ? { width: '100%', height: '6px' } : { width: '6px', height: '120px' }),
       }
     })
 
@@ -208,9 +206,7 @@ export const IrisSlider = defineComponent({
           style: {
             display: 'inline-flex',
             alignItems: 'center',
-            ...(isHorizontal.value
-              ? { width: '100%', padding: '8px 0' }
-              : { padding: '0 8px' }),
+            ...(isHorizontal.value ? { width: '100%', padding: '8px 0' } : { padding: '0 8px' }),
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },
         },

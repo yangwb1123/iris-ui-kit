@@ -1,12 +1,4 @@
-import {
-  computed,
-  defineComponent,
-  h,
-  onMounted,
-  onUpdated,
-  ref,
-  type PropType,
-} from 'vue'
+import { computed, defineComponent, h, onMounted, onUpdated, ref, type PropType } from 'vue'
 import { useDrag } from '../primitives/drag/useDrag'
 
 export interface IrisMovablePosition {
@@ -62,26 +54,17 @@ export const IrisMovable = defineComponent({
     // Find handle inside the wrapper when byHandle is set.
     const refreshHandle = () => {
       if (!props.byHandle) return
-      handleRef.value = rootRef.value?.querySelector<HTMLElement>(
-        '[data-iris-movable-handle]',
-      ) ?? null
+      handleRef.value =
+        rootRef.value?.querySelector<HTMLElement>('[data-iris-movable-handle]') ?? null
     }
     onMounted(refreshHandle)
     onUpdated(refreshHandle)
 
-    const dragTarget = computed(() =>
-      props.byHandle ? handleRef : rootRef,
-    )
+    const dragTarget = computed(() => (props.byHandle ? handleRef : rootRef))
 
     const clamp = (p: IrisMovablePosition): IrisMovablePosition => ({
-      x: Math.max(
-        props.bounds.minX ?? -Infinity,
-        Math.min(props.bounds.maxX ?? Infinity, p.x),
-      ),
-      y: Math.max(
-        props.bounds.minY ?? -Infinity,
-        Math.min(props.bounds.maxY ?? Infinity, p.y),
-      ),
+      x: Math.max(props.bounds.minX ?? -Infinity, Math.min(props.bounds.maxX ?? Infinity, p.x)),
+      y: Math.max(props.bounds.minY ?? -Infinity, Math.min(props.bounds.maxY ?? Infinity, p.y)),
     })
 
     const setPosition = (next: IrisMovablePosition) => {

@@ -63,18 +63,20 @@ describe('@iris-ui/react IrisNumberInput', () => {
 
   it('starts from min when value is null and user clicks +', () => {
     const onChange = vi.fn()
-    const { container } = render(
-      <IrisNumberInput value={null} min={3} onChange={onChange} />,
-    )
+    const { container } = render(<IrisNumberInput value={null} min={3} onChange={onChange} />)
     fireEvent.click(container.querySelector('[data-iris-number-input-inc]')!)
     expect(onChange).toHaveBeenLastCalledWith(4)
   })
 
   it('+/- buttons disabled at min/max', () => {
     const { container, rerender } = render(<IrisNumberInput value={0} min={0} />)
-    expect(container.querySelector('[data-iris-number-input-dec]')!.hasAttribute('disabled')).toBe(true)
+    expect(container.querySelector('[data-iris-number-input-dec]')!.hasAttribute('disabled')).toBe(
+      true,
+    )
     rerender(<IrisNumberInput value={100} max={100} />)
-    expect(container.querySelector('[data-iris-number-input-inc]')!.hasAttribute('disabled')).toBe(true)
+    expect(container.querySelector('[data-iris-number-input-inc]')!.hasAttribute('disabled')).toBe(
+      true,
+    )
   })
 
   it('role="spinbutton" + aria-valuemin/max/now', () => {

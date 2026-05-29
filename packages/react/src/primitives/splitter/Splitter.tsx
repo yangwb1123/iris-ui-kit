@@ -3,8 +3,7 @@ import { useDrag } from '../drag/useDrag'
 
 export type IrisSplitterOrientation = 'horizontal' | 'vertical'
 
-export interface IrisSplitterProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
+export interface IrisSplitterProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
   orientation?: IrisSplitterOrientation
   /** Split ratio in [0, 1]. */
   value?: number
@@ -120,11 +119,7 @@ export function IrisSplitter({
         style={{
           flex: '0 0 4px',
           background: dragging ? 'var(--iris-primary)' : 'var(--iris-border)',
-          cursor: disabled
-            ? 'not-allowed'
-            : isHorizontal
-              ? 'col-resize'
-              : 'row-resize',
+          cursor: disabled ? 'not-allowed' : isHorizontal ? 'col-resize' : 'row-resize',
           transition: 'background-color 120ms ease',
           position: 'relative',
           touchAction: 'none',

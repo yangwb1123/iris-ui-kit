@@ -18,7 +18,10 @@ export interface IrisListProps<T = unknown> {
   loop?: boolean
   ariaLabel?: string
   /** Custom render per item. */
-  renderItem?: (item: IrisListItem<T>, state: { selected: boolean; active: boolean; index: number }) => React.ReactNode
+  renderItem?: (
+    item: IrisListItem<T>,
+    state: { selected: boolean; active: boolean; index: number },
+  ) => React.ReactNode
   style?: React.CSSProperties
   className?: string
 }
@@ -46,8 +49,7 @@ export function IrisList<T = unknown>({
   className,
 }: IrisListProps<T>): React.ReactElement {
   const isControlled = valueProp !== undefined
-  const initial: T | T[] | null =
-    defaultValue !== undefined ? defaultValue : multi ? [] : null
+  const initial: T | T[] | null = defaultValue !== undefined ? defaultValue : multi ? [] : null
   const [internal, setInternal] = React.useState<T | T[] | null>(initial)
   const value = isControlled ? (valueProp as T | T[] | null) : internal
 
@@ -178,9 +180,7 @@ export function IrisList<T = unknown>({
             : active
               ? 'var(--iris-surface-hover)'
               : 'transparent',
-          color: selected
-            ? 'var(--iris-primary-foreground, #fff)'
-            : 'var(--iris-foreground)',
+          color: selected ? 'var(--iris-primary-foreground, #fff)' : 'var(--iris-foreground)',
           outline: 'none',
         }
         return (

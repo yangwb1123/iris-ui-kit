@@ -108,9 +108,7 @@ export const IrisToggleGroupItem = defineComponent({
                 ? 'var(--iris-primary)'
                 : 'var(--iris-primary)'
               : 'transparent',
-            color: active
-              ? 'var(--iris-primary-foreground, #fff)'
-              : 'var(--iris-foreground)',
+            color: active ? 'var(--iris-primary-foreground, #fff)' : 'var(--iris-foreground)',
             border: 'none',
             cursor: isDisabled.value ? 'not-allowed' : 'pointer',
             opacity: isDisabled.value ? '0.5' : '1',

@@ -8,8 +8,10 @@ const SIZE_MAP: Record<IrisTextareaSize, { padding: string; fontSize: string }> 
   lg: { padding: '10px 12px', fontSize: '16px' },
 }
 
-export interface IrisTextareaProps
-  extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'size'> {
+export interface IrisTextareaProps extends Omit<
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  'size'
+> {
   size?: IrisTextareaSize
   invalid?: boolean
   ariaDescribedby?: string
@@ -40,11 +42,7 @@ export const IrisTextarea = React.forwardRef<HTMLTextAreaElement, IrisTextareaPr
     const innerRef = React.useRef<HTMLTextAreaElement | null>(null)
 
     // Combine forwarded ref + internal ref.
-    React.useImperativeHandle(
-      ref,
-      () => innerRef.current as HTMLTextAreaElement,
-      [],
-    )
+    React.useImperativeHandle(ref, () => innerRef.current as HTMLTextAreaElement, [])
 
     const resize = React.useCallback(() => {
       const el = innerRef.current

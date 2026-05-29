@@ -26,7 +26,9 @@ describe('@iris-ui/react IrisProgress', () => {
     const { container, rerender } = render(<IrisProgress value={-5} />)
     expect(container.querySelector('[data-iris-progress]')!.getAttribute('aria-valuenow')).toBe('0')
     rerender(<IrisProgress value={200} max={100} />)
-    expect(container.querySelector('[data-iris-progress]')!.getAttribute('aria-valuenow')).toBe('100')
+    expect(container.querySelector('[data-iris-progress]')!.getAttribute('aria-valuenow')).toBe(
+      '100',
+    )
   })
 
   it('bar width reflects percent', () => {
@@ -44,7 +46,9 @@ describe('@iris-ui/react IrisProgress', () => {
 
   it('indeterminate=true forces indeterminate', () => {
     const { container } = render(<IrisProgress value={50} indeterminate />)
-    expect(container.querySelector('[data-iris-progress]')!.getAttribute('data-state')).toBe('indeterminate')
+    expect(container.querySelector('[data-iris-progress]')!.getAttribute('data-state')).toBe(
+      'indeterminate',
+    )
   })
 
   it('tone success uses --iris-success', () => {
@@ -55,9 +59,13 @@ describe('@iris-ui/react IrisProgress', () => {
 
   it('size sm/md flips height', () => {
     const { container, rerender } = render(<IrisProgress value={0} size="sm" />)
-    expect(container.querySelector('[data-iris-progress]')!.getAttribute('style')).toContain('height: 4px')
+    expect(container.querySelector('[data-iris-progress]')!.getAttribute('style')).toContain(
+      'height: 4px',
+    )
     rerender(<IrisProgress value={0} size="md" />)
-    expect(container.querySelector('[data-iris-progress]')!.getAttribute('style')).toContain('height: 8px')
+    expect(container.querySelector('[data-iris-progress]')!.getAttribute('style')).toContain(
+      'height: 8px',
+    )
   })
 
   it('installs the stylesheet once', () => {

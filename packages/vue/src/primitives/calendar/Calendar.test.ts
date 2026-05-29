@@ -47,9 +47,7 @@ describe('@iris-ui/vue dateUtils', () => {
   })
 
   it('isSameDay handles different times same day', () => {
-    expect(
-      isSameDay(new Date(2024, 0, 1, 8), new Date(2024, 0, 1, 20)),
-    ).toBe(true)
+    expect(isSameDay(new Date(2024, 0, 1, 8), new Date(2024, 0, 1, 20))).toBe(true)
   })
 
   it('addDays handles month/year rollover', () => {
@@ -187,9 +185,9 @@ describe('@iris-ui/vue IrisCalendar', () => {
         min: new Date(2024, 5, 5),
       },
     })
-    expect(
-      (wrap.find('[data-iris-calendar-prev]').element as HTMLButtonElement).disabled,
-    ).toBe(true)
+    expect((wrap.find('[data-iris-calendar-prev]').element as HTMLButtonElement).disabled).toBe(
+      true,
+    )
   })
 
   it('disabled prop disables all day cells', () => {

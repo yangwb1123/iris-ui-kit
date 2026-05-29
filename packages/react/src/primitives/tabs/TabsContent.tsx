@@ -1,8 +1,10 @@
 import * as React from 'react'
 import { useTabsContext } from './context'
 
-export interface IrisTabsContentProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface IrisTabsContentProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'children'
+> {
   value: string
   /** Render even when inactive; hidden via the `hidden` attribute. */
   forceMount?: boolean

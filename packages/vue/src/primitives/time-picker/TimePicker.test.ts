@@ -126,9 +126,9 @@ describe('@iris-ui/vue IrisTimePicker', () => {
     const wrap = mount(IrisTimePicker, {
       props: { modelValue: { hours: 0, minutes: 0 }, disabled: true },
     })
-    expect(
-      (wrap.find('[data-iris-time-picker-hours]').element as HTMLInputElement).disabled,
-    ).toBe(true)
+    expect((wrap.find('[data-iris-time-picker-hours]').element as HTMLInputElement).disabled).toBe(
+      true,
+    )
     expect(
       (wrap.find('[data-iris-time-picker-minutes]').element as HTMLInputElement).disabled,
     ).toBe(true)
@@ -138,9 +138,7 @@ describe('@iris-ui/vue IrisTimePicker', () => {
     const wrap = mount(IrisTimePicker, {
       props: { modelValue: { hours: 0, minutes: 0 }, invalid: true },
     })
-    expect(
-      wrap.find('[data-iris-time-picker-hours]').attributes('aria-invalid'),
-    ).toBe('true')
+    expect(wrap.find('[data-iris-time-picker-hours]').attributes('aria-invalid')).toBe('true')
   })
 
   it('id + ariaDescribedby forward to hours input (FormField wiring)', () => {

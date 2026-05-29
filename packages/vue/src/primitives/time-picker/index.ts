@@ -1,5 +1,1 @@
-export {
-  IrisTimePicker,
-  type IrisTimePickerFormat,
-  type IrisTimeValue,
-} from './TimePicker'
+export { IrisTimePicker, type IrisTimePickerFormat, type IrisTimeValue } from './TimePicker'

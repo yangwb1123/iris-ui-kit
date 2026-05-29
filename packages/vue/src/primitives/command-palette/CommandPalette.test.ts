@@ -55,13 +55,19 @@ describe('@iris-ui/vue defaultFilter', () => {
 
 describe('@iris-ui/vue IrisCommandPalette', () => {
   it('renders nothing when closed', () => {
-    const wrap = mount(IrisCommandPalette, { props: { open: false, items }, attachTo: document.body })
+    const wrap = mount(IrisCommandPalette, {
+      props: { open: false, items },
+      attachTo: document.body,
+    })
     expect(document.querySelector('[data-iris-command-palette]')).toBeNull()
     wrap.unmount()
   })
 
   it('renders surface + input + list when open', async () => {
-    const wrap = mount(IrisCommandPalette, { props: { open: true, items }, attachTo: document.body })
+    const wrap = mount(IrisCommandPalette, {
+      props: { open: true, items },
+      attachTo: document.body,
+    })
     await nextTick()
     expect(document.querySelector('[data-iris-command-palette]')).not.toBeNull()
     expect(document.querySelector('[data-iris-command-palette-input]')).not.toBeNull()
@@ -70,7 +76,10 @@ describe('@iris-ui/vue IrisCommandPalette', () => {
   })
 
   it('lists all items by default; groups have headers', async () => {
-    const wrap = mount(IrisCommandPalette, { props: { open: true, items }, attachTo: document.body })
+    const wrap = mount(IrisCommandPalette, {
+      props: { open: true, items },
+      attachTo: document.body,
+    })
     await nextTick()
     expect(document.querySelectorAll('[data-iris-command-palette-item]').length).toBe(4)
     expect(document.querySelectorAll('[data-iris-command-palette-group]').length).toBe(2)
@@ -78,7 +87,10 @@ describe('@iris-ui/vue IrisCommandPalette', () => {
   })
 
   it('typing filters the list', async () => {
-    const wrap = mount(IrisCommandPalette, { props: { open: true, items }, attachTo: document.body })
+    const wrap = mount(IrisCommandPalette, {
+      props: { open: true, items },
+      attachTo: document.body,
+    })
     await nextTick()
     const input = document.querySelector('[data-iris-command-palette-input]') as HTMLInputElement
     input.value = 'save'
@@ -124,7 +136,10 @@ describe('@iris-ui/vue IrisCommandPalette', () => {
   })
 
   it('ArrowDown navigates active item', async () => {
-    const wrap = mount(IrisCommandPalette, { props: { open: true, items }, attachTo: document.body })
+    const wrap = mount(IrisCommandPalette, {
+      props: { open: true, items },
+      attachTo: document.body,
+    })
     await nextTick()
     const surface = document.querySelector('[data-iris-command-palette]') as HTMLElement
     surface.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
@@ -135,7 +150,10 @@ describe('@iris-ui/vue IrisCommandPalette', () => {
   })
 
   it('Escape closes the palette', async () => {
-    const wrap = mount(IrisCommandPalette, { props: { open: true, items }, attachTo: document.body })
+    const wrap = mount(IrisCommandPalette, {
+      props: { open: true, items },
+      attachTo: document.body,
+    })
     await nextTick()
     const surface = document.querySelector('[data-iris-command-palette]') as HTMLElement
     surface.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
@@ -145,7 +163,10 @@ describe('@iris-ui/vue IrisCommandPalette', () => {
   })
 
   it('Disabled item is aria-disabled', async () => {
-    const wrap = mount(IrisCommandPalette, { props: { open: true, items }, attachTo: document.body })
+    const wrap = mount(IrisCommandPalette, {
+      props: { open: true, items },
+      attachTo: document.body,
+    })
     await nextTick()
     const disabled = document.querySelector('[data-iris-command-palette-item=pref]') as HTMLElement
     expect(disabled?.getAttribute('aria-disabled')).toBe('true')
@@ -153,7 +174,10 @@ describe('@iris-ui/vue IrisCommandPalette', () => {
   })
 
   it('Clicking the backdrop closes', async () => {
-    const wrap = mount(IrisCommandPalette, { props: { open: true, items }, attachTo: document.body })
+    const wrap = mount(IrisCommandPalette, {
+      props: { open: true, items },
+      attachTo: document.body,
+    })
     await nextTick()
     const backdrop = document.querySelector('[data-iris-command-palette-backdrop]') as HTMLElement
     // jsdom doesn't expose PointerEvent; use a generic Event with the same name.
@@ -167,14 +191,20 @@ describe('@iris-ui/vue IrisCommandPalette', () => {
   })
 
   it('Body scroll lock engages while open', async () => {
-    const wrap = mount(IrisCommandPalette, { props: { open: true, items }, attachTo: document.body })
+    const wrap = mount(IrisCommandPalette, {
+      props: { open: true, items },
+      attachTo: document.body,
+    })
     await nextTick()
     expect(document.body.style.overflow).toBe('hidden')
     wrap.unmount()
   })
 
   it('Reopening resets query', async () => {
-    const wrap = mount(IrisCommandPalette, { props: { open: true, items }, attachTo: document.body })
+    const wrap = mount(IrisCommandPalette, {
+      props: { open: true, items },
+      attachTo: document.body,
+    })
     await nextTick()
     const input = document.querySelector('[data-iris-command-palette-input]') as HTMLInputElement
     input.value = 'save'
@@ -184,13 +214,18 @@ describe('@iris-ui/vue IrisCommandPalette', () => {
     await nextTick()
     await wrap.setProps({ open: true })
     await nextTick()
-    const inputAgain = document.querySelector('[data-iris-command-palette-input]') as HTMLInputElement
+    const inputAgain = document.querySelector(
+      '[data-iris-command-palette-input]',
+    ) as HTMLInputElement
     expect(inputAgain.value).toBe('')
     wrap.unmount()
   })
 
   it('Shortcut hint renders when provided', async () => {
-    const wrap = mount(IrisCommandPalette, { props: { open: true, items }, attachTo: document.body })
+    const wrap = mount(IrisCommandPalette, {
+      props: { open: true, items },
+      attachTo: document.body,
+    })
     await nextTick()
     const shortcuts = document.querySelectorAll('[data-iris-command-palette-shortcut]')
     expect(shortcuts.length).toBe(2)

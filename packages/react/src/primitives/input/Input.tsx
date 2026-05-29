@@ -9,8 +9,10 @@ const SIZE_MAP: Record<IrisInputSize, { padding: string; fontSize: string; minHe
   lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
 }
 
-export interface IrisInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'type' | 'prefix'> {
+export interface IrisInputProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'size' | 'type' | 'prefix'
+> {
   size?: IrisInputSize
   type?: IrisInputType
   invalid?: boolean

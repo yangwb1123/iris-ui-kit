@@ -1,11 +1,4 @@
-import {
-  computed,
-  defineComponent,
-  h,
-  ref,
-  type PropType,
-  type VNode,
-} from 'vue'
+import { computed, defineComponent, h, ref, type PropType, type VNode } from 'vue'
 import { useDrag } from '../primitives/drag/useDrag'
 
 export type IrisResizableHandle =

@@ -23,9 +23,9 @@ const controlledOpen = ref(false)
           <IrisButton variant="outline" size="sm">{{ p }}</IrisButton>
         </IrisPopoverTrigger>
         <IrisPopoverContent>
-          <div style="display:flex;flex-direction:column;gap:8px;min-width:160px">
+          <div style="display: flex; flex-direction: column; gap: 8px; min-width: 160px">
             <strong>{{ p }}</strong>
-            <span style="font-size:12px;color:var(--iris-muted)">
+            <span style="font-size: 12px; color: var(--iris-muted)">
               Click outside or press Esc to dismiss.
             </span>
           </div>
@@ -43,9 +43,9 @@ const controlledOpen = ref(false)
           <IrisButton variant="solid" size="sm">anchor</IrisButton>
         </IrisPopoverTrigger>
         <IrisPopoverContent>
-          <div style="display:flex;flex-direction:column;gap:8px;min-width:200px">
+          <div style="display: flex; flex-direction: column; gap: 8px; min-width: 200px">
             <strong>Controlled mode</strong>
-            <span style="font-size:12px;color:var(--iris-muted)">
+            <span style="font-size: 12px; color: var(--iris-muted)">
               Open state is owned by the parent. Toggle via either button.
             </span>
             <IrisButton variant="ghost" size="sm" @click="controlledOpen = false">

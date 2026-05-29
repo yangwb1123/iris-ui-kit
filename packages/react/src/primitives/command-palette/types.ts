@@ -24,9 +24,7 @@ export interface IrisCommandItem {
 export function defaultFilter(query: string, item: IrisCommandItem): number | null {
   const q = query.trim().toLowerCase()
   if (!q) return 0
-  const haystacks: string[] = [item.label, ...(item.keywords ?? [])].map((s) =>
-    s.toLowerCase(),
-  )
+  const haystacks: string[] = [item.label, ...(item.keywords ?? [])].map((s) => s.toLowerCase())
   let best: number | null = null
   for (const h of haystacks) {
     let qi = 0

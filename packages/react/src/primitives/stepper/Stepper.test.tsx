@@ -106,9 +106,7 @@ describe('@iris-ui/react IrisStepper', () => {
     render(harness({ orientation: 'vertical' }))
     await Promise.resolve()
     expect(
-      document
-        .querySelector('[data-iris-stepper]')
-        ?.getAttribute('data-iris-stepper-orientation'),
+      document.querySelector('[data-iris-stepper]')?.getAttribute('data-iris-stepper-orientation'),
     ).toBe('vertical')
   })
 
@@ -145,9 +143,7 @@ describe('@iris-ui/react IrisStepper', () => {
 
   it('Step outside provider throws', () => {
     const e = vi.spyOn(console, 'error').mockImplementation(() => {})
-    expect(() => render(<IrisStepperStep title="x" />)).toThrow(
-      /must be inside an <IrisStepper>/,
-    )
+    expect(() => render(<IrisStepperStep title="x" />)).toThrow(/must be inside an <IrisStepper>/)
     e.mockRestore()
   })
 })

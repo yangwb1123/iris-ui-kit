@@ -40,9 +40,7 @@ export const IrisBanner = defineComponent({
       },
     )
 
-    const isOpen = computed(() =>
-      props.open !== undefined ? props.open : internalOpen.value,
-    )
+    const isOpen = computed(() => (props.open !== undefined ? props.open : internalOpen.value))
 
     const onClose = () => {
       if (props.open === undefined) internalOpen.value = false
@@ -61,9 +59,7 @@ export const IrisBanner = defineComponent({
       background: `color-mix(in srgb, ${tonalVar.value} 14%, var(--iris-background))`,
       color: 'var(--iris-foreground)',
       borderBottom: `1px solid color-mix(in srgb, ${tonalVar.value} 50%, transparent)`,
-      ...(props.sticky
-        ? { position: 'sticky' as const, top: '0', zIndex: '40' }
-        : {}),
+      ...(props.sticky ? { position: 'sticky' as const, top: '0', zIndex: '40' } : {}),
     }))
 
     return () => {

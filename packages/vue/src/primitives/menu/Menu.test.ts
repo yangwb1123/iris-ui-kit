@@ -44,14 +44,10 @@ const NestedHarness = defineComponent({
               h(IrisMenuTrigger, null, () => 'File'),
               h(IrisMenuContent, { teleport: false }, () => [
                 h(IrisMenuItem, { onSelect: () => log.push('new') }, () => 'New'),
-                h(
-                  IrisMenuSub,
-                  { label: 'Open Recent', teleport: false },
-                  () => [
-                    h(IrisMenuItem, { onSelect: () => log.push('a.txt') }, () => 'a.txt'),
-                    h(IrisMenuItem, { onSelect: () => log.push('b.txt') }, () => 'b.txt'),
-                  ],
-                ),
+                h(IrisMenuSub, { label: 'Open Recent', teleport: false }, () => [
+                  h(IrisMenuItem, { onSelect: () => log.push('a.txt') }, () => 'a.txt'),
+                  h(IrisMenuItem, { onSelect: () => log.push('b.txt') }, () => 'b.txt'),
+                ]),
               ]),
             ],
           },
@@ -103,9 +99,9 @@ describe('IrisMenu (flat)', () => {
   it('disabled item is skipped from arrow navigation (aria-disabled set)', async () => {
     const wrapper = mount(FlatHarness, { attachTo: host })
     await nextTick()
-    const disabled = wrapper.findAll('[role="menuitem"]').find(
-      (i) => i.attributes('aria-disabled') === 'true',
-    )
+    const disabled = wrapper
+      .findAll('[role="menuitem"]')
+      .find((i) => i.attributes('aria-disabled') === 'true')
     expect(disabled).toBeDefined()
   })
 })

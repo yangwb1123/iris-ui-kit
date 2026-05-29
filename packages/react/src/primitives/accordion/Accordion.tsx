@@ -3,8 +3,10 @@ import { AccordionContext } from './context'
 
 export type IrisAccordionValue = string | string[] | null
 
-export interface IrisAccordionProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
+export interface IrisAccordionProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'onChange' | 'defaultValue'
+> {
   value?: IrisAccordionValue
   defaultValue?: IrisAccordionValue
   onValueChange?: (next: IrisAccordionValue) => void

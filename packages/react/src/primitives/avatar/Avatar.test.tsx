@@ -16,7 +16,9 @@ describe('@iris-ui/react IrisAvatar', () => {
   it('renders initials from name when no src', () => {
     const { container } = render(<IrisAvatar name="Yan Buw" />)
     expect(container.textContent).toBe('YB')
-    expect(container.querySelector('[data-iris-avatar-state]')!.getAttribute('data-iris-avatar-state')).toBe('fallback')
+    expect(
+      container.querySelector('[data-iris-avatar-state]')!.getAttribute('data-iris-avatar-state'),
+    ).toBe('fallback')
   })
 
   it('explicit fallback wins over initials', () => {
@@ -40,14 +42,20 @@ describe('@iris-ui/react IrisAvatar', () => {
 
   it('size sm/md/lg maps to 24/32/48', () => {
     const { container, rerender } = render(<IrisAvatar size="sm" />)
-    expect(container.querySelector('[data-iris-avatar]')!.getAttribute('style')!).toContain('width: 24px')
+    expect(container.querySelector('[data-iris-avatar]')!.getAttribute('style')!).toContain(
+      'width: 24px',
+    )
     rerender(<IrisAvatar size="lg" />)
-    expect(container.querySelector('[data-iris-avatar]')!.getAttribute('style')!).toContain('width: 48px')
+    expect(container.querySelector('[data-iris-avatar]')!.getAttribute('style')!).toContain(
+      'width: 48px',
+    )
   })
 
   it('numeric size applied', () => {
     const { container } = render(<IrisAvatar size={64} />)
-    expect(container.querySelector('[data-iris-avatar]')!.getAttribute('style')!).toContain('width: 64px')
+    expect(container.querySelector('[data-iris-avatar]')!.getAttribute('style')!).toContain(
+      'width: 64px',
+    )
   })
 
   it('shape="square" disables circle border-radius', () => {

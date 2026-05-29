@@ -10,11 +10,9 @@ import type { Machine, MachineEvent, MachineState } from '@iris-ui/core'
  *
  * No primitive consumes this yet (Phase 0 ships the bridge for Phase 1).
  */
-export function useMachine<
-  TState extends string,
-  TContext,
-  TEvent extends MachineEvent,
->(machine: Machine<TState, TContext, TEvent>): {
+export function useMachine<TState extends string, TContext, TEvent extends MachineEvent>(
+  machine: Machine<TState, TContext, TEvent>,
+): {
   state: Ref<MachineState<TState, TContext>>
   send: (event: TEvent) => void
 } {

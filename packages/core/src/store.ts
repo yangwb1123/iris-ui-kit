@@ -18,8 +18,7 @@ export function createStore<T>(initial: T): Store<T> {
       return state
     },
     setState(updater) {
-      const next =
-        typeof updater === 'function' ? (updater as (prev: T) => T)(state) : updater
+      const next = typeof updater === 'function' ? (updater as (prev: T) => T)(state) : updater
       if (Object.is(next, state)) return
       state = next
       listeners.forEach((l) => l(state))

@@ -42,9 +42,7 @@ export function IrisDrawer({
 }: IrisDrawerProps): React.ReactElement {
   const isControlled = openProp !== undefined
 
-  const [state, send] = useMachine(() =>
-    createFloatingMachine(defaultOpen ? 'open' : 'closed'),
-  )
+  const [state, send] = useMachine(() => createFloatingMachine(defaultOpen ? 'open' : 'closed'))
   const internalOpen = state.value === 'open'
 
   React.useEffect(() => {

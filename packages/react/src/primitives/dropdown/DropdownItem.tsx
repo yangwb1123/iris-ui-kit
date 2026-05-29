@@ -2,7 +2,10 @@ import * as React from 'react'
 import { composeEventHandlers } from '@iris-ui/core'
 import { useDropdownContext } from './context'
 
-export interface IrisDropdownItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
+export interface IrisDropdownItemProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'onSelect'
+> {
   disabled?: boolean
   /** When true, selecting does NOT close the dropdown. */
   keepOpen?: boolean

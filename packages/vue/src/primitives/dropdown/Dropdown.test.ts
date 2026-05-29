@@ -123,11 +123,7 @@ describe('IrisDropdown', () => {
               default: () => [
                 h(IrisDropdownTrigger, null, () => 'T'),
                 h(IrisDropdownMenu, { teleport: false }, () => [
-                  h(
-                    IrisDropdownItem,
-                    { keepOpen: true, onSelect: () => count++ },
-                    () => 'Persist',
-                  ),
+                  h(IrisDropdownItem, { keepOpen: true, onSelect: () => count++ }, () => 'Persist'),
                 ]),
               ],
             },

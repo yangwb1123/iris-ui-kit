@@ -1,7 +1,6 @@
 import * as React from 'react'
 
-export interface IrisFormFieldProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface IrisFormFieldProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
   label?: string
   hint?: string
   error?: string

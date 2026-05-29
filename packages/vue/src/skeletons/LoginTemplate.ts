@@ -89,39 +89,33 @@ export const IrisLoginTemplate = defineComponent({
               h(IrisStack, { spacing: 'lg' }, () => [
                 slots.header
                   ? slots.header()
-                  : h(
-                      'div',
-                      { style: { textAlign: 'center' } },
-                      [
-                        h(
-                          'h1',
-                          {
-                            style: {
-                              margin: '0 0 4px 0',
-                              fontSize: '22px',
-                              fontWeight: '700',
-                            },
+                  : h('div', { style: { textAlign: 'center' } }, [
+                      h(
+                        'h1',
+                        {
+                          style: {
+                            margin: '0 0 4px 0',
+                            fontSize: '22px',
+                            fontWeight: '700',
                           },
-                          props.title,
-                        ),
-                        props.description
-                          ? h(
-                              'p',
-                              {
-                                style: {
-                                  margin: '0',
-                                  color: 'var(--iris-muted)',
-                                  fontSize: '14px',
-                                },
+                        },
+                        props.title,
+                      ),
+                      props.description
+                        ? h(
+                            'p',
+                            {
+                              style: {
+                                margin: '0',
+                                color: 'var(--iris-muted)',
+                                fontSize: '14px',
                               },
-                              props.description,
-                            )
-                          : null,
-                      ],
-                    ),
-                props.error
-                  ? h(IrisAlert, { tone: 'danger', title: props.error })
-                  : null,
+                            },
+                            props.description,
+                          )
+                        : null,
+                    ]),
+                props.error ? h(IrisAlert, { tone: 'danger', title: props.error }) : null,
                 h(IrisFormField, { label: 'Email', required: true }, () =>
                   h(IrisInput, {
                     type: 'email',
@@ -152,13 +146,17 @@ export const IrisLoginTemplate = defineComponent({
                         },
                       },
                       [
-                        h(IrisCheckbox, {
-                          modelValue: remember.value,
-                          'onUpdate:modelValue': (v: boolean | 'indeterminate') => {
-                            remember.value = v === true
-                          },
-                          disabled: props.loading,
-                        } as Record<string, unknown>, () => 'Remember me'),
+                        h(
+                          IrisCheckbox,
+                          {
+                            modelValue: remember.value,
+                            'onUpdate:modelValue': (v: boolean | 'indeterminate') => {
+                              remember.value = v === true
+                            },
+                            disabled: props.loading,
+                          } as Record<string, unknown>,
+                          () => 'Remember me',
+                        ),
                         slots.forgot ? slots.forgot() : null,
                       ],
                     )
@@ -174,10 +172,7 @@ export const IrisLoginTemplate = defineComponent({
                   () => props.submitLabel,
                 ),
                 slots.footer
-                  ? h('div', null, [
-                      h(IrisDivider, { spacing: 'md', label: 'or' }),
-                      slots.footer(),
-                    ])
+                  ? h('div', null, [h(IrisDivider, { spacing: 'md', label: 'or' }), slots.footer()])
                   : null,
               ]),
             ],

@@ -10,8 +10,7 @@ const TONE_TO_VAR: Record<IrisBannerTone, string> = {
   neutral: '--iris-muted',
 }
 
-export interface IrisBannerProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface IrisBannerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
   tone?: IrisBannerTone
   closable?: boolean
   open?: boolean
@@ -90,10 +89,7 @@ export function IrisBanner({
         {children}
       </div>
       {actions ? (
-        <div
-          data-iris-banner-actions=""
-          style={{ display: 'inline-flex', gap: 8, flexShrink: 0 }}
-        >
+        <div data-iris-banner-actions="" style={{ display: 'inline-flex', gap: 8, flexShrink: 0 }}>
           {actions}
         </div>
       ) : null}

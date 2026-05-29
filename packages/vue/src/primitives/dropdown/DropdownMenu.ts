@@ -1,13 +1,4 @@
-import {
-  Teleport,
-  defineComponent,
-  h,
-  inject,
-  nextTick,
-  ref,
-  watch,
-  type PropType,
-} from 'vue'
+import { Teleport, defineComponent, h, inject, nextTick, ref, watch, type PropType } from 'vue'
 import { useFloating } from '../floating/useFloating'
 import { useDismiss } from '../floating/useDismiss'
 import { DropdownContextKey } from './context'
@@ -66,7 +57,9 @@ export const IrisDropdownMenu = defineComponent({
     const onKeyDown = (event: KeyboardEvent) => {
       if (!ctx.open.value) return
       const items = Array.from(
-        innerRef.value?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])') ?? [],
+        innerRef.value?.querySelectorAll<HTMLElement>(
+          '[role="menuitem"]:not([aria-disabled="true"])',
+        ) ?? [],
       )
       if (items.length === 0) return
       const current = document.activeElement as HTMLElement | null
@@ -121,8 +114,7 @@ export const IrisDropdownMenu = defineComponent({
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-md)',
             padding: 'var(--iris-padding-sm)',
-            boxShadow:
-              '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
             minWidth: '160px',
             outline: 'none',
             zIndex: '1000',

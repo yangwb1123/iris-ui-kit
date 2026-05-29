@@ -44,7 +44,12 @@ const sections: SectionEntry[] = [
   { id: 'button', label: 'Buttons', group: 'Primitives', component: ButtonShowcase },
   { id: 'display', label: 'Display', group: 'Primitives', component: DisplayShowcase },
   { id: 'form', label: 'Form (basic)', group: 'Primitives', component: FormShowcase },
-  { id: 'adv-form', label: 'Form (advanced)', group: 'Primitives', component: AdvancedFormShowcase },
+  {
+    id: 'adv-form',
+    label: 'Form (advanced)',
+    group: 'Primitives',
+    component: AdvancedFormShowcase,
+  },
   { id: 'dates', label: 'Dates & Time', group: 'Primitives', component: DatesShowcase },
   { id: 'composite', label: 'Composite', group: 'Components', component: CompositeShowcase },
   { id: 'overlay', label: 'Overlays', group: 'Components', component: OverlayShowcase },
@@ -164,9 +169,7 @@ const Shell = defineComponent({
                 { class: 'nav', 'aria-label': 'Sections' },
                 groupedSections.value.map((g) =>
                   h('div', { class: 'nav-group', key: g.group }, [
-                    state.collapsed
-                      ? null
-                      : h('div', { class: 'nav-group-label' }, g.group),
+                    state.collapsed ? null : h('div', { class: 'nav-group-label' }, g.group),
                     ...g.items.map((s) =>
                       h(
                         'button',
@@ -301,7 +304,9 @@ const Shell = defineComponent({
   border-radius: 6px;
   font-family: inherit;
   outline: none;
-  transition: background-color 100ms ease, color 100ms ease;
+  transition:
+    background-color 100ms ease,
+    color 100ms ease;
   white-space: nowrap;
   overflow: hidden;
 }

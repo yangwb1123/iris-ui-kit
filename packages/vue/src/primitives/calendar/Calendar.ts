@@ -117,20 +117,12 @@ export const IrisCalendar = defineComponent({
         case 'PageUp':
           event.preventDefault()
           visibleMonth.value = addMonths(visibleMonth.value, -1)
-          focusDate.value = clampDate(
-            addMonths(focusDate.value, -1),
-            props.min,
-            props.max,
-          )
+          focusDate.value = clampDate(addMonths(focusDate.value, -1), props.min, props.max)
           break
         case 'PageDown':
           event.preventDefault()
           visibleMonth.value = addMonths(visibleMonth.value, 1)
-          focusDate.value = clampDate(
-            addMonths(focusDate.value, 1),
-            props.min,
-            props.max,
-          )
+          focusDate.value = clampDate(addMonths(focusDate.value, 1), props.min, props.max)
           break
         case 'Enter':
         case ' ':
@@ -286,9 +278,7 @@ export const IrisCalendar = defineComponent({
             matrix.value.flatMap((row) =>
               row.map((date) => {
                 const inMonth = isSameMonth(date, visibleMonth.value)
-                const selected = props.modelValue
-                  ? isSameDay(date, props.modelValue)
-                  : false
+                const selected = props.modelValue ? isSameDay(date, props.modelValue) : false
                 const focused = isSameDay(date, focusDate.value)
                 const isToday = isSameDay(date, today)
                 const oof = isOutOfRange(date, props.min, props.max)

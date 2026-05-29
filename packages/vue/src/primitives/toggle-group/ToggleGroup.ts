@@ -108,7 +108,9 @@ export const IrisToggleGroup = defineComponent({
             overflow: 'hidden',
             background: props.variant === 'outline' ? 'transparent' : 'var(--iris-surface)',
             border:
-              props.variant === 'outline' ? '1px solid var(--iris-border)' : '1px solid transparent',
+              props.variant === 'outline'
+                ? '1px solid var(--iris-border)'
+                : '1px solid transparent',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },
         },

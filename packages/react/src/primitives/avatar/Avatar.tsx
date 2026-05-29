@@ -91,7 +91,7 @@ export function IrisAvatar({
           onError={() => setFailed(true)}
         />
       ) : (
-        fallbackContent ?? initials
+        (fallbackContent ?? initials)
       )}
     </span>
   )

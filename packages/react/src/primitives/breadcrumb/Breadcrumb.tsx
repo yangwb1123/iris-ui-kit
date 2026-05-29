@@ -19,7 +19,12 @@ export const IrisBreadcrumb = React.forwardRef<HTMLElement, IrisBreadcrumbProps>
     const total = flat.length
 
     return (
-      <nav {...rest} ref={ref as React.Ref<HTMLElement>} aria-label="Breadcrumb" data-iris-breadcrumb="">
+      <nav
+        {...rest}
+        ref={ref as React.Ref<HTMLElement>}
+        aria-label="Breadcrumb"
+        data-iris-breadcrumb=""
+      >
         <ol
           style={{
             display: 'inline-flex',
@@ -40,7 +45,9 @@ export const IrisBreadcrumb = React.forwardRef<HTMLElement, IrisBreadcrumbProps>
                 data-iris-breadcrumb-last={isLast ? 'true' : undefined}
                 style={{ display: 'inline-flex', alignItems: 'center' }}
               >
-                {React.cloneElement(child, { isCurrent: isLast } as Partial<unknown> as React.Attributes)}
+                {React.cloneElement(child, {
+                  isCurrent: isLast,
+                } as Partial<unknown> as React.Attributes)}
               </li>
             )
             const sepNode = !isLast ? (

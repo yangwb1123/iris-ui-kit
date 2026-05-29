@@ -8,16 +8,10 @@ function buildHarness(items: { href?: string; label: string }[]) {
   return defineComponent({
     setup() {
       return () =>
-        h(
-          IrisBreadcrumb,
-          null,
-          {
-            default: () =>
-              items.map((it) =>
-                h(IrisBreadcrumbItem, { href: it.href }, () => it.label),
-              ),
-          },
-        )
+        h(IrisBreadcrumb, null, {
+          default: () =>
+            items.map((it) => h(IrisBreadcrumbItem, { href: it.href }, () => it.label)),
+        })
     },
   })
 }
@@ -43,11 +37,7 @@ describe('IrisBreadcrumb', () => {
 
   it('renders separators between but not after items', () => {
     const w = mount(
-      buildHarness([
-        { href: '/', label: 'A' },
-        { href: '/x', label: 'B' },
-        { label: 'C' },
-      ]),
+      buildHarness([{ href: '/', label: 'A' }, { href: '/x', label: 'B' }, { label: 'C' }]),
     )
     // 3 items → 2 separators
     expect(w.findAll('[data-iris-breadcrumb-separator]').length).toBe(2)
@@ -62,12 +52,16 @@ describe('IrisBreadcrumb', () => {
     const Harness = defineComponent({
       setup() {
         return () =>
-          h(IrisBreadcrumb, { separator: '›' }, {
-            default: () => [
-              h(IrisBreadcrumbItem, null, () => 'A'),
-              h(IrisBreadcrumbItem, null, () => 'B'),
-            ],
-          })
+          h(
+            IrisBreadcrumb,
+            { separator: '›' },
+            {
+              default: () => [
+                h(IrisBreadcrumbItem, null, () => 'A'),
+                h(IrisBreadcrumbItem, null, () => 'B'),
+              ],
+            },
+          )
       },
     })
     const w = mount(Harness)
@@ -75,24 +69,14 @@ describe('IrisBreadcrumb', () => {
   })
 
   it('last item is marked aria-current="page"', () => {
-    const w = mount(
-      buildHarness([
-        { href: '/', label: 'Home' },
-        { label: 'Current' },
-      ]),
-    )
+    const w = mount(buildHarness([{ href: '/', label: 'Home' }, { label: 'Current' }]))
     const crumbs = w.findAll('[data-iris-breadcrumb-crumb]')
     expect(crumbs[0]!.attributes('aria-current')).toBeUndefined()
     expect(crumbs[1]!.attributes('aria-current')).toBe('page')
   })
 
   it('item with href renders an <a>', () => {
-    const w = mount(
-      buildHarness([
-        { href: '/products', label: 'Products' },
-        { label: 'Item' },
-      ]),
-    )
+    const w = mount(buildHarness([{ href: '/products', label: 'Products' }, { label: 'Item' }]))
     const first = w.findAll('[data-iris-breadcrumb-crumb]')[0]!
     expect(first.element.tagName).toBe('A')
     expect(first.attributes('href')).toBe('/products')

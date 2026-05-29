@@ -58,10 +58,18 @@ export const IrisRangeSlider = defineComponent({
     const dragging = ref<'start' | 'end' | null>(null)
 
     const startVal = computed(() =>
-      clamp(roundToStep(props.modelValue[0] ?? props.min, props.step, props.min), props.min, props.max),
+      clamp(
+        roundToStep(props.modelValue[0] ?? props.min, props.step, props.min),
+        props.min,
+        props.max,
+      ),
     )
     const endVal = computed(() =>
-      clamp(roundToStep(props.modelValue[1] ?? props.max, props.step, props.min), props.min, props.max),
+      clamp(
+        roundToStep(props.modelValue[1] ?? props.max, props.step, props.min),
+        props.min,
+        props.max,
+      ),
     )
 
     const percent = (v: number): number => {

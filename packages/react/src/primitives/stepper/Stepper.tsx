@@ -1,9 +1,5 @@
 import * as React from 'react'
-import {
-  StepperContext,
-  type IrisStepperOrientation,
-  type IrisStepStatus,
-} from './context'
+import { StepperContext, type IrisStepperOrientation, type IrisStepStatus } from './context'
 
 export interface IrisStepperProps extends Omit<React.HTMLAttributes<HTMLOListElement>, 'onChange'> {
   value?: number

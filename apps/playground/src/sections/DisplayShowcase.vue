@@ -59,7 +59,7 @@ const bannerOpen = ref(true)
       <IrisButton size="sm" variant="ghost" @click="progress = Math.min(100, progress + 10)">
         +10
       </IrisButton>
-      <span style="font-size:12px;color:var(--iris-muted)">{{ progress }}%</span>
+      <span style="font-size: 12px; color: var(--iris-muted)">{{ progress }}%</span>
     </div>
 
     <div class="row" style="align-items: stretch; flex-direction: column">
@@ -124,10 +124,7 @@ const bannerOpen = ref(true)
 
     <div class="row" style="flex-direction: column; align-items: stretch">
       <span class="row-label">empty</span>
-      <IrisEmptyState
-        title="No items yet"
-        description="Add your first item to get started."
-      >
+      <IrisEmptyState title="No items yet" description="Add your first item to get started.">
         <template #actions>
           <IrisButton variant="solid">Add item</IrisButton>
         </template>

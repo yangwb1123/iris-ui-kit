@@ -2,14 +2,7 @@ import { computed, defineComponent, h, ref, type PropType } from 'vue'
 import type { Size } from '@iris-ui/core'
 
 export type IrisInputSize = Size
-export type IrisInputType =
-  | 'text'
-  | 'password'
-  | 'email'
-  | 'number'
-  | 'search'
-  | 'tel'
-  | 'url'
+export type IrisInputType = 'text' | 'password' | 'email' | 'number' | 'search' | 'tel' | 'url'
 
 /**
  * Text input primitive. Wraps a native `<input>` with token-driven styling
@@ -125,7 +118,10 @@ export const IrisInput = defineComponent({
           'data-iris-input': '',
           'data-iris-input-size': props.size,
           'data-state': props.invalid ? 'invalid' : focused.value ? 'focused' : 'idle',
-          style: { ...wrapperStyle.value, ...((attrs.style as Record<string, string> | undefined) ?? {}) },
+          style: {
+            ...wrapperStyle.value,
+            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+          },
         },
         [
           prefix &&

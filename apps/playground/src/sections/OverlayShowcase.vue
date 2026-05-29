@@ -75,9 +75,10 @@ const commands: IrisCommandItem[] = [
         <IrisDialogContent>
           <IrisDialogTitle>Confirm action</IrisDialogTitle>
           <IrisDialogDescription>
-            Focus is trapped inside, body scroll is locked, and Escape / backdrop click both dismiss.
+            Focus is trapped inside, body scroll is locked, and Escape / backdrop click both
+            dismiss.
           </IrisDialogDescription>
-          <div style="display:flex; gap:var(--iris-gap-md); justify-content:flex-end">
+          <div style="display: flex; gap: var(--iris-gap-md); justify-content: flex-end">
             <IrisDialogClose as-child>
               <IrisButton variant="ghost">Cancel</IrisButton>
             </IrisDialogClose>
@@ -92,11 +93,16 @@ const commands: IrisCommandItem[] = [
     <div class="row">
       <span class="row-label">drawer</span>
       <IrisButton
-        v-for="s in (['left', 'right', 'top', 'bottom'] as const)"
+        v-for="s in ['left', 'right', 'top', 'bottom'] as const"
         :key="s"
         size="sm"
         variant="outline"
-        @click="() => { drawerSide = s; drawerOpen = true }"
+        @click="
+          () => {
+            drawerSide = s
+            drawerOpen = true
+          }
+        "
       >
         from {{ s }}
       </IrisButton>
@@ -104,7 +110,10 @@ const commands: IrisCommandItem[] = [
         <IrisDrawerContent>
           <IrisDrawerTitle>Settings</IrisDrawerTitle>
           <div style="padding: 16px">
-            <p style="margin: 0 0 12px 0">Drawer is opened from <strong>{{ drawerSide }}</strong>.</p>
+            <p style="margin: 0 0 12px 0">
+              Drawer is opened from <strong>{{ drawerSide }}</strong
+              >.
+            </p>
             <IrisDrawerClose as-child>
               <IrisButton variant="ghost">Close</IrisButton>
             </IrisDrawerClose>
@@ -124,8 +133,12 @@ const commands: IrisCommandItem[] = [
           <IrisMenuItem @select="() => toast.info({ title: 'Copy' })">Copy</IrisMenuItem>
           <IrisMenuItem @select="() => toast.info({ title: 'Paste' })">Paste</IrisMenuItem>
           <IrisMenuSub label="More…">
-            <IrisMenuItem @select="() => toast.info({ title: 'Paste Special' })">Paste Special</IrisMenuItem>
-            <IrisMenuItem @select="() => toast.info({ title: 'Paste From History' })">Paste From History</IrisMenuItem>
+            <IrisMenuItem @select="() => toast.info({ title: 'Paste Special' })"
+              >Paste Special</IrisMenuItem
+            >
+            <IrisMenuItem @select="() => toast.info({ title: 'Paste From History' })"
+              >Paste From History</IrisMenuItem
+            >
           </IrisMenuSub>
         </IrisMenuContent>
       </IrisMenu>
@@ -133,14 +146,31 @@ const commands: IrisCommandItem[] = [
 
     <div class="row">
       <span class="row-label">toast</span>
-      <IrisButton size="sm" variant="outline" @click="toast.info({ title: 'Hello' })">info</IrisButton>
-      <IrisButton size="sm" variant="outline" @click="toast.success({ title: 'Saved!' })">success</IrisButton>
-      <IrisButton size="sm" variant="outline" @click="toast.warning({ title: 'Heads up' })">warning</IrisButton>
-      <IrisButton size="sm" variant="outline" @click="toast.error({ title: 'Failed', description: 'Network error.' })">error</IrisButton>
+      <IrisButton size="sm" variant="outline" @click="toast.info({ title: 'Hello' })"
+        >info</IrisButton
+      >
+      <IrisButton size="sm" variant="outline" @click="toast.success({ title: 'Saved!' })"
+        >success</IrisButton
+      >
+      <IrisButton size="sm" variant="outline" @click="toast.warning({ title: 'Heads up' })"
+        >warning</IrisButton
+      >
+      <IrisButton
+        size="sm"
+        variant="outline"
+        @click="toast.error({ title: 'Failed', description: 'Network error.' })"
+        >error</IrisButton
+      >
       <IrisButton
         size="sm"
         variant="ghost"
-        @click="toast.push({ title: 'Undo me?', action: { label: 'Undo', onClick: () => toast.success({ title: 'Undone' }) }, duration: 6000 })"
+        @click="
+          toast.push({
+            title: 'Undo me?',
+            action: { label: 'Undo', onClick: () => toast.success({ title: 'Undone' }) },
+            duration: 6000,
+          })
+        "
       >
         with action
       </IrisButton>
@@ -149,7 +179,7 @@ const commands: IrisCommandItem[] = [
     <div class="row">
       <span class="row-label">command</span>
       <IrisButton variant="solid" @click="cmdOpen = true">
-        Open palette <IrisKbd style="margin-left:6px">⌘K</IrisKbd>
+        Open palette <IrisKbd style="margin-left: 6px">⌘K</IrisKbd>
       </IrisButton>
       <IrisCommandPalette v-model:open="cmdOpen" :items="commands" />
     </div>

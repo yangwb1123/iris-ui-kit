@@ -66,7 +66,14 @@ describe('@iris-ui/react IrisIcon', () => {
 
   it('resolves from a custom registry', () => {
     const reg = createIconRegistry({
-      sets: [{ name: 'x', icons: { star: { name: 'star', nodes: [{ tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } }] } } }],
+      sets: [
+        {
+          name: 'x',
+          icons: {
+            star: { name: 'star', nodes: [{ tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } }] },
+          },
+        },
+      ],
     })
     render(<IrisIcon name="star" registry={reg} />)
     expect(svg()!.querySelector('circle')).not.toBeNull()

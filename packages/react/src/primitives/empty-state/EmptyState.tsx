@@ -1,7 +1,9 @@
 import * as React from 'react'
 
-export interface IrisEmptyStateProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title' | 'children'> {
+export interface IrisEmptyStateProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'title' | 'children'
+> {
   title?: React.ReactNode
   description?: React.ReactNode
   icon?: React.ReactNode
@@ -45,10 +47,7 @@ export function IrisEmptyState({
         </div>
       ) : null}
       {title ? (
-        <div
-          data-iris-empty-state-title=""
-          style={{ fontWeight: 600, fontSize: 16 }}
-        >
+        <div data-iris-empty-state-title="" style={{ fontWeight: 600, fontSize: 16 }}>
           {title}
         </div>
       ) : null}

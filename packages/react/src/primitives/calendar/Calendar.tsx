@@ -148,9 +148,7 @@ export function IrisCalendar({
 
   const today = startOfDay(new Date())
   const prevDisabled = min ? startOfMonth(visibleMonth) <= startOfMonth(min) : false
-  const nextDisabled = max
-    ? startOfMonth(endOfMonth(visibleMonth)) >= startOfMonth(max)
-    : false
+  const nextDisabled = max ? startOfMonth(endOfMonth(visibleMonth)) >= startOfMonth(max) : false
 
   const navButtonStyle: React.CSSProperties = {
     width: 28,
@@ -276,9 +274,7 @@ export function IrisCalendar({
               aria-current={isToday ? 'date' : undefined}
               data-iris-calendar-day=""
               data-iris-calendar-day-iso={formatLocalISO(date)}
-              data-state={
-                selected ? 'selected' : focused ? 'focused' : isToday ? 'today' : 'idle'
-              }
+              data-state={selected ? 'selected' : focused ? 'focused' : isToday ? 'today' : 'idle'}
               data-outside-month={!inMonth ? 'true' : undefined}
               disabled={isDisabled || undefined}
               onClick={() => {

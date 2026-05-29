@@ -69,11 +69,7 @@ export const IrisEmptyState = defineComponent({
               )
             : null,
           action
-            ? h(
-                'div',
-                { 'data-iris-empty-state-action': '', style: { marginTop: '4px' } },
-                action,
-              )
+            ? h('div', { 'data-iris-empty-state-action': '', style: { marginTop: '4px' } }, action)
             : null,
         ],
       )

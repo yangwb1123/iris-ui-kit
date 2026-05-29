@@ -3,8 +3,10 @@ import { composeEventHandlers } from '@iris-ui/core'
 import { IrisSlot } from '../slot/Slot'
 import { useDialogContext } from './context'
 
-export interface IrisDialogTriggerProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
+export interface IrisDialogTriggerProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'children'
+> {
   /** Use the single child as the trigger instead of rendering a `<button>`. */
   asChild?: boolean
   children?: React.ReactNode
@@ -23,7 +25,8 @@ export const IrisDialogTrigger = React.forwardRef<HTMLElement, IrisDialogTrigger
       (el: HTMLElement | null) => {
         ctx.triggerRef.current = el
         if (typeof forwardedRef === 'function') forwardedRef(el)
-        else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLElement | null>).current = el
+        else if (forwardedRef)
+          (forwardedRef as React.MutableRefObject<HTMLElement | null>).current = el
       },
       [ctx, forwardedRef],
     )

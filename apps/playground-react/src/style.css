@@ -17,7 +17,9 @@ body {
     sans-serif;
   background: var(--iris-background);
   color: var(--iris-foreground);
-  transition: background-color 200ms ease, color 200ms ease;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
 }
 #root {
   min-height: 100vh;
@@ -97,7 +99,9 @@ body {
   border-radius: 6px;
   font-family: inherit;
   outline: none;
-  transition: background-color 100ms ease, color 100ms ease;
+  transition:
+    background-color 100ms ease,
+    color 100ms ease;
   white-space: nowrap;
   overflow: hidden;
 }

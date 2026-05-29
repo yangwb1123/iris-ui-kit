@@ -7,8 +7,4 @@ export {
   type IrisDropdownItemProps,
   type IrisDropdownSeparatorProps,
 } from './DropdownItem'
-export {
-  DropdownContext,
-  useDropdownContext,
-  type DropdownContextValue,
-} from './context'
+export { DropdownContext, useDropdownContext, type DropdownContextValue } from './context'

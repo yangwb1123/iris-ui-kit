@@ -24,11 +24,7 @@ function fakeAsync() {
       <span class="counter">Click count: {{ clickCount }}</span>
     </div>
 
-    <div
-      v-for="variant in VARIANTS"
-      :key="variant"
-      class="row"
-    >
+    <div v-for="variant in VARIANTS" :key="variant" class="row">
       <span class="row-label">{{ variant }}</span>
       <IrisButton
         v-for="size in SIZES"
@@ -39,14 +35,8 @@ function fakeAsync() {
       >
         {{ size }}
       </IrisButton>
-      <IrisButton :variant="variant" disabled @click="clickCount += 1">
-        disabled
-      </IrisButton>
-      <IrisButton
-        :variant="variant"
-        :loading="asyncLoading"
-        @click="fakeAsync"
-      >
+      <IrisButton :variant="variant" disabled @click="clickCount += 1"> disabled </IrisButton>
+      <IrisButton :variant="variant" :loading="asyncLoading" @click="fakeAsync">
         <template #leading>
           <span class="lead-dot" aria-hidden="true" />
         </template>
@@ -57,12 +47,15 @@ function fakeAsync() {
     <div class="row">
       <span class="row-label">as-child</span>
       <IrisButton as-child variant="outline" size="md">
-        <a href="#anchor-demo" @click.prevent="clickCount += 1">
-          rendered as &lt;a href&gt;
-        </a>
+        <a href="#anchor-demo" @click.prevent="clickCount += 1"> rendered as &lt;a href&gt; </a>
       </IrisButton>
       <IrisButton as-child variant="link" size="md">
-        <a href="https://example.com" target="_blank" rel="noopener" @click.prevent="clickCount += 1">
+        <a
+          href="https://example.com"
+          target="_blank"
+          rel="noopener"
+          @click.prevent="clickCount += 1"
+        >
           external link
         </a>
       </IrisButton>

@@ -8,9 +8,7 @@ export interface IrisSlotProps {
   [key: string]: unknown
 }
 
-function mergeRefs<T>(
-  ...refs: Array<React.Ref<T> | undefined | null>
-): React.RefCallback<T> {
+function mergeRefs<T>(...refs: Array<React.Ref<T> | undefined | null>): React.RefCallback<T> {
   return (value: T | null) => {
     for (const ref of refs) {
       if (!ref) continue

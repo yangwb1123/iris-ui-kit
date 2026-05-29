@@ -37,7 +37,9 @@ describe('@iris-ui/react IrisDatePicker', () => {
     })
     const todayIso = new Date()
     const isoStr = `${todayIso.getFullYear()}-${String(todayIso.getMonth() + 1).padStart(2, '0')}-${String(todayIso.getDate()).padStart(2, '0')}`
-    const day = document.querySelector(`[data-iris-calendar-day-iso="${isoStr}"]`) as HTMLButtonElement
+    const day = document.querySelector(
+      `[data-iris-calendar-day-iso="${isoStr}"]`,
+    ) as HTMLButtonElement
     expect(day).not.toBeNull()
     act(() => {
       fireEvent.click(day)

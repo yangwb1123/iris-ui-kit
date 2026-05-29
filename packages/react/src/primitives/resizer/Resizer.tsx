@@ -91,8 +91,7 @@ function ResizerHandle(props: HandleRenderProps): React.ReactElement {
     disabled: props.disabled,
     onStart: () => {
       startSizeRef.current = { ...props.sizeRef.current }
-      aspectRef.current =
-        startSizeRef.current.width / Math.max(1, startSizeRef.current.height)
+      aspectRef.current = startSizeRef.current.width / Math.max(1, startSizeRef.current.height)
       props.onResizeStart?.(startSizeRef.current)
     },
     onDrag: ({ dx, dy }) => {
@@ -136,8 +135,7 @@ function ResizerHandle(props: HandleRenderProps): React.ReactElement {
   )
 }
 
-export interface IrisResizerProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
+export interface IrisResizerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
   value: IrisResizerSize
   onValueChange: (next: IrisResizerSize) => void
   onResizeStart?: (start: IrisResizerSize) => void

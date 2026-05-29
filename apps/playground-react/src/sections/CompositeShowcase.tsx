@@ -57,7 +57,11 @@ export function CompositeShowcase() {
 
       <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
         <span className="row-label">accordion</span>
-        <IrisAccordion value={openSections} onValueChange={(v) => setOpenSections(v as string[])} multiple>
+        <IrisAccordion
+          value={openSections}
+          onValueChange={(v) => setOpenSections(v as string[])}
+          multiple
+        >
           <IrisAccordionItem value="intro" title="What is Iris UI?">
             A token-driven component library with separated state/UI/theme.
           </IrisAccordionItem>
@@ -124,7 +128,13 @@ export function CompositeShowcase() {
 
       <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
         <span className="row-label">pagination</span>
-        <IrisPagination value={page} onValueChange={setPage} total={200} pageSize={10} showFirstLast />
+        <IrisPagination
+          value={page}
+          onValueChange={setPage}
+          total={200}
+          pageSize={10}
+          showFirstLast
+        />
         <span style={{ fontSize: 12, color: 'var(--iris-muted)' }}>page → {page}</span>
       </div>
 

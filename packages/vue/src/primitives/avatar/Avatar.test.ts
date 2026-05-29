@@ -55,9 +55,15 @@ describe('IrisAvatar', () => {
   })
 
   it('size="sm"/"md"/"lg" maps to 24/32/48 px', () => {
-    expect(mount(IrisAvatar, { props: { size: 'sm' } }).attributes('style')).toContain('width: 24px')
-    expect(mount(IrisAvatar, { props: { size: 'md' } }).attributes('style')).toContain('width: 32px')
-    expect(mount(IrisAvatar, { props: { size: 'lg' } }).attributes('style')).toContain('width: 48px')
+    expect(mount(IrisAvatar, { props: { size: 'sm' } }).attributes('style')).toContain(
+      'width: 24px',
+    )
+    expect(mount(IrisAvatar, { props: { size: 'md' } }).attributes('style')).toContain(
+      'width: 32px',
+    )
+    expect(mount(IrisAvatar, { props: { size: 'lg' } }).attributes('style')).toContain(
+      'width: 48px',
+    )
   })
 
   it('accepts a numeric size', () => {

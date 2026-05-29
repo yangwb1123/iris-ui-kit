@@ -20,7 +20,9 @@ describe('IrisGrid', () => {
 
   it('auto-fit columns → repeat(auto-fit, minmax(...))', () => {
     const w = mount(IrisGrid, { props: { columns: 'auto-fit', minColWidth: '180px' } })
-    expect(w.attributes('style')).toContain('grid-template-columns: repeat(auto-fit, minmax(180px, 1fr))')
+    expect(w.attributes('style')).toContain(
+      'grid-template-columns: repeat(auto-fit, minmax(180px, 1fr))',
+    )
   })
 
   it('auto-fill works the same way', () => {
@@ -55,7 +57,11 @@ describe('IrisGrid', () => {
   })
 
   it('data-iris-grid-columns reflects the columns prop', () => {
-    expect(mount(IrisGrid, { props: { columns: 3 } }).attributes('data-iris-grid-columns')).toBe('3')
-    expect(mount(IrisGrid, { props: { columns: 'auto-fit' } }).attributes('data-iris-grid-columns')).toBe('auto-fit')
+    expect(mount(IrisGrid, { props: { columns: 3 } }).attributes('data-iris-grid-columns')).toBe(
+      '3',
+    )
+    expect(
+      mount(IrisGrid, { props: { columns: 'auto-fit' } }).attributes('data-iris-grid-columns'),
+    ).toBe('auto-fit')
   })
 })

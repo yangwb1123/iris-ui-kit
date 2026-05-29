@@ -174,10 +174,7 @@ export const IrisResizer = defineComponent({
           'data-state': props.disabled ? 'disabled' : 'idle',
           style: wrapperStyle.value,
         },
-        [
-          slots.default?.(),
-          ...props.handles.map(renderHandle),
-        ],
+        [slots.default?.(), ...props.handles.map(renderHandle)],
       )
   },
 })

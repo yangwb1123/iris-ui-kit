@@ -1,12 +1,5 @@
 import { computed, defineComponent, h, ref, watch } from 'vue'
-import {
-  clamp01,
-  hexToRgba,
-  hsvaToRgba,
-  rgbToHex,
-  rgbaToHsva,
-  type IrisHsva,
-} from './colorUtils'
+import { clamp01, hexToRgba, hsvaToRgba, rgbToHex, rgbaToHsva, type IrisHsva } from './colorUtils'
 
 /**
  * Color picker. Renders:
@@ -188,127 +181,123 @@ export const IrisColorPicker = defineComponent({
           },
         },
         [
-          h(
-            'div',
-            { style: { display: 'flex', gap: '8px' } },
-            [
-              // SV pad
-              h(
-                'div',
-                {
-                  ref: (el: unknown) => {
-                    padRef.value = (el ?? null) as HTMLElement | null
-                  },
-                  'data-iris-color-picker-pad': '',
-                  onPointerdown: onPadPointerDown,
-                  onPointermove: onPadPointerMove,
-                  style: {
-                    position: 'relative',
-                    flex: '1',
-                    height: '160px',
-                    borderRadius: 'var(--iris-radius-sm, 4px)',
-                    background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, rgb(${hueRgb.r}, ${hueRgb.g}, ${hueRgb.b}))`,
-                    cursor: props.disabled ? 'not-allowed' : 'crosshair',
-                    touchAction: 'none',
-                  },
+          h('div', { style: { display: 'flex', gap: '8px' } }, [
+            // SV pad
+            h(
+              'div',
+              {
+                ref: (el: unknown) => {
+                  padRef.value = (el ?? null) as HTMLElement | null
                 },
-                [
-                  h('div', {
-                    'data-iris-color-picker-pad-cursor': '',
-                    style: {
-                      position: 'absolute',
-                      left: `${cursorX}%`,
-                      top: `${cursorY}%`,
-                      width: '10px',
-                      height: '10px',
-                      borderRadius: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      border: '2px solid #fff',
-                      boxShadow: '0 0 0 1px rgba(0,0,0,.4)',
-                      pointerEvents: 'none',
-                    },
-                  }),
-                ],
-              ),
-              // Hue strip
-              h(
-                'div',
-                {
-                  ref: (el: unknown) => {
-                    hueRef.value = (el ?? null) as HTMLElement | null
-                  },
-                  'data-iris-color-picker-hue': '',
-                  onPointerdown: onHuePointerDown,
-                  onPointermove: onHuePointerMove,
-                  style: {
-                    position: 'relative',
-                    width: '16px',
-                    height: '160px',
-                    borderRadius: 'var(--iris-radius-sm, 4px)',
-                    background:
-                      'linear-gradient(to bottom, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)',
-                    cursor: props.disabled ? 'not-allowed' : 'crosshair',
-                    touchAction: 'none',
-                  },
+                'data-iris-color-picker-pad': '',
+                onPointerdown: onPadPointerDown,
+                onPointermove: onPadPointerMove,
+                style: {
+                  position: 'relative',
+                  flex: '1',
+                  height: '160px',
+                  borderRadius: 'var(--iris-radius-sm, 4px)',
+                  background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, rgb(${hueRgb.r}, ${hueRgb.g}, ${hueRgb.b}))`,
+                  cursor: props.disabled ? 'not-allowed' : 'crosshair',
+                  touchAction: 'none',
                 },
-                [
-                  h('div', {
-                    'data-iris-color-picker-hue-cursor': '',
-                    style: {
-                      position: 'absolute',
-                      top: `${hueY}%`,
-                      left: '-2px',
-                      right: '-2px',
-                      height: '4px',
-                      transform: 'translateY(-50%)',
-                      border: '2px solid #fff',
-                      borderRadius: '2px',
-                      boxShadow: '0 0 0 1px rgba(0,0,0,.4)',
-                      pointerEvents: 'none',
+              },
+              [
+                h('div', {
+                  'data-iris-color-picker-pad-cursor': '',
+                  style: {
+                    position: 'absolute',
+                    left: `${cursorX}%`,
+                    top: `${cursorY}%`,
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    border: '2px solid #fff',
+                    boxShadow: '0 0 0 1px rgba(0,0,0,.4)',
+                    pointerEvents: 'none',
+                  },
+                }),
+              ],
+            ),
+            // Hue strip
+            h(
+              'div',
+              {
+                ref: (el: unknown) => {
+                  hueRef.value = (el ?? null) as HTMLElement | null
+                },
+                'data-iris-color-picker-hue': '',
+                onPointerdown: onHuePointerDown,
+                onPointermove: onHuePointerMove,
+                style: {
+                  position: 'relative',
+                  width: '16px',
+                  height: '160px',
+                  borderRadius: 'var(--iris-radius-sm, 4px)',
+                  background:
+                    'linear-gradient(to bottom, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)',
+                  cursor: props.disabled ? 'not-allowed' : 'crosshair',
+                  touchAction: 'none',
+                },
+              },
+              [
+                h('div', {
+                  'data-iris-color-picker-hue-cursor': '',
+                  style: {
+                    position: 'absolute',
+                    top: `${hueY}%`,
+                    left: '-2px',
+                    right: '-2px',
+                    height: '4px',
+                    transform: 'translateY(-50%)',
+                    border: '2px solid #fff',
+                    borderRadius: '2px',
+                    boxShadow: '0 0 0 1px rgba(0,0,0,.4)',
+                    pointerEvents: 'none',
+                  },
+                }),
+              ],
+            ),
+            props.showAlpha
+              ? h(
+                  'div',
+                  {
+                    ref: (el: unknown) => {
+                      alphaRef.value = (el ?? null) as HTMLElement | null
                     },
-                  }),
-                ],
-              ),
-              props.showAlpha
-                ? h(
-                    'div',
-                    {
-                      ref: (el: unknown) => {
-                        alphaRef.value = (el ?? null) as HTMLElement | null
-                      },
-                      'data-iris-color-picker-alpha': '',
-                      onPointerdown: onAlphaPointerDown,
-                      onPointermove: onAlphaPointerMove,
+                    'data-iris-color-picker-alpha': '',
+                    onPointerdown: onAlphaPointerDown,
+                    onPointermove: onAlphaPointerMove,
+                    style: {
+                      position: 'relative',
+                      width: '16px',
+                      height: '160px',
+                      borderRadius: 'var(--iris-radius-sm, 4px)',
+                      background: `linear-gradient(to bottom, rgba(${rgba.value.r},${rgba.value.g},${rgba.value.b},1) 0%, rgba(${rgba.value.r},${rgba.value.g},${rgba.value.b},0) 100%)`,
+                      cursor: props.disabled ? 'not-allowed' : 'crosshair',
+                      touchAction: 'none',
+                    },
+                  },
+                  [
+                    h('div', {
                       style: {
-                        position: 'relative',
-                        width: '16px',
-                        height: '160px',
-                        borderRadius: 'var(--iris-radius-sm, 4px)',
-                        background: `linear-gradient(to bottom, rgba(${rgba.value.r},${rgba.value.g},${rgba.value.b},1) 0%, rgba(${rgba.value.r},${rgba.value.g},${rgba.value.b},0) 100%)`,
-                        cursor: props.disabled ? 'not-allowed' : 'crosshair',
-                        touchAction: 'none',
+                        position: 'absolute',
+                        top: `${alphaY}%`,
+                        left: '-2px',
+                        right: '-2px',
+                        height: '4px',
+                        transform: 'translateY(-50%)',
+                        border: '2px solid #fff',
+                        borderRadius: '2px',
+                        boxShadow: '0 0 0 1px rgba(0,0,0,.4)',
+                        pointerEvents: 'none',
                       },
-                    },
-                    [
-                      h('div', {
-                        style: {
-                          position: 'absolute',
-                          top: `${alphaY}%`,
-                          left: '-2px',
-                          right: '-2px',
-                          height: '4px',
-                          transform: 'translateY(-50%)',
-                          border: '2px solid #fff',
-                          borderRadius: '2px',
-                          boxShadow: '0 0 0 1px rgba(0,0,0,.4)',
-                          pointerEvents: 'none',
-                        },
-                      }),
-                    ],
-                  )
-                : null,
-            ],
-          ),
+                    }),
+                  ],
+                )
+              : null,
+          ]),
           // Inputs row
           h(
             'div',

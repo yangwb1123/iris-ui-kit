@@ -80,9 +80,9 @@ describe('@iris-ui/react IrisResizable', () => {
         <span>x</span>
       </IrisResizable>,
     )
-    expect(
-      container.querySelector('[data-iris-resizable]')?.getAttribute('data-state'),
-    ).toBe('disabled')
+    expect(container.querySelector('[data-iris-resizable]')?.getAttribute('data-state')).toBe(
+      'disabled',
+    )
   })
 })
 
@@ -99,9 +99,7 @@ describe('@iris-ui/react IrisMovable', () => {
   })
 
   it('controlled position drives the transform', () => {
-    const { container, rerender } = render(
-      <IrisMovable position={{ x: 0, y: 0 }}>x</IrisMovable>,
-    )
+    const { container, rerender } = render(<IrisMovable position={{ x: 0, y: 0 }}>x</IrisMovable>)
     expect(
       (container.querySelector('[data-iris-movable]') as HTMLElement).style.transform,
     ).toContain('translate3d(0px, 0px')
@@ -113,9 +111,7 @@ describe('@iris-ui/react IrisMovable', () => {
 
   it('default state is "idle"', () => {
     const { container } = render(<IrisMovable>x</IrisMovable>)
-    expect(
-      container.querySelector('[data-iris-movable]')?.getAttribute('data-state'),
-    ).toBe('idle')
+    expect(container.querySelector('[data-iris-movable]')?.getAttribute('data-state')).toBe('idle')
   })
 
   it('byHandle changes cursor on root to default', () => {
@@ -124,16 +120,16 @@ describe('@iris-ui/react IrisMovable', () => {
         <span data-iris-movable-handle>handle</span>
       </IrisMovable>,
     )
-    expect(
-      (container.querySelector('[data-iris-movable]') as HTMLElement).style.cursor,
-    ).toBe('default')
+    expect((container.querySelector('[data-iris-movable]') as HTMLElement).style.cursor).toBe(
+      'default',
+    )
   })
 
   it('disabled cursor is not-allowed', () => {
     const { container } = render(<IrisMovable disabled>x</IrisMovable>)
-    expect(
-      (container.querySelector('[data-iris-movable]') as HTMLElement).style.cursor,
-    ).toBe('not-allowed')
+    expect((container.querySelector('[data-iris-movable]') as HTMLElement).style.cursor).toBe(
+      'not-allowed',
+    )
   })
 })
 

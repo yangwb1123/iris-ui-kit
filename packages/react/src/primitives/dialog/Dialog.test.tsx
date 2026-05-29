@@ -9,7 +9,10 @@ import {
   IrisDialogDescription,
   IrisDialogClose,
 } from './DialogContent'
-import { __resetBodyScrollLock, __getBodyScrollLockCount } from '../../modal-utils/useBodyScrollLock'
+import {
+  __resetBodyScrollLock,
+  __getBodyScrollLockCount,
+} from '../../modal-utils/useBodyScrollLock'
 
 beforeEach(() => {
   __resetBodyScrollLock()

@@ -67,7 +67,8 @@ export const IrisDropdownItem = defineComponent({
             borderRadius: 'var(--iris-radius-sm)',
             cursor: props.disabled ? 'not-allowed' : 'pointer',
             opacity: props.disabled ? '0.5' : '1',
-            background: hovered.value && !props.disabled ? 'var(--iris-surface-hover)' : 'transparent',
+            background:
+              hovered.value && !props.disabled ? 'var(--iris-surface-hover)' : 'transparent',
             color: 'inherit',
             outline: 'none',
             fontSize: '14px',

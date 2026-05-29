@@ -51,9 +51,7 @@ export const IrisAlert = defineComponent({
       },
     )
 
-    const isOpen = computed(() =>
-      props.open !== undefined ? props.open : internalOpen.value,
-    )
+    const isOpen = computed(() => (props.open !== undefined ? props.open : internalOpen.value))
 
     const onClose = () => {
       if (props.open === undefined) internalOpen.value = false
@@ -96,23 +94,19 @@ export const IrisAlert = defineComponent({
                 slots.icon(),
               )
             : null,
-          h(
-            'div',
-            { 'data-iris-alert-body': '', style: { flex: '1', minWidth: '0' } },
-            [
-              props.title || slots.title
-                ? h(
-                    'div',
-                    {
-                      'data-iris-alert-title': '',
-                      style: { fontWeight: '600', marginBottom: '4px', color: tonalVar.value },
-                    },
-                    slots.title?.() ?? props.title,
-                  )
-                : null,
-              h('div', { 'data-iris-alert-content': '' }, slots.default?.()),
-            ],
-          ),
+          h('div', { 'data-iris-alert-body': '', style: { flex: '1', minWidth: '0' } }, [
+            props.title || slots.title
+              ? h(
+                  'div',
+                  {
+                    'data-iris-alert-title': '',
+                    style: { fontWeight: '600', marginBottom: '4px', color: tonalVar.value },
+                  },
+                  slots.title?.() ?? props.title,
+                )
+              : null,
+            h('div', { 'data-iris-alert-content': '' }, slots.default?.()),
+          ]),
           props.closable
             ? h(
                 'button',

@@ -12,8 +12,10 @@ const SIZE_FONT: Record<'sm' | 'md' | 'lg', string> = {
   lg: '14px',
 }
 
-export interface IrisToggleGroupItemProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'value' | 'type'> {
+export interface IrisToggleGroupItemProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'value' | 'type'
+> {
   value: string
 }
 
@@ -33,7 +35,8 @@ export const IrisToggleGroupItem = React.forwardRef<HTMLButtonElement, IrisToggl
       (el: HTMLButtonElement | null) => {
         elRef.current = el
         if (typeof forwardedRef === 'function') forwardedRef(el)
-        else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLButtonElement | null>).current = el
+        else if (forwardedRef)
+          (forwardedRef as React.MutableRefObject<HTMLButtonElement | null>).current = el
       },
       [forwardedRef],
     )

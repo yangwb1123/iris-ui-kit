@@ -67,10 +67,17 @@ export function rgbToHex({ r, g, b, a }: IrisRgba): string {
 
 /** Parse `#rgb`, `#rrggbb`, or `#rrggbbaa`. Returns null on parse failure. */
 export function hexToRgba(input: string): IrisRgba | null {
-  const m = input.trim().toLowerCase().match(/^#?([0-9a-f]{3,8})$/)
+  const m = input
+    .trim()
+    .toLowerCase()
+    .match(/^#?([0-9a-f]{3,8})$/)
   if (!m) return null
   let s = m[1]!
-  if (s.length === 3) s = s.split('').map((c) => c + c).join('')
+  if (s.length === 3)
+    s = s
+      .split('')
+      .map((c) => c + c)
+      .join('')
   if (s.length !== 6 && s.length !== 8) return null
   const r = parseInt(s.slice(0, 2), 16)
   const g = parseInt(s.slice(2, 4), 16)

@@ -34,9 +34,7 @@ export function IrisTabs({
   children,
 }: IrisTabsProps): React.ReactElement {
   const isControlled = valueProp !== undefined
-  const [internalValue, setInternalValue] = React.useState<string | null>(
-    defaultValue ?? null,
-  )
+  const [internalValue, setInternalValue] = React.useState<string | null>(defaultValue ?? null)
 
   const effectiveValue = isControlled ? valueProp : internalValue
 
@@ -56,9 +54,7 @@ export function IrisTabs({
   const focusTriggerByValue = React.useCallback((value: string) => {
     const root = listRef.current
     if (!root) return
-    const el = root.querySelector<HTMLElement>(
-      `[data-iris-tabs-trigger][data-value="${value}"]`,
-    )
+    const el = root.querySelector<HTMLElement>(`[data-iris-tabs-trigger][data-value="${value}"]`)
     el?.focus()
   }, [])
 

@@ -49,9 +49,7 @@ const page = ref(3)
           </p>
         </IrisTabsContent>
         <IrisTabsContent value="changelog">
-          <p style="margin: 12px 0; color: var(--iris-muted)">
-            Changelog panel.
-          </p>
+          <p style="margin: 12px 0; color: var(--iris-muted)">Changelog panel.</p>
         </IrisTabsContent>
       </IrisTabs>
     </div>
@@ -105,7 +103,11 @@ const page = ref(3)
         <p style="margin: 0 0 6px 0; font-size: 12px; color: var(--iris-muted)">
           single (radio-like) — text align
         </p>
-        <IrisToggleGroup type="single" :modelValue="textAlign" @update:modelValue="textAlign = ($event as string | null)">
+        <IrisToggleGroup
+          type="single"
+          :modelValue="textAlign"
+          @update:modelValue="textAlign = $event as string | null"
+        >
           <IrisToggleGroupItem value="left">Left</IrisToggleGroupItem>
           <IrisToggleGroupItem value="center">Center</IrisToggleGroupItem>
           <IrisToggleGroupItem value="right">Right</IrisToggleGroupItem>
@@ -115,7 +117,11 @@ const page = ref(3)
         <p style="margin: 8px 0 6px 0; font-size: 12px; color: var(--iris-muted)">
           multiple (toggle-like) — text style
         </p>
-        <IrisToggleGroup type="multiple" :modelValue="toolbarValues" @update:modelValue="toolbarValues = ($event as string[])">
+        <IrisToggleGroup
+          type="multiple"
+          :modelValue="toolbarValues"
+          @update:modelValue="toolbarValues = $event as string[]"
+        >
           <IrisToggleGroupItem value="bold">B</IrisToggleGroupItem>
           <IrisToggleGroupItem value="italic">I</IrisToggleGroupItem>
           <IrisToggleGroupItem value="underline">U</IrisToggleGroupItem>

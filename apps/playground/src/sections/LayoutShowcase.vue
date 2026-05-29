@@ -13,10 +13,20 @@ const draggerPos = ref({ x: 16, y: 16 })
 
     <div class="row">
       <span class="row-label">splitter</span>
-      <div style="width: 100%; height: 140px; border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md); overflow: hidden">
+      <div
+        style="
+          width: 100%;
+          height: 140px;
+          border: 1px solid var(--iris-border);
+          border-radius: var(--iris-radius-md);
+          overflow: hidden;
+        "
+      >
         <IrisSplitter v-model="split">
           <template #start>
-            <div style="padding: var(--iris-padding-md); background: var(--iris-surface); height: 100%">
+            <div
+              style="padding: var(--iris-padding-md); background: var(--iris-surface); height: 100%"
+            >
               Left ({{ Math.round(split * 100) }}%)
             </div>
           </template>
@@ -63,10 +73,7 @@ const draggerPos = ref({ x: 16, y: 16 })
           overflow: hidden;
         "
       >
-        <IrisDragger
-          v-model="draggerPos"
-          :bounds="{ minX: 0, minY: 0, maxX: 800, maxY: 100 }"
-        >
+        <IrisDragger v-model="draggerPos" :bounds="{ minX: 0, minY: 0, maxX: 800, maxY: 100 }">
           <template #handle>
             <div
               style="

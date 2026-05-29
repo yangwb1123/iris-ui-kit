@@ -1,12 +1,4 @@
-import {
-  Teleport,
-  defineComponent,
-  h,
-  inject,
-  ref,
-  watch,
-  type VNode,
-} from 'vue'
+import { Teleport, defineComponent, h, inject, ref, watch, type VNode } from 'vue'
 import { DrawerContextKey } from './context'
 import { useFocusTrap, useBodyScrollLock } from '../modal-utils'
 import { findFirstElement, mergeSlotProps } from '../slot/Slot'

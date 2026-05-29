@@ -29,17 +29,23 @@ describe('@iris-ui/react IrisCard', () => {
 
   it('elevated variant uses box-shadow', () => {
     const { container } = render(<IrisCard variant="elevated">x</IrisCard>)
-    expect(container.querySelector('[data-iris-card]')!.getAttribute('style')!).toContain('box-shadow')
+    expect(container.querySelector('[data-iris-card]')!.getAttribute('style')!).toContain(
+      'box-shadow',
+    )
   })
 
   it('outline variant uses border', () => {
     const { container } = render(<IrisCard variant="outline">x</IrisCard>)
-    expect(container.querySelector('[data-iris-card]')!.getAttribute('style')!).toContain('var(--iris-border)')
+    expect(container.querySelector('[data-iris-card]')!.getAttribute('style')!).toContain(
+      'var(--iris-border)',
+    )
   })
 
   it('subtle variant uses surface', () => {
     const { container } = render(<IrisCard variant="subtle">x</IrisCard>)
-    expect(container.querySelector('[data-iris-card]')!.getAttribute('style')!).toContain('var(--iris-surface)')
+    expect(container.querySelector('[data-iris-card]')!.getAttribute('style')!).toContain(
+      'var(--iris-surface)',
+    )
   })
 
   it('exposes data attrs', () => {
@@ -56,6 +62,8 @@ describe('@iris-ui/react IrisCard', () => {
 
   it('padding="none" yields zero section padding', () => {
     const { container } = render(<IrisCard padding="none">x</IrisCard>)
-    expect(container.querySelector('[data-iris-card-body]')!.getAttribute('style')!).toContain('padding: 0')
+    expect(container.querySelector('[data-iris-card-body]')!.getAttribute('style')!).toContain(
+      'padding: 0',
+    )
   })
 })

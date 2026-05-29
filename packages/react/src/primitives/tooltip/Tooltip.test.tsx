@@ -170,7 +170,7 @@ describe('@iris-ui/react IrisTooltip', () => {
     expect(container.querySelector('[role=tooltip]')).not.toBeNull()
   })
 
-  it('preserves the child trigger\'s own click handler', () => {
+  it("preserves the child trigger's own click handler", () => {
     const onClick = vi.fn()
     const { container } = render(
       <IrisTooltip content="Hi" openDelay={0}>

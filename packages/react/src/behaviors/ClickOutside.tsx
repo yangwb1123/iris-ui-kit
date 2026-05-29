@@ -67,11 +67,7 @@ export function IrisClickOutside({
   }, [disabled, ignore])
 
   return (
-    <span
-      ref={wrapperRef}
-      data-iris-click-outside=""
-      style={{ display: 'contents' }}
-    >
+    <span ref={wrapperRef} data-iris-click-outside="" style={{ display: 'contents' }}>
       {children}
     </span>
   )

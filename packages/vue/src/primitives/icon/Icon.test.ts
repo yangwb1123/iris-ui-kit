@@ -63,7 +63,9 @@ describe('@iris-ui/vue IrisIcon', () => {
       sets: [
         {
           name: 'x',
-          icons: { star: { name: 'star', nodes: [{ tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } }] } },
+          icons: {
+            star: { name: 'star', nodes: [{ tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } }] },
+          },
         },
       ],
     })

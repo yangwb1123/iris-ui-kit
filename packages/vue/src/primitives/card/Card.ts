@@ -63,7 +63,10 @@ export const IrisCard = defineComponent({
           'data-iris-card-variant': props.variant,
           'data-iris-card-padding': props.padding,
           'data-iris-card-hover': props.hover ? 'true' : undefined,
-          style: { ...containerStyle.value, ...((attrs.style as Record<string, string> | undefined) ?? {}) },
+          style: {
+            ...containerStyle.value,
+            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+          },
         },
         [
           header

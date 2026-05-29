@@ -23,11 +23,7 @@ export type StateNode<TState extends string, TContext, TEvent extends MachineEve
   }
 }
 
-export interface MachineConfig<
-  TState extends string,
-  TContext,
-  TEvent extends MachineEvent,
-> {
+export interface MachineConfig<TState extends string, TContext, TEvent extends MachineEvent> {
   initial: TState
   context: TContext
   states: Record<TState, StateNode<TState, TContext, TEvent>>
@@ -52,11 +48,9 @@ export interface Machine<TState extends string, TContext, TEvent extends Machine
  *   },
  * })
  */
-export function createMachine<
-  TState extends string,
-  TContext,
-  TEvent extends MachineEvent,
->(config: MachineConfig<TState, TContext, TEvent>): Machine<TState, TContext, TEvent> {
+export function createMachine<TState extends string, TContext, TEvent extends MachineEvent>(
+  config: MachineConfig<TState, TContext, TEvent>,
+): Machine<TState, TContext, TEvent> {
   const store = createStore<MachineState<TState, TContext>>({
     value: config.initial,
     context: config.context,

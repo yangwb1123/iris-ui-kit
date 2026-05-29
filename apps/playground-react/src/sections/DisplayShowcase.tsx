@@ -51,10 +51,18 @@ export function DisplayShowcase() {
         <div style={{ flex: 1, minWidth: 200 }}>
           <IrisProgress value={progress} />
         </div>
-        <IrisButton size="sm" variant="ghost" onClick={() => setProgress((p) => Math.max(0, p - 10))}>
+        <IrisButton
+          size="sm"
+          variant="ghost"
+          onClick={() => setProgress((p) => Math.max(0, p - 10))}
+        >
           −10
         </IrisButton>
-        <IrisButton size="sm" variant="ghost" onClick={() => setProgress((p) => Math.min(100, p + 10))}>
+        <IrisButton
+          size="sm"
+          variant="ghost"
+          onClick={() => setProgress((p) => Math.min(100, p + 10))}
+        >
           +10
         </IrisButton>
         <span style={{ fontSize: 12, color: 'var(--iris-muted)' }}>{progress}%</span>
@@ -73,10 +81,16 @@ export function DisplayShowcase() {
 
       <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
         <span className="row-label">alert</span>
-        <IrisAlert tone="info" title="Heads up">This is an info alert.</IrisAlert>
+        <IrisAlert tone="info" title="Heads up">
+          This is an info alert.
+        </IrisAlert>
         <IrisAlert tone="success" title="Saved" closable />
-        <IrisAlert tone="warning" title="Watch out">Disk space is low.</IrisAlert>
-        <IrisAlert tone="danger" title="Error">Something went wrong.</IrisAlert>
+        <IrisAlert tone="warning" title="Watch out">
+          Disk space is low.
+        </IrisAlert>
+        <IrisAlert tone="danger" title="Error">
+          Something went wrong.
+        </IrisAlert>
       </div>
 
       <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
@@ -94,9 +108,13 @@ export function DisplayShowcase() {
       <div className="row">
         <span className="row-label">chip</span>
         <IrisChip>plain</IrisChip>
-        <IrisChip tone="primary" closable>react</IrisChip>
+        <IrisChip tone="primary" closable>
+          react
+        </IrisChip>
         <IrisChip tone="success">vue</IrisChip>
-        <IrisChip tone="warning" closable>typescript</IrisChip>
+        <IrisChip tone="warning" closable>
+          typescript
+        </IrisChip>
       </div>
 
       <div className="row">

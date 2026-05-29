@@ -5,8 +5,7 @@ export type IrisSkeletonShape = 'rect' | 'circle' | 'text'
 
 function defaultHeight(shape: IrisSkeletonShape, w: string | number | undefined): string {
   if (shape === 'text') return '1em'
-  if (shape === 'circle')
-    return typeof w === 'number' ? `${w}px` : (w ?? '40px')
+  if (shape === 'circle') return typeof w === 'number' ? `${w}px` : (w ?? '40px')
   return 'auto'
 }
 
@@ -43,7 +42,8 @@ export const IrisSkeleton = defineComponent({
 
     const style = computed<Record<string, string>>(() => {
       const w = props.width !== undefined ? toCss(props.width) : defaultWidth(props.shape)
-      const h = props.height !== undefined ? toCss(props.height) : defaultHeight(props.shape, props.width)
+      const h =
+        props.height !== undefined ? toCss(props.height) : defaultHeight(props.shape, props.width)
       return { width: w, height: h }
     })
 

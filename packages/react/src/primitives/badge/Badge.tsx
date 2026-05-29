@@ -32,7 +32,12 @@ function badgeStyle(
   }
   switch (variant) {
     case 'solid':
-      return { ...base, background: v, color: 'var(--iris-primary-foreground, #fff)', border: '1px solid transparent' }
+      return {
+        ...base,
+        background: v,
+        color: 'var(--iris-primary-foreground, #fff)',
+        border: '1px solid transparent',
+      }
     case 'outline':
       return { ...base, background: 'transparent', color: v, border: `1px solid ${v}` }
     case 'subtle':

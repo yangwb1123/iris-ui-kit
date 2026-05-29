@@ -3,15 +3,8 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { IrisDrawer } from './Drawer'
 import { IrisDrawerTrigger } from './DrawerTrigger'
-import {
-  IrisDrawerClose,
-  IrisDrawerContent,
-  IrisDrawerTitle,
-} from './DrawerContent'
-import {
-  __getBodyScrollLockCount,
-  __resetBodyScrollLock,
-} from '../modal-utils'
+import { IrisDrawerClose, IrisDrawerContent, IrisDrawerTitle } from './DrawerContent'
+import { __getBodyScrollLockCount, __resetBodyScrollLock } from '../modal-utils'
 
 enableAutoUnmount(afterEach)
 

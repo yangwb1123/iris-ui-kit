@@ -160,9 +160,7 @@ describe('@iris-ui/react IrisSelect', () => {
   })
 
   it('id and ariaDescribedby propagate (form field integration)', () => {
-    render(
-      <IrisSelect items={items} id="my-select" ariaDescribedby="hint-id" />,
-    )
+    render(<IrisSelect items={items} id="my-select" ariaDescribedby="hint-id" />)
     expect(trigger().id).toBe('my-select')
     expect(trigger().getAttribute('aria-describedby')).toBe('hint-id')
   })

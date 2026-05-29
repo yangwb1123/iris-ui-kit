@@ -70,7 +70,9 @@ const dashCards: IrisDashboardCardSpec[] = [
       <span style="font-size: 12px; color: var(--iris-muted)">
         active section → {{ dashActive }} · click sidebar items, click ≡ to collapse
       </span>
-      <IrisButton size="sm" variant="ghost" @click="dashActive = 'projects'">go to Projects</IrisButton>
+      <IrisButton size="sm" variant="ghost" @click="dashActive = 'projects'"
+        >go to Projects</IrisButton
+      >
     </div>
   </section>
 </template>

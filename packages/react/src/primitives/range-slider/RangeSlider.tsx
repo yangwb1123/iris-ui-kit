@@ -18,8 +18,10 @@ function roundToStep(value: number, step: number, min: number): number {
   return Number((Math.round((value - min) / step) * step + min).toFixed(places))
 }
 
-export interface IrisRangeSliderProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
+export interface IrisRangeSliderProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'onChange' | 'defaultValue'
+> {
   value?: IrisRangeSliderValue
   defaultValue?: IrisRangeSliderValue
   onChange?: (next: IrisRangeSliderValue) => void

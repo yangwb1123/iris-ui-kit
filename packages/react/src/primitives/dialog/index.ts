@@ -10,8 +10,4 @@ export {
   type IrisDialogDescriptionProps,
   type IrisDialogCloseProps,
 } from './DialogContent'
-export {
-  DialogContext,
-  useDialogContext,
-  type DialogContextValue,
-} from './context'
+export { DialogContext, useDialogContext, type DialogContextValue } from './context'

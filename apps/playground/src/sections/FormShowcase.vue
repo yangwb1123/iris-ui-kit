@@ -30,13 +30,13 @@ const dialogOpen = ref(false)
     <div class="row">
       <span class="row-label">input</span>
       <IrisInput v-model="text" placeholder="Type something" />
-      <span style="font-size:12px;color:var(--iris-muted)">{{ text }}</span>
+      <span style="font-size: 12px; color: var(--iris-muted)">{{ text }}</span>
     </div>
 
     <div class="row">
       <span class="row-label">switch</span>
       <IrisSwitch v-model="enabled" />
-      <span style="font-size:12px;color:var(--iris-muted)">{{ enabled ? 'on' : 'off' }}</span>
+      <span style="font-size: 12px; color: var(--iris-muted)">{{ enabled ? 'on' : 'off' }}</span>
     </div>
 
     <div class="row">
@@ -58,7 +58,7 @@ const dialogOpen = ref(false)
         <IrisRadio value="banana">Banana</IrisRadio>
         <IrisRadio value="cherry">Cherry</IrisRadio>
       </IrisRadioGroup>
-      <span style="font-size:12px;color:var(--iris-muted)">→ {{ fruit }}</span>
+      <span style="font-size: 12px; color: var(--iris-muted)">→ {{ fruit }}</span>
     </div>
 
     <div class="row">
@@ -72,7 +72,7 @@ const dialogOpen = ref(false)
           <IrisDialogDescription>
             This is a modal with focus trap, body scroll lock, and Escape/backdrop dismiss.
           </IrisDialogDescription>
-          <div style="display:flex; gap:var(--iris-gap-md); justify-content:flex-end">
+          <div style="display: flex; gap: var(--iris-gap-md); justify-content: flex-end">
             <IrisDialogClose as-child>
               <IrisButton variant="ghost">Cancel</IrisButton>
             </IrisDialogClose>

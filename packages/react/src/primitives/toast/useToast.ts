@@ -1,9 +1,4 @@
-import {
-  clearToasts,
-  dismissToast,
-  pushToast,
-  type IrisToastInput,
-} from './toastStore'
+import { clearToasts, dismissToast, pushToast, type IrisToastInput } from './toastStore'
 
 export interface UseToastReturn {
   /** Push a new toast (or replace by id). Returns the toast id. */

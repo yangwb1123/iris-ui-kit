@@ -51,9 +51,7 @@ describe('@iris-ui/react IrisSidebarLayout', () => {
   })
 
   it('side="right" reverses flex direction', () => {
-    const { container } = render(
-      <IrisSidebarLayout side="right" sidebar={<nav />} />,
-    )
+    const { container } = render(<IrisSidebarLayout side="right" sidebar={<nav />} />)
     const root = container.querySelector('[data-iris-sidebar-layout]') as HTMLElement
     expect(root.style.flexDirection).toBe('row-reverse')
     expect(root.getAttribute('data-side')).toBe('right')
@@ -159,9 +157,9 @@ describe('@iris-ui/react IrisDashboardGrid', () => {
         <div />
       </IrisDashboardGrid>,
     )
-    expect(
-      (container.querySelector('[data-iris-dashboard-grid]') as HTMLElement).style.gap,
-    ).toBe('20px')
+    expect((container.querySelector('[data-iris-dashboard-grid]') as HTMLElement).style.gap).toBe(
+      '20px',
+    )
   })
 
   it('DashboardCard colSpan="full" sets 1 / -1', () => {

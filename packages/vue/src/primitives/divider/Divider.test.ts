@@ -30,9 +30,15 @@ describe('IrisDivider', () => {
   })
 
   it('spacing sm/md/lg applies different margins', () => {
-    expect(mount(IrisDivider, { props: { spacing: 'sm' } }).attributes('style')).toContain('margin: 8px 0')
-    expect(mount(IrisDivider, { props: { spacing: 'md' } }).attributes('style')).toContain('margin: 16px 0')
-    expect(mount(IrisDivider, { props: { spacing: 'lg' } }).attributes('style')).toContain('margin: 24px 0')
+    expect(mount(IrisDivider, { props: { spacing: 'sm' } }).attributes('style')).toContain(
+      'margin: 8px 0',
+    )
+    expect(mount(IrisDivider, { props: { spacing: 'md' } }).attributes('style')).toContain(
+      'margin: 16px 0',
+    )
+    expect(mount(IrisDivider, { props: { spacing: 'lg' } }).attributes('style')).toContain(
+      'margin: 24px 0',
+    )
   })
 
   it('vertical applies horizontal margins', () => {

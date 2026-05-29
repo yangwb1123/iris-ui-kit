@@ -98,11 +98,7 @@ export const IrisSplitter = defineComponent({
     const handleStyle = computed<Record<string, string>>(() => ({
       flex: '0 0 4px',
       background: dragging.value ? 'var(--iris-primary)' : 'var(--iris-border)',
-      cursor: props.disabled
-        ? 'not-allowed'
-        : isHorizontal.value
-          ? 'col-resize'
-          : 'row-resize',
+      cursor: props.disabled ? 'not-allowed' : isHorizontal.value ? 'col-resize' : 'row-resize',
       transition: 'background-color 120ms ease',
       position: 'relative',
       touchAction: 'none',
@@ -140,11 +136,7 @@ export const IrisSplitter = defineComponent({
             tabindex: props.disabled ? -1 : 0,
             style: handleStyle.value,
           }),
-          h(
-            'div',
-            { 'data-iris-splitter-pane': 'end', style: endStyle.value },
-            slots.end?.(),
-          ),
+          h('div', { 'data-iris-splitter-pane': 'end', style: endStyle.value }, slots.end?.()),
         ],
       )
   },

@@ -26,7 +26,9 @@ describe('@iris-ui/react IrisSkeleton', () => {
 
   it('text shape height = 1em', () => {
     const { container } = render(<IrisSkeleton shape="text" />)
-    expect(container.querySelector('[data-iris-skeleton]')!.getAttribute('style')).toContain('height: 1em')
+    expect(container.querySelector('[data-iris-skeleton]')!.getAttribute('style')).toContain(
+      'height: 1em',
+    )
   })
 
   it('circle defaults to 40x40', () => {
@@ -49,7 +51,9 @@ describe('@iris-ui/react IrisSkeleton', () => {
 
   it('animated=false flips data attr', () => {
     const { container } = render(<IrisSkeleton animated={false} />)
-    expect(container.querySelector('[data-iris-skeleton]')!.getAttribute('data-iris-skeleton-animated')).toBe('false')
+    expect(
+      container.querySelector('[data-iris-skeleton]')!.getAttribute('data-iris-skeleton-animated'),
+    ).toBe('false')
   })
 
   it('installs stylesheet once', () => {

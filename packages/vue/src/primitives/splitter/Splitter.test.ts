@@ -31,7 +31,10 @@ describe('IrisSplitter', () => {
 
   it('renders the start and end slots', () => {
     const wrapper = mount(IrisSplitter, {
-      slots: { start: () => h('span', { class: 'lhs' }, 'L'), end: () => h('span', { class: 'rhs' }, 'R') },
+      slots: {
+        start: () => h('span', { class: 'lhs' }, 'L'),
+        end: () => h('span', { class: 'rhs' }, 'R'),
+      },
     })
     expect(wrapper.find('.lhs').exists()).toBe(true)
     expect(wrapper.find('.rhs').exists()).toBe(true)

@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import {
-  IrisSelect,
-  IrisTable,
-  type IrisListItem,
-  type IrisTableColumn,
-} from '@iris-ui/vue'
+import { IrisSelect, IrisTable, type IrisListItem, type IrisTableColumn } from '@iris-ui/vue'
 
 const fruitOptions: IrisListItem<string>[] = [
   { value: 'apple', label: 'Apple' },
@@ -46,7 +41,7 @@ const selectedRows = ref<Array<string | number>>([])
     <div class="row">
       <span class="row-label">select</span>
       <IrisSelect v-model="selected" :items="fruitOptions" placeholder="Pick a fruit" />
-      <span style="font-size:12px;color:var(--iris-muted)">→ {{ selected ?? '(none)' }}</span>
+      <span style="font-size: 12px; color: var(--iris-muted)">→ {{ selected ?? '(none)' }}</span>
     </div>
 
     <div class="block">
@@ -63,7 +58,7 @@ const selectedRows = ref<Array<string | number>>([])
           <strong>{{ value }}</strong>
         </template>
       </IrisTable>
-      <span style="font-size:12px;color:var(--iris-muted)">
+      <span style="font-size: 12px; color: var(--iris-muted)">
         Selected ids: {{ selectedRows.length ? selectedRows.join(', ') : '(none)' }}
       </span>
     </div>

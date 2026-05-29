@@ -42,7 +42,9 @@ const fruitItems = [
       <div style="flex: 1; min-width: 240px">
         <IrisRangeSlider v-model="range" :min="0" :max="100" :step="5" />
       </div>
-      <span style="font-size: 12px; color: var(--iris-muted)">[{{ range[0] }} → {{ range[1] }}]</span>
+      <span style="font-size: 12px; color: var(--iris-muted)"
+        >[{{ range[0] }} → {{ range[1] }}]</span
+      >
     </div>
 
     <div class="row">
@@ -60,7 +62,14 @@ const fruitItems = [
       </div>
       <div style="display: flex; flex-direction: column; gap: 4px">
         <span style="font-size: 12px; color: var(--iris-muted)">hex</span>
-        <code style="font-size: 14px; padding: 4px 8px; background: var(--iris-surface); border-radius: 4px">
+        <code
+          style="
+            font-size: 14px;
+            padding: 4px 8px;
+            background: var(--iris-surface);
+            border-radius: 4px;
+          "
+        >
           {{ color }}
         </code>
         <div

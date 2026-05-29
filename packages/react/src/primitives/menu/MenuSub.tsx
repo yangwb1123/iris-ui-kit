@@ -171,8 +171,7 @@ export function IrisMenuSub({
         border: '1px solid var(--iris-border)',
         borderRadius: 'var(--iris-radius-md, 6px)',
         padding: 'var(--iris-padding-sm, 4px)',
-        boxShadow:
-          '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
+        boxShadow: '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
         minWidth: 180,
         outline: 'none',
         zIndex: 1001,
@@ -182,9 +181,10 @@ export function IrisMenuSub({
     </div>
   ) : null
 
-  const portaled = content && portalTarget !== false && typeof document !== 'undefined'
-    ? createPortal(content, portalTarget ?? document.body)
-    : content
+  const portaled =
+    content && portalTarget !== false && typeof document !== 'undefined'
+      ? createPortal(content, portalTarget ?? document.body)
+      : content
 
   return (
     <>

@@ -8,11 +8,13 @@ import { IrisTabsContent } from './TabsContent'
 
 enableAutoUnmount(afterEach)
 
-function Harness(opts: {
-  defaultValue?: string
-  controlled?: import('vue').Ref<string | undefined>
-  triggers?: Array<{ value: string; label: string; disabled?: boolean }>
-} = {}) {
+function Harness(
+  opts: {
+    defaultValue?: string
+    controlled?: import('vue').Ref<string | undefined>
+    triggers?: Array<{ value: string; label: string; disabled?: boolean }>
+  } = {},
+) {
   const triggers = opts.triggers ?? [
     { value: 'a', label: 'A' },
     { value: 'b', label: 'B' },
@@ -32,17 +34,14 @@ function Harness(opts: {
           },
           {
             default: () => [
-              h(
-                IrisTabsList,
-                null,
-                () =>
-                  triggers.map((t) =>
-                    h(
-                      IrisTabsTrigger,
-                      { value: t.value, disabled: t.disabled, key: t.value },
-                      () => t.label,
-                    ),
+              h(IrisTabsList, null, () =>
+                triggers.map((t) =>
+                  h(
+                    IrisTabsTrigger,
+                    { value: t.value, disabled: t.disabled, key: t.value },
+                    () => t.label,
                   ),
+                ),
               ),
               ...triggers.map((t) =>
                 h(IrisTabsContent, { value: t.value, key: t.value }, () => `Content ${t.label}`),
@@ -176,12 +175,14 @@ describe('IrisTabs', () => {
   })
 
   it('Trigger outside Tabs throws', () => {
-    expect(() => mount(defineComponent({ setup: () => () => h(IrisTabsTrigger, { value: 'x' }) })))
-      .toThrow(/IrisTabsTrigger/)
+    expect(() =>
+      mount(defineComponent({ setup: () => () => h(IrisTabsTrigger, { value: 'x' }) })),
+    ).toThrow(/IrisTabsTrigger/)
   })
 
   it('Content outside Tabs throws', () => {
-    expect(() => mount(defineComponent({ setup: () => () => h(IrisTabsContent, { value: 'x' }) })))
-      .toThrow(/IrisTabsContent/)
+    expect(() =>
+      mount(defineComponent({ setup: () => () => h(IrisTabsContent, { value: 'x' }) })),
+    ).toThrow(/IrisTabsContent/)
   })
 })

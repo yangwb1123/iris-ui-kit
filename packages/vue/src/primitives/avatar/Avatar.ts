@@ -99,8 +99,7 @@ export const IrisAvatar = defineComponent({
         ])
       }
 
-      const fallbackContent =
-        slots.fallback?.() ?? fallbackText.value ?? ''
+      const fallbackContent = slots.fallback?.() ?? fallbackText.value ?? ''
 
       return h('span', baseAttrs, fallbackContent)
     }

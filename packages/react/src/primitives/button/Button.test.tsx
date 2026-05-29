@@ -61,9 +61,7 @@ describe('@iris-ui/react IrisButton', () => {
   })
 
   it('renders the leading slot when not loading', () => {
-    render(
-      <IrisButton leading={<span data-testid="lead">*</span>}>X</IrisButton>,
-    )
+    render(<IrisButton leading={<span data-testid="lead">*</span>}>X</IrisButton>)
     expect(screen.getByTestId('lead')).toBeTruthy()
   })
 

@@ -21,9 +21,7 @@ export type FloatingMachine = Machine<FloatingState, Record<string, never>, Floa
  * `useMachine`. The DOM-level positioning is handled separately by the
  * framework adapter (e.g. `useFloating` in `@iris-ui/vue`).
  */
-export function createFloatingMachine(
-  initial: FloatingState = 'closed',
-): FloatingMachine {
+export function createFloatingMachine(initial: FloatingState = 'closed'): FloatingMachine {
   return createMachine<FloatingState, Record<string, never>, FloatingEvent>({
     initial,
     context: {},

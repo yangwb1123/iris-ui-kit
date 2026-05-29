@@ -5,11 +5,7 @@ export {
   type IrisStackAlign,
   type IrisStackJustify,
 } from './Stack'
-export {
-  IrisContainer,
-  type IrisContainerProps,
-  type IrisContainerMaxWidth,
-} from './Container'
+export { IrisContainer, type IrisContainerProps, type IrisContainerMaxWidth } from './Container'
 export { IrisGrid, type IrisGridProps, type IrisGridColumns } from './Grid'
 export {
   IrisSidebarLayout,

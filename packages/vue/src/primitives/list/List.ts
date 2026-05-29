@@ -58,9 +58,7 @@ export const IrisList = defineComponent({
 
     const isSelected = (value: unknown): boolean => {
       if (props.multi) {
-        return (
-          Array.isArray(props.modelValue) && (props.modelValue as unknown[]).includes(value)
-        )
+        return Array.isArray(props.modelValue) && (props.modelValue as unknown[]).includes(value)
       }
       return props.modelValue === value
     }

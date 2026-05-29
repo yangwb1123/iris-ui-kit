@@ -5,8 +5,10 @@ export interface IrisSidebarLayoutSidebarState {
   setCollapsed: (next: boolean) => void
 }
 
-export interface IrisSidebarLayoutProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface IrisSidebarLayoutProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'children'
+> {
   collapsed?: boolean
   defaultCollapsed?: boolean
   onCollapsedChange?: (next: boolean) => void
@@ -16,9 +18,7 @@ export interface IrisSidebarLayoutProps
   collapsedWidth?: number | string
   side?: 'left' | 'right'
   /** Sidebar content. May be a render function that receives `{ collapsed, setCollapsed }`. */
-  sidebar?:
-    | React.ReactNode
-    | ((state: IrisSidebarLayoutSidebarState) => React.ReactNode)
+  sidebar?: React.ReactNode | ((state: IrisSidebarLayoutSidebarState) => React.ReactNode)
   children?: React.ReactNode
 }
 

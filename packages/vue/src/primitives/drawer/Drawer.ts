@@ -37,9 +37,7 @@ export const IrisDrawer = defineComponent({
     'update:open': (_value: boolean) => true,
   },
   setup(props, { slots, emit }) {
-    const machine = createFloatingMachine(
-      (props.open ?? props.defaultOpen) ? 'open' : 'closed',
-    )
+    const machine = createFloatingMachine((props.open ?? props.defaultOpen) ? 'open' : 'closed')
     const { state } = useMachine(machine)
 
     const isControlled = computed(() => props.open !== undefined)

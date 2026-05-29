@@ -51,18 +51,18 @@ describe('IrisStepper', () => {
 
   it('first step is active, others are pending', () => {
     const w = mount(harness())
-    const statuses = w.findAll('[data-iris-stepper-step]').map((el) =>
-      el.attributes('data-iris-stepper-step-status'),
-    )
+    const statuses = w
+      .findAll('[data-iris-stepper-step]')
+      .map((el) => el.attributes('data-iris-stepper-step-status'))
     expect(statuses).toEqual(['active', 'pending', 'pending'])
   })
 
   it('current=1 → step 0 completed, step 1 active, step 2 pending', async () => {
     const w = mount(harness({ current: 1 }))
     await nextTick()
-    const statuses = w.findAll('[data-iris-stepper-step]').map((el) =>
-      el.attributes('data-iris-stepper-step-status'),
-    )
+    const statuses = w
+      .findAll('[data-iris-stepper-step]')
+      .map((el) => el.attributes('data-iris-stepper-step-status'))
     expect(statuses).toEqual(['completed', 'active', 'pending'])
   })
 
@@ -139,9 +139,9 @@ describe('IrisStepper', () => {
     const w = mount(harness({ current: 99 }))
     await nextTick()
     // Last step (index 2) becomes active
-    const statuses = w.findAll('[data-iris-stepper-step]').map((el) =>
-      el.attributes('data-iris-stepper-step-status'),
-    )
+    const statuses = w
+      .findAll('[data-iris-stepper-step]')
+      .map((el) => el.attributes('data-iris-stepper-step-status'))
     expect(statuses).toEqual(['completed', 'completed', 'active'])
   })
 })

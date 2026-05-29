@@ -81,7 +81,10 @@ export const IrisRadio = defineComponent({
   inheritAttrs: false,
   props: {
     /** Value emitted to the group when this radio is selected. */
-    value: { type: [String, Number, Boolean] as PropType<string | number | boolean>, required: true },
+    value: {
+      type: [String, Number, Boolean] as PropType<string | number | boolean>,
+      required: true,
+    },
     /** Standalone mode only: two-way binding without a group. */
     modelValue: {
       type: [String, Number, Boolean] as PropType<string | number | boolean | null>,
@@ -180,4 +183,3 @@ export const IrisRadio = defineComponent({
       )
   },
 })
-

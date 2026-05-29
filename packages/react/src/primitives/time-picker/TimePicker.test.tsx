@@ -49,11 +49,7 @@ describe('@iris-ui/react IrisTimePicker', () => {
   it('minute rounds to step', () => {
     const onChange = vi.fn()
     render(
-      <IrisTimePicker
-        value={{ hours: 10, minutes: 0 }}
-        minuteStep={5}
-        onValueChange={onChange}
-      />,
+      <IrisTimePicker value={{ hours: 10, minutes: 0 }} minuteStep={5} onValueChange={onChange} />,
     )
     act(() => {
       fireEvent.change(minutesInput(), { target: { value: '13' } })
@@ -73,11 +69,7 @@ describe('@iris-ui/react IrisTimePicker', () => {
   it('AM/PM toggle flips 24h hour by 12', () => {
     const onChange = vi.fn()
     render(
-      <IrisTimePicker
-        value={{ hours: 3, minutes: 0 }}
-        format="12h"
-        onValueChange={onChange}
-      />,
+      <IrisTimePicker value={{ hours: 3, minutes: 0 }} format="12h" onValueChange={onChange} />,
     )
     act(() => {
       fireEvent.click(document.querySelector('[data-iris-time-picker-meridiem]')!)
@@ -97,11 +89,7 @@ describe('@iris-ui/react IrisTimePicker', () => {
   it('ArrowDown on minutes decrements by step', () => {
     const onChange = vi.fn()
     render(
-      <IrisTimePicker
-        value={{ hours: 10, minutes: 30 }}
-        minuteStep={5}
-        onValueChange={onChange}
-      />,
+      <IrisTimePicker value={{ hours: 10, minutes: 30 }} minuteStep={5} onValueChange={onChange} />,
     )
     act(() => {
       fireEvent.keyDown(minutesInput(), { key: 'ArrowDown' })
@@ -130,13 +118,7 @@ describe('@iris-ui/react IrisTimePicker', () => {
   })
 
   it('id + ariaDescribedby forward to hours input', () => {
-    render(
-      <IrisTimePicker
-        value={{ hours: 0, minutes: 0 }}
-        id="tp-1"
-        ariaDescribedby="hint"
-      />,
-    )
+    render(<IrisTimePicker value={{ hours: 0, minutes: 0 }} id="tp-1" ariaDescribedby="hint" />)
     expect(hoursInput().id).toBe('tp-1')
     expect(hoursInput().getAttribute('aria-describedby')).toBe('hint')
   })

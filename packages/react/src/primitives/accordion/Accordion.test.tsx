@@ -35,7 +35,9 @@ function harness(props?: {
 }
 
 function triggers(): HTMLButtonElement[] {
-  return Array.from(document.querySelectorAll('[data-iris-accordion-trigger]')) as HTMLButtonElement[]
+  return Array.from(
+    document.querySelectorAll('[data-iris-accordion-trigger]'),
+  ) as HTMLButtonElement[]
 }
 
 function regions(): HTMLElement[] {

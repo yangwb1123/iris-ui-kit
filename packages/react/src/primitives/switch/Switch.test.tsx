@@ -55,8 +55,12 @@ describe('@iris-ui/react IrisSwitch', () => {
 
   it('data-state reflects checked', () => {
     const { container, rerender } = render(<IrisSwitch checked={false} />)
-    expect(container.querySelector('[data-iris-switch]')!.getAttribute('data-state')).toBe('unchecked')
+    expect(container.querySelector('[data-iris-switch]')!.getAttribute('data-state')).toBe(
+      'unchecked',
+    )
     rerender(<IrisSwitch checked={true} />)
-    expect(container.querySelector('[data-iris-switch]')!.getAttribute('data-state')).toBe('checked')
+    expect(container.querySelector('[data-iris-switch]')!.getAttribute('data-state')).toBe(
+      'checked',
+    )
   })
 })

@@ -72,7 +72,7 @@
     },
     {
       "group": "primitives",
-      "count": 85,
+      "count": 86,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -85,6 +85,7 @@
         "IrisButton",
         "IrisCalendar",
         "IrisCard",
+        "IrisCarousel",
         "IrisCheckbox",
         "IrisChip",
         "IrisColorPicker",
@@ -305,6 +306,19 @@
       "name": "IrisCard",
       "group": "primitives",
       "module": "card",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisCarousel",
+      "group": "primitives",
+      "module": "carousel",
       "frameworks": [
         "react",
         "vue"
@@ -1510,8 +1524,8 @@
     ]
   },
   "stats": {
-    "total": 100,
-    "both": 100,
+    "total": 101,
+    "both": 101,
     "reactOnly": 0,
     "vueOnly": 0
   }

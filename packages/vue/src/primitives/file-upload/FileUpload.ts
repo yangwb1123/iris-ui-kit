@@ -1,4 +1,5 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
+import { useI18n } from '../../i18n'
 
 export interface IrisFileUploadFile {
   /** The underlying File. */
@@ -50,7 +51,7 @@ export const IrisFileUpload = defineComponent({
     maxFiles: { type: Number, default: 0 },
     disabled: { type: Boolean, default: false },
     /** Idle dropzone label. */
-    label: { type: String, default: 'Click or drop files to upload' },
+    label: { type: String, default: undefined },
     /** id forwarded to the hidden input. Set by IrisFormField. */
     id: { type: String, default: undefined },
   },
@@ -62,13 +63,18 @@ export const IrisFileUpload = defineComponent({
     reject: (_entries: { file: IrisFileUploadFile; reason: 'size' | 'count' | 'type' }[]) => true,
   },
   setup(props, { attrs, slots, emit }) {
+    const { t } = useI18n()
+    const resolvedLabel = computed(() => props.label ?? t('fileUpload.label'))
     const inputRef = ref<HTMLInputElement | null>(null)
     const dragOver = ref(false)
     const dragCount = ref(0) // tracks nested dragenter/leave correctly
 
     const acceptMatches = (file: File): boolean => {
       if (!props.accept) return true
-      const tokens = props.accept.split(',').map((t) => t.trim()).filter(Boolean)
+      const tokens = props.accept
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean)
       if (tokens.length === 0) return true
       return tokens.some((token) => {
         if (token.startsWith('.')) {
@@ -82,7 +88,9 @@ export const IrisFileUpload = defineComponent({
       })
     }
 
-    const validate = (incoming: File[]): {
+    const validate = (
+      incoming: File[],
+    ): {
       accepted: IrisFileUploadFile[]
       rejected: { file: IrisFileUploadFile; reason: 'size' | 'count' | 'type' }[]
     } => {
@@ -183,13 +191,9 @@ export const IrisFileUpload = defineComponent({
       justifyContent: 'center',
       gap: '6px',
       padding: 'var(--iris-padding-lg, 20px)',
-      border: `2px dashed ${
-        dragOver.value ? 'var(--iris-primary)' : 'var(--iris-border)'
-      }`,
+      border: `2px dashed ${dragOver.value ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
       borderRadius: 'var(--iris-radius-md, 6px)',
-      background: dragOver.value
-        ? 'var(--iris-surface-hover)'
-        : 'var(--iris-surface)',
+      background: dragOver.value ? 'var(--iris-surface-hover)' : 'var(--iris-surface)',
       color: 'var(--iris-foreground)',
       cursor: props.disabled ? 'not-allowed' : 'pointer',
       opacity: props.disabled ? '0.6' : '1',
@@ -255,7 +259,7 @@ export const IrisFileUpload = defineComponent({
                   'data-iris-file-upload-label': '',
                   style: { fontSize: '14px', fontWeight: '500' },
                 },
-                props.label,
+                resolvedLabel.value,
               ),
               props.accept
                 ? h(

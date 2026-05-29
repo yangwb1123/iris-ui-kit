@@ -61,7 +61,7 @@ export const defaultMessages: I18nMessages = {
   'select.placeholder': 'Select…',
   'commandPalette.placeholder': 'Type a command…',
   'commandPalette.empty': 'No results',
-  'fileUpload.browse': 'Browse files',
+  'fileUpload.label': 'Click or drop files to upload',
   'table.empty': 'No data',
   'table.loading': 'Loading…',
   'table.error': 'Failed to load data',

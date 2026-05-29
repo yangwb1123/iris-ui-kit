@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
 
 export interface IrisFileUploadFile {
   file: File
@@ -44,7 +45,10 @@ export interface IrisFileUploadProps {
   /** id forwarded to the hidden input. Set by `IrisFormField`. */
   id?: string
   /** Custom render for the file list. Receives `{ files, remove }`. */
-  renderList?: (state: { files: IrisFileUploadFile[]; remove: (index: number) => void }) => React.ReactNode
+  renderList?: (state: {
+    files: IrisFileUploadFile[]
+    remove: (index: number) => void
+  }) => React.ReactNode
   style?: React.CSSProperties
   className?: string
 }
@@ -65,12 +69,14 @@ export function IrisFileUpload({
   maxSize = 0,
   maxFiles = 0,
   disabled = false,
-  label = 'Click or drop files to upload',
+  label,
   id,
   renderList,
   style,
   className,
 }: IrisFileUploadProps): React.ReactElement {
+  const { t } = useI18n()
+  const resolvedLabel = label ?? t('fileUpload.label')
   const isControlled = valueProp !== undefined
   const [internal, setInternal] = React.useState<IrisFileUploadFile[]>(defaultValue)
   const files = isControlled ? (valueProp as IrisFileUploadFile[]) : internal
@@ -81,7 +87,10 @@ export function IrisFileUpload({
 
   const acceptMatches = (file: File): boolean => {
     if (!accept) return true
-    const tokens = accept.split(',').map((t) => t.trim()).filter(Boolean)
+    const tokens = accept
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
     if (tokens.length === 0) return true
     return tokens.some((token) => {
       if (token.startsWith('.')) {
@@ -109,10 +118,7 @@ export function IrisFileUpload({
         rejected.push({ file: wrapped, reason: 'size' })
         continue
       }
-      if (
-        maxFiles > 0 &&
-        (multiple ? existing + acceptedCount + 1 > maxFiles : false)
-      ) {
+      if (maxFiles > 0 && (multiple ? existing + acceptedCount + 1 > maxFiles : false)) {
         rejected.push({ file: wrapped, reason: 'count' })
         continue
       }
@@ -243,71 +249,67 @@ export function IrisFileUpload({
         style={zoneStyle}
       >
         <div data-iris-file-upload-label="" style={{ fontSize: 14, fontWeight: 500 }}>
-          {label}
+          {resolvedLabel}
         </div>
-        {accept ? (
-          <div style={{ fontSize: 12, color: 'var(--iris-muted)' }}>{accept}</div>
-        ) : null}
+        {accept ? <div style={{ fontSize: 12, color: 'var(--iris-muted)' }}>{accept}</div> : null}
       </div>
-      {renderList
-        ? renderList({ files, remove: removeAt })
-        : files.length > 0
-          ? (
-              <ul
-                data-iris-file-upload-list=""
+      {renderList ? (
+        renderList({ files, remove: removeAt })
+      ) : files.length > 0 ? (
+        <ul
+          data-iris-file-upload-list=""
+          style={{
+            listStyle: 'none',
+            margin: '8px 0 0 0',
+            padding: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+          }}
+        >
+          {files.map((item, idx) => (
+            <li
+              key={`${item.name}-${idx}`}
+              data-iris-file-upload-item=""
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 10px',
+                background: 'var(--iris-surface)',
+                border: '1px solid var(--iris-border)',
+                borderRadius: 'var(--iris-radius-sm, 4px)',
+                fontSize: 13,
+              }}
+            >
+              <span style={{ flex: 1, minWidth: 0 }}>{item.name}</span>
+              <span style={{ color: 'var(--iris-muted)', fontSize: 12 }}>
+                {formatBytes(item.size)}
+              </span>
+              <button
+                type="button"
+                aria-label={`Remove ${item.name}`}
+                disabled={disabled || undefined}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  removeAt(idx)
+                }}
                 style={{
-                  listStyle: 'none',
-                  margin: '8px 0 0 0',
-                  padding: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 4,
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--iris-muted)',
+                  cursor: disabled ? 'not-allowed' : 'pointer',
+                  fontSize: 16,
+                  lineHeight: 1,
+                  padding: '0 4px',
                 }}
               >
-                {files.map((item, idx) => (
-                  <li
-                    key={`${item.name}-${idx}`}
-                    data-iris-file-upload-item=""
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '6px 10px',
-                      background: 'var(--iris-surface)',
-                      border: '1px solid var(--iris-border)',
-                      borderRadius: 'var(--iris-radius-sm, 4px)',
-                      fontSize: 13,
-                    }}
-                  >
-                    <span style={{ flex: 1, minWidth: 0 }}>{item.name}</span>
-                    <span style={{ color: 'var(--iris-muted)', fontSize: 12 }}>
-                      {formatBytes(item.size)}
-                    </span>
-                    <button
-                      type="button"
-                      aria-label={`Remove ${item.name}`}
-                      disabled={disabled || undefined}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        removeAt(idx)
-                      }}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--iris-muted)',
-                        cursor: disabled ? 'not-allowed' : 'pointer',
-                        fontSize: 16,
-                        lineHeight: 1,
-                        padding: '0 4px',
-                      }}
-                    >
-                      ×
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )
-          : null}
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   )
 }

@@ -74,7 +74,10 @@ describe('@iris-ui/react IrisFileUpload', () => {
     const onReject = vi.fn()
     render(<IrisFileUpload accept="image/*" onReject={onReject} />)
     const input = document.querySelector('[data-iris-file-upload-input]') as HTMLInputElement
-    Object.defineProperty(input, 'files', { value: [fileOf('a.txt', 1, 'text/plain')], configurable: true })
+    Object.defineProperty(input, 'files', {
+      value: [fileOf('a.txt', 1, 'text/plain')],
+      configurable: true,
+    })
     act(() => {
       fireEvent.change(input)
     })
@@ -100,9 +103,9 @@ describe('@iris-ui/react IrisFileUpload', () => {
     act(() => {
       fireEvent.dragEnter(zone)
     })
-    expect(
-      document.querySelector('[data-iris-file-upload]')?.getAttribute('data-drag-over'),
-    ).toBe('true')
+    expect(document.querySelector('[data-iris-file-upload]')?.getAttribute('data-drag-over')).toBe(
+      'true',
+    )
     act(() => {
       fireEvent.dragLeave(zone)
     })
@@ -149,6 +152,27 @@ describe('@iris-ui/react IrisFileUpload', () => {
     render(<IrisFileUpload id="my-upload" />)
     expect((document.querySelector('[data-iris-file-upload-input]') as HTMLInputElement).id).toBe(
       'my-upload',
+    )
+  })
+})
+
+describe('@iris-ui/react IrisFileUpload i18n', () => {
+  it('renders the default localized label', () => {
+    const { container } = render(<IrisFileUpload />)
+    expect(container.querySelector('[data-iris-file-upload-label]')?.textContent).toBe(
+      'Click or drop files to upload',
+    )
+  })
+
+  it('localizes the label via IrisI18nProvider', async () => {
+    const { IrisI18nProvider } = await import('../../i18n')
+    const { container } = render(
+      <IrisI18nProvider messages={{ 'fileUpload.label': 'Datei ablegen' }}>
+        <IrisFileUpload />
+      </IrisI18nProvider>,
+    )
+    expect(container.querySelector('[data-iris-file-upload-label]')?.textContent).toBe(
+      'Datei ablegen',
     )
   })
 })

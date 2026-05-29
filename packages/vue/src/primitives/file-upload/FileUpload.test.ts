@@ -33,22 +33,19 @@ describe('@iris-ui/vue IrisFileUpload', () => {
 
   it('multiple prop forwards to native input', () => {
     const wrap = mount(IrisFileUpload, { props: { multiple: true } })
-    const input = wrap.find('[data-iris-file-upload-input]')
-      .element as HTMLInputElement
+    const input = wrap.find('[data-iris-file-upload-input]').element as HTMLInputElement
     expect(input.multiple).toBe(true)
   })
 
   it('accept prop forwards to native input', () => {
     const wrap = mount(IrisFileUpload, { props: { accept: 'image/*' } })
-    const input = wrap.find('[data-iris-file-upload-input]')
-      .element as HTMLInputElement
+    const input = wrap.find('[data-iris-file-upload-input]').element as HTMLInputElement
     expect(input.accept).toBe('image/*')
   })
 
   it('selecting a file emits update:modelValue', async () => {
     const wrap = mount(IrisFileUpload, { props: { multiple: false } })
-    const input = wrap.find('[data-iris-file-upload-input]')
-      .element as HTMLInputElement
+    const input = wrap.find('[data-iris-file-upload-input]').element as HTMLInputElement
     const file = fileOf('a.txt', 100)
     Object.defineProperty(input, 'files', { value: [file], configurable: true })
     await wrap.find('[data-iris-file-upload-input]').trigger('change')
@@ -64,8 +61,7 @@ describe('@iris-ui/vue IrisFileUpload', () => {
         modelValue: [{ file: fileOf('old.txt', 1), name: 'old.txt', size: 1, type: 'text/plain' }],
       },
     })
-    const input = wrap.find('[data-iris-file-upload-input]')
-      .element as HTMLInputElement
+    const input = wrap.find('[data-iris-file-upload-input]').element as HTMLInputElement
     Object.defineProperty(input, 'files', {
       value: [fileOf('new.txt', 2)],
       configurable: true,
@@ -82,8 +78,7 @@ describe('@iris-ui/vue IrisFileUpload', () => {
     const wrap = mount(IrisFileUpload, {
       props: { multiple: true, modelValue: [existing] },
     })
-    const input = wrap.find('[data-iris-file-upload-input]')
-      .element as HTMLInputElement
+    const input = wrap.find('[data-iris-file-upload-input]').element as HTMLInputElement
     Object.defineProperty(input, 'files', {
       value: [fileOf('b.txt', 2)],
       configurable: true,
@@ -96,8 +91,7 @@ describe('@iris-ui/vue IrisFileUpload', () => {
 
   it('maxSize rejects oversized files', async () => {
     const wrap = mount(IrisFileUpload, { props: { maxSize: 100 } })
-    const input = wrap.find('[data-iris-file-upload-input]')
-      .element as HTMLInputElement
+    const input = wrap.find('[data-iris-file-upload-input]').element as HTMLInputElement
     Object.defineProperty(input, 'files', {
       value: [fileOf('big.txt', 200)],
       configurable: true,
@@ -109,8 +103,7 @@ describe('@iris-ui/vue IrisFileUpload', () => {
 
   it('accept filter rejects mismatched type', async () => {
     const wrap = mount(IrisFileUpload, { props: { accept: 'image/*' } })
-    const input = wrap.find('[data-iris-file-upload-input]')
-      .element as HTMLInputElement
+    const input = wrap.find('[data-iris-file-upload-input]').element as HTMLInputElement
     Object.defineProperty(input, 'files', {
       value: [fileOf('a.txt', 1, 'text/plain')],
       configurable: true,
@@ -118,9 +111,7 @@ describe('@iris-ui/vue IrisFileUpload', () => {
     await wrap.find('[data-iris-file-upload-input]').trigger('change')
     const reject = wrap.emitted('reject')!
     expect(reject.length).toBe(1)
-    expect(
-      (reject[0]![0] as { reason: string }[])[0]!.reason,
-    ).toBe('type')
+    expect((reject[0]![0] as { reason: string }[])[0]!.reason).toBe('type')
   })
 
   it('drop event accepts files', async () => {
@@ -177,8 +168,30 @@ describe('@iris-ui/vue IrisFileUpload', () => {
 
   it('id forwarded to hidden input (form field integration)', () => {
     const wrap = mount(IrisFileUpload, { props: { id: 'my-upload' } })
-    expect(
-      (wrap.find('[data-iris-file-upload-input]').element as HTMLInputElement).id,
-    ).toBe('my-upload')
+    expect((wrap.find('[data-iris-file-upload-input]').element as HTMLInputElement).id).toBe(
+      'my-upload',
+    )
+  })
+})
+
+describe('@iris-ui/vue IrisFileUpload i18n', () => {
+  it('renders the default localized label', () => {
+    const w = mount(IrisFileUpload)
+    expect(w.find('[data-iris-file-upload-label]').text()).toBe('Click or drop files to upload')
+  })
+
+  it('localizes the label via IrisI18nProvider', async () => {
+    const { defineComponent, h } = await import('vue')
+    const { IrisI18nProvider } = await import('../../i18n')
+    const Probe = defineComponent({
+      setup: () => () =>
+        h(
+          IrisI18nProvider,
+          { messages: { 'fileUpload.label': 'Datei ablegen' } },
+          { default: () => h(IrisFileUpload) },
+        ),
+    })
+    const w = mount(Probe)
+    expect(w.find('[data-iris-file-upload-label]').text()).toBe('Datei ablegen')
   })
 })

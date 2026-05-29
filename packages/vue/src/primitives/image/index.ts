@@ -1,0 +1,1 @@
+export { IrisImage } from './Image'

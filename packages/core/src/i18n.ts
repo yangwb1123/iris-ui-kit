@@ -75,6 +75,7 @@ export const defaultMessages: I18nMessages = {
   'backTop.label': 'Back to top',
   'treeSelect.expand': 'Expand',
   'treeSelect.collapse': 'Collapse',
+  'image.preview': 'Image preview',
   'table.empty': 'No data',
   'table.loading': 'Loading…',
   'table.error': 'Failed to load data',

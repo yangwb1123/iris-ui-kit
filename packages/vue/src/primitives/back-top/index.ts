@@ -1,0 +1,1 @@
+export { IrisBackTop } from './BackTop'

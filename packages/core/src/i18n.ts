@@ -72,6 +72,7 @@ export const defaultMessages: I18nMessages = {
   'transfer.toSource': 'Move to available',
   'transfer.search': 'Search',
   'transfer.empty': 'No items',
+  'backTop.label': 'Back to top',
   'table.empty': 'No data',
   'table.loading': 'Loading…',
   'table.error': 'Failed to load data',

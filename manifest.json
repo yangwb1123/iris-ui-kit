@@ -72,7 +72,7 @@
     },
     {
       "group": "primitives",
-      "count": 109,
+      "count": 110,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -150,6 +150,7 @@
         "IrisRating",
         "IrisResizer",
         "IrisResult",
+        "IrisRibbon",
         "IrisScrollArea",
         "IrisSegmented",
         "IrisSelect",
@@ -1340,6 +1341,19 @@
       }
     },
     {
+      "name": "IrisRibbon",
+      "group": "primitives",
+      "module": "ribbon",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
       "name": "IrisScrollArea",
       "group": "primitives",
       "module": "scroll-area",
@@ -1846,8 +1860,8 @@
     ]
   },
   "stats": {
-    "total": 124,
-    "both": 124,
+    "total": 125,
+    "both": 125,
     "reactOnly": 0,
     "vueOnly": 0
   }

@@ -72,13 +72,14 @@
     },
     {
       "group": "primitives",
-      "count": 106,
+      "count": 107,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
         "IrisAffix",
         "IrisAlert",
         "IrisAnchor",
+        "IrisAspectRatio",
         "IrisAvatar",
         "IrisBackTop",
         "IrisBadge",
@@ -248,6 +249,19 @@
       "name": "IrisAnchor",
       "group": "primitives",
       "module": "anchor",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisAspectRatio",
+      "group": "primitives",
+      "module": "aspect-ratio",
       "frameworks": [
         "react",
         "vue"
@@ -1804,8 +1818,8 @@
     ]
   },
   "stats": {
-    "total": 121,
-    "both": 121,
+    "total": 122,
+    "both": 122,
     "reactOnly": 0,
     "vueOnly": 0
   }

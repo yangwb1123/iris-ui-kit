@@ -1,0 +1,18 @@
+{
+  "name": "docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "node .vitepress/generate-components.mjs",
+    "dev": "vitepress dev",
+    "prebuild": "node .vitepress/generate-components.mjs",
+    "build": "vitepress build",
+    "preview": "vitepress preview",
+    "test": "vitest run --passWithNoTests",
+    "clean": "rm -rf .vitepress/dist .vitepress/cache .turbo"
+  },
+  "devDependencies": {
+    "vitepress": "^1.5.0"
+  }
+}

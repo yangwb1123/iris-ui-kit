@@ -113,8 +113,9 @@ Layer 0  主题系统  tokens · theme · icons —— 贯穿层                
 
 ## 未竟事项
 
-- **数据层**：宽表横向虚拟化（列冻结 / pinned 已具备；CSV / Excel 导出已具备）。
-- **生态**：首个 npm 发布（changesets 流水线就绪）；更多框架适配器（Solid / Svelte 走同一 core 桥接）。
+> 数据层已闭环（变高 / 自动测量 / 横向虚拟化 · 列冻结 · 异步 + 分页 · CSV / Excel 导出）；表单 #1 全量（引擎 · `useFieldArray` · 提交聚焦首错 · Standard Schema 适配）。剩余均为生态/外延，非组件能力缺口：
+
+- **生态**：首个 npm 发布（changesets 流水线就绪，待执行）；更多框架适配器（Solid / Svelte 走同一 core 桥接）。
 - 延后：theme marketplace、Figma 插件、VS Code 扩展。
 
 ## svjs 教训（北极星）

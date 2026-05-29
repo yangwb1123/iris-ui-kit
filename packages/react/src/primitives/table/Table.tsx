@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { computeVirtualRange } from '@iris-ui/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
@@ -134,6 +135,13 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   onCellEdit?: (event: IrisTableCellEditEvent<Row>) => void
   /** Enable virtual scrolling for the body (renders only the visible window). */
   virtualScroll?: IrisTableVirtualOptions
+  /**
+   * Render only the horizontally-visible columns (plus pinned + a small
+   * overscan) for very wide tables. Needs numeric column widths; the table
+   * becomes a horizontal scroll container. Off-screen grid tracks stay sized,
+   * so alignment, resize, and pinned columns keep working.
+   */
+  columnVirtualization?: boolean
   /** Empty state node (replaces the row body when `data` is empty). */
   emptyState?: React.ReactNode
   /** Show the loading state instead of rows. */
@@ -174,6 +182,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onColumnWidthsChange,
   onCellEdit,
   virtualScroll,
+  columnVirtualization = false,
   emptyState,
   loading = false,
   error = false,
@@ -371,6 +380,56 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
   }
 
+  // -------- Column virtualization (opt-in) --------
+  const rootRef = React.useRef<HTMLDivElement | null>(null)
+  const [scrollLeft, setScrollLeft] = React.useState(0)
+  const [viewportWidth, setViewportWidth] = React.useState(0)
+
+  const resolvedColWidths = React.useMemo(
+    () =>
+      columns.map(
+        (col) =>
+          columnWidths[col.key] ??
+          (typeof col.width === 'number' ? col.width : DEFAULT_PINNED_WIDTH),
+      ),
+    [columns, columnWidths],
+  )
+
+  React.useEffect(() => {
+    if (!columnVirtualization) return
+    const el = rootRef.current
+    if (!el) return
+    const measure = () => setViewportWidth(el.clientWidth)
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [columnVirtualization])
+
+  // Set of column indices to render: the visible window + overscan, always
+  // unioned with pinned columns. `null` ⇒ render every column (feature off).
+  const visibleColSet = React.useMemo(() => {
+    if (!columnVirtualization) return null
+    const w = computeVirtualRange({
+      itemCount: columns.length,
+      scrollTop: scrollLeft,
+      viewportSize: viewportWidth,
+      itemSize: (i) => resolvedColWidths[i] ?? DEFAULT_PINNED_WIDTH,
+      buffer: 2,
+    })
+    const set = new Set<number>()
+    for (let i = w.startIndex; i <= w.endIndex; i += 1) set.add(i)
+    columns.forEach((col, i) => {
+      if (col.pinned) set.add(i)
+    })
+    return set
+  }, [columnVirtualization, columns, scrollLeft, viewportWidth, resolvedColWidths])
+
+  // 1-based grid track for a column (after the optional selection track), so a
+  // rendered cell lands in the right place even when earlier cells are skipped.
+  const colTrack = (i: number): number => (selectable !== 'none' ? 2 : 1) + i
+
   const baseCellStyle: React.CSSProperties = {
     padding: '8px 12px',
     display: 'flex',
@@ -420,7 +479,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
             />
           </div>
         ) : null}
-        {columns.map((col) => {
+        {columns.map((col, ci) => {
+          if (visibleColSet && !visibleColSet.has(ci)) return null
           const raw = getCellValue(row, col)
           const editing = editingCellId === cellId(k, col.key)
           return (
@@ -434,6 +494,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               onDoubleClick={col.editable ? () => beginEdit(row, col, k) : undefined}
               style={{
                 ...baseCellStyle,
+                ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
                 justifyContent:
                   col.align === 'right'
                     ? 'flex-end'
@@ -490,18 +551,26 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   return (
     <div
+      ref={rootRef}
       role="table"
       data-iris-table=""
       data-bordered={bordered ? 'true' : undefined}
       data-striped={striped ? 'true' : undefined}
+      data-column-virtualized={columnVirtualization ? 'true' : undefined}
       className={className}
+      onScroll={
+        columnVirtualization
+          ? (e) => setScrollLeft((e.currentTarget as HTMLDivElement).scrollLeft)
+          : undefined
+      }
       style={{
         background: 'var(--iris-background)',
         color: 'var(--iris-foreground)',
         fontSize: 14,
         border: borderStyle,
         borderRadius: 'var(--iris-radius-md, 6px)',
-        overflow: 'hidden',
+        // Column virtualization turns the table into a horizontal scroll container.
+        overflow: columnVirtualization ? 'auto' : 'hidden',
         ...style,
       }}
     >
@@ -535,7 +604,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
             }}
           />
         ) : null}
-        {columns.map((col) => {
+        {columns.map((col, ci) => {
+          if (visibleColSet && !visibleColSet.has(ci)) return null
           const isSortKey = sort?.key === col.key
           const dir: IrisTableSortDirection | undefined = isSortKey ? sort?.direction : undefined
           return (
@@ -560,6 +630,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               data-sort-direction={dir}
               style={{
                 ...baseCellStyle,
+                ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
                 justifyContent:
                   col.align === 'right'
                     ? 'flex-end'

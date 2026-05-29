@@ -549,3 +549,37 @@ describe('exportExcel', () => {
     expect(xml).toContain('<Data ss:Type="Number">31</Data>')
   })
 })
+
+describe('IrisTable column virtualization', () => {
+  const wideCols: IrisTableColumn[] = Array.from({ length: 8 }, (_, i) => ({
+    key: `c${i}`,
+    title: `C${i}`,
+    width: 120,
+  }))
+  const wideRows = [
+    Object.fromEntries([['id', 1], ...wideCols.map((c) => [c.key, `${c.key}-v`])]),
+  ] as Record<string, unknown>[]
+
+  it('renders every column when disabled (default)', () => {
+    const w = mount(IrisTable, { props: { columns: wideCols, data: wideRows, rowKey: 'id' } })
+    expect(w.findAll('[data-iris-table-header]').length).toBe(8)
+  })
+
+  it('renders only a window of columns when enabled', () => {
+    const w = mount(IrisTable, {
+      props: { columns: wideCols, data: wideRows, rowKey: 'id', columnVirtualization: true },
+    })
+    const n = w.findAll('[data-iris-table-header]').length
+    expect(n).toBeGreaterThan(0)
+    expect(n).toBeLessThan(8)
+    expect(w.find('[data-column-virtualized="true"]').exists()).toBe(true)
+  })
+
+  it('always renders pinned columns even when out of the window', () => {
+    const cols = wideCols.map((c, i) => (i === 7 ? { ...c, pinned: 'right' as const } : c))
+    const w = mount(IrisTable, {
+      props: { columns: cols, data: wideRows, rowKey: 'id', columnVirtualization: true },
+    })
+    expect(w.find('[data-iris-table-header="c7"]').exists()).toBe(true)
+  })
+})

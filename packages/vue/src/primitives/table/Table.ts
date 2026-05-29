@@ -1,4 +1,16 @@
-import { computed, defineComponent, h, nextTick, ref, watch, type PropType, type VNode } from 'vue'
+import {
+  computed,
+  defineComponent,
+  h,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+  type PropType,
+  type VNode,
+} from 'vue'
+import { computeVirtualRange } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useDrag } from '../drag/useDrag'
@@ -110,6 +122,8 @@ export const IrisTable = defineComponent({
     loading: { type: Boolean, default: false },
     /** Show the error state instead of rows (takes precedence over loading). */
     error: { type: Boolean, default: false },
+    /** Render only the horizontally-visible columns (+ pinned + overscan) for wide tables. */
+    columnVirtualization: { type: Boolean, default: false },
   },
   emits: {
     'update:selection': (_value: Array<string | number>) => true,
@@ -304,6 +318,48 @@ export const IrisTable = defineComponent({
       return parts.join(' ')
     })
 
+    // -------- Column virtualization (opt-in) --------
+    const rootRef = ref<HTMLElement | null>(null)
+    const scrollLeft = ref(0)
+    const viewportWidth = ref(0)
+    const colTrack = (i: number): number => (props.selectable !== 'none' ? 2 : 1) + i
+
+    if (typeof ResizeObserver !== 'undefined') {
+      let ro: ResizeObserver | null = null
+      onMounted(() => {
+        if (!props.columnVirtualization || !rootRef.value) return
+        const measure = () => {
+          if (rootRef.value) viewportWidth.value = rootRef.value.clientWidth
+        }
+        measure()
+        ro = new ResizeObserver(measure)
+        ro.observe(rootRef.value)
+      })
+      onBeforeUnmount(() => {
+        ro?.disconnect()
+        ro = null
+      })
+    }
+
+    // Column indices to render: visible window + overscan ∪ pinned. `null` ⇒ all.
+    const visibleColSet = computed<Set<number> | null>(() => {
+      if (!props.columnVirtualization) return null
+      const w = computeVirtualRange({
+        itemCount: props.columns.length,
+        scrollTop: scrollLeft.value,
+        viewportSize: viewportWidth.value,
+        itemSize: (i) =>
+          effectiveWidths.value[props.columns[i].key] ?? resolveInitialWidth(props.columns[i]),
+        buffer: 2,
+      })
+      const set = new Set<number>()
+      for (let i = w.startIndex; i <= w.endIndex; i += 1) set.add(i)
+      props.columns.forEach((col, i) => {
+        if (col.pinned) set.add(i)
+      })
+      return set
+    })
+
     // Sticky offsets for pinned columns (mirrors the React adapter): accumulate
     // resolved widths between each pinned column and its edge (+ selection col).
     const pinnedOffsets = computed(() => {
@@ -408,7 +464,9 @@ export const IrisTable = defineComponent({
           ),
         )
       }
-      for (const col of props.columns) {
+      for (let ci = 0; ci < props.columns.length; ci += 1) {
+        const col = props.columns[ci]
+        if (visibleColSet.value && !visibleColSet.value.has(ci)) continue
         const align = col.align ?? 'left'
         wireResize(col)
         const handle = props.resizableColumns
@@ -476,6 +534,7 @@ export const IrisTable = defineComponent({
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
+                ...(visibleColSet.value ? { gridColumnStart: String(colTrack(ci)) } : {}),
                 ...(col.pinned
                   ? { ...pinnedStyle(col.key), background: 'var(--iris-surface)' }
                   : {}),
@@ -540,7 +599,9 @@ export const IrisTable = defineComponent({
             ),
           )
         }
-        for (const col of props.columns) {
+        for (let ci = 0; ci < props.columns.length; ci += 1) {
+          const col = props.columns[ci]
+          if (visibleColSet.value && !visibleColSet.value.has(ci)) continue
           const align = col.align ?? 'left'
           const cellSlot = slots[`cell.${col.key}`]
           const isEditing = editingCellId.value === cellId(id, col.key)
@@ -610,6 +671,7 @@ export const IrisTable = defineComponent({
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   cursor: col.editable ? 'cell' : 'default',
+                  ...(visibleColSet.value ? { gridColumnStart: String(colTrack(ci)) } : {}),
                   ...pinnedStyle(col.key),
                 },
               },
@@ -705,15 +767,25 @@ export const IrisTable = defineComponent({
         'div',
         {
           ...attrs,
+          ref: (el: unknown) => {
+            rootRef.value = (el ?? null) as HTMLElement | null
+          },
           role: 'table',
           'data-iris-table': '',
           'data-virtual': props.virtualScroll ? '' : undefined,
+          'data-column-virtualized': props.columnVirtualization ? 'true' : undefined,
+          onScroll: props.columnVirtualization
+            ? (e: Event) => {
+                scrollLeft.value = (e.currentTarget as HTMLElement).scrollLeft
+              }
+            : undefined,
           style: {
             background: 'var(--iris-background)',
             color: 'var(--iris-foreground)',
             border: props.bordered ? '1px solid var(--iris-border)' : 'none',
             borderRadius: 'var(--iris-radius-md)',
-            overflow: 'hidden',
+            // Column virtualization turns the table into a horizontal scroll container.
+            overflow: props.columnVirtualization ? 'auto' : 'hidden',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },
         },

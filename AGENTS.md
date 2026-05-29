@@ -4,7 +4,7 @@
 
 ## 状态（2026-05 / v0.1.x）
 
-五层架构 + 贯穿主题层 + 正交 Behaviors 层全部落地，**React 18 / Vue 3 双适配器完全对齐**（manifest 实测 96 组件两端齐备）。约 1666 项测试，四道质量门 + 体积预算常绿。**生产就绪面已闭环**：SSR 安全（`useId` + 无 DOM 渲染测试）、axe-core 无障碍门、i18n（Intl + 可覆盖文案）、RTL（`dir` + 逻辑属性）、`prefers-reduced-motion` / `prefers-color-scheme`、子路径 `exports` + size 预算、VitePress 文档站、changesets 发布流水线。
+五层架构 + 贯穿主题层 + 正交 Behaviors 层全部落地，**React 18 / Vue 3 双适配器完全对齐**（manifest 实测 96 组件两端齐备）。约 1666 项测试，四道质量门 + 体积预算常绿。**生产就绪面已闭环**：SSR 安全（`useId` + 无 DOM 渲染测试 + React 全量 `'use client'` RSC/Next.js 边界）、axe-core 无障碍门、i18n（Intl + 可覆盖文案）、RTL（`dir` + 逻辑属性）、`prefers-reduced-motion` / `prefers-color-scheme`、子路径 `exports` + size 预算、VitePress 文档站、changesets 发布流水线。
 
 | 包                                        | 内容                                                                                                          | 状态 |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---- |

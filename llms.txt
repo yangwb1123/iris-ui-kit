@@ -12,7 +12,7 @@ Frameworks: react, vue. Import components from `@iris-ui/react` or `@iris-ui/vue
 - Layer 4 — System Skeletons: Page / section skeleton scaffolds.
 - Behaviors: Orthogonal interaction behaviors (hotkeys, click-outside, drag).
 
-## Components (98 total — 98 in both frameworks, 0 react-only, 0 vue-only)
+## Components (99 total — 99 in both frameworks, 0 react-only, 0 vue-only)
 
 ### behaviors (4)
 - IrisClickOutside [react/vue]
@@ -35,7 +35,7 @@ Frameworks: react, vue. Import components from `@iris-ui/react` or `@iris-ui/vue
 ### other (1)
 - IrisI18nProvider [react/vue]
 
-### primitives (83)
+### primitives (84)
 - IrisAccordion [react/vue]
 - IrisAccordionItem [react/vue]
 - IrisAlert [react/vue]
@@ -50,6 +50,7 @@ Frameworks: react, vue. Import components from `@iris-ui/react` or `@iris-ui/vue
 - IrisCheckbox [react/vue]
 - IrisChip [react/vue]
 - IrisColorPicker [react/vue]
+- IrisCombobox [react/vue]
 - IrisCommandPalette [react/vue]
 - IrisDatePicker [react/vue]
 - IrisDateRangePicker [react/vue]

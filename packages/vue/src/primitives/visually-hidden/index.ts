@@ -1,0 +1,1 @@
+export { IrisVisuallyHidden } from './VisuallyHidden'

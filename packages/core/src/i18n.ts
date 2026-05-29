@@ -73,6 +73,8 @@ export const defaultMessages: I18nMessages = {
   'transfer.search': 'Search',
   'transfer.empty': 'No items',
   'backTop.label': 'Back to top',
+  'treeSelect.expand': 'Expand',
+  'treeSelect.collapse': 'Collapse',
   'table.empty': 'No data',
   'table.loading': 'Loading…',
   'table.error': 'Failed to load data',

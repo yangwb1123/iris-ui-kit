@@ -72,7 +72,7 @@
     },
     {
       "group": "primitives",
-      "count": 93,
+      "count": 94,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -165,6 +165,7 @@
         "IrisTooltip",
         "IrisTransfer",
         "IrisTree",
+        "IrisTreeSelect",
         "IrisVirtualScroll",
         "IrisWatermark"
       ]
@@ -1543,6 +1544,19 @@
       }
     },
     {
+      "name": "IrisTreeSelect",
+      "group": "primitives",
+      "module": "tree-select",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
       "name": "IrisVirtualScroll",
       "group": "primitives",
       "module": "virtual-scroll",
@@ -1622,8 +1636,8 @@
     ]
   },
   "stats": {
-    "total": 108,
-    "both": 108,
+    "total": 109,
+    "both": 109,
     "reactOnly": 0,
     "vueOnly": 0
   }

@@ -1,7 +1,7 @@
 {
   "name": "@iris-ui/icons",
   "version": "0.0.0",
-  "description": "Icon set interface for Iris UI (implementations TBD)",
+  "description": "Built-in Feather-style icon set (structured nodes) + icon-set interface for Iris UI",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",

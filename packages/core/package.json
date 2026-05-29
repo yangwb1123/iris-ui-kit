@@ -1,7 +1,7 @@
 {
   "name": "@iris-ui/core",
   "version": "0.0.0",
-  "description": "Framework-agnostic store + state machine primitives for Iris UI",
+  "description": "Framework-agnostic engines for Iris UI: store, state machine, forms, i18n, virtualization, async, pagination",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",

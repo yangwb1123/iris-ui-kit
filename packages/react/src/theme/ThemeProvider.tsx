@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react'
 import {
+  applyDirection,
   applyTheme,
   injectGlobalStyles,
   type ApplyThemeResult,
+  type Direction,
   type ThemeStore,
 } from '@iris-ui/theme'
 import type { IrisTheme } from '@iris-ui/tokens'
@@ -11,6 +13,7 @@ import { useStore } from '../useStore'
 interface IrisThemeContextValue {
   store: ThemeStore
   current: IrisTheme
+  dir: Direction
 }
 
 const IrisThemeContext = createContext<IrisThemeContextValue | null>(null)
@@ -18,6 +21,8 @@ const IrisThemeContext = createContext<IrisThemeContextValue | null>(null)
 export interface ThemeProviderProps {
   store: ThemeStore
   target?: HTMLElement | null
+  /** Writing direction; sets `dir` on the target for RTL. Default `'ltr'`. */
+  dir?: Direction
   children?: ReactNode
 }
 
@@ -29,7 +34,7 @@ export interface ThemeProviderProps {
  * **Zero business logic** — `applyTheme` / `createThemeStore` come straight
  * from `@iris-ui/theme`. This component is just a 30-line React adapter.
  */
-export function ThemeProvider({ store, target = null, children }: ThemeProviderProps) {
+export function ThemeProvider({ store, target = null, dir = 'ltr', children }: ThemeProviderProps) {
   const current = useStore(store.store)
   const appliedRef = useRef<ApplyThemeResult | null>(null)
 
@@ -38,14 +43,18 @@ export function ThemeProvider({ store, target = null, children }: ThemeProviderP
     const el = target ?? document.documentElement
     appliedRef.current?.revert()
     appliedRef.current = applyTheme(current, el)
+    const dirApplied = applyDirection(dir, el)
     return () => {
       appliedRef.current?.revert()
       appliedRef.current = null
+      dirApplied.revert()
     }
-  }, [current, target])
+  }, [current, target, dir])
 
   return (
-    <IrisThemeContext.Provider value={{ store, current }}>{children}</IrisThemeContext.Provider>
+    <IrisThemeContext.Provider value={{ store, current, dir }}>
+      {children}
+    </IrisThemeContext.Provider>
   )
 }
 
@@ -64,4 +73,13 @@ export function useThemeContext(): IrisThemeContextValue {
  */
 export function useThemeOptional(): IrisTheme | undefined {
   return useContext(IrisThemeContext)?.current
+}
+
+/**
+ * Current writing direction (`'ltr'` / `'rtl'`) from the nearest
+ * `<ThemeProvider>`, or `'ltr'` when there is none. For components that need to
+ * branch on direction beyond what CSS logical properties already handle.
+ */
+export function useDirection(): Direction {
+  return useContext(IrisThemeContext)?.dir ?? 'ltr'
 }

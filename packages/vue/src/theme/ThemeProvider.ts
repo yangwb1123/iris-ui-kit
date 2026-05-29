@@ -1,4 +1,5 @@
 import {
+  computed,
   defineComponent,
   inject,
   onBeforeUnmount,
@@ -6,14 +7,18 @@ import {
   provide,
   ref,
   watch,
+  type ComputedRef,
   type InjectionKey,
   type PropType,
   type Ref,
 } from 'vue'
 import {
+  applyDirection,
   applyTheme,
   injectGlobalStyles,
+  type ApplyDirectionResult,
   type ApplyThemeResult,
+  type Direction,
   type ThemeStore,
 } from '@iris-ui/theme'
 import type { IrisTheme } from '@iris-ui/tokens'
@@ -21,6 +26,7 @@ import type { IrisTheme } from '@iris-ui/tokens'
 export interface IrisThemeContext {
   store: ThemeStore
   current: Ref<IrisTheme>
+  dir: ComputedRef<Direction>
 }
 
 export const IrisThemeKey: InjectionKey<IrisThemeContext> = Symbol('IrisTheme')
@@ -45,6 +51,11 @@ export const ThemeProvider = defineComponent({
       type: Object as PropType<HTMLElement | null>,
       default: null,
     },
+    /** Writing direction; sets `dir` on the target for RTL. Default `'ltr'`. */
+    dir: {
+      type: String as PropType<Direction>,
+      default: 'ltr',
+    },
   },
   setup(props, { slots }) {
     const current = ref(props.store.store.getState()) as Ref<IrisTheme>
@@ -53,29 +64,46 @@ export const ThemeProvider = defineComponent({
     })
 
     let applied: ApplyThemeResult | null = null
+    let dirApplied: ApplyDirectionResult | null = null
+
+    const targetEl = () => props.target ?? document.documentElement
 
     const applyCurrent = () => {
       applied?.revert()
-      const el = props.target ?? document.documentElement
-      applied = applyTheme(current.value, el)
+      applied = applyTheme(current.value, targetEl())
+    }
+
+    const applyDir = () => {
+      dirApplied?.revert()
+      dirApplied = applyDirection(props.dir, targetEl())
     }
 
     onMounted(() => {
       injectGlobalStyles()
       applyCurrent()
+      applyDir()
     })
 
     watch(current, () => {
       if (applied) applyCurrent()
     })
 
+    watch(
+      () => props.dir,
+      () => {
+        if (dirApplied) applyDir()
+      },
+    )
+
     onBeforeUnmount(() => {
       unsubscribe()
       applied?.revert()
       applied = null
+      dirApplied?.revert()
+      dirApplied = null
     })
 
-    provide(IrisThemeKey, { store: props.store, current })
+    provide(IrisThemeKey, { store: props.store, current, dir: computed(() => props.dir) })
 
     return () => slots.default?.()
   },
@@ -87,4 +115,13 @@ export function useThemeContext(): IrisThemeContext {
     throw new Error('[iris-ui] useTheme(): no <ThemeProvider> ancestor found')
   }
   return ctx
+}
+
+/**
+ * Current writing direction (`'ltr'` / `'rtl'`) from the nearest
+ * `<ThemeProvider>`, or a static `'ltr'` ref when there is none.
+ */
+export function useDirection(): ComputedRef<Direction> {
+  const ctx = inject(IrisThemeKey, null)
+  return ctx ? ctx.dir : computed(() => 'ltr' as Direction)
 }

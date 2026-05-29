@@ -3,8 +3,10 @@ import { composeEventHandlers } from '@iris-ui/core'
 import { IrisSlot } from '../slot/Slot'
 import { useTabsContext } from './context'
 
-export interface IrisTabsTriggerProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'value' | 'children'> {
+export interface IrisTabsTriggerProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'value' | 'children'
+> {
   value: string
   asChild?: boolean
   children?: React.ReactNode
@@ -118,11 +120,11 @@ export const IrisTabsTrigger = React.forwardRef<HTMLElement, IrisTabsTriggerProp
           background: 'transparent',
           color: isActive ? 'var(--iris-primary)' : 'var(--iris-muted)',
           marginBottom: horizontal ? -1 : undefined,
-          marginRight: horizontal ? undefined : -1,
+          marginInlineEnd: horizontal ? undefined : -1,
           borderBottom: horizontal
             ? `2px solid ${isActive ? 'var(--iris-primary)' : 'transparent'}`
             : undefined,
-          borderRight: !horizontal
+          borderInlineEnd: !horizontal
             ? `2px solid ${isActive ? 'var(--iris-primary)' : 'transparent'}`
             : undefined,
           transition: 'color 120ms ease, border-color 120ms ease',

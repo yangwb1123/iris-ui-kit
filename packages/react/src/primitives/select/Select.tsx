@@ -164,7 +164,7 @@ export function IrisSelect<T = unknown>({
     borderRadius: 'var(--iris-radius-md, 6px)',
     cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.6 : 1,
-    textAlign: 'left',
+    textAlign: 'start',
     fontFamily: 'inherit',
     position: 'relative',
     width: 'auto',

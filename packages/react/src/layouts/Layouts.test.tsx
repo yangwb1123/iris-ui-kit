@@ -23,16 +23,12 @@ describe('@iris-ui/react IrisStack', () => {
 
   it('numeric spacing becomes px', () => {
     const { container } = render(<IrisStack spacing={8}>x</IrisStack>)
-    expect(
-      (container.querySelector('[data-iris-stack]') as HTMLElement).style.gap,
-    ).toBe('8px')
+    expect((container.querySelector('[data-iris-stack]') as HTMLElement).style.gap).toBe('8px')
   })
 
   it('arbitrary spacing string passes through', () => {
     const { container } = render(<IrisStack spacing="1.5rem">x</IrisStack>)
-    expect(
-      (container.querySelector('[data-iris-stack]') as HTMLElement).style.gap,
-    ).toBe('1.5rem')
+    expect((container.querySelector('[data-iris-stack]') as HTMLElement).style.gap).toBe('1.5rem')
   })
 
   it('direction prop reflects on style and data attr', () => {
@@ -56,16 +52,14 @@ describe('@iris-ui/react IrisStack', () => {
 
   it('inline mode uses inline-flex', () => {
     const { container } = render(<IrisStack inline>x</IrisStack>)
-    expect(
-      (container.querySelector('[data-iris-stack]') as HTMLElement).style.display,
-    ).toBe('inline-flex')
+    expect((container.querySelector('[data-iris-stack]') as HTMLElement).style.display).toBe(
+      'inline-flex',
+    )
   })
 
   it('user style merges last (overrides defaults)', () => {
     const { container } = render(<IrisStack style={{ padding: '10px' }}>x</IrisStack>)
-    expect(
-      (container.querySelector('[data-iris-stack]') as HTMLElement).style.padding,
-    ).toBe('10px')
+    expect((container.querySelector('[data-iris-stack]') as HTMLElement).style.padding).toBe('10px')
   })
 })
 
@@ -75,50 +69,43 @@ describe('@iris-ui/react IrisContainer', () => {
     const el = container.querySelector('[data-iris-container]') as HTMLElement
     expect(el).not.toBeNull()
     expect(el.style.maxWidth).toBe('1024px')
-    expect(el.style.marginLeft).toBe('auto')
-    expect(el.style.marginRight).toBe('auto')
+    // Centered via logical margins (RTL-safe).
+    expect(el.style.marginInlineStart).toBe('auto')
+    expect(el.style.marginInlineEnd).toBe('auto')
   })
 
   it('maxWidth shorthand maps to px breakpoint', () => {
     const { container } = render(<IrisContainer maxWidth="sm">x</IrisContainer>)
-    expect(
-      (container.querySelector('[data-iris-container]') as HTMLElement).style.maxWidth,
-    ).toBe('640px')
+    expect((container.querySelector('[data-iris-container]') as HTMLElement).style.maxWidth).toBe(
+      '640px',
+    )
   })
 
   it('maxWidth raw value passes through', () => {
-    const { container } = render(
-      <IrisContainer maxWidth="1440px">x</IrisContainer>,
+    const { container } = render(<IrisContainer maxWidth="1440px">x</IrisContainer>)
+    expect((container.querySelector('[data-iris-container]') as HTMLElement).style.maxWidth).toBe(
+      '1440px',
     )
-    expect(
-      (container.querySelector('[data-iris-container]') as HTMLElement).style.maxWidth,
-    ).toBe('1440px')
   })
 
   it('center=false omits auto margins', () => {
-    const { container } = render(
-      <IrisContainer center={false}>x</IrisContainer>,
-    )
+    const { container } = render(<IrisContainer center={false}>x</IrisContainer>)
     const el = container.querySelector('[data-iris-container]') as HTMLElement
-    expect(el.style.marginLeft).not.toBe('auto')
+    expect(el.style.marginInlineStart).not.toBe('auto')
   })
 
   it('numeric padding becomes px', () => {
-    const { container } = render(
-      <IrisContainer padding={20}>x</IrisContainer>,
+    const { container } = render(<IrisContainer padding={20}>x</IrisContainer>)
+    expect((container.querySelector('[data-iris-container]') as HTMLElement).style.padding).toBe(
+      '0px 20px',
     )
-    expect(
-      (container.querySelector('[data-iris-container]') as HTMLElement).style.padding,
-    ).toBe('0px 20px')
   })
 
   it('token padding becomes var(--iris-padding-*)', () => {
-    const { container } = render(
-      <IrisContainer padding="lg">x</IrisContainer>,
+    const { container } = render(<IrisContainer padding="lg">x</IrisContainer>)
+    expect((container.querySelector('[data-iris-container]') as HTMLElement).style.padding).toMatch(
+      /^0(px)?\s+var\(--iris-padding-lg\)$/,
     )
-    expect(
-      (container.querySelector('[data-iris-container]') as HTMLElement).style.padding,
-    ).toMatch(/^0(px)?\s+var\(--iris-padding-lg\)$/)
   })
 })
 
@@ -127,26 +114,20 @@ describe('@iris-ui/react IrisGrid', () => {
     const { container } = render(<IrisGrid>x</IrisGrid>)
     const el = container.querySelector('[data-iris-grid]') as HTMLElement
     expect(el.style.display).toBe('grid')
-    expect(el.style.gridTemplateColumns).toBe(
-      'repeat(auto-fit, minmax(200px, 1fr))',
-    )
+    expect(el.style.gridTemplateColumns).toBe('repeat(auto-fit, minmax(200px, 1fr))')
   })
 
   it('integer columns become repeat(N, minmax(0, 1fr))', () => {
     const { container } = render(<IrisGrid columns={3}>x</IrisGrid>)
     expect(
-      (container.querySelector('[data-iris-grid]') as HTMLElement).style
-        .gridTemplateColumns,
+      (container.querySelector('[data-iris-grid]') as HTMLElement).style.gridTemplateColumns,
     ).toBe('repeat(3, minmax(0, 1fr))')
   })
 
   it('raw string columns pass through', () => {
-    const { container } = render(
-      <IrisGrid columns="100px 1fr 100px">x</IrisGrid>,
-    )
+    const { container } = render(<IrisGrid columns="100px 1fr 100px">x</IrisGrid>)
     expect(
-      (container.querySelector('[data-iris-grid]') as HTMLElement).style
-        .gridTemplateColumns,
+      (container.querySelector('[data-iris-grid]') as HTMLElement).style.gridTemplateColumns,
     ).toBe('100px 1fr 100px')
   })
 
@@ -157,8 +138,7 @@ describe('@iris-ui/react IrisGrid', () => {
       </IrisGrid>,
     )
     expect(
-      (container.querySelector('[data-iris-grid]') as HTMLElement).style
-        .gridTemplateColumns,
+      (container.querySelector('[data-iris-grid]') as HTMLElement).style.gridTemplateColumns,
     ).toBe('repeat(auto-fill, minmax(160px, 1fr))')
   })
 
@@ -182,17 +162,15 @@ describe('@iris-ui/react IrisGrid', () => {
 
   it('inline mode uses inline-grid', () => {
     const { container } = render(<IrisGrid inline>x</IrisGrid>)
-    expect(
-      (container.querySelector('[data-iris-grid]') as HTMLElement).style.display,
-    ).toBe('inline-grid')
+    expect((container.querySelector('[data-iris-grid]') as HTMLElement).style.display).toBe(
+      'inline-grid',
+    )
   })
 
   it('data-iris-grid-columns reflects input', () => {
     const { container } = render(<IrisGrid columns={4}>x</IrisGrid>)
     expect(
-      container
-        .querySelector('[data-iris-grid]')
-        ?.getAttribute('data-iris-grid-columns'),
+      container.querySelector('[data-iris-grid]')?.getAttribute('data-iris-grid-columns'),
     ).toBe('4')
   })
 })

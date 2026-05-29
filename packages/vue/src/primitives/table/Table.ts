@@ -281,7 +281,7 @@ export const IrisTable = defineComponent({
           style: {
             display: 'inline-flex',
             flexDirection: 'column',
-            marginLeft: '4px',
+            marginInlineStart: '4px',
             lineHeight: '0.6',
             fontSize: '8px',
             color,

@@ -74,7 +74,7 @@ export const IrisSelect = defineComponent({
       borderRadius: 'var(--iris-radius-md)',
       cursor: props.disabled ? 'not-allowed' : 'pointer',
       opacity: props.disabled ? '0.6' : '1',
-      textAlign: 'left',
+      textAlign: 'start',
       fontFamily: 'inherit',
       position: 'relative',
       width: 'auto',

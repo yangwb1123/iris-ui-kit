@@ -1,8 +1,10 @@
 import * as React from 'react'
 import { useAccordionContext } from './context'
 
-export interface IrisAccordionItemProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
+export interface IrisAccordionItemProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'title'
+> {
   value: string
   title?: React.ReactNode
   disabled?: boolean
@@ -65,7 +67,7 @@ export const IrisAccordionItem = React.forwardRef<HTMLDivElement, IrisAccordionI
             cursor: disabled ? 'not-allowed' : 'pointer',
             opacity: disabled ? 0.6 : 1,
             font: 'inherit',
-            textAlign: 'left',
+            textAlign: 'start',
           }}
         >
           <span data-iris-accordion-title="" style={{ flex: 1, minWidth: 0 }}>

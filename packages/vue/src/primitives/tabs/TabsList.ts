@@ -28,7 +28,7 @@ export const IrisTabsList = defineComponent({
             gap: '2px',
             borderBottom:
               ctx.orientation.value === 'horizontal' ? '1px solid var(--iris-border)' : 'none',
-            borderRight:
+            borderInlineEnd:
               ctx.orientation.value === 'vertical' ? '1px solid var(--iris-border)' : 'none',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },

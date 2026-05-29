@@ -92,7 +92,7 @@ export function IrisDatePicker({
             fontFamily: 'inherit',
             minHeight: 34,
             minWidth: 180,
-            textAlign: 'left',
+            textAlign: 'start',
             ...style,
           }}
         >

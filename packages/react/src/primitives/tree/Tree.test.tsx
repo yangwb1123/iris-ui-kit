@@ -123,9 +123,9 @@ describe('@iris-ui/react IrisTree', () => {
     act(() => {
       fireEvent.keyDown(tree, { key: 'ArrowDown' })
     })
-    expect(
-      document.querySelector('[data-state=active]')?.getAttribute('data-iris-tree-node'),
-    ).toBe('a')
+    expect(document.querySelector('[data-state=active]')?.getAttribute('data-iris-tree-node')).toBe(
+      'a',
+    )
   })
 
   it('ArrowRight expands a closed parent then drills into first child', () => {
@@ -168,15 +168,15 @@ describe('@iris-ui/react IrisTree', () => {
     act(() => {
       fireEvent.keyDown(tree, { key: 'End' })
     })
-    expect(
-      document.querySelector('[data-state=active]')?.getAttribute('data-iris-tree-node'),
-    ).toBe('standalone')
+    expect(document.querySelector('[data-state=active]')?.getAttribute('data-iris-tree-node')).toBe(
+      'standalone',
+    )
     act(() => {
       fireEvent.keyDown(tree, { key: 'Home' })
     })
-    expect(
-      document.querySelector('[data-state=active]')?.getAttribute('data-iris-tree-node'),
-    ).toBe('root')
+    expect(document.querySelector('[data-state=active]')?.getAttribute('data-iris-tree-node')).toBe(
+      'root',
+    )
   })
 
   it('controlled expanded reflects on UI', () => {
@@ -188,16 +188,23 @@ describe('@iris-ui/react IrisTree', () => {
 
   it('controlled selected highlights right node', () => {
     render(<IrisTree nodes={nodes} defaultExpanded={['root']} selected={['b']} />)
-    expect(
-      document
-        .querySelector('[data-iris-tree-node=b]')
-        ?.getAttribute('aria-selected'),
-    ).toBe('true')
+    expect(document.querySelector('[data-iris-tree-node=b]')?.getAttribute('aria-selected')).toBe(
+      'true',
+    )
   })
 
   it('leaf nodes have no toggle button', () => {
     render(<IrisTree nodes={nodes} defaultExpanded={['root']} />)
     const b = document.querySelector('[data-iris-tree-node=b]')!
     expect(b.querySelector('[data-iris-tree-toggle]')).toBeNull()
+  })
+})
+
+describe('@iris-ui/react IrisTree RTL', () => {
+  it('indents with logical inline-start padding (RTL-safe)', () => {
+    render(<IrisTree nodes={nodes} />)
+    const root = document.querySelector('[data-iris-tree-node=root]') as HTMLElement
+    expect(root.style.paddingInlineStart).toBeTruthy()
+    expect(root.style.paddingLeft).toBe('')
   })
 })

@@ -50,7 +50,7 @@ export const IrisContainer = React.forwardRef<HTMLDivElement, IrisContainerProps
           width: '100%',
           maxWidth: resolveMaxWidth(maxWidth),
           padding: `0 ${resolvePadding(padding)}`,
-          ...(center ? { marginLeft: 'auto', marginRight: 'auto' } : {}),
+          ...(center ? { marginInlineStart: 'auto', marginInlineEnd: 'auto' } : {}),
           ...style,
         }}
       >

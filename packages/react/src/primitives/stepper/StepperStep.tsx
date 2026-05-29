@@ -8,8 +8,7 @@ const STATUS_COLOR: Record<IrisStepStatus, string> = {
   error: 'var(--iris-danger)',
 }
 
-export interface IrisStepperStepProps
-  extends Omit<React.HTMLAttributes<HTMLLIElement>, 'title'> {
+export interface IrisStepperStepProps extends Omit<React.HTMLAttributes<HTMLLIElement>, 'title'> {
   title?: React.ReactNode
   description?: React.ReactNode
   /** Force a status; otherwise computed from position vs current. */
@@ -88,10 +87,7 @@ export const IrisStepperStep = React.forwardRef<HTMLLIElement, IrisStepperStepPr
     ) : null
 
     const descNode = description ? (
-      <div
-        data-iris-stepper-description=""
-        style={{ fontSize: 12, color: 'var(--iris-muted)' }}
-      >
+      <div data-iris-stepper-description="" style={{ fontSize: 12, color: 'var(--iris-muted)' }}>
         {description}
       </div>
     ) : null
@@ -105,17 +101,15 @@ export const IrisStepperStep = React.forwardRef<HTMLLIElement, IrisStepperStepPr
             ? {
                 flex: 1,
                 height: 1,
-                background:
-                  index < ctx.current ? STATUS_COLOR.completed : 'var(--iris-border)',
+                background: index < ctx.current ? STATUS_COLOR.completed : 'var(--iris-border)',
                 margin: '0 8px',
                 alignSelf: 'center',
               }
             : {
                 width: 1,
                 minHeight: 24,
-                background:
-                  index < ctx.current ? STATUS_COLOR.completed : 'var(--iris-border)',
-                marginLeft: 13,
+                background: index < ctx.current ? STATUS_COLOR.completed : 'var(--iris-border)',
+                marginInlineStart: 13,
                 marginTop: 4,
                 marginBottom: 4,
               }
@@ -164,7 +158,7 @@ export const IrisStepperStep = React.forwardRef<HTMLLIElement, IrisStepperStepPr
             cursor: clickable ? 'pointer' : 'default',
             color: 'inherit',
             font: 'inherit',
-            textAlign: 'left',
+            textAlign: 'start',
           }}
         >
           {indicator}

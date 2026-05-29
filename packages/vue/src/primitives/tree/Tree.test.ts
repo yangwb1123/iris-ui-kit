@@ -87,7 +87,9 @@ describe('IrisTree', () => {
     // Now node is expanded; second ArrowRight moves to first child.
     await wrapper.findAll('[role="treeitem"]')[0]!.trigger('keydown', { key: 'ArrowRight' })
     await nextTick()
-    const activeItem = wrapper.findAll('[role="treeitem"]').find((i) => i.attributes('tabindex') === '0')!
+    const activeItem = wrapper
+      .findAll('[role="treeitem"]')
+      .find((i) => i.attributes('tabindex') === '0')!
     expect(labelOf(activeItem)).toBe('A1')
   })
 
@@ -97,7 +99,9 @@ describe('IrisTree', () => {
     await a1.trigger('focus')
     await a1.trigger('keydown', { key: 'ArrowLeft' })
     await nextTick()
-    const active = wrapper.findAll('[role="treeitem"]').find((i) => i.attributes('tabindex') === '0')!
+    const active = wrapper
+      .findAll('[role="treeitem"]')
+      .find((i) => i.attributes('tabindex') === '0')!
     expect(labelOf(active)).toBe('A')
   })
 
@@ -166,5 +170,14 @@ describe('IrisTree', () => {
     const root = wrapper.find('[role="treeitem"][data-id="root"]')
     expect(root.attributes('aria-expanded')).toBe('false')
     expect(root.attributes('data-error')).toBeDefined()
+  })
+})
+
+describe('IrisTree RTL', () => {
+  it('indents with logical inline-start padding (RTL-safe)', () => {
+    const wrapper = mount(IrisTree, { props: { nodes: sampleNodes } })
+    const item = wrapper.find('[data-iris-tree-item]').element as HTMLElement
+    // Indentation is applied via the logical inline-start property (RTL-safe).
+    expect(item.style.paddingInlineStart).toBeTruthy()
   })
 })

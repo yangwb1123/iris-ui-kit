@@ -38,7 +38,12 @@ function chipStyle(
   }
   switch (variant) {
     case 'solid':
-      return { ...base, background: v, color: 'var(--iris-primary-foreground, #fff)', border: '1px solid transparent' }
+      return {
+        ...base,
+        background: v,
+        color: 'var(--iris-primary-foreground, #fff)',
+        border: '1px solid transparent',
+      }
     case 'outline':
       return { ...base, background: 'transparent', color: v, border: `1px solid ${v}` }
     case 'subtle':
@@ -51,8 +56,10 @@ function chipStyle(
   }
 }
 
-export interface IrisChipProps
-  extends Omit<React.HTMLAttributes<HTMLElement>, 'onClick' | 'children'> {
+export interface IrisChipProps extends Omit<
+  React.HTMLAttributes<HTMLElement>,
+  'onClick' | 'children'
+> {
   variant?: IrisChipVariant
   tone?: IrisChipTone
   size?: IrisChipSize
@@ -123,7 +130,7 @@ export function IrisChip({
             cursor: disabled ? 'not-allowed' : 'pointer',
             color: 'inherit',
             padding: 0,
-            marginLeft: 2,
+            marginInlineStart: 2,
             fontSize: 12,
             lineHeight: 1,
             flexShrink: 0,

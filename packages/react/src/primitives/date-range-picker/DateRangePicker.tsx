@@ -123,7 +123,7 @@ export function IrisDateRangePicker({
             fontFamily: 'inherit',
             minHeight: 34,
             minWidth: 260,
-            textAlign: 'left',
+            textAlign: 'start',
             ...style,
           }}
         >
@@ -131,10 +131,7 @@ export function IrisDateRangePicker({
         </button>
       </IrisPopoverTrigger>
       <IrisPopoverContent autoFocus={false} style={{ padding: 0 }}>
-        <div
-          data-iris-date-range-picker-pane=""
-          style={{ display: 'flex', gap: 8 }}
-        >
+        <div data-iris-date-range-picker-pane="" style={{ display: 'flex', gap: 8 }}>
           <IrisCalendar
             value={previewSelected}
             defaultMonth={leftMonth}

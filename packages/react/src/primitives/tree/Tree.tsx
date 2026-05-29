@@ -76,9 +76,7 @@ export function IrisTree({
 
   const flat = React.useMemo(() => flatten(nodes, expandedSet), [nodes, expandedSet])
 
-  const [activeId, setActiveId] = React.useState<string | null>(
-    flat[0]?.node.id ?? null,
-  )
+  const [activeId, setActiveId] = React.useState<string | null>(flat[0]?.node.id ?? null)
 
   // Keep activeId valid as the visible set changes.
   React.useEffect(() => {
@@ -217,10 +215,10 @@ export function IrisTree({
               display: 'flex',
               alignItems: 'center',
               gap: 4,
-              paddingLeft: 6 + depth * 16,
+              paddingInlineStart: 6 + depth * 16,
               paddingTop: 4,
               paddingBottom: 4,
-              paddingRight: 8,
+              paddingInlineEnd: 8,
               cursor: disabled ? 'not-allowed' : 'pointer',
               opacity: disabled ? 0.5 : 1,
               background: isSelected

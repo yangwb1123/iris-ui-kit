@@ -77,158 +77,152 @@ export const IrisDashboardTemplate = defineComponent({
           } as Record<string, unknown>,
           {
             sidebar: (state: { collapsed: boolean; setCollapsed: (v: boolean) => void }) =>
-              h(
-                IrisStack,
-                { spacing: 'sm', style: { padding: '12px' } },
-                () => [
-                  slots['sidebar-header']
-                    ? slots['sidebar-header'](state)
-                    : props.sidebarTitle
-                      ? h(
-                          'div',
+              h(IrisStack, { spacing: 'sm', style: { padding: '12px' } }, () => [
+                slots['sidebar-header']
+                  ? slots['sidebar-header'](state)
+                  : props.sidebarTitle
+                    ? h(
+                        'div',
+                        {
+                          style: {
+                            padding: '8px 12px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            color: 'var(--iris-foreground)',
+                            opacity: state.collapsed ? 0 : 1,
+                            transition: 'opacity 120ms ease',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                          },
+                        },
+                        props.sidebarTitle,
+                      )
+                    : null,
+                h(
+                  'nav',
+                  {
+                    'aria-label': 'Primary',
+                    style: { display: 'flex', flexDirection: 'column', gap: '2px' },
+                  },
+                  props.nav.map((item) => {
+                    const isActive = item.id === props.activeId
+                    return h(
+                      'button',
+                      {
+                        key: item.id,
+                        type: 'button',
+                        'data-iris-dashboard-nav-item': item.id,
+                        'data-iris-dashboard-nav-active': isActive ? 'true' : undefined,
+                        onClick: () => onSelectNav(item.id),
+                        style: {
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 12px',
+                          background: isActive ? 'var(--iris-primary)' : 'transparent',
+                          color: isActive
+                            ? 'var(--iris-primary-foreground, #fff)'
+                            : 'var(--iris-foreground)',
+                          border: 'none',
+                          borderRadius: 'var(--iris-radius-sm, 4px)',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontFamily: 'inherit',
+                          textAlign: 'start',
+                          outline: 'none',
+                        },
+                      },
+                      [
+                        item.icon
+                          ? h(
+                              'span',
+                              {
+                                'aria-hidden': 'true',
+                                style: {
+                                  width: '16px',
+                                  display: 'inline-flex',
+                                  justifyContent: 'center',
+                                },
+                              },
+                              item.icon,
+                            )
+                          : null,
+                        h(
+                          'span',
                           {
                             style: {
-                              padding: '8px 12px',
-                              fontSize: '14px',
-                              fontWeight: '600',
-                              color: 'var(--iris-foreground)',
                               opacity: state.collapsed ? 0 : 1,
                               transition: 'opacity 120ms ease',
                               whiteSpace: 'nowrap',
-                              overflow: 'hidden',
                             },
                           },
-                          props.sidebarTitle,
-                        )
-                      : null,
-                  h(
-                    'nav',
-                    {
-                      'aria-label': 'Primary',
-                      style: { display: 'flex', flexDirection: 'column', gap: '2px' },
-                    },
-                    props.nav.map((item) => {
-                      const isActive = item.id === props.activeId
-                      return h(
-                        'button',
+                          item.label,
+                        ),
+                      ],
+                    )
+                  }),
+                ),
+              ]),
+            default: () =>
+              h(IrisHeaderLayout, {} as Record<string, unknown>, {
+                header: () =>
+                  slots.header
+                    ? slots.header()
+                    : h(
+                        'div',
                         {
-                          key: item.id,
-                          type: 'button',
-                          'data-iris-dashboard-nav-item': item.id,
-                          'data-iris-dashboard-nav-active': isActive ? 'true' : undefined,
-                          onClick: () => onSelectNav(item.id),
                           style: {
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            padding: '8px 12px',
-                            background: isActive
-                              ? 'var(--iris-primary)'
-                              : 'transparent',
-                            color: isActive
-                              ? 'var(--iris-primary-foreground, #fff)'
-                              : 'var(--iris-foreground)',
-                            border: 'none',
-                            borderRadius: 'var(--iris-radius-sm, 4px)',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            fontFamily: 'inherit',
-                            textAlign: 'left',
-                            outline: 'none',
+                            padding: '12px 20px',
+                            fontSize: '16px',
+                            fontWeight: '600',
                           },
                         },
-                        [
-                          item.icon
-                            ? h(
-                                'span',
-                                {
-                                  'aria-hidden': 'true',
-                                  style: { width: '16px', display: 'inline-flex', justifyContent: 'center' },
-                                },
-                                item.icon,
-                              )
-                            : null,
-                          h(
-                            'span',
-                            {
-                              style: {
-                                opacity: state.collapsed ? 0 : 1,
-                                transition: 'opacity 120ms ease',
-                                whiteSpace: 'nowrap',
-                              },
-                            },
-                            item.label,
-                          ),
-                        ],
-                      )
-                    }),
-                  ),
-                ],
-              ),
-            default: () =>
-              h(
-                IrisHeaderLayout,
-                {} as Record<string, unknown>,
-                {
-                  header: () =>
-                    slots.header
-                      ? slots.header()
-                      : h(
-                          'div',
-                          {
-                            style: {
-                              padding: '12px 20px',
-                              fontSize: '16px',
-                              fontWeight: '600',
-                            },
-                          },
-                          props.title,
-                        ),
-                  default: () =>
-                    slots.default
-                      ? slots.default()
-                      : h(
-                          'div',
-                          { style: { padding: '20px' } },
-                          h(IrisDashboardGrid, { columns: 12, gap: 16 }, () =>
-                            props.cards.map((card) =>
-                              h(
-                                IrisDashboardCard,
-                                {
-                                  key: card.id,
-                                  colSpan: card.colSpan ?? 4,
-                                  rowSpan: card.rowSpan ?? 1,
-                                  'data-iris-dashboard-card-id': card.id,
-                                } as Record<string, unknown>,
-                                () => [
-                                  h(
-                                    'h3',
-                                    {
-                                      style: {
-                                        margin: '0 0 8px 0',
-                                        fontSize: '14px',
-                                        fontWeight: '600',
-                                        color: 'var(--iris-foreground)',
-                                      },
+                        props.title,
+                      ),
+                default: () =>
+                  slots.default
+                    ? slots.default()
+                    : h(
+                        'div',
+                        { style: { padding: '20px' } },
+                        h(IrisDashboardGrid, { columns: 12, gap: 16 }, () =>
+                          props.cards.map((card) =>
+                            h(
+                              IrisDashboardCard,
+                              {
+                                key: card.id,
+                                colSpan: card.colSpan ?? 4,
+                                rowSpan: card.rowSpan ?? 1,
+                                'data-iris-dashboard-card-id': card.id,
+                              } as Record<string, unknown>,
+                              () => [
+                                h(
+                                  'h3',
+                                  {
+                                    style: {
+                                      margin: '0 0 8px 0',
+                                      fontSize: '14px',
+                                      fontWeight: '600',
+                                      color: 'var(--iris-foreground)',
                                     },
-                                    card.title,
-                                  ),
-                                  slots[`card.${card.id}`]
-                                    ? slots[`card.${card.id}`]!()
-                                    : card.body
-                                      ? h(
-                                          'div',
-                                          { style: { fontSize: '13px', color: 'var(--iris-muted)' } },
-                                          card.body,
-                                        )
-                                      : null,
-                                ],
-                              ),
+                                  },
+                                  card.title,
+                                ),
+                                slots[`card.${card.id}`]
+                                  ? slots[`card.${card.id}`]!()
+                                  : card.body
+                                    ? h(
+                                        'div',
+                                        { style: { fontSize: '13px', color: 'var(--iris-muted)' } },
+                                        card.body,
+                                      )
+                                    : null,
+                              ],
                             ),
                           ),
                         ),
-                },
-              ),
+                      ),
+              }),
           },
         ),
       )

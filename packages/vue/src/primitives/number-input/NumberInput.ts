@@ -51,9 +51,7 @@ export const IrisNumberInput = defineComponent({
   setup(props, { attrs, emit }) {
     const focused = ref(false)
     const rawText = ref<string>(
-      props.modelValue === null || props.modelValue === undefined
-        ? ''
-        : String(props.modelValue),
+      props.modelValue === null || props.modelValue === undefined ? '' : String(props.modelValue),
     )
 
     const startValue = computed(() => {
@@ -129,7 +127,10 @@ export const IrisNumberInput = defineComponent({
     }
 
     const sizeStyles = computed<{ padding: string; fontSize: string; minHeight: string }>(() => {
-      const map: Record<IrisNumberInputSize, { padding: string; fontSize: string; minHeight: string }> = {
+      const map: Record<
+        IrisNumberInputSize,
+        { padding: string; fontSize: string; minHeight: string }
+      > = {
         sm: { padding: '4px var(--iris-padding-sm)', fontSize: '12px', minHeight: '28px' },
         md: { padding: '6px var(--iris-padding-md)', fontSize: '14px', minHeight: '34px' },
         lg: { padding: '8px var(--iris-padding-md)', fontSize: '16px', minHeight: '40px' },
@@ -173,7 +174,7 @@ export const IrisNumberInput = defineComponent({
       fontFamily: 'inherit',
       fontSize: 'inherit',
       padding: '0',
-      textAlign: 'right',
+      textAlign: 'end',
     }
 
     const controlBtnStyle: Record<string, string> = {
@@ -192,8 +193,10 @@ export const IrisNumberInput = defineComponent({
     }
 
     return () => {
-      const atMin = props.modelValue !== null && props.modelValue !== undefined && props.modelValue <= props.min
-      const atMax = props.modelValue !== null && props.modelValue !== undefined && props.modelValue >= props.max
+      const atMin =
+        props.modelValue !== null && props.modelValue !== undefined && props.modelValue <= props.min
+      const atMax =
+        props.modelValue !== null && props.modelValue !== undefined && props.modelValue >= props.max
       return h(
         'div',
         {
@@ -201,7 +204,10 @@ export const IrisNumberInput = defineComponent({
           'data-iris-number-input': '',
           'data-iris-number-input-size': props.size,
           'data-state': props.invalid ? 'invalid' : focused.value ? 'focused' : 'idle',
-          style: { ...wrapperStyle.value, ...((attrs.style as Record<string, string> | undefined) ?? {}) },
+          style: {
+            ...wrapperStyle.value,
+            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+          },
         },
         [
           props.showControls
@@ -213,7 +219,7 @@ export const IrisNumberInput = defineComponent({
                   'aria-label': 'Decrement',
                   disabled: props.disabled || atMin || undefined,
                   onClick: () => increment(-1),
-                  style: { ...controlBtnStyle, marginRight: '4px' },
+                  style: { ...controlBtnStyle, marginInlineEnd: '4px' },
                 },
                 '−',
               )
@@ -230,7 +236,9 @@ export const IrisNumberInput = defineComponent({
             'aria-invalid': props.invalid ? 'true' : undefined,
             'aria-describedby': props.ariaDescribedby,
             'aria-valuenow':
-              props.modelValue === null || props.modelValue === undefined ? undefined : props.modelValue,
+              props.modelValue === null || props.modelValue === undefined
+                ? undefined
+                : props.modelValue,
             'aria-valuemin': Number.isFinite(props.min) ? props.min : undefined,
             'aria-valuemax': Number.isFinite(props.max) ? props.max : undefined,
             style: inputStyle,
@@ -248,7 +256,7 @@ export const IrisNumberInput = defineComponent({
                   'aria-label': 'Increment',
                   disabled: props.disabled || atMax || undefined,
                   onClick: () => increment(1),
-                  style: { ...controlBtnStyle, marginLeft: '4px' },
+                  style: { ...controlBtnStyle, marginInlineStart: '4px' },
                 },
                 '+',
               )

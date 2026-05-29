@@ -45,7 +45,7 @@ export const IrisContainer = defineComponent({
       width: '100%',
       maxWidth: resolveMaxWidth(props.maxWidth),
       padding: `0 ${resolvePadding(props.padding)}`,
-      ...(props.center ? { marginLeft: 'auto', marginRight: 'auto' } : {}),
+      ...(props.center ? { marginInlineStart: 'auto', marginInlineEnd: 'auto' } : {}),
     }))
 
     return () =>

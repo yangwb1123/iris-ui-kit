@@ -2,7 +2,10 @@ import * as React from 'react'
 
 export type IrisNumberInputSize = 'sm' | 'md' | 'lg'
 
-const SIZE_MAP: Record<IrisNumberInputSize, { padding: string; fontSize: string; minHeight: string }> = {
+const SIZE_MAP: Record<
+  IrisNumberInputSize,
+  { padding: string; fontSize: string; minHeight: string }
+> = {
   sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
   md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
   lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
@@ -24,11 +27,10 @@ function roundToStep(value: number, step: number): number {
   return Number(value.toFixed(places))
 }
 
-export interface IrisNumberInputProps
-  extends Omit<
-    React.InputHTMLAttributes<HTMLInputElement>,
-    'type' | 'size' | 'value' | 'defaultValue' | 'onChange' | 'min' | 'max' | 'step'
-  > {
+export interface IrisNumberInputProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'size' | 'value' | 'defaultValue' | 'onChange' | 'min' | 'max' | 'step'
+> {
   value?: number | null
   defaultValue?: number | null
   onChange?: (next: number | null) => void
@@ -199,7 +201,7 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
             aria-label="Decrement"
             disabled={disabled || atMin}
             onClick={() => increment(-1)}
-            style={{ ...ctrlBtnStyle, marginRight: 4 }}
+            style={{ ...ctrlBtnStyle, marginInlineEnd: 4 }}
           >
             −
           </button>
@@ -215,9 +217,7 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
           readOnly={readOnly}
           aria-invalid={invalid ? 'true' : undefined}
           aria-describedby={ariaDescribedby}
-          aria-valuenow={
-            current === null || current === undefined ? undefined : current
-          }
+          aria-valuenow={current === null || current === undefined ? undefined : current}
           aria-valuemin={Number.isFinite(min) ? min : undefined}
           aria-valuemax={Number.isFinite(max) ? max : undefined}
           onChange={handleInput}
@@ -235,7 +235,7 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
             fontFamily: 'inherit',
             fontSize: 'inherit',
             padding: 0,
-            textAlign: 'right',
+            textAlign: 'end',
           }}
         />
         {showControls ? (
@@ -245,7 +245,7 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
             aria-label="Increment"
             disabled={disabled || atMax}
             onClick={() => increment(1)}
-            style={{ ...ctrlBtnStyle, marginLeft: 4 }}
+            style={{ ...ctrlBtnStyle, marginInlineStart: 4 }}
           >
             +
           </button>

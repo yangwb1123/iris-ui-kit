@@ -78,7 +78,7 @@ export const IrisAccordionItem = defineComponent({
                 cursor: props.disabled ? 'not-allowed' : 'pointer',
                 opacity: props.disabled ? '0.6' : '1',
                 font: 'inherit',
-                textAlign: 'left',
+                textAlign: 'start',
               },
             },
             [

@@ -585,7 +585,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   aria-hidden="true"
                   data-iris-table-sort-indicator=""
                   style={{
-                    marginLeft: 6,
+                    marginInlineStart: 6,
                     fontSize: 11,
                     color: dir ? 'var(--iris-primary)' : 'var(--iris-muted)',
                   }}

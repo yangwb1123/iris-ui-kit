@@ -176,11 +176,10 @@ export const IrisToastViewport = defineComponent({
             background: 'var(--iris-surface)',
             color: 'var(--iris-foreground)',
             border: `1px solid ${VARIANT_BORDER[toast.variant]}`,
-            borderLeft: `4px solid ${VARIANT_ACCENT[toast.variant]}`,
+            borderInlineStart: `4px solid ${VARIANT_ACCENT[toast.variant]}`,
             borderRadius: 'var(--iris-radius-md)',
             padding: 'var(--iris-padding-md)',
-            boxShadow:
-              '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
             minWidth: '280px',
             fontSize: '14px',
           },
@@ -248,7 +247,10 @@ export const IrisToastViewport = defineComponent({
           'data-position': props.position,
           onPointerenter: onPointerEnter,
           onPointerleave: onPointerLeave,
-          style: { ...positionStyle(), ...((attrs.style as Record<string, string> | undefined) ?? {}) },
+          style: {
+            ...positionStyle(),
+            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+          },
         },
         toasts.value.map(renderToast),
       )

@@ -35,9 +35,7 @@ export const IrisStepperStep = defineComponent({
       index.value = ctx.registerStep()
     })
 
-    const status = computed<IrisStepStatus>(
-      () => props.status ?? ctx.computeStatus(index.value),
-    )
+    const status = computed<IrisStepStatus>(() => props.status ?? ctx.computeStatus(index.value))
 
     const onClick = () => {
       if (props.disabled) return
@@ -76,31 +74,33 @@ export const IrisStepperStep = defineComponent({
         s === 'completed' ? '✓' : s === 'error' ? '!' : String(index.value + 1),
       )
 
-      const titleNode = props.title || slots.title
-        ? h(
-            'div',
-            {
-              'data-iris-stepper-title': '',
-              style: {
-                fontSize: '13px',
-                fontWeight: s === 'active' ? '600' : '500',
-                color: s === 'pending' ? 'var(--iris-muted)' : 'var(--iris-foreground)',
+      const titleNode =
+        props.title || slots.title
+          ? h(
+              'div',
+              {
+                'data-iris-stepper-title': '',
+                style: {
+                  fontSize: '13px',
+                  fontWeight: s === 'active' ? '600' : '500',
+                  color: s === 'pending' ? 'var(--iris-muted)' : 'var(--iris-foreground)',
+                },
               },
-            },
-            slots.title?.() ?? props.title,
-          )
-        : null
+              slots.title?.() ?? props.title,
+            )
+          : null
 
-      const descNode = props.description || slots.description
-        ? h(
-            'div',
-            {
-              'data-iris-stepper-description': '',
-              style: { fontSize: '12px', color: 'var(--iris-muted)' },
-            },
-            slots.description?.() ?? props.description,
-          )
-        : null
+      const descNode =
+        props.description || slots.description
+          ? h(
+              'div',
+              {
+                'data-iris-stepper-description': '',
+                style: { fontSize: '12px', color: 'var(--iris-muted)' },
+              },
+              slots.description?.() ?? props.description,
+            )
+          : null
 
       const connector = !isLast
         ? h('span', {
@@ -110,15 +110,17 @@ export const IrisStepperStep = defineComponent({
               ? {
                   flex: '1',
                   height: '1px',
-                  background: index.value < ctx.current.value ? STATUS_COLOR.completed : 'var(--iris-border)',
+                  background:
+                    index.value < ctx.current.value ? STATUS_COLOR.completed : 'var(--iris-border)',
                   margin: '0 8px',
                   alignSelf: 'center',
                 }
               : {
                   width: '1px',
                   minHeight: '24px',
-                  background: index.value < ctx.current.value ? STATUS_COLOR.completed : 'var(--iris-border)',
-                  marginLeft: '13px',
+                  background:
+                    index.value < ctx.current.value ? STATUS_COLOR.completed : 'var(--iris-border)',
+                  marginInlineStart: '13px',
                   marginTop: '4px',
                   marginBottom: '4px',
                 },
@@ -170,7 +172,7 @@ export const IrisStepperStep = defineComponent({
                     cursor: clickable ? 'pointer' : 'default',
                     color: 'inherit',
                     font: 'inherit',
-                    textAlign: 'left',
+                    textAlign: 'start',
                   },
                 },
                 [indicator, h('div', null, [titleNode, descNode])],
@@ -195,7 +197,7 @@ export const IrisStepperStep = defineComponent({
                     cursor: clickable ? 'pointer' : 'default',
                     color: 'inherit',
                     font: 'inherit',
-                    textAlign: 'left',
+                    textAlign: 'start',
                   },
                 },
                 [indicator, h('div', null, [titleNode, descNode])],

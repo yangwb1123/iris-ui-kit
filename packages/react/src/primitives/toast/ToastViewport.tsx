@@ -82,11 +82,7 @@ export function IrisToastViewport({
   style,
   ...rest
 }: IrisToastViewportProps): React.ReactElement | null {
-  const allToasts = React.useSyncExternalStore(
-    subscribeToasts,
-    getToasts,
-    () => [] as IrisToast[],
-  )
+  const allToasts = React.useSyncExternalStore(subscribeToasts, getToasts, () => [] as IrisToast[])
 
   const toasts = React.useMemo(
     () => (allToasts.length > max ? allToasts.slice(-max) : allToasts),
@@ -174,11 +170,10 @@ export function IrisToastViewport({
             background: 'var(--iris-surface)',
             color: 'var(--iris-foreground)',
             border: `1px solid ${VARIANT_BORDER[toast.variant]}`,
-            borderLeft: `4px solid ${VARIANT_ACCENT[toast.variant]}`,
+            borderInlineStart: `4px solid ${VARIANT_ACCENT[toast.variant]}`,
             borderRadius: 'var(--iris-radius-md, 6px)',
             padding: 'var(--iris-padding-md, 12px)',
-            boxShadow:
-              '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
             minWidth: 280,
             fontSize: 14,
           }}

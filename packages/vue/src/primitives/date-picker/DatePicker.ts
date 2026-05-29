@@ -63,63 +63,54 @@ export const IrisDatePicker = defineComponent({
         },
         {
           default: () => [
-            h(
-              IrisPopoverTrigger,
-              { asChild: true },
-              () => [
-                h(
-                  'button',
-                  {
-                    ...attrs,
-                    type: 'button',
-                    id: props.id,
-                    disabled: props.disabled || undefined,
-                    'aria-invalid': props.invalid ? 'true' : undefined,
-                    'aria-describedby': props.ariaDescribedby,
-                    'data-iris-date-picker-trigger': '',
-                    'data-iris-date-picker-iso': props.modelValue
-                      ? formatISODate(props.modelValue)
-                      : undefined,
-                    'data-state': open.value ? 'open' : 'closed',
-                    style: {
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '6px 12px',
-                      background: 'var(--iris-background)',
-                      color: props.modelValue
-                        ? 'var(--iris-foreground)'
-                        : 'var(--iris-muted)',
-                      border: `1px solid ${props.invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
-                      borderRadius: 'var(--iris-radius-md, 6px)',
-                      cursor: props.disabled ? 'not-allowed' : 'pointer',
-                      opacity: props.disabled ? '0.6' : '1',
-                      fontSize: '14px',
-                      fontFamily: 'inherit',
-                      minHeight: '34px',
-                      minWidth: '180px',
-                      textAlign: 'left',
-                      ...((attrs.style as Record<string, string> | undefined) ?? {}),
-                    },
+            h(IrisPopoverTrigger, { asChild: true }, () => [
+              h(
+                'button',
+                {
+                  ...attrs,
+                  type: 'button',
+                  id: props.id,
+                  disabled: props.disabled || undefined,
+                  'aria-invalid': props.invalid ? 'true' : undefined,
+                  'aria-describedby': props.ariaDescribedby,
+                  'data-iris-date-picker-trigger': '',
+                  'data-iris-date-picker-iso': props.modelValue
+                    ? formatISODate(props.modelValue)
+                    : undefined,
+                  'data-state': open.value ? 'open' : 'closed',
+                  style: {
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    background: 'var(--iris-background)',
+                    color: props.modelValue ? 'var(--iris-foreground)' : 'var(--iris-muted)',
+                    border: `1px solid ${props.invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
+                    borderRadius: 'var(--iris-radius-md, 6px)',
+                    cursor: props.disabled ? 'not-allowed' : 'pointer',
+                    opacity: props.disabled ? '0.6' : '1',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    minHeight: '34px',
+                    minWidth: '180px',
+                    textAlign: 'start',
+                    ...((attrs.style as Record<string, string> | undefined) ?? {}),
                   },
-                  display.value || props.placeholder,
-                ),
-              ],
-            ),
-            h(
-              IrisPopoverContent,
-              { style: { padding: '0' } },
-              () =>
-                h(IrisCalendar, {
-                  modelValue: props.modelValue,
-                  min: props.min,
-                  max: props.max,
-                  weekStartsOn: props.weekStartsOn,
-                  locale: props.locale,
-                  disabled: props.disabled,
-                  'onUpdate:modelValue': onSelect,
-                  style: { border: 'none', background: 'transparent' },
-                }),
+                },
+                display.value || props.placeholder,
+              ),
+            ]),
+            h(IrisPopoverContent, { style: { padding: '0' } }, () =>
+              h(IrisCalendar, {
+                modelValue: props.modelValue,
+                min: props.min,
+                max: props.max,
+                weekStartsOn: props.weekStartsOn,
+                locale: props.locale,
+                disabled: props.disabled,
+                'onUpdate:modelValue': onSelect,
+                style: { border: 'none', background: 'transparent' },
+              }),
             ),
           ],
         },

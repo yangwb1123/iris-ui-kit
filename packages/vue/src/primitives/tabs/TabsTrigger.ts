@@ -93,9 +93,12 @@ export const IrisTabsTrigger = defineComponent({
       const colors = isActive.value
         ? { background: 'transparent', color: 'var(--iris-primary)' }
         : { background: 'transparent', color: 'var(--iris-muted)' }
-      const borderActive = ctx.orientation.value === 'horizontal'
-        ? { borderBottom: `2px solid ${isActive.value ? 'var(--iris-primary)' : 'transparent'}` }
-        : { borderRight: `2px solid ${isActive.value ? 'var(--iris-primary)' : 'transparent'}` }
+      const borderActive =
+        ctx.orientation.value === 'horizontal'
+          ? { borderBottom: `2px solid ${isActive.value ? 'var(--iris-primary)' : 'transparent'}` }
+          : {
+              borderInlineEnd: `2px solid ${isActive.value ? 'var(--iris-primary)' : 'transparent'}`,
+            }
       return h(
         'button',
         {
@@ -112,7 +115,7 @@ export const IrisTabsTrigger = defineComponent({
             border: 'none',
             outline: 'none',
             marginBottom: ctx.orientation.value === 'horizontal' ? '-1px' : undefined,
-            marginRight: ctx.orientation.value === 'vertical' ? '-1px' : undefined,
+            marginInlineEnd: ctx.orientation.value === 'vertical' ? '-1px' : undefined,
             transition: 'color 120ms ease, border-color 120ms ease',
             ...colors,
             ...borderActive,

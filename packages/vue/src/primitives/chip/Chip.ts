@@ -141,7 +141,7 @@ export const IrisChip = defineComponent({
                   cursor: props.disabled ? 'not-allowed' : 'pointer',
                   color: 'inherit',
                   padding: '0',
-                  marginLeft: '2px',
+                  marginInlineStart: '2px',
                   fontSize: '12px',
                   lineHeight: '1',
                   flexShrink: '0',

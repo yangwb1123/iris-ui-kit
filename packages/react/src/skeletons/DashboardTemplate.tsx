@@ -86,30 +86,25 @@ export function IrisDashboardTemplate({
         collapsedWidth={64}
         sidebar={(state) => (
           <IrisStack spacing="sm" style={{ padding: 12 }}>
-            {sidebarHeader
-              ? sidebarHeader(state)
-              : sidebarTitle
-                ? (
-                    <div
-                      style={{
-                        padding: '8px 12px',
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: 'var(--iris-foreground)',
-                        opacity: state.collapsed ? 0 : 1,
-                        transition: 'opacity 120ms ease',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {sidebarTitle}
-                    </div>
-                  )
-                : null}
-            <nav
-              aria-label="Primary"
-              style={{ display: 'flex', flexDirection: 'column', gap: 2 }}
-            >
+            {sidebarHeader ? (
+              sidebarHeader(state)
+            ) : sidebarTitle ? (
+              <div
+                style={{
+                  padding: '8px 12px',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: 'var(--iris-foreground)',
+                  opacity: state.collapsed ? 0 : 1,
+                  transition: 'opacity 120ms ease',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                }}
+              >
+                {sidebarTitle}
+              </div>
+            ) : null}
+            <nav aria-label="Primary" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {nav.map((item) => {
                 const isActive = item.id === activeId
                 return (
@@ -133,7 +128,7 @@ export function IrisDashboardTemplate({
                       cursor: 'pointer',
                       fontSize: 14,
                       fontFamily: 'inherit',
-                      textAlign: 'left',
+                      textAlign: 'start',
                       outline: 'none',
                     }}
                   >
@@ -188,15 +183,11 @@ export function IrisDashboardTemplate({
                     >
                       {card.title}
                     </h3>
-                    {cardSlots?.[card.id] !== undefined
-                      ? cardSlots[card.id]
-                      : card.body
-                        ? (
-                            <div style={{ fontSize: 13, color: 'var(--iris-muted)' }}>
-                              {card.body}
-                            </div>
-                          )
-                        : null}
+                    {cardSlots?.[card.id] !== undefined ? (
+                      cardSlots[card.id]
+                    ) : card.body ? (
+                      <div style={{ fontSize: 13, color: 'var(--iris-muted)' }}>{card.body}</div>
+                    ) : null}
                   </IrisDashboardCard>
                 ))}
               </IrisDashboardGrid>

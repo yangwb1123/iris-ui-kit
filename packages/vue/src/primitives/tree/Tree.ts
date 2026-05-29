@@ -298,7 +298,8 @@ export const IrisTree = defineComponent({
             tabindex: isActive ? 0 : -1,
             'aria-level': depth + 1,
             'aria-expanded': hasChildren ? (isExpanded ? 'true' : 'false') : undefined,
-            'aria-selected': props.selectionMode !== 'none' ? (isSelected ? 'true' : 'false') : undefined,
+            'aria-selected':
+              props.selectionMode !== 'none' ? (isSelected ? 'true' : 'false') : undefined,
             'aria-disabled': node.disabled ? 'true' : undefined,
             'data-iris-tree-item': '',
             'data-id': node.id,
@@ -313,7 +314,7 @@ export const IrisTree = defineComponent({
               alignItems: 'center',
               gap: 'var(--iris-gap-sm)',
               padding: '4px 8px',
-              paddingLeft: `${8 + depth * 16}px`,
+              paddingInlineStart: `${8 + depth * 16}px`,
               cursor: node.disabled ? 'not-allowed' : 'pointer',
               opacity: node.disabled ? '0.5' : '1',
               borderRadius: 'var(--iris-radius-sm)',

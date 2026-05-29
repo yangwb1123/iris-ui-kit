@@ -61,9 +61,15 @@ describe('IrisContainer', () => {
   })
 
   it('maxWidth=sm/md/xl map correctly', () => {
-    expect(mount(IrisContainer, { props: { maxWidth: 'sm' } }).attributes('style')).toContain('640px')
-    expect(mount(IrisContainer, { props: { maxWidth: 'md' } }).attributes('style')).toContain('768px')
-    expect(mount(IrisContainer, { props: { maxWidth: 'xl' } }).attributes('style')).toContain('1280px')
+    expect(mount(IrisContainer, { props: { maxWidth: 'sm' } }).attributes('style')).toContain(
+      '640px',
+    )
+    expect(mount(IrisContainer, { props: { maxWidth: 'md' } }).attributes('style')).toContain(
+      '768px',
+    )
+    expect(mount(IrisContainer, { props: { maxWidth: 'xl' } }).attributes('style')).toContain(
+      '1280px',
+    )
   })
 
   it('arbitrary CSS length forwarded as-is', () => {
@@ -76,17 +82,17 @@ describe('IrisContainer', () => {
     expect(w.attributes('style')).toContain('max-width: 100%')
   })
 
-  it('center=true (default) adds auto margins', () => {
+  it('center=true (default) adds auto logical margins', () => {
     const w = mount(IrisContainer)
     const style = w.attributes('style') ?? ''
-    expect(style).toContain('margin-left: auto')
-    expect(style).toContain('margin-right: auto')
+    expect(style).toContain('margin-inline-start: auto')
+    expect(style).toContain('margin-inline-end: auto')
   })
 
   it('center=false skips auto margins', () => {
     const w = mount(IrisContainer, { props: { center: false } })
     const style = w.attributes('style') ?? ''
-    expect(style).not.toContain('margin-left: auto')
+    expect(style).not.toContain('margin-inline-start: auto')
   })
 
   it('numeric padding → px', () => {

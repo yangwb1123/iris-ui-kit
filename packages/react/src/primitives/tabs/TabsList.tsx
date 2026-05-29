@@ -12,7 +12,8 @@ export const IrisTabsList = React.forwardRef<HTMLDivElement, IrisTabsListProps>(
       (el: HTMLDivElement | null) => {
         ctx.listRef.current = el
         if (typeof forwardedRef === 'function') forwardedRef(el)
-        else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
+        else if (forwardedRef)
+          (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
       },
       [ctx, forwardedRef],
     )
@@ -29,10 +30,8 @@ export const IrisTabsList = React.forwardRef<HTMLDivElement, IrisTabsListProps>(
           display: 'flex',
           flexDirection: ctx.orientation === 'horizontal' ? 'row' : 'column',
           gap: 2,
-          borderBottom:
-            ctx.orientation === 'horizontal' ? '1px solid var(--iris-border)' : 'none',
-          borderRight:
-            ctx.orientation === 'vertical' ? '1px solid var(--iris-border)' : 'none',
+          borderBottom: ctx.orientation === 'horizontal' ? '1px solid var(--iris-border)' : 'none',
+          borderInlineEnd: ctx.orientation === 'vertical' ? '1px solid var(--iris-border)' : 'none',
           ...style,
         }}
       >

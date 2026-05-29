@@ -72,10 +72,11 @@
     },
     {
       "group": "primitives",
-      "count": 91,
+      "count": 92,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
+        "IrisAffix",
         "IrisAlert",
         "IrisAvatar",
         "IrisBackTop",
@@ -194,6 +195,19 @@
       "name": "IrisAccordionItem",
       "group": "primitives",
       "module": "accordion",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisAffix",
+      "group": "primitives",
+      "module": "affix",
       "frameworks": [
         "react",
         "vue"
@@ -1594,8 +1608,8 @@
     ]
   },
   "stats": {
-    "total": 106,
-    "both": 106,
+    "total": 107,
+    "both": 107,
     "reactOnly": 0,
     "vueOnly": 0
   }

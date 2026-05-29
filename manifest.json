@@ -72,7 +72,7 @@
     },
     {
       "group": "primitives",
-      "count": 86,
+      "count": 88,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -93,6 +93,7 @@
         "IrisCommandPalette",
         "IrisDatePicker",
         "IrisDateRangePicker",
+        "IrisDescriptions",
         "IrisDialog",
         "IrisDialogClose",
         "IrisDialogContent",
@@ -143,6 +144,7 @@
         "IrisSlot",
         "IrisSpinner",
         "IrisSplitter",
+        "IrisStatistic",
         "IrisStepper",
         "IrisStepperStep",
         "IrisSwitch",
@@ -470,6 +472,19 @@
       "name": "IrisDateRangePicker",
       "group": "primitives",
       "module": "date-range-picker",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDescriptions",
+      "group": "primitives",
+      "module": "descriptions",
       "frameworks": [
         "react",
         "vue"
@@ -1250,6 +1265,19 @@
       }
     },
     {
+      "name": "IrisStatistic",
+      "group": "primitives",
+      "module": "statistic",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
       "name": "IrisStepper",
       "group": "primitives",
       "module": "stepper",
@@ -1524,8 +1552,8 @@
     ]
   },
   "stats": {
-    "total": 101,
-    "both": 101,
+    "total": 103,
+    "both": 103,
     "reactOnly": 0,
     "vueOnly": 0
   }

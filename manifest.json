@@ -72,7 +72,7 @@
     },
     {
       "group": "primitives",
-      "count": 100,
+      "count": 101,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -95,6 +95,7 @@
         "IrisColorPicker",
         "IrisCombobox",
         "IrisCommandPalette",
+        "IrisCountdown",
         "IrisDatePicker",
         "IrisDateRangePicker",
         "IrisDescriptions",
@@ -474,6 +475,19 @@
     {
       "name": "IrisContainer",
       "group": "layouts",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisCountdown",
+      "group": "primitives",
+      "module": "countdown",
       "frameworks": [
         "react",
         "vue"
@@ -1720,8 +1734,8 @@
     ]
   },
   "stats": {
-    "total": 115,
-    "both": 115,
+    "total": 116,
+    "both": 116,
     "reactOnly": 0,
     "vueOnly": 0
   }

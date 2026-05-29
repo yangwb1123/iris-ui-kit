@@ -72,7 +72,7 @@
     },
     {
       "group": "primitives",
-      "count": 111,
+      "count": 112,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -129,6 +129,7 @@
         "IrisInput",
         "IrisKbd",
         "IrisList",
+        "IrisMarquee",
         "IrisMentions",
         "IrisMenu",
         "IrisMenuContent",
@@ -1045,6 +1046,19 @@
       }
     },
     {
+      "name": "IrisMarquee",
+      "group": "primitives",
+      "module": "marquee",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
       "name": "IrisMentions",
       "group": "primitives",
       "module": "mentions",
@@ -1874,8 +1888,8 @@
     ]
   },
   "stats": {
-    "total": 126,
-    "both": 126,
+    "total": 127,
+    "both": 127,
     "reactOnly": 0,
     "vueOnly": 0
   }

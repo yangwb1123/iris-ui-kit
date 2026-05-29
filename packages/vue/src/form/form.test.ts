@@ -120,3 +120,46 @@ describe('@iris-ui/vue useForm / useField', () => {
     errSpy.mockRestore()
   })
 })
+
+describe('@iris-ui/vue IrisForm focus-first-error', () => {
+  // useField must run inside <IrisForm> (descendant), so fields live in a child.
+  const Fields = defineComponent({
+    setup() {
+      const email = useField<string>('email')
+      const name = useField<string>('name')
+      return () => [
+        h('input', {
+          name: 'email',
+          value: email.value.value,
+          onInput: (e: Event) => email.setValue((e.target as HTMLInputElement).value),
+        }),
+        h('input', {
+          name: 'name',
+          value: name.value.value,
+          onInput: (e: Event) => name.setValue((e.target as HTMLInputElement).value),
+        }),
+        h('button', { type: 'submit' }, 'Save'),
+      ]
+    },
+  })
+
+  it('focuses the first errored field on invalid submit', async () => {
+    const Probe = defineComponent({
+      setup() {
+        const form = useForm({
+          initialValues: { email: '', name: '' },
+          validators: {
+            email: (v) => (v ? undefined : 'Required'),
+            name: (v) => (v ? undefined : 'Required'),
+          },
+        })
+        return () => h(IrisForm, { form: form.form }, { default: () => h(Fields) })
+      },
+    })
+    const wrapper = mount(Probe, { attachTo: document.body })
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    expect(document.activeElement).toBe(wrapper.find('input[name="email"]').element)
+    wrapper.unmount()
+  })
+})

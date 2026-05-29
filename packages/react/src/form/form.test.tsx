@@ -102,3 +102,37 @@ describe('@iris-ui/react useForm / useField', () => {
     spy.mockRestore()
   })
 })
+
+describe('@iris-ui/react IrisForm focus-first-error', () => {
+  function MultiField() {
+    const email = useField<string>('email')
+    const name = useField<string>('name')
+    return (
+      <>
+        <input aria-label="email" {...email.inputProps} />
+        <input aria-label="name" {...name.inputProps} />
+      </>
+    )
+  }
+  function MultiForm() {
+    const form = useForm({
+      initialValues: { email: '', name: '' },
+      validators: {
+        email: (v) => (v ? undefined : 'Required'),
+        name: (v) => (v ? undefined : 'Required'),
+      },
+    })
+    return (
+      <IrisForm form={form.form}>
+        <MultiField />
+        <button type="submit">Save</button>
+      </IrisForm>
+    )
+  }
+
+  it('focuses the first errored field on invalid submit', async () => {
+    render(<MultiForm />)
+    fireEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('email')))
+  })
+})

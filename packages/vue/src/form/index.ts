@@ -1,4 +1,5 @@
 export { IrisForm } from './Form'
 export { useForm, type UseFormReturn } from './useForm'
 export { useField, type UseFieldReturn, type FieldBindProps } from './useField'
+export { useFieldArray, type UseFieldArrayReturn } from './useFieldArray'
 export { FormInjectionKey, useFormContext } from './context'

@@ -72,7 +72,7 @@
     },
     {
       "group": "primitives",
-      "count": 84,
+      "count": 85,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -151,6 +151,7 @@
         "IrisTabsList",
         "IrisTabsTrigger",
         "IrisTextarea",
+        "IrisTimeline",
         "IrisTimePicker",
         "IrisToastViewport",
         "IrisToggleGroup",
@@ -1352,6 +1353,19 @@
       }
     },
     {
+      "name": "IrisTimeline",
+      "group": "primitives",
+      "module": "timeline",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
       "name": "IrisTimePicker",
       "group": "primitives",
       "module": "time-picker",
@@ -1496,8 +1510,8 @@
     ]
   },
   "stats": {
-    "total": 99,
-    "both": 99,
+    "total": 100,
+    "both": 100,
     "reactOnly": 0,
     "vueOnly": 0
   }

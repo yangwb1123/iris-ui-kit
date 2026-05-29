@@ -72,7 +72,7 @@
     },
     {
       "group": "primitives",
-      "count": 113,
+      "count": 114,
       "components": [
         "IrisAccordion",
         "IrisAccordionItem",
@@ -120,6 +120,7 @@
         "IrisDropdownSeparator",
         "IrisDropdownTrigger",
         "IrisEmptyState",
+        "IrisFieldset",
         "IrisFileUpload",
         "IrisFloatButton",
         "IrisFormField",
@@ -848,6 +849,19 @@
       "name": "IrisEmptyState",
       "group": "primitives",
       "module": "empty-state",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisFieldset",
+      "group": "primitives",
+      "module": "fieldset",
       "frameworks": [
         "react",
         "vue"
@@ -1902,8 +1916,8 @@
     ]
   },
   "stats": {
-    "total": 128,
-    "both": 128,
+    "total": 129,
+    "both": 129,
     "reactOnly": 0,
     "vueOnly": 0
   }

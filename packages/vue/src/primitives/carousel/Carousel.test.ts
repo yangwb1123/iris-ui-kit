@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { h } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+import { h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { IrisCarousel } from './Carousel'
 
@@ -65,5 +65,54 @@ describe('IrisCarousel', () => {
     expect(slides[0].attributes('aria-roledescription')).toBe('slide')
     expect(slides[0].attributes('aria-hidden')).toBeUndefined()
     expect(slides[1].attributes('aria-hidden')).toBe('true')
+  })
+
+  it('autoplay advances after the interval', async () => {
+    vi.useFakeTimers()
+    try {
+      const w = mount(IrisCarousel, {
+        props: { autoplay: true, interval: 1000 },
+        slots: { default: threeSlides },
+      })
+      vi.advanceTimersByTime(1000)
+      await nextTick()
+      expect(w.emitted('update:modelValue')?.[0]).toEqual([1])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('autoplay pauses on hover', async () => {
+    vi.useFakeTimers()
+    try {
+      const w = mount(IrisCarousel, {
+        props: { autoplay: true, interval: 1000 },
+        slots: { default: threeSlides },
+      })
+      await root(w).trigger('mouseenter')
+      vi.advanceTimersByTime(2000)
+      await nextTick()
+      expect(w.emitted('update:modelValue')).toBeUndefined()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('autoplay is disabled under prefers-reduced-motion', async () => {
+    const original = window.matchMedia
+    window.matchMedia = (() => ({ matches: true })) as unknown as typeof window.matchMedia
+    vi.useFakeTimers()
+    try {
+      const w = mount(IrisCarousel, {
+        props: { autoplay: true, interval: 1000 },
+        slots: { default: threeSlides },
+      })
+      vi.advanceTimersByTime(2000)
+      await nextTick()
+      expect(w.emitted('update:modelValue')).toBeUndefined()
+    } finally {
+      vi.useRealTimers()
+      window.matchMedia = original
+    }
   })
 })

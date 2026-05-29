@@ -1,4 +1,4 @@
-import { Comment, defineComponent, Fragment, h, type VNode } from 'vue'
+import { Comment, defineComponent, Fragment, h, onBeforeUnmount, ref, watch, type VNode } from 'vue'
 import { useI18n } from '../../i18n'
 
 const ARROW_BTN: Record<string, string> = {
@@ -18,6 +18,15 @@ const ARROW_BTN: Record<string, string> = {
   cursor: 'pointer',
   fontSize: '18px',
   lineHeight: '1',
+}
+
+/** True when the user has asked for reduced motion (SSR / jsdom safe). */
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
 }
 
 /** Flatten fragment slot output and drop comment placeholders (v-if etc.). */
@@ -46,6 +55,12 @@ export const IrisCarousel = defineComponent({
     modelValue: { type: Number, default: 0 },
     /** Wrap around at the ends. */
     loop: { type: Boolean, default: true },
+    /** Auto-advance slides. Disabled when the user prefers reduced motion. */
+    autoplay: { type: Boolean, default: false },
+    /** Autoplay interval in ms. */
+    interval: { type: Number, default: 4000 },
+    /** Pause autoplay while hovered. */
+    pauseOnHover: { type: Boolean, default: true },
     showArrows: { type: Boolean, default: true },
     showIndicators: { type: Boolean, default: true },
     /** Accessible name for the carousel region. */
@@ -56,6 +71,33 @@ export const IrisCarousel = defineComponent({
   },
   setup(props, { attrs, slots, emit }) {
     const { t } = useI18n()
+
+    // Autoplay: an interval that advances the active slide, paused on
+    // hover/focus and disabled under prefers-reduced-motion.
+    const hovered = ref(false)
+    const focusedWithin = ref(false)
+    let timer: ReturnType<typeof setInterval> | undefined
+    const stop = () => {
+      if (timer) {
+        clearInterval(timer)
+        timer = undefined
+      }
+    }
+    const start = () => {
+      stop()
+      if (!props.autoplay || prefersReducedMotion()) return
+      timer = setInterval(() => {
+        if ((props.pauseOnHover && hovered.value) || focusedWithin.value) return
+        const list = flattenSlides(slots.default?.() ?? [])
+        const count = list.length
+        if (count <= 1) return
+        const current = Math.min(Math.max(0, props.modelValue), Math.max(0, count - 1))
+        emit('update:modelValue', (current + 1) % count)
+      }, props.interval)
+    }
+    watch(() => [props.autoplay, props.interval], start, { immediate: true })
+    onBeforeUnmount(stop)
+
     return () => {
       const slides = flattenSlides(slots.default?.() ?? [])
       const count = slides.length
@@ -90,6 +132,18 @@ export const IrisCarousel = defineComponent({
           'aria-label': props.ariaLabel,
           tabindex: 0,
           onKeydown,
+          onMouseenter: () => {
+            hovered.value = true
+          },
+          onMouseleave: () => {
+            hovered.value = false
+          },
+          onFocusin: () => {
+            focusedWithin.value = true
+          },
+          onFocusout: () => {
+            focusedWithin.value = false
+          },
           style: {
             position: 'relative',
             outline: 'none',

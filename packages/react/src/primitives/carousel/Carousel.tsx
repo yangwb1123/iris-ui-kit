@@ -10,6 +10,12 @@ export interface IrisCarouselProps {
   onIndexChange?: (index: number) => void
   /** Wrap around at the ends (default true). */
   loop?: boolean
+  /** Auto-advance slides. Disabled when the user prefers reduced motion. */
+  autoplay?: boolean
+  /** Autoplay interval in ms (default 4000). */
+  interval?: number
+  /** Pause autoplay while hovered (default true). */
+  pauseOnHover?: boolean
   showArrows?: boolean
   showIndicators?: boolean
   /** Accessible name for the carousel region. */
@@ -37,6 +43,15 @@ const ARROW_BTN: React.CSSProperties = {
   lineHeight: 1,
 }
 
+/** True when the user has asked for reduced motion (SSR / jsdom safe). */
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+}
+
 /**
  * Slide carousel: shows one child slide at a time with prev/next controls,
  * indicator dots, and keyboard (←/→) navigation. Controlled or uncontrolled.
@@ -51,6 +66,9 @@ export function IrisCarousel({
   defaultIndex = 0,
   onIndexChange,
   loop = true,
+  autoplay = false,
+  interval = 4000,
+  pauseOnHover = true,
   showArrows = true,
   showIndicators = true,
   ariaLabel = 'Carousel',
@@ -75,6 +93,24 @@ export function IrisCarousel({
     onIndexChange?.(next)
   }
 
+  // Autoplay: a self-rescheduling timeout (resets on manual nav since `current`
+  // is a dep). Paused on hover/focus and when the user prefers reduced motion.
+  const onIndexChangeRef = React.useRef(onIndexChange)
+  onIndexChangeRef.current = onIndexChange
+  const [hovered, setHovered] = React.useState(false)
+  const [focusedWithin, setFocusedWithin] = React.useState(false)
+  const paused = (pauseOnHover && hovered) || focusedWithin
+
+  React.useEffect(() => {
+    if (!autoplay || paused || count <= 1 || prefersReducedMotion()) return
+    const id = setTimeout(() => {
+      const target = (current + 1) % count
+      if (!isControlled) setInternal(target)
+      onIndexChangeRef.current?.(target)
+    }, interval)
+    return () => clearTimeout(id)
+  }, [autoplay, paused, interval, current, count, isControlled])
+
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'ArrowLeft') {
       e.preventDefault()
@@ -94,6 +130,10 @@ export function IrisCarousel({
       tabIndex={0}
       className={className}
       onKeyDown={onKeyDown}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocusedWithin(true)}
+      onBlur={() => setFocusedWithin(false)}
       style={{ position: 'relative', outline: 'none', ...style }}
     >
       <div

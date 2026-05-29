@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { IrisCarousel } from './Carousel'
 
 afterEach(() => cleanup())
@@ -74,5 +74,53 @@ describe('@iris-ui/react IrisCarousel', () => {
     expect(slides[0].getAttribute('aria-roledescription')).toBe('slide')
     expect(slides[0].getAttribute('aria-hidden')).toBeNull()
     expect(slides[1].getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('autoplay advances after the interval', () => {
+    vi.useFakeTimers()
+    try {
+      const onIndexChange = vi.fn()
+      render(<ThreeSlides autoplay interval={1000} onIndexChange={onIndexChange} />)
+      act(() => {
+        vi.advanceTimersByTime(1000)
+      })
+      expect(onIndexChange).toHaveBeenCalledWith(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('autoplay pauses on hover', () => {
+    vi.useFakeTimers()
+    try {
+      const onIndexChange = vi.fn()
+      const { container } = render(
+        <ThreeSlides autoplay interval={1000} onIndexChange={onIndexChange} />,
+      )
+      fireEvent.mouseEnter(root(container))
+      act(() => {
+        vi.advanceTimersByTime(2000)
+      })
+      expect(onIndexChange).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('autoplay is disabled under prefers-reduced-motion', () => {
+    const original = window.matchMedia
+    window.matchMedia = (() => ({ matches: true })) as unknown as typeof window.matchMedia
+    vi.useFakeTimers()
+    try {
+      const onIndexChange = vi.fn()
+      render(<ThreeSlides autoplay interval={1000} onIndexChange={onIndexChange} />)
+      act(() => {
+        vi.advanceTimersByTime(2000)
+      })
+      expect(onIndexChange).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+      window.matchMedia = original
+    }
   })
 })

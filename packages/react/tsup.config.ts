@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsup'
-import { existsSync, readdirSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
@@ -37,4 +37,36 @@ export default defineConfig({
     '@iris-ui/tokens',
     '@iris-ui/icons',
   ],
+  // Every entry is interactive (hooks/state/effects), so each emitted module is
+  // a React Server Components client boundary: prepend `'use client'` to every
+  // .js/.cjs entry & chunk, so any import path (`@iris-ui/react`,
+  // `@iris-ui/react/form`, …) can be used directly inside a Next.js App Router
+  // Server Component without a manual client wrapper.
+  //
+  // We can't use esbuild's `banner` here: with `treeshake: true` tsup re-bundles
+  // each chunk through Rollup, whose tree-shaker drops a bare `'use client'`
+  // string as side-effect-free dead code. So we inject post-build (idempotent),
+  // shifting each sourcemap down one line to stay accurate. Verified in CI by
+  // scripts/check-rsc-directive.mjs (`pnpm check:rsc`).
+  onSuccess: async () => {
+    const dir = 'dist'
+    for (const file of readdirSync(dir)) {
+      if (!/\.(js|cjs)$/.test(file)) continue
+      const path = join(dir, file)
+      const code = readFileSync(path, 'utf8')
+      if (/^['"]use client['"]/.test(code)) continue
+      writeFileSync(path, "'use client'\n" + code)
+      const mapPath = path + '.map'
+      if (!existsSync(mapPath)) continue
+      try {
+        const map = JSON.parse(readFileSync(mapPath, 'utf8'))
+        if (typeof map.mappings === 'string') {
+          map.mappings = ';' + map.mappings
+          writeFileSync(mapPath, JSON.stringify(map))
+        }
+      } catch {
+        // Leave the map untouched (one-line offset) rather than risk corruption.
+      }
+    }
+  },
 })

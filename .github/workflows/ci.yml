@@ -43,5 +43,8 @@ jobs:
       - name: Size budget
         run: pnpm size
 
+      - name: RSC directive
+        run: pnpm check:rsc
+
       - name: Test
         run: pnpm test

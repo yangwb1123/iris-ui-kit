@@ -17,6 +17,7 @@
     "lint": "turbo run lint",
     "gen:manifest": "pnpm --filter @iris-ui/manifest build && node packages/manifest/dist/generate.js",
     "size": "node scripts/check-size.mjs",
+    "check:rsc": "node scripts/check-rsc-directive.mjs",
     "changeset": "changeset",
     "changeset:version": "changeset version",
     "release": "turbo run build && changeset publish",

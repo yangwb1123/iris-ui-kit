@@ -8,14 +8,14 @@
 
 ## 进展（截至 2026-05 本轮）
 
-| #   | 方向                 | 状态      | 已交付 / 剩余                                                                                                                                      |
-| --- | -------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | 表单编排引擎         | ✅ 已落地 | `createFormStore`（core）+ `useForm`/`useField`/`<IrisForm>` 两端；剩 `useFieldArray`、提交聚焦首错                                                |
-| —   | SSR 渲染安全         | ✅ 已落地 | 两端 `useId` 迁移 + 无 DOM 渲染烟雾测试（React/Vue）；剩 RSC `'use client'` 边界文档化                                                             |
-| 2   | 文档站 + 清单 + 发布 | 🟡 部分   | ✅ `@iris-ui/manifest`→`manifest.json`/`llms.txt`；剩 VitePress 文档站、changesets release workflow、首发布                                        |
-| 3   | a11y + i18n + 动效   | 🟡 部分   | ✅ axe-core 门（两端）、i18n 引擎 + 5 组件接入；剩 RTL/逻辑属性、内联动效服从 `prefers-reduced-motion`、`prefers-color-scheme`                     |
-| 4   | 数据层深化           | 🟡 部分   | ✅ 变高虚拟化（core 数学 + 两端 `VirtualScroll`）；剩 `ResizeObserver` 自动测量、异步契约（loading/error/empty + 服务端分页）、横向虚拟化 + 列冻结 |
-| 5   | 打包体积工程         | ⬜ 未启动 | 子路径 `exports`（每组件入口）、CI size-limit 预算门                                                                                               |
+| #   | 方向                 | 状态      | 已交付 / 剩余                                                                                                                                       |
+| --- | -------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | 表单编排引擎         | ✅ 已落地 | `createFormStore`（core）+ `useForm`/`useField`/`<IrisForm>` 两端；剩 `useFieldArray`、提交聚焦首错                                                 |
+| —   | SSR 渲染安全         | ✅ 已落地 | 两端 `useId` 迁移 + 无 DOM 渲染烟雾测试（React/Vue）；React 全量 `'use client'` 客户端边界（RSC/Next.js App Router 安全，`pnpm check:rsc` CI 守门） |
+| 2   | 文档站 + 清单 + 发布 | 🟡 部分   | ✅ `@iris-ui/manifest`→`manifest.json`/`llms.txt`；剩 VitePress 文档站、changesets release workflow、首发布                                         |
+| 3   | a11y + i18n + 动效   | 🟡 部分   | ✅ axe-core 门（两端）、i18n 引擎 + 5 组件接入；剩 RTL/逻辑属性、内联动效服从 `prefers-reduced-motion`、`prefers-color-scheme`                      |
+| 4   | 数据层深化           | 🟡 部分   | ✅ 变高虚拟化（core 数学 + 两端 `VirtualScroll`）；剩 `ResizeObserver` 自动测量、异步契约（loading/error/empty + 服务端分页）、横向虚拟化 + 列冻结  |
+| 5   | 打包体积工程         | ⬜ 未启动 | 子路径 `exports`（每组件入口）、CI size-limit 预算门                                                                                                |
 
 > 下方各方向正文保留完整「现状/为什么/建议范围」分析；🟡/⬜ 项的剩余范围即下一阶段待办。
 

@@ -60,5 +60,6 @@ export {
   type TableExportColumn,
   type SpreadsheetXmlOptions,
 } from './table-export'
+export { standardSchemaValidator, type StandardSchemaV1 } from './standard-schema'
 export type { Side, Align, Placement, Size, Variant } from './types'
 export { composeEventHandlers, mergeProps, generateId } from './utils'

@@ -46,5 +46,14 @@ export {
   type AsyncStatus,
   type AsyncResourceConfig,
 } from './async'
+export {
+  createPaginatedResource,
+  type PaginatedResource,
+  type PaginatedState,
+  type PaginatedResourceConfig,
+  type PaginationMode,
+  type PageQuery,
+  type PageResult,
+} from './pagination'
 export type { Side, Align, Placement, Size, Variant } from './types'
 export { composeEventHandlers, mergeProps, generateId } from './utils'

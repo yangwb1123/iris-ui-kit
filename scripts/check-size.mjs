@@ -20,6 +20,7 @@ const BUDGETS = {
   core: 7,
   tokens: 2,
   theme: 3.5,
+  skins: 5,
   icons: 4,
   react: 80,
   vue: 88,

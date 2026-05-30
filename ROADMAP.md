@@ -165,6 +165,8 @@
 
 核心引擎（表单 / i18n / 虚拟化 / 异步契约 / SSR / 清单 / a11y 门）与工程化补齐（RTL + 动效合规 + 系统主题、子路径 exports + size 门、文档站 + 发布流水线）**均已落地**，并保持 Vue / React 双端语义对齐、四道质量门 + size + `check:rsc` + `format:check` 常绿。
 
+> ✅ **皮肤系统（Skin System）已落地**（在主题层之上的可加载皮肤层）：框架无关的 `@iris-ui/skins` 包——`Skin`（部分覆盖 + `extends` 继承 + 闭合 21 token 之外的自定义 token 命名空间）解析为完整 `IrisTheme` 的 `ResolvedSkin`；纯函数 `validateSkin` / `resolveSkin`（环 / 缺父 / 不完整检测）+ `createSkinRegistry` + 内置 light/dark 基皮；副作用单元 `applySkin`（复用主题层抽出的 `applyCssVars`）/ `loadSkin` / `createSkinCatalog`（市场 = 清单契约 + 客户端 SDK，可注入 fetch，无服务端）；运行时引擎 `createSkinEngine`：持久化（可插拔 `SkinStorage`/localStorage）、FOUC 防闪 `skinBootScript`（注入字符串、`textContent` 非 innerHTML）、跟随系统 `prefers-color-scheme`（按皮肤 `variants`）、非破坏式实时编辑 `patch`/`resetPatch`；两端薄适配器 `SkinProvider` + `useSkin`（镜像 `ThemeProvider`/`useTheme`，React `'use client'` 边界）。
+
 **唯二未交付项均为显式决定，非能力缺口：**
 
 1. **首个 npm 发布**——流水线（changesets `release.yml`）已就绪；属不可逆的对外动作，按维护者决定暂缓，待授权 + 凭据 + 版本决定后执行。

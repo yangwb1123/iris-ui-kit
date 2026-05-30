@@ -32,6 +32,8 @@ export interface SkinEngine {
   attachCatalog(catalog: SkinCatalog): void
   setMode(mode: SkinMode): void
   getMode(): SkinMode
+  /** The logical selected id (pre system-variant remap) — e.g. 'auto' while following the system. */
+  getActiveId(): string
   patch(overrides: SkinPatch): void
   resetPatch(): void
   subscribe(listener: (skin: ResolvedSkin) => void): () => void
@@ -172,6 +174,7 @@ export function createSkinEngine(config: SkinEngineConfig): SkinEngine {
       refresh()
     },
     getMode: () => mode,
+    getActiveId: () => activeId,
     patch(overrides) {
       patchOverlay = {
         tokens: { ...(patchOverlay?.tokens ?? {}), ...(overrides.tokens ?? {}) },

@@ -9,6 +9,9 @@ export interface UseSkinReturn {
   patch: (overrides: SkinPatch) => void
   resetPatch: () => void
   setMode: (mode: SkinMode) => void
+  getMode: () => SkinMode
+  /** Logical selected id (pre system-variant remap) — e.g. 'auto' while following the system. */
+  getActiveId: () => string
   availableSkins: () => Skin[]
   errors: () => SkinError[]
 }
@@ -24,6 +27,8 @@ export function useSkin(): UseSkinReturn {
     patch: engine.patch,
     resetPatch: engine.resetPatch,
     setMode: engine.setMode,
+    getMode: engine.getMode,
+    getActiveId: engine.getActiveId,
     availableSkins: engine.availableSkins,
     errors: engine.errors,
   }

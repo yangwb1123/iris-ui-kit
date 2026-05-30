@@ -1,15 +1,13 @@
 import { useState, type ComponentType } from 'react'
 import {
-  ThemeProvider,
-  createThemeStore,
-  lightTheme,
-  darkTheme,
-  useTheme,
+  SkinProvider,
+  useSkin,
   IrisSidebarLayout,
   IrisHeaderLayout,
-  IrisButton,
   IrisToastViewport,
 } from '@iris-ui/react'
+import { skinEngine } from './demo-skins'
+import { SkinsShowcase } from './sections/SkinsShowcase'
 import { DisplayShowcase } from './sections/DisplayShowcase'
 import { FormShowcase } from './sections/FormShowcase'
 import { DatesShowcase } from './sections/DatesShowcase'
@@ -19,11 +17,6 @@ import { BehaviorsShowcase } from './sections/BehaviorsShowcase'
 import { SkeletonsShowcase } from './sections/SkeletonsShowcase'
 import { TokensShowcase } from './sections/TokensShowcase'
 
-const themeStore = createThemeStore({
-  themes: { light: lightTheme, dark: darkTheme },
-  default: 'light',
-})
-
 interface SectionEntry {
   id: string
   label: string
@@ -32,6 +25,7 @@ interface SectionEntry {
 }
 
 const sections: SectionEntry[] = [
+  { id: 'skins', label: 'Skin System', group: 'Skins', component: SkinsShowcase },
   { id: 'display', label: 'Display', group: 'Primitives', component: DisplayShowcase },
   { id: 'form', label: 'Form', group: 'Primitives', component: FormShowcase },
   { id: 'dates', label: 'Dates & Time', group: 'Primitives', component: DatesShowcase },
@@ -42,13 +36,21 @@ const sections: SectionEntry[] = [
   { id: 'tokens', label: 'Theme Tokens', group: 'Foundation', component: TokensShowcase },
 ]
 
-const groupOrder = ['Primitives', 'Components', 'Layer 4', 'Foundation']
+const groupOrder = ['Skins', 'Primitives', 'Components', 'Layer 4', 'Foundation']
 
 function Shell() {
-  const { theme, setTheme } = useTheme()
-  const isDark = theme.type === 'dark'
+  const { skin, setSkin, setMode, getActiveId, availableSkins } = useSkin()
   const [activeId, setActiveId] = useState(sections[0]!.id)
   const [collapsed, setCollapsed] = useState(false)
+
+  // Route every skin pick through the engine's mode: picking 'auto' follows the
+  // system; any other id pins a fixed skin. Keeps the picker, gallery, and the
+  // follow toggle reading the same logical selection (engine.getActiveId()).
+  const selectSkin = (id: string) => {
+    if (id === 'auto') setMode('system')
+    else setMode('fixed')
+    setSkin(id)
+  }
 
   const active = sections.find((s) => s.id === activeId)
   const Active = active?.component
@@ -103,16 +105,24 @@ function Shell() {
             <div className="header-title">
               <span className="header-active">{active?.label ?? '—'}</span>
               <span className="header-meta">
-                theme: {theme.name} ({theme.type})
+                skin: {skin.name} ({skin.type})
               </span>
             </div>
-            <IrisButton
-              variant="outline"
-              size="sm"
-              onClick={() => setTheme(isDark ? 'light' : 'dark')}
-            >
-              Switch to {isDark ? 'Light' : 'Dark'}
-            </IrisButton>
+            <label className="skin-picker">
+              <span className="skin-picker-label">Skin</span>
+              <select
+                aria-label="Active skin"
+                className="skin-select"
+                value={getActiveId()}
+                onChange={(e) => selectSkin(e.target.value)}
+              >
+                {availableSkins().map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name ?? s.id}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         }
       >
@@ -124,9 +134,9 @@ function Shell() {
 
 export function App() {
   return (
-    <ThemeProvider store={themeStore}>
+    <SkinProvider engine={skinEngine}>
       <Shell />
       <IrisToastViewport position="bottom-right" />
-    </ThemeProvider>
+    </SkinProvider>
   )
 }

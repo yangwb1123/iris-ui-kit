@@ -1,19 +1,17 @@
 <script setup lang="ts">
 import { computed, defineComponent, h, ref } from 'vue'
 import {
-  ThemeProvider,
-  createThemeStore,
-  lightTheme,
-  darkTheme,
-  useTheme,
+  SkinProvider,
+  useSkin,
   IrisSidebarLayout,
   IrisHeaderLayout,
-  IrisButton,
   IrisToastViewport,
   COLOR_TOKENS,
   SPACING_TOKENS,
   RADII_TOKENS,
 } from '@iris-ui/vue'
+import { skinEngine } from './demo-skins'
+import SkinsShowcase from './sections/SkinsShowcase.vue'
 import ButtonShowcase from './sections/ButtonShowcase.vue'
 import FormShowcase from './sections/FormShowcase.vue'
 import DataShowcase from './sections/DataShowcase.vue'
@@ -28,11 +26,6 @@ import DisplayShowcase from './sections/DisplayShowcase.vue'
 import SkeletonsShowcase from './sections/SkeletonsShowcase.vue'
 import BehaviorsShowcase from './sections/BehaviorsShowcase.vue'
 
-const themeStore = createThemeStore({
-  themes: { light: lightTheme, dark: darkTheme },
-  default: 'light',
-})
-
 interface SectionEntry {
   id: string
   label: string
@@ -41,6 +34,7 @@ interface SectionEntry {
 }
 
 const sections: SectionEntry[] = [
+  { id: 'skins', label: 'Skin System', group: 'Skins', component: SkinsShowcase },
   { id: 'button', label: 'Buttons', group: 'Primitives', component: ButtonShowcase },
   { id: 'display', label: 'Display', group: 'Primitives', component: DisplayShowcase },
   { id: 'form', label: 'Form (basic)', group: 'Primitives', component: FormShowcase },
@@ -62,7 +56,7 @@ const sections: SectionEntry[] = [
   { id: 'tokens', label: 'Theme Tokens', group: 'Foundation', component: null },
 ]
 
-const groupOrder = ['Primitives', 'Components', 'Layouts', 'Layer 4', 'Foundation']
+const groupOrder = ['Skins', 'Primitives', 'Components', 'Layouts', 'Layer 4', 'Foundation']
 const groupedSections = computed(() => {
   const out: Record<string, SectionEntry[]> = {}
   for (const s of sections) {
@@ -77,7 +71,8 @@ const activeSection = computed(() => sections.find((s) => s.id === activeId.valu
 
 const TokensView = defineComponent({
   setup() {
-    const { theme } = useTheme()
+    const { skin } = useSkin()
+    const theme = computed(() => skin.value.theme)
     return () =>
       h('div', { class: 'tokens-view' }, [
         h('section', { class: 'section' }, [
@@ -137,10 +132,16 @@ const TokensView = defineComponent({
 
 const Shell = defineComponent({
   setup() {
-    const { theme, setTheme } = useTheme()
-    const isDark = computed(() => theme.value.type === 'dark')
-    const toggle = () => setTheme(isDark.value ? 'light' : 'dark')
+    const { skin, setSkin, setMode, getActiveId, availableSkins } = useSkin()
     const collapsed = ref(false)
+
+    // Picking 'auto' follows the system; any other id pins a fixed skin. Keeps
+    // the header picker, gallery, and follow toggle on the same logical id.
+    const selectSkin = (id: string) => {
+      if (id === 'auto') setMode('system')
+      else setMode('fixed')
+      setSkin(id)
+    }
 
     return () =>
       h(
@@ -196,14 +197,24 @@ const Shell = defineComponent({
                     h(
                       'span',
                       { class: 'header-meta' },
-                      `theme: ${theme.value.name} (${theme.value.type})`,
+                      `skin: ${skin.value.name} (${skin.value.type})`,
                     ),
                   ]),
-                  h(
-                    IrisButton,
-                    { variant: 'outline', size: 'sm', onClick: toggle } as Record<string, unknown>,
-                    () => `Switch to ${isDark.value ? 'Light' : 'Dark'}`,
-                  ),
+                  h('label', { class: 'skin-picker' }, [
+                    h('span', { class: 'skin-picker-label' }, 'Skin'),
+                    h(
+                      'select',
+                      {
+                        class: 'skin-select',
+                        'aria-label': 'Active skin',
+                        value: getActiveId(),
+                        onChange: (e: Event) => selectSkin((e.target as HTMLSelectElement).value),
+                      },
+                      availableSkins().map((s) =>
+                        h('option', { key: s.id, value: s.id }, s.name ?? s.id),
+                      ),
+                    ),
+                  ]),
                 ]),
               default: () => {
                 const sec = activeSection.value
@@ -223,10 +234,10 @@ const Shell = defineComponent({
 </script>
 
 <template>
-  <ThemeProvider :store="themeStore">
+  <SkinProvider :engine="skinEngine">
     <Shell />
     <IrisToastViewport position="bottom-right" />
-  </ThemeProvider>
+  </SkinProvider>
 </template>
 
 <style>
@@ -337,6 +348,25 @@ const Shell = defineComponent({
   font-size: 12px;
   color: var(--iris-muted);
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+.skin-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.skin-picker-label {
+  font-size: 12px;
+  color: var(--iris-muted);
+}
+.skin-select {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--iris-border);
+  background: var(--iris-surface);
+  color: var(--iris-foreground);
+  cursor: pointer;
 }
 .content {
   padding: 24px;

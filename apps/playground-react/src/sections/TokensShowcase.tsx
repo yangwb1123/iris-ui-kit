@@ -1,7 +1,8 @@
-import { useTheme, COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS } from '@iris-ui/react'
+import { useSkin, COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS } from '@iris-ui/react'
 
 export function TokensShowcase() {
-  const { theme } = useTheme()
+  const { skin } = useSkin()
+  const theme = skin.theme
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <section className="section">

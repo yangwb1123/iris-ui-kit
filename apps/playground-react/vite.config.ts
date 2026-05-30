@@ -26,6 +26,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui/core': src('core'),
             '@iris-ui/tokens': src('tokens'),
             '@iris-ui/theme': src('theme'),
+            '@iris-ui/skins': src('skins'),
             '@iris-ui/icons': src('icons'),
             '@iris-ui/react': src('react'),
           },

@@ -1,4 +1,6 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
+import { useDataState } from '../../motion'
 import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
 
 interface FlatNode {
@@ -18,8 +20,25 @@ export interface IrisTreeProps {
   onSelectedChange?: (next: string[]) => void
   selectionMode?: IrisTreeSelectionMode
   ariaLabel?: string
+  /** Show the loading state instead of nodes. */
+  loading?: boolean
+  /** Show the error state instead of nodes (takes precedence over loading). */
+  error?: boolean
+  /** Custom empty-state node (defaults to the localized `tree.empty`). */
+  emptyState?: React.ReactNode
+  /** Custom loading-state node (defaults to the localized `tree.loading`). */
+  loadingState?: React.ReactNode
+  /** Custom error-state node (defaults to the localized `tree.error`). */
+  errorState?: React.ReactNode
   style?: React.CSSProperties
   className?: string
+}
+
+const TREE_STATE_STYLE: React.CSSProperties = {
+  padding: '12px',
+  textAlign: 'center',
+  color: 'var(--iris-muted)',
+  fontSize: 14,
 }
 
 /**
@@ -34,8 +53,10 @@ export interface IrisTreeProps {
  *   - Enter / Space : (de)select active node
  *   - Home / End : first / last visible node
  *
- * Semantic parity with the Vue adapter's `IrisTree`, including `node.loadChildren`
- * lazy loading with per-node loading/error states.
+ * Async lifecycle: pass `loading` / `error` (and empty `nodes`) to render the
+ * animated loading / error / empty state in place of the tree. Per-node
+ * `loadChildren` lazy loading is independent of this top-level state. Semantic
+ * parity with the Vue adapter's `IrisTree`.
  */
 export function IrisTree({
   nodes,
@@ -47,6 +68,11 @@ export function IrisTree({
   onSelectedChange,
   selectionMode = 'single',
   ariaLabel = 'Tree',
+  loading = false,
+  error = false,
+  emptyState,
+  loadingState,
+  errorState,
   style,
   className,
 }: IrisTreeProps): React.ReactElement {
@@ -56,6 +82,13 @@ export function IrisTree({
   const [selInternal, setSelInternal] = React.useState<string[]>(defaultSelected)
   const expanded = expControlled ? (expandedProp as string[]) : expInternal
   const selected = selControlled ? (selectedProp as string[]) : selInternal
+
+  const { t } = useI18n()
+  const { state, isContent, stateKey, stateProps } = useDataState({
+    loading,
+    error,
+    empty: nodes.length === 0,
+  })
 
   // Lazily-loaded children cache + per-node loading/error state (parity with
   // the Vue adapter, which supports `node.loadChildren`).
@@ -180,7 +213,7 @@ export function IrisTree({
   }
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!activeId) return
+    if (!isContent || !activeId) return
     const current = flat.find((f) => f.node.id === activeId)
     if (!current) return
     switch (e.key) {
@@ -223,10 +256,18 @@ export function IrisTree({
     }
   }
 
+  const stateNode =
+    state === 'error'
+      ? (errorState ?? t('tree.error'))
+      : state === 'loading'
+        ? (loadingState ?? t('tree.loading'))
+        : (emptyState ?? t('tree.empty'))
+
   return (
     <div
       role="tree"
       aria-label={ariaLabel}
+      aria-busy={state === 'loading' ? true : undefined}
       tabIndex={-1}
       onKeyDown={onKeyDown}
       className={className}
@@ -243,115 +284,128 @@ export function IrisTree({
         ...style,
       }}
     >
-      {flat.map(({ node, depth, hasChildren }) => {
-        const isExpanded = expandedSet.has(node.id)
-        const isSelected = selectedSet.has(node.id)
-        const isActive = node.id === activeId
-        const isLoading = loadingIds.has(node.id)
-        const isError = errorIds.has(node.id)
-        const disabled = Boolean(node.disabled)
-        return (
-          <div
-            key={node.id}
-            role="treeitem"
-            aria-expanded={hasChildren ? isExpanded : undefined}
-            aria-selected={selectionMode !== 'none' ? isSelected : undefined}
-            aria-disabled={disabled ? 'true' : undefined}
-            aria-level={depth + 1}
-            tabIndex={isActive ? 0 : -1}
-            data-iris-tree-node={node.id}
-            data-state={isSelected ? 'selected' : isActive ? 'active' : 'idle'}
-            data-loading={isLoading ? '' : undefined}
-            data-error={isError ? '' : undefined}
-            onClick={() => {
-              setActiveId(node.id)
-              selectNode(node.id)
-            }}
-            onFocus={() => setActiveId(node.id)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              paddingInlineStart: 6 + depth * 16,
-              paddingTop: 4,
-              paddingBottom: 4,
-              paddingInlineEnd: 8,
-              cursor: disabled ? 'not-allowed' : 'pointer',
-              opacity: disabled ? 0.5 : 1,
-              background: isSelected
-                ? 'var(--iris-primary)'
-                : isActive
-                  ? 'var(--iris-surface-hover)'
-                  : 'transparent',
-              color: isSelected ? 'var(--iris-primary-foreground, #fff)' : 'inherit',
-              borderRadius: 'var(--iris-radius-sm, 4px)',
-              outline: 'none',
-              userSelect: 'none',
-            }}
-          >
-            {hasChildren ? (
-              <button
-                type="button"
-                aria-label={isExpanded ? 'Collapse' : 'Expand'}
-                data-iris-tree-toggle=""
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleExpand(node)
-                }}
-                style={{
-                  width: 16,
-                  height: 16,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'inherit',
-                  cursor: 'pointer',
-                  padding: 0,
-                  fontSize: 11,
-                  fontFamily: 'inherit',
-                  transition: 'transform 120ms ease',
-                  transform: isLoading ? 'none' : isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                }}
-              >
-                {isLoading ? (
-                  <svg
-                    className="iris-button-spinner"
-                    viewBox="0 0 24 24"
-                    width={12}
-                    height={12}
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <circle
-                      cx={12}
-                      cy={12}
-                      r={10}
-                      stroke="currentColor"
-                      strokeOpacity={0.25}
-                      strokeWidth={3}
-                    />
-                    <path
-                      d="M22 12a10 10 0 0 1-10 10"
-                      stroke="currentColor"
-                      strokeWidth={3}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                ) : (
-                  '▸'
-                )}
-              </button>
-            ) : (
-              <span style={{ width: 16, display: 'inline-block' }} />
-            )}
-            <span data-iris-tree-label="" style={{ flex: 1, minWidth: 0 }}>
-              {node.label}
-            </span>
-          </div>
-        )
-      })}
+      {isContent ? (
+        flat.map(({ node, depth, hasChildren }) => {
+          const isExpanded = expandedSet.has(node.id)
+          const isSelected = selectedSet.has(node.id)
+          const isActive = node.id === activeId
+          const isLoading = loadingIds.has(node.id)
+          const isError = errorIds.has(node.id)
+          const disabled = Boolean(node.disabled)
+          return (
+            <div
+              key={node.id}
+              role="treeitem"
+              aria-expanded={hasChildren ? isExpanded : undefined}
+              aria-selected={selectionMode !== 'none' ? isSelected : undefined}
+              aria-disabled={disabled ? 'true' : undefined}
+              aria-level={depth + 1}
+              tabIndex={isActive ? 0 : -1}
+              data-iris-tree-node={node.id}
+              data-state={isSelected ? 'selected' : isActive ? 'active' : 'idle'}
+              data-loading={isLoading ? '' : undefined}
+              data-error={isError ? '' : undefined}
+              onClick={() => {
+                setActiveId(node.id)
+                selectNode(node.id)
+              }}
+              onFocus={() => setActiveId(node.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                paddingInlineStart: 6 + depth * 16,
+                paddingTop: 4,
+                paddingBottom: 4,
+                paddingInlineEnd: 8,
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                opacity: disabled ? 0.5 : 1,
+                background: isSelected
+                  ? 'var(--iris-primary)'
+                  : isActive
+                    ? 'var(--iris-surface-hover)'
+                    : 'transparent',
+                color: isSelected ? 'var(--iris-primary-foreground, #fff)' : 'inherit',
+                borderRadius: 'var(--iris-radius-sm, 4px)',
+                outline: 'none',
+                userSelect: 'none',
+              }}
+            >
+              {hasChildren ? (
+                <button
+                  type="button"
+                  aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                  data-iris-tree-toggle=""
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleExpand(node)
+                  }}
+                  style={{
+                    width: 16,
+                    height: 16,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'inherit',
+                    cursor: 'pointer',
+                    padding: 0,
+                    fontSize: 11,
+                    fontFamily: 'inherit',
+                    transition: 'transform 120ms ease',
+                    transform: isLoading ? 'none' : isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                  }}
+                >
+                  {isLoading ? (
+                    <svg
+                      className="iris-button-spinner"
+                      viewBox="0 0 24 24"
+                      width={12}
+                      height={12}
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <circle
+                        cx={12}
+                        cy={12}
+                        r={10}
+                        stroke="currentColor"
+                        strokeOpacity={0.25}
+                        strokeWidth={3}
+                      />
+                      <path
+                        d="M22 12a10 10 0 0 1-10 10"
+                        stroke="currentColor"
+                        strokeWidth={3}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  ) : (
+                    '▸'
+                  )}
+                </button>
+              ) : (
+                <span style={{ width: 16, display: 'inline-block' }} />
+              )}
+              <span data-iris-tree-label="" style={{ flex: 1, minWidth: 0 }}>
+                {node.label}
+              </span>
+            </div>
+          )
+        })
+      ) : (
+        <div
+          key={stateKey}
+          role="presentation"
+          data-iris-tree-state={state}
+          aria-live="polite"
+          {...stateProps}
+          style={TREE_STATE_STYLE}
+        >
+          {stateNode}
+        </div>
+      )}
     </div>
   )
 }

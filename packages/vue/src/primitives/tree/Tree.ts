@@ -1,4 +1,6 @@
 import { computed, defineComponent, h, ref, watch, type PropType, type VNode } from 'vue'
+import { useI18n } from '../../i18n'
+import { useDataState } from '../../motion'
 import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
 
 interface FlatNode {
@@ -6,6 +8,13 @@ interface FlatNode {
   depth: number
   parentId: string | null
   hasChildren: boolean
+}
+
+const TREE_STATE_STYLE: Record<string, string> = {
+  padding: '12px',
+  textAlign: 'center',
+  color: 'var(--iris-muted)',
+  fontSize: '14px',
 }
 
 /**
@@ -20,6 +29,11 @@ interface FlatNode {
  *
  * Selection model is decoupled from expansion — a node can be expanded
  * without being selected, and vice versa.
+ *
+ * Async lifecycle: pass `loading` / `error` (and empty `nodes`) to render the
+ * animated loading / error / empty state in place of the tree (customize via
+ * the `#loading` / `#error` / `#empty` slots). Per-node `loadChildren` lazy
+ * loading is independent of this top-level state.
  *
  * @example
  *   <IrisTree
@@ -43,6 +57,10 @@ export const IrisTree = defineComponent({
     selectionMode: { type: String as PropType<IrisTreeSelectionMode>, default: 'single' },
     /** ARIA label. */
     ariaLabel: { type: String, default: 'Tree' },
+    /** Show the loading state instead of nodes. */
+    loading: { type: Boolean, default: false },
+    /** Show the error state instead of nodes (takes precedence over loading). */
+    error: { type: Boolean, default: false },
   },
   emits: {
     'update:expanded': (_value: string[]) => true,
@@ -51,7 +69,14 @@ export const IrisTree = defineComponent({
     collapse: (_id: string) => true,
     select: (_id: string, _node: IrisTreeNode) => true,
   },
-  setup(props, { attrs, emit }) {
+  setup(props, { attrs, emit, slots }) {
+    const { t } = useI18n()
+    const { state, isContent, stateKey, stateProps } = useDataState(() => ({
+      loading: props.loading,
+      error: props.error,
+      empty: props.nodes.length === 0,
+    }))
+
     // Lazily-loaded children cache, keyed by node id.
     const lazyCache = ref<Map<string, IrisTreeNode[]>>(new Map())
     // Set of ids currently loading children.
@@ -228,8 +253,35 @@ export const IrisTree = defineComponent({
       }
     }
 
-    return () => {
-      const items: VNode[] = flat.value.map((entry) => {
+    const renderStateNode = () => {
+      const content =
+        state.value === 'error'
+          ? slots.error
+            ? slots.error()
+            : t('tree.error')
+          : state.value === 'loading'
+            ? slots.loading
+              ? slots.loading()
+              : t('tree.loading')
+            : slots.empty
+              ? slots.empty()
+              : t('tree.empty')
+      return h(
+        'div',
+        {
+          key: stateKey.value,
+          role: 'presentation',
+          'data-iris-tree-state': state.value,
+          'aria-live': 'polite',
+          ...stateProps.value,
+          style: TREE_STATE_STYLE,
+        },
+        content,
+      )
+    }
+
+    const renderItems = (): VNode[] =>
+      flat.value.map((entry) => {
         const { node, depth, hasChildren } = entry
         const isExpanded = expandedIds.value.has(node.id)
         const isSelected = selectedIds.value.has(node.id)
@@ -332,13 +384,15 @@ export const IrisTree = defineComponent({
         )
       })
 
-      return h(
+    return () =>
+      h(
         'div',
         {
           ...attrs,
           role: 'tree',
           'aria-label': props.ariaLabel,
           'aria-multiselectable': props.selectionMode === 'multi' ? 'true' : undefined,
+          'aria-busy': state.value === 'loading' ? 'true' : undefined,
           'data-iris-tree': '',
           style: {
             display: 'flex',
@@ -348,8 +402,7 @@ export const IrisTree = defineComponent({
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },
         },
-        items,
+        isContent.value ? renderItems() : [renderStateNode()],
       )
-    }
   },
 })

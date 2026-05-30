@@ -181,3 +181,26 @@ describe('IrisTree RTL', () => {
     expect(item.style.paddingInlineStart).toBeTruthy()
   })
 })
+
+describe('IrisTree data states', () => {
+  it('shows the localized empty state when nodes is empty', () => {
+    const w = mount(IrisTree, { props: { nodes: [] } })
+    const node = w.find('[data-iris-tree-state]')
+    expect(node.attributes('data-iris-tree-state')).toBe('empty')
+    expect(node.text()).toBe('No items')
+  })
+
+  it('shows loading with aria-busy; error takes precedence', async () => {
+    const w = mount(IrisTree, { props: { nodes: [], loading: true } })
+    expect(w.find('[data-iris-tree-state]').attributes('data-iris-tree-state')).toBe('loading')
+    expect(w.find('[role=tree]').attributes('aria-busy')).toBe('true')
+    await w.setProps({ loading: true, error: true })
+    expect(w.find('[data-iris-tree-state]').attributes('data-iris-tree-state')).toBe('error')
+  })
+
+  it('renders nodes (no state node) when content is present', () => {
+    const w = mount(IrisTree, { props: { nodes: [{ id: 'a', label: 'A' }] } })
+    expect(w.find('[data-iris-tree-state]').exists()).toBe(false)
+    expect(w.find('[data-iris-tree-item]').exists()).toBe(true)
+  })
+})

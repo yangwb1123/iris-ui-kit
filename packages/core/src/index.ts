@@ -61,5 +61,6 @@ export {
   type SpreadsheetXmlOptions,
 } from './table-export'
 export { standardSchemaValidator, type StandardSchemaV1 } from './standard-schema'
+export { resolveDataState, type DataState, type DataStateInput } from './data-state'
 export type { Side, Align, Placement, Size, Variant } from './types'
 export { composeEventHandlers, mergeProps, generateId } from './utils'

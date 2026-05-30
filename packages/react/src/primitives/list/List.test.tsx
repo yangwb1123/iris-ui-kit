@@ -159,3 +159,46 @@ describe('@iris-ui/react IrisList', () => {
     expect(document.querySelectorAll('[data-testid=bold]').length).toBe(4)
   })
 })
+
+describe('@iris-ui/react IrisList data states', () => {
+  it('shows the empty state (localized) when items is empty', () => {
+    render(<IrisList items={[]} />)
+    const node = document.querySelector('[data-iris-list-state]')!
+    expect(node).not.toBeNull()
+    expect(node.getAttribute('data-iris-list-state')).toBe('empty')
+    expect(node.textContent).toBe('No items')
+  })
+
+  it('shows loading over empty, with aria-busy on the listbox', () => {
+    render(<IrisList items={[]} loading />)
+    expect(
+      document.querySelector('[data-iris-list-state]')?.getAttribute('data-iris-list-state'),
+    ).toBe('loading')
+    expect(document.querySelector('[role=listbox]')?.getAttribute('aria-busy')).toBe('true')
+  })
+
+  it('error takes precedence over loading', () => {
+    render(<IrisList items={[]} loading error />)
+    expect(
+      document.querySelector('[data-iris-list-state]')?.getAttribute('data-iris-list-state'),
+    ).toBe('error')
+  })
+
+  it('renders a custom state node', () => {
+    render(<IrisList items={[]} error errorState={<span data-testid="boom">Boom</span>} />)
+    expect(document.querySelector('[data-testid=boom]')).not.toBeNull()
+  })
+
+  it('renders options (no state node) when content is present', () => {
+    render(<IrisList items={items} />)
+    expect(document.querySelector('[data-iris-list-state]')).toBeNull()
+    expect(document.querySelectorAll('[role=option]').length).toBe(items.length)
+  })
+
+  it('applies the enter-animation class on the state node', () => {
+    render(<IrisList items={[]} loading />)
+    expect(document.querySelector('[data-iris-list-state]')?.className).toContain(
+      'iris-data-state-enter',
+    )
+  })
+})

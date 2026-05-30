@@ -1,9 +1,19 @@
 import { computed, defineComponent, h, ref, watch, type PropType } from 'vue'
+import { useI18n } from '../../i18n'
+import { useDataState } from '../../motion'
 
 export interface IrisListItem<T = unknown> {
   value: T
   label?: string
   disabled?: boolean
+}
+
+const LIST_STATE_STYLE: Record<string, string> = {
+  listStyle: 'none',
+  padding: '12px',
+  textAlign: 'center',
+  color: 'var(--iris-muted)',
+  fontSize: '14px',
 }
 
 /**
@@ -17,6 +27,11 @@ export interface IrisListItem<T = unknown> {
  *
  * The list is data-driven — pass an array of `{ value, label?, disabled? }`.
  * Render custom items via the `#item` slot.
+ *
+ * Async lifecycle: pass `loading` / `error` (and empty `items`) to render the
+ * animated loading / error / empty state in place of options. Customize each
+ * via the `#loading` / `#error` / `#empty` slots; state precedence and entry
+ * animation come from {@link useDataState}.
  */
 export const IrisList = defineComponent({
   name: 'IrisList',
@@ -31,12 +46,23 @@ export const IrisList = defineComponent({
     loop: { type: Boolean, default: true },
     /** ARIA label. */
     ariaLabel: { type: String, default: undefined },
+    /** Show the loading state instead of items. */
+    loading: { type: Boolean, default: false },
+    /** Show the error state instead of items (takes precedence over loading). */
+    error: { type: Boolean, default: false },
   },
   emits: {
     'update:modelValue': (_value: unknown) => true,
     select: (_item: IrisListItem<unknown>) => true,
   },
   setup(props, { slots, attrs, emit }) {
+    const { t } = useI18n()
+    const { state, isContent, stateKey, stateProps } = useDataState(() => ({
+      loading: props.loading,
+      error: props.error,
+      empty: props.items.length === 0,
+    }))
+
     const enabledIndexes = computed(() =>
       props.items.map((item, i) => (item.disabled ? -1 : i)).filter((i) => i !== -1),
     )
@@ -100,6 +126,7 @@ export const IrisList = defineComponent({
     const listRef = ref<HTMLElement | null>(null)
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (!isContent.value) return
       switch (event.key) {
         case 'ArrowDown':
           event.preventDefault()
@@ -141,6 +168,88 @@ export const IrisList = defineComponent({
       }
     }
 
+    const renderStateNode = () => {
+      const content =
+        state.value === 'error'
+          ? slots.error
+            ? slots.error()
+            : t('list.error')
+          : state.value === 'loading'
+            ? slots.loading
+              ? slots.loading()
+              : t('list.loading')
+            : slots.empty
+              ? slots.empty()
+              : t('list.empty')
+      return h(
+        'li',
+        {
+          key: stateKey.value,
+          role: 'presentation',
+          'data-iris-list-state': state.value,
+          'aria-live': 'polite',
+          ...stateProps.value,
+          style: LIST_STATE_STYLE,
+        },
+        content,
+      )
+    }
+
+    const renderItems = () =>
+      props.items.map((item, index) => {
+        const selected = isSelected(item.value)
+        const active = index === activeIndex.value
+        const onClick = () => {
+          activeIndex.value = index
+          select(item)
+        }
+        const onFocus = () => {
+          activeIndex.value = index
+        }
+        const baseStyle: Record<string, string> = {
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--iris-gap-sm)',
+          padding: '6px var(--iris-padding-md)',
+          borderRadius: 'var(--iris-radius-sm)',
+          cursor: item.disabled ? 'not-allowed' : 'pointer',
+          opacity: item.disabled ? '0.5' : '1',
+          fontSize: '14px',
+          background: selected
+            ? 'var(--iris-primary)'
+            : active
+              ? 'var(--iris-surface-hover)'
+              : 'transparent',
+          color: selected ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
+          outline: 'none',
+        }
+
+        const slotContent = slots.item?.({
+          item,
+          index,
+          selected,
+          active,
+        })
+
+        return h(
+          'li',
+          {
+            key: String(item.value ?? index),
+            role: 'option',
+            tabindex: active ? 0 : -1,
+            'aria-selected': selected ? 'true' : 'false',
+            'aria-disabled': item.disabled ? 'true' : undefined,
+            'data-iris-list-index': index,
+            'data-iris-list-item': '',
+            'data-state': selected ? 'selected' : active ? 'active' : 'idle',
+            onClick: item.disabled ? undefined : onClick,
+            onFocus,
+            style: baseStyle,
+          },
+          slotContent ?? item.label ?? String(item.value),
+        )
+      })
+
     return () =>
       h(
         'ul',
@@ -152,6 +261,7 @@ export const IrisList = defineComponent({
           role: 'listbox',
           'aria-label': props.ariaLabel,
           'aria-multiselectable': props.multi ? 'true' : undefined,
+          'aria-busy': state.value === 'loading' ? 'true' : undefined,
           'data-iris-list': '',
           onKeydown: onKeyDown,
           style: {
@@ -165,59 +275,7 @@ export const IrisList = defineComponent({
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },
         },
-        props.items.map((item, index) => {
-          const selected = isSelected(item.value)
-          const active = index === activeIndex.value
-          const onClick = () => {
-            activeIndex.value = index
-            select(item)
-          }
-          const onFocus = () => {
-            activeIndex.value = index
-          }
-          const baseStyle: Record<string, string> = {
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--iris-gap-sm)',
-            padding: '6px var(--iris-padding-md)',
-            borderRadius: 'var(--iris-radius-sm)',
-            cursor: item.disabled ? 'not-allowed' : 'pointer',
-            opacity: item.disabled ? '0.5' : '1',
-            fontSize: '14px',
-            background: selected
-              ? 'var(--iris-primary)'
-              : active
-                ? 'var(--iris-surface-hover)'
-                : 'transparent',
-            color: selected ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
-            outline: 'none',
-          }
-
-          const slotContent = slots.item?.({
-            item,
-            index,
-            selected,
-            active,
-          })
-
-          return h(
-            'li',
-            {
-              key: String(item.value ?? index),
-              role: 'option',
-              tabindex: active ? 0 : -1,
-              'aria-selected': selected ? 'true' : 'false',
-              'aria-disabled': item.disabled ? 'true' : undefined,
-              'data-iris-list-index': index,
-              'data-iris-list-item': '',
-              'data-state': selected ? 'selected' : active ? 'active' : 'idle',
-              onClick: item.disabled ? undefined : onClick,
-              onFocus,
-              style: baseStyle,
-            },
-            slotContent ?? item.label ?? String(item.value),
-          )
-        }),
+        isContent.value ? renderItems() : [renderStateNode()],
       )
   },
 })

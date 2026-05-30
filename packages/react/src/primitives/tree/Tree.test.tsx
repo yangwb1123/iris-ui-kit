@@ -255,3 +255,29 @@ describe('@iris-ui/react IrisTree RTL', () => {
     expect(root.style.paddingLeft).toBe('')
   })
 })
+
+describe('@iris-ui/react IrisTree data states', () => {
+  it('shows the empty state (localized) when nodes is empty', () => {
+    render(<IrisTree nodes={[]} />)
+    const node = document.querySelector('[data-iris-tree-state]')!
+    expect(node.getAttribute('data-iris-tree-state')).toBe('empty')
+    expect(node.textContent).toBe('No items')
+  })
+
+  it('shows loading with aria-busy; error takes precedence', () => {
+    const { rerender } = render(<IrisTree nodes={[]} loading />)
+    expect(
+      document.querySelector('[data-iris-tree-state]')?.getAttribute('data-iris-tree-state'),
+    ).toBe('loading')
+    expect(document.querySelector('[role=tree]')?.getAttribute('aria-busy')).toBe('true')
+    rerender(<IrisTree nodes={[]} loading error />)
+    expect(
+      document.querySelector('[data-iris-tree-state]')?.getAttribute('data-iris-tree-state'),
+    ).toBe('error')
+  })
+
+  it('renders nodes (no state node) when content is present', () => {
+    render(<IrisTree nodes={nodes} />)
+    expect(document.querySelector('[data-iris-tree-state]')).toBeNull()
+  })
+})

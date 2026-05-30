@@ -89,6 +89,12 @@ export const defaultMessages: I18nMessages = {
   'table.empty': 'No data',
   'table.loading': 'Loading…',
   'table.error': 'Failed to load data',
+  'list.empty': 'No items',
+  'list.loading': 'Loading…',
+  'list.error': 'Failed to load',
+  'tree.empty': 'No items',
+  'tree.loading': 'Loading…',
+  'tree.error': 'Failed to load',
   'clearable.clear': 'Clear',
 }
 

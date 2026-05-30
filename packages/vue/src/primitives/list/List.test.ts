@@ -149,3 +149,43 @@ describe('IrisList', () => {
     expect(wrapper.findAll('.custom').length).toBe(4)
   })
 })
+
+describe('IrisList data states', () => {
+  it('shows the localized empty state when items is empty', () => {
+    const w = mount(IrisList, { props: { items: [] } })
+    const node = w.find('[data-iris-list-state]')
+    expect(node.exists()).toBe(true)
+    expect(node.attributes('data-iris-list-state')).toBe('empty')
+    expect(node.text()).toBe('No items')
+  })
+
+  it('shows loading over empty, with aria-busy on the listbox', () => {
+    const w = mount(IrisList, { props: { items: [], loading: true } })
+    expect(w.find('[data-iris-list-state]').attributes('data-iris-list-state')).toBe('loading')
+    expect(w.find('[role=listbox]').attributes('aria-busy')).toBe('true')
+  })
+
+  it('error takes precedence over loading', () => {
+    const w = mount(IrisList, { props: { items: [], loading: true, error: true } })
+    expect(w.find('[data-iris-list-state]').attributes('data-iris-list-state')).toBe('error')
+  })
+
+  it('renders a custom state via the #error slot', () => {
+    const w = mount(IrisList, {
+      props: { items: [], error: true },
+      slots: { error: () => h('span', { class: 'boom' }, 'Boom') },
+    })
+    expect(w.find('.boom').exists()).toBe(true)
+  })
+
+  it('renders options (no state node) when content is present', () => {
+    const w = mount(IrisList, { props: { items: sampleItems } })
+    expect(w.find('[data-iris-list-state]').exists()).toBe(false)
+    expect(w.findAll('[role=option]').length).toBe(sampleItems.length)
+  })
+
+  it('applies the enter-animation class on the state node', () => {
+    const w = mount(IrisList, { props: { items: [], loading: true } })
+    expect(w.find('[data-iris-list-state]').classes()).toContain('iris-data-state-enter')
+  })
+})

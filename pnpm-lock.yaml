@@ -205,6 +205,9 @@ importers:
       '@iris-ui/icons':
         specifier: workspace:*
         version: link:../icons
+      '@iris-ui/skins':
+        specifier: workspace:*
+        version: link:../skins
       '@iris-ui/theme':
         specifier: workspace:*
         version: link:../theme

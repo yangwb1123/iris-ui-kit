@@ -29,5 +29,12 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   target: 'es2022',
-  external: ['vue', '@iris-ui/core', '@iris-ui/theme', '@iris-ui/tokens', '@iris-ui/icons'],
+  external: [
+    'vue',
+    '@iris-ui/core',
+    '@iris-ui/skins',
+    '@iris-ui/theme',
+    '@iris-ui/tokens',
+    '@iris-ui/icons',
+  ],
 })

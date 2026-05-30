@@ -90,8 +90,14 @@ The directive is injected at build time and verified in CI (`pnpm check:rsc`). V
 
 ```bash
 pnpm install
-pnpm dev --filter playground         # Vue playground   → http://localhost:5173
-pnpm dev --filter playground-react   # React playground
+pnpm dev         # both playgrounds — Vue → http://localhost:5173, React → :5174
+pnpm dev:vue     # Vue playground only
+pnpm dev:react   # React playground only
+pnpm dev:docs    # VitePress docs site
+
+# Dev runs the libraries straight from source (instant start, HMR on any
+# @iris-ui/* edit — no build step). Use dev:watch for the old tsup --watch graph.
+pnpm preview     # build, then serve the production bundles (preview:vue / :react too)
 
 pnpm build       # Build all packages
 pnpm test        # Run all tests

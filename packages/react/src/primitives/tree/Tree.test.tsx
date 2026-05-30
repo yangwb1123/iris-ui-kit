@@ -200,6 +200,53 @@ describe('@iris-ui/react IrisTree', () => {
   })
 })
 
+describe('@iris-ui/react IrisTree lazy loading', () => {
+  it('shows an expand affordance for a loader-backed node with no eager children', () => {
+    const lazy: IrisTreeNode[] = [
+      { id: 'root', label: 'Root', loadChildren: vi.fn(async () => []) },
+    ]
+    render(<IrisTree nodes={lazy} />)
+    const root = document.querySelector('[data-iris-tree-node=root]')!
+    expect(root.querySelector('[data-iris-tree-toggle]')).not.toBeNull()
+    expect(root.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('lazily loads and caches children on expand (no second load on re-expand)', async () => {
+    const loadChildren = vi.fn(async () => [{ id: 'c1', label: 'Child 1' }])
+    const lazy: IrisTreeNode[] = [{ id: 'root', label: 'Root', loadChildren }]
+    render(<IrisTree nodes={lazy} />)
+    const toggle = () => document.querySelector('[data-iris-tree-toggle]') as HTMLElement
+    await act(async () => {
+      fireEvent.click(toggle())
+    })
+    expect(loadChildren).toHaveBeenCalledTimes(1)
+    expect(document.querySelector('[data-iris-tree-node=c1]')).not.toBeNull()
+    // Collapse, then re-expand → served from cache, loader not called again.
+    await act(async () => {
+      fireEvent.click(toggle())
+    })
+    await act(async () => {
+      fireEvent.click(toggle())
+    })
+    expect(loadChildren).toHaveBeenCalledTimes(1)
+    expect(document.querySelector('[data-iris-tree-node=c1]')).not.toBeNull()
+  })
+
+  it('marks the node errored and collapses when the loader rejects', async () => {
+    const loadChildren = vi.fn(async (): Promise<IrisTreeNode[]> => {
+      throw new Error('boom')
+    })
+    const lazy: IrisTreeNode[] = [{ id: 'root', label: 'Root', loadChildren }]
+    render(<IrisTree nodes={lazy} />)
+    await act(async () => {
+      fireEvent.click(document.querySelector('[data-iris-tree-toggle]') as HTMLElement)
+    })
+    const root = document.querySelector('[data-iris-tree-node=root]')!
+    expect(root.getAttribute('data-error')).toBe('')
+    expect(root.getAttribute('aria-expanded')).toBe('false')
+  })
+})
+
 describe('@iris-ui/react IrisTree RTL', () => {
   it('indents with logical inline-start padding (RTL-safe)', () => {
     render(<IrisTree nodes={nodes} />)

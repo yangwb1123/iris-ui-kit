@@ -8,23 +8,6 @@ interface FlatNode {
   hasChildren: boolean
 }
 
-function flatten(
-  nodes: IrisTreeNode[],
-  expanded: Set<string>,
-  parentId: string | null = null,
-  depth = 0,
-  out: FlatNode[] = [],
-): FlatNode[] {
-  for (const node of nodes) {
-    const hasChildren = !node.isLeaf && (node.children?.length ?? 0) > 0
-    out.push({ node, depth, parentId, hasChildren })
-    if (hasChildren && expanded.has(node.id)) {
-      flatten(node.children ?? [], expanded, node.id, depth + 1, out)
-    }
-  }
-  return out
-}
-
 export interface IrisTreeProps {
   nodes: IrisTreeNode[]
   expanded?: string[]
@@ -40,9 +23,9 @@ export interface IrisTreeProps {
 }
 
 /**
- * Tree control. Renders a hierarchy of `IrisTreeNode`s with expand/collapse
- * + single/multi selection. WAI-ARIA Tree pattern: root `role="tree"`, each
- * node `role="treeitem"`, roving tabindex.
+ * Tree control. Renders a hierarchy of `IrisTreeNode`s with expand/collapse,
+ * single/multi selection, and optional lazy-loaded children. WAI-ARIA Tree
+ * pattern: root `role="tree"`, each node `role="treeitem"`, roving tabindex.
  *
  * Keyboard:
  *   - ↓/↑ : move active node
@@ -50,6 +33,9 @@ export interface IrisTreeProps {
  *   - ← : collapse (or move to parent)
  *   - Enter / Space : (de)select active node
  *   - Home / End : first / last visible node
+ *
+ * Semantic parity with the Vue adapter's `IrisTree`, including `node.loadChildren`
+ * lazy loading with per-node loading/error states.
  */
 export function IrisTree({
   nodes,
@@ -71,10 +57,48 @@ export function IrisTree({
   const expanded = expControlled ? (expandedProp as string[]) : expInternal
   const selected = selControlled ? (selectedProp as string[]) : selInternal
 
+  // Lazily-loaded children cache + per-node loading/error state (parity with
+  // the Vue adapter, which supports `node.loadChildren`).
+  const [lazyCache, setLazyCache] = React.useState<Map<string, IrisTreeNode[]>>(new Map())
+  const [loadingIds, setLoadingIds] = React.useState<Set<string>>(new Set())
+  const [errorIds, setErrorIds] = React.useState<Set<string>>(new Set())
+
   const expandedSet = React.useMemo(() => new Set(expanded), [expanded])
   const selectedSet = React.useMemo(() => new Set(selected), [selected])
 
-  const flat = React.useMemo(() => flatten(nodes, expandedSet), [nodes, expandedSet])
+  const childrenOf = React.useCallback(
+    (node: IrisTreeNode): IrisTreeNode[] | null => {
+      if (node.children && node.children.length > 0) return node.children
+      return lazyCache.get(node.id) ?? null
+    },
+    [lazyCache],
+  )
+
+  const hasChildrenFn = React.useCallback(
+    (node: IrisTreeNode): boolean => {
+      if (node.isLeaf) return false
+      if (node.children && node.children.length > 0) return true
+      if (lazyCache.has(node.id)) return (lazyCache.get(node.id)?.length ?? 0) > 0
+      return Boolean(node.loadChildren)
+    },
+    [lazyCache],
+  )
+
+  const flat = React.useMemo(() => {
+    const out: FlatNode[] = []
+    const walk = (ns: IrisTreeNode[], depth: number, parentId: string | null) => {
+      for (const node of ns) {
+        const hasChildren = hasChildrenFn(node)
+        out.push({ node, depth, parentId, hasChildren })
+        if (hasChildren && expandedSet.has(node.id)) {
+          const kids = childrenOf(node)
+          if (kids) walk(kids, depth + 1, node.id)
+        }
+      }
+    }
+    walk(nodes, 0, null)
+    return out
+  }, [nodes, expandedSet, childrenOf, hasChildrenFn])
 
   const [activeId, setActiveId] = React.useState<string | null>(flat[0]?.node.id ?? null)
 
@@ -85,6 +109,11 @@ export function IrisTree({
     }
   }, [flat, activeId])
 
+  // Always-current expanded list so the async error handler collapses against
+  // the latest state rather than a stale render closure.
+  const expandedRef = React.useRef(expanded)
+  expandedRef.current = expanded
+
   const setExpanded = (next: string[]) => {
     if (!expControlled) setExpInternal(next)
     onExpandedChange?.(next)
@@ -94,9 +123,40 @@ export function IrisTree({
     onSelectedChange?.(next)
   }
 
-  const toggleExpand = (id: string) => {
-    const next = expandedSet.has(id) ? expanded.filter((x) => x !== id) : [...expanded, id]
-    setExpanded(next)
+  const expandNode = async (node: IrisTreeNode) => {
+    if (!hasChildrenFn(node)) return
+    if (!expandedSet.has(node.id)) setExpanded([...expanded, node.id])
+    // Trigger lazy load on first expansion of a loader-backed node.
+    if (
+      node.loadChildren &&
+      !lazyCache.has(node.id) &&
+      !(node.children && node.children.length > 0)
+    ) {
+      setLoadingIds((prev) => new Set(prev).add(node.id))
+      try {
+        const kids = await node.loadChildren()
+        setLazyCache((prev) => new Map(prev).set(node.id, kids))
+      } catch {
+        setErrorIds((prev) => new Set(prev).add(node.id))
+        // Collapse on failure (against the latest expanded state).
+        setExpanded(expandedRef.current.filter((x) => x !== node.id))
+      } finally {
+        setLoadingIds((prev) => {
+          const n = new Set(prev)
+          n.delete(node.id)
+          return n
+        })
+      }
+    }
+  }
+
+  const collapseNode = (id: string) => {
+    setExpanded(expanded.filter((x) => x !== id))
+  }
+
+  const toggleExpand = (node: IrisTreeNode) => {
+    if (expandedSet.has(node.id)) collapseNode(node.id)
+    else void expandNode(node)
   }
 
   const selectNode = (id: string) => {
@@ -135,21 +195,14 @@ export function IrisTree({
       case 'ArrowRight':
         e.preventDefault()
         if (current.hasChildren) {
-          if (!expandedSet.has(activeId)) toggleExpand(activeId)
-          else {
-            // Move to first child (which is the next flat item if just expanded).
-            const idx = flat.findIndex((f) => f.node.id === activeId)
-            const childItem = flat[idx + 1]
-            if (childItem && childItem.parentId === activeId) {
-              setActiveId(childItem.node.id)
-            }
-          }
+          if (expandedSet.has(activeId)) moveActive(1)
+          else void expandNode(current.node)
         }
         break
       case 'ArrowLeft':
         e.preventDefault()
         if (current.hasChildren && expandedSet.has(activeId)) {
-          toggleExpand(activeId)
+          collapseNode(activeId)
         } else if (current.parentId) {
           setActiveId(current.parentId)
         }
@@ -194,6 +247,8 @@ export function IrisTree({
         const isExpanded = expandedSet.has(node.id)
         const isSelected = selectedSet.has(node.id)
         const isActive = node.id === activeId
+        const isLoading = loadingIds.has(node.id)
+        const isError = errorIds.has(node.id)
         const disabled = Boolean(node.disabled)
         return (
           <div
@@ -206,6 +261,8 @@ export function IrisTree({
             tabIndex={isActive ? 0 : -1}
             data-iris-tree-node={node.id}
             data-state={isSelected ? 'selected' : isActive ? 'active' : 'idle'}
+            data-loading={isLoading ? '' : undefined}
+            data-error={isError ? '' : undefined}
             onClick={() => {
               setActiveId(node.id)
               selectNode(node.id)
@@ -239,7 +296,7 @@ export function IrisTree({
                 data-iris-tree-toggle=""
                 onClick={(e) => {
                   e.stopPropagation()
-                  toggleExpand(node.id)
+                  toggleExpand(node)
                 }}
                 style={{
                   width: 16,
@@ -255,10 +312,36 @@ export function IrisTree({
                   fontSize: 11,
                   fontFamily: 'inherit',
                   transition: 'transform 120ms ease',
-                  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                  transform: isLoading ? 'none' : isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
                 }}
               >
-                ▸
+                {isLoading ? (
+                  <svg
+                    className="iris-button-spinner"
+                    viewBox="0 0 24 24"
+                    width={12}
+                    height={12}
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx={12}
+                      cy={12}
+                      r={10}
+                      stroke="currentColor"
+                      strokeOpacity={0.25}
+                      strokeWidth={3}
+                    />
+                    <path
+                      d="M22 12a10 10 0 0 1-10 10"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                ) : (
+                  '▸'
+                )}
               </button>
             ) : (
               <span style={{ width: 16, display: 'inline-block' }} />

@@ -1,15 +1,14 @@
 import type { IrisTheme } from '@iris-ui/tokens'
 import { toCssVarName } from './toCssVarName'
+import { applyCssVars, type CssVarEntries } from './applyCssVars'
 
 export interface ApplyThemeResult {
   /** Restore the previously set inline custom property values on `target`. */
   revert(): void
 }
 
-type Entries = Array<[string, string]>
-
-function collectEntries(theme: IrisTheme): Entries {
-  const out: Entries = []
+function collectEntries(theme: IrisTheme): CssVarEntries {
+  const out: CssVarEntries = []
   for (const [key, value] of Object.entries(theme.colors)) {
     out.push([toCssVarName(key), value])
   }
@@ -28,18 +27,13 @@ function collectEntries(theme: IrisTheme): Entries {
  * nested themes or SSR re-mounting.
  *
  * Pure DOM. No framework dependency. Vue/React/Solid adapters call this.
+ * Delegates the var write to `applyCssVars` (the path shared with `applySkin`).
  */
 export function applyTheme(
   theme: IrisTheme,
   target: HTMLElement = document.documentElement,
 ): ApplyThemeResult {
-  const entries = collectEntries(theme)
-  const previous: Array<[string, string]> = []
-
-  for (const [name, value] of entries) {
-    previous.push([name, target.style.getPropertyValue(name)])
-    target.style.setProperty(name, value)
-  }
+  const applied = applyCssVars(collectEntries(theme), target)
 
   const prevThemeName = target.getAttribute('data-iris-theme')
   const prevThemeType = target.getAttribute('data-iris-theme-type')
@@ -48,13 +42,7 @@ export function applyTheme(
 
   return {
     revert() {
-      for (const [name, value] of previous) {
-        if (value === '') {
-          target.style.removeProperty(name)
-        } else {
-          target.style.setProperty(name, value)
-        }
-      }
+      applied.revert()
       if (prevThemeName === null) {
         target.removeAttribute('data-iris-theme')
       } else {

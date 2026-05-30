@@ -1,6 +1,7 @@
 export { toCssVarName } from './toCssVarName'
 export { getCssVar } from './getCssVar'
 export { applyTheme, type ApplyThemeResult } from './applyTheme'
+export { applyCssVars, type CssVarEntries, type ApplyCssVarsResult } from './applyCssVars'
 export { injectGlobalStyles } from './globalStyles'
 export {
   applyDirection,

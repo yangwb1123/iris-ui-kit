@@ -36,6 +36,7 @@
     "@floating-ui/dom": "^1.7.6",
     "@iris-ui/core": "workspace:*",
     "@iris-ui/icons": "workspace:*",
+    "@iris-ui/skins": "workspace:*",
     "@iris-ui/theme": "workspace:*",
     "@iris-ui/tokens": "workspace:*"
   },

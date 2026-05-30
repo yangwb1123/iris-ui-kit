@@ -33,6 +33,7 @@ export default defineConfig({
     'react',
     'react-dom',
     '@iris-ui/core',
+    '@iris-ui/skins',
     '@iris-ui/theme',
     '@iris-ui/tokens',
     '@iris-ui/icons',

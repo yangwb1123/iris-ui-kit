@@ -1,6 +1,7 @@
 export { useStore } from './useStore'
 export { useMachine } from './useMachine'
 export * from './theme'
+export * from './skins'
 export * from './primitives/button'
 export * from './primitives/badge'
 export * from './primitives/avatar'

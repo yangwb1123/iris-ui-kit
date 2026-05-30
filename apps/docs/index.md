@@ -13,7 +13,7 @@ hero:
       link: /components
 features:
   - title: Cross-framework parity
-    details: 96 components exported identically from @iris-ui/react and @iris-ui/vue. Business logic lives in a framework-agnostic core; adapters are thin reactive bridges.
+    details: 130 components exported identically from @iris-ui/react and @iris-ui/vue. Business logic lives in a framework-agnostic core; adapters are thin reactive bridges.
   - title: Logic that sinks to core
     details: Six engines — state machines, forms, i18n, virtualization, async resources, and pagination — are pure and framework-agnostic, each with a thin hook per framework.
   - title: Token-driven theming

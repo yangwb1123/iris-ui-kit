@@ -6,7 +6,7 @@ AI-native cross-framework component infrastructure. From meta UI primitives to f
 
 ## Status
 
-🔧 **Alpha** — not yet published to npm. **96 components at full React + Vue parity**, generated from one set of framework-agnostic engines, with a deep test suite (1,700+ specs) and four green quality gates (test · typecheck · lint · build) plus bundle-size and RSC-directive guards.
+🔧 **Alpha** — not yet published to npm. **130 components at full React + Vue parity**, generated from one set of framework-agnostic engines, with a deep test suite (2,100+ specs) and four green quality gates (test · typecheck · lint · build) plus bundle-size and RSC-directive guards.
 
 ## Packages
 
@@ -16,8 +16,8 @@ AI-native cross-framework component infrastructure. From meta UI primitives to f
 | `@iris-ui/tokens`   | `IrisTheme` types + Light/Dark default themes                                                      |
 | `@iris-ui/theme`    | Theme engine: `applyTheme`, `getCssVar`, theme store, direction & color-scheme                     |
 | `@iris-ui/icons`    | Built-in Feather-style icon set (structured nodes) + icon-set interface                            |
-| `@iris-ui/react`    | React 18 / 19 adapter — all 96 components                                                          |
-| `@iris-ui/vue`      | Vue 3.5 adapter — all 96 components                                                                |
+| `@iris-ui/react`    | React 18 / 19 adapter — all 130 components                                                         |
+| `@iris-ui/vue`      | Vue 3.5 adapter — all 130 components                                                               |
 | `@iris-ui/manifest` | Machine-readable component/token manifest (`manifest.json` / `llms.txt`) for AI-native consumption |
 
 ## Architecture

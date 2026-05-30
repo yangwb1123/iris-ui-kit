@@ -117,7 +117,7 @@
 - 宽表**横向虚拟化** + 列冻结。
 - 边界：测量抖动与无限增长滚动条、异步加载竞态、空数据/全失败/部分失败的可访问性提示。
 
-> ✅ **已交付**：变高虚拟化（core 数学 + 两端 `VirtualScroll`）+ `ResizeObserver` 自动测量（Table / VirtualScroll）；异步契约 `createAsyncResource` / `createPaginatedResource`（loading/error/empty/success 三态 + 服务端分页，含竞态防护）；Table 横向（列）虚拟化 + 列冻结。
+> ✅ **已交付**：变高虚拟化（core 数学 + 两端 `VirtualScroll`）+ `ResizeObserver` 自动测量（Table / VirtualScroll）；异步契约 `createAsyncResource` / `createPaginatedResource`（loading/error/empty/success 三态 + 服务端分页，含竞态防护）；Table 横向（列）虚拟化 + 列冻结；Table / List / Tree 组件级 loading/error/empty 三态 UI（core `resolveDataState` + 两端 `useDataState` / `usePrefersReducedMotion` 动画 hook，服从 `prefers-reduced-motion`）。
 
 ---
 
@@ -149,7 +149,7 @@
 - ✅ **内联动效受 `prefers-reduced-motion` 约束**：方向 3 已系统化收敛，开启"减少动态效果"时内联 `transition` 一并关闭。
 - ✅ **`prefers-color-scheme` 系统跟随**：`watchColorScheme` + 两端 `useColorScheme`（方向 3 已落地）。
 - ✅ **VirtualScroll 变高**：已支持 `itemHeight` 为 size 函数（两端）+ `ResizeObserver` 自动测量。
-- ✅ **数据组件 loading/error/empty 三态与异步竞态**：`createAsyncResource` / `createPaginatedResource` 统一三态契约 + 竞态防护（方向 4 已落地）。
+- ✅ **数据组件 loading/error/empty 三态与异步竞态**：`createAsyncResource` / `createPaginatedResource` 统一三态契约 + 竞态防护；Table / List / Tree 组件级三态 UI + 入场动画 hook（`useDataState`，服从 reduced-motion）（方向 4 已落地）。
 - ✅ **i18n 覆盖**：引擎 + 组件接入；RTL（`applyDirection` + 逻辑属性）已落地（方向 3）。
 - ✅ **表单聚合校验时机统一**：`createFormStore` 统一 onChange/onBlur/onSubmit + 异步竞态防护。
 

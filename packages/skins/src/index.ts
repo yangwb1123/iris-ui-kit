@@ -8,3 +8,4 @@ export type {
   SkinStorage,
 } from './types'
 export { skinError, SkinResolutionError, type SkinError, type SkinErrorCode } from './errors'
+export { validateSkin } from './validateSkin'

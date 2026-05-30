@@ -1,0 +1,40 @@
+{
+  "name": "@iris-ui/skins",
+  "version": "0.0.0",
+  "description": "Loadable, token-built skin system for Iris UI: inheritance, custom tokens, marketplace catalog, runtime engine",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "require": "./dist/*.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@iris-ui/core": "workspace:*",
+    "@iris-ui/tokens": "workspace:*",
+    "@iris-ui/theme": "workspace:*"
+  }
+}

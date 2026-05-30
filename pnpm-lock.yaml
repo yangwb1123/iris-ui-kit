@@ -168,6 +168,18 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
 
+  packages/skins:
+    dependencies:
+      '@iris-ui/core':
+        specifier: workspace:*
+        version: link:../core
+      '@iris-ui/theme':
+        specifier: workspace:*
+        version: link:../theme
+      '@iris-ui/tokens':
+        specifier: workspace:*
+        version: link:../tokens
+
   packages/theme:
     dependencies:
       '@iris-ui/core':

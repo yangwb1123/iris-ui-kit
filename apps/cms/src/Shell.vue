@@ -1,0 +1,113 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import {
+  IrisAdminLayout,
+  IrisAvatar,
+  IrisButton,
+  IrisDropdown,
+  IrisDropdownTrigger,
+  IrisDropdownMenu,
+  IrisDropdownItem,
+  IrisIcon,
+  useSkin,
+  useTabsNav,
+  findNavNode,
+} from '@iris-ui/vue'
+import { menus } from './menus'
+import { tabsNav } from './tabs'
+import DashboardPage from './pages/DashboardPage.vue'
+import UsersPage from './pages/UsersPage.vue'
+import SettingsPage from './pages/SettingsPage.vue'
+import GenericPage from './pages/GenericPage.vue'
+
+const { skin, setSkin, setMode, getActiveId, availableSkins } = useSkin()
+const t = useTabsNav(tabsNav)
+
+const activeKey = ref('dashboard')
+
+// Skin switcher (mirrors the playground): 'auto' follows the system, anything
+// else pins a fixed skin.
+function selectSkin(id: string) {
+  if (id === 'auto') setMode('system')
+  else setMode('fixed')
+  setSkin(id)
+}
+const isDark = computed(() => skin.value.type === 'dark')
+function toggleDark() {
+  setMode('fixed')
+  setSkin(isDark.value ? 'light' : 'dark')
+}
+
+// Map a route key to its page component; everything else gets a placeholder.
+const pages: Record<string, unknown> = {
+  dashboard: DashboardPage,
+  'all-users': UsersPage,
+  settings: SettingsPage,
+}
+const pageComp = (key: string): unknown => pages[key] ?? GenericPage
+const pageProps = (key: string): Record<string, unknown> =>
+  pages[key] ? {} : { title: findNavNode(menus, key)?.title ?? key }
+
+// Keep-alive cache key for the active tab (changes on refresh → remount).
+const activeCacheKey = computed(() => {
+  const found = t.cacheKeys.value.find((k) => k.slice(0, k.lastIndexOf(':')) === activeKey.value)
+  return found ?? activeKey.value
+})
+</script>
+
+<template>
+  <IrisAdminLayout
+    v-model:activeKey="activeKey"
+    :menus="menus"
+    :tabs="tabsNav"
+    app-title="Iris CMS"
+  >
+    <template #toolbar>
+      <select
+        class="skin-select"
+        aria-label="Theme"
+        :value="getActiveId()"
+        @change="selectSkin(($event.target as HTMLSelectElement).value)"
+      >
+        <option v-for="s in availableSkins()" :key="s.id" :value="s.id">
+          {{ s.name ?? s.id }}
+        </option>
+      </select>
+
+      <IrisButton
+        size="sm"
+        variant="outline"
+        :aria-label="isDark ? 'Light mode' : 'Dark mode'"
+        @click="toggleDark"
+      >
+        <IrisIcon :name="isDark ? 'sun' : 'moon'" :size="16" />
+      </IrisButton>
+
+      <IrisDropdown>
+        <IrisDropdownTrigger aria-label="Account">
+          <span style="display: inline-flex; cursor: pointer">
+            <IrisAvatar name="Ada Lovelace" :size="32" />
+          </span>
+        </IrisDropdownTrigger>
+        <IrisDropdownMenu>
+          <IrisDropdownItem>Profile</IrisDropdownItem>
+          <IrisDropdownItem>Account settings</IrisDropdownItem>
+          <IrisDropdownItem>Sign out</IrisDropdownItem>
+        </IrisDropdownMenu>
+      </IrisDropdown>
+    </template>
+
+    <template #default="{ activeKey: key }">
+      <KeepAlive>
+        <component :is="pageComp(key)" :key="activeCacheKey" v-bind="pageProps(key)" />
+      </KeepAlive>
+    </template>
+
+    <template #footer>
+      <div class="cms-footer">
+        <span>Iris CMS — built with @iris-ui/vue/admin</span>
+        <span>v0.1.x</span>
+      </div>
+    </template>
+  </IrisAdminLayout>
+</template>

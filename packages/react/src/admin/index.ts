@@ -1,3 +1,4 @@
+export { IrisAdminLayout, type IrisAdminLayoutProps, type IrisAdminLayoutMode } from './AdminLayout'
 export { IrisNavMenu, type IrisNavMenuProps } from './NavMenu'
 export { IrisAdminBreadcrumb, type IrisAdminBreadcrumbProps } from './AdminBreadcrumb'
 export { IrisAdminTabs, type IrisAdminTabsProps } from './AdminTabs'

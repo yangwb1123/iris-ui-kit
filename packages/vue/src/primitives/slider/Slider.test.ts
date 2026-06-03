@@ -24,9 +24,11 @@ describe('IrisSlider', () => {
     expect(w.find('[data-iris-slider-fill]').attributes('style')).toContain('width: 40%')
   })
 
-  it('thumb left equals percent', () => {
+  it('thumb inline-start equals percent (logical, RTL-aware)', () => {
     const w = mount(IrisSlider, { props: { modelValue: 60, min: 0, max: 100 } })
-    expect(w.find('[data-iris-slider-thumb]').attributes('style')).toContain('left: 60%')
+    expect(w.find('[data-iris-slider-thumb]').attributes('style')).toContain(
+      'inset-inline-start: 60%',
+    )
   })
 
   it('ArrowRight steps up by step', async () => {
@@ -110,5 +112,39 @@ describe('IrisSlider', () => {
     })
     await w.find('[data-iris-slider-thumb]').trigger('keydown', { key: 'ArrowRight' })
     expect(onUpdate).toHaveBeenLastCalledWith(0.3)
+  })
+
+  // jsdom returns a zero rect, so mock it to verify pointer→value mapping + RTL.
+  const RECT = { left: 0, right: 200, top: 0, bottom: 10, width: 200, height: 10, x: 0, y: 0 }
+
+  it('LTR track click maps left→value', async () => {
+    const onUpdate = vi.fn()
+    const w = mount(IrisSlider, {
+      props: { modelValue: 0, min: 0, max: 100 },
+      attrs: { 'onUpdate:modelValue': onUpdate },
+    })
+    const track = w.find('[data-iris-slider-track]')
+    ;(track.element as HTMLElement).getBoundingClientRect = () => RECT as DOMRect
+    await track.trigger('click', { clientX: 50 })
+    expect(onUpdate).toHaveBeenLastCalledWith(25)
+  })
+
+  it('RTL track click maps from the right edge', async () => {
+    const host = document.createElement('div')
+    host.setAttribute('dir', 'rtl')
+    document.body.appendChild(host)
+    const onUpdate = vi.fn()
+    const w = mount(IrisSlider, {
+      props: { modelValue: 0, min: 0, max: 100 },
+      attrs: { 'onUpdate:modelValue': onUpdate },
+      attachTo: host,
+    })
+    const track = w.find('[data-iris-slider-track]')
+    ;(track.element as HTMLElement).getBoundingClientRect = () => RECT as DOMRect
+    await track.trigger('click', { clientX: 50 })
+    // (right - clientX) / width = (200 - 50) / 200 = 0.75
+    expect(onUpdate).toHaveBeenLastCalledWith(75)
+    w.unmount()
+    host.remove()
   })
 })

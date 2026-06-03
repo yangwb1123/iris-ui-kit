@@ -33,7 +33,8 @@ describe('@iris-ui/vue IrisRangeSlider', () => {
     })
     const range = wrap.find('[data-iris-range-slider-range]')
     const style = range.attributes('style') || ''
-    expect(style).toMatch(/left:\s*20%/)
+    // Logical inset (flips under RTL) rather than physical left.
+    expect(style).toMatch(/inline-start:\s*20%/)
     expect(style).toMatch(/width:\s*60%/)
   })
 

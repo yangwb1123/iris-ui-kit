@@ -111,4 +111,43 @@ describe('@iris-ui/react IrisSlider', () => {
     render(<IrisSlider defaultValue={40} />)
     expect(thumb().getAttribute('aria-valuenow')).toBe('40')
   })
+
+  // jsdom returns a zero rect from getBoundingClientRect, so mock it to verify
+  // the pointer→value mapping (and its RTL flip).
+  function mockTrackRect(): HTMLElement {
+    const track = document.querySelector('[data-iris-slider-track]') as HTMLElement
+    track.getBoundingClientRect = () =>
+      ({ left: 0, right: 200, top: 0, bottom: 10, width: 200, height: 10, x: 0, y: 0 }) as DOMRect
+    return track
+  }
+  // jsdom may lack a PointerEvent constructor that carries clientX — build it
+  // explicitly and dispatch natively (React picks it up via root delegation).
+  function pointerDownAt(el: HTMLElement, clientX: number): void {
+    const ev = new Event('pointerdown', { bubbles: true })
+    Object.assign(ev, { clientX, clientY: 0, button: 0, pointerId: 1 })
+    el.dispatchEvent(ev)
+  }
+
+  it('LTR track pointerdown maps left→value', () => {
+    const onChange = vi.fn()
+    render(<IrisSlider value={0} min={0} max={100} onChange={onChange} />)
+    act(() => {
+      pointerDownAt(mockTrackRect(), 50)
+    })
+    expect(onChange).toHaveBeenLastCalledWith(25)
+  })
+
+  it('RTL track pointerdown maps from the right edge', () => {
+    const onChange = vi.fn()
+    render(
+      <div dir="rtl">
+        <IrisSlider value={0} min={0} max={100} onChange={onChange} />
+      </div>,
+    )
+    act(() => {
+      pointerDownAt(mockTrackRect(), 50)
+    })
+    // (right - clientX) / width = (200 - 50) / 200 = 0.75
+    expect(onChange).toHaveBeenLastCalledWith(75)
+  })
 })

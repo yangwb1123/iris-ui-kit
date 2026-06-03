@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { getDirection } from '@iris-ui/theme'
 import { useDrag } from '../drag/useDrag'
 
 export type IrisSliderOrientation = 'horizontal' | 'vertical'
@@ -79,8 +80,11 @@ export function IrisSlider({
     const track = trackRef.current
     if (!track) return value
     const rect = track.getBoundingClientRect()
+    // In RTL the horizontal value axis runs right-to-left, so measure from the
+    // right edge. Direction is read from the nearest dir-bearing ancestor.
+    const rtl = getDirection(track.closest<HTMLElement>('[data-iris-dir],[dir]')) === 'rtl'
     const rel = isHorizontal
-      ? (clientX - rect.left) / Math.max(1, rect.width)
+      ? (rtl ? rect.right - clientX : clientX - rect.left) / Math.max(1, rect.width)
       : 1 - (clientY - rect.top) / Math.max(1, rect.height)
     return min + Math.max(0, Math.min(1, rel)) * (max - min)
   }
@@ -163,7 +167,9 @@ export function IrisSlider({
           style={{
             position: 'absolute',
             top: 0,
-            left: 0,
+            // Logical inset so the fill anchors to the inline-start edge and
+            // flips automatically under `dir="rtl"`.
+            insetInlineStart: 0,
             ...(isHorizontal
               ? { height: '100%', width: `${percent}%` }
               : { width: '100%', height: `${percent}%`, top: 'auto', bottom: 0 }),
@@ -186,7 +192,7 @@ export function IrisSlider({
           style={{
             position: 'absolute',
             ...(isHorizontal
-              ? { top: '50%', left: `${percent}%`, transform: 'translate(-50%, -50%)' }
+              ? { top: '50%', insetInlineStart: `${percent}%`, transform: 'translate(-50%, -50%)' }
               : { left: '50%', bottom: `${percent}%`, transform: 'translate(-50%, 50%)' }),
             width: 16,
             height: 16,

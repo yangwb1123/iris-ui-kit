@@ -1,4 +1,5 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
+import { getDirection } from '@iris-ui/theme'
 import { useDrag } from '../drag/useDrag'
 
 export type IrisSliderOrientation = 'horizontal' | 'vertical'
@@ -81,7 +82,9 @@ export const IrisSlider = defineComponent({
       let ratio: number
       if (isHorizontal.value) {
         if (rect.width <= 0) return props.modelValue
-        ratio = (clientX - rect.left) / rect.width
+        // RTL: the horizontal value axis runs right-to-left.
+        const rtl = getDirection(track.closest<HTMLElement>('[data-iris-dir],[dir]')) === 'rtl'
+        ratio = (rtl ? rect.right - clientX : clientX - rect.left) / rect.width
       } else {
         if (rect.height <= 0) return props.modelValue
         // Vertical: top = max, bottom = min (common convention)
@@ -169,7 +172,7 @@ export const IrisSlider = defineComponent({
         borderRadius: '9999px',
         pointerEvents: 'none',
         ...(horiz
-          ? { top: '0', bottom: '0', left: '0', width: `${percent.value}%` }
+          ? { top: '0', bottom: '0', insetInlineStart: '0', width: `${percent.value}%` }
           : { left: '0', right: '0', bottom: '0', height: `${percent.value}%` }),
       }
     })
@@ -190,7 +193,11 @@ export const IrisSlider = defineComponent({
         transition: 'box-shadow 120ms ease',
         touchAction: 'none',
         ...(horiz
-          ? { top: '50%', left: `${percent.value}%`, transform: 'translate(-50%, -50%)' }
+          ? {
+              top: '50%',
+              insetInlineStart: `${percent.value}%`,
+              transform: 'translate(-50%, -50%)',
+            }
           : { left: '50%', bottom: `${percent.value}%`, transform: 'translate(-50%, 50%)' }),
       }
     })

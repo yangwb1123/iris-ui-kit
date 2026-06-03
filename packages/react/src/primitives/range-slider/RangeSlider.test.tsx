@@ -30,7 +30,8 @@ describe('@iris-ui/react IrisRangeSlider', () => {
   it('range bar position derives from values', () => {
     render(<IrisRangeSlider value={[20, 80]} min={0} max={100} />)
     const range = document.querySelector('[data-iris-range-slider-range]') as HTMLElement
-    expect(range.style.left).toBe('20%')
+    // Logical inset (flips under RTL) rather than physical left.
+    expect(range.style.insetInlineStart).toBe('20%')
     expect(range.style.width).toBe('60%')
   })
 

@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { getDirection } from '@iris-ui/theme'
 import { useDrag } from '../drag/useDrag'
 
 export type IrisRangeSliderValue = readonly [number, number]
@@ -89,7 +90,9 @@ export function IrisRangeSlider({
     const track = trackRef.current
     if (!track) return startVal
     const rect = track.getBoundingClientRect()
-    const rel = (clientX - rect.left) / Math.max(1, rect.width)
+    // RTL: the value axis runs right-to-left, so measure from the right edge.
+    const rtl = getDirection(track.closest<HTMLElement>('[data-iris-dir],[dir]')) === 'rtl'
+    const rel = (rtl ? rect.right - clientX : clientX - rect.left) / Math.max(1, rect.width)
     return min + Math.max(0, Math.min(1, rel)) * (max - min)
   }
 
@@ -171,7 +174,8 @@ export function IrisRangeSlider({
             position: 'absolute',
             top: 0,
             bottom: 0,
-            left: `${sPct}%`,
+            // Logical inset so the range bar flips under `dir="rtl"`.
+            insetInlineStart: `${sPct}%`,
             width: `${ePct - sPct}%`,
             background: disabled ? 'var(--iris-muted)' : 'var(--iris-primary)',
             borderRadius: 'inherit',
@@ -192,7 +196,7 @@ export function IrisRangeSlider({
           style={{
             position: 'absolute',
             top: '50%',
-            left: `${sPct}%`,
+            insetInlineStart: `${sPct}%`,
             transform: 'translate(-50%, -50%)',
             width: 16,
             height: 16,
@@ -219,7 +223,7 @@ export function IrisRangeSlider({
           style={{
             position: 'absolute',
             top: '50%',
-            left: `${ePct}%`,
+            insetInlineStart: `${ePct}%`,
             transform: 'translate(-50%, -50%)',
             width: 16,
             height: 16,

@@ -1,4 +1,5 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
+import { getDirection } from '@iris-ui/theme'
 import { useDrag } from '../drag/useDrag'
 
 export type IrisRangeSliderValue = readonly [number, number]
@@ -97,7 +98,9 @@ export const IrisRangeSlider = defineComponent({
       const track = trackRef.value
       if (!track) return startVal.value
       const rect = track.getBoundingClientRect()
-      const rel = (clientX - rect.left) / Math.max(1, rect.width)
+      // RTL: the value axis runs right-to-left, so measure from the right edge.
+      const rtl = getDirection(track.closest<HTMLElement>('[data-iris-dir],[dir]')) === 'rtl'
+      const rel = (rtl ? rect.right - clientX : clientX - rect.left) / Math.max(1, rect.width)
       return props.min + Math.max(0, Math.min(1, rel)) * (props.max - props.min)
     }
 
@@ -198,7 +201,7 @@ export const IrisRangeSlider = defineComponent({
                   position: 'absolute',
                   top: '0',
                   bottom: '0',
-                  left: `${startPct}%`,
+                  insetInlineStart: `${startPct}%`,
                   width: `${endPct - startPct}%`,
                   background: props.disabled ? 'var(--iris-muted)' : 'var(--iris-primary)',
                   borderRadius: 'inherit',
@@ -221,7 +224,7 @@ export const IrisRangeSlider = defineComponent({
                 style: {
                   position: 'absolute',
                   top: '50%',
-                  left: `${startPct}%`,
+                  insetInlineStart: `${startPct}%`,
                   transform: 'translate(-50%, -50%)',
                   width: '16px',
                   height: '16px',
@@ -250,7 +253,7 @@ export const IrisRangeSlider = defineComponent({
                 style: {
                   position: 'absolute',
                   top: '50%',
-                  left: `${endPct}%`,
+                  insetInlineStart: `${endPct}%`,
                   transform: 'translate(-50%, -50%)',
                   width: '16px',
                   height: '16px',

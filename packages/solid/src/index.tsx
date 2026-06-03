@@ -8,8 +8,13 @@ export { useMachine } from './useMachine'
 export * from './theme'
 export * from './skins'
 
+// ── Layouts + admin ───────────────────────────────────────────────────────────
+export * from './layouts'
+export * from './admin'
+
 // ── Primitives ───────────────────────────────────────────────────────────────
 export * from './primitives/button'
+export * from './primitives/icon'
 
 // ── Framework-agnostic re-exports (mirror @iris-ui/react / @iris-ui/vue) ───────
 export {

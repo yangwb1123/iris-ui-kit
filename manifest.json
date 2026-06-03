@@ -235,9 +235,11 @@
       "name": "IrisAdminBreadcrumb",
       "group": "other",
       "frameworks": [
+        "react",
         "vue"
       ],
       "importFrom": {
+        "react": "@iris-ui/react",
         "vue": "@iris-ui/vue"
       }
     },
@@ -245,9 +247,11 @@
       "name": "IrisAdminLayout",
       "group": "other",
       "frameworks": [
+        "react",
         "vue"
       ],
       "importFrom": {
+        "react": "@iris-ui/react",
         "vue": "@iris-ui/vue"
       }
     },
@@ -255,9 +259,11 @@
       "name": "IrisAdminTabs",
       "group": "other",
       "frameworks": [
+        "react",
         "vue"
       ],
       "importFrom": {
+        "react": "@iris-ui/react",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1228,9 +1234,11 @@
       "name": "IrisNavMenu",
       "group": "other",
       "frameworks": [
+        "react",
         "vue"
       ],
       "importFrom": {
+        "react": "@iris-ui/react",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1975,8 +1983,8 @@
   },
   "stats": {
     "total": 134,
-    "both": 130,
+    "both": 134,
     "reactOnly": 0,
-    "vueOnly": 4
+    "vueOnly": 0
   }
 }

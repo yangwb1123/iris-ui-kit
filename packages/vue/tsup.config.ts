@@ -18,6 +18,15 @@ function buildEntries(): Record<string, string> {
       if (existsSync(path)) entries[dir.name] = path
     }
   }
+  // `floating` + `modal-utils` live under primitives/ in the Vue tree but are
+  // framework utilities (hooks), not components. Surface them as flat deep
+  // entries so consumers get the same `@iris-ui/vue/floating` /
+  // `@iris-ui/vue/modal-utils` paths the React adapter already exposes
+  // (consumer import-path parity).
+  for (const name of ['floating', 'modal-utils']) {
+    const path = join('src', 'primitives', name, 'index.ts')
+    if (existsSync(path)) entries[name] = path
+  }
   return entries
 }
 

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, h, type VNode } from 'vue'
+import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import axe from 'axe-core'
 import {
@@ -8,21 +8,40 @@ import {
   IrisAlert,
   IrisBadge,
   IrisButton,
+  IrisCombobox,
   IrisDialog,
   IrisDialogClose,
   IrisDialogContent,
   IrisDialogDescription,
   IrisDialogTitle,
   IrisDialogTrigger,
+  IrisDrawer,
+  IrisDrawerClose,
+  IrisDrawerContent,
+  IrisDrawerTitle,
+  IrisDrawerTrigger,
+  IrisDropdown,
+  IrisDropdownItem,
+  IrisDropdownMenu,
+  IrisDropdownTrigger,
   IrisFormField,
   IrisInput,
+  IrisMenu,
+  IrisMenuContent,
+  IrisMenuItem,
+  IrisMenuTrigger,
   IrisPagination,
+  IrisPopover,
+  IrisPopoverContent,
+  IrisPopoverTrigger,
   IrisRadio,
   IrisRadioGroup,
+  IrisSelect,
   IrisTabs,
   IrisTabsContent,
   IrisTabsList,
   IrisTabsTrigger,
+  IrisTooltip,
 } from './index'
 
 /** WCAG A/AA scan, minus color-contrast (needs real layout jsdom lacks). */
@@ -35,10 +54,13 @@ async function axeViolations(node: Element): Promise<string[]> {
 }
 
 const wrappers: VueWrapper[] = []
-function mountIt(factory: () => VNode): HTMLElement {
+function mountW(factory: () => VNode): VueWrapper {
   const wrapper = mount(defineComponent({ setup: () => factory }), { attachTo: document.body })
   wrappers.push(wrapper)
-  return wrapper.element as HTMLElement
+  return wrapper
+}
+function mountIt(factory: () => VNode): HTMLElement {
+  return mountW(factory).element as HTMLElement
 }
 
 afterEach(() => {
@@ -150,6 +172,144 @@ describe('@iris-ui/vue a11y (axe-core)', () => {
       ),
     )
     // Content is teleported to document.body, so scan the whole document.
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  // Floating / overlay surfaces — the regression-prone set. Each is opened so
+  // axe scans the live teleported content (role wiring, aria-expanded, labelling).
+
+  it('open IrisPopover has no violations', async () => {
+    mountIt(() =>
+      h(
+        IrisPopover,
+        { defaultOpen: true },
+        {
+          default: () => [
+            h(IrisPopoverTrigger, null, { default: () => 'Toggle' }),
+            h(IrisPopoverContent, { 'aria-label': 'Details' }, { default: () => 'Popover body' }),
+          ],
+        },
+      ),
+    )
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  it('open IrisMenu has no violations', async () => {
+    mountIt(() =>
+      h(
+        IrisMenu,
+        { defaultOpen: true },
+        {
+          default: () => [
+            h(IrisMenuTrigger, null, { default: () => 'Actions' }),
+            h(IrisMenuContent, null, {
+              default: () => [
+                h(IrisMenuItem, null, { default: () => 'Rename' }),
+                h(IrisMenuItem, null, { default: () => 'Delete' }),
+              ],
+            }),
+          ],
+        },
+      ),
+    )
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  it('open IrisDropdown has no violations', async () => {
+    mountIt(() =>
+      h(
+        IrisDropdown,
+        { defaultOpen: true },
+        {
+          default: () => [
+            h(IrisDropdownTrigger, null, { default: () => 'Open' }),
+            h(IrisDropdownMenu, null, {
+              default: () => [
+                h(IrisDropdownItem, null, { default: () => 'One' }),
+                h(IrisDropdownItem, null, { default: () => 'Two' }),
+              ],
+            }),
+          ],
+        },
+      ),
+    )
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  it('open IrisDrawer has no violations', async () => {
+    mountIt(() =>
+      h(
+        IrisDrawer,
+        { defaultOpen: true },
+        {
+          default: () => [
+            h(IrisDrawerTrigger, null, { default: () => 'Open' }),
+            h(IrisDrawerContent, null, {
+              default: () => [
+                h(IrisDrawerTitle, null, { default: () => 'Settings' }),
+                h('p', null, 'Drawer body'),
+                h(IrisDrawerClose, null, { default: () => 'Close' }),
+              ],
+            }),
+          ],
+        },
+      ),
+    )
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  it('open IrisSelect listbox has no violations', async () => {
+    const w = mountW(() =>
+      h(
+        IrisFormField,
+        { label: 'Choose' },
+        {
+          default: () =>
+            h(IrisSelect, {
+              items: [
+                { value: 'a', label: 'Alpha' },
+                { value: 'b', label: 'Bravo' },
+              ],
+            }),
+        },
+      ),
+    )
+    await w.find('[data-iris-select-trigger]').trigger('click')
+    await nextTick()
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  it('open IrisCombobox has no violations', async () => {
+    const w = mountW(() =>
+      h(
+        IrisFormField,
+        { label: 'Fruit' },
+        {
+          default: () =>
+            h(IrisCombobox, {
+              options: [
+                { label: 'Apple', value: 'apple' },
+                { label: 'Banana', value: 'banana' },
+              ],
+            }),
+        },
+      ),
+    )
+    await w.find('[data-iris-combobox-input]').trigger('focus')
+    await nextTick()
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  it('visible IrisTooltip has no violations', async () => {
+    const w = mountW(() =>
+      h(
+        IrisTooltip,
+        { content: 'More info', openDelay: 0 },
+        { default: () => h('button', { type: 'button' }, 'Help') },
+      ),
+    )
+    await w.find('button').trigger('pointerenter')
+    await nextTick()
     expect(await axeViolations(document.body)).toEqual([])
   })
 })

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import * as React from 'react'
-import { cleanup, render } from '@testing-library/react'
+import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import axe from 'axe-core'
 import {
   IrisAccordion,
@@ -8,21 +8,40 @@ import {
   IrisAlert,
   IrisBadge,
   IrisButton,
+  IrisCombobox,
   IrisDialog,
   IrisDialogClose,
   IrisDialogContent,
   IrisDialogDescription,
   IrisDialogTitle,
   IrisDialogTrigger,
+  IrisDrawer,
+  IrisDrawerClose,
+  IrisDrawerContent,
+  IrisDrawerTitle,
+  IrisDrawerTrigger,
+  IrisDropdown,
+  IrisDropdownItem,
+  IrisDropdownMenu,
+  IrisDropdownTrigger,
   IrisFormField,
   IrisInput,
+  IrisMenu,
+  IrisMenuContent,
+  IrisMenuItem,
+  IrisMenuTrigger,
   IrisPagination,
+  IrisPopover,
+  IrisPopoverContent,
+  IrisPopoverTrigger,
   IrisRadio,
   IrisRadioGroup,
+  IrisSelect,
   IrisTabs,
   IrisTabsContent,
   IrisTabsList,
   IrisTabsTrigger,
+  IrisTooltip,
 } from './index'
 
 afterEach(cleanup)
@@ -121,6 +140,105 @@ describe('@iris-ui/react a11y (axe-core)', () => {
       </IrisDialog>,
     )
     // Content is portaled to document.body, so scan the whole document.
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  // Floating / overlay surfaces — the regression-prone set. Each is opened so
+  // axe scans the live portaled content (role wiring, aria-expanded, labelling).
+
+  it('open IrisPopover has no violations', async () => {
+    render(
+      <IrisPopover defaultOpen>
+        <IrisPopoverTrigger>Toggle</IrisPopoverTrigger>
+        <IrisPopoverContent aria-label="Details">Popover body</IrisPopoverContent>
+      </IrisPopover>,
+    )
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  it('open IrisMenu has no violations', async () => {
+    render(
+      <IrisMenu defaultOpen>
+        <IrisMenuTrigger>Actions</IrisMenuTrigger>
+        <IrisMenuContent>
+          <IrisMenuItem>Rename</IrisMenuItem>
+          <IrisMenuItem>Delete</IrisMenuItem>
+        </IrisMenuContent>
+      </IrisMenu>,
+    )
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  it('open IrisDropdown has no violations', async () => {
+    render(
+      <IrisDropdown defaultOpen>
+        <IrisDropdownTrigger>Open</IrisDropdownTrigger>
+        <IrisDropdownMenu>
+          <IrisDropdownItem>One</IrisDropdownItem>
+          <IrisDropdownItem>Two</IrisDropdownItem>
+        </IrisDropdownMenu>
+      </IrisDropdown>,
+    )
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  it('open IrisDrawer has no violations', async () => {
+    render(
+      <IrisDrawer defaultOpen>
+        <IrisDrawerTrigger>Open</IrisDrawerTrigger>
+        <IrisDrawerContent>
+          <IrisDrawerTitle>Settings</IrisDrawerTitle>
+          <p>Drawer body</p>
+          <IrisDrawerClose>Close</IrisDrawerClose>
+        </IrisDrawerContent>
+      </IrisDrawer>,
+    )
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  it('open IrisSelect listbox has no violations', async () => {
+    render(
+      <IrisFormField label="Choose">
+        <IrisSelect
+          items={[
+            { value: 'a', label: 'Alpha' },
+            { value: 'b', label: 'Bravo' },
+          ]}
+        />
+      </IrisFormField>,
+    )
+    await act(async () => {
+      fireEvent.click(document.querySelector('[data-iris-select-trigger]')!)
+    })
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  it('open IrisCombobox has no violations', async () => {
+    const { container } = render(
+      <IrisFormField label="Fruit">
+        <IrisCombobox
+          options={[
+            { label: 'Apple', value: 'apple' },
+            { label: 'Banana', value: 'banana' },
+          ]}
+        />
+      </IrisFormField>,
+    )
+    await act(async () => {
+      fireEvent.focus(container.querySelector('input')!)
+    })
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
+  it('visible IrisTooltip has no violations', async () => {
+    const { container } = render(
+      <IrisTooltip content="More info" openDelay={0}>
+        <button type="button">Help</button>
+      </IrisTooltip>,
+    )
+    await act(async () => {
+      fireEvent.focus(container.querySelector('button')!)
+    })
     expect(await axeViolations(document.body)).toEqual([])
   })
 })

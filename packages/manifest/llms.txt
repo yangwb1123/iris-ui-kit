@@ -1,0 +1,162 @@
+# Iris UI
+
+Token-driven, cross-framework (React 18 + Vue 3) UI component library.
+
+Frameworks: react, vue. Import components from `@iris-ui/react` or `@iris-ui/vue`.
+
+## Architecture
+- Layer 0 — Theme System: Design tokens, applyTheme, theme store (CSS variables).
+- Layer 1 — Meta Primitives: Low-level, single-purpose building blocks.
+- Layer 2 — Composite Components: Higher-level interactive components.
+- Layer 3 — Layouts: Structural layout components.
+- Layer 4 — System Skeletons: Page / section skeleton scaffolds.
+- Behaviors: Orthogonal interaction behaviors (hotkeys, click-outside, drag).
+
+## Components (130 total — 130 in both frameworks, 0 react-only, 0 vue-only)
+
+### behaviors (4)
+- IrisClickOutside [react/vue]
+- IrisHotkey [react/vue]
+- IrisMovable [react/vue]
+- IrisResizable [react/vue]
+
+### form (1)
+- IrisForm [react/vue]
+
+### layouts (7)
+- IrisContainer [react/vue]
+- IrisDashboardCard [react/vue]
+- IrisDashboardGrid [react/vue]
+- IrisGrid [react/vue]
+- IrisHeaderLayout [react/vue]
+- IrisSidebarLayout [react/vue]
+- IrisStack [react/vue]
+
+### other (1)
+- IrisI18nProvider [react/vue]
+
+### primitives (115)
+- IrisAccordion [react/vue]
+- IrisAccordionItem [react/vue]
+- IrisAffix [react/vue]
+- IrisAlert [react/vue]
+- IrisAnchor [react/vue]
+- IrisAspectRatio [react/vue]
+- IrisAvatar [react/vue]
+- IrisBackTop [react/vue]
+- IrisBadge [react/vue]
+- IrisBanner [react/vue]
+- IrisBreadcrumb [react/vue]
+- IrisBreadcrumbItem [react/vue]
+- IrisButton [react/vue]
+- IrisCalendar [react/vue]
+- IrisCard [react/vue]
+- IrisCarousel [react/vue]
+- IrisCascader [react/vue]
+- IrisCheckbox [react/vue]
+- IrisChip [react/vue]
+- IrisColorPicker [react/vue]
+- IrisCombobox [react/vue]
+- IrisCommandPalette [react/vue]
+- IrisCopyButton [react/vue]
+- IrisCountdown [react/vue]
+- IrisDatePicker [react/vue]
+- IrisDateRangePicker [react/vue]
+- IrisDescriptions [react/vue]
+- IrisDialog [react/vue]
+- IrisDialogClose [react/vue]
+- IrisDialogContent [react/vue]
+- IrisDialogDescription [react/vue]
+- IrisDialogTitle [react/vue]
+- IrisDialogTrigger [react/vue]
+- IrisDivider [react/vue]
+- IrisDragger [react/vue]
+- IrisDrawer [react/vue]
+- IrisDrawerClose [react/vue]
+- IrisDrawerContent [react/vue]
+- IrisDrawerTitle [react/vue]
+- IrisDrawerTrigger [react/vue]
+- IrisDropdown [react/vue]
+- IrisDropdownItem [react/vue]
+- IrisDropdownMenu [react/vue]
+- IrisDropdownSeparator [react/vue]
+- IrisDropdownTrigger [react/vue]
+- IrisEmptyState [react/vue]
+- IrisFieldset [react/vue]
+- IrisFileUpload [react/vue]
+- IrisFloatButton [react/vue]
+- IrisFormField [react/vue]
+- IrisGauge [react/vue]
+- IrisIcon [react/vue]
+- IrisImage [react/vue]
+- IrisInput [react/vue]
+- IrisKbd [react/vue]
+- IrisList [react/vue]
+- IrisMarquee [react/vue]
+- IrisMasonry [react/vue]
+- IrisMentions [react/vue]
+- IrisMenu [react/vue]
+- IrisMenuContent [react/vue]
+- IrisMenuItem [react/vue]
+- IrisMenuSeparator [react/vue]
+- IrisMenuSub [react/vue]
+- IrisMenuTrigger [react/vue]
+- IrisNumberInput [react/vue]
+- IrisOtpInput [react/vue]
+- IrisPagination [react/vue]
+- IrisPasswordInput [react/vue]
+- IrisPopover [react/vue]
+- IrisPopoverContent [react/vue]
+- IrisPopoverTrigger [react/vue]
+- IrisProgress [react/vue]
+- IrisProgressCircle [react/vue]
+- IrisRadio [react/vue]
+- IrisRadioGroup [react/vue]
+- IrisRangeSlider [react/vue]
+- IrisRating [react/vue]
+- IrisResizer [react/vue]
+- IrisResult [react/vue]
+- IrisRibbon [react/vue]
+- IrisScrollArea [react/vue]
+- IrisSegmented [react/vue]
+- IrisSelect [react/vue]
+- IrisSkeleton [react/vue]
+- IrisSlider [react/vue]
+- IrisSlot [react/vue]
+- IrisSpinner [react/vue]
+- IrisSplitButton [react/vue]
+- IrisSplitter [react/vue]
+- IrisStatistic [react/vue]
+- IrisStepper [react/vue]
+- IrisStepperStep [react/vue]
+- IrisSwitch [react/vue]
+- IrisTable [react/vue]
+- IrisTabs [react/vue]
+- IrisTabsContent [react/vue]
+- IrisTabsList [react/vue]
+- IrisTabsTrigger [react/vue]
+- IrisTagInput [react/vue]
+- IrisTextarea [react/vue]
+- IrisTimeline [react/vue]
+- IrisTimePicker [react/vue]
+- IrisToastViewport [react/vue]
+- IrisToggleGroup [react/vue]
+- IrisToggleGroupItem [react/vue]
+- IrisToolbar [react/vue]
+- IrisTooltip [react/vue]
+- IrisTour [react/vue]
+- IrisTransfer [react/vue]
+- IrisTree [react/vue]
+- IrisTreeSelect [react/vue]
+- IrisVirtualScroll [react/vue]
+- IrisVisuallyHidden [react/vue]
+- IrisWatermark [react/vue]
+
+### skeletons (2)
+- IrisDashboardTemplate [react/vue]
+- IrisLoginTemplate [react/vue]
+
+## Design tokens (21)
+- colors: iris.background, iris.foreground, iris.surface, iris.surface.hover, iris.border, iris.muted, iris.primary, iris.primary.foreground, iris.accent, iris.danger, iris.success, iris.warning
+- spacing: iris.gap.sm, iris.gap.md, iris.gap.lg, iris.padding.sm, iris.padding.md, iris.padding.lg
+- radii: iris.radius.sm, iris.radius.md, iris.radius.lg

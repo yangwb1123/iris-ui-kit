@@ -40,6 +40,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Manifest up-to-date
+        run: pnpm check:manifest
+
       - name: Size budget
         run: pnpm size
 

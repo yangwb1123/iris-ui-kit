@@ -1,0 +1,1938 @@
+{
+  "schema": "iris-ui/manifest@1",
+  "name": "Iris UI",
+  "description": "Token-driven, cross-framework (React 18 + Vue 3) UI component library.",
+  "frameworks": [
+    "react",
+    "vue"
+  ],
+  "layerModel": [
+    {
+      "layer": "Layer 0 — Theme System",
+      "description": "Design tokens, applyTheme, theme store (CSS variables)."
+    },
+    {
+      "layer": "Layer 1 — Meta Primitives",
+      "description": "Low-level, single-purpose building blocks."
+    },
+    {
+      "layer": "Layer 2 — Composite Components",
+      "description": "Higher-level interactive components."
+    },
+    {
+      "layer": "Layer 3 — Layouts",
+      "description": "Structural layout components."
+    },
+    {
+      "layer": "Layer 4 — System Skeletons",
+      "description": "Page / section skeleton scaffolds."
+    },
+    {
+      "layer": "Behaviors",
+      "description": "Orthogonal interaction behaviors (hotkeys, click-outside, drag)."
+    }
+  ],
+  "groups": [
+    {
+      "group": "behaviors",
+      "count": 4,
+      "components": [
+        "IrisClickOutside",
+        "IrisHotkey",
+        "IrisMovable",
+        "IrisResizable"
+      ]
+    },
+    {
+      "group": "form",
+      "count": 1,
+      "components": [
+        "IrisForm"
+      ]
+    },
+    {
+      "group": "layouts",
+      "count": 7,
+      "components": [
+        "IrisContainer",
+        "IrisDashboardCard",
+        "IrisDashboardGrid",
+        "IrisGrid",
+        "IrisHeaderLayout",
+        "IrisSidebarLayout",
+        "IrisStack"
+      ]
+    },
+    {
+      "group": "other",
+      "count": 1,
+      "components": [
+        "IrisI18nProvider"
+      ]
+    },
+    {
+      "group": "primitives",
+      "count": 115,
+      "components": [
+        "IrisAccordion",
+        "IrisAccordionItem",
+        "IrisAffix",
+        "IrisAlert",
+        "IrisAnchor",
+        "IrisAspectRatio",
+        "IrisAvatar",
+        "IrisBackTop",
+        "IrisBadge",
+        "IrisBanner",
+        "IrisBreadcrumb",
+        "IrisBreadcrumbItem",
+        "IrisButton",
+        "IrisCalendar",
+        "IrisCard",
+        "IrisCarousel",
+        "IrisCascader",
+        "IrisCheckbox",
+        "IrisChip",
+        "IrisColorPicker",
+        "IrisCombobox",
+        "IrisCommandPalette",
+        "IrisCopyButton",
+        "IrisCountdown",
+        "IrisDatePicker",
+        "IrisDateRangePicker",
+        "IrisDescriptions",
+        "IrisDialog",
+        "IrisDialogClose",
+        "IrisDialogContent",
+        "IrisDialogDescription",
+        "IrisDialogTitle",
+        "IrisDialogTrigger",
+        "IrisDivider",
+        "IrisDragger",
+        "IrisDrawer",
+        "IrisDrawerClose",
+        "IrisDrawerContent",
+        "IrisDrawerTitle",
+        "IrisDrawerTrigger",
+        "IrisDropdown",
+        "IrisDropdownItem",
+        "IrisDropdownMenu",
+        "IrisDropdownSeparator",
+        "IrisDropdownTrigger",
+        "IrisEmptyState",
+        "IrisFieldset",
+        "IrisFileUpload",
+        "IrisFloatButton",
+        "IrisFormField",
+        "IrisGauge",
+        "IrisIcon",
+        "IrisImage",
+        "IrisInput",
+        "IrisKbd",
+        "IrisList",
+        "IrisMarquee",
+        "IrisMasonry",
+        "IrisMentions",
+        "IrisMenu",
+        "IrisMenuContent",
+        "IrisMenuItem",
+        "IrisMenuSeparator",
+        "IrisMenuSub",
+        "IrisMenuTrigger",
+        "IrisNumberInput",
+        "IrisOtpInput",
+        "IrisPagination",
+        "IrisPasswordInput",
+        "IrisPopover",
+        "IrisPopoverContent",
+        "IrisPopoverTrigger",
+        "IrisProgress",
+        "IrisProgressCircle",
+        "IrisRadio",
+        "IrisRadioGroup",
+        "IrisRangeSlider",
+        "IrisRating",
+        "IrisResizer",
+        "IrisResult",
+        "IrisRibbon",
+        "IrisScrollArea",
+        "IrisSegmented",
+        "IrisSelect",
+        "IrisSkeleton",
+        "IrisSlider",
+        "IrisSlot",
+        "IrisSpinner",
+        "IrisSplitButton",
+        "IrisSplitter",
+        "IrisStatistic",
+        "IrisStepper",
+        "IrisStepperStep",
+        "IrisSwitch",
+        "IrisTable",
+        "IrisTabs",
+        "IrisTabsContent",
+        "IrisTabsList",
+        "IrisTabsTrigger",
+        "IrisTagInput",
+        "IrisTextarea",
+        "IrisTimeline",
+        "IrisTimePicker",
+        "IrisToastViewport",
+        "IrisToggleGroup",
+        "IrisToggleGroupItem",
+        "IrisToolbar",
+        "IrisTooltip",
+        "IrisTour",
+        "IrisTransfer",
+        "IrisTree",
+        "IrisTreeSelect",
+        "IrisVirtualScroll",
+        "IrisVisuallyHidden",
+        "IrisWatermark"
+      ]
+    },
+    {
+      "group": "skeletons",
+      "count": 2,
+      "components": [
+        "IrisDashboardTemplate",
+        "IrisLoginTemplate"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "name": "IrisAccordion",
+      "group": "primitives",
+      "module": "accordion",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisAccordionItem",
+      "group": "primitives",
+      "module": "accordion",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisAffix",
+      "group": "primitives",
+      "module": "affix",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisAlert",
+      "group": "primitives",
+      "module": "alert",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisAnchor",
+      "group": "primitives",
+      "module": "anchor",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisAspectRatio",
+      "group": "primitives",
+      "module": "aspect-ratio",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisAvatar",
+      "group": "primitives",
+      "module": "avatar",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisBackTop",
+      "group": "primitives",
+      "module": "back-top",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisBadge",
+      "group": "primitives",
+      "module": "badge",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisBanner",
+      "group": "primitives",
+      "module": "banner",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisBreadcrumb",
+      "group": "primitives",
+      "module": "breadcrumb",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisBreadcrumbItem",
+      "group": "primitives",
+      "module": "breadcrumb",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisButton",
+      "group": "primitives",
+      "module": "button",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisCalendar",
+      "group": "primitives",
+      "module": "calendar",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisCard",
+      "group": "primitives",
+      "module": "card",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisCarousel",
+      "group": "primitives",
+      "module": "carousel",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisCascader",
+      "group": "primitives",
+      "module": "cascader",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisCheckbox",
+      "group": "primitives",
+      "module": "checkbox",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisChip",
+      "group": "primitives",
+      "module": "chip",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisClickOutside",
+      "group": "behaviors",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisColorPicker",
+      "group": "primitives",
+      "module": "color-picker",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisCombobox",
+      "group": "primitives",
+      "module": "combobox",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisCommandPalette",
+      "group": "primitives",
+      "module": "command-palette",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisContainer",
+      "group": "layouts",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisCopyButton",
+      "group": "primitives",
+      "module": "copy-button",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisCountdown",
+      "group": "primitives",
+      "module": "countdown",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDashboardCard",
+      "group": "layouts",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDashboardGrid",
+      "group": "layouts",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDashboardTemplate",
+      "group": "skeletons",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDatePicker",
+      "group": "primitives",
+      "module": "date-picker",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDateRangePicker",
+      "group": "primitives",
+      "module": "date-range-picker",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDescriptions",
+      "group": "primitives",
+      "module": "descriptions",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDialog",
+      "group": "primitives",
+      "module": "dialog",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDialogClose",
+      "group": "primitives",
+      "module": "dialog",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDialogContent",
+      "group": "primitives",
+      "module": "dialog",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDialogDescription",
+      "group": "primitives",
+      "module": "dialog",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDialogTitle",
+      "group": "primitives",
+      "module": "dialog",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDialogTrigger",
+      "group": "primitives",
+      "module": "dialog",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDivider",
+      "group": "primitives",
+      "module": "divider",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDragger",
+      "group": "primitives",
+      "module": "dragger",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDrawer",
+      "group": "primitives",
+      "module": "drawer",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDrawerClose",
+      "group": "primitives",
+      "module": "drawer",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDrawerContent",
+      "group": "primitives",
+      "module": "drawer",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDrawerTitle",
+      "group": "primitives",
+      "module": "drawer",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDrawerTrigger",
+      "group": "primitives",
+      "module": "drawer",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDropdown",
+      "group": "primitives",
+      "module": "dropdown",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDropdownItem",
+      "group": "primitives",
+      "module": "dropdown",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDropdownMenu",
+      "group": "primitives",
+      "module": "dropdown",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDropdownSeparator",
+      "group": "primitives",
+      "module": "dropdown",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisDropdownTrigger",
+      "group": "primitives",
+      "module": "dropdown",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisEmptyState",
+      "group": "primitives",
+      "module": "empty-state",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisFieldset",
+      "group": "primitives",
+      "module": "fieldset",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisFileUpload",
+      "group": "primitives",
+      "module": "file-upload",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisFloatButton",
+      "group": "primitives",
+      "module": "float-button",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisForm",
+      "group": "form",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisFormField",
+      "group": "primitives",
+      "module": "form-field",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisGauge",
+      "group": "primitives",
+      "module": "gauge",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisGrid",
+      "group": "layouts",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisHeaderLayout",
+      "group": "layouts",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisHotkey",
+      "group": "behaviors",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisI18nProvider",
+      "group": "other",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisIcon",
+      "group": "primitives",
+      "module": "icon",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisImage",
+      "group": "primitives",
+      "module": "image",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisInput",
+      "group": "primitives",
+      "module": "input",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisKbd",
+      "group": "primitives",
+      "module": "kbd",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisList",
+      "group": "primitives",
+      "module": "list",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisLoginTemplate",
+      "group": "skeletons",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisMarquee",
+      "group": "primitives",
+      "module": "marquee",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisMasonry",
+      "group": "primitives",
+      "module": "masonry",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisMentions",
+      "group": "primitives",
+      "module": "mentions",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisMenu",
+      "group": "primitives",
+      "module": "menu",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisMenuContent",
+      "group": "primitives",
+      "module": "menu",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisMenuItem",
+      "group": "primitives",
+      "module": "menu",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisMenuSeparator",
+      "group": "primitives",
+      "module": "menu",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisMenuSub",
+      "group": "primitives",
+      "module": "menu",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisMenuTrigger",
+      "group": "primitives",
+      "module": "menu",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisMovable",
+      "group": "behaviors",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisNumberInput",
+      "group": "primitives",
+      "module": "number-input",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisOtpInput",
+      "group": "primitives",
+      "module": "otp-input",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisPagination",
+      "group": "primitives",
+      "module": "pagination",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisPasswordInput",
+      "group": "primitives",
+      "module": "password-input",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisPopover",
+      "group": "primitives",
+      "module": "popover",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisPopoverContent",
+      "group": "primitives",
+      "module": "popover",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisPopoverTrigger",
+      "group": "primitives",
+      "module": "popover",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisProgress",
+      "group": "primitives",
+      "module": "progress",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisProgressCircle",
+      "group": "primitives",
+      "module": "progress-circle",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisRadio",
+      "group": "primitives",
+      "module": "radio",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisRadioGroup",
+      "group": "primitives",
+      "module": "radio",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisRangeSlider",
+      "group": "primitives",
+      "module": "range-slider",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisRating",
+      "group": "primitives",
+      "module": "rating",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisResizable",
+      "group": "behaviors",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisResizer",
+      "group": "primitives",
+      "module": "resizer",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisResult",
+      "group": "primitives",
+      "module": "result",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisRibbon",
+      "group": "primitives",
+      "module": "ribbon",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisScrollArea",
+      "group": "primitives",
+      "module": "scroll-area",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisSegmented",
+      "group": "primitives",
+      "module": "segmented",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisSelect",
+      "group": "primitives",
+      "module": "select",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisSidebarLayout",
+      "group": "layouts",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisSkeleton",
+      "group": "primitives",
+      "module": "skeleton",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisSlider",
+      "group": "primitives",
+      "module": "slider",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisSlot",
+      "group": "primitives",
+      "module": "slot",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisSpinner",
+      "group": "primitives",
+      "module": "spinner",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisSplitButton",
+      "group": "primitives",
+      "module": "split-button",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisSplitter",
+      "group": "primitives",
+      "module": "splitter",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisStack",
+      "group": "layouts",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisStatistic",
+      "group": "primitives",
+      "module": "statistic",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisStepper",
+      "group": "primitives",
+      "module": "stepper",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisStepperStep",
+      "group": "primitives",
+      "module": "stepper",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisSwitch",
+      "group": "primitives",
+      "module": "switch",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTable",
+      "group": "primitives",
+      "module": "table",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTabs",
+      "group": "primitives",
+      "module": "tabs",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTabsContent",
+      "group": "primitives",
+      "module": "tabs",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTabsList",
+      "group": "primitives",
+      "module": "tabs",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTabsTrigger",
+      "group": "primitives",
+      "module": "tabs",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTagInput",
+      "group": "primitives",
+      "module": "tag-input",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTextarea",
+      "group": "primitives",
+      "module": "textarea",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTimeline",
+      "group": "primitives",
+      "module": "timeline",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTimePicker",
+      "group": "primitives",
+      "module": "time-picker",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisToastViewport",
+      "group": "primitives",
+      "module": "toast",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisToggleGroup",
+      "group": "primitives",
+      "module": "toggle-group",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisToggleGroupItem",
+      "group": "primitives",
+      "module": "toggle-group",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisToolbar",
+      "group": "primitives",
+      "module": "toolbar",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTooltip",
+      "group": "primitives",
+      "module": "tooltip",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTour",
+      "group": "primitives",
+      "module": "tour",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTransfer",
+      "group": "primitives",
+      "module": "transfer",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTree",
+      "group": "primitives",
+      "module": "tree",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisTreeSelect",
+      "group": "primitives",
+      "module": "tree-select",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisVirtualScroll",
+      "group": "primitives",
+      "module": "virtual-scroll",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisVisuallyHidden",
+      "group": "primitives",
+      "module": "visually-hidden",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisWatermark",
+      "group": "primitives",
+      "module": "watermark",
+      "frameworks": [
+        "react",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    }
+  ],
+  "tokens": {
+    "color": [
+      "iris.background",
+      "iris.foreground",
+      "iris.surface",
+      "iris.surface.hover",
+      "iris.border",
+      "iris.muted",
+      "iris.primary",
+      "iris.primary.foreground",
+      "iris.accent",
+      "iris.danger",
+      "iris.success",
+      "iris.warning"
+    ],
+    "spacing": [
+      "iris.gap.sm",
+      "iris.gap.md",
+      "iris.gap.lg",
+      "iris.padding.sm",
+      "iris.padding.md",
+      "iris.padding.lg"
+    ],
+    "radii": [
+      "iris.radius.sm",
+      "iris.radius.md",
+      "iris.radius.lg"
+    ],
+    "all": [
+      "iris.background",
+      "iris.foreground",
+      "iris.surface",
+      "iris.surface.hover",
+      "iris.border",
+      "iris.muted",
+      "iris.primary",
+      "iris.primary.foreground",
+      "iris.accent",
+      "iris.danger",
+      "iris.success",
+      "iris.warning",
+      "iris.gap.sm",
+      "iris.gap.md",
+      "iris.gap.lg",
+      "iris.padding.sm",
+      "iris.padding.md",
+      "iris.padding.lg",
+      "iris.radius.sm",
+      "iris.radius.md",
+      "iris.radius.lg"
+    ]
+  },
+  "stats": {
+    "total": 130,
+    "both": 130,
+    "reactOnly": 0,
+    "vueOnly": 0
+  }
+}

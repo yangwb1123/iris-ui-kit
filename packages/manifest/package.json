@@ -12,10 +12,15 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./manifest.json": "./manifest.json",
+    "./llms.txt": "./llms.txt",
+    "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "manifest.json",
+    "llms.txt"
   ],
   "sideEffects": false,
   "scripts": {

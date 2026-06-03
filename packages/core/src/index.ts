@@ -62,5 +62,21 @@ export {
 } from './table-export'
 export { standardSchemaValidator, type StandardSchemaV1 } from './standard-schema'
 export { resolveDataState, type DataState, type DataStateInput } from './data-state'
+export {
+  isBranch,
+  visibleNav,
+  flattenNav,
+  findNavNode,
+  findNavPath,
+  firstLeaf,
+  type NavNode,
+} from './nav'
+export {
+  createTabsNav,
+  type TabsNav,
+  type TabsNavState,
+  type TabsNavConfig,
+  type TabItem,
+} from './tabsNav'
 export type { Side, Align, Placement, Size, Variant } from './types'
 export { composeEventHandlers, mergeProps, generateId } from './utils'

@@ -1,5 +1,12 @@
 import { computed, defineComponent, h, ref, watch, type PropType, type VNode } from 'vue'
-import { findNavPath, isBranch, visibleNav, firstLeaf, type NavNode } from '@iris-ui/core'
+import {
+  findNavNode,
+  findNavPath,
+  isBranch,
+  visibleNav,
+  firstLeaf,
+  type NavNode,
+} from '@iris-ui/core'
 import { IrisIcon } from '../primitives/icon/Icon'
 
 /**
@@ -157,11 +164,12 @@ export const IrisNavMenu = defineComponent({
             key: node.key,
             type: 'button',
             'data-iris-nav-item': '',
+            'data-key': node.key,
             'data-active': active ? 'true' : undefined,
             'data-branch': branch ? 'true' : undefined,
             disabled: node.disabled,
             title: node.title,
-            'aria-label': node.title,
+            'aria-label': branch ? `${node.title} (section)` : node.title,
             'aria-current': active && !branch ? 'page' : undefined,
             style: itemStyle({ depth: 0, active, trail: false, disabled: !!node.disabled }),
             ...hoverHandlers(node.key),
@@ -182,6 +190,7 @@ export const IrisNavMenu = defineComponent({
         {
           type: 'button',
           'data-iris-nav-item': '',
+          'data-key': node.key,
           'data-branch': branch ? 'true' : undefined,
           'data-active': active ? 'true' : undefined,
           'data-open': branch && open ? 'true' : undefined,
@@ -231,6 +240,58 @@ export const IrisNavMenu = defineComponent({
       ])
     }
 
+    // Arrow-key navigation over the visible items (Tab still works as a
+    // fallback). Up/Down/Home/End move focus; Right expands a branch then steps
+    // into it; Left collapses an open branch else moves to the parent.
+    const onKeydown = (e: KeyboardEvent): void => {
+      const root = e.currentTarget as HTMLElement
+      const buttons = Array.from(root.querySelectorAll<HTMLElement>('[data-iris-nav-item]'))
+      if (buttons.length === 0) return
+      const idx = buttons.indexOf(document.activeElement as HTMLElement)
+      const focusAt = (i: number): void => buttons[(i + buttons.length) % buttons.length]?.focus()
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault()
+          focusAt(idx < 0 ? 0 : idx + 1)
+          return
+        case 'ArrowUp':
+          e.preventDefault()
+          focusAt(idx < 0 ? buttons.length - 1 : idx - 1)
+          return
+        case 'Home':
+          e.preventDefault()
+          buttons[0]?.focus()
+          return
+        case 'End':
+          e.preventDefault()
+          buttons[buttons.length - 1]?.focus()
+          return
+      }
+
+      if (props.collapsed || idx < 0) return
+      const key = buttons[idx]?.getAttribute('data-key')
+      if (!key) return
+      const node = findNavNode(props.items, key)
+
+      if (e.key === 'ArrowRight' && node && isBranch(node)) {
+        e.preventDefault()
+        if (!expanded.value.includes(key)) toggle(key)
+        else focusAt(idx + 1)
+      } else if (e.key === 'ArrowLeft') {
+        if (node && isBranch(node) && expanded.value.includes(key)) {
+          e.preventDefault()
+          toggle(key)
+        } else {
+          const parentKey = findNavPath(props.items, key).at(-2)?.key
+          if (parentKey) {
+            e.preventDefault()
+            buttons.find((b) => b.getAttribute('data-key') === parentKey)?.focus()
+          }
+        }
+      }
+    }
+
     return () =>
       h(
         'nav',
@@ -239,6 +300,7 @@ export const IrisNavMenu = defineComponent({
           'data-iris-nav-menu': '',
           'data-collapsed': props.collapsed ? 'true' : undefined,
           'aria-label': props.ariaLabel,
+          onKeydown,
           style: {
             display: 'flex',
             flexDirection: 'column',

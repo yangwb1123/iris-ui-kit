@@ -73,6 +73,7 @@ export {
 } from './nav'
 export {
   createTabsNav,
+  isClosable,
   type TabsNav,
   type TabsNavState,
   type TabsNavConfig,

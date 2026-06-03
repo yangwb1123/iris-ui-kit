@@ -1,5 +1,5 @@
-import { defineComponent, h, type PropType, type VNode } from 'vue'
-import type { TabsNav, TabItem } from '@iris-ui/core'
+import { defineComponent, h, nextTick, type PropType, type VNode } from 'vue'
+import { isClosable, type TabsNav, type TabItem } from '@iris-ui/core'
 import { useTabsNav } from './useTabsNav'
 import { IrisIcon } from '../primitives/icon/Icon'
 import { IrisDropdown } from '../primitives/dropdown/Dropdown'
@@ -13,6 +13,10 @@ import { IrisDropdownItem, IrisDropdownSeparator } from '../primitives/dropdown/
  * trailing actions dropdown runs Refresh / Close / Close-others / Close-all on
  * the active tab. The store owns the tab list + active key; the host watches it
  * to sync routing + keep-alive.
+ *
+ * Keyboard (WAI-ARIA tablist, automatic activation): ←/→ move + activate the
+ * adjacent tab, Home/End jump to the first/last, Delete/Backspace closes the
+ * focused tab. Roving tabindex keeps a single tab stop.
  */
 export const IrisAdminTabs = defineComponent({
   name: 'IrisAdminTabs',
@@ -42,21 +46,61 @@ export const IrisAdminTabs = defineComponent({
       emit('refresh', key)
     }
 
-    const isClosable = (tab: TabItem): boolean => !tab.pinned && tab.closable !== false
+    const focusTab = (root: HTMLElement | null, key: string | undefined): void => {
+      if (!root || !key) return
+      const labels = root.querySelectorAll<HTMLElement>('[data-iris-tab-label]')
+      labels.forEach((el) => {
+        if (el.getAttribute('data-key') === key) el.focus()
+      })
+    }
+
+    const onTablistKeydown = (e: KeyboardEvent): void => {
+      const root = e.currentTarget as HTMLElement
+      const tabs = t.tabs.value
+      const idx = tabs.findIndex((x) => x.key === t.activeKey.value)
+      if (idx < 0 || tabs.length === 0) return
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const cur = tabs[idx]
+        if (cur && isClosable(cur)) {
+          e.preventDefault()
+          close(cur.key)
+          void nextTick(() => focusTab(root, props.nav.getState().activeKey))
+        }
+        return
+      }
+
+      let target = -1
+      if (e.key === 'ArrowRight') target = (idx + 1) % tabs.length
+      else if (e.key === 'ArrowLeft') target = (idx - 1 + tabs.length) % tabs.length
+      else if (e.key === 'Home') target = 0
+      else if (e.key === 'End') target = tabs.length - 1
+      else return
+
+      e.preventDefault()
+      const key = tabs[target]?.key
+      if (!key) return
+      activate(key)
+      void nextTick(() => focusTab(root, key))
+    }
 
     const chip = (tab: TabItem): VNode => {
       const active = tab.key === t.activeKey.value
       const closable = isClosable(tab)
-      const children: VNode[] = []
-      if (tab.icon) children.push(h(IrisIcon, { name: tab.icon, size: 14 }))
-      children.push(h('span', { style: { whiteSpace: 'nowrap' } }, tab.title))
+      const labelChildren: VNode[] = []
+      if (tab.icon) labelChildren.push(h(IrisIcon, { name: tab.icon, size: 14 }))
+      labelChildren.push(h('span', { style: { whiteSpace: 'nowrap' } }, tab.title))
 
       const label = h(
         'button',
         {
           type: 'button',
+          role: 'tab',
           'data-iris-tab-label': '',
+          'data-key': tab.key,
+          'aria-selected': active ? 'true' : 'false',
           'aria-current': active ? 'page' : undefined,
+          tabindex: active ? 0 : -1,
           style: {
             display: 'inline-flex',
             alignItems: 'center',
@@ -71,7 +115,7 @@ export const IrisAdminTabs = defineComponent({
           },
           onClick: () => activate(tab.key),
         },
-        children,
+        labelChildren,
       )
 
       const closeBtn = closable
@@ -79,6 +123,7 @@ export const IrisAdminTabs = defineComponent({
             'button',
             {
               type: 'button',
+              tabindex: -1,
               'data-iris-tab-close': '',
               'aria-label': `Close ${tab.title}`,
               style: {
@@ -112,8 +157,6 @@ export const IrisAdminTabs = defineComponent({
           key: tab.key,
           'data-iris-tab': '',
           'data-active': active ? 'true' : undefined,
-          role: 'tab',
-          'aria-selected': active ? 'true' : 'false',
           style: {
             display: 'inline-flex',
             alignItems: 'center',
@@ -184,7 +227,6 @@ export const IrisAdminTabs = defineComponent({
         {
           ...attrs,
           'data-iris-admin-tabs': '',
-          role: 'tablist',
           style: {
             display: 'flex',
             alignItems: 'center',
@@ -200,6 +242,9 @@ export const IrisAdminTabs = defineComponent({
             'div',
             {
               'data-iris-tabs-scroll': '',
+              role: 'tablist',
+              'aria-label': 'Open pages',
+              onKeydown: onTablistKeydown,
               style: {
                 display: 'flex',
                 alignItems: 'center',

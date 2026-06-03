@@ -88,4 +88,43 @@ describe('IrisNavMenu', () => {
     await w.find('[data-iris-nav-item]').trigger('click')
     expect(w.emitted('select')).toBeUndefined()
   })
+
+  it('Arrow Down / Up move focus between visible items', async () => {
+    const w = mount(IrisNavMenu, { props: { items }, attachTo: document.body })
+    const buttons = w.findAll('[data-iris-nav-item]')
+    ;(buttons[0]!.element as HTMLElement).focus()
+    await w.find('[data-iris-nav-menu]').trigger('keydown', { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(buttons[1]!.element)
+    await w.find('[data-iris-nav-menu]').trigger('keydown', { key: 'ArrowUp' })
+    expect(document.activeElement).toBe(buttons[0]!.element)
+    w.unmount()
+  })
+
+  it('Arrow Right expands a collapsed branch, Arrow Left collapses it', async () => {
+    const w = mount(IrisNavMenu, { props: { items }, attachTo: document.body })
+    const sys = w.findAll('[data-iris-nav-item]').find((b) => b.text().includes('System'))!
+    ;(sys.element as HTMLElement).focus()
+    await w.find('[data-iris-nav-menu]').trigger('keydown', { key: 'ArrowRight' })
+    expect(w.find('[data-iris-nav-children]').exists()).toBe(true)
+    await w.find('[data-iris-nav-menu]').trigger('keydown', { key: 'ArrowLeft' })
+    expect(w.find('[data-iris-nav-children]').exists()).toBe(false)
+    w.unmount()
+  })
+
+  it('Home / End jump to the first / last visible item', async () => {
+    const w = mount(IrisNavMenu, { props: { items }, attachTo: document.body })
+    const buttons = w.findAll('[data-iris-nav-item]')
+    ;(buttons[0]!.element as HTMLElement).focus()
+    await w.find('[data-iris-nav-menu]').trigger('keydown', { key: 'End' })
+    expect(document.activeElement).toBe(buttons[buttons.length - 1]!.element)
+    await w.find('[data-iris-nav-menu]').trigger('keydown', { key: 'Home' })
+    expect(document.activeElement).toBe(buttons[0]!.element)
+    w.unmount()
+  })
+
+  it('collapsed branches announce themselves as sections', () => {
+    const w = mount(IrisNavMenu, { props: { items, collapsed: true } })
+    const sys = w.findAll('[data-iris-nav-item]')[1]!
+    expect(sys.attributes('aria-label')).toBe('System (section)')
+  })
 })

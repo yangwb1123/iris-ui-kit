@@ -52,4 +52,43 @@ describe('IrisAdminTabs', () => {
     await w.vm.$nextTick()
     expect(w.findAll('[data-iris-tab]')).toHaveLength(2)
   })
+
+  it('only the active tab is in the tab order (roving tabindex)', () => {
+    const nav = createTabsNav()
+    nav.open({ key: 'a', title: 'A' })
+    nav.open({ key: 'b', title: 'B' }) // active
+    const w = mount(IrisAdminTabs, { props: { nav } })
+    const labels = w.findAll('[data-iris-tab-label]')
+    expect(labels[0]!.attributes('tabindex')).toBe('-1')
+    expect(labels[1]!.attributes('tabindex')).toBe('0')
+    expect(labels[1]!.attributes('aria-selected')).toBe('true')
+  })
+
+  it('Arrow Right / Left + Home / End move + activate tabs', async () => {
+    const nav = createTabsNav()
+    nav.open({ key: 'a', title: 'A' })
+    nav.open({ key: 'b', title: 'B' })
+    nav.open({ key: 'c', title: 'C' }) // active = c
+    const w = mount(IrisAdminTabs, { props: { nav } })
+    const tablist = w.find('[role="tablist"]')
+    await tablist.trigger('keydown', { key: 'ArrowRight' }) // wraps c → a
+    expect(nav.getState().activeKey).toBe('a')
+    await tablist.trigger('keydown', { key: 'ArrowLeft' }) // a → c
+    expect(nav.getState().activeKey).toBe('c')
+    await tablist.trigger('keydown', { key: 'Home' })
+    expect(nav.getState().activeKey).toBe('a')
+    await tablist.trigger('keydown', { key: 'End' })
+    expect(nav.getState().activeKey).toBe('c')
+    expect(w.emitted('change')).toBeTruthy()
+  })
+
+  it('Delete closes the focused tab', async () => {
+    const nav = createTabsNav()
+    nav.open({ key: 'a', title: 'A' })
+    nav.open({ key: 'b', title: 'B' }) // active
+    const w = mount(IrisAdminTabs, { props: { nav } })
+    await w.find('[role="tablist"]').trigger('keydown', { key: 'Delete' })
+    expect(nav.getState().tabs.map((x) => x.key)).toEqual(['a'])
+    expect(w.emitted('close')!.at(-1)).toEqual(['b'])
+  })
 })

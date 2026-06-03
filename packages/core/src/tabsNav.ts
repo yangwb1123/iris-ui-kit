@@ -66,7 +66,7 @@ export interface TabsNav {
 }
 
 /** A tab can be closed only when it is neither pinned nor explicitly `closable: false`. */
-function isClosable(tab: TabItem): boolean {
+export function isClosable(tab: TabItem): boolean {
   return !tab.pinned && tab.closable !== false
 }
 

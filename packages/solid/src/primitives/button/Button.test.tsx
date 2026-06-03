@@ -1,0 +1,76 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { render, fireEvent, cleanup } from '@solidjs/testing-library'
+import { IrisButton } from './Button'
+import { __resetButtonStyles, __BUTTON_STYLE_ID } from './styles'
+
+afterEach(() => {
+  cleanup()
+  __resetButtonStyles()
+})
+
+describe('@iris-ui/solid IrisButton', () => {
+  it('renders a native button (render takes a FUNCTION in Solid)', () => {
+    const { getByRole } = render(() => <IrisButton>Save</IrisButton>)
+    const btn = getByRole('button')
+    expect(btn.tagName).toBe('BUTTON')
+    expect(btn.getAttribute('type')).toBe('button')
+    expect(btn.textContent).toContain('Save')
+  })
+
+  it('reflects variant + size via data attributes', () => {
+    const { getByRole } = render(() => (
+      <IrisButton variant="outline" size="lg">
+        X
+      </IrisButton>
+    ))
+    const btn = getByRole('button')
+    expect(btn.getAttribute('data-iris-button-variant')).toBe('outline')
+    expect(btn.getAttribute('data-iris-button-size')).toBe('lg')
+  })
+
+  it('fires onClick when interactive', () => {
+    const onClick = vi.fn()
+    const { getByRole } = render(() => <IrisButton onClick={onClick}>Go</IrisButton>)
+    fireEvent.click(getByRole('button'))
+    expect(onClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('swallows clicks when disabled or loading', () => {
+    const onClick = vi.fn()
+    const { getByRole, unmount } = render(() => (
+      <IrisButton disabled onClick={onClick}>
+        D
+      </IrisButton>
+    ))
+    fireEvent.click(getByRole('button'))
+    expect(onClick).not.toHaveBeenCalled()
+    unmount()
+
+    const { getByRole: getByRole2 } = render(() => (
+      <IrisButton loading onClick={onClick}>
+        L
+      </IrisButton>
+    ))
+    fireEvent.click(getByRole2('button'))
+    expect(onClick).not.toHaveBeenCalled()
+  })
+
+  it('sets aria-busy + disabled and shows a spinner when loading', () => {
+    const { getByRole, container } = render(() => <IrisButton loading>L</IrisButton>)
+    const btn = getByRole('button')
+    expect(btn.getAttribute('aria-busy')).toBe('true')
+    expect(btn.hasAttribute('disabled')).toBe(true)
+    expect(container.querySelector('.iris-button-spinner')).not.toBeNull()
+  })
+
+  it('inline style references CSS variables', () => {
+    const { getByRole } = render(() => <IrisButton variant="solid">X</IrisButton>)
+    expect(getByRole('button').getAttribute('style') ?? '').toContain('var(--iris-primary)')
+  })
+
+  it('installs the singleton stylesheet once', () => {
+    render(() => <IrisButton>A</IrisButton>)
+    render(() => <IrisButton>B</IrisButton>)
+    expect(document.querySelectorAll(`#${__BUTTON_STYLE_ID}`)).toHaveLength(1)
+  })
+})

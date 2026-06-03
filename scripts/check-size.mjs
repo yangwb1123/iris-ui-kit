@@ -24,6 +24,7 @@ const BUDGETS = {
   icons: 4,
   react: 80,
   vue: 88,
+  solid: 40,
   manifest: 2,
 }
 

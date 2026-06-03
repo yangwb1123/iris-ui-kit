@@ -18,6 +18,11 @@ export * from './primitives/button'
 export * from './primitives/icon'
 export * from './primitives/breadcrumb'
 export * from './primitives/dropdown'
+export * from './primitives/badge'
+export * from './primitives/avatar'
+export * from './primitives/form-field'
+export * from './primitives/input'
+export * from './primitives/switch'
 
 // ── Framework-agnostic re-exports (mirror @iris-ui/react / @iris-ui/vue) ───────
 export {

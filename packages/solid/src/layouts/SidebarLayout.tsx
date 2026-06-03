@@ -1,11 +1,11 @@
-import { createSignal, mergeProps, type JSX } from 'solid-js'
+import { createSignal, mergeProps, splitProps, type JSX } from 'solid-js'
 
 export interface IrisSidebarLayoutSidebarState {
   collapsed: boolean
   setCollapsed: (next: boolean) => void
 }
 
-export interface IrisSidebarLayoutProps {
+export interface IrisSidebarLayoutProps extends JSX.HTMLAttributes<HTMLDivElement> {
   collapsed?: boolean
   defaultCollapsed?: boolean
   onCollapsedChange?: (next: boolean) => void
@@ -31,9 +31,26 @@ const asLen = (v: number | string): string => (typeof v === 'number' ? `${v}px` 
  */
 export function IrisSidebarLayout(props: IrisSidebarLayoutProps): JSX.Element {
   const merged = mergeProps(
-    { defaultCollapsed: false, width: 240, collapsedWidth: 60, side: 'left' as const },
+    {
+      defaultCollapsed: false,
+      width: 240 as number | string,
+      collapsedWidth: 60 as number | string,
+      side: 'left' as const,
+    },
     props,
   )
+  const [, others] = splitProps(merged, [
+    'collapsed',
+    'defaultCollapsed',
+    'onCollapsedChange',
+    'width',
+    'collapsedWidth',
+    'side',
+    'sidebar',
+    'class',
+    'style',
+    'children',
+  ])
 
   const isControlled = (): boolean => props.collapsed !== undefined
   const [internal, setInternal] = createSignal(merged.defaultCollapsed)
@@ -57,6 +74,7 @@ export function IrisSidebarLayout(props: IrisSidebarLayoutProps): JSX.Element {
 
   return (
     <div
+      {...(others as JSX.HTMLAttributes<HTMLDivElement>)}
       data-iris-sidebar-layout=""
       data-collapsed={collapsed() ? '' : undefined}
       data-side={merged.side}

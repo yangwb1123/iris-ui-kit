@@ -1,3 +1,4 @@
+export { IrisAdminLayout, type IrisAdminLayoutMode } from './AdminLayout'
 export { IrisNavMenu } from './NavMenu'
 export { IrisAdminBreadcrumb } from './AdminBreadcrumb'
 export { IrisAdminTabs } from './AdminTabs'

@@ -2,6 +2,8 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import vuePlugin from 'eslint-plugin-vue'
 import vueParser from 'vue-eslint-parser'
+import sveltePlugin from 'eslint-plugin-svelte'
+import svelteParser from 'svelte-eslint-parser'
 import globals from 'globals'
 
 export default tseslint.config(
@@ -48,6 +50,30 @@ export default tseslint.config(
     },
     rules: {
       ...vuePlugin.configs['flat/essential']?.[0]?.rules,
+    },
+  },
+  {
+    files: ['**/*.svelte', '**/*.svelte.ts'],
+    plugins: {
+      svelte: sveltePlugin,
+    },
+    languageOptions: {
+      parser: svelteParser,
+      parserOptions: {
+        parser: tseslint.parser,
+        ecmaVersion: 2022,
+        sourceType: 'module',
+        extraFileExtensions: ['.svelte'],
+      },
+      globals: {
+        ...globals.browser,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_|^\\$\\$' },
+      ],
     },
   },
   {

@@ -25,6 +25,7 @@ const BUDGETS = {
   react: 80,
   vue: 88,
   solid: 40,
+  svelte: 6,
   manifest: 2,
 }
 

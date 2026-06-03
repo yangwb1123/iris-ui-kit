@@ -27,7 +27,7 @@ export function IrisBreadcrumbItem(props: IrisBreadcrumbItemProps): JSX.Element 
       when={local.href && !local.current}
       fallback={
         <span
-          {...others}
+          {...(others as JSX.HTMLAttributes<HTMLSpanElement>)}
           data-iris-breadcrumb-crumb=""
           aria-current={local.current ? 'page' : undefined}
           style={style()}
@@ -36,7 +36,12 @@ export function IrisBreadcrumbItem(props: IrisBreadcrumbItemProps): JSX.Element 
         </span>
       }
     >
-      <a {...others} data-iris-breadcrumb-crumb="" href={local.href} style={style()}>
+      <a
+        {...(others as JSX.AnchorHTMLAttributes<HTMLAnchorElement>)}
+        data-iris-breadcrumb-crumb=""
+        href={local.href}
+        style={style()}
+      >
         {local.children}
       </a>
     </Show>

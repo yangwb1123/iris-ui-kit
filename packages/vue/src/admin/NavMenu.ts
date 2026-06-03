@@ -1,0 +1,252 @@
+import { computed, defineComponent, h, ref, watch, type PropType, type VNode } from 'vue'
+import { findNavPath, isBranch, visibleNav, firstLeaf, type NavNode } from '@iris-ui/core'
+import { IrisIcon } from '../primitives/icon/Icon'
+
+/**
+ * Data-driven nested navigation menu — the sidebar nav of the admin shell.
+ * Renders a normalized `NavNode[]` tree as an accordion of expandable branches
+ * and selectable leaves; the active leaf and its ancestor branches are
+ * highlighted, and the active branch trail auto-expands. Router-agnostic: it
+ * takes `activeKey` + emits `select(key, node)`; the host owns navigation.
+ *
+ * `collapsed` switches to an icon-only rail (top-level items only); a branch
+ * click then jumps to its first leaf.
+ */
+export const IrisNavMenu = defineComponent({
+  name: 'IrisNavMenu',
+  inheritAttrs: false,
+  props: {
+    /** Normalized nav tree. */
+    items: { type: Array as PropType<NavNode[]>, required: true },
+    /** Key of the active leaf. */
+    activeKey: { type: String, default: undefined },
+    /** Controlled expanded branch keys (v-model:expandedKeys). */
+    expandedKeys: { type: Array as PropType<string[]>, default: undefined },
+    /** Initial expanded keys when uncontrolled (else the active trail expands). */
+    defaultExpandedKeys: { type: Array as PropType<string[]>, default: undefined },
+    /** Icon-only rail (top-level items only). */
+    collapsed: { type: Boolean, default: false },
+    ariaLabel: { type: String, default: 'Main navigation' },
+  },
+  emits: {
+    select: (_key: string, _node: NavNode) => true,
+    'update:expandedKeys': (_keys: string[]) => true,
+  },
+  setup(props, { emit, attrs }) {
+    const tree = computed(() => visibleNav(props.items))
+    const branchTrail = (key: string | undefined): string[] =>
+      key
+        ? findNavPath(props.items, key)
+            .filter(isBranch)
+            .map((n) => n.key)
+        : []
+
+    const activePath = computed(() =>
+      props.activeKey ? findNavPath(props.items, props.activeKey).map((n) => n.key) : [],
+    )
+
+    const isControlled = computed(() => props.expandedKeys !== undefined)
+    const internalExpanded = ref<string[]>(
+      props.defaultExpandedKeys ?? branchTrail(props.activeKey),
+    )
+    const expanded = computed(() =>
+      isControlled.value ? (props.expandedKeys as string[]) : internalExpanded.value,
+    )
+
+    // Auto-open the active branch trail as the active leaf changes (uncontrolled).
+    watch(
+      () => props.activeKey,
+      (key) => {
+        if (isControlled.value) return
+        internalExpanded.value = Array.from(
+          new Set([...internalExpanded.value, ...branchTrail(key)]),
+        )
+      },
+    )
+
+    const setExpanded = (keys: string[]): void => {
+      if (!isControlled.value) internalExpanded.value = keys
+      emit('update:expandedKeys', keys)
+    }
+    const toggle = (key: string): void => {
+      const cur = expanded.value
+      setExpanded(cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key])
+    }
+
+    const select = (node: NavNode): void => {
+      if (node.disabled) return
+      emit('select', node.key, node)
+    }
+
+    const hovered = ref<string | null>(null)
+
+    const itemStyle = (opts: {
+      depth: number
+      active: boolean
+      trail: boolean
+      disabled: boolean
+    }): Record<string, string> => {
+      const bg = opts.active
+        ? 'var(--iris-primary)'
+        : hovered.value && !opts.disabled
+          ? 'var(--iris-surface)'
+          : 'transparent'
+      return {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        width: '100%',
+        boxSizing: 'border-box',
+        border: 'none',
+        borderRadius: 'var(--iris-radius-md, 6px)',
+        background: bg,
+        color: opts.active
+          ? 'var(--iris-primary-foreground, #fff)'
+          : opts.trail
+            ? 'var(--iris-primary)'
+            : 'var(--iris-foreground)',
+        font: 'inherit',
+        fontSize: '14px',
+        fontWeight: opts.active || opts.trail ? '600' : '400',
+        textAlign: 'start',
+        cursor: opts.disabled ? 'not-allowed' : 'pointer',
+        opacity: opts.disabled ? '0.5' : '1',
+        padding: props.collapsed ? '10px' : `8px 10px 8px ${12 + opts.depth * 16}px`,
+        justifyContent: props.collapsed ? 'center' : 'flex-start',
+      }
+    }
+
+    const hoverHandlers = (key: string): Record<string, (e: Event) => void> => ({
+      onMouseenter: () => (hovered.value = key),
+      onMouseleave: () => {
+        if (hovered.value === key) hovered.value = null
+      },
+    })
+
+    const iconNode = (node: NavNode, size = 18): VNode | null =>
+      node.icon ? h(IrisIcon, { name: node.icon, size }) : null
+
+    const badgeNode = (node: NavNode): VNode | null =>
+      node.badge !== undefined && node.badge !== '' && !props.collapsed
+        ? h(
+            'span',
+            {
+              'data-iris-nav-badge': '',
+              style: {
+                marginInlineStart: 'auto',
+                fontSize: '11px',
+                lineHeight: '1',
+                padding: '2px 6px',
+                borderRadius: '999px',
+                background: 'var(--iris-danger, #e5484d)',
+                color: '#fff',
+              },
+            },
+            String(node.badge),
+          )
+        : null
+
+    // Collapsed rail: top-level items only, icon + native tooltip; branch → first leaf.
+    const renderCollapsed = (): VNode[] =>
+      tree.value.map((node) => {
+        const branch = isBranch(node)
+        const active = branch ? activePath.value.includes(node.key) : node.key === props.activeKey
+        return h(
+          'button',
+          {
+            key: node.key,
+            type: 'button',
+            'data-iris-nav-item': '',
+            'data-active': active ? 'true' : undefined,
+            'data-branch': branch ? 'true' : undefined,
+            disabled: node.disabled,
+            title: node.title,
+            'aria-label': node.title,
+            'aria-current': active && !branch ? 'page' : undefined,
+            style: itemStyle({ depth: 0, active, trail: false, disabled: !!node.disabled }),
+            ...hoverHandlers(node.key),
+            onClick: () => select(branch ? firstLeaf(node) : node),
+          },
+          [iconNode(node, 20) ?? h('span', { style: { fontWeight: '700' } }, node.title.charAt(0))],
+        )
+      })
+
+    const renderItem = (node: NavNode, depth: number): VNode => {
+      const branch = isBranch(node)
+      const open = expanded.value.includes(node.key)
+      const active = node.key === props.activeKey
+      const trail = branch && activePath.value.includes(node.key)
+
+      const row = h(
+        'button',
+        {
+          type: 'button',
+          'data-iris-nav-item': '',
+          'data-branch': branch ? 'true' : undefined,
+          'data-active': active ? 'true' : undefined,
+          'data-open': branch && open ? 'true' : undefined,
+          'data-depth': String(depth),
+          disabled: node.disabled,
+          'aria-expanded': branch ? (open ? 'true' : 'false') : undefined,
+          'aria-current': active ? 'page' : undefined,
+          style: itemStyle({ depth, active, trail, disabled: !!node.disabled }),
+          ...hoverHandlers(node.key),
+          onClick: () => (branch ? toggle(node.key) : select(node)),
+        },
+        [
+          iconNode(node),
+          h(
+            'span',
+            {
+              style: {
+                flex: branch ? '1' : '0 1 auto',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              },
+            },
+            node.title,
+          ),
+          badgeNode(node),
+          branch
+            ? h(IrisIcon, {
+                name: open ? 'chevron-down' : 'chevron-right',
+                size: 16,
+                style: { marginInlineStart: badgeNode(node) ? '6px' : 'auto', opacity: '0.6' },
+              })
+            : null,
+        ],
+      )
+
+      if (!branch || !open)
+        return h('div', { key: node.key, 'data-iris-nav-group': branch ? '' : undefined }, [row])
+
+      return h('div', { key: node.key, 'data-iris-nav-group': '', 'data-open': 'true' }, [
+        row,
+        h(
+          'div',
+          { 'data-iris-nav-children': '', role: 'group' },
+          (node.children ?? []).map((child) => renderItem(child, depth + 1)),
+        ),
+      ])
+    }
+
+    return () =>
+      h(
+        'nav',
+        {
+          ...attrs,
+          'data-iris-nav-menu': '',
+          'data-collapsed': props.collapsed ? 'true' : undefined,
+          'aria-label': props.ariaLabel,
+          style: {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2px',
+            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+          },
+        },
+        props.collapsed ? renderCollapsed() : tree.value.map((node) => renderItem(node, 0)),
+      )
+  },
+})

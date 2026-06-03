@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 import { useFloating } from '../../floating/useFloating'
+import { useDismiss } from '../../floating/useDismiss'
 import { usePopoverContext } from './context'
 
 export interface IrisPopoverContentProps extends Omit<
@@ -53,31 +54,12 @@ export const IrisPopoverContent = React.forwardRef<HTMLDivElement, IrisPopoverCo
       offset: ctx.offset,
     })
 
-    // Outside-click + Escape dismiss.
-    React.useEffect(() => {
-      if (!ctx.open) return
-      const onPointerDown = (e: PointerEvent) => {
-        const target = e.target as Node | null
-        if (!target) return
-        const t = ctx.triggerRef.current
-        const c = ctx.contentRef.current
-        if (t && t.contains(target)) return
-        if (c && c.contains(target)) return
-        ctx.setOpen(false)
-      }
-      const onKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          e.stopPropagation()
-          ctx.setOpen(false)
-        }
-      }
-      document.addEventListener('pointerdown', onPointerDown)
-      document.addEventListener('keydown', onKeyDown)
-      return () => {
-        document.removeEventListener('pointerdown', onPointerDown)
-        document.removeEventListener('keydown', onKeyDown)
-      }
-    }, [ctx])
+    // Outside-pointerdown + Escape dismiss (shared floating hook).
+    useDismiss({
+      enabled: ctx.open,
+      exclude: [ctx.triggerRef, ctx.contentRef],
+      onDismiss: () => ctx.setOpen(false),
+    })
 
     // Focus management.
     const lastFocusedRef = React.useRef<HTMLElement | null>(null)

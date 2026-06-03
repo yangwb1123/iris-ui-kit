@@ -13,9 +13,11 @@ export * from './layouts'
 export * from './admin'
 
 // ── Primitives ───────────────────────────────────────────────────────────────
+export * from './floating'
 export * from './primitives/button'
 export * from './primitives/icon'
 export * from './primitives/breadcrumb'
+export * from './primitives/dropdown'
 
 // ── Framework-agnostic re-exports (mirror @iris-ui/react / @iris-ui/vue) ───────
 export {

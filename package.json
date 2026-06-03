@@ -16,6 +16,7 @@
     "dev:react": "pnpm --filter playground-react dev",
     "dev:cms": "pnpm --filter cms dev",
     "dev:cms-react": "pnpm --filter cms-react dev",
+    "dev:cms-solid": "pnpm --filter cms-solid dev",
     "dev:docs": "pnpm --filter docs dev",
     "dev:watch": "turbo run dev --concurrency=15",
     "preview": "turbo run preview --concurrency=15",

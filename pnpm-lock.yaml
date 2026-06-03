@@ -122,6 +122,25 @@ importers:
         specifier: ^5.4.11
         version: 5.4.21(@types/node@20.19.41)
 
+  apps/cms-solid:
+    dependencies:
+      '@iris-ui/solid':
+        specifier: workspace:*
+        version: link:../../packages/solid
+      '@iris-ui/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
+      solid-js:
+        specifier: ^1.9.3
+        version: 1.9.13
+    devDependencies:
+      vite:
+        specifier: ^5.4.11
+        version: 5.4.21(@types/node@20.19.41)
+      vite-plugin-solid:
+        specifier: ^2.11.0
+        version: 2.11.12(solid-js@1.9.13)(vite@5.4.21(@types/node@20.19.41))
+
   apps/docs:
     devDependencies:
       vitepress:

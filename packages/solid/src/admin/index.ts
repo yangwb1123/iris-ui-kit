@@ -1,3 +1,4 @@
+export { IrisNavMenu, type IrisNavMenuProps } from './NavMenu'
 export { useTabsNav, type UseTabsNavReturn } from './useTabsNav'
 
 // Re-export the framework-agnostic nav model so consumers get the admin surface

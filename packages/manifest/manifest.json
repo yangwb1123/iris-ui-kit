@@ -65,9 +65,13 @@
     },
     {
       "group": "other",
-      "count": 1,
+      "count": 5,
       "components": [
-        "IrisI18nProvider"
+        "IrisAdminBreadcrumb",
+        "IrisAdminLayout",
+        "IrisAdminTabs",
+        "IrisI18nProvider",
+        "IrisNavMenu"
       ]
     },
     {
@@ -224,6 +228,36 @@
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisAdminBreadcrumb",
+      "group": "other",
+      "frameworks": [
+        "vue"
+      ],
+      "importFrom": {
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisAdminLayout",
+      "group": "other",
+      "frameworks": [
+        "vue"
+      ],
+      "importFrom": {
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
+      "name": "IrisAdminTabs",
+      "group": "other",
+      "frameworks": [
+        "vue"
+      ],
+      "importFrom": {
         "vue": "@iris-ui/vue"
       }
     },
@@ -1191,6 +1225,16 @@
       }
     },
     {
+      "name": "IrisNavMenu",
+      "group": "other",
+      "frameworks": [
+        "vue"
+      ],
+      "importFrom": {
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
       "name": "IrisNumberInput",
       "group": "primitives",
       "module": "number-input",
@@ -1930,9 +1974,9 @@
     ]
   },
   "stats": {
-    "total": 130,
+    "total": 134,
     "both": 130,
     "reactOnly": 0,
-    "vueOnly": 0
+    "vueOnly": 4
   }
 }

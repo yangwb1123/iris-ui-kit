@@ -1,4 +1,5 @@
 export { IrisNavMenu, type IrisNavMenuProps } from './NavMenu'
+export { IrisAdminBreadcrumb, type IrisAdminBreadcrumbProps } from './AdminBreadcrumb'
 export { useTabsNav, type UseTabsNavReturn } from './useTabsNav'
 
 // Re-export the framework-agnostic nav model so consumers get the admin surface

@@ -15,6 +15,7 @@ export * from './admin'
 // ── Primitives ───────────────────────────────────────────────────────────────
 export * from './primitives/button'
 export * from './primitives/icon'
+export * from './primitives/breadcrumb'
 
 // ── Framework-agnostic re-exports (mirror @iris-ui/react / @iris-ui/vue) ───────
 export {

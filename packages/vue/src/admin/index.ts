@@ -8,6 +8,7 @@ export { useTabsNav, type UseTabsNavReturn } from './useTabsNav'
 // surface from one import. Explicit names (not `export *`) so tsup keeps them.
 export {
   createTabsNav,
+  isClosable,
   isBranch,
   visibleNav,
   flattenNav,

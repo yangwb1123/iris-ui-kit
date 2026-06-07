@@ -7,8 +7,12 @@ export { toStore } from './useStore'
 export * from './theme'
 export * from './skins'
 
+// ── Layouts ───────────────────────────────────────────────────────────────────
+export * from './layouts'
+
 // ── Primitives ────────────────────────────────────────────────────────────────
 export * from './primitives/button'
+export * from './primitives/icon'
 
 // ── Framework-agnostic theme + token re-exports (mirror the sibling adapters) ──
 export {

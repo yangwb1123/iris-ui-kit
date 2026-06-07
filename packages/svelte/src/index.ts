@@ -2,6 +2,7 @@
 // component names + semantics as @iris-ui/react, @iris-ui/vue, @iris-ui/solid.
 
 export { toStore } from './useStore'
+export { toMachine } from './useMachine'
 
 // ── Layer 0: theme + skins ────────────────────────────────────────────────────
 export * from './theme'
@@ -11,8 +12,10 @@ export * from './skins'
 export * from './layouts'
 
 // ── Primitives ────────────────────────────────────────────────────────────────
+export * from './floating'
 export * from './primitives/button'
 export * from './primitives/icon'
+export * from './primitives/dropdown'
 
 // ── Framework-agnostic theme + token re-exports (mirror the sibling adapters) ──
 export {

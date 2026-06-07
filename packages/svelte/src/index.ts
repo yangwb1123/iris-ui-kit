@@ -3,6 +3,28 @@
 
 export { toStore } from './useStore'
 
-// ── Primitives ───────────────────────────────────────────────────────────────
-export { IrisButton } from './primitives/button'
-export type { IrisButtonVariant, IrisButtonSize, IrisButtonType } from './primitives/button'
+// ── Layer 0: theme + skins ────────────────────────────────────────────────────
+export * from './theme'
+export * from './skins'
+
+// ── Primitives ────────────────────────────────────────────────────────────────
+export * from './primitives/button'
+
+// ── Framework-agnostic theme + token re-exports (mirror the sibling adapters) ──
+export {
+  applyTheme,
+  toCssVarName,
+  getCssVar,
+  createThemeStore,
+  type ApplyThemeResult,
+  type ThemeStore,
+  type ThemeStoreConfig,
+} from '@iris-ui/theme'
+
+export {
+  lightTheme,
+  darkTheme,
+  type IrisTheme,
+  type IrisThemeType,
+  type IrisThemeColors,
+} from '@iris-ui/tokens'

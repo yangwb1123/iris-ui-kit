@@ -26,13 +26,17 @@ lines.push('---')
 lines.push('')
 lines.push('# Components')
 lines.push('')
+const byFw = manifest.frameworks.map((f) => `${manifest.stats.byFramework[f]} ${f}`).join(', ')
 lines.push(
   `> Generated from \`manifest.json\` (schema \`${manifest.schema}\`). ` +
-    `${manifest.stats.total} components — ${manifest.stats.both} available in both frameworks, ` +
-    `${manifest.stats.reactOnly} React-only, ${manifest.stats.vueOnly} Vue-only.`,
+    `${manifest.stats.total} components — ${manifest.stats.full} available in all ` +
+    `${manifest.frameworks.length} frameworks (${byFw}).`,
 )
 lines.push('')
-lines.push('Import from `@iris-ui/react` or `@iris-ui/vue` (same names, same semantics).')
+lines.push(
+  `Import from ${manifest.frameworks.map((f) => `\`@iris-ui/${f}\``).join(', ')} ` +
+    `(same names, same semantics).`,
+)
 lines.push('')
 
 for (const group of manifest.groups) {

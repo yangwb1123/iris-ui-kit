@@ -22,8 +22,12 @@ describe('buildManifest', () => {
     expect(button?.importFrom).toEqual({ react: '@iris-ui/react', vue: '@iris-ui/vue' })
   })
 
-  it('computes parity stats', () => {
-    expect(buildManifest(sample).stats).toEqual({ total: 3, both: 1, reactOnly: 1, vueOnly: 1 })
+  it('computes per-framework stats', () => {
+    expect(buildManifest(sample).stats).toEqual({
+      total: 3,
+      full: 0,
+      byFramework: { react: 2, vue: 2, solid: 0, svelte: 0 },
+    })
   })
 
   it('groups components and flattens the token catalog', () => {
@@ -55,10 +59,10 @@ describe('discover (real repo)', () => {
     expect(() => findRepoRoot()).not.toThrow()
   })
 
-  it('discovers the real inventory from both adapters', () => {
+  it('discovers the real inventory from all adapters', () => {
     const raw = discover()
     const button = raw.components.find((c) => c.name === 'IrisButton')
-    expect(button?.frameworks.slice().sort()).toEqual(['react', 'vue'])
+    expect(button?.frameworks.slice().sort()).toEqual(['react', 'solid', 'svelte', 'vue'])
     expect(raw.components.length).toBeGreaterThan(80)
     expect(raw.tokens.color).toContain('iris.primary')
     expect(raw.tokens.spacing).toContain('iris.gap.md')

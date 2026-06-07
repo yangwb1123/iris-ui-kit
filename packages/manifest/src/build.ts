@@ -5,10 +5,13 @@ import type {
   ManifestGroupSummary,
   RawDiscovery,
 } from './schema'
+import { ALL_FRAMEWORKS } from './schema'
 
 const IMPORT_PATH: Record<Framework, string> = {
   react: '@iris-ui/react',
   vue: '@iris-ui/vue',
+  solid: '@iris-ui/solid',
+  svelte: '@iris-ui/svelte',
 }
 
 const LAYER_MODEL: IrisManifest['layerModel'] = [
@@ -56,19 +59,17 @@ export function buildManifest(raw: RawDiscovery): IrisManifest {
     }))
     .sort((a, b) => a.group.localeCompare(b.group))
 
-  const both = components.filter((c) => c.frameworks.length === 2).length
-  const reactOnly = components.filter(
-    (c) => c.frameworks.length === 1 && c.frameworks[0] === 'react',
-  ).length
-  const vueOnly = components.filter(
-    (c) => c.frameworks.length === 1 && c.frameworks[0] === 'vue',
-  ).length
+  const byFramework = Object.fromEntries(
+    ALL_FRAMEWORKS.map((fw) => [fw, components.filter((c) => c.frameworks.includes(fw)).length]),
+  ) as Record<Framework, number>
+  const full = components.filter((c) => c.frameworks.length === ALL_FRAMEWORKS.length).length
 
   return {
     schema: 'iris-ui/manifest@1',
     name: 'Iris UI',
-    description: 'Token-driven, cross-framework (React 18 + Vue 3) UI component library.',
-    frameworks: ['react', 'vue'],
+    description:
+      'Token-driven, cross-framework (React, Vue, SolidJS, Svelte) UI component library.',
+    frameworks: [...ALL_FRAMEWORKS],
     layerModel: LAYER_MODEL,
     groups,
     components,
@@ -76,6 +77,6 @@ export function buildManifest(raw: RawDiscovery): IrisManifest {
       ...raw.tokens,
       all: [...raw.tokens.color, ...raw.tokens.spacing, ...raw.tokens.radii],
     },
-    stats: { total: components.length, both, reactOnly, vueOnly },
+    stats: { total: components.length, full, byFramework },
   }
 }

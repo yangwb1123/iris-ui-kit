@@ -1,4 +1,7 @@
-export type Framework = 'react' | 'vue'
+export type Framework = 'react' | 'vue' | 'solid' | 'svelte'
+
+/** Canonical framework order used across discovery, build, and reporting. */
+export const ALL_FRAMEWORKS: Framework[] = ['react', 'vue', 'solid', 'svelte']
 
 export type ComponentGroup =
   | 'primitives'
@@ -61,5 +64,11 @@ export interface IrisManifest {
   groups: ManifestGroupSummary[]
   components: ManifestComponent[]
   tokens: RawTokens & { all: string[] }
-  stats: { total: number; both: number; reactOnly: number; vueOnly: number }
+  stats: {
+    total: number
+    /** Components available in every framework (full parity). */
+    full: number
+    /** Component count per framework. */
+    byFramework: Record<Framework, number>
+  }
 }

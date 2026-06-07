@@ -1,8 +1,8 @@
 # Iris UI
 
-Token-driven, cross-framework (React 18 + Vue 3) UI component library.
+Token-driven, cross-framework (React, Vue, SolidJS, Svelte) UI component library.
 
-Frameworks: react, vue. Import components from `@iris-ui/react` or `@iris-ui/vue`.
+Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` or `@iris-ui/vue` or `@iris-ui/solid` or `@iris-ui/svelte`.
 
 ## Architecture
 - Layer 0 — Theme System: Design tokens, applyTheme, theme store (CSS variables).
@@ -12,7 +12,7 @@ Frameworks: react, vue. Import components from `@iris-ui/react` or `@iris-ui/vue
 - Layer 4 — System Skeletons: Page / section skeleton scaffolds.
 - Behaviors: Orthogonal interaction behaviors (hotkeys, click-outside, drag).
 
-## Components (134 total — 134 in both frameworks, 0 react-only, 0 vue-only)
+## Components (134 total — 23 in all 4 frameworks; react 134, vue 134, solid 23, svelte 23)
 
 ### behaviors (4)
 - IrisClickOutside [react/vue]
@@ -25,19 +25,19 @@ Frameworks: react, vue. Import components from `@iris-ui/react` or `@iris-ui/vue
 
 ### layouts (7)
 - IrisContainer [react/vue]
-- IrisDashboardCard [react/vue]
-- IrisDashboardGrid [react/vue]
+- IrisDashboardCard [react/solid/svelte/vue]
+- IrisDashboardGrid [react/solid/svelte/vue]
 - IrisGrid [react/vue]
-- IrisHeaderLayout [react/vue]
-- IrisSidebarLayout [react/vue]
-- IrisStack [react/vue]
+- IrisHeaderLayout [react/solid/svelte/vue]
+- IrisSidebarLayout [react/solid/svelte/vue]
+- IrisStack [react/solid/svelte/vue]
 
 ### other (5)
-- IrisAdminBreadcrumb [react/vue]
-- IrisAdminLayout [react/vue]
-- IrisAdminTabs [react/vue]
+- IrisAdminBreadcrumb [react/solid/svelte/vue]
+- IrisAdminLayout [react/solid/svelte/vue]
+- IrisAdminTabs [react/solid/svelte/vue]
 - IrisI18nProvider [react/vue]
-- IrisNavMenu [react/vue]
+- IrisNavMenu [react/solid/svelte/vue]
 
 ### primitives (115)
 - IrisAccordion [react/vue]
@@ -46,13 +46,13 @@ Frameworks: react, vue. Import components from `@iris-ui/react` or `@iris-ui/vue
 - IrisAlert [react/vue]
 - IrisAnchor [react/vue]
 - IrisAspectRatio [react/vue]
-- IrisAvatar [react/vue]
+- IrisAvatar [react/solid/svelte/vue]
 - IrisBackTop [react/vue]
-- IrisBadge [react/vue]
+- IrisBadge [react/solid/svelte/vue]
 - IrisBanner [react/vue]
-- IrisBreadcrumb [react/vue]
-- IrisBreadcrumbItem [react/vue]
-- IrisButton [react/vue]
+- IrisBreadcrumb [react/solid/svelte/vue]
+- IrisBreadcrumbItem [react/solid/svelte/vue]
+- IrisButton [react/solid/svelte/vue]
 - IrisCalendar [react/vue]
 - IrisCard [react/vue]
 - IrisCarousel [react/vue]
@@ -80,20 +80,20 @@ Frameworks: react, vue. Import components from `@iris-ui/react` or `@iris-ui/vue
 - IrisDrawerContent [react/vue]
 - IrisDrawerTitle [react/vue]
 - IrisDrawerTrigger [react/vue]
-- IrisDropdown [react/vue]
-- IrisDropdownItem [react/vue]
-- IrisDropdownMenu [react/vue]
-- IrisDropdownSeparator [react/vue]
-- IrisDropdownTrigger [react/vue]
+- IrisDropdown [react/solid/svelte/vue]
+- IrisDropdownItem [react/solid/svelte/vue]
+- IrisDropdownMenu [react/solid/svelte/vue]
+- IrisDropdownSeparator [react/solid/svelte/vue]
+- IrisDropdownTrigger [react/solid/svelte/vue]
 - IrisEmptyState [react/vue]
 - IrisFieldset [react/vue]
 - IrisFileUpload [react/vue]
 - IrisFloatButton [react/vue]
-- IrisFormField [react/vue]
+- IrisFormField [react/solid/svelte/vue]
 - IrisGauge [react/vue]
-- IrisIcon [react/vue]
+- IrisIcon [react/solid/svelte/vue]
 - IrisImage [react/vue]
-- IrisInput [react/vue]
+- IrisInput [react/solid/svelte/vue]
 - IrisKbd [react/vue]
 - IrisList [react/vue]
 - IrisMarquee [react/vue]
@@ -133,7 +133,7 @@ Frameworks: react, vue. Import components from `@iris-ui/react` or `@iris-ui/vue
 - IrisStatistic [react/vue]
 - IrisStepper [react/vue]
 - IrisStepperStep [react/vue]
-- IrisSwitch [react/vue]
+- IrisSwitch [react/solid/svelte/vue]
 - IrisTable [react/vue]
 - IrisTabs [react/vue]
 - IrisTabsContent [react/vue]

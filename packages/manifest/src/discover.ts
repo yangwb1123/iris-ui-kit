@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { ComponentGroup, Framework, RawComponent, RawDiscovery, RawTokens } from './schema'
+import { ALL_FRAMEWORKS } from './schema'
 
 const KNOWN_GROUPS: ComponentGroup[] = [
   'primitives',
@@ -14,11 +15,15 @@ const KNOWN_GROUPS: ComponentGroup[] = [
   'modal-utils',
 ]
 
-const FRAMEWORKS: Framework[] = ['react', 'vue']
-
 // `export const IrisX = ...` / `export function IrisX(...)`. Types
-// (`export type IrisXProps`) are intentionally excluded.
+// (`export type IrisXProps`) are intentionally excluded. Used for the
+// React/Vue/Solid adapters (all author components as exported functions/consts).
 const EXPORT_RE = /export\s+(?:const|function)\s+(Iris[A-Za-z0-9]+)/g
+
+// Svelte components are single-file `.svelte` modules re-exported from a barrel
+// as `export { default as IrisX } from './X.svelte'`, so they are discovered
+// from the barrels instead of from function/const declarations.
+const SVELTE_EXPORT_RE = /export\s*\{\s*default as (Iris[A-Za-z0-9]+)/g
 
 // Exported `Iris*` consts that are not components (injection keys, etc.).
 const NON_COMPONENT = /(?:Key|Context|Symbol)$/
@@ -61,6 +66,7 @@ function discoverFramework(repoRoot: string, framework: Framework): Map<string, 
   const found = new Map<string, RawComponent>()
   if (!existsSync(srcRoot)) return found
 
+  const re = framework === 'svelte' ? SVELTE_EXPORT_RE : EXPORT_RE
   for (const file of walkSource(srcRoot)) {
     const rel = file
       .slice(srcRoot.length + 1)
@@ -68,7 +74,7 @@ function discoverFramework(repoRoot: string, framework: Framework): Map<string, 
       .join('/')
     const { group, module } = classify(rel)
     const text = readFileSync(file, 'utf8')
-    for (const match of text.matchAll(EXPORT_RE)) {
+    for (const match of text.matchAll(re)) {
       const name = match[1]
       if (NON_COMPONENT.test(name)) continue
       const existing = found.get(name)
@@ -102,7 +108,7 @@ function discoverTokens(repoRoot: string): RawTokens {
  * export.
  */
 export function discover(repoRoot: string = findRepoRoot()): RawDiscovery {
-  const perFramework = FRAMEWORKS.map((fw) => discoverFramework(repoRoot, fw))
+  const perFramework = ALL_FRAMEWORKS.map((fw) => discoverFramework(repoRoot, fw))
   const names = new Set<string>()
   for (const map of perFramework) for (const name of map.keys()) names.add(name)
 

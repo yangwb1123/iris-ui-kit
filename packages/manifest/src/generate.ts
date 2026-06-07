@@ -22,10 +22,11 @@ function main(): void {
     writeFileSync(join(dir, 'manifest.json'), json)
     writeFileSync(join(dir, 'llms.txt'), llms)
   }
+  const byFw = manifest.frameworks.map((f) => `${f} ${manifest.stats.byFramework[f]}`).join(' / ')
   // eslint-disable-next-line no-console
   console.log(
     `manifest: ${manifest.stats.total} components ` +
-      `(${manifest.stats.both} both / ${manifest.stats.reactOnly} react / ${manifest.stats.vueOnly} vue), ` +
+      `(${byFw}; ${manifest.stats.full} in all ${manifest.frameworks.length}), ` +
       `${manifest.tokens.all.length} tokens → manifest.json, llms.txt (root + @iris-ui/manifest)`,
   )
 }

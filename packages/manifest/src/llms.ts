@@ -25,9 +25,10 @@ export function renderLlmsText(manifest: IrisManifest): string {
   }
   lines.push('')
 
+  const byFw = manifest.frameworks.map((f) => `${f} ${manifest.stats.byFramework[f]}`).join(', ')
   lines.push(
-    `## Components (${manifest.stats.total} total — ${manifest.stats.both} in both frameworks, ` +
-      `${manifest.stats.reactOnly} react-only, ${manifest.stats.vueOnly} vue-only)`,
+    `## Components (${manifest.stats.total} total — ${manifest.stats.full} in all ` +
+      `${manifest.frameworks.length} frameworks; ${byFw})`,
   )
   for (const group of manifest.groups) {
     lines.push('')

@@ -1,0 +1,22 @@
+<script lang="ts">
+  import { findNavNode } from '@iris-ui/svelte'
+  import { menus } from './menus'
+  import DashboardPage from './pages/DashboardPage.svelte'
+  import UsersPage from './pages/UsersPage.svelte'
+  import SettingsPage from './pages/SettingsPage.svelte'
+  import GenericPage from './pages/GenericPage.svelte'
+
+  let { routeKey }: { routeKey: string } = $props()
+
+  const title = $derived(findNavNode(menus, routeKey)?.title ?? routeKey)
+</script>
+
+{#if routeKey === 'dashboard'}
+  <DashboardPage />
+{:else if routeKey === 'all-users'}
+  <UsersPage />
+{:else if routeKey === 'settings'}
+  <SettingsPage />
+{:else}
+  <GenericPage {title} />
+{/if}

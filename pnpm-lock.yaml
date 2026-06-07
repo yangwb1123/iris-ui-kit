@@ -153,6 +153,28 @@ importers:
         specifier: ^2.11.0
         version: 2.11.12(@testing-library/jest-dom@6.9.1)(solid-js@1.9.13)(vite@5.4.21(@types/node@20.19.41))
 
+  apps/cms-svelte:
+    dependencies:
+      '@iris-ui/svelte':
+        specifier: workspace:*
+        version: link:../../packages/svelte
+      '@iris-ui/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
+      svelte:
+        specifier: ^5.16.0
+        version: 5.56.1(@typescript-eslint/types@8.59.4)
+    devDependencies:
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^4.0.4
+        version: 4.0.4(svelte@5.56.1(@typescript-eslint/types@8.59.4))(vite@5.4.21(@types/node@20.19.41))
+      svelte-check:
+        specifier: ^4.1.1
+        version: 4.5.0(picomatch@4.0.4)(svelte@5.56.1(@typescript-eslint/types@8.59.4))(typescript@5.9.3)
+      vite:
+        specifier: ^5.4.11
+        version: 5.4.21(@types/node@20.19.41)
+
   apps/docs:
     devDependencies:
       vitepress:

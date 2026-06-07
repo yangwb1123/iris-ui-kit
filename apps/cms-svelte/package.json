@@ -1,0 +1,25 @@
+{
+  "name": "cms-svelte",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "svelte-check --tsconfig ./tsconfig.json && vite build",
+    "preview": "vite preview",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json",
+    "lint": "eslint src",
+    "clean": "rm -rf dist .turbo .svelte-kit"
+  },
+  "dependencies": {
+    "@iris-ui/svelte": "workspace:*",
+    "@iris-ui/tokens": "workspace:*",
+    "svelte": "^5.16.0"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^4.0.4",
+    "svelte-check": "^4.1.1",
+    "vite": "^5.4.11"
+  }
+}

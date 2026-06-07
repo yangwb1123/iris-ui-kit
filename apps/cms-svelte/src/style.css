@@ -1,0 +1,99 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  background: var(--iris-background);
+  color: var(--iris-foreground);
+}
+
+.page-title {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.page-desc {
+  margin: 0 0 20px;
+  color: var(--iris-muted);
+  font-size: 14px;
+  max-width: 70ch;
+}
+
+.stat-label {
+  color: var(--iris-muted);
+  font-size: 13px;
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 6px 0 10px;
+}
+
+.cms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.cms-table th,
+.cms-table td {
+  text-align: start;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--iris-border);
+}
+
+.cms-table th {
+  color: var(--iris-muted);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cms-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skin-select {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--iris-radius-md, 6px);
+  border: 1px solid var(--iris-border);
+  background: var(--iris-surface);
+  color: var(--iris-foreground);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cms-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid var(--iris-border);
+  color: var(--iris-muted);
+  font-size: 12px;
+}

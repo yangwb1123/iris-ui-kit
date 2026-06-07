@@ -1,9 +1,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+  import type { HTMLButtonAttributes } from 'svelte/elements'
   import { installButtonStyles, buildInlineStyle } from './styles'
   import type { IrisButtonSize, IrisButtonType, IrisButtonVariant } from './types'
 
-  interface Props {
+  // Forwards arbitrary button attributes (aria-*, id, …) like the React/Vue/Solid
+  // adapters; the Iris-specific props override the native ones.
+  interface Props extends Omit<HTMLButtonAttributes, 'type' | 'disabled' | 'onclick'> {
     variant?: IrisButtonVariant
     size?: IrisButtonSize
     disabled?: boolean
@@ -24,6 +27,9 @@
     onclick,
     leading,
     children,
+    class: className,
+    style: userStyle,
+    ...rest
   }: Props = $props()
 
   $effect(() => installButtonStyles())
@@ -42,9 +48,10 @@
 </script>
 
 <button
-  class="iris-button"
+  {...rest}
+  class={className ? `iris-button ${className}` : 'iris-button'}
   {type}
-  {style}
+  style={userStyle ? `${style}; ${userStyle}` : style}
   disabled={interactive ? undefined : true}
   aria-disabled={disabled ? 'true' : undefined}
   aria-busy={loading ? 'true' : undefined}

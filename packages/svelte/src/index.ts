@@ -8,8 +8,9 @@ export { toMachine } from './useMachine'
 export * from './theme'
 export * from './skins'
 
-// ── Layouts ───────────────────────────────────────────────────────────────────
+// ── Layouts + admin ───────────────────────────────────────────────────────────
 export * from './layouts'
+export * from './admin'
 
 // ── Primitives ────────────────────────────────────────────────────────────────
 export * from './floating'

@@ -16,6 +16,12 @@ export * from './floating'
 export * from './primitives/button'
 export * from './primitives/icon'
 export * from './primitives/dropdown'
+export * from './primitives/breadcrumb'
+export * from './primitives/badge'
+export * from './primitives/avatar'
+export * from './primitives/form-field'
+export * from './primitives/input'
+export * from './primitives/switch'
 
 // ── Framework-agnostic theme + token re-exports (mirror the sibling adapters) ──
 export {

@@ -79,10 +79,11 @@
     },
     {
       "group": "plugin",
-      "count": 5,
+      "count": 6,
       "components": [
         "IrisBarChart",
         "IrisCodeEditor",
+        "IrisFormBuilder",
         "IrisLineChart",
         "IrisProTable",
         "IrisSparkline"
@@ -3231,6 +3232,23 @@
           "optional": true
         }
       ]
+    },
+    {
+      "name": "IrisFormBuilder",
+      "group": "plugin",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/plugin-form-builder/react",
+        "solid": "@iris-ui/plugin-form-builder/solid",
+        "svelte": "@iris-ui/plugin-form-builder/svelte",
+        "vue": "@iris-ui/plugin-form-builder/vue"
+      },
+      "plugin": "@iris-ui/plugin-form-builder"
     },
     {
       "name": "IrisFormField",
@@ -7738,13 +7756,13 @@
     ]
   },
   "stats": {
-    "total": 140,
-    "full": 137,
+    "total": 141,
+    "full": 138,
     "byFramework": {
-      "react": 140,
-      "vue": 140,
-      "solid": 139,
-      "svelte": 137
+      "react": 141,
+      "vue": 141,
+      "solid": 140,
+      "svelte": 138
     }
   }
 }

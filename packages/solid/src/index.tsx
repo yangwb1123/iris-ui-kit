@@ -109,6 +109,7 @@ export * from './primitives/carousel'
 // ── Utility modules ──────────────────────────────────────────────────────────
 export * from './behaviors'
 export * from './async'
+export * from './resource'
 export * from './form'
 export * from './i18n'
 export * from './motion'

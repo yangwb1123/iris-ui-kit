@@ -84,6 +84,12 @@ export {
   type SelectionMode,
   type SelectionKey,
 } from './selection'
+export {
+  createTreeSelection,
+  type TreeSelectionModel,
+  type TreeSelectionConfig,
+  type TreeSelectionNode,
+} from './tree-selection'
 export { nextEnabledIndex, firstEnabledIndex, lastEnabledIndex } from './roving'
 export {
   clamp01,

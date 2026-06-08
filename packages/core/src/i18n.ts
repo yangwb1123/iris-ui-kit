@@ -28,9 +28,10 @@ export interface I18n {
   getState(): I18nState
   subscribe(listener: (state: I18nState) => void): () => void
   /**
-   * Translate a key, interpolating `{name}` placeholders from `params`.
-   * Resolution order: override messages → {@link defaultMessages} → the key
-   * itself (so a missing key is visible rather than blank).
+   * Translate a key, interpolating `{name}` placeholders and ICU
+   * `{count, plural, …}` blocks (locale-correct via `Intl.PluralRules`) from
+   * `params`. Resolution order: override messages → {@link defaultMessages} →
+   * the key itself (so a missing key is visible rather than blank).
    */
   t(key: string, params?: Record<string, string | number>): string
   setLocale(locale: string): void

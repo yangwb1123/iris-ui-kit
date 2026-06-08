@@ -1,4 +1,6 @@
-import { createSignal, For, mergeProps, splitProps, type JSX } from 'solid-js'
+import { createEffect, For, mergeProps, splitProps, type JSX } from 'solid-js'
+import { createSelectionModel } from '@iris-ui/core'
+import { useStore } from '../../useStore'
 
 export type IrisSegmentedSize = 'sm' | 'md' | 'lg'
 
@@ -56,10 +58,22 @@ export function IrisSegmented(props: IrisSegmentedProps): JSX.Element {
     'onChange',
   ])
 
-  const isControlled = (): boolean => local.value !== undefined
-  const [internal, setInternal] = createSignal(local.defaultValue ?? '')
+  // Single-selection logic is single-sourced in the core model; this component
+  // only maps its scalar string value to/from the model's flat key array.
+  const toKeys = (v: string | undefined): string[] => (v ? [v] : [])
+  const model = createSelectionModel<string>({
+    mode: 'single',
+    defaultSelected: toKeys(local.value !== undefined ? local.value : local.defaultValue),
+    onChange: (keys) => local.onChange?.(keys[0] ?? ''),
+  })
+  const selected = useStore(model.store)
 
-  const currentValue = (): string => (isControlled() ? (local.value as string) : internal())
+  // Controlled: mirror the prop into the model without re-emitting onChange.
+  createEffect(() => {
+    if (local.value !== undefined) model.sync(toKeys(local.value))
+  })
+
+  const currentValue = (): string => selected()[0] ?? ''
 
   const norm = (): IrisSegmentedOption[] => normalize(local.options)
 
@@ -68,8 +82,7 @@ export function IrisSegmented(props: IrisSegmentedProps): JSX.Element {
   const select = (options: IrisSegmentedOption[], i: number): void => {
     const opt = options[i]
     if (!opt || opt.disabled || local.disabled) return
-    if (!isControlled()) setInternal(opt.value)
-    local.onChange?.(opt.value)
+    model.set([opt.value])
     btns[i]?.focus()
   }
 

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { compareValues } from '@iris-ui/core'
+  import { compareValues, createSelectionModel } from '@iris-ui/core'
+  import { toStore } from '../../useStore'
   import type {
     IrisTableColumn,
     IrisTableSortState,
@@ -98,9 +99,21 @@
     onUpdateSort?.(next)
   }
 
-  // Selection state
-  let internalSelection = $state<Array<string | number>>([])
-  const effectiveSelection = $derived(selection ?? internalSelection)
+  // Selection state — single-sourced in the core selection model (single/multiple
+  // toggle, dedup, select-all). The model owns the uncontrolled state; a
+  // controlled `selection` prop is mirrored in via `sync` from an effect, and
+  // every change is emitted through `onUpdateSelection`.
+  // svelte-ignore state_referenced_locally — initial seed; controlled changes sync below.
+  const selectionModel = createSelectionModel<string | number>({
+    mode: selectable === 'single' ? 'single' : 'multiple',
+    defaultSelected: selection ?? [],
+    onChange: (keys) => onUpdateSelection?.(keys),
+  })
+  const selectedKeys = toStore(selectionModel.store)
+
+  $effect(() => {
+    if (selection !== undefined) selectionModel.sync(selection)
+  })
 
   function rowId(row: Record<string, unknown>, index: number): string | number {
     const v = row[rowKey]
@@ -110,34 +123,24 @@
 
   const allRowIds = $derived(sortedRows().map((r, i) => rowId(r, i)))
   const allSelected = $derived(
-    allRowIds.length > 0 && allRowIds.every((id) => effectiveSelection.includes(id))
+    allRowIds.length > 0 && allRowIds.every((id) => $selectedKeys.includes(id))
   )
   const someSelected = $derived(
-    !allSelected && allRowIds.some((id) => effectiveSelection.includes(id))
+    !allSelected && allRowIds.some((id) => $selectedKeys.includes(id))
   )
 
   function isSelected(id: string | number): boolean {
-    return effectiveSelection.includes(id)
-  }
-
-  function setSelection(next: Array<string | number>): void {
-    if (selection === undefined) internalSelection = next
-    onUpdateSelection?.(next)
+    return $selectedKeys.includes(id)
   }
 
   function toggleRow(id: string | number): void {
-    if (selectable === 'single') {
-      setSelection(isSelected(id) ? [] : [id])
-    } else if (selectable === 'multi') {
-      const current = effectiveSelection
-      const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
-      setSelection(next)
-    }
+    // Mode (single vs multiple) is fixed from `selectable` at model creation;
+    // the model owns the toggle/replace semantics.
+    if (selectable === 'single' || selectable === 'multi') selectionModel.toggle(id)
   }
 
   function toggleAll(): void {
-    if (allSelected) setSelection([])
-    else setSelection([...allRowIds])
+    selectionModel.toggleAll(allRowIds)
   }
 
   // Column widths — seed from columns prop; use untracked read to avoid cycles

@@ -1,4 +1,5 @@
-import { computed, defineComponent, h, ref, type PropType } from 'vue'
+import { computed, defineComponent, h, onBeforeUnmount, ref, shallowRef, type PropType } from 'vue'
+import { createSelectionModel } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 
 export interface IrisTransferItem {
@@ -33,8 +34,23 @@ export const IrisTransfer = defineComponent({
   },
   setup(props, { attrs, emit }) {
     const { t } = useI18n()
-    const sourceChecked = ref<Set<string>>(new Set())
-    const targetChecked = ref<Set<string>>(new Set())
+    // Each pane's checkbox set is single-sourced through the core selection model
+    // (multiple-select toggle + dedup + select-all); only the ›/‹ move actions
+    // emit `modelValue`, so these models stay purely internal (no onChange).
+    const sourceModel = createSelectionModel<string>({ mode: 'multiple' })
+    const targetModel = createSelectionModel<string>({ mode: 'multiple' })
+    const sourceSel = shallowRef<string[]>(sourceModel.get())
+    const targetSel = shallowRef<string[]>(targetModel.get())
+    onBeforeUnmount(
+      sourceModel.store.subscribe((keys) => {
+        sourceSel.value = keys
+      }),
+    )
+    onBeforeUnmount(
+      targetModel.store.subscribe((keys) => {
+        targetSel.value = keys
+      }),
+    )
     const sourceQuery = ref('')
     const targetQuery = ref('')
 
@@ -45,18 +61,16 @@ export const IrisTransfer = defineComponent({
 
     const moveToTarget = () => {
       if (props.disabled) return
-      const moving = sourceItems.value.filter(
-        (o) => !o.disabled && sourceChecked.value.has(o.value),
-      )
+      const moving = sourceItems.value.filter((o) => !o.disabled && sourceModel.isSelected(o.value))
       if (moving.length === 0) return
       emit('update:modelValue', [...value.value, ...moving.map((o) => o.value)])
-      sourceChecked.value = new Set()
+      sourceModel.clear()
     }
     const moveToSource = () => {
       if (props.disabled) return
       const removing = new Set(
         targetItems.value
-          .filter((o) => !o.disabled && targetChecked.value.has(o.value))
+          .filter((o) => !o.disabled && targetModel.isSelected(o.value))
           .map((o) => o.value),
       )
       if (removing.size === 0) return
@@ -64,7 +78,7 @@ export const IrisTransfer = defineComponent({
         'update:modelValue',
         value.value.filter((v) => !removing.has(v)),
       )
-      targetChecked.value = new Set()
+      targetModel.clear()
     }
 
     const paneStyle: Record<string, string> = {
@@ -90,9 +104,9 @@ export const IrisTransfer = defineComponent({
 
     const renderPane = (side: Side) => {
       const items = (side === 'source' ? sourceItems : targetItems).value
-      const checkedRef = side === 'source' ? sourceChecked : targetChecked
+      const model = side === 'source' ? sourceModel : targetModel
+      const checked = new Set(side === 'source' ? sourceSel.value : targetSel.value)
       const queryRef = side === 'source' ? sourceQuery : targetQuery
-      const checked = checkedRef.value
       const query = queryRef.value
       const visible = query
         ? items.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
@@ -102,14 +116,10 @@ export const IrisTransfer = defineComponent({
       const someChecked = selectable.some((o) => checked.has(o.value))
       const checkedCount = items.filter((o) => checked.has(o.value)).length
 
-      const toggle = (v: string) => {
-        const next = new Set(checked)
-        if (next.has(v)) next.delete(v)
-        else next.add(v)
-        checkedRef.value = next
-      }
+      const toggle = (v: string) => model.toggle(v)
       const toggleAll = () => {
-        checkedRef.value = allChecked ? new Set() : new Set(selectable.map((o) => o.value))
+        if (allChecked) model.clear()
+        else model.set(selectable.map((o) => o.value))
       }
 
       return h('div', { 'data-iris-transfer-pane': '', 'data-side': side, style: paneStyle }, [
@@ -245,10 +255,10 @@ export const IrisTransfer = defineComponent({
     return () => {
       const canToTarget =
         !props.disabled &&
-        sourceItems.value.some((o) => !o.disabled && sourceChecked.value.has(o.value))
+        sourceItems.value.some((o) => !o.disabled && sourceSel.value.includes(o.value))
       const canToSource =
         !props.disabled &&
-        targetItems.value.some((o) => !o.disabled && targetChecked.value.has(o.value))
+        targetItems.value.some((o) => !o.disabled && targetSel.value.includes(o.value))
 
       return h(
         'div',

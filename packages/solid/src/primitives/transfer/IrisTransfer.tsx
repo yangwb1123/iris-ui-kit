@@ -1,4 +1,6 @@
 import { createSignal, createMemo, mergeProps, splitProps, Show, For, type JSX } from 'solid-js'
+import { createSelectionModel } from '@iris-ui/core'
+import { useStore } from '../../useStore'
 
 export interface IrisTransferItem {
   label: string
@@ -42,8 +44,12 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
   ])
 
   const [internalValue, setInternalValue] = createSignal<string[]>(local.defaultValue)
-  const [sourceChecked, setSourceChecked] = createSignal<Set<string>>(new Set())
-  const [targetChecked, setTargetChecked] = createSignal<Set<string>>(new Set())
+  // The two panes' checked sets are single-sourced in core selection models
+  // (multiple mode, internal/uncontrolled) instead of hand-rolled Set state.
+  const sourceModel = createSelectionModel<string>({ mode: 'multiple' })
+  const targetModel = createSelectionModel<string>({ mode: 'multiple' })
+  const sourceChecked = useStore(sourceModel.store)
+  const targetChecked = useStore(targetModel.store)
   const [sourceQuery, setSourceQuery] = createSignal('')
   const [targetQuery, setTargetQuery] = createSignal('')
 
@@ -72,39 +78,26 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
 
   const moveToTarget = () => {
     if (local.disabled) return
-    const moving = sourceItems().filter((o) => !o.disabled && sourceChecked().has(o.value))
+    const moving = sourceItems().filter((o) => !o.disabled && sourceModel.isSelected(o.value))
     if (moving.length === 0) return
     emitChange([...currentValue(), ...moving.map((o) => o.value)])
-    setSourceChecked(new Set<string>())
+    sourceModel.clear()
   }
 
   const moveToSource = () => {
     if (local.disabled) return
     const removing = new Set(
       targetItems()
-        .filter((o) => !o.disabled && targetChecked().has(o.value))
+        .filter((o) => !o.disabled && targetModel.isSelected(o.value))
         .map((o) => o.value),
     )
     emitChange(currentValue().filter((v) => !removing.has(v)))
-    setTargetChecked(new Set<string>())
+    targetModel.clear()
   }
 
-  const toggleCheck = (side: 'source' | 'target', value: string) => {
-    if (side === 'source') {
-      setSourceChecked((prev) => {
-        const next = new Set(prev)
-        if (next.has(value)) next.delete(value)
-        else next.add(value)
-        return next
-      })
-    } else {
-      setTargetChecked((prev) => {
-        const next = new Set(prev)
-        if (next.has(value)) next.delete(value)
-        else next.add(value)
-        return next
-      })
-    }
+  const toggleCheck = (side: 'source' | 'target', value: string): void => {
+    const m = side === 'source' ? sourceModel : targetModel
+    m.toggle(value)
   }
 
   const panelStyle: JSX.CSSProperties = {
@@ -121,7 +114,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
   const renderPanel = (
     side: 'source' | 'target',
     items: () => IrisTransferItem[],
-    checked: () => Set<string>,
+    checked: () => string[],
     title: string,
     query: () => string,
     setQuery: (v: string) => void,
@@ -138,7 +131,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
       >
         {title}
         <span style={{ float: 'right', 'font-weight': 'normal', color: 'var(--iris-muted)' }}>
-          {checked().size}/{items().length}
+          {checked().length}/{items().length}
         </span>
       </div>
       <Show when={local.searchable}>
@@ -178,7 +171,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
           {(item) => (
             <li
               role="option"
-              aria-selected={checked().has(item.value)}
+              aria-selected={checked().includes(item.value)}
               data-iris-transfer-item={`${side}-${item.value}`}
               style={{
                 display: 'flex',
@@ -196,7 +189,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
             >
               <input
                 type="checkbox"
-                checked={checked().has(item.value)}
+                checked={checked().includes(item.value)}
                 disabled={item.disabled || local.disabled || undefined}
                 onChange={() => {
                   if (!item.disabled && !local.disabled) toggleCheck(side, item.value)
@@ -255,20 +248,20 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
         <button
           type="button"
           data-iris-transfer-move-right=""
-          disabled={local.disabled || sourceChecked().size === 0 || undefined}
+          disabled={local.disabled || sourceChecked().length === 0 || undefined}
           onClick={moveToTarget}
           title="Move to selected"
-          style={{ ...btnStyle, opacity: sourceChecked().size === 0 ? '0.4' : '1' }}
+          style={{ ...btnStyle, opacity: sourceChecked().length === 0 ? '0.4' : '1' }}
         >
           ›
         </button>
         <button
           type="button"
           data-iris-transfer-move-left=""
-          disabled={local.disabled || targetChecked().size === 0 || undefined}
+          disabled={local.disabled || targetChecked().length === 0 || undefined}
           onClick={moveToSource}
           title="Move to available"
-          style={{ ...btnStyle, opacity: targetChecked().size === 0 ? '0.4' : '1' }}
+          style={{ ...btnStyle, opacity: targetChecked().length === 0 ? '0.4' : '1' }}
         >
           ‹
         </button>

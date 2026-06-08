@@ -1,4 +1,6 @@
 import * as React from 'react'
+import { createSelectionModel, type SelectionModel } from '@iris-ui/core'
+import { useStore } from '../../useStore'
 
 export type IrisSegmentedSize = 'sm' | 'md' | 'lg'
 
@@ -52,9 +54,28 @@ export function IrisSegmented({
 }: IrisSegmentedProps): React.ReactElement {
   const norm = normalize(options)
   const isControlled = value !== undefined
-  const [internal, setInternal] = React.useState(defaultValue ?? '')
-  const currentValue = isControlled ? (value as string) : internal
   const refs = React.useRef<(HTMLButtonElement | null)[]>([])
+
+  // Single-selection logic (controlled/uncontrolled) lives in the core model;
+  // this component only maps its scalar `string` value ⇄ the model's flat key
+  // array and renders. A segment never toggles off, so `select` uses
+  // `model.set` (always (re)select + emit), not `model.toggle`.
+  const toKeys = (v: string | undefined): string[] => (v ? [v] : [])
+  const modelRef = React.useRef<SelectionModel<string> | null>(null)
+  if (modelRef.current === null) {
+    modelRef.current = createSelectionModel<string>({
+      mode: 'single',
+      defaultSelected: toKeys(isControlled ? value : defaultValue),
+      onChange: (keys) => onValueChange?.(keys[0] ?? ''),
+    })
+  }
+  const model = modelRef.current
+  const currentValue = useStore(model.store)[0] ?? ''
+
+  // Controlled: mirror the prop into the model without re-emitting onChange.
+  React.useEffect(() => {
+    if (isControlled) model.sync(toKeys(value))
+  }, [value, isControlled, model])
 
   const selectedIndex = norm.findIndex((o) => o.value === currentValue)
   const firstEnabled = norm.findIndex((o) => !o.disabled)
@@ -63,8 +84,7 @@ export function IrisSegmented({
   const select = (i: number) => {
     const opt = norm[i]
     if (!opt || opt.disabled || disabled) return
-    if (!isControlled) setInternal(opt.value)
-    onValueChange?.(opt.value)
+    model.set([opt.value])
     refs.current[i]?.focus()
   }
 

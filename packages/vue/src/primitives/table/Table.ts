@@ -6,11 +6,12 @@ import {
   onBeforeUnmount,
   onMounted,
   ref,
+  shallowRef,
   watch,
   type PropType,
   type VNode,
 } from 'vue'
-import { compareValues, computeVirtualRange } from '@iris-ui/core'
+import { compareValues, computeVirtualRange, createSelectionModel } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useDrag } from '../drag/useDrag'
@@ -151,15 +152,29 @@ export const IrisTable = defineComponent({
       return arr
     })
 
-    // -------- Selection --------
-    const internalSelectionState = ref<Array<string | number>>([])
-    const effectiveSelection = computed<Array<string | number>>(
-      () => props.selection ?? internalSelectionState.value,
+    // -------- Selection (single-sourced via core createSelectionModel) --------
+    // The model owns the selected-key set plus the toggle / dedup / select-all
+    // logic; the table keeps only its controlled-or-uncontrolled value shape
+    // (`Array<string | number>`) and the row-id mapping. It runs in the default
+    // `multiple` mode so `selectable` stays runtime-reactive — single-select is a
+    // replace (`set`) and multi-select a `toggle`, matching the previous behavior.
+    const selectionModel = createSelectionModel<string | number>({
+      defaultSelected: props.selection ?? [],
+      onChange: (keys) => emit('update:selection', keys),
+    })
+    const selectedKeys = shallowRef<Array<string | number>>(selectionModel.get())
+    onBeforeUnmount(
+      selectionModel.store.subscribe((keys) => {
+        selectedKeys.value = keys
+      }),
     )
-    const setSelection = (next: Array<string | number>) => {
-      if (props.selection === undefined) internalSelectionState.value = next
-      emit('update:selection', next)
-    }
+    // Controlled: mirror the prop into the model without re-emitting onChange.
+    watch(
+      () => props.selection,
+      (sel) => {
+        if (sel !== undefined) selectionModel.sync(sel)
+      },
+    )
 
     const rowId = (row: Record<string, unknown>, index: number): string | number => {
       const v = row[props.rowKey]
@@ -167,30 +182,26 @@ export const IrisTable = defineComponent({
       return index
     }
 
-    const isSelected = (id: string | number) => effectiveSelection.value.includes(id)
+    const isSelected = (id: string | number) => selectedKeys.value.includes(id)
     const allRowIds = computed(() => sortedRows.value.map((r, i) => rowId(r, i)))
-    const allSelected = computed(
-      () =>
-        allRowIds.value.length > 0 &&
-        allRowIds.value.every((id) => effectiveSelection.value.includes(id)),
-    )
-    const someSelected = computed(
-      () =>
-        !allSelected.value && allRowIds.value.some((id) => effectiveSelection.value.includes(id)),
-    )
+    const allSelected = computed(() => {
+      const sel = selectedKeys.value
+      return allRowIds.value.length > 0 && allRowIds.value.every((id) => sel.includes(id))
+    })
+    const someSelected = computed(() => {
+      const sel = selectedKeys.value
+      return !allSelected.value && allRowIds.value.some((id) => sel.includes(id))
+    })
 
     const toggleRow = (id: string | number) => {
       if (props.selectable === 'single') {
-        setSelection(isSelected(id) ? [] : [id])
+        selectionModel.set(selectionModel.isSelected(id) ? [] : [id])
       } else if (props.selectable === 'multi') {
-        const current = effectiveSelection.value
-        const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
-        setSelection(next)
+        selectionModel.toggle(id)
       }
     }
     const toggleAll = () => {
-      if (allSelected.value) setSelection([])
-      else setSelection([...allRowIds.value])
+      selectionModel.set(allSelected.value ? [] : [...allRowIds.value])
     }
 
     // -------- Inline editing --------

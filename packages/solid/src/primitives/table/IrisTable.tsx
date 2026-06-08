@@ -1,5 +1,6 @@
-import { createMemo, createSignal, For, mergeProps, Show, type JSX } from 'solid-js'
-import { compareValues } from '@iris-ui/core'
+import { createEffect, createMemo, createSignal, For, mergeProps, Show, type JSX } from 'solid-js'
+import { compareValues, createSelectionModel } from '@iris-ui/core'
+import { useStore } from '../../useStore'
 import type { IrisTableColumn, IrisTableSortState, IrisTableCellEditEvent } from './types'
 
 export interface IrisTableProps<Row extends Record<string, unknown> = Record<string, unknown>> {
@@ -94,14 +95,21 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   }
 
   // ---- Selection ----
-  const [internalSelection, setInternalSelection] = createSignal<Array<string | number>>([])
-  const effectiveSelection = (): Array<string | number> =>
-    props.selection !== undefined ? props.selection : internalSelection()
+  // Row-selection logic (single/multi toggle, dedup, select-all) is single-sourced
+  // in the core model; the table keeps only its row-id mapping + rendering. Keyed
+  // by string|number because row ids may be either.
+  const selectionMode = merged.selectable === 'single' ? 'single' : 'multiple'
+  const selectionModel = createSelectionModel<string | number>({
+    mode: selectionMode,
+    defaultSelected: props.selection ?? [],
+    onChange: (keys) => merged.onSelectionChange?.(keys),
+  })
+  const selection = useStore(selectionModel.store)
 
-  const setSelection = (next: Array<string | number>): void => {
-    if (props.selection === undefined) setInternalSelection(next)
-    merged.onSelectionChange?.(next)
-  }
+  // Controlled: mirror the prop into the model without re-emitting onChange.
+  createEffect(() => {
+    if (props.selection !== undefined) selectionModel.sync(props.selection)
+  })
 
   const rowId = (row: Row, index: number): string | number => {
     const v = row[merged.rowKey]
@@ -109,29 +117,25 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     return index
   }
 
-  const isSelected = (id: string | number): boolean => effectiveSelection().includes(id)
+  const isSelected = (id: string | number): boolean => selection().includes(id)
 
   const allRowIds = createMemo(() => sortedRows().map((r, i) => rowId(r, i)))
-  const allSelected = createMemo(
-    () => allRowIds().length > 0 && allRowIds().every((id) => effectiveSelection().includes(id)),
-  )
-  const someSelected = createMemo(
-    () => !allSelected() && allRowIds().some((id) => effectiveSelection().includes(id)),
-  )
+  const allSelected = createMemo(() => {
+    selection() // subscribe to selection changes
+    return selectionModel.isAllSelected(allRowIds())
+  })
+  const someSelected = createMemo(() => {
+    selection() // subscribe to selection changes
+    return !allSelected() && allRowIds().some((id) => selectionModel.isSelected(id))
+  })
 
   const toggleRow = (id: string | number): void => {
-    if (merged.selectable === 'single') {
-      setSelection(isSelected(id) ? [] : [id])
-    } else if (merged.selectable === 'multi') {
-      const current = effectiveSelection()
-      const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
-      setSelection(next)
-    }
+    if (merged.selectable === 'none') return
+    selectionModel.toggle(id)
   }
 
   const toggleAll = (): void => {
-    if (allSelected()) setSelection([])
-    else setSelection([...allRowIds()])
+    selectionModel.toggleAll(allRowIds())
   }
 
   // ---- Inline Editing ----

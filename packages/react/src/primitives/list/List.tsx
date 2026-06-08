@@ -1,4 +1,6 @@
 import * as React from 'react'
+import { createSelectionModel, type SelectionKey, type SelectionModel } from '@iris-ui/core'
+import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
 
@@ -77,10 +79,35 @@ export function IrisList<T = unknown>({
   style,
   className,
 }: IrisListProps<T>): React.ReactElement {
+  // Item-selection logic (single set / multiple toggle, dedup,
+  // controlled/uncontrolled) is single-sourced in the core model. List values
+  // are generic `T`, while the model is keyed by string|number and only ever
+  // compares keys by identity (Set/includes) — exactly the previous hand-rolled
+  // behavior — so we bridge `T ⇄ key` at this edge (the cast is purely
+  // structural; runtime is identical). Single mode never toggles off, so
+  // `select` uses `model.set`, not `model.toggle`.
   const isControlled = valueProp !== undefined
-  const initial: T | T[] | null = defaultValue !== undefined ? defaultValue : multi ? [] : null
-  const [internal, setInternal] = React.useState<T | T[] | null>(initial)
-  const value = isControlled ? (valueProp as T | T[] | null) : internal
+  const asKey = (v: T): SelectionKey => v as unknown as SelectionKey
+  const toKeys = (v: T | T[] | null | undefined): SelectionKey[] =>
+    v == null ? [] : Array.isArray(v) ? (v as T[]).map(asKey) : [asKey(v as T)]
+  const fromKeys = (keys: SelectionKey[]): T | T[] | null =>
+    multi ? (keys as unknown as T[]) : ((keys[0] ?? null) as unknown as T | null)
+  const modelRef = React.useRef<SelectionModel<SelectionKey> | null>(null)
+  if (modelRef.current === null) {
+    const initial: T | T[] | null = defaultValue !== undefined ? defaultValue : multi ? [] : null
+    modelRef.current = createSelectionModel<SelectionKey>({
+      mode: multi ? 'multiple' : 'single',
+      defaultSelected: toKeys(isControlled ? valueProp : initial),
+      onChange: (keys) => onValueChange?.(fromKeys(keys)),
+    })
+  }
+  const model = modelRef.current
+  const selectedKeys = useStore(model.store)
+
+  // Controlled: mirror the prop into the model without re-emitting onChange.
+  React.useEffect(() => {
+    if (isControlled) model.sync(toKeys(valueProp))
+  }, [valueProp, isControlled, model])
 
   const { t } = useI18n()
   const { state, isContent, stateKey, stateProps } = useDataState({
@@ -90,12 +117,8 @@ export function IrisList<T = unknown>({
   })
 
   const isSelected = React.useCallback(
-    (v: T): boolean => {
-      if (value == null) return false
-      if (Array.isArray(value)) return (value as T[]).includes(v)
-      return value === v
-    },
-    [value],
+    (v: T): boolean => selectedKeys.includes(v as unknown as SelectionKey),
+    [selectedKeys],
   )
 
   const enabledIndexes = React.useMemo(
@@ -112,21 +135,10 @@ export function IrisList<T = unknown>({
 
   const listRef = React.useRef<HTMLUListElement | null>(null)
 
-  const setValue = (next: T | T[] | null) => {
-    if (!isControlled) setInternal(next)
-    onValueChange?.(next)
-  }
-
   const select = (item: IrisListItem<T>) => {
     if (item.disabled) return
-    if (multi) {
-      const arr = Array.isArray(value) ? (value as T[]) : []
-      const idx = arr.indexOf(item.value)
-      const next = idx >= 0 ? arr.filter((v) => v !== item.value) : [...arr, item.value]
-      setValue(next)
-    } else {
-      setValue(item.value)
-    }
+    if (multi) model.toggle(asKey(item.value))
+    else model.set([asKey(item.value)])
     onSelect?.(item)
   }
 

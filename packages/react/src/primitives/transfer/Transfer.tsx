@@ -1,4 +1,6 @@
 import * as React from 'react'
+import { createSelectionModel, type SelectionModel } from '@iris-ui/core'
+import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 
 export interface IrisTransferItem {
@@ -49,8 +51,23 @@ export function IrisTransfer({
   const value = isControlled ? (valueProp as string[]) : internal
   const valueSet = new Set(value)
 
-  const [sourceChecked, setSourceChecked] = React.useState<Set<string>>(new Set())
-  const [targetChecked, setTargetChecked] = React.useState<Set<string>>(new Set())
+  // Each pane's tentative "checked" set is a multi-select set; the per-item
+  // toggle + dedup is single-sourced in the core model (one per pane). These
+  // sets are purely internal (never controlled). Select-all REPLACES the set
+  // with the visible-enabled items (or clears it), so it uses `model.set`
+  // rather than the model's add/remove `toggleAll`.
+  const sourceModelRef = React.useRef<SelectionModel<string> | null>(null)
+  if (sourceModelRef.current === null) {
+    sourceModelRef.current = createSelectionModel<string>({ mode: 'multiple' })
+  }
+  const targetModelRef = React.useRef<SelectionModel<string> | null>(null)
+  if (targetModelRef.current === null) {
+    targetModelRef.current = createSelectionModel<string>({ mode: 'multiple' })
+  }
+  const sourceModel = sourceModelRef.current
+  const targetModel = targetModelRef.current
+  const sourceChecked = useStore(sourceModel.store)
+  const targetChecked = useStore(targetModel.store)
   const [sourceQuery, setSourceQuery] = React.useState('')
   const [targetQuery, setTargetQuery] = React.useState('')
 
@@ -64,19 +81,19 @@ export function IrisTransfer({
 
   const moveToTarget = () => {
     if (disabled) return
-    const moving = sourceItems.filter((o) => !o.disabled && sourceChecked.has(o.value))
+    const moving = sourceItems.filter((o) => !o.disabled && sourceChecked.includes(o.value))
     if (moving.length === 0) return
     setValue([...value, ...moving.map((o) => o.value)])
-    setSourceChecked(new Set())
+    sourceModel.clear()
   }
   const moveToSource = () => {
     if (disabled) return
     const removing = new Set(
-      targetItems.filter((o) => !o.disabled && targetChecked.has(o.value)).map((o) => o.value),
+      targetItems.filter((o) => !o.disabled && targetChecked.includes(o.value)).map((o) => o.value),
     )
     if (removing.size === 0) return
     setValue(value.filter((v) => !removing.has(v)))
-    setTargetChecked(new Set())
+    targetModel.clear()
   }
 
   const paneStyle: React.CSSProperties = {
@@ -102,26 +119,21 @@ export function IrisTransfer({
 
   const renderPane = (side: Side) => {
     const items = side === 'source' ? sourceItems : targetItems
+    const model = side === 'source' ? sourceModel : targetModel
     const checked = side === 'source' ? sourceChecked : targetChecked
-    const setChecked = side === 'source' ? setSourceChecked : setTargetChecked
     const query = side === 'source' ? sourceQuery : targetQuery
     const setQuery = side === 'source' ? setSourceQuery : setTargetQuery
     const visible = query
       ? items.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
       : items
     const selectable = visible.filter((o) => !o.disabled)
-    const allChecked = selectable.length > 0 && selectable.every((o) => checked.has(o.value))
-    const someChecked = selectable.some((o) => checked.has(o.value))
-    const checkedCount = items.filter((o) => checked.has(o.value)).length
+    const allChecked = selectable.length > 0 && selectable.every((o) => checked.includes(o.value))
+    const someChecked = selectable.some((o) => checked.includes(o.value))
+    const checkedCount = items.filter((o) => checked.includes(o.value)).length
 
-    const toggle = (v: string) => {
-      const next = new Set(checked)
-      if (next.has(v)) next.delete(v)
-      else next.add(v)
-      setChecked(next)
-    }
+    const toggle = (v: string) => model.toggle(v)
     const toggleAll = () => {
-      setChecked(allChecked ? new Set() : new Set(selectable.map((o) => o.value)))
+      model.set(allChecked ? [] : selectable.map((o) => o.value))
     }
 
     return (
@@ -217,7 +229,7 @@ export function IrisTransfer({
                 >
                   <input
                     type="checkbox"
-                    checked={checked.has(o.value)}
+                    checked={checked.includes(o.value)}
                     disabled={disabled || o.disabled}
                     onChange={() => toggle(o.value)}
                   />
@@ -232,9 +244,9 @@ export function IrisTransfer({
   }
 
   const canToTarget =
-    !disabled && sourceItems.some((o) => !o.disabled && sourceChecked.has(o.value))
+    !disabled && sourceItems.some((o) => !o.disabled && sourceChecked.includes(o.value))
   const canToSource =
-    !disabled && targetItems.some((o) => !o.disabled && targetChecked.has(o.value))
+    !disabled && targetItems.some((o) => !o.disabled && targetChecked.includes(o.value))
 
   return (
     <div

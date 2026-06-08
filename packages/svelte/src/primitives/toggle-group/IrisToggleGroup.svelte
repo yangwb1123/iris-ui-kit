@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { createSelectionModel } from '@iris-ui/core'
+  import { toStore } from '../../useStore'
   import { styleToString, mergeStyle } from '../../internal/style'
   import { setToggleGroupContext } from './context'
   import type { ToggleGroupType, ToggleGroupOrientation, ToggleGroupVariant } from './context'
@@ -33,23 +35,36 @@
   interface ItemReg { value: string; getEl: () => HTMLElement | null }
   const itemRegistry: ItemReg[] = []
 
+  // Selection logic (single/multiple toggle, dedup) is single-sourced in the
+  // core selection model; this component only maps its union value shape
+  // (string | string[] | null) to/from the model's flat key array — mirroring
+  // the React ToggleGroup reference.
+  const toKeys = (v: string | string[] | null | undefined): string[] =>
+    v == null ? [] : Array.isArray(v) ? v : [v]
+  const fromKeys = (keys: string[]): string | string[] | null =>
+    type === 'multiple' ? keys : (keys[0] ?? null)
+
+  // svelte-ignore state_referenced_locally — initial seed; controlled changes sync below.
+  const model = createSelectionModel<string>({
+    mode: type === 'multiple' ? 'multiple' : 'single',
+    defaultSelected: toKeys(value),
+    onChange: (keys) => onchange?.(fromKeys(keys)),
+  })
+  const selectedKeys = toStore(model.store)
+
+  // `value` is the single source for this controlled-only API: mirror it into
+  // the model without re-emitting onchange.
+  $effect(() => {
+    model.sync(toKeys(value))
+  })
+
   function isActive(v: string): boolean {
-    const val = value
-    if (val === null || val === undefined) return false
-    if (Array.isArray(val)) return val.includes(v)
-    return val === v
+    return $selectedKeys.includes(v)
   }
 
   function toggle(v: string) {
     if (disabled) return
-    if (type === 'multiple') {
-      const arr = Array.isArray(value) ? value : []
-      const idx = arr.indexOf(v)
-      const next = idx >= 0 ? arr.filter((x) => x !== v) : [...arr, v]
-      onchange?.(next)
-      return
-    }
-    onchange?.(value === v ? null : v)
+    model.toggle(v)
   }
 
   function registerItem(v: string, getEl: () => HTMLElement | null) {

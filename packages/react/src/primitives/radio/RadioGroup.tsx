@@ -1,4 +1,6 @@
 import * as React from 'react'
+import { createSelectionModel, type SelectionModel } from '@iris-ui/core'
+import { useStore } from '../../useStore'
 import { RadioGroupContext } from './context'
 
 let __counter = 0
@@ -33,16 +35,32 @@ export function IrisRadioGroup({
   children,
   ...rest
 }: IrisRadioGroupProps): React.ReactElement {
-  const [internal, setInternal] = React.useState<string | null>(defaultValue ?? null)
+  // Single-selection logic (controlled/uncontrolled) lives in the core model;
+  // this group only maps its `string | null` value ⇄ the model's flat key
+  // array. A radio never toggles off, so `setValue` uses `model.set`.
   const isControlled = value !== undefined
-  const current = isControlled ? (value as string | null) : internal
+  const toKeys = (v: string | null | undefined): string[] => (v == null ? [] : [v])
+  const modelRef = React.useRef<SelectionModel<string> | null>(null)
+  if (modelRef.current === null) {
+    modelRef.current = createSelectionModel<string>({
+      mode: 'single',
+      defaultSelected: toKeys(isControlled ? value : defaultValue),
+      onChange: (keys) => onChange?.(keys[0] ?? ''),
+    })
+  }
+  const model = modelRef.current
+  const current = useStore(model.store)[0] ?? null
+
+  // Controlled: mirror the prop into the model without re-emitting onChange.
+  React.useEffect(() => {
+    if (isControlled) model.sync(toKeys(value))
+  }, [value, isControlled, model])
 
   const groupName = React.useMemo(() => name ?? generateGroupName(), [name])
 
   const setValue = (next: string) => {
     if (disabled) return
-    if (!isControlled) setInternal(next)
-    onChange?.(next)
+    model.set([next])
   }
 
   return (

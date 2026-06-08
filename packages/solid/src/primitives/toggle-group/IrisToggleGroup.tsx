@@ -1,5 +1,5 @@
 import {
-  createSignal,
+  createEffect,
   mergeProps,
   onCleanup,
   onMount,
@@ -7,6 +7,8 @@ import {
   useContext,
   type JSX,
 } from 'solid-js'
+import { createSelectionModel } from '@iris-ui/core'
+import { useStore } from '../../useStore'
 import {
   ToggleGroupCtx,
   type IrisToggleGroupType,
@@ -56,33 +58,36 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): JSX.Element {
     'style',
   ])
 
-  const isControlled = (): boolean => local.value !== undefined
-  const [internal, setInternal] = createSignal<string | string[] | null>(local.defaultValue ?? null)
-  const current = (): string | string[] | null =>
-    isControlled() ? (local.value ?? null) : internal()
+  // Selection logic (single/multiple toggle, dedup) lives in the core model;
+  // this component only maps its value shape (string | string[] | null) to/from
+  // the model's flat key array.
+  const isMulti = local.type === 'multiple'
+  const toKeys = (v: string | string[] | null | undefined): string[] =>
+    v == null ? [] : Array.isArray(v) ? v : [v]
+  const fromKeys = (keys: string[]): string | string[] | null =>
+    isMulti ? keys : (keys[0] ?? null)
+
+  const model = createSelectionModel<string>({
+    mode: isMulti ? 'multiple' : 'single',
+    defaultSelected: toKeys(
+      local.value !== undefined ? local.value : (local.defaultValue ?? (isMulti ? [] : null)),
+    ),
+    onChange: (keys) => local.onChange?.(fromKeys(keys)),
+  })
+  const selected = useStore(model.store)
+
+  // Controlled: mirror the prop into the model without re-emitting onChange.
+  createEffect(() => {
+    if (local.value !== undefined) model.sync(toKeys(local.value))
+  })
 
   const items: { value: string; el: () => HTMLElement | undefined }[] = []
 
-  const isActive = (value: string): boolean => {
-    const v = current()
-    if (v === null || v === undefined) return false
-    if (Array.isArray(v)) return v.includes(value)
-    return v === value
-  }
+  const isActive = (value: string): boolean => selected().includes(value)
 
   const toggle = (value: string): void => {
     if (local.disabled) return
-    if (local.type === 'multiple') {
-      const arr = Array.isArray(current()) ? (current() as string[]) : []
-      const idx = arr.indexOf(value)
-      const next = idx >= 0 ? arr.filter((v) => v !== value) : [...arr, value]
-      if (!isControlled()) setInternal(next)
-      local.onChange?.(next)
-      return
-    }
-    const next = current() === value ? null : value
-    if (!isControlled()) setInternal(next)
-    local.onChange?.(next)
+    model.toggle(value)
   }
 
   const registerItem = (value: string, el: () => HTMLElement | undefined): void => {

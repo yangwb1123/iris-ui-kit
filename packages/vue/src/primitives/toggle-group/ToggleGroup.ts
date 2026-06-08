@@ -1,4 +1,15 @@
-import { computed, defineComponent, h, provide, type PropType, type Ref } from 'vue'
+import {
+  computed,
+  defineComponent,
+  h,
+  onBeforeUnmount,
+  provide,
+  shallowRef,
+  watch,
+  type PropType,
+  type Ref,
+} from 'vue'
+import { createSelectionModel } from '@iris-ui/core'
 import {
   ToggleGroupContextKey,
   type IrisToggleGroupType,
@@ -37,24 +48,39 @@ export const IrisToggleGroup = defineComponent({
   setup(props, { slots, attrs, emit }) {
     const items: { value: string; el: Ref<HTMLElement | null> }[] = []
 
-    const isActive = (value: string): boolean => {
-      const v = props.modelValue
-      if (v === null || v === undefined) return false
-      if (Array.isArray(v)) return v.includes(value)
-      return v === value
-    }
+    // Selection logic (single/multiple toggle, dedup) lives in the core model;
+    // this component only maps its union value shape (string | string[] | null)
+    // to/from the model's flat key array. Mode is fixed at creation (mirrors the
+    // React `IrisToggleGroup` reference).
+    const isMultiple = props.type === 'multiple'
+    const toKeys = (v: string | string[] | null | undefined): string[] =>
+      v == null ? [] : Array.isArray(v) ? v : [v]
+    const fromKeys = (keys: string[]): string | string[] | null =>
+      isMultiple ? keys : (keys[0] ?? null)
+
+    const model = createSelectionModel<string>({
+      mode: isMultiple ? 'multiple' : 'single',
+      defaultSelected: toKeys(props.modelValue),
+      onChange: (keys) => emit('update:modelValue', fromKeys(keys)),
+    })
+    const selected = shallowRef<string[]>(model.get())
+    onBeforeUnmount(
+      model.store.subscribe((keys) => {
+        selected.value = keys
+      }),
+    )
+
+    // Controlled (v-model): mirror the prop into the model without re-emitting.
+    watch(
+      () => props.modelValue,
+      (v) => model.sync(toKeys(v)),
+    )
+
+    const isActive = (value: string): boolean => selected.value.includes(value)
 
     const toggle = (value: string) => {
       if (props.disabled) return
-      if (props.type === 'multiple') {
-        const arr = Array.isArray(props.modelValue) ? props.modelValue : []
-        const idx = arr.indexOf(value)
-        const next = idx >= 0 ? arr.filter((v) => v !== value) : [...arr, value]
-        emit('update:modelValue', next)
-        return
-      }
-      // Single mode: select or unselect (always allowed)
-      emit('update:modelValue', props.modelValue === value ? null : value)
+      model.toggle(value)
     }
 
     const registerItem = (value: string, el: Ref<HTMLElement | null>) => {

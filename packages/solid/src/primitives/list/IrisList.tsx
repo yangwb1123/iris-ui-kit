@@ -1,4 +1,6 @@
-import { createSignal, For, mergeProps, Show, splitProps, type JSX } from 'solid-js'
+import { createEffect, createSignal, For, mergeProps, Show, splitProps, type JSX } from 'solid-js'
+import { createSelectionModel } from '@iris-ui/core'
+import { useStore } from '../../useStore'
 
 export interface IrisListItem<T = unknown> {
   value: T
@@ -47,34 +49,37 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
   const enabledIndices = () =>
     local.items.map((item, i) => (item.disabled ? -1 : i)).filter((i) => i !== -1)
 
-  const [internalValue, setInternalValue] = createSignal<T | T[] | undefined>(local.defaultValue)
   const [activeIndex, setActiveIndex] = createSignal<number>(enabledIndices()[0] ?? -1)
 
-  const isControlled = () => local.value !== undefined
-  const currentValue = () => (isControlled() ? local.value : internalValue())
+  // Selection logic (single/multiple toggle, dedup) is single-sourced in the core
+  // model. List values are an opaque generic `T`, so they're used directly as
+  // model keys — the model compares by identity (`includes`/`Set`), matching the
+  // component's previous `===`/`indexOf` semantics for any value type.
+  type Key = string | number
+  const asKey = (v: T): Key => v as unknown as Key
+  const toKeys = (v: T | T[] | undefined): Key[] =>
+    v === undefined ? [] : (Array.isArray(v) ? (v as T[]) : [v]).map(asKey)
 
-  const isSelected = (value: T): boolean => {
-    const cv = currentValue()
-    if (local.multi) {
-      return Array.isArray(cv) && (cv as T[]).includes(value)
-    }
-    return cv === value
-  }
+  const model = createSelectionModel<Key>({
+    mode: local.multi ? 'multiple' : 'single',
+    defaultSelected: toKeys(local.value !== undefined ? local.value : local.defaultValue),
+    onChange: (keys) =>
+      local.onChange?.(local.multi ? (keys as unknown as T[]) : (keys[0] as unknown as T)),
+  })
+  const selected = useStore(model.store)
+
+  // Controlled: mirror the prop into the model without re-emitting onChange.
+  createEffect(() => {
+    if (local.value !== undefined) model.sync(toKeys(local.value))
+  })
+
+  const isSelected = (value: T): boolean => selected().includes(asKey(value))
 
   const select = (item: IrisListItem<T>) => {
     if (item.disabled) return
-    let next: T | T[]
-    if (local.multi) {
-      const arr: T[] = Array.isArray(currentValue()) ? [...(currentValue() as T[])] : []
-      const idx = arr.indexOf(item.value)
-      if (idx >= 0) arr.splice(idx, 1)
-      else arr.push(item.value)
-      next = arr
-    } else {
-      next = item.value
-    }
-    if (!isControlled()) setInternalValue(() => next as T | T[])
-    local.onChange?.(next)
+    // multiple: toggle; single: always select (list never deselects on re-click).
+    if (local.multi) model.toggle(asKey(item.value))
+    else model.set([asKey(item.value)])
   }
 
   const moveActive = (delta: 1 | -1) => {

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { createSelectionModel } from '@iris-ui/core'
+  import { toStore } from '../../useStore'
   import type { IrisSegmentedOption } from './types'
 
   type SegmentedSize = 'sm' | 'md' | 'lg'
@@ -35,18 +37,34 @@
     [key: string]: unknown
   } = $props()
 
+  // Single-selection semantics (replace-on-select) + the controlled mirror are
+  // single-sourced in the core selection model; this component keeps only its
+  // value SHAPE (a single string) plus the roving-focus/keyboard logic.
+  // svelte-ignore state_referenced_locally — initial seed; controlled changes sync below.
+  const model = createSelectionModel<string>({
+    mode: 'single',
+    defaultSelected: value ? [value] : [],
+    onChange: (keys) => onchange?.(keys[0] ?? ''),
+  })
+  const selectedKeys = toStore(model.store)
+  $effect(() => {
+    model.sync(value ? [value] : [])
+  })
+
   let btnRefs = $state<(HTMLButtonElement | null)[]>([])
 
   const norm = $derived(normalize(options))
   const sz = $derived(SIZE_MAP[size])
-  const selectedIndex = $derived(norm.findIndex((o) => o.value === value))
+  const selectedIndex = $derived(norm.findIndex((o) => $selectedKeys.includes(o.value)))
   const firstEnabled = $derived(norm.findIndex((o) => !o.disabled))
   const rovingIndex = $derived(selectedIndex >= 0 ? selectedIndex : firstEnabled)
 
   function select(i: number): void {
     const opt = norm[i]
     if (!opt || opt.disabled || disabled) return
-    onchange?.(opt.value)
+    // model.set always commits (fires onChange → onchange), preserving the
+    // original "clicking always emits the value" behavior.
+    model.set([opt.value])
     btnRefs[i]?.focus()
   }
 
@@ -96,7 +114,7 @@
   style="display:{block ? 'flex' : 'inline-flex'}; {block ? 'width:100%;' : ''} gap:2px; padding:2px; background:var(--iris-surface); border-radius:var(--iris-radius-md,6px); opacity:{disabled ? '0.6' : '1'};{style ? ' ' + style : ''}"
 >
   {#each norm as opt, i (opt.value)}
-    {@const selected = opt.value === value}
+    {@const selected = $selectedKeys.includes(opt.value)}
     <button
       bind:this={btnRefs[i]}
       type="button"

@@ -1,6 +1,12 @@
 import * as React from 'react'
-import { compareValues, computeVirtualRange } from '@iris-ui/core'
+import {
+  compareValues,
+  computeVirtualRange,
+  createSelectionModel,
+  type SelectionModel,
+} from '@iris-ui/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
+import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
@@ -191,11 +197,29 @@ export function IrisTable<Row extends Record<string, unknown>>({
   )
   const sort = sortControlled ? (sortProp as IrisTableSortState | null) : sortInternal
 
+  // Row-selection logic (single/multiple toggle, dedup, select-all,
+  // controlled/uncontrolled) is single-sourced in the core model; keys are the
+  // string|number row keys. The sort / edit / resize / virtual logic below is
+  // untouched. Mode is fixed at creation from `selectable` (as ToggleGroup
+  // fixes its mode from `type`).
   const selControlled = selectionProp !== undefined
-  const [selInternal, setSelInternal] = React.useState<Array<string | number>>(
-    defaultSelection ?? [],
-  )
-  const selection = selControlled ? (selectionProp as Array<string | number>) : selInternal
+  const selModelRef = React.useRef<SelectionModel<string | number> | null>(null)
+  if (selModelRef.current === null) {
+    selModelRef.current = createSelectionModel<string | number>({
+      mode: selectable === 'single' ? 'single' : 'multiple',
+      defaultSelected: selControlled
+        ? (selectionProp as Array<string | number>)
+        : (defaultSelection ?? []),
+      onChange: (next) => onSelectionChange?.(next),
+    })
+  }
+  const selModel = selModelRef.current
+  const selection = useStore(selModel.store)
+
+  // Controlled: mirror the prop into the model without re-emitting onChange.
+  React.useEffect(() => {
+    if (selControlled) selModel.sync(selectionProp as Array<string | number>)
+  }, [selectionProp, selControlled, selModel])
 
   const widthsControlled = columnWidthsProp !== undefined
   const [widthsInternal, setWidthsInternal] = React.useState<IrisTableColumnWidths>(
@@ -266,11 +290,6 @@ export function IrisTable<Row extends Record<string, unknown>>({
     onSortChange?.(next)
   }
 
-  const setSelection = (next: Array<string | number>) => {
-    if (!selControlled) setSelInternal(next)
-    onSelectionChange?.(next)
-  }
-
   const cycleSort = (col: IrisTableColumn<Row>) => {
     if (!col.sortable) return
     if (!sort || sort.key !== col.key) {
@@ -296,32 +315,22 @@ export function IrisTable<Row extends Record<string, unknown>>({
     return (row as Record<string, unknown>)[rowKey] as string | number
   }
 
+  // Single mode toggles off / replaces, multiple toggles inclusion — both are
+  // the model's `toggle` semantics for the row's key.
   const toggleRow = (row: Row) => {
-    const k = rowKeyOf(row)
-    if (selectable === 'single') {
-      setSelection(selection.includes(k) ? [] : [k])
-      return
-    }
-    if (selectable === 'multi') {
-      setSelection(selection.includes(k) ? selection.filter((x) => x !== k) : [...selection, k])
-    }
+    if (selectable === 'none') return
+    selModel.toggle(rowKeyOf(row))
   }
 
   const toggleAll = () => {
     if (selectable !== 'multi') return
-    const allKeys = sortedData.map(rowKeyOf)
-    if (allKeys.every((k) => selection.includes(k))) setSelection([])
-    else setSelection(allKeys)
+    selModel.toggleAll(sortedData.map(rowKeyOf))
   }
 
-  const allSelected =
-    selectable === 'multi' &&
-    sortedData.length > 0 &&
-    sortedData.every((r) => selection.includes(rowKeyOf(r)))
+  const allKeys = sortedData.map(rowKeyOf)
+  const allSelected = selectable === 'multi' && selModel.isAllSelected(allKeys)
   const someSelected =
-    selectable === 'multi' &&
-    sortedData.some((r) => selection.includes(rowKeyOf(r))) &&
-    !allSelected
+    selectable === 'multi' && allKeys.some((k) => selection.includes(k)) && !allSelected
 
   const gridTemplateColumns = React.useMemo(() => {
     const widths: string[] = []

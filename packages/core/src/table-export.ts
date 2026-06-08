@@ -1,8 +1,10 @@
 /**
- * Framework-agnostic tabular export. `toSpreadsheetXml` emits SpreadsheetML
- * 2003 (the `<?mso-application?>` XML dialect) — opened natively by Excel and
- * LibreOffice with zero dependencies and no ZIP/binary handling, so it's the
- * pragmatic "Excel export" for the Table. Adapters wrap it as `exportExcel`.
+ * Framework-agnostic tabular export — an **auxiliary** capability (B-layer):
+ * composed onto a table, not part of its core identity, so it lives here as a
+ * standalone serializer rather than inside any controller. `toSpreadsheetXml`
+ * emits SpreadsheetML 2003 (the `<?mso-application?>` XML dialect) — opened
+ * natively by Excel and LibreOffice with zero dependencies; `toCsv` emits
+ * RFC-4180 CSV. Adapters/plugins wrap them as `exportExcel` / `exportCsv`.
  */
 
 /** Minimal column shape needed to serialize a row set. */
@@ -11,6 +13,29 @@ export interface TableExportColumn {
   title: string
   /** Field to read from each row; defaults to `key`. */
   dataIndex?: string
+}
+
+/** Quote a CSV field if it contains a comma, quote, CR, or LF (RFC 4180). */
+function csvField(value: unknown): string {
+  if (value == null) return ''
+  const text = String(value)
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
+/**
+ * Serialize rows to an RFC-4180 CSV string. Column order sets field order;
+ * values are read via `dataIndex` (falling back to `key`). The single source of
+ * truth for CSV export across the Table primitives and the ProTable plugin.
+ */
+export function toCsv(
+  rows: readonly Record<string, unknown>[],
+  columns: readonly TableExportColumn[],
+): string {
+  const header = columns.map((c) => csvField(c.title)).join(',')
+  const body = rows
+    .map((row) => columns.map((c) => csvField(row[c.dataIndex ?? c.key])).join(','))
+    .join('\n')
+  return body ? `${header}\n${body}` : header
 }
 
 export interface SpreadsheetXmlOptions {

@@ -57,9 +57,29 @@ export {
 } from './pagination'
 export {
   toSpreadsheetXml,
+  toCsv,
   type TableExportColumn,
   type SpreadsheetXmlOptions,
 } from './table-export'
+export {
+  compareValues,
+  cycleSort,
+  filterSort,
+  paginate,
+  pageCount,
+  getPageRange,
+  type SortDirection,
+  type SortState,
+  type DataViewColumn,
+  type DataViewQuery,
+} from './data-view'
+export {
+  createSelectionModel,
+  type SelectionModel,
+  type SelectionConfig,
+  type SelectionMode,
+} from './selection'
+export { nextEnabledIndex, firstEnabledIndex, lastEnabledIndex } from './roving'
 export { standardSchemaValidator, type StandardSchemaV1 } from './standard-schema'
 export { resolveDataState, type DataState, type DataStateInput } from './data-state'
 export {

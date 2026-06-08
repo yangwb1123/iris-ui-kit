@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toSpreadsheetXml, type TableExportColumn } from './table-export'
+import { toSpreadsheetXml, toCsv, type TableExportColumn } from './table-export'
 
 interface Row extends Record<string, unknown> {
   name: string
@@ -70,5 +70,30 @@ describe('toSpreadsheetXml', () => {
   it('rows produce one <Row> each plus the header', () => {
     const xml = toSpreadsheetXml(rows, columns)
     expect(xml.match(/<Row>/g)?.length).toBe(3)
+  })
+})
+
+describe('toCsv', () => {
+  it('emits a header row then one row per record', () => {
+    const csv = toCsv(rows, columns)
+    const lines = csv.split('\n')
+    expect(lines[0]).toBe('Name,Age')
+    expect(lines).toHaveLength(rows.length + 1)
+  })
+
+  it('reads via dataIndex when provided', () => {
+    const cols: TableExportColumn[] = [{ key: 'c', title: 'City', dataIndex: 'city' }]
+    expect(toCsv([{ city: 'NYC' }], cols)).toBe('City\nNYC')
+  })
+
+  it('quotes fields containing comma, quote, or newline (RFC 4180)', () => {
+    const cols: TableExportColumn[] = [{ key: 'v', title: 'V' }]
+    expect(toCsv([{ v: 'a,b' }], cols)).toBe('V\n"a,b"')
+    expect(toCsv([{ v: 'a"b' }], cols)).toBe('V\n"a""b"')
+    expect(toCsv([{ v: 'a\nb' }], cols)).toBe('V\n"a\nb"')
+  })
+
+  it('header only when there are no rows', () => {
+    expect(toCsv([], columns)).toBe('Name,Age')
   })
 })

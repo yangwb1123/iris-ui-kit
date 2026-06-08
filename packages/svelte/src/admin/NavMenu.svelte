@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { untrack } from 'svelte'
   import {
+    branchTrail,
+    createExpansion,
     findNavNode,
     findNavPath,
     firstLeaf,
@@ -8,6 +9,7 @@
     visibleNav,
     type NavNode,
   } from '@iris-ui/core'
+  import { toStore } from '../useStore'
   import { styleToString } from '../internal/style'
   import IrisIcon from '../primitives/icon/IrisIcon.svelte'
   import type { IrisNavMenuProps } from './types'
@@ -23,33 +25,30 @@
     onExpandedKeysChange,
   }: IrisNavMenuProps = $props()
 
-  function branchTrail(key: string | undefined): string[] {
-    return key
-      ? findNavPath(items, key)
-          .filter(isBranch)
-          .map((n) => n.key)
-      : []
-  }
-
   const isControlled = $derived(expandedKeys !== undefined)
-  // svelte-ignore state_referenced_locally — initial expanded set; controlled reads use the prop.
-  let internalExpanded = $state<string[]>(defaultExpandedKeys ?? branchTrail(activeKey))
-  const expanded = $derived(isControlled ? (expandedKeys as string[]) : internalExpanded)
+
+  // Expand/collapse state, toggle, and the active-trail auto-open union are
+  // single-sourced in the core expansion model (`merge` = union without drops);
+  // `branchTrail` is the shared selector for the ancestor groups to open. This
+  // component keeps only the controlled/uncontrolled split: controlled reads use
+  // the `expandedKeys` prop; uncontrolled state lives in the model.
+  // svelte-ignore state_referenced_locally — initial seed; controlled reads use the prop.
+  const model = createExpansion({
+    mode: 'multiple',
+    defaultExpanded: defaultExpandedKeys ?? branchTrail(items, activeKey ?? ''),
+  })
+  const internalExpanded = toStore(model.store)
+  const expanded = $derived(isControlled ? (expandedKeys as string[]) : $internalExpanded)
 
   // Auto-open the active branch trail as the active leaf changes (uncontrolled).
   $effect(() => {
     const key = activeKey
     if (isControlled) return
-    const keys = branchTrail(key)
-    if (!keys.length) return
-    untrack(() => {
-      const merged = Array.from(new Set([...internalExpanded, ...keys]))
-      if (merged.length !== internalExpanded.length) internalExpanded = merged
-    })
+    model.merge(key ? branchTrail(items, key) : [])
   })
 
   function setExpanded(keys: string[]): void {
-    if (!isControlled) internalExpanded = keys
+    if (!isControlled) model.set(keys)
     onExpandedKeysChange?.(keys)
   }
   function toggle(key: string): void {

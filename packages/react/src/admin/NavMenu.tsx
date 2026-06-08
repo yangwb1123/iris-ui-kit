@@ -1,12 +1,16 @@
 import * as React from 'react'
 import {
+  branchTrail,
+  createExpansion,
   findNavNode,
   findNavPath,
   firstLeaf,
   isBranch,
   visibleNav,
+  type ExpansionModel,
   type NavNode,
 } from '@iris-ui/core'
+import { useStore } from '../useStore'
 import { IrisIcon } from '../primitives/icon/Icon'
 
 export interface IrisNavMenuProps {
@@ -45,30 +49,38 @@ export function IrisNavMenu({
   onSelect,
   onExpandedKeysChange,
 }: IrisNavMenuProps): React.ReactElement {
-  const branchTrail = React.useCallback(
-    (key: string | undefined): string[] =>
-      key
-        ? findNavPath(items, key)
-            .filter(isBranch)
-            .map((n) => n.key)
-        : [],
+  // Expand/collapse state lives in the core expansion model — the open-set algebra
+  // and the active-trail union (`merge`) are byte-identical across every adapter, so
+  // they live in @iris-ui/core. This component keeps only the controlled/uncontrolled
+  // wiring: uncontrolled reads + writes the model store; controlled mirrors the
+  // `expandedKeys` prop and just notifies. `branchTrail` is the shared selector.
+  const trailOf = React.useCallback(
+    (key: string | undefined): string[] => (key ? branchTrail(items, key) : []),
     [items],
   )
 
   const isControlled = expandedKeys !== undefined
-  const [internalExpanded, setInternalExpanded] = React.useState<string[]>(
-    () => defaultExpandedKeys ?? branchTrail(activeKey),
-  )
+  const modelRef = React.useRef<ExpansionModel | null>(null)
+  if (modelRef.current === null) {
+    modelRef.current = createExpansion({
+      mode: 'multiple',
+      defaultExpanded: defaultExpandedKeys ?? trailOf(activeKey),
+    })
+  }
+  const model = modelRef.current
+  const internalExpanded = useStore(model.store)
   const expanded = isControlled ? (expandedKeys as string[]) : internalExpanded
 
   // Auto-open the active branch trail as the active leaf changes (uncontrolled).
+  // `merge` unions without removals and is a no-op when the trail is already open,
+  // and the model has no `onChange` wired, so this never emits onExpandedKeysChange.
   React.useEffect(() => {
     if (isControlled) return
-    setInternalExpanded((prev) => Array.from(new Set([...prev, ...branchTrail(activeKey)])))
-  }, [activeKey, isControlled, branchTrail])
+    model.merge(trailOf(activeKey))
+  }, [activeKey, isControlled, model, trailOf])
 
   const setExpanded = (keys: string[]): void => {
-    if (!isControlled) setInternalExpanded(keys)
+    if (!isControlled) model.set(keys)
     onExpandedKeysChange?.(keys)
   }
   const toggle = (key: string): void =>

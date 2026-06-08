@@ -1,5 +1,7 @@
 import { createEffect, createSignal, For, Show, type JSX } from 'solid-js'
 import {
+  branchTrail,
+  createExpansion,
   findNavNode,
   findNavPath,
   firstLeaf,
@@ -8,6 +10,7 @@ import {
   type NavNode,
 } from '@iris-ui/core'
 import { IrisIcon } from '../primitives/icon'
+import { useStore } from '../useStore'
 
 export interface IrisNavMenuProps {
   items: NavNode[]
@@ -29,30 +32,34 @@ export interface IrisNavMenuProps {
  * IrisNavMenu (same arrow-key a11y + section labels).
  */
 export function IrisNavMenu(props: IrisNavMenuProps): JSX.Element {
-  const branchTrail = (key: string | undefined): string[] =>
-    key
-      ? findNavPath(props.items, key)
-          .filter(isBranch)
-          .map((n) => n.key)
-      : []
+  // Branch-ancestor keys to auto-open for an active leaf — the slice/filter/map
+  // is single-sourced in core `branchTrail`; the guard handles an absent key.
+  const trailKeys = (key: string | undefined): string[] =>
+    key ? branchTrail(props.items, key) : []
+
+  // The expand/collapse state machine (open set + union-merge) lives in the core
+  // expansion model; this component keeps only the controlled/uncontrolled glue:
+  // when controlled, the displayed set is the `expandedKeys` prop and the model
+  // is left untouched (so it stays put until the parent updates).
+  const model = createExpansion({
+    mode: 'multiple',
+    defaultExpanded: props.defaultExpandedKeys ?? trailKeys(props.activeKey),
+  })
+  const modelExpanded = useStore(model.store)
 
   const isControlled = (): boolean => props.expandedKeys !== undefined
-  const [internalExpanded, setInternalExpanded] = createSignal<string[]>(
-    props.defaultExpandedKeys ?? branchTrail(props.activeKey),
-  )
   const expanded = (): string[] =>
-    isControlled() ? (props.expandedKeys as string[]) : internalExpanded()
+    isControlled() ? (props.expandedKeys as string[]) : modelExpanded()
 
   // Auto-open the active branch trail as the active leaf changes (uncontrolled).
   createEffect(() => {
     const key = props.activeKey
     if (isControlled()) return
-    const keys = branchTrail(key)
-    if (keys.length) setInternalExpanded((prev) => Array.from(new Set([...prev, ...keys])))
+    model.merge(trailKeys(key))
   })
 
   const setExpanded = (keys: string[]): void => {
-    if (!isControlled()) setInternalExpanded(keys)
+    if (!isControlled()) model.set(keys)
     props.onExpandedKeysChange?.(keys)
   }
   const toggle = (key: string): void => {

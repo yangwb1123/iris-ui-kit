@@ -1,5 +1,17 @@
-import { computed, defineComponent, h, ref, watch, type PropType, type VNode } from 'vue'
 import {
+  computed,
+  defineComponent,
+  h,
+  onBeforeUnmount,
+  ref,
+  shallowRef,
+  watch,
+  type PropType,
+  type VNode,
+} from 'vue'
+import {
+  branchTrail,
+  createExpansion,
   findNavNode,
   findNavPath,
   isBranch,
@@ -41,20 +53,29 @@ export const IrisNavMenu = defineComponent({
   },
   setup(props, { emit, attrs }) {
     const tree = computed(() => visibleNav(props.items))
-    const branchTrail = (key: string | undefined): string[] =>
-      key
-        ? findNavPath(props.items, key)
-            .filter(isBranch)
-            .map((n) => n.key)
-        : []
-
     const activePath = computed(() =>
       props.activeKey ? findNavPath(props.items, props.activeKey).map((n) => n.key) : [],
     )
 
     const isControlled = computed(() => props.expandedKeys !== undefined)
-    const internalExpanded = ref<string[]>(
-      props.defaultExpandedKeys ?? branchTrail(props.activeKey),
+
+    // The expand/collapse set — toggle, dedup and the active-trail union — lives in
+    // the core expansion model; this component only layers on the controlled /
+    // uncontrolled split. v-model here is *strict*: while controlled, rendering
+    // reads the `expandedKeys` prop (not the store) so a toggle stays closed until
+    // the parent updates it. The model therefore backs the uncontrolled state, and
+    // `branchTrail` feeds the auto-open union through `merge`.
+    const model = createExpansion({
+      mode: 'multiple',
+      defaultExpanded:
+        props.defaultExpandedKeys ??
+        (props.activeKey ? branchTrail(props.items, props.activeKey) : []),
+    })
+    const internalExpanded = shallowRef<string[]>(model.get())
+    onBeforeUnmount(
+      model.store.subscribe((keys) => {
+        internalExpanded.value = keys
+      }),
     )
     const expanded = computed(() =>
       isControlled.value ? (props.expandedKeys as string[]) : internalExpanded.value,
@@ -64,20 +85,21 @@ export const IrisNavMenu = defineComponent({
     watch(
       () => props.activeKey,
       (key) => {
-        if (isControlled.value) return
-        internalExpanded.value = Array.from(
-          new Set([...internalExpanded.value, ...branchTrail(key)]),
-        )
+        if (!isControlled.value) model.merge(key ? branchTrail(props.items, key) : [])
       },
     )
 
-    const setExpanded = (keys: string[]): void => {
-      if (!isControlled.value) internalExpanded.value = keys
-      emit('update:expandedKeys', keys)
-    }
     const toggle = (key: string): void => {
-      const cur = expanded.value
-      setExpanded(cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key])
+      if (isControlled.value) {
+        const cur = props.expandedKeys as string[]
+        emit(
+          'update:expandedKeys',
+          cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key],
+        )
+      } else {
+        model.toggle(key)
+        emit('update:expandedKeys', model.get())
+      }
     }
 
     const select = (node: NavNode): void => {

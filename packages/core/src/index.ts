@@ -79,6 +79,7 @@ export {
   type SelectionModel,
   type SelectionConfig,
   type SelectionMode,
+  type SelectionKey,
 } from './selection'
 export { nextEnabledIndex, firstEnabledIndex, lastEnabledIndex } from './roving'
 export {

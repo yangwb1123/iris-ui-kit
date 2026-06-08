@@ -213,10 +213,14 @@
       "module": "accordion",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -226,10 +230,14 @@
       "module": "accordion",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -287,10 +295,14 @@
       "module": "affix",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -300,10 +312,14 @@
       "module": "alert",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -313,10 +329,14 @@
       "module": "anchor",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -326,10 +346,14 @@
       "module": "aspect-ratio",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -356,10 +380,14 @@
       "module": "back-top",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -386,10 +414,14 @@
       "module": "banner",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -450,10 +482,14 @@
       "module": "calendar",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -463,10 +499,14 @@
       "module": "card",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -476,10 +516,14 @@
       "module": "carousel",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -489,10 +533,14 @@
       "module": "cascader",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -502,10 +550,14 @@
       "module": "checkbox",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -515,10 +567,14 @@
       "module": "chip",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -527,10 +583,14 @@
       "group": "behaviors",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -540,10 +600,14 @@
       "module": "color-picker",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -553,10 +617,14 @@
       "module": "combobox",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -566,10 +634,14 @@
       "module": "command-palette",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -578,10 +650,14 @@
       "group": "layouts",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -591,10 +667,14 @@
       "module": "copy-button",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -604,10 +684,14 @@
       "module": "countdown",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -648,10 +732,14 @@
       "group": "skeletons",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -661,10 +749,14 @@
       "module": "date-picker",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -674,10 +766,14 @@
       "module": "date-range-picker",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -687,10 +783,14 @@
       "module": "descriptions",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -700,10 +800,14 @@
       "module": "dialog",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -713,10 +817,14 @@
       "module": "dialog",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -726,10 +834,14 @@
       "module": "dialog",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -739,10 +851,12 @@
       "module": "dialog",
       "frameworks": [
         "react",
+        "solid",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
         "vue": "@iris-ui/vue"
       }
     },
@@ -752,10 +866,14 @@
       "module": "dialog",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -765,10 +883,14 @@
       "module": "dialog",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -778,10 +900,14 @@
       "module": "divider",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -791,10 +917,14 @@
       "module": "dragger",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -804,10 +934,14 @@
       "module": "drawer",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -817,10 +951,14 @@
       "module": "drawer",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -830,10 +968,14 @@
       "module": "drawer",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -843,10 +985,14 @@
       "module": "drawer",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -856,10 +1002,14 @@
       "module": "drawer",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -954,10 +1104,14 @@
       "module": "empty-state",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -967,10 +1121,14 @@
       "module": "fieldset",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -980,10 +1138,14 @@
       "module": "file-upload",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -993,10 +1155,14 @@
       "module": "float-button",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1005,10 +1171,14 @@
       "group": "form",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1035,10 +1205,14 @@
       "module": "gauge",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1047,10 +1221,14 @@
       "group": "layouts",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1075,10 +1253,14 @@
       "group": "behaviors",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1087,10 +1269,14 @@
       "group": "other",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1117,10 +1303,14 @@
       "module": "image",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1147,10 +1337,14 @@
       "module": "kbd",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1160,10 +1354,14 @@
       "module": "list",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1172,10 +1370,14 @@
       "group": "skeletons",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1185,10 +1387,14 @@
       "module": "marquee",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1198,10 +1404,14 @@
       "module": "masonry",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1211,10 +1421,14 @@
       "module": "mentions",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1224,10 +1438,14 @@
       "module": "menu",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1237,10 +1455,14 @@
       "module": "menu",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1250,10 +1472,14 @@
       "module": "menu",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1263,10 +1489,12 @@
       "module": "menu",
       "frameworks": [
         "react",
+        "solid",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1276,10 +1504,14 @@
       "module": "menu",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1289,10 +1521,14 @@
       "module": "menu",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1301,10 +1537,14 @@
       "group": "behaviors",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1330,10 +1570,14 @@
       "module": "number-input",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1343,10 +1587,14 @@
       "module": "otp-input",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1356,10 +1604,14 @@
       "module": "pagination",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1369,10 +1621,14 @@
       "module": "password-input",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1382,10 +1638,14 @@
       "module": "popover",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1395,10 +1655,14 @@
       "module": "popover",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1408,10 +1672,14 @@
       "module": "popover",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1421,10 +1689,14 @@
       "module": "progress",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1434,10 +1706,14 @@
       "module": "progress-circle",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1447,10 +1723,14 @@
       "module": "radio",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1460,10 +1740,14 @@
       "module": "radio",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1473,10 +1757,14 @@
       "module": "range-slider",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1486,10 +1774,14 @@
       "module": "rating",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1498,10 +1790,14 @@
       "group": "behaviors",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1511,10 +1807,14 @@
       "module": "resizer",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1524,10 +1824,14 @@
       "module": "result",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1537,10 +1841,14 @@
       "module": "ribbon",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1550,10 +1858,14 @@
       "module": "scroll-area",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1563,10 +1875,14 @@
       "module": "segmented",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1576,10 +1892,14 @@
       "module": "select",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1605,10 +1925,14 @@
       "module": "skeleton",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1618,10 +1942,14 @@
       "module": "slider",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1631,10 +1959,14 @@
       "module": "slot",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1644,10 +1976,14 @@
       "module": "spinner",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1657,10 +1993,14 @@
       "module": "split-button",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1670,10 +2010,14 @@
       "module": "splitter",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1699,10 +2043,14 @@
       "module": "statistic",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1712,10 +2060,14 @@
       "module": "stepper",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1725,10 +2077,14 @@
       "module": "stepper",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1755,10 +2111,14 @@
       "module": "table",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1768,10 +2128,14 @@
       "module": "tabs",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1781,10 +2145,14 @@
       "module": "tabs",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1794,10 +2162,14 @@
       "module": "tabs",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1807,10 +2179,14 @@
       "module": "tabs",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1820,10 +2196,14 @@
       "module": "tag-input",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1833,10 +2213,14 @@
       "module": "textarea",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1846,10 +2230,14 @@
       "module": "timeline",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1859,10 +2247,14 @@
       "module": "time-picker",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1885,10 +2277,14 @@
       "module": "toggle-group",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1898,10 +2294,14 @@
       "module": "toggle-group",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1911,10 +2311,14 @@
       "module": "toolbar",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1924,10 +2328,14 @@
       "module": "tooltip",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1937,10 +2345,14 @@
       "module": "tour",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1950,10 +2362,14 @@
       "module": "transfer",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1963,10 +2379,14 @@
       "module": "tree",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1976,10 +2396,14 @@
       "module": "tree-select",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -1989,10 +2413,14 @@
       "module": "virtual-scroll",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -2002,10 +2430,14 @@
       "module": "visually-hidden",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -2015,10 +2447,14 @@
       "module": "watermark",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     }
@@ -2077,12 +2513,12 @@
   },
   "stats": {
     "total": 134,
-    "full": 23,
+    "full": 131,
     "byFramework": {
       "react": 134,
       "vue": 134,
-      "solid": 23,
-      "svelte": 23
+      "solid": 133,
+      "svelte": 131
     }
   }
 }

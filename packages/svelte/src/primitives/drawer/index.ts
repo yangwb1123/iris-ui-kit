@@ -1,0 +1,6 @@
+export { default as IrisDrawer } from './IrisDrawer.svelte'
+export { default as IrisDrawerTrigger } from './IrisDrawerTrigger.svelte'
+export { default as IrisDrawerContent } from './IrisDrawerContent.svelte'
+export { default as IrisDrawerTitle } from './IrisDrawerTitle.svelte'
+export { default as IrisDrawerClose } from './IrisDrawerClose.svelte'
+export type { IrisDrawerSide } from './context'

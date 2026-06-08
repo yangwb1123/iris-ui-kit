@@ -1,0 +1,5 @@
+export { default as IrisDialog } from './IrisDialog.svelte'
+export { default as IrisDialogTrigger } from './IrisDialogTrigger.svelte'
+export { default as IrisDialogContent } from './IrisDialogContent.svelte'
+export { default as IrisDialogTitle } from './IrisDialogTitle.svelte'
+export { default as IrisDialogClose } from './IrisDialogClose.svelte'

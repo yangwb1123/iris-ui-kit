@@ -17,3 +17,5 @@ export {
   type IrisDashboardGridProps,
   type IrisDashboardCardProps,
 } from './DashboardGrid'
+export { IrisContainer, type IrisContainerProps, type IrisContainerMaxWidth } from './Container'
+export { IrisGrid, type IrisGridProps, type IrisGridColumns } from './Grid'

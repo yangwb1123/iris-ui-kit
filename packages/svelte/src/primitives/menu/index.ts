@@ -1,0 +1,5 @@
+export { default as IrisMenu } from './IrisMenu.svelte'
+export { default as IrisMenuTrigger } from './IrisMenuTrigger.svelte'
+export { default as IrisMenuContent } from './IrisMenuContent.svelte'
+export { default as IrisMenuItem } from './IrisMenuItem.svelte'
+export { default as IrisMenuSub } from './IrisMenuSub.svelte'

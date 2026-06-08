@@ -12,6 +12,7 @@ describe('createFormStore', () => {
       isSubmitting: false,
       isValidating: false,
       submitCount: 0,
+      currentStep: 0,
     })
   })
 
@@ -239,6 +240,7 @@ describe('createFormStore', () => {
         isSubmitting: false,
         isValidating: false,
         submitCount: 0,
+        currentStep: 0,
       })
     })
 
@@ -250,6 +252,65 @@ describe('createFormStore', () => {
       expect(form.getState().dirty.n).toBe(false)
       form.setFieldValue('n', 6)
       expect(form.getState().dirty.n).toBe(true)
+    })
+  })
+
+  describe('multi-step (wizard)', () => {
+    const make = () =>
+      createFormStore<{ name: string; email: string }>({
+        initialValues: { name: '', email: '' },
+        validateOnChange: false,
+        validators: {
+          name: (v) => (v ? undefined : 'Name required'),
+          email: (v) => (v ? undefined : 'Email required'),
+        },
+        steps: [
+          { id: 'who', fields: ['name'] },
+          { id: 'contact', fields: ['email'] },
+        ],
+      })
+
+    it('starts on step 0 and reports stepCount', () => {
+      const form = make()
+      expect(form.getState().currentStep).toBe(0)
+      expect(form.stepCount()).toBe(2)
+    })
+
+    it('nextStep blocks on an invalid step and advances when valid', async () => {
+      const form = make()
+      expect(await form.nextStep()).toBe(false) // name empty → blocked
+      expect(form.getState().currentStep).toBe(0)
+      expect(form.getState().errors.name).toBe('Name required')
+      form.setFieldValue('name', 'Ada')
+      expect(await form.nextStep()).toBe(true)
+      expect(form.getState().currentStep).toBe(1)
+    })
+
+    it('nextStep does not advance past the last step', async () => {
+      const form = make()
+      form.setFieldValue('name', 'Ada')
+      form.setFieldValue('email', 'a@b.com')
+      await form.nextStep() // → step 1
+      expect(await form.nextStep()).toBe(false) // already last
+      expect(form.getState().currentStep).toBe(1)
+    })
+
+    it('prevStep / goToStep clamp to range', () => {
+      const form = make()
+      form.goToStep(99)
+      expect(form.getState().currentStep).toBe(1)
+      form.prevStep()
+      expect(form.getState().currentStep).toBe(0)
+      form.prevStep()
+      expect(form.getState().currentStep).toBe(0) // clamped
+    })
+
+    it('step methods are safe no-ops without steps config', async () => {
+      const form = createFormStore({ initialValues: { x: '' } })
+      expect(form.stepCount()).toBe(1)
+      expect(await form.validateStep()).toBe(true)
+      expect(await form.nextStep()).toBe(false)
+      expect(form.getState().currentStep).toBe(0)
     })
   })
 

@@ -26,6 +26,7 @@ export {
   type FieldFlags,
   type ArrayKey,
   type ArrayElement,
+  type FormStep,
 } from './form'
 export {
   createI18n,

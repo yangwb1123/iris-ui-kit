@@ -37,6 +37,16 @@ export interface FormState<V extends FormValues> {
   isSubmitting: boolean
   isValidating: boolean
   submitCount: number
+  /** Active step index (0-based) when the form is configured with `steps`. */
+  currentStep: number
+}
+
+/** One step of a multi-step (wizard) form: the fields it owns. */
+export interface FormStep<V extends FormValues> {
+  /** Optional stable id / title for the step. */
+  id?: string
+  /** The fields validated when advancing past this step. */
+  fields: Key<V>[]
 }
 
 export interface FormConfig<V extends FormValues> {
@@ -60,6 +70,12 @@ export interface FormConfig<V extends FormValues> {
    * One level deep (dependents are not themselves cascaded) to avoid cycles.
    */
   dependencies?: Partial<Record<Key<V>, Key<V>[]>>
+  /**
+   * Multi-step (wizard) configuration. When set, `nextStep()` validates the
+   * current step's fields and only advances when they all pass. Absent = a
+   * single-step form (the step methods become safe no-ops).
+   */
+  steps?: FormStep<V>[]
   onSubmit?: (values: V) => void | Promise<void>
 }
 
@@ -85,6 +101,16 @@ export interface FormStore<V extends FormValues> {
   setErrors(errors: FieldErrors<V>): void
   validateField(name: Key<V>): Promise<string | undefined>
   validateForm(): Promise<FieldErrors<V>>
+  /** Validate just the fields of step `index` (default: the current step). */
+  validateStep(index?: number): Promise<boolean>
+  /** Number of configured steps (1 when no `steps` are set). */
+  stepCount(): number
+  /** Jump to a step by index (clamped to range). Does not validate. */
+  goToStep(index: number): void
+  /** Validate the current step; advance only if it passes. Returns whether it advanced. */
+  nextStep(): Promise<boolean>
+  /** Move to the previous step (no validation). */
+  prevStep(): void
   handleSubmit(): Promise<void>
   reset(nextInitialValues?: V): void
   isValid(): boolean
@@ -97,6 +123,8 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
 
   let initialValues: V = { ...config.initialValues }
 
+  const steps = config.steps ?? []
+
   const store = createStore<FormState<V>>({
     values: { ...config.initialValues },
     errors: {},
@@ -105,6 +133,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     isSubmitting: false,
     isValidating: false,
     submitCount: 0,
+    currentStep: 0,
   })
 
   // Monotonic per-field token. A validation result is only applied if its
@@ -172,6 +201,35 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     }
     store.setState((s) => ({ ...s, errors: nextErrors, isValidating: false }))
     return nextErrors
+  }
+
+  // ── Multi-step (wizard) ──────────────────────────────────────────────────
+  const stepCount: FormStore<V>['stepCount'] = () => Math.max(1, steps.length)
+  const clampStep = (i: number): number => Math.max(0, Math.min(i, stepCount() - 1))
+
+  const validateStep: FormStore<V>['validateStep'] = async (index) => {
+    const step = steps[index ?? store.getState().currentStep]
+    if (!step) return true // no steps configured → nothing to block on
+    const results = await Promise.all(step.fields.map((name) => validateField(name)))
+    step.fields.forEach((name) => setFieldTouched(name, true))
+    return results.every((e) => e === undefined)
+  }
+
+  const goToStep: FormStore<V>['goToStep'] = (index) => {
+    store.setState((s) => ({ ...s, currentStep: clampStep(index) }))
+  }
+
+  const nextStep: FormStore<V>['nextStep'] = async () => {
+    const ok = await validateStep()
+    if (!ok) return false
+    const cur = store.getState().currentStep
+    if (cur >= stepCount() - 1) return false // already on the last step
+    store.setState((s) => ({ ...s, currentStep: clampStep(cur + 1) }))
+    return true
+  }
+
+  const prevStep: FormStore<V>['prevStep'] = () => {
+    store.setState((s) => ({ ...s, currentStep: clampStep(s.currentStep - 1) }))
   }
 
   const dependencies: Partial<Record<Key<V>, Key<V>[]>> = config.dependencies ?? {}
@@ -298,6 +356,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
       isSubmitting: false,
       isValidating: false,
       submitCount: 0,
+      currentStep: 0,
     })
   }
 
@@ -317,6 +376,11 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     setErrors,
     validateField,
     validateForm,
+    validateStep,
+    stepCount,
+    goToStep,
+    nextStep,
+    prevStep,
     handleSubmit,
     reset,
     isValid: () => Object.keys(store.getState().errors).length === 0,

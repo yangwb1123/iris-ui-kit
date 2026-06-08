@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createSelectionModel } from '@iris-ui/core'
+  import { createSelectionModel, nextEnabledIndex, firstEnabledIndex, lastEnabledIndex } from '@iris-ui/core'
   import { toStore } from '../../useStore'
   import type { IrisSegmentedOption } from './types'
 
@@ -56,7 +56,10 @@
   const norm = $derived(normalize(options))
   const sz = $derived(SIZE_MAP[size])
   const selectedIndex = $derived(norm.findIndex((o) => $selectedKeys.includes(o.value)))
-  const firstEnabled = $derived(norm.findIndex((o) => !o.disabled))
+  // Enabled-index roving math (skip-disabled + wrap, first/last-enabled) is
+  // single-sourced in @iris-ui/core; this component keeps only focus/selection.
+  const isEnabled = (i: number): boolean => !norm[i]?.disabled
+  const firstEnabled = $derived(firstEnabledIndex(norm.length, isEnabled))
   const rovingIndex = $derived(selectedIndex >= 0 ? selectedIndex : firstEnabled)
 
   function select(i: number): void {
@@ -70,15 +73,7 @@
 
   function move(from: number, dir: 1 | -1): void {
     if (disabled) return
-    let i = from
-    for (let s = 0; s < norm.length; s++) {
-      i = (i + dir + norm.length) % norm.length
-      const opt = norm[i]
-      if (opt && !opt.disabled) {
-        select(i)
-        return
-      }
-    }
+    select(nextEnabledIndex(from, dir, norm.length, isEnabled))
   }
 
   function onKeyDown(event: KeyboardEvent, i: number): void {
@@ -90,16 +85,10 @@
       move(i, -1)
     } else if (event.key === 'Home') {
       event.preventDefault()
-      if (firstEnabled >= 0) select(firstEnabled)
+      select(firstEnabled)
     } else if (event.key === 'End') {
       event.preventDefault()
-      for (let j = norm.length - 1; j >= 0; j--) {
-        const o = norm[j]
-        if (o && !o.disabled) {
-          select(j)
-          break
-        }
-      }
+      select(lastEnabledIndex(norm.length, isEnabled))
     }
   }
 </script>

@@ -1,4 +1,5 @@
-import { computed, defineComponent, h, ref, watch, type PropType } from 'vue'
+import { defineComponent, h, ref, watch, type PropType } from 'vue'
+import { firstEnabledIndex, lastEnabledIndex, nextEnabledIndex } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
 
@@ -63,20 +64,20 @@ export const IrisList = defineComponent({
       empty: props.items.length === 0,
     }))
 
-    const enabledIndexes = computed(() =>
-      props.items.map((item, i) => (item.disabled ? -1 : i)).filter((i) => i !== -1),
-    )
+    const isEnabled = (i: number) => !props.items[i]?.disabled
 
-    const activeIndex = ref<number>(enabledIndexes.value[0] ?? -1)
+    const activeIndex = ref<number>(firstEnabledIndex(props.items.length, isEnabled))
 
     // Keep the active index in sync when items change.
     watch(
       () => props.items,
       () => {
-        if (activeIndex.value < 0 || activeIndex.value >= props.items.length) {
-          activeIndex.value = enabledIndexes.value[0] ?? -1
-        } else if (props.items[activeIndex.value]?.disabled) {
-          activeIndex.value = enabledIndexes.value[0] ?? -1
+        if (
+          activeIndex.value < 0 ||
+          activeIndex.value >= props.items.length ||
+          props.items[activeIndex.value]?.disabled
+        ) {
+          activeIndex.value = firstEnabledIndex(props.items.length, isEnabled)
         }
       },
       { flush: 'post' },
@@ -106,14 +107,14 @@ export const IrisList = defineComponent({
     }
 
     const moveActive = (delta: 1 | -1) => {
-      const enabled = enabledIndexes.value
-      if (enabled.length === 0) return
-      let pos = enabled.indexOf(activeIndex.value)
-      if (pos === -1) pos = delta > 0 ? -1 : enabled.length
-      let next = pos + delta
-      if (next < 0) next = props.loop ? enabled.length - 1 : 0
-      else if (next >= enabled.length) next = props.loop ? 0 : enabled.length - 1
-      activeIndex.value = enabled[next]!
+      const next = nextEnabledIndex(
+        activeIndex.value,
+        delta,
+        props.items.length,
+        isEnabled,
+        props.loop,
+      )
+      if (next >= 0) activeIndex.value = next
     }
 
     const focusActive = () => {
@@ -140,7 +141,7 @@ export const IrisList = defineComponent({
           break
         case 'Home': {
           event.preventDefault()
-          const first = enabledIndexes.value[0] ?? -1
+          const first = firstEnabledIndex(props.items.length, isEnabled)
           if (first >= 0) {
             activeIndex.value = first
             focusActive()
@@ -149,7 +150,7 @@ export const IrisList = defineComponent({
         }
         case 'End': {
           event.preventDefault()
-          const last = enabledIndexes.value[enabledIndexes.value.length - 1] ?? -1
+          const last = lastEnabledIndex(props.items.length, isEnabled)
           if (last >= 0) {
             activeIndex.value = last
             focusActive()

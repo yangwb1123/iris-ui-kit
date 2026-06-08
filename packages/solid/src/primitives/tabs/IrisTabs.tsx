@@ -1,4 +1,5 @@
 import { createSignal, mergeProps, Show, splitProps, useContext, type JSX } from 'solid-js'
+import { firstEnabledIndex, lastEnabledIndex, nextEnabledIndex } from '@iris-ui/core'
 import { TabsCtx, type IrisTabsOrientation } from './context'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -68,19 +69,13 @@ export function IrisTabs(props: IrisTabsProps): JSX.Element {
   }
 
   const moveFocus = (from: string, delta: 1 | -1 | 'home' | 'end'): void => {
-    const enabled = triggers.filter((t) => !t.isDisabled())
-    if (enabled.length === 0) return
-    const fromIndex = enabled.findIndex((t) => t.value === from)
+    const isEnabled = (i: number): boolean => !triggers[i]?.isDisabled()
+    const fromIndex = triggers.findIndex((t) => t.value === from)
     let nextIndex: number
-    if (delta === 'home') nextIndex = 0
-    else if (delta === 'end') nextIndex = enabled.length - 1
-    else {
-      const base = fromIndex === -1 ? (delta > 0 ? -1 : enabled.length) : fromIndex
-      nextIndex = base + delta
-      if (nextIndex < 0) nextIndex = enabled.length - 1
-      if (nextIndex >= enabled.length) nextIndex = 0
-    }
-    const next = enabled[nextIndex]
+    if (delta === 'home') nextIndex = firstEnabledIndex(triggers.length, isEnabled)
+    else if (delta === 'end') nextIndex = lastEnabledIndex(triggers.length, isEnabled)
+    else nextIndex = nextEnabledIndex(fromIndex, delta, triggers.length, isEnabled)
+    const next = triggers[nextIndex]
     if (next) {
       setValue(next.value)
       focusTriggerByValue(next.value)

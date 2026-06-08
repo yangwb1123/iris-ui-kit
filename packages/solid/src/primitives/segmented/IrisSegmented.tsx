@@ -1,5 +1,10 @@
 import { createEffect, For, mergeProps, splitProps, type JSX } from 'solid-js'
-import { createSelectionModel } from '@iris-ui/core'
+import {
+  createSelectionModel,
+  firstEnabledIndex,
+  lastEnabledIndex,
+  nextEnabledIndex,
+} from '@iris-ui/core'
 import { useStore } from '../../useStore'
 
 export type IrisSegmentedSize = 'sm' | 'md' | 'lg'
@@ -88,15 +93,8 @@ export function IrisSegmented(props: IrisSegmentedProps): JSX.Element {
 
   const move = (options: IrisSegmentedOption[], from: number, dir: 1 | -1): void => {
     if (local.disabled) return
-    let i = from
-    for (let s = 0; s < options.length; s++) {
-      i = (i + dir + options.length) % options.length
-      const opt = options[i]
-      if (opt && !opt.disabled) {
-        select(options, i)
-        return
-      }
-    }
+    const next = nextEnabledIndex(from, dir, options.length, (i) => !options[i]?.disabled)
+    if (next >= 0) select(options, next)
   }
 
   const sz = (): { padding: string; fontSize: string; height: string } => SIZE_MAP[local.size]
@@ -155,16 +153,12 @@ export function IrisSegmented(props: IrisSegmentedProps): JSX.Element {
                   move(n, i(), -1)
                 } else if (e.key === 'Home') {
                   e.preventDefault()
-                  const fe = n.findIndex((o) => !o.disabled)
+                  const fe = firstEnabledIndex(n.length, (idx) => !n[idx]?.disabled)
                   if (fe >= 0) select(n, fe)
                 } else if (e.key === 'End') {
                   e.preventDefault()
-                  for (let j = n.length - 1; j >= 0; j--) {
-                    if (!n[j]?.disabled) {
-                      select(n, j)
-                      break
-                    }
-                  }
+                  const le = lastEnabledIndex(n.length, (idx) => !n[idx]?.disabled)
+                  if (le >= 0) select(n, le)
                 }
               }}
               style={{

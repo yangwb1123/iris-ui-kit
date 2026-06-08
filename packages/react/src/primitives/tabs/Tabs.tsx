@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { nextEnabledIndex } from '@iris-ui/core'
 import { TabsContext, type IrisTabsOrientation } from './context'
 
 export interface IrisTabsProps {
@@ -87,12 +88,8 @@ export function IrisTabs({
       let nextIndex: number
       if (delta === 'home') nextIndex = 0
       else if (delta === 'end') nextIndex = enabled.length - 1
-      else {
-        const base = fromIndex === -1 ? (delta > 0 ? -1 : enabled.length) : fromIndex
-        nextIndex = base + delta
-        if (nextIndex < 0) nextIndex = enabled.length - 1
-        if (nextIndex >= enabled.length) nextIndex = 0
-      }
+      // Step ±1 over the already-enabled list (wrap) via the shared core helper.
+      else nextIndex = nextEnabledIndex(fromIndex, delta, enabled.length)
       const next = enabled[nextIndex]
       if (next) {
         setValue(next.value)

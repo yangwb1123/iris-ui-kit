@@ -1,5 +1,11 @@
 import * as React from 'react'
-import type { Placement, Size } from '@iris-ui/core'
+import {
+  firstEnabledIndex,
+  lastEnabledIndex,
+  nextEnabledIndex,
+  type Placement,
+  type Size,
+} from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
@@ -75,16 +81,15 @@ export function IrisSelect<T = unknown>({
     onValueChange?.(next)
   }
 
-  // Active (focused) option index for arrow-key navigation.
-  const enabledIndexes = React.useMemo(
-    () => items.map((it, i) => (it.disabled ? -1 : i)).filter((i) => i !== -1),
-    [items],
-  )
+  // Active (focused) option index for arrow-key navigation. The roving-index
+  // math (next enabled with wrap, first/last enabled) is single-sourced in
+  // @iris-ui/core; here we only supply the `isEnabled` predicate.
+  const isEnabled = React.useCallback((i: number) => !items[i]?.disabled, [items])
   const initialActive = React.useMemo(() => {
     const selIdx = items.findIndex((it) => it.value === value)
     if (selIdx >= 0 && !items[selIdx]?.disabled) return selIdx
-    return enabledIndexes[0] ?? -1
-  }, [items, value, enabledIndexes])
+    return firstEnabledIndex(items.length, isEnabled)
+  }, [items, value, isEnabled])
   const [activeIndex, setActiveIndex] = React.useState(initialActive)
 
   // Reset activeIndex when opening so focus starts at the selected (or first enabled) item.
@@ -104,13 +109,8 @@ export function IrisSelect<T = unknown>({
   }, [open, activeIndex])
 
   const moveActive = (delta: 1 | -1) => {
-    if (enabledIndexes.length === 0) return
-    let pos = enabledIndexes.indexOf(activeIndex)
-    if (pos === -1) pos = delta > 0 ? -1 : enabledIndexes.length
-    let next = pos + delta
-    if (next < 0) next = enabledIndexes.length - 1
-    if (next >= enabledIndexes.length) next = 0
-    setActiveIndex(enabledIndexes[next]!)
+    const next = nextEnabledIndex(activeIndex, delta, items.length, isEnabled)
+    if (next >= 0) setActiveIndex(next)
   }
 
   const selectItem = (item: IrisSelectItem<T>) => {
@@ -131,14 +131,14 @@ export function IrisSelect<T = unknown>({
         break
       case 'Home': {
         e.preventDefault()
-        const first = enabledIndexes[0]
-        if (first !== undefined) setActiveIndex(first)
+        const first = firstEnabledIndex(items.length, isEnabled)
+        if (first >= 0) setActiveIndex(first)
         break
       }
       case 'End': {
         e.preventDefault()
-        const last = enabledIndexes[enabledIndexes.length - 1]
-        if (last !== undefined) setActiveIndex(last)
+        const last = lastEnabledIndex(items.length, isEnabled)
+        if (last >= 0) setActiveIndex(last)
         break
       }
       case 'Enter':

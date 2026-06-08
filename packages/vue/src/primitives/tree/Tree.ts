@@ -1,4 +1,5 @@
 import { computed, defineComponent, h, ref, watch, type PropType, type VNode } from 'vue'
+import { nextEnabledIndex } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
 import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
@@ -206,9 +207,7 @@ export const IrisTree = defineComponent({
       const list = flat.value
       if (list.length === 0) return
       const idx = list.findIndex((f) => f.node.id === activeId.value)
-      let next = idx + delta
-      if (next < 0) next = 0
-      if (next >= list.length) next = list.length - 1
+      const next = nextEnabledIndex(idx, delta, list.length, () => true, false)
       activeId.value = list[next]?.node.id ?? null
     }
 

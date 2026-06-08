@@ -1,5 +1,11 @@
 import * as React from 'react'
-import { createSelectionModel, type SelectionModel } from '@iris-ui/core'
+import {
+  createSelectionModel,
+  firstEnabledIndex,
+  lastEnabledIndex,
+  nextEnabledIndex,
+  type SelectionModel,
+} from '@iris-ui/core'
 import { useStore } from '../../useStore'
 
 export type IrisSegmentedSize = 'sm' | 'md' | 'lg'
@@ -77,8 +83,9 @@ export function IrisSegmented({
     if (isControlled) model.sync(toKeys(value))
   }, [value, isControlled, model])
 
+  const enabledAt = (i: number) => !norm[i]?.disabled
   const selectedIndex = norm.findIndex((o) => o.value === currentValue)
-  const firstEnabled = norm.findIndex((o) => !o.disabled)
+  const firstEnabled = firstEnabledIndex(norm.length, enabledAt)
   const rovingIndex = selectedIndex >= 0 ? selectedIndex : firstEnabled
 
   const select = (i: number) => {
@@ -90,15 +97,9 @@ export function IrisSegmented({
 
   const move = (from: number, dir: 1 | -1) => {
     if (disabled) return
-    let i = from
-    for (let s = 0; s < norm.length; s++) {
-      i = (i + dir + norm.length) % norm.length
-      const opt = norm[i]
-      if (opt && !opt.disabled) {
-        select(i)
-        return
-      }
-    }
+    // Pure index math (step, skip disabled, wrap) lives in @iris-ui/core;
+    // `select` performs the DOM focus and ignores out-of-range/disabled.
+    select(nextEnabledIndex(from, dir, norm.length, enabledAt, true))
   }
 
   const onKeyDown = (i: number, e: React.KeyboardEvent<HTMLButtonElement>) => {
@@ -113,13 +114,7 @@ export function IrisSegmented({
       if (firstEnabled >= 0) select(firstEnabled)
     } else if (e.key === 'End') {
       e.preventDefault()
-      for (let j = norm.length - 1; j >= 0; j--) {
-        const o = norm[j]
-        if (o && !o.disabled) {
-          select(j)
-          break
-        }
-      }
+      select(lastEnabledIndex(norm.length, enabledAt))
     }
   }
 

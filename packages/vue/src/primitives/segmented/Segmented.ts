@@ -1,4 +1,5 @@
 import { defineComponent, h, type PropType } from 'vue'
+import { firstEnabledIndex, lastEnabledIndex, nextEnabledIndex } from '@iris-ui/core'
 
 export type IrisSegmentedSize = 'sm' | 'md' | 'lg'
 
@@ -49,22 +50,15 @@ export const IrisSegmented = defineComponent({
 
     const move = (norm: IrisSegmentedOption[], from: number, dir: 1 | -1) => {
       if (props.disabled) return
-      let i = from
-      for (let s = 0; s < norm.length; s++) {
-        i = (i + dir + norm.length) % norm.length
-        const opt = norm[i]
-        if (opt && !opt.disabled) {
-          select(norm, i)
-          return
-        }
-      }
+      const next = nextEnabledIndex(from, dir, norm.length, (i) => !norm[i]?.disabled)
+      select(norm, next)
     }
 
     return () => {
       const norm = normalize(props.options)
       const sz = SIZE_MAP[props.size]
       const selectedIndex = norm.findIndex((o) => o.value === props.modelValue)
-      const firstEnabled = norm.findIndex((o) => !o.disabled)
+      const firstEnabled = firstEnabledIndex(norm.length, (i) => !norm[i]?.disabled)
       const rovingIndex = selectedIndex >= 0 ? selectedIndex : firstEnabled
 
       return h(
@@ -117,13 +111,8 @@ export const IrisSegmented = defineComponent({
                   if (firstEnabled >= 0) select(norm, firstEnabled)
                 } else if (e.key === 'End') {
                   e.preventDefault()
-                  for (let j = norm.length - 1; j >= 0; j--) {
-                    const o = norm[j]
-                    if (o && !o.disabled) {
-                      select(norm, j)
-                      break
-                    }
-                  }
+                  const last = lastEnabledIndex(norm.length, (i) => !norm[i]?.disabled)
+                  if (last >= 0) select(norm, last)
                 }
               },
               style: {

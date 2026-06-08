@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte'
+  import { nextEnabledIndex } from '@iris-ui/core'
   import { setTabsContext } from './context'
 
   type Orientation = 'horizontal' | 'vertical'
@@ -80,12 +81,9 @@
     let nextIndex: number
     if (delta === 'home') nextIndex = 0
     else if (delta === 'end') nextIndex = enabled.length - 1
-    else {
-      const base = fromIndex === -1 ? (delta > 0 ? -1 : enabled.length) : fromIndex
-      nextIndex = base + delta
-      if (nextIndex < 0) nextIndex = enabled.length - 1
-      if (nextIndex >= enabled.length) nextIndex = 0
-    }
+    // Skip-disabled is already done by the `enabled` filter above; the core
+    // helper single-sources the ±1 wraparound (incl. the from-not-found case).
+    else nextIndex = nextEnabledIndex(fromIndex, delta, enabled.length)
     const next = enabled[nextIndex]
     if (next) {
       setValue(next.value)

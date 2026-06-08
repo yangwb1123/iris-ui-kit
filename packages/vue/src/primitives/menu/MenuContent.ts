@@ -1,4 +1,5 @@
 import { Teleport, defineComponent, h, inject, nextTick, ref, watch, type PropType } from 'vue'
+import { nextEnabledIndex } from '@iris-ui/core'
 import { useFloating } from '../floating/useFloating'
 import { useDismiss } from '../floating/useDismiss'
 import { MenuContextKey } from './context'
@@ -67,14 +68,12 @@ export const IrisMenuContent = defineComponent({
       switch (event.key) {
         case 'ArrowDown': {
           event.preventDefault()
-          const next = index < 0 ? 0 : (index + 1) % items.length
-          items[next]?.focus()
+          items[nextEnabledIndex(index, 1, items.length)]?.focus()
           break
         }
         case 'ArrowUp': {
           event.preventDefault()
-          const next = index <= 0 ? items.length - 1 : index - 1
-          items[next]?.focus()
+          items[nextEnabledIndex(index, -1, items.length)]?.focus()
           break
         }
         case 'Home':

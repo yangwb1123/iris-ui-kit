@@ -1,5 +1,6 @@
 import { createEffect, splitProps, Show, type JSX } from 'solid-js'
 import { Portal } from 'solid-js/web'
+import { nextEnabledIndex } from '@iris-ui/core'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useMenuContext } from './context'
@@ -61,11 +62,11 @@ export function IrisMenuContent(props: IrisMenuContentProps): JSX.Element {
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
-        items[index < 0 ? 0 : (index + 1) % items.length]?.focus()
+        items[nextEnabledIndex(index, 1, items.length)]?.focus()
         break
       case 'ArrowUp':
         e.preventDefault()
-        items[index <= 0 ? items.length - 1 : index - 1]?.focus()
+        items[nextEnabledIndex(index, -1, items.length)]?.focus()
         break
       case 'Home':
         e.preventDefault()

@@ -1,5 +1,10 @@
 import { createEffect, createSignal, For, mergeProps, Show, splitProps, type JSX } from 'solid-js'
-import { createSelectionModel } from '@iris-ui/core'
+import {
+  createSelectionModel,
+  firstEnabledIndex,
+  lastEnabledIndex,
+  nextEnabledIndex,
+} from '@iris-ui/core'
 import { useStore } from '../../useStore'
 
 export interface IrisListItem<T = unknown> {
@@ -46,10 +51,11 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
     'style',
   ])
 
-  const enabledIndices = () =>
-    local.items.map((item, i) => (item.disabled ? -1 : i)).filter((i) => i !== -1)
+  const isEnabled = (i: number): boolean => !local.items[i]?.disabled
 
-  const [activeIndex, setActiveIndex] = createSignal<number>(enabledIndices()[0] ?? -1)
+  const [activeIndex, setActiveIndex] = createSignal<number>(
+    firstEnabledIndex(local.items.length, isEnabled),
+  )
 
   // Selection logic (single/multiple toggle, dedup) is single-sourced in the core
   // model. List values are an opaque generic `T`, so they're used directly as
@@ -83,14 +89,8 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
   }
 
   const moveActive = (delta: 1 | -1) => {
-    const enabled = enabledIndices()
-    if (enabled.length === 0) return
-    let pos = enabled.indexOf(activeIndex())
-    if (pos === -1) pos = delta > 0 ? -1 : enabled.length
-    let next = pos + delta
-    if (next < 0) next = local.loop ? enabled.length - 1 : 0
-    else if (next >= enabled.length) next = local.loop ? 0 : enabled.length - 1
-    setActiveIndex(enabled[next]!)
+    const next = nextEnabledIndex(activeIndex(), delta, local.items.length, isEnabled, local.loop)
+    if (next >= 0) setActiveIndex(next)
   }
 
   const onKeyDown: JSX.EventHandlerUnion<HTMLUListElement, KeyboardEvent> = (e) => {
@@ -105,13 +105,13 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
         break
       case 'Home': {
         e.preventDefault()
-        const first = enabledIndices()[0] ?? -1
+        const first = firstEnabledIndex(local.items.length, isEnabled)
         if (first >= 0) setActiveIndex(first)
         break
       }
       case 'End': {
         e.preventDefault()
-        const last = enabledIndices()[enabledIndices().length - 1] ?? -1
+        const last = lastEnabledIndex(local.items.length, isEnabled)
         if (last >= 0) setActiveIndex(last)
         break
       }

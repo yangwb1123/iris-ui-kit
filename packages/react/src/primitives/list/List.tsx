@@ -1,5 +1,12 @@
 import * as React from 'react'
-import { createSelectionModel, type SelectionKey, type SelectionModel } from '@iris-ui/core'
+import {
+  createSelectionModel,
+  firstEnabledIndex,
+  lastEnabledIndex,
+  nextEnabledIndex,
+  type SelectionKey,
+  type SelectionModel,
+} from '@iris-ui/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
@@ -121,17 +128,19 @@ export function IrisList<T = unknown>({
     [selectedKeys],
   )
 
-  const enabledIndexes = React.useMemo(
-    () => items.map((it, i) => (it.disabled ? -1 : i)).filter((i) => i !== -1),
-    [items],
+  // Roving-index math (next enabled with wrap, first/last enabled) is
+  // single-sourced in @iris-ui/core; this edge only supplies the `isEnabled`
+  // predicate and performs the actual DOM focus.
+  const isEnabled = React.useCallback((i: number) => !items[i]?.disabled, [items])
+  const [activeIndex, setActiveIndex] = React.useState<number>(() =>
+    firstEnabledIndex(items.length, isEnabled),
   )
-  const [activeIndex, setActiveIndex] = React.useState<number>(enabledIndexes[0] ?? -1)
 
   React.useEffect(() => {
     if (activeIndex < 0 || activeIndex >= items.length || items[activeIndex]?.disabled) {
-      setActiveIndex(enabledIndexes[0] ?? -1)
+      setActiveIndex(firstEnabledIndex(items.length, isEnabled))
     }
-  }, [items, activeIndex, enabledIndexes])
+  }, [items, activeIndex, isEnabled])
 
   const listRef = React.useRef<HTMLUListElement | null>(null)
 
@@ -149,13 +158,8 @@ export function IrisList<T = unknown>({
   }
 
   const moveActive = (delta: 1 | -1) => {
-    if (enabledIndexes.length === 0) return
-    let pos = enabledIndexes.indexOf(activeIndex)
-    if (pos === -1) pos = delta > 0 ? -1 : enabledIndexes.length
-    let next = pos + delta
-    if (next < 0) next = loop ? enabledIndexes.length - 1 : 0
-    if (next >= enabledIndexes.length) next = loop ? 0 : enabledIndexes.length - 1
-    focusAt(enabledIndexes[next]!)
+    const next = nextEnabledIndex(activeIndex, delta, items.length, isEnabled, loop)
+    if (next >= 0) focusAt(next)
   }
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLUListElement>) => {
@@ -171,14 +175,14 @@ export function IrisList<T = unknown>({
         break
       case 'Home': {
         e.preventDefault()
-        const first = enabledIndexes[0]
-        if (first !== undefined) focusAt(first)
+        const first = firstEnabledIndex(items.length, isEnabled)
+        if (first >= 0) focusAt(first)
         break
       }
       case 'End': {
         e.preventDefault()
-        const last = enabledIndexes[enabledIndexes.length - 1]
-        if (last !== undefined) focusAt(last)
+        const last = lastEnabledIndex(items.length, isEnabled)
+        if (last >= 0) focusAt(last)
         break
       }
       case 'Enter':

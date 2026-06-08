@@ -2,7 +2,7 @@ import { createMemo, createSignal, createUniqueId, mergeProps, Show, For, type J
 import { Portal } from 'solid-js/web'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
-import type { Placement, Size } from '@iris-ui/core'
+import { firstEnabledIndex, nextEnabledIndex, type Placement, type Size } from '@iris-ui/core'
 
 export type IrisSelectSize = Size
 
@@ -85,29 +85,22 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
     escape: true,
   })
 
-  const enabledItems = createMemo(() =>
-    merged.items.map((item, i) => (item.disabled ? -1 : i)).filter((i) => i !== -1),
-  )
+  const isEnabled = (i: number): boolean => !merged.items[i]?.disabled
 
   const handleKeyDown = (e: KeyboardEvent): void => {
     if (merged.disabled) return
-    const items = enabledItems()
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       if (!open()) {
         setOpen(true)
-        setActiveIndex(items[0] ?? -1)
+        setActiveIndex(firstEnabledIndex(merged.items.length, isEnabled))
         return
       }
-      const pos = items.indexOf(activeIndex())
-      const next = pos < 0 ? 0 : (pos + 1) % items.length
-      setActiveIndex(items[next] ?? -1)
+      setActiveIndex(nextEnabledIndex(activeIndex(), 1, merged.items.length, isEnabled))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       if (!open()) return
-      const pos = items.indexOf(activeIndex())
-      const prev = pos <= 0 ? items.length - 1 : pos - 1
-      setActiveIndex(items[prev] ?? -1)
+      setActiveIndex(nextEnabledIndex(activeIndex(), -1, merged.items.length, isEnabled))
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       if (!open()) {

@@ -1,4 +1,5 @@
 import { computed, defineComponent, provide, ref, type PropType } from 'vue'
+import { nextEnabledIndex } from '@iris-ui/core'
 import { TabsContextKey, type IrisTabsOrientation } from './context'
 
 interface TriggerRegistration {
@@ -80,12 +81,7 @@ export const IrisTabs = defineComponent({
       let nextIndex: number
       if (delta === 'home') nextIndex = 0
       else if (delta === 'end') nextIndex = enabled.length - 1
-      else {
-        const base = fromIndex === -1 ? (delta > 0 ? -1 : enabled.length) : fromIndex
-        nextIndex = base + delta
-        if (nextIndex < 0) nextIndex = enabled.length - 1
-        if (nextIndex >= enabled.length) nextIndex = 0
-      }
+      else nextIndex = nextEnabledIndex(fromIndex, delta, enabled.length)
       const next = enabled[nextIndex]
       if (next) {
         setValue(next.value)

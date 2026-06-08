@@ -1,0 +1,174 @@
+import {
+  defineComponent,
+  h,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+  type PropType,
+  type VNode,
+} from 'vue'
+import type { ProTableColumn, ProTableStore } from '../core'
+
+export type { ProTableColumn, ProTableStore } from '../core'
+
+function pinnedStyle(column: ProTableColumn): Record<string, string> | undefined {
+  if (!column.pinned) return undefined
+  return { position: 'sticky', [column.pinned]: '0', zIndex: '1' }
+}
+
+/**
+ * vxe-table-style CRUD data table for Vue (render-function authored, matching
+ * the `@iris-ui/vue` convention). Subscribes to the framework-agnostic
+ * {@link ProTableStore}.
+ */
+export const IrisProTable = defineComponent({
+  name: 'IrisProTable',
+  props: {
+    store: { type: Object as PropType<ProTableStore>, required: true },
+  },
+  setup(props) {
+    const state = shallowRef(props.store.getState())
+    const draft = ref('')
+    let unsub = () => {}
+
+    onMounted(() => {
+      unsub = props.store.subscribe((s) => {
+        state.value = s
+        if (s.editing) {
+          const row = s.rows.find((r) => props.store.rowKeyOf(r) === s.editing!.rowKey)
+          const col = props.store.visibleColumns().find((c) => c.key === s.editing!.columnKey)
+          if (row && col) draft.value = String(props.store.cellValue(row, col) ?? '')
+        }
+      })
+    })
+    onUnmounted(() => unsub())
+
+    const sortIndicator = (key: string): string => {
+      const sort = state.value.sort
+      return sort?.key === key ? (sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
+    }
+
+    return () => {
+      const columns = props.store.visibleColumns()
+      const hasFilter = columns.some((c) => c.filterable)
+
+      const headerCells: VNode[] = [
+        h('th', [
+          h('input', {
+            type: 'checkbox',
+            'aria-label': 'Select all',
+            checked: props.store.isAllSelected(),
+            onChange: () => props.store.toggleAll(),
+          }),
+        ]),
+        ...columns.map((c) =>
+          h(
+            'th',
+            {
+              key: c.key,
+              style: { textAlign: c.align, width: c.width, ...pinnedStyle(c) },
+              'data-sortable': c.sortable ? '' : undefined,
+              onClick: c.sortable ? () => props.store.toggleSort(c.key) : undefined,
+            },
+            `${c.title}${sortIndicator(c.key)}`,
+          ),
+        ),
+      ]
+
+      const filterRow = hasFilter
+        ? h('tr', [
+            h('th'),
+            ...columns.map((c) =>
+              h(
+                'th',
+                { key: c.key },
+                c.filterable
+                  ? [
+                      h('input', {
+                        'aria-label': `Filter ${c.title}`,
+                        value: state.value.filters[c.key] ?? '',
+                        onInput: (e: Event) =>
+                          props.store.setFilter(c.key, (e.target as HTMLInputElement).value),
+                      }),
+                    ]
+                  : [],
+              ),
+            ),
+          ])
+        : null
+
+      const bodyRows = state.value.rows.map((row) => {
+        const key = props.store.rowKeyOf(row)
+        return h('tr', { key, 'data-selected': props.store.isSelected(key) ? '' : undefined }, [
+          h('td', [
+            h('input', {
+              type: 'checkbox',
+              'aria-label': `Select row ${key}`,
+              checked: props.store.isSelected(key),
+              onChange: () => props.store.toggleRow(key),
+            }),
+          ]),
+          ...columns.map((c) => {
+            const editing =
+              state.value.editing?.rowKey === key && state.value.editing?.columnKey === c.key
+            return h(
+              'td',
+              {
+                key: c.key,
+                style: { textAlign: c.align, ...pinnedStyle(c) },
+                onDblclick: c.editable ? () => props.store.startEdit(key, c.key) : undefined,
+              },
+              editing
+                ? [
+                    h('input', {
+                      type: c.editor === 'number' ? 'number' : 'text',
+                      value: draft.value,
+                      onInput: (e: Event) => (draft.value = (e.target as HTMLInputElement).value),
+                      onBlur: () => props.store.commitEdit(draft.value),
+                      onKeydown: (e: KeyboardEvent) => {
+                        if (e.key === 'Enter') props.store.commitEdit(draft.value)
+                        if (e.key === 'Escape') props.store.cancelEdit()
+                      },
+                    }),
+                  ]
+                : String(props.store.cellValue(row, c) ?? ''),
+            )
+          }),
+        ])
+      })
+
+      return h('div', { 'data-iris-pro-table': '' }, [
+        h('table', [
+          h('thead', filterRow ? [h('tr', headerCells), filterRow] : [h('tr', headerCells)]),
+          h('tbody', bodyRows),
+        ]),
+        h('div', { 'data-iris-pro-table-footer': '' }, [
+          h(
+            'button',
+            {
+              type: 'button',
+              disabled: state.value.page <= 1,
+              onClick: () => props.store.setPage(state.value.page - 1),
+            },
+            'Prev',
+          ),
+          h(
+            'span',
+            { 'data-iris-pro-table-page': '' },
+            `${state.value.page} / ${props.store.pageCount()}`,
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              disabled: state.value.page >= props.store.pageCount(),
+              onClick: () => props.store.setPage(state.value.page + 1),
+            },
+            'Next',
+          ),
+        ]),
+      ])
+    }
+  },
+})

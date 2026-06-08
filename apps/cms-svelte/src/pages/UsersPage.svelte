@@ -3,8 +3,11 @@
     IrisAvatar,
     IrisBadge,
     IrisCheckbox,
+    IrisInput,
     IrisPagination,
+    createClientFetcher,
     useResourceController,
+    type DataViewColumn,
   } from '@iris-ui/svelte'
 
   type Status = 'active' | 'invited' | 'suspended'
@@ -16,8 +19,6 @@
     status: Status
   }
 
-  // A small static dataset, served through a mock async fetcher so the page
-  // exercises the real createResourceController (server-mode) lifecycle.
   const ALL: User[] = [
     { id: 1, name: 'Ada Lovelace', email: 'ada@iris.dev', role: 'Owner', status: 'active' },
     { id: 2, name: 'Alan Turing', email: 'alan@iris.dev', role: 'Admin', status: 'active' },
@@ -28,17 +29,29 @@
     { id: 7, name: 'Barbara L.', email: 'barbara@iris.dev', role: 'Viewer', status: 'active' },
   ]
 
-  async function fetchUsers({ page, pageSize }: { page: number; pageSize: number }) {
-    const start = (page - 1) * pageSize
-    return { rows: ALL.slice(start, start + pageSize), total: ALL.length }
-  }
+  // Column accessors drive the controller's client-side filter/sort.
+  const columns: DataViewColumn<User>[] = [
+    { key: 'name', getValue: (u) => u.name, filterable: true },
+    { key: 'role', getValue: (u) => u.role },
+  ]
+  // Client-mode: filter + sort + paginate the in-memory dataset (no backend).
+  const fetchUsers = createClientFetcher(ALL, columns)
 
   const tone = (s: Status): 'success' | 'warning' | 'danger' =>
     s === 'active' ? 'success' : s === 'invited' ? 'warning' : 'danger'
 
-  // L4 validation: a real CRUD list driven entirely by the framework-agnostic
-  // `createResourceController` (via the `useResourceController` bridge) — server
-  // pagination + the composed selection model, rendered with Iris primitives.
+  /** Tri-state header sort cycle: none → asc → desc → none. */
+  type Sort = { key: string; direction: 'asc' | 'desc' } | null
+  function nextSort(current: Sort, key: string): Sort {
+    if (!current || current.key !== key) return { key, direction: 'asc' }
+    if (current.direction === 'asc') return { key, direction: 'desc' }
+    return null
+  }
+
+  // A real CRUD list driven entirely by the framework-agnostic
+  // `createResourceController` (via the `useResourceController` bridge) in client
+  // mode (`createClientFetcher`): keyword filter + sortable columns + pagination +
+  // the composed selection model, rendered with Iris primitives.
   const users = useResourceController<User>({ fetcher: fetchUsers, pageSize: 4 })
   // `$state` is a Svelte rune, so alias the readable state store (see Dropdown.svelte).
   const view = users.state
@@ -47,15 +60,42 @@
   const allOnPage = $derived(
     pageIds.length > 0 && pageIds.every((id) => $view.selectedKeys.includes(id)),
   )
+
+  const ariaSort = (key: string): 'ascending' | 'descending' | 'none' =>
+    $view.sort?.key === key
+      ? $view.sort.direction === 'asc'
+        ? 'ascending'
+        : 'descending'
+      : 'none'
+  const sortGlyph = (key: string) =>
+    $view.sort?.key === key ? ($view.sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
+
+  function toggleSort(key: string) {
+    users.setSort(nextSort($view.sort, key))
+  }
+  function onHeaderKey(e: KeyboardEvent, key: string) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      toggleSort(key)
+    }
+  }
 </script>
 
 <section>
   <h1 class="page-title">All users</h1>
   <p class="page-desc">
-    Driven by <code>createResourceController</code> (server pagination + selection) from
-    @iris-ui/core — the L4 composite, rendered with Iris primitives.{#if $view.selectedKeys.length > 0}
+    Driven by <code>createResourceController</code> in client mode (<code>createClientFetcher</code>)
+    — keyword filter + sortable columns + pagination + selection, all from @iris-ui/core.{#if $view.selectedKeys.length > 0}
       · {$view.selectedKeys.length} selected{/if}
   </p>
+  <div style="max-width: 260px; margin-bottom: 12px">
+    <IrisInput
+      value={$view.filters.name ?? ''}
+      oninput={(e) => users.setFilter('name', e.currentTarget.value)}
+      placeholder="Filter by name…"
+      aria-label="Filter users by name"
+    />
+  </div>
   <table class="cms-table">
     <thead>
       <tr>
@@ -66,9 +106,27 @@
             aria-label="Select all on page"
           />
         </th>
-        <th>User</th>
-        <th>Role</th>
-        <th>Status</th>
+        <th
+          scope="col"
+          aria-sort={ariaSort('name')}
+          tabindex={0}
+          style="cursor: pointer"
+          onclick={() => toggleSort('name')}
+          onkeydown={(e) => onHeaderKey(e, 'name')}
+        >
+          User<span aria-hidden="true">{sortGlyph('name')}</span>
+        </th>
+        <th
+          scope="col"
+          aria-sort={ariaSort('role')}
+          tabindex={0}
+          style="cursor: pointer"
+          onclick={() => toggleSort('role')}
+          onkeydown={(e) => onHeaderKey(e, 'role')}
+        >
+          Role<span aria-hidden="true">{sortGlyph('role')}</span>
+        </th>
+        <th scope="col">Status</th>
       </tr>
     </thead>
     <tbody>

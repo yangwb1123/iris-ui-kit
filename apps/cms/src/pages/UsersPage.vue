@@ -4,8 +4,11 @@ import {
   IrisAvatar,
   IrisBadge,
   IrisCheckbox,
+  IrisInput,
   IrisPagination,
+  createClientFetcher,
   useResourceController,
+  type DataViewColumn,
 } from '@iris-ui/vue'
 
 type Status = 'active' | 'invited' | 'suspended'
@@ -17,8 +20,6 @@ interface User {
   status: Status
 }
 
-// A small static dataset, served through a mock async fetcher so the page
-// exercises the real createResourceController (server-mode) lifecycle.
 const ALL: User[] = [
   { id: 1, name: 'Ada Lovelace', email: 'ada@iris.dev', role: 'Owner', status: 'active' },
   { id: 2, name: 'Alan Turing', email: 'alan@iris.dev', role: 'Admin', status: 'active' },
@@ -29,17 +30,29 @@ const ALL: User[] = [
   { id: 7, name: 'Barbara L.', email: 'barbara@iris.dev', role: 'Viewer', status: 'active' },
 ]
 
-async function fetchUsers({ page, pageSize }: { page: number; pageSize: number }) {
-  const start = (page - 1) * pageSize
-  return { rows: ALL.slice(start, start + pageSize), total: ALL.length }
-}
+// Column accessors drive the controller's client-side filter/sort.
+const columns: DataViewColumn<User>[] = [
+  { key: 'name', getValue: (u) => u.name, filterable: true },
+  { key: 'role', getValue: (u) => u.role },
+]
+// Client-mode: filter + sort + paginate the in-memory dataset (no backend).
+const fetchUsers = createClientFetcher(ALL, columns)
 
 const tone = (s: Status) => (s === 'active' ? 'success' : s === 'invited' ? 'warning' : 'danger')
 
-// L4 validation: a real CRUD list driven entirely by the framework-agnostic
-// `createResourceController` (via the `useResourceController` bridge) — server
-// pagination + the composed selection model, rendered with Iris primitives.
-const { state, selection, setPage } = useResourceController<User>({
+/** Tri-state header sort cycle: none → asc → desc → none. */
+type Sort = { key: string; direction: 'asc' | 'desc' } | null
+function nextSort(current: Sort, key: string): Sort {
+  if (!current || current.key !== key) return { key, direction: 'asc' }
+  if (current.direction === 'asc') return { key, direction: 'desc' }
+  return null
+}
+
+// A real CRUD list driven entirely by the framework-agnostic
+// `createResourceController` (via the `useResourceController` bridge) in client
+// mode (`createClientFetcher`): keyword filter + sortable columns + pagination +
+// the composed selection model, rendered with Iris primitives.
+const { state, selection, setPage, setSort, setFilter } = useResourceController<User>({
   fetcher: fetchUsers,
   pageSize: 4,
 })
@@ -47,18 +60,36 @@ const pageIds = computed(() => state.value.rows.map((u) => String(u.id)))
 const allOnPage = computed(
   () => pageIds.value.length > 0 && pageIds.value.every((id) => selection.isSelected(id)),
 )
+
+const ariaSort = (key: string): 'ascending' | 'descending' | 'none' =>
+  state.value.sort?.key === key
+    ? state.value.sort.direction === 'asc'
+      ? 'ascending'
+      : 'descending'
+    : 'none'
+const sortGlyph = (key: string) =>
+  state.value.sort?.key === key ? (state.value.sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
 </script>
 
 <template>
   <section>
     <h1 class="page-title">All users</h1>
     <p class="page-desc">
-      Driven by <code>createResourceController</code> (server pagination + selection) from
-      @iris-ui/core — the L4 composite, rendered with Iris primitives.
+      Driven by <code>createResourceController</code> in client mode
+      (<code>createClientFetcher</code>) — keyword filter + sortable columns + pagination +
+      selection, all from @iris-ui/core.
       <template v-if="state.selectedKeys.length > 0">
         · {{ state.selectedKeys.length }} selected</template
       >
     </p>
+    <div style="max-width: 260px; margin-bottom: 12px">
+      <IrisInput
+        :model-value="state.filters.name ?? ''"
+        placeholder="Filter by name…"
+        aria-label="Filter users by name"
+        @update:model-value="setFilter('name', $event)"
+      />
+    </div>
     <table class="cms-table">
       <thead>
         <tr>
@@ -69,9 +100,29 @@ const allOnPage = computed(
               @update:model-value="selection.toggleAll(pageIds)"
             />
           </th>
-          <th>User</th>
-          <th>Role</th>
-          <th>Status</th>
+          <th
+            scope="col"
+            :aria-sort="ariaSort('name')"
+            :tabindex="0"
+            style="cursor: pointer"
+            @click="setSort(nextSort(state.sort, 'name'))"
+            @keydown.enter.prevent="setSort(nextSort(state.sort, 'name'))"
+            @keydown.space.prevent="setSort(nextSort(state.sort, 'name'))"
+          >
+            User<span aria-hidden="true">{{ sortGlyph('name') }}</span>
+          </th>
+          <th
+            scope="col"
+            :aria-sort="ariaSort('role')"
+            :tabindex="0"
+            style="cursor: pointer"
+            @click="setSort(nextSort(state.sort, 'role'))"
+            @keydown.enter.prevent="setSort(nextSort(state.sort, 'role'))"
+            @keydown.space.prevent="setSort(nextSort(state.sort, 'role'))"
+          >
+            Role<span aria-hidden="true">{{ sortGlyph('role') }}</span>
+          </th>
+          <th scope="col">Status</th>
         </tr>
       </thead>
       <tbody>

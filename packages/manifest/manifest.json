@@ -78,6 +78,14 @@
       ]
     },
     {
+      "group": "plugin",
+      "count": 2,
+      "components": [
+        "IrisCodeEditor",
+        "IrisProTable"
+      ]
+    },
+    {
       "group": "primitives",
       "count": 115,
       "components": [
@@ -594,6 +602,23 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
+    },
+    {
+      "name": "IrisCodeEditor",
+      "group": "plugin",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/plugin-editor/react",
+        "solid": "@iris-ui/plugin-editor/solid",
+        "svelte": "@iris-ui/plugin-editor/svelte",
+        "vue": "@iris-ui/plugin-editor/vue"
+      },
+      "plugin": "@iris-ui/plugin-editor"
     },
     {
       "name": "IrisColorPicker",
@@ -1719,6 +1744,23 @@
       }
     },
     {
+      "name": "IrisProTable",
+      "group": "plugin",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/plugin-pro-table/react",
+        "solid": "@iris-ui/plugin-pro-table/solid",
+        "svelte": "@iris-ui/plugin-pro-table/svelte",
+        "vue": "@iris-ui/plugin-pro-table/vue"
+      },
+      "plugin": "@iris-ui/plugin-pro-table"
+    },
+    {
       "name": "IrisProvider",
       "group": "other",
       "frameworks": [
@@ -2529,13 +2571,13 @@
     ]
   },
   "stats": {
-    "total": 135,
-    "full": 132,
+    "total": 137,
+    "full": 134,
     "byFramework": {
-      "react": 135,
-      "vue": 135,
-      "solid": 134,
-      "svelte": 132
+      "react": 137,
+      "vue": 137,
+      "solid": 136,
+      "svelte": 134
     }
   }
 }

@@ -76,4 +76,16 @@ describe('discover (real repo)', () => {
     // The non-component filter kept injection keys / contexts out.
     expect(m.components.some((c) => /Key$|Context$/.test(c.name))).toBe(false)
   })
+
+  it('discovers plugin components tagged with their owning package + sub-path import', () => {
+    const m = buildManifest(discover())
+    const editor = m.components.find((c) => c.name === 'IrisCodeEditor')
+    expect(editor?.group).toBe('plugin')
+    expect(editor?.plugin).toBe('@iris-ui/plugin-editor')
+    expect(editor?.importFrom.react).toBe('@iris-ui/plugin-editor/react')
+    const proTable = m.components.find((c) => c.name === 'IrisProTable')
+    expect(proTable?.plugin).toBe('@iris-ui/plugin-pro-table')
+    // llms.txt surfaces the activation hint for plugin components.
+    expect(renderLlmsText(m)).toContain('via @iris-ui/plugin-editor')
+  })
 })

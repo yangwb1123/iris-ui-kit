@@ -88,6 +88,44 @@ function discoverFramework(repoRoot: string, framework: Framework): Map<string, 
   return found
 }
 
+/**
+ * Discover plugin-shipped components under each `packages/plugin-<name>/src/
+ * <framework>/` directory. Plugins are single packages with a per-framework
+ * sub-path (`@iris-ui/plugin-x/react`, …); their `Iris*` exports are tagged
+ * `group: 'plugin'` plus the owning package so an agent reading the manifest can
+ * find them AND knows they need `<IrisProvider plugins={[…]}>` activation.
+ * Returns name → record.
+ */
+function discoverPlugins(repoRoot: string): Map<string, RawComponent> {
+  const found = new Map<string, RawComponent>()
+  const packagesDir = join(repoRoot, 'packages')
+  if (!existsSync(packagesDir)) return found
+
+  for (const entry of readdirSync(packagesDir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !entry.name.startsWith('plugin-')) continue
+    const pluginPkg = `@iris-ui/${entry.name}`
+    for (const framework of ALL_FRAMEWORKS) {
+      const fwDir = join(packagesDir, entry.name, 'src', framework)
+      if (!existsSync(fwDir)) continue
+      const re = framework === 'svelte' ? SVELTE_EXPORT_RE : EXPORT_RE
+      for (const file of walkSource(fwDir)) {
+        const text = readFileSync(file, 'utf8')
+        for (const match of text.matchAll(re)) {
+          const name = match[1]
+          if (NON_COMPONENT.test(name)) continue
+          const existing = found.get(name)
+          if (existing) {
+            if (!existing.frameworks.includes(framework)) existing.frameworks.push(framework)
+            continue
+          }
+          found.set(name, { name, group: 'plugin', frameworks: [framework], plugin: pluginPkg })
+        }
+      }
+    }
+  }
+  return found
+}
+
 function discoverTokens(repoRoot: string): RawTokens {
   const text = readFileSync(join(repoRoot, 'packages', 'tokens', 'src', 'tokens.ts'), 'utf8')
   const grab = (constName: string): string[] => {
@@ -126,5 +164,12 @@ export function discover(repoRoot: string = findRepoRoot()): RawDiscovery {
       frameworks,
     })
   }
+
+  // Plugin components are namespaced separately so a core-adapter name can't be
+  // shadowed by a plugin one; they carry their owning package + activation group.
+  for (const record of discoverPlugins(repoRoot).values()) {
+    components.push(record)
+  }
+
   return { components, tokens: discoverTokens(repoRoot) }
 }

@@ -40,8 +40,17 @@ export function buildManifest(raw: RawDiscovery): IrisManifest {
     .map((c) => {
       const frameworks = [...c.frameworks].sort()
       const importFrom: ManifestComponent['importFrom'] = {}
-      for (const fw of frameworks) importFrom[fw] = IMPORT_PATH[fw]
-      return { name: c.name, group: c.group, module: c.module, frameworks, importFrom }
+      // Plugin components import from the plugin's per-framework sub-path
+      // (`@iris-ui/plugin-x/react`); core components from the adapter package.
+      for (const fw of frameworks) importFrom[fw] = c.plugin ? `${c.plugin}/${fw}` : IMPORT_PATH[fw]
+      return {
+        name: c.name,
+        group: c.group,
+        module: c.module,
+        frameworks,
+        importFrom,
+        plugin: c.plugin,
+      }
     })
     .sort((a, b) => a.name.localeCompare(b.name))
 

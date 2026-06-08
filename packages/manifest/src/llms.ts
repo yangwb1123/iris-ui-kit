@@ -36,7 +36,10 @@ export function renderLlmsText(manifest: IrisManifest): string {
     for (const name of group.components) {
       const component = manifest.components.find((c) => c.name === name)
       const fw = component ? component.frameworks.join('/') : ''
-      lines.push(`- ${name} [${fw}]`)
+      // Plugin components note their package so an agent knows to install it and
+      // activate via `<IrisProvider plugins={[…]}>`.
+      const via = component?.plugin ? ` — via ${component.plugin} (IrisProvider plugins)` : ''
+      lines.push(`- ${name} [${fw}]${via}`)
     }
   }
   lines.push('')

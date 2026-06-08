@@ -21,4 +21,17 @@ describe('resolveDataState', () => {
   it('content wins when empty is false even with data absent flags off', () => {
     expect(resolveDataState({ loading: false, error: false, empty: false })).toBe('content')
   })
+
+  it('stale-while-revalidate: loading + hasContent shows content, not a spinner', () => {
+    expect(resolveDataState({ loading: true, hasContent: true })).toBe('content')
+  })
+
+  it('stale-while-revalidate: a retry over existing content keeps content, not the stale error', () => {
+    expect(resolveDataState({ loading: true, error: true, hasContent: true })).toBe('content')
+  })
+
+  it('hasContent without loading does not change base precedence', () => {
+    expect(resolveDataState({ error: true, hasContent: true })).toBe('error')
+    expect(resolveDataState({ empty: true, hasContent: true })).toBe('empty')
+  })
 })

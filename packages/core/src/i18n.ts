@@ -119,6 +119,24 @@ export function createI18n(config: I18nConfig = {}): I18n {
     return messages[key] ?? defaultMessages[key] ?? key
   }
 
+  // Memoize Intl formatters by (locale, options). Constructing an `Intl.*Format`
+  // is the expensive part (`.format()` is cheap); a date/number column over N
+  // rows previously built N formatters per render. Formatters are pure for a
+  // given key so the cache never needs invalidation; it is GC'd with this i18n
+  // instance. A differing option key-order at worst causes a harmless cache miss.
+  const dtfCache = new Map<string, Intl.DateTimeFormat>()
+  const nfCache = new Map<string, Intl.NumberFormat>()
+  const rtfCache = new Map<string, Intl.RelativeTimeFormat>()
+  const cached = <F>(cache: Map<string, F>, locale: string, options: unknown, make: () => F): F => {
+    const cacheKey = `${locale}|${JSON.stringify(options ?? {})}`
+    let formatter = cache.get(cacheKey)
+    if (formatter === undefined) {
+      formatter = make()
+      cache.set(cacheKey, formatter)
+    }
+    return formatter
+  }
+
   return {
     store,
     getState: store.getState,
@@ -127,11 +145,29 @@ export function createI18n(config: I18nConfig = {}): I18n {
     setLocale: (locale) => store.setState((s) => ({ ...s, locale })),
     setMessages: (messages) =>
       store.setState((s) => ({ ...s, messages: { ...s.messages, ...messages } })),
-    formatDate: (value, options) =>
-      new Intl.DateTimeFormat(store.getState().locale, options).format(value),
-    formatNumber: (value, options) =>
-      new Intl.NumberFormat(store.getState().locale, options).format(value),
-    formatRelativeTime: (value, unit, options) =>
-      new Intl.RelativeTimeFormat(store.getState().locale, options).format(value, unit),
+    formatDate: (value, options) => {
+      const locale = store.getState().locale
+      return cached(
+        dtfCache,
+        locale,
+        options,
+        () => new Intl.DateTimeFormat(locale, options),
+      ).format(value)
+    },
+    formatNumber: (value, options) => {
+      const locale = store.getState().locale
+      return cached(nfCache, locale, options, () => new Intl.NumberFormat(locale, options)).format(
+        value,
+      )
+    },
+    formatRelativeTime: (value, unit, options) => {
+      const locale = store.getState().locale
+      return cached(
+        rtfCache,
+        locale,
+        options,
+        () => new Intl.RelativeTimeFormat(locale, options),
+      ).format(value, unit)
+    },
   }
 }

@@ -70,7 +70,9 @@ describe('createAsyncResource', () => {
     await r.load(7)
     await r.reload()
     expect(fetcher).toHaveBeenCalledTimes(2)
-    expect(fetcher).toHaveBeenLastCalledWith(7)
+    // params are preserved across reload; an AbortSignal is appended as a
+    // trailing arg (the fetcher above ignores it).
+    expect(fetcher).toHaveBeenLastCalledWith(7, expect.any(AbortSignal))
     expect(r.getState().data).toBe('item-7')
   })
 
@@ -102,5 +104,49 @@ describe('createAsyncResource', () => {
     await r.load()
     // loading + success = at least two notifications.
     expect(listener.mock.calls.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('passes an AbortSignal as a trailing arg; a new load aborts the previous', async () => {
+    const seen: AbortSignal[] = []
+    const d1 = deferred<number>()
+    const d2 = deferred<number>()
+    let call = 0
+    const r = createAsyncResource((signal?: AbortSignal) => {
+      if (signal) seen.push(signal)
+      return ++call === 1 ? d1.promise : d2.promise
+    })
+    const p1 = r.load()
+    expect(seen[0]?.aborted).toBe(false)
+    r.load() // supersede → aborts the first
+    expect(seen[0]?.aborted).toBe(true)
+    expect(seen[1]?.aborted).toBe(false)
+    d1.resolve(1)
+    await p1 // superseded → no state write
+    d2.resolve(2)
+    await Promise.resolve()
+  })
+
+  it('cancel() aborts the in-flight request without changing displayed state', async () => {
+    const d = deferred<number>()
+    let captured: AbortSignal | undefined
+    const r = createAsyncResource(
+      (signal?: AbortSignal) => {
+        captured = signal
+        return d.promise
+      },
+      { initialData: 7 },
+    )
+    const p = r.load()
+    r.cancel()
+    expect(captured?.aborted).toBe(true)
+    expect(r.getState().data).toBe(7) // unchanged
+    d.resolve(99)
+    await p
+    expect(r.getState().data).toBe(7) // superseded load never wrote
+  })
+
+  it('a fetcher that ignores the signal still works (backward compatible)', async () => {
+    const r = createAsyncResource(async (n: number) => n * 2)
+    expect(await r.load(21)).toBe(42)
   })
 })

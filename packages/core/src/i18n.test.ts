@@ -31,6 +31,40 @@ describe('createI18n', () => {
       const i18n = createI18n({ messages: { hi: 'Hi {name}, {missing}' } })
       expect(i18n.t('hi', { name: 'Ann' })).toBe('Hi Ann, {missing}')
     })
+
+    describe('ICU plural', () => {
+      const msg = { items: '{count, plural, =0 {No items} one {# item} other {# items}}' }
+
+      it('selects exact (=N), one, and other categories (en)', () => {
+        const i18n = createI18n({ locale: 'en-US', messages: msg })
+        expect(i18n.t('items', { count: 0 })).toBe('No items')
+        expect(i18n.t('items', { count: 1 })).toBe('1 item')
+        expect(i18n.t('items', { count: 5 })).toBe('5 items')
+      })
+
+      it('uses the locale plural rules (Polish has a distinct "few")', () => {
+        const pl = {
+          files: '{n, plural, one {# plik} few {# pliki} many {# plików} other {# pliku}}',
+        }
+        const i18n = createI18n({ locale: 'pl-PL', messages: pl })
+        expect(i18n.t('files', { n: 1 })).toBe('1 plik')
+        expect(i18n.t('files', { n: 3 })).toBe('3 pliki') // few
+        expect(i18n.t('files', { n: 5 })).toBe('5 plików') // many
+      })
+
+      it('mixes plural with plain placeholders', () => {
+        const i18n = createI18n({
+          locale: 'en-US',
+          messages: { cart: '{name}: {count, plural, one {# thing} other {# things}}' },
+        })
+        expect(i18n.t('cart', { name: 'Ann', count: 2 })).toBe('Ann: 2 things')
+      })
+
+      it('leaves a plural block intact when its count is missing', () => {
+        const i18n = createI18n({ messages: msg })
+        expect(i18n.t('items')).toBe(msg.items) // no params → template returned
+      })
+    })
   })
 
   describe('mutations', () => {

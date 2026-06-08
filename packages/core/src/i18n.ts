@@ -100,12 +100,91 @@ export const defaultMessages: I18nMessages = {
 
 const DEFAULT_LOCALE = 'en-US'
 
-function interpolate(template: string, params?: Record<string, string | number>): string {
+/** Index of the `}` that closes the `{` at `open` (balanced), or -1. */
+function matchBrace(s: string, open: number): number {
+  let depth = 0
+  for (let i = open; i < s.length; i += 1) {
+    if (s[i] === '{') depth += 1
+    else if (s[i] === '}') {
+      depth -= 1
+      if (depth === 0) return i
+    }
+  }
+  return -1
+}
+
+/** Parse an ICU plural body (`=0 {none} one {# item} other {# items}`) → cases. */
+function parsePluralCases(body: string): Record<string, string> {
+  const cases: Record<string, string> = {}
+  let i = 0
+  while (i < body.length) {
+    while (i < body.length && /\s/.test(body[i]!)) i += 1
+    let selector = ''
+    while (i < body.length && !/\s/.test(body[i]!) && body[i] !== '{') {
+      selector += body[i]
+      i += 1
+    }
+    while (i < body.length && /\s/.test(body[i]!)) i += 1
+    if (body[i] !== '{') break
+    const end = matchBrace(body, i)
+    if (end === -1) break
+    if (selector) cases[selector] = body.slice(i + 1, end)
+    i = end + 1
+  }
+  return cases
+}
+
+/**
+ * Interpolate `{name}` placeholders AND a useful subset of ICU
+ * `{count, plural, …}` (with `=N` exact cases + CLDR categories via
+ * `Intl.PluralRules`, `#` → the value). Locale-aware so plural category
+ * selection is correct per language. Plain `{name}` messages are unaffected.
+ */
+function interpolate(
+  template: string,
+  params?: Record<string, string | number>,
+  locale: string = DEFAULT_LOCALE,
+): string {
   if (!params) return template
-  return template.replace(/\{(\w+)\}/g, (match, name: string) => {
-    const value = params[name]
-    return value === undefined ? match : String(value)
-  })
+  let out = ''
+  let i = 0
+  while (i < template.length) {
+    if (template[i] === '{') {
+      const end = matchBrace(template, i)
+      if (end === -1) {
+        out += template[i]
+        i += 1
+        continue
+      }
+      const inner = template.slice(i + 1, end)
+      const plural = /^(\w+)\s*,\s*plural\s*,(.*)$/s.exec(inner)
+      if (plural) {
+        const [, name, body] = plural
+        const value = params[name!]
+        if (typeof value === 'number') {
+          const cases = parsePluralCases(body!)
+          const text =
+            cases[`=${value}`] ??
+            cases[new Intl.PluralRules(locale).select(value)] ??
+            cases.other ??
+            ''
+          out += text.replace(/#/g, String(value))
+        } else {
+          out += `{${inner}}` // missing/non-numeric → leave visible
+        }
+      } else if (/^\w+$/.test(inner)) {
+        const value = params[inner]
+        out += value === undefined ? `{${inner}}` : String(value)
+      } else {
+        out += `{${inner}}`
+      }
+      i = end + 1
+    } else {
+      out += template[i]
+      i += 1
+    }
+  }
+  return out
 }
 
 export function createI18n(config: I18nConfig = {}): I18n {
@@ -141,7 +220,7 @@ export function createI18n(config: I18nConfig = {}): I18n {
     store,
     getState: store.getState,
     subscribe: store.subscribe,
-    t: (key, params) => interpolate(resolve(key), params),
+    t: (key, params) => interpolate(resolve(key), params, store.getState().locale),
     setLocale: (locale) => store.setState((s) => ({ ...s, locale })),
     setMessages: (messages) =>
       store.setState((s) => ({ ...s, messages: { ...s.messages, ...messages } })),

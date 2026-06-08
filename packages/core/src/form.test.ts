@@ -253,6 +253,34 @@ describe('createFormStore', () => {
     })
   })
 
+  describe('dependent-field validation', () => {
+    it('re-validates a dependent field when its dependency changes', async () => {
+      const form = createFormStore<{ password: string; confirm: string }>({
+        initialValues: { password: '', confirm: '' },
+        dependencies: { password: ['confirm'] },
+        validators: {
+          confirm: (v, all) => (v === all.password ? undefined : 'Must match'),
+        },
+      })
+      form.setFieldValue('confirm', 'abc')
+      await Promise.resolve()
+      expect(form.getState().errors.confirm).toBe('Must match')
+      // Editing `password` to match should clear confirm's error inline.
+      form.setFieldValue('password', 'abc')
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(form.getState().errors.confirm).toBeUndefined()
+    })
+
+    it('skips dependents that have no validator and is a no-op without config', async () => {
+      const form = createFormStore<{ a: string; b: string }>({
+        initialValues: { a: '', b: '' },
+        dependencies: { a: ['b'] },
+      })
+      expect(() => form.setFieldValue('a', 'x')).not.toThrow()
+    })
+  })
+
   describe('array fields', () => {
     const make = () => createFormStore<{ tags: string[] }>({ initialValues: { tags: ['a', 'b'] } })
 

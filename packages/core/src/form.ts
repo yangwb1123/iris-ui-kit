@@ -53,6 +53,13 @@ export interface FormConfig<V extends FormValues> {
   validateOnChange?: boolean
   /** Validate a field when it is blurred (marked touched). Default `true`. */
   validateOnBlur?: boolean
+  /**
+   * Cross-field dependencies: when a key changes, the listed fields are also
+   * re-validated. E.g. `{ password: ['confirmPassword'] }` re-checks the
+   * confirmation inline as the password is edited, rather than only on submit.
+   * One level deep (dependents are not themselves cascaded) to avoid cycles.
+   */
+  dependencies?: Partial<Record<Key<V>, Key<V>[]>>
   onSubmit?: (values: V) => void | Promise<void>
 }
 
@@ -167,13 +174,23 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     return nextErrors
   }
 
+  const dependencies: Partial<Record<Key<V>, Key<V>[]>> = config.dependencies ?? {}
+
   const setFieldValue: FormStore<V>['setFieldValue'] = (name, value) => {
     store.setState((s) => ({
       ...s,
       values: { ...s.values, [name]: value },
       dirty: { ...s.dirty, [name]: !Object.is(value, initialValues[name]) },
     }))
-    if (validateOnChange) void validateField(name)
+    if (validateOnChange) {
+      void validateField(name)
+      // Re-validate dependent fields (one level deep) so a cross-field rule
+      // (e.g. confirmPassword depends on password) updates inline, not only on
+      // submit. Only fields with a validator are re-run.
+      for (const dep of dependencies[name] ?? []) {
+        if (validators[dep]) void validateField(dep)
+      }
+    }
   }
 
   const setValues: FormStore<V>['setValues'] = (values) => {

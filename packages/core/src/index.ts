@@ -144,10 +144,12 @@ export {
 } from './admin-shell'
 export {
   createResourceController,
+  createClientFetcher,
   type ResourceController,
   type ResourceControllerConfig,
   type ResourceState,
   type ResourceQuery,
+  type MutateOptions,
 } from './resource'
 export {
   createTabsNav,

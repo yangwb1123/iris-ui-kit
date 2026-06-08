@@ -1,7 +1,13 @@
 import { createStore, type Store } from './store'
 import { createAsyncResource } from './async'
 import { createSelectionModel, type SelectionModel } from './selection'
-import { pageCount as computePageCount, type SortState } from './data-view'
+import {
+  pageCount as computePageCount,
+  filterSort,
+  paginate,
+  type SortState,
+  type DataViewColumn,
+} from './data-view'
 
 /**
  * Framework-agnostic CRUD resource controller (L4 composite) — the canonical
@@ -166,4 +172,23 @@ export function createResourceController<T>(
   if (config.immediate !== false) void load()
 
   return controller
+}
+
+/**
+ * Build a client-side `fetcher` for {@link createResourceController} from an
+ * in-memory dataset: applies the query's filters + sort locally (via the core
+ * {@link filterSort} pipeline) and slices the page. Makes the resource
+ * controller symmetric (client/server) and usable without a backend — pass the
+ * result as `config.fetcher`. The `columns` map each filter/sort key to a cell
+ * accessor (and optional custom `sorter`), the same `DataViewColumn` contract
+ * the Table/ProTable use.
+ */
+export function createClientFetcher<T>(
+  data: readonly T[],
+  columns: readonly DataViewColumn<T>[],
+): (query: ResourceQuery) => Promise<{ rows: T[]; total: number }> {
+  return async ({ page, pageSize, sort, filters }) => {
+    const processed = filterSort(data, columns, { filters, sort })
+    return { rows: paginate(processed, page, pageSize), total: processed.length }
+  }
 }

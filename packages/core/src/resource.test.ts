@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createResourceController } from './resource'
+import { createResourceController, createClientFetcher } from './resource'
 
 interface Row {
   id: number
@@ -121,5 +121,35 @@ describe('createResourceController', () => {
     await flush()
     expect(c.getState().rows.find((r) => r.id === 1)).toBeDefined() // rolled back + reloaded
     expect(before).toBe(5)
+  })
+})
+
+describe('createClientFetcher', () => {
+  const columns = [{ key: 'name', getValue: (r: Row) => r.name, filterable: true }]
+
+  it('filters + sorts + paginates an in-memory dataset through the controller', async () => {
+    const c = createResourceController<Row>({
+      fetcher: createClientFetcher(all, columns),
+      pageSize: 2,
+    })
+    await flush()
+    expect(c.getState().total).toBe(5)
+    expect(c.getState().rows).toHaveLength(2)
+
+    c.setSort({ key: 'name', direction: 'desc' })
+    await flush()
+    expect(c.getState().rows[0].name).toBe('r5') // r5 > r4 > … by locale string
+
+    c.setFilter('name', 'r1')
+    await flush()
+    expect(c.getState().rows.map((r) => r.name)).toEqual(['r1'])
+    expect(c.getState().total).toBe(1)
+  })
+
+  it('returns the right page slice + total directly', async () => {
+    const fetch = createClientFetcher(all, columns)
+    const r = await fetch({ page: 2, pageSize: 2, sort: null, filters: {} })
+    expect(r.total).toBe(5)
+    expect(r.rows.map((x) => x.id)).toEqual([3, 4])
   })
 })

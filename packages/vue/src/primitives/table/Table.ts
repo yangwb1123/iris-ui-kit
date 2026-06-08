@@ -10,7 +10,7 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { computeVirtualRange } from '@iris-ui/core'
+import { compareValues, computeVirtualRange } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useDrag } from '../drag/useDrag'
@@ -30,14 +30,6 @@ function getCellValue<Row extends Record<string, unknown>>(
 ): unknown {
   const key = (column.dataIndex ?? column.key) as keyof Row
   return row[key]
-}
-
-function defaultSorter(a: unknown, b: unknown): number {
-  if (a === b) return 0
-  if (a == null) return -1
-  if (b == null) return 1
-  if (typeof a === 'number' && typeof b === 'number') return a - b
-  return String(a).localeCompare(String(b))
 }
 
 const SELECTION_COL_WIDTH = 40
@@ -152,7 +144,7 @@ export const IrisTable = defineComponent({
       const sorter =
         column.sorter ??
         ((a: Record<string, unknown>, b: Record<string, unknown>) =>
-          defaultSorter(getCellValue(a, column), getCellValue(b, column)))
+          compareValues(getCellValue(a, column), getCellValue(b, column)))
       const arr = [...props.data]
       arr.sort(sorter)
       if (state.direction === 'desc') arr.reverse()

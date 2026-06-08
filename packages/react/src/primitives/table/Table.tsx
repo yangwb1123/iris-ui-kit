@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { computeVirtualRange } from '@iris-ui/core'
+import { compareValues, computeVirtualRange } from '@iris-ui/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
@@ -100,14 +100,6 @@ function getCellValue<Row extends Record<string, unknown>>(
 ): unknown {
   const key = (column.dataIndex ?? column.key) as keyof Row
   return row[key]
-}
-
-function defaultSorter(a: unknown, b: unknown): number {
-  if (a === b) return 0
-  if (a == null) return -1
-  if (b == null) return 1
-  if (typeof a === 'number' && typeof b === 'number') return a - b
-  return String(a).localeCompare(String(b))
 }
 
 export interface IrisTableProps<Row extends Record<string, unknown> = Record<string, unknown>> {
@@ -265,7 +257,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!col) return data
     const dir = sort.direction === 'asc' ? 1 : -1
     const sorter =
-      col.sorter ?? ((a: Row, b: Row) => defaultSorter(getCellValue(a, col), getCellValue(b, col)))
+      col.sorter ?? ((a: Row, b: Row) => compareValues(getCellValue(a, col), getCellValue(b, col)))
     return [...data].sort((a, b) => sorter(a, b) * dir)
   }, [data, columns, sort])
 

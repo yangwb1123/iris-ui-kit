@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { compareValues } from '@iris-ui/core'
   import type {
     IrisTableColumn,
     IrisTableSortState,
@@ -64,13 +65,6 @@
     return row[key]
   }
 
-  function defaultSorter(a: unknown, b: unknown): number {
-    if (a === b) return 0
-    if (a == null) return -1
-    if (b == null) return 1
-    if (typeof a === 'number' && typeof b === 'number') return a - b
-    return String(a).localeCompare(String(b))
-  }
 
   // Sort state
   let internalSort = $state<IrisTableSortState | null>(null)
@@ -82,7 +76,7 @@
     const column = columns.find((c) => c.key === state.key)
     if (!column) return data
     const sorter = column.sorter ?? ((a: Record<string, unknown>, b: Record<string, unknown>) =>
-      defaultSorter(getCellValue(a, column), getCellValue(b, column)))
+      compareValues(getCellValue(a, column), getCellValue(b, column)))
     const arr = [...data]
     arr.sort(sorter)
     if (state.direction === 'desc') arr.reverse()

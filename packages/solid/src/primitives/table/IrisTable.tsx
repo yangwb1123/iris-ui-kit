@@ -1,4 +1,5 @@
 import { createMemo, createSignal, For, mergeProps, Show, type JSX } from 'solid-js'
+import { compareValues } from '@iris-ui/core'
 import type { IrisTableColumn, IrisTableSortState, IrisTableCellEditEvent } from './types'
 
 export interface IrisTableProps<Row extends Record<string, unknown> = Record<string, unknown>> {
@@ -38,14 +39,6 @@ function getCellValue<Row extends Record<string, unknown>>(
   return row[key]
 }
 
-function defaultSorter(a: unknown, b: unknown): number {
-  if (a === b) return 0
-  if (a == null) return -1
-  if (b == null) return 1
-  if (typeof a === 'number' && typeof b === 'number') return a - b
-  return String(a).localeCompare(String(b))
-}
-
 /**
  * Data table. Renders as a CSS-grid layout. Supports sorting, row selection,
  * and inline editing. Non-virtualized for Tier 4 (add virtual-scroll integration later).
@@ -78,7 +71,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     if (!column) return merged.data
     const sorter =
       column.sorter ??
-      ((a: Row, b: Row) => defaultSorter(getCellValue(a, column), getCellValue(b, column)))
+      ((a: Row, b: Row) => compareValues(getCellValue(a, column), getCellValue(b, column)))
     const arr = [...merged.data]
     arr.sort(sorter)
     if (state.direction === 'desc') arr.reverse()

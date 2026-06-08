@@ -114,6 +114,9 @@ export * from './i18n'
 export * from './motion'
 export * from './skeletons'
 
+// ── Plugin system: unified IrisProvider + consumer hooks ──────────────────────
+export * from './provider'
+
 // ── Framework-agnostic re-exports (mirror @iris-ui/react / @iris-ui/vue) ───────
 export {
   createStore,

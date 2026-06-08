@@ -67,13 +67,14 @@
     },
     {
       "group": "other",
-      "count": 5,
+      "count": 6,
       "components": [
         "IrisAdminBreadcrumb",
         "IrisAdminLayout",
         "IrisAdminTabs",
         "IrisI18nProvider",
-        "IrisNavMenu"
+        "IrisNavMenu",
+        "IrisProvider"
       ]
     },
     {
@@ -1718,6 +1719,22 @@
       }
     },
     {
+      "name": "IrisProvider",
+      "group": "other",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
+        "vue": "@iris-ui/vue"
+      }
+    },
+    {
       "name": "IrisRadio",
       "group": "primitives",
       "module": "radio",
@@ -2512,13 +2529,13 @@
     ]
   },
   "stats": {
-    "total": 134,
-    "full": 131,
+    "total": 135,
+    "full": 132,
     "byFramework": {
-      "react": 134,
-      "vue": 134,
-      "solid": 133,
-      "svelte": 131
+      "react": 135,
+      "vue": 135,
+      "solid": 134,
+      "svelte": 132
     }
   }
 }

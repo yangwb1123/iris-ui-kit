@@ -1,0 +1,30 @@
+{
+  "name": "@iris-ui/plugin-locale-zh",
+  "version": "0.0.0",
+  "description": "Simplified-Chinese (zh-CN) message pack for Iris UI, as an Iris plugin",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js",
+      "require": "./dist/core/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@iris-ui/core": "workspace:*"
+  }
+}

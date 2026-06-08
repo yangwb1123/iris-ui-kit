@@ -81,3 +81,10 @@ export {
 } from './tabsNav'
 export type { Side, Align, Placement, Size, Variant } from './types'
 export { composeEventHandlers, mergeProps, generateId } from './utils'
+export {
+  createPlugin,
+  runPlugins,
+  type IrisPlugin,
+  type PluginRegistry,
+  type CollectedRegistrations,
+} from './plugin'

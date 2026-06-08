@@ -31,6 +31,7 @@ export * from './i18n'
 export * from './async'
 export * from './motion'
 export * from './admin'
+export * from './provider'
 
 // ── Layer 1 · Meta Primitives ────────────────────────────────────────────────
 export * from './primitives/slot'

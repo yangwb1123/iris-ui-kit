@@ -237,6 +237,12 @@ importers:
 
   packages/manifest: {}
 
+  packages/plugin-locale-zh:
+    dependencies:
+      '@iris-ui/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/react:
     dependencies:
       '@floating-ui/dom':

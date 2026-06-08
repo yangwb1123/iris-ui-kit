@@ -8,6 +8,9 @@ export { toMachine } from './useMachine'
 export * from './theme'
 export * from './skins'
 
+// ── Plugin system: unified IrisProvider + consumer hooks ──────────────────────
+export * from './provider'
+
 // ── Layouts + admin ───────────────────────────────────────────────────────────
 export * from './layouts'
 export * from './admin'

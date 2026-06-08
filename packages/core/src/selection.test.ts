@@ -51,6 +51,24 @@ describe('createSelectionModel — single', () => {
   })
 })
 
+describe('createSelectionModel — sync (controlled mirror)', () => {
+  it('replaces state WITHOUT firing onChange', () => {
+    const onChange = vi.fn()
+    const sel = createSelectionModel({ onChange })
+    sel.sync(['a', 'b'])
+    expect(sel.get()).toEqual(['a', 'b'])
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('works with numeric keys', () => {
+    const sel = createSelectionModel<number>()
+    sel.toggle(1)
+    sel.toggle(2)
+    expect(sel.get()).toEqual([1, 2])
+    expect(sel.isSelected(1)).toBe(true)
+  })
+})
+
 describe('createSelectionModel — store + clear', () => {
   it('exposes a subscribable store and clear()', () => {
     const sel = createSelectionModel()

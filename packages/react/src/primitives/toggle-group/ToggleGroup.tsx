@@ -1,4 +1,6 @@
 import * as React from 'react'
+import { createSelectionModel, type SelectionModel } from '@iris-ui/core'
+import { useStore } from '../../useStore'
 import {
   ToggleGroupContext,
   type IrisToggleGroupOrientation,
@@ -63,51 +65,42 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): React.ReactElement
   }
 
   const isMultiple = type === 'multiple'
-
   const isControlled = valueProp !== undefined
-  const initialUncontrolled: IrisToggleGroupValue =
-    defaultValue !== undefined ? defaultValue : isMultiple ? [] : null
-  const [internal, setInternal] = React.useState<IrisToggleGroupValue>(initialUncontrolled)
 
-  const current = isControlled ? (valueProp as IrisToggleGroupValue) : internal
+  // Selection logic (single/multiple toggle, dedup) lives in the core model;
+  // this component only maps its union value shape (string | string[] | null)
+  // to/from the model's flat key array.
+  const toKeys = (v: IrisToggleGroupValue): string[] =>
+    v == null ? [] : Array.isArray(v) ? v : [v]
+  const fromKeys = (keys: string[]): IrisToggleGroupValue => (isMultiple ? keys : (keys[0] ?? null))
 
-  const isActive = React.useCallback(
-    (v: string): boolean => {
-      if (current === null || current === undefined) return false
-      if (Array.isArray(current)) return current.includes(v)
-      return current === v
-    },
-    [current],
-  )
+  const modelRef = React.useRef<SelectionModel<string> | null>(null)
+  if (modelRef.current === null) {
+    const initial: IrisToggleGroupValue =
+      defaultValue !== undefined ? defaultValue : isMultiple ? [] : null
+    modelRef.current = createSelectionModel<string>({
+      mode: isMultiple ? 'multiple' : 'single',
+      defaultSelected: toKeys(valueProp !== undefined ? valueProp : initial),
+      onChange: (keys) =>
+        (onValueChange as ((next: IrisToggleGroupValue) => void) | undefined)?.(fromKeys(keys)),
+    })
+  }
+  const model = modelRef.current
+  const selected = useStore(model.store)
 
-  const controlledRef = React.useRef(valueProp)
-  controlledRef.current = valueProp
+  // Controlled: mirror the prop into the model without re-emitting onChange.
+  React.useEffect(() => {
+    if (isControlled) model.sync(toKeys(valueProp))
+  }, [valueProp, isControlled, model])
+
+  const isActive = React.useCallback((v: string): boolean => selected.includes(v), [selected])
 
   const toggle = React.useCallback(
     (v: string) => {
       if (disabled) return
-      const compute = (prev: IrisToggleGroupValue): IrisToggleGroupValue => {
-        if (isMultiple) {
-          const arr = Array.isArray(prev) ? prev : []
-          const idx = arr.indexOf(v)
-          return idx >= 0 ? arr.filter((x) => x !== v) : [...arr, v]
-        }
-        return prev === v ? null : v
-      }
-      if (isControlled) {
-        const next = compute(controlledRef.current as IrisToggleGroupValue)
-        ;(onValueChange as ((next: IrisToggleGroupValue) => void) | undefined)?.(next)
-        return
-      }
-      setInternal((prev) => {
-        const next = compute(prev)
-        if (next !== prev) {
-          ;(onValueChange as ((next: IrisToggleGroupValue) => void) | undefined)?.(next)
-        }
-        return next
-      })
+      model.toggle(v)
     },
-    [disabled, isMultiple, isControlled, onValueChange],
+    [disabled, model],
   )
 
   // Registry kept in a ref; reads happen at event time.

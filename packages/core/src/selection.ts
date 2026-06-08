@@ -35,8 +35,13 @@ export interface SelectionModel<K extends SelectionKey = string> {
   toggle(key: K): void
   select(key: K): void
   deselect(key: K): void
-  /** Replace the whole selection. In `single` mode keeps at most the last key. */
+  /** Replace the whole selection (fires `onChange`). In `single` mode keeps at most the last key. */
   set(keys: K[]): void
+  /**
+   * Replace internal state WITHOUT firing `onChange` — for controlled adapters
+   * mirroring a prop into the model from an effect (avoids an onChange echo).
+   */
+  sync(keys: K[]): void
   /** Select-all / clear over a specific set of keys (e.g. the current page). */
   toggleAll(keys: readonly K[]): void
   /** True when every key in `keys` is selected (and `keys` is non-empty). */
@@ -78,6 +83,9 @@ export function createSelectionModel<K extends SelectionKey = string>(
     },
     set(keys) {
       commit(keys)
+    },
+    sync(keys) {
+      store.setState(normalize(keys, mode))
     },
     toggleAll(keys) {
       const cur = store.getState()

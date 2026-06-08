@@ -52,7 +52,6 @@ function devWarn(message: string): void {
   if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') {
     return
   }
-  // eslint-disable-next-line no-console
   console.warn(`[iris-ui] ${message}`)
 }
 

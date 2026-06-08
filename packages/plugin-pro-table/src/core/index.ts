@@ -1,19 +1,32 @@
-import { createStore, createPlugin, toSpreadsheetXml, type Store } from '@iris-ui/core'
+import {
+  createStore,
+  createPlugin,
+  createSelectionModel,
+  createAsyncResource,
+  filterSort,
+  paginate,
+  cycleSort,
+  pageCount as corePageCount,
+  toCsv,
+  toSpreadsheetXml,
+  type Store,
+  type AsyncResource,
+  type DataViewColumn,
+} from '@iris-ui/core'
 
 /**
  * `@iris-ui/plugin-pro-table` — a vxe-table-style CRUD data table for Iris UI.
  * This `core` entry is framework-agnostic: {@link createProTableStore} owns all
- * the table logic (sort / filter / selection / inline edit / pagination /
- * client+server modes / export) behind a subscribable {@link Store}. The four
- * framework entries are render-only adapters that read this store and draw rows
- * with their native `renderCell`.
+ * the table logic behind a subscribable {@link Store}. Per the re-layering, it
+ * is now a **composition** of @iris-ui/core controllers rather than a monolith:
+ * selection → `createSelectionModel`, the filter→sort→paginate pipeline →
+ * `filterSort`/`paginate`/`cycleSort`, server loading → `createAsyncResource`
+ * (token-guarded, no stale-response clobbering), CSV → `toCsv`. The four
+ * framework entries are render-only adapters that read this store.
  */
 
-export type SortDirection = 'asc' | 'desc'
-export interface SortState {
-  key: string
-  direction: SortDirection
-}
+export type { SortDirection, SortState } from '@iris-ui/core'
+import type { SortState } from '@iris-ui/core'
 
 export type CellEditor = 'text' | 'number'
 
@@ -96,49 +109,26 @@ export interface ProTableStore<Row = Record<string, unknown>> {
   store: Store<ProTableState<Row>>
   getState(): ProTableState<Row>
   subscribe(listener: (state: ProTableState<Row>) => void): () => void
-  /** Resolve a row's stable key. */
   rowKeyOf(row: Row): string
-  /** Columns minus hidden ones, in order. */
   visibleColumns(): ProTableColumn<Row>[]
-  /** Read a cell's raw value. */
   cellValue(row: Row, column: ProTableColumn<Row>): unknown
-  // sorting / filtering
   toggleSort(key: string): void
   setFilter(key: string, value: string): void
   clearFilters(): void
-  // selection (operates over the current page)
   isSelected(key: string): boolean
   toggleRow(key: string): void
   toggleAll(): void
   isAllSelected(): boolean
   clearSelection(): void
-  // inline edit
   startEdit(rowKey: string, columnKey: string): void
   cancelEdit(): void
   commitEdit(value: unknown): void
-  // pagination
   setPage(page: number): void
   setPageSize(size: number): void
   pageCount(): number
-  // server mode
   reload(): void
-  // export (uses filtered+sorted rows, visible columns)
   exportCsv(): string
   exportExcelXml(sheetName?: string): string
-}
-
-function compareValues(a: unknown, b: unknown): number {
-  if (a == null && b == null) return 0
-  if (a == null) return -1
-  if (b == null) return 1
-  if (typeof a === 'number' && typeof b === 'number') return a - b
-  return String(a).localeCompare(String(b))
-}
-
-function escapeCsv(value: unknown): string {
-  if (value == null) return ''
-  const text = String(value)
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
 
 export function createProTableStore<Row extends Record<string, unknown>>(
@@ -153,6 +143,15 @@ export function createProTableStore<Row extends Record<string, unknown>>(
   const dataIndexOf = (column: ProTableColumn<Row>): string => column.dataIndex ?? column.key
   const cellValue = (row: Row, column: ProTableColumn<Row>): unknown => row[dataIndexOf(column)]
 
+  /** Map our columns onto the core data-view column contract. */
+  const dataViewColumns = (): DataViewColumn<Row>[] =>
+    config.columns.map((c) => ({
+      key: c.key,
+      getValue: (row: Row) => cellValue(row, c),
+      filterable: c.filterable,
+      sorter: c.sorter,
+    }))
+
   const store = createStore<ProTableState<Row>>({
     rows: [],
     columns: config.columns,
@@ -166,83 +165,52 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     loading: false,
   })
 
+  // Selection: a composed core controller; mirror its keys into our state so
+  // subscribers (renderers) re-render on selection change.
+  const selection = createSelectionModel({ mode: 'multiple' })
+  selection.store.subscribe((keys) => {
+    store.setState((s) => ({ ...s, selectedKeys: keys }))
+  })
+
+  // Server mode: a composed async resource — token-guarded, so an out-of-order
+  // onLoad resolution can no longer clobber a newer page (the prior hand-rolled
+  // loader had no such guard).
+  let resource: AsyncResource<{ rows: Row[]; total: number }, [ProTableQuery]> | null = null
+  if (mode === 'server' && config.onLoad) {
+    const onLoad = config.onLoad
+    resource = createAsyncResource((query: ProTableQuery) => onLoad(query))
+    resource.subscribe((s) => {
+      store.setState((st) => ({
+        ...st,
+        loading: s.status === 'loading',
+        rows: s.data?.rows ?? (s.status === 'loading' ? st.rows : []),
+        total: s.data?.total ?? (s.status === 'loading' ? st.total : 0),
+      }))
+    })
+  }
+
   const visibleColumns = (): ProTableColumn<Row>[] =>
     store.getState().columns.filter((c) => !c.hidden)
 
-  /** Client mode: filter → sort → paginate from `allRows`. */
-  function processClient(): void {
-    const { sort, filters, page, pageSize } = store.getState()
-    let working = allRows
-
-    const activeFilters = Object.entries(filters).filter(([, v]) => v !== '')
-    if (activeFilters.length > 0) {
-      working = working.filter((row) =>
-        activeFilters.every(([key, value]) => {
-          const col = config.columns.find((c) => c.key === key)
-          if (!col) return true
-          const cell = cellValue(row, col)
-          return String(cell ?? '')
-            .toLowerCase()
-            .includes(value.toLowerCase())
-        }),
-      )
-    }
-
-    if (sort) {
-      const col = config.columns.find((c) => c.key === sort.key)
-      if (col) {
-        const cmp =
-          col.sorter ?? ((a: Row, b: Row) => compareValues(cellValue(a, col), cellValue(b, col)))
-        working = [...working].sort((a, b) => (sort.direction === 'asc' ? cmp(a, b) : -cmp(a, b)))
-      }
-    }
-
-    const total = working.length
-    const start = (page - 1) * pageSize
-    const rows = working.slice(start, start + pageSize)
-    store.setState((s) => ({ ...s, rows, total }))
+  /** Filtered + sorted rows across ALL pages (client mode; for export too). */
+  function processedAll(): Row[] {
+    const { sort, filters } = store.getState()
+    return filterSort(allRows, dataViewColumns(), { filters, sort })
   }
 
-  /** Server mode: call onLoad with the current query. */
+  function processClient(): void {
+    const { page, pageSize } = store.getState()
+    const all = processedAll()
+    store.setState((s) => ({ ...s, rows: paginate(all, page, pageSize), total: all.length }))
+  }
+
   function processServer(): void {
-    if (!config.onLoad) return
+    if (!resource) return
     const { sort, filters, page, pageSize } = store.getState()
-    store.setState((s) => ({ ...s, loading: true }))
-    config.onLoad({ page, pageSize, sort, filters }).then(
-      (result) =>
-        store.setState((s) => ({ ...s, rows: result.rows, total: result.total, loading: false })),
-      () => store.setState((s) => ({ ...s, loading: false })),
-    )
+    resource.load({ page, pageSize, sort, filters })
   }
 
   const refresh = (): void => (mode === 'server' ? processServer() : processClient())
-
-  /** Filtered + sorted rows across ALL pages (for export). Client mode only. */
-  function processedAll(): Row[] {
-    const { sort, filters } = store.getState()
-    let working = allRows
-    const activeFilters = Object.entries(filters).filter(([, v]) => v !== '')
-    if (activeFilters.length > 0) {
-      working = working.filter((row) =>
-        activeFilters.every(([key, value]) => {
-          const col = config.columns.find((c) => c.key === key)
-          if (!col) return true
-          return String(cellValue(row, col) ?? '')
-            .toLowerCase()
-            .includes(value.toLowerCase())
-        }),
-      )
-    }
-    if (sort) {
-      const col = config.columns.find((c) => c.key === sort.key)
-      if (col) {
-        const cmp =
-          col.sorter ?? ((a: Row, b: Row) => compareValues(cellValue(a, col), cellValue(b, col)))
-        working = [...working].sort((a, b) => (sort.direction === 'asc' ? cmp(a, b) : -cmp(a, b)))
-      }
-    }
-    return working
-  }
 
   // initial load
   refresh()
@@ -256,13 +224,7 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     cellValue,
 
     toggleSort(key) {
-      store.setState((s) => {
-        let next: SortState | null
-        if (!s.sort || s.sort.key !== key) next = { key, direction: 'asc' }
-        else if (s.sort.direction === 'asc') next = { key, direction: 'desc' }
-        else next = null
-        return { ...s, sort: next, page: 1 }
-      })
+      store.setState((s) => ({ ...s, sort: cycleSort(s.sort, key), page: 1 }))
       refresh()
     },
 
@@ -276,38 +238,11 @@ export function createProTableStore<Row extends Record<string, unknown>>(
       refresh()
     },
 
-    isSelected: (key) => store.getState().selectedKeys.includes(key),
-
-    toggleRow(key) {
-      store.setState((s) => {
-        const has = s.selectedKeys.includes(key)
-        return {
-          ...s,
-          selectedKeys: has ? s.selectedKeys.filter((k) => k !== key) : [...s.selectedKeys, key],
-        }
-      })
-    },
-
-    toggleAll() {
-      store.setState((s) => {
-        const pageKeys = s.rows.map(rowKeyOf)
-        const allOn = pageKeys.every((k) => s.selectedKeys.includes(k))
-        const selectedKeys = allOn
-          ? s.selectedKeys.filter((k) => !pageKeys.includes(k))
-          : Array.from(new Set([...s.selectedKeys, ...pageKeys]))
-        return { ...s, selectedKeys }
-      })
-    },
-
-    isAllSelected() {
-      const s = store.getState()
-      const pageKeys = s.rows.map(rowKeyOf)
-      return pageKeys.length > 0 && pageKeys.every((k) => s.selectedKeys.includes(k))
-    },
-
-    clearSelection() {
-      store.setState((s) => ({ ...s, selectedKeys: [] }))
-    },
+    isSelected: (key) => selection.isSelected(key),
+    toggleRow: (key) => selection.toggle(key),
+    toggleAll: () => selection.toggleAll(store.getState().rows.map(rowKeyOf)),
+    isAllSelected: () => selection.isAllSelected(store.getState().rows.map(rowKeyOf)),
+    clearSelection: () => selection.clear(),
 
     startEdit(rowKey, columnKey) {
       store.setState((s) => ({ ...s, editing: { rowKey, columnKey } }))
@@ -331,7 +266,6 @@ export function createProTableStore<Row extends Record<string, unknown>>(
       const newValue = column.editor === 'number' ? Number(value) : value
       let updatedRow = {} as Row
       if (idx >= 0) {
-        // immutable write-back into the client dataset
         updatedRow = { ...allRows[idx], [dataIndex]: newValue }
         allRows[idx] = updatedRow
       }
@@ -359,19 +293,22 @@ export function createProTableStore<Row extends Record<string, unknown>>(
 
     pageCount() {
       const s = store.getState()
-      return Math.max(1, Math.ceil(s.total / s.pageSize))
+      return corePageCount(s.total, s.pageSize)
     },
 
     reload: refresh,
 
     exportCsv() {
-      const cols = visibleColumns()
-      const rows = mode === 'client' ? processedAll() : store.getState().rows
-      const header = cols.map((c) => escapeCsv(c.title)).join(',')
-      const body = rows
-        .map((row) => cols.map((c) => escapeCsv(cellValue(row, c))).join(','))
-        .join('\n')
-      return `${header}\n${body}`
+      const cols = visibleColumns().map((c) => ({
+        key: c.key,
+        title: c.title,
+        dataIndex: dataIndexOf(c),
+      }))
+      const rows = (mode === 'client' ? processedAll() : store.getState().rows) as Record<
+        string,
+        unknown
+      >[]
+      return toCsv(rows, cols)
     },
 
     exportExcelXml(sheetName) {

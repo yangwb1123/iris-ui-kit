@@ -1,19 +1,7 @@
 <script lang="ts">
-  type PaginationSize = 'sm' | 'md'
-  type PageItem = number | 'ellipsis-left' | 'ellipsis-right'
+  import { getPageRange } from '@iris-ui/core'
 
-  function getPageRange(current: number, totalPages: number, siblingCount = 1): PageItem[] {
-    if (totalPages <= 0) return []
-    if (totalPages === 1) return [1]
-    const left = Math.max(2, current - siblingCount)
-    const right = Math.min(totalPages - 1, current + siblingCount)
-    const items: PageItem[] = [1]
-    if (left > 2) items.push('ellipsis-left')
-    for (let i = left; i <= right; i++) items.push(i)
-    if (right < totalPages - 1) items.push('ellipsis-right')
-    if (totalPages > 1) items.push(totalPages)
-    return items
-  }
+  type PaginationSize = 'sm' | 'md'
 
   let {
     value = 1,

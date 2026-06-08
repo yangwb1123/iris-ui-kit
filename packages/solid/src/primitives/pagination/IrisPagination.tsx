@@ -1,22 +1,10 @@
 import { createMemo, createSignal, For, mergeProps, splitProps, type JSX } from 'solid-js'
+import { getPageRange, type PageItem } from '@iris-ui/core'
 
 export type IrisPaginationSize = 'sm' | 'md'
 
-export type IrisPageItem = number | 'ellipsis-left' | 'ellipsis-right'
-
-function getPageRange(current: number, totalPages: number, siblingCount = 1): IrisPageItem[] {
-  if (totalPages <= 0) return []
-  if (totalPages === 1) return [1]
-
-  const left = Math.max(2, current - siblingCount)
-  const right = Math.min(totalPages - 1, current + siblingCount)
-  const items: IrisPageItem[] = [1]
-  if (left > 2) items.push('ellipsis-left')
-  for (let i = left; i <= right; i++) items.push(i)
-  if (right < totalPages - 1) items.push('ellipsis-right')
-  if (totalPages > 1) items.push(totalPages)
-  return items
-}
+/** The page-range algorithm now lives in @iris-ui/core; this preserves the name. */
+export type IrisPageItem = PageItem
 
 export interface IrisPaginationProps {
   page?: number

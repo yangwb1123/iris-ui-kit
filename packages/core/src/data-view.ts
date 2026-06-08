@@ -101,43 +101,29 @@ export function pageCount(total: number, pageSize: number): number {
   return Math.max(1, Math.ceil(total / pageSize))
 }
 
+/** A pagination control slot: a page number or a side-tagged ellipsis. */
+export type PageItem = number | 'ellipsis-left' | 'ellipsis-right'
+
 /**
- * Pagination control range with ellipses, e.g. `[1, 'ellipsis', 4, 5, 6,
- * 'ellipsis', 20]`. `siblings` = pages on each side of the current page;
- * `boundaries` = pages pinned at each end. Pure UI math — distinct from the
- * server-side `createPaginatedResource` data resource.
+ * Compute the visible page list with two-sided ellipsis insertion — the single
+ * source of truth behind the Pagination primitive across all four frameworks.
+ *
+ * Always shows the first page, the last page, and the `siblingCount` pages on
+ * either side of `current`. Inserts a side-tagged ellipsis when there's a gap of
+ * ≥ 2 between kept segments (a single missing page renders as its number, not an
+ * ellipsis). Pure UI math — distinct from the server-side
+ * `createPaginatedResource` data resource.
  */
-export function getPageRange(
-  current: number,
-  total: number,
-  siblings = 1,
-  boundaries = 1,
-): Array<number | 'ellipsis'> {
-  const totalPageNumbers = siblings * 2 + 3 + boundaries * 2
-  if (totalPageNumbers >= total) {
-    return range(1, total)
-  }
+export function getPageRange(current: number, totalPages: number, siblingCount = 1): PageItem[] {
+  if (totalPages <= 0) return []
+  if (totalPages === 1) return [1]
 
-  const leftSibling = Math.max(current - siblings, boundaries + 2)
-  const rightSibling = Math.min(current + siblings, total - boundaries - 1)
-
-  const showLeftEllipsis = leftSibling > boundaries + 2
-  const showRightEllipsis = rightSibling < total - boundaries - 1
-
-  const result: Array<number | 'ellipsis'> = []
-  result.push(...range(1, boundaries))
-  if (showLeftEllipsis) result.push('ellipsis')
-  else result.push(...range(boundaries + 1, leftSibling - 1))
-  result.push(...range(leftSibling, rightSibling))
-  if (showRightEllipsis) result.push('ellipsis')
-  else result.push(...range(rightSibling + 1, total - boundaries))
-  result.push(...range(total - boundaries + 1, total))
-
-  return result
-}
-
-function range(start: number, end: number): number[] {
-  const out: number[] = []
-  for (let i = start; i <= end; i += 1) if (i >= 1) out.push(i)
-  return out
+  const left = Math.max(2, current - siblingCount)
+  const right = Math.min(totalPages - 1, current + siblingCount)
+  const items: PageItem[] = [1]
+  if (left > 2) items.push('ellipsis-left')
+  for (let i = left; i <= right; i += 1) items.push(i)
+  if (right < totalPages - 1) items.push('ellipsis-right')
+  items.push(totalPages)
+  return items
 }

@@ -72,6 +72,7 @@ export {
   type SortState,
   type DataViewColumn,
   type DataViewQuery,
+  type PageItem,
 } from './data-view'
 export {
   createSelectionModel,

@@ -81,17 +81,19 @@ describe('paginate / pageCount', () => {
 
 describe('getPageRange', () => {
   it('returns all pages when small', () => {
-    expect(getPageRange(1, 5)).toEqual([1, 2, 3, 4, 5])
+    expect(getPageRange(3, 5)).toEqual([1, 2, 3, 4, 5])
   })
-  it('inserts ellipsis around the current page in a large set', () => {
-    const r = getPageRange(10, 20)
-    expect(r[0]).toBe(1)
-    expect(r[r.length - 1]).toBe(20)
-    expect(r).toContain('ellipsis')
-    expect(r).toContain(10)
+  it('inserts side-tagged ellipses around the current page', () => {
+    expect(getPageRange(10, 20)).toEqual([1, 'ellipsis-left', 9, 10, 11, 'ellipsis-right', 20])
   })
-  it('no left ellipsis near the start', () => {
-    const r = getPageRange(2, 20)
-    expect(r.slice(0, 3)).toEqual([1, 2, 3])
+  it('only a right ellipsis near the start', () => {
+    expect(getPageRange(1, 20)).toEqual([1, 2, 'ellipsis-right', 20])
+  })
+  it('only a left ellipsis near the end', () => {
+    expect(getPageRange(20, 20)).toEqual([1, 'ellipsis-left', 19, 20])
+  })
+  it('edge cases', () => {
+    expect(getPageRange(1, 0)).toEqual([])
+    expect(getPageRange(1, 1)).toEqual([1])
   })
 })

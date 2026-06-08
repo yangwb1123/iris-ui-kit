@@ -252,4 +252,42 @@ describe('createFormStore', () => {
       expect(form.getState().dirty.n).toBe(true)
     })
   })
+
+  describe('array fields', () => {
+    const make = () => createFormStore<{ tags: string[] }>({ initialValues: { tags: ['a', 'b'] } })
+
+    it('push / insert / remove', () => {
+      const form = make()
+      form.arrayPush('tags', 'c')
+      expect(form.getState().values.tags).toEqual(['a', 'b', 'c'])
+      form.arrayInsert('tags', 1, 'x')
+      expect(form.getState().values.tags).toEqual(['a', 'x', 'b', 'c'])
+      form.arrayRemove('tags', 0)
+      expect(form.getState().values.tags).toEqual(['x', 'b', 'c'])
+    })
+
+    it('swap / move', () => {
+      const form = make()
+      form.arraySwap('tags', 0, 1)
+      expect(form.getState().values.tags).toEqual(['b', 'a'])
+      form.arrayMove('tags', 1, 0)
+      expect(form.getState().values.tags).toEqual(['a', 'b'])
+    })
+
+    it('marks the field dirty and is immutable', () => {
+      const form = make()
+      const before = form.getState().values.tags
+      form.arrayPush('tags', 'c')
+      expect(form.getState().dirty.tags).toBe(true)
+      expect(form.getState().values.tags).not.toBe(before) // new array reference
+    })
+
+    it('out-of-range ops are no-ops, not crashes', () => {
+      const form = make()
+      form.arrayRemove('tags', 99)
+      form.arraySwap('tags', 0, 99)
+      form.arrayMove('tags', 5, 0)
+      expect(form.getState().values.tags).toEqual(['a', 'b'])
+    })
+  })
 })

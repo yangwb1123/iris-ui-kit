@@ -13,6 +13,11 @@ export type FormValues = Record<string, unknown>
 
 type Key<V> = keyof V & string
 
+/** Keys of `V` whose value is an array (the targets of the `array*` helpers). */
+export type ArrayKey<V> = { [K in Key<V>]: V[K] extends readonly unknown[] ? K : never }[Key<V>]
+/** The element type of an array field value. */
+export type ArrayElement<T> = T extends readonly (infer U)[] ? U : never
+
 export type FieldErrors<V extends FormValues> = Partial<Record<Key<V>, string>>
 export type FieldFlags<V extends FormValues> = Partial<Record<Key<V>, boolean>>
 
@@ -58,6 +63,16 @@ export interface FormStore<V extends FormValues> {
   subscribe(listener: (state: FormState<V>) => void): () => void
   setFieldValue<K extends Key<V>>(name: K, value: V[K]): void
   setValues(values: Partial<V>): void
+  /** Append `item` to an array field. */
+  arrayPush<K extends ArrayKey<V>>(name: K, item: ArrayElement<V[K]>): void
+  /** Insert `item` at `index` in an array field. */
+  arrayInsert<K extends ArrayKey<V>>(name: K, index: number, item: ArrayElement<V[K]>): void
+  /** Remove the element at `index` from an array field. */
+  arrayRemove<K extends ArrayKey<V>>(name: K, index: number): void
+  /** Swap two elements of an array field. */
+  arraySwap<K extends ArrayKey<V>>(name: K, a: number, b: number): void
+  /** Move an element of an array field from one index to another. */
+  arrayMove<K extends ArrayKey<V>>(name: K, from: number, to: number): void
   setFieldTouched(name: Key<V>, touched?: boolean): void
   setFieldError(name: Key<V>, error: string | undefined): void
   setErrors(errors: FieldErrors<V>): void
@@ -176,6 +191,51 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     if (validateOnChange) for (const key of keys) void validateField(key)
   }
 
+  // Array-field helpers. Each reads the current array, produces a new array
+  // immutably, writes it back as a dirty value, and re-validates the field —
+  // the per-framework `useFieldArray` bridges are thin wrappers over these.
+  const updateArray = <K extends ArrayKey<V>>(
+    name: K,
+    fn: (arr: ArrayElement<V[K]>[]) => ArrayElement<V[K]>[],
+  ): void => {
+    const current = store.getState().values[name]
+    const arr = Array.isArray(current) ? (current as ArrayElement<V[K]>[]) : []
+    setFieldValue(name, fn([...arr]) as unknown as V[K])
+  }
+
+  const arrayPush: FormStore<V>['arrayPush'] = (name, item) =>
+    updateArray(name, (arr) => {
+      arr.push(item)
+      return arr
+    })
+  const arrayInsert: FormStore<V>['arrayInsert'] = (name, index, item) =>
+    updateArray(name, (arr) => {
+      arr.splice(Math.max(0, Math.min(index, arr.length)), 0, item)
+      return arr
+    })
+  const arrayRemove: FormStore<V>['arrayRemove'] = (name, index) =>
+    updateArray(name, (arr) => {
+      if (index >= 0 && index < arr.length) arr.splice(index, 1)
+      return arr
+    })
+  const arraySwap: FormStore<V>['arraySwap'] = (name, a, b) =>
+    updateArray(name, (arr) => {
+      if (a >= 0 && a < arr.length && b >= 0 && b < arr.length) {
+        const tmp = arr[a]!
+        arr[a] = arr[b]!
+        arr[b] = tmp
+      }
+      return arr
+    })
+  const arrayMove: FormStore<V>['arrayMove'] = (name, from, to) =>
+    updateArray(name, (arr) => {
+      if (from >= 0 && from < arr.length && to >= 0 && to < arr.length) {
+        const [moved] = arr.splice(from, 1)
+        arr.splice(to, 0, moved!)
+      }
+      return arr
+    })
+
   const setFieldTouched: FormStore<V>['setFieldTouched'] = (name, touched = true) => {
     store.setState((s) => ({ ...s, touched: { ...s.touched, [name]: touched } }))
     if (touched && validateOnBlur) void validateField(name)
@@ -230,6 +290,11 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     subscribe: store.subscribe,
     setFieldValue,
     setValues,
+    arrayPush,
+    arrayInsert,
+    arrayRemove,
+    arraySwap,
+    arrayMove,
     setFieldTouched,
     setFieldError,
     setErrors,

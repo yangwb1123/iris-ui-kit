@@ -24,6 +24,8 @@ export {
   type Validator,
   type FieldErrors,
   type FieldFlags,
+  type ArrayKey,
+  type ArrayElement,
 } from './form'
 export {
   createI18n,

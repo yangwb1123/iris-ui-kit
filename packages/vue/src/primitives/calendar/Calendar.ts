@@ -62,6 +62,17 @@ export const IrisCalendar = defineComponent({
     const matrix = computed(() => buildMonthMatrix(visibleMonth.value, props.weekStartsOn))
     const weekdays = computed(() => getWeekdayNames(props.weekStartsOn, props.locale))
     const title = computed(() => formatMonthYear(visibleMonth.value, props.locale))
+    // One memoized formatter for the full-date cell label (e.g. "Monday, June 9,
+    // 2026") so screen readers announce the whole date, not just the day number.
+    const dayLabelFmt = computed(
+      () =>
+        new Intl.DateTimeFormat(props.locale, {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+    )
 
     const goPrevMonth = () => {
       visibleMonth.value = addMonths(visibleMonth.value, -1)
@@ -275,69 +286,77 @@ export const IrisCalendar = defineComponent({
                 gap: '2px',
               },
             },
-            matrix.value.flatMap((row) =>
-              row.map((date) => {
-                const inMonth = isSameMonth(date, visibleMonth.value)
-                const selected = props.modelValue ? isSameDay(date, props.modelValue) : false
-                const focused = isSameDay(date, focusDate.value)
-                const isToday = isSameDay(date, today)
-                const oof = isOutOfRange(date, props.min, props.max)
-                const isDisabled = props.disabled || oof
-                return h(
-                  'button',
-                  {
-                    key: date.toISOString(),
-                    type: 'button',
-                    role: 'gridcell',
-                    tabindex: focused ? 0 : -1,
-                    'aria-selected': selected ? 'true' : 'false',
-                    'aria-disabled': isDisabled ? 'true' : undefined,
-                    'aria-current': isToday ? 'date' : undefined,
-                    'data-iris-calendar-day': '',
-                    'data-iris-calendar-day-iso': formatLocalISO(date),
-                    'data-state': selected
-                      ? 'selected'
-                      : focused
-                        ? 'focused'
-                        : isToday
-                          ? 'today'
-                          : 'idle',
-                    'data-outside-month': !inMonth ? 'true' : undefined,
-                    disabled: isDisabled || undefined,
-                    onClick: () => {
-                      focusDate.value = date
-                      selectDate(date)
+            matrix.value.map((week, wi) =>
+              // `display: contents` keeps the row in the accessibility tree (a
+              // valid grid → row → gridcell structure) while letting its day cells
+              // participate directly in the parent's 7-column CSS grid layout.
+              h(
+                'div',
+                { key: `week-${wi}`, role: 'row', style: { display: 'contents' } },
+                week.map((date) => {
+                  const inMonth = isSameMonth(date, visibleMonth.value)
+                  const selected = props.modelValue ? isSameDay(date, props.modelValue) : false
+                  const focused = isSameDay(date, focusDate.value)
+                  const isToday = isSameDay(date, today)
+                  const oof = isOutOfRange(date, props.min, props.max)
+                  const isDisabled = props.disabled || oof
+                  return h(
+                    'button',
+                    {
+                      key: date.toISOString(),
+                      type: 'button',
+                      role: 'gridcell',
+                      'aria-label': dayLabelFmt.value.format(date),
+                      tabindex: focused ? 0 : -1,
+                      'aria-selected': selected ? 'true' : 'false',
+                      'aria-disabled': isDisabled ? 'true' : undefined,
+                      'aria-current': isToday ? 'date' : undefined,
+                      'data-iris-calendar-day': '',
+                      'data-iris-calendar-day-iso': formatLocalISO(date),
+                      'data-state': selected
+                        ? 'selected'
+                        : focused
+                          ? 'focused'
+                          : isToday
+                            ? 'today'
+                            : 'idle',
+                      'data-outside-month': !inMonth ? 'true' : undefined,
+                      disabled: isDisabled || undefined,
+                      onClick: () => {
+                        focusDate.value = date
+                        selectDate(date)
+                      },
+                      onFocus: () => {
+                        focusDate.value = date
+                      },
+                      style: {
+                        height: '32px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: selected
+                          ? 'var(--iris-primary)'
+                          : isToday
+                            ? 'var(--iris-surface-hover)'
+                            : 'transparent',
+                        color: selected
+                          ? 'var(--iris-primary-foreground, #fff)'
+                          : inMonth
+                            ? 'var(--iris-foreground)'
+                            : 'var(--iris-muted)',
+                        border: 'none',
+                        borderRadius: 'var(--iris-radius-sm, 4px)',
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                        opacity: isDisabled ? '0.45' : '1',
+                        fontSize: '13px',
+                        fontFamily: 'inherit',
+                        outline: 'none',
+                      },
                     },
-                    onFocus: () => {
-                      focusDate.value = date
-                    },
-                    style: {
-                      height: '32px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: selected
-                        ? 'var(--iris-primary)'
-                        : isToday
-                          ? 'var(--iris-surface-hover)'
-                          : 'transparent',
-                      color: selected
-                        ? 'var(--iris-primary-foreground, #fff)'
-                        : inMonth
-                          ? 'var(--iris-foreground)'
-                          : 'var(--iris-muted)',
-                      border: 'none',
-                      borderRadius: 'var(--iris-radius-sm, 4px)',
-                      cursor: isDisabled ? 'not-allowed' : 'pointer',
-                      opacity: isDisabled ? '0.45' : '1',
-                      fontSize: '13px',
-                      fontFamily: 'inherit',
-                      outline: 'none',
-                    },
-                  },
-                  String(date.getDate()),
-                )
-              }),
+                    String(date.getDate()),
+                  )
+                }),
+              ),
             ),
           ),
         ],

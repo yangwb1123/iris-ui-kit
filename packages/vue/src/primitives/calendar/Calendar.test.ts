@@ -65,6 +65,18 @@ describe('@iris-ui/vue IrisCalendar', () => {
     expect(wrap.findAll('[data-iris-calendar-day]').length).toBe(42)
   })
 
+  it('grid has 6 direct child role=row rows and full-date cell labels', () => {
+    const wrap = mount(IrisCalendar, {
+      props: { defaultMonth: new Date(2024, 5, 15), locale: 'en-US' },
+    })
+    const grid = wrap.find('[data-iris-calendar-grid]')
+    const rows = grid.element.querySelectorAll(':scope > [role=row]')
+    expect(rows.length).toBe(6)
+    // Each day button announces the whole date, not just the day number.
+    const cell = wrap.find('[data-iris-calendar-day-iso="2024-06-10"]')
+    expect(cell.attributes('aria-label')).toMatch(/Monday, June 10, 2024/)
+  })
+
   it('header title reflects visible month', () => {
     const wrap = mount(IrisCalendar, {
       props: { defaultMonth: new Date(2024, 5, 15), locale: 'en-US' },

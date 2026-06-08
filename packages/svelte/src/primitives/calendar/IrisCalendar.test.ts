@@ -16,6 +16,18 @@ describe('IrisCalendar', () => {
     expect(weekdays!.children.length).toBe(7)
   })
 
+  it('day cells are wrapped in grid rows (valid grid → row → gridcell) with full-date labels', () => {
+    const { container } = render(IrisCalendar, {
+      props: { defaultMonth: new Date(2024, 5, 15), locale: 'en-US' },
+    })
+    // 6 week rows directly inside the grid (the weekday header row is outside it).
+    const grid = container.querySelector('[data-iris-calendar-grid]')!
+    expect(grid.querySelectorAll(':scope > [role=row]').length).toBe(6)
+    // each gridcell announces the full date, not just the day number.
+    const june10 = container.querySelector('[data-iris-calendar-day-iso="2024-06-10"]')!
+    expect(june10.getAttribute('aria-label')).toMatch(/June 10, 2024/)
+  })
+
   it('calls onValueChange when a day is clicked', async () => {
     let selected: Date | null = null
     const { container } = render(IrisCalendar, {

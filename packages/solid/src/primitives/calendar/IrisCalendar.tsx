@@ -79,6 +79,17 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
   const matrix = createMemo(() => buildMonthMatrix(visibleMonth(), local.weekStartsOn))
   const weekdays = createMemo(() => getWeekdayNames(local.weekStartsOn, local.locale))
   const title = createMemo(() => formatMonthYear(visibleMonth(), local.locale))
+  // One memoized formatter for the full-date cell label (e.g. "Monday, June 9,
+  // 2026") so screen readers announce the whole date, not just the day number.
+  const dayLabelFmt = createMemo(
+    () =>
+      new Intl.DateTimeFormat(local.locale, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+  )
   const today = startOfDay(new Date())
 
   const prevDisabled = createMemo(() => {
@@ -268,64 +279,76 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
       >
         <For each={matrix()}>
           {(row) => (
-            <For each={row}>
-              {(date) => {
-                const inMonth = () => isSameMonth(date, visibleMonth())
-                const selected = () => (local.value ? isSameDay(date, local.value) : false)
-                const focused = () => isSameDay(date, focusDate())
-                const isToday = () => isSameDay(date, today)
-                const oof = () => isOutOfRange(date, local.min, local.max)
-                const isDisabled = () => local.disabled || oof()
+            // `display: contents` keeps the row in the accessibility tree (a
+            // valid grid → row → gridcell structure) while letting its day cells
+            // participate directly in the parent's 7-column CSS grid layout.
+            <div role="row" style={{ display: 'contents' }}>
+              <For each={row}>
+                {(date) => {
+                  const inMonth = () => isSameMonth(date, visibleMonth())
+                  const selected = () => (local.value ? isSameDay(date, local.value) : false)
+                  const focused = () => isSameDay(date, focusDate())
+                  const isToday = () => isSameDay(date, today)
+                  const oof = () => isOutOfRange(date, local.min, local.max)
+                  const isDisabled = () => local.disabled || oof()
 
-                return (
-                  <button
-                    type="button"
-                    role="gridcell"
-                    tabIndex={focused() ? 0 : -1}
-                    aria-selected={selected() ? 'true' : 'false'}
-                    aria-disabled={isDisabled() ? 'true' : undefined}
-                    aria-current={isToday() ? 'date' : undefined}
-                    data-iris-calendar-day=""
-                    data-iris-calendar-day-iso={formatLocalISO(date)}
-                    data-state={
-                      selected() ? 'selected' : focused() ? 'focused' : isToday() ? 'today' : 'idle'
-                    }
-                    data-outside-month={!inMonth() ? 'true' : undefined}
-                    disabled={isDisabled() || undefined}
-                    onClick={() => {
-                      setFocusDate(date)
-                      selectDate(date)
-                    }}
-                    onFocus={() => setFocusDate(date)}
-                    style={{
-                      height: '32px',
-                      display: 'inline-flex',
-                      'align-items': 'center',
-                      'justify-content': 'center',
-                      background: selected()
-                        ? 'var(--iris-primary)'
-                        : isToday()
-                          ? 'var(--iris-surface-hover)'
-                          : 'transparent',
-                      color: selected()
-                        ? 'var(--iris-primary-foreground, #fff)'
-                        : inMonth()
-                          ? 'var(--iris-foreground)'
-                          : 'var(--iris-muted)',
-                      border: 'none',
-                      'border-radius': 'var(--iris-radius-sm, 4px)',
-                      cursor: isDisabled() ? 'not-allowed' : 'pointer',
-                      opacity: isDisabled() ? '0.45' : '1',
-                      'font-size': '13px',
-                      'font-family': 'inherit',
-                      outline: 'none',
-                    }}
-                  >
-                    {String(date.getDate())}
-                  </button>
-                )
-              }}
-            </For>
+                  return (
+                    <button
+                      type="button"
+                      role="gridcell"
+                      aria-label={dayLabelFmt().format(date)}
+                      tabIndex={focused() ? 0 : -1}
+                      aria-selected={selected() ? 'true' : 'false'}
+                      aria-disabled={isDisabled() ? 'true' : undefined}
+                      aria-current={isToday() ? 'date' : undefined}
+                      data-iris-calendar-day=""
+                      data-iris-calendar-day-iso={formatLocalISO(date)}
+                      data-state={
+                        selected()
+                          ? 'selected'
+                          : focused()
+                            ? 'focused'
+                            : isToday()
+                              ? 'today'
+                              : 'idle'
+                      }
+                      data-outside-month={!inMonth() ? 'true' : undefined}
+                      disabled={isDisabled() || undefined}
+                      onClick={() => {
+                        setFocusDate(date)
+                        selectDate(date)
+                      }}
+                      onFocus={() => setFocusDate(date)}
+                      style={{
+                        height: '32px',
+                        display: 'inline-flex',
+                        'align-items': 'center',
+                        'justify-content': 'center',
+                        background: selected()
+                          ? 'var(--iris-primary)'
+                          : isToday()
+                            ? 'var(--iris-surface-hover)'
+                            : 'transparent',
+                        color: selected()
+                          ? 'var(--iris-primary-foreground, #fff)'
+                          : inMonth()
+                            ? 'var(--iris-foreground)'
+                            : 'var(--iris-muted)',
+                        border: 'none',
+                        'border-radius': 'var(--iris-radius-sm, 4px)',
+                        cursor: isDisabled() ? 'not-allowed' : 'pointer',
+                        opacity: isDisabled() ? '0.45' : '1',
+                        'font-size': '13px',
+                        'font-family': 'inherit',
+                        outline: 'none',
+                      }}
+                    >
+                      {String(date.getDate())}
+                    </button>
+                  )
+                }}
+              </For>
+            </div>
           )}
         </For>
       </div>

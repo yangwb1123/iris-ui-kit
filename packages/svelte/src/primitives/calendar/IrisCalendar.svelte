@@ -58,6 +58,16 @@
   const matrix = $derived(buildMonthMatrix(visibleMonth, weekStartsOn))
   const weekdays = $derived(getWeekdayNames(weekStartsOn, locale))
   const title = $derived(formatMonthYear(visibleMonth, locale))
+  // One memoized formatter for the full-date cell label (e.g. "Monday, June 9,
+  // 2026") so screen readers announce the whole date, not just the day number.
+  const dayLabelFmt = $derived(
+    new Intl.DateTimeFormat(locale, {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }),
+  )
 
   const prevDisabled = $derived(min ? startOfMonth(visibleMonth) <= startOfMonth(min) : false)
   const nextDisabled = $derived(max ? startOfMonth(endOfMonth(visibleMonth)) >= startOfMonth(max) : false)
@@ -233,46 +243,54 @@
     style:grid-template-columns="repeat(7, minmax(0, 1fr))"
     style:gap="2px"
   >
-    {#each matrix as row}
-      {#each row as date (date.toISOString())}
-        {@const inMonth = isSameMonth(date, visibleMonth)}
-        {@const selected = value ? isSameDay(date, value) : false}
-        {@const focused = isSameDay(date, focusDate)}
-        {@const isToday = isSameDay(date, today)}
-        {@const oof = isOutOfRange(date, min, max)}
-        {@const isDisabled = disabled || oof}
-        <button
-          type="button"
-          role="gridcell"
-          tabindex={focused ? 0 : -1}
-          aria-selected={selected ? 'true' : 'false'}
-          aria-disabled={isDisabled ? 'true' : undefined}
-          aria-current={isToday ? 'date' : undefined}
-          data-iris-calendar-day
-          data-iris-calendar-day-iso={formatLocalISO(date)}
-          data-state={selected ? 'selected' : focused ? 'focused' : isToday ? 'today' : 'idle'}
-          data-outside-month={!inMonth ? 'true' : undefined}
-          disabled={isDisabled || undefined}
-          onclick={() => {
-            focusDate = date
-            selectDate(date)
-          }}
-          onfocus={() => { focusDate = date }}
-          style:height="32px"
-          style:display="inline-flex"
-          style:align-items="center"
-          style:justify-content="center"
-          style:background={selected ? 'var(--iris-primary)' : isToday ? 'var(--iris-surface-hover)' : 'transparent'}
-          style:color={selected ? 'var(--iris-primary-foreground, #fff)' : inMonth ? 'var(--iris-foreground)' : 'var(--iris-muted)'}
-          style:border="none"
-          style:border-radius="var(--iris-radius-sm, 4px)"
-          style:cursor={isDisabled ? 'not-allowed' : 'pointer'}
-          style:opacity={isDisabled ? '0.45' : '1'}
-          style:font-size="13px"
-          style:font-family="inherit"
-          style:outline="none"
-        >{date.getDate()}</button>
-      {/each}
+    {#each matrix as week}
+      <!--
+        `display: contents` keeps the row in the accessibility tree (a valid
+        grid → row → gridcell structure) while letting its day cells participate
+        directly in the parent's 7-column CSS grid layout.
+      -->
+      <div role="row" style:display="contents">
+        {#each week as date (date.toISOString())}
+          {@const inMonth = isSameMonth(date, visibleMonth)}
+          {@const selected = value ? isSameDay(date, value) : false}
+          {@const focused = isSameDay(date, focusDate)}
+          {@const isToday = isSameDay(date, today)}
+          {@const oof = isOutOfRange(date, min, max)}
+          {@const isDisabled = disabled || oof}
+          <button
+            type="button"
+            role="gridcell"
+            aria-label={dayLabelFmt.format(date)}
+            tabindex={focused ? 0 : -1}
+            aria-selected={selected ? 'true' : 'false'}
+            aria-disabled={isDisabled ? 'true' : undefined}
+            aria-current={isToday ? 'date' : undefined}
+            data-iris-calendar-day
+            data-iris-calendar-day-iso={formatLocalISO(date)}
+            data-state={selected ? 'selected' : focused ? 'focused' : isToday ? 'today' : 'idle'}
+            data-outside-month={!inMonth ? 'true' : undefined}
+            disabled={isDisabled || undefined}
+            onclick={() => {
+              focusDate = date
+              selectDate(date)
+            }}
+            onfocus={() => { focusDate = date }}
+            style:height="32px"
+            style:display="inline-flex"
+            style:align-items="center"
+            style:justify-content="center"
+            style:background={selected ? 'var(--iris-primary)' : isToday ? 'var(--iris-surface-hover)' : 'transparent'}
+            style:color={selected ? 'var(--iris-primary-foreground, #fff)' : inMonth ? 'var(--iris-foreground)' : 'var(--iris-muted)'}
+            style:border="none"
+            style:border-radius="var(--iris-radius-sm, 4px)"
+            style:cursor={isDisabled ? 'not-allowed' : 'pointer'}
+            style:opacity={isDisabled ? '0.45' : '1'}
+            style:font-size="13px"
+            style:font-family="inherit"
+            style:outline="none"
+          >{date.getDate()}</button>
+        {/each}
+      </div>
     {/each}
   </div>
 </div>

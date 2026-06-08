@@ -7404,6 +7404,24 @@
           "optional": true
         },
         {
+          "name": "checkable",
+          "type": "boolean",
+          "optional": true,
+          "description": "Show a checkbox per node with parent/child cascade + indeterminate (tri-state) propagation, independent of `selectionMode`. Driven by the framework-agnostic `createTreeSelection`."
+        },
+        {
+          "name": "defaultChecked",
+          "type": "string[]",
+          "optional": true,
+          "description": "Initially checked node ids (uncontrolled; reconciled through the cascade)."
+        },
+        {
+          "name": "onCheckedChange",
+          "type": "(checked: string[]) => void",
+          "optional": true,
+          "description": "Notified with the fully-reconciled checked node ids on every check change."
+        },
+        {
           "name": "ariaLabel",
           "type": "string",
           "optional": true

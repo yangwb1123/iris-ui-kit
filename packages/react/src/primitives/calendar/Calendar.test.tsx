@@ -24,6 +24,16 @@ describe('@iris-ui/react IrisCalendar', () => {
     expect(days().length).toBe(42)
   })
 
+  it('day cells are wrapped in grid rows (valid grid → row → gridcell) with full-date labels', () => {
+    render(<IrisCalendar defaultMonth={new Date(2024, 5, 15)} locale="en-US" />)
+    // 6 week rows inside the grid (plus the weekday header row outside it).
+    const grid = document.querySelector('[data-iris-calendar-grid]')!
+    expect(grid.querySelectorAll(':scope > [role=row]').length).toBe(6)
+    // each gridcell announces the full date, not just the day number.
+    const june10 = document.querySelector('[data-iris-calendar-day-iso="2024-06-10"]')!
+    expect(june10.getAttribute('aria-label')).toMatch(/June 10, 2024/)
+  })
+
   it('header reflects visible month', () => {
     render(<IrisCalendar defaultMonth={new Date(2024, 5, 15)} locale="en-US" />)
     expect(document.querySelector('[data-iris-calendar-title]')?.textContent).toMatch(/June.*2024/)

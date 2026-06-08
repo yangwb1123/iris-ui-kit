@@ -283,7 +283,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 - IrisTransfer [react/solid/svelte/vue]
   props: options, value?, defaultValue?, onValueChange?, titles?, searchable?, disabled?, style?, className?
 - IrisTree [react/solid/svelte/vue]
-  props: nodes, expanded?, defaultExpanded?, onExpandedChange?, selected?, defaultSelected?, onSelectedChange?, selectionMode?, ariaLabel?, loading?, error?, emptyState?, loadingState?, errorState?, style?, className?
+  props: nodes, expanded?, defaultExpanded?, onExpandedChange?, selected?, defaultSelected?, onSelectedChange?, selectionMode?, checkable?, defaultChecked?, onCheckedChange?, ariaLabel?, loading?, error?, emptyState?, loadingState?, errorState?, style?, className?
 - IrisTreeSelect [react/solid/svelte/vue]
   props: options, value?, defaultValue?, onValueChange?, defaultExpanded?, placeholder?, disabled?, invalid?, size?, id?, ariaDescribedby?, style?, className?
 - IrisVirtualScroll [react/solid/svelte/vue]

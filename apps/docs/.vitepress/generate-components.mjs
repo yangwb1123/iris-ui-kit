@@ -39,17 +39,33 @@ lines.push(
 )
 lines.push('')
 
+// Escape a TS type / text for a markdown table cell (pipes break the table).
+const cell = (s) => String(s).replace(/\|/g, '\\|')
+
 for (const group of manifest.groups) {
   lines.push(`## ${group.group} <Badge type="info" text="${group.count}" />`)
   lines.push('')
-  lines.push('| Component | Frameworks |')
-  lines.push('| --- | --- |')
   for (const name of group.components) {
     const component = manifest.components.find((c) => c.name === name)
-    const fw = component ? component.frameworks.join(' · ') : ''
-    lines.push(`| \`${name}\` | ${fw} |`)
+    if (!component) continue
+    const fw = component.frameworks.join(' · ')
+    const via = component.plugin ? ` — via \`${component.plugin}\` (IrisProvider plugins)` : ''
+    lines.push(`### \`${name}\``)
+    lines.push('')
+    lines.push(`<small>${fw}${via}</small>`)
+    lines.push('')
+    const props = component.props ?? []
+    if (props.length > 0) {
+      lines.push('| Prop | Type | Required | Description |')
+      lines.push('| --- | --- | --- | --- |')
+      for (const p of props) {
+        lines.push(
+          `| \`${p.name}\` | \`${cell(p.type)}\` | ${p.optional ? '' : '✓'} | ${cell(p.description ?? '')} |`,
+        )
+      }
+      lines.push('')
+    }
   }
-  lines.push('')
 }
 
 lines.push('## Design tokens')

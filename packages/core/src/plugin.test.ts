@@ -89,4 +89,52 @@ describe('runPlugins', () => {
     runPlugins([p, p])
     expect(warn).toHaveBeenCalled()
   })
+
+  it('collects teardowns from install return values and onTeardown, runs LIFO', () => {
+    const order: string[] = []
+    const a = createPlugin({
+      name: 'a',
+      install: () => () => order.push('a-return'),
+    })
+    const b = createPlugin({
+      name: 'b',
+      install: (reg) => {
+        reg.onTeardown(() => order.push('b-onTeardown'))
+      },
+    })
+    const r = runPlugins([a, b])
+    expect(order).toEqual([]) // not run until teardown()
+    r.teardown()
+    expect(order).toEqual(['b-onTeardown', 'a-return']) // LIFO
+  })
+
+  it('teardown is idempotent', () => {
+    const fn = vi.fn()
+    const r = runPlugins([createPlugin({ name: 'p', install: () => fn })])
+    r.teardown()
+    r.teardown()
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  it('a throwing teardown is isolated and does not block the rest', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const after = vi.fn()
+    const boom = createPlugin({
+      name: 'boom',
+      install: () => () => {
+        throw new Error('nope')
+      },
+    })
+    const ok = createPlugin({ name: 'ok', install: () => after })
+    // install order [ok, boom] → LIFO teardown runs boom (throws) then ok
+    const r = runPlugins([ok, boom])
+    expect(() => r.teardown()).not.toThrow()
+    expect(after).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalled()
+  })
+
+  it('no teardowns → teardown() is a safe no-op', () => {
+    const r = runPlugins([createPlugin({ name: 'p', install() {} })])
+    expect(() => r.teardown()).not.toThrow()
+  })
 })

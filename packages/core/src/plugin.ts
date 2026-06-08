@@ -29,12 +29,21 @@ export interface PluginRegistry {
    * `usePluginStore(key)`. A duplicate key wins-last (with a dev warning).
    */
   registerStore(key: string, factory: () => unknown): void
+  /**
+   * Register a cleanup to run when the provider unmounts or the `plugins` set
+   * is swapped — so eager stores / subscriptions / timers don't leak. An
+   * alternative to returning a teardown from `install`; both are collected.
+   */
+  onTeardown(fn: () => void): void
 }
 
-/** A plugin: a name plus an `install` hook that registers into the registry. */
+/**
+ * A plugin: a name plus an `install` hook that registers into the registry.
+ * `install` may optionally return a teardown function (run on unmount/swap).
+ */
 export interface IrisPlugin {
   readonly name: string
-  install(registry: PluginRegistry): void
+  install(registry: PluginRegistry): void | (() => void)
 }
 
 /** The merged result of running every plugin's `install`. */
@@ -45,6 +54,13 @@ export interface CollectedRegistrations {
   messages: Record<string, Record<string, string>>
   /** store key → the instance returned by its factory (already invoked). */
   stores: Map<string, unknown>
+  /**
+   * Run every registered teardown (from `install` return values and
+   * `registry.onTeardown`) in LIFO order. Each is isolated (a throwing teardown
+   * doesn't block the others) and the whole call is idempotent. The adapter
+   * `IrisProvider` invokes this on unmount.
+   */
+  teardown(): void
 }
 
 function devWarn(message: string): void {
@@ -92,6 +108,7 @@ export function runPlugins(plugins: readonly IrisPlugin[]): CollectedRegistratio
   const messages: Record<string, Record<string, string>> = {}
   const stores = new Map<string, unknown>()
   const seenNames = new Set<string>()
+  const teardowns: Array<() => void> = []
 
   const registry: PluginRegistry = {
     registerTokens(next) {
@@ -111,6 +128,9 @@ export function runPlugins(plugins: readonly IrisPlugin[]): CollectedRegistratio
       }
       stores.set(key, factory())
     },
+    onTeardown(fn) {
+      teardowns.push(fn)
+    },
   }
 
   for (const plugin of plugins) {
@@ -118,8 +138,25 @@ export function runPlugins(plugins: readonly IrisPlugin[]): CollectedRegistratio
       devWarn(`plugin "${plugin.name}" installed more than once.`)
     }
     seenNames.add(plugin.name)
-    plugin.install(registry)
+    const cleanup = plugin.install(registry)
+    if (typeof cleanup === 'function') teardowns.push(cleanup)
   }
 
-  return { tokens, messages, stores }
+  let torn = false
+  const teardown = (): void => {
+    if (torn) return // idempotent
+    torn = true
+    // LIFO: tear down in reverse install order so later plugins that depend on
+    // earlier ones unwind first. Each is isolated — a throwing teardown is
+    // reported but never blocks the rest.
+    for (let i = teardowns.length - 1; i >= 0; i -= 1) {
+      try {
+        teardowns[i]!()
+      } catch (err) {
+        devWarn(`a plugin teardown threw: ${String(err)}`)
+      }
+    }
+  }
+
+  return { tokens, messages, stores, teardown }
 }

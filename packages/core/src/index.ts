@@ -73,6 +73,8 @@ export {
   type SortState,
   type DataViewColumn,
   type DataViewQuery,
+  type FilterOperator,
+  type FilterRule,
   type PageItem,
 } from './data-view'
 export {

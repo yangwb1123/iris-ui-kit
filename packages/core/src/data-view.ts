@@ -46,45 +46,128 @@ export interface DataViewColumn<Row> {
   sorter?: (a: Row, b: Row) => number
 }
 
+/** Comparison operators for a typed {@link FilterRule}. */
+export type FilterOperator =
+  | 'eq'
+  | 'ne'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'contains'
+  | 'startsWith'
+  | 'endsWith'
+  | 'in'
+  | 'between'
+
+/**
+ * A typed filter on a column. `contains`/`startsWith`/`endsWith` are
+ * case-insensitive string ops; `in` matches any value in `value` (an array);
+ * `between` matches an inclusive `[min, max]` (a two-element `value`); the rest
+ * compare via {@link compareValues}.
+ */
+export interface FilterRule {
+  key: string
+  operator: FilterOperator
+  value: unknown
+}
+
 export interface DataViewQuery {
   /** key → substring (case-insensitive); empty strings are ignored. */
   filters: Record<string, string>
+  /** Single-column sort. For multi-column, use {@link DataViewQuery.multiSort}. */
   sort: SortState | null
+  /**
+   * Typed operator filters, applied IN ADDITION to {@link DataViewQuery.filters}
+   * (a row must satisfy both). Optional — omit for the substring-only path.
+   */
+  filterRules?: FilterRule[]
+  /**
+   * Multi-column sort, most-significant first. Applied when `sort` is null;
+   * ties on an earlier column fall through to the next. Optional.
+   */
+  multiSort?: SortState[]
+}
+
+function matchesRule(value: unknown, rule: FilterRule): boolean {
+  const lower = (v: unknown): string => String(v ?? '').toLowerCase()
+  switch (rule.operator) {
+    case 'eq':
+      return compareValues(value, rule.value) === 0
+    case 'ne':
+      return compareValues(value, rule.value) !== 0
+    case 'gt':
+      return compareValues(value, rule.value) > 0
+    case 'gte':
+      return compareValues(value, rule.value) >= 0
+    case 'lt':
+      return compareValues(value, rule.value) < 0
+    case 'lte':
+      return compareValues(value, rule.value) <= 0
+    case 'contains':
+      return lower(value).includes(lower(rule.value))
+    case 'startsWith':
+      return lower(value).startsWith(lower(rule.value))
+    case 'endsWith':
+      return lower(value).endsWith(lower(rule.value))
+    case 'in':
+      return Array.isArray(rule.value) && rule.value.some((v) => compareValues(value, v) === 0)
+    case 'between': {
+      if (!Array.isArray(rule.value) || rule.value.length < 2) return true // incomplete → skip
+      const [min, max] = rule.value
+      return compareValues(value, min) >= 0 && compareValues(value, max) <= 0
+    }
+    default:
+      return true
+  }
 }
 
 /**
- * Filter then sort the full row set (no pagination). Filtering is a
- * case-insensitive substring match on each active filter's column; sorting uses
- * the column's `sorter` or {@link compareValues}.
+ * Filter then sort the full row set (no pagination). Substring `filters` and
+ * typed `filterRules` are both applied (a row must satisfy all). Sorting uses
+ * `sort` (single column) or, when that is null, `multiSort` (most-significant
+ * first); each column uses its `sorter` or {@link compareValues}.
  */
 export function filterSort<Row>(
   rows: readonly Row[],
   columns: readonly DataViewColumn<Row>[],
   query: DataViewQuery,
 ): Row[] {
+  const colOf = (key: string): DataViewColumn<Row> | undefined => columns.find((c) => c.key === key)
   let working: readonly Row[] = rows
 
   const activeFilters = Object.entries(query.filters).filter(([, v]) => v !== '')
-  if (activeFilters.length > 0) {
-    working = working.filter((row) =>
-      activeFilters.every(([key, value]) => {
-        const col = columns.find((c) => c.key === key)
-        if (!col) return true
-        return String(col.getValue(row) ?? '')
-          .toLowerCase()
-          .includes(value.toLowerCase())
-      }),
+  const rules = query.filterRules ?? []
+  if (activeFilters.length > 0 || rules.length > 0) {
+    working = working.filter(
+      (row) =>
+        activeFilters.every(([key, value]) => {
+          const col = colOf(key)
+          if (!col) return true
+          return String(col.getValue(row) ?? '')
+            .toLowerCase()
+            .includes(value.toLowerCase())
+        }) &&
+        rules.every((rule) => {
+          const col = colOf(rule.key)
+          if (!col) return true
+          return matchesRule(col.getValue(row), rule)
+        }),
     )
   }
 
-  const { sort } = query
-  if (sort) {
-    const col = columns.find((c) => c.key === sort.key)
-    if (col) {
-      const cmp =
-        col.sorter ?? ((a: Row, b: Row) => compareValues(col.getValue(a), col.getValue(b)))
-      working = [...working].sort((a, b) => (sort.direction === 'asc' ? cmp(a, b) : -cmp(a, b)))
-    }
+  // Single-column sort wins; otherwise apply the multi-column list in order.
+  const sortCols: SortState[] = query.sort ? [query.sort] : (query.multiSort ?? [])
+  if (sortCols.length > 0) {
+    working = [...working].sort((a, b) => {
+      for (const s of sortCols) {
+        const col = colOf(s.key)
+        if (!col) continue
+        const cmp = col.sorter ? col.sorter(a, b) : compareValues(col.getValue(a), col.getValue(b))
+        if (cmp !== 0) return s.direction === 'asc' ? cmp : -cmp
+      }
+      return 0
+    })
   }
 
   return working === rows ? [...rows] : (working as Row[])

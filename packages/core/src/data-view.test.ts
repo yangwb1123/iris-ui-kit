@@ -69,6 +69,77 @@ describe('filterSort', () => {
     expect(out).not.toBe(rows)
     expect(out).toHaveLength(3)
   })
+
+  it('applies typed filterRules (operators) in addition to substring filters', () => {
+    expect(
+      filterSort(rows, cols, {
+        filters: {},
+        sort: null,
+        filterRules: [{ key: 'age', operator: 'gte', value: 30 }],
+      })
+        .map((r) => r.age)
+        .sort((a, b) => a - b),
+    ).toEqual([30, 35])
+    expect(
+      filterSort(rows, cols, {
+        filters: {},
+        sort: null,
+        filterRules: [{ key: 'name', operator: 'in', value: ['Alice', 'Bob'] }],
+      })
+        .map((r) => r.name)
+        .sort(),
+    ).toEqual(['Alice', 'Bob'])
+    expect(
+      filterSort(rows, cols, {
+        filters: {},
+        sort: null,
+        filterRules: [{ key: 'age', operator: 'between', value: [26, 31] }],
+      }).map((r) => r.age),
+    ).toEqual([30])
+  })
+
+  it('substring filter AND filterRule must both match', () => {
+    const out = filterSort(rows, cols, {
+      filters: { name: 'a' }, // Charlie, Alice
+      sort: null,
+      filterRules: [{ key: 'age', operator: 'lt', value: 28 }], // Alice(25)
+    })
+    expect(out.map((r) => r.name)).toEqual(['Alice'])
+  })
+
+  it('multiSort breaks ties on the next column', () => {
+    const data = [
+      { team: 'a', score: 2 },
+      { team: 'a', score: 1 },
+      { team: 'b', score: 5 },
+    ]
+    const c = [
+      { key: 'team', getValue: (r: (typeof data)[number]) => r.team },
+      { key: 'score', getValue: (r: (typeof data)[number]) => r.score },
+    ]
+    const out = filterSort(data, c, {
+      filters: {},
+      sort: null,
+      multiSort: [
+        { key: 'team', direction: 'asc' },
+        { key: 'score', direction: 'desc' },
+      ],
+    })
+    expect(out).toEqual([
+      { team: 'a', score: 2 },
+      { team: 'a', score: 1 },
+      { team: 'b', score: 5 },
+    ])
+  })
+
+  it('single `sort` takes precedence over multiSort', () => {
+    const out = filterSort(rows, cols, {
+      filters: {},
+      sort: { key: 'age', direction: 'asc' },
+      multiSort: [{ key: 'name', direction: 'asc' }],
+    })
+    expect(out.map((r) => r.age)).toEqual([25, 30, 35])
+  })
 })
 
 describe('paginate / pageCount', () => {

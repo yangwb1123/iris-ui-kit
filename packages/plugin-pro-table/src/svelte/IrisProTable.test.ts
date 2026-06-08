@@ -32,4 +32,21 @@ describe('IrisProTable (svelte)', () => {
     await fireEvent.click(getByText(/Age/))
     expect(store.getState().sort).toEqual({ key: 'age', direction: 'asc' })
   })
+
+  it('exposes aria-sort and keyboard semantics on sortable headers', async () => {
+    const store = createProTableStore<User>({ columns, rowKey: 'id', data })
+    const { container } = render(IrisProTable, { props: { store } })
+    const headers = container.querySelectorAll('thead th[scope="col"][data-sortable]')
+    const ageHeader = Array.from(headers).find((th) =>
+      th.textContent?.includes('Age'),
+    ) as HTMLElement
+    expect(ageHeader).toBeTruthy()
+    // unsorted sortable header advertises 'none'
+    expect(ageHeader.getAttribute('aria-sort')).toBe('none')
+    expect(ageHeader.getAttribute('tabindex')).toBe('0')
+    // Enter toggles sort and updates aria-sort to 'ascending'
+    await fireEvent.keyDown(ageHeader, { key: 'Enter' })
+    expect(store.getState().sort).toEqual({ key: 'age', direction: 'asc' })
+    expect(ageHeader.getAttribute('aria-sort')).toBe('ascending')
+  })
 })

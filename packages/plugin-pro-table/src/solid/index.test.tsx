@@ -33,4 +33,16 @@ describe('IrisProTable (solid)', () => {
     fireEvent.click(getByText(/Age/))
     expect(store.getState().sort).toEqual({ key: 'age', direction: 'asc' })
   })
+
+  it('exposes aria-sort and keyboard-operates sortable headers', () => {
+    const store = createProTableStore<User>({ columns, rowKey: 'id', data })
+    const { getByText } = render(() => <IrisProTable store={store} />)
+    const ageHeader = getByText(/Age/).closest('th') as HTMLTableCellElement
+    expect(ageHeader.getAttribute('scope')).toBe('col')
+    expect(ageHeader.getAttribute('aria-sort')).toBe('none')
+    expect(ageHeader.tabIndex).toBe(0)
+    fireEvent.keyDown(ageHeader, { key: 'Enter' })
+    expect(store.getState().sort).toEqual({ key: 'age', direction: 'asc' })
+    expect(ageHeader.getAttribute('aria-sort')).toBe('ascending')
+  })
 })

@@ -32,6 +32,22 @@
       : ''
   }
 
+  // WAI-ARIA grid sort semantics: aria-sort on the header conveys state to
+  // screen readers (the visual ▲/▼ is decorative/aria-hidden), and sortable
+  // headers are keyboard-operable (Enter/Space) — mirrors the base IrisTable.
+  function ariaSort(c: {
+    key: string
+    sortable?: boolean
+  }): 'ascending' | 'descending' | 'none' | undefined {
+    return tableState.sort?.key === c.key
+      ? tableState.sort.direction === 'asc'
+        ? 'ascending'
+        : 'descending'
+      : c.sortable
+        ? 'none'
+        : undefined
+  }
+
   function pinnedStyle(c: { pinned?: 'left' | 'right' }): string {
     return c.pinned ? `position:sticky;${c.pinned}:0;z-index:1;` : ''
   }
@@ -41,7 +57,7 @@
   <table>
     <thead>
       <tr>
-        <th>
+        <th scope="col">
           <input
             type="checkbox"
             aria-label="Select all"
@@ -51,11 +67,20 @@
         </th>
         {#each columns as c (c.key)}
           <th
+            scope="col"
+            aria-sort={ariaSort(c)}
+            tabindex={c.sortable ? 0 : undefined}
             style={`text-align:${c.align ?? 'left'};${pinnedStyle(c)}`}
             data-sortable={c.sortable ? '' : undefined}
             onclick={c.sortable ? () => store.toggleSort(c.key) : undefined}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                store.toggleSort(c.key)
+              }
+            }}
           >
-            {c.title}{sortIndicator(c.key)}
+            {c.title}<span aria-hidden="true">{sortIndicator(c.key)}</span>
           </th>
         {/each}
       </tr>

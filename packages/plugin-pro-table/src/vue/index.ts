@@ -48,13 +48,26 @@ export const IrisProTable = defineComponent({
       const sort = state.value.sort
       return sort?.key === key ? (sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
     }
+    // WAI-ARIA grid sort semantics: aria-sort on the header conveys state to
+    // screen readers (the visual ▲/▼ is decorative/aria-hidden), and sortable
+    // headers are keyboard-operable (Enter/Space) — mirrors the base IrisTable.
+    const ariaSort = (c: ProTableColumn): 'ascending' | 'descending' | 'none' | undefined => {
+      const sort = state.value.sort
+      return sort?.key === c.key
+        ? sort.direction === 'asc'
+          ? 'ascending'
+          : 'descending'
+        : c.sortable
+          ? 'none'
+          : undefined
+    }
 
     return () => {
       const columns = props.store.visibleColumns()
       const hasFilter = columns.some((c) => c.filterable)
 
       const headerCells: VNode[] = [
-        h('th', [
+        h('th', { scope: 'col' }, [
           h('input', {
             type: 'checkbox',
             'aria-label': 'Select all',
@@ -67,11 +80,22 @@ export const IrisProTable = defineComponent({
             'th',
             {
               key: c.key,
+              scope: 'col',
+              'aria-sort': ariaSort(c),
+              tabindex: c.sortable ? 0 : undefined,
               style: { textAlign: c.align, width: c.width, ...pinnedStyle(c) },
               'data-sortable': c.sortable ? '' : undefined,
               onClick: c.sortable ? () => props.store.toggleSort(c.key) : undefined,
+              onKeydown: c.sortable
+                ? (e: KeyboardEvent) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      props.store.toggleSort(c.key)
+                    }
+                  }
+                : undefined,
             },
-            `${c.title}${sortIndicator(c.key)}`,
+            [c.title, h('span', { 'aria-hidden': 'true' }, sortIndicator(c.key))],
           ),
         ),
       ]

@@ -35,13 +35,28 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
     const sort = state().sort
     return sort?.key === key ? (sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
   }
+  // WAI-ARIA grid sort semantics: aria-sort on the header conveys state to
+  // screen readers (the visual ▲/▼ is decorative/aria-hidden), and sortable
+  // headers are keyboard-operable (Enter/Space) — mirrors the base IrisTable.
+  const ariaSort = (
+    c: ReturnType<typeof columns>[number],
+  ): 'ascending' | 'descending' | 'none' | undefined => {
+    const sort = state().sort
+    return sort?.key === c.key
+      ? sort.direction === 'asc'
+        ? 'ascending'
+        : 'descending'
+      : c.sortable
+        ? 'none'
+        : undefined
+  }
 
   return (
     <div data-iris-pro-table="" class={props.class}>
       <table>
         <thead>
           <tr>
-            <th>
+            <th scope="col">
               <input
                 type="checkbox"
                 aria-label="Select all"
@@ -52,6 +67,9 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
             <For each={columns()}>
               {(c) => (
                 <th
+                  scope="col"
+                  aria-sort={ariaSort(c)}
+                  tabindex={c.sortable ? 0 : undefined}
                   style={{
                     'text-align': c.align,
                     width: typeof c.width === 'number' ? `${c.width}px` : c.width,
@@ -59,9 +77,19 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                   }}
                   data-sortable={c.sortable ? '' : undefined}
                   onClick={c.sortable ? () => props.store.toggleSort(c.key) : undefined}
+                  onKeyDown={
+                    c.sortable
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            props.store.toggleSort(c.key)
+                          }
+                        }
+                      : undefined
+                  }
                 >
                   {c.title}
-                  {sortIndicator(c.key)}
+                  <span aria-hidden="true">{sortIndicator(c.key)}</span>
                 </th>
               )}
             </For>

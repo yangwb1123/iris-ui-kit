@@ -35,4 +35,24 @@ describe('IrisProTable (vue)', () => {
     expect(store.getState().sort).toEqual({ key: 'age', direction: 'asc' })
     wrapper.unmount()
   })
+
+  it('exposes aria-sort and keyboard sorting on sortable headers', async () => {
+    const store = createProTableStore<User>({ columns, rowKey: 'id', data })
+    const wrapper = mount(IrisProTable, { props: { store } })
+    const ageHeader = wrapper.findAll('th').find((th) => th.text().includes('Age'))!
+    // sortable but unsorted → 'none', scope=col, keyboard-focusable
+    expect(ageHeader.attributes('aria-sort')).toBe('none')
+    expect(ageHeader.attributes('scope')).toBe('col')
+    expect(ageHeader.attributes('tabindex')).toBe('0')
+    // Enter activates the sort
+    await ageHeader.trigger('keydown', { key: 'Enter' })
+    expect(store.getState().sort).toEqual({ key: 'age', direction: 'asc' })
+    expect(
+      wrapper
+        .findAll('th')
+        .find((th) => th.text().includes('Age'))!
+        .attributes('aria-sort'),
+    ).toBe('ascending')
+    wrapper.unmount()
+  })
 })

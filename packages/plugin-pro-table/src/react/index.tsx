@@ -36,13 +36,24 @@ export function IrisProTable<Row extends Record<string, unknown>>({
 
   const sortIndicator = (key: string) =>
     state.sort?.key === key ? (state.sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
+  // WAI-ARIA grid sort semantics: aria-sort on the header conveys state to
+  // screen readers (the visual ▲/▼ is decorative/aria-hidden), and sortable
+  // headers are keyboard-operable (Enter/Space) — mirrors the base IrisTable.
+  const ariaSort = (c: (typeof columns)[number]): React.AriaAttributes['aria-sort'] =>
+    state.sort?.key === c.key
+      ? state.sort.direction === 'asc'
+        ? 'ascending'
+        : 'descending'
+      : c.sortable
+        ? 'none'
+        : undefined
 
   return (
     <div data-iris-pro-table="" className={className}>
       <table>
         <thead>
           <tr>
-            <th>
+            <th scope="col">
               <input
                 type="checkbox"
                 aria-label="Select all"
@@ -53,12 +64,25 @@ export function IrisProTable<Row extends Record<string, unknown>>({
             {columns.map((c) => (
               <th
                 key={c.key}
+                scope="col"
+                aria-sort={ariaSort(c)}
+                tabIndex={c.sortable ? 0 : undefined}
                 style={{ textAlign: c.align, width: c.width, ...pinnedStyle(c) }}
                 onClick={c.sortable ? () => store.toggleSort(c.key) : undefined}
+                onKeyDown={
+                  c.sortable
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          store.toggleSort(c.key)
+                        }
+                      }
+                    : undefined
+                }
                 data-sortable={c.sortable ? '' : undefined}
               >
                 {c.title}
-                {sortIndicator(c.key)}
+                <span aria-hidden="true">{sortIndicator(c.key)}</span>
               </th>
             ))}
           </tr>

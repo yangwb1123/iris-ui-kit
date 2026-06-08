@@ -18,6 +18,7 @@ export interface UseAsyncResourceReturn<T, P extends unknown[]> extends AsyncSta
   load: AsyncResource<T, P>['load']
   reload: AsyncResource<T, P>['reload']
   mutate: AsyncResource<T, P>['mutate']
+  cancel: AsyncResource<T, P>['cancel']
   reset: AsyncResource<T, P>['reset']
 }
 
@@ -51,6 +52,10 @@ export function useAsyncResource<T, P extends unknown[] = []>(
   const immediate = React.useRef(options.immediate ?? false)
   React.useEffect(() => {
     if (immediate.current) void resource.load(...([] as unknown as P))
+    // Abort any in-flight request on unmount so it can't write back into an
+    // unmounted component (the token guard already prevents the state write;
+    // this also cancels the underlying request when the fetcher honors signal).
+    return () => resource.cancel()
   }, [resource])
 
   return {
@@ -60,6 +65,7 @@ export function useAsyncResource<T, P extends unknown[] = []>(
     load: resource.load,
     reload: resource.reload,
     mutate: resource.mutate,
+    cancel: resource.cancel,
     reset: resource.reset,
   }
 }

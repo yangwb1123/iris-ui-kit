@@ -63,6 +63,10 @@ export function IrisProvider({
     }
   }, [collected, target])
 
+  // Run plugin teardowns when the plugins set is swapped (a new `collected`) or
+  // on unmount, so eager stores / subscriptions / timers don't leak.
+  useEffect(() => () => collected.teardown(), [collected])
+
   const value = useMemo(
     () => ({ stores: collected.stores, installed: new Set((plugins ?? []).map((p) => p.name)) }),
     [collected, plugins],

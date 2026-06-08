@@ -68,6 +68,9 @@ export const IrisProvider = defineComponent({
     onBeforeUnmount(() => {
       applied?.revert()
       applied = null
+      // Run plugin teardowns on unmount so eager stores / subscriptions /
+      // timers don't leak. Idempotent and safe with no plugins.
+      collected.teardown()
     })
 
     // stores + installed names → PluginStoreContext.

@@ -12,12 +12,13 @@ describe('useAsyncResource', () => {
     expect(result.isError()).toBe(false)
   })
 
-  it('has load, reload, mutate, reset methods', () => {
+  it('has load, reload, mutate, cancel, reset methods', () => {
     const fetcher = vi.fn().mockResolvedValue(['data'])
     const { result } = renderHook(() => useAsyncResource(fetcher))
     expect(typeof result.load).toBe('function')
     expect(typeof result.reload).toBe('function')
     expect(typeof result.mutate).toBe('function')
+    expect(typeof result.cancel).toBe('function')
     expect(typeof result.reset).toBe('function')
   })
 })

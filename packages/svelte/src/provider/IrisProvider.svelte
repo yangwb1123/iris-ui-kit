@@ -43,6 +43,14 @@
     const applied = applyCssVars(Object.entries(collected.tokens), el)
     return () => applied.revert()
   })
+
+  // Run plugin teardowns when the plugins set is swapped (a new `collected`) or
+  // on unmount, so eager stores / subscriptions / timers don't leak. Mirrors the
+  // React `useEffect(() => () => collected.teardown(), [collected])`.
+  $effect(() => {
+    const current = collected
+    return () => current.teardown()
+  })
 </script>
 
 <!-- Order when present: Theme → Skin → I18n → PluginContext (set above) → children. -->

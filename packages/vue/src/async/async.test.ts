@@ -20,7 +20,8 @@ function probe(fetcher: () => Promise<string>, immediate?: boolean) {
           h('span', { class: 'status' }, r.status.value),
           h('span', { class: 'data' }, r.data.value ?? '—'),
           h('span', { class: 'loading' }, String(r.isLoading.value)),
-          h('button', { onClick: () => void r.load() }, 'load'),
+          h('button', { class: 'load', onClick: () => void r.load() }, 'load'),
+          h('button', { class: 'cancel', onClick: () => r.cancel() }, 'cancel'),
         ])
     },
   })
@@ -61,8 +62,21 @@ describe('@iris-ui/vue useAsyncResource', () => {
         throw new Error('nope')
       }),
     )
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('.load').trigger('click')
     await flushPromises()
     expect(wrapper.find('.status').text()).toBe('error')
+  })
+
+  it('cancel() aborts an in-flight load so its result is dropped', async () => {
+    const d = deferred<string>()
+    const wrapper = mount(probe(() => d.promise))
+    await wrapper.find('.load').trigger('click')
+    expect(wrapper.find('.loading').text()).toBe('true')
+    await wrapper.find('.cancel').trigger('click')
+    d.resolve('late')
+    await flushPromises()
+    // Cancel invalidates the in-flight token: the late result never lands.
+    expect(wrapper.find('.status').text()).toBe('loading')
+    expect(wrapper.find('.data').text()).toBe('—')
   })
 })

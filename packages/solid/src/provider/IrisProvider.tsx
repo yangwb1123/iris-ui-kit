@@ -50,6 +50,13 @@ export function IrisProvider(props: IrisProviderProps): JSX.Element {
     onCleanup(() => applied.revert())
   })
 
+  // Run plugin teardowns when the plugins set is swapped (a new `collected`) or
+  // on unmount, so eager stores / subscriptions / timers don't leak.
+  createEffect(() => {
+    const current = collected()
+    onCleanup(() => current.teardown())
+  })
+
   const value: PluginStoreContextValue = {
     get stores() {
       return collected().stores

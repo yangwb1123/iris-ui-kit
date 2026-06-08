@@ -21,6 +21,7 @@ export interface UseAsyncResourceReturn<T, P extends unknown[]> {
   load: AsyncResource<T, P>['load']
   reload: AsyncResource<T, P>['reload']
   mutate: AsyncResource<T, P>['mutate']
+  cancel: AsyncResource<T, P>['cancel']
   reset: AsyncResource<T, P>['reset']
 }
 
@@ -41,6 +42,10 @@ export function useAsyncResource<T, P extends unknown[] = []>(
     setState(next as AsyncState<T>)
   })
   onCleanup(unsubscribe)
+  // Abort any in-flight request on unmount so it can't write back after teardown
+  // (the token guard already blocks the state write; this also cancels the
+  // underlying request when the fetcher honors signal).
+  onCleanup(() => resource.cancel())
 
   if (options.immediate) {
     onMount(() => {
@@ -57,6 +62,7 @@ export function useAsyncResource<T, P extends unknown[] = []>(
     load: resource.load,
     reload: resource.reload,
     mutate: resource.mutate,
+    cancel: resource.cancel,
     reset: resource.reset,
   }
 }

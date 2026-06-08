@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPlugin } from '@iris-ui/core'
@@ -62,5 +62,25 @@ describe('@iris-ui/vue IrisProvider', () => {
 
   it('throws a clear error when usePluginStore is used without a provider', () => {
     expect(() => mount(Probe)).toThrow(/usePluginStore\("example"\): no <IrisProvider>/)
+  })
+
+  it('runs plugin teardowns on unmount', () => {
+    const teardown = vi.fn()
+    const plugin = createPlugin({
+      name: 'teardown-probe',
+      install(reg) {
+        reg.onTeardown(teardown)
+      },
+    })
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          return () => h(IrisProvider, { plugins: [plugin] }, { default: () => null })
+        },
+      }),
+    )
+    expect(teardown).not.toHaveBeenCalled()
+    wrapper.unmount()
+    expect(teardown).toHaveBeenCalledTimes(1)
   })
 })

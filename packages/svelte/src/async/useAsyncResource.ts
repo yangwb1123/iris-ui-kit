@@ -20,6 +20,7 @@ export interface UseAsyncResourceReturn<T, P extends unknown[]> {
   load: (...params: P) => Promise<void>
   reload: () => Promise<void>
   mutate: (data: T) => void
+  cancel: () => void
   reset: () => void
 }
 
@@ -39,11 +40,14 @@ export function useAsyncResource<T, P extends unknown[] = []>(
     return resource.subscribe(set)
   })
 
-  if (options.immediate) {
-    onMount(() => {
-      void resource.load(...([] as unknown as P))
-    })
-  }
+  // Kick off the immediate load (when requested) and always abort any in-flight
+  // request on unmount so it can't write back into a destroyed component — the
+  // token guard prevents the state write; this also cancels the underlying
+  // request when the fetcher honors `signal`. Mirrors the React binding.
+  onMount(() => {
+    if (options.immediate) void resource.load(...([] as unknown as P))
+    return () => resource.cancel()
+  })
 
   return {
     status: derived(state, ($s) => $s.status),
@@ -56,6 +60,7 @@ export function useAsyncResource<T, P extends unknown[] = []>(
     ) => Promise<void>,
     reload: () => resource.reload().then(() => undefined),
     mutate: resource.mutate,
+    cancel: resource.cancel,
     reset: resource.reset,
   }
 }

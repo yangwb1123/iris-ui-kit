@@ -21,6 +21,7 @@ export interface UseAsyncResourceReturn<T, P extends unknown[]> {
   load: AsyncResource<T, P>['load']
   reload: AsyncResource<T, P>['reload']
   mutate: AsyncResource<T, P>['mutate']
+  cancel: AsyncResource<T, P>['cancel']
   reset: AsyncResource<T, P>['reset']
 }
 
@@ -46,7 +47,13 @@ export function useAsyncResource<T, P extends unknown[] = []>(
   const unsubscribe = resource.subscribe((next) => {
     state.value = next
   })
-  onBeforeUnmount(unsubscribe)
+  onBeforeUnmount(() => {
+    unsubscribe()
+    // Abort any in-flight request on unmount so it can't write back into an
+    // unmounted component (and cancels the underlying request when the fetcher
+    // honors `signal`). Idempotent and safe with no in-flight load.
+    resource.cancel()
+  })
 
   if (options.immediate) {
     onMounted(() => {
@@ -63,6 +70,7 @@ export function useAsyncResource<T, P extends unknown[] = []>(
     load: resource.load,
     reload: resource.reload,
     mutate: resource.mutate,
+    cancel: resource.cancel,
     reset: resource.reset,
   }
 }

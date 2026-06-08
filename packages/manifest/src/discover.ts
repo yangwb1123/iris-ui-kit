@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { ComponentGroup, Framework, RawComponent, RawDiscovery, RawTokens } from './schema'
 import { ALL_FRAMEWORKS } from './schema'
+import { extractComponentProps } from './props'
 
 const KNOWN_GROUPS: ComponentGroup[] = [
   'primitives',
@@ -150,6 +151,8 @@ export function discover(repoRoot: string = findRepoRoot()): RawDiscovery {
   const names = new Set<string>()
   for (const map of perFramework) for (const name of map.keys()) names.add(name)
 
+  const propsByName = extractComponentProps(repoRoot)
+
   const components: RawComponent[] = []
   for (const name of names) {
     const records = perFramework
@@ -157,18 +160,21 @@ export function discover(repoRoot: string = findRepoRoot()): RawDiscovery {
       .filter((r): r is RawComponent => Boolean(r))
     const frameworks = records.flatMap((r) => r.frameworks)
     const base = records[0]
+    const props = propsByName.get(name)
     components.push({
       name,
       group: base.group,
       module: records.find((r) => r.module)?.module,
       frameworks,
+      ...(props ? { props } : {}),
     })
   }
 
   // Plugin components are namespaced separately so a core-adapter name can't be
   // shadowed by a plugin one; they carry their owning package + activation group.
   for (const record of discoverPlugins(repoRoot).values()) {
-    components.push(record)
+    const props = propsByName.get(record.name)
+    components.push(props ? { ...record, props } : record)
   }
 
   return { components, tokens: discoverTokens(repoRoot) }

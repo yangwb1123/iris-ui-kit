@@ -15,6 +15,17 @@ export type ComponentGroup =
   | 'plugin'
   | 'other'
 
+/** A single component prop extracted from its `Iris<Name>Props` interface. */
+export interface ManifestProp {
+  name: string
+  /** The declared TypeScript type (as written in source). */
+  type: string
+  /** Whether the prop is optional (`?`). */
+  optional: boolean
+  /** The prop's JSDoc summary, if any. */
+  description?: string
+}
+
 /** Raw record produced by the filesystem discovery pass. */
 export interface RawComponent {
   name: string
@@ -23,6 +34,8 @@ export interface RawComponent {
   frameworks: Framework[]
   /** Owning plugin package (e.g. `@iris-ui/plugin-editor`) for plugin components. */
   plugin?: string
+  /** Props extracted from the component's `Iris<Name>Props` interface (React source). */
+  props?: ManifestProp[]
 }
 
 export interface RawTokens {
@@ -50,6 +63,13 @@ export interface ManifestComponent {
    * imported from the plugin's per-framework sub-path, not the core adapter.
    */
   plugin?: string
+  /**
+   * The component's typed prop contract (name / type / optional / JSDoc),
+   * extracted from its `Iris<Name>Props` interface in the React source — so an
+   * agent can call the component correctly without guessing. Absent when no
+   * interface was found.
+   */
+  props?: ManifestProp[]
 }
 
 export interface ManifestGroupSummary {

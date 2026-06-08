@@ -40,6 +40,12 @@ export function renderLlmsText(manifest: IrisManifest): string {
       // activate via `<IrisProvider plugins={[…]}>`.
       const via = component?.plugin ? ` — via ${component.plugin} (IrisProvider plugins)` : ''
       lines.push(`- ${name} [${fw}]${via}`)
+      // Compact prop list (names + `?` for optional) so an agent reading
+      // llms.txt knows the API surface; full types live in manifest.json.
+      if (component?.props && component.props.length > 0) {
+        const names = component.props.map((p) => `${p.name}${p.optional ? '?' : ''}`).join(', ')
+        lines.push(`  props: ${names}`)
+      }
     }
   }
   lines.push('')

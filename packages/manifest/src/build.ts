@@ -50,6 +50,7 @@ export function buildManifest(raw: RawDiscovery): IrisManifest {
         frameworks,
         importFrom,
         plugin: c.plugin,
+        props: c.props,
       }
     })
     .sort((a, b) => a.name.localeCompare(b.name))

@@ -88,4 +88,17 @@ describe('discover (real repo)', () => {
     // llms.txt surfaces the activation hint for plugin components.
     expect(renderLlmsText(m)).toContain('via @iris-ui/plugin-editor')
   })
+
+  it('extracts typed props from component interfaces (name/type/optional/JSDoc)', () => {
+    const m = buildManifest(discover())
+    const button = m.components.find((c) => c.name === 'IrisButton')
+    expect(button?.props).toBeDefined()
+    const variant = button?.props?.find((p) => p.name === 'variant')
+    expect(variant?.optional).toBe(true)
+    expect(variant?.type).toBe('IrisButtonVariant')
+    // a meaningful fraction of components carry props (not just one)
+    expect(m.components.filter((c) => (c.props?.length ?? 0) > 0).length).toBeGreaterThan(40)
+    // methods / index signatures are not captured as props
+    expect(button?.props?.some((p) => p.name.includes('('))).toBe(false)
+  })
 })

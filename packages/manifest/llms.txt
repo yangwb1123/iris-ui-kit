@@ -16,29 +16,47 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 
 ### behaviors (4)
 - IrisClickOutside [react/solid/svelte/vue]
+  props: onOutside, disabled?, ignore?, children?
 - IrisHotkey [react/solid/svelte/vue]
+  props: shortcut, onTrigger, disabled?, allowInInputs?, scope?, children?
 - IrisMovable [react/solid/svelte/vue]
+  props: position?, defaultPosition?, onPositionChange?, onDragStart?, onDragEnd?, bounds?, byHandle?, disabled?, children?
 - IrisResizable [react/solid/svelte/vue]
+  props: size?, defaultSize?, onSizeChange?, onResizeStart?, onResizeEnd?, handles?, minWidth?, minHeight?, maxWidth?, maxHeight?, keepAspect?, disabled?, children?
 
 ### form (1)
 - IrisForm [react/solid/svelte/vue]
+  props: form, children?
 
 ### layouts (7)
 - IrisContainer [react/solid/svelte/vue]
+  props: maxWidth?, padding?, center?
 - IrisDashboardCard [react/solid/svelte/vue]
+  props: colSpan?, rowSpan?, surface?
 - IrisDashboardGrid [react/solid/svelte/vue]
+  props: columns?, gap?, minColWidth?
 - IrisGrid [react/solid/svelte/vue]
+  props: columns?, minColWidth?, rowGap?, columnGap?, gap?, inline?
 - IrisHeaderLayout [react/solid/svelte/vue]
+  props: headerHeight?, footerHeight?, sticky?, header?, footer?, children?
 - IrisSidebarLayout [react/solid/svelte/vue]
+  props: collapsed?, defaultCollapsed?, onCollapsedChange?, width?, collapsedWidth?, side?, sidebar?, children?
 - IrisStack [react/solid/svelte/vue]
+  props: direction?, spacing?, align?, justify?, wrap?, inline?
 
 ### other (6)
 - IrisAdminBreadcrumb [react/solid/svelte/vue]
+  props: trail, showIcon?, hideSingle?, separator?, onSelect?
 - IrisAdminLayout [react/solid/svelte/vue]
+  props: menus, activeKey?, defaultActiveKey?, onActiveKeyChange?, collapsed?, defaultCollapsed?, onCollapsedChange?, mode?, appTitle?, tabs?, showBreadcrumb?, sidebarWidth?, collapsedWidth?, logo?, toolbar?, footer?, onSelect?, children?
 - IrisAdminTabs [react/solid/svelte/vue]
+  props: nav, onChange?, onClose?, onRefresh?
 - IrisI18nProvider [react/solid/svelte/vue]
+  props: locale?, messages?, i18n?, autoDirection?, directionTarget?, children?
 - IrisNavMenu [react/solid/svelte/vue]
+  props: items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, ariaLabel?, onSelect?, onExpandedKeysChange?
 - IrisProvider [react/solid/svelte/vue]
+  props: theme?, skin?, dir?, locale?, messages?, plugins?, target?, children?
 
 ### plugin (2)
 - IrisCodeEditor [react/solid/svelte/vue] — via @iris-ui/plugin-editor (IrisProvider plugins)
@@ -46,124 +64,235 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 
 ### primitives (115)
 - IrisAccordion [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, multiple?, collapsible?
 - IrisAccordionItem [react/solid/svelte/vue]
+  props: value, title?, disabled?
 - IrisAffix [react/solid/svelte/vue]
+  props: offsetTop?, offsetBottom?, target?, onChange?, children, style?, className?
 - IrisAlert [react/solid/svelte/vue]
+  props: tone?, title?, closable?, open?, onClose?, icon?, children?
 - IrisAnchor [react/solid/svelte/vue]
+  props: items, target?, offset?, onChange?, ariaLabel?, style?, className?
 - IrisAspectRatio [react/solid/svelte/vue]
+  props: ratio?, children?, style?, className?
 - IrisAvatar [react/solid/svelte/vue]
+  props: src?, alt?, name?, fallback?, fallbackContent?, size?, shape?
 - IrisBackTop [react/solid/svelte/vue]
+  props: target?, visibilityHeight?, behavior?, onClick?, ariaLabel?, children?, style?, className?
 - IrisBadge [react/solid/svelte/vue]
+  props: variant?, tone?, size?, children?
 - IrisBanner [react/solid/svelte/vue]
+  props: tone?, closable?, open?, defaultOpen?, onOpenChange?, sticky?, icon?, actions?, children?
 - IrisBreadcrumb [react/solid/svelte/vue]
+  props: separator?, children?
 - IrisBreadcrumbItem [react/solid/svelte/vue]
+  props: href?, isCurrent?, children?
 - IrisButton [react/solid/svelte/vue]
+  props: variant?, size?, disabled?, loading?, type?, asChild?, leading?, children?, className?, style?, onClick?
 - IrisCalendar [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, defaultMonth?, min?, max?, weekStartsOn?, locale?, disabled?, style?, className?
 - IrisCard [react/solid/svelte/vue]
+  props: variant?, padding?, hover?, header?, footer?, children?
 - IrisCarousel [react/solid/svelte/vue]
+  props: children, index?, defaultIndex?, onIndexChange?, loop?, autoplay?, interval?, pauseOnHover?, showArrows?, showIndicators?, ariaLabel?, style?, className?
 - IrisCascader [react/solid/svelte/vue]
+  props: options, value?, defaultValue?, onValueChange?, placeholder?, disabled?, invalid?, separator?, size?, id?, ariaDescribedby?, style?, className?
 - IrisCheckbox [react/solid/svelte/vue]
+  props: checked?, defaultChecked?, onChange?, size?, invalid?, ariaDescribedby?, children?
 - IrisChip [react/solid/svelte/vue]
+  props: variant?, tone?, size?, closable?, clickable?, disabled?, onClose?, onClick?, icon?, children?
 - IrisColorPicker [react/solid/svelte/vue]
+  props: value?, defaultValue?, onChange?, showAlpha?, disabled?
 - IrisCombobox [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, options, placeholder?, disabled?, invalid?, size?, emptyText?, id?, ariaDescribedby?, style?, className?
 - IrisCommandPalette [react/solid/svelte/vue]
+  props: open?, onOpenChange?, items, placeholder?, emptyText?, filter?, onSelect?
 - IrisCopyButton [react/solid/svelte/vue]
+  props: text, children?, copiedLabel?, timeout?, onCopy?, disabled?, size?, style?, className?
 - IrisCountdown [react/solid/svelte/vue]
+  props: value, format?, title?, prefix?, suffix?, onFinish?, size?, style?, className?
 - IrisDatePicker [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?, style?, className?
 - IrisDateRangePicker [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?, style?, className?
 - IrisDescriptions [react/solid/svelte/vue]
+  props: items, columns?, layout?, bordered?, style?, className?
 - IrisDialog [react/solid/svelte/vue]
+  props: open?, defaultOpen?, onOpenChange?, closeOnOutsideClick?, closeOnEscape?, children?
 - IrisDialogClose [react/solid/svelte/vue]
+  props: asChild?, children?
 - IrisDialogContent [react/solid/svelte/vue]
+  props: portalTarget?, children?
 - IrisDialogDescription [react/solid/vue]
+  props: as?
 - IrisDialogTitle [react/solid/svelte/vue]
+  props: as?
 - IrisDialogTrigger [react/solid/svelte/vue]
+  props: asChild?, children?
 - IrisDivider [react/solid/svelte/vue]
+  props: orientation?, label?, spacing?, children?
 - IrisDragger [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, onDragStart?, onDragEnd?, disabled?, bounds?, handle?
 - IrisDrawer [react/solid/svelte/vue]
+  props: open?, defaultOpen?, onOpenChange?, side?, size?, closeOnOutsideClick?, closeOnEscape?, children?
 - IrisDrawerClose [react/solid/svelte/vue]
+  props: asChild?, children?
 - IrisDrawerContent [react/solid/svelte/vue]
+  props: portalTarget?, children?
 - IrisDrawerTitle [react/solid/svelte/vue]
 - IrisDrawerTrigger [react/solid/svelte/vue]
+  props: asChild?, children?
 - IrisDropdown [react/solid/svelte/vue]
+  props: open?, defaultOpen?, onOpenChange?, placement?, offset?, children?
 - IrisDropdownItem [react/solid/svelte/vue]
+  props: disabled?, keepOpen?, onSelect?
 - IrisDropdownMenu [react/solid/svelte/vue]
+  props: portalTarget?, children?
 - IrisDropdownSeparator [react/solid/svelte/vue]
 - IrisDropdownTrigger [react/solid/svelte/vue]
+  props: asChild?, children?
 - IrisEmptyState [react/solid/svelte/vue]
+  props: title?, description?, icon?, action?, children?
 - IrisFieldset [react/solid/svelte/vue]
+  props: legend?, disabled?, hint?, children?, style?, className?
 - IrisFileUpload [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, onAccept?, onReject?, accept?, multiple?, maxSize?, maxFiles?, disabled?, label?, id?, renderList?, style?, className?
 - IrisFloatButton [react/solid/svelte/vue]
+  props: icon?, children?, ariaLabel?, onClick?, shape?, actions?, offset?, style?, className?
 - IrisFormField [react/solid/svelte/vue]
+  props: label?, hint?, error?, required?, labelFor?, size?, children?
 - IrisGauge [react/solid/svelte/vue]
+  props: value, min?, max?, size?, strokeWidth?, status?, showValue?, format?, ariaLabel?, style?, className?
 - IrisIcon [react/solid/svelte/vue]
+  props: name, size?, strokeWidth?, fill?, title?, registry?
 - IrisImage [react/solid/svelte/vue]
+  props: src, alt?, width?, height?, fallback?, preview?, style?, className?
 - IrisInput [react/solid/svelte/vue]
+  props: size?, type?, invalid?, ariaDescribedby?, prefix?, suffix?
 - IrisKbd [react/solid/svelte/vue]
+  props: keys?, separator?, size?, children?
 - IrisList [react/solid/svelte/vue]
+  props: items, value?, defaultValue?, onValueChange?, onSelect?, multi?, loop?, ariaLabel?, loading?, error?, emptyState?, loadingState?, errorState?, renderItem?, item, state, style?, className?
 - IrisMarquee [react/solid/svelte/vue]
+  props: children?, duration?, direction?, pauseOnHover?, gap?, style?, className?
 - IrisMasonry [react/solid/svelte/vue]
+  props: columns?, gap?, children?, style?, className?
 - IrisMentions [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, options, prefix?, placeholder?, disabled?, invalid?, rows?, id?, ariaDescribedby?, style?, className?
 - IrisMenu [react/solid/svelte/vue]
+  props: open?, defaultOpen?, onOpenChange?, placement?, offset?, children?
 - IrisMenuContent [react/solid/svelte/vue]
+  props: portalTarget?, children?
 - IrisMenuItem [react/solid/svelte/vue]
+  props: disabled?, keepOpen?, onSelect?
 - IrisMenuSeparator [react/solid/vue]
 - IrisMenuSub [react/solid/svelte/vue]
+  props: label?, portalTarget?, children?
 - IrisMenuTrigger [react/solid/svelte/vue]
+  props: asChild?, children?
 - IrisNumberInput [react/solid/svelte/vue]
+  props: value?, defaultValue?, onChange?, size?, min?, max?, step?, invalid?, showControls?, ariaDescribedby?
 - IrisOtpInput [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, onComplete?, length?, type?, mask?, size?, disabled?, invalid?, autoFocus?, placeholder?, id?, ariaDescribedby?, style?, className?
 - IrisPagination [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, total, pageSize?, siblingCount?, showFirstLast?, size?, disabled?
 - IrisPasswordInput [react/solid/svelte/vue]
+  props: showToggle?, suffix?, prefix?
 - IrisPopover [react/solid/svelte/vue]
+  props: open?, defaultOpen?, onOpenChange?, placement?, offset?, children?
 - IrisPopoverContent [react/solid/svelte/vue]
+  props: portalTarget?, autoFocus?, restoreFocus?, children?
 - IrisPopoverTrigger [react/solid/svelte/vue]
+  props: asChild?, children?
 - IrisProgress [react/solid/svelte/vue]
+  props: value?, max?, indeterminate?, tone?, size?
 - IrisProgressCircle [react/solid/svelte/vue]
+  props: value, max?, size?, strokeWidth?, status?, showLabel?, format?, ariaLabel?, style?, className?
 - IrisRadio [react/solid/svelte/vue]
+  props: value, size?, children?
 - IrisRadioGroup [react/solid/svelte/vue]
+  props: name?, value?, defaultValue?, onChange?, disabled?, orientation?, children?
 - IrisRangeSlider [react/solid/svelte/vue]
+  props: value?, defaultValue?, onChange?, min?, max?, step?, disabled?, labelStart?, labelEnd?
 - IrisRating [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, max?, allowHalf?, readonly?, disabled?, clearable?, size?, invalid?, label?, id?, ariaDescribedby?, style?, className?
 - IrisResizer [react/solid/svelte/vue]
+  props: value, onValueChange, onResizeStart?, onResizeEnd?, handles?, minWidth?, minHeight?, maxWidth?, maxHeight?, disabled?, keepAspect?
 - IrisResult [react/solid/svelte/vue]
+  props: status?, title?, subtitle?, icon?, extra?, children?, style?, className?
 - IrisRibbon [react/solid/svelte/vue]
+  props: text, placement?, color?, children?, style?, className?
 - IrisScrollArea [react/solid/svelte/vue]
+  props: maxHeight?, maxWidth?, axis?, children?, style?, className?
 - IrisSegmented [react/solid/svelte/vue]
+  props: options, value?, defaultValue?, onValueChange?, size?, disabled?, block?, ariaLabel?, style?, className?
 - IrisSelect [react/solid/svelte/vue]
+  props: items, value?, defaultValue?, onValueChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, style?, className?
 - IrisSkeleton [react/solid/svelte/vue]
+  props: width?, height?, shape?, animated?
 - IrisSlider [react/solid/svelte/vue]
+  props: value?, defaultValue?, onChange?, min?, max?, step?, disabled?, orientation?, label?
 - IrisSlot [react/solid/svelte/vue]
+  props: children?
 - IrisSpinner [react/solid/svelte/vue]
+  props: size?, color?, strokeWidth?, label?
 - IrisSplitButton [react/solid/svelte/vue]
+  props: children?, onClick?, actions?, variant?, size?, disabled?, menuAriaLabel?, style?, className?
 - IrisSplitter [react/solid/svelte/vue]
+  props: orientation?, value?, defaultValue?, onValueChange?, minStart?, minEnd?, disabled?, start?, end?
 - IrisStatistic [react/solid/svelte/vue]
+  props: label?, value, prefix?, suffix?, description?, trend?, trendValue?, size?, style?, className?
 - IrisStepper [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, orientation?, linear?
 - IrisStepperStep [react/solid/svelte/vue]
+  props: title?, description?, status?, disabled?
 - IrisSwitch [react/solid/svelte/vue]
+  props: checked?, defaultChecked?, onChange?, size?, invalid?, ariaDescribedby?
 - IrisTable [react/solid/svelte/vue]
+  props: columns, data, rowKey?, selectable?, selection?, defaultSelection?, onSelectionChange?, sort?, defaultSort?, onSortChange?, striped?, bordered?, resizableColumns?, columnWidths?, defaultColumnWidths?, onColumnWidthsChange?, onCellEdit?, virtualScroll?, columnVirtualization?, emptyState?, loading?, error?, loadingState?, errorState?, style?, className?
 - IrisTabs [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, orientation?, disabled?, lazy?, children?
 - IrisTabsContent [react/solid/svelte/vue]
+  props: value, forceMount?, children?
 - IrisTabsList [react/solid/svelte/vue]
 - IrisTabsTrigger [react/solid/svelte/vue]
+  props: value, asChild?, children?
 - IrisTagInput [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, placeholder?, disabled?, invalid?, max?, allowDuplicates?, id?, ariaDescribedby?, style?, className?
 - IrisTextarea [react/solid/svelte/vue]
+  props: size?, invalid?, ariaDescribedby?, autosize?, maxRows?
 - IrisTimeline [react/solid/svelte/vue]
+  props: items, renderItem?, style?, className?
 - IrisTimePicker [react/solid/svelte/vue]
+  props: value?, defaultValue?, onValueChange?, format?, minuteStep?, disabled?, invalid?, id?, ariaDescribedby?, style?, className?
 - IrisToastViewport [react/vue]
+  props: position?, portalTarget?, max?
 - IrisToggleGroup [react/solid/svelte/vue]
 - IrisToggleGroupItem [react/solid/svelte/vue]
+  props: value
 - IrisToolbar [react/solid/svelte/vue]
+  props: children?, orientation?, ariaLabel?, style?, className?
 - IrisTooltip [react/solid/svelte/vue]
+  props: content?, placement?, offset?, openDelay?, closeDelay?, portalTarget?, disabled?, children?
 - IrisTour [react/solid/svelte/vue]
+  props: steps, open?, defaultOpen?, onChange?, onClose?, onFinish?, style?, className?
 - IrisTransfer [react/solid/svelte/vue]
+  props: options, value?, defaultValue?, onValueChange?, titles?, searchable?, disabled?, style?, className?
 - IrisTree [react/solid/svelte/vue]
+  props: nodes, expanded?, defaultExpanded?, onExpandedChange?, selected?, defaultSelected?, onSelectedChange?, selectionMode?, ariaLabel?, loading?, error?, emptyState?, loadingState?, errorState?, style?, className?
 - IrisTreeSelect [react/solid/svelte/vue]
+  props: options, value?, defaultValue?, onValueChange?, defaultExpanded?, placeholder?, disabled?, invalid?, size?, id?, ariaDescribedby?, style?, className?
 - IrisVirtualScroll [react/solid/svelte/vue]
+  props: items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, renderItem, onScroll?, onRangeChange?, style?, className?
 - IrisVisuallyHidden [react/solid/svelte/vue]
 - IrisWatermark [react/solid/svelte/vue]
+  props: content, children?, rotate?, fontSize?, color?, opacity?, gap?, style?, className?
 
 ### skeletons (2)
 - IrisDashboardTemplate [react/solid/svelte/vue]
+  props: title?, sidebarTitle?, nav?, activeId?, onActiveIdChange?, cards?, defaultCollapsed?, onCollapsedChange?, header?, sidebarHeader?, children?, cardSlots?, style?, className?
 - IrisLoginTemplate [react/solid/svelte/vue]
+  props: title?, description?, showRemember?, error?, submitLabel?, loading?, header?, forgot?, footer?, onSubmit?, style?, className?
 
 ## Design tokens (21)
 - colors: iris.background, iris.foreground, iris.surface, iris.surface.hover, iris.border, iris.muted, iris.primary, iris.primary.foreground, iris.accent, iris.danger, iris.success, iris.warning

@@ -1,5 +1,6 @@
-import { defineComponent, provide, watch, type PropType } from 'vue'
-import { createI18n, type I18n, type I18nMessages } from '@iris-ui/core'
+import { defineComponent, onScopeDispose, provide, watch, type PropType } from 'vue'
+import { createI18n, localeDirection, type I18n, type I18nMessages } from '@iris-ui/core'
+import { applyDirection } from '@iris-ui/theme'
 import { I18nInjectionKey } from './context'
 
 /**
@@ -14,6 +15,16 @@ export const IrisI18nProvider = defineComponent({
     locale: { type: String, default: undefined },
     messages: { type: Object as PropType<I18nMessages>, default: undefined },
     i18n: { type: Object as PropType<I18n>, default: undefined },
+    /**
+     * When set, the locale's writing direction ({@link localeDirection}) is
+     * applied to `directionTarget` (`dir` + `data-iris-dir`) and `<html lang>`
+     * is set whenever `locale` changes — so "set locale → flip direction +
+     * announce language" needs no manual wiring. Off by default so it never
+     * fights an explicit `<ThemeProvider dir>`. Reverts on unmount.
+     */
+    autoDirection: { type: Boolean, default: false },
+    /** Element to receive dir/lang when `autoDirection` is set. Defaults to `document.documentElement`. */
+    directionTarget: { type: Object as PropType<HTMLElement | null>, default: undefined },
   },
   setup(props, { slots }) {
     const instance = props.i18n ?? createI18n({ locale: props.locale, messages: props.messages })
@@ -33,6 +44,31 @@ export const IrisI18nProvider = defineComponent({
         },
       )
     }
+
+    // Auto-apply writing direction + `lang` from the active locale (opt-in).
+    let revertDirection: (() => void) | null = null
+    watch(
+      () => [props.autoDirection, props.locale, props.directionTarget] as const,
+      ([autoDirection, locale]) => {
+        revertDirection?.()
+        revertDirection = null
+        if (!autoDirection || !locale || typeof document === 'undefined') return
+        const el = props.directionTarget ?? document.documentElement
+        const applied = applyDirection(localeDirection(locale), el)
+        const prevLang = el.getAttribute('lang')
+        el.setAttribute('lang', locale)
+        revertDirection = () => {
+          applied.revert()
+          if (prevLang === null) el.removeAttribute('lang')
+          else el.setAttribute('lang', prevLang)
+        }
+      },
+      { immediate: true },
+    )
+    onScopeDispose(() => {
+      revertDirection?.()
+      revertDirection = null
+    })
 
     return () => slots.default?.()
   },

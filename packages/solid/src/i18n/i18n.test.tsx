@@ -15,6 +15,39 @@ describe('IrisI18nProvider', () => {
     ))
     expect(container.querySelector('[data-test]')).not.toBeNull()
   })
+
+  it('autoDirection applies rtl dir + lang to the target and reverts on unmount', () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const { unmount } = render(() => (
+      <IrisI18nProvider locale="ar-SA" autoDirection directionTarget={target}>
+        <span>content</span>
+      </IrisI18nProvider>
+    ))
+    expect(target.getAttribute('dir')).toBe('rtl')
+    expect(target.getAttribute('data-iris-dir')).toBe('rtl')
+    expect(target.getAttribute('lang')).toBe('ar-SA')
+
+    unmount()
+    expect(target.getAttribute('dir')).toBeNull()
+    expect(target.getAttribute('data-iris-dir')).toBeNull()
+    expect(target.getAttribute('lang')).toBeNull()
+    target.remove()
+  })
+
+  it('does nothing to the target when autoDirection is off (default)', () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    render(() => (
+      <IrisI18nProvider locale="ar-SA" directionTarget={target}>
+        <span>content</span>
+      </IrisI18nProvider>
+    ))
+    expect(target.getAttribute('dir')).toBeNull()
+    expect(target.getAttribute('data-iris-dir')).toBeNull()
+    expect(target.getAttribute('lang')).toBeNull()
+    target.remove()
+  })
 })
 
 describe('useI18n', () => {

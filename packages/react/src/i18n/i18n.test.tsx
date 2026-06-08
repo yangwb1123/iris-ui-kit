@@ -68,4 +68,36 @@ describe('@iris-ui/react i18n', () => {
     )
     expect(screen.getByTestId('locale').textContent).toBe('de-DE')
   })
+
+  it('autoDirection applies locale direction + lang to a target, and reverts on unmount', () => {
+    const target = document.createElement('div')
+    const { rerender, unmount } = render(
+      <IrisI18nProvider locale="en-US" autoDirection directionTarget={target}>
+        <Probe />
+      </IrisI18nProvider>,
+    )
+    expect(target.getAttribute('dir')).toBe('ltr')
+    expect(target.getAttribute('lang')).toBe('en-US')
+    rerender(
+      <IrisI18nProvider locale="ar-SA" autoDirection directionTarget={target}>
+        <Probe />
+      </IrisI18nProvider>,
+    )
+    expect(target.getAttribute('dir')).toBe('rtl')
+    expect(target.getAttribute('data-iris-dir')).toBe('rtl')
+    expect(target.getAttribute('lang')).toBe('ar-SA')
+    unmount()
+    expect(target.getAttribute('dir')).toBeNull()
+    expect(target.getAttribute('lang')).toBeNull()
+  })
+
+  it('does not touch direction when autoDirection is off', () => {
+    const target = document.createElement('div')
+    render(
+      <IrisI18nProvider locale="ar-SA" directionTarget={target}>
+        <Probe />
+      </IrisI18nProvider>,
+    )
+    expect(target.getAttribute('dir')).toBeNull()
+  })
 })

@@ -63,4 +63,31 @@ describe('@iris-ui/vue i18n', () => {
     expect(wrapper.find('.locale').text()).toBe('de-DE')
     expect(wrapper.find('.num').text()).toBe('1.234,5')
   })
+
+  it('autoDirection applies locale direction + lang to a target, and reverts on unmount', async () => {
+    const target = document.createElement('div')
+    const wrapper = mount(IrisI18nProvider, {
+      props: { locale: 'en-US', autoDirection: true, directionTarget: target },
+      slots: { default: () => h(Probe) },
+    })
+    expect(target.getAttribute('dir')).toBe('ltr')
+    expect(target.getAttribute('lang')).toBe('en-US')
+    await wrapper.setProps({ locale: 'ar-SA' })
+    await flushPromises()
+    expect(target.getAttribute('dir')).toBe('rtl')
+    expect(target.getAttribute('data-iris-dir')).toBe('rtl')
+    expect(target.getAttribute('lang')).toBe('ar-SA')
+    wrapper.unmount()
+    expect(target.getAttribute('dir')).toBeNull()
+    expect(target.getAttribute('lang')).toBeNull()
+  })
+
+  it('does not touch direction when autoDirection is off', () => {
+    const target = document.createElement('div')
+    mount(IrisI18nProvider, {
+      props: { locale: 'ar-SA', directionTarget: target },
+      slots: { default: () => h(Probe) },
+    })
+    expect(target.getAttribute('dir')).toBeNull()
+  })
 })

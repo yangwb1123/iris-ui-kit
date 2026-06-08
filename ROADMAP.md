@@ -4,6 +4,8 @@
 > **基线**：四框架（react/vue/solid/svelte）全量对齐，manifest 实测 135 组件；五层架构 + 主题/皮肤层 + 正交 Behaviors + **逻辑下沉的 core 控制器层**（selection/expansion/data-view/roving/admin-shell/resource）+ **插件层**（locale-zh / editor(CM6) / pro-table）；四道质量门 + size + RSC + manifest 常绿。
 >
 > **上一版 5 个方向（表单引擎 / 文档站+清单+发布 / a11y+i18n+动效 / 数据层深化 / 体积工程）已全部落地。** 本版是**下一地平线**：价值重心从「补齐基础」转向三件事——**(A) 把数据层做成真正护城河**、**(B) 兑现"AI 原生"差异化**、**(C) 跨过企业/政府/全球的硬性准入门**。下列 5 个方向按价值排序，每项给出现状证据（`file:symbol`）、为什么需要、建议范围、价值/成本。
+>
+> **首轮已落地（2026-06，10 个 core 增量提交 `6249a42`→`f4031e4`，全程 78 门常绿、core 231 测试）**：选择模型 Set 化（O(n²)→O(n)）· createStore 派发安全 · Intl formatter 缓存 · `localeDirection`/`localeWeekStartsOn` · resolveDataState SWR · 插件 teardown 契约 · createAsyncResource AbortSignal 取消 · data-view 过滤操作符+多列排序 · **createTreeSelection（级联+半选引擎）** · **resource 控制器补 sort/filter+乐观 mutate**。覆盖方向 1（数据引擎 perf+深度）、3（globalization 助手）、4（健壮性）的多个高价值/速赢项。剩余多为框架层接线（桥接 teardown/cancel/SWR/setSort 到适配器）与方向 2/5。
 
 ---
 

@@ -81,6 +81,17 @@ export {
   type SelectionMode,
 } from './selection'
 export { nextEnabledIndex, firstEnabledIndex, lastEnabledIndex } from './roving'
+export {
+  clamp01,
+  hsvToRgb,
+  rgbToHsv,
+  rgbToHex,
+  hexToRgba,
+  rgbaToHsva,
+  hsvaToRgba,
+  type IrisHsva,
+  type IrisRgba,
+} from './color'
 export { standardSchemaValidator, type StandardSchemaV1 } from './standard-schema'
 export { resolveDataState, type DataState, type DataStateInput } from './data-state'
 export {

@@ -12,6 +12,27 @@ describe('createSelectionModel — multiple', () => {
     expect(sel.get()).toEqual(['b'])
   })
 
+  it('membership index stays consistent across mixed ops (Set-backed isSelected)', () => {
+    const sel = createSelectionModel<number>()
+    sel.toggleAll([1, 2, 3, 4])
+    sel.deselect(2)
+    sel.toggle(5)
+    expect(sel.get()).toEqual([1, 3, 4, 5])
+    for (const k of [1, 3, 4, 5]) expect(sel.isSelected(k)).toBe(true)
+    for (const k of [2, 6]) expect(sel.isSelected(k)).toBe(false)
+    // membership survives a controlled `sync` (which bypasses commit)
+    sel.sync([9])
+    expect(sel.isSelected(9)).toBe(true)
+    expect(sel.isSelected(1)).toBe(false)
+  })
+
+  it('deselect of an unselected key is a no-op (no spurious onChange)', () => {
+    const onChange = vi.fn()
+    const sel = createSelectionModel({ onChange })
+    sel.deselect('x')
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('page-scoped toggleAll / isAllSelected', () => {
     const sel = createSelectionModel()
     sel.toggleAll(['a', 'b', 'c'])

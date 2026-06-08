@@ -55,6 +55,16 @@ export function createSelectionModel<K extends SelectionKey = string>(
   const mode: SelectionMode = config.mode ?? 'multiple'
   const store = createStore<K[]>(normalize(config.defaultSelected ?? [], mode))
 
+  // Membership index kept in sync with the ordered store array. `isSelected` is
+  // a per-row, per-render hot path; backing it with a Set turns a table render
+  // from O(n²) (n rows × O(n) `includes`) into O(n). The array stays the source
+  // of truth for insertion order; the Set is a derived index rebuilt on change
+  // (a user action, not a render), so it can never drift from the store.
+  let index = new Set<K>(store.getState())
+  store.subscribe((keys) => {
+    index = new Set<K>(keys)
+  })
+
   function commit(next: K[]): void {
     const value = normalize(next, mode)
     store.setState(value)
@@ -64,21 +74,22 @@ export function createSelectionModel<K extends SelectionKey = string>(
   return {
     store,
     get: store.getState,
-    isSelected: (key) => store.getState().includes(key),
+    isSelected: (key) => index.has(key),
     toggle(key) {
-      const cur = store.getState()
       if (mode === 'single') {
-        commit(cur.includes(key) ? [] : [key])
+        commit(index.has(key) ? [] : [key])
         return
       }
-      commit(cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key])
+      commit(
+        index.has(key) ? store.getState().filter((k) => k !== key) : [...store.getState(), key],
+      )
     },
     select(key) {
-      const cur = store.getState()
-      if (cur.includes(key)) return
-      commit(mode === 'single' ? [key] : [...cur, key])
+      if (index.has(key)) return
+      commit(mode === 'single' ? [key] : [...store.getState(), key])
     },
     deselect(key) {
+      if (!index.has(key)) return
       commit(store.getState().filter((k) => k !== key))
     },
     set(keys) {
@@ -88,18 +99,16 @@ export function createSelectionModel<K extends SelectionKey = string>(
       store.setState(normalize(keys, mode))
     },
     toggleAll(keys) {
-      const cur = store.getState()
-      const allOn = keys.length > 0 && keys.every((k) => cur.includes(k))
+      const allOn = keys.length > 0 && keys.every((k) => index.has(k))
       if (allOn) {
         const drop = new Set<K>(keys)
-        commit(cur.filter((k) => !drop.has(k)))
+        commit(store.getState().filter((k) => !drop.has(k)))
       } else {
-        commit([...cur, ...keys])
+        commit([...store.getState(), ...keys])
       }
     },
     isAllSelected(keys) {
-      const cur = store.getState()
-      return keys.length > 0 && keys.every((k) => cur.includes(k))
+      return keys.length > 0 && keys.every((k) => index.has(k))
     },
     clear() {
       commit([])

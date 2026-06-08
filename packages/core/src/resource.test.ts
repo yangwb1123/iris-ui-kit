@@ -64,4 +64,62 @@ describe('createResourceController', () => {
     await flush()
     expect(fetcher).not.toHaveBeenCalled()
   })
+
+  it('setSort passes sort to the fetcher and resets to page 1', async () => {
+    const fetcher = vi.fn(async (_q: { page: number; pageSize: number; sort: unknown }) => ({
+      rows: all,
+      total: all.length,
+    }))
+    const c = createResourceController<Row>({ fetcher, pageSize: 2 })
+    await flush()
+    c.setPage(2)
+    await flush()
+    c.setSort({ key: 'name', direction: 'desc' })
+    await flush()
+    const lastQuery = fetcher.mock.calls.at(-1)?.[0]
+    expect(lastQuery?.sort).toEqual({ key: 'name', direction: 'desc' })
+    expect(lastQuery?.page).toBe(1) // reset
+    expect(c.getState().sort).toEqual({ key: 'name', direction: 'desc' })
+  })
+
+  it('setFilter / clearFilters pass filters and reset to page 1', async () => {
+    const fetcher = vi.fn(async (_q: { page: number; filters: Record<string, string> }) => ({
+      rows: all,
+      total: all.length,
+    }))
+    const c = createResourceController<Row>({ fetcher, pageSize: 2 })
+    await flush()
+    c.setFilter('name', 'r1')
+    await flush()
+    expect(fetcher.mock.calls.at(-1)?.[0].filters).toEqual({ name: 'r1' })
+    expect(c.getState().page).toBe(1)
+    c.clearFilters()
+    await flush()
+    expect(fetcher.mock.calls.at(-1)?.[0].filters).toEqual({})
+  })
+
+  it('optimistic mutate updates rows immediately and rolls back on failure', async () => {
+    const c = createResourceController<Row>({ fetcher: fetcherFor(all), pageSize: 10 })
+    await flush()
+    const before = c.getState().rows.length
+    // success: optimistic add survives until reload reconciles
+    await c.mutate(async () => undefined, {
+      optimistic: (rows) => [...rows, { id: 99, name: 'new' }],
+      skipReload: true,
+    })
+    expect(c.getState().rows.some((r) => r.id === 99)).toBe(true)
+
+    // failure: optimistic removal is rolled back
+    await expect(
+      c.mutate(
+        async () => {
+          throw new Error('server rejected')
+        },
+        { optimistic: (rows) => rows.filter((r) => r.id !== 1) },
+      ),
+    ).rejects.toThrow('server rejected')
+    await flush()
+    expect(c.getState().rows.find((r) => r.id === 1)).toBeDefined() // rolled back + reloaded
+    expect(before).toBe(5)
+  })
 })

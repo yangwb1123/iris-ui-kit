@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { createTreeSelection, type TreeSelectionNode } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
 import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
@@ -19,6 +20,16 @@ export interface IrisTreeProps {
   defaultSelected?: string[]
   onSelectedChange?: (next: string[]) => void
   selectionMode?: IrisTreeSelectionMode
+  /**
+   * Show a checkbox per node with parent/child cascade + indeterminate
+   * (tri-state) propagation, independent of `selectionMode`. Driven by the
+   * framework-agnostic `createTreeSelection`.
+   */
+  checkable?: boolean
+  /** Initially checked node ids (uncontrolled; reconciled through the cascade). */
+  defaultChecked?: string[]
+  /** Notified with the fully-reconciled checked node ids on every check change. */
+  onCheckedChange?: (checked: string[]) => void
   ariaLabel?: string
   /** Show the loading state instead of nodes. */
   loading?: boolean
@@ -67,6 +78,9 @@ export function IrisTree({
   defaultSelected = [],
   onSelectedChange,
   selectionMode = 'single',
+  checkable = false,
+  defaultChecked,
+  onCheckedChange,
   ariaLabel = 'Tree',
   loading = false,
   error = false,
@@ -132,6 +146,41 @@ export function IrisTree({
     walk(nodes, 0, null)
     return out
   }, [nodes, expandedSet, childrenOf, hasChildrenFn])
+
+  // Checkable mode: flatten the FULL tree (every node, not just the visible
+  // ones) into `{ key, parentKey, disabled }` so the cascade is correct even
+  // for collapsed branches, and drive it with the core `createTreeSelection`.
+  const checkNodes = React.useMemo<TreeSelectionNode[]>(() => {
+    const out: TreeSelectionNode[] = []
+    const walk = (ns: IrisTreeNode[], parentKey: string | undefined) => {
+      for (const node of ns) {
+        out.push({ key: node.id, parentKey, disabled: node.disabled })
+        const kids = node.children ?? lazyCache.get(node.id)
+        if (kids && kids.length > 0) walk(kids, node.id)
+      }
+    }
+    walk(nodes, undefined)
+    return out
+  }, [nodes, lazyCache])
+
+  const onCheckedRef = React.useRef(onCheckedChange)
+  onCheckedRef.current = onCheckedChange
+  // Rebuild when the tree shape changes; defaultChecked re-seeds then.
+  const checkModel = React.useMemo(
+    () =>
+      createTreeSelection({
+        nodes: checkNodes,
+        defaultChecked,
+        onChange: (keys) => onCheckedRef.current?.(keys),
+      }),
+    [checkNodes, defaultChecked],
+  )
+  // Re-render when the checked set changes.
+  React.useSyncExternalStore(
+    checkModel.selection.store.subscribe,
+    checkModel.selection.get,
+    checkModel.selection.get,
+  )
 
   const [activeId, setActiveId] = React.useState<string | null>(flat[0]?.node.id ?? null)
 
@@ -387,6 +436,24 @@ export function IrisTree({
                 </button>
               ) : (
                 <span style={{ width: 16, display: 'inline-block' }} />
+              )}
+              {checkable && (
+                <input
+                  type="checkbox"
+                  data-iris-tree-checkbox=""
+                  checked={checkModel.isChecked(node.id)}
+                  aria-checked={
+                    checkModel.isIndeterminate(node.id) ? 'mixed' : checkModel.isChecked(node.id)
+                  }
+                  aria-label={node.label}
+                  disabled={disabled}
+                  ref={(el) => {
+                    if (el) el.indeterminate = checkModel.isIndeterminate(node.id)
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={() => checkModel.toggle(node.id)}
+                  style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
+                />
               )}
               <span data-iris-tree-label="" style={{ flex: 1, minWidth: 0 }}>
                 {node.label}

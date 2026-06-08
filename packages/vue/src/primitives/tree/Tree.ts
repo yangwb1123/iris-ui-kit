@@ -1,5 +1,15 @@
-import { computed, defineComponent, h, ref, watch, type PropType, type VNode } from 'vue'
-import { nextEnabledIndex } from '@iris-ui/core'
+import {
+  computed,
+  defineComponent,
+  h,
+  onBeforeUnmount,
+  ref,
+  shallowRef,
+  watch,
+  type PropType,
+  type VNode,
+} from 'vue'
+import { createTreeSelection, nextEnabledIndex, type TreeSelectionNode } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
 import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
@@ -56,6 +66,14 @@ export const IrisTree = defineComponent({
     selected: { type: Array as PropType<string[]>, default: undefined },
     defaultSelected: { type: Array as PropType<string[]>, default: () => [] },
     selectionMode: { type: String as PropType<IrisTreeSelectionMode>, default: 'single' },
+    /**
+     * Show a checkbox per node with parent/child cascade + indeterminate
+     * (tri-state) propagation, independent of `selectionMode`. Driven by the
+     * framework-agnostic `createTreeSelection`.
+     */
+    checkable: { type: Boolean, default: false },
+    /** Initially checked node ids (uncontrolled; reconciled through the cascade). */
+    defaultChecked: { type: Array as PropType<string[]>, default: undefined },
     /** ARIA label. */
     ariaLabel: { type: String, default: 'Tree' },
     /** Show the loading state instead of nodes. */
@@ -69,6 +87,8 @@ export const IrisTree = defineComponent({
     expand: (_id: string) => true,
     collapse: (_id: string) => true,
     select: (_id: string, _node: IrisTreeNode) => true,
+    /** Notified with the fully-reconciled checked node ids on every check change. */
+    checkedChange: (_checked: string[]) => true,
   },
   setup(props, { attrs, emit, slots }) {
     const { t } = useI18n()
@@ -135,6 +155,49 @@ export const IrisTree = defineComponent({
       walk(props.nodes, 0, null)
       return out
     })
+
+    // Checkable mode: flatten the FULL tree (every node, not just the visible
+    // ones) into `{ key, parentKey, disabled }` so the cascade is correct even
+    // for collapsed branches, and drive it with the core `createTreeSelection`.
+    const checkNodes = computed<TreeSelectionNode[]>(() => {
+      const out: TreeSelectionNode[] = []
+      const walk = (nodes: IrisTreeNode[], parentKey: string | undefined) => {
+        for (const node of nodes) {
+          out.push({ key: node.id, parentKey, disabled: node.disabled })
+          const kids = node.children ?? lazyCache.value.get(node.id)
+          if (kids && kids.length > 0) walk(kids, node.id)
+        }
+      }
+      walk(props.nodes, undefined)
+      return out
+    })
+
+    // Rebuild the model whenever the tree shape changes; `defaultChecked`
+    // re-seeds then. A `shallowRef` mirrors the live checked set so the render
+    // function re-runs on every check change (matching the `IrisTransfer`
+    // store-binding pattern).
+    let checkModel = createTreeSelection({
+      nodes: checkNodes.value,
+      defaultChecked: props.defaultChecked,
+      onChange: (keys) => emit('checkedChange', keys),
+    })
+    const checkedKeys = shallowRef<string[]>(checkModel.getChecked())
+    let unsubscribe = checkModel.selection.store.subscribe((keys) => {
+      checkedKeys.value = keys
+    })
+    watch([checkNodes, () => props.defaultChecked], () => {
+      unsubscribe()
+      checkModel = createTreeSelection({
+        nodes: checkNodes.value,
+        defaultChecked: props.defaultChecked,
+        onChange: (keys) => emit('checkedChange', keys),
+      })
+      checkedKeys.value = checkModel.getChecked()
+      unsubscribe = checkModel.selection.store.subscribe((keys) => {
+        checkedKeys.value = keys
+      })
+    })
+    onBeforeUnmount(() => unsubscribe())
 
     const activeId = ref<string | null>(flat.value[0]?.node.id ?? null)
     watch(flat, (next) => {
@@ -279,8 +342,10 @@ export const IrisTree = defineComponent({
       )
     }
 
-    const renderItems = (): VNode[] =>
-      flat.value.map((entry) => {
+    const renderItems = (): VNode[] => {
+      // Touch the live checked set so the render re-runs on every check change.
+      void checkedKeys.value
+      return flat.value.map((entry) => {
         const { node, depth, hasChildren } = entry
         const isExpanded = expandedIds.value.has(node.id)
         const isSelected = selectedIds.value.has(node.id)
@@ -341,6 +406,32 @@ export const IrisTree = defineComponent({
             )
           : h('span', { 'aria-hidden': 'true', style: { width: '16px', display: 'inline-block' } })
 
+        const disabled = !!node.disabled
+        const checkbox = props.checkable
+          ? h('input', {
+              type: 'checkbox',
+              'data-iris-tree-checkbox': '',
+              checked: checkModel.isChecked(node.id),
+              'aria-checked': checkModel.isIndeterminate(node.id)
+                ? 'mixed'
+                : checkModel.isChecked(node.id)
+                  ? 'true'
+                  : 'false',
+              'aria-label': node.label,
+              disabled,
+              // `indeterminate` is a DOM property, not an attribute — set it via a
+              // function ref on the rendered <input> element.
+              ref: (el: unknown) => {
+                if (el instanceof HTMLInputElement) {
+                  el.indeterminate = checkModel.isIndeterminate(node.id)
+                }
+              },
+              onClick: (e: MouseEvent) => e.stopPropagation(),
+              onChange: () => checkModel.toggle(node.id),
+              style: { cursor: disabled ? 'not-allowed' : 'pointer' },
+            })
+          : null
+
         return h(
           'div',
           {
@@ -379,9 +470,10 @@ export const IrisTree = defineComponent({
               fontSize: '14px',
             },
           },
-          [chevron, h('span', { style: { flex: '1', minWidth: '0' } }, node.label)],
+          [chevron, checkbox, h('span', { style: { flex: '1', minWidth: '0' } }, node.label)],
         )
       })
+    }
 
     return () =>
       h(

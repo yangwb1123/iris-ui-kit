@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createTreeSelection, type TreeSelectionNode } from '@iris-ui/core'
   import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
 
   interface FlatNode {
@@ -15,6 +16,16 @@
     selected?: string[]
     defaultSelected?: string[]
     selectionMode?: IrisTreeSelectionMode
+    /**
+     * Show a checkbox per node with parent/child cascade + indeterminate
+     * (tri-state) propagation, independent of `selectionMode`. Driven by the
+     * framework-agnostic `createTreeSelection`.
+     */
+    checkable?: boolean
+    /** Initially checked node ids (uncontrolled; reconciled through the cascade). */
+    defaultChecked?: string[]
+    /** Notified with the fully-reconciled checked node ids on every check change. */
+    onCheckedChange?: (checked: string[]) => void
     ariaLabel?: string
     loading?: boolean
     error?: boolean
@@ -34,6 +45,9 @@
     selected: selectedProp,
     defaultSelected = [],
     selectionMode = 'single',
+    checkable = false,
+    defaultChecked,
+    onCheckedChange,
     ariaLabel = 'Tree',
     loading = false,
     error = false,
@@ -85,6 +99,67 @@
   }
 
   const flat = $derived(flatten(nodes, 0, null))
+
+  // Checkable mode: flatten the FULL tree (every node, not just the visible
+  // ones) into `{ key, parentKey, disabled }` so the cascade is correct even
+  // for collapsed branches, and drive it with the core `createTreeSelection`.
+  function flattenCheckNodes(nodeList: IrisTreeNode[], parentKey: string | undefined): TreeSelectionNode[] {
+    const out: TreeSelectionNode[] = []
+    for (const node of nodeList) {
+      out.push({ key: node.id, parentKey, disabled: node.disabled })
+      const kids = node.children ?? childrenCache.get(node.id)
+      if (kids && kids.length > 0) out.push(...flattenCheckNodes(kids, node.id))
+    }
+    return out
+  }
+
+  const checkNodes = $derived(flattenCheckNodes(nodes, undefined))
+
+  // Rebuild the cascade model when the tree shape changes; `defaultChecked`
+  // re-seeds then. The model owns its checked-set store.
+  const checkModel = $derived(
+    createTreeSelection({
+      nodes: checkNodes,
+      defaultChecked,
+      onChange: (keys) => onCheckedChange?.(keys),
+    })
+  )
+
+  // Re-render when the checked set changes. Mirror the model's store into local
+  // reactive state (re-subscribing whenever the model is rebuilt); reading
+  // `checkedKeys` inside the `{#each}` makes `isChecked`/`isIndeterminate`
+  // reactive.
+  // svelte-ignore state_referenced_locally
+  let checkedKeys = $state<string[]>(checkModel.selection.get())
+  $effect(() => {
+    const model = checkModel
+    checkedKeys = model.selection.get()
+    return model.selection.store.subscribe((v) => {
+      checkedKeys = v
+    })
+  })
+
+  // Resolve check state through the model. `keys` is the reactive checked-set
+  // snapshot — passing it in makes these reads re-run when the set changes.
+  function checkChecked(id: string, keys: string[]): boolean {
+    void keys
+    return checkModel.isChecked(id)
+  }
+  function checkIndeterminate(id: string, keys: string[]): boolean {
+    void keys
+    return checkModel.isIndeterminate(id)
+  }
+
+  // `indeterminate` is a DOM property, not an attribute. Set it via an action
+  // whose `update` re-runs whenever the passed boolean changes.
+  function setIndeterminate(el: HTMLInputElement, value: boolean) {
+    el.indeterminate = value
+    return {
+      update(next: boolean) {
+        el.indeterminate = next
+      },
+    }
+  }
 
   function setExpanded(ids: string[]) {
     if (!isExpandedControlled) internalExpanded = new Set(ids)
@@ -190,6 +265,8 @@
       {@const isExpanded = expandedSet.has(fn.node.id)}
       {@const isSelected = selectedSet.has(fn.node.id)}
       {@const isFocused = activeId === fn.node.id}
+      {@const isChecked = checkChecked(fn.node.id, checkedKeys)}
+      {@const isIndeterminate = checkIndeterminate(fn.node.id, checkedKeys)}
       <div
         role="treeitem"
         aria-expanded={fn.hasChildren ? isExpanded : undefined}
@@ -238,6 +315,21 @@
           >{isExpanded ? '▼' : '▶'}</button>
         {:else}
           <span style:width="16px" style:flex-shrink="0"></span>
+        {/if}
+        {#if checkable}
+          <input
+            type="checkbox"
+            data-iris-tree-checkbox
+            checked={isChecked}
+            aria-checked={isIndeterminate ? 'mixed' : isChecked}
+            aria-label={fn.node.label}
+            disabled={fn.node.disabled}
+            use:setIndeterminate={isIndeterminate}
+            onclick={(e) => e.stopPropagation()}
+            onchange={() => checkModel.toggle(fn.node.id)}
+            style:cursor={fn.node.disabled ? 'not-allowed' : 'pointer'}
+            style:flex-shrink="0"
+          />
         {/if}
         {#if loadingNodes.has(fn.node.id)}
           <span aria-hidden="true" style:color="var(--iris-muted)" style:font-size="11px">…</span>

@@ -46,4 +46,55 @@ describe('IrisTree', () => {
     fireEvent.click(bRow)
     expect(onSelect).toHaveBeenCalledWith(['b'])
   })
+
+  describe('checkable', () => {
+    const checkboxFor = (container: HTMLElement, id: string) =>
+      container.querySelector(
+        `[data-iris-tree-node="${id}"] [data-iris-tree-checkbox]`,
+      ) as HTMLInputElement | null
+
+    it('renders a checkbox per node when checkable', () => {
+      const { container } = render(() => (
+        <IrisTree nodes={nodes} checkable defaultExpandedIds={['a']} />
+      ))
+      expect(checkboxFor(container, 'a')).toBeTruthy()
+      expect(checkboxFor(container, 'a1')).toBeTruthy()
+      expect(checkboxFor(container, 'b')).toBeTruthy()
+    })
+
+    it('checking a parent cascades to its (enabled) descendants and fires onCheckedChange', () => {
+      const onCheckedChange = vi.fn()
+      const { container } = render(() => (
+        <IrisTree
+          nodes={nodes}
+          checkable
+          defaultExpandedIds={['a']}
+          onCheckedChange={onCheckedChange}
+        />
+      ))
+      fireEvent.click(checkboxFor(container, 'a')!)
+      expect(checkboxFor(container, 'a1')!.checked).toBe(true)
+      expect(checkboxFor(container, 'a2')!.checked).toBe(true)
+      expect(checkboxFor(container, 'a')!.checked).toBe(true)
+      expect(onCheckedChange).toHaveBeenCalled()
+      expect(onCheckedChange.mock.calls.at(-1)![0]).toContain('a1')
+    })
+
+    it('a partially-checked parent is aria-checked=mixed and indeterminate', () => {
+      const { container } = render(() => (
+        <IrisTree nodes={nodes} checkable defaultExpandedIds={['a']} defaultChecked={['a1']} />
+      ))
+      // 'a' has only some descendants checked → indeterminate (aria mixed)
+      const parent = checkboxFor(container, 'a')!
+      expect(parent.getAttribute('aria-checked')).toBe('mixed')
+      expect(parent.indeterminate).toBe(true)
+      expect(parent.checked).toBe(false)
+    })
+
+    it('no checkboxes when checkable is off', () => {
+      const { container } = render(() => <IrisTree nodes={nodes} defaultExpandedIds={['a']} />)
+      expect(checkboxFor(container, 'a')).toBeNull()
+      expect(checkboxFor(container, 'a1')).toBeNull()
+    })
+  })
 })

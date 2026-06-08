@@ -280,4 +280,47 @@ describe('@iris-ui/react IrisTree data states', () => {
     render(<IrisTree nodes={nodes} />)
     expect(document.querySelector('[data-iris-tree-state]')).toBeNull()
   })
+
+  describe('checkable', () => {
+    const checkboxFor = (id: string) =>
+      document.querySelector(
+        `[data-iris-tree-node="${id}"] [data-iris-tree-checkbox]`,
+      ) as HTMLInputElement | null
+
+    it('renders a checkbox per node when checkable', () => {
+      render(<IrisTree nodes={nodes} checkable expanded={['root', 'a']} />)
+      expect(checkboxFor('root')).toBeTruthy()
+      expect(checkboxFor('a1')).toBeTruthy()
+    })
+
+    it('checking a parent cascades to its (enabled) descendants and fires onCheckedChange', () => {
+      const onCheckedChange = vi.fn()
+      render(
+        <IrisTree
+          nodes={nodes}
+          checkable
+          expanded={['root', 'a']}
+          onCheckedChange={onCheckedChange}
+        />,
+      )
+      act(() => {
+        fireEvent.click(checkboxFor('a')!)
+      })
+      expect(checkboxFor('a1')!.checked).toBe(true)
+      expect(checkboxFor('a')!.checked).toBe(true)
+      expect(onCheckedChange).toHaveBeenCalled()
+      expect(onCheckedChange.mock.calls.at(-1)![0]).toContain('a1')
+    })
+
+    it('a partially-checked parent is indeterminate', () => {
+      render(<IrisTree nodes={nodes} checkable expanded={['root', 'a']} defaultChecked={['a1']} />)
+      // root has only some descendants checked → indeterminate (aria mixed)
+      expect(checkboxFor('root')!.getAttribute('aria-checked')).toBe('mixed')
+    })
+
+    it('no checkboxes when checkable is off', () => {
+      render(<IrisTree nodes={nodes} expanded={['root']} />)
+      expect(checkboxFor('root')).toBeNull()
+    })
+  })
 })

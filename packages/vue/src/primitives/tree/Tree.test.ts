@@ -182,6 +182,87 @@ describe('IrisTree RTL', () => {
   })
 })
 
+describe('IrisTree checkable', () => {
+  const checkNodes: IrisTreeNode[] = [
+    {
+      id: 'root',
+      label: 'Root',
+      children: [
+        { id: 'a', label: 'A', children: [{ id: 'a1', label: 'A1' }] },
+        { id: 'b', label: 'B' },
+        { id: 'c', label: 'C', disabled: true },
+      ],
+    },
+    { id: 'standalone', label: 'Standalone' },
+  ]
+
+  const checkboxFor = (wrapper: ReturnType<typeof mount>, id: string) =>
+    wrapper.find(`[role="treeitem"][data-id="${id}"] [data-iris-tree-checkbox]`)
+
+  it('renders a checkbox per node when checkable', () => {
+    const wrapper = mount(IrisTree, {
+      props: { nodes: checkNodes, checkable: true, expanded: ['root', 'a'] },
+    })
+    expect(checkboxFor(wrapper, 'root').exists()).toBe(true)
+    expect(checkboxFor(wrapper, 'a1').exists()).toBe(true)
+  })
+
+  it('checking a parent cascades to its (enabled) descendants and fires checkedChange', async () => {
+    const checked = ref<string[] | null>(null)
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(IrisTree, {
+            nodes: checkNodes,
+            checkable: true,
+            expanded: ['root', 'a'],
+            onCheckedChange: (v: string[]) => (checked.value = v),
+          })
+      },
+    })
+    const wrapper = mount(Harness)
+    const aCheckbox = wrapper.find('[role="treeitem"][data-id="a"] [data-iris-tree-checkbox]')
+    await aCheckbox.setValue(true)
+    await nextTick()
+    expect(
+      (
+        wrapper.find('[role="treeitem"][data-id="a1"] [data-iris-tree-checkbox]')
+          .element as HTMLInputElement
+      ).checked,
+    ).toBe(true)
+    expect(
+      (
+        wrapper.find('[role="treeitem"][data-id="a"] [data-iris-tree-checkbox]')
+          .element as HTMLInputElement
+      ).checked,
+    ).toBe(true)
+    expect(checked.value).not.toBeNull()
+    expect(checked.value).toContain('a1')
+  })
+
+  it('a partially-checked parent is indeterminate (aria mixed)', () => {
+    const wrapper = mount(IrisTree, {
+      props: {
+        nodes: checkNodes,
+        checkable: true,
+        expanded: ['root', 'a'],
+        defaultChecked: ['a1'],
+      },
+    })
+    // root has only some descendants checked → indeterminate (aria mixed).
+    const root = checkboxFor(wrapper, 'root')
+    expect(root.attributes('aria-checked')).toBe('mixed')
+    expect((root.element as HTMLInputElement).indeterminate).toBe(true)
+  })
+
+  it('no checkboxes when checkable is off', () => {
+    const wrapper = mount(IrisTree, {
+      props: { nodes: checkNodes, expanded: ['root'] },
+    })
+    expect(checkboxFor(wrapper, 'root').exists()).toBe(false)
+  })
+})
+
 describe('IrisTree data states', () => {
   it('shows the localized empty state when nodes is empty', () => {
     const w = mount(IrisTree, { props: { nodes: [] } })

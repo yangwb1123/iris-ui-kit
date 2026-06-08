@@ -33,6 +33,7 @@ export {
   type I18nState,
   type I18nMessages,
 } from './i18n'
+export { localeDirection, isRtlLocale, localeWeekStartsOn } from './locale'
 export {
   computeVirtualRange,
   buildOffsets,

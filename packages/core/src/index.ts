@@ -92,6 +92,21 @@ export {
   type IrisHsva,
   type IrisRgba,
 } from './color'
+export {
+  startOfDay,
+  isSameDay,
+  isSameMonth,
+  addDays,
+  addMonths,
+  startOfMonth,
+  endOfMonth,
+  buildMonthMatrix,
+  formatMonthYear,
+  getWeekdayNames,
+  formatLocalISO,
+  clampDate,
+  isOutOfRange,
+} from './date'
 export { standardSchemaValidator, type StandardSchemaV1 } from './standard-schema'
 export { resolveDataState, type DataState, type DataStateInput } from './data-state'
 export {

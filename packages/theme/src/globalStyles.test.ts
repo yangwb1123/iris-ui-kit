@@ -37,6 +37,18 @@ describe('injectGlobalStyles', () => {
     expect(css).toMatch(/animation-duration:\s*0\.01ms\s*!important/)
   })
 
+  it('carries a forced-colors block restoring focus + selection visibility', () => {
+    // jsdom does not evaluate media queries; assert the wiring (rule text):
+    // a forced-colors block, scoped to [data-iris-theme], giving :focus-visible
+    // and selected/checked/current elements a system-color Highlight outline.
+    injectGlobalStyles()
+    const css = styleEl()?.textContent ?? ''
+    expect(css).toContain('@media (forced-colors: active)')
+    expect(css).toContain(':focus-visible')
+    expect(css).toContain('Highlight')
+    expect(css).toContain('[aria-selected="true"]')
+  })
+
   it('re-injects after a reset', () => {
     injectGlobalStyles()
     __resetGlobalStyles()

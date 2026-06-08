@@ -96,3 +96,41 @@ export function firstLeaf(node: NavNode): NavNode {
   while (current.children && current.children.length > 0) current = current.children[0]!
   return current
 }
+
+/**
+ * The keys of the **branch ancestors** of `key` (excluding the node itself) —
+ * i.e. the menu groups that must be expanded for `key` to be visible. The
+ * canonical "auto-open the active trail" set, previously re-derived in every
+ * adapter's NavMenu.
+ */
+export function branchTrail(nodes: NavNode[], key: string): string[] {
+  return findNavPath(nodes, key)
+    .slice(0, -1)
+    .filter(isBranch)
+    .map((n) => n.key)
+}
+
+/**
+ * Filter the tree by an access predicate (role/permission/ACL) — the pure
+ * complement to {@link visibleNav}'s static `hidden` filter. A node is dropped
+ * when `can(node)` is false; by default a branch whose children are all dropped
+ * is pruned too (pass `pruneEmptyBranches: false` to keep empty groups).
+ */
+export function filterNavByAccess(
+  nodes: NavNode[],
+  can: (node: NavNode) => boolean,
+  pruneEmptyBranches = true,
+): NavNode[] {
+  const out: NavNode[] = []
+  for (const n of nodes) {
+    if (!can(n)) continue
+    if (n.children && n.children.length > 0) {
+      const children = filterNavByAccess(n.children, can, pruneEmptyBranches)
+      if (children.length === 0 && pruneEmptyBranches) continue
+      out.push({ ...n, children })
+    } else {
+      out.push(n)
+    }
+  }
+  return out
+}

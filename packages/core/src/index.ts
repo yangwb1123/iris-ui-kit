@@ -89,8 +89,29 @@ export {
   findNavNode,
   findNavPath,
   firstLeaf,
+  branchTrail,
+  filterNavByAccess,
   type NavNode,
 } from './nav'
+export {
+  createExpansion,
+  type ExpansionModel,
+  type ExpansionConfig,
+  type ExpansionMode,
+} from './expansion'
+export {
+  createAdminShell,
+  type AdminShell,
+  type AdminShellConfig,
+  type AdminShellState,
+} from './admin-shell'
+export {
+  createResourceController,
+  type ResourceController,
+  type ResourceControllerConfig,
+  type ResourceState,
+  type ResourceQuery,
+} from './resource'
 export {
   createTabsNav,
   isClosable,

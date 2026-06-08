@@ -56,6 +56,39 @@ describe('createStore', () => {
     expect(a).toHaveBeenCalledTimes(1)
     expect(b).toHaveBeenCalledTimes(1)
   })
+
+  it('subscribe DURING a notify does not fire for the current emit (snapshot)', () => {
+    const store = createStore(0)
+    const late = vi.fn()
+    store.subscribe(() => store.subscribe(late))
+    store.setState(1)
+    expect(late).not.toHaveBeenCalled()
+    store.setState(2)
+    expect(late).toHaveBeenCalledTimes(1)
+  })
+
+  it('a listener removed mid-notify by a sibling is skipped, not called stale', () => {
+    const store = createStore(0)
+    const b = vi.fn()
+    let unsub = () => {}
+    store.subscribe(() => unsub()) // first listener tears down the second
+    unsub = store.subscribe(b)
+    store.setState(1)
+    expect(b).not.toHaveBeenCalled()
+  })
+
+  it('a listener that unsubscribes itself is still called for the current emit', () => {
+    const store = createStore(0)
+    const self = vi.fn()
+    const unsub = store.subscribe((s) => {
+      self(s)
+      unsub()
+    })
+    store.setState(1)
+    expect(self).toHaveBeenCalledTimes(1)
+    store.setState(2)
+    expect(self).toHaveBeenCalledTimes(1) // not called again
+  })
 })
 
 describe('createMachine (smoke)', () => {

@@ -21,7 +21,13 @@ export function createStore<T>(initial: T): Store<T> {
       const next = typeof updater === 'function' ? (updater as (prev: T) => T)(state) : updater
       if (Object.is(next, state)) return
       state = next
-      listeners.forEach((l) => l(state))
+      // Snapshot before notifying so subscribe/unsubscribe DURING a notify is
+      // well-defined: listeners present at emit-start are notified (ones added
+      // mid-emit are not), and a listener removed mid-emit (e.g. by an earlier
+      // listener tearing down a sibling) is skipped rather than called stale.
+      for (const listener of [...listeners]) {
+        if (listeners.has(listener)) listener(state)
+      }
     },
     subscribe(listener) {
       listeners.add(listener)

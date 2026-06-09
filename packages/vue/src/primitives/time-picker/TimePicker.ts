@@ -1,4 +1,5 @@
 import { computed, defineComponent, h, type PropType } from 'vue'
+import { useI18n } from '../../i18n'
 
 export type IrisTimePickerFormat = '12h' | '24h'
 
@@ -43,6 +44,7 @@ export const IrisTimePicker = defineComponent({
     'update:modelValue': (_value: IrisTimeValue) => true,
   },
   setup(props, { attrs, emit }) {
+    const { t } = useI18n()
     const value = computed<IrisTimeValue>(() => props.modelValue ?? { hours: 0, minutes: 0 })
 
     const meridiem = computed<'AM' | 'PM'>(() => (value.value.hours >= 12 ? 'PM' : 'AM'))
@@ -168,7 +170,7 @@ export const IrisTimePicker = defineComponent({
             max: props.format === '12h' ? 12 : 23,
             value: pad2(display.value.h),
             disabled: props.disabled || undefined,
-            'aria-label': 'Hours',
+            'aria-label': t('timePicker.hours'),
             'aria-describedby': props.ariaDescribedby,
             'aria-invalid': props.invalid ? 'true' : undefined,
             'data-iris-time-picker-hours': '',
@@ -192,7 +194,7 @@ export const IrisTimePicker = defineComponent({
             step: props.minuteStep,
             value: pad2(display.value.m),
             disabled: props.disabled || undefined,
-            'aria-label': 'Minutes',
+            'aria-label': t('timePicker.minutes'),
             'data-iris-time-picker-minutes': '',
             onInput: onMinutesInput,
             onKeydown: onMinutesKey,
@@ -204,7 +206,7 @@ export const IrisTimePicker = defineComponent({
                 {
                   type: 'button',
                   disabled: props.disabled || undefined,
-                  'aria-label': 'Toggle AM/PM',
+                  'aria-label': t('timePicker.togglePeriod'),
                   'data-iris-time-picker-meridiem': meridiem.value,
                   onClick: toggleMeridiem,
                   style: {

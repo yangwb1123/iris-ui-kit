@@ -108,6 +108,18 @@ export const defaultMessages: I18nMessages = {
   'clearable.clear': 'Clear',
   'calendar.previousMonth': 'Previous month',
   'calendar.nextMonth': 'Next month',
+  'numberInput.decrement': 'Decrement',
+  'numberInput.increment': 'Increment',
+  'timePicker.hours': 'Hours',
+  'timePicker.minutes': 'Minutes',
+  'timePicker.togglePeriod': 'Toggle AM/PM',
+  'colorPicker.hex': 'Hex',
+  'colorPicker.red': 'Red',
+  'colorPicker.green': 'Green',
+  'colorPicker.blue': 'Blue',
+  'colorPicker.alpha': 'Alpha',
+  'breadcrumb.label': 'Breadcrumb',
+  'skeleton.loading': 'Loading',
 }
 
 const DEFAULT_LOCALE = 'en-US'

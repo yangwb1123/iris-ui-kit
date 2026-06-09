@@ -1,4 +1,5 @@
 import { Fragment, defineComponent, h, type VNode } from 'vue'
+import { useI18n } from '../../i18n'
 
 /**
  * Container for breadcrumb navigation. Renders a `<nav>` with `<ol>` per
@@ -15,6 +16,7 @@ export const IrisBreadcrumb = defineComponent({
     separator: { type: String, default: '/' },
   },
   setup(props, { slots, attrs }) {
+    const { t } = useI18n()
     return () => {
       const children = slots.default?.() ?? []
       // Flatten Fragment / array children to a flat list of VNodes.
@@ -69,7 +71,7 @@ export const IrisBreadcrumb = defineComponent({
         'nav',
         {
           ...attrs,
-          'aria-label': 'Breadcrumb',
+          'aria-label': t('breadcrumb.label'),
           'data-iris-breadcrumb': '',
         },
         h(

@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
 
 export type IrisTimePickerFormat = '12h' | '24h'
 
@@ -49,6 +50,7 @@ export function IrisTimePicker({
   style,
   className,
 }: IrisTimePickerProps): React.ReactElement {
+  const { t } = useI18n()
   const isControlled = valueProp !== undefined
   const [internal, setInternal] = React.useState<IrisTimeValue>(defaultValue)
   const value = isControlled ? (valueProp ?? defaultValue) : internal
@@ -167,7 +169,7 @@ export function IrisTimePicker({
         max={format === '12h' ? 12 : 23}
         value={pad2(displayH)}
         disabled={disabled || undefined}
-        aria-label="Hours"
+        aria-label={t('timePicker.hours')}
         aria-describedby={ariaDescribedby}
         aria-invalid={invalid ? 'true' : undefined}
         data-iris-time-picker-hours=""
@@ -186,7 +188,7 @@ export function IrisTimePicker({
         step={minuteStep}
         value={pad2(value.minutes)}
         disabled={disabled || undefined}
-        aria-label="Minutes"
+        aria-label={t('timePicker.minutes')}
         data-iris-time-picker-minutes=""
         onChange={onMinutesInput}
         onKeyDown={onMinutesKey}
@@ -196,7 +198,7 @@ export function IrisTimePicker({
         <button
           type="button"
           disabled={disabled || undefined}
-          aria-label="Toggle AM/PM"
+          aria-label={t('timePicker.togglePeriod')}
           data-iris-time-picker-meridiem={meridiem}
           onClick={toggleMeridiem}
           style={{

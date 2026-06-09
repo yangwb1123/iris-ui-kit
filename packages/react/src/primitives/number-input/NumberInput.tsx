@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
 
 export type IrisNumberInputSize = 'sm' | 'md' | 'lg'
 
@@ -64,6 +65,7 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
     },
     ref,
   ) {
+    const { t } = useI18n()
     const isControlled = value !== undefined
     const [internal, setInternal] = React.useState<number | null>(defaultValue ?? null)
     const current = isControlled ? (value as number | null) : internal
@@ -198,7 +200,7 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
           <button
             type="button"
             data-iris-number-input-dec=""
-            aria-label="Decrement"
+            aria-label={t('numberInput.decrement')}
             disabled={disabled || atMin}
             onClick={() => increment(-1)}
             style={{ ...ctrlBtnStyle, marginInlineEnd: 4 }}
@@ -242,7 +244,7 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
           <button
             type="button"
             data-iris-number-input-inc=""
-            aria-label="Increment"
+            aria-label={t('numberInput.increment')}
             disabled={disabled || atMax}
             onClick={() => increment(1)}
             style={{ ...ctrlBtnStyle, marginInlineStart: 4 }}

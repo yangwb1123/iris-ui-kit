@@ -1,5 +1,6 @@
 import { computed, defineComponent, h, onMounted, type PropType } from 'vue'
 import { installSkeletonStyles } from './styles'
+import { useI18n } from '../../i18n'
 
 export type IrisSkeletonShape = 'rect' | 'circle' | 'text'
 
@@ -38,6 +39,7 @@ export const IrisSkeleton = defineComponent({
     animated: { type: Boolean, default: true },
   },
   setup(props, { attrs }) {
+    const { t } = useI18n()
     onMounted(installSkeletonStyles)
 
     const style = computed<Record<string, string>>(() => {
@@ -55,7 +57,7 @@ export const IrisSkeleton = defineComponent({
         'data-iris-skeleton-animated': String(props.animated),
         role: 'status',
         'aria-busy': 'true',
-        'aria-label': 'Loading',
+        'aria-label': t('skeleton.loading'),
         style: { ...style.value, ...((attrs.style as Record<string, string>) ?? {}) },
       })
   },

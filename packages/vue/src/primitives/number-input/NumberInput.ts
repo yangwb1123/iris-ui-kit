@@ -1,5 +1,6 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
 import type { Size } from '@iris-ui/core'
+import { useI18n } from '../../i18n'
 
 export type IrisNumberInputSize = Size
 
@@ -49,6 +50,7 @@ export const IrisNumberInput = defineComponent({
     blur: (_event: FocusEvent) => true,
   },
   setup(props, { attrs, emit }) {
+    const { t } = useI18n()
     const focused = ref(false)
     const rawText = ref<string>(
       props.modelValue === null || props.modelValue === undefined ? '' : String(props.modelValue),
@@ -216,7 +218,7 @@ export const IrisNumberInput = defineComponent({
                 {
                   type: 'button',
                   'data-iris-number-input-dec': '',
-                  'aria-label': 'Decrement',
+                  'aria-label': t('numberInput.decrement'),
                   disabled: props.disabled || atMin || undefined,
                   onClick: () => increment(-1),
                   style: { ...controlBtnStyle, marginInlineEnd: '4px' },
@@ -253,7 +255,7 @@ export const IrisNumberInput = defineComponent({
                 {
                   type: 'button',
                   'data-iris-number-input-inc': '',
-                  'aria-label': 'Increment',
+                  'aria-label': t('numberInput.increment'),
                   disabled: props.disabled || atMax || undefined,
                   onClick: () => increment(1),
                   style: { ...controlBtnStyle, marginInlineStart: '4px' },

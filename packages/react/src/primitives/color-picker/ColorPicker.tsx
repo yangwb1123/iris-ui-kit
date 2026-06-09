@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { clamp01, hexToRgba, hsvaToRgba, rgbToHex, rgbaToHsva, type IrisHsva } from './colorUtils'
+import { useI18n } from '../../i18n'
 
 export interface IrisColorPickerProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
@@ -43,6 +44,7 @@ export function IrisColorPicker({
   style,
   ...rest
 }: IrisColorPickerProps): React.ReactElement {
+  const { t } = useI18n()
   const initialHex = value ?? defaultValue ?? '#000000'
   const [hsva, setHsva] = React.useState<IrisHsva>(() =>
     rgbaToHsva(hexToRgba(initialHex) ?? { r: 0, g: 0, b: 0, a: 1 }),
@@ -260,7 +262,7 @@ export function IrisColorPicker({
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12 }}>
         <input
           data-iris-color-picker-hex=""
-          aria-label="Hex"
+          aria-label={t('colorPicker.hex')}
           disabled={disabled}
           value={hexDraft ?? hex}
           onChange={(e) => setHexDraft(e.target.value)}
@@ -281,7 +283,7 @@ export function IrisColorPicker({
         <input
           type="number"
           data-iris-color-picker-r=""
-          aria-label="Red"
+          aria-label={t('colorPicker.red')}
           min={0}
           max={255}
           disabled={disabled}
@@ -292,7 +294,7 @@ export function IrisColorPicker({
         <input
           type="number"
           data-iris-color-picker-g=""
-          aria-label="Green"
+          aria-label={t('colorPicker.green')}
           min={0}
           max={255}
           disabled={disabled}
@@ -303,7 +305,7 @@ export function IrisColorPicker({
         <input
           type="number"
           data-iris-color-picker-b=""
-          aria-label="Blue"
+          aria-label={t('colorPicker.blue')}
           min={0}
           max={255}
           disabled={disabled}
@@ -315,7 +317,7 @@ export function IrisColorPicker({
           <input
             type="number"
             data-iris-color-picker-a=""
-            aria-label="Alpha"
+            aria-label={t('colorPicker.alpha')}
             min={0}
             max={1}
             step={0.01}

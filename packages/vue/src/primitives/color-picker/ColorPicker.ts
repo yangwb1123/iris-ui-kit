@@ -1,5 +1,6 @@
 import { computed, defineComponent, h, ref, watch } from 'vue'
 import { clamp01, hexToRgba, hsvaToRgba, rgbToHex, rgbaToHsva, type IrisHsva } from './colorUtils'
+import { useI18n } from '../../i18n'
 
 /**
  * Color picker. Renders:
@@ -24,6 +25,7 @@ export const IrisColorPicker = defineComponent({
     'update:modelValue': (_value: string) => true,
   },
   setup(props, { attrs, emit }) {
+    const { t } = useI18n()
     const padRef = ref<HTMLElement | null>(null)
     const hueRef = ref<HTMLElement | null>(null)
     const alphaRef = ref<HTMLElement | null>(null)
@@ -312,7 +314,7 @@ export const IrisColorPicker = defineComponent({
             [
               h('input', {
                 'data-iris-color-picker-hex': '',
-                'aria-label': 'Hex',
+                'aria-label': t('colorPicker.hex'),
                 disabled: props.disabled || undefined,
                 value: hex.value,
                 onChange: (e: Event) => {
@@ -324,7 +326,7 @@ export const IrisColorPicker = defineComponent({
               h('input', {
                 type: 'number',
                 'data-iris-color-picker-r': '',
-                'aria-label': 'Red',
+                'aria-label': t('colorPicker.red'),
                 min: 0,
                 max: 255,
                 disabled: props.disabled || undefined,
@@ -337,7 +339,7 @@ export const IrisColorPicker = defineComponent({
               h('input', {
                 type: 'number',
                 'data-iris-color-picker-g': '',
-                'aria-label': 'Green',
+                'aria-label': t('colorPicker.green'),
                 min: 0,
                 max: 255,
                 disabled: props.disabled || undefined,
@@ -350,7 +352,7 @@ export const IrisColorPicker = defineComponent({
               h('input', {
                 type: 'number',
                 'data-iris-color-picker-b': '',
-                'aria-label': 'Blue',
+                'aria-label': t('colorPicker.blue'),
                 min: 0,
                 max: 255,
                 disabled: props.disabled || undefined,
@@ -364,7 +366,7 @@ export const IrisColorPicker = defineComponent({
                 ? h('input', {
                     type: 'number',
                     'data-iris-color-picker-a': '',
-                    'aria-label': 'Alpha',
+                    'aria-label': t('colorPicker.alpha'),
                     min: 0,
                     max: 1,
                     step: 0.01,

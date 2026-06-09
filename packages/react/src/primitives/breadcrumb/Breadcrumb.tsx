@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
 
 export interface IrisBreadcrumbProps extends React.HTMLAttributes<HTMLElement> {
   /** String separator between crumbs. Default `/`. */
@@ -13,6 +14,7 @@ export interface IrisBreadcrumbProps extends React.HTMLAttributes<HTMLElement> {
  */
 export const IrisBreadcrumb = React.forwardRef<HTMLElement, IrisBreadcrumbProps>(
   function IrisBreadcrumb({ separator = '/', children, ...rest }, ref) {
+    const { t } = useI18n()
     const flat = React.Children.toArray(children).filter((c) =>
       React.isValidElement(c),
     ) as React.ReactElement[]
@@ -22,7 +24,7 @@ export const IrisBreadcrumb = React.forwardRef<HTMLElement, IrisBreadcrumbProps>
       <nav
         {...rest}
         ref={ref as React.Ref<HTMLElement>}
-        aria-label="Breadcrumb"
+        aria-label={t('breadcrumb.label')}
         data-iris-breadcrumb=""
       >
         <ol

@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
 import { installSkeletonStyles } from './styles'
 
 export type IrisSkeletonShape = 'rect' | 'circle' | 'text'
@@ -34,6 +35,7 @@ export function IrisSkeleton({
   style,
   ...rest
 }: IrisSkeletonProps): React.ReactElement {
+  const { t } = useI18n()
   React.useEffect(installSkeletonStyles, [])
   const w = width !== undefined ? toCss(width) : defaultWidth(shape)
   const h = height !== undefined ? toCss(height) : defaultHeight(shape, width)
@@ -45,7 +47,7 @@ export function IrisSkeleton({
       data-iris-skeleton-animated={String(animated)}
       role="status"
       aria-busy="true"
-      aria-label="Loading"
+      aria-label={t('skeleton.loading')}
       style={{ width: w, height: h, ...style }}
     />
   )

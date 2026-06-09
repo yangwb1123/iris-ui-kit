@@ -168,7 +168,7 @@ export function IrisCommandPalette({
         ref={surfaceRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Command palette"
+        aria-label={t('commandPalette.label')}
         data-iris-command-palette=""
         tabIndex={-1}
         style={{
@@ -191,7 +191,7 @@ export function IrisCommandPalette({
             value={query}
             placeholder={resolvedPlaceholder}
             data-iris-command-palette-input=""
-            aria-label="Search commands"
+            aria-label={t('commandPalette.search')}
             onChange={(e) => setQuery(e.target.value)}
             style={{
               width: '100%',
@@ -207,7 +207,7 @@ export function IrisCommandPalette({
         </div>
         <ul
           role="listbox"
-          aria-label="Commands"
+          aria-label={t('commandPalette.commands')}
           data-iris-command-palette-list=""
           style={{ listStyle: 'none', margin: 0, padding: 4, overflow: 'auto', flex: 1 }}
         >

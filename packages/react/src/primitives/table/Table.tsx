@@ -591,7 +591,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             <IrisCheckbox
               checked={allSelected ? true : someSelected ? 'indeterminate' : false}
               onChange={toggleAll}
-              aria-label="Select all"
+              aria-label={t('table.selectAll')}
             />
           </div>
         ) : selectable === 'single' ? (

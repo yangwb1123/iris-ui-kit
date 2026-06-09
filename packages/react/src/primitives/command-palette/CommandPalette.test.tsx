@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { IrisCommandPalette } from './CommandPalette'
+import { IrisI18nProvider } from '../../i18n'
 import { defaultFilter, type IrisCommandItem } from './types'
 import { __resetBodyScrollLock } from '../../modal-utils/useBodyScrollLock'
 
@@ -63,6 +64,36 @@ describe('@iris-ui/react IrisCommandPalette', () => {
     expect(document.querySelector('[data-iris-command-palette]')).not.toBeNull()
     expect(document.querySelector('[data-iris-command-palette-input]')).not.toBeNull()
     expect(document.querySelector('[data-iris-command-palette-list]')).not.toBeNull()
+  })
+
+  it('dialog/search/list aria-labels default to English and are localizable via i18n', () => {
+    const { unmount } = render(<IrisCommandPalette open items={items} />)
+    expect(document.querySelector('[data-iris-command-palette]')?.getAttribute('aria-label')).toBe(
+      'Command palette',
+    )
+    expect(input().getAttribute('aria-label')).toBe('Search commands')
+    expect(
+      document.querySelector('[data-iris-command-palette-list]')?.getAttribute('aria-label'),
+    ).toBe('Commands')
+    unmount()
+    render(
+      <IrisI18nProvider
+        messages={{
+          'commandPalette.label': 'Palette de commandes',
+          'commandPalette.search': 'Rechercher des commandes',
+          'commandPalette.commands': 'Commandes',
+        }}
+      >
+        <IrisCommandPalette open items={items} />
+      </IrisI18nProvider>,
+    )
+    expect(document.querySelector('[data-iris-command-palette]')?.getAttribute('aria-label')).toBe(
+      'Palette de commandes',
+    )
+    expect(input().getAttribute('aria-label')).toBe('Rechercher des commandes')
+    expect(
+      document.querySelector('[data-iris-command-palette-list]')?.getAttribute('aria-label'),
+    ).toBe('Commandes')
   })
 
   it('lists all items by default; groups have headers', () => {

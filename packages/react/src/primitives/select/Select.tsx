@@ -227,7 +227,7 @@ export function IrisSelect<T = unknown>({
         <ul
           ref={listRef}
           role="listbox"
-          aria-label="Options"
+          aria-label={t('select.options')}
           data-iris-select-listbox=""
           onKeyDown={handleKeyDown}
           tabIndex={-1}

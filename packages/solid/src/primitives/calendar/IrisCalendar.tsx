@@ -22,6 +22,7 @@ import {
   startOfDay,
   startOfMonth,
 } from './dateUtils'
+import { useI18n } from '../../i18n'
 
 export interface IrisCalendarProps {
   value?: Date | null
@@ -60,6 +61,8 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
     'disabled',
     'onChange',
   ])
+
+  const { t } = useI18n()
 
   const initialMonth = local.defaultMonth ?? local.defaultValue ?? local.value ?? new Date()
   const [visibleMonth, setVisibleMonth] = createSignal(startOfMonth(initialMonth))
@@ -208,7 +211,7 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
       >
         <button
           type="button"
-          aria-label="Previous month"
+          aria-label={t('calendar.previousMonth')}
           data-iris-calendar-prev=""
           disabled={prevDisabled() || undefined}
           onClick={goPrevMonth}
@@ -229,7 +232,7 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
         </div>
         <button
           type="button"
-          aria-label="Next month"
+          aria-label={t('calendar.nextMonth')}
           data-iris-calendar-next=""
           disabled={nextDisabled() || undefined}
           onClick={goNextMonth}

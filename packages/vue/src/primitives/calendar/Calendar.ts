@@ -14,6 +14,7 @@ import {
   startOfDay,
   startOfMonth,
 } from './dateUtils'
+import { useI18n } from '../../i18n'
 
 /**
  * Month-view calendar. Single date selection only (range pickers are a
@@ -44,6 +45,7 @@ export const IrisCalendar = defineComponent({
     'update:modelValue': (_value: Date | null) => true,
   },
   setup(props, { attrs, emit }) {
+    const { t } = useI18n()
     const initialMonth = props.defaultMonth ?? props.modelValue ?? new Date()
     const visibleMonth = ref(startOfMonth(initialMonth))
     const focusDate = ref<Date>(clampDate(props.modelValue ?? new Date(), props.min, props.max))
@@ -206,7 +208,7 @@ export const IrisCalendar = defineComponent({
                 'button',
                 {
                   type: 'button',
-                  'aria-label': 'Previous month',
+                  'aria-label': t('calendar.previousMonth'),
                   'data-iris-calendar-prev': '',
                   disabled: prevDisabled.value || undefined,
                   onClick: goPrevMonth,
@@ -231,7 +233,7 @@ export const IrisCalendar = defineComponent({
                 'button',
                 {
                   type: 'button',
-                  'aria-label': 'Next month',
+                  'aria-label': t('calendar.nextMonth'),
                   'data-iris-calendar-next': '',
                   disabled: nextDisabled.value || undefined,
                   onClick: goNextMonth,

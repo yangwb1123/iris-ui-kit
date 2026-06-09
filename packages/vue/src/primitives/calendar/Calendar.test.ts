@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { IrisCalendar } from './Calendar'
+import { IrisI18nProvider } from '../../i18n'
 import {
   addDays,
   buildMonthMatrix,
@@ -199,6 +200,34 @@ describe('@iris-ui/vue IrisCalendar', () => {
     })
     expect((wrap.find('[data-iris-calendar-prev]').element as HTMLButtonElement).disabled).toBe(
       true,
+    )
+  })
+
+  it('nav aria-labels default to English and localize via IrisI18nProvider', () => {
+    const plain = mount(IrisCalendar, { props: { defaultMonth: new Date(2024, 5, 15) } })
+    expect(plain.find('[data-iris-calendar-prev]').attributes('aria-label')).toBe('Previous month')
+    expect(plain.find('[data-iris-calendar-next]').attributes('aria-label')).toBe('Next month')
+
+    const localized = mount(
+      defineComponent({
+        setup: () => () =>
+          h(
+            IrisI18nProvider,
+            {
+              messages: {
+                'calendar.previousMonth': 'Mois précédent',
+                'calendar.nextMonth': 'Mois suivant',
+              },
+            },
+            { default: () => h(IrisCalendar, { defaultMonth: new Date(2024, 5, 15) }) },
+          ),
+      }),
+    )
+    expect(localized.find('[data-iris-calendar-prev]').attributes('aria-label')).toBe(
+      'Mois précédent',
+    )
+    expect(localized.find('[data-iris-calendar-next]').attributes('aria-label')).toBe(
+      'Mois suivant',
     )
   })
 

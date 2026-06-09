@@ -2,6 +2,7 @@ import { render, fireEvent } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
 import { describe, it, expect } from 'vitest'
 import IrisCalendar from './IrisCalendar.svelte'
+import CalendarI18nHarness from './CalendarI18nHarness.svelte'
 
 describe('IrisCalendar', () => {
   it('renders without crashing', () => {
@@ -41,6 +42,35 @@ describe('IrisCalendar', () => {
     await fireEvent.click(days[7]!)
     flushSync()
     expect(selected).toBeTruthy()
+  })
+
+  it('uses i18n for nav button aria-labels (English default)', () => {
+    // No provider -> useI18n falls back to English defaults.
+    const { container } = render(IrisCalendar)
+    expect(container.querySelector('[data-iris-calendar-prev]')!.getAttribute('aria-label')).toBe(
+      'Previous month',
+    )
+    expect(container.querySelector('[data-iris-calendar-next]')!.getAttribute('aria-label')).toBe(
+      'Next month',
+    )
+  })
+
+  it('nav button aria-labels follow IrisI18nProvider message overrides', () => {
+    // Calendar mounted inside a provider whose messages remap the nav keys.
+    const { container } = render(CalendarI18nHarness, {
+      props: {
+        messages: {
+          'calendar.previousMonth': 'Mois précédent',
+          'calendar.nextMonth': 'Mois suivant',
+        },
+      },
+    })
+    expect(container.querySelector('[data-iris-calendar-prev]')!.getAttribute('aria-label')).toBe(
+      'Mois précédent',
+    )
+    expect(container.querySelector('[data-iris-calendar-next]')!.getAttribute('aria-label')).toBe(
+      'Mois suivant',
+    )
   })
 
   it('navigates to next month', async () => {

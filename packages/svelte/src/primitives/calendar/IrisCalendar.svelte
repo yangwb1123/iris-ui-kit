@@ -14,6 +14,9 @@
     startOfDay,
     startOfMonth,
   } from './dateUtils'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   interface Props {
     value?: Date | null
@@ -171,7 +174,7 @@
   >
     <button
       type="button"
-      aria-label="Previous month"
+      aria-label={t('calendar.previousMonth')}
       data-iris-calendar-prev
       disabled={prevDisabled || undefined}
       onclick={goPrevMonth}
@@ -198,7 +201,7 @@
 
     <button
       type="button"
-      aria-label="Next month"
+      aria-label={t('calendar.nextMonth')}
       data-iris-calendar-next
       disabled={nextDisabled || undefined}
       onclick={goNextMonth}

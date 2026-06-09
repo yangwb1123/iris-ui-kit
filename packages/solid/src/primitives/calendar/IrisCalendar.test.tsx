@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@solidjs/testing-library'
 import { IrisCalendar } from './IrisCalendar'
+import { IrisI18nProvider } from '../../i18n'
 
 afterEach(cleanup)
 
@@ -43,5 +44,34 @@ describe('IrisCalendar', () => {
     // each gridcell announces the full date, not just the day number.
     const june10 = container.querySelector('[data-iris-calendar-day-iso="2024-06-10"]')!
     expect(june10.getAttribute('aria-label')).toMatch(/June 10, 2024/)
+  })
+
+  it('nav button aria-labels default to English and follow an i18n provider override', () => {
+    // No provider: English fallback from core defaultMessages.
+    const { container } = render(() => <IrisCalendar />)
+    expect(container.querySelector('[data-iris-calendar-prev]')!.getAttribute('aria-label')).toBe(
+      'Previous month',
+    )
+    expect(container.querySelector('[data-iris-calendar-next]')!.getAttribute('aria-label')).toBe(
+      'Next month',
+    )
+
+    // With a provider overriding the messages, the labels follow.
+    const { container: c2 } = render(() => (
+      <IrisI18nProvider
+        messages={{
+          'calendar.previousMonth': 'Mois précédent',
+          'calendar.nextMonth': 'Mois suivant',
+        }}
+      >
+        <IrisCalendar />
+      </IrisI18nProvider>
+    ))
+    expect(c2.querySelector('[data-iris-calendar-prev]')!.getAttribute('aria-label')).toBe(
+      'Mois précédent',
+    )
+    expect(c2.querySelector('[data-iris-calendar-next]')!.getAttribute('aria-label')).toBe(
+      'Mois suivant',
+    )
   })
 })

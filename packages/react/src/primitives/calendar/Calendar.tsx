@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
 import {
   addDays,
   addMonths,
@@ -51,6 +52,7 @@ export function IrisCalendar({
   style,
   className,
 }: IrisCalendarProps): React.ReactElement {
+  const { t } = useI18n()
   const isControlled = valueProp !== undefined
   const [internal, setInternal] = React.useState<Date | null>(defaultValue ?? null)
   const selectedValue = isControlled ? (valueProp as Date | null) : internal
@@ -205,7 +207,7 @@ export function IrisCalendar({
       >
         <button
           type="button"
-          aria-label="Previous month"
+          aria-label={t('calendar.previousMonth')}
           data-iris-calendar-prev=""
           disabled={prevDisabled || undefined}
           onClick={() => setVisibleMonth((m) => addMonths(m, -1))}
@@ -226,7 +228,7 @@ export function IrisCalendar({
         </div>
         <button
           type="button"
-          aria-label="Next month"
+          aria-label={t('calendar.nextMonth')}
           data-iris-calendar-next=""
           disabled={nextDisabled || undefined}
           onClick={() => setVisibleMonth((m) => addMonths(m, 1))}

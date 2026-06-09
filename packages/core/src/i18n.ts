@@ -97,6 +97,8 @@ export const defaultMessages: I18nMessages = {
   'tree.loading': 'Loading…',
   'tree.error': 'Failed to load',
   'clearable.clear': 'Clear',
+  'calendar.previousMonth': 'Previous month',
+  'calendar.nextMonth': 'Next month',
 }
 
 const DEFAULT_LOCALE = 'en-US'

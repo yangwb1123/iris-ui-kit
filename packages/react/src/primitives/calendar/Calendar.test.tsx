@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { IrisCalendar } from './Calendar'
+import { IrisI18nProvider } from '../../i18n'
 import { isSameDay } from './dateUtils'
 
 beforeEach(() => {})
@@ -154,6 +155,33 @@ describe('@iris-ui/react IrisCalendar', () => {
     expect(day('2024-06-05').getAttribute('aria-selected')).toBe('true')
     rerender(<IrisCalendar value={new Date(2024, 5, 20)} defaultMonth={new Date(2024, 5, 1)} />)
     expect(day('2024-06-20').getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('nav button labels default to English and are localizable via i18n', () => {
+    const { unmount } = render(<IrisCalendar defaultMonth={new Date(2024, 5, 1)} />)
+    expect(document.querySelector('[data-iris-calendar-prev]')?.getAttribute('aria-label')).toBe(
+      'Previous month',
+    )
+    expect(document.querySelector('[data-iris-calendar-next]')?.getAttribute('aria-label')).toBe(
+      'Next month',
+    )
+    unmount()
+    render(
+      <IrisI18nProvider
+        messages={{
+          'calendar.previousMonth': 'Mois précédent',
+          'calendar.nextMonth': 'Mois suivant',
+        }}
+      >
+        <IrisCalendar defaultMonth={new Date(2024, 5, 1)} />
+      </IrisI18nProvider>,
+    )
+    expect(document.querySelector('[data-iris-calendar-prev]')?.getAttribute('aria-label')).toBe(
+      'Mois précédent',
+    )
+    expect(document.querySelector('[data-iris-calendar-next]')?.getAttribute('aria-label')).toBe(
+      'Mois suivant',
+    )
   })
 
   it('uncontrolled click updates internal selection', () => {

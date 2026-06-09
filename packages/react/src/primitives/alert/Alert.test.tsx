@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { IrisAlert } from './Alert'
+import { IrisI18nProvider } from '../../i18n'
 
 afterEach(() => cleanup())
 
@@ -48,6 +49,22 @@ describe('@iris-ui/react IrisAlert', () => {
     )
     fireEvent.click(container.querySelector('[data-iris-alert-close]')!)
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('close button aria-label defaults to English and localizes via i18n', () => {
+    const plain = render(<IrisAlert closable>body</IrisAlert>)
+    expect(
+      plain.container.querySelector('[data-iris-alert-close]')!.getAttribute('aria-label'),
+    ).toBe('Close')
+    plain.unmount()
+    const { container } = render(
+      <IrisI18nProvider messages={{ 'alert.close': 'Fermer' }}>
+        <IrisAlert closable>body</IrisAlert>
+      </IrisI18nProvider>,
+    )
+    expect(container.querySelector('[data-iris-alert-close]')!.getAttribute('aria-label')).toBe(
+      'Fermer',
+    )
   })
 
   it('uncontrolled close hides the alert', () => {

@@ -7,6 +7,7 @@ import {
   type IrisToast,
   type IrisToastVariant,
 } from './toastStore'
+import { useI18n } from '../../i18n'
 
 export type IrisToastPosition =
   | 'top-left'
@@ -82,6 +83,7 @@ export function IrisToastViewport({
   style,
   ...rest
 }: IrisToastViewportProps): React.ReactElement | null {
+  const { t } = useI18n()
   const allToasts = React.useSyncExternalStore(subscribeToasts, getToasts, () => [] as IrisToast[])
 
   const toasts = React.useMemo(
@@ -215,7 +217,7 @@ export function IrisToastViewport({
           ) : null}
           <button
             type="button"
-            aria-label="Dismiss"
+            aria-label={t('toast.dismiss')}
             onClick={() => dismissToast(toast.id)}
             style={{
               background: 'transparent',

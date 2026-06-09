@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
 
 export type IrisBannerTone = 'info' | 'success' | 'warning' | 'danger' | 'neutral'
 
@@ -45,6 +46,7 @@ export function IrisBanner({
   children,
   ...rest
 }: IrisBannerProps): React.ReactElement | null {
+  const { t } = useI18n()
   const isControlled = openProp !== undefined
   const [internalOpen, setInternalOpen] = React.useState(defaultOpen)
   const isOpen = isControlled ? Boolean(openProp) : internalOpen
@@ -97,7 +99,7 @@ export function IrisBanner({
         <button
           type="button"
           data-iris-banner-close=""
-          aria-label="Close"
+          aria-label={t('banner.close')}
           onClick={handleClose}
           style={{
             background: 'transparent',

@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
 
 export type IrisAlertTone = 'info' | 'success' | 'warning' | 'danger'
 
@@ -31,6 +32,7 @@ export function IrisAlert({
   style,
   ...rest
 }: IrisAlertProps): React.ReactElement | null {
+  const { t } = useI18n()
   const [internalOpen, setInternalOpen] = React.useState(true)
   React.useEffect(() => {
     if (open !== undefined) setInternalOpen(open)
@@ -87,7 +89,7 @@ export function IrisAlert({
         <button
           type="button"
           data-iris-alert-close=""
-          aria-label="Close"
+          aria-label={t('alert.close')}
           onClick={handleClose}
           style={{
             background: 'transparent',

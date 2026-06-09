@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
 
 export type IrisChipVariant = 'solid' | 'outline' | 'subtle'
 export type IrisChipTone = 'primary' | 'success' | 'warning' | 'danger' | 'neutral'
@@ -87,6 +88,7 @@ export function IrisChip({
   style,
   ...rest
 }: IrisChipProps): React.ReactElement {
+  const { t } = useI18n()
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     if (disabled) return
     onClick?.(event)
@@ -121,7 +123,7 @@ export function IrisChip({
         <button
           type="button"
           data-iris-chip-close=""
-          aria-label="Remove"
+          aria-label={t('chip.remove')}
           disabled={disabled}
           onClick={handleCloseClick}
           style={{

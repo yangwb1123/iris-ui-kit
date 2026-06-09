@@ -1,4 +1,5 @@
 import { computed, defineComponent, h, ref, watch, type PropType } from 'vue'
+import { useI18n } from '../../i18n'
 
 export type IrisBannerTone = 'info' | 'success' | 'warning' | 'danger' | 'neutral'
 
@@ -31,6 +32,7 @@ export const IrisBanner = defineComponent({
     close: () => true,
   },
   setup(props, { slots, attrs, emit }) {
+    const { t } = useI18n()
     const internalOpen = ref(true)
 
     watch(
@@ -108,7 +110,7 @@ export const IrisBanner = defineComponent({
                 {
                   type: 'button',
                   'data-iris-banner-close': '',
-                  'aria-label': 'Close',
+                  'aria-label': t('banner.close'),
                   onClick: onClose,
                   style: {
                     background: 'transparent',

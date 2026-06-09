@@ -1,4 +1,5 @@
 import { computed, defineComponent, h, type PropType } from 'vue'
+import { useI18n } from '../../i18n'
 
 export type IrisChipVariant = 'solid' | 'outline' | 'subtle'
 export type IrisChipTone = 'primary' | 'success' | 'warning' | 'danger' | 'neutral'
@@ -89,6 +90,7 @@ export const IrisChip = defineComponent({
     click: (_event: MouseEvent) => true,
   },
   setup(props, { slots, attrs, emit }) {
+    const { t } = useI18n()
     const style = computed(() =>
       chipStyle(props.variant, props.tone, props.size, props.clickable, props.disabled),
     )
@@ -132,7 +134,7 @@ export const IrisChip = defineComponent({
               {
                 type: 'button',
                 'data-iris-chip-close': '',
-                'aria-label': 'Remove',
+                'aria-label': t('chip.remove'),
                 disabled: props.disabled || undefined,
                 onClick: onCloseClick,
                 style: {

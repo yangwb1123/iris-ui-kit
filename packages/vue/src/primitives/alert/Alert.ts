@@ -1,4 +1,5 @@
 import { computed, defineComponent, h, ref, watch, type PropType } from 'vue'
+import { useI18n } from '../../i18n'
 
 export type IrisAlertTone = 'info' | 'success' | 'warning' | 'danger'
 
@@ -42,6 +43,7 @@ export const IrisAlert = defineComponent({
     close: () => true,
   },
   setup(props, { slots, attrs, emit }) {
+    const { t } = useI18n()
     const internalOpen = ref(true)
 
     watch(
@@ -113,7 +115,7 @@ export const IrisAlert = defineComponent({
                 {
                   type: 'button',
                   'data-iris-alert-close': '',
-                  'aria-label': 'Close',
+                  'aria-label': t('alert.close'),
                   onClick: onClose,
                   style: {
                     background: 'transparent',

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, ref } from 'vue'
 import { IrisAlert } from './Alert'
+import { IrisI18nProvider } from '../../i18n'
 
 describe('IrisAlert', () => {
   it('renders the default slot', () => {
@@ -90,5 +91,22 @@ describe('IrisAlert', () => {
     await w.find('[data-iris-alert-close]').trigger('click')
     // Parent didn't update → still visible.
     expect(w.find('[data-iris-alert]').exists()).toBe(true)
+  })
+
+  it('close button aria-label defaults to "Close" and localizes via IrisI18nProvider', () => {
+    const plain = mount(IrisAlert, { props: { closable: true }, slots: { default: 'body' } })
+    expect(plain.find('[data-iris-alert-close]').attributes('aria-label')).toBe('Close')
+
+    const localized = mount(
+      defineComponent({
+        setup: () => () =>
+          h(
+            IrisI18nProvider,
+            { messages: { 'alert.close': 'Fermer' } },
+            { default: () => h(IrisAlert, { closable: true }, { default: () => 'body' }) },
+          ),
+      }),
+    )
+    expect(localized.find('[data-iris-alert-close]').attributes('aria-label')).toBe('Fermer')
   })
 })

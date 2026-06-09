@@ -17,7 +17,11 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 /** Gzipped-KB budget per package entry. */
 const BUDGETS = {
-  core: 13,
+  // Bumped 13→14 (R33): the dir-3 a11y/i18n sweep adds component-facing default
+  // copy to defaultMessages (calendar/select/table/commandPalette/alert/banner/
+  // chip/toast …) so labels are localizable via t(). Real feature surface, not
+  // drift; headroom left for the remaining keys in the sweep.
+  core: 14,
   tokens: 2,
   theme: 3.5,
   skins: 5,

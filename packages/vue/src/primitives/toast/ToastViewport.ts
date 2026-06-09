@@ -15,6 +15,7 @@ import {
   type IrisToast,
   type IrisToastVariant,
 } from './store'
+import { useI18n } from '../../i18n'
 
 export type IrisToastPosition =
   | 'top-left'
@@ -62,6 +63,7 @@ export const IrisToastViewport = defineComponent({
     max: { type: Number, default: 5 },
   },
   setup(props, { attrs }) {
+    const { t } = useI18n()
     const toasts = ref<IrisToast[]>(getToasts())
     const hovered = ref(false)
     const timers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -220,7 +222,7 @@ export const IrisToastViewport = defineComponent({
             'button',
             {
               type: 'button',
-              'aria-label': 'Dismiss',
+              'aria-label': t('toast.dismiss'),
               onClick: () => dismissToast(toast.id),
               style: {
                 background: 'transparent',

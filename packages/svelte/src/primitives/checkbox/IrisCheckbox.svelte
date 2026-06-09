@@ -10,6 +10,7 @@
     name,
     checkboxValue,
     ariaDescribedby,
+    ariaLabel,
     invalid = false,
     onchange,
     children,
@@ -22,6 +23,7 @@
     name?: string
     checkboxValue?: string | number
     ariaDescribedby?: string
+    ariaLabel?: string
     invalid?: boolean
     onchange?: (value: boolean) => void
     children?: import('svelte').Snippet
@@ -69,6 +71,7 @@
     {disabled}
     aria-checked={checkState === 'indeterminate' ? 'mixed' : checkState === 'checked' ? 'true' : 'false'}
     aria-describedby={ariaDescribedby}
+    aria-label={ariaLabel}
     aria-invalid={invalid ? 'true' : undefined}
     onchange={onChange}
     style="position:absolute; opacity:0; width:0; height:0; pointer-events:none;"

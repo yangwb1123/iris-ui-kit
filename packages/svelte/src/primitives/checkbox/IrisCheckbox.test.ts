@@ -25,4 +25,13 @@ describe('IrisCheckbox', () => {
     const label = container.querySelector('[data-iris-checkbox]')
     expect(label!.getAttribute('data-state')).toBe('indeterminate')
   })
+
+  it('applies ariaLabel to the input element', () => {
+    const { container } = render(IrisCheckbox, { props: { ariaLabel: 'Accept terms' } })
+    const input = container.querySelector('input[type="checkbox"]')!
+    expect(input.getAttribute('aria-label')).toBe('Accept terms')
+    // must not leak onto the <label> wrapper
+    const label = container.querySelector('[data-iris-checkbox]')!
+    expect(label.getAttribute('aria-label')).toBeNull()
+  })
 })

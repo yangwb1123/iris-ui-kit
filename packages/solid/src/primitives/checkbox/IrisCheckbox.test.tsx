@@ -34,4 +34,16 @@ describe('IrisCheckbox', () => {
     const { getByText } = render(() => <IrisCheckbox>Accept terms</IrisCheckbox>)
     expect(getByText('Accept terms')).toBeTruthy()
   })
+
+  it('binds ariaLabel as aria-label on the input (the checkbox-role element)', () => {
+    const { container } = render(() => <IrisCheckbox ariaLabel="Accept terms" />)
+    const input = container.querySelector('input')!
+    expect(input.getAttribute('aria-label')).toBe('Accept terms')
+  })
+
+  it('omits aria-label on the input when ariaLabel is not provided', () => {
+    const { container } = render(() => <IrisCheckbox />)
+    const input = container.querySelector('input')!
+    expect(input.hasAttribute('aria-label')).toBe(false)
+  })
 })

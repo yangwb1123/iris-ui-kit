@@ -460,6 +460,7 @@ export const IrisTable = defineComponent({
                         ? 'indeterminate'
                         : false,
                     size: 'sm',
+                    ariaLabel: t('table.selectAll'),
                     'onUpdate:modelValue': toggleAll,
                   }),
                 ]

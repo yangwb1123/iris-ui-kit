@@ -17,6 +17,7 @@ export interface IrisCheckboxProps {
   name?: string
   value?: string | number
   ariaDescribedby?: string
+  ariaLabel?: string
   invalid?: boolean
   children?: JSX.Element
   style?: JSX.CSSProperties | string
@@ -48,6 +49,7 @@ export function IrisCheckbox(props: IrisCheckboxProps): JSX.Element {
     'name',
     'value',
     'ariaDescribedby',
+    'ariaLabel',
     'invalid',
     'children',
     'style',
@@ -121,6 +123,7 @@ export function IrisCheckbox(props: IrisCheckboxProps): JSX.Element {
           state() === 'indeterminate' ? 'mixed' : state() === 'checked' ? 'true' : 'false'
         }
         aria-describedby={describedBy()}
+        aria-label={local.ariaLabel}
         aria-invalid={invalid() ? 'true' : undefined}
         onChange={handleChange}
         style={{

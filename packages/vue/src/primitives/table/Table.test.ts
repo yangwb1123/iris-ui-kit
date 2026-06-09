@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
+import { IrisI18nProvider } from '../../i18n'
 import { IrisTable } from './Table'
 import { exportCsv } from './exportCsv'
 import { exportExcel } from './exportExcel'
@@ -231,6 +232,35 @@ describe('IrisTable', () => {
     await master.trigger('change')
     await nextTick()
     expect(selection.value.sort()).toEqual([1, 2, 3])
+  })
+
+  it('select-all checkbox input carries a default aria-label of "Select all"', () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: rows, rowKey: 'id', selectable: 'multi' },
+      attachTo: host,
+    })
+    const master = wrapper.find('[data-iris-table-header-row] [data-iris-checkbox] input')
+    expect(master.exists()).toBe(true)
+    expect(master.attributes('aria-label')).toBe('Select all')
+  })
+
+  it('select-all checkbox aria-label follows an IrisI18nProvider override', () => {
+    const wrapper = mount(
+      defineComponent({
+        setup: () => () =>
+          h(
+            IrisI18nProvider,
+            { messages: { 'table.selectAll': 'Alle auswählen' } },
+            {
+              default: () =>
+                h(IrisTable, { columns, data: rows, rowKey: 'id', selectable: 'multi' }),
+            },
+          ),
+      }),
+      { attachTo: host },
+    )
+    const master = wrapper.find('[data-iris-table-header-row] [data-iris-checkbox] input')
+    expect(master.attributes('aria-label')).toBe('Alle auswählen')
   })
 
   it('renders a custom cell via the #cell.<key> slot', () => {

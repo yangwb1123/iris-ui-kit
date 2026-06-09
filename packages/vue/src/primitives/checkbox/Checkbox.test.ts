@@ -34,4 +34,17 @@ describe('IrisCheckbox', () => {
     const wrapper = mount(IrisCheckbox, { props: { modelValue: true } })
     expect(wrapper.find('svg').exists()).toBe(true)
   })
+
+  it('binds ariaLabel as aria-label on the input (not the label wrapper)', () => {
+    const wrapper = mount(IrisCheckbox, { props: { ariaLabel: 'Accept terms' } })
+    const input = wrapper.find('input')
+    expect(input.attributes('aria-label')).toBe('Accept terms')
+    // The label wrapper must NOT carry the aria-label.
+    expect(wrapper.find('[data-iris-checkbox]').attributes('aria-label')).toBeUndefined()
+  })
+
+  it('omits aria-label on the input when ariaLabel is not provided', () => {
+    const wrapper = mount(IrisCheckbox)
+    expect(wrapper.find('input').attributes('aria-label')).toBeUndefined()
+  })
 })

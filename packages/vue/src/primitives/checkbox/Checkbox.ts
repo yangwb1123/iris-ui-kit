@@ -27,6 +27,12 @@ export const IrisCheckbox = defineComponent({
     value: { type: [String, Number] as PropType<string | number>, default: undefined },
     /** Forwarded as `aria-describedby` on the native checkbox input. Set by IrisFormField. */
     ariaDescribedby: { type: String, default: undefined },
+    /**
+     * Accessible name for the native checkbox input. Bound as `aria-label` on
+     * the `<input>` itself (the element with the checkbox role), NOT the label
+     * wrapper. Use when there is no visible label text.
+     */
+    ariaLabel: { type: String, default: undefined },
     /** Invalid state — sets aria-invalid. Set by IrisFormField. */
     invalid: { type: Boolean, default: false },
   },
@@ -130,6 +136,7 @@ export const IrisCheckbox = defineComponent({
                   ? 'true'
                   : 'false',
             'aria-describedby': props.ariaDescribedby,
+            'aria-label': props.ariaLabel,
             'aria-invalid': props.invalid ? 'true' : undefined,
             style: {
               position: 'absolute',

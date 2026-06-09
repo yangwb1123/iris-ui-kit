@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { IrisCommandPalette } from './CommandPalette'
+import { IrisI18nProvider } from '../../i18n'
 import { defaultFilter, type IrisCommandItem } from './types'
 import { __resetBodyScrollLock } from '../modal-utils'
 
@@ -72,6 +73,54 @@ describe('@iris-ui/vue IrisCommandPalette', () => {
     expect(document.querySelector('[data-iris-command-palette]')).not.toBeNull()
     expect(document.querySelector('[data-iris-command-palette-input]')).not.toBeNull()
     expect(document.querySelector('[data-iris-command-palette-list]')).not.toBeNull()
+    wrap.unmount()
+  })
+
+  it('dialog/search/list aria-labels default to English and localize via IrisI18nProvider', async () => {
+    const plain = mount(IrisCommandPalette, {
+      props: { open: true, items },
+      attachTo: document.body,
+    })
+    await nextTick()
+    expect(document.querySelector('[data-iris-command-palette]')?.getAttribute('aria-label')).toBe(
+      'Command palette',
+    )
+    expect(
+      document.querySelector('[data-iris-command-palette-input]')?.getAttribute('aria-label'),
+    ).toBe('Search commands')
+    expect(
+      document.querySelector('[data-iris-command-palette-list]')?.getAttribute('aria-label'),
+    ).toBe('Commands')
+    plain.unmount()
+    clearBody()
+
+    const wrap = mount(
+      defineComponent({
+        setup: () => () =>
+          h(
+            IrisI18nProvider,
+            {
+              messages: {
+                'commandPalette.label': 'Palette de commandes',
+                'commandPalette.search': 'Rechercher des commandes',
+                'commandPalette.commands': 'Commandes',
+              },
+            },
+            { default: () => h(IrisCommandPalette, { open: true, items }) },
+          ),
+      }),
+      { attachTo: document.body },
+    )
+    await nextTick()
+    expect(document.querySelector('[data-iris-command-palette]')?.getAttribute('aria-label')).toBe(
+      'Palette de commandes',
+    )
+    expect(
+      document.querySelector('[data-iris-command-palette-input]')?.getAttribute('aria-label'),
+    ).toBe('Rechercher des commandes')
+    expect(
+      document.querySelector('[data-iris-command-palette-list]')?.getAttribute('aria-label'),
+    ).toBe('Commandes')
     wrap.unmount()
   })
 

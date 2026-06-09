@@ -162,7 +162,7 @@ export const IrisSelect = defineComponent({
                   modelValue: props.modelValue,
                   'onUpdate:modelValue': (v: unknown) => emit('update:modelValue', v),
                   onSelect,
-                  ariaLabel: 'Options',
+                  ariaLabel: t('select.options'),
                 }),
             ),
           ],

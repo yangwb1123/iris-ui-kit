@@ -187,7 +187,7 @@ export const IrisCommandPalette = defineComponent({
               },
               role: 'dialog',
               'aria-modal': 'true',
-              'aria-label': 'Command palette',
+              'aria-label': t('commandPalette.label'),
               'data-iris-command-palette': '',
               tabindex: -1,
               onKeydown: onKeyDown,
@@ -222,7 +222,7 @@ export const IrisCommandPalette = defineComponent({
                   value: query.value,
                   placeholder: resolvedPlaceholder.value,
                   'data-iris-command-palette-input': '',
-                  'aria-label': 'Search commands',
+                  'aria-label': t('commandPalette.search'),
                   onInput: (e: Event) => {
                     query.value = (e.target as HTMLInputElement).value
                   },
@@ -242,7 +242,7 @@ export const IrisCommandPalette = defineComponent({
                 'ul',
                 {
                   role: 'listbox',
-                  'aria-label': 'Commands',
+                  'aria-label': t('commandPalette.commands'),
                   'data-iris-command-palette-list': '',
                   style: {
                     listStyle: 'none',

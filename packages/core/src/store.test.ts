@@ -91,6 +91,48 @@ describe('createStore', () => {
   })
 })
 
+describe('createStore.subscribeWith (selective subscription)', () => {
+  it('fires only when the selected slice changes', () => {
+    const store = createStore({ a: 1, b: 1 })
+    const listener = vi.fn()
+    store.subscribeWith((s) => s.a, listener)
+    store.setState((s) => ({ ...s, b: 2 })) // a unchanged → no fire
+    expect(listener).not.toHaveBeenCalled()
+    store.setState((s) => ({ ...s, a: 2 })) // a changed → fire with the slice
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener).toHaveBeenCalledWith(2)
+  })
+
+  it('does not fire on subscribe; captures the current slice', () => {
+    const store = createStore({ a: 5 })
+    const listener = vi.fn()
+    store.subscribeWith((s) => s.a, listener)
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('honors a custom equals (e.g. shallow array compare)', () => {
+    const store = createStore({ ids: [1, 2] as number[] })
+    const listener = vi.fn()
+    const shallow = (x: number[], y: number[]) =>
+      x.length === y.length && x.every((v, i) => v === y[i])
+    store.subscribeWith((s) => s.ids, listener, shallow)
+    store.setState((s) => ({ ...s, ids: [1, 2] })) // new array, equal contents → no fire
+    expect(listener).not.toHaveBeenCalled()
+    store.setState((s) => ({ ...s, ids: [1, 2, 3] }))
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener).toHaveBeenCalledWith([1, 2, 3])
+  })
+
+  it('unsubscribe stops slice notifications', () => {
+    const store = createStore({ a: 1 })
+    const listener = vi.fn()
+    const unsub = store.subscribeWith((s) => s.a, listener)
+    unsub()
+    store.setState({ a: 2 })
+    expect(listener).not.toHaveBeenCalled()
+  })
+})
+
 describe('createMachine (smoke)', () => {
   type State = 'closed' | 'open'
   type Event = { type: 'OPEN' } | { type: 'CLOSE'; reason?: string }

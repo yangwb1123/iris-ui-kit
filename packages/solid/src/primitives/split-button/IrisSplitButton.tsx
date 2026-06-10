@@ -1,4 +1,5 @@
 import { createEffect, createSignal, mergeProps, onCleanup, Show, For, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export type IrisSplitButtonVariant = 'primary' | 'default'
 export type IrisSplitButtonSize = 'sm' | 'md' | 'lg'
@@ -42,6 +43,8 @@ export function IrisSplitButton(props: IrisSplitButtonProps): JSX.Element {
     props,
   )
 
+  const { t } = useI18n()
+
   const [open, setOpen] = createSignal(false)
   let rootEl: HTMLDivElement | undefined
 
@@ -83,7 +86,7 @@ export function IrisSplitButton(props: IrisSplitButtonProps): JSX.Element {
           border: '1px solid var(--iris-border)',
         }
 
-  const label = (): string => merged.menuAriaLabel ?? 'More actions'
+  const label = (): string => merged.menuAriaLabel ?? t('splitButton.more')
 
   return (
     <div

@@ -10,6 +10,7 @@ import {
   type JSX,
 } from 'solid-js'
 import { type IrisCommandItem, defaultFilter } from './types'
+import { useI18n } from '../../i18n'
 
 export interface IrisCommandPaletteProps {
   open?: boolean
@@ -26,12 +27,11 @@ export interface IrisCommandPaletteProps {
  * Solid port of the Vue IrisCommandPalette.
  */
 export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element {
+  const { t } = useI18n()
   const merged = mergeProps(
     {
       defaultOpen: false,
       items: [] as IrisCommandItem[],
-      placeholder: 'Type a command or search…',
-      emptyText: 'No results found.',
     },
     props,
   )
@@ -134,7 +134,7 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
         data-state="open"
         role="dialog"
         aria-modal="true"
-        aria-label="Command palette"
+        aria-label={t('commandPalette.label')}
         style={{
           position: 'fixed',
           inset: '0',
@@ -169,7 +169,7 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
             <input
               type="text"
               data-iris-command-palette-input=""
-              placeholder={local.placeholder}
+              placeholder={local.placeholder ?? t('commandPalette.placeholder')}
               value={query()}
               onInput={(e) => setQuery(e.currentTarget.value)}
               onKeyDown={onInputKeyDown}
@@ -208,7 +208,7 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
                     'font-size': '14px',
                   }}
                 >
-                  {local.emptyText}
+                  {local.emptyText ?? t('commandPalette.empty')}
                 </div>
               }
             >

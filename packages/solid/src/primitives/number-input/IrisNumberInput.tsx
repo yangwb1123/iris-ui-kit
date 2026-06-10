@@ -1,5 +1,6 @@
 import { createSignal, mergeProps, Show, splitProps, type JSX } from 'solid-js'
 import type { Size } from '@iris-ui/core'
+import { useI18n } from '../../i18n'
 
 export type IrisNumberInputSize = Size
 
@@ -80,6 +81,8 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
     'onBlur',
     'style',
   ])
+
+  const { t } = useI18n()
 
   const isControlled = (): boolean => local.value !== undefined
   const [internal, setInternal] = createSignal<number | null>(
@@ -214,7 +217,7 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
         <button
           type="button"
           data-iris-number-input-dec=""
-          aria-label="Decrement"
+          aria-label={t('numberInput.decrement')}
           disabled={local.disabled || atMin() || undefined}
           onClick={() => increment(-1)}
           style={{ ...btnStyle, 'margin-inline-end': '4px' }}
@@ -258,7 +261,7 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
         <button
           type="button"
           data-iris-number-input-inc=""
-          aria-label="Increment"
+          aria-label={t('numberInput.increment')}
           disabled={local.disabled || atMax() || undefined}
           onClick={() => increment(1)}
           style={{ ...btnStyle, 'margin-inline-start': '4px' }}

@@ -1,4 +1,5 @@
 import { createSignal, mergeProps, onCleanup, onMount, Show, splitProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 function prefersReducedMotion(): boolean {
   return (
@@ -36,6 +37,8 @@ export function IrisBackTop(props: IrisBackTopProps): JSX.Element {
     'style',
   ])
 
+  const { t } = useI18n()
+
   const [visible, setVisible] = createSignal(false)
   let el: HTMLElement | Window | undefined
 
@@ -72,7 +75,7 @@ export function IrisBackTop(props: IrisBackTopProps): JSX.Element {
         {...rest}
         type="button"
         data-iris-back-top=""
-        aria-label={local.ariaLabel ?? 'Back to top'}
+        aria-label={local.ariaLabel ?? t('backTop.label')}
         onClick={scrollToTop}
         style={{
           position: 'fixed',

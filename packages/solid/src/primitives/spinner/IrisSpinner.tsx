@@ -1,4 +1,5 @@
 import { mergeProps, onMount, splitProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export type IrisSpinnerSize = 'sm' | 'md' | 'lg' | number
 
@@ -93,16 +94,18 @@ export function IrisSpinner(props: IrisSpinnerProps): JSX.Element {
       size: 'md' as IrisSpinnerSize,
       color: 'var(--iris-primary)',
       strokeWidth: 0,
-      label: 'Loading',
     },
     props,
   )
   const [local, rest] = splitProps(merged, ['size', 'color', 'strokeWidth', 'label', 'style'])
 
+  const { t } = useI18n()
+
   onMount(installSpinnerStyles)
 
   const px = () => resolveSize(local.size)
   const sw = () => local.strokeWidth || Math.max(1.5, Math.round(px() * 0.12))
+  const label = () => local.label ?? t('spinner.loading')
 
   return (
     <span
@@ -126,7 +129,7 @@ export function IrisSpinner(props: IrisSpinnerProps): JSX.Element {
       >
         <circle cx="25" cy="25" r="20" stroke="currentColor" stroke-width={sw()} />
       </svg>
-      {local.label && <span style={SR_ONLY}>{local.label}</span>}
+      {label() && <span style={SR_ONLY}>{label()}</span>}
     </span>
   )
 }

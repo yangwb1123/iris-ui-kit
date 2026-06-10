@@ -1,4 +1,5 @@
 import { createSignal, For, mergeProps, splitProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export interface IrisTagInputProps {
   value?: string[]
@@ -31,6 +32,8 @@ export function IrisTagInput(props: IrisTagInputProps): JSX.Element {
     'onChange',
     'style',
   ])
+
+  const { t } = useI18n()
 
   const isControlled = (): boolean => local.value !== undefined
   const [internal, setInternal] = createSignal<string[]>(local.defaultValue ?? [])
@@ -132,7 +135,7 @@ export function IrisTagInput(props: IrisTagInputProps): JSX.Element {
             <button
               type="button"
               data-iris-tag-input-remove=""
-              aria-label={`Remove ${tag}`}
+              aria-label={t('tagInput.remove', { tag })}
               disabled={local.disabled}
               onClick={() => removeAt(i())}
               style={{

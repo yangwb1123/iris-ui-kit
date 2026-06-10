@@ -1,5 +1,6 @@
 import { createMemo, createSignal, For, mergeProps, splitProps, type JSX } from 'solid-js'
 import { getPageRange, type PageItem } from '@iris-ui/core'
+import { useI18n } from '../../i18n'
 
 export type IrisPaginationSize = 'sm' | 'md'
 
@@ -47,6 +48,8 @@ export function IrisPagination(props: IrisPaginationProps): JSX.Element {
     'onChange',
   ])
 
+  const { t } = useI18n()
+
   const isControlled = (): boolean => local.page !== undefined
   const [internal, setInternal] = createSignal(local.defaultPage ?? 1)
 
@@ -90,9 +93,11 @@ export function IrisPagination(props: IrisPaginationProps): JSX.Element {
     'line-height': '1',
   })
 
+  // `label` is a thunk so `t()` runs inside the JSX attribute/child effects and
+  // stays reactive to locale changes (For's map callback itself is untracked).
   const renderBtn = (
     page: number | null,
-    label: string,
+    label: () => string,
     opts: { kind: string; disabled?: boolean; active?: boolean },
   ): JSX.Element => {
     const isDisabled = opts.disabled || local.disabled
@@ -102,7 +107,7 @@ export function IrisPagination(props: IrisPaginationProps): JSX.Element {
         type="button"
         data-iris-pagination-item={opts.kind}
         data-iris-pagination-active={isActive ? 'true' : undefined}
-        aria-label={label}
+        aria-label={label()}
         aria-current={isActive ? 'page' : undefined}
         disabled={isDisabled}
         onClick={() => {
@@ -121,7 +126,7 @@ export function IrisPagination(props: IrisPaginationProps): JSX.Element {
             : {}),
         }}
       >
-        {opts.kind === 'page' ? String(page) : label}
+        {opts.kind === 'page' ? String(page) : label()}
       </button>
     )
   }
@@ -129,7 +134,7 @@ export function IrisPagination(props: IrisPaginationProps): JSX.Element {
   return (
     <nav
       {...rest}
-      aria-label="Pagination"
+      aria-label={t('pagination.label')}
       data-iris-pagination=""
       data-iris-pagination-size={local.size}
       style={{
@@ -139,8 +144,12 @@ export function IrisPagination(props: IrisPaginationProps): JSX.Element {
         ...((rest.style as JSX.CSSProperties) ?? {}),
       }}
     >
-      {local.showFirstLast && renderBtn(1, 'First', { kind: 'first', disabled: current() <= 1 })}
-      {renderBtn(current() - 1, 'Previous', { kind: 'prev', disabled: current() <= 1 })}
+      {local.showFirstLast &&
+        renderBtn(1, () => t('pagination.first'), { kind: 'first', disabled: current() <= 1 })}
+      {renderBtn(current() - 1, () => t('pagination.previous'), {
+        kind: 'prev',
+        disabled: current() <= 1,
+      })}
       <For each={items()}>
         {(item) => {
           if (item === 'ellipsis-left' || item === 'ellipsis-right') {
@@ -161,12 +170,21 @@ export function IrisPagination(props: IrisPaginationProps): JSX.Element {
               </span>
             )
           }
-          return renderBtn(item, `Page ${item}`, { kind: 'page', active: item === current() })
+          return renderBtn(item, () => t('pagination.page', { page: item }), {
+            kind: 'page',
+            active: item === current(),
+          })
         }}
       </For>
-      {renderBtn(current() + 1, 'Next', { kind: 'next', disabled: current() >= totalPages() })}
+      {renderBtn(current() + 1, () => t('pagination.next'), {
+        kind: 'next',
+        disabled: current() >= totalPages(),
+      })}
       {local.showFirstLast &&
-        renderBtn(totalPages(), 'Last', { kind: 'last', disabled: current() >= totalPages() })}
+        renderBtn(totalPages(), () => t('pagination.last'), {
+          kind: 'last',
+          disabled: current() >= totalPages(),
+        })}
     </nav>
   )
 }

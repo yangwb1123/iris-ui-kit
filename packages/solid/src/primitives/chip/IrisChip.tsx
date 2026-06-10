@@ -1,5 +1,6 @@
 import { mergeProps, splitProps, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
+import { useI18n } from '../../i18n'
 
 export type IrisChipVariant = 'solid' | 'outline' | 'subtle'
 export type IrisChipTone = 'primary' | 'success' | 'warning' | 'danger' | 'neutral'
@@ -101,6 +102,8 @@ export function IrisChip(props: IrisChipProps): JSX.Element {
     'class',
   ])
 
+  const { t } = useI18n()
+
   const handleClick = (event: MouseEvent): void => {
     if (local.disabled) return
     local.onClick?.(event)
@@ -139,7 +142,7 @@ export function IrisChip(props: IrisChipProps): JSX.Element {
         <button
           type="button"
           data-iris-chip-close=""
-          aria-label="Remove"
+          aria-label={t('chip.remove')}
           disabled={local.disabled}
           onClick={handleCloseClick}
           style={{

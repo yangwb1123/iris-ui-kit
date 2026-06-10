@@ -1,4 +1,5 @@
 import { createSignal, mergeProps, Show, splitProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export type IrisBannerTone = 'info' | 'success' | 'warning' | 'danger' | 'neutral'
 
@@ -40,6 +41,8 @@ export function IrisBanner(props: IrisBannerProps): JSX.Element {
     'class',
   ])
 
+  const { t } = useI18n()
+
   const isControlled = (): boolean => local.open !== undefined
   const [internalOpen, setInternalOpen] = createSignal(true)
 
@@ -80,7 +83,7 @@ export function IrisBanner(props: IrisBannerProps): JSX.Element {
           <button
             type="button"
             data-iris-banner-close=""
-            aria-label="Close"
+            aria-label={t('banner.close')}
             onClick={onClose}
             style={{
               background: 'transparent',

@@ -1,4 +1,5 @@
 import { createSignal, For, mergeProps, onMount, splitProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export type IrisOtpInputSize = 'sm' | 'md' | 'lg'
 export type IrisOtpInputType = 'numeric' | 'alphanumeric'
@@ -63,6 +64,8 @@ export function IrisOtpInput(props: IrisOtpInputProps): JSX.Element {
     'onComplete',
     'style',
   ])
+
+  const { t } = useI18n()
 
   const isControlled = (): boolean => local.value !== undefined
   const [internal, setInternal] = createSignal(sanitize(local.defaultValue ?? '', local.type))
@@ -194,7 +197,7 @@ export function IrisOtpInput(props: IrisOtpInputProps): JSX.Element {
               value={char()}
               placeholder={local.placeholder || undefined}
               disabled={local.disabled}
-              aria-label={`Digit ${i + 1} of ${local.length}`}
+              aria-label={t('otpInput.cell', { index: i + 1, total: local.length })}
               aria-invalid={local.invalid ? 'true' : undefined}
               aria-describedby={local.ariaDescribedby}
               data-iris-otp-input-cell=""

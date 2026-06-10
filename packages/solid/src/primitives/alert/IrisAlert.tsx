@@ -1,4 +1,5 @@
 import { createSignal, mergeProps, Show, splitProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export type IrisAlertTone = 'info' | 'success' | 'warning' | 'danger'
 
@@ -39,6 +40,8 @@ export function IrisAlert(props: IrisAlertProps): JSX.Element {
     'style',
     'children',
   ])
+
+  const { t } = useI18n()
 
   const [internalOpen, setInternalOpen] = createSignal(true)
   const isControlled = () => local.open !== undefined
@@ -94,7 +97,7 @@ export function IrisAlert(props: IrisAlertProps): JSX.Element {
           <button
             type="button"
             data-iris-alert-close=""
-            aria-label="Close"
+            aria-label={t('alert.close')}
             onClick={onClose}
             style={{
               background: 'transparent',

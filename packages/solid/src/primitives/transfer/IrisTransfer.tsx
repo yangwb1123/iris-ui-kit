@@ -1,6 +1,7 @@
 import { createSignal, createMemo, mergeProps, splitProps, Show, For, type JSX } from 'solid-js'
 import { createSelectionModel } from '@iris-ui/core'
 import { useStore } from '../../useStore'
+import { useI18n } from '../../i18n'
 
 export interface IrisTransferItem {
   label: string
@@ -23,11 +24,11 @@ export interface IrisTransferProps {
  * Solid port of the Vue IrisTransfer.
  */
 export function IrisTransfer(props: IrisTransferProps): JSX.Element {
+  const { t } = useI18n()
   const merged = mergeProps(
     {
       options: [] as IrisTransferItem[],
       defaultValue: [] as string[],
-      titles: ['Available', 'Selected'] as [string, string],
       searchable: false,
       disabled: false,
     },
@@ -138,7 +139,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
         <div style={{ padding: '6px 8px', 'border-bottom': '1px solid var(--iris-border)' }}>
           <input
             type="text"
-            placeholder="Search…"
+            placeholder={t('transfer.search')}
             value={query()}
             onInput={(e) => setQuery(e.currentTarget.value)}
             style={{
@@ -231,7 +232,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
         'source',
         sourceItems,
         sourceChecked,
-        local.titles[0],
+        local.titles?.[0] ?? t('transfer.sourceTitle'),
         sourceQuery,
         setSourceQuery,
       )}
@@ -250,7 +251,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
           data-iris-transfer-move-right=""
           disabled={local.disabled || sourceChecked().length === 0 || undefined}
           onClick={moveToTarget}
-          title="Move to selected"
+          title={t('transfer.toTarget')}
           style={{ ...btnStyle, opacity: sourceChecked().length === 0 ? '0.4' : '1' }}
         >
           ›
@@ -260,7 +261,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
           data-iris-transfer-move-left=""
           disabled={local.disabled || targetChecked().length === 0 || undefined}
           onClick={moveToSource}
-          title="Move to available"
+          title={t('transfer.toSource')}
           style={{ ...btnStyle, opacity: targetChecked().length === 0 ? '0.4' : '1' }}
         >
           ‹
@@ -271,7 +272,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
         'target',
         targetItems,
         targetChecked,
-        local.titles[1],
+        local.titles?.[1] ?? t('transfer.targetTitle'),
         targetQuery,
         setTargetQuery,
       )}

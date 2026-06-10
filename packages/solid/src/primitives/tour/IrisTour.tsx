@@ -9,6 +9,7 @@ import {
   type JSX,
 } from 'solid-js'
 import { Portal } from 'solid-js/web'
+import { useI18n } from '../../i18n'
 
 export interface IrisTourStep {
   target?: () => HTMLElement | null
@@ -58,6 +59,8 @@ export interface IrisTourProps {
  */
 export function IrisTour(props: IrisTourProps): JSX.Element {
   const merged = mergeProps({ steps: [] as IrisTourStep[], open: false }, props)
+
+  const { t } = useI18n()
 
   const [step, setStep] = createSignal(0)
   const [spotlight, setSpotlight] = createSignal<Rect | null>(null)
@@ -140,7 +143,8 @@ export function IrisTour(props: IrisTourProps): JSX.Element {
       : { top: '50%', 'inset-inline-start': '50%', transform: 'translate(-50%, -50%)' }
   }
 
-  const dialogLabel = (): string => data()?.title ?? `Step ${current() + 1} of ${total()}`
+  const dialogLabel = (): string =>
+    data()?.title ?? t('tour.step', { current: current() + 1, total: total() })
 
   return (
     <Show when={merged.open && total() > 0}>
@@ -230,15 +234,15 @@ export function IrisTour(props: IrisTourProps): JSX.Element {
                 </span>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button type="button" data-iris-tour-skip="" onClick={close} style={btnGhost}>
-                    Skip
+                    {t('tour.skip')}
                   </button>
                   <Show when={current() > 0}>
                     <button type="button" data-iris-tour-prev="" onClick={prev} style={btnGhost}>
-                      Prev
+                      {t('tour.prev')}
                     </button>
                   </Show>
                   <button type="button" data-iris-tour-next="" onClick={next} style={btnPrimary}>
-                    {isLast() ? 'Finish' : 'Next'}
+                    {isLast() ? t('tour.finish') : t('tour.next')}
                   </button>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import { createSignal, createEffect, mergeProps, splitProps, Show, For, type JSX } from 'solid-js'
 import { createTreeSelection, type TreeSelectionNode } from '@iris-ui/core'
 import { useStore } from '../../useStore'
+import { useI18n } from '../../i18n'
 
 export interface IrisTreeNode {
   id: string
@@ -32,6 +33,8 @@ export interface IrisTreeProps {
   disabled?: boolean
   onSelect?: (ids: string[]) => void
   onExpand?: (ids: string[]) => void
+  /** Accessible name for the tree container. Defaults to the localized "Tree". */
+  ariaLabel?: string
 }
 
 function IrisTreeNodeItem(nodeProps: {
@@ -143,6 +146,7 @@ function IrisTreeNodeItem(nodeProps: {
  * `createTreeSelection` from `@iris-ui/core` (no cascade logic lives here).
  */
 export function IrisTree(props: IrisTreeProps): JSX.Element {
+  const { t } = useI18n()
   const merged = mergeProps(
     {
       nodes: [] as IrisTreeNode[],
@@ -167,6 +171,7 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
     'disabled',
     'onSelect',
     'onExpand',
+    'ariaLabel',
   ])
 
   const [internalSelected, setInternalSelected] = createSignal<string[]>(local.defaultSelectedIds)
@@ -256,6 +261,7 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
     <ul
       data-iris-tree=""
       role="tree"
+      aria-label={local.ariaLabel ?? t('tree.label')}
       data-disabled={local.disabled ? '' : undefined}
       style={{ 'list-style': 'none', margin: '0', padding: '0' }}
     >

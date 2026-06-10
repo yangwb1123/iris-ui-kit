@@ -1,5 +1,6 @@
 import { createSignal, mergeProps, Show, splitProps, type JSX } from 'solid-js'
 import type { Size } from '@iris-ui/core'
+import { useI18n } from '../../i18n'
 
 export type IrisPasswordInputSize = Size
 
@@ -49,6 +50,8 @@ export function IrisPasswordInput(props: IrisPasswordInputProps): JSX.Element {
     'onBlur',
     'style',
   ])
+
+  const { t } = useI18n()
 
   const isControlled = (): boolean => local.value !== undefined
   const [internal, setInternal] = createSignal(local.defaultValue ?? '')
@@ -140,7 +143,7 @@ export function IrisPasswordInput(props: IrisPasswordInputProps): JSX.Element {
         <button
           type="button"
           data-iris-password-input-toggle=""
-          aria-label={visible() ? 'Hide password' : 'Show password'}
+          aria-label={visible() ? t('passwordInput.hide') : t('passwordInput.show')}
           aria-pressed={visible() ? 'true' : 'false'}
           onClick={toggle}
           style={{

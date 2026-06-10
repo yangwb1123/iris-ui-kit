@@ -8,6 +8,7 @@ import {
   splitProps,
   type JSX,
 } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export type IrisFloatButtonShape = 'circle' | 'square'
 
@@ -62,6 +63,8 @@ export function IrisFloatButton(props: IrisFloatButtonProps): JSX.Element {
     'children',
     'style',
   ])
+
+  const { t } = useI18n()
 
   const [open, setOpen] = createSignal(false)
   let rootEl: HTMLElement | undefined
@@ -140,7 +143,7 @@ export function IrisFloatButton(props: IrisFloatButtonProps): JSX.Element {
       <button
         type="button"
         data-iris-float-button=""
-        aria-label={local.ariaLabel ?? (hasActions() ? 'Actions' : undefined)}
+        aria-label={local.ariaLabel ?? (hasActions() ? t('floatButton.actions') : undefined)}
         aria-haspopup={hasActions() ? 'menu' : undefined}
         aria-expanded={hasActions() ? (open() ? 'true' : 'false') : undefined}
         onClick={() => {

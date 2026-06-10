@@ -1,5 +1,6 @@
 import { createSignal, createMemo, mergeProps, splitProps, For, Show, type JSX } from 'solid-js'
 import { type IrisHsva, hexToRgba, hsvaToRgba, rgbToHex, rgbaToHsva, clamp01 } from './colorUtils'
+import { useI18n } from '../../i18n'
 
 export interface IrisColorPickerProps {
   value?: string
@@ -46,6 +47,8 @@ export function IrisColorPicker(props: IrisColorPickerProps): JSX.Element {
     props,
   )
   const [local] = splitProps(merged, ['value', 'defaultValue', 'presets', 'disabled', 'onChange'])
+
+  const { t } = useI18n()
 
   const [internalHsva, setInternalHsva] = createSignal<IrisHsva>(
     hexToHsva(local.value ?? local.defaultValue),
@@ -226,6 +229,7 @@ export function IrisColorPicker(props: IrisColorPickerProps): JSX.Element {
         <input
           type="text"
           data-iris-color-picker-hex=""
+          aria-label={t('colorPicker.hex')}
           value={hexInput()}
           onInput={onHexInput}
           disabled={local.disabled || undefined}

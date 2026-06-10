@@ -1,4 +1,5 @@
 import { createSignal, For, mergeProps, splitProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export type IrisRatingSize = 'sm' | 'md' | 'lg'
 
@@ -43,7 +44,6 @@ export function IrisRating(props: IrisRatingProps): JSX.Element {
       clearable: true,
       size: 'md' as IrisRatingSize,
       invalid: false,
-      label: 'Rating',
     },
     props,
   )
@@ -60,6 +60,8 @@ export function IrisRating(props: IrisRatingProps): JSX.Element {
     'label',
     'onChange',
   ])
+
+  const { t } = useI18n()
 
   const isControlled = (): boolean => local.value !== undefined
   const [internal, setInternal] = createSignal(local.defaultValue ?? 0)
@@ -129,11 +131,11 @@ export function IrisRating(props: IrisRatingProps): JSX.Element {
       data-state={local.invalid ? 'invalid' : 'idle'}
       role="slider"
       tabindex={interactive() ? 0 : -1}
-      aria-label={local.label}
+      aria-label={local.label ?? t('rating.label')}
       aria-valuemin={0}
       aria-valuemax={local.max}
       aria-valuenow={currentValue()}
-      aria-valuetext={`${currentValue()} of ${local.max}`}
+      aria-valuetext={t('rating.value', { value: currentValue(), max: local.max })}
       aria-readonly={local.readonly ? 'true' : undefined}
       aria-disabled={local.disabled ? 'true' : undefined}
       aria-invalid={local.invalid ? 'true' : undefined}

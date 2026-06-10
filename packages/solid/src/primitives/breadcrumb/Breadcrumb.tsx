@@ -1,4 +1,5 @@
 import { children, For, mergeProps, Show, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export interface IrisBreadcrumbProps {
   /** Separator between crumbs. Default `/`. */
@@ -19,9 +20,15 @@ export function IrisBreadcrumb(props: IrisBreadcrumbProps): JSX.Element {
   const merged = mergeProps({ separator: '/' as JSX.Element }, props)
   const resolved = children(() => props.children)
   const items = (): unknown[] => resolved.toArray()
+  const { t } = useI18n()
 
   return (
-    <nav aria-label="Breadcrumb" data-iris-breadcrumb="" class={merged.class} style={merged.style}>
+    <nav
+      aria-label={t('breadcrumb.label')}
+      data-iris-breadcrumb=""
+      class={merged.class}
+      style={merged.style}
+    >
       <ol
         style={{
           display: 'inline-flex',

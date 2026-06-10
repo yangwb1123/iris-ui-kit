@@ -1,5 +1,6 @@
 import { createSignal, createMemo, mergeProps, splitProps, Show, type JSX } from 'solid-js'
 import { IrisTree, type IrisTreeNode, type IrisTreeSelectionMode } from '../tree/IrisTree'
+import { useI18n } from '../../i18n'
 
 function findNode(nodes: IrisTreeNode[], id: string): IrisTreeNode | undefined {
   for (const node of nodes) {
@@ -29,6 +30,7 @@ export interface IrisTreeSelectProps {
  * Solid port of the Vue IrisTreeSelect.
  */
 export function IrisTreeSelect(props: IrisTreeSelectProps): JSX.Element {
+  const { t } = useI18n()
   const merged = mergeProps(
     {
       nodes: [] as IrisTreeNode[],
@@ -36,7 +38,6 @@ export function IrisTreeSelect(props: IrisTreeSelectProps): JSX.Element {
       selectionMode: 'single' as IrisTreeSelectionMode,
       disabled: false,
       invalid: false,
-      placeholder: 'Select…',
     },
     props,
   )
@@ -100,7 +101,7 @@ export function IrisTreeSelect(props: IrisTreeSelectProps): JSX.Element {
         }}
       >
         <span style={{ flex: '1', 'text-align': 'start' }}>
-          {displayLabel() || local.placeholder}
+          {displayLabel() || local.placeholder || t('select.placeholder')}
         </span>
         <span aria-hidden="true">▾</span>
       </button>

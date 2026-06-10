@@ -1,6 +1,7 @@
 import { createEffect, createMemo, createSignal, For, mergeProps, Show, type JSX } from 'solid-js'
 import { compareValues, createSelectionModel } from '@iris-ui/core'
 import { useStore } from '../../useStore'
+import { useI18n } from '../../i18n'
 import type { IrisTableColumn, IrisTableSortState, IrisTableCellEditEvent } from './types'
 
 export interface IrisTableProps<Row extends Record<string, unknown> = Record<string, unknown>> {
@@ -59,6 +60,8 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     },
     props,
   )
+
+  const { t } = useI18n()
 
   // ---- Sort ----
   const [internalSort, setInternalSort] = createSignal<IrisTableSortState | null>(null)
@@ -251,7 +254,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                   if (el) el.indeterminate = someSelected()
                 }}
                 onChange={toggleAll}
-                aria-label="Select all"
+                aria-label={t('table.selectAll')}
               />
             </Show>
           </div>
@@ -309,12 +312,12 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             when={merged.error}
             fallback={
               <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>
-                Loading...
+                {t('table.loading')}
               </div>
             }
           >
             <div role="row" data-iris-table-row="error" style={stateRowStyle}>
-              Error loading data
+              {t('table.error')}
             </div>
           </Show>
         }
@@ -323,7 +326,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           when={sortedRows().length > 0}
           fallback={
             <div role="row" data-iris-table-row="empty" style={stateRowStyle}>
-              No data
+              {t('table.empty')}
             </div>
           }
         >
@@ -367,7 +370,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                           checked={selected()}
                           onChange={() => toggleRow(id)}
                           onClick={(e) => e.stopPropagation()}
-                          aria-label={`Select row ${index + 1}`}
+                          aria-label={t('table.selectRow', { key: index + 1 })}
                         />
                       </div>
                     </Show>

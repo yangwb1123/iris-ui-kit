@@ -9,6 +9,7 @@ import {
   onCleanup,
   type JSX,
 } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export interface IrisCarouselProps {
   index?: number
@@ -38,7 +39,6 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
       pauseOnHover: true,
       showArrows: true,
       showIndicators: true,
-      ariaLabel: 'Carousel',
     },
     props,
   )
@@ -55,6 +55,8 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
     'onChange',
     'children',
   ])
+
+  const { t } = useI18n()
 
   const [internalIndex, setInternalIndex] = createSignal(local.defaultIndex)
   const [paused, setPaused] = createSignal(false)
@@ -114,7 +116,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
       data-iris-carousel=""
       role="region"
       aria-roledescription="carousel"
-      aria-label={local.ariaLabel}
+      aria-label={local.ariaLabel ?? t('carousel.label')}
       onKeyDown={(e) => {
         if (e.key === 'ArrowLeft') {
           e.preventDefault()
@@ -151,7 +153,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
               data-iris-carousel-slide={i()}
               role="group"
               aria-roledescription="slide"
-              aria-label={`Slide ${i() + 1} of ${count()}`}
+              aria-label={t('carousel.slide', { index: i() + 1, total: count() })}
               aria-hidden={i() !== currentIndex()}
               style={{ width: `${100 / count()}%`, 'flex-shrink': '0' }}
             >
@@ -166,7 +168,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
         <button
           type="button"
           data-iris-carousel-prev=""
-          aria-label="Previous slide"
+          aria-label={t('carousel.previous')}
           onClick={prev}
           disabled={!local.loop && currentIndex() === 0 ? true : undefined}
           style={{ ...arrowBtnStyle, left: '8px' }}
@@ -176,7 +178,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
         <button
           type="button"
           data-iris-carousel-next=""
-          aria-label="Next slide"
+          aria-label={t('carousel.next')}
           onClick={next}
           disabled={!local.loop && currentIndex() === count() - 1 ? true : undefined}
           style={{ ...arrowBtnStyle, right: '8px' }}
@@ -190,7 +192,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
         <div
           data-iris-carousel-indicators=""
           role="tablist"
-          aria-label="Slides"
+          aria-label={t('carousel.slides')}
           style={{
             position: 'absolute',
             bottom: '10px',
@@ -207,7 +209,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
                 type="button"
                 role="tab"
                 aria-selected={i() === currentIndex()}
-                aria-label={`Go to slide ${i() + 1}`}
+                aria-label={t('carousel.goTo', { index: i() + 1 })}
                 data-iris-carousel-dot={i()}
                 onClick={() => goTo(i())}
                 style={{

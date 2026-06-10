@@ -1,4 +1,5 @@
 import { createSignal, mergeProps, Show, splitProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export interface IrisImageProps extends Omit<
   JSX.ImgHTMLAttributes<HTMLImageElement>,
@@ -29,6 +30,8 @@ export function IrisImage(props: IrisImageProps): JSX.Element {
     'preview',
     'style',
   ])
+
+  const { t } = useI18n()
 
   const [errored, setErrored] = createSignal(false)
   const [open, setOpen] = createSignal(false)
@@ -69,7 +72,7 @@ export function IrisImage(props: IrisImageProps): JSX.Element {
           data-iris-image-preview=""
           role="dialog"
           aria-modal="true"
-          aria-label={local.alt || 'Image preview'}
+          aria-label={local.alt || t('image.preview')}
           onClick={() => setOpen(false)}
           onKeyDown={onKeyDown}
           style={{
@@ -92,7 +95,7 @@ export function IrisImage(props: IrisImageProps): JSX.Element {
           <button
             type="button"
             data-iris-image-preview-close=""
-            aria-label="Close"
+            aria-label={t('dialog.close')}
             onClick={(e) => {
               e.stopPropagation()
               setOpen(false)

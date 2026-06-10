@@ -1,6 +1,7 @@
 import { createSignal, createMemo, mergeProps, splitProps, Show, type JSX } from 'solid-js'
 import { IrisCalendar } from '../calendar/IrisCalendar'
 import { startOfDay } from '../calendar/dateUtils'
+import { useI18n } from '../../i18n'
 
 function formatDisplay(date: Date | null | undefined, locale?: string): string {
   if (!date) return ''
@@ -32,7 +33,6 @@ export function IrisDateRangePicker(props: IrisDateRangePickerProps): JSX.Elemen
   const merged = mergeProps(
     {
       defaultValue: { start: null, end: null } as IrisDateRange,
-      placeholder: 'Select range…',
       disabled: false,
       weekStartsOn: 0,
     },
@@ -49,6 +49,8 @@ export function IrisDateRangePicker(props: IrisDateRangePickerProps): JSX.Elemen
     'disabled',
     'onChange',
   ])
+
+  const { t } = useI18n()
 
   const [internalValue, setInternalValue] = createSignal<IrisDateRange>(local.defaultValue)
   const [open, setOpen] = createSignal(false)
@@ -111,7 +113,7 @@ export function IrisDateRangePicker(props: IrisDateRangePickerProps): JSX.Elemen
           'min-width': '120px',
         }}
       >
-        {displayStart() || 'Start date'}
+        {displayStart() || (local.placeholder ?? t('dateRangePicker.start'))}
       </button>
       <span aria-hidden="true" style={{ color: 'var(--iris-muted)' }}>
         →
@@ -138,7 +140,7 @@ export function IrisDateRangePicker(props: IrisDateRangePickerProps): JSX.Elemen
           'min-width': '120px',
         }}
       >
-        {displayEnd() || 'End date'}
+        {displayEnd() || (local.placeholder ?? t('dateRangePicker.end'))}
       </button>
 
       <Show when={open()}>

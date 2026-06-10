@@ -8,6 +8,7 @@ import {
   onCleanup,
   type JSX,
 } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export interface IrisCascaderNode {
   label: string
@@ -79,6 +80,8 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
     'onChange',
     'id',
   ])
+
+  const { t } = useI18n()
 
   const [internalValue, setInternalValue] = createSignal<string[]>(local.defaultValue)
   const [open, setOpen] = createSignal(false)
@@ -152,7 +155,7 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
         }}
       >
         <span style={{ flex: '1', 'text-align': 'start' }}>
-          {displayLabel() || local.placeholder || 'Select…'}
+          {displayLabel() || (local.placeholder ?? t('select.placeholder'))}
         </span>
         <span aria-hidden="true">▾</span>
       </button>

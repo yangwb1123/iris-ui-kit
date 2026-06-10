@@ -1,6 +1,7 @@
 import { createSignal, createMemo, mergeProps, splitProps, Show, type JSX } from 'solid-js'
 import { IrisCalendar } from '../calendar/IrisCalendar'
 import { formatLocalISO } from '../calendar/dateUtils'
+import { useI18n } from '../../i18n'
 
 function formatDisplay(date: Date | null | undefined, locale?: string): string {
   if (!date) return ''
@@ -29,7 +30,6 @@ export function IrisDatePicker(props: IrisDatePickerProps): JSX.Element {
   const merged = mergeProps(
     {
       defaultValue: null as Date | null,
-      placeholder: 'Select date…',
       disabled: false,
       invalid: false,
       weekStartsOn: 0,
@@ -49,6 +49,8 @@ export function IrisDatePicker(props: IrisDatePickerProps): JSX.Element {
     'onChange',
     'id',
   ])
+
+  const { t } = useI18n()
 
   const [internalValue, setInternalValue] = createSignal<Date | null>(local.defaultValue)
   const [open, setOpen] = createSignal(false)
@@ -89,7 +91,9 @@ export function IrisDatePicker(props: IrisDatePickerProps): JSX.Element {
           'min-width': '160px',
         }}
       >
-        <span style={{ flex: '1', 'text-align': 'start' }}>{display() || local.placeholder}</span>
+        <span style={{ flex: '1', 'text-align': 'start' }}>
+          {display() || (local.placeholder ?? t('datePicker.placeholder'))}
+        </span>
         <span aria-hidden="true" style={{ 'font-size': '16px' }}>
           📅
         </span>

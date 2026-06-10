@@ -2,6 +2,7 @@ import { createMemo, createSignal, createUniqueId, mergeProps, Show, For, type J
 import { Portal } from 'solid-js/web'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
+import { useI18n } from '../../i18n'
 import { firstEnabledIndex, nextEnabledIndex, type Placement, type Size } from '@iris-ui/core'
 
 export type IrisSelectSize = Size
@@ -44,10 +45,11 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
       disabled: false,
       placement: 'bottom-start' as Placement,
       invalid: false,
-      placeholder: 'Select...',
     },
     props,
   )
+
+  const { t } = useI18n()
 
   const isControlled = (): boolean => props.value !== undefined
   const [internalValue, setInternalValue] = createSignal<T | undefined>(merged.defaultValue)
@@ -60,7 +62,7 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
 
   const triggerLabel = createMemo(() => {
     const item = selectedItem()
-    if (!item) return merged.placeholder
+    if (!item) return merged.placeholder ?? t('select.placeholder')
     return item.label ?? String(item.value)
   })
 
@@ -136,6 +138,7 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
       ref={setListbox}
       id={listboxId}
       role="listbox"
+      aria-label={t('select.options')}
       data-iris-select-listbox=""
       style={{
         ...floatingStyles(),

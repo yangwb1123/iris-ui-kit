@@ -1,4 +1,5 @@
 import { createSignal, mergeProps, splitProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export type IrisSliderOrientation = 'horizontal' | 'vertical'
 
@@ -42,7 +43,6 @@ export function IrisSlider(props: IrisSliderProps): JSX.Element {
       max: 100,
       step: 1,
       orientation: 'horizontal' as IrisSliderOrientation,
-      label: 'Value',
     },
     props,
   )
@@ -59,6 +59,8 @@ export function IrisSlider(props: IrisSliderProps): JSX.Element {
     'onChangeEnd',
     'style',
   ])
+
+  const { t } = useI18n()
 
   const isControlled = (): boolean => local.value !== undefined
   const [internal, setInternal] = createSignal(local.defaultValue ?? local.min)
@@ -204,7 +206,7 @@ export function IrisSlider(props: IrisSliderProps): JSX.Element {
         <div
           data-iris-slider-thumb=""
           role="slider"
-          aria-label={local.label}
+          aria-label={local.label ?? t('slider.label')}
           aria-valuemin={local.min}
           aria-valuemax={local.max}
           aria-valuenow={current()}

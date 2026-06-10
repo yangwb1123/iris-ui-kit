@@ -1,4 +1,5 @@
 import { createSignal, mergeProps, onCleanup, splitProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export type IrisCopyButtonSize = 'sm' | 'md' | 'lg'
 
@@ -39,6 +40,8 @@ export function IrisCopyButton(props: IrisCopyButtonProps): JSX.Element {
     'style',
     'class',
   ])
+
+  const { t } = useI18n()
 
   const [copied, setCopied] = createSignal(false)
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -90,7 +93,9 @@ export function IrisCopyButton(props: IrisCopyButtonProps): JSX.Element {
         ...((local.style as JSX.CSSProperties) ?? {}),
       }}
     >
-      {copied() ? (local.copiedLabel ?? 'Copied') : (local.children ?? 'Copy')}
+      {copied()
+        ? (local.copiedLabel ?? t('copyButton.copied'))
+        : (local.children ?? t('copyButton.copy'))}
     </button>
   )
 }

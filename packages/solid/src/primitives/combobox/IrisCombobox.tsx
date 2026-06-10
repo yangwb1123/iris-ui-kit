@@ -1,4 +1,5 @@
 import { createMemo, createSignal, createUniqueId, mergeProps, Show, For, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export type IrisComboboxSize = 'sm' | 'md' | 'lg'
 
@@ -44,6 +45,8 @@ export function IrisCombobox(props: IrisComboboxProps): JSX.Element {
     },
     props,
   )
+
+  const { t } = useI18n()
 
   const reactId = createUniqueId()
   const listboxId = `${reactId}-listbox`
@@ -134,7 +137,7 @@ export function IrisCombobox(props: IrisComboboxProps): JSX.Element {
     if (!open() || activeIndex() < 0 || !filtered()[activeIndex()]) return undefined
     return optionId(activeIndex())
   })
-  const resolvedEmpty = createMemo(() => merged.emptyText ?? 'No options')
+  const resolvedEmpty = createMemo(() => merged.emptyText ?? t('combobox.empty'))
 
   return (
     <div

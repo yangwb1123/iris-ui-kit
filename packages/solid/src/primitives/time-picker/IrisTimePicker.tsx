@@ -1,4 +1,5 @@
 import { createMemo, createSignal, mergeProps, splitProps, Show, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export type IrisTimePickerFormat = '12h' | '24h'
 
@@ -51,6 +52,8 @@ export function IrisTimePicker(props: IrisTimePickerProps): JSX.Element {
     'onChange',
     'id',
   ])
+
+  const { t } = useI18n()
 
   const [internalValue, setInternalValue] = createSignal<IrisTimeValue>(
     local.defaultValue ?? { hours: 0, minutes: 0 },
@@ -131,7 +134,7 @@ export function IrisTimePicker(props: IrisTimePickerProps): JSX.Element {
         max={local.format === '12h' ? 12 : 23}
         value={pad2(display().h)}
         disabled={local.disabled || undefined}
-        aria-label="Hours"
+        aria-label={t('timePicker.hours')}
         onInput={onHoursInput}
         style={inputStyle}
       />
@@ -144,7 +147,7 @@ export function IrisTimePicker(props: IrisTimePickerProps): JSX.Element {
         step={local.minuteStep}
         value={pad2(display().m)}
         disabled={local.disabled || undefined}
-        aria-label="Minutes"
+        aria-label={t('timePicker.minutes')}
         onInput={onMinutesInput}
         style={inputStyle}
       />
@@ -152,6 +155,7 @@ export function IrisTimePicker(props: IrisTimePickerProps): JSX.Element {
         <button
           type="button"
           data-iris-time-picker-meridiem=""
+          aria-label={t('timePicker.togglePeriod')}
           disabled={local.disabled || undefined}
           onClick={toggleMeridiem}
           style={{

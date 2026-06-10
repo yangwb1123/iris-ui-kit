@@ -1,4 +1,5 @@
 import { createSignal, mergeProps, splitProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export type IrisRangeSliderValue = readonly [number, number]
 
@@ -36,13 +37,12 @@ export interface IrisRangeSliderProps {
 
 /** Solid port of IrisRangeSlider — two-handle range slider. */
 export function IrisRangeSlider(props: IrisRangeSliderProps): JSX.Element {
+  const { t } = useI18n()
   const merged = mergeProps(
     {
       min: 0,
       max: 100,
       step: 1,
-      labelStart: 'Start',
-      labelEnd: 'End',
       defaultValue: [0, 100] as IrisRangeSliderValue,
     },
     props,
@@ -195,7 +195,7 @@ export function IrisRangeSlider(props: IrisRangeSliderProps): JSX.Element {
           data-dragging={dragging() === 'start' ? 'true' : undefined}
           role="slider"
           tabIndex={local.disabled ? -1 : 0}
-          aria-label={local.labelStart}
+          aria-label={local.labelStart ?? t('rangeSlider.start')}
           aria-valuemin={local.min}
           aria-valuemax={endVal()}
           aria-valuenow={startVal()}
@@ -222,7 +222,7 @@ export function IrisRangeSlider(props: IrisRangeSliderProps): JSX.Element {
           data-dragging={dragging() === 'end' ? 'true' : undefined}
           role="slider"
           tabIndex={local.disabled ? -1 : 0}
-          aria-label={local.labelEnd}
+          aria-label={local.labelEnd ?? t('rangeSlider.end')}
           aria-valuemin={startVal()}
           aria-valuemax={local.max}
           aria-valuenow={endVal()}

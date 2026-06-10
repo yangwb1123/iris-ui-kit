@@ -1,4 +1,5 @@
 import { createSignal, For, mergeProps, Show, splitProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export interface IrisFileUploadFile {
   file: File
@@ -55,6 +56,8 @@ export function IrisFileUpload(props: IrisFileUploadProps): JSX.Element {
     'onReject',
     'style',
   ])
+
+  const { t } = useI18n()
 
   const isControlled = (): boolean => local.value !== undefined
   const [internal, setInternal] = createSignal<IrisFileUploadFile[]>(local.defaultValue ?? [])
@@ -228,7 +231,7 @@ export function IrisFileUpload(props: IrisFileUploadProps): JSX.Element {
         }}
       >
         <div data-iris-file-upload-label="" style={{ 'font-size': '14px', 'font-weight': '500' }}>
-          {local.label ?? 'Click or drag files here'}
+          {local.label ?? t('fileUpload.label')}
         </div>
         <Show when={local.accept}>
           <div style={{ 'font-size': '12px', color: 'var(--iris-muted)' }}>{local.accept}</div>
@@ -267,7 +270,7 @@ export function IrisFileUpload(props: IrisFileUploadProps): JSX.Element {
                 </span>
                 <button
                   type="button"
-                  aria-label={`Remove ${item.name}`}
+                  aria-label={t('fileUpload.remove', { name: item.name })}
                   disabled={local.disabled}
                   onClick={(e) => {
                     e.stopPropagation()

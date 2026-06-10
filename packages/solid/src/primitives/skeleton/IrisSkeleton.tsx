@@ -1,4 +1,5 @@
 import { mergeProps, onMount, splitProps, type JSX } from 'solid-js'
+import { useI18n } from '../../i18n'
 
 export type IrisSkeletonShape = 'rect' | 'circle' | 'text'
 
@@ -91,6 +92,8 @@ export function IrisSkeleton(props: IrisSkeletonProps): JSX.Element {
   const merged = mergeProps({ shape: 'rect' as IrisSkeletonShape, animated: true }, props)
   const [local, rest] = splitProps(merged, ['width', 'height', 'shape', 'animated', 'style'])
 
+  const { t } = useI18n()
+
   onMount(installSkeletonStyles)
 
   const w = () => (local.width !== undefined ? toCss(local.width) : defaultWidth(local.shape))
@@ -105,7 +108,7 @@ export function IrisSkeleton(props: IrisSkeletonProps): JSX.Element {
       data-iris-skeleton-animated={String(local.animated)}
       role="status"
       aria-busy="true"
-      aria-label="Loading"
+      aria-label={t('skeleton.loading')}
       style={{
         width: w(),
         height: h(),

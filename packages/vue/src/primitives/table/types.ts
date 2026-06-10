@@ -53,6 +53,22 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   renderSummary?: (value: number, rows: Row[]) => import('vue').VNodeChild
 }
 
+/**
+ * Render an expandable detail panel beneath a row. Providing this to the table
+ * adds a leading expand-toggle column; clicking it reveals a full-width detail
+ * row. (Not applied in the virtual-scroll path.)
+ */
+export type IrisTableRenderDetail<Row = Record<string, unknown>> = (
+  row: Row,
+  rowIndex: number,
+) => import('vue').VNodeChild
+
+/** Predicate selecting which rows can expand a detail panel. */
+export type IrisTableRowExpandable<Row = Record<string, unknown>> = (
+  row: Row,
+  rowIndex: number,
+) => boolean
+
 export interface IrisTableCellEditEvent<Row = Record<string, unknown>> {
   row: Row
   column: IrisTableColumn<Row>

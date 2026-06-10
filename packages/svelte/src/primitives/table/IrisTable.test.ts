@@ -196,3 +196,73 @@ describe('IrisTable summary/footer row', () => {
     expect(container.querySelector('[data-iris-table-row="summary"]')).toBeNull()
   })
 })
+
+describe('IrisTable expandable detail rows', () => {
+  // Fixture rows have keys 1, 2, 3 (the `id` field). Detail rows carry the key
+  // via [data-iris-table-row-detail]; the svelte body rows carry no key
+  // attribute, so toggles are indexed by fixture order.
+  function toggleAt(container: HTMLElement, index: number): HTMLElement {
+    const rows = container.querySelectorAll('[data-iris-table-body] [data-iris-table-row]')
+    return rows[index].querySelector('[data-iris-table-expand-toggle]') as HTMLElement
+  }
+  function detail(container: HTMLElement, rowId: string | number): HTMLElement | null {
+    return container.querySelector(`[data-iris-table-row-detail="${rowId}"]`)
+  }
+
+  const renderDetail = (r: Record<string, unknown>) => `detail-${r.id}`
+
+  it('renders an expand toggle per row and no detail panel by default; aria-expanded=false', () => {
+    const { container } = render(IrisTable, { props: { columns, data, renderDetail } })
+    expect(container.querySelectorAll('[data-iris-table-expand-toggle]').length).toBe(3)
+    expect(detail(container, 1)).toBeNull()
+    expect(toggleAt(container, 0).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('clicking the toggle reveals the detail panel with content, clicking again hides it', async () => {
+    const { container } = render(IrisTable, { props: { columns, data, renderDetail } })
+    await fireEvent.click(toggleAt(container, 0))
+    expect(detail(container, 1)).not.toBeNull()
+    expect(detail(container, 1)!.textContent?.trim()).toBe('detail-1')
+    expect(toggleAt(container, 0).getAttribute('aria-expanded')).toBe('true')
+    await fireEvent.click(toggleAt(container, 0))
+    expect(detail(container, 1)).toBeNull()
+  })
+
+  it('rowExpandable gates which rows get a toggle', () => {
+    const { container } = render(IrisTable, {
+      props: {
+        columns,
+        data,
+        renderDetail,
+        rowExpandable: (r: Record<string, unknown>) => r.id !== 2,
+      },
+    })
+    const rows = container.querySelectorAll('[data-iris-table-body] [data-iris-table-row]')
+    expect(rows[0].querySelector('[data-iris-table-expand-toggle]')).not.toBeNull()
+    expect(rows[1].querySelector('[data-iris-table-expand-toggle]')).toBeNull() // row 2 not expandable
+    expect(rows[2].querySelector('[data-iris-table-expand-toggle]')).not.toBeNull()
+  })
+
+  it('defaultExpandedRowKeys starts expanded; onExpandedRowsChange fires with string keys on toggle', async () => {
+    const onExpandedRowsChange = vi.fn()
+    const { container } = render(IrisTable, {
+      props: {
+        columns,
+        data,
+        renderDetail,
+        defaultExpandedRowKeys: [1],
+        onExpandedRowsChange,
+      },
+    })
+    expect(detail(container, 1)).not.toBeNull()
+    await fireEvent.click(toggleAt(container, 1)) // toggle row 2
+    expect(onExpandedRowsChange).toHaveBeenLastCalledWith(['1', '2'])
+    expect(detail(container, 2)).not.toBeNull()
+  })
+
+  it('no __expand column when renderDetail is absent', () => {
+    const { container } = render(IrisTable, { props: { columns, data } })
+    expect(container.querySelector('[data-iris-table-cell="__expand"]')).toBeNull()
+    expect(container.querySelector('[data-iris-table-header="__expand"]')).toBeNull()
+  })
+})

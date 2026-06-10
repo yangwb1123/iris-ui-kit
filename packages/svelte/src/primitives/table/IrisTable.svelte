@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { aggregate, compareValues, createSelectionModel } from '@iris-ui/core'
+  import { aggregate, compareValues, createSelectionModel, createExpansion } from '@iris-ui/core'
   import { toStore } from '../../useStore'
   import { useI18n } from '../../i18n'
   import type {
@@ -24,6 +24,17 @@
     virtualScroll?: IrisTableVirtualOptions
     resizableColumns?: boolean
     columnWidths?: IrisTableColumnWidths
+    /**
+     * Render an expandable detail panel beneath a row. Providing this adds a
+     * leading expand-toggle column; clicking it reveals a full-width detail row.
+     */
+    renderDetail?: (row: Record<string, unknown>, rowIndex: number) => unknown
+    /** Which rows can expand a detail panel. Defaults to all rows when `renderDetail` is set. */
+    rowExpandable?: (row: Record<string, unknown>, rowIndex: number) => boolean
+    /** Initially-expanded row keys (uncontrolled). */
+    defaultExpandedRowKeys?: Array<string | number>
+    /** Notified with the expanded row keys whenever they change. */
+    onExpandedRowsChange?: (keys: Array<string | number>) => void
     onUpdateSelection?: (value: Array<string | number>) => void
     onUpdateSort?: (value: IrisTableSortState | null) => void
     onRowClick?: (row: Record<string, unknown>, index: number) => void
@@ -43,6 +54,10 @@
     bordered = true,
     loading = false,
     error = false,
+    renderDetail,
+    rowExpandable,
+    defaultExpandedRowKeys,
+    onExpandedRowsChange,
     onUpdateSelection,
     onUpdateSort,
     onRowClick,
@@ -118,6 +133,22 @@
     if (selection !== undefined) selectionModel.sync(selection)
   })
 
+  // Expandable detail rows: a leading toggle column + a full-width detail panel,
+  // driven by the framework-agnostic createExpansion (multiple-open). The
+  // expanded keys are strings; the store is bridged into Svelte via toStore.
+  const hasDetail = $derived(renderDetail !== undefined)
+  // svelte-ignore state_referenced_locally — defaults are read once at creation.
+  const expansion = createExpansion({
+    mode: 'multiple',
+    defaultExpanded: (defaultExpandedRowKeys ?? []).map(String),
+    onChange: (keys) => onExpandedRowsChange?.(keys),
+  })
+  const expandedKeys = toStore(expansion.store)
+
+  function isRowExpandable(row: Record<string, unknown>, index: number): boolean {
+    return hasDetail && (rowExpandable ? rowExpandable(row, index) : true)
+  }
+
   function rowId(row: Record<string, unknown>, index: number): string | number {
     const v = row[rowKey]
     if (typeof v === 'string' || typeof v === 'number') return v
@@ -168,6 +199,7 @@
 
   const gridTemplate = $derived(() => {
     const parts: string[] = []
+    if (hasDetail) parts.push('40px')
     if (showSelection) parts.push('40px')
     for (const col of columns) {
       parts.push(`${internalWidths[col.key] ?? resolveInitialWidth(col)}px`)
@@ -231,6 +263,13 @@
 >
   <!-- Header row -->
   <div role="row" data-iris-table-header-row style="display: grid; grid-template-columns: {gridTemplate()}">
+    {#if hasDetail}
+      <div
+        role="columnheader"
+        data-iris-table-header="__expand"
+        style="display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+      ></div>
+    {/if}
     {#if showSelection}
       <div
         role="columnheader"
@@ -285,6 +324,24 @@
           onclick={() => onRowClick?.(row, index)}
           style="display: grid; grid-template-columns: {gridTemplate()}; background: {selected ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))' : striped && index % 2 === 1 ? 'var(--iris-surface)' : 'transparent'}; transition: background-color 120ms ease; cursor: default"
         >
+          {#if hasDetail}
+            <div
+              role="cell"
+              data-iris-table-cell="__expand"
+              style="display: flex; align-items: center; justify-content: center; padding: 8px; border-bottom: 1px solid var(--iris-border)"
+            >
+              {#if isRowExpandable(row, index)}
+                <button
+                  type="button"
+                  data-iris-table-expand-toggle=""
+                  aria-expanded={$expandedKeys.includes(String(id))}
+                  aria-label={t($expandedKeys.includes(String(id)) ? 'treeSelect.collapse' : 'treeSelect.expand')}
+                  onclick={(e) => { e.stopPropagation(); expansion.toggle(String(id)) }}
+                  style="border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--iris-foreground); transform: {$expandedKeys.includes(String(id)) ? 'rotate(90deg)' : 'none'}; transition: transform 150ms"
+                >▶</button>
+              {/if}
+            </div>
+          {/if}
           {#if showSelection}
             <div
               role="cell"
@@ -339,6 +396,21 @@
             </div>
           {/each}
         </div>
+        <!-- Full-width detail panel beneath an expanded, expandable row (spans
+             all grid tracks). Not emitted in any virtual path (none here). -->
+        {#if hasDetail && isRowExpandable(row, index) && $expandedKeys.includes(String(id))}
+          <div
+            role="row"
+            data-iris-table-row-detail={String(id)}
+            style="display: grid; grid-template-columns: {gridTemplate()}"
+          >
+            <div
+              role="cell"
+              data-iris-table-detail-cell=""
+              style="grid-column: 1 / -1; padding: 8px 12px; border-bottom: 1px solid var(--iris-border)"
+            >{renderDetail?.(row, index)}</div>
+          </div>
+        {/if}
       {/each}
     </div>
   {/if}

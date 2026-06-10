@@ -599,6 +599,77 @@ describe('@iris-ui/react IrisTable summary row', () => {
   })
 })
 
+describe('@iris-ui/react IrisTable expandable detail rows', () => {
+  function toggle(rowId: string | number): HTMLElement {
+    return document.querySelector(
+      `[data-iris-table-row="${rowId}"] [data-iris-table-expand-toggle]`,
+    ) as HTMLElement
+  }
+  function detail(rowId: string | number): HTMLElement | null {
+    return document.querySelector(`[data-iris-table-row-detail="${rowId}"]`)
+  }
+
+  it('renders an expand toggle per row and no detail panel by default', () => {
+    render(<IrisTable columns={baseColumns} data={rows} renderDetail={(r) => <div>D{r.id}</div>} />)
+    expect(document.querySelectorAll('[data-iris-table-expand-toggle]').length).toBe(3)
+    expect(detail(1)).toBeNull()
+    expect(toggle(1).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('clicking the toggle reveals the detail panel, clicking again hides it', () => {
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        renderDetail={(r) => <div>detail-{r.id}</div>}
+      />,
+    )
+    act(() => fireEvent.click(toggle(1)))
+    expect(detail(1)).not.toBeNull()
+    expect(detail(1)!.textContent).toBe('detail-1')
+    expect(toggle(1).getAttribute('aria-expanded')).toBe('true')
+    act(() => fireEvent.click(toggle(1)))
+    expect(detail(1)).toBeNull()
+  })
+
+  it('rowExpandable gates which rows get a toggle', () => {
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        renderDetail={(r) => <div>{r.id}</div>}
+        rowExpandable={(r) => r.id !== 2}
+      />,
+    )
+    expect(toggle(1)).not.toBeNull()
+    expect(toggle(2)).toBeNull() // row 2 not expandable
+    expect(toggle(3)).not.toBeNull()
+  })
+
+  it('defaultExpandedRowKeys starts expanded and onExpandedRowsChange fires on toggle', () => {
+    const onChange = vi.fn()
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        renderDetail={(r) => <div>{r.id}</div>}
+        defaultExpandedRowKeys={[1]}
+        onExpandedRowsChange={onChange}
+      />,
+    )
+    expect(detail(1)).not.toBeNull()
+    act(() => fireEvent.click(toggle(2)))
+    expect(onChange).toHaveBeenLastCalledWith(['1', '2'])
+    expect(detail(2)).not.toBeNull()
+  })
+
+  it('no expand column when renderDetail is absent', () => {
+    render(<IrisTable columns={baseColumns} data={rows} />)
+    expect(document.querySelector('[data-iris-table-cell="__expand"]')).toBeNull()
+    expect(document.querySelector('[data-iris-table-header="__expand"]')).toBeNull()
+  })
+})
+
 describe('@iris-ui/react IrisTable virtual scroll', () => {
   const many: Row[] = Array.from({ length: 50 }, (_, i) => ({ id: i + 1, name: `N${i}`, age: i }))
 

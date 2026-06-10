@@ -41,6 +41,16 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   renderSummary?: (value: number, rows: Row[]) => unknown
 }
 
+/**
+ * Render an expandable detail panel beneath a row. Providing this to the table
+ * adds a leading expand-toggle column; clicking it reveals a full-width detail
+ * row containing this function's return value. (Not applied in any virtual path.)
+ */
+export type IrisTableRenderDetail<Row = Record<string, unknown>> = (
+  row: Row,
+  rowIndex: number,
+) => unknown
+
 export interface IrisTableCellEditEvent<Row = Record<string, unknown>> {
   row: Row
   column: IrisTableColumn<Row>

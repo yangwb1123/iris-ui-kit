@@ -1,5 +1,11 @@
 import { createEffect, createMemo, createSignal, For, mergeProps, Show, type JSX } from 'solid-js'
-import { aggregate, compareValues, createSelectionModel } from '@iris-ui/core'
+import {
+  aggregate,
+  compareValues,
+  createExpansion,
+  createSelectionModel,
+  type ExpansionModel,
+} from '@iris-ui/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import type { IrisTableColumn, IrisTableSortState, IrisTableCellEditEvent } from './types'
@@ -19,6 +25,17 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   error?: boolean
   onRowClick?: (row: Row, index: number) => void
   onCellEdit?: (event: IrisTableCellEditEvent<Row>) => void
+  /**
+   * Render an expandable detail panel beneath a row. Providing this adds a
+   * leading expand-toggle column; clicking it reveals a full-width detail row.
+   */
+  renderDetail?: (row: Row, rowIndex: number) => JSX.Element
+  /** Which rows can expand a detail panel. Defaults to all rows when `renderDetail` is set. */
+  rowExpandable?: (row: Row, rowIndex: number) => boolean
+  /** Initially-expanded row keys (uncontrolled). */
+  defaultExpandedRowKeys?: Array<string | number>
+  /** Notified with the expanded row keys whenever they change. */
+  onExpandedRowsChange?: (keys: Array<string | number>) => void
   style?: JSX.CSSProperties
 }
 
@@ -141,6 +158,19 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     selectionModel.toggleAll(allRowIds())
   }
 
+  // ---- Expandable detail rows ----
+  // A leading toggle column + a full-width detail panel, driven by the
+  // framework-agnostic createExpansion (multiple-open). Keys are strings.
+  const hasDetail = (): boolean => props.renderDetail !== undefined
+  const expansion: ExpansionModel = createExpansion({
+    mode: 'multiple',
+    defaultExpanded: (props.defaultExpandedRowKeys ?? []).map(String),
+    onChange: (keys) => props.onExpandedRowsChange?.(keys),
+  })
+  const expandedKeys = useStore(expansion.store)
+  const isRowExpandable = (row: Row, idx: number): boolean =>
+    hasDetail() && (props.rowExpandable ? props.rowExpandable(row, idx) : true)
+
   // ---- Inline Editing ----
   const [editingCellId, setEditingCellId] = createSignal<string | null>(null)
   const [editingDraft, setEditingDraft] = createSignal('')
@@ -187,8 +217,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
 
   // ---- Grid template ----
   const SELECTION_COL_WIDTH = 40
+  const EXPAND_COL_WIDTH = 40
   const gridTemplate = createMemo(() => {
     const parts: string[] = []
+    if (hasDetail()) parts.push(`${EXPAND_COL_WIDTH}px`)
     if (merged.selectable !== 'none') parts.push(`${SELECTION_COL_WIDTH}px`)
     for (const col of merged.columns) {
       parts.push(`${resolveInitialWidth(col as IrisTableColumn<Record<string, unknown>>)}px`)
@@ -247,6 +279,20 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           'grid-template-columns': gridTemplate(),
         }}
       >
+        <Show when={hasDetail()}>
+          <div
+            role="columnheader"
+            data-iris-table-header="__expand"
+            style={{
+              display: 'flex',
+              'align-items': 'center',
+              'justify-content': 'center',
+              padding: '8px',
+              background: 'var(--iris-surface)',
+              'border-bottom': '1px solid var(--iris-border)',
+            }}
+          />
+        </Show>
         <Show when={merged.selectable !== 'none'}>
           <div
             role="columnheader"
@@ -349,139 +395,205 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                 const index = indexAccessor()
                 const id = rowId(row, index)
                 const selected = () => isSelected(id)
+                const expanded = (): boolean => expandedKeys().includes(String(id))
+                const expandable = (): boolean => isRowExpandable(row, index)
                 return (
-                  <div
-                    role="row"
-                    data-iris-table-row=""
-                    data-state={selected() ? 'selected' : undefined}
-                    onClick={() => merged.onRowClick?.(row, index)}
-                    style={{
-                      display: 'grid',
-                      'grid-template-columns': gridTemplate(),
-                      background: selected()
-                        ? 'var(--iris-surface-hover)'
-                        : merged.striped && index % 2 === 1
-                          ? 'var(--iris-surface)'
-                          : 'transparent',
-                      transition: 'background-color 120ms ease',
-                      cursor: 'default',
-                    }}
-                  >
-                    <Show when={merged.selectable !== 'none'}>
+                  <>
+                    <div
+                      role="row"
+                      data-iris-table-row=""
+                      data-state={selected() ? 'selected' : undefined}
+                      onClick={() => merged.onRowClick?.(row, index)}
+                      style={{
+                        display: 'grid',
+                        'grid-template-columns': gridTemplate(),
+                        background: selected()
+                          ? 'var(--iris-surface-hover)'
+                          : merged.striped && index % 2 === 1
+                            ? 'var(--iris-surface)'
+                            : 'transparent',
+                        transition: 'background-color 120ms ease',
+                        cursor: 'default',
+                      }}
+                    >
+                      <Show when={hasDetail()}>
+                        <div
+                          role="cell"
+                          data-iris-table-cell="__expand"
+                          style={{
+                            display: 'flex',
+                            'align-items': 'center',
+                            'justify-content': 'center',
+                            padding: '8px',
+                            'border-bottom': '1px solid var(--iris-border)',
+                          }}
+                        >
+                          <Show when={expandable()}>
+                            <button
+                              type="button"
+                              data-iris-table-expand-toggle=""
+                              aria-expanded={expanded()}
+                              aria-label={t(
+                                expanded() ? 'treeSelect.collapse' : 'treeSelect.expand',
+                              )}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                expansion.toggle(String(id))
+                              }}
+                              style={{
+                                border: 'none',
+                                background: 'transparent',
+                                cursor: 'pointer',
+                                padding: '0',
+                                font: 'inherit',
+                                color: 'var(--iris-foreground)',
+                                transform: expanded() ? 'rotate(90deg)' : 'none',
+                                transition: 'transform 150ms',
+                              }}
+                            >
+                              ▶
+                            </button>
+                          </Show>
+                        </div>
+                      </Show>
+                      <Show when={merged.selectable !== 'none'}>
+                        <div
+                          role="cell"
+                          style={{
+                            display: 'flex',
+                            'align-items': 'center',
+                            'justify-content': 'center',
+                            padding: '8px',
+                            'border-bottom': '1px solid var(--iris-border)',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected()}
+                            onChange={() => toggleRow(id)}
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={t('table.selectRow', { key: index + 1 })}
+                          />
+                        </div>
+                      </Show>
+                      <For each={merged.columns}>
+                        {(col) => {
+                          const cid = `${id}::${col.key}`
+                          const isEditing = () => editingCellId() === cid
+                          return (
+                            <div
+                              role="cell"
+                              data-iris-table-cell={col.key}
+                              data-editable={col.editable ? '' : undefined}
+                              data-editing={isEditing() ? '' : undefined}
+                              onDblClick={col.editable ? () => beginEdit(row, col, id) : undefined}
+                              style={{
+                                display: 'flex',
+                                'align-items': 'center',
+                                'justify-content':
+                                  col.align === 'right'
+                                    ? 'flex-end'
+                                    : col.align === 'center'
+                                      ? 'center'
+                                      : 'flex-start',
+                                padding: isEditing() ? '4px' : '8px var(--iris-padding-md)',
+                                'border-bottom': '1px solid var(--iris-border)',
+                                'font-size': '14px',
+                                'white-space': 'nowrap',
+                                overflow: 'hidden',
+                                'text-overflow': 'ellipsis',
+                                cursor: col.editable ? 'cell' : 'default',
+                              }}
+                            >
+                              <Show
+                                when={isEditing()}
+                                fallback={
+                                  <Show
+                                    when={col.renderCell}
+                                    fallback={String(getCellValue(row, col) ?? '')}
+                                  >
+                                    {col.renderCell!(row, index)}
+                                  </Show>
+                                }
+                              >
+                                <>
+                                  <input
+                                    type={col.editor === 'number' ? 'number' : 'text'}
+                                    value={editingDraft()}
+                                    data-iris-table-editor=""
+                                    aria-invalid={editError() ? 'true' : undefined}
+                                    aria-describedby={editError() ? `${cid}-error` : undefined}
+                                    onInput={(e) =>
+                                      setEditingDraft((e.target as HTMLInputElement).value)
+                                    }
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault()
+                                        commitEdit(row, col, index)
+                                      } else if (e.key === 'Escape') {
+                                        e.preventDefault()
+                                        cancelEdit()
+                                      }
+                                    }}
+                                    onBlur={() => commitEdit(row, col, index)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{
+                                      width: '100%',
+                                      border: `1px solid ${
+                                        editError() ? 'var(--iris-danger)' : 'var(--iris-primary)'
+                                      }`,
+                                      'border-radius': 'var(--iris-radius-sm)',
+                                      padding: '4px 6px',
+                                      font: 'inherit',
+                                      background: 'var(--iris-background)',
+                                      color: 'var(--iris-foreground)',
+                                      outline: 'none',
+                                    }}
+                                  />
+                                  <Show when={editError()}>
+                                    <div
+                                      id={`${cid}-error`}
+                                      role="alert"
+                                      data-iris-table-editor-error=""
+                                      style={{
+                                        'margin-top': '2px',
+                                        'font-size': '12px',
+                                        color: 'var(--iris-danger)',
+                                      }}
+                                    >
+                                      {editError()}
+                                    </div>
+                                  </Show>
+                                </>
+                              </Show>
+                            </div>
+                          )
+                        }}
+                      </For>
+                    </div>
+                    <Show when={hasDetail() && expandable() && expanded()}>
                       <div
-                        role="cell"
+                        role="row"
+                        data-iris-table-row-detail={String(id)}
                         style={{
-                          display: 'flex',
-                          'align-items': 'center',
-                          'justify-content': 'center',
-                          padding: '8px',
-                          'border-bottom': '1px solid var(--iris-border)',
+                          display: 'grid',
+                          'grid-template-columns': gridTemplate(),
                         }}
                       >
-                        <input
-                          type="checkbox"
-                          checked={selected()}
-                          onChange={() => toggleRow(id)}
-                          onClick={(e) => e.stopPropagation()}
-                          aria-label={t('table.selectRow', { key: index + 1 })}
-                        />
+                        <div
+                          role="cell"
+                          data-iris-table-detail-cell=""
+                          style={{
+                            'grid-column': '1 / -1',
+                            padding: '8px 12px',
+                            'border-bottom': '1px solid var(--iris-border)',
+                          }}
+                        >
+                          {props.renderDetail!(row, index)}
+                        </div>
                       </div>
                     </Show>
-                    <For each={merged.columns}>
-                      {(col) => {
-                        const cid = `${id}::${col.key}`
-                        const isEditing = () => editingCellId() === cid
-                        return (
-                          <div
-                            role="cell"
-                            data-iris-table-cell={col.key}
-                            data-editable={col.editable ? '' : undefined}
-                            data-editing={isEditing() ? '' : undefined}
-                            onDblClick={col.editable ? () => beginEdit(row, col, id) : undefined}
-                            style={{
-                              display: 'flex',
-                              'align-items': 'center',
-                              'justify-content':
-                                col.align === 'right'
-                                  ? 'flex-end'
-                                  : col.align === 'center'
-                                    ? 'center'
-                                    : 'flex-start',
-                              padding: isEditing() ? '4px' : '8px var(--iris-padding-md)',
-                              'border-bottom': '1px solid var(--iris-border)',
-                              'font-size': '14px',
-                              'white-space': 'nowrap',
-                              overflow: 'hidden',
-                              'text-overflow': 'ellipsis',
-                              cursor: col.editable ? 'cell' : 'default',
-                            }}
-                          >
-                            <Show
-                              when={isEditing()}
-                              fallback={
-                                <Show
-                                  when={col.renderCell}
-                                  fallback={String(getCellValue(row, col) ?? '')}
-                                >
-                                  {col.renderCell!(row, index)}
-                                </Show>
-                              }
-                            >
-                              <>
-                                <input
-                                  type={col.editor === 'number' ? 'number' : 'text'}
-                                  value={editingDraft()}
-                                  data-iris-table-editor=""
-                                  aria-invalid={editError() ? 'true' : undefined}
-                                  aria-describedby={editError() ? `${cid}-error` : undefined}
-                                  onInput={(e) =>
-                                    setEditingDraft((e.target as HTMLInputElement).value)
-                                  }
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault()
-                                      commitEdit(row, col, index)
-                                    } else if (e.key === 'Escape') {
-                                      e.preventDefault()
-                                      cancelEdit()
-                                    }
-                                  }}
-                                  onBlur={() => commitEdit(row, col, index)}
-                                  onClick={(e) => e.stopPropagation()}
-                                  style={{
-                                    width: '100%',
-                                    border: `1px solid ${
-                                      editError() ? 'var(--iris-danger)' : 'var(--iris-primary)'
-                                    }`,
-                                    'border-radius': 'var(--iris-radius-sm)',
-                                    padding: '4px 6px',
-                                    font: 'inherit',
-                                    background: 'var(--iris-background)',
-                                    color: 'var(--iris-foreground)',
-                                    outline: 'none',
-                                  }}
-                                />
-                                <Show when={editError()}>
-                                  <div
-                                    id={`${cid}-error`}
-                                    role="alert"
-                                    data-iris-table-editor-error=""
-                                    style={{
-                                      'margin-top': '2px',
-                                      'font-size': '12px',
-                                      color: 'var(--iris-danger)',
-                                    }}
-                                  >
-                                    {editError()}
-                                  </div>
-                                </Show>
-                              </>
-                            </Show>
-                          </div>
-                        )
-                      }}
-                    </For>
-                  </div>
+                  </>
                 )
               }}
             </For>

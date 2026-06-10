@@ -11,7 +11,13 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { aggregate, compareValues, computeVirtualRange, createSelectionModel } from '@iris-ui/core'
+import {
+  aggregate,
+  compareValues,
+  computeVirtualRange,
+  createExpansion,
+  createSelectionModel,
+} from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useDrag } from '../drag/useDrag'
@@ -20,6 +26,8 @@ import type {
   IrisTableCellEditEvent,
   IrisTableColumn,
   IrisTableColumnWidths,
+  IrisTableRenderDetail,
+  IrisTableRowExpandable,
   IrisTableSortDirection,
   IrisTableSortState,
   IrisTableVirtualOptions,
@@ -34,6 +42,7 @@ function getCellValue<Row extends Record<string, unknown>>(
 }
 
 const SELECTION_COL_WIDTH = 40
+const EXPAND_COL_WIDTH = 40
 const DEFAULT_COL_WIDTH = 140
 const DEFAULT_MIN_WIDTH = 60
 const RESIZE_STEP = 16
@@ -117,6 +126,25 @@ export const IrisTable = defineComponent({
     error: { type: Boolean, default: false },
     /** Render only the horizontally-visible columns (+ pinned + overscan) for wide tables. */
     columnVirtualization: { type: Boolean, default: false },
+    /**
+     * Render an expandable detail panel beneath a row. Providing this adds a
+     * leading expand-toggle column; clicking it reveals a full-width detail row.
+     * (Not applied in the virtual-scroll path.)
+     */
+    renderDetail: {
+      type: Function as PropType<IrisTableRenderDetail<Record<string, unknown>>>,
+      default: undefined,
+    },
+    /** Which rows can expand a detail panel. Defaults to all rows when `renderDetail` is set. */
+    rowExpandable: {
+      type: Function as PropType<IrisTableRowExpandable<Record<string, unknown>>>,
+      default: undefined,
+    },
+    /** Initially-expanded row keys (uncontrolled). */
+    defaultExpandedRowKeys: {
+      type: Array as PropType<Array<string | number>>,
+      default: undefined,
+    },
   },
   emits: {
     'update:selection': (_value: Array<string | number>) => true,
@@ -124,6 +152,7 @@ export const IrisTable = defineComponent({
     'update:columnWidths': (_value: IrisTableColumnWidths) => true,
     rowClick: (_row: Record<string, unknown>, _index: number) => true,
     cellEdit: (_payload: IrisTableCellEditEvent<Record<string, unknown>>) => true,
+    expandedRowsChange: (_keys: Array<string | number>) => true,
   },
   setup(props, { slots, attrs, emit }) {
     const { t } = useI18n()
@@ -175,6 +204,26 @@ export const IrisTable = defineComponent({
         if (sel !== undefined) selectionModel.sync(sel)
       },
     )
+
+    // -------- Expandable detail rows (single-sourced via core createExpansion) --------
+    // A leading toggle column + a full-width detail panel beneath an expanded
+    // row, driven by the framework-agnostic expansion model (multiple-open). The
+    // keys are the row keys as strings (matching React). Mirrors the selection
+    // pattern: shallowRef + subscribe so toggling re-renders.
+    const hasDetail = computed(() => props.renderDetail !== undefined)
+    const expansion = createExpansion({
+      mode: 'multiple',
+      defaultExpanded: (props.defaultExpandedRowKeys ?? []).map(String),
+      onChange: (keys) => emit('expandedRowsChange', keys),
+    })
+    const expandedKeys = shallowRef<string[]>(expansion.get())
+    onBeforeUnmount(
+      expansion.store.subscribe((keys) => {
+        expandedKeys.value = keys
+      }),
+    )
+    const isRowExpandable = (row: Record<string, unknown>, idx: number): boolean =>
+      hasDetail.value && (props.rowExpandable ? props.rowExpandable(row, idx) : true)
 
     const rowId = (row: Record<string, unknown>, index: number): string | number => {
       const v = row[props.rowKey]
@@ -327,6 +376,7 @@ export const IrisTable = defineComponent({
     /** Build the grid-template-columns string for the current widths. */
     const gridTemplate = computed(() => {
       const parts: string[] = []
+      if (hasDetail.value) parts.push(`${EXPAND_COL_WIDTH}px`)
       if (props.selectable !== 'none') parts.push(`${SELECTION_COL_WIDTH}px`)
       for (const col of props.columns) {
         parts.push(`${effectiveWidths.value[col.key] ?? resolveInitialWidth(col)}px`)
@@ -338,7 +388,8 @@ export const IrisTable = defineComponent({
     const rootRef = ref<HTMLElement | null>(null)
     const scrollLeft = ref(0)
     const viewportWidth = ref(0)
-    const colTrack = (i: number): number => (props.selectable !== 'none' ? 2 : 1) + i
+    const colTrack = (i: number): number =>
+      (hasDetail.value ? 1 : 0) + (props.selectable !== 'none' ? 2 : 1) + i
 
     if (typeof ResizeObserver !== 'undefined') {
       let ro: ResizeObserver | null = null
@@ -382,7 +433,9 @@ export const IrisTable = defineComponent({
       const map: Record<string, { side: 'left' | 'right'; offset: number }> = {}
       const widthOf = (col: IrisTableColumn) =>
         effectiveWidths.value[col.key] ?? resolveInitialWidth(col)
-      let left = props.selectable !== 'none' ? SELECTION_COL_WIDTH : 0
+      let left =
+        (hasDetail.value ? EXPAND_COL_WIDTH : 0) +
+        (props.selectable !== 'none' ? SELECTION_COL_WIDTH : 0)
       for (const col of props.columns) {
         if (col.pinned === 'left') {
           map[col.key] = { side: 'left', offset: left }
@@ -446,8 +499,26 @@ export const IrisTable = defineComponent({
 
     return () => {
       const showSelection = props.selectable !== 'none'
+      const showDetail = hasDetail.value
 
       const headerCells: VNode[] = []
+      if (showDetail) {
+        headerCells.push(
+          h('div', {
+            role: 'columnheader',
+            key: '__expand__',
+            'data-iris-table-header': '__expand',
+            style: {
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '8px',
+              background: 'var(--iris-surface)',
+              borderBottom: '1px solid var(--iris-border)',
+            },
+          }),
+        )
+      }
       if (showSelection) {
         headerCells.push(
           h(
@@ -591,6 +662,55 @@ export const IrisTable = defineComponent({
         const id = rowId(row, index)
         const selected = isSelected(id)
         const cells: VNode[] = []
+        if (showDetail) {
+          const rowExpandable = isRowExpandable(row, index)
+          const isExpanded = expandedKeys.value.includes(String(id))
+          cells.push(
+            h(
+              'div',
+              {
+                key: '__expand',
+                role: 'cell',
+                'data-iris-table-cell': '__expand',
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px',
+                  borderBottom: '1px solid var(--iris-border)',
+                },
+              },
+              rowExpandable
+                ? [
+                    h(
+                      'button',
+                      {
+                        type: 'button',
+                        'data-iris-table-expand-toggle': '',
+                        'aria-expanded': isExpanded ? 'true' : 'false',
+                        'aria-label': t(isExpanded ? 'treeSelect.collapse' : 'treeSelect.expand'),
+                        onClick: (e: MouseEvent) => {
+                          e.stopPropagation()
+                          expansion.toggle(String(id))
+                        },
+                        style: {
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          padding: '0',
+                          font: 'inherit',
+                          color: 'var(--iris-foreground)',
+                          transform: isExpanded ? 'rotate(90deg)' : 'none',
+                          transition: 'transform 150ms',
+                        },
+                      },
+                      '▶',
+                    ),
+                  ]
+                : '',
+            ),
+          )
+        }
         if (showSelection) {
           cells.push(
             h(
@@ -794,13 +914,53 @@ export const IrisTable = defineComponent({
           },
         )
       } else {
+        const bodyChildren: VNode[] = []
+        sortedRows.value.forEach((row, i) => {
+          bodyChildren.push(renderRow(row, i))
+          // Full-width detail panel beneath an expanded, expandable row (spans
+          // all grid tracks). Only in the non-virtualized path.
+          if (showDetail && isRowExpandable(row, i)) {
+            const id = rowId(row, i)
+            if (expandedKeys.value.includes(String(id))) {
+              bodyChildren.push(
+                h(
+                  'div',
+                  {
+                    key: `${String(id)}::detail`,
+                    role: 'row',
+                    'data-iris-table-row-detail': String(id),
+                    style: {
+                      display: 'grid',
+                      gridTemplateColumns: gridTemplate.value,
+                    },
+                  },
+                  [
+                    h(
+                      'div',
+                      {
+                        role: 'cell',
+                        'data-iris-table-detail-cell': '',
+                        style: {
+                          gridColumn: '1 / -1',
+                          padding: '8px 12px',
+                          borderBottom: '1px solid var(--iris-border)',
+                        },
+                      },
+                      [props.renderDetail!(row, i)],
+                    ),
+                  ],
+                ),
+              )
+            }
+          }
+        })
         bodyNode = h(
           'div',
           {
             role: 'rowgroup',
             'data-iris-table-body': '',
           },
-          sortedRows.value.map((row, i) => renderRow(row, i)),
+          bodyChildren,
         )
       }
 

@@ -3,7 +3,9 @@ import {
   aggregate,
   compareValues,
   computeVirtualRange,
+  createExpansion,
   createSelectionModel,
+  type ExpansionModel,
   type SelectionModel,
 } from '@iris-ui/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
@@ -22,6 +24,7 @@ import type {
 
 const RESIZE_STEP = 16
 const SELECTION_COL_WIDTH = 40
+const EXPAND_COL_WIDTH = 40
 const DEFAULT_PINNED_WIDTH = 140
 
 /** Shared style for the full-width empty / loading / error state rows. */
@@ -132,6 +135,18 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   onColumnWidthsChange?: (next: IrisTableColumnWidths) => void
   /** Called when an inline-editable cell is committed with a changed value. */
   onCellEdit?: (event: IrisTableCellEditEvent<Row>) => void
+  /**
+   * Render an expandable detail panel beneath a row. Providing this adds a
+   * leading expand-toggle column; clicking it reveals a full-width detail row.
+   * (Not applied in the virtual-scroll path.)
+   */
+  renderDetail?: (row: Row, rowIndex: number) => React.ReactNode
+  /** Which rows can expand a detail panel. Defaults to all rows when `renderDetail` is set. */
+  rowExpandable?: (row: Row, rowIndex: number) => boolean
+  /** Initially-expanded row keys (uncontrolled). */
+  defaultExpandedRowKeys?: Array<string | number>
+  /** Notified with the expanded row keys whenever they change. */
+  onExpandedRowsChange?: (keys: Array<string | number>) => void
   /** Enable virtual scrolling for the body (renders only the visible window). */
   virtualScroll?: IrisTableVirtualOptions
   /**
@@ -180,6 +195,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   defaultColumnWidths,
   onColumnWidthsChange,
   onCellEdit,
+  renderDetail,
+  rowExpandable,
+  defaultExpandedRowKeys,
+  onExpandedRowsChange,
   virtualScroll,
   columnVirtualization = false,
   emptyState,
@@ -221,6 +240,22 @@ export function IrisTable<Row extends Record<string, unknown>>({
   React.useEffect(() => {
     if (selControlled) selModel.sync(selectionProp as Array<string | number>)
   }, [selectionProp, selControlled, selModel])
+
+  // Expandable detail rows: a leading toggle column + a full-width detail panel,
+  // driven by the framework-agnostic createExpansion (multiple-open).
+  const hasDetail = renderDetail !== undefined
+  const expansionRef = React.useRef<ExpansionModel | null>(null)
+  if (expansionRef.current === null) {
+    expansionRef.current = createExpansion({
+      mode: 'multiple',
+      defaultExpanded: (defaultExpandedRowKeys ?? []).map(String),
+      onChange: (keys) => onExpandedRowsChange?.(keys),
+    })
+  }
+  const expansion = expansionRef.current
+  const expandedKeys = useStore(expansion.store)
+  const isRowExpandable = (row: Row, idx: number): boolean =>
+    hasDetail && (rowExpandable ? rowExpandable(row, idx) : true)
 
   const widthsControlled = columnWidthsProp !== undefined
   const [widthsInternal, setWidthsInternal] = React.useState<IrisTableColumnWidths>(
@@ -350,6 +385,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   const gridTemplateColumns = React.useMemo(() => {
     const widths: string[] = []
+    if (hasDetail) widths.push(`${EXPAND_COL_WIDTH}px`)
     if (selectable !== 'none') widths.push('40px')
     for (const col of columns) {
       const override = columnWidths[col.key]
@@ -359,7 +395,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       else widths.push('minmax(0, 1fr)')
     }
     return widths.join(' ')
-  }, [columns, selectable, columnWidths])
+  }, [columns, selectable, columnWidths, hasDetail])
 
   // Sticky offsets for pinned columns: each accumulates the resolved widths of
   // the pinned columns between it and its edge (plus the selection column on
@@ -368,7 +404,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const map: Record<string, { side: 'left' | 'right'; offset: number }> = {}
     const widthOf = (col: IrisTableColumn<Row>): number =>
       columnWidths[col.key] ?? (typeof col.width === 'number' ? col.width : DEFAULT_PINNED_WIDTH)
-    let left = selectable !== 'none' ? SELECTION_COL_WIDTH : 0
+    let left =
+      (hasDetail ? EXPAND_COL_WIDTH : 0) + (selectable !== 'none' ? SELECTION_COL_WIDTH : 0)
     for (const col of columns) {
       if (col.pinned === 'left') {
         map[col.key] = { side: 'left', offset: left }
@@ -445,7 +482,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   // 1-based grid track for a column (after the optional selection track), so a
   // rendered cell lands in the right place even when earlier cells are skipped.
-  const colTrack = (i: number): number => (selectable !== 'none' ? 2 : 1) + i
+  const colTrack = (i: number): number => (hasDetail ? 1 : 0) + (selectable !== 'none' ? 2 : 1) + i
 
   const baseCellStyle: React.CSSProperties = {
     padding: '8px 12px',
@@ -478,6 +515,45 @@ export function IrisTable<Row extends Record<string, unknown>>({
         data-iris-table-row-selected={selected ? 'true' : undefined}
         style={{ display: 'grid', gridTemplateColumns, ...extraStyle }}
       >
+        {hasDetail ? (
+          <div
+            role="cell"
+            data-iris-table-cell="__expand"
+            style={{
+              ...baseCellStyle,
+              justifyContent: 'center',
+              background: striped && idx % 2 === 1 ? 'var(--iris-surface)' : 'transparent',
+              borderBottom: borderStyle,
+            }}
+          >
+            {isRowExpandable(row, idx) ? (
+              <button
+                type="button"
+                data-iris-table-expand-toggle=""
+                aria-expanded={expandedKeys.includes(String(k))}
+                aria-label={t(
+                  expandedKeys.includes(String(k)) ? 'treeSelect.collapse' : 'treeSelect.expand',
+                )}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  expansion.toggle(String(k))
+                }}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  padding: 0,
+                  font: 'inherit',
+                  color: 'var(--iris-foreground)',
+                  transform: expandedKeys.includes(String(k)) ? 'rotate(90deg)' : 'none',
+                  transition: 'transform 150ms',
+                }}
+              >
+                ▶
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         {selectable !== 'none' ? (
           <div
             role="cell"
@@ -607,6 +683,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
     >
       {/* Header row */}
       <div role="row" data-iris-table-row="header" style={{ display: 'grid', gridTemplateColumns }}>
+        {hasDetail ? (
+          <div
+            role="columnheader"
+            data-iris-table-header="__expand"
+            style={{
+              ...baseCellStyle,
+              background: 'var(--iris-surface)',
+              borderBottom: borderStyle,
+            }}
+          />
+        ) : null}
         {selectable === 'multi' ? (
           <div
             role="columnheader"
@@ -733,7 +820,34 @@ export function IrisTable<Row extends Record<string, unknown>>({
           renderItem={(row, idx) => renderRow(row, idx, { height: '100%' })}
         />
       ) : (
-        sortedData.map((row, idx) => renderRow(row, idx))
+        sortedData.map((row, idx) => {
+          const main = renderRow(row, idx)
+          if (
+            !hasDetail ||
+            !isRowExpandable(row, idx) ||
+            !expandedKeys.includes(String(rowKeyOf(row)))
+          )
+            return main
+          // Full-width detail panel beneath the row (spans all grid tracks).
+          return (
+            <React.Fragment key={`${String(rowKeyOf(row) ?? idx)}::wrap`}>
+              {main}
+              <div
+                role="row"
+                data-iris-table-row-detail={String(rowKeyOf(row) ?? idx)}
+                style={{ display: 'grid', gridTemplateColumns }}
+              >
+                <div
+                  role="cell"
+                  data-iris-table-detail-cell=""
+                  style={{ gridColumn: '1 / -1', padding: '8px 12px', borderBottom: borderStyle }}
+                >
+                  {renderDetail!(row, idx)}
+                </div>
+              </div>
+            </React.Fragment>
+          )
+        })
       )}
 
       {/* Summary / footer row: each column with a `summary` op aggregates over

@@ -6635,6 +6635,30 @@
           "description": "Called when an inline-editable cell is committed with a changed value."
         },
         {
+          "name": "renderDetail",
+          "type": "(row: Row, rowIndex: number) => React.ReactNode",
+          "optional": true,
+          "description": "Render an expandable detail panel beneath a row. Providing this adds a leading expand-toggle column; clicking it reveals a full-width detail row. (Not applied in the virtual-scroll path.)"
+        },
+        {
+          "name": "rowExpandable",
+          "type": "(row: Row, rowIndex: number) => boolean",
+          "optional": true,
+          "description": "Which rows can expand a detail panel. Defaults to all rows when `renderDetail` is set."
+        },
+        {
+          "name": "defaultExpandedRowKeys",
+          "type": "Array<string | number>",
+          "optional": true,
+          "description": "Initially-expanded row keys (uncontrolled)."
+        },
+        {
+          "name": "onExpandedRowsChange",
+          "type": "(keys: Array<string | number>) => void",
+          "optional": true,
+          "description": "Notified with the expanded row keys whenever they change."
+        },
+        {
           "name": "virtualScroll",
           "type": "IrisTableVirtualOptions",
           "optional": true,

@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, cleanup, fireEvent } from '@solidjs/testing-library'
+import type { JSX } from 'solid-js'
 import { IrisTable } from './IrisTable'
 import type { IrisTableColumn } from './types'
 
@@ -181,5 +182,94 @@ describe('IrisTable editable-cell validation', () => {
     fireEvent.keyDown(editor()!, { key: 'Escape' })
     expect(editor()).toBeNull()
     expect(onCellEdit).not.toHaveBeenCalled()
+  })
+})
+
+describe('IrisTable expandable detail rows', () => {
+  type DetailRow = { id: number; name: string; age: number }
+  const detailRows: DetailRow[] = [
+    { id: 1, name: 'Alice', age: 30 },
+    { id: 2, name: 'Bob', age: 25 },
+    { id: 3, name: 'Charlie', age: 35 },
+  ]
+  const detailCols: IrisTableColumn<DetailRow>[] = [
+    { key: 'name', title: 'Name' },
+    { key: 'age', title: 'Age' },
+  ]
+  const renderDetail = (row: DetailRow): JSX.Element => (
+    <span data-testid="detail">Detail for {row.name}</span>
+  )
+
+  it('renders an expand toggle per row, no detail panel by default, aria-expanded="false"', () => {
+    const { container } = render(() => (
+      <IrisTable columns={detailCols} data={detailRows} renderDetail={renderDetail} />
+    ))
+    const toggles = container.querySelectorAll('[data-iris-table-expand-toggle]')
+    expect(toggles).toHaveLength(detailRows.length)
+    expect(container.querySelector('[data-iris-table-header="__expand"]')).not.toBeNull()
+    expect(container.querySelector('[data-iris-table-row-detail]')).toBeNull()
+    toggles.forEach((t) => expect(t.getAttribute('aria-expanded')).toBe('false'))
+  })
+
+  it('clicking the toggle reveals/hides the detail panel and flips aria-expanded', () => {
+    const { container } = render(() => (
+      <IrisTable columns={detailCols} data={detailRows} renderDetail={renderDetail} />
+    ))
+    const firstToggle = (): HTMLButtonElement =>
+      container.querySelector('[data-iris-table-expand-toggle]') as HTMLButtonElement
+
+    fireEvent.click(firstToggle())
+    const detail = container.querySelector('[data-iris-table-row-detail="1"]')
+    expect(detail).not.toBeNull()
+    expect(detail!.querySelector('[data-iris-table-detail-cell]')?.textContent).toBe(
+      'Detail for Alice',
+    )
+    expect(firstToggle().getAttribute('aria-expanded')).toBe('true')
+
+    fireEvent.click(firstToggle())
+    expect(container.querySelector('[data-iris-table-row-detail="1"]')).toBeNull()
+    expect(firstToggle().getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('rowExpandable gates which rows get a toggle', () => {
+    const { container } = render(() => (
+      <IrisTable
+        columns={detailCols}
+        data={detailRows}
+        renderDetail={renderDetail}
+        rowExpandable={(row) => row.name !== 'Bob'}
+      />
+    ))
+    // Three expand cells (leading column) but only two toggles.
+    expect(container.querySelectorAll('[data-iris-table-cell="__expand"]')).toHaveLength(3)
+    expect(container.querySelectorAll('[data-iris-table-expand-toggle]')).toHaveLength(2)
+  })
+
+  it('defaultExpandedRowKeys starts expanded and onExpandedRowsChange fires with string keys', () => {
+    const onExpandedRowsChange = vi.fn()
+    const { container } = render(() => (
+      <IrisTable
+        columns={detailCols}
+        data={detailRows}
+        renderDetail={renderDetail}
+        defaultExpandedRowKeys={[2]}
+        onExpandedRowsChange={onExpandedRowsChange}
+      />
+    ))
+    expect(container.querySelector('[data-iris-table-row-detail="2"]')).not.toBeNull()
+
+    // Expanding row 1 calls onChange with both keys as strings.
+    const firstToggle = container.querySelector(
+      '[data-iris-table-expand-toggle]',
+    ) as HTMLButtonElement
+    fireEvent.click(firstToggle)
+    expect(onExpandedRowsChange).toHaveBeenLastCalledWith(['2', '1'])
+  })
+
+  it('renders no __expand column when renderDetail is absent', () => {
+    const { container } = render(() => <IrisTable columns={detailCols} data={detailRows} />)
+    expect(container.querySelector('[data-iris-table-header="__expand"]')).toBeNull()
+    expect(container.querySelector('[data-iris-table-cell="__expand"]')).toBeNull()
+    expect(container.querySelector('[data-iris-table-expand-toggle]')).toBeNull()
   })
 })

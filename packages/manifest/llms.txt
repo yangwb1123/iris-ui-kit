@@ -255,7 +255,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 - IrisSwitch [react/solid/svelte/vue]
   props: checked?, defaultChecked?, onChange?, size?, invalid?, ariaDescribedby?
 - IrisTable [react/solid/svelte/vue]
-  props: columns, data, rowKey?, selectable?, selection?, defaultSelection?, onSelectionChange?, sort?, defaultSort?, onSortChange?, striped?, bordered?, resizableColumns?, columnWidths?, defaultColumnWidths?, onColumnWidthsChange?, onCellEdit?, virtualScroll?, columnVirtualization?, emptyState?, loading?, error?, loadingState?, errorState?, style?, className?
+  props: columns, data, rowKey?, selectable?, selection?, defaultSelection?, onSelectionChange?, sort?, defaultSort?, onSortChange?, striped?, bordered?, resizableColumns?, columnWidths?, defaultColumnWidths?, onColumnWidthsChange?, onCellEdit?, renderDetail?, rowExpandable?, defaultExpandedRowKeys?, onExpandedRowsChange?, virtualScroll?, columnVirtualization?, emptyState?, loading?, error?, loadingState?, errorState?, style?, className?
 - IrisTabs [react/solid/svelte/vue]
   props: value?, defaultValue?, onValueChange?, orientation?, disabled?, lazy?, children?
 - IrisTabsContent [react/solid/svelte/vue]

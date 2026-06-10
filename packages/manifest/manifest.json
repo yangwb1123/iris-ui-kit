@@ -7115,10 +7115,14 @@
       "module": "toast",
       "frameworks": [
         "react",
+        "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
       "props": [
@@ -7846,12 +7850,12 @@
   },
   "stats": {
     "total": 142,
-    "full": 138,
+    "full": 139,
     "byFramework": {
       "react": 141,
       "vue": 142,
-      "solid": 141,
-      "svelte": 139
+      "solid": 142,
+      "svelte": 140
     }
   }
 }

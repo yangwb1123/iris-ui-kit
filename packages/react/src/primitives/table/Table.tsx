@@ -6,7 +6,9 @@ import {
   createExpansion,
   createSelectionModel,
   flattenTree,
+  nextGridCell,
   type ExpansionModel,
+  type GridNavKey,
   type SelectionModel,
   type TreeRow,
 } from '@iris-ui/core'
@@ -157,6 +159,14 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * mode renders the non-virtualized body and does not reorder on column sort.
    */
   getSubRows?: (row: Row) => Row[] | undefined
+  /**
+   * Enable WAI-ARIA grid keyboard navigation: the table becomes `role="grid"`
+   * and Arrow / Home / End / Page Up·Down move a roving cell focus across the
+   * data cells. Off by default; opt-in and additive (no effect on mouse / Tab
+   * behavior). Pairs best without virtualization (the focused cell must be
+   * rendered) and does not hijack keystrokes while a cell is being edited.
+   */
+  keyboardNavigation?: boolean
   /** Enable virtual scrolling for the body (renders only the visible window). */
   virtualScroll?: IrisTableVirtualOptions
   /**
@@ -210,6 +220,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   defaultExpandedRowKeys,
   onExpandedRowsChange,
   getSubRows,
+  keyboardNavigation = false,
   virtualScroll,
   columnVirtualization = false,
   emptyState,
@@ -469,6 +480,38 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const [scrollLeft, setScrollLeft] = React.useState(0)
   const [viewportWidth, setViewportWidth] = React.useState(0)
 
+  // Grid keyboard navigation (opt-in): roving cell focus over the data cells.
+  const [focusedCell, setFocusedCell] = React.useState<{ row: number; col: number } | null>(null)
+  const GRID_NAV_KEYS = new Set([
+    'ArrowUp',
+    'ArrowDown',
+    'ArrowLeft',
+    'ArrowRight',
+    'Home',
+    'End',
+    'PageUp',
+    'PageDown',
+  ])
+  const handleGridKey = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (!keyboardNavigation || !GRID_NAV_KEYS.has(e.key)) return
+    // Only navigate from a grid cell — never hijack arrows inside an editing
+    // cell's <input> (which carries no data-grid-row).
+    const target = e.target as HTMLElement
+    if (target.dataset.gridRow === undefined) return
+    e.preventDefault()
+    const current = focusedCell ?? { row: 0, col: 0 }
+    const next = nextGridCell(current, e.key as GridNavKey, {
+      rowCount: bodyData.length,
+      colCount: columns.length,
+      pageSize: 10,
+    })
+    setFocusedCell(next)
+    const cell = rootRef.current?.querySelector<HTMLElement>(
+      `[data-grid-row="${next.row}"][data-grid-col="${next.col}"]`,
+    )
+    cell?.focus()
+  }
+
   const resolvedColWidths = React.useMemo(
     () =>
       columns.map(
@@ -615,6 +658,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
               data-iris-table-pinned={col.pinned}
               data-editable={col.editable ? '' : undefined}
               data-editing={editing ? '' : undefined}
+              {...(keyboardNavigation
+                ? {
+                    'data-grid-row': idx,
+                    'data-grid-col': ci,
+                    tabIndex: (
+                      focusedCell
+                        ? focusedCell.row === idx && focusedCell.col === ci
+                        : idx === 0 && ci === 0
+                    )
+                      ? 0
+                      : -1,
+                    onFocus: () => setFocusedCell({ row: idx, col: ci }),
+                  }
+                : null)}
               onDoubleClick={col.editable ? () => beginEdit(row, col, k) : undefined}
               style={{
                 ...baseCellStyle,
@@ -731,12 +788,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
   return (
     <div
       ref={rootRef}
-      role="table"
+      role={keyboardNavigation ? 'grid' : 'table'}
       data-iris-table=""
       data-bordered={bordered ? 'true' : undefined}
       data-striped={striped ? 'true' : undefined}
       data-column-virtualized={columnVirtualization ? 'true' : undefined}
       className={className}
+      onKeyDown={keyboardNavigation ? handleGridKey : undefined}
       onScroll={
         columnVirtualization
           ? (e) => setScrollLeft((e.currentTarget as HTMLDivElement).scrollLeft)

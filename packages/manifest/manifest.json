@@ -6665,6 +6665,12 @@
           "description": "Read a row's child rows to render the table as a TREE. Providing this enables tree mode: `data` is treated as the root rows, each row's first cell gains a depth indent + an expand/collapse toggle (when it has children), and the expand state reuses `defaultExpandedRowKeys`/`onExpandedRowsChange`. v1 tree mode renders the non-virtualized body and does not reorder on column sort."
         },
         {
+          "name": "keyboardNavigation",
+          "type": "boolean",
+          "optional": true,
+          "description": "Enable WAI-ARIA grid keyboard navigation: the table becomes `role=\"grid\"` and Arrow / Home / End / Page Up·Down move a roving cell focus across the data cells. Off by default; opt-in and additive (no effect on mouse / Tab behavior). Pairs best without virtualization (the focused cell must be rendered) and does not hijack keystrokes while a cell is being edited."
+        },
+        {
           "name": "virtualScroll",
           "type": "IrisTableVirtualOptions",
           "optional": true,

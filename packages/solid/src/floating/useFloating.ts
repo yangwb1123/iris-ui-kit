@@ -55,24 +55,34 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     return mw
   }
 
+  // Monotonic token bumped on each new positioning cycle and on cleanup, so a
+  // computePosition() that resolves after this effect tore down (close/unmount
+  // or a newer cycle) drops its result instead of applying stale coordinates.
+  let epoch = 0
+
   createEffect(() => {
     if (!options.open()) return
     const a = options.anchor()
     const f = options.floating()
     if (!a || !f) return
     const update = (): void => {
+      const token = ++epoch
       void computePosition(a, f, {
         placement: placement(),
         strategy: strategy(),
         middleware: buildMiddleware(),
       }).then((result) => {
+        if (token !== epoch) return
         setX(result.x)
         setY(result.y)
         setFinalPlacement(result.placement)
       })
     }
     const cleanup = autoUpdate(a, f, update)
-    onCleanup(cleanup)
+    onCleanup(() => {
+      epoch++
+      cleanup()
+    })
   })
 
   const floatingStyles = (): JSX.CSSProperties => ({

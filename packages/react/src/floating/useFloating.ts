@@ -82,15 +82,24 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
   const middlewareRef = React.useRef(middleware)
   middlewareRef.current = middleware
 
+  // Monotonic token bumped on every new positioning cycle and on teardown.
+  // `computePosition` is async; without this guard a result that resolves
+  // after the panel closed/unmounted (or after a newer update started) would
+  // apply stale coordinates and call setState on an unmounted component.
+  const epochRef = React.useRef(0)
+
   const update = React.useCallback(async () => {
     const a = anchor.current
     const f = floating.current
     if (!a || !f) return
+    const token = ++epochRef.current
     const result = await computePosition(a, f, {
       placement,
       strategy,
       middleware: middlewareRef.current,
     })
+    // A newer update() started, or the effect tore down, while awaiting — drop.
+    if (token !== epochRef.current) return
     setX(result.x)
     setY(result.y)
     setFinalPlacement(result.placement)
@@ -104,7 +113,11 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     const cleanup = autoUpdate(a, f, () => {
       void update()
     })
-    return cleanup
+    return () => {
+      // Invalidate any in-flight update() so its late result never lands.
+      epochRef.current++
+      cleanup()
+    }
   }, [open, anchor, floating, update])
 
   const floatingStyles = React.useMemo<React.CSSProperties>(

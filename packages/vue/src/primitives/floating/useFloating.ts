@@ -87,16 +87,22 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
   }
 
   let cleanupAutoUpdate: (() => void) | null = null
+  // Monotonic token bumped on every new positioning cycle and on teardown, so a
+  // computePosition() that resolves after the panel closed/re-opened (or after a
+  // newer update started) drops its result instead of applying stale coords.
+  let epoch = 0
 
   async function update() {
     const a = options.anchor.value
     const f = options.floating.value
     if (!a || !f) return
+    const token = ++epoch
     const result = await computePosition(a, f, {
       placement: options.placement ?? 'bottom',
       strategy: strategy.value,
       middleware: middleware.value,
     })
+    if (token !== epoch) return
     x.value = result.x
     y.value = result.y
     finalPlacement.value = result.placement
@@ -107,6 +113,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     ([isOpen, anchorEl, floatingEl]) => {
       cleanupAutoUpdate?.()
       cleanupAutoUpdate = null
+      epoch++
       if (isOpen && anchorEl && floatingEl) {
         cleanupAutoUpdate = autoUpdate(anchorEl, floatingEl, () => {
           void update()
@@ -119,6 +126,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
   onScopeDispose(() => {
     cleanupAutoUpdate?.()
     cleanupAutoUpdate = null
+    epoch++
   })
 
   const floatingStyles = computed<Record<string, string>>(() => ({

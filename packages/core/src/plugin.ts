@@ -44,6 +44,14 @@ export interface PluginRegistry {
 export interface IrisPlugin {
   readonly name: string
   install(registry: PluginRegistry): void | (() => void)
+  /**
+   * Names of plugins this one must install AFTER (e.g. it reads a store or
+   * tokens they register). {@link runPlugins} topologically orders installs so
+   * dependencies run first; teardown then runs LIFO (dependents unwind first).
+   * Missing names and cycles are dev-warned and degrade gracefully. Omit for an
+   * independent plugin (the common case — install order then follows the array).
+   */
+  readonly dependsOn?: readonly string[]
 }
 
 /** The merged result of running every plugin's `install`. */
@@ -95,13 +103,49 @@ export function createPlugin(def: IrisPlugin): IrisPlugin {
 }
 
 /**
+ * Order plugins so every plugin installs AFTER the ones it `dependsOn`, while
+ * preserving the original array order for independent plugins (stable DFS
+ * post-order topological sort). Missing dependency names are dev-warned and
+ * skipped; a dependency cycle is dev-warned and its back-edge ignored so the
+ * run still completes deterministically.
+ */
+function orderPlugins(plugins: readonly IrisPlugin[]): IrisPlugin[] {
+  const byName = new Map(plugins.map((p) => [p.name, p]))
+  const result: IrisPlugin[] = []
+  const done = new Set<string>()
+  const onStack = new Set<string>()
+  const visit = (p: IrisPlugin): void => {
+    if (done.has(p.name)) return
+    if (onStack.has(p.name)) {
+      devWarn(`plugin "${p.name}" is part of a dependency cycle; ignoring the back-edge.`)
+      return
+    }
+    onStack.add(p.name)
+    for (const dep of p.dependsOn ?? []) {
+      const depPlugin = byName.get(dep)
+      if (!depPlugin) {
+        devWarn(`plugin "${p.name}" depends on "${dep}", which is not installed.`)
+        continue
+      }
+      visit(depPlugin)
+    }
+    onStack.delete(p.name)
+    done.add(p.name)
+    result.push(p)
+  }
+  for (const p of plugins) visit(p)
+  return result
+}
+
+/**
  * Pure, synchronous, deterministic. Runs every plugin's `install` and collects
  * the registrations. This is the system's only real logic — the four adapter
  * providers delegate to it, so there is one implementation and one test suite.
  *
  * Store factories are invoked **eagerly** (once each) so server and client see
  * the same instances in SSR. Duplicate tokens / store keys win-last with a dev
- * warning; messages for a locale are deep-merged across plugins.
+ * warning; messages for a locale are deep-merged across plugins. Plugins that
+ * declare {@link IrisPlugin.dependsOn} are topologically ordered first.
  */
 export function runPlugins(plugins: readonly IrisPlugin[]): CollectedRegistrations {
   const tokens: Record<string, string> = {}
@@ -133,7 +177,10 @@ export function runPlugins(plugins: readonly IrisPlugin[]): CollectedRegistratio
     },
   }
 
-  for (const plugin of plugins) {
+  // Only reorder when a plugin actually declares a dependency — otherwise the
+  // install order is the array order (zero behavior change for independent plugins).
+  const ordered = plugins.some((p) => p.dependsOn?.length) ? orderPlugins(plugins) : plugins
+  for (const plugin of ordered) {
     if (seenNames.has(plugin.name)) {
       devWarn(`plugin "${plugin.name}" installed more than once.`)
     }

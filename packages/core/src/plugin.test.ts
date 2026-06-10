@@ -138,3 +138,64 @@ describe('runPlugins', () => {
     expect(() => r.teardown()).not.toThrow()
   })
 })
+
+describe('runPlugins dependency ordering', () => {
+  function recordingPlugin(name: string, log: string[], dependsOn?: string[]) {
+    return createPlugin({
+      name,
+      dependsOn,
+      install() {
+        log.push(name)
+      },
+    })
+  }
+
+  it('installs a plugin after the ones it dependsOn', () => {
+    const log: string[] = []
+    // Declared order puts the dependent first; ordering must fix it.
+    runPlugins([recordingPlugin('table', log, ['data']), recordingPlugin('data', log)])
+    expect(log).toEqual(['data', 'table'])
+  })
+
+  it('preserves array order for independent plugins (no reordering)', () => {
+    const log: string[] = []
+    runPlugins([recordingPlugin('a', log), recordingPlugin('b', log), recordingPlugin('c', log)])
+    expect(log).toEqual(['a', 'b', 'c'])
+  })
+
+  it('resolves a transitive chain', () => {
+    const log: string[] = []
+    runPlugins([
+      recordingPlugin('c', log, ['b']),
+      recordingPlugin('b', log, ['a']),
+      recordingPlugin('a', log),
+    ])
+    expect(log).toEqual(['a', 'b', 'c'])
+  })
+
+  it('warns on a missing dependency but still installs', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const log: string[] = []
+    runPlugins([recordingPlugin('x', log, ['nope'])])
+    expect(log).toEqual(['x'])
+    expect(warn.mock.calls.some((c) => String(c[0]).includes('not installed'))).toBe(true)
+  })
+
+  it('warns on a cycle and still completes', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const log: string[] = []
+    runPlugins([recordingPlugin('a', log, ['b']), recordingPlugin('b', log, ['a'])])
+    expect(log.sort()).toEqual(['a', 'b']) // both installed once
+    expect(warn.mock.calls.some((c) => String(c[0]).includes('cycle'))).toBe(true)
+  })
+
+  it('tears down in reverse install order (dependents first)', () => {
+    const log: string[] = []
+    const r = runPlugins([
+      createPlugin({ name: 'table', dependsOn: ['data'], install: () => () => log.push('table') }),
+      createPlugin({ name: 'data', install: () => () => log.push('data') }),
+    ])
+    r.teardown()
+    expect(log).toEqual(['table', 'data']) // install was data→table; teardown LIFO
+  })
+})

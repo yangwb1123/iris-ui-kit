@@ -144,12 +144,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   // ---- Inline Editing ----
   const [editingCellId, setEditingCellId] = createSignal<string | null>(null)
   const [editingDraft, setEditingDraft] = createSignal('')
+  const [editError, setEditError] = createSignal<string | null>(null)
 
   const beginEdit = (row: Row, column: IrisTableColumn<Row>, rowIdent: string | number): void => {
     if (!column.editable) return
     setEditingCellId(`${rowIdent}::${column.key}`)
     const current = getCellValue(row, column)
     setEditingDraft(current == null ? '' : String(current))
+    setEditError(null)
   }
 
   const commitEdit = (row: Row, column: IrisTableColumn<Row>, rowIndex: number): void => {
@@ -162,6 +164,16 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           ? oldValue
           : Number(draft)
         : draft
+    // A column validator can reject the draft: keep the editor open, surface the
+    // message, and skip the commit until the value is valid (or the user cancels).
+    if (column.validate) {
+      const error = column.validate(newValue, row)
+      if (error) {
+        setEditError(error)
+        return
+      }
+    }
+    setEditError(null)
     setEditingCellId(null)
     if (newValue !== oldValue) {
       merged.onCellEdit?.({ row, column, oldValue, newValue, rowIndex })
@@ -169,6 +181,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   }
 
   const cancelEdit = (): void => {
+    setEditError(null)
     setEditingCellId(null)
   }
 
@@ -414,35 +427,55 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                                 </Show>
                               }
                             >
-                              <input
-                                type={col.editor === 'number' ? 'number' : 'text'}
-                                value={editingDraft()}
-                                data-iris-table-editor=""
-                                onInput={(e) =>
-                                  setEditingDraft((e.target as HTMLInputElement).value)
-                                }
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault()
-                                    commitEdit(row, col, index)
-                                  } else if (e.key === 'Escape') {
-                                    e.preventDefault()
-                                    cancelEdit()
+                              <>
+                                <input
+                                  type={col.editor === 'number' ? 'number' : 'text'}
+                                  value={editingDraft()}
+                                  data-iris-table-editor=""
+                                  aria-invalid={editError() ? 'true' : undefined}
+                                  aria-describedby={editError() ? `${cid}-error` : undefined}
+                                  onInput={(e) =>
+                                    setEditingDraft((e.target as HTMLInputElement).value)
                                   }
-                                }}
-                                onBlur={() => commitEdit(row, col, index)}
-                                onClick={(e) => e.stopPropagation()}
-                                style={{
-                                  width: '100%',
-                                  border: '1px solid var(--iris-primary)',
-                                  'border-radius': 'var(--iris-radius-sm)',
-                                  padding: '4px 6px',
-                                  font: 'inherit',
-                                  background: 'var(--iris-background)',
-                                  color: 'var(--iris-foreground)',
-                                  outline: 'none',
-                                }}
-                              />
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault()
+                                      commitEdit(row, col, index)
+                                    } else if (e.key === 'Escape') {
+                                      e.preventDefault()
+                                      cancelEdit()
+                                    }
+                                  }}
+                                  onBlur={() => commitEdit(row, col, index)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{
+                                    width: '100%',
+                                    border: `1px solid ${
+                                      editError() ? 'var(--iris-danger)' : 'var(--iris-primary)'
+                                    }`,
+                                    'border-radius': 'var(--iris-radius-sm)',
+                                    padding: '4px 6px',
+                                    font: 'inherit',
+                                    background: 'var(--iris-background)',
+                                    color: 'var(--iris-foreground)',
+                                    outline: 'none',
+                                  }}
+                                />
+                                <Show when={editError()}>
+                                  <div
+                                    id={`${cid}-error`}
+                                    role="alert"
+                                    data-iris-table-editor-error=""
+                                    style={{
+                                      'margin-top': '2px',
+                                      'font-size': '12px',
+                                      color: 'var(--iris-danger)',
+                                    }}
+                                  >
+                                    {editError()}
+                                  </div>
+                                </Show>
+                              </>
                             </Show>
                           </div>
                         )

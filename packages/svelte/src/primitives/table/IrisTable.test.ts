@@ -66,3 +66,75 @@ describe('IrisTable', () => {
     expect(onUpdateSort).toHaveBeenCalledWith({ key: 'name', direction: 'asc' })
   })
 })
+
+describe('IrisTable inline-edit validation', () => {
+  const validatedCols = [
+    {
+      key: 'name',
+      title: 'Name',
+      editable: true,
+      validate: (v: unknown) => (String(v).trim() === '' ? 'Name is required' : null),
+    },
+    { key: 'age', title: 'Age' },
+  ]
+
+  function cell(container: HTMLElement, rowIdx: number, key: string): HTMLElement {
+    const rows = container.querySelectorAll('[data-iris-table-body] [data-iris-table-row]')
+    return rows[rowIdx].querySelector(`[data-iris-table-cell="${key}"]`) as HTMLElement
+  }
+  function editor(container: HTMLElement): HTMLInputElement | null {
+    return container.querySelector('[data-iris-table-editor]')
+  }
+
+  it('a failing validator blocks the commit, keeps the editor open, and shows the error', async () => {
+    const onCellEdit = vi.fn()
+    const { container } = render(IrisTable, {
+      props: { columns: validatedCols, data, onCellEdit },
+    })
+    await fireEvent.dblClick(cell(container, 0, 'name'))
+    await fireEvent.input(editor(container)!, { target: { value: '   ' } })
+    await fireEvent.keyDown(editor(container)!, { key: 'Enter' })
+
+    expect(onCellEdit).not.toHaveBeenCalled()
+    expect(editor(container)).not.toBeNull() // stays open
+    expect(editor(container)!.getAttribute('aria-invalid')).toBe('true')
+    const err = container.querySelector('[data-iris-table-editor-error]')
+    expect(err?.textContent).toBe('Name is required')
+    expect(err?.getAttribute('role')).toBe('alert')
+    expect(editor(container)!.getAttribute('aria-describedby')).toBe(err?.id)
+  })
+
+  it('correcting the value clears the error and commits', async () => {
+    const onCellEdit = vi.fn()
+    const { container } = render(IrisTable, {
+      props: { columns: validatedCols, data, onCellEdit },
+    })
+    await fireEvent.dblClick(cell(container, 0, 'name'))
+    await fireEvent.input(editor(container)!, { target: { value: '' } })
+    await fireEvent.keyDown(editor(container)!, { key: 'Enter' })
+    expect(onCellEdit).not.toHaveBeenCalled()
+
+    await fireEvent.input(editor(container)!, { target: { value: 'Valid Name' } })
+    await fireEvent.keyDown(editor(container)!, { key: 'Enter' })
+
+    expect(onCellEdit).toHaveBeenCalledWith(expect.objectContaining({ newValue: 'Valid Name' }))
+    expect(editor(container)).toBeNull()
+    expect(container.querySelector('[data-iris-table-editor-error]')).toBeNull()
+  })
+
+  it('Escape cancels even while an error is showing', async () => {
+    const onCellEdit = vi.fn()
+    const { container } = render(IrisTable, {
+      props: { columns: validatedCols, data, onCellEdit },
+    })
+    await fireEvent.dblClick(cell(container, 0, 'name'))
+    await fireEvent.input(editor(container)!, { target: { value: '' } })
+    await fireEvent.keyDown(editor(container)!, { key: 'Enter' })
+    expect(editor(container)).not.toBeNull()
+
+    await fireEvent.keyDown(editor(container)!, { key: 'Escape' })
+
+    expect(editor(container)).toBeNull()
+    expect(onCellEdit).not.toHaveBeenCalled()
+  })
+})

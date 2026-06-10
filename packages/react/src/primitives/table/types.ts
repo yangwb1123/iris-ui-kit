@@ -37,6 +37,13 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   editable?: boolean
   /** Editor kind. Default `'text'`. */
   editor?: IrisTableEditor
+  /**
+   * Validate a draft value before it commits. Return an error message to
+   * REJECT the edit (the editor stays open, shows the message, and is marked
+   * `aria-invalid`); return `null`/`undefined` to accept. Receives the parsed
+   * value (a number for the `'number'` editor) and the row being edited.
+   */
+  validate?: (value: unknown, row: Row) => string | null | undefined
   /** Custom comparator for sorting; defaults to native `<`. */
   sorter?: (a: Row, b: Row) => number
   /** Custom render for cell content. */

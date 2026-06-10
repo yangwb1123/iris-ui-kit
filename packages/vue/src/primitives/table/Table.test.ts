@@ -465,6 +465,118 @@ describe('IrisTable', () => {
       await nextTick()
       expect(wrapper.emitted('cellEdit')).toBeUndefined()
     })
+
+    it('a failing validator blocks commit and surfaces the error', async () => {
+      const validatedCols: IrisTableColumn<Row>[] = [
+        {
+          key: 'name',
+          title: 'Name',
+          editable: true,
+          validate: (value) => (String(value).length < 3 ? 'Too short' : null),
+        },
+        { key: 'age', title: 'Age', editable: true, editor: 'number' },
+      ]
+      const wrapper = mount(IrisTable, {
+        props: {
+          columns: validatedCols as IrisTableColumn<Record<string, unknown>>[],
+          data: rows,
+          rowKey: 'id',
+        },
+        attachTo: host,
+      })
+      const firstCell = wrapper.findAll('[data-iris-table-row]')[0]!.findAll('[role="cell"]')[0]!
+      await firstCell.trigger('dblclick')
+      await nextTick()
+      const editor = wrapper.find('[data-iris-table-editor]')
+      await editor.setValue('Hi')
+      await editor.trigger('keydown', { key: 'Enter' })
+      await nextTick()
+      // Editor stays open, no emit.
+      expect(wrapper.emitted('cellEdit')).toBeUndefined()
+      expect(wrapper.find('[data-iris-table-editor]').exists()).toBe(true)
+      // aria-invalid set on the input.
+      expect(wrapper.find('[data-iris-table-editor]').attributes('aria-invalid')).toBe('true')
+      // Error element rendered with role=alert and the message.
+      const err = wrapper.find('[data-iris-table-editor-error]')
+      expect(err.exists()).toBe(true)
+      expect(err.attributes('role')).toBe('alert')
+      expect(err.text()).toBe('Too short')
+      // aria-describedby points at the error element id.
+      expect(wrapper.find('[data-iris-table-editor]').attributes('aria-describedby')).toBe(
+        err.attributes('id'),
+      )
+    })
+
+    it('correcting the value clears the error, emits, and closes the editor', async () => {
+      const validatedCols: IrisTableColumn<Row>[] = [
+        {
+          key: 'name',
+          title: 'Name',
+          editable: true,
+          validate: (value) => (String(value).length < 3 ? 'Too short' : null),
+        },
+        { key: 'age', title: 'Age', editable: true, editor: 'number' },
+      ]
+      const wrapper = mount(IrisTable, {
+        props: {
+          columns: validatedCols as IrisTableColumn<Record<string, unknown>>[],
+          data: rows,
+          rowKey: 'id',
+        },
+        attachTo: host,
+      })
+      const firstCell = wrapper.findAll('[data-iris-table-row]')[0]!.findAll('[role="cell"]')[0]!
+      await firstCell.trigger('dblclick')
+      await nextTick()
+      let editor = wrapper.find('[data-iris-table-editor]')
+      await editor.setValue('Hi')
+      await editor.trigger('keydown', { key: 'Enter' })
+      await nextTick()
+      expect(wrapper.find('[data-iris-table-editor-error]').exists()).toBe(true)
+      // Correct the value and commit again.
+      editor = wrapper.find('[data-iris-table-editor]')
+      await editor.setValue('Hiya')
+      await editor.trigger('keydown', { key: 'Enter' })
+      await nextTick()
+      const events = wrapper.emitted('cellEdit') as Array<[IrisTableCellEditEvent]> | undefined
+      expect(events).toBeDefined()
+      expect(events![0]![0].newValue).toBe('Hiya')
+      expect(wrapper.find('[data-iris-table-editor]').exists()).toBe(false)
+      expect(wrapper.find('[data-iris-table-editor-error]').exists()).toBe(false)
+    })
+
+    it('Escape cancels even while the validation error shows', async () => {
+      const validatedCols: IrisTableColumn<Row>[] = [
+        {
+          key: 'name',
+          title: 'Name',
+          editable: true,
+          validate: (value) => (String(value).length < 3 ? 'Too short' : null),
+        },
+        { key: 'age', title: 'Age', editable: true, editor: 'number' },
+      ]
+      const wrapper = mount(IrisTable, {
+        props: {
+          columns: validatedCols as IrisTableColumn<Record<string, unknown>>[],
+          data: rows,
+          rowKey: 'id',
+        },
+        attachTo: host,
+      })
+      const firstCell = wrapper.findAll('[data-iris-table-row]')[0]!.findAll('[role="cell"]')[0]!
+      await firstCell.trigger('dblclick')
+      await nextTick()
+      const editor = wrapper.find('[data-iris-table-editor]')
+      await editor.setValue('Hi')
+      await editor.trigger('keydown', { key: 'Enter' })
+      await nextTick()
+      expect(wrapper.find('[data-iris-table-editor-error]').exists()).toBe(true)
+      await wrapper.find('[data-iris-table-editor]').trigger('keydown', { key: 'Escape' })
+      await nextTick()
+      expect(wrapper.emitted('cellEdit')).toBeUndefined()
+      expect(wrapper.find('[data-iris-table-editor]').exists()).toBe(false)
+      expect(wrapper.find('[data-iris-table-editor-error]').exists()).toBe(false)
+    })
   })
 
   describe('Pro: CSV export', () => {

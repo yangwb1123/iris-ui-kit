@@ -208,6 +208,7 @@ export const IrisTable = defineComponent({
     /** Encode a unique cell identity: row id + column key. */
     const editingCellId = ref<string | null>(null)
     const editingDraft = ref<string>('')
+    const editError = ref<string | null>(null)
     const editorInputRef = ref<HTMLInputElement | null>(null)
 
     const cellId = (rowIdent: string | number, colKey: string) => `${rowIdent}::${colKey}`
@@ -221,6 +222,7 @@ export const IrisTable = defineComponent({
       editingCellId.value = cellId(rowIdent, column.key)
       const current = getCellValue(row, column)
       editingDraft.value = current == null ? '' : String(current)
+      editError.value = null
       void nextTick(() => editorInputRef.value?.focus())
     }
 
@@ -238,6 +240,16 @@ export const IrisTable = defineComponent({
             ? oldValue
             : Number(draft)
           : draft
+      // A column validator can reject the draft: keep the editor open, surface the
+      // message, and skip the commit until the value is valid (or the user cancels).
+      if (column.validate) {
+        const error = column.validate(newValue, row)
+        if (error) {
+          editError.value = error
+          return
+        }
+      }
+      editError.value = null
       editingCellId.value = null
       if (newValue !== oldValue) {
         emit('cellEdit', { row, column, oldValue, newValue, rowIndex })
@@ -245,6 +257,7 @@ export const IrisTable = defineComponent({
     }
 
     const cancelEdit = () => {
+      editError.value = null
       editingCellId.value = null
     }
 
@@ -613,13 +626,17 @@ export const IrisTable = defineComponent({
 
           let content: unknown
           if (isEditing) {
-            content = h('input', {
+            const editCellId = cellId(id, col.key)
+            const error = editError.value
+            const input = h('input', {
               ref: (el: unknown) => {
                 editorInputRef.value = (el ?? null) as HTMLInputElement | null
               },
               type: col.editor === 'number' ? 'number' : 'text',
               value: editingDraft.value,
               'data-iris-table-editor': '',
+              'aria-invalid': error ? 'true' : undefined,
+              'aria-describedby': error ? `${editCellId}-error` : undefined,
               onInput: (e: Event) => {
                 editingDraft.value = (e.target as HTMLInputElement).value
               },
@@ -637,7 +654,7 @@ export const IrisTable = defineComponent({
               onDblclick: (e: MouseEvent) => e.stopPropagation(),
               style: {
                 width: '100%',
-                border: '1px solid var(--iris-primary)',
+                border: `1px solid ${error ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
                 borderRadius: 'var(--iris-radius-sm)',
                 padding: '4px 6px',
                 font: 'inherit',
@@ -647,6 +664,25 @@ export const IrisTable = defineComponent({
                 boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.18)',
               },
             })
+            content = error
+              ? [
+                  input,
+                  h(
+                    'div',
+                    {
+                      id: `${editCellId}-error`,
+                      role: 'alert',
+                      'data-iris-table-editor-error': '',
+                      style: {
+                        marginTop: '2px',
+                        fontSize: '12px',
+                        color: 'var(--iris-danger)',
+                      },
+                    },
+                    error,
+                  ),
+                ]
+              : input
           } else {
             content =
               cellSlot?.({ row, index, value: getCellValue(row, col) }) ??
@@ -680,7 +716,7 @@ export const IrisTable = defineComponent({
                   ...pinnedStyle(col.key),
                 },
               },
-              content as VNode | string,
+              content as VNode | VNode[] | string,
             ),
           )
         }

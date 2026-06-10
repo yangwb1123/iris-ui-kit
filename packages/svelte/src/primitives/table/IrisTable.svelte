@@ -171,6 +171,7 @@
   // Editing
   let editingCellId = $state<string | null>(null)
   let editingDraft = $state('')
+  let editError = $state<string | null>(null)
 
   function cellId(rowIdent: string | number, colKey: string): string {
     return `${rowIdent}::${colKey}`
@@ -181,6 +182,7 @@
     editingCellId = cellId(rowIdent, column.key)
     const current = getCellValue(row, column)
     editingDraft = current == null ? '' : String(current)
+    editError = null
   }
 
   function commitEdit(row: Record<string, unknown>, column: IrisTableColumn, rowIndex: number): void {
@@ -190,13 +192,26 @@
     const newValue = column.editor === 'number'
       ? draft === '' || isNaN(Number(draft)) ? oldValue : Number(draft)
       : draft
+    // A column validator can reject the draft: keep the editor open, surface the
+    // message, and skip the commit until the value is valid (or the user cancels).
+    if (column.validate) {
+      const error = column.validate(newValue, row)
+      if (error) {
+        editError = error
+        return
+      }
+    }
+    editError = null
     editingCellId = null
     if (newValue !== oldValue) {
       onCellEdit?.({ row, column, oldValue, newValue, rowIndex })
     }
   }
 
-  function cancelEdit(): void { editingCellId = null }
+  function cancelEdit(): void {
+    editError = null
+    editingCellId = null
+  }
 
   const stateRowStyle = 'padding: 32px 12px; text-align: center; color: var(--iris-muted)'
 </script>
@@ -292,6 +307,8 @@
                   type={col.editor === 'number' ? 'number' : 'text'}
                   value={editingDraft}
                   data-iris-table-editor
+                  aria-invalid={editError ? 'true' : undefined}
+                  aria-describedby={editError ? `${cellId(id, col.key)}-error` : undefined}
                   oninput={(e) => { editingDraft = (e.target as HTMLInputElement).value }}
                   onkeydown={(e) => {
                     if (e.key === 'Enter') { e.preventDefault(); commitEdit(row, col, index) }
@@ -299,8 +316,16 @@
                   }}
                   onblur={() => commitEdit(row, col, index)}
                   onclick={(e) => e.stopPropagation()}
-                  style="width: 100%; border: 1px solid var(--iris-primary); border-radius: var(--iris-radius-sm, 4px); padding: 4px 6px; font: inherit; background: var(--iris-background); color: var(--iris-foreground); outline: none"
+                  style="width: 100%; border: 1px solid {editError ? 'var(--iris-danger)' : 'var(--iris-primary)'}; border-radius: var(--iris-radius-sm, 4px); padding: 4px 6px; font: inherit; background: var(--iris-background); color: var(--iris-foreground); outline: none"
                 />
+                {#if editError}
+                  <div
+                    id={`${cellId(id, col.key)}-error`}
+                    role="alert"
+                    data-iris-table-editor-error
+                    style="margin-top: 2px; font-size: 12px; color: var(--iris-danger)"
+                  >{editError}</div>
+                {/if}
               {:else}
                 {String(getCellValue(row, col) ?? '')}
               {/if}

@@ -239,6 +239,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // the change + Enter events are processed in the same React batch.
   const [editingCellId, setEditingCellId] = React.useState<string | null>(null)
   const [editingDraft, setEditingDraft] = React.useState('')
+  const [editError, setEditError] = React.useState<string | null>(null)
   const draftRef = React.useRef('')
   const editorRef = React.useRef<HTMLInputElement | null>(null)
   const cellId = (rowIdent: string | number, colKey: string): string => `${rowIdent}::${colKey}`
@@ -255,9 +256,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!col.editable) return
     const current = getCellValue(row, col)
     setDraft(current == null ? '' : String(current))
+    setEditError(null)
     setEditingCellId(cellId(rowIdent, col.key))
   }
-  const cancelEdit = () => setEditingCellId(null)
+  const cancelEdit = () => {
+    setEditError(null)
+    setEditingCellId(null)
+  }
   const commitEdit = (row: Row, col: IrisTableColumn<Row>, rowIndex: number) => {
     if (editingCellId === null) return
     const oldValue = getCellValue(row, col)
@@ -268,6 +273,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
           ? oldValue
           : Number(draft)
         : draft
+    // A column validator can reject the draft: keep the editor open, surface the
+    // message, and skip the commit until the value is valid (or the user cancels).
+    if (col.validate) {
+      const error = col.validate(newValue, row)
+      if (error) {
+        setEditError(error)
+        return
+      }
+    }
+    setEditError(null)
     setEditingCellId(null)
     if (newValue !== oldValue) {
       onCellEdit?.({ row, column: col, oldValue, newValue, rowIndex })
@@ -510,34 +525,48 @@ export function IrisTable<Row extends Record<string, unknown>>({
               }}
             >
               {editing ? (
-                <input
-                  ref={editorRef}
-                  type={col.editor === 'number' ? 'number' : 'text'}
-                  value={editingDraft}
-                  data-iris-table-editor=""
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      commitEdit(row, col, idx)
-                    } else if (e.key === 'Escape') {
-                      e.preventDefault()
-                      cancelEdit()
-                    }
-                  }}
-                  onBlur={() => commitEdit(row, col, idx)}
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    width: '100%',
-                    border: '1px solid var(--iris-primary)',
-                    borderRadius: 'var(--iris-radius-sm, 4px)',
-                    padding: '4px 6px',
-                    font: 'inherit',
-                    background: 'var(--iris-background)',
-                    color: 'var(--iris-foreground)',
-                    outline: 'none',
-                  }}
-                />
+                <>
+                  <input
+                    ref={editorRef}
+                    type={col.editor === 'number' ? 'number' : 'text'}
+                    value={editingDraft}
+                    data-iris-table-editor=""
+                    aria-invalid={editError ? 'true' : undefined}
+                    aria-describedby={editError ? `${cellId(k, col.key)}-error` : undefined}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        commitEdit(row, col, idx)
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault()
+                        cancelEdit()
+                      }
+                    }}
+                    onBlur={() => commitEdit(row, col, idx)}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      width: '100%',
+                      border: `1px solid ${editError ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
+                      borderRadius: 'var(--iris-radius-sm, 4px)',
+                      padding: '4px 6px',
+                      font: 'inherit',
+                      background: 'var(--iris-background)',
+                      color: 'var(--iris-foreground)',
+                      outline: 'none',
+                    }}
+                  />
+                  {editError ? (
+                    <div
+                      id={`${cellId(k, col.key)}-error`}
+                      role="alert"
+                      data-iris-table-editor-error=""
+                      style={{ marginTop: 2, fontSize: 12, color: 'var(--iris-danger)' }}
+                    >
+                      {editError}
+                    </div>
+                  ) : null}
+                </>
               ) : col.render ? (
                 col.render(raw, row, idx)
               ) : (

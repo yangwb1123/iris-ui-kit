@@ -32,6 +32,12 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   editable?: boolean
   /** Which kind of editor to render. Default `'text'`. */
   editor?: IrisTableEditor
+  /**
+   * Validate a draft before commit. Return an error message to REJECT (editor
+   * stays open, marked aria-invalid); null/undefined to accept. Receives the
+   * parsed value (a number for the number editor) and the row.
+   */
+  validate?: (value: unknown, row: Row) => string | null | undefined
 }
 
 export interface IrisTableCellEditEvent<Row = Record<string, unknown>> {

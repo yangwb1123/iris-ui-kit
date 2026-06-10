@@ -20,6 +20,12 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   sorter?: (a: Row, b: Row) => number
   editable?: boolean
   editor?: IrisTableEditor
+  /**
+   * Validate a draft before commit. Return an error message to REJECT (editor
+   * stays open, marked aria-invalid); null/undefined to accept. Receives the
+   * parsed value (a number for the number editor) and the row.
+   */
+  validate?: (value: unknown, row: Row) => string | null | undefined
   /** Custom cell render function. */
   renderCell?: (row: Row, index: number) => JSX.Element
 }

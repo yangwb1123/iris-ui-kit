@@ -489,6 +489,71 @@ describe('@iris-ui/react IrisTable inline editing', () => {
     })
     expect(onCellEdit).not.toHaveBeenCalled()
   })
+
+  const validatedCols: IrisTableColumn<Row>[] = [
+    {
+      key: 'name',
+      title: 'Name',
+      editable: true,
+      validate: (v) => (String(v).trim() === '' ? 'Name is required' : null),
+    },
+  ]
+
+  it('a failing validator blocks the commit, keeps the editor open, and shows the error', () => {
+    const onCellEdit = vi.fn()
+    render(<IrisTable columns={validatedCols} data={rows} onCellEdit={onCellEdit} />)
+    act(() => {
+      fireEvent.doubleClick(cell(1, 'name'))
+    })
+    act(() => {
+      fireEvent.change(editor()!, { target: { value: '   ' } })
+      fireEvent.keyDown(editor()!, { key: 'Enter' })
+    })
+    expect(onCellEdit).not.toHaveBeenCalled()
+    expect(editor()).not.toBeNull() // stays open
+    expect(editor()!.getAttribute('aria-invalid')).toBe('true')
+    const err = document.querySelector('[data-iris-table-editor-error]')
+    expect(err?.textContent).toBe('Name is required')
+    expect(err?.getAttribute('role')).toBe('alert')
+    expect(editor()!.getAttribute('aria-describedby')).toBe(err?.id)
+  })
+
+  it('correcting the value clears the error and commits', () => {
+    const onCellEdit = vi.fn()
+    render(<IrisTable columns={validatedCols} data={rows} onCellEdit={onCellEdit} />)
+    act(() => {
+      fireEvent.doubleClick(cell(1, 'name'))
+    })
+    act(() => {
+      fireEvent.change(editor()!, { target: { value: '' } })
+      fireEvent.keyDown(editor()!, { key: 'Enter' })
+    })
+    expect(onCellEdit).not.toHaveBeenCalled()
+    act(() => {
+      fireEvent.change(editor()!, { target: { value: 'Valid Name' } })
+      fireEvent.keyDown(editor()!, { key: 'Enter' })
+    })
+    expect(onCellEdit).toHaveBeenCalledWith(expect.objectContaining({ newValue: 'Valid Name' }))
+    expect(editor()).toBeNull()
+  })
+
+  it('Escape cancels even while an error is showing', () => {
+    const onCellEdit = vi.fn()
+    render(<IrisTable columns={validatedCols} data={rows} onCellEdit={onCellEdit} />)
+    act(() => {
+      fireEvent.doubleClick(cell(1, 'name'))
+    })
+    act(() => {
+      fireEvent.change(editor()!, { target: { value: '' } })
+      fireEvent.keyDown(editor()!, { key: 'Enter' })
+    })
+    expect(editor()).not.toBeNull()
+    act(() => {
+      fireEvent.keyDown(editor()!, { key: 'Escape' })
+    })
+    expect(editor()).toBeNull()
+    expect(onCellEdit).not.toHaveBeenCalled()
+  })
 })
 
 describe('@iris-ui/react IrisTable virtual scroll', () => {

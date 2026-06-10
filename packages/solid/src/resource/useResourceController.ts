@@ -1,4 +1,4 @@
-import type { Accessor } from 'solid-js'
+import { onCleanup, type Accessor } from 'solid-js'
 import {
   createResourceController,
   type ResourceController,
@@ -24,5 +24,8 @@ export function useResourceController<T>(
 ): UseResourceController<T> {
   const controller = createResourceController(config)
   const state = useStore(controller.store)
+  // Abort any in-flight fetch + detach the controller's internal subscriptions
+  // on unmount (a late response must not write back to a torn-down instance).
+  onCleanup(() => controller.destroy())
   return { ...controller, state }
 }

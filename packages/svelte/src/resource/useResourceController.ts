@@ -1,3 +1,4 @@
+import { onDestroy } from 'svelte'
 import type { Readable } from 'svelte/store'
 import {
   createResourceController,
@@ -22,5 +23,8 @@ export function useResourceController<T>(
   config: ResourceControllerConfig<T>,
 ): UseResourceController<T> {
   const controller = createResourceController(config)
+  // Abort any in-flight fetch + detach the controller's internal subscriptions
+  // on unmount (a late response must not write back to a torn-down instance).
+  onDestroy(() => controller.destroy())
   return { ...controller, state: toStore(controller.store) }
 }

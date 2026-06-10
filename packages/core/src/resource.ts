@@ -84,6 +84,15 @@ export interface ResourceController<T> {
    * back if the action rejects.
    */
   mutate(action: () => Promise<unknown>, options?: MutateOptions<T>): Promise<void>
+  /**
+   * Tear down the controller: abort any in-flight fetch so a late response
+   * never writes back to a torn-down (e.g. unmounted) instance. Call from the
+   * host adapter on unmount. Idempotent, and safe to load again afterwards
+   * (the internal store subscriptions are intentionally left intact — they are
+   * self-referential and collected with the controller — so a React StrictMode
+   * remount that re-loads still propagates).
+   */
+  destroy(): void
 }
 
 export function createResourceController<T>(
@@ -166,6 +175,9 @@ export function createResourceController<T>(
         throw error
       }
       if (!options?.skipReload) await load()
+    },
+    destroy() {
+      resource.cancel()
     },
   }
 

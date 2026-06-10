@@ -98,6 +98,33 @@ describe('createResourceController', () => {
     expect(fetcher.mock.calls.at(-1)?.[0].filters).toEqual({})
   })
 
+  it('destroy() drops a late fetch response so it never writes back', async () => {
+    let resolveFetch!: (v: { rows: Row[]; total: number }) => void
+    const fetcher = vi.fn(
+      () => new Promise<{ rows: Row[]; total: number }>((r) => (resolveFetch = r)),
+    )
+    const c = createResourceController<Row>({ fetcher, pageSize: 2 })
+    // fetch is in-flight (pending); tear down before it resolves
+    c.destroy()
+    resolveFetch({ rows: all.slice(0, 2), total: 5 })
+    await flush()
+    // the torn-down controller must not have applied the late response
+    expect(c.getState().rows).toEqual([])
+    expect(c.getState().total).toBe(0)
+  })
+
+  it('destroy() is idempotent and the controller can still load afterwards (StrictMode remount)', async () => {
+    const fetcher = fetcherFor(all)
+    const c = createResourceController<Row>({ fetcher, pageSize: 2, immediate: false })
+    c.destroy()
+    expect(() => c.destroy()).not.toThrow()
+    // A StrictMode remount loads again on the same (ref-cached) controller — the
+    // internal subscriptions are intact, so the result still reaches the store.
+    await c.load()
+    await flush()
+    expect(c.getState().rows.map((r) => r.id)).toEqual([1, 2])
+  })
+
   it('optimistic mutate updates rows immediately and rolls back on failure', async () => {
     const c = createResourceController<Row>({ fetcher: fetcherFor(all), pageSize: 10 })
     await flush()

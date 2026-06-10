@@ -23,5 +23,8 @@ export function useResourceController<T>(
   const controller = createResourceController(config)
   const state = shallowRef(controller.getState())
   onBeforeUnmount(controller.subscribe((next) => (state.value = next)))
+  // Abort any in-flight fetch + detach the controller's internal subscriptions
+  // on unmount (a late response must not write back to a torn-down instance).
+  onBeforeUnmount(() => controller.destroy())
   return { ...controller, state }
 }

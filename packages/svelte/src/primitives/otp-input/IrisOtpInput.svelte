@@ -1,5 +1,8 @@
 <script lang="ts">
   import { styleToString, mergeStyle } from '../../internal/style'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   type OtpSize = 'sm' | 'md' | 'lg'
   type OtpType = 'numeric' | 'alphanumeric'
@@ -156,7 +159,7 @@
       value={char}
       placeholder={placeholder || undefined}
       {disabled}
-      aria-label={`Digit ${i + 1} of ${length}`}
+      aria-label={t('otpInput.cell', { index: i + 1, total: length })}
       aria-invalid={invalid ? 'true' : undefined}
       aria-describedby={ariaDescribedby}
       data-iris-otp-input-cell

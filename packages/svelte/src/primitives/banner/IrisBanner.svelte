@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
+
   type BannerTone = 'info' | 'success' | 'warning' | 'danger' | 'neutral'
 
   const TONE_TO_VAR: Record<BannerTone, string> = {
@@ -77,7 +81,7 @@
       <button
         type="button"
         data-iris-banner-close
-        aria-label="Close"
+        aria-label={t('banner.close')}
         onclick={handleClose}
         style="background:transparent; border:none; cursor:pointer; color:var(--iris-muted); font-size:16px; padding:0 4px; line-height:1; flex-shrink:0;"
       >✕</button>

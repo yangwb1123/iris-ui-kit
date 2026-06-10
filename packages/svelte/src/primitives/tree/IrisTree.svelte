@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createTreeSelection, type TreeSelectionNode } from '@iris-ui/core'
+  import { useI18n } from '../../i18n'
   import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
 
   interface FlatNode {
@@ -48,7 +49,7 @@
     checkable = false,
     defaultChecked,
     onCheckedChange,
-    ariaLabel = 'Tree',
+    ariaLabel,
     loading = false,
     error = false,
     onExpandedChange,
@@ -60,6 +61,8 @@
     class: className,
     ...rest
   }: Props = $props()
+
+  const { t } = useI18n()
 
   const isExpandedControlled = $derived(expandedProp !== undefined)
   const isSelectedControlled = $derived(selectedProp !== undefined)
@@ -246,7 +249,7 @@
 
 <div
   role="tree"
-  aria-label={ariaLabel}
+  aria-label={ariaLabel ?? t('tree.label')}
   data-iris-tree
   style:display="flex"
   style:flex-direction="column"
@@ -255,11 +258,11 @@
   {...rest}
 >
   {#if loading}
-    <div data-iris-state="loading" style:padding="12px" style:color="var(--iris-muted)" style:font-size="14px">Loading…</div>
+    <div data-iris-state="loading" style:padding="12px" style:color="var(--iris-muted)" style:font-size="14px">{t('tree.loading')}</div>
   {:else if error}
-    <div data-iris-state="error" style:padding="12px" style:color="var(--iris-danger)" style:font-size="14px">Error loading data.</div>
+    <div data-iris-state="error" style:padding="12px" style:color="var(--iris-danger)" style:font-size="14px">{t('tree.error')}</div>
   {:else if nodes.length === 0}
-    <div data-iris-state="empty" style:padding="12px" style:color="var(--iris-muted)" style:font-size="14px">No items.</div>
+    <div data-iris-state="empty" style:padding="12px" style:color="var(--iris-muted)" style:font-size="14px">{t('tree.empty')}</div>
   {:else}
     {#each flat as fn, idx (fn.node.id)}
       {@const isExpanded = expandedSet.has(fn.node.id)}

@@ -1,5 +1,8 @@
 <script lang="ts">
   import { styleToString, mergeStyle } from '../../internal/style'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   type RangeValue = [number, number]
 
@@ -23,8 +26,8 @@
     max = 100,
     step = 1,
     disabled = false,
-    labelStart = 'Start',
-    labelEnd = 'End',
+    labelStart,
+    labelEnd,
     style,
     onchange,
     oninput,
@@ -155,7 +158,7 @@
     <div
       role="slider"
       tabindex={disabled ? -1 : 0}
-      aria-label={labelStart}
+      aria-label={labelStart ?? t('rangeSlider.start')}
       aria-valuemin={min}
       aria-valuemax={endVal}
       aria-valuenow={startVal}
@@ -170,7 +173,7 @@
     <div
       role="slider"
       tabindex={disabled ? -1 : 0}
-      aria-label={labelEnd}
+      aria-label={labelEnd ?? t('rangeSlider.end')}
       aria-valuemin={startVal}
       aria-valuemax={max}
       aria-valuenow={endVal}

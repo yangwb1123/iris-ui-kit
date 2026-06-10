@@ -1,5 +1,6 @@
 <script lang="ts">
   import { portal } from '../../internal/portal'
+  import { useI18n } from '../../i18n'
   import type { IrisCommandItem } from './types'
   import { defaultFilter } from './types'
 
@@ -16,12 +17,16 @@
   let {
     open = false,
     items = [],
-    placeholder = 'Search commands…',
-    emptyText = 'No results found.',
+    placeholder,
+    emptyText,
     filter = defaultFilter,
     onOpenChange,
     onSelect,
   }: Props = $props()
+
+  const { t } = useI18n()
+
+  const resolvedPlaceholder = $derived(placeholder ?? t('commandPalette.placeholder'))
 
   let query = $state('')
   let activeIndex = $state(0)
@@ -133,7 +138,7 @@
       data-iris-command-palette
       role="dialog"
       aria-modal="true"
-      aria-label={placeholder}
+      aria-label={resolvedPlaceholder}
       style:background="var(--iris-background)"
       style:border="1px solid var(--iris-border)"
       style:border-radius="var(--iris-radius-lg, 8px)"
@@ -149,7 +154,7 @@
           bind:this={inputEl}
           bind:value={query}
           type="text"
-          {placeholder}
+          placeholder={resolvedPlaceholder}
           data-iris-command-palette-input
           style:width="100%"
           style:border="none"
@@ -176,7 +181,7 @@
             style:text-align="center"
             style:color="var(--iris-muted)"
             style:font-size="14px"
-          >{emptyText}</div>
+          >{emptyText ?? t('commandPalette.empty')}</div>
         {:else}
           {#each rows as row, i (row.kind === 'item' ? row.item.id : `header-${i}`)}
             {#if row.kind === 'header'}

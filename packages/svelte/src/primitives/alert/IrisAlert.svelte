@@ -1,5 +1,8 @@
 <script lang="ts">
   import { styleToString, mergeStyle } from '../../internal/style'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   type AlertTone = 'info' | 'success' | 'warning' | 'danger'
 
@@ -86,7 +89,7 @@
       <button
         type="button"
         data-iris-alert-close
-        aria-label="Close"
+        aria-label={t('alert.close')}
         onclick={handleClose}
         style="background: transparent; border: none; cursor: pointer; color: var(--iris-muted); font-size: 16px; padding: 0; line-height: 1; flex-shrink: 0"
       >

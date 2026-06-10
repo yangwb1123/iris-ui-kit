@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
+
   interface TimeValue {
     hour: number
     minute: number
@@ -69,7 +73,7 @@
   <div
     data-iris-time-picker-hours
     role="listbox"
-    aria-label="Hours"
+    aria-label={t('timePicker.hours')}
     style={colStyle}
   >
     {#each hours as h (h)}
@@ -94,7 +98,7 @@
   <div
     data-iris-time-picker-minutes
     role="listbox"
-    aria-label="Minutes"
+    aria-label={t('timePicker.minutes')}
     style={colStyle}
   >
     {#each minutes as m (m)}
@@ -120,7 +124,7 @@
     <div
       data-iris-time-picker-seconds
       role="listbox"
-      aria-label="Seconds"
+      aria-label={t('timePicker.seconds')}
       style={colStyle}
     >
       {#each seconds as s (s)}

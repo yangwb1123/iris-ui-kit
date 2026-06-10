@@ -1,5 +1,6 @@
 <script lang="ts">
   import { generateId } from '@iris-ui/core'
+  import { useI18n } from '../../i18n'
 
   export type IrisComboboxSize = 'sm' | 'md' | 'lg'
 
@@ -30,12 +31,14 @@
     disabled = false,
     invalid = false,
     size = 'md',
-    emptyText = 'No results',
+    emptyText,
     id,
     onValueChange,
     style,
     ...rest
   }: Props = $props()
+
+  const { t } = useI18n()
 
   const baseId = generateId()
   const listboxId = `${baseId}-listbox`
@@ -152,7 +155,7 @@
         aria-disabled="true"
         style="padding: 6px 10px; color: var(--iris-muted); font-size: {sz.fontSize}"
       >
-        {emptyText}
+        {emptyText ?? t('combobox.empty')}
       </li>
     {:else}
       {#each filtered() as opt, i}

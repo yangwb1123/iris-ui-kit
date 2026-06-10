@@ -1,5 +1,6 @@
 <script lang="ts">
   import { styleToString, mergeStyle } from '../../internal/style'
+  import { useI18n } from '../../i18n'
 
   interface ListItem<T = unknown> {
     value: T
@@ -16,6 +17,8 @@
     children,
     ...rest
   } = $props()
+
+  const { t } = useI18n()
 
   // svelte-ignore state_referenced_locally
   let activeIndex = $state(0)
@@ -63,7 +66,7 @@
       {#if children}
         {@render children()}
       {:else}
-        No items
+        {t('list.empty')}
       {/if}
     </li>
   {:else}

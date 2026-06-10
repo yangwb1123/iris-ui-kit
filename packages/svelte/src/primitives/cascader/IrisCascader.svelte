@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { useI18n } from '../../i18n'
+
   export interface IrisCascaderNode {
     label: string
     value: string
@@ -31,7 +33,7 @@
   let {
     options = [],
     value = [],
-    placeholder = 'Select…',
+    placeholder,
     disabled = false,
     invalid = false,
     separator = ' / ',
@@ -42,6 +44,8 @@
     class: className,
     ...rest
   }: Props = $props()
+
+  const { t } = useI18n()
 
   let open = $state(false)
   let activePath = $state<string[]>([...value])
@@ -141,7 +145,7 @@
     style:cursor={disabled ? 'not-allowed' : 'pointer'}
     style:font-family="inherit"
   >
-    <span style:flex="1" style:text-align="start">{display || placeholder}</span>
+    <span style:flex="1" style:text-align="start">{display || (placeholder ?? t('select.placeholder'))}</span>
     <span aria-hidden="true" style:font-size="10px">{open ? '▲' : '▼'}</span>
   </button>
 
@@ -165,7 +169,7 @@
         {/if}
         <ul
           role="listbox"
-          aria-label={`Level ${colIdx + 1}`}
+          aria-label={t('cascader.level', { level: colIdx + 1 })}
           style:min-width="140px"
           style:max-height="240px"
           style:overflow-y="auto"

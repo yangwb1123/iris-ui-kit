@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createSelectionModel } from '@iris-ui/core'
   import { toStore } from '../../useStore'
+  import { useI18n } from '../../i18n'
 
   export interface IrisTransferItem {
     label: string
@@ -22,7 +23,7 @@
   let {
     options = [],
     value = [],
-    titles = ['Available', 'Selected'],
+    titles,
     searchable = false,
     disabled = false,
     onValueChange,
@@ -30,6 +31,8 @@
     class: className,
     ...rest
   }: Props = $props()
+
+  const { t } = useI18n()
 
   // Each panel's "checked" set is a core selection model (multiple mode). The
   // per-item toggle and select-all are single-sourced in the model; these sets
@@ -111,19 +114,19 @@
     <div style:padding="8px 12px" style:border-bottom="1px solid var(--iris-border)" style:display="flex" style:align-items="center" style:gap="8px">
       <input
         type="checkbox"
-        aria-label="Select all available"
+        aria-label={t('transfer.selectAllSource')}
         checked={filteredSource.filter(o => !o.disabled).length > 0 && filteredSource.filter(o => !o.disabled).every(o => $sourceChecked.includes(o.value))}
         onchange={toggleAllSource}
         disabled={disabled}
       />
-      <span style:font-size="13px" style:font-weight="600">{titles[0]}</span>
+      <span style:font-size="13px" style:font-weight="600">{titles?.[0] ?? t('transfer.sourceTitle')}</span>
       <span style:margin-left="auto" style:font-size="12px" style:color="var(--iris-muted)">{$sourceChecked.length}/{filteredSource.length}</span>
     </div>
     {#if searchable}
       <div style:padding="6px 8px" style:border-bottom="1px solid var(--iris-border)">
         <input
           type="text"
-          placeholder="Search…"
+          placeholder={t('transfer.search')}
           bind:value={sourceQuery}
           style:width="100%"
           style:border="none"
@@ -156,7 +159,7 @@
         </label>
       {/each}
       {#if filteredSource.length === 0}
-        <div style:padding="12px" style:color="var(--iris-muted)" style:font-size="13px" style:text-align="center">Empty</div>
+        <div style:padding="12px" style:color="var(--iris-muted)" style:font-size="13px" style:text-align="center">{t('transfer.empty')}</div>
       {/if}
     </div>
   </div>
@@ -165,7 +168,7 @@
   <div style:display="flex" style:flex-direction="column" style:gap="6px" style:align-items="center">
     <button
       type="button"
-      aria-label="Move to target"
+      aria-label={t('transfer.toTarget')}
       data-iris-transfer-move-right
       onclick={moveToTarget}
       disabled={disabled || $sourceChecked.length === 0}
@@ -180,7 +183,7 @@
     >›</button>
     <button
       type="button"
-      aria-label="Move to source"
+      aria-label={t('transfer.toSource')}
       data-iris-transfer-move-left
       onclick={moveToSource}
       disabled={disabled || $targetChecked.length === 0}
@@ -200,19 +203,19 @@
     <div style:padding="8px 12px" style:border-bottom="1px solid var(--iris-border)" style:display="flex" style:align-items="center" style:gap="8px">
       <input
         type="checkbox"
-        aria-label="Select all selected"
+        aria-label={t('transfer.selectAllTarget')}
         checked={filteredTarget.filter(o => !o.disabled).length > 0 && filteredTarget.filter(o => !o.disabled).every(o => $targetChecked.includes(o.value))}
         onchange={toggleAllTarget}
         disabled={disabled}
       />
-      <span style:font-size="13px" style:font-weight="600">{titles[1]}</span>
+      <span style:font-size="13px" style:font-weight="600">{titles?.[1] ?? t('transfer.targetTitle')}</span>
       <span style:margin-left="auto" style:font-size="12px" style:color="var(--iris-muted)">{$targetChecked.length}/{filteredTarget.length}</span>
     </div>
     {#if searchable}
       <div style:padding="6px 8px" style:border-bottom="1px solid var(--iris-border)">
         <input
           type="text"
-          placeholder="Search…"
+          placeholder={t('transfer.search')}
           bind:value={targetQuery}
           style:width="100%"
           style:border="none"
@@ -245,7 +248,7 @@
         </label>
       {/each}
       {#if filteredTarget.length === 0}
-        <div style:padding="12px" style:color="var(--iris-muted)" style:font-size="13px" style:text-align="center">Empty</div>
+        <div style:padding="12px" style:color="var(--iris-muted)" style:font-size="13px" style:text-align="center">{t('transfer.empty')}</div>
       {/if}
     </div>
   </div>

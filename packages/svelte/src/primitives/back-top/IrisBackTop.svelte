@@ -1,5 +1,8 @@
 <script lang="ts">
   import { mergeStyle } from '../../internal/style'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   type ScrollBehavior = 'auto' | 'instant' | 'smooth'
 
@@ -18,7 +21,7 @@
     target,
     visibilityHeight = 400,
     behavior = 'smooth',
-    ariaLabel = 'Back to top',
+    ariaLabel = undefined,
     style,
     children,
     onclick,
@@ -72,7 +75,7 @@
     type="button"
     {...rest}
     data-iris-back-top
-    aria-label={ariaLabel}
+    aria-label={ariaLabel ?? t('backTop.label')}
     onclick={scrollToTop}
     style={mergeStyle(baseStyle, style)}
   >

@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
+
   type RatingSize = 'sm' | 'md' | 'lg'
 
   const SIZE_MAP: Record<RatingSize, number> = { sm: 16, md: 22, lg: 28 }
@@ -20,7 +24,7 @@
     clearable = true,
     size = 'md',
     invalid = false,
-    label = 'Rating',
+    label,
     id,
     ariaDescribedby,
     onchange,
@@ -106,11 +110,11 @@
   role="slider"
   {id}
   tabindex={interactive ? 0 : -1}
-  aria-label={label}
+  aria-label={label ?? t('rating.label')}
   aria-valuemin={0}
   aria-valuemax={max}
   aria-valuenow={value}
-  aria-valuetext="{value} out of {max}"
+  aria-valuetext={t('rating.value', { value, max })}
   aria-readonly={readonly ? 'true' : undefined}
   aria-disabled={disabled ? 'true' : undefined}
   aria-invalid={invalid ? 'true' : undefined}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import IrisTree from '../tree/IrisTree.svelte'
+  import { useI18n } from '../../i18n'
   import type { IrisTreeNode, IrisTreeSelectionMode } from '../tree/types'
 
   interface Props {
@@ -17,7 +18,7 @@
   let {
     nodes = [],
     value = [],
-    placeholder = 'Select…',
+    placeholder,
     disabled = false,
     invalid = false,
     selectionMode = 'single',
@@ -26,6 +27,8 @@
     class: className,
     ...rest
   }: Props = $props()
+
+  const { t } = useI18n()
 
   let open = $state(false)
   let containerEl = $state<HTMLElement | undefined>(undefined)
@@ -99,7 +102,7 @@
     style:font-family="inherit"
     style:text-align="start"
   >
-    <span style:flex="1">{display || placeholder}</span>
+    <span style:flex="1">{display || (placeholder ?? t('select.placeholder'))}</span>
     <span aria-hidden="true" style:font-size="10px">{open ? '▲' : '▼'}</span>
   </button>
 

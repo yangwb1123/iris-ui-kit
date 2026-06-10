@@ -1,5 +1,8 @@
 <script lang="ts">
   import { styleToString, mergeStyle } from '../../internal/style'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   type Size = 'sm' | 'md' | 'lg'
 
@@ -183,7 +186,7 @@
     <button
       type="button"
       data-iris-number-input-dec
-      aria-label="Decrement"
+      aria-label={t('numberInput.decrement')}
       disabled={disabled || atMin || undefined}
       onclick={() => increment(-1)}
       style="{ctrlBtnStyle}; margin-inline-end: 4px"
@@ -213,7 +216,7 @@
     <button
       type="button"
       data-iris-number-input-inc
-      aria-label="Increment"
+      aria-label={t('numberInput.increment')}
       disabled={disabled || atMax || undefined}
       onclick={() => increment(1)}
       style="{ctrlBtnStyle}; margin-inline-start: 4px"

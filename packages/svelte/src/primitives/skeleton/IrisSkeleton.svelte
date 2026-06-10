@@ -1,6 +1,9 @@
 <script lang="ts">
   import { installSkeletonStyles } from './styles'
   import { styleToString, mergeStyle } from '../../internal/style'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   type SkeletonShape = 'rect' | 'circle' | 'text'
 
@@ -48,6 +51,6 @@
   data-iris-skeleton-animated={String(animated)}
   role="status"
   aria-busy="true"
-  aria-label="Loading"
+  aria-label={t('skeleton.loading')}
   style={mergeStyle(computedStyle, style)}
 ></div>

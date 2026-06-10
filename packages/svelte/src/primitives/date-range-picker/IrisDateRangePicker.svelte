@@ -1,6 +1,9 @@
 <script lang="ts">
   import IrisCalendar from '../calendar/IrisCalendar.svelte'
   import { startOfDay } from '../calendar/dateUtils'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   interface DateRange {
     start: Date | null
@@ -30,8 +33,8 @@
     locale,
     disabled = false,
     invalid = false,
-    startPlaceholder = 'Start date',
-    endPlaceholder = 'End date',
+    startPlaceholder,
+    endPlaceholder,
     onValueChange,
     style,
     class: className,
@@ -104,7 +107,7 @@
   <button
     type="button"
     data-iris-date-range-picker-start
-    aria-label="Start date"
+    aria-label={t('dateRangePicker.start')}
     {disabled}
     onclick={() => openPicker('start')}
     style:padding="6px 12px"
@@ -117,14 +120,14 @@
     style:font-family="inherit"
     style:min-height="34px"
     style:min-width="140px"
-  >{fmt(value.start) || startPlaceholder}</button>
+  >{fmt(value.start) || (startPlaceholder ?? t('dateRangePicker.start'))}</button>
 
   <span aria-hidden="true" style:color="var(--iris-muted)">–</span>
 
   <button
     type="button"
     data-iris-date-range-picker-end
-    aria-label="End date"
+    aria-label={t('dateRangePicker.end')}
     {disabled}
     onclick={() => openPicker('end')}
     style:padding="6px 12px"
@@ -137,7 +140,7 @@
     style:font-family="inherit"
     style:min-height="34px"
     style:min-width="140px"
-  >{fmt(value.end) || endPlaceholder}</button>
+  >{fmt(value.end) || (endPlaceholder ?? t('dateRangePicker.end'))}</button>
 
   {#if open}
     <div

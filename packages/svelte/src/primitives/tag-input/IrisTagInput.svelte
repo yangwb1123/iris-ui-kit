@@ -1,5 +1,8 @@
 <script lang="ts">
   import { styleToString, mergeStyle } from '../../internal/style'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   interface Props {
     value?: string[]
@@ -127,7 +130,7 @@
       <button
         type="button"
         data-iris-tag-input-remove
-        aria-label="Remove {tag}"
+        aria-label={t('tagInput.remove', { tag })}
         {disabled}
         onclick={() => removeAt(i)}
         style="border: none; background: transparent; color: var(--iris-muted); cursor: {disabled ? 'not-allowed' : 'pointer'}; font-size: 14px; line-height: 1; padding: 0;"

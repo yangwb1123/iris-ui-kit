@@ -1,5 +1,8 @@
 <script lang="ts">
   import IrisCalendar from '../calendar/IrisCalendar.svelte'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   interface Props {
     value?: Date | null
@@ -22,7 +25,7 @@
     max,
     weekStartsOn = 0,
     locale,
-    placeholder = 'Select date…',
+    placeholder,
     disabled = false,
     invalid = false,
     id,
@@ -110,7 +113,7 @@
     style:text-align="start"
     {...rest}
   >
-    {display || placeholder}
+    {display || (placeholder ?? t('datePicker.placeholder'))}
   </button>
 
   {#if open}

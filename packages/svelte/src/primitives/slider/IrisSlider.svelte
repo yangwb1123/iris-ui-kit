@@ -1,5 +1,8 @@
 <script lang="ts">
   import { styleToString, mergeStyle } from '../../internal/style'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   type Orientation = 'horizontal' | 'vertical'
 
@@ -24,7 +27,7 @@
     step = 1,
     disabled = false,
     orientation = 'horizontal',
-    label = 'Value',
+    label,
     style,
     onchange,
     oninput,
@@ -190,7 +193,7 @@
       bind:this={thumbEl}
       data-iris-slider-thumb
       role="slider"
-      aria-label={label}
+      aria-label={label ?? t('slider.label')}
       aria-valuemin={min}
       aria-valuemax={max}
       aria-valuenow={value}

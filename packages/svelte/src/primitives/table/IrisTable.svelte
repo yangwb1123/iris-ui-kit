@@ -1,6 +1,7 @@
 <script lang="ts">
   import { compareValues, createSelectionModel } from '@iris-ui/core'
   import { toStore } from '../../useStore'
+  import { useI18n } from '../../i18n'
   import type {
     IrisTableColumn,
     IrisTableSortState,
@@ -49,6 +50,8 @@
     style,
     ...rest
   }: Props = $props()
+
+  const { t } = useI18n()
 
   const DEFAULT_COL_WIDTH = 140
 
@@ -217,7 +220,7 @@
             checked={allSelected}
             indeterminate={someSelected}
             onchange={toggleAll}
-            aria-label="Select all"
+            aria-label={t('table.selectAll')}
           />
         {/if}
       </div>
@@ -243,11 +246,11 @@
 
   <!-- Body -->
   {#if error}
-    <div role="row" data-iris-table-row="error" style={stateRowStyle}>Error loading data</div>
+    <div role="row" data-iris-table-row="error" style={stateRowStyle}>{t('table.error')}</div>
   {:else if loading}
-    <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>Loading…</div>
+    <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>{t('table.loading')}</div>
   {:else if sortedRows().length === 0}
-    <div role="row" data-iris-table-row="empty" style={stateRowStyle}>No data</div>
+    <div role="row" data-iris-table-row="empty" style={stateRowStyle}>{t('table.empty')}</div>
   {:else}
     <div role="rowgroup" data-iris-table-body>
       {#each sortedRows() as row, index}
@@ -270,7 +273,7 @@
                 checked={selected}
                 onchange={() => toggleRow(id)}
                 onclick={(e) => e.stopPropagation()}
-                aria-label="Select row"
+                aria-label={t('table.selectRow', { key: id })}
               />
             </div>
           {/if}

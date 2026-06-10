@@ -3,6 +3,7 @@
   import { useFloating } from '../../floating/useFloating.svelte'
   import { useDismiss } from '../../floating/useDismiss.svelte'
   import { portal } from '../../internal/portal'
+  import { useI18n } from '../../i18n'
   import type { Placement } from '@iris-ui/core'
 
   export interface IrisSelectItem<T = unknown> {
@@ -30,7 +31,7 @@
   let {
     items,
     value,
-    placeholder = 'Select…',
+    placeholder,
     size = 'md',
     disabled = false,
     placement = 'bottom-start',
@@ -41,6 +42,8 @@
     ...rest
   }: Props = $props()
 
+  const { t } = useI18n()
+
   const baseId = generateId()
   const listboxId = `${baseId}-listbox`
 
@@ -49,7 +52,7 @@
   let contentEl = $state<HTMLElement | undefined>(undefined)
 
   const selectedItem = $derived(items.find((item) => item.value === value) ?? null)
-  const triggerLabel = $derived(selectedItem ? (selectedItem.label ?? String(selectedItem.value)) : placeholder)
+  const triggerLabel = $derived(selectedItem ? (selectedItem.label ?? String(selectedItem.value)) : (placeholder ?? t('select.placeholder')))
 
   const SIZE_MAP: Record<IrisSelectSize, { padding: string; fontSize: string; minHeight: string }> = {
     sm: { padding: '4px 24px 4px 8px', fontSize: '12px', minHeight: '28px' },
@@ -119,7 +122,7 @@
     use:portal
     id={listboxId}
     role="listbox"
-    aria-label="Options"
+    aria-label={t('select.options')}
     data-iris-select-listbox
     style="{floating.floatingStyles}; background: var(--iris-background); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-sm, 4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 180px; list-style: none; margin: 0; z-index: 1000; max-height: 240px; overflow-y: auto"
   >

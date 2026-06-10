@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
+
   type ChipVariant = 'solid' | 'outline' | 'subtle'
   type ChipTone = 'primary' | 'success' | 'warning' | 'danger' | 'neutral'
   type ChipSize = 'sm' | 'md'
@@ -97,7 +101,7 @@
         role="button"
         tabindex={disabled ? -1 : 0}
         data-iris-chip-close
-        aria-label="Remove"
+        aria-label={t('chip.remove')}
         onclick={onCloseClick}
         style="background:transparent; border:none; cursor:{disabled ? 'not-allowed' : 'pointer'}; color:inherit; padding:0; margin-inline-start:2px; font-size:12px; line-height:1; flex-shrink:0; opacity:0.7; display:inline-flex;"
       >✕</span>
@@ -122,7 +126,7 @@
       <button
         type="button"
         data-iris-chip-close
-        aria-label="Remove"
+        aria-label={t('chip.remove')}
         {disabled}
         onclick={onCloseClick}
         style="background:transparent; border:none; cursor:{disabled ? 'not-allowed' : 'pointer'}; color:inherit; padding:0; margin-inline-start:2px; font-size:12px; line-height:1; flex-shrink:0; opacity:0.7;"

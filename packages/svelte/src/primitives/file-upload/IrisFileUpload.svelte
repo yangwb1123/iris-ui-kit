@@ -1,5 +1,8 @@
 <script lang="ts">
   import { styleToString, mergeStyle } from '../../internal/style'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   export interface IrisFileUploadFile {
     file: File
@@ -57,7 +60,7 @@
   let dragOver = $state(false)
   let dragCount = $state(0)
 
-  const resolvedLabel = $derived(label ?? 'Click or drag files here')
+  const resolvedLabel = $derived(label ?? t('fileUpload.label'))
 
   function acceptMatches(file: File): boolean {
     if (!accept) return true
@@ -190,7 +193,7 @@
           <span style="color: var(--iris-muted); font-size: 12px;">{formatBytes(item.size)}</span>
           <button
             type="button"
-            aria-label="Remove {item.name}"
+            aria-label={t('fileUpload.remove', { name: item.name })}
             {disabled}
             onclick={(e) => { e.stopPropagation(); removeAt(idx) }}
             style="background: transparent; border: none; color: var(--iris-muted); cursor: {disabled ? 'not-allowed' : 'pointer'}; font-size: 16px; line-height: 1; padding: 0 4px;"

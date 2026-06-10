@@ -1,5 +1,8 @@
 <script lang="ts">
   import { styleToString, mergeStyle } from '../../internal/style'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   type Size = 'sm' | 'md' | 'lg'
 
@@ -104,7 +107,7 @@
     <button
       type="button"
       data-iris-password-input-toggle
-      aria-label={visible ? 'Hide password' : 'Show password'}
+      aria-label={visible ? t('passwordInput.hide') : t('passwordInput.show')}
       aria-pressed={visible ? 'true' : 'false'}
       onclick={toggle}
       style="background: transparent; border: none; cursor: {disabled ? 'not-allowed' : 'pointer'}; color: var(--iris-muted); padding: 0 2px; font-size: 13px; line-height: 1;"

@@ -1,5 +1,8 @@
 <script lang="ts">
   import { mergeStyle } from '../../internal/style'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   let {
     src,
@@ -68,7 +71,7 @@
     data-iris-image-preview
     role="dialog"
     aria-modal="true"
-    aria-label={alt || 'Image preview'}
+    aria-label={alt || t('image.preview')}
     tabindex="-1"
     onclick={handleClose}
     onkeydown={(e) => { if (e.key === 'Escape') handleClose() }}
@@ -83,7 +86,7 @@
     <button
       type="button"
       data-iris-image-preview-close
-      aria-label="Close"
+      aria-label={t('dialog.close')}
       onclick={(e) => { e.stopPropagation(); handleClose() }}
       style="position: absolute; inset-block-start: 16px; inset-inline-end: 16px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,0.5); color: #fff; font-size: 22px; line-height: 1; cursor: pointer"
     >

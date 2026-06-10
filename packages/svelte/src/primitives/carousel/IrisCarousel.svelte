@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+  import { useI18n } from '../../i18n'
 
   interface Props {
     value?: number
@@ -26,7 +27,7 @@
     pauseOnHover = true,
     showArrows = true,
     showIndicators = true,
-    ariaLabel = 'Carousel',
+    ariaLabel,
     onValueChange,
     slides,
     children,
@@ -35,6 +36,8 @@
     slideCount = 0,
     ...rest
   }: Props = $props()
+
+  const { t } = useI18n()
 
   let hovered = $state(false)
   let focusedWithin = $state(false)
@@ -82,14 +85,14 @@
     }
     if (next !== value) {
       onValueChange?.(next)
-      liveText = `Slide ${next + 1} of ${count}`
+      liveText = t('carousel.slide', { index: next + 1, total: count })
     }
   }
 
   function goTo(idx: number) {
     if (idx !== value) {
       onValueChange?.(idx)
-      liveText = `Slide ${idx + 1} of ${slideCount}`
+      liveText = t('carousel.slide', { index: idx + 1, total: slideCount })
     }
   }
 
@@ -106,7 +109,7 @@
   data-iris-carousel
   role="region"
   aria-roledescription="carousel"
-  aria-label={ariaLabel}
+  aria-label={ariaLabel ?? t('carousel.label')}
   onkeydown={onKeyDown}
   onmouseenter={() => { hovered = true }}
   onmouseleave={() => { hovered = false }}
@@ -138,7 +141,7 @@
   {#if showArrows}
     <button
       type="button"
-      aria-label="Previous slide"
+      aria-label={t('carousel.previous')}
       data-iris-carousel-prev
       disabled={!canPrev}
       onclick={() => advance(-1)}
@@ -163,7 +166,7 @@
 
     <button
       type="button"
-      aria-label="Next slide"
+      aria-label={t('carousel.next')}
       data-iris-carousel-next
       disabled={!canNext}
       onclick={() => advance(1)}
@@ -200,7 +203,7 @@
       {#each Array.from({ length: slideCount }, (_, i) => i) as i (i)}
         <button
           type="button"
-          aria-label={`Go to slide ${i + 1}`}
+          aria-label={t('carousel.goTo', { index: i + 1 })}
           data-state={i === value ? 'active' : 'idle'}
           onclick={() => goTo(i)}
           style:width={i === value ? '20px' : '8px'}

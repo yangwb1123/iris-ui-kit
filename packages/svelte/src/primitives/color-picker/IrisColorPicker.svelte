@@ -1,6 +1,9 @@
 <script lang="ts">
   import { hexToRgba, hsvaToRgba, rgbToHex, rgbaToHsva, clamp01 } from './colorUtils'
   import type { IrisHsva } from './colorUtils'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   interface Props {
     value?: string
@@ -201,6 +204,7 @@
       value={hexInput}
       oninput={onHexInput}
       data-iris-color-picker-hex
+      aria-label={t('colorPicker.hex')}
       spellcheck={false}
       disabled={disabled}
       style:flex="1"

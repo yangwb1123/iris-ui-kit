@@ -1,5 +1,8 @@
 <script lang="ts">
   import { portal } from '../../internal/portal'
+  import { useI18n } from '../../i18n'
+
+  const { t } = useI18n()
 
   export interface IrisTourStep {
     target?: () => HTMLElement | null
@@ -116,7 +119,7 @@
         data-iris-tour-card
         role="dialog"
         aria-modal="true"
-        aria-label={data.title ?? `Step ${current + 1} of ${total}`}
+        aria-label={data.title ?? t('tour.step', { current: current + 1, total })}
         style="position: fixed; z-index: 1002; max-width: 320px; padding: 16px; background: var(--iris-background); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); box-shadow: 0 8px 24px rgba(0,0,0,0.18); {spotlit && sl ? `top: ${sl.top + sl.height + 12}px; inset-inline-start: ${sl.left}px` : 'top: 50%; inset-inline-start: 50%; transform: translate(-50%, -50%)'}"
       >
         {#if data.title != null}
@@ -128,14 +131,14 @@
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
           <span data-iris-tour-indicator style="font-size: 12px; color: var(--iris-muted)">{current + 1} / {total}</span>
           <div style="display: flex; gap: 8px">
-            <button type="button" data-iris-tour-skip onclick={close} style={btnGhost}>Skip</button>
+            <button type="button" data-iris-tour-skip onclick={close} style={btnGhost}>{t('tour.skip')}</button>
             {#if current > 0}
               <button
                 type="button"
                 data-iris-tour-prev
                 onclick={() => { step = current - 1; onChange?.(current - 1) }}
                 style={btnGhost}
-              >Prev</button>
+              >{t('tour.prev')}</button>
             {/if}
             <button
               type="button"
@@ -151,7 +154,7 @@
               }}
               style={btnPrimary}
             >
-              {isLast ? 'Finish' : 'Next'}
+              {isLast ? t('tour.finish') : t('tour.next')}
             </button>
           </div>
         </div>

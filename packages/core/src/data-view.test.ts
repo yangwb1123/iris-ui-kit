@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   compareValues,
   cycleSort,
   filterSort,
+  createMemoizedFilterSort,
+  debounce,
   paginate,
   pageCount,
   getPageRange,
@@ -139,6 +141,61 @@ describe('filterSort', () => {
       multiSort: [{ key: 'name', direction: 'asc' }],
     })
     expect(out.map((r) => r.age)).toEqual([25, 30, 35])
+  })
+})
+
+describe('createMemoizedFilterSort', () => {
+  it('returns the cached result when rows/columns/query are identical references', () => {
+    const memo = createMemoizedFilterSort<Row>()
+    const query = { filters: {}, sort: { key: 'age', direction: 'asc' as const } }
+    const first = memo(rows, cols, query)
+    const second = memo(rows, cols, query)
+    expect(second).toBe(first) // same reference → no recompute
+    expect(first.map((r) => r.age)).toEqual([25, 30, 35])
+  })
+
+  it('recomputes when any input reference changes', () => {
+    const memo = createMemoizedFilterSort<Row>()
+    const q1 = { filters: {}, sort: null }
+    const a = memo(rows, cols, q1)
+    const b = memo(rows, cols, { filters: {}, sort: null }) // new query object
+    expect(b).not.toBe(a)
+  })
+
+  it('each instance has its own cache (no cross-table eviction)', () => {
+    const m1 = createMemoizedFilterSort<Row>()
+    const m2 = createMemoizedFilterSort<Row>()
+    const q = { filters: {}, sort: null }
+    const r1 = m1(rows, cols, q)
+    m2(rows, cols, q)
+    expect(m1(rows, cols, q)).toBe(r1) // m2 did not disturb m1's cache
+  })
+})
+
+describe('debounce', () => {
+  it('invokes once after the wait with the latest args', () => {
+    vi.useFakeTimers()
+    const fn = vi.fn()
+    const d = debounce(fn, 100)
+    d('a')
+    d('b')
+    d('c')
+    expect(fn).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(100)
+    expect(fn).toHaveBeenCalledTimes(1)
+    expect(fn).toHaveBeenCalledWith('c')
+    vi.useRealTimers()
+  })
+
+  it('cancel() drops a pending call', () => {
+    vi.useFakeTimers()
+    const fn = vi.fn()
+    const d = debounce(fn, 100)
+    d('x')
+    d.cancel()
+    vi.advanceTimersByTime(200)
+    expect(fn).not.toHaveBeenCalled()
+    vi.useRealTimers()
   })
 })
 

@@ -133,7 +133,11 @@ export function filterSort<Row>(
   columns: readonly DataViewColumn<Row>[],
   query: DataViewQuery,
 ): Row[] {
-  const colOf = (key: string): DataViewColumn<Row> | undefined => columns.find((c) => c.key === key)
+  // Index columns by key once (O(cols)) instead of a linear find per row per
+  // filter/sort comparison (was O(rows × cols)).
+  const colMap = new Map<string, DataViewColumn<Row>>()
+  for (const c of columns) colMap.set(c.key, c)
+  const colOf = (key: string): DataViewColumn<Row> | undefined => colMap.get(key)
   let working: readonly Row[] = rows
 
   const activeFilters = Object.entries(query.filters).filter(([, v]) => v !== '')
@@ -171,6 +175,63 @@ export function filterSort<Row>(
   }
 
   return working === rows ? [...rows] : (working as Row[])
+}
+
+/**
+ * A {@link filterSort} with a single-entry referential cache. Adapters call
+ * filterSort on every render; when `rows`, `columns`, and `query` are all the
+ * same references as the previous call (the common case between unrelated
+ * re-renders) the cached result is returned without re-running the pipeline.
+ *
+ * Each consumer should create its OWN instance (the cache is not shared) so one
+ * table's inputs never evict another's.
+ */
+export function createMemoizedFilterSort<Row>(): (
+  rows: readonly Row[],
+  columns: readonly DataViewColumn<Row>[],
+  query: DataViewQuery,
+) => Row[] {
+  let lastRows: readonly Row[] | null = null
+  let lastColumns: readonly DataViewColumn<Row>[] | null = null
+  let lastQuery: DataViewQuery | null = null
+  let lastResult: Row[] = []
+  return (rows, columns, query) => {
+    if (rows === lastRows && columns === lastColumns && query === lastQuery) {
+      return lastResult
+    }
+    lastResult = filterSort(rows, columns, query)
+    lastRows = rows
+    lastColumns = columns
+    lastQuery = query
+    return lastResult
+  }
+}
+
+/**
+ * Trailing-edge debounce: delays invoking `fn` until `wait` ms have elapsed
+ * since the last call. The returned function has a `cancel()` to drop a pending
+ * call (e.g. on unmount). Use it to throttle per-keystroke filter recomputes
+ * feeding {@link filterSort}. SSR-safe (uses whatever `setTimeout` is in scope).
+ */
+export function debounce<Args extends unknown[]>(
+  fn: (...args: Args) => void,
+  wait: number,
+): ((...args: Args) => void) & { cancel: () => void } {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const debounced = (...args: Args): void => {
+    if (timer !== undefined) clearTimeout(timer)
+    timer = setTimeout(() => {
+      timer = undefined
+      fn(...args)
+    }, wait)
+  }
+  debounced.cancel = (): void => {
+    if (timer !== undefined) {
+      clearTimeout(timer)
+      timer = undefined
+    }
+  }
+  return debounced
 }
 
 /** Slice the page-th page (1-based) of `pageSize` rows. */

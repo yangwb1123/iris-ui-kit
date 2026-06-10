@@ -69,6 +69,8 @@ export {
   compareValues,
   cycleSort,
   filterSort,
+  createMemoizedFilterSort,
+  debounce,
   paginate,
   pageCount,
   getPageRange,

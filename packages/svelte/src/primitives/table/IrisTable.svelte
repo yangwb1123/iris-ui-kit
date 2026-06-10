@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { aggregate, compareValues, createSelectionModel, createExpansion } from '@iris-ui/core'
+  import {
+    aggregate,
+    compareValues,
+    createSelectionModel,
+    createExpansion,
+    flattenTree,
+    type TreeRow,
+  } from '@iris-ui/core'
   import { toStore } from '../../useStore'
   import { useI18n } from '../../i18n'
   import type {
@@ -35,6 +42,15 @@
     defaultExpandedRowKeys?: Array<string | number>
     /** Notified with the expanded row keys whenever they change. */
     onExpandedRowsChange?: (keys: Array<string | number>) => void
+    /**
+     * Read a row's child rows to render the table as a TREE. Providing this
+     * enables tree mode: `data` is treated as the root rows, each row's first
+     * cell gains a depth indent + an expand/collapse toggle (when it has
+     * children), and the expand state reuses
+     * `defaultExpandedRowKeys`/`onExpandedRowsChange`. Mutually exclusive with
+     * `renderDetail`.
+     */
+    getSubRows?: (row: Record<string, unknown>) => Array<Record<string, unknown>> | undefined
     onUpdateSelection?: (value: Array<string | number>) => void
     onUpdateSort?: (value: IrisTableSortState | null) => void
     onRowClick?: (row: Record<string, unknown>, index: number) => void
@@ -58,6 +74,7 @@
     rowExpandable,
     defaultExpandedRowKeys,
     onExpandedRowsChange,
+    getSubRows,
     onUpdateSelection,
     onUpdateSort,
     onRowClick,
@@ -155,7 +172,24 @@
     return index
   }
 
-  const allRowIds = $derived(sortedRows().map((r, i) => rowId(r, i)))
+  // Tree mode (opt-in via getSubRows): flatten the data into the visible rows
+  // honoring the (shared) expansion model. `bodyData` is the row list the body,
+  // selection, and summary all operate on — identical to `sortedRows()` in flat
+  // mode, so non-tree behavior is unchanged. Each flat entry carries its
+  // TreeRow meta (depth / hasChildren / expanded) for the first-cell indent.
+  const treeMode = $derived(getSubRows !== undefined)
+  const flatTree = $derived<Array<TreeRow<Record<string, unknown>>> | null>(
+    treeMode
+      ? flattenTree(sortedRows(), {
+          getKey: (r) => String(rowId(r, 0)),
+          getChildren: (r) => getSubRows!(r),
+          isExpanded: (k) => $expandedKeys.includes(k),
+        })
+      : null,
+  )
+  const bodyData = $derived(flatTree ? flatTree.map((tr) => tr.row) : sortedRows())
+
+  const allRowIds = $derived(bodyData.map((r, i) => rowId(r, i)))
   const allSelected = $derived(
     allRowIds.length > 0 && allRowIds.every((id) => $selectedKeys.includes(id))
   )
@@ -310,13 +344,14 @@
     <div role="row" data-iris-table-row="error" style={stateRowStyle}>{t('table.error')}</div>
   {:else if loading}
     <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>{t('table.loading')}</div>
-  {:else if sortedRows().length === 0}
+  {:else if bodyData.length === 0}
     <div role="row" data-iris-table-row="empty" style={stateRowStyle}>{t('table.empty')}</div>
   {:else}
     <div role="rowgroup" data-iris-table-body>
-      {#each sortedRows() as row, index}
+      {#each bodyData as row, index}
         {@const id = rowId(row, index)}
         {@const selected = isSelected(id)}
+        {@const treeMeta = flatTree ? flatTree[index] : null}
         <div
           role="row"
           data-iris-table-row
@@ -356,7 +391,7 @@
               />
             </div>
           {/if}
-          {#each columns as col}
+          {#each columns as col, ci}
             {@const isEditing = editingCellId === cellId(id, col.key)}
             <div
               role="cell"
@@ -366,6 +401,25 @@
               ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}
               style="display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: {isEditing ? '4px' : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable ? 'cell' : 'default'}"
             >
+              {#if treeMeta && ci === 0}
+                <span
+                  data-iris-table-tree-indent=""
+                  style="display: inline-flex; align-items: center; flex: none; padding-left: {treeMeta.depth * 16}px"
+                >
+                  {#if treeMeta.hasChildren}
+                    <button
+                      type="button"
+                      data-iris-table-tree-toggle=""
+                      aria-expanded={treeMeta.expanded}
+                      aria-label={t(treeMeta.expanded ? 'treeSelect.collapse' : 'treeSelect.expand')}
+                      onclick={(e) => { e.stopPropagation(); expansion.toggle(treeMeta.key) }}
+                      style="border: none; background: transparent; cursor: pointer; padding: 0; margin-right: 4px; font: inherit; color: var(--iris-foreground); transform: {treeMeta.expanded ? 'rotate(90deg)' : 'none'}; transition: transform 150ms"
+                    >▶</button>
+                  {:else}
+                    <span style="display: inline-block; width: 16px" aria-hidden="true"></span>
+                  {/if}
+                </span>
+              {/if}
               {#if isEditing}
                 <input
                   type={col.editor === 'number' ? 'number' : 'text'}
@@ -417,7 +471,7 @@
 
   <!-- Summary / footer row: each column with a `summary` op aggregates over the
        full sorted dataset (the core `aggregate` material). -->
-  {#if !error && !loading && sortedRows().length > 0 && hasSummary}
+  {#if !error && !loading && bodyData.length > 0 && hasSummary}
     <div
       role="row"
       data-iris-table-row="summary"
@@ -428,14 +482,14 @@
       {/if}
       {#each columns as col}
         {@const op = col.summary}
-        {@const value = op ? aggregate(sortedRows(), (r) => getCellValue(r, col), op) : null}
+        {@const value = op ? aggregate(bodyData, (r) => getCellValue(r, col), op) : null}
         <div
           role="cell"
           data-iris-table-cell={col.key}
           data-iris-table-summary-cell={op ? '' : undefined}
           style={summaryCellStyle(col)}
         >
-          {#if op != null && value != null}{col.renderSummary ? col.renderSummary(value, sortedRows()) : String(value)}{/if}
+          {#if op != null && value != null}{col.renderSummary ? col.renderSummary(value, bodyData) : String(value)}{/if}
         </div>
       {/each}
     </div>

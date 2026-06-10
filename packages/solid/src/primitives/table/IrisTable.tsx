@@ -4,7 +4,9 @@ import {
   compareValues,
   createExpansion,
   createSelectionModel,
+  flattenTree,
   type ExpansionModel,
+  type TreeRow,
 } from '@iris-ui/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
@@ -36,6 +38,14 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   defaultExpandedRowKeys?: Array<string | number>
   /** Notified with the expanded row keys whenever they change. */
   onExpandedRowsChange?: (keys: Array<string | number>) => void
+  /**
+   * Return a row's child rows to enable TREE MODE: `data` is treated as the root
+   * rows, each parent gets an inline expand toggle in its first cell, and the
+   * (shared) expansion model controls which branches are visible. Additive —
+   * absent means the table stays in flat mode. Mutually exclusive with
+   * `renderDetail` (detail panels).
+   */
+  getSubRows?: (row: Row) => Row[] | undefined
   style?: JSX.CSSProperties
 }
 
@@ -114,6 +124,49 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     merged.onSortChange?.(next)
   }
 
+  const rowId = (row: Row, index: number): string | number => {
+    const v = row[merged.rowKey]
+    if (typeof v === 'string' || typeof v === 'number') return v
+    return index
+  }
+
+  // ---- Expandable detail rows ----
+  // A leading toggle column + a full-width detail panel, driven by the
+  // framework-agnostic createExpansion (multiple-open). Keys are strings. The
+  // same expansion model is reused by tree mode (below) — they're mutually
+  // exclusive (renderDetail vs getSubRows).
+  const hasDetail = (): boolean => props.renderDetail !== undefined
+  const expansion: ExpansionModel = createExpansion({
+    mode: 'multiple',
+    defaultExpanded: (props.defaultExpandedRowKeys ?? []).map(String),
+    onChange: (keys) => props.onExpandedRowsChange?.(keys),
+  })
+  const expandedKeys = useStore(expansion.store)
+  const isRowExpandable = (row: Row, idx: number): boolean =>
+    hasDetail() && (props.rowExpandable ? props.rowExpandable(row, idx) : true)
+
+  // ---- Tree rows ----
+  // Opt-in via getSubRows: flatten the (root) data into the visible flat list,
+  // honoring the (shared) expansion model. `bodyRows` is what the body, the
+  // select-all set, and the summary aggregate over; in flat mode it is identical
+  // to sortedRows() (each row carries no tree meta).
+  const flatTree = createMemo<Array<TreeRow<Row>> | null>(() => {
+    if (props.getSubRows === undefined) return null
+    const keys = expandedKeys()
+    return flattenTree<Row>(sortedRows(), {
+      getKey: (r) => String(rowId(r, 0)),
+      getChildren: (r) => props.getSubRows!(r),
+      isExpanded: (k) => keys.includes(k),
+    })
+  })
+  // Body rows paired with their tree meta (meta is null in flat mode).
+  const bodyEntries = createMemo<Array<{ row: Row; meta: TreeRow<Row> | null }>>(() => {
+    const ft = flatTree()
+    if (ft) return ft.map((t) => ({ row: t.row, meta: t }))
+    return sortedRows().map((row) => ({ row, meta: null }))
+  })
+  const bodyRows = createMemo<Row[]>(() => bodyEntries().map((e) => e.row))
+
   // ---- Selection ----
   // Row-selection logic (single/multi toggle, dedup, select-all) is single-sourced
   // in the core model; the table keeps only its row-id mapping + rendering. Keyed
@@ -131,15 +184,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     if (props.selection !== undefined) selectionModel.sync(props.selection)
   })
 
-  const rowId = (row: Row, index: number): string | number => {
-    const v = row[merged.rowKey]
-    if (typeof v === 'string' || typeof v === 'number') return v
-    return index
-  }
-
   const isSelected = (id: string | number): boolean => selection().includes(id)
 
-  const allRowIds = createMemo(() => sortedRows().map((r, i) => rowId(r, i)))
+  const allRowIds = createMemo(() => bodyRows().map((r, i) => rowId(r, i)))
   const allSelected = createMemo(() => {
     selection() // subscribe to selection changes
     return selectionModel.isAllSelected(allRowIds())
@@ -157,19 +204,6 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const toggleAll = (): void => {
     selectionModel.toggleAll(allRowIds())
   }
-
-  // ---- Expandable detail rows ----
-  // A leading toggle column + a full-width detail panel, driven by the
-  // framework-agnostic createExpansion (multiple-open). Keys are strings.
-  const hasDetail = (): boolean => props.renderDetail !== undefined
-  const expansion: ExpansionModel = createExpansion({
-    mode: 'multiple',
-    defaultExpanded: (props.defaultExpandedRowKeys ?? []).map(String),
-    onChange: (keys) => props.onExpandedRowsChange?.(keys),
-  })
-  const expandedKeys = useStore(expansion.store)
-  const isRowExpandable = (row: Row, idx: number): boolean =>
-    hasDetail() && (props.rowExpandable ? props.rowExpandable(row, idx) : true)
 
   // ---- Inline Editing ----
   const [editingCellId, setEditingCellId] = createSignal<string | null>(null)
@@ -382,7 +416,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         }
       >
         <Show
-          when={sortedRows().length > 0}
+          when={bodyRows().length > 0}
           fallback={
             <div role="row" data-iris-table-row="empty" style={stateRowStyle}>
               {t('table.empty')}
@@ -390,8 +424,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           }
         >
           <div role="rowgroup" data-iris-table-body="">
-            <For each={sortedRows()}>
-              {(row, indexAccessor) => {
+            <For each={bodyEntries()}>
+              {(entry, indexAccessor) => {
+                const row = entry.row
+                const treeMeta = entry.meta
                 const index = indexAccessor()
                 const id = rowId(row, index)
                 const selected = () => isSelected(id)
@@ -477,9 +513,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                         </div>
                       </Show>
                       <For each={merged.columns}>
-                        {(col) => {
+                        {(col, colIndexAccessor) => {
                           const cid = `${id}::${col.key}`
                           const isEditing = () => editingCellId() === cid
+                          const isFirstCol = colIndexAccessor() === 0
                           return (
                             <div
                               role="cell"
@@ -505,6 +542,57 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                                 cursor: col.editable ? 'cell' : 'default',
                               }}
                             >
+                              <Show when={treeMeta && isFirstCol}>
+                                <span
+                                  data-iris-table-tree-indent=""
+                                  style={{
+                                    display: 'inline-flex',
+                                    'align-items': 'center',
+                                    flex: 'none',
+                                    'padding-left': `${treeMeta!.depth * 16}px`,
+                                  }}
+                                >
+                                  <Show
+                                    when={treeMeta!.hasChildren}
+                                    fallback={
+                                      <span
+                                        aria-hidden="true"
+                                        style={{ display: 'inline-block', width: '16px' }}
+                                      />
+                                    }
+                                  >
+                                    <button
+                                      type="button"
+                                      data-iris-table-tree-toggle=""
+                                      aria-expanded={expandedKeys().includes(treeMeta!.key)}
+                                      aria-label={t(
+                                        expandedKeys().includes(treeMeta!.key)
+                                          ? 'treeSelect.collapse'
+                                          : 'treeSelect.expand',
+                                      )}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        expansion.toggle(treeMeta!.key)
+                                      }}
+                                      style={{
+                                        border: 'none',
+                                        background: 'transparent',
+                                        cursor: 'pointer',
+                                        padding: '0',
+                                        'margin-right': '4px',
+                                        font: 'inherit',
+                                        color: 'var(--iris-foreground)',
+                                        transform: expandedKeys().includes(treeMeta!.key)
+                                          ? 'rotate(90deg)'
+                                          : 'none',
+                                        transition: 'transform 150ms',
+                                      }}
+                                    >
+                                      ▶
+                                    </button>
+                                  </Show>
+                                </span>
+                              </Show>
                               <Show
                                 when={isEditing()}
                                 fallback={
@@ -607,7 +695,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         when={
           !merged.error &&
           !merged.loading &&
-          sortedRows().length > 0 &&
+          bodyRows().length > 0 &&
           merged.columns.some((c) => c.summary)
         }
       >
@@ -638,7 +726,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           <For each={merged.columns}>
             {(col) => {
               const op = col.summary
-              const value = op ? aggregate(sortedRows(), (r) => getCellValue(r, col), op) : null
+              const value = op ? aggregate(bodyRows(), (r) => getCellValue(r, col), op) : null
               return (
                 <div
                   role="cell"
@@ -663,7 +751,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                 >
                   <Show when={op != null && value != null}>
                     <Show when={col.renderSummary} fallback={String(value)}>
-                      {col.renderSummary!(value!, sortedRows())}
+                      {col.renderSummary!(value!, bodyRows())}
                     </Show>
                   </Show>
                 </div>

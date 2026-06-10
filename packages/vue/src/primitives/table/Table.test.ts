@@ -880,6 +880,122 @@ describe('IrisTable expandable detail rows', () => {
   })
 })
 
+describe('IrisTable tree rows', () => {
+  let host: HTMLDivElement
+  beforeEach(() => {
+    host = document.createElement('div')
+    document.body.appendChild(host)
+  })
+  afterEach(() => host.remove())
+
+  interface TreeRowData extends Record<string, unknown> {
+    id: number
+    name: string
+    children?: TreeRowData[]
+  }
+  const treeData: TreeRowData[] = [
+    {
+      id: 1,
+      name: 'Root A',
+      children: [
+        { id: 11, name: 'Child A1' },
+        { id: 12, name: 'Child A2' },
+      ],
+    },
+    { id: 2, name: 'Root B' },
+  ]
+  const treeCols: IrisTableColumn<TreeRowData>[] = [{ key: 'name', title: 'Name' }]
+  const getSubRows = (row: Record<string, unknown>) => (row as TreeRowData).children
+
+  // The tree toggle (▶) renders inside the first cell; strip it to read the name.
+  function visibleNames(wrapper: ReturnType<typeof mount>): string[] {
+    return wrapper
+      .findAll('[data-iris-table-cell="name"]')
+      .map((c) => c.text().replace('▶', '').trim())
+  }
+  // Toggle within each rendered body row's first cell, in row order.
+  function toggleAt(wrapper: ReturnType<typeof mount>, rowIndex: number) {
+    return wrapper.findAll('[data-iris-table-row]')[rowIndex]!.find('[data-iris-table-tree-toggle]')
+  }
+
+  it('renders only roots collapsed, with a toggle on parents only + aria-expanded="false"', () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns: treeCols, data: treeData, rowKey: 'id', getSubRows },
+      attachTo: host,
+    })
+    expect(visibleNames(wrapper)).toEqual(['Root A', 'Root B'])
+    // Root A (has children) → toggle; Root B (leaf) → no toggle.
+    expect(toggleAt(wrapper, 0).exists()).toBe(true)
+    expect(toggleAt(wrapper, 1).exists()).toBe(false)
+    expect(toggleAt(wrapper, 0).attributes('aria-expanded')).toBe('false')
+  })
+
+  it('clicking the toggle reveals children, then hides them', async () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns: treeCols, data: treeData, rowKey: 'id', getSubRows },
+      attachTo: host,
+    })
+    await toggleAt(wrapper, 0).trigger('click')
+    await nextTick()
+    expect(visibleNames(wrapper)).toEqual(['Root A', 'Child A1', 'Child A2', 'Root B'])
+    expect(toggleAt(wrapper, 0).attributes('aria-expanded')).toBe('true')
+    await toggleAt(wrapper, 0).trigger('click')
+    await nextTick()
+    expect(visibleNames(wrapper)).toEqual(['Root A', 'Root B'])
+  })
+
+  it('defaultExpandedRowKeys starts a branch open + emits expandedRowsChange on toggle', async () => {
+    const changed = ref<Array<string | number> | null>(null)
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(IrisTable, {
+            columns: treeCols,
+            data: treeData,
+            rowKey: 'id',
+            getSubRows,
+            defaultExpandedRowKeys: [1],
+            onExpandedRowsChange: (keys: Array<string | number>) => (changed.value = keys),
+          })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: host })
+    expect(visibleNames(wrapper)).toEqual(['Root A', 'Child A1', 'Child A2', 'Root B'])
+    // Collapse Root A (the first toggle).
+    await wrapper.findAll('[data-iris-table-tree-toggle]')[0]!.trigger('click')
+    await nextTick()
+    expect(changed.value).toEqual([])
+  })
+
+  it('child rows have greater paddingLeft than their parent', () => {
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: treeCols,
+        data: treeData,
+        rowKey: 'id',
+        getSubRows,
+        defaultExpandedRowKeys: [1],
+      },
+      attachTo: host,
+    })
+    const indents = wrapper.findAll('[data-iris-table-tree-indent]')
+    const pad = (i: number): number =>
+      parseInt((indents[i]!.element as HTMLElement).style.paddingLeft || '0', 10)
+    // Order: Root A (depth 0), Child A1 (depth 1), Child A2 (depth 1), Root B (depth 0).
+    expect(pad(1)).toBeGreaterThan(pad(0))
+    expect(pad(2)).toBeGreaterThan(pad(0))
+  })
+
+  it('no tree toggle/indent when getSubRows is absent (flat mode unchanged)', () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns: treeCols, data: treeData, rowKey: 'id' },
+      attachTo: host,
+    })
+    expect(wrapper.find('[data-iris-table-tree-toggle]').exists()).toBe(false)
+    expect(wrapper.find('[data-iris-table-tree-indent]').exists()).toBe(false)
+  })
+})
+
 describe('exportExcel', () => {
   it('serializes rows to SpreadsheetML, typing numbers', () => {
     const xml = exportExcel(rows, columns)

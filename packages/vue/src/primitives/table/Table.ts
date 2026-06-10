@@ -17,6 +17,8 @@ import {
   computeVirtualRange,
   createExpansion,
   createSelectionModel,
+  flattenTree,
+  type TreeRow,
 } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 import { IrisCheckbox } from '../checkbox/Checkbox'
@@ -145,6 +147,20 @@ export const IrisTable = defineComponent({
       type: Array as PropType<Array<string | number>>,
       default: undefined,
     },
+    /**
+     * Read a row's child rows to render the table as a TREE. Providing this
+     * enables tree mode: `data` is treated as the root rows, each row's first
+     * cell gains a depth indent + an expand/collapse toggle (when it has
+     * children), and the expand state reuses `defaultExpandedRowKeys` /
+     * `expandedRowsChange`. Tree mode renders the non-virtualized body and is
+     * mutually exclusive with `renderDetail`.
+     */
+    getSubRows: {
+      type: Function as PropType<
+        (row: Record<string, unknown>) => Array<Record<string, unknown>> | undefined
+      >,
+      default: undefined,
+    },
   },
   emits: {
     'update:selection': (_value: Array<string | number>) => true,
@@ -231,8 +247,28 @@ export const IrisTable = defineComponent({
       return index
     }
 
+    // -------- Tree rows (opt-in via getSubRows) --------
+    // Flatten the nested data into the visible rows honoring the (shared)
+    // expansion model. `bodyData` is the row list the body, select-all, and
+    // summary all operate on — identical to `sortedRows` in flat mode, so
+    // non-tree behavior is byte-identical. Tree mode is mutually exclusive with
+    // detail rows and is gated off the virtual-scroll path.
+    const treeMode = computed(() => props.getSubRows !== undefined)
+    const flatTree = computed<Array<TreeRow<Record<string, unknown>>> | null>(() =>
+      treeMode.value
+        ? flattenTree(sortedRows.value, {
+            getKey: (r) => String(r[props.rowKey]),
+            getChildren: (r) => props.getSubRows!(r),
+            isExpanded: (k) => expandedKeys.value.includes(k),
+          })
+        : null,
+    )
+    const bodyData = computed(() =>
+      flatTree.value ? flatTree.value.map((t) => t.row) : sortedRows.value,
+    )
+
     const isSelected = (id: string | number) => selectedKeys.value.includes(id)
-    const allRowIds = computed(() => sortedRows.value.map((r, i) => rowId(r, i)))
+    const allRowIds = computed(() => bodyData.value.map((r, i) => rowId(r, i)))
     const allSelected = computed(() => {
       const sel = selectedKeys.value
       return allRowIds.value.length > 0 && allRowIds.value.every((id) => sel.includes(id))
@@ -658,6 +694,7 @@ export const IrisTable = defineComponent({
         row: Record<string, unknown>,
         index: number,
         style?: Record<string, string>,
+        treeMeta?: TreeRow<Record<string, unknown>>,
       ): VNode => {
         const id = rowId(row, index)
         const selected = isSelected(id)
@@ -809,6 +846,65 @@ export const IrisTable = defineComponent({
               String(getCellValue(row, col) ?? '')
           }
 
+          // Tree mode: in the first data cell, prepend a depth-indent span that
+          // holds an expand/collapse toggle (parents) or a fixed-width spacer
+          // (leaves, so they align). Renders before the cell's content.
+          const treeIndent: VNode | null =
+            treeMeta && ci === 0
+              ? h(
+                  'span',
+                  {
+                    'data-iris-table-tree-indent': '',
+                    style: {
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      flex: 'none',
+                      paddingLeft: `${treeMeta.depth * 16}px`,
+                    },
+                  },
+                  treeMeta.hasChildren
+                    ? [
+                        h(
+                          'button',
+                          {
+                            type: 'button',
+                            'data-iris-table-tree-toggle': '',
+                            'aria-expanded': treeMeta.expanded ? 'true' : 'false',
+                            'aria-label': t(
+                              treeMeta.expanded ? 'treeSelect.collapse' : 'treeSelect.expand',
+                            ),
+                            onClick: (e: MouseEvent) => {
+                              e.stopPropagation()
+                              expansion.toggle(treeMeta.key)
+                            },
+                            style: {
+                              border: 'none',
+                              background: 'transparent',
+                              cursor: 'pointer',
+                              padding: '0',
+                              marginRight: '4px',
+                              font: 'inherit',
+                              color: 'var(--iris-foreground)',
+                              transform: treeMeta.expanded ? 'rotate(90deg)' : 'none',
+                              transition: 'transform 150ms',
+                            },
+                          },
+                          '▶',
+                        ),
+                      ]
+                    : [
+                        h('span', {
+                          'aria-hidden': 'true',
+                          style: { display: 'inline-block', width: '16px' },
+                        }),
+                      ],
+                )
+              : null
+
+          const cellChildren: VNode | VNode[] | string = treeIndent
+            ? [treeIndent, ...(Array.isArray(content) ? content : [content as VNode | string])]
+            : (content as VNode | VNode[] | string)
+
           cells.push(
             h(
               'div',
@@ -836,7 +932,7 @@ export const IrisTable = defineComponent({
                   ...pinnedStyle(col.key),
                 },
               },
-              content as VNode | VNode[] | string,
+              cellChildren,
             ),
           )
         }
@@ -891,13 +987,13 @@ export const IrisTable = defineComponent({
           },
           slots.loading ? slots.loading() : t('table.loading'),
         )
-      } else if (sortedRows.value.length === 0) {
+      } else if (bodyData.value.length === 0) {
         bodyNode = h(
           'div',
           { role: 'row', 'data-iris-table-row': 'empty', style: stateRowStyle },
           slots.empty ? slots.empty() : t('table.empty'),
         )
-      } else if (props.virtualScroll) {
+      } else if (props.virtualScroll && !treeMode.value) {
         bodyNode = h(
           IrisVirtualScroll,
           {
@@ -915,8 +1011,8 @@ export const IrisTable = defineComponent({
         )
       } else {
         const bodyChildren: VNode[] = []
-        sortedRows.value.forEach((row, i) => {
-          bodyChildren.push(renderRow(row, i))
+        bodyData.value.forEach((row, i) => {
+          bodyChildren.push(renderRow(row, i, undefined, flatTree.value?.[i]))
           // Full-width detail panel beneath an expanded, expandable row (spans
           // all grid tracks). Only in the non-virtualized path.
           if (showDetail && isRowExpandable(row, i)) {
@@ -972,7 +1068,7 @@ export const IrisTable = defineComponent({
       if (
         !props.error &&
         !props.loading &&
-        sortedRows.value.length > 0 &&
+        bodyData.value.length > 0 &&
         props.columns.some((c) => c.summary)
       ) {
         const summaryCells: VNode[] = []
@@ -996,12 +1092,12 @@ export const IrisTable = defineComponent({
           if (visibleColSet.value && !visibleColSet.value.has(ci)) continue
           const align = col.align ?? 'left'
           const op = col.summary
-          const value = op ? aggregate(sortedRows.value, (r) => getCellValue(r, col), op) : null
+          const value = op ? aggregate(bodyData.value, (r) => getCellValue(r, col), op) : null
           // Columns without a summary op render an empty cell.
           const summaryContent: VNode | VNode[] | string =
             op != null && value != null
               ? col.renderSummary
-                ? (col.renderSummary(value, sortedRows.value) as VNode | VNode[] | string)
+                ? (col.renderSummary(value, bodyData.value) as VNode | VNode[] | string)
                 : String(value)
               : ''
           summaryCells.push(

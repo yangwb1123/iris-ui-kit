@@ -266,3 +266,93 @@ describe('IrisTable expandable detail rows', () => {
     expect(container.querySelector('[data-iris-table-header="__expand"]')).toBeNull()
   })
 })
+
+describe('IrisTable tree rows', () => {
+  // Hierarchical fixture: Root A (id 1) has two children A1/A2; Root B (id 2)
+  // is a leaf. Svelte body rows carry no key attribute, so the tree toggle /
+  // indent are addressed by the row's position in the flattened body.
+  const treeData = [
+    {
+      id: 1,
+      name: 'Root A',
+      children: [
+        { id: 11, name: 'Child A1' },
+        { id: 12, name: 'Child A2' },
+      ],
+    },
+    { id: 2, name: 'Root B' },
+  ]
+  const treeCols = [{ key: 'name', title: 'Name' }]
+  const getSubRows = (r: Record<string, unknown>) =>
+    r.children as Array<Record<string, unknown>> | undefined
+
+  function bodyRows(container: HTMLElement): NodeListOf<HTMLElement> {
+    return container.querySelectorAll('[data-iris-table-body] [data-iris-table-row]')
+  }
+  function toggleAt(container: HTMLElement, index: number): HTMLElement | null {
+    return bodyRows(container)[index].querySelector('[data-iris-table-tree-toggle]')
+  }
+  function indentAt(container: HTMLElement, index: number): HTMLElement {
+    return bodyRows(container)[index].querySelector('[data-iris-table-tree-indent]') as HTMLElement
+  }
+  function visibleNames(container: HTMLElement): string[] {
+    // The tree toggle (▶) renders inside the first cell; strip it to read the name.
+    return Array.from(container.querySelectorAll('[data-iris-table-cell="name"]')).map((c) =>
+      (c.textContent ?? '').replace('▶', '').trim(),
+    )
+  }
+
+  it('renders only roots collapsed, with a toggle on parents only; aria-expanded=false', () => {
+    const { container } = render(IrisTable, {
+      props: { columns: treeCols, data: treeData, getSubRows },
+    })
+    expect(visibleNames(container)).toEqual(['Root A', 'Root B'])
+    expect(toggleAt(container, 0)).not.toBeNull() // Root A has children
+    expect(toggleAt(container, 1)).toBeNull() // Root B is a leaf
+    expect(toggleAt(container, 0)!.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('clicking the toggle reveals children then hides them', async () => {
+    const { container } = render(IrisTable, {
+      props: { columns: treeCols, data: treeData, getSubRows },
+    })
+    await fireEvent.click(toggleAt(container, 0)!)
+    expect(visibleNames(container)).toEqual(['Root A', 'Child A1', 'Child A2', 'Root B'])
+    expect(toggleAt(container, 0)!.getAttribute('aria-expanded')).toBe('true')
+    await fireEvent.click(toggleAt(container, 0)!)
+    expect(visibleNames(container)).toEqual(['Root A', 'Root B'])
+  })
+
+  it('defaultExpandedRowKeys starts a branch open + onExpandedRowsChange fires on toggle', async () => {
+    const onExpandedRowsChange = vi.fn()
+    const { container } = render(IrisTable, {
+      props: {
+        columns: treeCols,
+        data: treeData,
+        getSubRows,
+        defaultExpandedRowKeys: [1],
+        onExpandedRowsChange,
+      },
+    })
+    expect(visibleNames(container)).toEqual(['Root A', 'Child A1', 'Child A2', 'Root B'])
+    await fireEvent.click(toggleAt(container, 0)!) // collapse Root A
+    expect(onExpandedRowsChange).toHaveBeenLastCalledWith([])
+    expect(visibleNames(container)).toEqual(['Root A', 'Root B'])
+  })
+
+  it('child rows are indented deeper than their parent', () => {
+    const { container } = render(IrisTable, {
+      props: { columns: treeCols, data: treeData, getSubRows, defaultExpandedRowKeys: [1] },
+    })
+    const pad = (index: number): number =>
+      parseInt(indentAt(container, index).style.paddingLeft || '0', 10)
+    // Flattened order: [Root A, Child A1, Child A2, Root B]; child (idx 1) deeper than parent (idx 0).
+    expect(pad(1)).toBeGreaterThan(pad(0))
+  })
+
+  it('no tree toggle/indent when getSubRows is absent (flat mode unchanged)', () => {
+    const { container } = render(IrisTable, { props: { columns: treeCols, data: treeData } })
+    expect(container.querySelector('[data-iris-table-tree-toggle]')).toBeNull()
+    expect(container.querySelector('[data-iris-table-tree-indent]')).toBeNull()
+  })
+})

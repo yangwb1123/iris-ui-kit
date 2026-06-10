@@ -234,6 +234,84 @@ export function debounce<Args extends unknown[]>(
   return debounced
 }
 
+/** Aggregation operation over a column's values. */
+export type AggregateOp = 'sum' | 'avg' | 'min' | 'max' | 'count'
+
+/**
+ * Aggregate the values read by `getValue` across `rows`. `count` counts
+ * non-null values; the others coerce to `Number` and ignore non-finite values.
+ * Empty input → 0 for sum/avg/count, `NaN` for min/max (no extremum exists).
+ */
+export function aggregate<Row>(
+  rows: readonly Row[],
+  getValue: (row: Row) => unknown,
+  op: AggregateOp,
+): number {
+  if (op === 'count') return rows.reduce((n, r) => (getValue(r) != null ? n + 1 : n), 0)
+  const nums: number[] = []
+  for (const r of rows) {
+    const raw = getValue(r)
+    if (raw == null) continue // null/undefined are not data points (Number(null) === 0)
+    const v = Number(raw)
+    if (Number.isFinite(v)) nums.push(v)
+  }
+  if (nums.length === 0) return op === 'min' || op === 'max' ? NaN : 0
+  switch (op) {
+    case 'sum':
+      return nums.reduce((a, b) => a + b, 0)
+    case 'avg':
+      return nums.reduce((a, b) => a + b, 0) / nums.length
+    case 'min':
+      return Math.min(...nums)
+    case 'max':
+      return Math.max(...nums)
+  }
+}
+
+/** A `{ column key → operation }` pair for {@link summarize}. */
+export interface AggregateSpec {
+  key: string
+  op: AggregateOp
+}
+
+/**
+ * Compute a summary record (`{ columnKey: aggregatedNumber }`) for a set of
+ * column specs, reading each column's value via its {@link DataViewColumn}. The
+ * material behind a table's summary/footer row. Unknown column keys are skipped.
+ */
+export function summarize<Row>(
+  rows: readonly Row[],
+  columns: readonly DataViewColumn<Row>[],
+  specs: readonly AggregateSpec[],
+): Record<string, number> {
+  const colMap = new Map(columns.map((c) => [c.key, c]))
+  const out: Record<string, number> = {}
+  for (const spec of specs) {
+    const col = colMap.get(spec.key)
+    if (col) out[spec.key] = aggregate(rows, col.getValue, spec.op)
+  }
+  return out
+}
+
+/**
+ * Group rows by a key function into an ordered array of `{ key, rows }`
+ * (first-seen key order preserved). The material behind grouped/tree table rows
+ * and group-aggregate rollups.
+ */
+export function groupRows<Row, K>(
+  rows: readonly Row[],
+  keyOf: (row: Row) => K,
+): Array<{ key: K; rows: Row[] }> {
+  const groups = new Map<K, Row[]>()
+  for (const row of rows) {
+    const k = keyOf(row)
+    const bucket = groups.get(k)
+    if (bucket) bucket.push(row)
+    else groups.set(k, [row])
+  }
+  return Array.from(groups, ([key, rs]) => ({ key, rows: rs }))
+}
+
 /** Slice the page-th page (1-based) of `pageSize` rows. */
 export function paginate<Row>(rows: readonly Row[], page: number, pageSize: number): Row[] {
   const start = (page - 1) * pageSize

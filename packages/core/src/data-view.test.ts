@@ -5,6 +5,9 @@ import {
   filterSort,
   createMemoizedFilterSort,
   debounce,
+  aggregate,
+  summarize,
+  groupRows,
   paginate,
   pageCount,
   getPageRange,
@@ -196,6 +199,52 @@ describe('debounce', () => {
     vi.advanceTimersByTime(200)
     expect(fn).not.toHaveBeenCalled()
     vi.useRealTimers()
+  })
+})
+
+describe('aggregate', () => {
+  const data = [{ n: 10 }, { n: 20 }, { n: 30 }, { n: null }]
+  const get = (r: { n: number | null }) => r.n
+  it('computes sum/avg/min/max over finite values', () => {
+    expect(aggregate(data, get, 'sum')).toBe(60)
+    expect(aggregate(data, get, 'avg')).toBe(20)
+    expect(aggregate(data, get, 'min')).toBe(10)
+    expect(aggregate(data, get, 'max')).toBe(30)
+  })
+  it('count counts non-null values', () => {
+    expect(aggregate(data, get, 'count')).toBe(3)
+  })
+  it('empty input → 0 for sum/avg/count, NaN for min/max', () => {
+    expect(aggregate([], get, 'sum')).toBe(0)
+    expect(aggregate([], get, 'avg')).toBe(0)
+    expect(aggregate([], get, 'count')).toBe(0)
+    expect(aggregate([], get, 'min')).toBeNaN()
+    expect(aggregate([], get, 'max')).toBeNaN()
+  })
+})
+
+describe('summarize', () => {
+  it('produces a per-column summary record, skipping unknown keys', () => {
+    const out = summarize(rows, cols, [
+      { key: 'age', op: 'sum' },
+      { key: 'age', op: 'avg' }, // later spec for the same key overwrites
+      { key: 'missing', op: 'sum' },
+    ])
+    expect(out).toEqual({ age: 30 }) // avg of 30/25/35 = 30; 'missing' skipped
+  })
+})
+
+describe('groupRows', () => {
+  it('groups by a key function preserving first-seen order', () => {
+    const data = [
+      { team: 'b', v: 1 },
+      { team: 'a', v: 2 },
+      { team: 'b', v: 3 },
+    ]
+    const groups = groupRows(data, (r) => r.team)
+    expect(groups.map((g) => g.key)).toEqual(['b', 'a'])
+    expect(groups[0].rows).toHaveLength(2)
+    expect(groups[1].rows).toEqual([{ team: 'a', v: 2 }])
   })
 })
 

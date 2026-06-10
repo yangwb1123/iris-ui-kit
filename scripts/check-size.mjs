@@ -21,7 +21,10 @@ const BUDGETS = {
   // copy to defaultMessages (calendar/select/table/commandPalette/alert/banner/
   // chip/toast …) so labels are localizable via t(). Real feature surface, not
   // drift; headroom left for the remaining keys in the sweep.
-  core: 14,
+  // Bumped 14→15 (R45): admin/errorBoundary i18n keys + the dir-1 data engine
+  // additions (memoized filterSort, debounce, aggregate/summarize/groupRows).
+  // Genuine shared logic — core is the framework-agnostic logic home by design.
+  core: 15,
   tokens: 2,
   theme: 3.5,
   skins: 5,

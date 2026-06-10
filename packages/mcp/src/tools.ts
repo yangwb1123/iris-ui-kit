@@ -75,3 +75,65 @@ export function scaffoldSnippet(
   // react / solid share JSX.
   return `import { ${name} } from '${importPath}'${pluginNote}\n${open}</${name}>`
 }
+
+/** The bare element/tag for `component` in `framework`, required props pre-filled (no import). */
+function componentTag(component: ManifestComponent, framework: Framework): string {
+  const { name } = component
+  const required = (component.props ?? []).filter((p) => !p.optional)
+  if (framework === 'vue') {
+    const attrs = required.map((p) => `:${p.name}="/* ${p.type} */"`).join(' ')
+    return `<${name}${attrs ? ' ' + attrs : ''} />`
+  }
+  const attrs = required.map((p) => `${p.name}={/* ${p.type} */}`).join(' ')
+  return attrs ? `<${name} ${attrs}></${name}>` : `<${name}></${name}>`
+}
+
+export interface ScaffoldViewRequest {
+  framework: Framework
+  /** Component names to place inside the view, in order. */
+  components: string[]
+  /** Optional container component to wrap the children (e.g. a layout/card). */
+  layout?: string
+}
+
+/**
+ * Compose SEVERAL components into one ready-to-edit view: deduped imports
+ * (grouped by source module) + a parent container — the `layout` component if
+ * given, else a plain wrapper — holding each child pre-filled with its required
+ * props. The multi-component counterpart to {@link scaffoldSnippet} (the
+ * "prompt → composed UI" surface). Returns null if `components` is empty or any
+ * named component (incl. `layout`) is unknown or unsupported in `framework`.
+ */
+export function scaffoldView(manifest: IrisManifest, req: ScaffoldViewRequest): string | null {
+  const { framework, components, layout } = req
+  if (components.length === 0) return null
+  const names = layout ? [layout, ...components] : components
+  const resolved = names.map((n) => getComponentApi(manifest, n))
+  if (resolved.some((c) => !c || !c.frameworks.includes(framework))) return null
+  const all = resolved as ManifestComponent[]
+
+  // Deduped imports grouped by source module so multiple components from the
+  // same package share one import statement.
+  const byPath = new Map<string, Set<string>>()
+  const pluginNotes: string[] = []
+  for (const c of all) {
+    const path = c.importFrom[framework] ?? `@iris-ui/${framework}`
+    if (!byPath.has(path)) byPath.set(path, new Set())
+    byPath.get(path)!.add(c.name)
+    if (c.plugin) pluginNotes.push(`// Requires <IrisProvider plugins={[…]}> — install ${c.plugin}`)
+  }
+  const imports = Array.from(byPath, ([path, set]) => {
+    const importedNames = Array.from(set).sort().join(', ')
+    return `import { ${importedNames} } from '${path}'`
+  }).join('\n')
+  const notes = [...new Set(pluginNotes)]
+  const header = notes.length ? imports + '\n' + notes.join('\n') : imports
+
+  const children = components
+    .map((n) => '  ' + componentTag(getComponentApi(manifest, n)!, framework))
+    .join('\n')
+
+  if (layout) return `${header}\n\n<${layout}>\n${children}\n</${layout}>`
+  const classAttr = framework === 'vue' ? 'class' : 'className'
+  return `${header}\n\n<div ${classAttr}="iris-view">\n${children}\n</div>`
+}

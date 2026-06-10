@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { buildManifest, discover } from '@iris-ui/manifest'
-import { listComponents, searchComponents, getComponentApi, scaffoldSnippet } from './tools'
+import {
+  listComponents,
+  searchComponents,
+  getComponentApi,
+  scaffoldSnippet,
+  scaffoldView,
+} from './tools'
 
 const manifest = buildManifest(discover())
 
@@ -54,5 +60,43 @@ describe('scaffoldSnippet', () => {
   })
   it('returns null for an unknown component or unsupported framework', () => {
     expect(scaffoldSnippet(manifest, 'IrisNope', 'react')).toBeNull()
+  })
+})
+
+describe('scaffoldView', () => {
+  it('composes several components with deduped, grouped imports + a wrapper', () => {
+    const view = scaffoldView(manifest, {
+      framework: 'react',
+      components: ['IrisButton', 'IrisInput'],
+    })
+    expect(view).not.toBeNull()
+    // Both come from @iris-ui/react → a single import statement listing both.
+    expect(view).toContain("import { IrisButton, IrisInput } from '@iris-ui/react'")
+    expect(view).toContain('<div className="iris-view">')
+    expect(view).toContain('<IrisButton')
+    expect(view).toContain('<IrisInput')
+  })
+
+  it('wraps children in a layout component when given', () => {
+    const view = scaffoldView(manifest, {
+      framework: 'react',
+      components: ['IrisButton'],
+      layout: 'IrisCard',
+    })
+    expect(view).toContain('<IrisCard>')
+    expect(view).toContain('</IrisCard>')
+    expect(view).toContain('<IrisButton')
+  })
+
+  it('uses Vue class binding for the default wrapper', () => {
+    const view = scaffoldView(manifest, { framework: 'vue', components: ['IrisButton'] })
+    expect(view).toContain('<div class="iris-view">')
+  })
+
+  it('returns null for empty input or an unknown/unsupported component', () => {
+    expect(scaffoldView(manifest, { framework: 'react', components: [] })).toBeNull()
+    expect(
+      scaffoldView(manifest, { framework: 'react', components: ['IrisButton', 'IrisNope'] }),
+    ).toBeNull()
   })
 })

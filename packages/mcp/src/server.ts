@@ -4,7 +4,13 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
 import { ALL_FRAMEWORKS } from '@iris-ui/manifest'
 import { loadManifest } from './manifest-source'
-import { listComponents, searchComponents, getComponentApi, scaffoldSnippet } from './tools'
+import {
+  listComponents,
+  searchComponents,
+  getComponentApi,
+  scaffoldSnippet,
+  scaffoldView,
+} from './tools'
 
 /**
  * Iris UI MCP server. Exposes the typed component manifest as agent tools so an
@@ -71,6 +77,36 @@ server.registerTool(
       content: [
         { type: 'text' as const, text: snippet ?? `Cannot scaffold ${name} for ${framework}.` },
       ],
+    }
+  },
+)
+
+server.registerTool(
+  'scaffold_view',
+  {
+    description:
+      'Compose several components into one ready-to-edit view file: deduped imports + an optional layout container holding each component pre-filled with its required props. The multi-component counterpart to scaffold_component.',
+    inputSchema: {
+      framework: z.enum(ALL_FRAMEWORKS as [string, ...string[]]).describe('Target framework'),
+      components: z
+        .array(z.string())
+        .describe(
+          'Component names to place in the view, in order, e.g. ["IrisInput", "IrisButton"]',
+        ),
+      layout: z
+        .string()
+        .optional()
+        .describe('Optional container component to wrap the children, e.g. "IrisCard"'),
+    },
+  },
+  async ({ framework, components, layout }) => {
+    const view = scaffoldView(manifest, {
+      framework: framework as (typeof ALL_FRAMEWORKS)[number],
+      components,
+      layout,
+    })
+    return {
+      content: [{ type: 'text' as const, text: view ?? `Cannot compose a view for ${framework}.` }],
     }
   },
 )

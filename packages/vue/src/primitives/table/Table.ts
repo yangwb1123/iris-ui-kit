@@ -11,7 +11,7 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { compareValues, computeVirtualRange, createSelectionModel } from '@iris-ui/core'
+import { aggregate, compareValues, computeVirtualRange, createSelectionModel } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useDrag } from '../drag/useDrag'
@@ -804,6 +804,90 @@ export const IrisTable = defineComponent({
         )
       }
 
+      // -------- Summary / footer row --------
+      // Each column with a `summary` op aggregates over the FULL sorted dataset
+      // (the same array the body maps), via the core `aggregate` material. The
+      // footer appears only when there is data and at least one column opts in.
+      let summaryRow: VNode | null = null
+      if (
+        !props.error &&
+        !props.loading &&
+        sortedRows.value.length > 0 &&
+        props.columns.some((c) => c.summary)
+      ) {
+        const summaryCells: VNode[] = []
+        if (showSelection) {
+          summaryCells.push(
+            h('div', {
+              key: '__selection',
+              role: 'cell',
+              'data-iris-table-cell': '__selection',
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px',
+              },
+            }),
+          )
+        }
+        for (let ci = 0; ci < props.columns.length; ci += 1) {
+          const col = props.columns[ci]
+          if (visibleColSet.value && !visibleColSet.value.has(ci)) continue
+          const align = col.align ?? 'left'
+          const op = col.summary
+          const value = op ? aggregate(sortedRows.value, (r) => getCellValue(r, col), op) : null
+          // Columns without a summary op render an empty cell.
+          const summaryContent: VNode | VNode[] | string =
+            op != null && value != null
+              ? col.renderSummary
+                ? (col.renderSummary(value, sortedRows.value) as VNode | VNode[] | string)
+                : String(value)
+              : ''
+          summaryCells.push(
+            h(
+              'div',
+              {
+                key: col.key,
+                role: 'cell',
+                'data-iris-table-cell': col.key,
+                'data-iris-table-summary-cell': op ? '' : undefined,
+                'data-iris-table-pinned': col.pinned,
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent:
+                    align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start',
+                  padding: '8px var(--iris-padding-md)',
+                  fontSize: '14px',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  ...(visibleColSet.value ? { gridColumnStart: String(colTrack(ci)) } : {}),
+                  ...pinnedStyle(col.key),
+                },
+              },
+              summaryContent,
+            ),
+          )
+        }
+        summaryRow = h(
+          'div',
+          {
+            role: 'row',
+            'data-iris-table-row': 'summary',
+            style: {
+              display: 'grid',
+              gridTemplateColumns: gridTemplate.value,
+              fontWeight: '600',
+              borderTop: '2px solid var(--iris-border)',
+              background: 'var(--iris-surface)',
+            },
+          },
+          summaryCells,
+        )
+      }
+
       return h(
         'div',
         {
@@ -830,7 +914,7 @@ export const IrisTable = defineComponent({
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },
         },
-        [headerRow, bodyNode],
+        [headerRow, bodyNode, summaryRow],
       )
     }
   },

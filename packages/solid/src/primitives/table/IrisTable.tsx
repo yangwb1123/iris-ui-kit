@@ -1,5 +1,5 @@
 import { createEffect, createMemo, createSignal, For, mergeProps, Show, type JSX } from 'solid-js'
-import { compareValues, createSelectionModel } from '@iris-ui/core'
+import { aggregate, compareValues, createSelectionModel } from '@iris-ui/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import type { IrisTableColumn, IrisTableSortState, IrisTableCellEditEvent } from './types'
@@ -487,6 +487,78 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             </For>
           </div>
         </Show>
+      </Show>
+
+      {/* Summary / footer row: each column with a `summary` op aggregates over
+          the full sorted dataset (the core `aggregate` material). */}
+      <Show
+        when={
+          !merged.error &&
+          !merged.loading &&
+          sortedRows().length > 0 &&
+          merged.columns.some((c) => c.summary)
+        }
+      >
+        <div
+          role="row"
+          data-iris-table-row="summary"
+          style={{
+            display: 'grid',
+            'grid-template-columns': gridTemplate(),
+            'font-weight': '600',
+            'border-top': '2px solid var(--iris-border)',
+            background: 'var(--iris-surface)',
+          }}
+        >
+          <Show when={merged.selectable !== 'none'}>
+            <div
+              role="cell"
+              data-iris-table-cell="__selection"
+              style={{
+                display: 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                padding: '8px',
+                'border-bottom': '1px solid var(--iris-border)',
+              }}
+            />
+          </Show>
+          <For each={merged.columns}>
+            {(col) => {
+              const op = col.summary
+              const value = op ? aggregate(sortedRows(), (r) => getCellValue(r, col), op) : null
+              return (
+                <div
+                  role="cell"
+                  data-iris-table-cell={col.key}
+                  data-iris-table-summary-cell={op ? '' : undefined}
+                  style={{
+                    display: 'flex',
+                    'align-items': 'center',
+                    'justify-content':
+                      col.align === 'right'
+                        ? 'flex-end'
+                        : col.align === 'center'
+                          ? 'center'
+                          : 'flex-start',
+                    padding: '8px var(--iris-padding-md)',
+                    'border-bottom': '1px solid var(--iris-border)',
+                    'font-size': '14px',
+                    'white-space': 'nowrap',
+                    overflow: 'hidden',
+                    'text-overflow': 'ellipsis',
+                  }}
+                >
+                  <Show when={op != null && value != null}>
+                    <Show when={col.renderSummary} fallback={String(value)}>
+                      {col.renderSummary!(value!, sortedRows())}
+                    </Show>
+                  </Show>
+                </div>
+              )
+            }}
+          </For>
+        </div>
       </Show>
     </div>
   )

@@ -1,5 +1,6 @@
 import * as React from 'react'
 import {
+  aggregate,
   compareValues,
   computeVirtualRange,
   createSelectionModel,
@@ -734,6 +735,46 @@ export function IrisTable<Row extends Record<string, unknown>>({
       ) : (
         sortedData.map((row, idx) => renderRow(row, idx))
       )}
+
+      {/* Summary / footer row: each column with a `summary` op aggregates over
+          the full sorted dataset (the core `aggregate` material). */}
+      {!error && !loading && sortedData.length > 0 && columns.some((c) => c.summary) ? (
+        <div
+          role="row"
+          data-iris-table-row="summary"
+          style={{
+            display: 'grid',
+            gridTemplateColumns,
+            fontWeight: 600,
+            borderTop: '2px solid var(--iris-border)',
+            background: 'var(--iris-surface)',
+          }}
+        >
+          {selectable !== 'none' ? (
+            <div role="cell" data-iris-table-cell="__selection" style={baseCellStyle} />
+          ) : null}
+          {columns.map((col, ci) => {
+            if (visibleColSet && !visibleColSet.has(ci)) return null
+            const op = col.summary
+            const value = op ? aggregate(sortedData, (r) => getCellValue(r, col), op) : null
+            return (
+              <div
+                key={col.key}
+                role="cell"
+                data-iris-table-cell={col.key}
+                data-iris-table-summary-cell={op ? '' : undefined}
+                style={{ ...baseCellStyle, ...pinnedStyle(col.key) }}
+              >
+                {op != null && value != null
+                  ? col.renderSummary
+                    ? col.renderSummary(value, sortedData)
+                    : String(value)
+                  : null}
+              </div>
+            )
+          })}
+        </div>
+      ) : null}
     </div>
   )
 }

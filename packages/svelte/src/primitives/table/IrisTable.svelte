@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { compareValues, createSelectionModel } from '@iris-ui/core'
+  import { aggregate, compareValues, createSelectionModel } from '@iris-ui/core'
   import { toStore } from '../../useStore'
   import { useI18n } from '../../i18n'
   import type {
@@ -158,6 +158,13 @@
   let internalWidths = $state<IrisTableColumnWidths>(seedWidths(columns))
 
   const showSelection = $derived(selectable !== 'none')
+
+  // Summary/footer row appears when any column declares a `summary` aggregate op.
+  const hasSummary = $derived(columns.some((c) => c.summary))
+
+  // Base per-cell style shared by the summary cells (mirrors the body cell base).
+  const summaryCellStyle = (col: IrisTableColumn): string =>
+    `display: flex; align-items: center; justify-content: ${col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: 8px var(--iris-padding-md, 12px); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis`
 
   const gridTemplate = $derived(() => {
     const parts: string[] = []
@@ -331,6 +338,32 @@
               {/if}
             </div>
           {/each}
+        </div>
+      {/each}
+    </div>
+  {/if}
+
+  <!-- Summary / footer row: each column with a `summary` op aggregates over the
+       full sorted dataset (the core `aggregate` material). -->
+  {#if !error && !loading && sortedRows().length > 0 && hasSummary}
+    <div
+      role="row"
+      data-iris-table-row="summary"
+      style="display: grid; grid-template-columns: {gridTemplate()}; font-weight: 600; border-top: 2px solid var(--iris-border); background: var(--iris-surface)"
+    >
+      {#if showSelection}
+        <div role="cell" data-iris-table-cell="__selection" style={summaryCellStyle({ key: '__selection' } as IrisTableColumn)}></div>
+      {/if}
+      {#each columns as col}
+        {@const op = col.summary}
+        {@const value = op ? aggregate(sortedRows(), (r) => getCellValue(r, col), op) : null}
+        <div
+          role="cell"
+          data-iris-table-cell={col.key}
+          data-iris-table-summary-cell={op ? '' : undefined}
+          style={summaryCellStyle(col)}
+        >
+          {#if op != null && value != null}{col.renderSummary ? col.renderSummary(value, sortedRows()) : String(value)}{/if}
         </div>
       {/each}
     </div>

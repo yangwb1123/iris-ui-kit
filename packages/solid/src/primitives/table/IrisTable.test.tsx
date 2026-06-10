@@ -69,6 +69,57 @@ describe('IrisTable', () => {
   })
 })
 
+describe('IrisTable summary / footer row', () => {
+  // Fixture ages: 30 + 25 + 35 = 90.
+  const ageSum = data.reduce((acc, r) => acc + r.age, 0)
+
+  const summaryCols: IrisTableColumn[] = [
+    { key: 'name', title: 'Name' },
+    { key: 'age', title: 'Age', summary: 'sum' },
+  ]
+
+  it('renders a summary row whose aggregate cell shows the sum; non-summary cell is blank', () => {
+    const { container } = render(() => <IrisTable columns={summaryCols} data={data} />)
+    const summaryRow = container.querySelector('[data-iris-table-row="summary"]')
+    expect(summaryRow).not.toBeNull()
+
+    const ageCell = summaryRow!.querySelector('[data-iris-table-cell="age"]')
+    expect(ageCell?.textContent).toBe(String(ageSum))
+    expect(ageCell?.getAttribute('data-iris-table-summary-cell')).toBe('')
+
+    const nameCell = summaryRow!.querySelector('[data-iris-table-cell="name"]')
+    expect(nameCell?.textContent).toBe('')
+    expect(nameCell?.hasAttribute('data-iris-table-summary-cell')).toBe(false)
+  })
+
+  it('renderSummary formats the aggregated value', () => {
+    const formattedCols: IrisTableColumn[] = [
+      { key: 'name', title: 'Name' },
+      {
+        key: 'age',
+        title: 'Age',
+        summary: 'sum',
+        renderSummary: (value) => `Total: ${value}`,
+      },
+    ]
+    const { container } = render(() => <IrisTable columns={formattedCols} data={data} />)
+    const ageCell = container.querySelector(
+      '[data-iris-table-row="summary"] [data-iris-table-cell="age"]',
+    )
+    expect(ageCell?.textContent).toBe(`Total: ${ageSum}`)
+  })
+
+  it('renders no summary row when no column declares one', () => {
+    const { container } = render(() => <IrisTable columns={columns} data={data} />)
+    expect(container.querySelector('[data-iris-table-row="summary"]')).toBeNull()
+  })
+
+  it('renders no summary row when data is empty', () => {
+    const { container } = render(() => <IrisTable columns={summaryCols} data={[]} />)
+    expect(container.querySelector('[data-iris-table-row="summary"]')).toBeNull()
+  })
+})
+
 describe('IrisTable editable-cell validation', () => {
   type EditRow = { id: number; name: string }
   const editRows: EditRow[] = [{ id: 1, name: 'Charlie' }]

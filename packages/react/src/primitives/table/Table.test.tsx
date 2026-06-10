@@ -556,6 +556,49 @@ describe('@iris-ui/react IrisTable inline editing', () => {
   })
 })
 
+describe('@iris-ui/react IrisTable summary row', () => {
+  const sumCols: IrisTableColumn<Row>[] = [
+    { key: 'name', title: 'Name' },
+    { key: 'age', title: 'Age', summary: 'sum' },
+  ]
+  function summaryCell(key: string): HTMLElement | null {
+    return document.querySelector(`[data-iris-table-row="summary"] [data-iris-table-cell="${key}"]`)
+  }
+
+  it('renders a footer row aggregating the flagged column', () => {
+    render(<IrisTable columns={sumCols} data={rows} />)
+    expect(document.querySelector('[data-iris-table-row="summary"]')).not.toBeNull()
+    // rows ages 25 + 32 + 28 = 85
+    expect(summaryCell('age')!.textContent).toBe('85')
+    expect(summaryCell('name')!.textContent).toBe('') // no summary op → blank
+    expect(summaryCell('age')!.getAttribute('data-iris-table-summary-cell')).toBe('')
+  })
+
+  it('uses renderSummary to format the aggregated value', () => {
+    const cols: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name' },
+      {
+        key: 'age',
+        title: 'Age',
+        summary: 'avg',
+        renderSummary: (v) => `avg ${v.toFixed(1)}`,
+      },
+    ]
+    render(<IrisTable columns={cols} data={rows} />)
+    expect(summaryCell('age')!.textContent).toBe('avg 28.3') // (25+32+28)/3 = 28.33
+  })
+
+  it('shows no summary row when no column declares one', () => {
+    render(<IrisTable columns={baseColumns} data={rows} />)
+    expect(document.querySelector('[data-iris-table-row="summary"]')).toBeNull()
+  })
+
+  it('shows no summary row when there is no data', () => {
+    render(<IrisTable columns={sumCols} data={[]} />)
+    expect(document.querySelector('[data-iris-table-row="summary"]')).toBeNull()
+  })
+})
+
 describe('@iris-ui/react IrisTable virtual scroll', () => {
   const many: Row[] = Array.from({ length: 50 }, (_, i) => ({ id: i + 1, name: `N${i}`, age: i }))
 

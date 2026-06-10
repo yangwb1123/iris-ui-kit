@@ -138,3 +138,61 @@ describe('IrisTable inline-edit validation', () => {
     expect(onCellEdit).not.toHaveBeenCalled()
   })
 })
+
+describe('IrisTable summary/footer row', () => {
+  // Aggregate computed from the fixture: ages 30 + 25 + 35.
+  const expectedSum = data.reduce((n, r) => n + (r.age as number), 0)
+
+  it('renders a summary row; the summary column shows the aggregate, non-summary cell is blank', () => {
+    const summaryCols = [
+      { key: 'name', title: 'Name' },
+      { key: 'age', title: 'Age', summary: 'sum' as const },
+    ]
+    const { container } = render(IrisTable, { props: { columns: summaryCols, data } })
+    const summaryRow = container.querySelector('[data-iris-table-row="summary"]')
+    expect(summaryRow).not.toBeNull()
+
+    const ageCell = summaryRow!.querySelector('[data-iris-table-cell="age"]') as HTMLElement
+    expect(ageCell.textContent?.trim()).toBe(String(expectedSum))
+    expect(ageCell.getAttribute('data-iris-table-summary-cell')).toBe('')
+
+    const nameCell = summaryRow!.querySelector('[data-iris-table-cell="name"]') as HTMLElement
+    expect(nameCell.textContent?.trim()).toBe('')
+    expect(nameCell.hasAttribute('data-iris-table-summary-cell')).toBe(false)
+  })
+
+  it('renderSummary formats the aggregated value', () => {
+    const summaryCols = [
+      { key: 'name', title: 'Name' },
+      {
+        key: 'age',
+        title: 'Age',
+        summary: 'sum' as const,
+        renderSummary: (value: number) => `Σ ${value}`,
+      },
+    ]
+    const { container } = render(IrisTable, { props: { columns: summaryCols, data } })
+    const ageCell = container.querySelector(
+      '[data-iris-table-row="summary"] [data-iris-table-cell="age"]',
+    ) as HTMLElement
+    expect(ageCell.textContent?.trim()).toBe(`Σ ${expectedSum}`)
+  })
+
+  it('renders no summary row when no column declares one', () => {
+    const summaryCols = [
+      { key: 'name', title: 'Name' },
+      { key: 'age', title: 'Age' },
+    ]
+    const { container } = render(IrisTable, { props: { columns: summaryCols, data } })
+    expect(container.querySelector('[data-iris-table-row="summary"]')).toBeNull()
+  })
+
+  it('renders no summary row when data is empty', () => {
+    const summaryCols = [
+      { key: 'name', title: 'Name' },
+      { key: 'age', title: 'Age', summary: 'sum' as const },
+    ]
+    const { container } = render(IrisTable, { props: { columns: summaryCols, data: [] } })
+    expect(container.querySelector('[data-iris-table-row="summary"]')).toBeNull()
+  })
+})

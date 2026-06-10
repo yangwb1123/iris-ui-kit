@@ -7,6 +7,9 @@ export interface IrisTableSortState {
 
 export type IrisTableEditor = 'text' | 'number'
 
+/** Aggregation op for a column's summary/footer cell. */
+export type IrisTableAggregateOp = 'sum' | 'avg' | 'min' | 'max' | 'count'
+
 export interface IrisTableColumn<Row = Record<string, unknown>> {
   /** Stable unique column identifier; used for slot names and sort state. */
   key: string
@@ -38,6 +41,16 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    * parsed value (a number for the number editor) and the row.
    */
   validate?: (value: unknown, row: Row) => string | null | undefined
+  /**
+   * Aggregate this column in the table's summary/footer row. Any column with a
+   * `summary` op makes the footer row appear; columns without one render blank.
+   */
+  summary?: IrisTableAggregateOp
+  /**
+   * Format this column's summary value. Receives the aggregated number and the
+   * rows it was computed over; defaults to the number's string form.
+   */
+  renderSummary?: (value: number, rows: Row[]) => import('vue').VNodeChild
 }
 
 export interface IrisTableCellEditEvent<Row = Record<string, unknown>> {

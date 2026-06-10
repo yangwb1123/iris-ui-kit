@@ -5,6 +5,9 @@ export type IrisTableColumnWidths = Record<string, number>
 
 export type IrisTableEditor = 'text' | 'number'
 
+/** Aggregation op for a column's summary/footer cell. */
+export type IrisTableAggregateOp = 'sum' | 'avg' | 'min' | 'max' | 'count'
+
 export interface IrisTableVirtualOptions {
   /** Per-row height in px (uniform). */
   itemHeight: number
@@ -44,6 +47,16 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    * value (a number for the `'number'` editor) and the row being edited.
    */
   validate?: (value: unknown, row: Row) => string | null | undefined
+  /**
+   * Aggregate this column in the table's summary/footer row. Any column with a
+   * `summary` op makes the footer row appear; columns without one render blank.
+   */
+  summary?: IrisTableAggregateOp
+  /**
+   * Format this column's summary value. Receives the aggregated number and the
+   * rows it was computed over; defaults to the number's string form.
+   */
+  renderSummary?: (value: number, rows: Row[]) => import('react').ReactNode
   /** Custom comparator for sorting; defaults to native `<`. */
   sorter?: (a: Row, b: Row) => number
   /** Custom render for cell content. */

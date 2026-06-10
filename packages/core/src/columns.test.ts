@@ -51,6 +51,19 @@ describe('buildHeaderMatrix', () => {
     ])
   })
 
+  it('records level + 1-based colStart for grid placement', () => {
+    const matrix = buildHeaderMatrix(grouped)
+    expect(matrix[0].map((c) => [c.column.key, c.level, c.colStart])).toEqual([
+      ['name', 0, 1],
+      ['info', 0, 2], // group begins at leaf column 2 (age)
+      ['score', 0, 4], // after name + age + city
+    ])
+    expect(matrix[1].map((c) => [c.column.key, c.level, c.colStart])).toEqual([
+      ['age', 1, 2],
+      ['city', 1, 3],
+    ])
+  })
+
   it('the total colSpan of the top row equals the leaf count', () => {
     const top = buildHeaderMatrix(grouped)[0]
     const totalSpan = top.reduce((s, c) => s + c.colSpan, 0)

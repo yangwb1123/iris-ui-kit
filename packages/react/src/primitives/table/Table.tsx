@@ -1,10 +1,12 @@
 import * as React from 'react'
 import {
   aggregate,
+  buildHeaderMatrix,
   compareValues,
   computeVirtualRange,
   createExpansion,
   createSelectionModel,
+  flattenLeafColumns,
   flattenTree,
   nextGridCell,
   type ExpansionModel,
@@ -232,6 +234,24 @@ export function IrisTable<Row extends Record<string, unknown>>({
   className,
 }: IrisTableProps<Row>): React.ReactElement {
   const { t } = useI18n()
+
+  // Multi-level (grouped) headers: a column with `children` forms a header group.
+  // The BODY always renders the leaf columns; only the header gains extra rows.
+  // When nothing is grouped, `leafColumns` is the original `columns` (same
+  // reference) so the flat path is byte-identical.
+  const grouped = React.useMemo(
+    () => columns.some((c) => c.children && c.children.length > 0),
+    [columns],
+  )
+  const leafColumns = React.useMemo(
+    () => (grouped ? flattenLeafColumns(columns) : columns),
+    [grouped, columns],
+  )
+  const headerMatrix = React.useMemo(
+    () => (grouped ? buildHeaderMatrix(columns) : null),
+    [grouped, columns],
+  )
+
   // Controlled / uncontrolled state.
   const sortControlled = sortProp !== undefined
   const [sortInternal, setSortInternal] = React.useState<IrisTableSortState | null>(
@@ -350,7 +370,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // Sorted data.
   const sortedData = React.useMemo(() => {
     if (!sort) return data
-    const col = columns.find((c) => c.key === sort.key)
+    const col = leafColumns.find((c) => c.key === sort.key)
     if (!col) return data
     const dir = sort.direction === 'asc' ? 1 : -1
     const sorter =
@@ -428,7 +448,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const widths: string[] = []
     if (hasDetail) widths.push(`${EXPAND_COL_WIDTH}px`)
     if (selectable !== 'none') widths.push('40px')
-    for (const col of columns) {
+    for (const col of leafColumns) {
       const override = columnWidths[col.key]
       if (override != null) widths.push(`${override}px`)
       else if (typeof col.width === 'number') widths.push(`${col.width}px`)
@@ -436,7 +456,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       else widths.push('minmax(0, 1fr)')
     }
     return widths.join(' ')
-  }, [columns, selectable, columnWidths, hasDetail])
+  }, [leafColumns, selectable, columnWidths, hasDetail])
 
   // Sticky offsets for pinned columns: each accumulates the resolved widths of
   // the pinned columns between it and its edge (plus the selection column on
@@ -447,22 +467,22 @@ export function IrisTable<Row extends Record<string, unknown>>({
       columnWidths[col.key] ?? (typeof col.width === 'number' ? col.width : DEFAULT_PINNED_WIDTH)
     let left =
       (hasDetail ? EXPAND_COL_WIDTH : 0) + (selectable !== 'none' ? SELECTION_COL_WIDTH : 0)
-    for (const col of columns) {
+    for (const col of leafColumns) {
       if (col.pinned === 'left') {
         map[col.key] = { side: 'left', offset: left }
         left += widthOf(col)
       }
     }
     let right = 0
-    for (let i = columns.length - 1; i >= 0; i -= 1) {
-      const col = columns[i]
+    for (let i = leafColumns.length - 1; i >= 0; i -= 1) {
+      const col = leafColumns[i]
       if (col?.pinned === 'right') {
         map[col.key] = { side: 'right', offset: right }
         right += widthOf(col)
       }
     }
     return map
-  }, [columns, columnWidths, selectable])
+  }, [leafColumns, columnWidths, selectable])
 
   const pinnedStyle = (key: string): React.CSSProperties | null => {
     const p = pinnedOffsets[key]
@@ -502,7 +522,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const current = focusedCell ?? { row: 0, col: 0 }
     const next = nextGridCell(current, e.key as GridNavKey, {
       rowCount: bodyData.length,
-      colCount: columns.length,
+      colCount: leafColumns.length,
       pageSize: 10,
     })
     setFocusedCell(next)
@@ -514,12 +534,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   const resolvedColWidths = React.useMemo(
     () =>
-      columns.map(
+      leafColumns.map(
         (col) =>
           columnWidths[col.key] ??
           (typeof col.width === 'number' ? col.width : DEFAULT_PINNED_WIDTH),
       ),
-    [columns, columnWidths],
+    [leafColumns, columnWidths],
   )
 
   React.useEffect(() => {
@@ -539,7 +559,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const visibleColSet = React.useMemo(() => {
     if (!columnVirtualization) return null
     const w = computeVirtualRange({
-      itemCount: columns.length,
+      itemCount: leafColumns.length,
       scrollTop: scrollLeft,
       viewportSize: viewportWidth,
       itemSize: (i) => resolvedColWidths[i] ?? DEFAULT_PINNED_WIDTH,
@@ -547,11 +567,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
     })
     const set = new Set<number>()
     for (let i = w.startIndex; i <= w.endIndex; i += 1) set.add(i)
-    columns.forEach((col, i) => {
+    leafColumns.forEach((col, i) => {
       if (col.pinned) set.add(i)
     })
     return set
-  }, [columnVirtualization, columns, scrollLeft, viewportWidth, resolvedColWidths])
+  }, [columnVirtualization, leafColumns, scrollLeft, viewportWidth, resolvedColWidths])
 
   // 1-based grid track for a column (after the optional selection track), so a
   // rendered cell lands in the right place even when earlier cells are skipped.
@@ -646,7 +666,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             />
           </div>
         ) : null}
-        {columns.map((col, ci) => {
+        {leafColumns.map((col, ci) => {
           if (visibleColSet && !visibleColSet.has(ci)) return null
           const raw = getCellValue(row, col)
           const editing = editingCellId === cellId(k, col.key)
@@ -811,121 +831,226 @@ export function IrisTable<Row extends Record<string, unknown>>({
         ...style,
       }}
     >
-      {/* Header row */}
-      <div role="row" data-iris-table-row="header" style={{ display: 'grid', gridTemplateColumns }}>
-        {hasDetail ? (
-          <div
-            role="columnheader"
-            data-iris-table-header="__expand"
-            style={{
-              ...baseCellStyle,
-              background: 'var(--iris-surface)',
-              borderBottom: borderStyle,
-            }}
-          />
-        ) : null}
-        {selectable === 'multi' ? (
-          <div
-            role="columnheader"
-            data-iris-table-header=""
-            style={{
-              ...baseCellStyle,
-              background: 'var(--iris-surface)',
-              borderBottom: borderStyle,
-              justifyContent: 'center',
-            }}
-          >
-            <IrisCheckbox
-              checked={allSelected ? true : someSelected ? 'indeterminate' : false}
-              onChange={toggleAll}
-              aria-label={t('table.selectAll')}
-            />
-          </div>
-        ) : selectable === 'single' ? (
-          <div
-            role="columnheader"
-            data-iris-table-header=""
-            style={{
-              ...baseCellStyle,
-              background: 'var(--iris-surface)',
-              borderBottom: borderStyle,
-            }}
-          />
-        ) : null}
-        {columns.map((col, ci) => {
-          if (visibleColSet && !visibleColSet.has(ci)) return null
-          const isSortKey = sort?.key === col.key
-          const dir: IrisTableSortDirection | undefined = isSortKey ? sort?.direction : undefined
-          return (
+      {/* Multi-level (grouped) header: a CSS grid of `headerMatrix.length` rows;
+          each cell placed by its leaf-column span (colStart/colSpan) and row span. */}
+      {grouped && headerMatrix ? (
+        <div
+          role="row"
+          data-iris-table-row="header"
+          data-iris-table-header-grouped=""
+          style={{
+            display: 'grid',
+            gridTemplateColumns,
+            gridTemplateRows: `repeat(${headerMatrix.length}, auto)`,
+          }}
+        >
+          {hasDetail ? (
+            <div role="columnheader" style={{ gridColumn: '1', gridRow: '1 / -1' }} />
+          ) : null}
+          {selectable !== 'none' ? (
             <div
-              key={col.key}
               role="columnheader"
-              aria-sort={
-                isSortKey
-                  ? dir === 'asc'
-                    ? 'ascending'
-                    : 'descending'
-                  : col.sortable
-                    ? 'none'
-                    : undefined
-              }
-              tabIndex={col.sortable ? 0 : undefined}
-              onClick={col.sortable ? () => cycleSort(col) : undefined}
-              onKeyDown={col.sortable ? (e) => onHeaderKeyDown(e, col) : undefined}
-              data-iris-table-header={col.key}
-              data-iris-table-pinned={col.pinned}
-              data-sortable={col.sortable ? 'true' : undefined}
-              data-sort-direction={dir}
+              data-iris-table-header=""
               style={{
+                gridColumn: hasDetail ? '2' : '1',
+                gridRow: '1 / -1',
                 ...baseCellStyle,
-                ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
-                justifyContent:
-                  col.align === 'right'
-                    ? 'flex-end'
-                    : col.align === 'center'
-                      ? 'center'
-                      : 'flex-start',
                 background: 'var(--iris-surface)',
                 borderBottom: borderStyle,
-                cursor: col.sortable ? 'pointer' : 'default',
-                fontWeight: 600,
-                userSelect: col.sortable ? 'none' : 'auto',
-                position: 'relative',
-                // Pinned header keeps a solid surface bg + sticky position
-                // (overrides position: relative above for the sticky edge).
-                ...(pinnedStyle(col.key)
-                  ? { ...pinnedStyle(col.key), background: 'var(--iris-surface)' }
-                  : null),
+                justifyContent: 'center',
               }}
             >
-              <span>{col.title}</span>
-              {col.sortable ? (
-                <span
-                  aria-hidden="true"
-                  data-iris-table-sort-indicator=""
-                  style={{
-                    marginInlineStart: 6,
-                    fontSize: 11,
-                    color: dir ? 'var(--iris-primary)' : 'var(--iris-muted)',
-                  }}
-                >
-                  {dir === 'asc' ? '↑' : dir === 'desc' ? '↓' : '↕'}
-                </span>
-              ) : null}
-              {resizableColumns ? (
-                <ColumnResizeHandle
-                  colKey={col.key}
-                  label={col.title}
-                  width={columnWidths[col.key]}
-                  minWidth={col.minWidth ?? 60}
-                  maxWidth={col.maxWidth ?? Infinity}
-                  onResize={setColumnWidth}
+              {selectable === 'multi' ? (
+                <IrisCheckbox
+                  checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                  onChange={toggleAll}
+                  aria-label={t('table.selectAll')}
                 />
               ) : null}
             </div>
-          )
-        })}
-      </div>
+          ) : null}
+          {headerMatrix.flatMap((cells) =>
+            cells.map((cell) => {
+              const col = cell.column
+              const isLeaf = !col.children || col.children.length === 0
+              const sortable = isLeaf && col.sortable
+              const isSortKey = sortable && sort?.key === col.key
+              const dir: IrisTableSortDirection | undefined = isSortKey
+                ? sort?.direction
+                : undefined
+              const lead = (hasDetail ? 1 : 0) + (selectable !== 'none' ? 1 : 0)
+              return (
+                <div
+                  key={`${col.key}-${cell.level}`}
+                  role="columnheader"
+                  data-iris-table-header={col.key}
+                  data-iris-table-header-group={isLeaf ? undefined : ''}
+                  aria-colspan={cell.colSpan}
+                  aria-sort={
+                    isSortKey
+                      ? dir === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : sortable
+                        ? 'none'
+                        : undefined
+                  }
+                  tabIndex={sortable ? 0 : undefined}
+                  onClick={sortable ? () => cycleSort(col) : undefined}
+                  onKeyDown={sortable ? (e) => onHeaderKeyDown(e, col) : undefined}
+                  style={{
+                    gridColumn: `${lead + cell.colStart} / span ${cell.colSpan}`,
+                    gridRow: `${cell.level + 1} / span ${cell.rowSpan}`,
+                    ...baseCellStyle,
+                    justifyContent: isLeaf ? 'flex-start' : 'center',
+                    background: 'var(--iris-surface)',
+                    borderBottom: borderStyle,
+                    borderInlineEnd: isLeaf ? 'none' : borderStyle,
+                    cursor: sortable ? 'pointer' : 'default',
+                    fontWeight: 600,
+                    userSelect: sortable ? 'none' : 'auto',
+                  }}
+                >
+                  <span>{col.title}</span>
+                  {sortable ? (
+                    <span
+                      aria-hidden="true"
+                      data-iris-table-sort-indicator=""
+                      style={{
+                        marginInlineStart: 6,
+                        fontSize: 11,
+                        color: dir ? 'var(--iris-primary)' : 'var(--iris-muted)',
+                      }}
+                    >
+                      {dir === 'asc' ? '↑' : dir === 'desc' ? '↓' : '↕'}
+                    </span>
+                  ) : null}
+                </div>
+              )
+            }),
+          )}
+        </div>
+      ) : (
+        /* Header row (flat) */
+        <div
+          role="row"
+          data-iris-table-row="header"
+          style={{ display: 'grid', gridTemplateColumns }}
+        >
+          {hasDetail ? (
+            <div
+              role="columnheader"
+              data-iris-table-header="__expand"
+              style={{
+                ...baseCellStyle,
+                background: 'var(--iris-surface)',
+                borderBottom: borderStyle,
+              }}
+            />
+          ) : null}
+          {selectable === 'multi' ? (
+            <div
+              role="columnheader"
+              data-iris-table-header=""
+              style={{
+                ...baseCellStyle,
+                background: 'var(--iris-surface)',
+                borderBottom: borderStyle,
+                justifyContent: 'center',
+              }}
+            >
+              <IrisCheckbox
+                checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                onChange={toggleAll}
+                aria-label={t('table.selectAll')}
+              />
+            </div>
+          ) : selectable === 'single' ? (
+            <div
+              role="columnheader"
+              data-iris-table-header=""
+              style={{
+                ...baseCellStyle,
+                background: 'var(--iris-surface)',
+                borderBottom: borderStyle,
+              }}
+            />
+          ) : null}
+          {columns.map((col, ci) => {
+            if (visibleColSet && !visibleColSet.has(ci)) return null
+            const isSortKey = sort?.key === col.key
+            const dir: IrisTableSortDirection | undefined = isSortKey ? sort?.direction : undefined
+            return (
+              <div
+                key={col.key}
+                role="columnheader"
+                aria-sort={
+                  isSortKey
+                    ? dir === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : col.sortable
+                      ? 'none'
+                      : undefined
+                }
+                tabIndex={col.sortable ? 0 : undefined}
+                onClick={col.sortable ? () => cycleSort(col) : undefined}
+                onKeyDown={col.sortable ? (e) => onHeaderKeyDown(e, col) : undefined}
+                data-iris-table-header={col.key}
+                data-iris-table-pinned={col.pinned}
+                data-sortable={col.sortable ? 'true' : undefined}
+                data-sort-direction={dir}
+                style={{
+                  ...baseCellStyle,
+                  ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
+                  justifyContent:
+                    col.align === 'right'
+                      ? 'flex-end'
+                      : col.align === 'center'
+                        ? 'center'
+                        : 'flex-start',
+                  background: 'var(--iris-surface)',
+                  borderBottom: borderStyle,
+                  cursor: col.sortable ? 'pointer' : 'default',
+                  fontWeight: 600,
+                  userSelect: col.sortable ? 'none' : 'auto',
+                  position: 'relative',
+                  // Pinned header keeps a solid surface bg + sticky position
+                  // (overrides position: relative above for the sticky edge).
+                  ...(pinnedStyle(col.key)
+                    ? { ...pinnedStyle(col.key), background: 'var(--iris-surface)' }
+                    : null),
+                }}
+              >
+                <span>{col.title}</span>
+                {col.sortable ? (
+                  <span
+                    aria-hidden="true"
+                    data-iris-table-sort-indicator=""
+                    style={{
+                      marginInlineStart: 6,
+                      fontSize: 11,
+                      color: dir ? 'var(--iris-primary)' : 'var(--iris-muted)',
+                    }}
+                  >
+                    {dir === 'asc' ? '↑' : dir === 'desc' ? '↓' : '↕'}
+                  </span>
+                ) : null}
+                {resizableColumns ? (
+                  <ColumnResizeHandle
+                    colKey={col.key}
+                    label={col.title}
+                    width={columnWidths[col.key]}
+                    minWidth={col.minWidth ?? 60}
+                    maxWidth={col.maxWidth ?? Infinity}
+                    onResize={setColumnWidth}
+                  />
+                ) : null}
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Body — state precedence: error → loading → empty → rows. */}
       {error ? (
@@ -982,7 +1107,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
       {/* Summary / footer row: each column with a `summary` op aggregates over
           the full sorted dataset (the core `aggregate` material). */}
-      {!error && !loading && bodyData.length > 0 && columns.some((c) => c.summary) ? (
+      {!error && !loading && bodyData.length > 0 && leafColumns.some((c) => c.summary) ? (
         <div
           role="row"
           data-iris-table-row="summary"
@@ -997,7 +1122,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           {selectable !== 'none' ? (
             <div role="cell" data-iris-table-cell="__selection" style={baseCellStyle} />
           ) : null}
-          {columns.map((col, ci) => {
+          {leafColumns.map((col, ci) => {
             if (visibleColSet && !visibleColSet.has(ci)) return null
             const op = col.summary
             const value = op ? aggregate(bodyData, (r) => getCellValue(r, col), op) : null

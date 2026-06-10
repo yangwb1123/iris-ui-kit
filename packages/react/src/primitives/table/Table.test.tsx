@@ -801,6 +801,55 @@ describe('@iris-ui/react IrisTable grid keyboard navigation', () => {
   })
 })
 
+describe('@iris-ui/react IrisTable multi-level headers', () => {
+  const groupedCols: IrisTableColumn<Row>[] = [
+    { key: 'name', title: 'Name' },
+    {
+      key: 'info',
+      title: 'Info',
+      children: [
+        { key: 'age', title: 'Age', sortable: true },
+        { key: 'id', title: 'ID' },
+      ],
+    },
+  ]
+  function header(key: string): HTMLElement | null {
+    return document.querySelector(`[data-iris-table-header="${key}"]`)
+  }
+
+  it('flat columns render a non-grouped header (unchanged)', () => {
+    render(<IrisTable columns={baseColumns} data={rows} />)
+    expect(document.querySelector('[data-iris-table-header-grouped]')).toBeNull()
+  })
+
+  it('a column with children renders a grouped header with span attrs', () => {
+    render(<IrisTable columns={groupedCols} data={rows} />)
+    expect(document.querySelector('[data-iris-table-header-grouped]')).not.toBeNull()
+    // The group cell spans its 2 leaves and is marked as a group.
+    const group = header('info')!
+    expect(group.getAttribute('aria-colspan')).toBe('2')
+    expect(group.getAttribute('data-iris-table-header-group')).toBe('')
+    // Leaf header cells exist and the group's leaves are NOT marked as a group.
+    expect(header('age')!.getAttribute('data-iris-table-header-group')).toBeNull()
+    expect(header('id')).not.toBeNull()
+  })
+
+  it('the body renders the LEAF columns (group is header-only)', () => {
+    render(<IrisTable columns={groupedCols} data={rows} />)
+    // 3 leaf columns × 3 rows of body cells (name, age, id); no "info" data cell.
+    expect(document.querySelectorAll('[data-iris-table-cell="age"]').length).toBe(3)
+    expect(document.querySelectorAll('[data-iris-table-cell="id"]').length).toBe(3)
+    expect(document.querySelector('[data-iris-table-cell="info"]')).toBeNull()
+  })
+
+  it('a sortable leaf inside a group still sorts', () => {
+    const onSort = vi.fn()
+    render(<IrisTable columns={groupedCols} data={rows} onSortChange={onSort} />)
+    act(() => fireEvent.click(header('age')!))
+    expect(onSort).toHaveBeenLastCalledWith({ key: 'age', direction: 'asc' })
+  })
+})
+
 describe('@iris-ui/react IrisTable virtual scroll', () => {
   const many: Row[] = Array.from({ length: 50 }, (_, i) => ({ id: i + 1, name: `N${i}`, age: i }))
 

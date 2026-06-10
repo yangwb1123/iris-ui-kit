@@ -20,6 +20,10 @@ export interface HeaderCell<C extends ColumnTreeNode> {
   colSpan: number
   /** Header rows this cell spans: a leaf reaches the bottom; a group spans 1. */
   rowSpan: number
+  /** 0-based header row (nesting level) this cell sits in. */
+  level: number
+  /** 1-based leaf-column index where this cell begins — its grid column start. */
+  colStart: number
 }
 
 /** Count the leaf descendants of a node (itself if it has no children). */
@@ -66,15 +70,20 @@ export function buildHeaderMatrix<C extends ColumnTreeNode>(
 ): HeaderCell<C>[][] {
   const depth = forestDepth(columns)
   const rows: HeaderCell<C>[][] = Array.from({ length: depth }, () => [])
+  let leafCursor = 1 // 1-based leaf-column index, advances left-to-right
   const walk = (node: C, level: number): void => {
     const children = node.children as C[] | undefined
     const isLeaf = !children || children.length === 0
+    const colStart = leafCursor
     rows[level].push({
       column: node,
       colSpan: leafCount(node),
       rowSpan: isLeaf ? depth - level : 1,
+      level,
+      colStart,
     })
-    if (!isLeaf) for (const child of children) walk(child, level + 1)
+    if (isLeaf) leafCursor += 1
+    else for (const child of children) walk(child, level + 1)
   }
   for (const node of columns) walk(node, 0)
   return rows

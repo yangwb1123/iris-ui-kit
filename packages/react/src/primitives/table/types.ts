@@ -57,6 +57,12 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    * rows it was computed over; defaults to the number's string form.
    */
   renderSummary?: (value: number, rows: Row[]) => import('react').ReactNode
+  /**
+   * Child columns, making this a HEADER GROUP that spans them in a multi-level
+   * header. A column with `children` is not a data column itself — its leaf
+   * descendants render the body. Omit for a normal (leaf) column.
+   */
+  children?: IrisTableColumn<Row>[]
   /** Custom comparator for sorting; defaults to native `<`. */
   sorter?: (a: Row, b: Row) => number
   /** Custom render for cell content. */

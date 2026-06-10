@@ -78,6 +78,7 @@ export {
   summarize,
   groupRows,
   flattenTree,
+  treeMatchKeys,
   paginate,
   pageCount,
   getPageRange,

@@ -366,6 +366,40 @@ export function flattenTree<Row>(
   return out
 }
 
+/**
+ * The set of keys to KEEP when filtering a tree: a node is kept when it OR any
+ * descendant satisfies `predicate`, so the ancestors of a match are retained for
+ * context (a deep match still shows its path). Pair with {@link flattenTree} —
+ * `flattenTree(roots, …).filter((tr) => keep.has(tr.key))` — to render a filtered
+ * tree. Pure, post-order, and cycle/duplicate-guarded like `flattenTree`.
+ */
+export function treeMatchKeys<Row>(
+  roots: readonly Row[],
+  predicate: (row: Row) => boolean,
+  options: {
+    getKey: (row: Row) => string
+    getChildren: (row: Row) => readonly Row[] | undefined
+  },
+): Set<string> {
+  const { getKey, getChildren } = options
+  const keep = new Set<string>()
+  const seen = new Set<string>()
+  const visit = (row: Row): boolean => {
+    const key = getKey(row)
+    if (seen.has(key)) return keep.has(key) // cycle / duplicate: reuse the decision
+    seen.add(key)
+    let anyChild = false
+    for (const child of getChildren(row) ?? []) {
+      if (visit(child)) anyChild = true
+    }
+    const kept = predicate(row) || anyChild
+    if (kept) keep.add(key)
+    return kept
+  }
+  for (const row of roots) visit(row)
+  return keep
+}
+
 /** Slice the page-th page (1-based) of `pageSize` rows. */
 export function paginate<Row>(rows: readonly Row[], page: number, pageSize: number): Row[] {
   const start = (page - 1) * pageSize

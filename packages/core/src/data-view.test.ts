@@ -9,6 +9,7 @@ import {
   summarize,
   groupRows,
   flattenTree,
+  treeMatchKeys,
   paginate,
   pageCount,
   getPageRange,
@@ -317,5 +318,59 @@ describe('flattenTree', () => {
     a.children = [b] // a → b → a cycle
     const out = flattenTree([a], { ...opts(new Set(['a', 'b'])) })
     expect(out.map((r) => r.key)).toEqual(['a', 'b']) // each emitted once, no loop
+  })
+})
+
+describe('treeMatchKeys', () => {
+  interface N {
+    id: string
+    label: string
+    children?: N[]
+  }
+  const tree: N[] = [
+    {
+      id: 'a',
+      label: 'Apple',
+      children: [
+        { id: 'a1', label: 'Apricot' },
+        { id: 'a2', label: 'Banana' },
+      ],
+    },
+    { id: 'b', label: 'Cherry' },
+  ]
+  const opts = { getKey: (n: N) => n.id, getChildren: (n: N) => n.children }
+
+  it('keeps a matching leaf and all its ancestors', () => {
+    const keep = treeMatchKeys(tree, (n) => n.label === 'Banana', opts)
+    expect([...keep].sort()).toEqual(['a', 'a2']) // a2 matches, a kept as ancestor
+  })
+
+  it('keeps a matching branch even when no descendant matches', () => {
+    const keep = treeMatchKeys(tree, (n) => n.label === 'Apple', opts)
+    expect(keep.has('a')).toBe(true)
+    expect(keep.has('a1')).toBe(false)
+  })
+
+  it('returns an empty set when nothing matches', () => {
+    expect(treeMatchKeys(tree, () => false, opts).size).toBe(0)
+  })
+
+  it('composes with flattenTree to render a filtered tree', () => {
+    const keep = treeMatchKeys(tree, (n) => n.label.includes('Apr'), opts) // Apricot
+    const visible = flattenTree(tree, {
+      getKey: opts.getKey,
+      getChildren: opts.getChildren,
+      isExpanded: () => true,
+    })
+      .filter((tr) => keep.has(tr.key))
+      .map((tr) => tr.key)
+    expect(visible).toEqual(['a', 'a1']) // path to the match only
+  })
+
+  it('terminates on a cyclic tree', () => {
+    const x: N = { id: 'x', label: 'X' }
+    const y: N = { id: 'y', label: 'Y', children: [x] }
+    x.children = [y]
+    expect(() => treeMatchKeys([x], (n) => n.label === 'Y', opts)).not.toThrow()
   })
 })

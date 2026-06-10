@@ -17,3 +17,4 @@ export type {
 } from './types'
 export { lightTheme } from './light'
 export { darkTheme } from './dark'
+export { toDtcg, toDtcgJson, type DtcgType, type DtcgToken, type DtcgGroup } from './dtcg'

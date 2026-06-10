@@ -3,7 +3,7 @@ layout: home
 hero:
   name: Iris UI
   text: Token-driven, cross-framework UI infrastructure
-  tagline: One theme.json skins every layer. React 18 + Vue 3, same names, same semantics.
+  tagline: One theme.json skins every layer. React, Vue, Solid & Svelte — same names, same semantics.
   actions:
     - theme: brand
       text: Get started
@@ -13,7 +13,7 @@ hero:
       link: /components
 features:
   - title: Cross-framework parity
-    details: 130 components exported identically from @iris-ui/react and @iris-ui/vue. Business logic lives in a framework-agnostic core; adapters are thin reactive bridges.
+    details: 141 components exported identically from @iris-ui/react and @iris-ui/vue, with @iris-ui/solid (140) and @iris-ui/svelte (138) right behind. Business logic lives in a framework-agnostic core; adapters are thin reactive bridges.
   - title: Logic that sinks to core
     details: Six engines — state machines, forms, i18n, virtualization, async resources, and pagination — are pure and framework-agnostic, each with a thin hook per framework.
   - title: Token-driven theming

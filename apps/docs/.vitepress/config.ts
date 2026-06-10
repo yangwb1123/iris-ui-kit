@@ -4,7 +4,7 @@ import { defineConfig } from 'vitepress'
 // (see generate-components.mjs) so the reference can't drift from the packages.
 export default defineConfig({
   title: 'Iris UI',
-  description: 'Token-driven, cross-framework (React 18 + Vue 3) UI infrastructure.',
+  description: 'Token-driven, cross-framework (React · Vue · Solid · Svelte) UI infrastructure.',
   cleanUrls: true,
   themeConfig: {
     nav: [

@@ -6,23 +6,32 @@ AI-native cross-framework component infrastructure. From meta UI primitives to f
 
 ## Status
 
-🔧 **Alpha** — not yet published to npm. **130 components at full React + Vue parity**, generated from one set of framework-agnostic engines, with a deep test suite (2,100+ specs) and four green quality gates (test · typecheck · lint · build) plus bundle-size and RSC-directive guards.
+🔧 **Alpha** — not yet published to npm. **141 components across four frameworks (React 141 · Vue 141 · Solid 140 · Svelte 138)**, generated from one set of framework-agnostic engines, with a deep test suite (2,100+ specs) and four green quality gates (test · typecheck · lint · build) plus bundle-size and RSC-directive guards.
 
 ## Packages
 
-| Package             | Description                                                                                        |
-| ------------------- | -------------------------------------------------------------------------------------------------- |
-| `@iris-ui/core`     | Framework-agnostic engines: store, state machine, forms, i18n, virtualization, async, pagination   |
-| `@iris-ui/tokens`   | `IrisTheme` types + Light/Dark default themes                                                      |
-| `@iris-ui/theme`    | Theme engine: `applyTheme`, `getCssVar`, theme store, direction & color-scheme                     |
-| `@iris-ui/icons`    | Built-in Feather-style icon set (structured nodes) + icon-set interface                            |
-| `@iris-ui/react`    | React 18 / 19 adapter — all 130 components                                                         |
-| `@iris-ui/vue`      | Vue 3.5 adapter — all 130 components                                                               |
-| `@iris-ui/manifest` | Machine-readable component/token manifest (`manifest.json` / `llms.txt`) for AI-native consumption |
+| Package                        | Description                                                                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `@iris-ui/core`                | Framework-agnostic engines: store, state machine, forms, i18n, virtualization, async, pagination                                     |
+| `@iris-ui/tokens`              | `IrisTheme` types + Light/Dark default themes                                                                                        |
+| `@iris-ui/theme`               | Theme engine: `applyTheme`, `getCssVar`, theme store, direction & color-scheme                                                       |
+| `@iris-ui/icons`               | Built-in Feather-style icon set (structured nodes) + icon-set interface                                                              |
+| `@iris-ui/react`               | React 18 / 19 adapter — all 141 components                                                                                           |
+| `@iris-ui/vue`                 | Vue 3.5 adapter — all 141 components                                                                                                 |
+| `@iris-ui/solid`               | SolidJS adapter — 140 components, thin bridges over `@iris-ui/core`                                                                  |
+| `@iris-ui/svelte`              | Svelte 5 adapter — 138 components, thin bridges over `@iris-ui/core`                                                                 |
+| `@iris-ui/skins`               | Loadable, token-built skin system: inheritance, custom tokens, marketplace catalog, runtime engine                                   |
+| `@iris-ui/manifest`            | Machine-readable component/token manifest (`manifest.json` / `llms.txt`) for AI-native consumption                                   |
+| `@iris-ui/mcp`                 | MCP server over the typed manifest — `list_components` / `search_components` / `get_component_api` / `scaffold_component` for agents |
+| `@iris-ui/plugin-locale-zh`    | Simplified-Chinese (zh-CN) message pack, packaged as an Iris plugin                                                                  |
+| `@iris-ui/plugin-editor`       | Code editor plugin (CodeMirror 6): `IrisCodeEditor` for all four frameworks                                                          |
+| `@iris-ui/plugin-pro-table`    | vxe-table-style CRUD data table plugin: `IrisProTable` for all four frameworks                                                       |
+| `@iris-ui/plugin-charts`       | Zero-dependency, token-themed SVG charts: `IrisLineChart` / `IrisBarChart` / `IrisSparkline`                                         |
+| `@iris-ui/plugin-form-builder` | Schema-driven form builder: `IrisFormBuilder` renders a form from a declarative schema                                               |
 
 ## Architecture
 
-The same logic powers both frameworks: **engines sink into `@iris-ui/core`** (pure, framework-agnostic), and each adapter is a thin bridge — React via `useSyncExternalStore`, Vue via `ref` + `subscribe`. A new framework adapter therefore re-bridges engines, not logic.
+The same logic powers all four frameworks: **engines sink into `@iris-ui/core`** (pure, framework-agnostic), and each adapter is a thin bridge — React via `useSyncExternalStore`, Vue via `ref` + `subscribe`, Solid via `createSignal` + `subscribe`, Svelte via `readable` stores. A new framework adapter therefore re-bridges engines, not logic.
 
 Five-layer model with a transversal theme layer and an orthogonal behaviors layer:
 
@@ -35,11 +44,13 @@ Layer 0: Theme System     (tokens / theme / icons)  ← transversal
 Behaviors:                (ClickOutside / Movable / Resizable / Hotkey)  ← orthogonal
 ```
 
+On top of the component layers sits a Vben-style **admin layer** (the `admin` entry of every adapter, e.g. `@iris-ui/react/admin`): `AdminLayout` shell, `NavMenu`, `AdminTabs` tab navigation, and `AdminBreadcrumb`, all driven by the core nav/tabsNav engines. And for AI agents, **`@iris-ui/mcp`** serves the typed component manifest over the Model Context Protocol — list, search, fetch a component's full prop contract, or scaffold a ready-to-edit usage snippet in any of the four frameworks.
+
 Read [AGENTS.md](./AGENTS.md) for the full vision and [ROADMAP.md](./ROADMAP.md) for the expansion plan.
 
 ## Usage
 
-> Peer deps: React `^18 || ^19` (+ `react-dom`) or Vue `^3.5`.
+> Peer deps: React `^18 || ^19` (+ `react-dom`), Vue `^3.5`, Solid `^1.9`, or Svelte `^5`.
 
 **React** — wrap your tree in `ThemeProvider`, then use components:
 

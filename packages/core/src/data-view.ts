@@ -312,6 +312,60 @@ export function groupRows<Row, K>(
   return Array.from(groups, ([key, rs]) => ({ key, rows: rs }))
 }
 
+/** A row in the flattened view of a tree, tagged with its hierarchy position. */
+export interface TreeRow<Row> {
+  row: Row
+  /** Stable key from `getKey`. */
+  key: string
+  /** Indentation level: `0` for roots, `+1` per descent. */
+  depth: number
+  /** Whether the node has children (regardless of whether they're shown). */
+  hasChildren: boolean
+  /** Whether this node's children are currently visible. */
+  expanded: boolean
+}
+
+export interface FlattenTreeOptions<Row> {
+  /** Stable, unique key for a row. */
+  getKey: (row: Row) => string
+  /** A row's child rows, or `undefined`/`[]` for a leaf. */
+  getChildren: (row: Row) => readonly Row[] | undefined
+  /** Whether a key's children are currently expanded (e.g. from createExpansion). */
+  isExpanded: (key: string) => boolean
+}
+
+/**
+ * Flatten a nested row tree into the visible flat list (pre-order: a parent
+ * precedes its shown descendants), honoring an expansion predicate — children of
+ * a collapsed node are omitted. Each emitted {@link TreeRow} carries its depth
+ * (for indentation) and `hasChildren` (so the UI shows a toggle even when
+ * collapsed). The C-layer material behind hierarchical/tree table rows. A
+ * `seen`-key guard makes a malformed tree (a child cycling back to an ancestor)
+ * terminate instead of looping, and de-dupes repeated keys.
+ */
+export function flattenTree<Row>(
+  roots: readonly Row[],
+  options: FlattenTreeOptions<Row>,
+): Array<TreeRow<Row>> {
+  const { getKey, getChildren, isExpanded } = options
+  const out: Array<TreeRow<Row>> = []
+  const seen = new Set<string>()
+  const walk = (nodes: readonly Row[], depth: number): void => {
+    for (const row of nodes) {
+      const key = getKey(row)
+      if (seen.has(key)) continue // cycle / duplicate-key guard
+      seen.add(key)
+      const children = getChildren(row)
+      const hasChildren = !!children && children.length > 0
+      const expanded = hasChildren && isExpanded(key)
+      out.push({ row, key, depth, hasChildren, expanded })
+      if (expanded) walk(children!, depth + 1)
+    }
+  }
+  walk(roots, 0)
+  return out
+}
+
 /** Slice the page-th page (1-based) of `pageSize` rows. */
 export function paginate<Row>(rows: readonly Row[], page: number, pageSize: number): Row[] {
   const start = (page - 1) * pageSize

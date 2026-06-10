@@ -8,6 +8,7 @@ import {
   aggregate,
   summarize,
   groupRows,
+  flattenTree,
   paginate,
   pageCount,
   getPageRange,
@@ -272,5 +273,49 @@ describe('getPageRange', () => {
   it('edge cases', () => {
     expect(getPageRange(1, 0)).toEqual([])
     expect(getPageRange(1, 1)).toEqual([1])
+  })
+})
+
+describe('flattenTree', () => {
+  interface Node {
+    id: string
+    children?: Node[]
+  }
+  const tree: Node[] = [
+    { id: 'a', children: [{ id: 'a1' }, { id: 'a2', children: [{ id: 'a2x' }] }] },
+    { id: 'b' },
+  ]
+  const opts = (expanded: Set<string>) => ({
+    getKey: (n: Node) => n.id,
+    getChildren: (n: Node) => n.children,
+    isExpanded: (k: string) => expanded.has(k),
+  })
+
+  it('all-collapsed yields only the roots, with hasChildren flags', () => {
+    const out = flattenTree(tree, opts(new Set()))
+    expect(out.map((r) => r.key)).toEqual(['a', 'b'])
+    expect(out[0]).toMatchObject({ depth: 0, hasChildren: true, expanded: false })
+    expect(out[1]).toMatchObject({ depth: 0, hasChildren: false, expanded: false })
+  })
+
+  it('expanding a branch reveals its children at depth+1 (pre-order)', () => {
+    const out = flattenTree(tree, opts(new Set(['a'])))
+    expect(out.map((r) => r.key)).toEqual(['a', 'a1', 'a2', 'b'])
+    expect(out.find((r) => r.key === 'a1')!.depth).toBe(1)
+    expect(out.find((r) => r.key === 'a2')).toMatchObject({ depth: 1, hasChildren: true })
+  })
+
+  it('expands transitively only along expanded keys', () => {
+    const out = flattenTree(tree, opts(new Set(['a', 'a2'])))
+    expect(out.map((r) => r.key)).toEqual(['a', 'a1', 'a2', 'a2x', 'b'])
+    expect(out.find((r) => r.key === 'a2x')!.depth).toBe(2)
+  })
+
+  it('terminates and de-dupes on a cyclic / repeated-key tree', () => {
+    const a: Node = { id: 'a' }
+    const b: Node = { id: 'b', children: [a] }
+    a.children = [b] // a → b → a cycle
+    const out = flattenTree([a], { ...opts(new Set(['a', 'b'])) })
+    expect(out.map((r) => r.key)).toEqual(['a', 'b']) // each emitted once, no loop
   })
 })

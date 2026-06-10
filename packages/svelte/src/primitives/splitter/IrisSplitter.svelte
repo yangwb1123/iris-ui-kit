@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useDrag } from './useDrag.svelte'
+  import { useDrag } from '../drag/useDrag.svelte'
 
   export type IrisSplitterOrientation = 'horizontal' | 'vertical'
 

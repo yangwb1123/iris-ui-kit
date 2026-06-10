@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useDrag } from '../splitter/useDrag.svelte'
+  import { useDrag } from '../drag/useDrag.svelte'
 
   export interface IrisDraggerPosition {
     x: number

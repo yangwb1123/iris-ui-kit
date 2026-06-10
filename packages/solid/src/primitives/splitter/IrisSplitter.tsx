@@ -1,5 +1,5 @@
 import { createSignal, mergeProps, type JSX } from 'solid-js'
-import { useDrag } from '../dragger/useDrag'
+import { useDrag } from '../drag/useDrag'
 
 export type IrisSplitterOrientation = 'horizontal' | 'vertical'
 

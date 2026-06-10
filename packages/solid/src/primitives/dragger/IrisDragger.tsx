@@ -1,5 +1,5 @@
 import { createMemo, createSignal, mergeProps, Show, type JSX } from 'solid-js'
-import { useDrag } from './useDrag'
+import { useDrag } from '../drag/useDrag'
 
 export interface IrisDraggerPosition {
   x: number

@@ -3,6 +3,7 @@
   import IrisDialogTrigger from './IrisDialogTrigger.svelte'
   import IrisDialogContent from './IrisDialogContent.svelte'
   import IrisDialogTitle from './IrisDialogTitle.svelte'
+  import IrisDialogDescription from './IrisDialogDescription.svelte'
   import IrisDialogClose from './IrisDialogClose.svelte'
 </script>
 
@@ -10,7 +11,7 @@
   <IrisDialogTrigger>Open Dialog</IrisDialogTrigger>
   <IrisDialogContent>
     <IrisDialogTitle>Dialog Title</IrisDialogTitle>
-    <p>Dialog body content</p>
+    <IrisDialogDescription>Dialog body content</IrisDialogDescription>
     <IrisDialogClose>Close</IrisDialogClose>
   </IrisDialogContent>
 </IrisDialog>

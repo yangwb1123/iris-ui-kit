@@ -12,7 +12,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 - Layer 4 — System Skeletons: Page / section skeleton scaffolds.
 - Behaviors: Orthogonal interaction behaviors (hotkeys, click-outside, drag).
 
-## Components (142 total — 139 in all 4 frameworks; react 141, vue 142, solid 142, svelte 140)
+## Components (142 total — 141 in all 4 frameworks; react 141, vue 142, solid 142, svelte 142)
 
 ### behaviors (4)
 - IrisClickOutside [react/solid/svelte/vue]
@@ -129,7 +129,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: asChild?, children?
 - IrisDialogContent [react/solid/svelte/vue]
   props: portalTarget?, children?
-- IrisDialogDescription [react/solid/vue]
+- IrisDialogDescription [react/solid/svelte/vue]
   props: as?
 - IrisDialogTitle [react/solid/svelte/vue]
   props: as?
@@ -191,7 +191,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: portalTarget?, children?
 - IrisMenuItem [react/solid/svelte/vue]
   props: disabled?, keepOpen?, onSelect?
-- IrisMenuSeparator [react/solid/vue]
+- IrisMenuSeparator [react/solid/svelte/vue]
 - IrisMenuSub [react/solid/svelte/vue]
   props: label?, portalTarget?, children?
 - IrisMenuTrigger [react/solid/svelte/vue]

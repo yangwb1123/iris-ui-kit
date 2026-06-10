@@ -3,6 +3,7 @@
   import IrisMenuTrigger from './IrisMenuTrigger.svelte'
   import IrisMenuContent from './IrisMenuContent.svelte'
   import IrisMenuItem from './IrisMenuItem.svelte'
+  import IrisMenuSeparator from './IrisMenuSeparator.svelte'
 
   interface Props {
     onSelect?: () => void
@@ -15,6 +16,7 @@
   <IrisMenuTrigger>Menu</IrisMenuTrigger>
   <IrisMenuContent>
     <IrisMenuItem onclick={onSelect}>Item 1</IrisMenuItem>
+    <IrisMenuSeparator />
     <IrisMenuItem>Item 2</IrisMenuItem>
   </IrisMenuContent>
 </IrisMenu>

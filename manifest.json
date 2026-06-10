@@ -2452,11 +2452,13 @@
       "frameworks": [
         "react",
         "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
         "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
       "props": [
@@ -4352,11 +4354,13 @@
       "frameworks": [
         "react",
         "solid",
+        "svelte",
         "vue"
       ],
       "importFrom": {
         "react": "@iris-ui/react",
         "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       }
     },
@@ -7850,12 +7854,12 @@
   },
   "stats": {
     "total": 142,
-    "full": 139,
+    "full": 141,
     "byFramework": {
       "react": 141,
       "vue": 142,
       "solid": 142,
-      "svelte": 140
+      "svelte": 142
     }
   }
 }

@@ -21,6 +21,14 @@ describe('IrisMenu', () => {
     expect(document.querySelector('[role="menu"]')).not.toBeNull()
   })
 
+  it('renders a separator with role="separator"', async () => {
+    const { getByText } = render(MenuHarness)
+    await fireEvent.click(getByText('Menu'))
+    const sep = document.querySelector('[data-iris-menu-separator]')
+    expect(sep).not.toBeNull()
+    expect(sep?.getAttribute('role')).toBe('separator')
+  })
+
   it('selects item and closes', async () => {
     const onSelect = vi.fn()
     const { getByText } = render(MenuHarness, { props: { onSelect } })

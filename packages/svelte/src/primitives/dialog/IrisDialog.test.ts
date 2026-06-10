@@ -28,6 +28,14 @@ describe('IrisDialog', () => {
     expect(document.querySelector('[data-iris-dialog-title]')?.textContent).toBe('Dialog Title')
   })
 
+  it('renders the description with the context description id', async () => {
+    const { getByText } = render(DialogHarness)
+    await fireEvent.click(getByText('Open Dialog'))
+    const desc = document.querySelector('[data-iris-dialog-description]')
+    expect(desc?.textContent).toBe('Dialog body content')
+    expect(desc?.id).toBeTruthy()
+  })
+
   it('closes when Close button is clicked', async () => {
     const { getByText } = render(DialogHarness)
     await fireEvent.click(getByText('Open Dialog'))

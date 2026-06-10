@@ -373,6 +373,55 @@ describe('IrisTable tree rows', () => {
   })
 })
 
+describe('IrisTable multi-level (grouped) headers', () => {
+  const groupedCols: IrisTableColumn[] = [
+    { key: 'name', title: 'Name' },
+    {
+      key: 'info',
+      title: 'Info',
+      children: [
+        { key: 'age', title: 'Age', sortable: true },
+        { key: 'id', title: 'ID' },
+      ],
+    },
+  ]
+  function header(key: string): HTMLElement | null {
+    return document.querySelector(`[data-iris-table-header="${key}"]`)
+  }
+
+  it('flat columns render a non-grouped header (unchanged)', () => {
+    const { container } = render(() => <IrisTable columns={columns} data={data} />)
+    expect(container.querySelector('[data-iris-table-header-grouped]')).toBeNull()
+  })
+
+  it('a column with children renders a grouped header with span attrs', () => {
+    const { container } = render(() => <IrisTable columns={groupedCols} data={data} />)
+    expect(container.querySelector('[data-iris-table-header-grouped]')).not.toBeNull()
+    // The group cell spans its 2 leaves and is marked as a group.
+    const group = header('info')!
+    expect(group.getAttribute('aria-colspan')).toBe('2')
+    expect(group.getAttribute('data-iris-table-header-group')).toBe('')
+    // Leaf header cells exist and the group's leaves are NOT marked as a group.
+    expect(header('age')!.getAttribute('data-iris-table-header-group')).toBeNull()
+    expect(header('id')).not.toBeNull()
+  })
+
+  it('the body renders the LEAF columns (group is header-only)', () => {
+    const { container } = render(() => <IrisTable columns={groupedCols} data={data} />)
+    // 3 leaf columns × 3 rows of body cells (name, age, id); no "info" data cell.
+    expect(container.querySelectorAll('[data-iris-table-cell="age"]').length).toBe(3)
+    expect(container.querySelectorAll('[data-iris-table-cell="id"]').length).toBe(3)
+    expect(container.querySelector('[data-iris-table-cell="info"]')).toBeNull()
+  })
+
+  it('a sortable leaf inside a group still sorts', () => {
+    const onSortChange = vi.fn()
+    render(() => <IrisTable columns={groupedCols} data={data} onSortChange={onSortChange} />)
+    fireEvent.click(header('age')!)
+    expect(onSortChange).toHaveBeenLastCalledWith({ key: 'age', direction: 'asc' })
+  })
+})
+
 describe('IrisTable grid keyboard navigation', () => {
   function cellAt(r: number, c: number): HTMLElement | null {
     return document.querySelector(`[data-grid-row="${r}"][data-grid-col="${c}"]`)

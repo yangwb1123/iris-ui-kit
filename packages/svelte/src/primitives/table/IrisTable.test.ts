@@ -413,3 +413,58 @@ describe('IrisTable grid keyboard navigation', () => {
     expect(document.activeElement).toBe(cellAt(container, 0, 1)) // 2 columns → last is col 1
   })
 })
+
+describe('IrisTable multi-level (grouped) headers', () => {
+  // `info` is a header GROUP over two leaves (age, id); `name` stays flat. The
+  // fixture rows carry name/age/id, so the body renders 3 leaf data columns.
+  const groupedCols = [
+    { key: 'name', title: 'Name' },
+    {
+      key: 'info',
+      title: 'Info',
+      children: [
+        { key: 'age', title: 'Age', sortable: true },
+        { key: 'id', title: 'ID' },
+      ],
+    },
+  ]
+  function header(container: HTMLElement, key: string): HTMLElement | null {
+    return container.querySelector(`[data-iris-table-header="${key}"]`)
+  }
+
+  it('flat columns render a non-grouped header (unchanged)', () => {
+    const { container } = render(IrisTable, { props: { columns, data } })
+    expect(container.querySelector('[data-iris-table-header-grouped]')).toBeNull()
+  })
+
+  it('a column with children renders a grouped header with span attrs', () => {
+    const { container } = render(IrisTable, { props: { columns: groupedCols, data } })
+    expect(container.querySelector('[data-iris-table-header-grouped]')).not.toBeNull()
+    // The group cell spans its 2 leaves and is marked as a group.
+    const group = header(container, 'info')!
+    expect(group.getAttribute('aria-colspan')).toBe('2')
+    expect(group.getAttribute('data-iris-table-header-group')).toBe('')
+    // Leaf header cells exist and the group's leaves are NOT marked as a group.
+    expect(header(container, 'age')!.getAttribute('data-iris-table-header-group')).toBeNull()
+    expect(header(container, 'id')).not.toBeNull()
+  })
+
+  it('the body renders the LEAF columns (group is header-only)', () => {
+    const { container } = render(IrisTable, { props: { columns: groupedCols, data } })
+    // 3 leaf columns × 3 rows of body cells (name, age, id); no "info" data cell.
+    const bodyCell = (key: string) =>
+      container.querySelectorAll(`[data-iris-table-body] [data-iris-table-cell="${key}"]`)
+    expect(bodyCell('age').length).toBe(3)
+    expect(bodyCell('id').length).toBe(3)
+    expect(bodyCell('info').length).toBe(0)
+  })
+
+  it('a sortable leaf inside a group still sorts', async () => {
+    const onUpdateSort = vi.fn()
+    const { container } = render(IrisTable, {
+      props: { columns: groupedCols, data, onUpdateSort },
+    })
+    await fireEvent.click(header(container, 'age')!)
+    expect(onUpdateSort).toHaveBeenLastCalledWith({ key: 'age', direction: 'asc' })
+  })
+})

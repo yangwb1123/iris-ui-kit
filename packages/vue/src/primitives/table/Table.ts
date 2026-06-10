@@ -13,10 +13,12 @@ import {
 } from 'vue'
 import {
   aggregate,
+  buildHeaderMatrix,
   compareValues,
   computeVirtualRange,
   createExpansion,
   createSelectionModel,
+  flattenLeafColumns,
   flattenTree,
   nextGridCell,
   type GridNavKey,
@@ -182,6 +184,18 @@ export const IrisTable = defineComponent({
   },
   setup(props, { slots, attrs, emit }) {
     const { t } = useI18n()
+
+    // -------- Multi-level (grouped) headers --------
+    // A column carrying `children` is a header GROUP spanning its leaf
+    // descendants; the leaves drive the body. When nothing is grouped,
+    // `leafColumns` is the original `columns` (same reference) so every
+    // body-affecting iteration stays byte-identical to the flat path.
+    const grouped = computed(() => props.columns.some((c) => c.children && c.children.length > 0))
+    const leafColumns = computed(() =>
+      grouped.value ? flattenLeafColumns(props.columns) : props.columns,
+    )
+    const headerMatrix = computed(() => (grouped.value ? buildHeaderMatrix(props.columns) : null))
+
     // -------- Sort --------
     const internalSortValue = ref<IrisTableSortState | null>(null)
     const internalSort = computed<IrisTableSortState | null>({
@@ -195,7 +209,7 @@ export const IrisTable = defineComponent({
     const sortedRows = computed(() => {
       const state = internalSort.value
       if (!state) return props.data
-      const column = props.columns.find((c) => c.key === state.key)
+      const column = leafColumns.value.find((c) => c.key === state.key)
       if (!column) return props.data
       const sorter =
         column.sorter ??
@@ -358,9 +372,10 @@ export const IrisTable = defineComponent({
 
     // -------- Column widths --------
     const internalWidths = ref<IrisTableColumnWidths>({})
-    // Seed internal widths from columns when uncontrolled.
+    // Seed internal widths from the LEAF columns when uncontrolled (a header
+    // group column carries no body width; only its leaves do).
     watch(
-      () => props.columns,
+      () => leafColumns.value,
       (cols) => {
         const seeded = { ...internalWidths.value }
         for (const col of cols) {
@@ -424,7 +439,7 @@ export const IrisTable = defineComponent({
       const parts: string[] = []
       if (hasDetail.value) parts.push(`${EXPAND_COL_WIDTH}px`)
       if (props.selectable !== 'none') parts.push(`${SELECTION_COL_WIDTH}px`)
-      for (const col of props.columns) {
+      for (const col of leafColumns.value) {
         parts.push(`${effectiveWidths.value[col.key] ?? resolveInitialWidth(col)}px`)
       }
       return parts.join(' ')
@@ -457,7 +472,7 @@ export const IrisTable = defineComponent({
       const current = focusedCell.value ?? { row: 0, col: 0 }
       const next = nextGridCell(current, e.key as GridNavKey, {
         rowCount: bodyData.value.length,
-        colCount: props.columns.length,
+        colCount: leafColumns.value.length,
         pageSize: 10,
       })
       focusedCell.value = next
@@ -493,17 +508,17 @@ export const IrisTable = defineComponent({
     // Column indices to render: visible window + overscan ∪ pinned. `null` ⇒ all.
     const visibleColSet = computed<Set<number> | null>(() => {
       if (!props.columnVirtualization) return null
+      const cols = leafColumns.value
       const w = computeVirtualRange({
-        itemCount: props.columns.length,
+        itemCount: cols.length,
         scrollTop: scrollLeft.value,
         viewportSize: viewportWidth.value,
-        itemSize: (i) =>
-          effectiveWidths.value[props.columns[i].key] ?? resolveInitialWidth(props.columns[i]),
+        itemSize: (i) => effectiveWidths.value[cols[i].key] ?? resolveInitialWidth(cols[i]),
         buffer: 2,
       })
       const set = new Set<number>()
       for (let i = w.startIndex; i <= w.endIndex; i += 1) set.add(i)
-      props.columns.forEach((col, i) => {
+      cols.forEach((col, i) => {
         if (col.pinned) set.add(i)
       })
       return set
@@ -518,15 +533,15 @@ export const IrisTable = defineComponent({
       let left =
         (hasDetail.value ? EXPAND_COL_WIDTH : 0) +
         (props.selectable !== 'none' ? SELECTION_COL_WIDTH : 0)
-      for (const col of props.columns) {
+      for (const col of leafColumns.value) {
         if (col.pinned === 'left') {
           map[col.key] = { side: 'left', offset: left }
           left += widthOf(col)
         }
       }
       let right = 0
-      for (let i = props.columns.length - 1; i >= 0; i -= 1) {
-        const col = props.columns[i]
+      for (let i = leafColumns.value.length - 1; i >= 0; i -= 1) {
+        const col = leafColumns.value[i]
         if (col?.pinned === 'right') {
           map[col.key] = { side: 'right', offset: right }
           right += widthOf(col)
@@ -582,6 +597,130 @@ export const IrisTable = defineComponent({
     return () => {
       const showSelection = props.selectable !== 'none'
       const showDetail = hasDetail.value
+
+      // -------- Grouped (multi-level) header --------
+      // When any column carries `children`, render the header as a CSS grid of
+      // `headerMatrix.length` rows; each cell placed by its leaf-column span
+      // (colStart/colSpan) and row span. Leaf header cells keep the full sort
+      // behavior; group cells are spanning labels. The single-row (flat) header
+      // below is rendered unchanged otherwise.
+      const buildGroupedHeader = (matrix: NonNullable<typeof headerMatrix.value>): VNode => {
+        const lead = (showDetail ? 1 : 0) + (showSelection ? 1 : 0)
+        const cells: VNode[] = []
+        if (showDetail) {
+          cells.push(
+            h('div', {
+              key: '__expand__',
+              role: 'columnheader',
+              style: { gridColumn: '1', gridRow: '1 / -1' },
+            }),
+          )
+        }
+        if (showSelection) {
+          cells.push(
+            h(
+              'div',
+              {
+                key: '__select__',
+                role: 'columnheader',
+                'data-iris-table-header': '',
+                style: {
+                  gridColumn: showDetail ? '2' : '1',
+                  gridRow: '1 / -1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px',
+                  background: 'var(--iris-surface)',
+                  borderBottom: '1px solid var(--iris-border)',
+                },
+              },
+              props.selectable === 'multi'
+                ? [
+                    h(IrisCheckbox, {
+                      modelValue: allSelected.value
+                        ? true
+                        : someSelected.value
+                          ? 'indeterminate'
+                          : false,
+                      size: 'sm',
+                      ariaLabel: t('table.selectAll'),
+                      'onUpdate:modelValue': toggleAll,
+                    }),
+                  ]
+                : '',
+            ),
+          )
+        }
+        for (const rowCells of matrix) {
+          for (const cell of rowCells) {
+            const col = cell.column
+            const isLeaf = !col.children || col.children.length === 0
+            const sortable = isLeaf && col.sortable
+            const align = col.align ?? 'left'
+            cells.push(
+              h(
+                'div',
+                {
+                  key: `${col.key}-${cell.level}`,
+                  role: 'columnheader',
+                  'data-iris-table-header': col.key,
+                  'data-iris-table-header-group': isLeaf ? undefined : '',
+                  'aria-colspan': cell.colSpan,
+                  onClick: sortable ? () => onHeaderClick(col) : undefined,
+                  'aria-sort': sortable
+                    ? internalSort.value?.key === col.key
+                      ? internalSort.value.direction === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : 'none'
+                    : undefined,
+                  style: {
+                    gridColumn: `${lead + cell.colStart} / span ${cell.colSpan}`,
+                    gridRow: `${cell.level + 1} / span ${cell.rowSpan}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: isLeaf
+                      ? align === 'right'
+                        ? 'flex-end'
+                        : align === 'center'
+                          ? 'center'
+                          : 'flex-start'
+                      : 'center',
+                    padding: '8px var(--iris-padding-md)',
+                    cursor: sortable ? 'pointer' : 'default',
+                    userSelect: sortable ? 'none' : 'auto',
+                    background: 'var(--iris-surface)',
+                    borderBottom: '1px solid var(--iris-border)',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    color: 'var(--iris-foreground)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  },
+                },
+                [col.title, sortable ? sortIndicator(col) : null],
+              ),
+            )
+          }
+        }
+        return h(
+          'div',
+          {
+            role: 'row',
+            'data-iris-table-row': 'header',
+            'data-iris-table-header-row': '',
+            'data-iris-table-header-grouped': '',
+            style: {
+              display: 'grid',
+              gridTemplateColumns: gridTemplate.value,
+              gridTemplateRows: `repeat(${matrix.length}, auto)`,
+            },
+          },
+          cells,
+        )
+      }
 
       const headerCells: VNode[] = []
       if (showDetail) {
@@ -723,18 +862,21 @@ export const IrisTable = defineComponent({
         )
       }
 
-      const headerRow = h(
-        'div',
-        {
-          role: 'row',
-          'data-iris-table-header-row': '',
-          style: {
-            display: 'grid',
-            gridTemplateColumns: gridTemplate.value,
-          },
-        },
-        headerCells,
-      )
+      const headerRow =
+        grouped.value && headerMatrix.value
+          ? buildGroupedHeader(headerMatrix.value)
+          : h(
+              'div',
+              {
+                role: 'row',
+                'data-iris-table-header-row': '',
+                style: {
+                  display: 'grid',
+                  gridTemplateColumns: gridTemplate.value,
+                },
+              },
+              headerCells,
+            )
 
       const renderRow = (
         row: Record<string, unknown>,
@@ -820,8 +962,8 @@ export const IrisTable = defineComponent({
             ),
           )
         }
-        for (let ci = 0; ci < props.columns.length; ci += 1) {
-          const col = props.columns[ci]
+        for (let ci = 0; ci < leafColumns.value.length; ci += 1) {
+          const col = leafColumns.value[ci]
           if (visibleColSet.value && !visibleColSet.value.has(ci)) continue
           const align = col.align ?? 'left'
           const cellSlot = slots[`cell.${col.key}`]
@@ -1133,7 +1275,7 @@ export const IrisTable = defineComponent({
         !props.error &&
         !props.loading &&
         bodyData.value.length > 0 &&
-        props.columns.some((c) => c.summary)
+        leafColumns.value.some((c) => c.summary)
       ) {
         const summaryCells: VNode[] = []
         if (showSelection) {
@@ -1151,8 +1293,8 @@ export const IrisTable = defineComponent({
             }),
           )
         }
-        for (let ci = 0; ci < props.columns.length; ci += 1) {
-          const col = props.columns[ci]
+        for (let ci = 0; ci < leafColumns.value.length; ci += 1) {
+          const col = leafColumns.value[ci]
           if (visibleColSet.value && !visibleColSet.value.has(ci)) continue
           const align = col.align ?? 'left'
           const op = col.summary

@@ -1,13 +1,16 @@
 import { createEffect, createMemo, createSignal, For, mergeProps, Show, type JSX } from 'solid-js'
 import {
   aggregate,
+  buildHeaderMatrix,
   compareValues,
   createExpansion,
   createSelectionModel,
+  flattenLeafColumns,
   flattenTree,
   nextGridCell,
   type ExpansionModel,
   type GridNavKey,
+  type HeaderCell,
   type TreeRow,
 } from '@iris-ui/core'
 import { useStore } from '../../useStore'
@@ -100,6 +103,19 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
 
   const { t } = useI18n()
 
+  // ---- Multi-level (grouped) headers ----
+  // A column with `children` forms a header GROUP spanning its leaf descendants;
+  // the leaves drive the body. When nothing is grouped, `leafColumns` is the
+  // original `columns` (same reference → flat path is byte-identical) and
+  // `headerMatrix` is null (the single-row header renders unchanged).
+  const grouped = createMemo(() => merged.columns.some((c) => c.children && c.children.length > 0))
+  const leafColumns = createMemo<IrisTableColumn<Row>[]>(() =>
+    grouped() ? flattenLeafColumns(merged.columns) : merged.columns,
+  )
+  const headerMatrix = createMemo<HeaderCell<IrisTableColumn<Row>>[][] | null>(() =>
+    grouped() ? buildHeaderMatrix(merged.columns) : null,
+  )
+
   // ---- Sort ----
   const [internalSort, setInternalSort] = createSignal<IrisTableSortState | null>(null)
   const effectiveSort = (): IrisTableSortState | null =>
@@ -108,7 +124,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const sortedRows = createMemo(() => {
     const state = effectiveSort()
     if (!state) return merged.data
-    const column = merged.columns.find((c) => c.key === state.key)
+    const column = leafColumns().find((c) => c.key === state.key)
     if (!column) return merged.data
     const sorter =
       column.sorter ??
@@ -284,7 +300,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     const current = focusedCell() ?? { row: 0, col: 0 }
     const next = nextGridCell(current, e.key as GridNavKey, {
       rowCount: bodyRows().length,
-      colCount: merged.columns.length,
+      colCount: leafColumns().length,
       pageSize: 10,
     })
     setFocusedCell(next)
@@ -301,7 +317,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     const parts: string[] = []
     if (hasDetail()) parts.push(`${EXPAND_COL_WIDTH}px`)
     if (merged.selectable !== 'none') parts.push(`${SELECTION_COL_WIDTH}px`)
-    for (const col of merged.columns) {
+    for (const col of leafColumns()) {
       parts.push(`${resolveInitialWidth(col as IrisTableColumn<Record<string, unknown>>)}px`)
     }
     return parts.join(' ')
@@ -351,98 +367,195 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         ...(merged.style ?? {}),
       }}
     >
-      {/* Header */}
-      <div
-        role="row"
-        data-iris-table-header-row=""
-        style={{
-          display: 'grid',
-          'grid-template-columns': gridTemplate(),
-        }}
-      >
-        <Show when={hasDetail()}>
-          <div
-            role="columnheader"
-            data-iris-table-header="__expand"
-            style={{
-              display: 'flex',
-              'align-items': 'center',
-              'justify-content': 'center',
-              padding: '8px',
-              background: 'var(--iris-surface)',
-              'border-bottom': '1px solid var(--iris-border)',
-            }}
-          />
-        </Show>
-        <Show when={merged.selectable !== 'none'}>
-          <div
-            role="columnheader"
-            style={{
-              display: 'flex',
-              'align-items': 'center',
-              'justify-content': 'center',
-              padding: '8px',
-              background: 'var(--iris-surface)',
-              'border-bottom': '1px solid var(--iris-border)',
-            }}
-          >
-            <Show when={merged.selectable === 'multi'}>
-              <input
-                type="checkbox"
-                checked={allSelected()}
-                ref={(el) => {
-                  if (el) el.indeterminate = someSelected()
-                }}
-                onChange={toggleAll}
-                aria-label={t('table.selectAll')}
-              />
-            </Show>
-          </div>
-        </Show>
-        <For each={merged.columns}>
-          {(col) => (
+      {/* Multi-level (grouped) header: a CSS grid of `headerMatrix().length`
+          rows; each cell placed by its leaf-column span (colStart/colSpan) and
+          row span. Renders INSTEAD of the single-row header when grouped. */}
+      <Show when={grouped() && headerMatrix()}>
+        <div
+          role="row"
+          data-iris-table-row="header"
+          data-iris-table-header-grouped=""
+          style={{
+            display: 'grid',
+            'grid-template-columns': gridTemplate(),
+            'grid-template-rows': `repeat(${headerMatrix()!.length}, auto)`,
+          }}
+        >
+          <Show when={hasDetail()}>
+            <div role="columnheader" style={{ 'grid-column': '1', 'grid-row': '1 / -1' }} />
+          </Show>
+          <Show when={merged.selectable !== 'none'}>
             <div
               role="columnheader"
-              data-iris-table-header={col.key}
-              onClick={() => handleHeaderClick(col)}
               style={{
-                position: 'relative',
+                'grid-column': hasDetail() ? '2' : '1',
+                'grid-row': '1 / -1',
                 display: 'flex',
                 'align-items': 'center',
-                'justify-content':
-                  col.align === 'right'
-                    ? 'flex-end'
-                    : col.align === 'center'
-                      ? 'center'
-                      : 'flex-start',
-                padding: '8px var(--iris-padding-md)',
-                cursor: col.sortable ? 'pointer' : 'default',
-                'user-select': col.sortable ? 'none' : 'auto',
+                'justify-content': 'center',
+                padding: '8px',
                 background: 'var(--iris-surface)',
                 'border-bottom': '1px solid var(--iris-border)',
-                'font-weight': '600',
-                'font-size': '13px',
-                color: 'var(--iris-foreground)',
-                'white-space': 'nowrap',
-                overflow: 'hidden',
-                'text-overflow': 'ellipsis',
               }}
-              aria-sort={
-                effectiveSort()?.key === col.key
-                  ? effectiveSort()!.direction === 'asc'
-                    ? 'ascending'
-                    : 'descending'
-                  : col.sortable
-                    ? 'none'
-                    : undefined
-              }
             >
-              {col.title}
-              {sortIndicator(col)}
+              <Show when={merged.selectable === 'multi'}>
+                <input
+                  type="checkbox"
+                  checked={allSelected()}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someSelected()
+                  }}
+                  onChange={toggleAll}
+                  aria-label={t('table.selectAll')}
+                />
+              </Show>
             </div>
-          )}
-        </For>
-      </div>
+          </Show>
+          <For each={headerMatrix()!.flat()}>
+            {(cell) => {
+              const col = cell.column
+              const isLeaf = (): boolean => !col.children || col.children.length === 0
+              const sortable = (): boolean => isLeaf() && !!col.sortable
+              const lead = (hasDetail() ? 1 : 0) + (merged.selectable !== 'none' ? 1 : 0)
+              return (
+                <div
+                  role="columnheader"
+                  data-iris-table-header={col.key}
+                  data-iris-table-header-group={isLeaf() ? undefined : ''}
+                  aria-colspan={cell.colSpan}
+                  onClick={sortable() ? () => handleHeaderClick(col) : undefined}
+                  aria-sort={
+                    sortable()
+                      ? effectiveSort()?.key === col.key
+                        ? effectiveSort()!.direction === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : 'none'
+                      : undefined
+                  }
+                  style={{
+                    'grid-column': `${lead + cell.colStart} / span ${cell.colSpan}`,
+                    'grid-row': `${cell.level + 1} / span ${cell.rowSpan}`,
+                    position: 'relative',
+                    display: 'flex',
+                    'align-items': 'center',
+                    'justify-content': isLeaf() ? 'flex-start' : 'center',
+                    padding: '8px var(--iris-padding-md)',
+                    cursor: sortable() ? 'pointer' : 'default',
+                    'user-select': sortable() ? 'none' : 'auto',
+                    background: 'var(--iris-surface)',
+                    'border-bottom': '1px solid var(--iris-border)',
+                    'font-weight': '600',
+                    'font-size': '13px',
+                    color: 'var(--iris-foreground)',
+                    'white-space': 'nowrap',
+                    overflow: 'hidden',
+                    'text-overflow': 'ellipsis',
+                  }}
+                >
+                  {col.title}
+                  <Show when={sortable()}>{sortIndicator(col)}</Show>
+                </div>
+              )
+            }}
+          </For>
+        </div>
+      </Show>
+
+      {/* Header (flat) — unchanged when not grouped. */}
+      <Show when={!grouped()}>
+        <div
+          role="row"
+          data-iris-table-header-row=""
+          style={{
+            display: 'grid',
+            'grid-template-columns': gridTemplate(),
+          }}
+        >
+          <Show when={hasDetail()}>
+            <div
+              role="columnheader"
+              data-iris-table-header="__expand"
+              style={{
+                display: 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                padding: '8px',
+                background: 'var(--iris-surface)',
+                'border-bottom': '1px solid var(--iris-border)',
+              }}
+            />
+          </Show>
+          <Show when={merged.selectable !== 'none'}>
+            <div
+              role="columnheader"
+              style={{
+                display: 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                padding: '8px',
+                background: 'var(--iris-surface)',
+                'border-bottom': '1px solid var(--iris-border)',
+              }}
+            >
+              <Show when={merged.selectable === 'multi'}>
+                <input
+                  type="checkbox"
+                  checked={allSelected()}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someSelected()
+                  }}
+                  onChange={toggleAll}
+                  aria-label={t('table.selectAll')}
+                />
+              </Show>
+            </div>
+          </Show>
+          <For each={merged.columns}>
+            {(col) => (
+              <div
+                role="columnheader"
+                data-iris-table-header={col.key}
+                onClick={() => handleHeaderClick(col)}
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  'align-items': 'center',
+                  'justify-content':
+                    col.align === 'right'
+                      ? 'flex-end'
+                      : col.align === 'center'
+                        ? 'center'
+                        : 'flex-start',
+                  padding: '8px var(--iris-padding-md)',
+                  cursor: col.sortable ? 'pointer' : 'default',
+                  'user-select': col.sortable ? 'none' : 'auto',
+                  background: 'var(--iris-surface)',
+                  'border-bottom': '1px solid var(--iris-border)',
+                  'font-weight': '600',
+                  'font-size': '13px',
+                  color: 'var(--iris-foreground)',
+                  'white-space': 'nowrap',
+                  overflow: 'hidden',
+                  'text-overflow': 'ellipsis',
+                }}
+                aria-sort={
+                  effectiveSort()?.key === col.key
+                    ? effectiveSort()!.direction === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : col.sortable
+                      ? 'none'
+                      : undefined
+                }
+              >
+                {col.title}
+                {sortIndicator(col)}
+              </div>
+            )}
+          </For>
+        </div>
+      </Show>
 
       {/* Body */}
       <Show
@@ -559,7 +672,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                           />
                         </div>
                       </Show>
-                      <For each={merged.columns}>
+                      <For each={leafColumns()}>
                         {(col, colIndexAccessor) => {
                           const cid = `${id}::${col.key}`
                           const isEditing = () => editingCellId() === cid
@@ -760,7 +873,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           !merged.error &&
           !merged.loading &&
           bodyRows().length > 0 &&
-          merged.columns.some((c) => c.summary)
+          leafColumns().some((c) => c.summary)
         }
       >
         <div
@@ -787,7 +900,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
               }}
             />
           </Show>
-          <For each={merged.columns}>
+          <For each={leafColumns()}>
             {(col) => {
               const op = col.summary
               const value = op ? aggregate(bodyRows(), (r) => getCellValue(r, col), op) : null

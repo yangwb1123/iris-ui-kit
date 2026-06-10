@@ -41,6 +41,12 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   renderSummary?: (value: number, rows: Row[]) => JSX.Element
   /** Custom cell render function. */
   renderCell?: (row: Row, index: number) => JSX.Element
+  /**
+   * Child columns. A column WITH children is a header GROUP (not a data column):
+   * it renders only as a spanning header label, and its leaf descendants drive
+   * the body. Additive — absent means a flat (single-row) header.
+   */
+  children?: IrisTableColumn<Row>[]
 }
 
 export interface IrisTableCellEditEvent<Row = Record<string, unknown>> {

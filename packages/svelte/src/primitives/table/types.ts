@@ -39,6 +39,12 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    * rows it was computed over; defaults to the number's string form.
    */
   renderSummary?: (value: number, rows: Row[]) => unknown
+  /**
+   * Child columns. A column WITH children is a header GROUP (not a data column);
+   * its leaf descendants render the body. Additive: when absent the table is
+   * flat (current behavior). Drives multi-level (grouped) headers.
+   */
+  children?: IrisTableColumn<Row>[]
 }
 
 /**

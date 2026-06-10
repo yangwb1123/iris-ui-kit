@@ -996,6 +996,90 @@ describe('IrisTable tree rows', () => {
   })
 })
 
+describe('IrisTable multi-level (grouped) headers', () => {
+  let host: HTMLDivElement
+  beforeEach(() => {
+    host = document.createElement('div')
+    document.body.appendChild(host)
+  })
+  afterEach(() => host.remove())
+
+  const groupedCols: IrisTableColumn<Row>[] = [
+    { key: 'name', title: 'Name' },
+    {
+      key: 'info',
+      title: 'Info',
+      children: [
+        { key: 'age', title: 'Age', sortable: true },
+        { key: 'id', title: 'ID' },
+      ],
+    },
+  ]
+
+  it('flat columns render a non-grouped header (unchanged)', () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: rows, rowKey: 'id' },
+      attachTo: host,
+    })
+    expect(wrapper.find('[data-iris-table-header-grouped]').exists()).toBe(false)
+  })
+
+  it('a column with children renders a grouped header with span attrs', () => {
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: groupedCols as IrisTableColumn<Record<string, unknown>>[],
+        data: rows,
+        rowKey: 'id',
+      },
+      attachTo: host,
+    })
+    expect(wrapper.find('[data-iris-table-header-grouped]').exists()).toBe(true)
+    // The group cell spans its 2 leaves and is marked as a group.
+    const group = wrapper.find('[data-iris-table-header="info"]')
+    expect(group.attributes('aria-colspan')).toBe('2')
+    expect(group.attributes('data-iris-table-header-group')).toBe('')
+    // Leaf header cells exist and the group's leaves are NOT marked as a group.
+    const ageLeaf = wrapper.find('[data-iris-table-header="age"]')
+    expect(ageLeaf.exists()).toBe(true)
+    expect(ageLeaf.attributes('data-iris-table-header-group')).toBeUndefined()
+    expect(wrapper.find('[data-iris-table-header="id"]').exists()).toBe(true)
+  })
+
+  it('the body renders the LEAF columns (group is header-only)', () => {
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: groupedCols as IrisTableColumn<Record<string, unknown>>[],
+        data: rows,
+        rowKey: 'id',
+      },
+      attachTo: host,
+    })
+    // 3 leaf columns × 3 rows of body cells (name, age, id); no "info" data cell.
+    expect(wrapper.findAll('[data-iris-table-cell="age"]').length).toBe(3)
+    expect(wrapper.findAll('[data-iris-table-cell="id"]').length).toBe(3)
+    expect(wrapper.find('[data-iris-table-cell="info"]').exists()).toBe(false)
+  })
+
+  it('a sortable leaf inside a group still sorts', async () => {
+    const sort = ref<IrisTableSortState | null>(null)
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(IrisTable, {
+            columns: groupedCols as IrisTableColumn<Record<string, unknown>>[],
+            data: rows,
+            rowKey: 'id',
+            sort: sort.value,
+            'onUpdate:sort': (s) => (sort.value = s),
+          })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: host })
+    await wrapper.find('[data-iris-table-header="age"]').trigger('click')
+    expect(sort.value).toEqual({ key: 'age', direction: 'asc' })
+  })
+})
+
 describe('exportExcel', () => {
   it('serializes rows to SpreadsheetML, typing numbers', () => {
     const xml = exportExcel(rows, columns)

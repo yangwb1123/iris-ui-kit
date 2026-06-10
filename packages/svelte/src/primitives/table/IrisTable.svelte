@@ -1,9 +1,11 @@
 <script lang="ts">
   import {
     aggregate,
+    buildHeaderMatrix,
     compareValues,
     createSelectionModel,
     createExpansion,
+    flattenLeafColumns,
     flattenTree,
     nextGridCell,
     type GridNavKey,
@@ -111,6 +113,13 @@
     return row[key]
   }
 
+  // Multi-level (grouped) headers: a column with `children` forms a header group.
+  // The BODY always renders the leaf columns; only the header gains extra rows.
+  // When nothing is grouped, `leafColumns` is the original `columns` (same
+  // reference) so the flat path is byte-identical.
+  const grouped = $derived(columns.some((c) => c.children && c.children.length > 0))
+  const leafColumns = $derived(grouped ? flattenLeafColumns(columns) : columns)
+  const headerMatrix = $derived(grouped ? buildHeaderMatrix(columns) : null)
 
   // Sort state
   let internalSort = $state<IrisTableSortState | null>(null)
@@ -119,7 +128,7 @@
   const sortedRows = $derived((): Array<Record<string, unknown>> => {
     const state = effectiveSort
     if (!state) return data
-    const column = columns.find((c) => c.key === state.key)
+    const column = leafColumns.find((c) => c.key === state.key)
     if (!column) return data
     const sorter = column.sorter ?? ((a: Record<string, unknown>, b: Record<string, unknown>) =>
       compareValues(getCellValue(a, column), getCellValue(b, column)))
@@ -234,8 +243,12 @@
 
   const showSelection = $derived(selectable !== 'none')
 
+  // Leading non-data columns (detail toggle, selection) that offset the grouped
+  // header cells' grid placement.
+  const lead = $derived((hasDetail ? 1 : 0) + (showSelection ? 1 : 0))
+
   // Summary/footer row appears when any column declares a `summary` aggregate op.
-  const hasSummary = $derived(columns.some((c) => c.summary))
+  const hasSummary = $derived(leafColumns.some((c) => c.summary))
 
   // Base per-cell style shared by the summary cells (mirrors the body cell base).
   const summaryCellStyle = (col: IrisTableColumn): string =>
@@ -245,7 +258,7 @@
     const parts: string[] = []
     if (hasDetail) parts.push('40px')
     if (showSelection) parts.push('40px')
-    for (const col of columns) {
+    for (const col of leafColumns) {
       parts.push(`${internalWidths[col.key] ?? resolveInitialWidth(col)}px`)
     }
     return parts.join(' ')
@@ -321,7 +334,7 @@
     const current = focusedCell ?? { row: 0, col: 0 }
     const next = nextGridCell(current, e.key as GridNavKey, {
       rowCount: bodyData.length,
-      colCount: columns.length,
+      colCount: leafColumns.length,
       pageSize: 10,
     })
     focusedCell = next
@@ -349,48 +362,104 @@
   style="background: var(--iris-background); color: var(--iris-foreground); border: {bordered ? '1px solid var(--iris-border)' : 'none'}; border-radius: var(--iris-radius-md, 6px); overflow: hidden;{style ? ' ' + style : ''}"
 >
   <!-- Header row -->
-  <div role="row" data-iris-table-header-row style="display: grid; grid-template-columns: {gridTemplate()}">
-    {#if hasDetail}
-      <div
-        role="columnheader"
-        data-iris-table-header="__expand"
-        style="display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
-      ></div>
-    {/if}
-    {#if showSelection}
-      <div
-        role="columnheader"
-        style="display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
-      >
-        {#if selectable === 'multi'}
-          <input
-            type="checkbox"
-            checked={allSelected}
-            indeterminate={someSelected}
-            onchange={toggleAll}
-            aria-label={t('table.selectAll')}
-          />
-        {/if}
-      </div>
-    {/if}
-    {#each columns as col}
-      <div
-        role="columnheader"
-        data-iris-table-header={col.key}
-        onclick={() => handleHeaderClick(col)}
-        aria-sort={effectiveSort?.key === col.key ? effectiveSort.direction === 'asc' ? 'ascending' : 'descending' : col.sortable ? 'none' : undefined}
-        style="position: relative; display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: 8px var(--iris-padding-md, 12px); cursor: {col.sortable ? 'pointer' : 'default'}; user-select: {col.sortable ? 'none' : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: 13px; color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
-      >
-        {col.title}
-        {#if col.sortable}
-          <span aria-hidden="true" style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: 8px; color: {effectiveSort?.key === col.key ? 'var(--iris-primary)' : 'var(--iris-muted)'}">
-            <span style="opacity: {effectiveSort?.key === col.key && effectiveSort.direction === 'asc' ? '1' : '0.45'}">▲</span>
-            <span style="opacity: {effectiveSort?.key === col.key && effectiveSort.direction === 'desc' ? '1' : '0.45'}">▼</span>
-          </span>
-        {/if}
-      </div>
-    {/each}
-  </div>
+  {#if grouped && headerMatrix}
+    <!-- Multi-level (grouped) header: a CSS grid of `headerMatrix.length` rows;
+         each cell placed by its leaf-column span (colStart/colSpan) and row span.
+         The BODY still renders the leaf columns; only the header gains rows. -->
+    <div
+      role="row"
+      data-iris-table-row="header"
+      data-iris-table-header-grouped=""
+      style="display: grid; grid-template-columns: {gridTemplate()}; grid-template-rows: repeat({headerMatrix.length}, auto)"
+    >
+      {#if hasDetail}
+        <div role="columnheader" style="grid-column: 1; grid-row: 1 / -1; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"></div>
+      {/if}
+      {#if showSelection}
+        <div
+          role="columnheader"
+          style="grid-column: {hasDetail ? 2 : 1}; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+        >
+          {#if selectable === 'multi'}
+            <input
+              type="checkbox"
+              checked={allSelected}
+              indeterminate={someSelected}
+              onchange={toggleAll}
+              aria-label={t('table.selectAll')}
+            />
+          {/if}
+        </div>
+      {/if}
+      {#each headerMatrix as rowCells}
+        {#each rowCells as cell}
+          {@const col = cell.column}
+          {@const isGroup = !!(col.children && col.children.length > 0)}
+          {@const sortable = !isGroup && col.sortable}
+          <div
+            role="columnheader"
+            data-iris-table-header={col.key}
+            data-iris-table-header-group={isGroup ? '' : undefined}
+            aria-colspan={cell.colSpan}
+            onclick={sortable ? () => handleHeaderClick(col) : undefined}
+            aria-sort={sortable ? (effectiveSort?.key === col.key ? effectiveSort.direction === 'asc' ? 'ascending' : 'descending' : 'none') : undefined}
+            style="position: relative; display: flex; align-items: center; justify-content: {isGroup ? 'center' : col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; grid-column: {lead + cell.colStart} / span {cell.colSpan}; grid-row: {cell.level + 1} / span {cell.rowSpan}; padding: 8px var(--iris-padding-md, 12px); cursor: {sortable ? 'pointer' : 'default'}; user-select: {sortable ? 'none' : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: 13px; color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+          >
+            {col.title}
+            {#if sortable}
+              <span aria-hidden="true" style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: 8px; color: {effectiveSort?.key === col.key ? 'var(--iris-primary)' : 'var(--iris-muted)'}">
+                <span style="opacity: {effectiveSort?.key === col.key && effectiveSort.direction === 'asc' ? '1' : '0.45'}">▲</span>
+                <span style="opacity: {effectiveSort?.key === col.key && effectiveSort.direction === 'desc' ? '1' : '0.45'}">▼</span>
+              </span>
+            {/if}
+          </div>
+        {/each}
+      {/each}
+    </div>
+  {:else}
+    <div role="row" data-iris-table-header-row style="display: grid; grid-template-columns: {gridTemplate()}">
+      {#if hasDetail}
+        <div
+          role="columnheader"
+          data-iris-table-header="__expand"
+          style="display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+        ></div>
+      {/if}
+      {#if showSelection}
+        <div
+          role="columnheader"
+          style="display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+        >
+          {#if selectable === 'multi'}
+            <input
+              type="checkbox"
+              checked={allSelected}
+              indeterminate={someSelected}
+              onchange={toggleAll}
+              aria-label={t('table.selectAll')}
+            />
+          {/if}
+        </div>
+      {/if}
+      {#each columns as col}
+        <div
+          role="columnheader"
+          data-iris-table-header={col.key}
+          onclick={() => handleHeaderClick(col)}
+          aria-sort={effectiveSort?.key === col.key ? effectiveSort.direction === 'asc' ? 'ascending' : 'descending' : col.sortable ? 'none' : undefined}
+          style="position: relative; display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: 8px var(--iris-padding-md, 12px); cursor: {col.sortable ? 'pointer' : 'default'}; user-select: {col.sortable ? 'none' : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: 13px; color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+        >
+          {col.title}
+          {#if col.sortable}
+            <span aria-hidden="true" style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: 8px; color: {effectiveSort?.key === col.key ? 'var(--iris-primary)' : 'var(--iris-muted)'}">
+              <span style="opacity: {effectiveSort?.key === col.key && effectiveSort.direction === 'asc' ? '1' : '0.45'}">▲</span>
+              <span style="opacity: {effectiveSort?.key === col.key && effectiveSort.direction === 'desc' ? '1' : '0.45'}">▼</span>
+            </span>
+          {/if}
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   <!-- Body -->
   {#if error}
@@ -444,7 +513,7 @@
               />
             </div>
           {/if}
-          {#each columns as col, ci}
+          {#each leafColumns as col, ci}
             {@const isEditing = editingCellId === cellId(id, col.key)}
             <div
               role="cell"
@@ -537,7 +606,7 @@
       {#if showSelection}
         <div role="cell" data-iris-table-cell="__selection" style={summaryCellStyle({ key: '__selection' } as IrisTableColumn)}></div>
       {/if}
-      {#each columns as col}
+      {#each leafColumns as col}
         {@const op = col.summary}
         {@const value = op ? aggregate(bodyData, (r) => getCellValue(r, col), op) : null}
         <div

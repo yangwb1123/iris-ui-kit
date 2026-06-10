@@ -5,8 +5,10 @@ import {
   computeVirtualRange,
   createExpansion,
   createSelectionModel,
+  flattenTree,
   type ExpansionModel,
   type SelectionModel,
+  type TreeRow,
 } from '@iris-ui/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useStore } from '../../useStore'
@@ -143,10 +145,18 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   renderDetail?: (row: Row, rowIndex: number) => React.ReactNode
   /** Which rows can expand a detail panel. Defaults to all rows when `renderDetail` is set. */
   rowExpandable?: (row: Row, rowIndex: number) => boolean
-  /** Initially-expanded row keys (uncontrolled). */
+  /** Initially-expanded row keys (uncontrolled). Shared by detail rows + tree rows. */
   defaultExpandedRowKeys?: Array<string | number>
   /** Notified with the expanded row keys whenever they change. */
   onExpandedRowsChange?: (keys: Array<string | number>) => void
+  /**
+   * Read a row's child rows to render the table as a TREE. Providing this enables
+   * tree mode: `data` is treated as the root rows, each row's first cell gains a
+   * depth indent + an expand/collapse toggle (when it has children), and the
+   * expand state reuses `defaultExpandedRowKeys`/`onExpandedRowsChange`. v1 tree
+   * mode renders the non-virtualized body and does not reorder on column sort.
+   */
+  getSubRows?: (row: Row) => Row[] | undefined
   /** Enable virtual scrolling for the body (renders only the visible window). */
   virtualScroll?: IrisTableVirtualOptions
   /**
@@ -199,6 +209,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   rowExpandable,
   defaultExpandedRowKeys,
   onExpandedRowsChange,
+  getSubRows,
   virtualScroll,
   columnVirtualization = false,
   emptyState,
@@ -373,12 +384,31 @@ export function IrisTable<Row extends Record<string, unknown>>({
     selModel.toggle(rowKeyOf(row))
   }
 
+  // Tree mode (opt-in via getSubRows): flatten the data into the visible rows
+  // honoring the (shared) expansion model. `bodyData` is the row list the body,
+  // selection, and summary all operate on — identical to `sortedData` in flat
+  // mode, so non-tree behavior is unchanged.
+  const treeMode = getSubRows !== undefined
+  const flatTree = React.useMemo<Array<TreeRow<Row>> | null>(
+    () =>
+      treeMode
+        ? flattenTree<Row>(sortedData, {
+            getKey: (r) => String(rowKeyOf(r)),
+            getChildren: (r) => getSubRows!(r),
+            isExpanded: (k) => expandedKeys.includes(k),
+          })
+        : null,
+    // Recompute on data / expansion / accessor change (rowKeyOf reads `rowKey`).
+    [treeMode, sortedData, getSubRows, expandedKeys, rowKey],
+  )
+  const bodyData = flatTree ? flatTree.map((t) => t.row) : sortedData
+
   const toggleAll = () => {
     if (selectable !== 'multi') return
-    selModel.toggleAll(sortedData.map(rowKeyOf))
+    selModel.toggleAll(bodyData.map(rowKeyOf))
   }
 
-  const allKeys = sortedData.map(rowKeyOf)
+  const allKeys = bodyData.map(rowKeyOf)
   const allSelected = selectable === 'multi' && selModel.isAllSelected(allKeys)
   const someSelected =
     selectable === 'multi' && allKeys.some((k) => selection.includes(k)) && !allSelected
@@ -503,6 +533,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     row: Row,
     idx: number,
     extraStyle?: React.CSSProperties,
+    treeMeta?: TreeRow<Row>,
   ): React.ReactElement => {
     const k = rowKeyOf(row)
     const selected = selection.includes(k)
@@ -601,6 +632,47 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 ...pinnedStyle(col.key),
               }}
             >
+              {treeMeta && ci === 0 ? (
+                <span
+                  data-iris-table-tree-indent=""
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    flex: 'none',
+                    paddingLeft: treeMeta.depth * 16,
+                  }}
+                >
+                  {treeMeta.hasChildren ? (
+                    <button
+                      type="button"
+                      data-iris-table-tree-toggle=""
+                      aria-expanded={treeMeta.expanded}
+                      aria-label={t(
+                        treeMeta.expanded ? 'treeSelect.collapse' : 'treeSelect.expand',
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        expansion.toggle(treeMeta.key)
+                      }}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        padding: 0,
+                        marginRight: 4,
+                        font: 'inherit',
+                        color: 'var(--iris-foreground)',
+                        transform: treeMeta.expanded ? 'rotate(90deg)' : 'none',
+                        transition: 'transform 150ms',
+                      }}
+                    >
+                      ▶
+                    </button>
+                  ) : (
+                    <span style={{ display: 'inline-block', width: 16 }} aria-hidden="true" />
+                  )}
+                </span>
+              ) : null}
               {editing ? (
                 <>
                   <input
@@ -806,11 +878,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
         <div role="row" aria-busy="true" data-iris-table-row="loading" style={STATE_ROW_STYLE}>
           {loadingState ?? t('table.loading')}
         </div>
-      ) : sortedData.length === 0 ? (
+      ) : bodyData.length === 0 ? (
         <div role="row" data-iris-table-row="empty" style={STATE_ROW_STYLE}>
           {emptyState ?? t('table.empty')}
         </div>
-      ) : virtualScroll ? (
+      ) : virtualScroll && !treeMode ? (
         <IrisVirtualScroll
           items={sortedData}
           itemHeight={virtualScroll.itemHeight}
@@ -820,8 +892,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
           renderItem={(row, idx) => renderRow(row, idx, { height: '100%' })}
         />
       ) : (
-        sortedData.map((row, idx) => {
-          const main = renderRow(row, idx)
+        bodyData.map((row, idx) => {
+          const main = renderRow(row, idx, undefined, flatTree?.[idx])
           if (
             !hasDetail ||
             !isRowExpandable(row, idx) ||
@@ -852,7 +924,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
       {/* Summary / footer row: each column with a `summary` op aggregates over
           the full sorted dataset (the core `aggregate` material). */}
-      {!error && !loading && sortedData.length > 0 && columns.some((c) => c.summary) ? (
+      {!error && !loading && bodyData.length > 0 && columns.some((c) => c.summary) ? (
         <div
           role="row"
           data-iris-table-row="summary"
@@ -870,7 +942,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           {columns.map((col, ci) => {
             if (visibleColSet && !visibleColSet.has(ci)) return null
             const op = col.summary
-            const value = op ? aggregate(sortedData, (r) => getCellValue(r, col), op) : null
+            const value = op ? aggregate(bodyData, (r) => getCellValue(r, col), op) : null
             return (
               <div
                 key={col.key}

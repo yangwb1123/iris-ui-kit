@@ -670,6 +670,92 @@ describe('@iris-ui/react IrisTable expandable detail rows', () => {
   })
 })
 
+describe('@iris-ui/react IrisTable tree rows', () => {
+  interface TreeRowData extends Record<string, unknown> {
+    id: number
+    name: string
+    children?: TreeRowData[]
+  }
+  const treeData: TreeRowData[] = [
+    {
+      id: 1,
+      name: 'Root A',
+      children: [
+        { id: 11, name: 'Child A1' },
+        { id: 12, name: 'Child A2' },
+      ],
+    },
+    { id: 2, name: 'Root B' },
+  ]
+  const treeCols: IrisTableColumn<TreeRowData>[] = [{ key: 'name', title: 'Name' }]
+  function toggleOf(rowId: number): HTMLElement | null {
+    return document.querySelector(`[data-iris-table-row="${rowId}"] [data-iris-table-tree-toggle]`)
+  }
+  function visibleNames(): string[] {
+    // The tree toggle (▶) renders inside the first cell; strip it to read the name.
+    return Array.from(document.querySelectorAll('[data-iris-table-cell="name"]')).map((c) =>
+      (c.textContent ?? '').replace('▶', '').trim(),
+    )
+  }
+
+  it('renders only roots collapsed, with a toggle on parents only', () => {
+    render(<IrisTable columns={treeCols} data={treeData} getSubRows={(r) => r.children} />)
+    expect(visibleNames()).toEqual(['Root A', 'Root B'])
+    expect(toggleOf(1)).not.toBeNull() // has children
+    expect(toggleOf(2)).toBeNull() // leaf
+    expect(toggleOf(1)!.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('expanding a parent reveals its children, collapsing hides them', () => {
+    render(<IrisTable columns={treeCols} data={treeData} getSubRows={(r) => r.children} />)
+    act(() => fireEvent.click(toggleOf(1)!))
+    expect(visibleNames()).toEqual(['Root A', 'Child A1', 'Child A2', 'Root B'])
+    expect(toggleOf(1)!.getAttribute('aria-expanded')).toBe('true')
+    act(() => fireEvent.click(toggleOf(1)!))
+    expect(visibleNames()).toEqual(['Root A', 'Root B'])
+  })
+
+  it('defaultExpandedRowKeys starts a branch open + onExpandedRowsChange fires', () => {
+    const onChange = vi.fn()
+    render(
+      <IrisTable
+        columns={treeCols}
+        data={treeData}
+        getSubRows={(r) => r.children}
+        defaultExpandedRowKeys={[1]}
+        onExpandedRowsChange={onChange}
+      />,
+    )
+    expect(visibleNames()).toEqual(['Root A', 'Child A1', 'Child A2', 'Root B'])
+    act(() => fireEvent.click(toggleOf(1)!)) // collapse
+    expect(onChange).toHaveBeenLastCalledWith([])
+  })
+
+  it('child rows are indented deeper than their parent', () => {
+    render(
+      <IrisTable
+        columns={treeCols}
+        data={treeData}
+        getSubRows={(r) => r.children}
+        defaultExpandedRowKeys={[1]}
+      />,
+    )
+    const indentOf = (rowId: number): number => {
+      const el = document.querySelector(
+        `[data-iris-table-row="${rowId}"] [data-iris-table-tree-indent]`,
+      ) as HTMLElement
+      return parseInt(el.style.paddingLeft || '0', 10)
+    }
+    expect(indentOf(11)).toBeGreaterThan(indentOf(1))
+  })
+
+  it('no tree indent/toggle when getSubRows is absent (flat mode unchanged)', () => {
+    render(<IrisTable columns={treeCols} data={treeData} />)
+    expect(document.querySelector('[data-iris-table-tree-toggle]')).toBeNull()
+    expect(document.querySelector('[data-iris-table-tree-indent]')).toBeNull()
+  })
+})
+
 describe('@iris-ui/react IrisTable virtual scroll', () => {
   const many: Row[] = Array.from({ length: 50 }, (_, i) => ({ id: i + 1, name: `N${i}`, age: i }))
 

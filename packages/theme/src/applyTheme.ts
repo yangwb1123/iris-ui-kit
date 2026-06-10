@@ -7,7 +7,13 @@ export interface ApplyThemeResult {
   revert(): void
 }
 
-function collectEntries(theme: IrisTheme): CssVarEntries {
+/**
+ * The CSS-custom-property `[name, value]` entries for a theme — colors as-is,
+ * spacing/radii suffixed with `px`. The single source of truth shared by the
+ * runtime {@link applyTheme} and the static {@link themeToCss} export, so both
+ * always emit identical var names and values.
+ */
+export function themeCssVarEntries(theme: IrisTheme): CssVarEntries {
   const out: CssVarEntries = []
   for (const [key, value] of Object.entries(theme.colors)) {
     out.push([toCssVarName(key), value])
@@ -33,7 +39,7 @@ export function applyTheme(
   theme: IrisTheme,
   target: HTMLElement = document.documentElement,
 ): ApplyThemeResult {
-  const applied = applyCssVars(collectEntries(theme), target)
+  const applied = applyCssVars(themeCssVarEntries(theme), target)
 
   const prevThemeName = target.getAttribute('data-iris-theme')
   const prevThemeType = target.getAttribute('data-iris-theme-type')

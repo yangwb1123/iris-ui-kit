@@ -100,10 +100,12 @@ export function useFocusTrap(options: UseFocusTrapOptions): void {
     return () => {
       document.removeEventListener('keydown', onKeyDown)
       if (raf !== undefined) cancelAnimationFrame(raf)
-      const restore = returnFocusTo?.current ?? previouslyFocusedRef.current
-      const target = restore
+      const target = returnFocusTo?.current ?? previouslyFocusedRef.current
       requestAnimationFrame(() => {
-        target?.focus?.()
+        // The element that had focus when the trap opened may have been
+        // unmounted while it was open; focusing a detached node silently drops
+        // focus to <body>. Only restore if it is still in the document.
+        if (target && target.isConnected) target.focus?.()
       })
       previouslyFocusedRef.current = null
     }

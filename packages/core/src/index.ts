@@ -39,9 +39,12 @@ export {
 export { localeDirection, isRtlLocale, localeWeekStartsOn } from './locale'
 export {
   computeVirtualRange,
+  computeGridVirtualRange,
   buildOffsets,
   type VirtualWindow,
   type VirtualRangeOptions,
+  type GridVirtualRangeOptions,
+  type GridVirtualWindow,
 } from './virtual'
 export {
   createAsyncResource,

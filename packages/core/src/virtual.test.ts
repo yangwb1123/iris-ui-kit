@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildOffsets, computeVirtualRange } from './virtual'
+import { buildOffsets, computeVirtualRange, computeGridVirtualRange } from './virtual'
 
 describe('computeVirtualRange (fixed height)', () => {
   const base = { itemCount: 100, viewportSize: 100, itemSize: 20 }
@@ -146,5 +146,39 @@ describe('computeVirtualRange (precomputed offsets)', () => {
       offsets,
     })
     expect(calls).toBe(0)
+  })
+})
+
+describe('computeGridVirtualRange (2D)', () => {
+  it('computes independent row and column windows in one call', () => {
+    const grid = computeGridVirtualRange({
+      rows: { itemCount: 100, scrollTop: 200, viewportSize: 100, itemSize: 20 },
+      columns: { itemCount: 50, scrollTop: 300, viewportSize: 150, itemSize: 60 },
+    })
+    // rows: each call matches the 1D computation for that axis
+    expect(grid.rows).toEqual(
+      computeVirtualRange({ itemCount: 100, scrollTop: 200, viewportSize: 100, itemSize: 20 }),
+    )
+    expect(grid.columns).toEqual(
+      computeVirtualRange({ itemCount: 50, scrollTop: 300, viewportSize: 150, itemSize: 60 }),
+    )
+    expect(grid.rows.startIndex).toBe(10) // 200/20
+    expect(grid.columns.startIndex).toBe(5) // 300/60
+  })
+
+  it('supports cached offsets per axis', () => {
+    const colOffsets = buildOffsets(4, () => 60) // [0,60,120,180,240]
+    const grid = computeGridVirtualRange({
+      rows: { itemCount: 4, scrollTop: 0, viewportSize: 40, itemSize: 20 },
+      columns: {
+        itemCount: 4,
+        scrollTop: 60,
+        viewportSize: 120,
+        itemSize: () => 60,
+        offsets: colOffsets,
+      },
+    })
+    expect(grid.columns.startIndex).toBe(1)
+    expect(grid.columns.offsetBefore).toBe(60)
   })
 })

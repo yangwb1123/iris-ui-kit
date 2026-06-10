@@ -127,3 +127,29 @@ export function computeVirtualRange(options: VirtualRangeOptions): VirtualWindow
     ? variableRange(itemCount, scrollTop, viewportSize, itemSize, safeBuffer)
     : fixedRange(itemCount, scrollTop, viewportSize, itemSize, safeBuffer)
 }
+
+export interface GridVirtualRangeOptions {
+  /** Vertical axis: which rows to render. `scrollTop` is the vertical scroll. */
+  rows: VirtualRangeOptions
+  /** Horizontal axis: which columns to render. Use `scrollTop` for `scrollLeft`. */
+  columns: VirtualRangeOptions
+}
+
+export interface GridVirtualWindow {
+  rows: VirtualWindow
+  columns: VirtualWindow
+}
+
+/**
+ * 2D virtualization: the visible row window AND column window in one call. The
+ * two axes are independent 1D ranges (the math is axis-agnostic), so this is the
+ * primitive behind a grid that virtualizes BOTH directions — a very wide *and*
+ * very tall data table — rather than rows-only. Each axis independently supports
+ * fixed/variable sizing and cached {@link VirtualRangeOptions.offsets}.
+ */
+export function computeGridVirtualRange(options: GridVirtualRangeOptions): GridVirtualWindow {
+  return {
+    rows: computeVirtualRange(options.rows),
+    columns: computeVirtualRange(options.columns),
+  }
+}

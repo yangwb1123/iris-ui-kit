@@ -111,6 +111,9 @@ export const IrisVirtualScroll = defineComponent({
           scrollTop: scrollTop.value,
           viewportSize: viewportHeight.value,
           itemSize: fn,
+          // Reuse the memoized offsets so each scroll binary-searches the cached
+          // array instead of rebuilding all offsets O(n).
+          offsets: offsets.value ?? undefined,
           buffer: props.buffer,
         })
         return { start: w.startIndex, end: w.endIndex + 1 }

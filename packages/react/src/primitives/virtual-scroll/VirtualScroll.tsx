@@ -94,6 +94,9 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
         scrollTop,
         viewportSize: viewportHeight,
         itemSize: sizeFn,
+        // Reuse the already-memoized offsets so each scroll binary-searches the
+        // cached array instead of rebuilding all offsets O(n).
+        offsets: offsets ?? undefined,
         buffer,
       })
       return { start: w.startIndex, end: w.endIndex + 1 }
@@ -103,7 +106,7 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
     const start = Math.max(0, startRaw - buffer)
     const end = Math.min(items.length, startRaw + visibleCount + buffer)
     return { start, end }
-  }, [sizeFn, scrollTop, viewportHeight, fixedHeight, buffer, items.length])
+  }, [sizeFn, offsets, scrollTop, viewportHeight, fixedHeight, buffer, items.length])
 
   // Emit range change without firing onScroll's effect prematurely.
   const rangeRef = React.useRef(range)

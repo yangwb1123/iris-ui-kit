@@ -104,3 +104,47 @@ describe('computeVirtualRange (variable height)', () => {
     expect(w.totalSize).toBe(100)
   })
 })
+
+describe('computeVirtualRange (precomputed offsets)', () => {
+  const sizes = [10, 20, 30, 40] // offsets [0,10,30,60,100]
+  const offsets = buildOffsets(4, (i) => sizes[i])
+
+  it('matches the itemSize-function path exactly when given cached offsets', () => {
+    for (const scrollTop of [0, 35, 1000]) {
+      for (const buffer of [0, 1, 2]) {
+        const viaFn = computeVirtualRange({
+          itemCount: 4,
+          scrollTop,
+          viewportSize: 35,
+          itemSize: (i) => sizes[i],
+          buffer,
+        })
+        const viaOffsets = computeVirtualRange({
+          itemCount: 4,
+          scrollTop,
+          viewportSize: 35,
+          itemSize: (i) => sizes[i],
+          offsets,
+          buffer,
+        })
+        expect(viaOffsets).toEqual(viaFn)
+      }
+    }
+  })
+
+  it('does not call itemSize when offsets are supplied (no per-scroll rebuild)', () => {
+    let calls = 0
+    const sizeAt = (i: number): number => {
+      calls += 1
+      return sizes[i]
+    }
+    computeVirtualRange({
+      itemCount: 4,
+      scrollTop: 35,
+      viewportSize: 35,
+      itemSize: sizeAt,
+      offsets,
+    })
+    expect(calls).toBe(0)
+  })
+})

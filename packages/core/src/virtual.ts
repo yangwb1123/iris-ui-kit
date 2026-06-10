@@ -26,6 +26,14 @@ export interface VirtualRangeOptions {
   itemSize: number | ((index: number) => number)
   /** Extra rows rendered above and below the viewport. Default `0`. */
   buffer?: number
+  /**
+   * Precomputed cumulative offsets (from {@link buildOffsets}, length
+   * `itemCount + 1`). When supplied, variable-height ranging reuses this array
+   * and binary-searches it instead of rebuilding offsets O(n) on every scroll —
+   * pass a memoized array you rebuild only when item sizes change. Takes
+   * precedence over `itemSize`.
+   */
+  offsets?: number[]
 }
 
 const EMPTY: VirtualWindow = { startIndex: 0, endIndex: -1, offsetBefore: 0, totalSize: 0 }
@@ -73,14 +81,14 @@ function findIndexAtOffset(offsets: number[], target: number): number {
   return lo
 }
 
-function variableRange(
+/** Compute the window from already-built cumulative `offsets` (no O(n) rebuild). */
+function rangeFromOffsets(
+  offsets: number[],
   itemCount: number,
   scrollTop: number,
   viewportSize: number,
-  sizeAt: (index: number) => number,
   buffer: number,
 ): VirtualWindow {
-  const offsets = buildOffsets(itemCount, sizeAt)
   const totalSize = offsets[itemCount]
   const clampedTop = Math.max(0, Math.min(scrollTop, Math.max(0, totalSize - viewportSize)))
   const first = Math.min(findIndexAtOffset(offsets, clampedTop), itemCount - 1)
@@ -93,10 +101,28 @@ function variableRange(
   return { startIndex, endIndex, offsetBefore: offsets[startIndex], totalSize }
 }
 
+function variableRange(
+  itemCount: number,
+  scrollTop: number,
+  viewportSize: number,
+  sizeAt: (index: number) => number,
+  buffer: number,
+): VirtualWindow {
+  return rangeFromOffsets(
+    buildOffsets(itemCount, sizeAt),
+    itemCount,
+    scrollTop,
+    viewportSize,
+    buffer,
+  )
+}
+
 export function computeVirtualRange(options: VirtualRangeOptions): VirtualWindow {
-  const { itemCount, scrollTop, viewportSize, itemSize, buffer = 0 } = options
+  const { itemCount, scrollTop, viewportSize, itemSize, buffer = 0, offsets } = options
   if (itemCount <= 0) return { ...EMPTY }
   const safeBuffer = Math.max(0, Math.floor(buffer))
+  // A cached offsets array skips the per-scroll O(n) rebuild (binary search only).
+  if (offsets) return rangeFromOffsets(offsets, itemCount, scrollTop, viewportSize, safeBuffer)
   return typeof itemSize === 'function'
     ? variableRange(itemCount, scrollTop, viewportSize, itemSize, safeBuffer)
     : fixedRange(itemCount, scrollTop, viewportSize, itemSize, safeBuffer)

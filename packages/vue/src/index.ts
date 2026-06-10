@@ -23,6 +23,7 @@
 // without juggling every sub-package.
 
 // ── Layer 0 ──────────────────────────────────────────────────────────────────
+export { useStore, useStoreSelector } from './useStore'
 export * from './theme'
 export * from './skins'
 export * from './machine'

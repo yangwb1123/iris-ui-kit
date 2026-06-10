@@ -1,4 +1,4 @@
-export { useStore } from './useStore'
+export { useStore, useStoreSelector } from './useStore'
 export { useMachine } from './useMachine'
 export * from './theme'
 export * from './skins'

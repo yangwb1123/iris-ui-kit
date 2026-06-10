@@ -19,3 +19,19 @@ export function useStore<T>(store: Store<T>): Accessor<T> {
   onCleanup(unsubscribe)
   return state
 }
+
+/**
+ * Subscribe to a DERIVED slice of a core store — the accessor updates only when
+ * `selector(state)` changes per `equals` (default `Object.is`), not on every
+ * store emission. Built on {@link Store.subscribeWith}.
+ */
+export function useStoreSelector<T, U>(
+  store: Store<T>,
+  selector: (state: T) => U,
+  equals?: (a: U, b: U) => boolean,
+): Accessor<U> {
+  const [slice, setSlice] = createSignal(selector(store.getState()))
+  const unsubscribe = store.subscribeWith(selector, (v) => setSlice(() => v), equals)
+  onCleanup(unsubscribe)
+  return slice
+}

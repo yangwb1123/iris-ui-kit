@@ -12,3 +12,16 @@ import type { Store } from '@iris-ui/core'
 export function toStore<T>(store: Store<T>): Readable<T> {
   return readable(store.getState(), (set) => store.subscribe(set))
 }
+
+/**
+ * Bridge a DERIVED slice of a core store into a Svelte readable — it emits only
+ * when `selector(state)` changes per `equals` (default `Object.is`), not on
+ * every store emission. Built on {@link Store.subscribeWith}.
+ */
+export function toStoreSelector<T, U>(
+  store: Store<T>,
+  selector: (state: T) => U,
+  equals?: (a: U, b: U) => boolean,
+): Readable<U> {
+  return readable(selector(store.getState()), (set) => store.subscribeWith(selector, set, equals))
+}

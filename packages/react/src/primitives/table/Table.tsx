@@ -476,7 +476,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             <IrisCheckbox
               checked={selected}
               onChange={() => toggleRow(row)}
-              aria-label={`Select row ${String(k ?? idx)}`}
+              aria-label={t('table.selectRow', { key: String(k ?? idx) })}
             />
           </div>
         ) : null}

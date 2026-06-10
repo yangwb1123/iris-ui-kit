@@ -71,7 +71,7 @@ export function IrisCarousel({
   pauseOnHover = true,
   showArrows = true,
   showIndicators = true,
-  ariaLabel = 'Carousel',
+  ariaLabel,
   style,
   className,
 }: IrisCarouselProps): React.ReactElement {
@@ -126,7 +126,7 @@ export function IrisCarousel({
       data-iris-carousel=""
       role="group"
       aria-roledescription="carousel"
-      aria-label={ariaLabel}
+      aria-label={ariaLabel ?? t('carousel.label')}
       tabIndex={0}
       className={className}
       onKeyDown={onKeyDown}

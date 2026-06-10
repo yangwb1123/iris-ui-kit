@@ -1,5 +1,6 @@
 import * as React from 'react'
 import type { Placement } from '@iris-ui/core'
+import { useI18n } from '../../i18n'
 import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'
@@ -43,7 +44,7 @@ export function IrisDatePicker({
   max,
   weekStartsOn = 0,
   locale,
-  placeholder = 'Select date…',
+  placeholder,
   disabled = false,
   invalid = false,
   placement = 'bottom-start',
@@ -52,6 +53,7 @@ export function IrisDatePicker({
   style,
   className,
 }: IrisDatePickerProps): React.ReactElement {
+  const { t } = useI18n()
   const isControlled = valueProp !== undefined
   const [internal, setInternal] = React.useState<Date | null>(defaultValue ?? null)
   const value = isControlled ? (valueProp as Date | null) : internal
@@ -96,7 +98,7 @@ export function IrisDatePicker({
             ...style,
           }}
         >
-          {display || placeholder}
+          {display || (placeholder ?? t('datePicker.placeholder'))}
         </button>
       </IrisPopoverTrigger>
       <IrisPopoverContent autoFocus={false} style={{ padding: 0 }}>

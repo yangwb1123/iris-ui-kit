@@ -64,7 +64,7 @@ export const IrisCarousel = defineComponent({
     showArrows: { type: Boolean, default: true },
     showIndicators: { type: Boolean, default: true },
     /** Accessible name for the carousel region. */
-    ariaLabel: { type: String, default: 'Carousel' },
+    ariaLabel: { type: String, default: undefined },
   },
   emits: {
     'update:modelValue': (_index: number) => true,
@@ -129,7 +129,7 @@ export const IrisCarousel = defineComponent({
           'data-iris-carousel': '',
           role: 'group',
           'aria-roledescription': 'carousel',
-          'aria-label': props.ariaLabel,
+          'aria-label': props.ariaLabel ?? t('carousel.label'),
           tabindex: 0,
           onKeydown,
           onMouseenter: () => {

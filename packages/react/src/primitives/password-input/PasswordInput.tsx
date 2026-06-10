@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
 import { IrisInput, type IrisInputProps } from '../input/Input'
 
 export interface IrisPasswordInputProps extends Omit<
@@ -19,6 +20,7 @@ export const IrisPasswordInput = React.forwardRef<HTMLInputElement, IrisPassword
     { showToggle = true, suffix, prefix, disabled, readOnly, ...rest },
     ref,
   ) {
+    const { t } = useI18n()
     const [visible, setVisible] = React.useState(false)
     const toggle = () => {
       if (disabled || readOnly) return
@@ -29,7 +31,7 @@ export const IrisPasswordInput = React.forwardRef<HTMLInputElement, IrisPassword
       <button
         type="button"
         data-iris-password-input-toggle=""
-        aria-label={visible ? 'Hide password' : 'Show password'}
+        aria-label={visible ? t('passwordInput.hide') : t('passwordInput.show')}
         aria-pressed={visible ? 'true' : 'false'}
         onClick={toggle}
         style={{

@@ -60,7 +60,7 @@ export function IrisRating({
   clearable = true,
   size = 'md',
   invalid = false,
-  label = 'Rating',
+  label,
   id,
   ariaDescribedby,
   style,
@@ -133,7 +133,7 @@ export function IrisRating({
       role="slider"
       id={id}
       tabIndex={interactive ? 0 : -1}
-      aria-label={label}
+      aria-label={label ?? t('rating.label')}
       aria-valuemin={0}
       aria-valuemax={max}
       aria-valuenow={value}

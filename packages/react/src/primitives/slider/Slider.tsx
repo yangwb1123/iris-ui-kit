@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { getDirection } from '@iris-ui/theme'
+import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 
 export type IrisSliderOrientation = 'horizontal' | 'vertical'
@@ -50,10 +51,11 @@ export function IrisSlider({
   step = 1,
   disabled = false,
   orientation = 'horizontal',
-  label = 'Value',
+  label,
   style,
   ...rest
 }: IrisSliderProps): React.ReactElement {
+  const { t } = useI18n()
   const isControlled = valueProp !== undefined
   const [internal, setInternal] = React.useState(defaultValue)
   const raw = isControlled ? (valueProp as number) : internal
@@ -181,7 +183,7 @@ export function IrisSlider({
           ref={thumbRef}
           role="slider"
           tabIndex={disabled ? -1 : 0}
-          aria-label={label}
+          aria-label={label ?? t('slider.label')}
           aria-valuemin={min}
           aria-valuemax={max}
           aria-valuenow={value}

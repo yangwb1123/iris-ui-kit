@@ -4,6 +4,7 @@ import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'
 import { IrisCalendar } from '../calendar/Calendar'
+import { useI18n } from '../../i18n'
 
 function formatISODate(date: Date): string {
   const y = date.getFullYear()
@@ -32,7 +33,7 @@ export const IrisDatePicker = defineComponent({
     max: { type: Date as unknown as PropType<Date | undefined>, default: undefined },
     weekStartsOn: { type: Number, default: 0 },
     locale: { type: String, default: undefined },
-    placeholder: { type: String, default: 'Select date…' },
+    placeholder: { type: String, default: undefined },
     disabled: { type: Boolean, default: false },
     invalid: { type: Boolean, default: false },
     placement: { type: String as PropType<Placement>, default: 'bottom-start' },
@@ -45,6 +46,7 @@ export const IrisDatePicker = defineComponent({
     'update:modelValue': (_value: Date | null) => true,
   },
   setup(props, { attrs, emit }) {
+    const { t } = useI18n()
     const open = ref(false)
     const display = computed(() => formatDisplay(props.modelValue, props.locale))
 
@@ -97,7 +99,7 @@ export const IrisDatePicker = defineComponent({
                     ...((attrs.style as Record<string, string> | undefined) ?? {}),
                   },
                 },
-                display.value || props.placeholder,
+                display.value || (props.placeholder ?? t('datePicker.placeholder')),
               ),
             ]),
             h(IrisPopoverContent, { style: { padding: '0' } }, () =>

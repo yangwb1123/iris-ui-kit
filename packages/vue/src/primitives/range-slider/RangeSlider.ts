@@ -1,6 +1,7 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
 import { getDirection } from '@iris-ui/theme'
 import { useDrag } from '../drag/useDrag'
+import { useI18n } from '../../i18n'
 
 export type IrisRangeSliderValue = readonly [number, number]
 
@@ -45,14 +46,15 @@ export const IrisRangeSlider = defineComponent({
     step: { type: Number, default: 1 },
     disabled: { type: Boolean, default: false },
     /** Accessible label prefixes for screen readers. */
-    labelStart: { type: String, default: 'Start' },
-    labelEnd: { type: String, default: 'End' },
+    labelStart: { type: String, default: undefined },
+    labelEnd: { type: String, default: undefined },
   },
   emits: {
     'update:modelValue': (_value: IrisRangeSliderValue) => true,
     change: (_value: IrisRangeSliderValue) => true,
   },
   setup(props, { attrs, emit }) {
+    const { t } = useI18n()
     const trackRef = ref<HTMLElement | null>(null)
     const startThumbRef = ref<HTMLElement | null>(null)
     const endThumbRef = ref<HTMLElement | null>(null)
@@ -213,7 +215,7 @@ export const IrisRangeSlider = defineComponent({
                 },
                 role: 'slider',
                 tabindex: props.disabled ? -1 : 0,
-                'aria-label': props.labelStart,
+                'aria-label': props.labelStart ?? t('rangeSlider.start'),
                 'aria-valuemin': props.min,
                 'aria-valuemax': endVal.value,
                 'aria-valuenow': startVal.value,
@@ -242,7 +244,7 @@ export const IrisRangeSlider = defineComponent({
                 },
                 role: 'slider',
                 tabindex: props.disabled ? -1 : 0,
-                'aria-label': props.labelEnd,
+                'aria-label': props.labelEnd ?? t('rangeSlider.end'),
                 'aria-valuemin': startVal.value,
                 'aria-valuemax': props.max,
                 'aria-valuenow': endVal.value,

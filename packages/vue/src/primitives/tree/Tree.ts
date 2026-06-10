@@ -75,7 +75,7 @@ export const IrisTree = defineComponent({
     /** Initially checked node ids (uncontrolled; reconciled through the cascade). */
     defaultChecked: { type: Array as PropType<string[]>, default: undefined },
     /** ARIA label. */
-    ariaLabel: { type: String, default: 'Tree' },
+    ariaLabel: { type: String, default: undefined },
     /** Show the loading state instead of nodes. */
     loading: { type: Boolean, default: false },
     /** Show the error state instead of nodes (takes precedence over loading). */
@@ -481,7 +481,7 @@ export const IrisTree = defineComponent({
         {
           ...attrs,
           role: 'tree',
-          'aria-label': props.ariaLabel,
+          'aria-label': props.ariaLabel ?? t('tree.label'),
           'aria-multiselectable': props.selectionMode === 'multi' ? 'true' : undefined,
           'aria-busy': state.value === 'loading' ? 'true' : undefined,
           'data-iris-tree': '',

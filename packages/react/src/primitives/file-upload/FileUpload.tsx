@@ -288,7 +288,7 @@ export function IrisFileUpload({
               </span>
               <button
                 type="button"
-                aria-label={`Remove ${item.name}`}
+                aria-label={t('fileUpload.remove', { name: item.name })}
                 disabled={disabled || undefined}
                 onClick={(e) => {
                   e.stopPropagation()

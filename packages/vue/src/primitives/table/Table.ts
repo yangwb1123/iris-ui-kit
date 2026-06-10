@@ -596,6 +596,7 @@ export const IrisTable = defineComponent({
                 h(IrisCheckbox, {
                   modelValue: selected,
                   size: 'sm',
+                  ariaLabel: t('table.selectRow', { key: id }),
                   'onUpdate:modelValue': () => toggleRow(id),
                   onClick: (e: MouseEvent) => e.stopPropagation(),
                 }),

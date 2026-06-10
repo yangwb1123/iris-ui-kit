@@ -1,5 +1,6 @@
 import { computed, defineComponent, h, onMounted, type PropType } from 'vue'
 import { installSpinnerStyles } from './styles'
+import { useI18n } from '../../i18n'
 
 export type IrisSpinnerSize = 'sm' | 'md' | 'lg' | number
 
@@ -31,15 +32,17 @@ export const IrisSpinner = defineComponent({
     /** SVG stroke width in px. Auto-scaled by size when not specified. */
     strokeWidth: { type: Number, default: 0 },
     /** Visually-hidden screen reader label. */
-    label: { type: String, default: 'Loading' },
+    label: { type: String, default: undefined },
   },
   setup(props, { attrs }) {
+    const { t } = useI18n()
     onMounted(installSpinnerStyles)
     const px = computed(() => resolveSize(props.size))
     const sw = computed(() => props.strokeWidth || Math.max(1.5, Math.round(px.value * 0.12)))
 
-    return () =>
-      h(
+    return () => {
+      const label = props.label ?? t('spinner.loading')
+      return h(
         'span',
         {
           ...attrs,
@@ -72,7 +75,7 @@ export const IrisSpinner = defineComponent({
               'stroke-width': sw.value,
             }),
           ),
-          props.label
+          label
             ? h(
                 'span',
                 {
@@ -88,10 +91,11 @@ export const IrisSpinner = defineComponent({
                     border: '0',
                   },
                 },
-                props.label,
+                label,
               )
             : null,
         ],
       )
+    }
   },
 })

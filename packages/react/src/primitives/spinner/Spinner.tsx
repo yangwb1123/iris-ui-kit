@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useI18n } from '../../i18n'
 import { installSpinnerStyles } from './styles'
 
 export type IrisSpinnerSize = 'sm' | 'md' | 'lg' | number
@@ -25,13 +26,15 @@ export function IrisSpinner({
   size = 'md',
   color = 'var(--iris-primary)',
   strokeWidth = 0,
-  label = 'Loading',
+  label,
   style,
   ...rest
 }: IrisSpinnerProps): React.ReactElement {
+  const { t } = useI18n()
   React.useEffect(installSpinnerStyles, [])
   const px = resolveSize(size)
   const sw = strokeWidth || Math.max(1.5, Math.round(px * 0.12))
+  const resolvedLabel = label ?? t('spinner.loading')
 
   return (
     <span
@@ -52,7 +55,7 @@ export function IrisSpinner({
       >
         <circle cx="25" cy="25" r="20" stroke="currentColor" strokeWidth={sw} />
       </svg>
-      {label ? (
+      {resolvedLabel ? (
         <span
           style={{
             position: 'absolute',
@@ -66,7 +69,7 @@ export function IrisSpinner({
             border: 0,
           }}
         >
-          {label}
+          {resolvedLabel}
         </span>
       ) : null}
     </span>

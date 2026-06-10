@@ -1,5 +1,6 @@
 import { defineComponent, h, ref, type PropType } from 'vue'
 import { IrisInput } from '../input/Input'
+import { useI18n } from '../../i18n'
 import type { Size } from '@iris-ui/core'
 
 export type IrisPasswordInputSize = Size
@@ -29,6 +30,7 @@ export const IrisPasswordInput = defineComponent({
     blur: (_event: FocusEvent) => true,
   },
   setup(props, { attrs, emit, slots }) {
+    const { t } = useI18n()
     const visible = ref(false)
 
     const onUpdate = (value: string) => emit('update:modelValue', value)
@@ -68,7 +70,7 @@ export const IrisPasswordInput = defineComponent({
                   {
                     type: 'button',
                     'data-iris-password-input-toggle': '',
-                    'aria-label': visible.value ? 'Hide password' : 'Show password',
+                    'aria-label': visible.value ? t('passwordInput.hide') : t('passwordInput.show'),
                     'aria-pressed': visible.value ? 'true' : 'false',
                     onClick: toggle,
                     style: {

@@ -37,7 +37,7 @@ export const IrisRating = defineComponent({
     size: { type: String as PropType<IrisRatingSize>, default: 'md' },
     invalid: { type: Boolean, default: false },
     /** Accessible label for the slider. */
-    label: { type: String, default: 'Rating' },
+    label: { type: String, default: undefined },
     /** id forwarded to the slider. Set by IrisFormField. */
     id: { type: String, default: undefined },
     /** Forwarded as `aria-describedby`. Set by IrisFormField. */
@@ -113,7 +113,7 @@ export const IrisRating = defineComponent({
           role: 'slider',
           id: props.id,
           tabindex: interactive.value ? 0 : -1,
-          'aria-label': props.label,
+          'aria-label': props.label ?? t('rating.label'),
           'aria-valuemin': 0,
           'aria-valuemax': props.max,
           'aria-valuenow': value.value,

@@ -320,7 +320,7 @@ export const IrisFileUpload = defineComponent({
                           'button',
                           {
                             type: 'button',
-                            'aria-label': `Remove ${item.name}`,
+                            'aria-label': t('fileUpload.remove', { name: item.name }),
                             disabled: props.disabled || undefined,
                             onClick: (e: MouseEvent) => {
                               e.stopPropagation()

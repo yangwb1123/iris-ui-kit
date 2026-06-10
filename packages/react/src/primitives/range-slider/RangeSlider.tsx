@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { getDirection } from '@iris-ui/theme'
+import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 
 export type IrisRangeSliderValue = readonly [number, number]
@@ -46,11 +47,12 @@ export function IrisRangeSlider({
   max = 100,
   step = 1,
   disabled = false,
-  labelStart = 'Start',
-  labelEnd = 'End',
+  labelStart,
+  labelEnd,
   style,
   ...rest
 }: IrisRangeSliderProps): React.ReactElement {
+  const { t } = useI18n()
   const isControlled = valueProp !== undefined
   const [internal, setInternal] = React.useState<IrisRangeSliderValue>(defaultValue)
   const raw = isControlled ? (valueProp as IrisRangeSliderValue) : internal
@@ -185,7 +187,7 @@ export function IrisRangeSlider({
           ref={startRef}
           role="slider"
           tabIndex={disabled ? -1 : 0}
-          aria-label={labelStart}
+          aria-label={labelStart ?? t('rangeSlider.start')}
           aria-valuemin={min}
           aria-valuemax={endVal}
           aria-valuenow={startVal}
@@ -212,7 +214,7 @@ export function IrisRangeSlider({
           ref={endRef}
           role="slider"
           tabIndex={disabled ? -1 : 0}
-          aria-label={labelEnd}
+          aria-label={labelEnd ?? t('rangeSlider.end')}
           aria-valuemin={startVal}
           aria-valuemax={max}
           aria-valuenow={endVal}

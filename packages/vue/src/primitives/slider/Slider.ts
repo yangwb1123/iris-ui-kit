@@ -1,6 +1,7 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
 import { getDirection } from '@iris-ui/theme'
 import { useDrag } from '../drag/useDrag'
+import { useI18n } from '../../i18n'
 
 export type IrisSliderOrientation = 'horizontal' | 'vertical'
 
@@ -44,13 +45,14 @@ export const IrisSlider = defineComponent({
     disabled: { type: Boolean, default: false },
     orientation: { type: String as PropType<IrisSliderOrientation>, default: 'horizontal' },
     /** Accessible label for screen readers. */
-    label: { type: String, default: 'Value' },
+    label: { type: String, default: undefined },
   },
   emits: {
     'update:modelValue': (_value: number) => true,
     change: (_value: number) => true,
   },
   setup(props, { attrs, emit }) {
+    const { t } = useI18n()
     const trackRef = ref<HTMLElement | null>(null)
     const thumbRef = ref<HTMLElement | null>(null)
     const dragging = ref(false)
@@ -235,7 +237,7 @@ export const IrisSlider = defineComponent({
               },
               'data-iris-slider-thumb': '',
               role: 'slider',
-              'aria-label': props.label,
+              'aria-label': props.label ?? t('slider.label'),
               'aria-valuemin': props.min,
               'aria-valuemax': props.max,
               'aria-valuenow': props.modelValue,

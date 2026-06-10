@@ -81,7 +81,7 @@ export function IrisTree({
   checkable = false,
   defaultChecked,
   onCheckedChange,
-  ariaLabel = 'Tree',
+  ariaLabel,
   loading = false,
   error = false,
   emptyState,
@@ -315,7 +315,7 @@ export function IrisTree({
   return (
     <div
       role="tree"
-      aria-label={ariaLabel}
+      aria-label={ariaLabel ?? t('tree.label')}
       aria-busy={state === 'loading' ? true : undefined}
       tabIndex={-1}
       onKeyDown={onKeyDown}

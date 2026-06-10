@@ -5,6 +5,7 @@ import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'
 import { IrisCalendar } from '../calendar/Calendar'
 import { addMonths, startOfDay, startOfMonth } from '../calendar/dateUtils'
+import { useI18n } from '../../i18n'
 
 export interface IrisDateRange {
   start: Date | null
@@ -37,7 +38,7 @@ export const IrisDateRangePicker = defineComponent({
     max: { type: Date as unknown as PropType<Date | undefined>, default: undefined },
     weekStartsOn: { type: Number, default: 0 },
     locale: { type: String, default: undefined },
-    placeholder: { type: String, default: 'Select range…' },
+    placeholder: { type: String, default: undefined },
     disabled: { type: Boolean, default: false },
     invalid: { type: Boolean, default: false },
     placement: { type: String as PropType<Placement>, default: 'bottom-start' },
@@ -48,6 +49,7 @@ export const IrisDateRangePicker = defineComponent({
     'update:modelValue': (_value: IrisDateRange) => true,
   },
   setup(props, { attrs, emit }) {
+    const { t } = useI18n()
     const open = ref(false)
     const value = computed<IrisDateRange>(() => props.modelValue ?? { start: null, end: null })
 
@@ -125,7 +127,7 @@ export const IrisDateRangePicker = defineComponent({
                     ...((attrs.style as Record<string, string> | undefined) ?? {}),
                   },
                 },
-                display.value || props.placeholder,
+                display.value || (props.placeholder ?? t('dateRangePicker.placeholder')),
               ),
             ]),
             h(IrisPopoverContent, { style: { padding: '0' } }, () =>

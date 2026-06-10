@@ -12,7 +12,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 - Layer 4 — System Skeletons: Page / section skeleton scaffolds.
 - Behaviors: Orthogonal interaction behaviors (hotkeys, click-outside, drag).
 
-## Components (141 total — 138 in all 4 frameworks; react 141, vue 141, solid 140, svelte 138)
+## Components (142 total — 138 in all 4 frameworks; react 141, vue 142, solid 141, svelte 139)
 
 ### behaviors (4)
 - IrisClickOutside [react/solid/svelte/vue]
@@ -44,13 +44,15 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 - IrisStack [react/solid/svelte/vue]
   props: direction?, spacing?, align?, justify?, wrap?, inline?
 
-### other (6)
+### other (7)
 - IrisAdminBreadcrumb [react/solid/svelte/vue]
   props: trail, showIcon?, hideSingle?, separator?, onSelect?
 - IrisAdminLayout [react/solid/svelte/vue]
   props: menus, activeKey?, defaultActiveKey?, onActiveKeyChange?, collapsed?, defaultCollapsed?, onCollapsedChange?, mode?, appTitle?, tabs?, showBreadcrumb?, sidebarWidth?, collapsedWidth?, logo?, toolbar?, footer?, onSelect?, children?
 - IrisAdminTabs [react/solid/svelte/vue]
   props: nav, onChange?, onClose?, onRefresh?
+- IrisErrorBoundary [solid/svelte/vue]
+  props: children?, fallback?, onError?
 - IrisI18nProvider [react/solid/svelte/vue]
   props: locale?, messages?, i18n?, autoDirection?, directionTarget?, children?
 - IrisNavMenu [react/solid/svelte/vue]

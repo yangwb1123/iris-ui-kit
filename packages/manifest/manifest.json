@@ -67,11 +67,12 @@
     },
     {
       "group": "other",
-      "count": 6,
+      "count": 7,
       "components": [
         "IrisAdminBreadcrumb",
         "IrisAdminLayout",
         "IrisAdminTabs",
+        "IrisErrorBoundary",
         "IrisI18nProvider",
         "IrisNavMenu",
         "IrisProvider"
@@ -2985,6 +2986,40 @@
           "name": "children",
           "type": "React.ReactNode",
           "optional": true
+        }
+      ]
+    },
+    {
+      "name": "IrisErrorBoundary",
+      "group": "other",
+      "frameworks": [
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
+        "vue": "@iris-ui/vue"
+      },
+      "props": [
+        {
+          "name": "children",
+          "type": "React.ReactNode",
+          "optional": true,
+          "description": "The guarded subtree."
+        },
+        {
+          "name": "fallback",
+          "type": "(props: IrisErrorBoundaryFallbackProps) => React.ReactNode",
+          "optional": true,
+          "description": "Custom fallback UI. Receives `{ error, reset }`. When omitted, the default themed, accessible fallback is rendered."
+        },
+        {
+          "name": "onError",
+          "type": "(error: Error, info: React.ErrorInfo) => void",
+          "optional": true,
+          "description": "Invoked with the caught error (and React error info) for logging."
         }
       ]
     },
@@ -7774,13 +7809,13 @@
     ]
   },
   "stats": {
-    "total": 141,
+    "total": 142,
     "full": 138,
     "byFramework": {
       "react": 141,
-      "vue": 141,
-      "solid": 140,
-      "svelte": 138
+      "vue": 142,
+      "solid": 141,
+      "svelte": 139
     }
   }
 }

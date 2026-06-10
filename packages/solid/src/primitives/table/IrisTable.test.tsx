@@ -372,3 +372,50 @@ describe('IrisTable tree rows', () => {
     expect(document.querySelector('[data-iris-table-tree-indent]')).toBeNull()
   })
 })
+
+describe('IrisTable grid keyboard navigation', () => {
+  function cellAt(r: number, c: number): HTMLElement | null {
+    return document.querySelector(`[data-grid-row="${r}"][data-grid-col="${c}"]`)
+  }
+
+  it('is off by default: role=table, no grid coords', () => {
+    render(() => <IrisTable columns={columns} data={data} />)
+    expect(document.querySelector('[role=grid]')).toBeNull()
+    expect(document.querySelector('[role=table]')).not.toBeNull()
+    expect(cellAt(0, 0)).toBeNull()
+  })
+
+  it('opt-in makes the table a grid with roving cell tabindex', () => {
+    render(() => <IrisTable columns={columns} data={data} keyboardNavigation />)
+    expect(document.querySelector('[role=grid]')).not.toBeNull()
+    expect(cellAt(0, 0)!.getAttribute('tabindex')).toBe('0') // first cell focusable
+    expect(cellAt(0, 1)!.getAttribute('tabindex')).toBe('-1')
+  })
+
+  it('ArrowRight / ArrowDown move the focused cell and roving tabindex', () => {
+    render(() => <IrisTable columns={columns} data={data} keyboardNavigation />)
+    cellAt(0, 0)!.focus()
+    // Fire on the CELL so the event bubbles to the root handler with the cell as
+    // target (target carries data-grid-row); firing on the root makes target=root.
+    fireEvent.keyDown(cellAt(0, 0)!, { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(cellAt(0, 1))
+    expect(cellAt(0, 1)!.getAttribute('tabindex')).toBe('0')
+    expect(cellAt(0, 0)!.getAttribute('tabindex')).toBe('-1')
+    fireEvent.keyDown(cellAt(0, 1)!, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(cellAt(1, 1))
+  })
+
+  it('does not move past an edge (no wrap)', () => {
+    render(() => <IrisTable columns={columns} data={data} keyboardNavigation />)
+    cellAt(0, 0)!.focus()
+    fireEvent.keyDown(cellAt(0, 0)!, { key: 'ArrowLeft' })
+    expect(document.activeElement).toBe(cellAt(0, 0)) // stayed
+  })
+
+  it('End jumps to the last column of the row', () => {
+    render(() => <IrisTable columns={columns} data={data} keyboardNavigation />)
+    cellAt(0, 0)!.focus()
+    fireEvent.keyDown(cellAt(0, 0)!, { key: 'End' })
+    expect(document.activeElement).toBe(cellAt(0, 1)) // 2 columns → last is col 1
+  })
+})

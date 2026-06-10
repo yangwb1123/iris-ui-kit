@@ -18,6 +18,8 @@ import {
   createExpansion,
   createSelectionModel,
   flattenTree,
+  nextGridCell,
+  type GridNavKey,
   type TreeRow,
 } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
@@ -128,6 +130,14 @@ export const IrisTable = defineComponent({
     error: { type: Boolean, default: false },
     /** Render only the horizontally-visible columns (+ pinned + overscan) for wide tables. */
     columnVirtualization: { type: Boolean, default: false },
+    /**
+     * Enable WAI-ARIA grid keyboard navigation: the table becomes `role="grid"`
+     * and Arrow / Home / End / Page Up·Down move a roving cell focus across the
+     * data cells. Off by default; opt-in and additive (no effect on mouse / Tab
+     * behavior). Pairs best without virtualization (the focused cell must be
+     * rendered) and does not hijack keystrokes while a cell is being edited.
+     */
+    keyboardNavigation: { type: Boolean, default: false },
     /**
      * Render an expandable detail panel beneath a row. Providing this adds a
      * leading expand-toggle column; clicking it reveals a full-width detail row.
@@ -420,8 +430,44 @@ export const IrisTable = defineComponent({
       return parts.join(' ')
     })
 
-    // -------- Column virtualization (opt-in) --------
+    // -------- Grid keyboard navigation (opt-in via keyboardNavigation) --------
+    // Roving 2D cell focus: exactly one data cell is tabbable; Arrow/Home/End/
+    // Page keys move the focus via the core `nextGridCell` math. Off by default
+    // (the table stays `role="table"` with byte-identical behavior). The actual
+    // `.focus()` is delegated to the adapter by querying the root for the cell.
     const rootRef = ref<HTMLElement | null>(null)
+    const focusedCell = ref<{ row: number; col: number } | null>(null)
+    const GRID_NAV_KEYS = new Set<string>([
+      'ArrowUp',
+      'ArrowDown',
+      'ArrowLeft',
+      'ArrowRight',
+      'Home',
+      'End',
+      'PageUp',
+      'PageDown',
+    ])
+    const handleGridKey = (e: KeyboardEvent): void => {
+      if (!props.keyboardNavigation || !GRID_NAV_KEYS.has(e.key)) return
+      // Only navigate from a grid cell — never hijack arrows inside an editing
+      // cell's <input> (which carries no data-grid-row).
+      const target = e.target as HTMLElement
+      if (target.dataset.gridRow === undefined) return
+      e.preventDefault()
+      const current = focusedCell.value ?? { row: 0, col: 0 }
+      const next = nextGridCell(current, e.key as GridNavKey, {
+        rowCount: bodyData.value.length,
+        colCount: props.columns.length,
+        pageSize: 10,
+      })
+      focusedCell.value = next
+      const cell = rootRef.value?.querySelector<HTMLElement>(
+        `[data-grid-row="${next.row}"][data-grid-col="${next.col}"]`,
+      )
+      cell?.focus()
+    }
+
+    // -------- Column virtualization (opt-in) --------
     const scrollLeft = ref(0)
     const viewportWidth = ref(0)
     const colTrack = (i: number): number =>
@@ -915,6 +961,24 @@ export const IrisTable = defineComponent({
                 'data-iris-table-pinned': col.pinned,
                 'data-editable': col.editable ? '' : undefined,
                 'data-editing': isEditing ? '' : undefined,
+                // Grid keyboard navigation (opt-in): grid coords + roving tabindex
+                // (exactly one cell is 0) + an onFocus that syncs the focused cell.
+                ...(props.keyboardNavigation
+                  ? {
+                      'data-grid-row': index,
+                      'data-grid-col': ci,
+                      tabindex: (
+                        focusedCell.value
+                          ? focusedCell.value.row === index && focusedCell.value.col === ci
+                          : index === 0 && ci === 0
+                      )
+                        ? 0
+                        : -1,
+                      onFocus: () => {
+                        focusedCell.value = { row: index, col: ci }
+                      },
+                    }
+                  : {}),
                 onDblclick: col.editable ? () => beginEdit(row, col, id) : undefined,
                 style: {
                   display: 'flex',
@@ -1151,10 +1215,11 @@ export const IrisTable = defineComponent({
           ref: (el: unknown) => {
             rootRef.value = (el ?? null) as HTMLElement | null
           },
-          role: 'table',
+          role: props.keyboardNavigation ? 'grid' : 'table',
           'data-iris-table': '',
           'data-virtual': props.virtualScroll ? '' : undefined,
           'data-column-virtualized': props.columnVirtualization ? 'true' : undefined,
+          onKeydown: props.keyboardNavigation ? handleGridKey : undefined,
           onScroll: props.columnVirtualization
             ? (e: Event) => {
                 scrollLeft.value = (e.currentTarget as HTMLElement).scrollLeft

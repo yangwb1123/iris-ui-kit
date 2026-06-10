@@ -5,6 +5,8 @@
     createSelectionModel,
     createExpansion,
     flattenTree,
+    nextGridCell,
+    type GridNavKey,
     type TreeRow,
   } from '@iris-ui/core'
   import { toStore } from '../../useStore'
@@ -51,6 +53,13 @@
      * `renderDetail`.
      */
     getSubRows?: (row: Record<string, unknown>) => Array<Record<string, unknown>> | undefined
+    /**
+     * Enable WAI-ARIA grid keyboard navigation: the table becomes `role="grid"`
+     * and Arrow / Home / End / Page Up·Down move a roving cell focus across the
+     * data cells. Off by default; opt-in and additive (no effect on mouse / Tab
+     * behavior). Does not hijack keystrokes while a cell is being edited.
+     */
+    keyboardNavigation?: boolean
     onUpdateSelection?: (value: Array<string | number>) => void
     onUpdateSort?: (value: IrisTableSortState | null) => void
     onRowClick?: (row: Record<string, unknown>, index: number) => void
@@ -75,6 +84,7 @@
     defaultExpandedRowKeys,
     onExpandedRowsChange,
     getSubRows,
+    keyboardNavigation = false,
     onUpdateSelection,
     onUpdateSort,
     onRowClick,
@@ -287,12 +297,55 @@
   }
 
   const stateRowStyle = 'padding: 32px 12px; text-align: center; color: var(--iris-muted)'
+
+  // Grid keyboard navigation (opt-in): roving cell focus over the data cells.
+  let rootEl = $state<HTMLDivElement | null>(null)
+  let focusedCell = $state<{ row: number; col: number } | null>(null)
+  const GRID_NAV_KEYS = new Set([
+    'ArrowUp',
+    'ArrowDown',
+    'ArrowLeft',
+    'ArrowRight',
+    'Home',
+    'End',
+    'PageUp',
+    'PageDown',
+  ])
+  function handleGridKey(e: KeyboardEvent): void {
+    if (!keyboardNavigation || !GRID_NAV_KEYS.has(e.key)) return
+    // Only navigate from a grid cell — never hijack arrows inside an editing
+    // cell's <input> (which carries no data-grid-row).
+    const target = e.target as HTMLElement
+    if (target.dataset.gridRow === undefined) return
+    e.preventDefault()
+    const current = focusedCell ?? { row: 0, col: 0 }
+    const next = nextGridCell(current, e.key as GridNavKey, {
+      rowCount: bodyData.length,
+      colCount: columns.length,
+      pageSize: 10,
+    })
+    focusedCell = next
+    const cell = rootEl?.querySelector<HTMLElement>(
+      `[data-grid-row="${next.row}"][data-grid-col="${next.col}"]`,
+    )
+    cell?.focus()
+  }
+
+  // Roving tabindex: exactly one data cell is tabbable (0); the rest are -1.
+  function cellTabIndex(rowIndex: number, colIndex: number): number {
+    const isActive = focusedCell
+      ? focusedCell.row === rowIndex && focusedCell.col === colIndex
+      : rowIndex === 0 && colIndex === 0
+    return isActive ? 0 : -1
+  }
 </script>
 
 <div
   {...rest}
-  role="table"
+  bind:this={rootEl}
+  role={keyboardNavigation ? 'grid' : 'table'}
   data-iris-table
+  onkeydown={keyboardNavigation ? handleGridKey : undefined}
   style="background: var(--iris-background); color: var(--iris-foreground); border: {bordered ? '1px solid var(--iris-border)' : 'none'}; border-radius: var(--iris-radius-md, 6px); overflow: hidden;{style ? ' ' + style : ''}"
 >
   <!-- Header row -->
@@ -398,6 +451,10 @@
               data-iris-table-cell={col.key}
               data-editable={col.editable ? '' : undefined}
               data-editing={isEditing ? '' : undefined}
+              data-grid-row={keyboardNavigation ? index : undefined}
+              data-grid-col={keyboardNavigation ? ci : undefined}
+              tabindex={keyboardNavigation ? cellTabIndex(index, ci) : undefined}
+              onfocus={keyboardNavigation ? () => (focusedCell = { row: index, col: ci }) : undefined}
               ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}
               style="display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: {isEditing ? '4px' : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable ? 'cell' : 'default'}"
             >

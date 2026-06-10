@@ -5,7 +5,9 @@ import {
   createExpansion,
   createSelectionModel,
   flattenTree,
+  nextGridCell,
   type ExpansionModel,
+  type GridNavKey,
   type TreeRow,
 } from '@iris-ui/core'
 import { useStore } from '../../useStore'
@@ -46,6 +48,13 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * `renderDetail` (detail panels).
    */
   getSubRows?: (row: Row) => Row[] | undefined
+  /**
+   * Enable WAI-ARIA grid keyboard navigation: the table becomes `role="grid"`
+   * and Arrow / Home / End / Page Up·Down move a roving cell focus across the
+   * data cells. Off by default; opt-in and additive (no effect on mouse / Tab
+   * behavior). Does not hijack keystrokes while a cell is being edited.
+   */
+  keyboardNavigation?: boolean
   style?: JSX.CSSProperties
 }
 
@@ -84,6 +93,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       bordered: true,
       loading: false,
       error: false,
+      keyboardNavigation: false,
     },
     props,
   )
@@ -249,6 +259,41 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     setEditingCellId(null)
   }
 
+  // ---- Grid keyboard navigation (opt-in) ----
+  // Roving cell focus over the data cells, driven by the framework-agnostic
+  // `nextGridCell`. Off by default; additive (no effect on mouse / Tab).
+  let rootRef: HTMLDivElement | undefined
+  const [focusedCell, setFocusedCell] = createSignal<{ row: number; col: number } | null>(null)
+  const GRID_NAV_KEYS = new Set([
+    'ArrowUp',
+    'ArrowDown',
+    'ArrowLeft',
+    'ArrowRight',
+    'Home',
+    'End',
+    'PageUp',
+    'PageDown',
+  ])
+  const handleGridKey = (e: KeyboardEvent): void => {
+    if (!merged.keyboardNavigation || !GRID_NAV_KEYS.has(e.key)) return
+    // Only navigate from a grid cell — never hijack arrows inside an editing
+    // cell's <input> (which carries no data-grid-row).
+    const target = e.target as HTMLElement
+    if (target.dataset.gridRow === undefined) return
+    e.preventDefault()
+    const current = focusedCell() ?? { row: 0, col: 0 }
+    const next = nextGridCell(current, e.key as GridNavKey, {
+      rowCount: bodyRows().length,
+      colCount: merged.columns.length,
+      pageSize: 10,
+    })
+    setFocusedCell(next)
+    const cell = rootRef?.querySelector<HTMLElement>(
+      `[data-grid-row="${next.row}"][data-grid-col="${next.col}"]`,
+    )
+    cell?.focus()
+  }
+
   // ---- Grid template ----
   const SELECTION_COL_WIDTH = 40
   const EXPAND_COL_WIDTH = 40
@@ -293,8 +338,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
 
   return (
     <div
-      role="table"
+      ref={rootRef}
+      role={merged.keyboardNavigation ? 'grid' : 'table'}
       data-iris-table=""
+      onKeyDown={merged.keyboardNavigation ? handleGridKey : undefined}
       style={{
         background: 'var(--iris-background)',
         color: 'var(--iris-foreground)',
@@ -517,12 +564,29 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                           const cid = `${id}::${col.key}`
                           const isEditing = () => editingCellId() === cid
                           const isFirstCol = colIndexAccessor() === 0
+                          const colIndex = colIndexAccessor()
+                          const isFocused = (): boolean => {
+                            const fc = focusedCell()
+                            return fc
+                              ? fc.row === index && fc.col === colIndex
+                              : index === 0 && colIndex === 0
+                          }
                           return (
                             <div
                               role="cell"
                               data-iris-table-cell={col.key}
                               data-editable={col.editable ? '' : undefined}
                               data-editing={isEditing() ? '' : undefined}
+                              data-grid-row={merged.keyboardNavigation ? index : undefined}
+                              data-grid-col={merged.keyboardNavigation ? colIndex : undefined}
+                              tabindex={
+                                merged.keyboardNavigation ? (isFocused() ? 0 : -1) : undefined
+                              }
+                              onFocus={
+                                merged.keyboardNavigation
+                                  ? () => setFocusedCell({ row: index, col: colIndex })
+                                  : undefined
+                              }
                               onDblClick={col.editable ? () => beginEdit(row, col, id) : undefined}
                               style={{
                                 display: 'flex',

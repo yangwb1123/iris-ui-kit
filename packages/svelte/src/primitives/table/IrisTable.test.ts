@@ -356,3 +356,60 @@ describe('IrisTable tree rows', () => {
     expect(container.querySelector('[data-iris-table-tree-indent]')).toBeNull()
   })
 })
+
+describe('IrisTable grid keyboard navigation', () => {
+  // Fixture: 2 columns (name, age) × 3 rows from the shared `columns`/`data`.
+  function cellAt(container: HTMLElement, r: number, c: number): HTMLElement | null {
+    return container.querySelector(`[data-grid-row="${r}"][data-grid-col="${c}"]`)
+  }
+
+  it('is off by default: role=table, no grid coords', () => {
+    const { container } = render(IrisTable, { props: { columns, data } })
+    expect(container.querySelector('[role="grid"]')).toBeNull()
+    expect(container.querySelector('[role="table"]')).not.toBeNull()
+    expect(cellAt(container, 0, 0)).toBeNull()
+  })
+
+  it('opt-in makes the table a grid with roving cell tabindex', () => {
+    const { container } = render(IrisTable, {
+      props: { columns, data, keyboardNavigation: true },
+    })
+    expect(container.querySelector('[role="grid"]')).not.toBeNull()
+    expect(cellAt(container, 0, 0)!.getAttribute('tabindex')).toBe('0') // first cell focusable
+    expect(cellAt(container, 0, 1)!.getAttribute('tabindex')).toBe('-1')
+  })
+
+  it('ArrowRight / ArrowDown move the focused cell and roving tabindex', async () => {
+    const { container } = render(IrisTable, {
+      props: { columns, data, keyboardNavigation: true },
+    })
+    cellAt(container, 0, 0)!.focus()
+    // Dispatch the keydown ON THE CELL so it bubbles to the root handler with
+    // the cell as target (firing on the root would make target=root, which has
+    // no data-grid-row and is correctly ignored).
+    await fireEvent.keyDown(cellAt(container, 0, 0)!, { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(cellAt(container, 0, 1))
+    expect(cellAt(container, 0, 1)!.getAttribute('tabindex')).toBe('0')
+    expect(cellAt(container, 0, 0)!.getAttribute('tabindex')).toBe('-1')
+    await fireEvent.keyDown(cellAt(container, 0, 1)!, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(cellAt(container, 1, 1))
+  })
+
+  it('does not move past an edge (no wrap)', async () => {
+    const { container } = render(IrisTable, {
+      props: { columns, data, keyboardNavigation: true },
+    })
+    cellAt(container, 0, 0)!.focus()
+    await fireEvent.keyDown(cellAt(container, 0, 0)!, { key: 'ArrowLeft' })
+    expect(document.activeElement).toBe(cellAt(container, 0, 0)) // stayed
+  })
+
+  it('End jumps to the last column of the row', async () => {
+    const { container } = render(IrisTable, {
+      props: { columns, data, keyboardNavigation: true },
+    })
+    cellAt(container, 0, 0)!.focus()
+    await fireEvent.keyDown(cellAt(container, 0, 0)!, { key: 'End' })
+    expect(document.activeElement).toBe(cellAt(container, 0, 1)) // 2 columns → last is col 1
+  })
+})

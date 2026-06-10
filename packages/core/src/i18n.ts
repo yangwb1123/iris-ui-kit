@@ -145,6 +145,16 @@ export const defaultMessages: I18nMessages = {
   'tree.label': 'Tree',
   'errorBoundary.message': 'Something went wrong.',
   'errorBoundary.retry': 'Try again',
+  'admin.openPages': 'Open pages',
+  'admin.tabActions': 'Tab actions',
+  'admin.refresh': 'Refresh',
+  'admin.closeTab': 'Close {title}',
+  'admin.close': 'Close',
+  'admin.closeOthers': 'Close others',
+  'admin.closeAll': 'Close all',
+  'admin.expandSidebar': 'Expand sidebar',
+  'admin.collapseSidebar': 'Collapse sidebar',
+  'admin.nav': 'Main navigation',
 }
 
 const DEFAULT_LOCALE = 'en-US'

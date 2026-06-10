@@ -6,6 +6,7 @@ import { IrisDropdown } from '../primitives/dropdown/Dropdown'
 import { IrisDropdownTrigger } from '../primitives/dropdown/DropdownTrigger'
 import { IrisDropdownMenu } from '../primitives/dropdown/DropdownMenu'
 import { IrisDropdownItem, IrisDropdownSeparator } from '../primitives/dropdown/DropdownItem'
+import { useI18n } from '../i18n'
 
 /**
  * Vben-style multi-tab bar over a shared {@link TabsNav} store. Each open page
@@ -31,6 +32,7 @@ export const IrisAdminTabs = defineComponent({
     refresh: (_key: string) => true,
   },
   setup(props, { emit, attrs }) {
+    const { t: tr } = useI18n()
     const t = useTabsNav(props.nav)
 
     const activate = (key: string): void => {
@@ -125,7 +127,7 @@ export const IrisAdminTabs = defineComponent({
               type: 'button',
               tabindex: -1,
               'data-iris-tab-close': '',
-              'aria-label': `Close ${tab.title}`,
+              'aria-label': tr('admin.closeTab', { title: tab.title }),
               style: {
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -181,7 +183,7 @@ export const IrisAdminTabs = defineComponent({
         default: () => [
           h(
             IrisDropdownTrigger,
-            { 'aria-label': 'Tab actions' },
+            { 'aria-label': tr('admin.tabActions') },
             {
               default: () =>
                 h(
@@ -210,11 +212,11 @@ export const IrisAdminTabs = defineComponent({
               const key = t.activeKey.value
               if (!key) return [action('No active tab', () => {}, true)]
               return [
-                action('Refresh', () => refresh(key)),
-                action('Close', () => close(key)),
+                action(tr('admin.refresh'), () => refresh(key)),
+                action(tr('admin.close'), () => close(key)),
                 h(IrisDropdownSeparator),
-                action('Close others', () => props.nav.closeOthers(key)),
-                action('Close all', () => props.nav.closeAll()),
+                action(tr('admin.closeOthers'), () => props.nav.closeOthers(key)),
+                action(tr('admin.closeAll'), () => props.nav.closeAll()),
               ]
             },
           }),
@@ -243,7 +245,7 @@ export const IrisAdminTabs = defineComponent({
             {
               'data-iris-tabs-scroll': '',
               role: 'tablist',
-              'aria-label': 'Open pages',
+              'aria-label': tr('admin.openPages'),
               onKeydown: onTablistKeydown,
               style: {
                 display: 'flex',

@@ -11,6 +11,7 @@ import {
 } from '@iris-ui/core'
 import { IrisIcon } from '../primitives/icon'
 import { useStore } from '../useStore'
+import { useI18n } from '../i18n'
 
 export interface IrisNavMenuProps {
   items: NavNode[]
@@ -32,6 +33,7 @@ export interface IrisNavMenuProps {
  * IrisNavMenu (same arrow-key a11y + section labels).
  */
 export function IrisNavMenu(props: IrisNavMenuProps): JSX.Element {
+  const { t } = useI18n()
   // Branch-ancestor keys to auto-open for an active leaf — the slice/filter/map
   // is single-sourced in core `branchTrail`; the guard handles an absent key.
   const trailKeys = (key: string | undefined): string[] =>
@@ -281,7 +283,7 @@ export function IrisNavMenu(props: IrisNavMenuProps): JSX.Element {
     <nav
       data-iris-nav-menu=""
       data-collapsed={props.collapsed ? 'true' : undefined}
-      aria-label={props.ariaLabel ?? 'Main navigation'}
+      aria-label={props.ariaLabel ?? t('admin.nav')}
       onKeyDown={onKeyDown}
       style={{ display: 'flex', 'flex-direction': 'column', gap: '2px' }}
     >

@@ -14,6 +14,7 @@ import { IrisNavMenu } from './NavMenu'
 import { IrisAdminBreadcrumb } from './AdminBreadcrumb'
 import { IrisAdminTabs } from './AdminTabs'
 import { IrisIcon } from '../primitives/icon/Icon'
+import { useI18n } from '../i18n'
 
 export type IrisAdminLayoutMode = 'sidebar' | 'full-content'
 
@@ -97,6 +98,7 @@ export function IrisAdminLayout({
   onSelect,
   children,
 }: IrisAdminLayoutProps): React.ReactElement {
+  const { t } = useI18n()
   const activeControlled = activeKey !== undefined
   const [internalActive, setInternalActive] = React.useState(activeKey ?? defaultActiveKey ?? '')
   const currentActive = activeControlled ? (activeKey as string) : internalActive
@@ -191,7 +193,7 @@ export function IrisAdminLayout({
     <button
       type="button"
       data-iris-admin-collapse=""
-      aria-label={currentCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      aria-label={currentCollapsed ? t('admin.expandSidebar') : t('admin.collapseSidebar')}
       aria-pressed={currentCollapsed ? 'true' : 'false'}
       style={{
         display: 'inline-flex',

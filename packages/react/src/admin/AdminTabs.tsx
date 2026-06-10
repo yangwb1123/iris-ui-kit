@@ -6,6 +6,7 @@ import { IrisDropdown } from '../primitives/dropdown/Dropdown'
 import { IrisDropdownTrigger } from '../primitives/dropdown/DropdownTrigger'
 import { IrisDropdownMenu } from '../primitives/dropdown/DropdownMenu'
 import { IrisDropdownItem, IrisDropdownSeparator } from '../primitives/dropdown/DropdownItem'
+import { useI18n } from '../i18n'
 
 export interface IrisAdminTabsProps {
   /** Shared tabs store (from `createTabsNav`). */
@@ -33,6 +34,7 @@ export function IrisAdminTabs({
   onRefresh,
 }: IrisAdminTabsProps): React.ReactElement {
   const t = useTabsNav(nav)
+  const { t: translate } = useI18n()
   const tablistRef = React.useRef<HTMLDivElement>(null)
   const pendingFocus = React.useRef<string | null>(null)
 
@@ -124,7 +126,7 @@ export function IrisAdminTabs({
         type="button"
         tabIndex={-1}
         data-iris-tab-close=""
-        aria-label={`Close ${tab.title}`}
+        aria-label={translate('admin.closeTab', { title: tab.title })}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -190,7 +192,7 @@ export function IrisAdminTabs({
         ref={tablistRef}
         data-iris-tabs-scroll=""
         role="tablist"
-        aria-label="Open pages"
+        aria-label={translate('admin.openPages')}
         onKeyDown={onKeyDown}
         style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', flex: 1 }}
       >
@@ -199,7 +201,7 @@ export function IrisAdminTabs({
 
       <IrisDropdown>
         <IrisDropdownTrigger
-          aria-label="Tab actions"
+          aria-label={translate('admin.tabActions')}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -218,13 +220,19 @@ export function IrisAdminTabs({
         <IrisDropdownMenu>
           {activeKey ? (
             <>
-              <IrisDropdownItem onSelect={() => refresh(activeKey)}>Refresh</IrisDropdownItem>
-              <IrisDropdownItem onSelect={() => close(activeKey)}>Close</IrisDropdownItem>
+              <IrisDropdownItem onSelect={() => refresh(activeKey)}>
+                {translate('admin.refresh')}
+              </IrisDropdownItem>
+              <IrisDropdownItem onSelect={() => close(activeKey)}>
+                {translate('admin.close')}
+              </IrisDropdownItem>
               <IrisDropdownSeparator />
               <IrisDropdownItem onSelect={() => nav.closeOthers(activeKey)}>
-                Close others
+                {translate('admin.closeOthers')}
               </IrisDropdownItem>
-              <IrisDropdownItem onSelect={() => nav.closeAll()}>Close all</IrisDropdownItem>
+              <IrisDropdownItem onSelect={() => nav.closeAll()}>
+                {translate('admin.closeAll')}
+              </IrisDropdownItem>
             </>
           ) : (
             <IrisDropdownItem disabled>No active tab</IrisDropdownItem>

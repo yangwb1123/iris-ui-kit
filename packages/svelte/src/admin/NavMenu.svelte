@@ -12,7 +12,10 @@
   import { toStore } from '../useStore'
   import { styleToString } from '../internal/style'
   import IrisIcon from '../primitives/icon/IrisIcon.svelte'
+  import { useI18n } from '../i18n'
   import type { IrisNavMenuProps } from './types'
+
+  const { t } = useI18n()
 
   let {
     items,
@@ -247,7 +250,7 @@
 <nav
   data-iris-nav-menu
   data-collapsed={collapsed ? 'true' : undefined}
-  aria-label={ariaLabel ?? 'Main navigation'}
+  aria-label={ariaLabel ?? t('admin.nav')}
   onkeydown={onKeyDown}
   style="display: flex; flex-direction: column; gap: 2px"
 >

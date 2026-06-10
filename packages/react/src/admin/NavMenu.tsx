@@ -12,6 +12,7 @@ import {
 } from '@iris-ui/core'
 import { useStore } from '../useStore'
 import { IrisIcon } from '../primitives/icon/Icon'
+import { useI18n } from '../i18n'
 
 export interface IrisNavMenuProps {
   /** Normalized nav tree. */
@@ -45,10 +46,11 @@ export function IrisNavMenu({
   expandedKeys,
   defaultExpandedKeys,
   collapsed = false,
-  ariaLabel = 'Main navigation',
+  ariaLabel,
   onSelect,
   onExpandedKeysChange,
 }: IrisNavMenuProps): React.ReactElement {
+  const { t } = useI18n()
   // Expand/collapse state lives in the core expansion model — the open-set algebra
   // and the active-trail union (`merge`) are byte-identical across every adapter, so
   // they live in @iris-ui/core. This component keeps only the controlled/uncontrolled
@@ -303,7 +305,7 @@ export function IrisNavMenu({
     <nav
       data-iris-nav-menu=""
       data-collapsed={collapsed ? 'true' : undefined}
-      aria-label={ariaLabel}
+      aria-label={ariaLabel ?? t('admin.nav')}
       onKeyDown={onKeyDown}
       style={{ display: 'flex', flexDirection: 'column', gap: 2 }}
     >

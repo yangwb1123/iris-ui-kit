@@ -22,6 +22,7 @@ import { IrisNavMenu } from './NavMenu'
 import { IrisAdminBreadcrumb } from './AdminBreadcrumb'
 import { IrisAdminTabs } from './AdminTabs'
 import { IrisIcon } from '../primitives/icon/Icon'
+import { useI18n } from '../i18n'
 
 export type IrisAdminLayoutMode = 'sidebar' | 'full-content'
 
@@ -63,6 +64,7 @@ export const IrisAdminLayout = defineComponent({
     select: (_key: string, _node: NavNode) => true,
   },
   setup(props, { emit, slots, attrs }) {
+    const { t } = useI18n()
     const activeControlled = computed(() => props.activeKey !== undefined)
     const internalActive = ref(props.activeKey ?? '')
     const activeKey = computed(() =>
@@ -159,7 +161,7 @@ export const IrisAdminLayout = defineComponent({
         {
           type: 'button',
           'data-iris-admin-collapse': '',
-          'aria-label': collapsed.value ? 'Expand sidebar' : 'Collapse sidebar',
+          'aria-label': collapsed.value ? t('admin.expandSidebar') : t('admin.collapseSidebar'),
           'aria-pressed': collapsed.value ? 'true' : 'false',
           style: {
             display: 'inline-flex',

@@ -20,6 +20,7 @@ import {
   type NavNode,
 } from '@iris-ui/core'
 import { IrisIcon } from '../primitives/icon/Icon'
+import { useI18n } from '../i18n'
 
 /**
  * Data-driven nested navigation menu — the sidebar nav of the admin shell.
@@ -45,13 +46,14 @@ export const IrisNavMenu = defineComponent({
     defaultExpandedKeys: { type: Array as PropType<string[]>, default: undefined },
     /** Icon-only rail (top-level items only). */
     collapsed: { type: Boolean, default: false },
-    ariaLabel: { type: String, default: 'Main navigation' },
+    ariaLabel: { type: String, default: undefined },
   },
   emits: {
     select: (_key: string, _node: NavNode) => true,
     'update:expandedKeys': (_keys: string[]) => true,
   },
   setup(props, { emit, attrs }) {
+    const { t } = useI18n()
     const tree = computed(() => visibleNav(props.items))
     const activePath = computed(() =>
       props.activeKey ? findNavPath(props.items, props.activeKey).map((n) => n.key) : [],
@@ -321,7 +323,7 @@ export const IrisNavMenu = defineComponent({
           ...attrs,
           'data-iris-nav-menu': '',
           'data-collapsed': props.collapsed ? 'true' : undefined,
-          'aria-label': props.ariaLabel,
+          'aria-label': props.ariaLabel ?? t('admin.nav'),
           onKeydown,
           style: {
             display: 'flex',

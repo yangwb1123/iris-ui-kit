@@ -7,7 +7,10 @@
   import IrisAdminBreadcrumb from './AdminBreadcrumb.svelte'
   import IrisAdminTabs from './AdminTabs.svelte'
   import IrisIcon from '../primitives/icon/IrisIcon.svelte'
+  import { useI18n } from '../i18n'
   import type { IrisAdminLayoutProps } from './types'
+
+  const { t } = useI18n()
 
   let {
     menus,
@@ -117,7 +120,7 @@
     <button
       type="button"
       data-iris-admin-collapse
-      aria-label={currentCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      aria-label={currentCollapsed ? t('admin.expandSidebar') : t('admin.collapseSidebar')}
       aria-pressed={currentCollapsed ? 'true' : 'false'}
       style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; border-radius: var(--iris-radius-md, 6px); background: transparent; color: var(--iris-foreground); cursor: pointer; flex-shrink: 0"
       onclick={() => setCollapsed(!currentCollapsed)}

@@ -8,7 +8,10 @@
   import IrisDropdownItem from '../primitives/dropdown/DropdownItem.svelte'
   import IrisDropdownSeparator from '../primitives/dropdown/DropdownSeparator.svelte'
   import { styleToString } from '../internal/style'
+  import { useI18n } from '../i18n'
   import type { IrisAdminTabsProps } from './types'
+
+  const { t: translate } = useI18n()
 
   let { nav, onChange, onClose, onRefresh }: IrisAdminTabsProps = $props()
   // svelte-ignore state_referenced_locally — `nav` is a stable store instance.
@@ -100,7 +103,7 @@
     bind:this={tablistEl}
     data-iris-tabs-scroll
     role="tablist"
-    aria-label="Open pages"
+    aria-label={translate('admin.openPages')}
     onkeydown={onKeyDown}
     style="display: flex; align-items: center; gap: 6px; overflow-x: auto; flex: 1"
   >
@@ -127,7 +130,7 @@
             type="button"
             tabindex={-1}
             data-iris-tab-close
-            aria-label={`Close ${tab.title}`}
+            aria-label={translate('admin.closeTab', { title: tab.title })}
             style={CLOSE_STYLE}
             onclick={(e) => {
               e.stopPropagation()
@@ -144,17 +147,17 @@
   </div>
 
   <IrisDropdown>
-    <IrisDropdownTrigger aria-label="Tab actions" style={TRIGGER_STYLE}>
+    <IrisDropdownTrigger aria-label={translate('admin.tabActions')} style={TRIGGER_STYLE}>
       <IrisIcon name="more-horizontal" size={16} />
     </IrisDropdownTrigger>
     <IrisDropdownMenu>
       {#if $activeKey}
         {@const key = $activeKey}
-        <IrisDropdownItem onSelect={() => refresh(key)}>Refresh</IrisDropdownItem>
-        <IrisDropdownItem onSelect={() => close(key)}>Close</IrisDropdownItem>
+        <IrisDropdownItem onSelect={() => refresh(key)}>{translate('admin.refresh')}</IrisDropdownItem>
+        <IrisDropdownItem onSelect={() => close(key)}>{translate('admin.close')}</IrisDropdownItem>
         <IrisDropdownSeparator />
-        <IrisDropdownItem onSelect={() => nav.closeOthers(key)}>Close others</IrisDropdownItem>
-        <IrisDropdownItem onSelect={() => nav.closeAll()}>Close all</IrisDropdownItem>
+        <IrisDropdownItem onSelect={() => nav.closeOthers(key)}>{translate('admin.closeOthers')}</IrisDropdownItem>
+        <IrisDropdownItem onSelect={() => nav.closeAll()}>{translate('admin.closeAll')}</IrisDropdownItem>
       {:else}
         <IrisDropdownItem disabled>No active tab</IrisDropdownItem>
       {/if}

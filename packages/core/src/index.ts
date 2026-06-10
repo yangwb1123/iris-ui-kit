@@ -103,7 +103,15 @@ export {
   type TreeSelectionConfig,
   type TreeSelectionNode,
 } from './tree-selection'
-export { nextEnabledIndex, firstEnabledIndex, lastEnabledIndex } from './roving'
+export {
+  nextEnabledIndex,
+  firstEnabledIndex,
+  lastEnabledIndex,
+  nextGridCell,
+  type GridCell,
+  type GridNavKey,
+  type GridNavOptions,
+} from './roving'
 export {
   clamp01,
   hsvToRgb,

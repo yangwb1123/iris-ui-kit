@@ -117,6 +117,12 @@ export {
   type GridNavOptions,
 } from './roving'
 export {
+  flattenLeafColumns,
+  buildHeaderMatrix,
+  type ColumnTreeNode,
+  type HeaderCell,
+} from './columns'
+export {
   clamp01,
   hsvToRgb,
   rgbToHsv,

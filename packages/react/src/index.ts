@@ -102,6 +102,7 @@ export * from './skeletons'
 export * from './floating'
 export * from './modal-utils'
 export * from './provider'
+export * from './error-boundary'
 
 // Re-export framework-agnostic surface so React consumers don't need both packages.
 export {

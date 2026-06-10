@@ -11,6 +11,9 @@ export * from './skins'
 // ── Plugin system: unified IrisProvider + consumer hooks ──────────────────────
 export * from './provider'
 
+// ── Error boundary (standalone; NOT auto-wrapped around IrisProvider) ─────────
+export * from './error-boundary'
+
 // ── Layouts + admin ───────────────────────────────────────────────────────────
 export * from './layouts'
 export * from './admin'

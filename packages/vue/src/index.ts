@@ -33,6 +33,7 @@ export * from './resource'
 export * from './motion'
 export * from './admin'
 export * from './provider'
+export * from './error-boundary'
 
 // ── Layer 1 · Meta Primitives ────────────────────────────────────────────────
 export * from './primitives/slot'

@@ -143,6 +143,8 @@ export const defaultMessages: I18nMessages = {
   'timePicker.seconds': 'Seconds',
   'cascader.level': 'Level {level}',
   'tree.label': 'Tree',
+  'errorBoundary.message': 'Something went wrong.',
+  'errorBoundary.retry': 'Try again',
 }
 
 const DEFAULT_LOCALE = 'en-US'

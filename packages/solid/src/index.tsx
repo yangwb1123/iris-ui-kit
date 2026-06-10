@@ -118,6 +118,9 @@ export * from './skeletons'
 // ── Plugin system: unified IrisProvider + consumer hooks ──────────────────────
 export * from './provider'
 
+// ── Error boundary ────────────────────────────────────────────────────────────
+export * from './error-boundary'
+
 // ── Framework-agnostic re-exports (mirror @iris-ui/react / @iris-ui/vue) ───────
 export {
   createStore,

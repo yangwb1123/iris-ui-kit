@@ -80,13 +80,14 @@
     },
     {
       "group": "plugin",
-      "count": 8,
+      "count": 9,
       "components": [
         "IrisAdminApp",
         "IrisBarChart",
         "IrisCodeEditor",
         "IrisFormBuilder",
         "IrisLineChart",
+        "IrisNotificationCenter",
         "IrisProTable",
         "IrisQueryBuilder",
         "IrisSparkline"
@@ -4925,6 +4926,23 @@
       ]
     },
     {
+      "name": "IrisNotificationCenter",
+      "group": "plugin",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/plugin-notifications/react",
+        "solid": "@iris-ui/plugin-notifications/solid",
+        "svelte": "@iris-ui/plugin-notifications/svelte",
+        "vue": "@iris-ui/plugin-notifications/vue"
+      },
+      "plugin": "@iris-ui/plugin-notifications"
+    },
+    {
       "name": "IrisNumberInput",
       "group": "primitives",
       "module": "number-input",
@@ -8570,13 +8588,13 @@
     ]
   },
   "stats": {
-    "total": 144,
-    "full": 143,
+    "total": 145,
+    "full": 144,
     "byFramework": {
-      "react": 143,
-      "vue": 144,
-      "solid": 144,
-      "svelte": 144
+      "react": 144,
+      "vue": 145,
+      "solid": 145,
+      "svelte": 145
     }
   }
 }

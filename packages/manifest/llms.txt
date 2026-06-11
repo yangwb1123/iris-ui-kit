@@ -12,7 +12,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 - Layer 4 — System Skeletons: Page / section skeleton scaffolds.
 - Behaviors: Orthogonal interaction behaviors (hotkeys, click-outside, drag).
 
-## Components (144 total — 143 in all 4 frameworks; react 143, vue 144, solid 144, svelte 144)
+## Components (145 total — 144 in all 4 frameworks; react 144, vue 145, solid 145, svelte 145)
 
 ### behaviors (4)
 - IrisClickOutside [react/solid/svelte/vue]
@@ -60,12 +60,13 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 - IrisProvider [react/solid/svelte/vue]
   props: theme?, skin?, dir?, locale?, messages?, plugins?, target?, children?
 
-### plugin (8)
+### plugin (9)
 - IrisAdminApp [react/solid/svelte/vue] — via @iris-ui/plugin-admin (IrisProvider plugins)
 - IrisBarChart [react/solid/svelte/vue] — via @iris-ui/plugin-charts (IrisProvider plugins)
 - IrisCodeEditor [react/solid/svelte/vue] — via @iris-ui/plugin-editor (IrisProvider plugins)
 - IrisFormBuilder [react/solid/svelte/vue] — via @iris-ui/plugin-form-builder (IrisProvider plugins)
 - IrisLineChart [react/solid/svelte/vue] — via @iris-ui/plugin-charts (IrisProvider plugins)
+- IrisNotificationCenter [react/solid/svelte/vue] — via @iris-ui/plugin-notifications (IrisProvider plugins)
 - IrisProTable [react/solid/svelte/vue] — via @iris-ui/plugin-pro-table (IrisProvider plugins)
 - IrisQueryBuilder [react/solid/svelte/vue] — via @iris-ui/plugin-query-builder (IrisProvider plugins)
 - IrisSparkline [react/solid/svelte/vue] — via @iris-ui/plugin-charts (IrisProvider plugins)

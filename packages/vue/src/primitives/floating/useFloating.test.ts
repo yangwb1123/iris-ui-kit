@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref, nextTick } from 'vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { useFloating } from './useFloating'
 
 const { computePositionMock } = vi.hoisted(() => ({ computePositionMock: vi.fn() }))
@@ -137,6 +137,52 @@ describe('useFloating', () => {
     // The second update started last, so its epoch token wins.
     expect(wrapper.vm.x).toBe(20)
     expect(wrapper.vm.y).toBe(20)
+  })
+
+  it('populates arrowX / arrowY / arrowSide from middlewareData.arrow', async () => {
+    computePositionMock.mockResolvedValue({
+      x: 10,
+      y: 20,
+      placement: 'bottom',
+      strategy: 'absolute',
+      middlewareData: { arrow: { x: 5 } },
+    })
+
+    const ArrowHarness = defineComponent({
+      setup() {
+        const anchor = ref<HTMLElement | null>(null)
+        const floating = ref<HTMLElement | null>(null)
+        const arrowEl = ref<HTMLElement | null>(null)
+        const open = ref(true)
+        const { arrowX, arrowY, arrowSide, update } = useFloating({
+          anchor,
+          floating,
+          open,
+          arrow: arrowEl,
+        })
+        return { anchor, floating, arrowEl, arrowX, arrowY, arrowSide, update }
+      },
+      render() {
+        return h('div', [
+          h('div', { ref: 'anchor' }),
+          h('div', { ref: 'floating' }, [
+            h(
+              'div',
+              { ref: 'arrowEl', 'data-testid': 'arrow-out' },
+              `${this.arrowX},${this.arrowY},${this.arrowSide}`,
+            ),
+          ]),
+        ])
+      },
+    })
+
+    const wrapper = mount(ArrowHarness, { attachTo: host })
+    wrapper.vm.open = true
+    await nextTick()
+    await wrapper.vm.update()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="arrow-out"]').text()).toBe('5,undefined,top')
+    wrapper.unmount()
   })
 
   it('adds the viewport-clamping size middleware when `size` is enabled', async () => {

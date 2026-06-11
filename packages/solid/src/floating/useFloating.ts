@@ -2,6 +2,7 @@ import { createEffect, createSignal, onCleanup, type Accessor } from 'solid-js'
 import {
   autoUpdate,
   computePosition,
+  arrow as arrowMiddleware,
   flip as flipMiddleware,
   offset as offsetMiddleware,
   shift as shiftMiddleware,
@@ -32,12 +33,21 @@ export interface UseFloatingOptions {
    */
   size?: boolean | number
   middleware?: Middleware[]
+  /**
+   * Optional accessor returning the arrow element inside the floating panel.
+   * When provided, `arrowX`, `arrowY`, `arrowSide` in the return are populated.
+   */
+  arrow?: Accessor<HTMLElement | null | undefined>
 }
 
 export interface UseFloatingReturn {
   finalPlacement: Accessor<Placement>
   /** Ready-to-bind inline style accessor for the floating element. */
   floatingStyles: Accessor<JSX.CSSProperties>
+  arrowX: Accessor<number | undefined>
+  arrowY: Accessor<number | undefined>
+  /** Side of the floating element the arrow is on ('bottom' placement → 'top'). */
+  arrowSide: Accessor<'top' | 'right' | 'bottom' | 'left' | undefined>
 }
 
 /**
@@ -53,6 +63,8 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
   const [x, setX] = createSignal(0)
   const [y, setY] = createSignal(0)
   const [finalPlacement, setFinalPlacement] = createSignal<Placement>(placement())
+  const [arrowX, setArrowX] = createSignal<number | undefined>()
+  const [arrowY, setArrowY] = createSignal<number | undefined>()
 
   const buildMiddleware = (): Middleware[] => {
     const mw: Middleware[] = []
@@ -73,6 +85,8 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
         }),
       )
     }
+    const arrowEl = options.arrow?.()
+    if (arrowEl) mw.push(arrowMiddleware({ element: arrowEl }))
     if (options.middleware) mw.push(...options.middleware)
     return mw
   }
@@ -98,6 +112,9 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
         setX(result.x)
         setY(result.y)
         setFinalPlacement(result.placement)
+        const arrowData = result.middlewareData.arrow as { x?: number; y?: number } | undefined
+        setArrowX(arrowData?.x)
+        setArrowY(arrowData?.y)
       })
     }
     const cleanup = autoUpdate(a, f, update)
@@ -107,6 +124,15 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     })
   })
 
+  const OPPOSITE: Record<string, 'top' | 'right' | 'bottom' | 'left'> = {
+    top: 'bottom',
+    bottom: 'top',
+    left: 'right',
+    right: 'left',
+  }
+  const arrowSide = (): 'top' | 'right' | 'bottom' | 'left' | undefined =>
+    OPPOSITE[finalPlacement().split('-')[0]]
+
   const floatingStyles = (): JSX.CSSProperties => ({
     position: strategy(),
     top: '0',
@@ -115,5 +141,5 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     width: 'max-content',
   })
 
-  return { finalPlacement, floatingStyles }
+  return { finalPlacement, floatingStyles, arrowX, arrowY, arrowSide }
 }

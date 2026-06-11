@@ -213,6 +213,25 @@ function extractDefaults(text: string, componentName: string): Map<string, strin
   return defaults
 }
 
+const SLOT_TYPE_RE = /ReactNode|ReactElement|JSX\.Element|VNode|Snippet/
+
+/**
+ * Classify a list of props into event-handler names and slot names.
+ * Events: props matching `/^on[A-Z]/`. Slots: props whose type contains a
+ * renderable type pattern, with `children` normalised to `'default'`.
+ */
+export function classifyProps(props: ManifestProp[]): {
+  events: string[]
+  slots: string[]
+} {
+  const events = props.filter((p) => /^on[A-Z]/.test(p.name)).map((p) => p.name)
+  const slots = props
+    .filter((p) => SLOT_TYPE_RE.test(p.type))
+    .map((p) => (p.name === 'children' ? 'default' : p.name))
+    .filter((name, idx, arr) => arr.indexOf(name) === idx)
+  return { events, slots }
+}
+
 export function extractComponentProps(repoRoot: string): Map<string, ManifestProp[]> {
   const result = new Map<string, ManifestProp[]>()
   const srcRoot = join(repoRoot, 'packages', 'react', 'src')

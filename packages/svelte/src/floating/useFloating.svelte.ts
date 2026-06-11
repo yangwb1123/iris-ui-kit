@@ -1,6 +1,7 @@
 import {
   autoUpdate,
   computePosition,
+  arrow as arrowMiddleware,
   flip as flipMiddleware,
   offset as offsetMiddleware,
   shift as shiftMiddleware,
@@ -30,6 +31,11 @@ export interface UseFloatingOptions {
    */
   size?: boolean | number
   middleware?: Middleware[]
+  /**
+   * Optional getter returning the arrow element inside the floating panel.
+   * When provided, `arrowX`, `arrowY`, `arrowSide` in the return are populated.
+   */
+  arrow?: () => HTMLElement | null | undefined
 }
 
 export interface UseFloatingReturn {
@@ -37,6 +43,10 @@ export interface UseFloatingReturn {
   readonly finalPlacement: Placement
   /** Ready-to-bind inline style STRING for the floating element. */
   readonly floatingStyles: string
+  readonly arrowX: number | undefined
+  readonly arrowY: number | undefined
+  /** Side of the floating element the arrow is on ('bottom' placement → 'top'). */
+  readonly arrowSide: 'top' | 'right' | 'bottom' | 'left' | undefined
 }
 
 /**
@@ -53,6 +63,8 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
   let x = $state(0)
   let y = $state(0)
   let finalPlacement = $state<Placement>(placement)
+  let arrowX = $state<number | undefined>(undefined)
+  let arrowY = $state<number | undefined>(undefined)
 
   const buildMiddleware = (): Middleware[] => {
     const mw: Middleware[] = []
@@ -73,6 +85,8 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
         }),
       )
     }
+    const arrowEl = options.arrow?.()
+    if (arrowEl) mw.push(arrowMiddleware({ element: arrowEl }))
     if (options.middleware) mw.push(...options.middleware)
     return mw
   }
@@ -81,6 +95,16 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
   // computePosition() that resolves after this effect tore down (close/unmount
   // or a newer cycle) drops its result instead of applying stale coordinates.
   let epoch = 0
+
+  const OPPOSITE: Record<string, 'top' | 'right' | 'bottom' | 'left'> = {
+    top: 'bottom',
+    bottom: 'top',
+    left: 'right',
+    right: 'left',
+  }
+  const arrowSide = $derived(
+    OPPOSITE[finalPlacement.split('-')[0]] as 'top' | 'right' | 'bottom' | 'left' | undefined,
+  )
 
   $effect(() => {
     if (!options.open()) return
@@ -98,6 +122,9 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
         x = result.x
         y = result.y
         finalPlacement = result.placement
+        const arrowData = result.middlewareData.arrow as { x?: number; y?: number } | undefined
+        arrowX = arrowData?.x
+        arrowY = arrowData?.y
       })
     }
     const cleanup = autoUpdate(a, f, update)
@@ -113,6 +140,15 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     },
     get floatingStyles() {
       return `position: ${strategy}; top: 0; left: 0; transform: translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0); width: max-content`
+    },
+    get arrowX() {
+      return arrowX
+    },
+    get arrowY() {
+      return arrowY
+    },
+    get arrowSide() {
+      return arrowSide
     },
   }
 }

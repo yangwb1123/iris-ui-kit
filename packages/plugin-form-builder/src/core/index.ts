@@ -56,6 +56,21 @@ export interface FormSchema {
 export interface FormBuilderConfig {
   onSubmit?: (values: FormValues) => void | Promise<void>
   validateOnChange?: boolean
+  /**
+   * Normalize incoming values on init + every `reset` — e.g. coerce a numeric
+   * string field to `number`. Passed through to the underlying `createFormStore`.
+   */
+  parse?: (values: FormValues) => FormValues
+  /**
+   * Normalize values just before `onSubmit` — e.g. trim strings. Does not
+   * touch the form state. Passed through to the underlying `createFormStore`.
+   */
+  transform?: (values: FormValues) => FormValues
+  /**
+   * Cross-field re-validation: when a key changes, the listed fields are also
+   * re-validated inline. E.g. `{ password: ['confirmPassword'] }`.
+   */
+  dependencies?: Partial<Record<string, string[]>>
 }
 
 export interface FormBuilder {
@@ -108,6 +123,9 @@ export function createFormBuilder(schema: FormSchema, config: FormBuilderConfig 
     validators,
     validateOnChange: config.validateOnChange ?? true,
     onSubmit: config.onSubmit,
+    parse: config.parse,
+    transform: config.transform,
+    dependencies: config.dependencies,
   })
 
   return {

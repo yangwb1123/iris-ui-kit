@@ -74,4 +74,28 @@ describe('useFloating size middleware', () => {
     }
     expect(opts.middleware.some((m) => m?.name === 'size')).toBe(false)
   })
+
+  it('populates arrowX / arrowY / arrowSide from middlewareData.arrow', async () => {
+    computePositionMock.mockResolvedValue({
+      x: 10,
+      y: 20,
+      placement: 'bottom' as const,
+      strategy: 'absolute' as const,
+      middlewareData: { arrow: { x: 5 } },
+    })
+    const el = document.createElement('div')
+    let result!: ReturnType<typeof useFloating>
+    renderHook(() => {
+      result = useFloating({
+        anchor: () => el,
+        floating: () => el,
+        open: () => true,
+        arrow: () => el,
+      })
+    })
+    await waitFor(() => expect(computePositionMock).toHaveBeenCalled())
+    expect(result.arrowX()).toBe(5)
+    expect(result.arrowY()).toBeUndefined()
+    expect(result.arrowSide()).toBe('top')
+  })
 })

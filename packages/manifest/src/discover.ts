@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { ComponentGroup, Framework, RawComponent, RawDiscovery, RawTokens } from './schema'
 import { ALL_FRAMEWORKS } from './schema'
-import { extractComponentProps } from './props'
+import { extractComponentProps, classifyProps } from './props'
 
 const KNOWN_GROUPS: ComponentGroup[] = [
   'primitives',
@@ -161,12 +161,15 @@ export function discover(repoRoot: string = findRepoRoot()): RawDiscovery {
     const frameworks = records.flatMap((r) => r.frameworks)
     const base = records[0]
     const props = propsByName.get(name)
+    const classified = props ? classifyProps(props) : { events: [], slots: [] }
     components.push({
       name,
       group: base.group,
       module: records.find((r) => r.module)?.module,
       frameworks,
       ...(props ? { props } : {}),
+      ...(classified.events.length ? { events: classified.events } : {}),
+      ...(classified.slots.length ? { slots: classified.slots } : {}),
     })
   }
 
@@ -174,7 +177,12 @@ export function discover(repoRoot: string = findRepoRoot()): RawDiscovery {
   // shadowed by a plugin one; they carry their owning package + activation group.
   for (const record of discoverPlugins(repoRoot).values()) {
     const props = propsByName.get(record.name)
-    components.push(props ? { ...record, props } : record)
+    const classified = props ? classifyProps(props) : { events: [], slots: [] }
+    components.push({
+      ...(props ? { ...record, props } : record),
+      ...(classified.events.length ? { events: classified.events } : {}),
+      ...(classified.slots.length ? { slots: classified.slots } : {}),
+    })
   }
 
   return { components, tokens: discoverTokens(repoRoot) }

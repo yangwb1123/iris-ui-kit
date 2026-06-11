@@ -62,3 +62,22 @@ describe('useFloating (svelte) size middleware', () => {
     expect(lastMiddleware().some((m) => m?.name === 'size')).toBe(false)
   })
 })
+
+describe('useFloating (svelte) arrow middleware', () => {
+  it('does not include arrow middleware when arrow option is absent', () => {
+    computePositionMock.mockReset()
+    computePositionMock.mockResolvedValue({
+      x: 0,
+      y: 0,
+      placement: 'bottom',
+      strategy: 'absolute',
+      middlewareData: {},
+    })
+    render(FloatingHarness)
+    flushSync()
+    const opts = computePositionMock.mock.calls.at(-1)?.[2] as {
+      middleware: { name?: string }[]
+    }
+    expect(opts.middleware.some((m) => m?.name === 'arrow')).toBe(false)
+  })
+})

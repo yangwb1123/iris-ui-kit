@@ -105,4 +105,42 @@ describe('useFloating stale-result guard', () => {
     }
     expect(opts.middleware.some((m) => m?.name === 'size')).toBe(true)
   })
+
+  it('populates arrowX / arrowY / arrowSide from middlewareData.arrow', async () => {
+    computePositionMock.mockResolvedValue({
+      x: 10,
+      y: 20,
+      placement: 'bottom',
+      strategy: 'absolute',
+      middlewareData: { arrow: { x: 5, y: undefined } },
+    })
+
+    function ArrowHarness({ onUpdate }: { onUpdate: (u: () => Promise<void>) => void }) {
+      const anchor = React.useRef<HTMLDivElement | null>(null)
+      const floating = React.useRef<HTMLDivElement | null>(null)
+      const arrowRef = React.useRef<HTMLDivElement | null>(null)
+      const { arrowX, arrowY, arrowSide, update } = useFloating({
+        anchor,
+        floating,
+        open: true,
+        arrow: arrowRef,
+      })
+      onUpdate(update)
+      return (
+        <div>
+          <div ref={anchor} />
+          <div ref={floating}>
+            <div ref={arrowRef} data-testid="arrow-data">{`${arrowX},${arrowY},${arrowSide}`}</div>
+          </div>
+        </div>
+      )
+    }
+
+    let update!: () => Promise<void>
+    const { getByTestId } = render(<ArrowHarness onUpdate={(u) => (update = u)} />)
+    await act(async () => {
+      await update()
+    })
+    expect(getByTestId('arrow-data').textContent).toBe('5,undefined,top')
+  })
 })

@@ -84,6 +84,42 @@ describe('createFormBuilder', () => {
   })
 })
 
+describe('parse / transform', () => {
+  it('parse normalizes initialValues at construction', () => {
+    const { form } = createFormBuilder(schema, {
+      parse: (v) => ({ ...v, fullName: 'seeded' }),
+    })
+    expect(form.getState().values.fullName).toBe('seeded')
+  })
+
+  it('transform shapes values passed to onSubmit', async () => {
+    const onSubmit = vi.fn()
+    const { form } = createFormBuilder(schema, {
+      onSubmit,
+      transform: (v) => ({ ...v, fullName: String(v.fullName).toUpperCase() }),
+    })
+    form.setFieldValue('fullName', 'ada')
+    await form.handleSubmit()
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ fullName: 'ADA' }))
+  })
+})
+
+describe('dependencies (cross-field re-validation)', () => {
+  it('re-validates a dependent field when the source field changes', async () => {
+    const twoField: FormSchema = {
+      fields: [{ name: 'password' }, { name: 'confirm', required: true }],
+    }
+    const { form } = createFormBuilder(twoField, {
+      dependencies: { password: ['confirm'] },
+    })
+    // 'confirm' is required but empty. Changing 'password' should re-validate 'confirm'.
+    form.setFieldValue('password', 'abc')
+    await vi.waitFor(() => {
+      expect(form.getState().errors.confirm).toBe('Confirm is required')
+    })
+  })
+})
+
 describe('formBuilderPlugin', () => {
   it('registers form tokens', () => {
     const { tokens } = runPlugins([formBuilderPlugin])

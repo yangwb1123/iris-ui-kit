@@ -2,6 +2,7 @@ import { computed, onScopeDispose, ref, shallowRef, watch, type ComputedRef, typ
 import {
   autoUpdate,
   computePosition,
+  arrow as arrowMiddleware,
   flip as flipMiddleware,
   offset as offsetMiddleware,
   shift as shiftMiddleware,
@@ -37,6 +38,11 @@ export interface UseFloatingOptions {
   size?: boolean | number
   /** Extra Floating UI middleware to append. */
   middleware?: Middleware[]
+  /**
+   * Optional ref to an arrow element inside the floating panel. When provided,
+   * `arrowX`, `arrowY`, and `arrowSide` in the return value are populated.
+   */
+  arrow?: Ref<HTMLElement | null | undefined>
 }
 
 export interface UseFloatingReturn {
@@ -52,6 +58,15 @@ export interface UseFloatingReturn {
   floatingStyles: ComputedRef<Record<string, string>>
   /** Trigger a manual recompute. Usually not needed — `autoUpdate` handles scrolling/resizing. */
   update: () => Promise<void>
+  /** Arrow x offset (px). Present when `arrow` option is set. */
+  arrowX: Ref<number | undefined>
+  /** Arrow y offset (px). Present when `arrow` option is set. */
+  arrowY: Ref<number | undefined>
+  /**
+   * Side of the floating element the arrow is on.
+   * E.g. `'bottom'` placement → `'top'` (arrow at top pointing up).
+   */
+  arrowSide: ComputedRef<'top' | 'right' | 'bottom' | 'left' | undefined>
 }
 
 /**
@@ -81,6 +96,8 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
   const y = ref(0)
   const strategy = ref<Strategy>(options.strategy ?? 'absolute')
   const finalPlacement = ref<Placement>(options.placement ?? 'bottom')
+  const arrowX = ref<number | undefined>()
+  const arrowY = ref<number | undefined>()
 
   const middleware = shallowRef<Middleware[]>([])
   rebuildMiddleware()
@@ -104,6 +121,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
         }),
       )
     }
+    if (options.arrow?.value) mw.push(arrowMiddleware({ element: options.arrow.value }))
     if (options.middleware) mw.push(...options.middleware)
     middleware.value = mw
   }
@@ -118,6 +136,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     const a = options.anchor.value
     const f = options.floating.value
     if (!a || !f) return
+    rebuildMiddleware()
     const token = ++epoch
     const result = await computePosition(a, f, {
       placement: options.placement ?? 'bottom',
@@ -128,6 +147,9 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     x.value = result.x
     y.value = result.y
     finalPlacement.value = result.placement
+    const arrowData = result.middlewareData.arrow as { x?: number; y?: number } | undefined
+    arrowX.value = arrowData?.x
+    arrowY.value = arrowData?.y
   }
 
   watch(
@@ -151,6 +173,22 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     epoch++
   })
 
+  const OPPOSITE: Record<string, 'top' | 'right' | 'bottom' | 'left'> = {
+    top: 'bottom',
+    bottom: 'top',
+    left: 'right',
+    right: 'left',
+  }
+  const arrowSide = computed(
+    () =>
+      OPPOSITE[finalPlacement.value.split('-')[0]] as
+        | 'top'
+        | 'right'
+        | 'bottom'
+        | 'left'
+        | undefined,
+  )
+
   const floatingStyles = computed<Record<string, string>>(() => ({
     position: strategy.value,
     top: '0',
@@ -159,5 +197,5 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     width: 'max-content',
   }))
 
-  return { x, y, strategy, finalPlacement, floatingStyles, update }
+  return { x, y, strategy, finalPlacement, floatingStyles, update, arrowX, arrowY, arrowSide }
 }

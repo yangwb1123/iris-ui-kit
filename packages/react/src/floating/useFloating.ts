@@ -2,6 +2,7 @@ import * as React from 'react'
 import {
   autoUpdate,
   computePosition,
+  arrow as arrowMiddleware,
   flip as flipMiddleware,
   offset as offsetMiddleware,
   shift as shiftMiddleware,
@@ -37,6 +38,12 @@ export interface UseFloatingOptions {
   size?: boolean | number
   /** Extra Floating UI middleware to append. */
   middleware?: Middleware[]
+  /**
+   * Optional ref to an arrow element inside the floating panel. When provided,
+   * `arrowX`, `arrowY`, and `arrowSide` in the return value are populated by the
+   * `@floating-ui/dom` arrow middleware so you can position the caret CSS.
+   */
+  arrow?: React.RefObject<HTMLElement | null>
 }
 
 export interface UseFloatingReturn {
@@ -48,6 +55,16 @@ export interface UseFloatingReturn {
   floatingStyles: React.CSSProperties
   /** Trigger a manual recompute. Usually not needed — `autoUpdate` handles scroll/resize. */
   update: () => Promise<void>
+  /** Arrow x offset (px from floating start edge). Present when `arrow` option is set. */
+  arrowX: number | undefined
+  /** Arrow y offset (px from floating start edge). Present when `arrow` option is set. */
+  arrowY: number | undefined
+  /**
+   * The side of the floating element the arrow is on — use as the CSS property
+   * to apply `bottom: 0` / `top: 0` etc. to the arrow element.
+   * E.g. `'bottom'` placement → arrow is on `'top'` of the floating element.
+   */
+  arrowSide: 'top' | 'right' | 'bottom' | 'left' | undefined
 }
 
 /**
@@ -71,11 +88,14 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     shift = true,
     size = false,
     middleware: extraMiddleware,
+    arrow,
   } = options
 
   const [x, setX] = React.useState(0)
   const [y, setY] = React.useState(0)
   const [finalPlacement, setFinalPlacement] = React.useState<Placement>(placement)
+  const [arrowX, setArrowX] = React.useState<number | undefined>()
+  const [arrowY, setArrowY] = React.useState<number | undefined>()
 
   const middleware = React.useMemo<Middleware[]>(() => {
     const mw: Middleware[] = []
@@ -96,9 +116,10 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
         }),
       )
     }
+    if (arrow?.current) mw.push(arrowMiddleware({ element: arrow.current }))
     if (extraMiddleware) mw.push(...extraMiddleware)
     return mw
-  }, [offset, flip, shift, size, extraMiddleware])
+  }, [offset, flip, shift, size, extraMiddleware, arrow])
 
   // Hold the latest middleware in a ref so `update` always sees current value
   // without being re-created (which would churn the autoUpdate subscription).
@@ -126,6 +147,9 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     setX(result.x)
     setY(result.y)
     setFinalPlacement(result.placement)
+    const arrowData = result.middlewareData.arrow as { x?: number; y?: number } | undefined
+    setArrowX(arrowData?.x)
+    setArrowY(arrowData?.y)
   }, [anchor, floating, placement, strategy])
 
   React.useEffect(() => {
@@ -154,5 +178,18 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     [strategy, x, y],
   )
 
-  return { x, y, strategy, finalPlacement, floatingStyles, update }
+  const OPPOSITE: Record<string, 'top' | 'right' | 'bottom' | 'left'> = {
+    top: 'bottom',
+    bottom: 'top',
+    left: 'right',
+    right: 'left',
+  }
+  const arrowSide = OPPOSITE[finalPlacement.split('-')[0]] as
+    | 'top'
+    | 'right'
+    | 'bottom'
+    | 'left'
+    | undefined
+
+  return { x, y, strategy, finalPlacement, floatingStyles, update, arrowX, arrowY, arrowSide }
 }

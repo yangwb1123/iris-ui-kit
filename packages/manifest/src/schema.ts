@@ -92,6 +92,18 @@ export interface ManifestComponent {
    * Absent for standalone components.
    */
   subComponents?: string[]
+  /**
+   * Event-handler prop names declared in the component's props interface
+   * (props whose name matches `/^on[A-Z]/`). Derived from `props`; surfaced
+   * here so an agent can discover events without scanning the full props list.
+   * Absent when no event handlers were found.
+   */
+  events?: string[]
+  /**
+   * Renderable content prop names — `'default'` for `children`, prop name for
+   * named render-slots (e.g. `'trigger'`, `'header'`). Absent when none found.
+   */
+  slots?: string[]
 }
 
 export interface ManifestGroupSummary {

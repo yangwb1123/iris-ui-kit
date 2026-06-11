@@ -77,16 +77,25 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): JSX.Element {
   const selected = useStore(model.store)
 
   // Controlled: mirror the prop into the model without re-emitting onChange.
+  const isControlled = (): boolean => local.value !== undefined
   createEffect(() => {
-    if (local.value !== undefined) model.sync(toKeys(local.value))
+    if (isControlled()) model.sync(toKeys(local.value))
   })
+
+  // Controlled groups RENDER from the prop (true controlled semantics): a press
+  // emits onChange but the active items only change when the parent writes
+  // `value` back; uncontrolled renders from the model store.
+  const displaySelected = (): string[] => (isControlled() ? toKeys(local.value) : selected())
 
   const items: { value: string; el: () => HTMLElement | undefined }[] = []
 
-  const isActive = (value: string): boolean => selected().includes(value)
+  const isActive = (value: string): boolean => displaySelected().includes(value)
 
   const toggle = (value: string): void => {
     if (local.disabled) return
+    // Re-base on the prop so the emitted next value is computed against what the
+    // parent holds (not a prior, possibly-rejected, optimistic value).
+    if (isControlled()) model.sync(toKeys(local.value))
     model.toggle(value)
   }
 

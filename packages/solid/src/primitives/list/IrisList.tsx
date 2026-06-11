@@ -75,14 +75,26 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
   const selected = useStore(model.store)
 
   // Controlled: mirror the prop into the model without re-emitting onChange.
+  const isControlled = (): boolean => local.value !== undefined
   createEffect(() => {
-    if (local.value !== undefined) model.sync(toKeys(local.value))
+    if (isControlled()) model.sync(toKeys(local.value))
   })
 
-  const isSelected = (value: T): boolean => selected().includes(asKey(value))
+  // Controlled lists RENDER from the prop (true controlled semantics): a click
+  // emits onChange but the highlighted selection only changes when the parent
+  // writes `value` back; uncontrolled renders from the model store.
+  const displaySelectedKeys = (): Key[] => (isControlled() ? toKeys(local.value) : selected())
+  const rebaseToProp = (): void => {
+    if (isControlled()) model.sync(toKeys(local.value))
+  }
+
+  const isSelected = (value: T): boolean => displaySelectedKeys().includes(asKey(value))
 
   const select = (item: IrisListItem<T>) => {
     if (item.disabled) return
+    // Re-base on the prop so the emitted next value is computed against what the
+    // parent holds (not a prior, possibly-rejected, optimistic value).
+    rebaseToProp()
     // multiple: toggle; single: always select (list never deselects on re-click).
     if (local.multi) model.toggle(asKey(item.value))
     else model.set([asKey(item.value)])

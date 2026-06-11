@@ -83,14 +83,23 @@ export function IrisSegmented({
     if (isControlled) model.sync(toKeys(value))
   }, [value, isControlled, model])
 
+  // Controlled segmented RENDERS from the prop (true controlled semantics): a
+  // click emits onChange but the active segment only changes when the parent
+  // writes `value` back; uncontrolled renders from the model store.
+  const displayValue = isControlled ? (toKeys(value)[0] ?? '') : currentValue
+  const rebaseToProp = (): void => {
+    if (isControlled) model.sync(toKeys(value))
+  }
+
   const enabledAt = (i: number) => !norm[i]?.disabled
-  const selectedIndex = norm.findIndex((o) => o.value === currentValue)
+  const selectedIndex = norm.findIndex((o) => o.value === displayValue)
   const firstEnabled = firstEnabledIndex(norm.length, enabledAt)
   const rovingIndex = selectedIndex >= 0 ? selectedIndex : firstEnabled
 
   const select = (i: number) => {
     const opt = norm[i]
     if (!opt || opt.disabled || disabled) return
+    rebaseToProp()
     model.set([opt.value])
     refs.current[i]?.focus()
   }
@@ -140,7 +149,7 @@ export function IrisSegmented({
       }}
     >
       {norm.map((opt, i) => {
-        const selected = opt.value === currentValue
+        const selected = opt.value === displayValue
         return (
           <button
             key={opt.value}

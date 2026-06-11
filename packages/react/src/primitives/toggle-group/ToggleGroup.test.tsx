@@ -52,6 +52,22 @@ function items(): HTMLButtonElement[] {
 }
 
 describe('@iris-ui/react IrisToggleGroup (single)', () => {
+  it('controlled value renders from the prop (reject → no flip; accept → flips)', () => {
+    const onValueChange = vi.fn()
+    function C({ value }: { value: string | null }) {
+      return single({ value, onValueChange })
+    }
+    const { rerender } = render(<C value={null} />)
+    act(() => {
+      fireEvent.click(items()[0]!)
+    })
+    expect(onValueChange).toHaveBeenLastCalledWith('a')
+    // parent rejected → item A stays off (true controlled)
+    expect(items()[0]!.getAttribute('data-state')).toBe('off')
+    rerender(<C value="a" />)
+    expect(items()[0]!.getAttribute('data-state')).toBe('on')
+  })
+
   it('renders radiogroup role with radio items', () => {
     render(single())
     expect(document.querySelector('[role=radiogroup]')).not.toBeNull()

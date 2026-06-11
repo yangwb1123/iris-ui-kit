@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import { createSignal } from 'solid-js'
 import { render, cleanup, fireEvent } from '@solidjs/testing-library'
 import { IrisList } from './IrisList'
 
@@ -11,6 +12,22 @@ const fruits = [
 ]
 
 describe('IrisList', () => {
+  it('controlled value renders from the prop (reject → no flip; accept → flips)', () => {
+    const onChange = vi.fn()
+    const [value, setValue] = createSignal<string[]>([])
+    const { container } = render(() => (
+      <IrisList items={fruits} multi value={value()} onChange={onChange} />
+    ))
+    const options = (): Element[] => Array.from(container.querySelectorAll('[role="option"]'))
+    fireEvent.click(options()[0] as HTMLElement) // click "Apple"
+    expect(onChange).toHaveBeenLastCalledWith(['apple'])
+    // parent has not written it back → the option stays unselected (true controlled)
+    expect(options()[0]!.getAttribute('aria-selected')).toBe('false')
+    // parent accepts → prop updates → the option reflects it
+    setValue(['apple'])
+    expect(options()[0]!.getAttribute('aria-selected')).toBe('true')
+  })
+
   it('renders all items', () => {
     const { getByText } = render(() => <IrisList items={fruits} />)
     expect(getByText('Apple')).toBeTruthy()

@@ -17,7 +17,7 @@
 
   let {
     options = [],
-    value = '',
+    value = undefined,
     size = 'md',
     disabled = false,
     block = false,
@@ -37,25 +37,42 @@
     [key: string]: unknown
   } = $props()
 
+  // Controlled when a `value` prop is supplied. Controlled segmented RENDERS from
+  // the prop (true controlled semantics): a click emits onchange but the active
+  // segment only changes when the parent writes `value` back; uncontrolled
+  // renders from the model store.
+  const isControlled = $derived(value !== undefined)
+  const toKeys = (v: string | undefined): string[] => (v ? [v] : [])
+
   // Single-selection semantics (replace-on-select) + the controlled mirror are
   // single-sourced in the core selection model; this component keeps only its
   // value SHAPE (a single string) plus the roving-focus/keyboard logic.
   // svelte-ignore state_referenced_locally — initial seed; controlled changes sync below.
   const model = createSelectionModel<string>({
     mode: 'single',
-    defaultSelected: value ? [value] : [],
+    defaultSelected: toKeys(value),
     onChange: (keys) => onchange?.(keys[0] ?? ''),
   })
   const selectedKeys = toStore(model.store)
+  // Controlled: mirror the prop into the model without re-emitting onchange.
   $effect(() => {
-    model.sync(value ? [value] : [])
+    if (isControlled) model.sync(toKeys(value))
   })
+
+  // Re-base the model on the controlled prop before a select so the emitted next
+  // value is computed against what the parent holds (not a prior, possibly-
+  // rejected, optimistic value).
+  function rebaseToProp(): void {
+    if (isControlled) model.sync(toKeys(value))
+  }
 
   let btnRefs = $state<(HTMLButtonElement | null)[]>([])
 
   const norm = $derived(normalize(options))
   const sz = $derived(SIZE_MAP[size])
-  const selectedIndex = $derived(norm.findIndex((o) => $selectedKeys.includes(o.value)))
+  // Render the selection from the prop when controlled, the model store otherwise.
+  const displaySelected = $derived(isControlled ? toKeys(value) : $selectedKeys)
+  const selectedIndex = $derived(norm.findIndex((o) => displaySelected.includes(o.value)))
   // Enabled-index roving math (skip-disabled + wrap, first/last-enabled) is
   // single-sourced in @iris-ui/core; this component keeps only focus/selection.
   const isEnabled = (i: number): boolean => !norm[i]?.disabled
@@ -65,6 +82,7 @@
   function select(i: number): void {
     const opt = norm[i]
     if (!opt || opt.disabled || disabled) return
+    rebaseToProp()
     // model.set always commits (fires onChange → onchange), preserving the
     // original "clicking always emits the value" behavior.
     model.set([opt.value])
@@ -103,7 +121,7 @@
   style="display:{block ? 'flex' : 'inline-flex'}; {block ? 'width:100%;' : ''} gap:2px; padding:2px; background:var(--iris-surface); border-radius:var(--iris-radius-md,6px); opacity:{disabled ? '0.6' : '1'};{style ? ' ' + style : ''}"
 >
   {#each norm as opt, i (opt.value)}
-    {@const selected = $selectedKeys.includes(opt.value)}
+    {@const selected = displaySelected.includes(opt.value)}
     <button
       bind:this={btnRefs[i]}
       type="button"

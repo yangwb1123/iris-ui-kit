@@ -227,6 +227,7 @@ export const IrisTable = defineComponent({
     // (`Array<string | number>`) and the row-id mapping. It runs in the default
     // `multiple` mode so `selectable` stays runtime-reactive — single-select is a
     // replace (`set`) and multi-select a `toggle`, matching the previous behavior.
+    const selControlled = computed(() => props.selection !== undefined)
     const selectionModel = createSelectionModel<string | number>({
       defaultSelected: props.selection ?? [],
       onChange: (keys) => emit('update:selection', keys),
@@ -244,6 +245,20 @@ export const IrisTable = defineComponent({
         if (sel !== undefined) selectionModel.sync(sel)
       },
     )
+    // Controlled tables RENDER from the prop (true controlled semantics): a local
+    // toggle emits update:selection, but the displayed selection only changes when
+    // the parent writes `selection` back — so a parent that validates/rejects a
+    // change no longer sees the row flip optimistically. Uncontrolled renders from
+    // the model store as before.
+    const displaySelection = computed<Array<string | number>>(() =>
+      selControlled.value ? (props.selection as Array<string | number>) : selectedKeys.value,
+    )
+    // Re-base the model on the controlled prop before a toggle so the emitted next
+    // value is computed against what the parent actually holds (not a prior,
+    // possibly-rejected, optimistic value).
+    const rebaseToProp = (): void => {
+      if (selControlled.value) selectionModel.sync(props.selection as Array<string | number>)
+    }
 
     // -------- Expandable detail rows (single-sourced via core createExpansion) --------
     // A leading toggle column + a full-width detail panel beneath an expanded
@@ -291,18 +306,19 @@ export const IrisTable = defineComponent({
       flatTree.value ? flatTree.value.map((t) => t.row) : sortedRows.value,
     )
 
-    const isSelected = (id: string | number) => selectedKeys.value.includes(id)
+    const isSelected = (id: string | number) => displaySelection.value.includes(id)
     const allRowIds = computed(() => bodyData.value.map((r, i) => rowId(r, i)))
     const allSelected = computed(() => {
-      const sel = selectedKeys.value
+      const sel = displaySelection.value
       return allRowIds.value.length > 0 && allRowIds.value.every((id) => sel.includes(id))
     })
     const someSelected = computed(() => {
-      const sel = selectedKeys.value
+      const sel = displaySelection.value
       return !allSelected.value && allRowIds.value.some((id) => sel.includes(id))
     })
 
     const toggleRow = (id: string | number) => {
+      rebaseToProp()
       if (props.selectable === 'single') {
         selectionModel.set(selectionModel.isSelected(id) ? [] : [id])
       } else if (props.selectable === 'multi') {
@@ -310,6 +326,7 @@ export const IrisTable = defineComponent({
       }
     }
     const toggleAll = () => {
+      rebaseToProp()
       selectionModel.set(allSelected.value ? [] : [...allRowIds.value])
     }
 

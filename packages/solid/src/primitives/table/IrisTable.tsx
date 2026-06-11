@@ -206,28 +206,54 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const selection = useStore(selectionModel.store)
 
   // Controlled: mirror the prop into the model without re-emitting onChange.
+  const selControlled = (): boolean => props.selection !== undefined
   createEffect(() => {
-    if (props.selection !== undefined) selectionModel.sync(props.selection)
+    if (selControlled()) selectionModel.sync(props.selection!)
   })
 
-  const isSelected = (id: string | number): boolean => selection().includes(id)
+  // Controlled tables RENDER from the prop (true controlled semantics): a local
+  // toggle emits onSelectionChange, but the displayed selection only changes when
+  // the parent writes `selection` back — so a parent that validates/rejects a
+  // change no longer sees the row flip optimistically. Uncontrolled renders from
+  // the model store as before.
+  const displaySelection = (): Array<string | number> => {
+    // Subscribe to the model store even when controlled so a render read re-runs
+    // after a (possibly-rejected) optimistic toggle — that re-asserts the prop's
+    // value onto the native checkbox's `checked`, which the click mutated. The
+    // returned value is always the prop in controlled mode.
+    const store = selection()
+    return selControlled() ? props.selection! : store
+  }
+  // Re-base the model on the controlled prop before a toggle so the emitted next
+  // value is computed against what the parent actually holds (not a prior,
+  // possibly-rejected, optimistic value).
+  const rebaseToProp = (): void => {
+    if (selControlled()) selectionModel.sync(props.selection!)
+  }
+
+  const isSelected = (id: string | number): boolean => displaySelection().includes(id)
 
   const allRowIds = createMemo(() => bodyRows().map((r, i) => rowId(r, i)))
   const allSelected = createMemo(() => {
-    selection() // subscribe to selection changes
-    return selectionModel.isAllSelected(allRowIds())
+    const sel = displaySelection()
+    const ids = allRowIds()
+    return selControlled()
+      ? ids.length > 0 && ids.every((id) => sel.includes(id))
+      : selectionModel.isAllSelected(ids)
   })
   const someSelected = createMemo(() => {
-    selection() // subscribe to selection changes
-    return !allSelected() && allRowIds().some((id) => selectionModel.isSelected(id))
+    const sel = displaySelection()
+    return !allSelected() && allRowIds().some((id) => sel.includes(id))
   })
 
   const toggleRow = (id: string | number): void => {
     if (merged.selectable === 'none') return
+    rebaseToProp()
     selectionModel.toggle(id)
   }
 
   const toggleAll = (): void => {
+    rebaseToProp()
     selectionModel.toggleAll(allRowIds())
   }
 

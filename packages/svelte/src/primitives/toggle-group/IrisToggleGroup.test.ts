@@ -28,4 +28,32 @@ describe('IrisToggleGroup', () => {
     expect(items[0].getAttribute('data-state')).toBe('on')
     expect(items[1].getAttribute('data-state')).toBe('off')
   })
+
+  // Controlled value renders from the prop (reject → no flip; accept → flips).
+  it('controlled value renders from the prop, not optimistically', async () => {
+    const onchange = vi.fn()
+    const { container, rerender } = render(ToggleGroupHarness, {
+      props: { type: 'single', value: 'bold', onchange },
+    })
+    const items = container.querySelectorAll('[data-iris-toggle-group-item]')
+    expect(items[0].getAttribute('data-state')).toBe('on')
+    expect(items[1].getAttribute('data-state')).toBe('off')
+
+    // Press Italic: onchange fires, but a controlled parent that does NOT write
+    // `value` back means the active item must NOT flip.
+    await fireEvent.click(items[1])
+    flushSync()
+    expect(onchange).toHaveBeenCalledWith('italic')
+    expect(items[0].getAttribute('data-state')).toBe('on')
+    expect(items[1].getAttribute('data-state')).toBe('off')
+    expect(items[0].getAttribute('aria-checked')).toBe('true')
+    expect(items[1].getAttribute('aria-checked')).toBe('false')
+
+    // Parent accepts: write the new value back → now it flips.
+    await rerender({ type: 'single', value: 'italic', onchange })
+    flushSync()
+    expect(items[0].getAttribute('data-state')).toBe('off')
+    expect(items[1].getAttribute('data-state')).toBe('on')
+    expect(items[1].getAttribute('aria-checked')).toBe('true')
+  })
 })

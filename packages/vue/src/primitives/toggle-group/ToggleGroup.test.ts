@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { IrisToggleGroup } from './ToggleGroup'
 import { IrisToggleGroupItem } from './ToggleGroupItem'
@@ -40,6 +40,48 @@ describe('IrisToggleGroup', () => {
   it('renders 3 items', () => {
     const w = mount(harness())
     expect(w.findAll('[data-iris-toggle-group-item]').length).toBe(3)
+  })
+
+  it('controlled value renders from the prop (reject → no flip; accept → flips)', async () => {
+    const onUpdate = vi.fn()
+    const value = ref<string | null>(null)
+    const Controlled = defineComponent({
+      setup() {
+        return () =>
+          h(
+            IrisToggleGroup,
+            {
+              type: 'single',
+              modelValue: value.value,
+              // Parent VALIDATES + REJECTS: records the emit but does NOT write back.
+              'onUpdate:modelValue': onUpdate,
+            },
+            {
+              default: () => [
+                h(IrisToggleGroupItem, { value: 'a' }, () => 'A'),
+                h(IrisToggleGroupItem, { value: 'b' }, () => 'B'),
+                h(IrisToggleGroupItem, { value: 'c' }, () => 'C'),
+              ],
+            },
+          )
+      },
+    })
+    const w = mount(Controlled)
+    const items = w.findAll('[data-iris-toggle-group-item]')
+    await items[0]!.trigger('click')
+    // onChange emits the intended next value...
+    expect(onUpdate).toHaveBeenLastCalledWith('a')
+    // ...but the parent has NOT written it back → item A stays off (true controlled).
+    expect(items[0]!.attributes('data-state')).toBe('off')
+    expect(items[0]!.attributes('aria-checked')).toBe('false')
+    // Parent accepts → prop updates → the item reflects it.
+    value.value = 'a'
+    await nextTick()
+    expect(items[0]!.attributes('data-state')).toBe('on')
+    expect(items[0]!.attributes('aria-checked')).toBe('true')
+    // A further toggle is computed against the prop base 'a' → emits null (deselect).
+    await items[0]!.trigger('click')
+    expect(onUpdate).toHaveBeenLastCalledWith(null)
   })
 
   it('single mode: root has role="radiogroup", items role="radio"', () => {

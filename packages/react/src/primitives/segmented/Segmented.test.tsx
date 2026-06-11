@@ -13,6 +13,22 @@ const OPTS: IrisSegmentedOption[] = [
 const items = (c: HTMLElement) => c.querySelectorAll('[data-iris-segmented-item]')
 
 describe('@iris-ui/react IrisSegmented', () => {
+  it('controlled value renders from the prop (reject → no flip; accept → flips)', () => {
+    const onValueChange = vi.fn()
+    function C({ value }: { value: string }) {
+      return <IrisSegmented options={OPTS} value={value} onValueChange={onValueChange} />
+    }
+    const { container, rerender } = render(<C value="day" />)
+    const seg = () => Array.from(container.querySelectorAll('[data-iris-segmented-item]'))
+    fireEvent.click(seg()[1]!) // click "Week"
+    expect(onValueChange).toHaveBeenLastCalledWith('week')
+    // parent rejected → "Day" stays active, "Week" not
+    expect(seg()[0]!.getAttribute('aria-checked')).toBe('true')
+    expect(seg()[1]!.getAttribute('aria-checked')).toBe('false')
+    rerender(<C value="week" />)
+    expect(seg()[1]!.getAttribute('aria-checked')).toBe('true')
+  })
+
   it('renders a radiogroup of segments', () => {
     const { container } = render(<IrisSegmented options={OPTS} />)
     expect(container.querySelector('[role="radiogroup"]')).not.toBeNull()

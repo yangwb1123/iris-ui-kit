@@ -234,6 +234,46 @@ describe('IrisTable', () => {
     expect(selection.value.sort()).toEqual([1, 2, 3])
   })
 
+  it('controlled selection renders from the prop (reject → no flip; accept → flips)', async () => {
+    // Parent VALIDATES + REJECTS: it records the emit but does NOT write it back,
+    // so the controlled prop stays as-is until it explicitly accepts.
+    const emitted: Array<Array<string | number>> = []
+    const value = ref<Array<string | number>>([])
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(IrisTable, {
+            columns,
+            data: rows,
+            rowKey: 'id',
+            selectable: 'multi',
+            selection: value.value,
+            'onUpdate:selection': (s: Array<string | number>) => {
+              emitted.push(s)
+            },
+          })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: host })
+    const bodyCheckboxes = () =>
+      wrapper.findAll<HTMLInputElement>('[data-iris-table-row] [data-iris-checkbox] input')
+    // Row index 0 is Carol (id 1).
+    await bodyCheckboxes()[0]!.trigger('change')
+    // onChange emits the intended next value...
+    expect(emitted.at(-1)).toEqual([1])
+    // ...but the parent has NOT written it back → the row stays unselected.
+    expect((bodyCheckboxes()[0]!.element as HTMLInputElement).checked).toBe(false)
+    expect(wrapper.findAll('[data-iris-table-row]')[0]!.attributes('data-state')).toBeUndefined()
+    // Parent accepts → prop updates → the row reflects it.
+    value.value = [1]
+    await nextTick()
+    expect((bodyCheckboxes()[0]!.element as HTMLInputElement).checked).toBe(true)
+    expect(wrapper.findAll('[data-iris-table-row]')[0]!.attributes('data-state')).toBe('selected')
+    // A further toggle is computed against the prop base [1] → emits [] (deselect).
+    await bodyCheckboxes()[0]!.trigger('change')
+    expect(emitted.at(-1)).toEqual([])
+  })
+
   it('select-all checkbox input carries a default aria-label of "Select all"', () => {
     const wrapper = mount(IrisTable, {
       props: { columns, data: rows, rowKey: 'id', selectable: 'multi' },

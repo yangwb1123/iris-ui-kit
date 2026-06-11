@@ -1,10 +1,31 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createSignal } from 'solid-js'
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { IrisToggleGroup, IrisToggleGroupItem } from './IrisToggleGroup'
 
 afterEach(cleanup)
 
 describe('IrisToggleGroup', () => {
+  it('controlled value renders from the prop (reject → no flip; accept → flips)', () => {
+    const onChange = vi.fn()
+    const [value, setValue] = createSignal<string | null>(null)
+    const { container } = render(() => (
+      <IrisToggleGroup value={value()} onChange={onChange}>
+        <IrisToggleGroupItem value="a">A</IrisToggleGroupItem>
+        <IrisToggleGroupItem value="b">B</IrisToggleGroupItem>
+      </IrisToggleGroup>
+    ))
+    const items = (): Element[] =>
+      Array.from(container.querySelectorAll('[data-iris-toggle-group-item]'))
+    fireEvent.click(items()[0] as HTMLButtonElement) // press A
+    expect(onChange).toHaveBeenLastCalledWith('a')
+    // parent rejected → item A stays off (true controlled)
+    expect(items()[0]!.getAttribute('data-state')).toBe('off')
+    // parent accepts → prop updates → item A reflects it
+    setValue('a')
+    expect(items()[0]!.getAttribute('data-state')).toBe('on')
+  })
+
   it('renders without crashing', () => {
     const { container } = render(() => (
       <IrisToggleGroup>

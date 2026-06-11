@@ -283,6 +283,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (selControlled) selModel.sync(selectionProp as Array<string | number>)
   }, [selectionProp, selControlled, selModel])
 
+  // Controlled tables RENDER from the prop (true controlled semantics): a local
+  // toggle emits onSelectionChange, but the displayed selection only changes when
+  // the parent writes `selection` back — so a parent that validates/rejects a
+  // change no longer sees the row flip optimistically. Uncontrolled renders from
+  // the model store as before.
+  const displaySelection = selControlled ? (selectionProp as Array<string | number>) : selection
+  // Re-base the model on the controlled prop before a toggle so the emitted next
+  // value is computed against what the parent actually holds (not a prior,
+  // possibly-rejected, optimistic value).
+  const rebaseToProp = (): void => {
+    if (selControlled) selModel.sync(selectionProp as Array<string | number>)
+  }
+
   // Expandable detail rows: a leading toggle column + a full-width detail panel,
   // driven by the framework-agnostic createExpansion (multiple-open).
   const hasDetail = renderDetail !== undefined
@@ -412,6 +425,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // the model's `toggle` semantics for the row's key.
   const toggleRow = (row: Row) => {
     if (selectable === 'none') return
+    rebaseToProp()
     selModel.toggle(rowKeyOf(row))
   }
 
@@ -436,13 +450,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   const toggleAll = () => {
     if (selectable !== 'multi') return
+    rebaseToProp()
     selModel.toggleAll(bodyData.map(rowKeyOf))
   }
 
   const allKeys = bodyData.map(rowKeyOf)
-  const allSelected = selectable === 'multi' && selModel.isAllSelected(allKeys)
+  const allSelected =
+    selectable === 'multi' &&
+    (selControlled
+      ? allKeys.length > 0 && allKeys.every((k) => displaySelection.includes(k))
+      : selModel.isAllSelected(allKeys))
   const someSelected =
-    selectable === 'multi' && allKeys.some((k) => selection.includes(k)) && !allSelected
+    selectable === 'multi' && allKeys.some((k) => displaySelection.includes(k)) && !allSelected
 
   const gridTemplateColumns = React.useMemo(() => {
     const widths: string[] = []
@@ -599,7 +618,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     treeMeta?: TreeRow<Row>,
   ): React.ReactElement => {
     const k = rowKeyOf(row)
-    const selected = selection.includes(k)
+    const selected = displaySelection.includes(k)
     return (
       <div
         key={String(k ?? idx)}

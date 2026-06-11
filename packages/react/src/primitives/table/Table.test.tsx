@@ -226,6 +226,39 @@ describe('@iris-ui/react IrisTable', () => {
     expect(onChange).toHaveBeenLastCalledWith(['a'])
   })
 
+  it('controlled selection renders from the prop (reject → no flip; accept → flips)', () => {
+    const onChange = vi.fn()
+    function Controlled({ value }: { value: Array<string | number> }) {
+      return (
+        <IrisTable
+          columns={baseColumns}
+          data={rows}
+          selectable="multi"
+          selection={value}
+          onSelectionChange={onChange}
+        />
+      )
+    }
+    const { rerender } = render(<Controlled value={[]} />)
+    const cb = () => Array.from(document.querySelectorAll<HTMLInputElement>('input[type=checkbox]'))
+    // index 0 is the master checkbox; row checkboxes start at 1.
+    act(() => {
+      fireEvent.click(cb()[1]!)
+    })
+    // onChange emits the intended next value...
+    expect(onChange).toHaveBeenLastCalledWith([1])
+    // ...but the parent has NOT written it back → the row stays unchecked (true controlled).
+    expect(cb()[1]!.checked).toBe(false)
+    // parent accepts → prop updates → the row reflects it.
+    rerender(<Controlled value={[1]} />)
+    expect(cb()[1]!.checked).toBe(true)
+    // a further toggle is computed against the prop base [1] → emits [] (deselect).
+    act(() => {
+      fireEvent.click(cb()[1]!)
+    })
+    expect(onChange).toHaveBeenLastCalledWith([])
+  })
+
   it('render callback customizes cell content', () => {
     const cols: IrisTableColumn<Row>[] = [
       {

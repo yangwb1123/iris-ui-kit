@@ -116,6 +116,14 @@ export function IrisList<T = unknown>({
     if (isControlled) model.sync(toKeys(valueProp))
   }, [valueProp, isControlled, model])
 
+  // Controlled lists RENDER from the prop (true controlled semantics): a click
+  // emits onChange but the highlighted selection only changes when the parent
+  // writes `value` back; uncontrolled renders from the model store.
+  const displaySelectedKeys = isControlled ? toKeys(valueProp) : selectedKeys
+  const rebaseToProp = (): void => {
+    if (isControlled) model.sync(toKeys(valueProp))
+  }
+
   const { t } = useI18n()
   const { state, isContent, stateKey, stateProps } = useDataState({
     loading,
@@ -124,8 +132,8 @@ export function IrisList<T = unknown>({
   })
 
   const isSelected = React.useCallback(
-    (v: T): boolean => selectedKeys.includes(v as unknown as SelectionKey),
-    [selectedKeys],
+    (v: T): boolean => displaySelectedKeys.includes(v as unknown as SelectionKey),
+    [displaySelectedKeys],
   )
 
   // Roving-index math (next enabled with wrap, first/last enabled) is
@@ -146,6 +154,7 @@ export function IrisList<T = unknown>({
 
   const select = (item: IrisListItem<T>) => {
     if (item.disabled) return
+    rebaseToProp()
     if (multi) model.toggle(asKey(item.value))
     else model.set([asKey(item.value)])
     onSelect?.(item)

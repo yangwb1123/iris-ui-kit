@@ -93,14 +93,25 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): React.ReactElement
     if (isControlled) model.sync(toKeys(valueProp))
   }, [valueProp, isControlled, model])
 
-  const isActive = React.useCallback((v: string): boolean => selected.includes(v), [selected])
+  // Controlled groups RENDER from the prop (true controlled semantics): a press
+  // emits onChange but the active items only change when the parent writes
+  // `value` back; uncontrolled renders from the model store.
+  const displaySelected = isControlled ? toKeys(valueProp) : selected
+
+  const isActive = React.useCallback(
+    (v: string): boolean => displaySelected.includes(v),
+    [displaySelected],
+  )
 
   const toggle = React.useCallback(
     (v: string) => {
       if (disabled) return
+      // Re-base on the prop so the emitted next value is computed against what
+      // the parent holds (not a prior, possibly-rejected, optimistic value).
+      if (isControlled) model.sync(toKeys(valueProp))
       model.toggle(v)
     },
-    [disabled, model],
+    [disabled, model, isControlled, valueProp],
   )
 
   // Registry kept in a ref; reads happen at event time.

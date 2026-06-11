@@ -74,11 +74,19 @@ export function IrisSegmented(props: IrisSegmentedProps): JSX.Element {
   const selected = useStore(model.store)
 
   // Controlled: mirror the prop into the model without re-emitting onChange.
+  const isControlled = (): boolean => local.value !== undefined
   createEffect(() => {
-    if (local.value !== undefined) model.sync(toKeys(local.value))
+    if (isControlled()) model.sync(toKeys(local.value))
   })
 
-  const currentValue = (): string => selected()[0] ?? ''
+  // Controlled segmented RENDERS from the prop (true controlled semantics): a
+  // click emits onChange but the active segment only changes when the parent
+  // writes `value` back; uncontrolled renders from the model store.
+  const currentValue = (): string =>
+    isControlled() ? (toKeys(local.value)[0] ?? '') : (selected()[0] ?? '')
+  const rebaseToProp = (): void => {
+    if (isControlled()) model.sync(toKeys(local.value))
+  }
 
   const norm = (): IrisSegmentedOption[] => normalize(local.options)
 
@@ -87,6 +95,9 @@ export function IrisSegmented(props: IrisSegmentedProps): JSX.Element {
   const select = (options: IrisSegmentedOption[], i: number): void => {
     const opt = options[i]
     if (!opt || opt.disabled || local.disabled) return
+    // Re-base on the prop so the emitted next value is computed against what the
+    // parent holds (not a prior, possibly-rejected, optimistic value).
+    rebaseToProp()
     model.set([opt.value])
     btns[i]?.focus()
   }

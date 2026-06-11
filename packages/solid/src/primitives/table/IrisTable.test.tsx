@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import { createSignal } from 'solid-js'
 import { render, cleanup, fireEvent } from '@solidjs/testing-library'
 import type { JSX } from 'solid-js'
 import { IrisTable } from './IrisTable'
@@ -18,6 +19,38 @@ const data = [
 ]
 
 describe('IrisTable', () => {
+  it('controlled selection renders from the prop (reject → no flip; accept → flips)', () => {
+    const onChange = vi.fn()
+    const idData = [
+      { id: 1, name: 'Alice', age: 30 },
+      { id: 2, name: 'Bob', age: 25 },
+    ]
+    const [selection, setSelection] = createSignal<Array<string | number>>([])
+    const { container } = render(() => (
+      <IrisTable
+        columns={columns}
+        data={idData}
+        selectable="multi"
+        selection={selection()}
+        onSelectionChange={onChange}
+      />
+    ))
+    const cb = (): HTMLInputElement[] =>
+      Array.from(container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'))
+    // index 0 is the master checkbox; row checkboxes start at 1.
+    fireEvent.click(cb()[1]!)
+    // onChange emits the intended next value...
+    expect(onChange).toHaveBeenLastCalledWith([1])
+    // ...but the parent has NOT written it back → the row stays unchecked (true controlled).
+    expect(cb()[1]!.checked).toBe(false)
+    // parent accepts → prop updates → the row reflects it.
+    setSelection([1])
+    expect(cb()[1]!.checked).toBe(true)
+    // a further toggle is computed against the prop base [1] → emits [] (deselect).
+    fireEvent.click(cb()[1]!)
+    expect(onChange).toHaveBeenLastCalledWith([])
+  })
+
   it('renders without crashing', () => {
     const { container } = render(() => <IrisTable columns={columns} data={data} />)
     expect(container.querySelector('[data-iris-table]')).not.toBeNull()

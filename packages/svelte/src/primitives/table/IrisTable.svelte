@@ -157,6 +157,7 @@
   // toggle, dedup, select-all). The model owns the uncontrolled state; a
   // controlled `selection` prop is mirrored in via `sync` from an effect, and
   // every change is emitted through `onUpdateSelection`.
+  const selControlled = $derived(selection !== undefined)
   // svelte-ignore state_referenced_locally — initial seed; controlled changes sync below.
   const selectionModel = createSelectionModel<string | number>({
     mode: selectable === 'single' ? 'single' : 'multiple',
@@ -165,9 +166,23 @@
   })
   const selectedKeys = toStore(selectionModel.store)
 
+  // Controlled: mirror the prop into the model without re-emitting onChange.
   $effect(() => {
-    if (selection !== undefined) selectionModel.sync(selection)
+    if (selControlled) selectionModel.sync(selection!)
   })
+
+  // Controlled tables RENDER from the prop (true controlled semantics): a local
+  // toggle emits onUpdateSelection, but the displayed selection only changes when
+  // the parent writes `selection` back — so a parent that validates/rejects a
+  // change no longer sees the row flip optimistically. Uncontrolled renders from
+  // the model store as before.
+  const displaySelection = $derived(selControlled ? selection! : $selectedKeys)
+  // Re-base the model on the controlled prop before a toggle so the emitted next
+  // value is computed against what the parent actually holds (not a prior,
+  // possibly-rejected, optimistic value).
+  function rebaseToProp(): void {
+    if (selControlled) selectionModel.sync(selection!)
+  }
 
   // Expandable detail rows: a leading toggle column + a full-width detail panel,
   // driven by the framework-agnostic createExpansion (multiple-open). The
@@ -210,23 +225,27 @@
 
   const allRowIds = $derived(bodyData.map((r, i) => rowId(r, i)))
   const allSelected = $derived(
-    allRowIds.length > 0 && allRowIds.every((id) => $selectedKeys.includes(id))
+    allRowIds.length > 0 && allRowIds.every((id) => displaySelection.includes(id))
   )
   const someSelected = $derived(
-    !allSelected && allRowIds.some((id) => $selectedKeys.includes(id))
+    !allSelected && allRowIds.some((id) => displaySelection.includes(id))
   )
 
   function isSelected(id: string | number): boolean {
-    return $selectedKeys.includes(id)
+    return displaySelection.includes(id)
   }
 
   function toggleRow(id: string | number): void {
     // Mode (single vs multiple) is fixed from `selectable` at model creation;
     // the model owns the toggle/replace semantics.
-    if (selectable === 'single' || selectable === 'multi') selectionModel.toggle(id)
+    if (selectable === 'single' || selectable === 'multi') {
+      rebaseToProp()
+      selectionModel.toggle(id)
+    }
   }
 
   function toggleAll(): void {
+    rebaseToProp()
     selectionModel.toggleAll(allRowIds)
   }
 

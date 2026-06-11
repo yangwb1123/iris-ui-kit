@@ -44,6 +44,12 @@
   const fromKeys = (keys: string[]): string | string[] | null =>
     type === 'multiple' ? keys : (keys[0] ?? null)
 
+  // Controlled when a `value` prop is supplied. Controlled groups RENDER from
+  // the prop (true controlled semantics): a press emits onchange but the active
+  // items only change when the parent writes `value` back; uncontrolled renders
+  // from the model store.
+  const isControlled = $derived(value !== undefined)
+
   // svelte-ignore state_referenced_locally — initial seed; controlled changes sync below.
   const model = createSelectionModel<string>({
     mode: type === 'multiple' ? 'multiple' : 'single',
@@ -52,18 +58,23 @@
   })
   const selectedKeys = toStore(model.store)
 
-  // `value` is the single source for this controlled-only API: mirror it into
-  // the model without re-emitting onchange.
+  // Controlled: mirror the prop into the model without re-emitting onchange.
   $effect(() => {
-    model.sync(toKeys(value))
+    if (isControlled) model.sync(toKeys(value))
   })
 
+  // Render the selection from the prop when controlled, the model store otherwise.
+  const displaySelected = $derived(isControlled ? toKeys(value) : $selectedKeys)
+
   function isActive(v: string): boolean {
-    return $selectedKeys.includes(v)
+    return displaySelected.includes(v)
   }
 
   function toggle(v: string) {
     if (disabled) return
+    // Re-base on the prop so the emitted next value is computed against what the
+    // parent holds (not a prior, possibly-rejected, optimistic value).
+    if (isControlled) model.sync(toKeys(value))
     model.toggle(v)
   }
 

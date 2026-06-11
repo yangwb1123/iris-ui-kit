@@ -58,6 +58,7 @@ export const IrisToggleGroup = defineComponent({
     const fromKeys = (keys: string[]): string | string[] | null =>
       isMultiple ? keys : (keys[0] ?? null)
 
+    const isControlled = computed(() => props.modelValue !== undefined)
     const model = createSelectionModel<string>({
       mode: isMultiple ? 'multiple' : 'single',
       defaultSelected: toKeys(props.modelValue),
@@ -76,10 +77,20 @@ export const IrisToggleGroup = defineComponent({
       (v) => model.sync(toKeys(v)),
     )
 
-    const isActive = (value: string): boolean => selected.value.includes(value)
+    // Controlled groups RENDER from the prop (true controlled semantics): a press
+    // emits update:modelValue but the active items only change when the parent
+    // writes `modelValue` back; uncontrolled renders from the model store.
+    const displaySelected = computed<string[]>(() =>
+      isControlled.value ? toKeys(props.modelValue) : selected.value,
+    )
+
+    const isActive = (value: string): boolean => displaySelected.value.includes(value)
 
     const toggle = (value: string) => {
       if (props.disabled) return
+      // Re-base on the prop so the emitted next value is computed against what the
+      // parent holds (not a prior, possibly-rejected, optimistic value).
+      if (isControlled.value) model.sync(toKeys(props.modelValue))
       model.toggle(value)
     }
 

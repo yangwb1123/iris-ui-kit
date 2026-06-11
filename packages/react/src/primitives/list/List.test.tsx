@@ -20,6 +20,22 @@ function listEl(): HTMLElement {
 }
 
 describe('@iris-ui/react IrisList', () => {
+  it('controlled value renders from the prop (reject → no flip; accept → flips)', () => {
+    const onValueChange = vi.fn()
+    function C({ value }: { value: string[] }) {
+      return <IrisList items={items} multi value={value} onValueChange={onValueChange} />
+    }
+    const { rerender } = render(<C value={[]} />)
+    act(() => {
+      fireEvent.click(options()[0]!)
+    })
+    expect(onValueChange).toHaveBeenLastCalledWith(['a'])
+    // parent has not written it back → the option stays unselected (true controlled)
+    expect(options()[0]!.getAttribute('aria-selected')).toBe('false')
+    rerender(<C value={['a']} />)
+    expect(options()[0]!.getAttribute('aria-selected')).toBe('true')
+  })
+
   it('renders role="listbox" with options', () => {
     render(<IrisList items={items} />)
     expect(listEl()).not.toBeNull()

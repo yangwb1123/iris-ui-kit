@@ -115,6 +115,7 @@ export {
   firstEnabledIndex,
   lastEnabledIndex,
   nextGridCell,
+  matchTypeahead,
   type GridCell,
   type GridNavKey,
   type GridNavOptions,

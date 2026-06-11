@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { matchTypeahead } from './roving'
 import {
   nextEnabledIndex,
   firstEnabledIndex,
@@ -100,6 +101,23 @@ describe('nextGridCell (2D roving)', () => {
     expect(nextGridCell({ row: 0, col: 0 }, 'ArrowDown', { rowCount: 0, colCount: 0 })).toEqual({
       row: 0,
       col: 0,
+    })
+  })
+
+  describe('matchTypeahead', () => {
+    const items = ['Apple', 'Banana', 'Blueberry', 'Cherry']
+    it('jumps to the first item starting with the query (case-insensitive)', () => {
+      expect(matchTypeahead(items, 'b', -1)).toBe(1) // Banana
+      expect(matchTypeahead(items, 'CHE', 0)).toBe(3) // Cherry
+    })
+    it('cycles through same-initial items from after fromIndex', () => {
+      expect(matchTypeahead(items, 'b', 1)).toBe(2) // from Banana → Blueberry
+      expect(matchTypeahead(items, 'b', 2)).toBe(1) // from Blueberry → wraps to Banana
+    })
+    it('skips disabled items and returns -1 when nothing matches', () => {
+      expect(matchTypeahead(items, 'b', -1, (i) => i === 1)).toBe(2) // skip Banana → Blueberry
+      expect(matchTypeahead(items, 'z', -1)).toBe(-1)
+      expect(matchTypeahead(items, '  ', 0)).toBe(-1)
     })
   })
 })

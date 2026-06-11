@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { matchTypeahead } from '@iris-ui/core'
   import { getDropdownContext } from './context'
   import { useFloating } from '../../floating/useFloating.svelte'
   import { useDismiss } from '../../floating/useDismiss.svelte'
@@ -42,6 +43,11 @@
     wasOpen = open
   })
 
+  // Typeahead buffer: accumulated printable chars, reset after a ~500ms pause.
+  // Plain closure state — it does not need to be reactive.
+  let typeaheadBuffer = ''
+  let typeaheadTimer: ReturnType<typeof setTimeout> | null = null
+
   function handleKeyDown(e: KeyboardEvent & { currentTarget: EventTarget & HTMLDivElement }) {
     onkeydown?.(e)
     const root = ctx.content
@@ -71,6 +77,26 @@
       case 'Tab':
         ctx.setOpen(false)
         break
+      default: {
+        // Typeahead: a single printable char jumps to (and repeated chars
+        // cycle through) items whose label matches the accumulated buffer.
+        if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          typeaheadBuffer += e.key
+          if (typeaheadTimer) clearTimeout(typeaheadTimer)
+          typeaheadTimer = setTimeout(() => {
+            typeaheadBuffer = ''
+          }, 500)
+          const match = matchTypeahead(
+            items.map((it) => it.textContent ?? ''),
+            typeaheadBuffer,
+            index,
+          )
+          if (match >= 0) {
+            e.preventDefault()
+            items[match]?.focus()
+          }
+        }
+      }
     }
   }
 

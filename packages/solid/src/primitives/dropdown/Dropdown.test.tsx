@@ -45,6 +45,17 @@ describe('@iris-ui/solid IrisDropdown', () => {
     expect(container.querySelector('[data-iris-dropdown-menu]')).toBeNull()
   })
 
+  it('typeahead focuses the item whose label matches a typed character', () => {
+    const { getByText } = render(() => harness())
+    fireEvent.click(getByText('Actions'))
+    const menu = document.querySelector('[role="menu"]') as HTMLElement
+    const copy = getByText('Copy') as HTMLElement
+    const del = getByText('Delete') as HTMLElement
+    copy.focus()
+    fireEvent.keyDown(menu, { key: 'd' })
+    expect(document.activeElement).toBe(del)
+  })
+
   it('Escape closes the menu', () => {
     const { getByText, container } = render(() => harness())
     fireEvent.click(getByText('Actions'))

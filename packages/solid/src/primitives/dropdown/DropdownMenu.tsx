@@ -1,6 +1,6 @@
 import { createEffect, splitProps, Show, type JSX } from 'solid-js'
 import { Portal } from 'solid-js/web'
-import { nextEnabledIndex } from '@iris-ui/core'
+import { nextEnabledIndex, matchTypeahead } from '@iris-ui/core'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useDropdownContext } from './context'
@@ -34,6 +34,11 @@ export function IrisDropdownMenu(props: IrisDropdownMenuProps): JSX.Element {
     exclude: [ctx.trigger, ctx.content],
     onDismiss: () => ctx.setOpen(false),
   })
+
+  // Typeahead buffer: accumulated printable chars, reset after a ~500ms pause.
+  // Plain closure vars — no signal needed (not reactive state).
+  let typeaheadBuffer = ''
+  let typeaheadTimer: ReturnType<typeof setTimeout> | null = null
 
   // Focus first item on open; restore focus to the trigger on close.
   let wasOpen = false
@@ -80,6 +85,26 @@ export function IrisDropdownMenu(props: IrisDropdownMenuProps): JSX.Element {
       case 'Tab':
         ctx.setOpen(false)
         break
+      default: {
+        // Typeahead: a single printable char jumps to (and repeated chars
+        // cycle through) items whose label matches the accumulated buffer.
+        if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          typeaheadBuffer += e.key
+          if (typeaheadTimer) clearTimeout(typeaheadTimer)
+          typeaheadTimer = setTimeout(() => {
+            typeaheadBuffer = ''
+          }, 500)
+          const match = matchTypeahead(
+            items.map((it) => it.textContent ?? ''),
+            typeaheadBuffer,
+            index,
+          )
+          if (match >= 0) {
+            e.preventDefault()
+            items[match]?.focus()
+          }
+        }
+      }
     }
   }
 

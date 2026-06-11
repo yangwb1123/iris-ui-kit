@@ -111,6 +111,17 @@ describe('IrisDropdown', () => {
     expect(wrapper.find('[role="separator"]').exists()).toBe(true)
   })
 
+  it('typeahead focuses the item whose label matches a typed character', async () => {
+    const wrapper = mount(Harness({ defaultOpen: true }), { attachTo: host })
+    await nextTick()
+    const items = wrapper.findAll('[role="menuitem"]')
+    const copy = items[0]!.element as HTMLElement
+    const paste = items[1]!.element as HTMLElement
+    copy.focus()
+    await wrapper.find('[role="menu"]').trigger('keydown', { key: 'p' })
+    expect(document.activeElement).toBe(paste)
+  })
+
   it('keepOpen item does NOT close the menu', async () => {
     let count = 0
     const Persistent = defineComponent({

@@ -1,5 +1,5 @@
 import { Teleport, defineComponent, h, inject, nextTick, ref, watch, type PropType } from 'vue'
-import { nextEnabledIndex } from '@iris-ui/core'
+import { matchTypeahead, nextEnabledIndex } from '@iris-ui/core'
 import { useFloating } from '../floating/useFloating'
 import { useDismiss } from '../floating/useDismiss'
 import { DropdownContextKey } from './context'
@@ -55,6 +55,13 @@ export const IrisDropdownMenu = defineComponent({
       }
     })
 
+    // Typeahead buffer: accumulated printable chars, reset after a ~500ms pause.
+    // Plain closure state — does not need to be reactive.
+    const typeahead: { buffer: string; timer: ReturnType<typeof setTimeout> | null } = {
+      buffer: '',
+      timer: null,
+    }
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (!ctx.open.value) return
       const items = Array.from(
@@ -88,6 +95,26 @@ export const IrisDropdownMenu = defineComponent({
           // Tab closes the menu and lets focus continue.
           ctx.setOpen(false)
           break
+        default: {
+          // Typeahead: a single printable char jumps to (and repeated chars
+          // cycle through) items whose label matches the accumulated buffer.
+          if (event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {
+            typeahead.buffer += event.key
+            if (typeahead.timer) clearTimeout(typeahead.timer)
+            typeahead.timer = setTimeout(() => {
+              typeahead.buffer = ''
+            }, 500)
+            const match = matchTypeahead(
+              items.map((it) => it.textContent ?? ''),
+              typeahead.buffer,
+              index,
+            )
+            if (match >= 0) {
+              event.preventDefault()
+              items[match]?.focus()
+            }
+          }
+        }
       }
     }
 

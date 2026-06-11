@@ -30,6 +30,17 @@ describe('@iris-ui/svelte IrisDropdown', () => {
     expect(container.querySelector('[data-iris-dropdown-menu]')).toBeNull()
   })
 
+  it('typeahead focuses the item whose label matches a typed character', async () => {
+    const { getByText, container } = render(DropdownHarness)
+    await fireEvent.click(getByText('Actions'))
+    const copy = getByText('Copy')
+    const del = getByText('Delete')
+    copy.focus()
+    const menu = container.querySelector('[role="menu"]')!
+    await fireEvent.keyDown(menu, { key: 'd' })
+    expect(document.activeElement).toBe(del)
+  })
+
   it('Escape closes the menu', async () => {
     const { getByText, container } = render(DropdownHarness)
     await fireEvent.click(getByText('Actions'))

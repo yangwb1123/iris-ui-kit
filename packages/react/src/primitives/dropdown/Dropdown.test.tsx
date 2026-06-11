@@ -106,6 +106,16 @@ describe('@iris-ui/react IrisDropdown', () => {
     expect(document.activeElement).toBe(c)
   })
 
+  it('typeahead focuses the item whose label matches a typed character', () => {
+    render(harness({ defaultOpen: true }))
+    const [a, , c] = items()
+    a!.focus()
+    act(() => {
+      fireEvent.keyDown(menu()!, { key: 'c' })
+    })
+    expect(document.activeElement).toBe(c)
+  })
+
   it('ArrowDown skips disabled items', () => {
     render(harness({ defaultOpen: true, disableB: true }))
     const [a, , c] = items()

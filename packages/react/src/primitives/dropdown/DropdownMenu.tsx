@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
+import { matchTypeahead } from '@iris-ui/core'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useDropdownContext } from './context'
@@ -62,6 +63,12 @@ export const IrisDropdownMenu = React.forwardRef<HTMLDivElement, IrisDropdownMen
       wasOpenRef.current = ctx.open
     }, [ctx.open, ctx.triggerRef])
 
+    // Typeahead buffer: accumulated printable chars, reset after a ~500ms pause.
+    const typeaheadRef = React.useRef<{
+      buffer: string
+      timer: ReturnType<typeof setTimeout> | null
+    }>({ buffer: '', timer: null })
+
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
       onKeyDown?.(e)
       if (!ctx.open) return
@@ -98,6 +105,27 @@ export const IrisDropdownMenu = React.forwardRef<HTMLDivElement, IrisDropdownMen
           // Tab closes the menu and lets focus continue out.
           ctx.setOpen(false)
           break
+        default: {
+          // Typeahead: a single printable char jumps to (and repeated chars
+          // cycle through) items whose label matches the accumulated buffer.
+          if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+            const ta = typeaheadRef.current
+            ta.buffer += e.key
+            if (ta.timer) clearTimeout(ta.timer)
+            ta.timer = setTimeout(() => {
+              ta.buffer = ''
+            }, 500)
+            const match = matchTypeahead(
+              items.map((it) => it.textContent ?? ''),
+              ta.buffer,
+              index,
+            )
+            if (match >= 0) {
+              e.preventDefault()
+              items[match]?.focus()
+            }
+          }
+        }
       }
     }
 

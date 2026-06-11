@@ -157,3 +157,30 @@ export function nextGridCell(
       return nearestInRow(clampRow(current.row + pageSize), current.col)
   }
 }
+
+/**
+ * Typeahead match for menu / listbox keyboard navigation (the WAI-ARIA pattern):
+ * the index of the first item whose label starts with `query` (case-insensitive),
+ * searching cyclically from AFTER `fromIndex`, then wrapping to include
+ * `fromIndex` itself. Returns -1 if nothing matches. The caller buffers the typed
+ * characters (resetting on a ~500ms pause) and passes the running buffer — so a
+ * repeated single char cycles through same-initial items, and a typed string
+ * jumps to the best match. `disabled` items are skipped.
+ */
+export function matchTypeahead(
+  labels: readonly string[],
+  query: string,
+  fromIndex: number,
+  isDisabled?: (index: number) => boolean,
+): number {
+  const q = query.trim().toLowerCase()
+  if (!q || labels.length === 0) return -1
+  const n = labels.length
+  const start = fromIndex < 0 || fromIndex >= n ? -1 : fromIndex
+  for (let step = 1; step <= n; step += 1) {
+    const idx = (((start + step) % n) + n) % n
+    if (isDisabled?.(idx)) continue
+    if ((labels[idx] ?? '').trim().toLowerCase().startsWith(q)) return idx
+  }
+  return -1
+}

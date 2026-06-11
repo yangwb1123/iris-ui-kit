@@ -119,9 +119,19 @@ export {
 export {
   flattenLeafColumns,
   buildHeaderMatrix,
+  dataIndexOf,
+  readCell,
   type ColumnTreeNode,
   type HeaderCell,
+  type ColumnAccessor,
 } from './columns'
+export {
+  createCellEdit,
+  type CellEdit,
+  type CellEditState,
+  type CellEditTarget,
+  type CreateCellEditOptions,
+} from './cell-edit'
 export {
   clamp01,
   hsvToRgb,

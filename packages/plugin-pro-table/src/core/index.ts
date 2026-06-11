@@ -3,9 +3,12 @@ import {
   createPlugin,
   createSelectionModel,
   createAsyncResource,
+  createCellEdit,
   filterSort,
   paginate,
   cycleSort,
+  dataIndexOf,
+  readCell,
   pageCount as corePageCount,
   toCsv,
   toSpreadsheetXml,
@@ -140,14 +143,13 @@ export function createProTableStore<Row extends Record<string, unknown>>(
   const rowKeyOf = (row: Row): string =>
     typeof config.rowKey === 'function' ? config.rowKey(row) : String(row[config.rowKey])
 
-  const dataIndexOf = (column: ProTableColumn<Row>): string => column.dataIndex ?? column.key
-  const cellValue = (row: Row, column: ProTableColumn<Row>): unknown => row[dataIndexOf(column)]
+  const cellValue = (row: Row, column: ProTableColumn<Row>): unknown => readCell(row, column)
 
   /** Map our columns onto the core data-view column contract. */
   const dataViewColumns = (): DataViewColumn<Row>[] =>
     config.columns.map((c) => ({
       key: c.key,
-      getValue: (row: Row) => cellValue(row, c),
+      getValue: (row: Row) => readCell(row, c),
       filterable: c.filterable,
       sorter: c.sorter,
     }))
@@ -170,6 +172,30 @@ export function createProTableStore<Row extends Record<string, unknown>>(
   const selection = createSelectionModel({ mode: 'multiple' })
   selection.store.subscribe((keys) => {
     store.setState((s) => ({ ...s, selectedKeys: keys }))
+  })
+
+  // Inline editing: a composed core controller. `onCommit` resolves the column +
+  // row, coerces (number editor), writes back into `allRows`, and fires
+  // `onCellEdit`; it runs before the editor closes. Mirror its editing state
+  // into our store so renderers re-render on start/commit/cancel.
+  const cellEdit = createCellEdit({
+    onCommit: ({ rowKey, columnKey }, value) => {
+      const column = config.columns.find((c) => c.key === columnKey)
+      if (!column) return
+      const dataIndex = dataIndexOf(column)
+      const idx = allRows.findIndex((r) => rowKeyOf(r) === rowKey)
+      const oldValue = idx >= 0 ? allRows[idx][dataIndex] : undefined
+      const newValue = column.editor === 'number' ? Number(value) : value
+      let updatedRow = {} as Row
+      if (idx >= 0) {
+        updatedRow = { ...allRows[idx], [dataIndex]: newValue }
+        allRows[idx] = updatedRow
+      }
+      config.onCellEdit?.({ rowKey, columnKey, dataIndex, oldValue, newValue, row: updatedRow })
+    },
+  })
+  cellEdit.store.subscribe((s) => {
+    store.setState((st) => ({ ...st, editing: s.editing }))
   })
 
   // Server mode: a composed async resource — token-guarded, so an out-of-order
@@ -244,40 +270,13 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     isAllSelected: () => selection.isAllSelected(store.getState().rows.map(rowKeyOf)),
     clearSelection: () => selection.clear(),
 
-    startEdit(rowKey, columnKey) {
-      store.setState((s) => ({ ...s, editing: { rowKey, columnKey } }))
-    },
+    startEdit: (rowKey, columnKey) => cellEdit.startEdit(rowKey, columnKey),
 
-    cancelEdit() {
-      store.setState((s) => ({ ...s, editing: null }))
-    },
+    cancelEdit: () => cellEdit.cancelEdit(),
 
     commitEdit(value) {
-      const editing = store.getState().editing
-      if (!editing) return
-      const column = config.columns.find((c) => c.key === editing.columnKey)
-      if (!column) {
-        store.setState((s) => ({ ...s, editing: null }))
-        return
-      }
-      const dataIndex = dataIndexOf(column)
-      const idx = allRows.findIndex((r) => rowKeyOf(r) === editing.rowKey)
-      const oldValue = idx >= 0 ? allRows[idx][dataIndex] : undefined
-      const newValue = column.editor === 'number' ? Number(value) : value
-      let updatedRow = {} as Row
-      if (idx >= 0) {
-        updatedRow = { ...allRows[idx], [dataIndex]: newValue }
-        allRows[idx] = updatedRow
-      }
-      config.onCellEdit?.({
-        rowKey: editing.rowKey,
-        columnKey: editing.columnKey,
-        dataIndex,
-        oldValue,
-        newValue,
-        row: updatedRow,
-      })
-      store.setState((s) => ({ ...s, editing: null }))
+      if (!cellEdit.getEditing()) return
+      cellEdit.commitEdit(value) // → onCommit (write-back + onCellEdit), then clears editing
       if (mode === 'client') refresh()
     },
 

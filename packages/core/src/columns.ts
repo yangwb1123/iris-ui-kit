@@ -26,6 +26,29 @@ export interface HeaderCell<C extends ColumnTreeNode> {
   colStart: number
 }
 
+/**
+ * Minimal column shape needed to read a cell value: a stable `key` plus an
+ * optional `dataIndex` (the row field to read; defaults to `key`). Real column
+ * types — `DataViewColumn`, pro-table's `ProTableColumn`, etc. — extend it.
+ */
+export interface ColumnAccessor {
+  key: string
+  dataIndex?: string
+}
+
+/** The row field a column reads — its `dataIndex`, defaulting to `key`. */
+export function dataIndexOf(column: ColumnAccessor): string {
+  return column.dataIndex ?? column.key
+}
+
+/** Read a column's cell value out of a row. */
+export function readCell<Row extends Record<string, unknown>>(
+  row: Row,
+  column: ColumnAccessor,
+): unknown {
+  return row[dataIndexOf(column)]
+}
+
 /** Count the leaf descendants of a node (itself if it has no children). */
 function leafCount(node: ColumnTreeNode): number {
   if (!node.children || node.children.length === 0) return 1

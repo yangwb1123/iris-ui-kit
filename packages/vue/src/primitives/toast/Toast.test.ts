@@ -81,6 +81,45 @@ describe('IrisToastViewport', () => {
     expect(wrapper.text()).toContain('Saved')
   })
 
+  // jsdom's PointerEvent drops clientX from its init, so build the event and
+  // define clientX explicitly to drive the swipe handlers.
+  function swipePointer(
+    node: Element,
+    kind: 'pointerdown' | 'pointermove' | 'pointerup',
+    clientX: number,
+  ) {
+    const ev = new Event(kind, { bubbles: true, cancelable: true }) as PointerEvent
+    Object.defineProperty(ev, 'pointerId', { value: 1, configurable: true })
+    Object.defineProperty(ev, 'clientX', { value: clientX, configurable: true })
+    node.dispatchEvent(ev)
+  }
+
+  it('swiping a toast past the threshold dismisses it', async () => {
+    const wrapper = mount(Harness(), { attachTo: host })
+    pushToast({ title: 'Swipe me', duration: Infinity })
+    await nextTick()
+    const toast = wrapper.find('[data-iris-toast]').element
+    swipePointer(toast, 'pointerdown', 0)
+    swipePointer(toast, 'pointermove', 140)
+    swipePointer(toast, 'pointerup', 140)
+    await nextTick()
+    expect(getToasts().length).toBe(0)
+    expect(wrapper.find('[data-iris-toast]').exists()).toBe(false)
+  })
+
+  it('releasing a small swipe (below threshold) keeps the toast', async () => {
+    const wrapper = mount(Harness(), { attachTo: host })
+    pushToast({ title: 'Keep me', duration: Infinity })
+    await nextTick()
+    const toast = wrapper.find('[data-iris-toast]').element
+    swipePointer(toast, 'pointerdown', 0)
+    swipePointer(toast, 'pointermove', 30)
+    swipePointer(toast, 'pointerup', 30)
+    await nextTick()
+    expect(getToasts().length).toBe(1)
+    expect(wrapper.find('[data-iris-toast]').exists()).toBe(true)
+  })
+
   it('error variant uses role=alert + aria-live=assertive', async () => {
     const wrapper = mount(Harness(), { attachTo: host })
     pushToast({ title: 'Boom', variant: 'error', duration: 0 })

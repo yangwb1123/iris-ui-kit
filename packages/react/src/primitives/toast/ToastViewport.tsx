@@ -94,6 +94,13 @@ export function IrisToastViewport({
   const [hovered, setHovered] = React.useState(false)
   const timersRef = React.useRef(new Map<string, ReturnType<typeof setTimeout>>())
 
+  // Swipe-to-dismiss: one toast is dragged at a time; past the threshold on
+  // release it dismisses, otherwise it snaps back. The decision logic reads the
+  // ref (synchronous — survives event batching); state drives the visual offset.
+  const SWIPE_DISMISS_PX = 80
+  const [drag, setDrag] = React.useState<{ id: string; dx: number } | null>(null)
+  const dragRef = React.useRef<{ id: string; startX: number; dx: number } | null>(null)
+
   const clearTimer = React.useCallback((id: string) => {
     const t = timersRef.current.get(id)
     if (t) {
@@ -157,83 +164,117 @@ export function IrisToastViewport({
       onPointerLeave={() => setHovered(false)}
       style={{ ...positionStyle(position), ...style }}
     >
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          role={toast.variant === 'error' ? 'alert' : 'status'}
-          aria-live={toast.variant === 'error' ? 'assertive' : 'polite'}
-          data-iris-toast=""
-          data-variant={toast.variant}
-          style={{
-            pointerEvents: 'auto',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 'var(--iris-gap-md, 12px)',
-            background: 'var(--iris-surface)',
-            color: 'var(--iris-foreground)',
-            border: `1px solid ${VARIANT_BORDER[toast.variant]}`,
-            borderInlineStart: `4px solid ${VARIANT_ACCENT[toast.variant]}`,
-            borderRadius: 'var(--iris-radius-md, 6px)',
-            padding: 'var(--iris-padding-md, 12px)',
-            boxShadow: '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
-            minWidth: 280,
-            fontSize: 14,
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {toast.title ? <div style={{ fontWeight: 600 }}>{toast.title}</div> : null}
-            {toast.description ? (
-              <div
+      {toasts.map((toast) => {
+        const isDragging = drag?.id === toast.id
+        const dx = isDragging ? (drag?.dx ?? 0) : 0
+        return (
+          <div
+            key={toast.id}
+            role={toast.variant === 'error' ? 'alert' : 'status'}
+            aria-live={toast.variant === 'error' ? 'assertive' : 'polite'}
+            data-iris-toast=""
+            data-variant={toast.variant}
+            onPointerDown={(e) => {
+              dragRef.current = { id: toast.id, startX: e.clientX, dx: 0 }
+              // Pointer capture keeps move/up on this element; unsupported in jsdom.
+              try {
+                e.currentTarget.setPointerCapture?.(e.pointerId)
+              } catch {
+                /* no-op */
+              }
+              setDrag({ id: toast.id, dx: 0 })
+            }}
+            onPointerMove={(e) => {
+              const d = dragRef.current
+              if (d && d.id === toast.id) {
+                d.dx = e.clientX - d.startX
+                setDrag({ id: toast.id, dx: d.dx })
+              }
+            }}
+            onPointerUp={() => {
+              const d = dragRef.current
+              if (d && d.id === toast.id) {
+                if (Math.abs(d.dx) > SWIPE_DISMISS_PX) dismissToast(toast.id)
+                dragRef.current = null
+                setDrag(null)
+              }
+            }}
+            style={{
+              pointerEvents: 'auto',
+              transform: dx ? `translateX(${dx}px)` : undefined,
+              opacity: isDragging ? Math.max(0.3, 1 - Math.abs(dx) / 250) : undefined,
+              transition: isDragging ? 'none' : 'transform 150ms ease, opacity 150ms ease',
+              touchAction: 'pan-y',
+              cursor: 'grab',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 'var(--iris-gap-md, 12px)',
+              background: 'var(--iris-surface)',
+              color: 'var(--iris-foreground)',
+              border: `1px solid ${VARIANT_BORDER[toast.variant]}`,
+              borderInlineStart: `4px solid ${VARIANT_ACCENT[toast.variant]}`,
+              borderRadius: 'var(--iris-radius-md, 6px)',
+              padding: 'var(--iris-padding-md, 12px)',
+              boxShadow: '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
+              minWidth: 280,
+              fontSize: 14,
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {toast.title ? <div style={{ fontWeight: 600 }}>{toast.title}</div> : null}
+              {toast.description ? (
+                <div
+                  style={{
+                    color: 'var(--iris-muted)',
+                    fontSize: 13,
+                    marginTop: 2,
+                  }}
+                >
+                  {toast.description}
+                </div>
+              ) : null}
+            </div>
+            {toast.action ? (
+              <button
+                type="button"
+                onClick={() => {
+                  toast.action!.onClick()
+                  dismissToast(toast.id)
+                }}
                 style={{
-                  color: 'var(--iris-muted)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: VARIANT_ACCENT[toast.variant],
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '4px 8px',
                   fontSize: 13,
-                  marginTop: 2,
+                  fontFamily: 'inherit',
                 }}
               >
-                {toast.description}
-              </div>
+                {toast.action.label}
+              </button>
             ) : null}
-          </div>
-          {toast.action ? (
             <button
               type="button"
-              onClick={() => {
-                toast.action!.onClick()
-                dismissToast(toast.id)
-              }}
+              aria-label={t('toast.dismiss')}
+              onClick={() => dismissToast(toast.id)}
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: VARIANT_ACCENT[toast.variant],
-                fontWeight: 600,
                 cursor: 'pointer',
-                padding: '4px 8px',
-                fontSize: 13,
+                padding: 4,
+                color: 'var(--iris-muted)',
+                lineHeight: 1,
                 fontFamily: 'inherit',
+                fontSize: 16,
               }}
             >
-              {toast.action.label}
+              ×
             </button>
-          ) : null}
-          <button
-            type="button"
-            aria-label={t('toast.dismiss')}
-            onClick={() => dismissToast(toast.id)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 4,
-              color: 'var(--iris-muted)',
-              lineHeight: 1,
-              fontFamily: 'inherit',
-              fontSize: 16,
-            }}
-          >
-            ×
-          </button>
-        </div>
-      ))}
+          </div>
+        )
+      })}
     </div>
   )
 

@@ -41,6 +41,9 @@ const VARIANT_ACCENT: Record<IrisToastVariant, string> = {
   info: 'var(--iris-primary)',
 }
 
+/** Horizontal swipe distance (px) past which a release dismisses the toast. */
+const SWIPE_DISMISS_PX = 80
+
 /**
  * Renders the queued toasts. Mount exactly **one** of these per page —
  * typically near the root of the application layout. The viewport subscribes
@@ -67,6 +70,39 @@ export const IrisToastViewport = defineComponent({
     const toasts = ref<IrisToast[]>(getToasts())
     const hovered = ref(false)
     const timers = new Map<string, ReturnType<typeof setTimeout>>()
+
+    // Swipe-to-dismiss: one toast is dragged at a time; past the threshold on
+    // release it dismisses, otherwise it snaps back. The decision logic reads a
+    // plain closure object (synchronous — survives event batching); the reactive
+    // ref drives the visual offset.
+    const drag = ref<{ id: string; dx: number } | null>(null)
+    let dragLogic: { id: string; startX: number; dx: number } | null = null
+
+    const onToastPointerDown = (toast: IrisToast, e: PointerEvent) => {
+      dragLogic = { id: toast.id, startX: e.clientX, dx: 0 }
+      // Pointer capture keeps move/up on this element; unsupported in jsdom.
+      try {
+        ;(e.currentTarget as Element | null)?.setPointerCapture?.(e.pointerId)
+      } catch {
+        /* no-op */
+      }
+      drag.value = { id: toast.id, dx: 0 }
+    }
+    const onToastPointerMove = (toast: IrisToast, e: PointerEvent) => {
+      const d = dragLogic
+      if (d && d.id === toast.id) {
+        d.dx = e.clientX - d.startX
+        drag.value = { id: toast.id, dx: d.dx }
+      }
+    }
+    const onToastPointerUp = (toast: IrisToast) => {
+      const d = dragLogic
+      if (d && d.id === toast.id) {
+        if (Math.abs(d.dx) > SWIPE_DISMISS_PX) dismissToast(toast.id)
+        dragLogic = null
+        drag.value = null
+      }
+    }
 
     const clearTimer = (id: string) => {
       const t = timers.get(id)
@@ -161,8 +197,10 @@ export const IrisToastViewport = defineComponent({
       return base
     }
 
-    const renderToast = (toast: IrisToast): VNode =>
-      h(
+    const renderToast = (toast: IrisToast): VNode => {
+      const isDragging = drag.value?.id === toast.id
+      const dx = isDragging ? (drag.value?.dx ?? 0) : 0
+      return h(
         'div',
         {
           key: toast.id,
@@ -170,8 +208,16 @@ export const IrisToastViewport = defineComponent({
           'aria-live': toast.variant === 'error' ? 'assertive' : 'polite',
           'data-iris-toast': '',
           'data-variant': toast.variant,
+          onPointerdown: (e: PointerEvent) => onToastPointerDown(toast, e),
+          onPointermove: (e: PointerEvent) => onToastPointerMove(toast, e),
+          onPointerup: () => onToastPointerUp(toast),
           style: {
             pointerEvents: 'auto',
+            transform: dx ? `translateX(${dx}px)` : undefined,
+            opacity: isDragging ? String(Math.max(0.3, 1 - Math.abs(dx) / 250)) : undefined,
+            transition: isDragging ? 'none' : 'transform 150ms ease, opacity 150ms ease',
+            touchAction: 'pan-y',
+            cursor: 'grab',
             display: 'flex',
             alignItems: 'flex-start',
             gap: 'var(--iris-gap-md)',
@@ -239,6 +285,7 @@ export const IrisToastViewport = defineComponent({
           ),
         ],
       )
+    }
 
     return () => {
       const viewport = h(

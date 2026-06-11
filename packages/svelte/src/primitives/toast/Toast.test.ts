@@ -1,4 +1,4 @@
-import { render, fireEvent, cleanup } from '@testing-library/svelte'
+import { render, fireEvent, createEvent, cleanup } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import IrisToastViewport from './IrisToastViewport.svelte'
@@ -24,6 +24,18 @@ function dismissButtonFor(toast: HTMLElement): HTMLButtonElement {
   return toast.querySelector('button[aria-label=Dismiss]') as HTMLButtonElement
 }
 
+// jsdom's PointerEvent drops clientX from its init, so build the event and
+// define clientX explicitly to drive the swipe handlers.
+async function swipePointer(
+  node: Element,
+  kind: 'pointerDown' | 'pointerMove' | 'pointerUp',
+  clientX: number,
+): Promise<void> {
+  const ev = createEvent[kind](node, { pointerId: 1 })
+  Object.defineProperty(ev, 'clientX', { value: clientX, configurable: true })
+  await fireEvent(node, ev)
+}
+
 describe('@iris-ui/svelte IrisToast', () => {
   it('renders viewport and shows nothing when queue is empty', () => {
     render(IrisToastViewport)
@@ -38,6 +50,30 @@ describe('@iris-ui/svelte IrisToast', () => {
     const list = toasts()
     expect(list.length).toBe(1)
     expect(list[0]?.textContent).toContain('Hello')
+  })
+
+  it('swiping a toast past the threshold dismisses it', async () => {
+    render(IrisToastViewport)
+    pushToast({ title: 'Swipe me', duration: Infinity })
+    flushSync()
+    const toast = toasts()[0]!
+    await swipePointer(toast, 'pointerDown', 0)
+    await swipePointer(toast, 'pointerMove', 140)
+    await swipePointer(toast, 'pointerUp', 140)
+    flushSync()
+    expect(toasts().length).toBe(0)
+  })
+
+  it('releasing a small swipe (below threshold) keeps the toast', async () => {
+    render(IrisToastViewport)
+    pushToast({ title: 'Keep me', duration: Infinity })
+    flushSync()
+    const toast = toasts()[0]!
+    await swipePointer(toast, 'pointerDown', 0)
+    await swipePointer(toast, 'pointerMove', 30)
+    await swipePointer(toast, 'pointerUp', 30)
+    flushSync()
+    expect(toasts().length).toBe(1)
   })
 
   it('renders title and description', () => {

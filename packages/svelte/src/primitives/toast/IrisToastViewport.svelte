@@ -51,6 +51,63 @@
   let hovered = $state(false)
   const timers = new Map<string, ReturnType<typeof setTimeout>>()
 
+  // Swipe-to-dismiss: one toast is dragged at a time; past the threshold on
+  // release it dismisses, otherwise it snaps back. The decision logic reads the
+  // plain `dragLogic` closure var (synchronous — survives event batching); the
+  // `drag` $state drives the visual offset (re-renders the transform).
+  const SWIPE_DISMISS_PX = 80
+  let dragLogic: { id: string; startX: number; dx: number } | null = null
+  let drag = $state<{ id: string; dx: number } | null>(null)
+
+  function onPointerDown(toast: IrisToast, e: PointerEvent): void {
+    dragLogic = { id: toast.id, startX: e.clientX, dx: 0 }
+    // Pointer capture keeps move/up on this element; unsupported in jsdom.
+    try {
+      ;(e.currentTarget as HTMLElement | null)?.setPointerCapture?.(e.pointerId)
+    } catch {
+      /* no-op */
+    }
+    drag = { id: toast.id, dx: 0 }
+  }
+
+  function onPointerMove(toast: IrisToast, e: PointerEvent): void {
+    if (dragLogic && dragLogic.id === toast.id) {
+      dragLogic.dx = e.clientX - dragLogic.startX
+      drag = { id: toast.id, dx: dragLogic.dx }
+    }
+  }
+
+  function onPointerUp(toast: IrisToast): void {
+    if (dragLogic && dragLogic.id === toast.id) {
+      if (Math.abs(dragLogic.dx) > SWIPE_DISMISS_PX) dismissToast(toast.id)
+      dragLogic = null
+      drag = null
+    }
+  }
+
+  function toastStyle(toast: IrisToast): string {
+    const isDragging = drag?.id === toast.id
+    const dx = isDragging ? (drag?.dx ?? 0) : 0
+    const transform = dx ? `transform: translateX(${dx}px); ` : ''
+    const opacity = isDragging ? `opacity: ${Math.max(0.3, 1 - Math.abs(dx) / 250)}; ` : ''
+    const transition = isDragging
+      ? 'transition: none; '
+      : 'transition: transform 150ms ease, opacity 150ms ease; '
+    return (
+      'pointer-events: auto; ' +
+      transform +
+      opacity +
+      transition +
+      'touch-action: pan-y; cursor: grab; display: flex; align-items: flex-start; ' +
+      'gap: var(--iris-gap-md, 12px); background: var(--iris-surface); color: var(--iris-foreground); ' +
+      `border: 1px solid ${VARIANT_BORDER[toast.variant]}; ` +
+      `border-inline-start: 4px solid ${VARIANT_ACCENT[toast.variant]}; ` +
+      'border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-md, 12px); ' +
+      'box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08); ' +
+      'min-width: 280px; font-size: 14px'
+    )
+  }
+
   function clearTimer(id: string): void {
     const timer = timers.get(id)
     if (timer) {
@@ -147,11 +204,10 @@
       aria-live={toast.variant === 'error' ? 'assertive' : 'polite'}
       data-iris-toast=""
       data-variant={toast.variant}
-      style="pointer-events: auto; display: flex; align-items: flex-start; gap: var(--iris-gap-md, 12px); background: var(--iris-surface); color: var(--iris-foreground); border: 1px solid {VARIANT_BORDER[
-        toast.variant
-      ]}; border-inline-start: 4px solid {VARIANT_ACCENT[
-        toast.variant
-      ]}; border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-md, 12px); box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08); min-width: 280px; font-size: 14px"
+      onpointerdown={(e) => onPointerDown(toast, e)}
+      onpointermove={(e) => onPointerMove(toast, e)}
+      onpointerup={() => onPointerUp(toast)}
+      style={toastStyle(toast)}
     >
       <div style="flex: 1; min-width: 0">
         {#if toast.title}

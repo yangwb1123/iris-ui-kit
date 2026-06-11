@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { onMount } from 'solid-js'
-import { cleanup, fireEvent, render } from '@solidjs/testing-library'
+import { cleanup, createEvent, fireEvent, render } from '@solidjs/testing-library'
 import { IrisToastViewport } from './ToastViewport'
 import { useToast } from './useToast'
 import { clearToasts, getToasts, pushToast } from './toastStore'
@@ -24,6 +24,18 @@ function dismissButtonFor(toast: HTMLElement): HTMLButtonElement {
   return toast.querySelector('button[aria-label=Dismiss]') as HTMLButtonElement
 }
 
+// jsdom's PointerEvent drops clientX from its init, so build the event and
+// define clientX explicitly to drive the swipe handlers.
+function swipePointer(
+  node: Element,
+  kind: 'pointerDown' | 'pointerMove' | 'pointerUp',
+  clientX: number,
+): void {
+  const ev = createEvent[kind](node, { pointerId: 1 })
+  Object.defineProperty(ev, 'clientX', { value: clientX, configurable: true })
+  fireEvent(node, ev)
+}
+
 describe('@iris-ui/solid IrisToast', () => {
   it('renders viewport and shows nothing when queue is empty', () => {
     render(() => <IrisToastViewport />)
@@ -36,6 +48,26 @@ describe('@iris-ui/solid IrisToast', () => {
     const list = toasts()
     expect(list.length).toBe(1)
     expect(list[0]?.textContent).toContain('Hello')
+  })
+
+  it('swiping a toast past the threshold dismisses it', () => {
+    render(() => <IrisToastViewport />)
+    pushToast({ title: 'Swipe me', duration: Infinity })
+    const toast = toasts()[0]!
+    swipePointer(toast, 'pointerDown', 0)
+    swipePointer(toast, 'pointerMove', 140)
+    swipePointer(toast, 'pointerUp', 140)
+    expect(toasts().length).toBe(0)
+  })
+
+  it('releasing a small swipe (below threshold) keeps the toast', () => {
+    render(() => <IrisToastViewport />)
+    pushToast({ title: 'Keep me', duration: Infinity })
+    const toast = toasts()[0]!
+    swipePointer(toast, 'pointerDown', 0)
+    swipePointer(toast, 'pointerMove', 30)
+    swipePointer(toast, 'pointerUp', 30)
+    expect(toasts().length).toBe(1)
   })
 
   it('renders title and description', () => {

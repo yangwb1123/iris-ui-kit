@@ -1,4 +1,5 @@
 import { createStore, type Store } from './store'
+import { debounce } from './data-view'
 
 /**
  * Framework-agnostic form engine. Owns value aggregation, dirty/touched
@@ -36,6 +37,8 @@ export interface FormState<V extends FormValues> {
   dirty: FieldFlags<V>
   isSubmitting: boolean
   isValidating: boolean
+  /** Per-field flag: true while that field's (async) validator is in flight. */
+  validating: FieldFlags<V>
   submitCount: number
   /** Active step index (0-based) when the form is configured with `steps`. */
   currentStep: number
@@ -63,6 +66,13 @@ export interface FormConfig<V extends FormValues> {
   validateOnChange?: boolean
   /** Validate a field when it is blurred (marked touched). Default `true`. */
   validateOnBlur?: boolean
+  /**
+   * Debounce the validate-on-change of each field by this many ms — so an async
+   * validator (e.g. a username-availability check) isn't fired on every
+   * keystroke. 0 / omitted validates immediately. Blur, submit, and explicit
+   * `validateField` are never debounced.
+   */
+  validationDebounceMs?: number
   /**
    * Cross-field dependencies: when a key changes, the listed fields are also
    * re-validated. E.g. `{ password: ['confirmPassword'] }` re-checks the
@@ -147,6 +157,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     dirty: {},
     isSubmitting: false,
     isValidating: false,
+    validating: {},
     submitCount: 0,
     currentStep: 0,
   })
@@ -181,12 +192,36 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     return validator(values[name], values)
   }
 
+  const setValidating = (name: Key<V>, on: boolean): void => {
+    store.setState((s) => ({ ...s, validating: { ...s.validating, [name]: on } }))
+  }
+
   const validateField: FormStore<V>['validateField'] = async (name) => {
     const token = nextToken(name)
+    setValidating(name, true)
     const error = await runFieldValidator(name, store.getState().values)
+    // A newer validation superseded this one — leave it to clear the flag.
     if (!isCurrent(name, token)) return store.getState().errors[name]
+    setValidating(name, false)
     writeError(name, error)
     return error
+  }
+
+  // Debounced per-field validate-on-change (one debouncer per field), so an
+  // async validator isn't fired on every keystroke. Immediate when debounce is 0.
+  const debounceMs = config.validationDebounceMs ?? 0
+  const fieldDebouncers = new Map<Key<V>, () => void>()
+  const scheduleValidate = (name: Key<V>): void => {
+    if (debounceMs <= 0) {
+      void validateField(name)
+      return
+    }
+    let run = fieldDebouncers.get(name)
+    if (!run) {
+      run = debounce(() => void validateField(name), debounceMs)
+      fieldDebouncers.set(name, run)
+    }
+    run()
   }
 
   const fieldNames = (): Key<V>[] => {
@@ -256,12 +291,12 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
       dirty: { ...s.dirty, [name]: !Object.is(value, initialValues[name]) },
     }))
     if (validateOnChange) {
-      void validateField(name)
+      scheduleValidate(name)
       // Re-validate dependent fields (one level deep) so a cross-field rule
       // (e.g. confirmPassword depends on password) updates inline, not only on
       // submit. Only fields with a validator are re-run.
       for (const dep of dependencies[name] ?? []) {
-        if (validators[dep]) void validateField(dep)
+        if (validators[dep]) scheduleValidate(dep)
       }
     }
   }
@@ -370,6 +405,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
       dirty: {},
       isSubmitting: false,
       isValidating: false,
+      validating: {},
       submitCount: 0,
       currentStep: 0,
     })

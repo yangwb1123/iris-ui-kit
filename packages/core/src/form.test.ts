@@ -11,6 +11,7 @@ describe('createFormStore', () => {
       dirty: {},
       isSubmitting: false,
       isValidating: false,
+      validating: {},
       submitCount: 0,
       currentStep: 0,
     })
@@ -239,6 +240,7 @@ describe('createFormStore', () => {
         dirty: {},
         isSubmitting: false,
         isValidating: false,
+        validating: {},
         submitCount: 0,
         currentStep: 0,
       })
@@ -409,6 +411,39 @@ describe('createFormStore', () => {
       })
       form.reset({ name: '  Bob  ' })
       expect(form.getState().values.name).toBe('Bob')
+    })
+  })
+
+  describe('async validation', () => {
+    it('tracks per-field `validating` while an async validator is in flight', async () => {
+      let resolve!: (v: string | undefined) => void
+      const form = createFormStore({
+        initialValues: { name: '' },
+        validators: { name: () => new Promise<string | undefined>((r) => (resolve = r)) },
+      })
+      form.setFieldValue('name', 'x')
+      expect(form.getState().validating.name).toBe(true)
+      resolve('Taken')
+      await new Promise((r) => setTimeout(r, 0)) // flush all microtasks
+      expect(form.getState().validating.name).toBe(false)
+      expect(form.getState().errors.name).toBe('Taken')
+    })
+
+    it('debounces validate-on-change by validationDebounceMs', () => {
+      vi.useFakeTimers()
+      const validator = vi.fn(() => undefined)
+      const form = createFormStore({
+        initialValues: { name: '' },
+        validators: { name: validator },
+        validationDebounceMs: 200,
+      })
+      form.setFieldValue('name', 'a')
+      form.setFieldValue('name', 'ab')
+      form.setFieldValue('name', 'abc')
+      expect(validator).not.toHaveBeenCalled()
+      vi.advanceTimersByTime(250)
+      expect(validator).toHaveBeenCalledTimes(1)
+      vi.useRealTimers()
     })
   })
 })

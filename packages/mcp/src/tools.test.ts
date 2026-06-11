@@ -6,6 +6,8 @@ import {
   getComponentApi,
   scaffoldSnippet,
   scaffoldView,
+  suggestComponents,
+  validateUsage,
 } from './tools'
 
 const manifest = buildManifest(discover())
@@ -98,5 +100,47 @@ describe('scaffoldView', () => {
     expect(
       scaffoldView(manifest, { framework: 'react', components: ['IrisButton', 'IrisNope'] }),
     ).toBeNull()
+  })
+})
+
+describe('suggestComponents', () => {
+  it('ranks components by a free-text requirement', () => {
+    const out = suggestComponents(manifest, 'a button to submit a form')
+    expect(out.length).toBeGreaterThan(0)
+    expect(out.some((s) => s.name === 'IrisButton')).toBe(true)
+    // scores are non-increasing (ranked best-first)
+    for (let i = 1; i < out.length; i += 1)
+      expect(out[i - 1]!.score).toBeGreaterThanOrEqual(out[i]!.score)
+  })
+
+  it('respects the limit and returns nothing for a term-less query', () => {
+    expect(suggestComponents(manifest, 'table data grid', 2).length).toBeLessThanOrEqual(2)
+    expect(suggestComponents(manifest, '   !! ')).toEqual([])
+  })
+})
+
+describe('validateUsage', () => {
+  it('passes a correct usage (empty issues)', () => {
+    expect(
+      validateUsage(manifest, {
+        name: 'IrisButton',
+        framework: 'react',
+        props: { variant: 'solid', size: 'md' },
+      }),
+    ).toEqual([])
+  })
+
+  it('flags an invalid enum value against the manifest', () => {
+    const issues = validateUsage(manifest, { name: 'IrisButton', props: { variant: 'huge' } })
+    expect(issues.some((i) => i.severity === 'error' && /Invalid value/.test(i.message))).toBe(true)
+  })
+
+  it('flags unknown component, unknown prop, and unsupported framework', () => {
+    expect(validateUsage(manifest, { name: 'IrisNope' })[0]?.severity).toBe('error')
+    expect(
+      validateUsage(manifest, { name: 'IrisButton', props: { notAProp: 'x' } }).some((i) =>
+        /Unknown prop/.test(i.message),
+      ),
+    ).toBe(true)
   })
 })

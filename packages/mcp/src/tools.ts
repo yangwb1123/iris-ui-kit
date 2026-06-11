@@ -137,3 +137,129 @@ export function scaffoldView(manifest: IrisManifest, req: ScaffoldViewRequest): 
   const classAttr = framework === 'vue' ? 'class' : 'className'
   return `${header}\n\n<div ${classAttr}="iris-view">\n${children}\n</div>`
 }
+
+/** A ranked component recommendation with the terms that matched. */
+export interface ComponentSuggestion extends ComponentSummary {
+  score: number
+  rationale: string
+}
+
+/**
+ * Recommend components for a free-text requirement (e.g. "a date picker for a
+ * form", "tabs with keyboard nav"). A dependency-free heuristic: split the
+ * requirement into terms and score each component by where the term hits —
+ * name/group match weighs more than a prop-name/description match. Returns the
+ * top `limit`, highest score first. Helps an agent PICK a component instead of
+ * scanning the whole list.
+ */
+export function suggestComponents(
+  manifest: IrisManifest,
+  requirement: string,
+  limit = 5,
+): ComponentSuggestion[] {
+  const terms = [
+    ...new Set(
+      requirement
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((t) => t.length > 2),
+    ),
+  ]
+  if (terms.length === 0) return []
+  const scored = manifest.components
+    .map((c) => {
+      const nameGroup = `${c.name} ${c.group}`.toLowerCase()
+      const props = (c.props ?? [])
+        .map((p) => `${p.name} ${p.description ?? ''}`)
+        .join(' ')
+        .toLowerCase()
+      const matched: string[] = []
+      let score = 0
+      for (const t of terms) {
+        if (nameGroup.includes(t)) {
+          score += 3
+          matched.push(t)
+        } else if (props.includes(t)) {
+          score += 1
+          matched.push(t)
+        }
+      }
+      return { c, score, matched }
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || a.c.name.localeCompare(b.c.name))
+    .slice(0, limit)
+  return scored.map((x) => ({
+    ...summarize(x.c),
+    score: x.score,
+    rationale: `matched: ${x.matched.join(', ')}`,
+  }))
+}
+
+/** A component usage to validate against the manifest. */
+export interface UsageToValidate {
+  name: string
+  framework?: Framework
+  /** prop name → the value as written (quotes optional for string literals). */
+  props?: Record<string, string>
+}
+
+export interface UsageIssue {
+  severity: 'error' | 'warning'
+  message: string
+}
+
+const stripQuotes = (v: string): string => v.trim().replace(/^['"]|['"]$/g, '')
+
+/**
+ * Validate a component usage against the typed manifest — the "verify your
+ * guess" counterpart to the typed contracts: unknown component / unsupported
+ * framework / missing required prop / unknown prop / invalid enum value (using
+ * the manifest's enumerated literal values) / plugin-activation reminder. An
+ * agent can call this before emitting code instead of guess-and-check.
+ */
+export function validateUsage(manifest: IrisManifest, usage: UsageToValidate): UsageIssue[] {
+  const issues: UsageIssue[] = []
+  const component = getComponentApi(manifest, usage.name)
+  if (!component) {
+    issues.push({ severity: 'error', message: `Unknown component "${usage.name}".` })
+    return issues
+  }
+  if (usage.framework && !component.frameworks.includes(usage.framework)) {
+    issues.push({
+      severity: 'error',
+      message: `${usage.name} is not available in ${usage.framework} (available: ${component.frameworks.join(', ')}).`,
+    })
+  }
+  if (component.plugin) {
+    issues.push({
+      severity: 'warning',
+      message: `${usage.name} requires the ${component.plugin} plugin via <IrisProvider plugins={[…]}>.`,
+    })
+  }
+  const props = component.props ?? []
+  const known = new Map(props.map((p) => [p.name, p]))
+  const provided = usage.props ?? {}
+  for (const p of props) {
+    if (!p.optional && !(p.name in provided)) {
+      issues.push({ severity: 'error', message: `Missing required prop "${p.name}" (${p.type}).` })
+    }
+  }
+  for (const [name, value] of Object.entries(provided)) {
+    const p = known.get(name)
+    if (!p) {
+      issues.push({ severity: 'warning', message: `Unknown prop "${name}" on ${usage.name}.` })
+      continue
+    }
+    if (p.enum && p.enum.length > 0) {
+      const v = stripQuotes(value)
+      if (v && !p.enum.includes(v)) {
+        issues.push({
+          severity: 'error',
+          message: `Invalid value "${value}" for "${name}". One of: ${p.enum.map((e) => `'${e}'`).join(', ')}.`,
+        })
+      }
+    }
+  }
+  return issues
+}

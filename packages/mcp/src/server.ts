@@ -10,6 +10,8 @@ import {
   getComponentApi,
   scaffoldSnippet,
   scaffoldView,
+  suggestComponents,
+  validateUsage,
 } from './tools'
 
 /**
@@ -109,6 +111,46 @@ server.registerTool(
       content: [{ type: 'text' as const, text: view ?? `Cannot compose a view for ${framework}.` }],
     }
   },
+)
+
+server.registerTool(
+  'suggest_components',
+  {
+    description:
+      'Recommend Iris UI components for a free-text requirement (e.g. "a date picker for a form", "tabs with keyboard nav"). Returns a ranked list with the matched terms. Use to PICK a component instead of scanning the full list.',
+    inputSchema: {
+      requirement: z.string().describe('What you need, in plain words'),
+      limit: z.number().int().positive().optional().describe('Max results (default 5)'),
+    },
+  },
+  async ({ requirement, limit }) => json(suggestComponents(manifest, requirement, limit)),
+)
+
+server.registerTool(
+  'validate_usage',
+  {
+    description:
+      'Validate a component usage against the typed manifest BEFORE writing code: unknown component, unsupported framework, missing required prop, unknown prop, invalid enum value (checked against the allowed literal values), and plugin-activation reminders. Returns an array of issues (empty = valid).',
+    inputSchema: {
+      name: z.string().describe('Exact component name, e.g. "IrisButton"'),
+      framework: z
+        .enum(ALL_FRAMEWORKS as [string, ...string[]])
+        .optional()
+        .describe('Optional: also check the component is available in this framework'),
+      props: z
+        .record(z.string())
+        .optional()
+        .describe('prop name → value (as written), e.g. { "variant": "solid", "size": "md" }'),
+    },
+  },
+  async ({ name, framework, props }) =>
+    json(
+      validateUsage(manifest, {
+        name,
+        framework: framework as (typeof ALL_FRAMEWORKS)[number] | undefined,
+        props,
+      }),
+    ),
 )
 
 async function main(): Promise<void> {

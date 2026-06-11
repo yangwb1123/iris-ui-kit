@@ -48,9 +48,17 @@ from an `IrisTheme`; `dtcgToCss` is the DTCG-pipeline equivalent.)
   from step 1 directly — Tokens Studio reads DTCG natively, and Figma Variables
   import the flat JSON. Edits made in Figma export back to DTCG, closing the
   round-trip.
-- **Components (Code Connect):** `figma/IrisButton.figma.tsx` is a [Figma Code
-  Connect](https://www.figma.com/code-connect-docs/) template mapping a Figma
-  Button component's variants to `IrisButton` code. Fill in your component's
-  node URL and publish with `npx figma connect publish`. It lives outside `src/`
-  so it never enters the library build (Code Connect is a tooling-only
-  dependency).
+- **Components (Code Connect):** `figma/*.figma.tsx` are [Figma Code
+  Connect](https://www.figma.com/code-connect-docs/) templates mapping Figma
+  component variants to Iris React code (`IrisButton`, `IrisSwitch`, …), with a
+  ready `figma.config.json` (`include: figma/**/*.figma.tsx`, `parser: react`).
+  Fill in each component's Figma node URL and publish:
+
+  ```bash
+  npm i -D @figma/code-connect
+  cd packages/tokens && npx figma connect publish   # reads figma.config.json
+  ```
+
+  The templates live outside `src/` so they never enter the library build (Code
+  Connect is a tooling-only dependency). Add a component by dropping in another
+  `figma/<Name>.figma.tsx`.

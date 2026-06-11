@@ -26,7 +26,12 @@ const BUDGETS = {
   // Genuine shared logic — core is the framework-agnostic logic home by design.
   // Bumped 15→16 (R54): more dir-1 engine material (subscribeWith, 2D virtual
   // primitive, nextGridCell grid-roving) + plugin dependency-ordering topo sort.
-  core: 16,
+  // Bumped 16→18 (R69): the dir-1 keystone — createDataSource (the unified data
+  // engine: multi-sort, typed filters, paged+infinite, per-row pending/error,
+  // optimistic mutate) + createCellEdit + column accessors. The convergence
+  // round (pro-table/resource → createDataSource) is expected to reclaim some of
+  // this by replacing their duplicated logic with thin wrappers.
+  core: 18,
   tokens: 2,
   theme: 3.5,
   skins: 5,

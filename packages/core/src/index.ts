@@ -133,6 +133,17 @@ export {
   type CreateCellEditOptions,
 } from './cell-edit'
 export {
+  createDataSource,
+  createClientDataSource,
+  type DataSourceController,
+  type DataSourceConfig,
+  type DataSourceState,
+  type DataSourceQuery,
+  type DataSourceMode,
+  type MutateOptions as DataSourceMutateOptions,
+  type RowMutateOptions,
+} from './data-source'
+export {
   clamp01,
   hsvToRgb,
   rgbToHsv,

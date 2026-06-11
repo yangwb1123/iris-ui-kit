@@ -65,8 +65,11 @@ export {
 export {
   toSpreadsheetXml,
   toCsv,
+  toJson,
+  toHtml,
   type TableExportColumn,
   type SpreadsheetXmlOptions,
+  type TableHtmlOptions,
 } from './table-export'
 export {
   compareValues,

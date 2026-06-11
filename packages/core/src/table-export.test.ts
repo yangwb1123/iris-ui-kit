@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toSpreadsheetXml, toCsv, type TableExportColumn } from './table-export'
+import { toSpreadsheetXml, toCsv, toJson, toHtml, type TableExportColumn } from './table-export'
 
 interface Row extends Record<string, unknown> {
   name: string
@@ -95,5 +95,36 @@ describe('toCsv', () => {
 
   it('header only when there are no rows', () => {
     expect(toCsv([], columns)).toBe('Name,Age')
+  })
+})
+
+describe('toJson', () => {
+  it('serializes rows keyed by column key, reading dataIndex', () => {
+    const cols: TableExportColumn[] = [
+      { key: 'name', title: 'Name' },
+      { key: 'years', title: 'Age', dataIndex: 'age' },
+    ]
+    expect(JSON.parse(toJson(rows, cols))).toEqual([
+      { name: 'Ann', years: 30 },
+      { name: 'Bob', years: 25 },
+    ])
+  })
+
+  it('honors pretty: false (compact)', () => {
+    expect(toJson(rows, columns, { pretty: false })).not.toContain('\n')
+  })
+})
+
+describe('toHtml', () => {
+  it('emits a table with escaped cells + right-aligned numbers', () => {
+    const html = toHtml([{ name: 'A & <b>', age: 7 }], columns)
+    expect(html.startsWith('<table>')).toBe(true)
+    expect(html).toContain('<th>Name</th>')
+    expect(html).toContain('A &amp; &lt;b&gt;')
+    expect(html).toContain('<td style="text-align:right">7</td>')
+  })
+
+  it('adds a caption when given', () => {
+    expect(toHtml(rows, columns, { caption: 'People' })).toContain('<caption>People</caption>')
   })
 })

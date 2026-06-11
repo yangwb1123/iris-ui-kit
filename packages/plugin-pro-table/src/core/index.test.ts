@@ -125,6 +125,24 @@ describe('createProTableStore — export', () => {
     expect(xml).toContain('ss:Name="Users"')
     expect(xml).toContain('Charlie')
   })
+
+  it('exports JSON of filtered+sorted rows (visible columns only)', () => {
+    const t = make({ pageSize: 2 })
+    t.toggleSort('age')
+    const data = JSON.parse(t.exportJson()) as { name: string; age: number }[]
+    expect(data).toHaveLength(4)
+    expect(data[0]).toEqual({ name: 'Alice', age: 25 })
+    expect(Object.keys(data[0]!)).toEqual(['name', 'age'])
+  })
+
+  it('exports an HTML table', () => {
+    const t = make()
+    const html = t.exportHtml({ caption: 'Users' })
+    expect(html.startsWith('<table>')).toBe(true)
+    expect(html).toContain('<caption>Users</caption>')
+    expect(html).toContain('<th>Name</th>')
+    expect(html).toContain('Charlie')
+  })
 })
 
 describe('proTablePlugin', () => {

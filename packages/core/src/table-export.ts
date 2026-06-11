@@ -38,6 +38,61 @@ export function toCsv(
   return body ? `${header}\n${body}` : header
 }
 
+/**
+ * Serialize rows to a JSON string — an array of objects keyed by each column's
+ * `key`, values read via `dataIndex`. The portable, re-importable export format
+ * (`toCsv`/`toSpreadsheetXml`'s structured sibling). Pretty-printed by default.
+ */
+export function toJson(
+  rows: readonly Record<string, unknown>[],
+  columns: readonly TableExportColumn[],
+  options: { pretty?: boolean } = {},
+): string {
+  const out = rows.map((row) => {
+    const obj: Record<string, unknown> = {}
+    for (const c of columns) obj[c.key] = row[c.dataIndex ?? c.key]
+    return obj
+  })
+  return JSON.stringify(out, null, options.pretty === false ? undefined : 2)
+}
+
+export interface TableHtmlOptions {
+  /** Optional `<caption>` text. */
+  caption?: string
+  /** Right-align numeric cells (print-friendly). Default true. */
+  alignNumbers?: boolean
+}
+
+/**
+ * Serialize rows to an HTML `<table>` string — for print / preview / email.
+ * Column titles head the table; numeric cells are right-aligned; all text is
+ * HTML-escaped. An adapter can drop this into a fresh window and call
+ * `window.print()` for a print-friendly table.
+ */
+export function toHtml(
+  rows: readonly Record<string, unknown>[],
+  columns: readonly TableExportColumn[],
+  options: TableHtmlOptions = {},
+): string {
+  const alignNumbers = options.alignNumbers !== false
+  const th = columns.map((c) => `<th>${escapeXml(c.title)}</th>`).join('')
+  const trs = rows
+    .map((row) => {
+      const tds = columns
+        .map((c) => {
+          const v = row[c.dataIndex ?? c.key]
+          const numeric = alignNumbers && typeof v === 'number' && Number.isFinite(v)
+          const style = numeric ? ' style="text-align:right"' : ''
+          return `<td${style}>${v == null ? '' : escapeXml(String(v))}</td>`
+        })
+        .join('')
+      return `<tr>${tds}</tr>`
+    })
+    .join('')
+  const caption = options.caption ? `<caption>${escapeXml(options.caption)}</caption>` : ''
+  return `<table>${caption}<thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`
+}
+
 export interface SpreadsheetXmlOptions {
   /** Worksheet tab name. Default `'Sheet1'`. */
   sheetName?: string

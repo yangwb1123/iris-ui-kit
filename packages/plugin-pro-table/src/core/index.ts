@@ -10,8 +10,11 @@ import {
   readCell,
   toCsv,
   toSpreadsheetXml,
+  toJson,
+  toHtml,
   type Store,
   type DataViewColumn,
+  type TableHtmlOptions,
 } from '@iris-ui/core'
 
 /**
@@ -129,6 +132,10 @@ export interface ProTableStore<Row = Record<string, unknown>> {
   reload(): void
   exportCsv(): string
   exportExcelXml(sheetName?: string): string
+  /** Export the visible columns + processed rows as a JSON array of objects. */
+  exportJson(): string
+  /** Export the visible columns + processed rows as an HTML `<table>` (print/email). */
+  exportHtml(options?: TableHtmlOptions): string
 }
 
 export function createProTableStore<Row extends Record<string, unknown>>(
@@ -229,6 +236,23 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     return filterSort(allRows, dataViewColumns(), { filters, sort })
   }
 
+  /** Visible columns + processed rows — the shared input for every export format. */
+  function exportData(): {
+    rows: Record<string, unknown>[]
+    cols: { key: string; title: string; dataIndex: string }[]
+  } {
+    const cols = visibleColumns().map((c) => ({
+      key: c.key,
+      title: c.title,
+      dataIndex: dataIndexOf(c),
+    }))
+    const rows = (mode === 'client' ? processedAll() : store.getState().rows) as Record<
+      string,
+      unknown
+    >[]
+    return { rows, cols }
+  }
+
   // Initial load — client mode applies synchronously (rows ready now), server
   // mode kicks the first fetch.
   void dataSource.load()
@@ -273,30 +297,24 @@ export function createProTableStore<Row extends Record<string, unknown>>(
       void dataSource.reload()
     },
 
-    exportCsv() {
-      const cols = visibleColumns().map((c) => ({
-        key: c.key,
-        title: c.title,
-        dataIndex: dataIndexOf(c),
-      }))
-      const rows = (mode === 'client' ? processedAll() : store.getState().rows) as Record<
-        string,
-        unknown
-      >[]
+    exportCsv: () => {
+      const { rows, cols } = exportData()
       return toCsv(rows, cols)
     },
 
-    exportExcelXml(sheetName) {
-      const cols = visibleColumns().map((c) => ({
-        key: c.key,
-        title: c.title,
-        dataIndex: dataIndexOf(c),
-      }))
-      const rows = (mode === 'client' ? processedAll() : store.getState().rows) as Record<
-        string,
-        unknown
-      >[]
+    exportExcelXml: (sheetName) => {
+      const { rows, cols } = exportData()
       return toSpreadsheetXml(rows, cols, { sheetName })
+    },
+
+    exportJson: () => {
+      const { rows, cols } = exportData()
+      return toJson(rows, cols)
+    },
+
+    exportHtml: (options) => {
+      const { rows, cols } = exportData()
+      return toHtml(rows, cols, options)
     },
   }
 

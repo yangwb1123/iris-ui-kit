@@ -3,6 +3,11 @@ export { default as IrisNavMenu } from './NavMenu.svelte'
 export { default as IrisAdminBreadcrumb } from './AdminBreadcrumb.svelte'
 export { default as IrisAdminTabs } from './AdminTabs.svelte'
 export { useTabsNav, type UseTabsNavReturn } from './useTabsNav'
+export {
+  useAdminShell,
+  type UseAdminShellConfig,
+  type UseAdminShellReturn,
+} from './useAdminShell.svelte'
 export type {
   IrisAdminLayoutProps,
   IrisAdminLayoutMode,

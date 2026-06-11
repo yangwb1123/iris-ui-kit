@@ -1,12 +1,5 @@
 import * as React from 'react'
-import {
-  findNavNode,
-  findNavPath,
-  firstLeaf,
-  isBranch,
-  type NavNode,
-  type TabsNav,
-} from '@iris-ui/core'
+import type { NavNode, TabsNav } from '@iris-ui/core'
 import { IrisSidebarLayout } from '../layouts/SidebarLayout'
 import { IrisHeaderLayout } from '../layouts/HeaderLayout'
 import { useStore } from '../useStore'
@@ -15,6 +8,7 @@ import { IrisAdminBreadcrumb } from './AdminBreadcrumb'
 import { IrisAdminTabs } from './AdminTabs'
 import { IrisIcon } from '../primitives/icon/Icon'
 import { useI18n } from '../i18n'
+import { useAdminShell } from './useAdminShell'
 
 export type IrisAdminLayoutMode = 'sidebar' | 'full-content'
 
@@ -99,16 +93,12 @@ export function IrisAdminLayout({
   children,
 }: IrisAdminLayoutProps): React.ReactElement {
   const { t } = useI18n()
-  const activeControlled = activeKey !== undefined
-  const [internalActive, setInternalActive] = React.useState(activeKey ?? defaultActiveKey ?? '')
-  const currentActive = activeControlled ? (activeKey as string) : internalActive
-  const setActive = React.useCallback(
-    (key: string) => {
-      if (!activeControlled) setInternalActive(key)
-      onActiveKeyChange?.(key)
-    },
-    [activeControlled, onActiveKeyChange],
-  )
+  const {
+    activeKey: currentActive,
+    navigate,
+    syncFromTab,
+    breadcrumb: trail,
+  } = useAdminShell({ menus, activeKey, defaultActiveKey, onActiveKeyChange, onSelect, tabs })
 
   const collapseControlled = collapsed !== undefined
   const [internalCollapsed, setInternalCollapsed] = React.useState(defaultCollapsed)
@@ -121,24 +111,7 @@ export function IrisAdminLayout({
     [collapseControlled, onCollapsedChange],
   )
 
-  const trail = findNavPath(menus, currentActive)
-
-  const navigateTo = (node: NavNode): void => {
-    const leaf = isBranch(node) ? firstLeaf(node) : node
-    setActive(leaf.key)
-    onSelect?.(leaf.key, leaf)
-    tabs?.open({ key: leaf.key, title: leaf.title, icon: leaf.icon })
-  }
-  const handleSelect = (_key: string, node: NavNode): void => navigateTo(node)
-
-  const syncFromTab = React.useCallback(
-    (key: string) => {
-      setActive(key)
-      const node = findNavNode(menus, key)
-      if (node) onSelect?.(key, node)
-    },
-    [setActive, menus, onSelect],
-  )
+  const handleSelect = (_key: string, node: NavNode): void => navigate(node)
 
   const renderContent = (): React.ReactNode =>
     typeof children === 'function' ? children({ activeKey: currentActive }) : children

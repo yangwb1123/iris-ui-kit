@@ -61,4 +61,21 @@ describe('createAdminShell', () => {
     shell.tabs.close('users')
     expect(shell.tabs.getState().activeKey).toBe('dash')
   })
+
+  it('setMenus updates the tree used by breadcrumb + syncFromTab node lookup', () => {
+    const onActiveChange = vi.fn()
+    const shell = createAdminShell({ menus, onActiveChange })
+    const nextMenus: NavNode[] = [
+      { key: 'dash', title: 'Dashboard' },
+      { key: 'reports', title: 'Reports', children: [{ key: 'sales', title: 'Sales' }] },
+    ]
+    shell.setMenus(nextMenus)
+    shell.syncFromTab('sales')
+    expect(shell.getActiveKey()).toBe('sales')
+    expect(onActiveChange).toHaveBeenLastCalledWith(
+      'sales',
+      expect.objectContaining({ key: 'sales' }),
+    )
+    expect(shell.breadcrumb().map((n) => n.key)).toEqual(['reports', 'sales'])
+  })
 })

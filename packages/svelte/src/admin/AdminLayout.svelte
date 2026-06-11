@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { findNavNode, findNavPath, firstLeaf, isBranch, type NavNode } from '@iris-ui/core'
+  import type { NavNode } from '@iris-ui/core'
   import IrisSidebarLayout from '../layouts/SidebarLayout.svelte'
   import IrisHeaderLayout from '../layouts/HeaderLayout.svelte'
   import type { IrisSidebarLayoutSidebarState } from '../layouts/types'
@@ -8,6 +8,7 @@
   import IrisAdminTabs from './AdminTabs.svelte'
   import IrisIcon from '../primitives/icon/IrisIcon.svelte'
   import { useI18n } from '../i18n'
+  import { useAdminShell } from './useAdminShell.svelte'
   import type { IrisAdminLayoutProps } from './types'
 
   const { t } = useI18n()
@@ -33,13 +34,18 @@
     children,
   }: IrisAdminLayoutProps = $props()
 
-  const activeControlled = $derived(activeKey !== undefined)
-  // svelte-ignore state_referenced_locally — initial seed; controlled reads use the prop.
-  let internalActive = $state(activeKey ?? defaultActiveKey ?? '')
-  const currentActive = $derived(activeControlled ? (activeKey as string) : internalActive)
-  function setActive(key: string): void {
-    if (!activeControlled) internalActive = key
-    onActiveKeyChange?.(key)
+  const shell = useAdminShell(() => ({
+    menus,
+    activeKey,
+    defaultActiveKey,
+    onActiveKeyChange,
+    onSelect,
+    tabs,
+  }))
+  const currentActive = $derived(shell.activeKey)
+  const trail = $derived(shell.breadcrumb)
+  function handleSelect(_key: string, node: NavNode): void {
+    shell.navigate(node)
   }
 
   const collapseControlled = $derived(collapsed !== undefined)
@@ -51,28 +57,12 @@
     onCollapsedChange?.(next)
   }
 
-  const trail = $derived(findNavPath(menus, currentActive))
-
-  function navigateTo(node: NavNode): void {
-    const leaf = isBranch(node) ? firstLeaf(node) : node
-    setActive(leaf.key)
-    onSelect?.(leaf.key, leaf)
-    tabs?.open({ key: leaf.key, title: leaf.title, icon: leaf.icon })
-  }
-  function handleSelect(_key: string, node: NavNode): void {
-    navigateTo(node)
-  }
-
   // Mirror tab-store activation (incl. close→neighbor) back into the active key.
   $effect(() => {
     const nav = tabs
     if (!nav) return
     return nav.store.subscribe((s) => {
-      const key = s.activeKey
-      if (!key || key === currentActive) return
-      setActive(key)
-      const node = findNavNode(menus, key)
-      if (node) onSelect?.(key, node)
+      shell.syncFromTab(s.activeKey ?? '')
     })
   })
 </script>

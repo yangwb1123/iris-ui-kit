@@ -8,14 +8,7 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import {
-  findNavNode,
-  findNavPath,
-  firstLeaf,
-  isBranch,
-  type NavNode,
-  type TabsNav,
-} from '@iris-ui/core'
+import { type NavNode, type TabsNav } from '@iris-ui/core'
 import { IrisSidebarLayout } from '../layouts/SidebarLayout'
 import { IrisHeaderLayout } from '../layouts/HeaderLayout'
 import { IrisNavMenu } from './NavMenu'
@@ -23,6 +16,7 @@ import { IrisAdminBreadcrumb } from './AdminBreadcrumb'
 import { IrisAdminTabs } from './AdminTabs'
 import { IrisIcon } from '../primitives/icon/Icon'
 import { useI18n } from '../i18n'
+import { useAdminShell } from './useAdminShell'
 
 export type IrisAdminLayoutMode = 'sidebar' | 'full-content'
 
@@ -65,15 +59,19 @@ export const IrisAdminLayout = defineComponent({
   },
   setup(props, { emit, slots, attrs }) {
     const { t } = useI18n()
-    const activeControlled = computed(() => props.activeKey !== undefined)
-    const internalActive = ref(props.activeKey ?? '')
-    const activeKey = computed(() =>
-      activeControlled.value ? (props.activeKey as string) : internalActive.value,
-    )
-    const setActive = (key: string): void => {
-      if (!activeControlled.value) internalActive.value = key
-      emit('update:activeKey', key)
-    }
+
+    const {
+      activeKey,
+      navigate,
+      syncFromTab,
+      breadcrumb: trail,
+    } = useAdminShell({
+      menus: () => props.menus,
+      activeKey: () => props.activeKey,
+      tabs: props.tabs,
+      onActiveKeyChange: (key) => emit('update:activeKey', key),
+      onSelect: (key, node) => emit('select', key, node),
+    })
 
     const collapseControlled = computed(() => props.collapsed !== undefined)
     const internalCollapsed = ref(props.defaultCollapsed)
@@ -85,16 +83,8 @@ export const IrisAdminLayout = defineComponent({
       emit('update:collapsed', value)
     }
 
-    const trail = computed(() => findNavPath(props.menus, activeKey.value))
-
-    const navigateTo = (node: NavNode): void => {
-      const leaf = isBranch(node) ? firstLeaf(node) : node
-      setActive(leaf.key)
-      emit('select', leaf.key, leaf)
-      props.tabs?.open({ key: leaf.key, title: leaf.title, icon: leaf.icon })
-    }
-    // NavMenu / Breadcrumb emit (key, node); route the node through navigateTo.
-    const onSelect = (_key: string, node: NavNode): void => navigateTo(node)
+    // NavMenu / Breadcrumb emit (key, node); route the node through navigate.
+    const onSelect = (_key: string, node: NavNode): void => navigate(node)
 
     // Tab activation (incl. close → neighbor) is the store's job; mirror it into
     // the layout's active key so the breadcrumb + content stay in sync.
@@ -105,10 +95,7 @@ export const IrisAdminLayout = defineComponent({
       })
       onBeforeUnmount(unsubscribe)
       watch(tabsActive, (key) => {
-        if (!key || key === activeKey.value) return
-        setActive(key)
-        const node = findNavNode(props.menus, key)
-        if (node) emit('select', key, node)
+        if (key) syncFromTab(key)
       })
     }
 

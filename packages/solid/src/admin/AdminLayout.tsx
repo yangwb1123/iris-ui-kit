@@ -1,12 +1,5 @@
 import { createEffect, createSignal, mergeProps, Show, type JSX } from 'solid-js'
-import {
-  findNavNode,
-  findNavPath,
-  firstLeaf,
-  isBranch,
-  type NavNode,
-  type TabsNav,
-} from '@iris-ui/core'
+import { type NavNode, type TabsNav } from '@iris-ui/core'
 import { IrisSidebarLayout } from '../layouts/SidebarLayout'
 import { IrisHeaderLayout } from '../layouts/HeaderLayout'
 import { useStore } from '../useStore'
@@ -15,6 +8,7 @@ import { IrisAdminBreadcrumb } from './AdminBreadcrumb'
 import { IrisAdminTabs } from './AdminTabs'
 import { IrisIcon } from '../primitives/icon/Icon'
 import { useI18n } from '../i18n'
+import { useAdminShell } from './useAdminShell'
 
 export type IrisAdminLayoutMode = 'sidebar' | 'full-content'
 
@@ -70,16 +64,19 @@ export function IrisAdminLayout(props: IrisAdminLayoutProps): JSX.Element {
     props,
   )
 
-  const activeControlled = (): boolean => props.activeKey !== undefined
-  const [internalActive, setInternalActive] = createSignal(
-    props.activeKey ?? props.defaultActiveKey ?? '',
-  )
-  const currentActive = (): string =>
-    activeControlled() ? (props.activeKey as string) : internalActive()
-  const setActive = (key: string): void => {
-    if (!activeControlled()) setInternalActive(key)
-    merged.onActiveKeyChange?.(key)
-  }
+  const {
+    activeKey: currentActive,
+    navigate,
+    syncFromTab,
+    breadcrumb: trail,
+  } = useAdminShell({
+    menus: () => props.menus,
+    activeKey: () => props.activeKey,
+    defaultActiveKey: props.defaultActiveKey,
+    onActiveKeyChange: (key) => merged.onActiveKeyChange?.(key),
+    onSelect: (key, node) => merged.onSelect?.(key, node),
+    tabs: props.tabs,
+  })
 
   const collapseControlled = (): boolean => props.collapsed !== undefined
   const [internalCollapsed, setInternalCollapsed] = createSignal(merged.defaultCollapsed)
@@ -90,25 +87,14 @@ export function IrisAdminLayout(props: IrisAdminLayoutProps): JSX.Element {
     merged.onCollapsedChange?.(next)
   }
 
-  const trail = (): NavNode[] => findNavPath(props.menus, currentActive())
-
-  const navigateTo = (node: NavNode): void => {
-    const leaf = isBranch(node) ? firstLeaf(node) : node
-    setActive(leaf.key)
-    merged.onSelect?.(leaf.key, leaf)
-    props.tabs?.open({ key: leaf.key, title: leaf.title, icon: leaf.icon })
-  }
-  const handleSelect = (_key: string, node: NavNode): void => navigateTo(node)
+  const handleSelect = (_key: string, node: NavNode): void => navigate(node)
 
   // Mirror tab-store activation (incl. close→neighbor) back into the active key.
   if (props.tabs) {
     const tabsState = useStore(props.tabs.store)
     createEffect(() => {
       const key = tabsState().activeKey
-      if (!key || key === currentActive()) return
-      setActive(key)
-      const node = findNavNode(props.menus, key)
-      if (node) merged.onSelect?.(key, node)
+      if (key) syncFromTab(key)
     })
   }
 

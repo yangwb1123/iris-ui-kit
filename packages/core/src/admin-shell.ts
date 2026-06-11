@@ -42,16 +42,23 @@ export interface AdminShell {
   syncFromTab(key: string | null | undefined): void
   /** Ancestor→node breadcrumb trail for the active key. */
   breadcrumb(): NavNode[]
+  /**
+   * Replace the nav tree the shell reconciles against (e.g. an adapter whose
+   * `menus` prop changed). `navigate` already resolves from the passed node, so
+   * this only affects `syncFromTab` node lookup + `breadcrumb`.
+   */
+  setMenus(menus: NavNode[]): void
 }
 
 export function createAdminShell(config: AdminShellConfig): AdminShell {
   const tabs = config.tabs ?? createTabsNav()
   const store = createStore<AdminShellState>({ activeKey: config.defaultActiveKey ?? null })
+  let menus = config.menus
 
   const setActive = (key: string): void => {
     if (store.getState().activeKey === key) return
     store.setState({ activeKey: key })
-    config.onActiveChange?.(key, findNavNode(config.menus, key))
+    config.onActiveChange?.(key, findNavNode(menus, key))
   }
 
   return {
@@ -72,7 +79,11 @@ export function createAdminShell(config: AdminShellConfig): AdminShell {
 
     breadcrumb() {
       const key = store.getState().activeKey
-      return key ? findNavPath(config.menus, key) : []
+      return key ? findNavPath(menus, key) : []
+    },
+
+    setMenus(next) {
+      menus = next
     },
   }
 }

@@ -18,3 +18,11 @@ export type {
 export { lightTheme } from './light'
 export { darkTheme } from './dark'
 export { toDtcg, toDtcgJson, type DtcgType, type DtcgToken, type DtcgGroup } from './dtcg'
+export {
+  flattenDtcg,
+  dtcgToCss,
+  irisStyleDictionaryConfig,
+  type FlatToken,
+  type StyleDictionaryConfig,
+  type StyleDictionaryPlatform,
+} from './style-dictionary'

@@ -21,6 +21,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "tokens:build": "tsup && node scripts/build-tokens.mjs",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",

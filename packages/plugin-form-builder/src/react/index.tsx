@@ -27,7 +27,7 @@ export function IrisFormBuilder({
     builderRef.current = createFormBuilder(schema, { onSubmit, validateOnChange })
   }
   const builder = builderRef.current
-  const { form, fields, submitLabel, labelOf } = builder
+  const { form, submitLabel, labelOf } = builder
   const state = React.useSyncExternalStore(form.subscribe, form.getState, form.getState)
 
   const setValue = (field: FieldSpec, value: unknown) =>
@@ -44,7 +44,7 @@ export function IrisFormBuilder({
       }}
       noValidate
     >
-      {fields.map((field) => {
+      {builder.visibleFields(state.values).map((field) => {
         const id = `iris-fb-${field.name}`
         const value = state.values[field.name]
         const error = state.errors[field.name]

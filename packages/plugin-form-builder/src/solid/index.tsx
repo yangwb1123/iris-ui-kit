@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, For, Show, type JSX } from 'solid-js'
+import { createSignal, createMemo, onCleanup, For, Show, type JSX } from 'solid-js'
 import { createFormBuilder, type FormSchema, type FieldSpec, type FormBuilderConfig } from '../core'
 import type { FormValues } from '@iris-ui/core'
 
@@ -21,10 +21,12 @@ export function IrisFormBuilder(props: IrisFormBuilderProps) {
     onSubmit: props.onSubmit,
     validateOnChange: props.validateOnChange,
   })
-  const { form, fields, submitLabel, labelOf } = builder
+  const { form, submitLabel, labelOf } = builder
 
   const [state, setState] = createSignal(form.getState())
   onCleanup(form.subscribe(setState))
+
+  const visibleFields = createMemo(() => builder.visibleFields(state().values))
 
   const setValue = (field: FieldSpec, value: unknown) =>
     form.setFieldValue(field.name, value as FormValues[string])
@@ -40,7 +42,7 @@ export function IrisFormBuilder(props: IrisFormBuilderProps) {
       }}
       noValidate
     >
-      <For each={fields}>
+      <For each={visibleFields()}>
         {(field) => {
           const id = `iris-fb-${field.name}`
           const type = field.type ?? 'text'

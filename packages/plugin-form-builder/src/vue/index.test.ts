@@ -47,4 +47,18 @@ describe('IrisFormBuilder (vue)', () => {
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ name: 'Ada' }))
     wrapper.unmount()
   })
+
+  it('hides a conditional (when) field until its predicate passes', async () => {
+    const conditional: FormSchema = {
+      fields: [
+        { name: 'hasAccount', type: 'checkbox' },
+        { name: 'username', type: 'text', when: (v) => v.hasAccount === true },
+      ],
+    }
+    const wrapper = mount(IrisFormBuilder, { props: { schema: conditional } })
+    expect(wrapper.find('[data-iris-form-field="username"]').exists()).toBe(false)
+    await wrapper.find('[data-iris-form-field="hasAccount"] input').setValue(true)
+    expect(wrapper.find('[data-iris-form-field="username"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
 })

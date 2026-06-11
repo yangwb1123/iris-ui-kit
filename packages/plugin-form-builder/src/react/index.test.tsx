@@ -47,4 +47,17 @@ describe('IrisFormBuilder (react)', () => {
     await vi.waitFor(() => expect(onSubmit).toHaveBeenCalled())
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ name: 'Ada' }))
   })
+
+  it('hides a conditional (when) field until its predicate passes', () => {
+    const conditional: FormSchema = {
+      fields: [
+        { name: 'hasAccount', type: 'checkbox' },
+        { name: 'username', type: 'text', when: (v) => v.hasAccount === true },
+      ],
+    }
+    const { container } = render(<IrisFormBuilder schema={conditional} />)
+    expect(container.querySelector('[data-iris-form-field="username"]')).toBeNull()
+    fireEvent.click(container.querySelector('[data-iris-form-field="hasAccount"] input')!)
+    expect(container.querySelector('[data-iris-form-field="username"]')).not.toBeNull()
+  })
 })

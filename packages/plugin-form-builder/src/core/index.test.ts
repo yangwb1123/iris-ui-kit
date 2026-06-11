@@ -47,6 +47,41 @@ describe('createFormBuilder', () => {
     expect(fb.fields).toHaveLength(4)
     expect(fb.submitLabel).toBe('Create')
   })
+
+  describe('conditional fields (when)', () => {
+    const conditional: FormSchema = {
+      fields: [
+        { name: 'hasAccount', type: 'checkbox' },
+        { name: 'username', type: 'text', required: true, when: (v) => v.hasAccount === true },
+      ],
+    }
+
+    it('visibleFields / isVisible reflect the when predicate', () => {
+      const fb = createFormBuilder(conditional)
+      expect(fb.visibleFields({ hasAccount: false }).map((f) => f.name)).toEqual(['hasAccount'])
+      expect(fb.visibleFields({ hasAccount: true }).map((f) => f.name)).toEqual([
+        'hasAccount',
+        'username',
+      ])
+      expect(fb.isVisible(conditional.fields[1]!, { hasAccount: true })).toBe(true)
+    })
+
+    it('a hidden required field does not block submit', async () => {
+      const onSubmit = vi.fn()
+      const { form } = createFormBuilder(conditional, { onSubmit })
+      // username is required but hidden (hasAccount false) → submit succeeds.
+      await form.handleSubmit()
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      expect(form.getState().errors.username).toBeUndefined()
+    })
+
+    it('the required validator applies once the field becomes visible', async () => {
+      const { form } = createFormBuilder(conditional)
+      form.setFieldValue('hasAccount', true)
+      await form.validateForm()
+      expect(form.getState().errors.username).toBe('Username is required')
+    })
+  })
 })
 
 describe('formBuilderPlugin', () => {

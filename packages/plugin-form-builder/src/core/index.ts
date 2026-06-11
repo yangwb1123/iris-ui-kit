@@ -1,5 +1,7 @@
 import { createFormStore, createPlugin, type FormStore, type FormValues } from '@iris-ui/core'
 
+export type { FormValues } from '@iris-ui/core'
+
 /**
  * `@iris-ui/plugin-form-builder` — render a working, validated form from a
  * declarative schema. This `core` entry is framework-agnostic: it COMPILES a
@@ -36,6 +38,13 @@ export interface FieldSpec {
   options?: FieldOption[]
   /** Seed value (defaults to `false` for checkbox, `''` otherwise). */
   defaultValue?: unknown
+  /**
+   * Conditional visibility: the field is shown only when this returns true for
+   * the current form values (e.g. `(v) => v.hasAccount === true`). A hidden
+   * field is not rendered AND its `required` validator is skipped, so it never
+   * silently blocks submit. Omitted = always visible.
+   */
+  when?: (values: FormValues) => boolean
 }
 
 export interface FormSchema {
@@ -55,6 +64,10 @@ export interface FormBuilder {
   submitLabel: string
   /** The resolved label for a field (explicit or humanized from its name). */
   labelOf(field: FieldSpec): string
+  /** Whether a field is visible for the given values (its `when`, default true). */
+  isVisible(field: FieldSpec, values: FormValues): boolean
+  /** The fields visible for the given values — what renderers should draw. */
+  visibleFields(values: FormValues): FieldSpec[]
 }
 
 /** Humanize a camelCase / snake_case name into a Title Case label. */
@@ -73,16 +86,20 @@ function isEmpty(value: unknown): boolean {
 /** Compile a {@link FormSchema} into a live {@link FormBuilder}. */
 export function createFormBuilder(schema: FormSchema, config: FormBuilderConfig = {}): FormBuilder {
   const labelOf = (field: FieldSpec): string => field.label ?? humanize(field.name)
+  const isVisible = (field: FieldSpec, values: FormValues): boolean =>
+    field.when ? field.when(values) : true
 
   const initialValues: FormValues = {}
-  const validators: Record<string, (value: unknown) => string | undefined> = {}
+  const validators: Record<string, (value: unknown, values: FormValues) => string | undefined> = {}
   for (const field of schema.fields) {
     initialValues[field.name] =
       field.defaultValue ?? (field.type === 'checkbox' ? false : field.type === 'number' ? '' : '')
     if (field.required) {
       const label = labelOf(field)
-      validators[field.name] = (value: unknown) =>
-        isEmpty(value) ? `${label} is required` : undefined
+      // A conditionally-hidden field skips its required check, so it can't
+      // silently block submit when the user can't even see it.
+      validators[field.name] = (value: unknown, values: FormValues) =>
+        isVisible(field, values) && isEmpty(value) ? `${label} is required` : undefined
     }
   }
 
@@ -93,7 +110,14 @@ export function createFormBuilder(schema: FormSchema, config: FormBuilderConfig 
     onSubmit: config.onSubmit,
   })
 
-  return { form, fields: schema.fields, submitLabel: schema.submitLabel ?? 'Submit', labelOf }
+  return {
+    form,
+    fields: schema.fields,
+    submitLabel: schema.submitLabel ?? 'Submit',
+    labelOf,
+    isVisible,
+    visibleFields: (values) => schema.fields.filter((f) => isVisible(f, values)),
+  }
 }
 
 /** CSS custom properties the form builder reads; overridable by the host theme. */

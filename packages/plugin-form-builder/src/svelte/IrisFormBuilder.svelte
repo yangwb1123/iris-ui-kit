@@ -23,7 +23,7 @@
   // (mirrors the React renderer's lazy-ref). No new form logic lives here.
   // svelte-ignore state_referenced_locally
   const builder = createFormBuilder(schema, { onSubmit, validateOnChange })
-  const { form, fields, submitLabel, labelOf } = builder
+  const { form, submitLabel, labelOf } = builder
 
   // NB: do not name this `state` — a leading `$` would make Svelte read
   // `$state` as a store auto-subscription instead of the rune.
@@ -51,7 +51,7 @@
     void form.handleSubmit()
   }}
 >
-  {#each fields as field (field.name)}
+  {#each builder.visibleFields(formState.values) as field (field.name)}
     {@const type = field.type ?? 'text'}
     {@const id = idOf(field.name)}
     {@const value = formState.values[field.name]}

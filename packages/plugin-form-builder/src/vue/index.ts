@@ -36,7 +36,7 @@ export const IrisFormBuilder = defineComponent({
       onSubmit: props.onSubmit,
       validateOnChange: props.validateOnChange,
     })
-    const { form, fields, submitLabel, labelOf } = builder
+    const { form, submitLabel, labelOf } = builder
 
     const state = shallowRef(form.getState())
     let unsub = () => {}
@@ -51,7 +51,7 @@ export const IrisFormBuilder = defineComponent({
       form.setFieldValue(field.name, value as FormValues[string])
 
     return () => {
-      const fieldNodes: VNode[] = fields.map((field) => {
+      const fieldNodes: VNode[] = builder.visibleFields(state.value.values).map((field) => {
         const id = `iris-fb-${field.name}`
         const value = state.value.values[field.name]
         const error = state.value.errors[field.name]

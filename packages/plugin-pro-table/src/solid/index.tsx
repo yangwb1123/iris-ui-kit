@@ -1,11 +1,17 @@
 import { createSignal, onCleanup, For, Show, type JSX } from 'solid-js'
-import type { ProTableStore } from '../core'
+import { proTableLabel, type ProTableStore, type ProTableLabels } from '../core'
 
-export type { ProTableColumn, ProTableStore } from '../core'
+export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
 
 export interface IrisProTableProps<Row extends Record<string, unknown>> {
   store: ProTableStore<Row>
   class?: string
+  /**
+   * Host-overridable UI strings (aria-labels + pager). Pass localized values
+   * (e.g. from the adapter's `useI18n().t`) — plugins can't reach adapter i18n
+   * directly. Defaults to English.
+   */
+  labels?: ProTableLabels
 }
 
 function pinnedStyle(column: { pinned?: 'left' | 'right' }): JSX.CSSProperties | undefined {
@@ -59,7 +65,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
             <th scope="col">
               <input
                 type="checkbox"
-                aria-label="Select all"
+                aria-label={proTableLabel(props.labels, 'selectAll')}
                 checked={props.store.isAllSelected()}
                 onChange={() => props.store.toggleAll()}
               />
@@ -102,7 +108,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                   <th>
                     <Show when={c.filterable}>
                       <input
-                        aria-label={`Filter ${c.title}`}
+                        aria-label={proTableLabel(props.labels, 'filterColumn', { title: c.title })}
                         value={state().filters[c.key] ?? ''}
                         onInput={(e) => props.store.setFilter(c.key, e.currentTarget.value)}
                       />
@@ -122,7 +128,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                   <td>
                     <input
                       type="checkbox"
-                      aria-label={`Select row ${key}`}
+                      aria-label={proTableLabel(props.labels, 'selectRow', { key: String(key) })}
                       checked={props.store.isSelected(key)}
                       onChange={() => props.store.toggleRow(key)}
                     />
@@ -169,7 +175,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
           disabled={state().page <= 1}
           onClick={() => props.store.setPage(state().page - 1)}
         >
-          Prev
+          {proTableLabel(props.labels, 'prev')}
         </button>
         <span data-iris-pro-table-page="">
           {state().page} / {props.store.pageCount()}
@@ -179,7 +185,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
           disabled={state().page >= props.store.pageCount()}
           onClick={() => props.store.setPage(state().page + 1)}
         >
-          Next
+          {proTableLabel(props.labels, 'next')}
         </button>
       </div>
     </div>

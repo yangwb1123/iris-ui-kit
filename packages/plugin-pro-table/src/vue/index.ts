@@ -8,9 +8,14 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import type { ProTableColumn, ProTableStore } from '../core'
+import {
+  proTableLabel,
+  type ProTableColumn,
+  type ProTableStore,
+  type ProTableLabels,
+} from '../core'
 
-export type { ProTableColumn, ProTableStore } from '../core'
+export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
 
 function pinnedStyle(column: ProTableColumn): Record<string, string> | undefined {
   if (!column.pinned) return undefined
@@ -26,6 +31,12 @@ export const IrisProTable = defineComponent({
   name: 'IrisProTable',
   props: {
     store: { type: Object as PropType<ProTableStore>, required: true },
+    /**
+     * Host-overridable UI strings (aria-labels + pager). Pass localized values
+     * (e.g. from the adapter's `useI18n().t`) — plugins can't reach adapter i18n
+     * directly. Defaults to English.
+     */
+    labels: { type: Object as PropType<ProTableLabels>, default: undefined },
   },
   setup(props) {
     const state = shallowRef(props.store.getState())
@@ -70,7 +81,7 @@ export const IrisProTable = defineComponent({
         h('th', { scope: 'col' }, [
           h('input', {
             type: 'checkbox',
-            'aria-label': 'Select all',
+            'aria-label': proTableLabel(props.labels, 'selectAll'),
             checked: props.store.isAllSelected(),
             onChange: () => props.store.toggleAll(),
           }),
@@ -110,7 +121,9 @@ export const IrisProTable = defineComponent({
                 c.filterable
                   ? [
                       h('input', {
-                        'aria-label': `Filter ${c.title}`,
+                        'aria-label': proTableLabel(props.labels, 'filterColumn', {
+                          title: c.title,
+                        }),
                         value: state.value.filters[c.key] ?? '',
                         onInput: (e: Event) =>
                           props.store.setFilter(c.key, (e.target as HTMLInputElement).value),
@@ -128,7 +141,7 @@ export const IrisProTable = defineComponent({
           h('td', [
             h('input', {
               type: 'checkbox',
-              'aria-label': `Select row ${key}`,
+              'aria-label': proTableLabel(props.labels, 'selectRow', { key: String(key) }),
               checked: props.store.isSelected(key),
               onChange: () => props.store.toggleRow(key),
             }),
@@ -175,7 +188,7 @@ export const IrisProTable = defineComponent({
               disabled: state.value.page <= 1,
               onClick: () => props.store.setPage(state.value.page - 1),
             },
-            'Prev',
+            proTableLabel(props.labels, 'prev'),
           ),
           h(
             'span',
@@ -189,7 +202,7 @@ export const IrisProTable = defineComponent({
               disabled: state.value.page >= props.store.pageCount(),
               onClick: () => props.store.setPage(state.value.page + 1),
             },
-            'Next',
+            proTableLabel(props.labels, 'next'),
           ),
         ]),
       ])

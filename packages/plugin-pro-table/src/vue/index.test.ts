@@ -55,4 +55,30 @@ describe('IrisProTable (vue)', () => {
     ).toBe('ascending')
     wrapper.unmount()
   })
+
+  it('localizes UI strings via the labels prop (defaults to English)', () => {
+    const store = createProTableStore<User>({
+      columns: [{ ...columns[0]!, filterable: true }, columns[1]!],
+      rowKey: 'id',
+      data,
+    })
+    const wrapper = mount(IrisProTable, {
+      props: {
+        store,
+        labels: {
+          selectAll: 'Tout sélectionner',
+          filterColumn: 'Filtrer {title}',
+          selectRow: 'Ligne {key}',
+          prev: 'Précédent',
+          next: 'Suivant',
+        },
+      },
+    })
+    expect(wrapper.element.querySelector('[aria-label="Tout sélectionner"]')).toBeTruthy()
+    expect(wrapper.element.querySelector('[aria-label="Filtrer Name"]')).toBeTruthy()
+    expect(wrapper.element.querySelector('[aria-label="Ligne 1"]')).toBeTruthy()
+    expect(wrapper.text()).toContain('Précédent')
+    expect(wrapper.text()).toContain('Suivant')
+    wrapper.unmount()
+  })
 })

@@ -1,11 +1,17 @@
 import * as React from 'react'
-import type { ProTableStore } from '../core'
+import { proTableLabel, type ProTableStore, type ProTableLabels } from '../core'
 
-export type { ProTableColumn, ProTableStore } from '../core'
+export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
 
 export interface IrisProTableProps<Row extends Record<string, unknown>> {
   store: ProTableStore<Row>
   className?: string
+  /**
+   * Host-overridable UI strings (aria-labels + pager). Pass localized values
+   * (e.g. from the adapter's `useI18n().t`) — plugins can't reach adapter i18n
+   * directly. Defaults to English.
+   */
+  labels?: ProTableLabels
 }
 
 function pinnedStyle(column: { pinned?: 'left' | 'right' }): React.CSSProperties | undefined {
@@ -21,6 +27,7 @@ function pinnedStyle(column: { pinned?: 'left' | 'right' }): React.CSSProperties
 export function IrisProTable<Row extends Record<string, unknown>>({
   store,
   className,
+  labels,
 }: IrisProTableProps<Row>) {
   const state = React.useSyncExternalStore(store.subscribe, store.getState, store.getState)
   const columns = store.visibleColumns()
@@ -56,7 +63,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
             <th scope="col">
               <input
                 type="checkbox"
-                aria-label="Select all"
+                aria-label={proTableLabel(labels, 'selectAll')}
                 checked={store.isAllSelected()}
                 onChange={() => store.toggleAll()}
               />
@@ -93,7 +100,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
                 <th key={c.key}>
                   {c.filterable && (
                     <input
-                      aria-label={`Filter ${c.title}`}
+                      aria-label={proTableLabel(labels, 'filterColumn', { title: c.title })}
                       value={state.filters[c.key] ?? ''}
                       onChange={(e) => store.setFilter(c.key, e.target.value)}
                     />
@@ -111,7 +118,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
                 <td>
                   <input
                     type="checkbox"
-                    aria-label={`Select row ${key}`}
+                    aria-label={proTableLabel(labels, 'selectRow', { key: String(key) })}
                     checked={store.isSelected(key)}
                     onChange={() => store.toggleRow(key)}
                   />
@@ -154,7 +161,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
           disabled={state.page <= 1}
           onClick={() => store.setPage(state.page - 1)}
         >
-          Prev
+          {proTableLabel(labels, 'prev')}
         </button>
         <span data-iris-pro-table-page="">
           {state.page} / {store.pageCount()}
@@ -164,7 +171,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
           disabled={state.page >= store.pageCount()}
           onClick={() => store.setPage(state.page + 1)}
         >
-          Next
+          {proTableLabel(labels, 'next')}
         </button>
       </div>
     </div>

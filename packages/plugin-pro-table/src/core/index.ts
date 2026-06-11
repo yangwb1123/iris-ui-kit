@@ -327,6 +327,48 @@ export function createProTableStore<Row extends Record<string, unknown>>(
   return api
 }
 
+/**
+ * Host-overridable UI strings for the ProTable renderers. Plugins are
+ * framework-agnostic at the core and don't depend on the adapter packages, so
+ * they can't reach the adapter `useI18n()` — instead the host localizes by
+ * passing `labels` (e.g. `labels={{ selectAll: t('table.selectAll') }}`).
+ * `filterColumn` interpolates `{title}`, `selectRow` interpolates `{key}`.
+ */
+export interface ProTableLabels {
+  selectAll?: string
+  filterColumn?: string
+  selectRow?: string
+  prev?: string
+  next?: string
+}
+
+export const defaultProTableLabels: Required<ProTableLabels> = {
+  selectAll: 'Select all',
+  filterColumn: 'Filter {title}',
+  selectRow: 'Select row {key}',
+  prev: 'Prev',
+  next: 'Next',
+}
+
+/**
+ * Resolve a ProTable label: the host override (if any) else the English default,
+ * with `{name}` placeholders filled from `vars`. Shared by all four renderers so
+ * the contract + interpolation live once.
+ */
+export function proTableLabel(
+  labels: ProTableLabels | undefined,
+  key: keyof ProTableLabels,
+  vars?: Record<string, string>,
+): string {
+  let text = labels?.[key] ?? defaultProTableLabels[key]
+  if (vars) {
+    for (const [name, value] of Object.entries(vars)) {
+      text = text.replace(`{${name}}`, value)
+    }
+  }
+  return text
+}
+
 /** CSS custom properties the ProTable reads; overridable by the host theme. */
 export const proTableTokens: Record<string, string> = {
   '--iris-pro-table-border': 'var(--iris-color-border, #e5e7eb)',

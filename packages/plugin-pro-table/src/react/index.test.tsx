@@ -34,4 +34,29 @@ describe('IrisProTable (react)', () => {
     fireEvent.click(getByText(/Age/))
     expect(store.getState().sort).toEqual({ key: 'age', direction: 'asc' })
   })
+
+  it('localizes UI strings via the labels prop (defaults to English)', () => {
+    const store = createProTableStore<User>({
+      columns: [{ ...columns[0]!, filterable: true }, columns[1]!],
+      rowKey: 'id',
+      data,
+    })
+    const { container } = render(
+      <IrisProTable
+        store={store}
+        labels={{
+          selectAll: 'Tout sélectionner',
+          filterColumn: 'Filtrer {title}',
+          selectRow: 'Ligne {key}',
+          prev: 'Précédent',
+          next: 'Suivant',
+        }}
+      />,
+    )
+    expect(container.querySelector('[aria-label="Tout sélectionner"]')).toBeTruthy()
+    expect(container.querySelector('[aria-label="Filtrer Name"]')).toBeTruthy()
+    expect(container.querySelector('[aria-label="Ligne 1"]')).toBeTruthy()
+    expect(container.textContent).toContain('Précédent')
+    expect(container.textContent).toContain('Suivant')
+  })
 })

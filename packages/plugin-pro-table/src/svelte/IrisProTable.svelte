@@ -1,9 +1,22 @@
 <script lang="ts">
-  import type { ProTableState, ProTableStore } from '../core'
+  import { proTableLabel, type ProTableLabels, type ProTableState, type ProTableStore } from '../core'
 
   type Row = Record<string, unknown>
 
-  let { store, class: klass = '' }: { store: ProTableStore<Row>; class?: string } = $props()
+  let {
+    store,
+    class: klass = '',
+    labels,
+  }: {
+    store: ProTableStore<Row>
+    class?: string
+    /**
+     * Host-overridable UI strings (aria-labels + pager). Pass localized values
+     * (e.g. from the adapter's `useI18n().t`) — plugins can't reach adapter i18n
+     * directly. Defaults to English.
+     */
+    labels?: ProTableLabels
+  } = $props()
 
   // NB: do not name this `state` — a leading `$` would make Svelte read `$state`
   // as a store auto-subscription instead of the rune.
@@ -60,7 +73,7 @@
         <th scope="col">
           <input
             type="checkbox"
-            aria-label="Select all"
+            aria-label={proTableLabel(labels, 'selectAll')}
             checked={store.isAllSelected()}
             onchange={() => store.toggleAll()}
           />
@@ -91,7 +104,7 @@
             <th>
               {#if c.filterable}
                 <input
-                  aria-label={`Filter ${c.title}`}
+                  aria-label={proTableLabel(labels, 'filterColumn', { title: c.title })}
                   value={tableState.filters[c.key] ?? ''}
                   oninput={(e) => store.setFilter(c.key, e.currentTarget.value)}
                 />
@@ -108,7 +121,7 @@
           <td>
             <input
               type="checkbox"
-              aria-label={`Select row ${key}`}
+              aria-label={proTableLabel(labels, 'selectRow', { key: String(key) })}
               checked={store.isSelected(key)}
               onchange={() => store.toggleRow(key)}
             />
@@ -144,7 +157,7 @@
       disabled={tableState.page <= 1}
       onclick={() => store.setPage(tableState.page - 1)}
     >
-      Prev
+      {proTableLabel(labels, 'prev')}
     </button>
     <span data-iris-pro-table-page>{tableState.page} / {store.pageCount()}</span>
     <button
@@ -152,7 +165,7 @@
       disabled={tableState.page >= store.pageCount()}
       onclick={() => store.setPage(tableState.page + 1)}
     >
-      Next
+      {proTableLabel(labels, 'next')}
     </button>
   </div>
 </div>

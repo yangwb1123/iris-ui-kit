@@ -138,4 +138,29 @@ describe('useFloating', () => {
     expect(wrapper.vm.x).toBe(20)
     expect(wrapper.vm.y).toBe(20)
   })
+
+  it('adds the viewport-clamping size middleware when `size` is enabled', async () => {
+    const SizeHarness = defineComponent({
+      setup() {
+        const anchor = ref<HTMLElement | null>(null)
+        const floating = ref<HTMLElement | null>(null)
+        const open = ref(true)
+        const { update } = useFloating({ anchor, floating, open, size: true })
+        return { anchor, floating, open, update }
+      },
+      render() {
+        return h('div', [
+          h('div', { ref: 'anchor', class: 'anchor' }),
+          h('div', { ref: 'floating', class: 'floating' }, 'content'),
+        ])
+      },
+    })
+    const wrapper = mount(SizeHarness, { attachTo: host })
+    await nextTick()
+    await wrapper.vm.update()
+    const opts = computePositionMock.mock.calls.at(-1)?.[2] as {
+      middleware: { name?: string }[]
+    }
+    expect(opts.middleware.some((m) => m?.name === 'size')).toBe(true)
+  })
 })

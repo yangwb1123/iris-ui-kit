@@ -80,4 +80,29 @@ describe('useFloating stale-result guard', () => {
     // The second update started last, so its epoch token wins.
     expect(getByTestId('xy').textContent).toBe('20,20')
   })
+
+  it('adds the viewport-clamping size middleware when `size` is enabled', async () => {
+    computePositionMock.mockResolvedValue(pos(0, 0))
+    function SizeHarness({ onUpdate }: { onUpdate: (u: () => Promise<void>) => void }) {
+      const anchor = React.useRef<HTMLDivElement | null>(null)
+      const floating = React.useRef<HTMLDivElement | null>(null)
+      const { update } = useFloating({ anchor, floating, open: true, size: true })
+      onUpdate(update)
+      return (
+        <div>
+          <div ref={anchor} />
+          <div ref={floating} />
+        </div>
+      )
+    }
+    let update!: () => Promise<void>
+    render(<SizeHarness onUpdate={(u) => (update = u)} />)
+    await act(async () => {
+      await update()
+    })
+    const opts = computePositionMock.mock.calls.at(-1)?.[2] as {
+      middleware: { name?: string }[]
+    }
+    expect(opts.middleware.some((m) => m?.name === 'size')).toBe(true)
+  })
 })

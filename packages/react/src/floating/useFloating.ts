@@ -5,6 +5,7 @@ import {
   flip as flipMiddleware,
   offset as offsetMiddleware,
   shift as shiftMiddleware,
+  size as sizeMiddleware,
   type Middleware,
   type Placement,
   type Strategy,
@@ -27,6 +28,13 @@ export interface UseFloatingOptions {
   flip?: boolean
   /** Shift along the cross-axis to stay in view. Default `true`. */
   shift?: boolean
+  /**
+   * Constrain the floating element to the available viewport space — sets
+   * `maxWidth`/`maxHeight` (minus 8px padding) on it so a long dropdown/popover
+   * never overflows the screen (pair with `overflow:auto` for scroll). Off by
+   * default. Pass a number to override the viewport padding.
+   */
+  size?: boolean | number
   /** Extra Floating UI middleware to append. */
   middleware?: Middleware[]
 }
@@ -61,6 +69,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     offset,
     flip = true,
     shift = true,
+    size = false,
     middleware: extraMiddleware,
   } = options
 
@@ -73,9 +82,23 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     if (offset !== undefined) mw.push(offsetMiddleware(offset))
     if (flip) mw.push(flipMiddleware())
     if (shift) mw.push(shiftMiddleware({ padding: 8 }))
+    if (size) {
+      const padding = typeof size === 'number' ? size : 8
+      mw.push(
+        sizeMiddleware({
+          padding,
+          apply({ availableWidth, availableHeight, elements }) {
+            Object.assign(elements.floating.style, {
+              maxWidth: `${Math.max(0, Math.floor(availableWidth))}px`,
+              maxHeight: `${Math.max(0, Math.floor(availableHeight))}px`,
+            })
+          },
+        }),
+      )
+    }
     if (extraMiddleware) mw.push(...extraMiddleware)
     return mw
-  }, [offset, flip, shift, extraMiddleware])
+  }, [offset, flip, shift, size, extraMiddleware])
 
   // Hold the latest middleware in a ref so `update` always sees current value
   // without being re-created (which would churn the autoUpdate subscription).

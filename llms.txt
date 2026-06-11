@@ -12,7 +12,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 - Layer 4 — System Skeletons: Page / section skeleton scaffolds.
 - Behaviors: Orthogonal interaction behaviors (hotkeys, click-outside, drag).
 
-## Components (142 total — 141 in all 4 frameworks; react 141, vue 142, solid 142, svelte 142)
+## Components (143 total — 142 in all 4 frameworks; react 142, vue 143, solid 143, svelte 143)
 
 ### behaviors (4)
 - IrisClickOutside [react/solid/svelte/vue]
@@ -60,7 +60,8 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 - IrisProvider [react/solid/svelte/vue]
   props: theme?, skin?, dir?, locale?, messages?, plugins?, target?, children?
 
-### plugin (6)
+### plugin (7)
+- IrisAdminApp [react/solid/svelte/vue] — via @iris-ui/plugin-admin (IrisProvider plugins)
 - IrisBarChart [react/solid/svelte/vue] — via @iris-ui/plugin-charts (IrisProvider plugins)
 - IrisCodeEditor [react/solid/svelte/vue] — via @iris-ui/plugin-editor (IrisProvider plugins)
 - IrisFormBuilder [react/solid/svelte/vue] — via @iris-ui/plugin-form-builder (IrisProvider plugins)

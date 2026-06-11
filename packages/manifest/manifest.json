@@ -80,8 +80,9 @@
     },
     {
       "group": "plugin",
-      "count": 6,
+      "count": 7,
       "components": [
+        "IrisAdminApp",
         "IrisBarChart",
         "IrisCodeEditor",
         "IrisFormBuilder",
@@ -299,6 +300,23 @@
           "optional": true
         }
       ]
+    },
+    {
+      "name": "IrisAdminApp",
+      "group": "plugin",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/plugin-admin/react",
+        "solid": "@iris-ui/plugin-admin/solid",
+        "svelte": "@iris-ui/plugin-admin/svelte",
+        "vue": "@iris-ui/plugin-admin/vue"
+      },
+      "plugin": "@iris-ui/plugin-admin"
     },
     {
       "name": "IrisAdminBreadcrumb",
@@ -7853,13 +7871,13 @@
     ]
   },
   "stats": {
-    "total": 142,
-    "full": 141,
+    "total": 143,
+    "full": 142,
     "byFramework": {
-      "react": 141,
-      "vue": 142,
-      "solid": 142,
-      "svelte": 142
+      "react": 142,
+      "vue": 143,
+      "solid": 143,
+      "svelte": 143
     }
   }
 }

@@ -20,6 +20,14 @@ import {
  * and abort-guarded (the same race protection as {@link createAsyncResource},
  * extended for infinite append), so a slow page can never clobber a newer one.
  */
+function isThenable<T>(value: unknown): value is Promise<T> {
+  return (
+    value != null &&
+    (typeof value === 'object' || typeof value === 'function') &&
+    typeof (value as { then?: unknown }).then === 'function'
+  )
+}
+
 export interface DataSourceQuery {
   page: number
   pageSize: number
@@ -37,12 +45,17 @@ export type DataSourceMode = 'paged' | 'infinite'
 
 export interface DataSourceConfig<T> {
   /**
-   * Fetch one page for the query. An `AbortSignal` is appended as an optional
-   * trailing arg (aborted when a newer load supersedes this one); accept it to
-   * cancel the network call, or ignore it (the token guard still prevents stale
-   * writes).
+   * Fetch one page for the query. Return a value SYNCHRONOUSLY (client mode —
+   * applied immediately with no loading flicker, so rows are ready right after
+   * construction) or a `Promise` (server mode). An `AbortSignal` is appended as
+   * an optional trailing arg for the async case (aborted when a newer load
+   * supersedes this one); ignore it and the token guard still prevents stale
+   * writes.
    */
-  fetcher: (query: DataSourceQuery, signal?: AbortSignal) => Promise<{ rows: T[]; total: number }>
+  fetcher: (
+    query: DataSourceQuery,
+    signal?: AbortSignal,
+  ) => { rows: T[]; total: number } | Promise<{ rows: T[]; total: number }>
   /** Rows per page. Default 10. */
   pageSize?: number
   /** `'paged'` (default) replaces rows per page; `'infinite'` appends via loadMore. */
@@ -170,41 +183,64 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
     }
   }
 
+  const applyResult = (
+    result: { rows: T[]; total: number },
+    append: boolean,
+    overridePage?: number,
+  ): void => {
+    store.setState((s) => {
+      const nextRows = append ? [...s.rows, ...result.rows] : result.rows
+      const page = overridePage ?? s.page
+      const hasMore =
+        mode === 'infinite'
+          ? nextRows.length < result.total
+          : computePageCount(result.total, s.pageSize) > page
+      return {
+        ...s,
+        rows: nextRows,
+        total: result.total,
+        page,
+        loading: false,
+        loadingMore: false,
+        error: undefined,
+        hasMore,
+      }
+    })
+  }
+
   async function fetchPage(opts: { append: boolean; page?: number }): Promise<void> {
     const append = opts.append && mode === 'infinite'
     const token = ++epoch
     inFlight?.abort()
     const ac = typeof AbortController !== 'undefined' ? new AbortController() : null
     inFlight = ac
-    store.setState((s) => ({
-      ...s,
-      loading: !append,
-      loadingMore: append,
-      error: undefined,
-    }))
     const query = buildQuery(opts.page)
+
+    let result: { rows: T[]; total: number } | Promise<{ rows: T[]; total: number }>
     try {
-      const result = ac ? await config.fetcher(query, ac.signal) : await config.fetcher(query)
+      result = ac ? config.fetcher(query, ac.signal) : config.fetcher(query)
+    } catch (error) {
+      if (token !== epoch) return
+      inFlight = null
+      store.setState((s) => ({ ...s, loading: false, loadingMore: false, error }))
+      return
+    }
+
+    // Synchronous fetcher (client mode): apply immediately, no loading flicker,
+    // so rows are ready right after construction.
+    if (!isThenable(result)) {
+      inFlight = null
+      applyResult(result, append, opts.page)
+      return
+    }
+
+    // Async fetcher (server mode): show loading, await, drop stale/aborted results.
+    store.setState((s) => ({ ...s, loading: !append, loadingMore: append, error: undefined }))
+    try {
+      const awaited = await result
       if (token !== epoch) return // superseded
       inFlight = null
-      store.setState((s) => {
-        const nextRows = append ? [...s.rows, ...result.rows] : result.rows
-        const page = opts.page ?? s.page
-        const hasMore =
-          mode === 'infinite'
-            ? nextRows.length < result.total
-            : computePageCount(result.total, s.pageSize) > page
-        return {
-          ...s,
-          rows: nextRows,
-          total: result.total,
-          page,
-          loading: false,
-          loadingMore: false,
-          error: undefined,
-          hasMore,
-        }
-      })
+      applyResult(awaited, append, opts.page)
     } catch (error) {
       if (token !== epoch) return // superseded
       inFlight = null
@@ -349,6 +385,23 @@ export function createClientDataSource<T>(
   columns: readonly DataViewColumn<T>[],
 ): (query: DataSourceQuery) => Promise<{ rows: T[]; total: number }> {
   return async ({ page, pageSize, sort, multiSort, filters, filterRules }) => {
+    const processed = filterSort(data, columns, { filters, sort, multiSort, filterRules })
+    return { rows: paginate(processed, page, pageSize), total: processed.length }
+  }
+}
+
+/**
+ * Like {@link createClientDataSource} but SYNCHRONOUS — returns the page value
+ * directly (no Promise). {@link createDataSource} applies a sync fetcher
+ * immediately with no loading flicker, so rows are ready right after
+ * construction. Use this for in-memory client tables that need synchronous
+ * data (e.g. a server that composes the engine but exposes a sync client mode).
+ */
+export function createSyncClientDataSource<T>(
+  data: readonly T[],
+  columns: readonly DataViewColumn<T>[],
+): (query: DataSourceQuery) => { rows: T[]; total: number } {
+  return ({ page, pageSize, sort, multiSort, filters, filterRules }) => {
     const processed = filterSort(data, columns, { filters, sort, multiSort, filterRules })
     return { rows: paginate(processed, page, pageSize), total: processed.length }
   }

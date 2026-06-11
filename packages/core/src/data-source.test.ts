@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createDataSource, createClientDataSource } from './data-source'
+import { createDataSource, createClientDataSource, createSyncClientDataSource } from './data-source'
 import type { DataViewColumn } from './data-view'
 
 interface User extends Record<string, unknown> {
@@ -101,6 +101,41 @@ describe('createDataSource — paged client mode', () => {
         .rows.map((r) => r.age)
         .sort((a, b) => a - b),
     ).toEqual([30, 35])
+  })
+})
+
+describe('createDataSource — synchronous client mode', () => {
+  it('populates rows synchronously after construction (no await, no loading flicker)', () => {
+    let sawLoading = false
+    const ds = createDataSource<User>({
+      fetcher: createSyncClientDataSource(data, columns),
+      pageSize: 2,
+    })
+    ds.subscribe((s) => {
+      if (s.loading) sawLoading = true
+    })
+    // No await: rows are ready immediately.
+    expect(ds.getState().rows.map((r) => r.id)).toEqual([1, 2])
+    expect(ds.getState().total).toBe(5)
+    expect(ds.getState().loading).toBe(false)
+    expect(sawLoading).toBe(false)
+  })
+
+  it('applies sort + filter synchronously', () => {
+    const ds = createDataSource<User>({
+      fetcher: createSyncClientDataSource(data, columns),
+      pageSize: 10,
+    })
+    ds.setSort({ key: 'age', direction: 'asc' })
+    expect(ds.getState().rows.map((r) => r.age)).toEqual([25, 25, 28, 30, 35])
+    expect(ds.getState().loading).toBe(false)
+    ds.setFilter('name', 'a')
+    expect(
+      ds
+        .getState()
+        .rows.map((r) => r.name)
+        .sort(),
+    ).toEqual(['Alice', 'Charlie', 'Dave'])
   })
 })
 

@@ -135,6 +135,7 @@ export {
 export {
   createDataSource,
   createClientDataSource,
+  createSyncClientDataSource,
   type DataSourceController,
   type DataSourceConfig,
   type DataSourceState,

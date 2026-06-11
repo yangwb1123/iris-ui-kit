@@ -24,6 +24,13 @@ export interface ManifestProp {
   optional: boolean
   /** The prop's JSDoc summary, if any. */
   description?: string
+  /**
+   * The allowed string-literal values when the type is (or resolves through a
+   * type alias to) a union of string literals — e.g. `variant` →
+   * `['solid','outline','ghost','link']`. Lets an agent pick a valid value
+   * without opening the source. Absent for non-enumerable types.
+   */
+  enum?: string[]
 }
 
 /** Raw record produced by the filesystem discovery pass. */

@@ -421,7 +421,11 @@
         {
           "name": "mode",
           "type": "IrisAdminLayoutMode",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sidebar",
+            "full-content"
+          ]
         },
         {
           "name": "appTitle",
@@ -595,7 +599,13 @@
         {
           "name": "tone",
           "type": "IrisAlertTone",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "info",
+            "success",
+            "warning",
+            "danger"
+          ]
         },
         {
           "name": "title",
@@ -778,7 +788,11 @@
         {
           "name": "shape",
           "type": "IrisAvatarShape",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "circle",
+            "square"
+          ]
         }
       ]
     },
@@ -864,17 +878,33 @@
         {
           "name": "variant",
           "type": "IrisBadgeVariant",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "solid",
+            "outline",
+            "subtle"
+          ]
         },
         {
           "name": "tone",
           "type": "IrisBadgeTone",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "primary",
+            "success",
+            "warning",
+            "danger",
+            "neutral"
+          ]
         },
         {
           "name": "size",
           "type": "IrisBadgeSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md"
+          ]
         },
         {
           "name": "children",
@@ -903,7 +933,14 @@
         {
           "name": "tone",
           "type": "IrisBannerTone",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "info",
+            "success",
+            "warning",
+            "danger",
+            "neutral"
+          ]
         },
         {
           "name": "closable",
@@ -1052,12 +1089,23 @@
         {
           "name": "variant",
           "type": "IrisButtonVariant",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "solid",
+            "outline",
+            "ghost",
+            "link"
+          ]
         },
         {
           "name": "size",
           "type": "IrisButtonSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "disabled",
@@ -1072,7 +1120,12 @@
         {
           "name": "type",
           "type": "IrisButtonType",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "button",
+            "submit",
+            "reset"
+          ]
         },
         {
           "name": "asChild",
@@ -1202,12 +1255,23 @@
         {
           "name": "variant",
           "type": "IrisCardVariant",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "elevated",
+            "outline",
+            "subtle"
+          ]
         },
         {
           "name": "padding",
           "type": "IrisCardPadding",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "none",
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "hover",
@@ -1384,7 +1448,12 @@
         {
           "name": "size",
           "type": "IrisCascaderSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "id",
@@ -1444,7 +1513,12 @@
         {
           "name": "size",
           "type": "IrisCheckboxSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "invalid",
@@ -1484,17 +1558,33 @@
         {
           "name": "variant",
           "type": "IrisChipVariant",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "solid",
+            "outline",
+            "subtle"
+          ]
         },
         {
           "name": "tone",
           "type": "IrisChipTone",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "primary",
+            "success",
+            "warning",
+            "danger",
+            "neutral"
+          ]
         },
         {
           "name": "size",
           "type": "IrisChipSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md"
+          ]
         },
         {
           "name": "closable",
@@ -1692,7 +1782,12 @@
         {
           "name": "size",
           "type": "IrisComboboxSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "emptyText",
@@ -1867,7 +1962,12 @@
         {
           "name": "size",
           "type": "IrisCopyButtonSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "style",
@@ -1934,7 +2034,12 @@
         {
           "name": "size",
           "type": "IrisCountdownSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "style",
@@ -2330,7 +2435,11 @@
           "name": "layout",
           "type": "IrisDescriptionsLayout",
           "optional": true,
-          "description": "`horizontal` = label beside value; `vertical` = label above value."
+          "description": "`horizontal` = label beside value; `vertical` = label above value.",
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
         },
         {
           "name": "bordered",
@@ -2561,7 +2670,11 @@
         {
           "name": "orientation",
           "type": "IrisDividerOrientation",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
         },
         {
           "name": "label",
@@ -2571,7 +2684,12 @@
         {
           "name": "spacing",
           "type": "IrisDividerSpacing",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "children",
@@ -2676,7 +2794,13 @@
         {
           "name": "side",
           "type": "IrisDrawerSide",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "left",
+            "right",
+            "top",
+            "bottom"
+          ]
         },
         {
           "name": "size",
@@ -3233,7 +3357,11 @@
         {
           "name": "shape",
           "type": "IrisFloatButtonShape",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "circle",
+            "square"
+          ]
         },
         {
           "name": "actions",
@@ -3352,7 +3480,11 @@
           "name": "size",
           "type": "'sm' | 'md'",
           "optional": true,
-          "description": "Visual size of the label."
+          "description": "Visual size of the label.",
+          "enum": [
+            "sm",
+            "md"
+          ]
         },
         {
           "name": "children",
@@ -3407,7 +3539,13 @@
         {
           "name": "status",
           "type": "IrisGaugeStatus",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "default",
+            "success",
+            "danger",
+            "warning"
+          ]
         },
         {
           "name": "showValue",
@@ -3581,7 +3719,11 @@
           "name": "scope",
           "type": "'document' | 'window'",
           "optional": true,
-          "description": "Scope: 'document' (default) or 'window'."
+          "description": "Scope: 'document' (default) or 'window'.",
+          "enum": [
+            "document",
+            "window"
+          ]
         },
         {
           "name": "children",
@@ -3779,12 +3921,26 @@
         {
           "name": "size",
           "type": "IrisInputSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "type",
           "type": "IrisInputType",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "text",
+            "password",
+            "email",
+            "number",
+            "search",
+            "tel",
+            "url"
+          ]
         },
         {
           "name": "invalid",
@@ -3839,7 +3995,11 @@
         {
           "name": "size",
           "type": "IrisKbdSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md"
+          ]
         },
         {
           "name": "children",
@@ -4094,7 +4254,11 @@
         {
           "name": "direction",
           "type": "IrisMarqueeDirection",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "left",
+            "right"
+          ]
         },
         {
           "name": "pauseOnHover",
@@ -4607,7 +4771,12 @@
         {
           "name": "size",
           "type": "IrisNumberInputSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "min",
@@ -4691,7 +4860,11 @@
           "name": "type",
           "type": "IrisOtpInputType",
           "optional": true,
-          "description": "Allowed characters: digits only, or digits + letters."
+          "description": "Allowed characters: digits only, or digits + letters.",
+          "enum": [
+            "numeric",
+            "alphanumeric"
+          ]
         },
         {
           "name": "mask",
@@ -4702,7 +4875,12 @@
         {
           "name": "size",
           "type": "IrisOtpInputSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "disabled",
@@ -4807,7 +4985,11 @@
         {
           "name": "size",
           "type": "IrisPaginationSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md"
+          ]
         },
         {
           "name": "disabled",
@@ -5014,12 +5196,22 @@
         {
           "name": "tone",
           "type": "IrisProgressTone",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "primary",
+            "success",
+            "warning",
+            "danger"
+          ]
         },
         {
           "name": "size",
           "type": "IrisProgressSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md"
+          ]
         }
       ]
     },
@@ -5064,7 +5256,13 @@
         {
           "name": "status",
           "type": "IrisProgressCircleStatus",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "default",
+            "success",
+            "danger",
+            "warning"
+          ]
         },
         {
           "name": "showLabel",
@@ -5201,7 +5399,12 @@
         {
           "name": "size",
           "type": "IrisRadioSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "children",
@@ -5256,7 +5459,11 @@
         {
           "name": "orientation",
           "type": "'horizontal' | 'vertical'",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
         },
         {
           "name": "children",
@@ -5395,7 +5602,12 @@
         {
           "name": "size",
           "type": "IrisRatingSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "invalid",
@@ -5611,7 +5823,13 @@
         {
           "name": "status",
           "type": "IrisResultStatus",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "success",
+            "error",
+            "info",
+            "warning"
+          ]
         },
         {
           "name": "title",
@@ -5679,7 +5897,11 @@
           "name": "placement",
           "type": "IrisRibbonPlacement",
           "optional": true,
-          "description": "Corner: 'end' = top inline-end (default), 'start' = top inline-start."
+          "description": "Corner: 'end' = top inline-end (default), 'start' = top inline-start.",
+          "enum": [
+            "start",
+            "end"
+          ]
         },
         {
           "name": "color",
@@ -5734,7 +5956,12 @@
         {
           "name": "axis",
           "type": "IrisScrollAreaAxis",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "vertical",
+            "horizontal",
+            "both"
+          ]
         },
         {
           "name": "children",
@@ -5793,7 +6020,12 @@
         {
           "name": "size",
           "type": "IrisSegmentedSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "disabled",
@@ -5868,7 +6100,12 @@
         {
           "name": "size",
           "type": "IrisSelectSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "disabled",
@@ -5961,7 +6198,11 @@
         {
           "name": "side",
           "type": "'left' | 'right'",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "left",
+            "right"
+          ]
         },
         {
           "name": "sidebar",
@@ -6006,7 +6247,12 @@
         {
           "name": "shape",
           "type": "IrisSkeletonShape",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "rect",
+            "circle",
+            "text"
+          ]
         },
         {
           "name": "animated",
@@ -6070,7 +6316,11 @@
         {
           "name": "orientation",
           "type": "IrisSliderOrientation",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
         },
         {
           "name": "label",
@@ -6195,12 +6445,21 @@
         {
           "name": "variant",
           "type": "IrisSplitButtonVariant",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "primary",
+            "default"
+          ]
         },
         {
           "name": "size",
           "type": "IrisSplitButtonSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "disabled",
@@ -6244,7 +6503,11 @@
         {
           "name": "orientation",
           "type": "IrisSplitterOrientation",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
         },
         {
           "name": "value",
@@ -6312,7 +6575,11 @@
         {
           "name": "direction",
           "type": "IrisStackDirection",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "row",
+            "column"
+          ]
         },
         {
           "name": "spacing",
@@ -6322,12 +6589,25 @@
         {
           "name": "align",
           "type": "IrisStackAlign",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "stretch"
+          ]
         },
         {
           "name": "justify",
           "type": "IrisStackJustify",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "between",
+            "around"
+          ]
         },
         {
           "name": "wrap",
@@ -6390,7 +6670,12 @@
           "name": "trend",
           "type": "IrisStatisticTrend",
           "optional": true,
-          "description": "Trend direction — colors the trend line and shows a ▲/▼ glyph."
+          "description": "Trend direction — colors the trend line and shows a ▲/▼ glyph.",
+          "enum": [
+            "up",
+            "down",
+            "neutral"
+          ]
         },
         {
           "name": "trendValue",
@@ -6401,7 +6686,12 @@
         {
           "name": "size",
           "type": "IrisStatisticSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "style",
@@ -6450,7 +6740,11 @@
         {
           "name": "orientation",
           "type": "IrisStepperOrientation",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
         },
         {
           "name": "linear",
@@ -6491,7 +6785,13 @@
           "name": "status",
           "type": "IrisStepStatus",
           "optional": true,
-          "description": "Force a status; otherwise computed from position vs current."
+          "description": "Force a status; otherwise computed from position vs current.",
+          "enum": [
+            "pending",
+            "active",
+            "completed",
+            "error"
+          ]
         },
         {
           "name": "disabled",
@@ -6535,7 +6835,12 @@
         {
           "name": "size",
           "type": "IrisSwitchSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "invalid",
@@ -6586,7 +6891,12 @@
           "name": "selectable",
           "type": "'none' | 'single' | 'multi'",
           "optional": true,
-          "description": "Selection mode."
+          "description": "Selection mode.",
+          "enum": [
+            "none",
+            "single",
+            "multi"
+          ]
         },
         {
           "name": "selection",
@@ -6783,7 +7093,11 @@
         {
           "name": "orientation",
           "type": "IrisTabsOrientation",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
         },
         {
           "name": "disabled",
@@ -6990,7 +7304,12 @@
         {
           "name": "size",
           "type": "IrisTextareaSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "invalid",
@@ -7089,7 +7408,11 @@
         {
           "name": "format",
           "type": "IrisTimePickerFormat",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "12h",
+            "24h"
+          ]
         },
         {
           "name": "minuteStep",
@@ -7232,7 +7555,11 @@
         {
           "name": "orientation",
           "type": "IrisToolbarOrientation",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
         },
         {
           "name": "ariaLabel",
@@ -7498,7 +7825,12 @@
         {
           "name": "selectionMode",
           "type": "IrisTreeSelectionMode",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "none",
+            "single",
+            "multi"
+          ]
         },
         {
           "name": "checkable",
@@ -7626,7 +7958,12 @@
         {
           "name": "size",
           "type": "IrisTreeSelectSize",
-          "optional": true
+          "optional": true,
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         {
           "name": "id",

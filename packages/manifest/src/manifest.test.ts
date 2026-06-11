@@ -101,4 +101,21 @@ describe('discover (real repo)', () => {
     // methods / index signatures are not captured as props
     expect(button?.props?.some((p) => p.name.includes('('))).toBe(false)
   })
+
+  it('enumerates string-literal-union prop values, resolving through type aliases', () => {
+    const m = buildManifest(discover())
+    const button = m.components.find((c) => c.name === 'IrisButton')
+    // variant is `IrisButtonVariant` → `Variant` (in core) → a string union;
+    // the resolver follows the alias chain to the literal values.
+    const variant = button?.props?.find((p) => p.name === 'variant')
+    expect(variant?.enum).toEqual(['solid', 'outline', 'ghost', 'link'])
+    const size = button?.props?.find((p) => p.name === 'size')
+    expect(size?.enum).toEqual(['sm', 'md', 'lg'])
+    // non-enumerable types carry no `enum`.
+    const children = button?.props?.find((p) => p.name === 'children')
+    expect(children?.enum).toBeUndefined()
+    // a meaningful number of props across the library are enumerated.
+    const enumProps = m.components.flatMap((c) => c.props ?? []).filter((p) => p.enum)
+    expect(enumProps.length).toBeGreaterThan(30)
+  })
 })

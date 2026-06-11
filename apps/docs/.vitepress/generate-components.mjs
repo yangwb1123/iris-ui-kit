@@ -113,8 +113,12 @@ for (const group of manifest.groups) {
       lines.push('| Prop | Type | Required | Description |')
       lines.push('| --- | --- | --- | --- |')
       for (const p of props) {
+        const enumNote =
+          p.enum && p.enum.length > 0
+            ? `${p.description ? ' ' : ''}One of: ${p.enum.map((v) => `\`${v}\``).join(', ')}.`
+            : ''
         lines.push(
-          `| \`${p.name}\` | \`${cell(p.type)}\` | ${p.optional ? '' : '✓'} | ${cell(p.description ?? '')} |`,
+          `| \`${p.name}\` | \`${cell(p.type)}\` | ${p.optional ? '' : '✓'} | ${cell((p.description ?? '') + enumNote)} |`,
         )
       }
       lines.push('')

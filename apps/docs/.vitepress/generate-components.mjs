@@ -5,6 +5,56 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { themeToCss } from '@iris-ui/theme'
+import { lightTheme, darkTheme } from '@iris-ui/tokens'
+
+// Curated live demos (Vue, mounted client-only via the <IrisDemo> wrapper).
+// Keyed by component name; injected right after the component heading. Only
+// SSR-safe, standalone-renderable components — every tag used here must be in
+// the globally-registered set in .vitepress/theme/index.ts.
+const DEMOS = {
+  IrisButton: [
+    '<IrisDemo>',
+    '  <IrisButton variant="solid">Solid</IrisButton>',
+    '  <IrisButton variant="outline">Outline</IrisButton>',
+    '  <IrisButton variant="ghost">Ghost</IrisButton>',
+    '  <IrisButton variant="link">Link</IrisButton>',
+    '</IrisDemo>',
+  ].join('\n'),
+  IrisSwitch: [
+    '<IrisDemo>',
+    '  <IrisSwitch :model-value="true" />',
+    '  <IrisSwitch :model-value="false" />',
+    '</IrisDemo>',
+  ].join('\n'),
+  IrisSpinner: ['<IrisDemo>', '  <IrisSpinner />', '</IrisDemo>'].join('\n'),
+  IrisAvatar: [
+    '<IrisDemo>',
+    '  <IrisAvatar name="Ada Lovelace" />',
+    '  <IrisAvatar name="Grace Hopper" />',
+    '</IrisDemo>',
+  ].join('\n'),
+  IrisBadge: [
+    '<IrisDemo>',
+    '  <IrisBadge>New</IrisBadge>',
+    '  <IrisBadge tone="success">Active</IrisBadge>',
+    '  <IrisBadge tone="danger">Error</IrisBadge>',
+    '</IrisDemo>',
+  ].join('\n'),
+  IrisProgress: [
+    '<IrisDemo>',
+    '  <div style="flex:1"><IrisProgress :value="62" /></div>',
+    '</IrisDemo>',
+  ].join('\n'),
+  IrisDivider: [
+    '<IrisDemo>',
+    '  <span>Above</span>',
+    '  <IrisDivider />',
+    '  <span>Below</span>',
+    '</IrisDemo>',
+  ].join('\n'),
+  IrisKbd: ['<IrisDemo>', "  <IrisKbd :keys=\"['⌘', 'K']\" />", '</IrisDemo>'].join('\n'),
+}
 
 const here = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(here, '..', '..', '..')
@@ -54,6 +104,10 @@ for (const group of manifest.groups) {
     lines.push('')
     lines.push(`<small>${fw}${via}</small>`)
     lines.push('')
+    if (DEMOS[name]) {
+      lines.push(DEMOS[name])
+      lines.push('')
+    }
     const props = component.props ?? []
     if (props.length > 0) {
       lines.push('| Prop | Type | Required | Description |')
@@ -82,3 +136,16 @@ lines.push('')
 writeFileSync(outPath, lines.join('\n'))
 // eslint-disable-next-line no-console
 console.log(`[docs] wrote components.md (${manifest.stats.total} components)`)
+
+// Static token stylesheet for the live demos — the real Iris light/dark CSS
+// variables (via @iris-ui/theme themeToCss), so demos are themed without a
+// runtime <ThemeProvider> (components fall back to these CSS vars). `.dark`
+// matches VitePress's dark-mode class.
+const tokensCss =
+  themeToCss(lightTheme, { selector: ':root' }) +
+  '\n' +
+  themeToCss(darkTheme, { selector: '.dark' }) +
+  '\n'
+writeFileSync(join(here, 'theme', 'iris-tokens.css'), tokensCss)
+// eslint-disable-next-line no-console
+console.log('[docs] wrote theme/iris-tokens.css')

@@ -8,7 +8,20 @@ import { useFloating } from './useFloating'
  * `computePosition` call fires. `size` is kept as the real export (via
  * importOriginal) so the pushed middleware's `.name` is genuinely "size".
  */
-const { computePositionMock } = vi.hoisted(() => ({ computePositionMock: vi.fn() }))
+// A DEFAULT resolved-promise impl is essential: this file's `vi.mock` is hoisted
+// process-wide, and Solid's vitest runs with isolate:false, so the mock leaks to
+// every other solid test file. Without a default, an unconfigured call (from
+// another file's floating component) returns undefined and `undefined.then`
+// throws an unhandled error. The default keeps it a Promise everywhere.
+const { computePositionMock } = vi.hoisted(() => ({
+  computePositionMock: vi.fn(async (..._args: unknown[]) => ({
+    x: 0,
+    y: 0,
+    placement: 'bottom' as const,
+    strategy: 'absolute' as const,
+    middlewareData: {},
+  })),
+}))
 vi.mock('@floating-ui/dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@floating-ui/dom')>()
   return {
@@ -22,19 +35,14 @@ vi.mock('@floating-ui/dom', async (importOriginal) => {
   }
 })
 
-function pos(x: number, y: number) {
-  return { x, y, placement: 'bottom', strategy: 'absolute', middlewareData: {} }
-}
-
 describe('useFloating size middleware', () => {
-  beforeEach(() => computePositionMock.mockReset())
-  afterEach(() => {
-    cleanup()
-    vi.restoreAllMocks()
-  })
+  // mockClear (not mockReset) so the default Promise impl survives, and NO
+  // restoreAllMocks (it would clear that impl after this file, re-introducing
+  // the leak) — see the leak note on the mock above.
+  beforeEach(() => computePositionMock.mockClear())
+  afterEach(() => cleanup())
 
   it('adds the viewport-clamping size middleware when `size` is enabled', async () => {
-    computePositionMock.mockResolvedValue(pos(0, 0))
     const el = document.createElement('div')
     renderHook(() =>
       useFloating({
@@ -52,7 +60,6 @@ describe('useFloating size middleware', () => {
   })
 
   it('omits the size middleware by default', async () => {
-    computePositionMock.mockResolvedValue(pos(0, 0))
     const el = document.createElement('div')
     renderHook(() =>
       useFloating({

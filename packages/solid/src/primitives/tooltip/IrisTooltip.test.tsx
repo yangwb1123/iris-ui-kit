@@ -21,7 +21,7 @@ describe('IrisTooltip', () => {
     expect(getByText('Hover me')).toBeTruthy()
   })
 
-  it('shows tooltip after openDelay on pointer enter', () => {
+  it('shows tooltip after openDelay on pointer enter', async () => {
     const { getByText, queryByRole } = render(() => (
       <IrisTooltip content="My tooltip" openDelay={100} portalTarget={false}>
         <button>Trigger</button>
@@ -30,7 +30,10 @@ describe('IrisTooltip', () => {
 
     expect(queryByRole('tooltip')).toBeNull()
     fireEvent.pointerEnter(getByText('Trigger').closest('span')!)
-    vi.advanceTimersByTime(150)
+    // Async advance flushes microtasks between firing timers, so the reactive
+    // open → render settles deterministically even under concurrent CPU load
+    // (the sync variant was timing-flaky in the full parallel turbo run).
+    await vi.advanceTimersByTimeAsync(150)
     expect(queryByRole('tooltip')).not.toBeNull()
     expect(queryByRole('tooltip')?.textContent).toBe('My tooltip')
   })

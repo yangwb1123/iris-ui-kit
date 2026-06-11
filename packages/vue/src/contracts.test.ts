@@ -5,6 +5,8 @@ import {
   runContract,
   tabsScenario,
   switchScenario,
+  checkboxScenario,
+  accordionScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -12,6 +14,9 @@ import { IrisTabsList } from './primitives/tabs/TabsList'
 import { IrisTabsTrigger } from './primitives/tabs/TabsTrigger'
 import { IrisTabsContent } from './primitives/tabs/TabsContent'
 import { IrisSwitch } from './primitives/switch/Switch'
+import { IrisCheckbox } from './primitives/checkbox/Checkbox'
+import { IrisAccordion } from './primitives/accordion/Accordion'
+import { IrisAccordionItem } from './primitives/accordion/AccordionItem'
 
 enableAutoUnmount(afterEach)
 
@@ -60,6 +65,44 @@ const SwitchHarness = defineComponent({
   },
 })
 
+/**
+ * IrisCheckbox is v-model based (it emits on the native input's `change`), so —
+ * exactly like the Switch harness — mount it inside a wrapper holding a reactive
+ * boolean bound with v-model. A native click on the hidden `<input type=checkbox>`
+ * toggles its `.checked` and fires `change`, flipping the boolean and re-rendering
+ * the checkbox with the new `aria-checked`. Starts unchecked (false), matching the
+ * uncontrolled React/Solid/Svelte reference.
+ */
+const CheckboxHarness = defineComponent({
+  name: 'CheckboxHarness',
+  setup() {
+    const checked = ref(false)
+    return () =>
+      h(IrisCheckbox, {
+        modelValue: checked.value,
+        'onUpdate:modelValue': (v: boolean) => {
+          checked.value = v
+        },
+      })
+  },
+})
+
+/**
+ * EXACT same setup as the React reference: IrisAccordion with two
+ * IrisAccordionItem (value "a"/"b", a title each) and NO defaultValue → both
+ * items collapsed by default.
+ */
+const AccordionHarness = defineComponent({
+  name: 'AccordionHarness',
+  setup() {
+    return () =>
+      h(IrisAccordion, null, () => [
+        h(IrisAccordionItem, { value: 'a', title: 'A' }, () => 'Panel A'),
+        h(IrisAccordionItem, { value: 'b', title: 'B' }, () => 'Panel B'),
+      ])
+  },
+})
+
 /** EXACT same setup as the React reference: defaultValue "a", Tab A/B/C, Panel A/B/C. */
 const TabsHarness = defineComponent({
   name: 'TabsHarness',
@@ -93,5 +136,21 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     const wrapper = mount(SwitchHarness, { attachTo: host })
     await nextTick()
     await runContract(switchScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared Checkbox contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(CheckboxHarness, { attachTo: host })
+    await nextTick()
+    await runContract(checkboxScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared Accordion contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(AccordionHarness, { attachTo: host })
+    await nextTick()
+    await runContract(accordionScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

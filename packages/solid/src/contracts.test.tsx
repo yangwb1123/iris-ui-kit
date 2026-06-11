@@ -4,6 +4,8 @@ import {
   runContract,
   tabsScenario,
   switchScenario,
+  checkboxScenario,
+  accordionScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import {
@@ -13,6 +15,8 @@ import {
   IrisTabsContent,
 } from './primitives/tabs/IrisTabs'
 import { IrisSwitch } from './primitives/switch/Switch'
+import { IrisCheckbox } from './primitives/checkbox'
+import { IrisAccordion, IrisAccordionItem } from './primitives/accordion'
 
 afterEach(cleanup)
 
@@ -57,5 +61,24 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
   it('satisfies the shared Switch contract', async () => {
     const { container } = render(() => <IrisSwitch />)
     await runContract(switchScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Checkbox contract', async () => {
+    const { container } = render(() => <IrisCheckbox />)
+    await runContract(checkboxScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Accordion contract', async () => {
+    const { container } = render(() => (
+      <IrisAccordion>
+        <IrisAccordionItem value="a" title="A">
+          Panel A
+        </IrisAccordionItem>
+        <IrisAccordionItem value="b" title="B">
+          Panel B
+        </IrisAccordionItem>
+      </IrisAccordion>
+    ))
+    await runContract(accordionScenario, driverFor(container), expect)
   })
 })

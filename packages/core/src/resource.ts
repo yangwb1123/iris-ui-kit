@@ -1,13 +1,7 @@
 import { createStore, type Store } from './store'
-import { createAsyncResource } from './async'
-import { createSelectionModel, type SelectionModel } from './selection'
-import {
-  pageCount as computePageCount,
-  filterSort,
-  paginate,
-  type SortState,
-  type DataViewColumn,
-} from './data-view'
+import { createDataSource } from './data-source'
+import { type SelectionModel } from './selection'
+import { filterSort, paginate, type SortState, type DataViewColumn } from './data-view'
 
 /**
  * Framework-agnostic CRUD resource controller (L4 composite) — the canonical
@@ -110,78 +104,49 @@ export function createResourceController<T>(
     selectedKeys: [],
   })
 
-  const selection = createSelectionModel({ mode: 'multiple' })
-  selection.store.subscribe((keys) => store.setState((s) => ({ ...s, selectedKeys: keys })))
-
-  const resource = createAsyncResource((query: ResourceQuery) => config.fetcher(query))
-  resource.subscribe((s) => {
+  // The unified data engine does the work; this controller is a thin projection
+  // of it onto the narrower ResourceState (a strict subset of DataSourceState),
+  // so resource, the base Table, and pro-table all share ONE engine. A
+  // DataSourceQuery is a superset of ResourceQuery, so the fetcher receives it
+  // unchanged (the extra multi-sort/filter-rule fields stay empty here).
+  const ds = createDataSource<T>({
+    fetcher: (query) => config.fetcher(query),
+    pageSize: config.pageSize ?? 10,
+    immediate: false,
+  })
+  ds.subscribe((s) => {
     store.setState((st) => ({
       ...st,
-      loading: s.status === 'loading',
-      rows: s.data?.rows ?? (s.status === 'loading' ? st.rows : []),
-      total: s.data?.total ?? (s.status === 'loading' ? st.total : 0),
+      rows: s.rows,
+      total: s.total,
+      page: s.page,
+      pageSize: s.pageSize,
+      sort: s.sort,
+      filters: s.filters,
+      loading: s.loading,
       error: s.error,
+      selectedKeys: s.selectedKeys,
     }))
   })
 
-  async function load(): Promise<void> {
-    const { page, pageSize, sort, filters } = store.getState()
-    await resource.load({ page, pageSize, sort, filters })
-  }
-
   const controller: ResourceController<T> = {
     store,
-    selection,
+    selection: ds.selection,
     getState: store.getState,
     subscribe: store.subscribe,
-    load,
-    reload: load,
-    setPage(page) {
-      store.setState((s) => ({ ...s, page }))
-      void load()
-    },
-    setPageSize(size) {
-      store.setState((s) => ({ ...s, pageSize: size, page: 1 }))
-      void load()
-    },
-    setSort(sort) {
-      // Reset to page 1: the row at a given offset changes under a new sort.
-      store.setState((s) => ({ ...s, sort, page: 1 }))
-      void load()
-    },
-    setFilter(key, value) {
-      store.setState((s) => ({ ...s, filters: { ...s.filters, [key]: value }, page: 1 }))
-      void load()
-    },
-    clearFilters() {
-      store.setState((s) => ({ ...s, filters: {}, page: 1 }))
-      void load()
-    },
-    pageCount() {
-      const s = store.getState()
-      return computePageCount(s.total, s.pageSize)
-    },
-    async mutate(action, options) {
-      const snapshot = store.getState().rows
-      if (options?.optimistic) {
-        store.setState((s) => ({ ...s, rows: options.optimistic!(s.rows) }))
-      }
-      try {
-        await action()
-      } catch (error) {
-        // Roll back the optimistic update, then reload to reconcile with server.
-        if (options?.optimistic) store.setState((s) => ({ ...s, rows: snapshot }))
-        await load()
-        throw error
-      }
-      if (!options?.skipReload) await load()
-    },
-    destroy() {
-      resource.cancel()
-    },
+    load: () => ds.load(),
+    reload: () => ds.reload(),
+    setPage: (page) => ds.setPage(page),
+    setPageSize: (size) => ds.setPageSize(size),
+    setSort: (sort) => ds.setSort(sort),
+    setFilter: (key, value) => ds.setFilter(key, value),
+    clearFilters: () => ds.clearFilters(),
+    pageCount: () => ds.pageCount(),
+    mutate: (action, options) => ds.mutate(action, options),
+    destroy: () => ds.destroy(),
   }
 
-  if (config.immediate !== false) void load()
+  if (config.immediate !== false) void ds.load()
 
   return controller
 }

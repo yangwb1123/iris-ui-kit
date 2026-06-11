@@ -80,7 +80,7 @@
     },
     {
       "group": "plugin",
-      "count": 7,
+      "count": 8,
       "components": [
         "IrisAdminApp",
         "IrisBarChart",
@@ -88,6 +88,7 @@
         "IrisFormBuilder",
         "IrisLineChart",
         "IrisProTable",
+        "IrisQueryBuilder",
         "IrisSparkline"
       ]
     },
@@ -5375,6 +5376,23 @@
       ]
     },
     {
+      "name": "IrisQueryBuilder",
+      "group": "plugin",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/plugin-query-builder/react",
+        "solid": "@iris-ui/plugin-query-builder/solid",
+        "svelte": "@iris-ui/plugin-query-builder/svelte",
+        "vue": "@iris-ui/plugin-query-builder/vue"
+      },
+      "plugin": "@iris-ui/plugin-query-builder"
+    },
+    {
       "name": "IrisRadio",
       "group": "primitives",
       "module": "radio",
@@ -8208,13 +8226,13 @@
     ]
   },
   "stats": {
-    "total": 143,
-    "full": 142,
+    "total": 144,
+    "full": 143,
     "byFramework": {
-      "react": 142,
-      "vue": 143,
-      "solid": 143,
-      "svelte": 143
+      "react": 143,
+      "vue": 144,
+      "solid": 144,
+      "svelte": 144
     }
   }
 }

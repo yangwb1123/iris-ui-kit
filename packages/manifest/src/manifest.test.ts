@@ -118,4 +118,21 @@ describe('discover (real repo)', () => {
     const enumProps = m.components.flatMap((c) => c.props ?? []).filter((p) => p.enum)
     expect(enumProps.length).toBeGreaterThan(30)
   })
+
+  it('captures literal default values from the component destructuring', () => {
+    const m = buildManifest(discover())
+    const admin = m.components.find((c) => c.name === 'IrisAdminLayout')
+    const mode = admin?.props?.find((p) => p.name === 'mode')
+    // mode carries the full contract: type + enum + default.
+    expect(mode?.default).toBe('sidebar')
+    expect(mode?.enum).toEqual(['sidebar', 'full-content'])
+    // booleans are captured too.
+    const collapsed = admin?.props?.find((p) => p.name === 'defaultCollapsed')
+    expect(collapsed?.default).toBe('false')
+    // a meaningful number of props across the library carry a default.
+    const withDefaults = m.components
+      .flatMap((c) => c.props ?? [])
+      .filter((p) => p.default !== undefined)
+    expect(withDefaults.length).toBeGreaterThan(100)
+  })
 })

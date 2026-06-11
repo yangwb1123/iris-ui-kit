@@ -150,6 +150,69 @@ function resolveEnumValues(
   return undefined
 }
 
+/** Split a destructuring body on top-level commas (respecting `{}`/`[]`/`()` nesting). */
+function splitTopLevel(body: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let start = 0
+  for (let i = 0; i < body.length; i += 1) {
+    const ch = body[i]
+    if (ch === '{' || ch === '[' || ch === '(') depth += 1
+    else if (ch === '}' || ch === ']' || ch === ')') depth -= 1
+    else if (ch === ',' && depth === 0) {
+      parts.push(body.slice(start, i))
+      start = i + 1
+    }
+  }
+  parts.push(body.slice(start))
+  return parts
+}
+
+/** A literal default (`'x'` / `"x"` / number / boolean) → its serialized form, else undefined. */
+function literalDefault(expr: string): string | undefined {
+  const v = expr.trim()
+  if (/^'[^']*'$/.test(v) || /^"[^"]*"$/.test(v)) return v.slice(1, -1)
+  if (/^-?\d+(?:\.\d+)?$/.test(v)) return v
+  if (v === 'true' || v === 'false') return v
+  return undefined
+}
+
+/**
+ * Parse `name = literal` defaults from a component's destructured first
+ * parameter — covers both `export function IrisX({ … })` and
+ * `forwardRef(function IrisX({ … }, ref))`. Only literal defaults are captured.
+ */
+function extractDefaults(text: string, componentName: string): Map<string, string> {
+  const defaults = new Map<string, string>()
+  const fn = new RegExp(`function\\s+${componentName}\\b`).exec(text)
+  if (!fn) return defaults
+  const paren = text.indexOf('(', fn.index)
+  const open = paren < 0 ? -1 : text.indexOf('{', paren)
+  if (open < 0) return defaults
+  let depth = 0
+  let end = -1
+  for (let i = open; i < text.length; i += 1) {
+    if (text[i] === '{') depth += 1
+    else if (text[i] === '}') {
+      depth -= 1
+      if (depth === 0) {
+        end = i
+        break
+      }
+    }
+  }
+  if (end < 0) return defaults
+  for (const part of splitTopLevel(text.slice(open + 1, end))) {
+    const eq = part.indexOf('=')
+    if (eq < 0) continue
+    const name = part.slice(0, eq).trim()
+    if (!/^[A-Za-z_]\w*$/.test(name)) continue
+    const def = literalDefault(part.slice(eq + 1))
+    if (def !== undefined) defaults.set(name, def)
+  }
+  return defaults
+}
+
 export function extractComponentProps(repoRoot: string): Map<string, ManifestProp[]> {
   const result = new Map<string, ManifestProp[]>()
   const srcRoot = join(repoRoot, 'packages', 'react', 'src')
@@ -168,9 +231,12 @@ export function extractComponentProps(repoRoot: string): Map<string, ManifestPro
       const body = interfaceBody(text, open)
       const props = parseBody(body)
       if (props.length === 0) continue
+      const defaults = extractDefaults(text, name)
       for (const prop of props) {
         const values = resolveEnumValues(prop.type, aliases)
         if (values && values.length > 0) prop.enum = values
+        const def = defaults.get(prop.name)
+        if (def !== undefined) prop.default = def
       }
       result.set(name, props)
     }

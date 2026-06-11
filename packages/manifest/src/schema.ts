@@ -31,6 +31,13 @@ export interface ManifestProp {
    * without opening the source. Absent for non-enumerable types.
    */
   enum?: string[]
+  /**
+   * The prop's default value as written, when the component destructures a
+   * literal default (e.g. `size = 'md'` → `'md'`, `disabled = false` → `false`).
+   * Lets an agent omit props it would only re-set to the default. Absent when
+   * there is no literal default.
+   */
+  default?: string
 }
 
 /** Raw record produced by the filesystem discovery pass. */

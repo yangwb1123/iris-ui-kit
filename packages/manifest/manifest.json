@@ -258,13 +258,15 @@
         {
           "name": "multiple",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "collapsible",
           "type": "boolean",
           "optional": true,
-          "description": "In single mode, allow zero items open."
+          "description": "In single mode, allow zero items open.",
+          "default": "false"
         }
       ]
     },
@@ -298,7 +300,8 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         }
       ]
     },
@@ -345,18 +348,21 @@
           "name": "showIcon",
           "type": "boolean",
           "optional": true,
-          "description": "Show each node's icon before its title."
+          "description": "Show each node's icon before its title.",
+          "default": "true"
         },
         {
           "name": "hideSingle",
           "type": "boolean",
           "optional": true,
-          "description": "Hide the breadcrumb when the trail has a single crumb."
+          "description": "Hide the breadcrumb when the trail has a single crumb.",
+          "default": "false"
         },
         {
           "name": "separator",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": "/"
         },
         {
           "name": "onSelect",
@@ -412,7 +418,8 @@
         {
           "name": "defaultCollapsed",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "onCollapsedChange",
@@ -426,12 +433,14 @@
           "enum": [
             "sidebar",
             "full-content"
-          ]
+          ],
+          "default": "sidebar"
         },
         {
           "name": "appTitle",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": "Iris Admin"
         },
         {
           "name": "tabs",
@@ -442,17 +451,20 @@
         {
           "name": "showBreadcrumb",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         },
         {
           "name": "sidebarWidth",
           "type": "number | string",
-          "optional": true
+          "optional": true,
+          "default": "240"
         },
         {
           "name": "collapsedWidth",
           "type": "number | string",
-          "optional": true
+          "optional": true,
+          "default": "64"
         },
         {
           "name": "logo",
@@ -606,7 +618,8 @@
             "success",
             "warning",
             "danger"
-          ]
+          ],
+          "default": "info"
         },
         {
           "name": "title",
@@ -616,7 +629,8 @@
         {
           "name": "closable",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "open",
@@ -672,7 +686,8 @@
           "name": "offset",
           "type": "number",
           "optional": true,
-          "description": "Top offset (px) for active detection + scroll target."
+          "description": "Top offset (px) for active detection + scroll target.",
+          "default": "0"
         },
         {
           "name": "onChange",
@@ -756,24 +771,28 @@
         {
           "name": "src",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": ""
         },
         {
           "name": "alt",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": ""
         },
         {
           "name": "name",
           "type": "string",
           "optional": true,
-          "description": "Used to derive initials when no `fallback` slot is supplied."
+          "description": "Used to derive initials when no `fallback` slot is supplied.",
+          "default": ""
         },
         {
           "name": "fallback",
           "type": "string",
           "optional": true,
-          "description": "Explicit fallback string; wins over derived initials."
+          "description": "Explicit fallback string; wins over derived initials.",
+          "default": ""
         },
         {
           "name": "fallbackContent",
@@ -784,7 +803,8 @@
         {
           "name": "size",
           "type": "IrisAvatarSize",
-          "optional": true
+          "optional": true,
+          "default": "md"
         },
         {
           "name": "shape",
@@ -793,7 +813,8 @@
           "enum": [
             "circle",
             "square"
-          ]
+          ],
+          "default": "circle"
         }
       ]
     },
@@ -824,13 +845,15 @@
           "name": "visibilityHeight",
           "type": "number",
           "optional": true,
-          "description": "Show the button once the scroll position passes this (px)."
+          "description": "Show the button once the scroll position passes this (px).",
+          "default": "400"
         },
         {
           "name": "behavior",
           "type": "ScrollBehavior",
           "optional": true,
-          "description": "Scroll behavior; forced to 'auto' under reduced motion."
+          "description": "Scroll behavior; forced to 'auto' under reduced motion.",
+          "default": "smooth"
         },
         {
           "name": "onClick",
@@ -884,7 +907,8 @@
             "solid",
             "outline",
             "subtle"
-          ]
+          ],
+          "default": "subtle"
         },
         {
           "name": "tone",
@@ -896,7 +920,8 @@
             "warning",
             "danger",
             "neutral"
-          ]
+          ],
+          "default": "primary"
         },
         {
           "name": "size",
@@ -905,7 +930,8 @@
           "enum": [
             "sm",
             "md"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "children",
@@ -941,12 +967,14 @@
             "warning",
             "danger",
             "neutral"
-          ]
+          ],
+          "default": "info"
         },
         {
           "name": "closable",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "open",
@@ -956,7 +984,8 @@
         {
           "name": "defaultOpen",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         },
         {
           "name": "onOpenChange",
@@ -967,7 +996,8 @@
           "name": "sticky",
           "type": "boolean",
           "optional": true,
-          "description": "Use `position: sticky; top: 0;`."
+          "description": "Use `position: sticky; top: 0;`.",
+          "default": "false"
         },
         {
           "name": "icon",
@@ -1026,7 +1056,8 @@
           "name": "separator",
           "type": "React.ReactNode",
           "optional": true,
-          "description": "String separator between crumbs. Default `/`."
+          "description": "String separator between crumbs. Default `/`.",
+          "default": "/"
         },
         {
           "name": "children",
@@ -1061,7 +1092,8 @@
           "name": "isCurrent",
           "type": "boolean",
           "optional": true,
-          "description": "Internal: set by parent `IrisBreadcrumb` when this is the last item."
+          "description": "Internal: set by parent `IrisBreadcrumb` when this is the last item.",
+          "default": "false"
         },
         {
           "name": "children",
@@ -1096,7 +1128,8 @@
             "outline",
             "ghost",
             "link"
-          ]
+          ],
+          "default": "solid"
         },
         {
           "name": "size",
@@ -1106,17 +1139,20 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "loading",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "type",
@@ -1126,12 +1162,14 @@
             "button",
             "submit",
             "reset"
-          ]
+          ],
+          "default": "button"
         },
         {
           "name": "asChild",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "leading",
@@ -1212,7 +1250,8 @@
           "name": "weekStartsOn",
           "type": "number",
           "optional": true,
-          "description": "0–6, 0 = Sunday. Default 0."
+          "description": "0–6, 0 = Sunday. Default 0.",
+          "default": "0"
         },
         {
           "name": "locale",
@@ -1222,7 +1261,8 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "style",
@@ -1261,7 +1301,8 @@
             "elevated",
             "outline",
             "subtle"
-          ]
+          ],
+          "default": "elevated"
         },
         {
           "name": "padding",
@@ -1272,12 +1313,14 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "hover",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "header",
@@ -1328,7 +1371,8 @@
         {
           "name": "defaultIndex",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "0"
         },
         {
           "name": "onIndexChange",
@@ -1339,35 +1383,41 @@
           "name": "loop",
           "type": "boolean",
           "optional": true,
-          "description": "Wrap around at the ends (default true)."
+          "description": "Wrap around at the ends (default true).",
+          "default": "true"
         },
         {
           "name": "autoplay",
           "type": "boolean",
           "optional": true,
-          "description": "Auto-advance slides. Disabled when the user prefers reduced motion."
+          "description": "Auto-advance slides. Disabled when the user prefers reduced motion.",
+          "default": "false"
         },
         {
           "name": "interval",
           "type": "number",
           "optional": true,
-          "description": "Autoplay interval in ms (default 4000)."
+          "description": "Autoplay interval in ms (default 4000).",
+          "default": "4000"
         },
         {
           "name": "pauseOnHover",
           "type": "boolean",
           "optional": true,
-          "description": "Pause autoplay while hovered (default true)."
+          "description": "Pause autoplay while hovered (default true).",
+          "default": "true"
         },
         {
           "name": "showArrows",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         },
         {
           "name": "showIndicators",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         },
         {
           "name": "ariaLabel",
@@ -1433,18 +1483,21 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "separator",
           "type": "string",
           "optional": true,
-          "description": "Separator between path labels in the trigger."
+          "description": "Separator between path labels in the trigger.",
+          "default": " / "
         },
         {
           "name": "size",
@@ -1454,7 +1507,8 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "id",
@@ -1504,7 +1558,8 @@
         {
           "name": "defaultChecked",
           "type": "IrisCheckboxValue",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "onChange",
@@ -1519,12 +1574,14 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "ariaDescribedby",
@@ -1564,7 +1621,8 @@
             "solid",
             "outline",
             "subtle"
-          ]
+          ],
+          "default": "subtle"
         },
         {
           "name": "tone",
@@ -1576,7 +1634,8 @@
             "warning",
             "danger",
             "neutral"
-          ]
+          ],
+          "default": "neutral"
         },
         {
           "name": "size",
@@ -1585,22 +1644,26 @@
           "enum": [
             "sm",
             "md"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "closable",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "clickable",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "onClose",
@@ -1649,7 +1712,8 @@
           "name": "disabled",
           "type": "boolean",
           "optional": true,
-          "description": "Disable detection (no-op if true)."
+          "description": "Disable detection (no-op if true).",
+          "default": "false"
         },
         {
           "name": "ignore",
@@ -1718,12 +1782,14 @@
           "name": "showAlpha",
           "type": "boolean",
           "optional": true,
-          "description": "Include the alpha strip + alpha input. Default false."
+          "description": "Include the alpha strip + alpha input. Default false.",
+          "default": "false"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         }
       ]
     },
@@ -1753,7 +1819,8 @@
         {
           "name": "defaultValue",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": ""
         },
         {
           "name": "onValueChange",
@@ -1773,12 +1840,14 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "size",
@@ -1788,7 +1857,8 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "emptyText",
@@ -1840,7 +1910,8 @@
         {
           "name": "open",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "onOpenChange",
@@ -1895,17 +1966,20 @@
         {
           "name": "maxWidth",
           "type": "IrisContainerMaxWidth",
-          "optional": true
+          "optional": true,
+          "default": "lg"
         },
         {
           "name": "padding",
           "type": "string | number",
-          "optional": true
+          "optional": true,
+          "default": "md"
         },
         {
           "name": "center",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         }
       ]
     },
@@ -1948,7 +2022,8 @@
           "name": "timeout",
           "type": "number",
           "optional": true,
-          "description": "How long the copied state lasts (ms)."
+          "description": "How long the copied state lasts (ms).",
+          "default": "2000"
         },
         {
           "name": "onCopy",
@@ -1958,7 +2033,8 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "size",
@@ -1968,7 +2044,8 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "style",
@@ -2009,7 +2086,8 @@
           "name": "format",
           "type": "string",
           "optional": true,
-          "description": "Token format: DD / HH / mm / ss / SSS."
+          "description": "Token format: DD / HH / mm / ss / SSS.",
+          "default": "HH:mm:ss"
         },
         {
           "name": "title",
@@ -2040,7 +2118,8 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "style",
@@ -2073,18 +2152,21 @@
         {
           "name": "colSpan",
           "type": "number | 'full'",
-          "optional": true
+          "optional": true,
+          "default": "1"
         },
         {
           "name": "rowSpan",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "1"
         },
         {
           "name": "surface",
           "type": "boolean",
           "optional": true,
-          "description": "Show the styled card surface (background + border). Default true."
+          "description": "Show the styled card surface (background + border). Default true.",
+          "default": "true"
         }
       ]
     },
@@ -2107,12 +2189,14 @@
         {
           "name": "columns",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "12"
         },
         {
           "name": "gap",
           "type": "number | string",
-          "optional": true
+          "optional": true,
+          "default": "16"
         },
         {
           "name": "minColWidth",
@@ -2141,12 +2225,14 @@
         {
           "name": "title",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": "Dashboard"
         },
         {
           "name": "sidebarTitle",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": ""
         },
         {
           "name": "nav",
@@ -2156,7 +2242,8 @@
         {
           "name": "activeId",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": ""
         },
         {
           "name": "onActiveIdChange",
@@ -2171,7 +2258,8 @@
         {
           "name": "defaultCollapsed",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "onCollapsedChange",
@@ -2259,7 +2347,8 @@
         {
           "name": "weekStartsOn",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "0"
         },
         {
           "name": "locale",
@@ -2274,17 +2363,20 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "placement",
           "type": "Placement",
-          "optional": true
+          "optional": true,
+          "default": "bottom-start"
         },
         {
           "name": "id",
@@ -2355,7 +2447,8 @@
         {
           "name": "weekStartsOn",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "0"
         },
         {
           "name": "locale",
@@ -2370,17 +2463,20 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "placement",
           "type": "Placement",
-          "optional": true
+          "optional": true,
+          "default": "bottom-start"
         },
         {
           "name": "id",
@@ -2430,7 +2526,8 @@
           "name": "columns",
           "type": "number",
           "optional": true,
-          "description": "Number of label/value pairs per row. Default 1."
+          "description": "Number of label/value pairs per row. Default 1.",
+          "default": "1"
         },
         {
           "name": "layout",
@@ -2440,13 +2537,15 @@
           "enum": [
             "horizontal",
             "vertical"
-          ]
+          ],
+          "default": "horizontal"
         },
         {
           "name": "bordered",
           "type": "boolean",
           "optional": true,
-          "description": "Boxed style with cell separators."
+          "description": "Boxed style with cell separators.",
+          "default": "false"
         },
         {
           "name": "style",
@@ -2487,7 +2586,8 @@
           "name": "defaultOpen",
           "type": "boolean",
           "optional": true,
-          "description": "Initial open value in uncontrolled mode."
+          "description": "Initial open value in uncontrolled mode.",
+          "default": "false"
         },
         {
           "name": "onOpenChange",
@@ -2499,13 +2599,15 @@
           "name": "closeOnOutsideClick",
           "type": "boolean",
           "optional": true,
-          "description": "Close on backdrop click. Default `true`."
+          "description": "Close on backdrop click. Default `true`.",
+          "default": "true"
         },
         {
           "name": "closeOnEscape",
           "type": "boolean",
           "optional": true,
-          "description": "Close on Escape key. Default `true`."
+          "description": "Close on Escape key. Default `true`.",
+          "default": "true"
         },
         {
           "name": "children",
@@ -2534,7 +2636,8 @@
         {
           "name": "asChild",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "children",
@@ -2593,7 +2696,8 @@
         {
           "name": "as",
           "type": "keyof React.JSX.IntrinsicElements",
-          "optional": true
+          "optional": true,
+          "default": "p"
         }
       ]
     },
@@ -2617,7 +2721,8 @@
         {
           "name": "as",
           "type": "keyof React.JSX.IntrinsicElements",
-          "optional": true
+          "optional": true,
+          "default": "h2"
         }
       ]
     },
@@ -2642,7 +2747,8 @@
           "name": "asChild",
           "type": "boolean",
           "optional": true,
-          "description": "Use the single child as the trigger instead of rendering a `<button>`."
+          "description": "Use the single child as the trigger instead of rendering a `<button>`.",
+          "default": "false"
         },
         {
           "name": "children",
@@ -2675,7 +2781,8 @@
           "enum": [
             "horizontal",
             "vertical"
-          ]
+          ],
+          "default": "horizontal"
         },
         {
           "name": "label",
@@ -2690,7 +2797,8 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "children",
@@ -2744,7 +2852,8 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "bounds",
@@ -2785,7 +2894,8 @@
         {
           "name": "defaultOpen",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "onOpenChange",
@@ -2801,23 +2911,27 @@
             "right",
             "top",
             "bottom"
-          ]
+          ],
+          "default": "right"
         },
         {
           "name": "size",
           "type": "string",
           "optional": true,
-          "description": "Width (for left/right) or height (for top/bottom). Any CSS length."
+          "description": "Width (for left/right) or height (for top/bottom). Any CSS length.",
+          "default": "320px"
         },
         {
           "name": "closeOnOutsideClick",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         },
         {
           "name": "closeOnEscape",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         },
         {
           "name": "children",
@@ -2846,7 +2960,8 @@
         {
           "name": "asChild",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "children",
@@ -2921,7 +3036,8 @@
         {
           "name": "asChild",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "children",
@@ -2955,7 +3071,8 @@
         {
           "name": "defaultOpen",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "onOpenChange",
@@ -2965,12 +3082,14 @@
         {
           "name": "placement",
           "type": "Placement",
-          "optional": true
+          "optional": true,
+          "default": "bottom-start"
         },
         {
           "name": "offset",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "6"
         },
         {
           "name": "children",
@@ -2999,13 +3118,15 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "keepOpen",
           "type": "boolean",
           "optional": true,
-          "description": "When true, selecting does NOT close the dropdown."
+          "description": "When true, selecting does NOT close the dropdown.",
+          "default": "false"
         },
         {
           "name": "onSelect",
@@ -3081,7 +3202,8 @@
         {
           "name": "asChild",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "children",
@@ -3194,7 +3316,8 @@
           "name": "disabled",
           "type": "boolean",
           "optional": true,
-          "description": "Disables the whole group (native fieldset disabling propagates to controls)."
+          "description": "Disables the whole group (native fieldset disabling propagates to controls).",
+          "default": "false"
         },
         {
           "name": "hint",
@@ -3264,29 +3387,34 @@
           "name": "accept",
           "type": "string",
           "optional": true,
-          "description": "MIME type filter (forwarded + used to filter dropped files)."
+          "description": "MIME type filter (forwarded + used to filter dropped files).",
+          "default": ""
         },
         {
           "name": "multiple",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "maxSize",
           "type": "number",
           "optional": true,
-          "description": "Max file size in bytes. 0 = unlimited."
+          "description": "Max file size in bytes. 0 = unlimited.",
+          "default": "0"
         },
         {
           "name": "maxFiles",
           "type": "number",
           "optional": true,
-          "description": "Max simultaneous files. 0 = unlimited."
+          "description": "Max simultaneous files. 0 = unlimited.",
+          "default": "0"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "label",
@@ -3362,7 +3490,8 @@
           "enum": [
             "circle",
             "square"
-          ]
+          ],
+          "default": "circle"
         },
         {
           "name": "actions",
@@ -3469,7 +3598,8 @@
         {
           "name": "required",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "labelFor",
@@ -3485,7 +3615,8 @@
           "enum": [
             "sm",
             "md"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "children",
@@ -3519,23 +3650,27 @@
         {
           "name": "min",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "0"
         },
         {
           "name": "max",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "100"
         },
         {
           "name": "size",
           "type": "number",
           "optional": true,
-          "description": "Diameter in px."
+          "description": "Diameter in px.",
+          "default": "120"
         },
         {
           "name": "strokeWidth",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "10"
         },
         {
           "name": "status",
@@ -3546,12 +3681,14 @@
             "success",
             "danger",
             "warning"
-          ]
+          ],
+          "default": "default"
         },
         {
           "name": "showValue",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         },
         {
           "name": "format",
@@ -3595,13 +3732,15 @@
         {
           "name": "columns",
           "type": "IrisGridColumns",
-          "optional": true
+          "optional": true,
+          "default": "auto-fit"
         },
         {
           "name": "minColWidth",
           "type": "string",
           "optional": true,
-          "description": "Min width per column for `auto-fit` / `auto-fill`."
+          "description": "Min width per column for `auto-fit` / `auto-fill`.",
+          "default": "200px"
         },
         {
           "name": "rowGap",
@@ -3617,12 +3756,14 @@
           "name": "gap",
           "type": "string | number",
           "optional": true,
-          "description": "Shorthand for both row + column gap. Overridden if rowGap/columnGap given."
+          "description": "Shorthand for both row + column gap. Overridden if rowGap/columnGap given.",
+          "default": "md"
         },
         {
           "name": "inline",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         }
       ]
     },
@@ -3646,19 +3787,22 @@
           "name": "headerHeight",
           "type": "number | string",
           "optional": true,
-          "description": "Header height (px or CSS length). Default `'auto'`."
+          "description": "Header height (px or CSS length). Default `'auto'`.",
+          "default": "auto"
         },
         {
           "name": "footerHeight",
           "type": "number | string",
           "optional": true,
-          "description": "Footer height (px or CSS length). Default `'auto'`."
+          "description": "Footer height (px or CSS length). Default `'auto'`.",
+          "default": "auto"
         },
         {
           "name": "sticky",
           "type": "boolean",
           "optional": true,
-          "description": "Header sticks via `position: sticky` instead of static. Default true."
+          "description": "Header sticks via `position: sticky` instead of static. Default true.",
+          "default": "true"
         },
         {
           "name": "header",
@@ -3708,13 +3852,15 @@
           "name": "disabled",
           "type": "boolean",
           "optional": true,
-          "description": "Disable the binding (no-op if true)."
+          "description": "Disable the binding (no-op if true).",
+          "default": "false"
         },
         {
           "name": "allowInInputs",
           "type": "boolean",
           "optional": true,
-          "description": "Allow the hotkey to fire even when focus is inside an input / textarea / contentEditable element. Default false (most apps want hotkeys to skip while typing)."
+          "description": "Allow the hotkey to fire even when focus is inside an input / textarea / contentEditable element. Default false (most apps want hotkeys to skip while typing).",
+          "default": "false"
         },
         {
           "name": "scope",
@@ -3724,7 +3870,8 @@
           "enum": [
             "document",
             "window"
-          ]
+          ],
+          "default": "document"
         },
         {
           "name": "children",
@@ -3813,19 +3960,22 @@
           "name": "size",
           "type": "number | string",
           "optional": true,
-          "description": "Width & height (number → px). Default 24."
+          "description": "Width & height (number → px). Default 24.",
+          "default": "24"
         },
         {
           "name": "strokeWidth",
           "type": "number",
           "optional": true,
-          "description": "Stroke width for line icons. Default 2."
+          "description": "Stroke width for line icons. Default 2.",
+          "default": "2"
         },
         {
           "name": "fill",
           "type": "boolean",
           "optional": true,
-          "description": "Render as a filled glyph instead of a stroked line icon."
+          "description": "Render as a filled glyph instead of a stroked line icon.",
+          "default": "false"
         },
         {
           "name": "title",
@@ -3866,7 +4016,8 @@
         {
           "name": "alt",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": ""
         },
         {
           "name": "width",
@@ -3888,7 +4039,8 @@
           "name": "preview",
           "type": "boolean",
           "optional": true,
-          "description": "Enable the click-to-zoom preview overlay. Default true."
+          "description": "Enable the click-to-zoom preview overlay. Default true.",
+          "default": "true"
         },
         {
           "name": "style",
@@ -3927,7 +4079,8 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "type",
@@ -3941,12 +4094,14 @@
             "search",
             "tel",
             "url"
-          ]
+          ],
+          "default": "text"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "ariaDescribedby",
@@ -3991,7 +4146,8 @@
         {
           "name": "separator",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": "+"
         },
         {
           "name": "size",
@@ -4000,7 +4156,8 @@
           "enum": [
             "sm",
             "md"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "children",
@@ -4072,13 +4229,15 @@
         {
           "name": "multi",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "loop",
           "type": "boolean",
           "optional": true,
-          "description": "Loop arrow nav at boundaries. Default true."
+          "description": "Loop arrow nav at boundaries. Default true.",
+          "default": "true"
         },
         {
           "name": "ariaLabel",
@@ -4089,13 +4248,15 @@
           "name": "loading",
           "type": "boolean",
           "optional": true,
-          "description": "Show the loading state instead of items."
+          "description": "Show the loading state instead of items.",
+          "default": "false"
         },
         {
           "name": "error",
           "type": "boolean",
           "optional": true,
-          "description": "Show the error state instead of items (takes precedence over loading)."
+          "description": "Show the error state instead of items (takes precedence over loading).",
+          "default": "false"
         },
         {
           "name": "emptyState",
@@ -4162,32 +4323,38 @@
         {
           "name": "title",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": "Sign in"
         },
         {
           "name": "description",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": ""
         },
         {
           "name": "showRemember",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         },
         {
           "name": "error",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": ""
         },
         {
           "name": "submitLabel",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": "Sign in"
         },
         {
           "name": "loading",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "header",
@@ -4250,7 +4417,8 @@
           "name": "duration",
           "type": "number",
           "optional": true,
-          "description": "Seconds for one full loop."
+          "description": "Seconds for one full loop.",
+          "default": "10"
         },
         {
           "name": "direction",
@@ -4259,18 +4427,21 @@
           "enum": [
             "left",
             "right"
-          ]
+          ],
+          "default": "left"
         },
         {
           "name": "pauseOnHover",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         },
         {
           "name": "gap",
           "type": "number",
           "optional": true,
-          "description": "Gap between the repeated copies (px)."
+          "description": "Gap between the repeated copies (px).",
+          "default": "40"
         },
         {
           "name": "style",
@@ -4305,13 +4476,15 @@
           "name": "columns",
           "type": "number",
           "optional": true,
-          "description": "Number of columns."
+          "description": "Number of columns.",
+          "default": "3"
         },
         {
           "name": "gap",
           "type": "number",
           "optional": true,
-          "description": "Gap between items (px)."
+          "description": "Gap between items (px).",
+          "default": "16"
         },
         {
           "name": "children",
@@ -4355,7 +4528,8 @@
         {
           "name": "defaultValue",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": ""
         },
         {
           "name": "onValueChange",
@@ -4371,7 +4545,8 @@
           "name": "prefix",
           "type": "string",
           "optional": true,
-          "description": "Trigger character. Default '@'."
+          "description": "Trigger character. Default '@'.",
+          "default": "@"
         },
         {
           "name": "placeholder",
@@ -4381,17 +4556,20 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "rows",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "3"
         },
         {
           "name": "id",
@@ -4441,7 +4619,8 @@
         {
           "name": "defaultOpen",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "onOpenChange",
@@ -4451,12 +4630,14 @@
         {
           "name": "placement",
           "type": "Placement",
-          "optional": true
+          "optional": true,
+          "default": "bottom-start"
         },
         {
           "name": "offset",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "6"
         },
         {
           "name": "children",
@@ -4514,13 +4695,15 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "keepOpen",
           "type": "boolean",
           "optional": true,
-          "description": "Skip closing the menu on select (e.g. for sub-actions)."
+          "description": "Skip closing the menu on select (e.g. for sub-actions).",
+          "default": "false"
         },
         {
           "name": "onSelect",
@@ -4601,7 +4784,8 @@
         {
           "name": "asChild",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "children",
@@ -4660,12 +4844,14 @@
           "name": "byHandle",
           "type": "boolean",
           "optional": true,
-          "description": "Restrict drag origination to a child element marked `data-iris-movable-handle`."
+          "description": "Restrict drag origination to a child element marked `data-iris-movable-handle`.",
+          "default": "false"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "children",
@@ -4718,7 +4904,8 @@
           "name": "collapsed",
           "type": "boolean",
           "optional": true,
-          "description": "Icon-only rail (top-level items only)."
+          "description": "Icon-only rail (top-level items only).",
+          "default": "false"
         },
         {
           "name": "ariaLabel",
@@ -4777,7 +4964,8 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "min",
@@ -4792,17 +4980,20 @@
         {
           "name": "step",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "1"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "showControls",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         },
         {
           "name": "ariaDescribedby",
@@ -4838,7 +5029,8 @@
           "name": "defaultValue",
           "type": "string",
           "optional": true,
-          "description": "Initial value when uncontrolled."
+          "description": "Initial value when uncontrolled.",
+          "default": ""
         },
         {
           "name": "onValueChange",
@@ -4855,7 +5047,8 @@
           "name": "length",
           "type": "number",
           "optional": true,
-          "description": "Number of cells. Default 6."
+          "description": "Number of cells. Default 6.",
+          "default": "6"
         },
         {
           "name": "type",
@@ -4865,13 +5058,15 @@
           "enum": [
             "numeric",
             "alphanumeric"
-          ]
+          ],
+          "default": "numeric"
         },
         {
           "name": "mask",
           "type": "boolean",
           "optional": true,
-          "description": "Mask entered characters (renders password cells)."
+          "description": "Mask entered characters (renders password cells).",
+          "default": "false"
         },
         {
           "name": "size",
@@ -4881,28 +5076,33 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "autoFocus",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "placeholder",
           "type": "string",
           "optional": true,
-          "description": "Placeholder glyph shown in empty cells."
+          "description": "Placeholder glyph shown in empty cells.",
+          "default": ""
         },
         {
           "name": "id",
@@ -4955,7 +5155,8 @@
           "name": "defaultValue",
           "type": "number",
           "optional": true,
-          "description": "Initial page in uncontrolled mode."
+          "description": "Initial page in uncontrolled mode.",
+          "default": "1"
         },
         {
           "name": "onValueChange",
@@ -4971,17 +5172,20 @@
         {
           "name": "pageSize",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "10"
         },
         {
           "name": "siblingCount",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "1"
         },
         {
           "name": "showFirstLast",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "size",
@@ -4990,12 +5194,14 @@
           "enum": [
             "sm",
             "md"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         }
       ]
     },
@@ -5020,7 +5226,8 @@
           "name": "showToggle",
           "type": "boolean",
           "optional": true,
-          "description": "Allow toggling visibility. Default true."
+          "description": "Allow toggling visibility. Default true.",
+          "default": "true"
         },
         {
           "name": "suffix",
@@ -5063,7 +5270,8 @@
           "name": "defaultOpen",
           "type": "boolean",
           "optional": true,
-          "description": "Initial open value in uncontrolled mode."
+          "description": "Initial open value in uncontrolled mode.",
+          "default": "false"
         },
         {
           "name": "onOpenChange",
@@ -5075,13 +5283,15 @@
           "name": "placement",
           "type": "Placement",
           "optional": true,
-          "description": "Anchor placement; may be flipped by Floating UI to stay in view."
+          "description": "Anchor placement; may be flipped by Floating UI to stay in view.",
+          "default": "bottom-start"
         },
         {
           "name": "offset",
           "type": "number",
           "optional": true,
-          "description": "Distance in px between trigger and content."
+          "description": "Distance in px between trigger and content.",
+          "default": "8"
         },
         {
           "name": "children",
@@ -5117,13 +5327,15 @@
           "name": "autoFocus",
           "type": "boolean",
           "optional": true,
-          "description": "Move focus into the content on open (default: true)."
+          "description": "Move focus into the content on open (default: true).",
+          "default": "true"
         },
         {
           "name": "restoreFocus",
           "type": "boolean",
           "optional": true,
-          "description": "Restore focus to the trigger on close (default: true)."
+          "description": "Restore focus to the trigger on close (default: true).",
+          "default": "true"
         },
         {
           "name": "children",
@@ -5153,7 +5365,8 @@
           "name": "asChild",
           "type": "boolean",
           "optional": true,
-          "description": "Use the single child as the trigger instead of rendering a `<button>`."
+          "description": "Use the single child as the trigger instead of rendering a `<button>`.",
+          "default": "false"
         },
         {
           "name": "children",
@@ -5187,12 +5400,14 @@
         {
           "name": "max",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "100"
         },
         {
           "name": "indeterminate",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "tone",
@@ -5203,7 +5418,8 @@
             "success",
             "warning",
             "danger"
-          ]
+          ],
+          "default": "primary"
         },
         {
           "name": "size",
@@ -5212,7 +5428,8 @@
           "enum": [
             "sm",
             "md"
-          ]
+          ],
+          "default": "md"
         }
       ]
     },
@@ -5241,18 +5458,21 @@
         {
           "name": "max",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "100"
         },
         {
           "name": "size",
           "type": "number",
           "optional": true,
-          "description": "Diameter in px."
+          "description": "Diameter in px.",
+          "default": "80"
         },
         {
           "name": "strokeWidth",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "6"
         },
         {
           "name": "status",
@@ -5263,12 +5483,14 @@
             "success",
             "danger",
             "warning"
-          ]
+          ],
+          "default": "default"
         },
         {
           "name": "showLabel",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         },
         {
           "name": "format",
@@ -5342,7 +5564,8 @@
           "name": "dir",
           "type": "Direction",
           "optional": true,
-          "description": "Writing direction; forwarded to `<ThemeProvider>`. Default `'ltr'`."
+          "description": "Writing direction; forwarded to `<ThemeProvider>`. Default `'ltr'`.",
+          "default": "ltr"
         },
         {
           "name": "locale",
@@ -5422,7 +5645,8 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "children",
@@ -5472,7 +5696,8 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "orientation",
@@ -5481,7 +5706,8 @@
           "enum": [
             "horizontal",
             "vertical"
-          ]
+          ],
+          "default": "vertical"
         },
         {
           "name": "children",
@@ -5525,22 +5751,26 @@
         {
           "name": "min",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "0"
         },
         {
           "name": "max",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "100"
         },
         {
           "name": "step",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "1"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "labelStart",
@@ -5581,7 +5811,8 @@
           "name": "defaultValue",
           "type": "number",
           "optional": true,
-          "description": "Initial value when uncontrolled."
+          "description": "Initial value when uncontrolled.",
+          "default": "0"
         },
         {
           "name": "onValueChange",
@@ -5592,30 +5823,35 @@
           "name": "max",
           "type": "number",
           "optional": true,
-          "description": "Number of stars. Default 5."
+          "description": "Number of stars. Default 5.",
+          "default": "5"
         },
         {
           "name": "allowHalf",
           "type": "boolean",
           "optional": true,
-          "description": "Allow half-star precision."
+          "description": "Allow half-star precision.",
+          "default": "false"
         },
         {
           "name": "readonly",
           "type": "boolean",
           "optional": true,
-          "description": "Display-only — no interaction."
+          "description": "Display-only — no interaction.",
+          "default": "false"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "clearable",
           "type": "boolean",
           "optional": true,
-          "description": "Clicking the current value again resets to 0. Default true."
+          "description": "Clicking the current value again resets to 0. Default true.",
+          "default": "true"
         },
         {
           "name": "size",
@@ -5625,12 +5861,14 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "label",
@@ -5712,12 +5950,14 @@
         {
           "name": "minWidth",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "40"
         },
         {
           "name": "minHeight",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "40"
         },
         {
           "name": "maxWidth",
@@ -5732,12 +5972,14 @@
         {
           "name": "keepAspect",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "children",
@@ -5791,12 +6033,14 @@
         {
           "name": "minWidth",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "40"
         },
         {
           "name": "minHeight",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "40"
         },
         {
           "name": "maxWidth",
@@ -5811,13 +6055,15 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "keepAspect",
           "type": "boolean",
           "optional": true,
-          "description": "Maintain `width / height` ratio when dragging corner handles."
+          "description": "Maintain `width / height` ratio when dragging corner handles.",
+          "default": "false"
         }
       ]
     },
@@ -5847,7 +6093,8 @@
             "error",
             "info",
             "warning"
-          ]
+          ],
+          "default": "info"
         },
         {
           "name": "title",
@@ -5919,7 +6166,8 @@
           "enum": [
             "start",
             "end"
-          ]
+          ],
+          "default": "end"
         },
         {
           "name": "color",
@@ -5979,7 +6227,8 @@
             "vertical",
             "horizontal",
             "both"
-          ]
+          ],
+          "default": "vertical"
         },
         {
           "name": "children",
@@ -6043,18 +6292,21 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "block",
           "type": "boolean",
           "optional": true,
-          "description": "Stretch to fill the container width."
+          "description": "Stretch to fill the container width.",
+          "default": "false"
         },
         {
           "name": "ariaLabel",
@@ -6123,22 +6375,26 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "placement",
           "type": "Placement",
-          "optional": true
+          "optional": true,
+          "default": "bottom-start"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "id",
@@ -6194,7 +6450,8 @@
         {
           "name": "defaultCollapsed",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "onCollapsedChange",
@@ -6205,13 +6462,15 @@
           "name": "width",
           "type": "number | string",
           "optional": true,
-          "description": "Sidebar width when expanded (px or CSS length)."
+          "description": "Sidebar width when expanded (px or CSS length).",
+          "default": "240"
         },
         {
           "name": "collapsedWidth",
           "type": "number | string",
           "optional": true,
-          "description": "Sidebar width when collapsed."
+          "description": "Sidebar width when collapsed.",
+          "default": "60"
         },
         {
           "name": "side",
@@ -6220,7 +6479,8 @@
           "enum": [
             "left",
             "right"
-          ]
+          ],
+          "default": "left"
         },
         {
           "name": "sidebar",
@@ -6270,12 +6530,14 @@
             "rect",
             "circle",
             "text"
-          ]
+          ],
+          "default": "rect"
         },
         {
           "name": "animated",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         }
       ]
     },
@@ -6304,7 +6566,8 @@
         {
           "name": "defaultValue",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "0"
         },
         {
           "name": "onChange",
@@ -6314,22 +6577,26 @@
         {
           "name": "min",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "0"
         },
         {
           "name": "max",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "100"
         },
         {
           "name": "step",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "1"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "orientation",
@@ -6338,7 +6605,8 @@
           "enum": [
             "horizontal",
             "vertical"
-          ]
+          ],
+          "default": "horizontal"
         },
         {
           "name": "label",
@@ -6409,17 +6677,20 @@
         {
           "name": "size",
           "type": "IrisSpinnerSize",
-          "optional": true
+          "optional": true,
+          "default": "md"
         },
         {
           "name": "color",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": "var(--iris-primary)"
         },
         {
           "name": "strokeWidth",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "0"
         },
         {
           "name": "label",
@@ -6467,7 +6738,8 @@
           "enum": [
             "primary",
             "default"
-          ]
+          ],
+          "default": "primary"
         },
         {
           "name": "size",
@@ -6477,12 +6749,14 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "menuAriaLabel",
@@ -6525,7 +6799,8 @@
           "enum": [
             "horizontal",
             "vertical"
-          ]
+          ],
+          "default": "horizontal"
         },
         {
           "name": "value",
@@ -6536,7 +6811,8 @@
         {
           "name": "defaultValue",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "0.5"
         },
         {
           "name": "onValueChange",
@@ -6547,18 +6823,21 @@
           "name": "minStart",
           "type": "number",
           "optional": true,
-          "description": "Minimum size of the start pane in px."
+          "description": "Minimum size of the start pane in px.",
+          "default": "80"
         },
         {
           "name": "minEnd",
           "type": "number",
           "optional": true,
-          "description": "Minimum size of the end pane in px."
+          "description": "Minimum size of the end pane in px.",
+          "default": "80"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "start",
@@ -6597,12 +6876,14 @@
           "enum": [
             "row",
             "column"
-          ]
+          ],
+          "default": "column"
         },
         {
           "name": "spacing",
           "type": "string | number",
-          "optional": true
+          "optional": true,
+          "default": "md"
         },
         {
           "name": "align",
@@ -6613,7 +6894,8 @@
             "center",
             "end",
             "stretch"
-          ]
+          ],
+          "default": "stretch"
         },
         {
           "name": "justify",
@@ -6625,18 +6907,21 @@
             "end",
             "between",
             "around"
-          ]
+          ],
+          "default": "start"
         },
         {
           "name": "wrap",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "inline",
           "type": "boolean",
           "optional": true,
-          "description": "When true, renders as `inline-flex`."
+          "description": "When true, renders as `inline-flex`.",
+          "default": "false"
         }
       ]
     },
@@ -6709,7 +6994,8 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "style",
@@ -6748,7 +7034,8 @@
         {
           "name": "defaultValue",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "0"
         },
         {
           "name": "onValueChange",
@@ -6762,13 +7049,15 @@
           "enum": [
             "horizontal",
             "vertical"
-          ]
+          ],
+          "default": "horizontal"
         },
         {
           "name": "linear",
           "type": "boolean",
           "optional": true,
-          "description": "When true (default), forward navigation is blocked beyond the current step."
+          "description": "When true (default), forward navigation is blocked beyond the current step.",
+          "default": "true"
         }
       ]
     },
@@ -6814,7 +7103,8 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         }
       ]
     },
@@ -6858,12 +7148,14 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "ariaDescribedby",
@@ -6903,7 +7195,8 @@
           "name": "rowKey",
           "type": "string",
           "optional": true,
-          "description": "Field to use as the row key."
+          "description": "Field to use as the row key.",
+          "default": "id"
         },
         {
           "name": "selectable",
@@ -6914,7 +7207,8 @@
             "none",
             "single",
             "multi"
-          ]
+          ],
+          "default": "none"
         },
         {
           "name": "selection",
@@ -6949,18 +7243,21 @@
         {
           "name": "striped",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "bordered",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         },
         {
           "name": "resizableColumns",
           "type": "boolean",
           "optional": true,
-          "description": "Enable column resizing (drag the header's trailing edge or focus + arrow keys)."
+          "description": "Enable column resizing (drag the header's trailing edge or focus + arrow keys).",
+          "default": "false"
         },
         {
           "name": "columnWidths",
@@ -7018,7 +7315,8 @@
           "name": "keyboardNavigation",
           "type": "boolean",
           "optional": true,
-          "description": "Enable WAI-ARIA grid keyboard navigation: the table becomes `role=\"grid\"` and Arrow / Home / End / Page Up·Down move a roving cell focus across the data cells. Off by default; opt-in and additive (no effect on mouse / Tab behavior). Pairs best without virtualization (the focused cell must be rendered) and does not hijack keystrokes while a cell is being edited."
+          "description": "Enable WAI-ARIA grid keyboard navigation: the table becomes `role=\"grid\"` and Arrow / Home / End / Page Up·Down move a roving cell focus across the data cells. Off by default; opt-in and additive (no effect on mouse / Tab behavior). Pairs best without virtualization (the focused cell must be rendered) and does not hijack keystrokes while a cell is being edited.",
+          "default": "false"
         },
         {
           "name": "virtualScroll",
@@ -7030,7 +7328,8 @@
           "name": "columnVirtualization",
           "type": "boolean",
           "optional": true,
-          "description": "Render only the horizontally-visible columns (plus pinned + a small overscan) for very wide tables. Needs numeric column widths; the table becomes a horizontal scroll container. Off-screen grid tracks stay sized, so alignment, resize, and pinned columns keep working."
+          "description": "Render only the horizontally-visible columns (plus pinned + a small overscan) for very wide tables. Needs numeric column widths; the table becomes a horizontal scroll container. Off-screen grid tracks stay sized, so alignment, resize, and pinned columns keep working.",
+          "default": "false"
         },
         {
           "name": "emptyState",
@@ -7042,13 +7341,15 @@
           "name": "loading",
           "type": "boolean",
           "optional": true,
-          "description": "Show the loading state instead of rows."
+          "description": "Show the loading state instead of rows.",
+          "default": "false"
         },
         {
           "name": "error",
           "type": "boolean",
           "optional": true,
-          "description": "Show the error state instead of rows (takes precedence over loading)."
+          "description": "Show the error state instead of rows (takes precedence over loading).",
+          "default": "false"
         },
         {
           "name": "loadingState",
@@ -7115,18 +7416,21 @@
           "enum": [
             "horizontal",
             "vertical"
-          ]
+          ],
+          "default": "horizontal"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "lazy",
           "type": "boolean",
           "optional": true,
-          "description": "When true (default), content panels are unmounted when not active."
+          "description": "When true (default), content panels are unmounted when not active.",
+          "default": "true"
         },
         {
           "name": "children",
@@ -7161,7 +7465,8 @@
           "name": "forceMount",
           "type": "boolean",
           "optional": true,
-          "description": "Render even when inactive; hidden via the `hidden` attribute."
+          "description": "Render even when inactive; hidden via the `hidden` attribute.",
+          "default": "false"
         },
         {
           "name": "children",
@@ -7212,7 +7517,8 @@
         {
           "name": "asChild",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "children",
@@ -7261,12 +7567,14 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "max",
@@ -7277,7 +7585,8 @@
         {
           "name": "allowDuplicates",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "id",
@@ -7327,12 +7636,14 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "ariaDescribedby",
@@ -7342,12 +7653,14 @@
         {
           "name": "autosize",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "maxRows",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "8"
         }
       ]
     },
@@ -7430,23 +7743,27 @@
           "enum": [
             "12h",
             "24h"
-          ]
+          ],
+          "default": "24h"
         },
         {
           "name": "minuteStep",
           "type": "number",
           "optional": true,
-          "description": "Step in minutes for the minute input (1, 5, 10, 15, 30)."
+          "description": "Step in minutes for the minute input (1, 5, 10, 15, 30).",
+          "default": "1"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "id",
@@ -7492,7 +7809,8 @@
         {
           "name": "position",
           "type": "IrisToastPosition",
-          "optional": true
+          "optional": true,
+          "default": "top-right"
         },
         {
           "name": "portalTarget",
@@ -7503,7 +7821,8 @@
           "name": "max",
           "type": "number",
           "optional": true,
-          "description": "Maximum simultaneous toasts; older entries are evicted when exceeded."
+          "description": "Maximum simultaneous toasts; older entries are evicted when exceeded.",
+          "default": "5"
         }
       ]
     },
@@ -7577,7 +7896,8 @@
           "enum": [
             "horizontal",
             "vertical"
-          ]
+          ],
+          "default": "horizontal"
         },
         {
           "name": "ariaLabel",
@@ -7623,25 +7943,29 @@
           "name": "placement",
           "type": "Placement",
           "optional": true,
-          "description": "Side relative to the trigger; may flip to stay in view."
+          "description": "Side relative to the trigger; may flip to stay in view.",
+          "default": "top"
         },
         {
           "name": "offset",
           "type": "number",
           "optional": true,
-          "description": "Pixel offset between trigger and tooltip."
+          "description": "Pixel offset between trigger and tooltip.",
+          "default": "6"
         },
         {
           "name": "openDelay",
           "type": "number",
           "optional": true,
-          "description": "Hover/focus dwell before opening, in ms."
+          "description": "Hover/focus dwell before opening, in ms.",
+          "default": "600"
         },
         {
           "name": "closeDelay",
           "type": "number",
           "optional": true,
-          "description": "Hover/blur dwell before closing, in ms."
+          "description": "Hover/blur dwell before closing, in ms.",
+          "default": "0"
         },
         {
           "name": "portalTarget",
@@ -7653,7 +7977,8 @@
           "name": "disabled",
           "type": "boolean",
           "optional": true,
-          "description": "Disable the tooltip without removing the trigger."
+          "description": "Disable the tooltip without removing the trigger.",
+          "default": "false"
         },
         {
           "name": "children",
@@ -7692,7 +8017,8 @@
         {
           "name": "defaultOpen",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "onChange",
@@ -7769,12 +8095,14 @@
           "name": "searchable",
           "type": "boolean",
           "optional": true,
-          "description": "Show a search box per pane."
+          "description": "Show a search box per pane.",
+          "default": "false"
         },
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "style",
@@ -7848,13 +8176,15 @@
             "none",
             "single",
             "multi"
-          ]
+          ],
+          "default": "single"
         },
         {
           "name": "checkable",
           "type": "boolean",
           "optional": true,
-          "description": "Show a checkbox per node with parent/child cascade + indeterminate (tri-state) propagation, independent of `selectionMode`. Driven by the framework-agnostic `createTreeSelection`."
+          "description": "Show a checkbox per node with parent/child cascade + indeterminate (tri-state) propagation, independent of `selectionMode`. Driven by the framework-agnostic `createTreeSelection`.",
+          "default": "false"
         },
         {
           "name": "defaultChecked",
@@ -7877,13 +8207,15 @@
           "name": "loading",
           "type": "boolean",
           "optional": true,
-          "description": "Show the loading state instead of nodes."
+          "description": "Show the loading state instead of nodes.",
+          "default": "false"
         },
         {
           "name": "error",
           "type": "boolean",
           "optional": true,
-          "description": "Show the error state instead of nodes (takes precedence over loading)."
+          "description": "Show the error state instead of nodes (takes precedence over loading).",
+          "default": "false"
         },
         {
           "name": "emptyState",
@@ -7945,7 +8277,8 @@
         {
           "name": "defaultValue",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": ""
         },
         {
           "name": "onValueChange",
@@ -7966,12 +8299,14 @@
         {
           "name": "disabled",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "invalid",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "size",
@@ -7981,7 +8316,8 @@
             "sm",
             "md",
             "lg"
-          ]
+          ],
+          "default": "md"
         },
         {
           "name": "id",
@@ -8038,19 +8374,22 @@
           "name": "estimatedItemHeight",
           "type": "number",
           "optional": true,
-          "description": "Initial row-height estimate used before measurement, when `itemHeight=\"auto\"`."
+          "description": "Initial row-height estimate used before measurement, when `itemHeight=\"auto\"`.",
+          "default": "40"
         },
         {
           "name": "height",
           "type": "number | string",
           "optional": true,
-          "description": "Viewport height. Number → px; string → CSS length passed through."
+          "description": "Viewport height. Number → px; string → CSS length passed through.",
+          "default": "400"
         },
         {
           "name": "buffer",
           "type": "number",
           "optional": true,
-          "description": "Number of extra rows to render above and below the viewport."
+          "description": "Number of extra rows to render above and below the viewport.",
+          "default": "4"
         },
         {
           "name": "keyOf",
@@ -8136,29 +8475,34 @@
           "name": "rotate",
           "type": "number",
           "optional": true,
-          "description": "Rotation of each tile in degrees."
+          "description": "Rotation of each tile in degrees.",
+          "default": "-22"
         },
         {
           "name": "fontSize",
           "type": "number",
-          "optional": true
+          "optional": true,
+          "default": "16"
         },
         {
           "name": "color",
           "type": "string",
-          "optional": true
+          "optional": true,
+          "default": "var(--iris-muted)"
         },
         {
           "name": "opacity",
           "type": "number",
           "optional": true,
-          "description": "Overlay opacity (0–1)."
+          "description": "Overlay opacity (0–1).",
+          "default": "0.15"
         },
         {
           "name": "gap",
           "type": "number",
           "optional": true,
-          "description": "Spacing between tiles in px."
+          "description": "Spacing between tiles in px.",
+          "default": "24"
         },
         {
           "name": "style",

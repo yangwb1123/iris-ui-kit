@@ -117,8 +117,9 @@ for (const group of manifest.groups) {
           p.enum && p.enum.length > 0
             ? `${p.description ? ' ' : ''}One of: ${p.enum.map((v) => `\`${v}\``).join(', ')}.`
             : ''
+        const defaultNote = p.default !== undefined ? ` Default: \`${p.default}\`.` : ''
         lines.push(
-          `| \`${p.name}\` | \`${cell(p.type)}\` | ${p.optional ? '' : '✓'} | ${cell((p.description ?? '') + enumNote)} |`,
+          `| \`${p.name}\` | \`${cell(p.type)}\` | ${p.optional ? '' : '✓'} | ${cell((p.description ?? '') + enumNote + defaultNote)} |`,
         )
       }
       lines.push('')

@@ -1,19 +1,16 @@
 import {
   createStore,
   createPlugin,
-  createSelectionModel,
-  createAsyncResource,
   createCellEdit,
+  createDataSource,
+  createSyncClientDataSource,
   filterSort,
-  paginate,
   cycleSort,
   dataIndexOf,
   readCell,
-  pageCount as corePageCount,
   toCsv,
   toSpreadsheetXml,
   type Store,
-  type AsyncResource,
   type DataViewColumn,
 } from '@iris-ui/core'
 
@@ -167,11 +164,36 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     loading: false,
   })
 
-  // Selection: a composed core controller; mirror its keys into our state so
-  // subscribers (renderers) re-render on selection change.
-  const selection = createSelectionModel({ mode: 'multiple' })
-  selection.store.subscribe((keys) => {
-    store.setState((s) => ({ ...s, selectedKeys: keys }))
+  // The unified data engine drives query + sort + filter + pagination + loading
+  // + selection. Client mode uses a SYNCHRONOUS fetcher (createSyncClientDataSource
+  // over `allRows`) so rows are ready right after construction — the ProTable's
+  // long-standing sync-client contract; server mode adapts `onLoad` to the async
+  // fetcher (token-guarded against stale/out-of-order pages). The ProTable no
+  // longer re-implements any of this — it consumes the same engine the base
+  // Table and the resource controller compose.
+  const dataSource = createDataSource<Row>({
+    fetcher:
+      mode === 'server' && config.onLoad
+        ? (q) =>
+            config.onLoad!({ page: q.page, pageSize: q.pageSize, sort: q.sort, filters: q.filters })
+        : createSyncClientDataSource(allRows, dataViewColumns()),
+    pageSize: config.pageSize ?? 10,
+    immediate: false,
+  })
+  // Mirror the engine's state into ProTableState so subscribers (renderers)
+  // re-render on any query / selection / loading change.
+  dataSource.subscribe((s) => {
+    store.setState((st) => ({
+      ...st,
+      rows: s.rows,
+      sort: s.sort,
+      filters: s.filters,
+      page: s.page,
+      pageSize: s.pageSize,
+      total: s.total,
+      loading: s.loading,
+      selectedKeys: s.selectedKeys,
+    }))
   })
 
   // Inline editing: a composed core controller. `onCommit` resolves the column +
@@ -198,23 +220,6 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     store.setState((st) => ({ ...st, editing: s.editing }))
   })
 
-  // Server mode: a composed async resource — token-guarded, so an out-of-order
-  // onLoad resolution can no longer clobber a newer page (the prior hand-rolled
-  // loader had no such guard).
-  let resource: AsyncResource<{ rows: Row[]; total: number }, [ProTableQuery]> | null = null
-  if (mode === 'server' && config.onLoad) {
-    const onLoad = config.onLoad
-    resource = createAsyncResource((query: ProTableQuery) => onLoad(query))
-    resource.subscribe((s) => {
-      store.setState((st) => ({
-        ...st,
-        loading: s.status === 'loading',
-        rows: s.data?.rows ?? (s.status === 'loading' ? st.rows : []),
-        total: s.data?.total ?? (s.status === 'loading' ? st.total : 0),
-      }))
-    })
-  }
-
   const visibleColumns = (): ProTableColumn<Row>[] =>
     store.getState().columns.filter((c) => !c.hidden)
 
@@ -224,22 +229,9 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     return filterSort(allRows, dataViewColumns(), { filters, sort })
   }
 
-  function processClient(): void {
-    const { page, pageSize } = store.getState()
-    const all = processedAll()
-    store.setState((s) => ({ ...s, rows: paginate(all, page, pageSize), total: all.length }))
-  }
-
-  function processServer(): void {
-    if (!resource) return
-    const { sort, filters, page, pageSize } = store.getState()
-    resource.load({ page, pageSize, sort, filters })
-  }
-
-  const refresh = (): void => (mode === 'server' ? processServer() : processClient())
-
-  // initial load
-  refresh()
+  // Initial load — client mode applies synchronously (rows ready now), server
+  // mode kicks the first fetch.
+  void dataSource.load()
 
   const api: ProTableStore<Row> = {
     store,
@@ -249,26 +241,17 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     visibleColumns,
     cellValue,
 
-    toggleSort(key) {
-      store.setState((s) => ({ ...s, sort: cycleSort(s.sort, key), page: 1 }))
-      refresh()
-    },
+    toggleSort: (key) => dataSource.setSort(cycleSort(dataSource.getState().sort, key)),
 
-    setFilter(key, value) {
-      store.setState((s) => ({ ...s, filters: { ...s.filters, [key]: value }, page: 1 }))
-      refresh()
-    },
+    setFilter: (key, value) => dataSource.setFilter(key, value),
 
-    clearFilters() {
-      store.setState((s) => ({ ...s, filters: {}, page: 1 }))
-      refresh()
-    },
+    clearFilters: () => dataSource.clearFilters(),
 
-    isSelected: (key) => selection.isSelected(key),
-    toggleRow: (key) => selection.toggle(key),
-    toggleAll: () => selection.toggleAll(store.getState().rows.map(rowKeyOf)),
-    isAllSelected: () => selection.isAllSelected(store.getState().rows.map(rowKeyOf)),
-    clearSelection: () => selection.clear(),
+    isSelected: (key) => dataSource.selection.isSelected(key),
+    toggleRow: (key) => dataSource.selection.toggle(key),
+    toggleAll: () => dataSource.selection.toggleAll(store.getState().rows.map(rowKeyOf)),
+    isAllSelected: () => dataSource.selection.isAllSelected(store.getState().rows.map(rowKeyOf)),
+    clearSelection: () => dataSource.selection.clear(),
 
     startEdit: (rowKey, columnKey) => cellEdit.startEdit(rowKey, columnKey),
 
@@ -277,25 +260,18 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     commitEdit(value) {
       if (!cellEdit.getEditing()) return
       cellEdit.commitEdit(value) // → onCommit (write-back + onCellEdit), then clears editing
-      if (mode === 'client') refresh()
+      if (mode === 'client') void dataSource.reload()
     },
 
-    setPage(page) {
-      store.setState((s) => ({ ...s, page }))
-      refresh()
-    },
+    setPage: (page) => dataSource.setPage(page),
 
-    setPageSize(size) {
-      store.setState((s) => ({ ...s, pageSize: size, page: 1 }))
-      refresh()
-    },
+    setPageSize: (size) => dataSource.setPageSize(size),
 
-    pageCount() {
-      const s = store.getState()
-      return corePageCount(s.total, s.pageSize)
-    },
+    pageCount: () => dataSource.pageCount(),
 
-    reload: refresh,
+    reload: () => {
+      void dataSource.reload()
+    },
 
     exportCsv() {
       const cols = visibleColumns().map((c) => ({

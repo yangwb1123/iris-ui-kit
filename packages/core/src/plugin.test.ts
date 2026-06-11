@@ -47,6 +47,38 @@ describe('runPlugins', () => {
     expect(factory).toHaveBeenCalledTimes(1)
   })
 
+  it('defers a lazy store factory until first access, then memoizes it', () => {
+    const factory = vi.fn(() => ({ ok: true }))
+    const r = runPlugins([
+      createPlugin({ name: 'p', install: (reg) => reg.registerLazyStore('lazy', factory) }),
+    ])
+    // not invoked during runPlugins
+    expect(factory).not.toHaveBeenCalled()
+    // visible to has() before materialization
+    expect(r.stores.has('lazy')).toBe(true)
+    // first get materializes it...
+    const first = r.stores.get('lazy')
+    expect(factory).toHaveBeenCalledTimes(1)
+    expect(first).toEqual({ ok: true })
+    // ...subsequent gets return the SAME memoized instance (no re-invoke)
+    expect(r.stores.get('lazy')).toBe(first)
+    expect(factory).toHaveBeenCalledTimes(1)
+  })
+
+  it('warns when a lazy store key collides with an existing store', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    runPlugins([
+      createPlugin({
+        name: 'p',
+        install: (reg) => {
+          reg.registerStore('s', () => 'eager')
+          reg.registerLazyStore('s', () => 'lazy')
+        },
+      }),
+    ])
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('registered by multiple plugins'))
+  })
+
   it('merges messages for the same locale across plugins', () => {
     const a = createPlugin({ name: 'a', install: (r) => r.registerMessages('zh-CN', { a: '1' }) })
     const b = createPlugin({ name: 'b', install: (r) => r.registerMessages('zh-CN', { b: '2' }) })

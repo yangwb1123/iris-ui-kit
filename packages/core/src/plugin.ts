@@ -30,6 +30,17 @@ export interface PluginRegistry {
    */
   registerStore(key: string, factory: () => unknown): void
   /**
+   * Register a store whose `factory` is invoked LAZILY — on first
+   * `usePluginStore(key)` access — and memoized thereafter. Opt-in for stores
+   * that are expensive and not always used (e.g. a heavy client-only editor
+   * engine). Trade-off vs {@link registerStore}: a lazy store is NOT guaranteed
+   * to be the same instance across an SSR server/client boundary (it
+   * materializes wherever first accessed), and its factory runs after `install`
+   * so it cannot register an `onTeardown` — prefer an eager store when either
+   * matters. A duplicate key wins-last (with a dev warning).
+   */
+  registerLazyStore(key: string, factory: () => unknown): void
+  /**
    * Register a cleanup to run when the provider unmounts or the `plugins` set
    * is swapped — so eager stores / subscriptions / timers don't leak. An
    * alternative to returning a teardown from `install`; both are collected.
@@ -60,7 +71,11 @@ export interface CollectedRegistrations {
   tokens: Record<string, string>
   /** locale → merged messages, across all plugins. */
   messages: Record<string, Record<string, string>>
-  /** store key → the instance returned by its factory (already invoked). */
+  /**
+   * store key → instance. Eager stores are already invoked; a lazily-registered
+   * store materializes (once, memoized) on first `.get(key)` / `.has(key)`, so
+   * the adapter's `usePluginStore` resolves both transparently.
+   */
   stores: Map<string, unknown>
   /**
    * Run every registered teardown (from `install` return values and
@@ -69,6 +84,35 @@ export interface CollectedRegistrations {
    * `IrisProvider` invokes this on unmount.
    */
   teardown(): void
+}
+
+/**
+ * A `Map` of plugin stores that also materializes LAZILY-registered factories
+ * on first access (memoizing the instance). Eager stores live in the Map
+ * directly; lazy factories are invoked the first time `get`/`has` asks for them.
+ * It IS a `Map`, so it satisfies the public `stores` type and the adapters'
+ * `ctx.stores.get(key)` works unchanged.
+ */
+class PluginStoreMap extends Map<string, unknown> {
+  private readonly lazyFactories = new Map<string, () => unknown>()
+
+  registerLazy(key: string, factory: () => unknown): void {
+    this.lazyFactories.set(key, factory)
+  }
+
+  override get(key: string): unknown {
+    if (super.has(key)) return super.get(key)
+    const factory = this.lazyFactories.get(key)
+    if (!factory) return undefined
+    const instance = factory()
+    this.lazyFactories.delete(key)
+    super.set(key, instance) // memoize
+    return instance
+  }
+
+  override has(key: string): boolean {
+    return super.has(key) || this.lazyFactories.has(key)
+  }
 }
 
 function devWarn(message: string): void {
@@ -150,7 +194,7 @@ function orderPlugins(plugins: readonly IrisPlugin[]): IrisPlugin[] {
 export function runPlugins(plugins: readonly IrisPlugin[]): CollectedRegistrations {
   const tokens: Record<string, string> = {}
   const messages: Record<string, Record<string, string>> = {}
-  const stores = new Map<string, unknown>()
+  const stores = new PluginStoreMap()
   const seenNames = new Set<string>()
   const teardowns: Array<() => void> = []
 
@@ -171,6 +215,12 @@ export function runPlugins(plugins: readonly IrisPlugin[]): CollectedRegistratio
         devWarn(`store "${key}" registered by multiple plugins; last instance wins.`)
       }
       stores.set(key, factory())
+    },
+    registerLazyStore(key, factory) {
+      if (stores.has(key)) {
+        devWarn(`store "${key}" registered by multiple plugins; last instance wins.`)
+      }
+      stores.registerLazy(key, factory)
     },
     onTeardown(fn) {
       teardowns.push(fn)

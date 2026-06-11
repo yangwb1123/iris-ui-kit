@@ -76,6 +76,19 @@ export interface FormConfig<V extends FormValues> {
    * single-step form (the step methods become safe no-ops).
    */
   steps?: FormStep<V>[]
+  /**
+   * Normalize incoming values on init + every `reset` — e.g. coerce a date
+   * string to a `Date`, default nullish fields, or denormalize a nested shape
+   * for editing. Runs before they become the form's (and `dirty`-baseline)
+   * values. Pure: return the normalized values.
+   */
+  parse?: (values: V) => V
+  /**
+   * Normalize the values just before `onSubmit` — e.g. trim strings, format
+   * dates, or re-nest. Does not touch the form state; only what `onSubmit`
+   * receives. Pure: return the transformed values.
+   */
+  transform?: (values: V) => V
   onSubmit?: (values: V) => void | Promise<void>
 }
 
@@ -120,13 +133,15 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
   const validators: FormValidators<V> = config.validators ?? {}
   const validateOnChange = config.validateOnChange ?? true
   const validateOnBlur = config.validateOnBlur ?? true
+  const parse = config.parse ?? ((v: V) => v)
+  const transform = config.transform ?? ((v: V) => v)
 
-  let initialValues: V = { ...config.initialValues }
+  let initialValues: V = parse({ ...config.initialValues })
 
   const steps = config.steps ?? []
 
   const store = createStore<FormState<V>>({
-    values: { ...config.initialValues },
+    values: { ...initialValues },
     errors: {},
     touched: {},
     dirty: {},
@@ -339,14 +354,14 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
       return
     }
     try {
-      await config.onSubmit?.(store.getState().values)
+      await config.onSubmit?.(transform(store.getState().values))
     } finally {
       store.setState((s) => ({ ...s, isSubmitting: false }))
     }
   }
 
   const reset: FormStore<V>['reset'] = (nextInitialValues) => {
-    if (nextInitialValues) initialValues = { ...nextInitialValues }
+    if (nextInitialValues) initialValues = parse({ ...nextInitialValues })
     tokens.clear()
     store.setState({
       values: { ...initialValues },

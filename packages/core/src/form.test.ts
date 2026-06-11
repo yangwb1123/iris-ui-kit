@@ -379,4 +379,36 @@ describe('createFormStore', () => {
       expect(form.getState().values.tags).toEqual(['a', 'b'])
     })
   })
+
+  describe('parse + transform', () => {
+    it('parse normalizes the initial values (and the dirty baseline)', () => {
+      const form = createFormStore({
+        initialValues: { name: '  Ann  ' },
+        parse: (v) => ({ name: v.name.trim() }),
+      })
+      expect(form.getState().values.name).toBe('Ann')
+      expect(form.getState().dirty.name).toBeFalsy()
+    })
+
+    it('transform is applied to what onSubmit receives; form state is unchanged', async () => {
+      const onSubmit = vi.fn()
+      const form = createFormStore({
+        initialValues: { name: 'ann' },
+        transform: (v) => ({ name: v.name.toUpperCase() }),
+        onSubmit,
+      })
+      await form.handleSubmit()
+      expect(onSubmit).toHaveBeenCalledWith({ name: 'ANN' })
+      expect(form.getState().values.name).toBe('ann')
+    })
+
+    it('reset re-parses the next initial values', () => {
+      const form = createFormStore({
+        initialValues: { name: 'x' },
+        parse: (v) => ({ name: v.name.trim() }),
+      })
+      form.reset({ name: '  Bob  ' })
+      expect(form.getState().values.name).toBe('Bob')
+    })
+  })
 })

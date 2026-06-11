@@ -269,6 +269,9 @@
           "description": "In single mode, allow zero items open.",
           "default": "false"
         }
+      ],
+      "subComponents": [
+        "IrisAccordionItem"
       ]
     },
     {
@@ -1065,6 +1068,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "subComponents": [
+        "IrisBreadcrumbItem"
       ]
     },
     {
@@ -2615,6 +2621,13 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "subComponents": [
+        "IrisDialogClose",
+        "IrisDialogContent",
+        "IrisDialogDescription",
+        "IrisDialogTitle",
+        "IrisDialogTrigger"
       ]
     },
     {
@@ -2939,6 +2952,12 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "subComponents": [
+        "IrisDrawerClose",
+        "IrisDrawerContent",
+        "IrisDrawerTitle",
+        "IrisDrawerTrigger"
       ]
     },
     {
@@ -3097,6 +3116,12 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "subComponents": [
+        "IrisDropdownItem",
+        "IrisDropdownMenu",
+        "IrisDropdownSeparator",
+        "IrisDropdownTrigger"
       ]
     },
     {
@@ -3545,6 +3570,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "subComponents": [
+        "IrisFormField"
       ]
     },
     {
@@ -4645,6 +4673,13 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "subComponents": [
+        "IrisMenuContent",
+        "IrisMenuItem",
+        "IrisMenuSeparator",
+        "IrisMenuSub",
+        "IrisMenuTrigger"
       ]
     },
     {
@@ -5316,6 +5351,10 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "subComponents": [
+        "IrisPopoverContent",
+        "IrisPopoverTrigger"
       ]
     },
     {
@@ -7077,6 +7116,9 @@
           "description": "When true (default), forward navigation is blocked beyond the current step.",
           "default": "true"
         }
+      ],
+      "subComponents": [
+        "IrisStepperStep"
       ]
     },
     {
@@ -7455,6 +7497,11 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "subComponents": [
+        "IrisTabsContent",
+        "IrisTabsList",
+        "IrisTabsTrigger"
       ]
     },
     {
@@ -7859,7 +7906,10 @@
         "solid": "@iris-ui/solid",
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
-      }
+      },
+      "subComponents": [
+        "IrisToggleGroupItem"
+      ]
     },
     {
       "name": "IrisToggleGroupItem",

@@ -104,6 +104,10 @@ for (const group of manifest.groups) {
     lines.push('')
     lines.push(`<small>${fw}${via}</small>`)
     lines.push('')
+    if (component.subComponents && component.subComponents.length > 0) {
+      lines.push(`Parts: ${component.subComponents.map((s) => `\`${s}\``).join(', ')}`)
+      lines.push('')
+    }
     if (DEMOS[name]) {
       lines.push(DEMOS[name])
       lines.push('')

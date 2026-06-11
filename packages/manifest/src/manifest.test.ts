@@ -135,4 +135,14 @@ describe('discover (real repo)', () => {
       .filter((p) => p.default !== undefined)
     expect(withDefaults.length).toBeGreaterThan(100)
   })
+
+  it('detects compound sub-components by the part-suffix naming convention', () => {
+    const m = buildManifest(discover())
+    const dialog = m.components.find((c) => c.name === 'IrisDialog')
+    expect(dialog?.subComponents).toContain('IrisDialogContent')
+    expect(dialog?.subComponents).toContain('IrisDialogTrigger')
+    // distinct-component lookalikes that merely share a prefix are NOT parts.
+    expect(m.components.find((c) => c.name === 'IrisProgress')?.subComponents).toBeUndefined()
+    expect(m.components.find((c) => c.name === 'IrisTree')?.subComponents).toBeUndefined()
+  })
 })

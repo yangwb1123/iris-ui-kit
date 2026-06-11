@@ -55,6 +55,33 @@ export function buildManifest(raw: RawDiscovery): IrisManifest {
     })
     .sort((a, b) => a.name.localeCompare(b.name))
 
+  // Compound sub-components: a part is `Iris<Root><Part>` where Part is one of
+  // the compound-component naming words. The suffix allow-list excludes
+  // distinct-component lookalikes that merely share a prefix (IrisProgressCircle,
+  // IrisTreeSelect, IrisRadioGroup, IrisFormBuilder) from being mistaken for parts.
+  const PART_SUFFIXES = new Set([
+    'Trigger',
+    'Content',
+    'Title',
+    'Description',
+    'Close',
+    'Item',
+    'Separator',
+    'Sub',
+    'List',
+    'Menu',
+    'Step',
+    'Field',
+    'Panel',
+  ])
+  const names = components.map((c) => c.name)
+  for (const c of components) {
+    const subs = names.filter(
+      (n) => n.startsWith(c.name) && PART_SUFFIXES.has(n.slice(c.name.length)),
+    )
+    if (subs.length > 0) c.subComponents = subs
+  }
+
   const byGroup = new Map<string, string[]>()
   for (const c of components) {
     const list = byGroup.get(c.group) ?? []

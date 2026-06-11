@@ -84,6 +84,14 @@ export interface ManifestComponent {
    * interface was found.
    */
   props?: ManifestProp[]
+  /**
+   * Compound sub-components: the parts a composite expects as children — e.g.
+   * `IrisDialog` → `['IrisDialogTrigger','IrisDialogContent','IrisDialogTitle',…]`.
+   * Detected by the `Iris<Root><Part>` naming convention (Part ∈ a fixed set like
+   * Trigger/Content/Item/Sub/…), so an agent knows the full set to import + nest.
+   * Absent for standalone components.
+   */
+  subComponents?: string[]
 }
 
 export interface ManifestGroupSummary {

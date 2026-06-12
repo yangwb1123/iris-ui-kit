@@ -65,8 +65,12 @@
     const s = ctx.side
     const sz = ctx.size
     const base = `position: fixed; z-index: 1200; background: var(--iris-surface); color: var(--iris-foreground); border: 1px solid var(--iris-border); box-shadow: 0 24px 48px -16px rgba(0,0,0,0.32); overflow: auto; outline: none; ${safeAreaPadding(s)}`
-    if (s === 'left') return `${base}top: 0; left: 0; bottom: 0; width: ${sz}; border-left: none;`
-    if (s === 'right') return `${base}top: 0; right: 0; bottom: 0; width: ${sz}; border-right: none;`
+    // `100vh` is the fallback; `max-height: 100dvh` clamps the full-height side
+    // panels to the DYNAMIC viewport (dvh <= vh) so they don't overflow under
+    // mobile browser chrome. Separate property, so it's simply ignored where dvh
+    // is unsupported, leaving the 100vh fallback.
+    if (s === 'left') return `${base}top: 0; left: 0; bottom: 0; width: ${sz}; height: 100vh; max-height: 100dvh; border-left: none;`
+    if (s === 'right') return `${base}top: 0; right: 0; bottom: 0; width: ${sz}; height: 100vh; max-height: 100dvh; border-right: none;`
     if (s === 'top') return `${base}top: 0; left: 0; right: 0; height: ${sz}; border-top: none;`
     return `${base}bottom: 0; left: 0; right: 0; height: ${sz}; border-bottom: none;`
   })

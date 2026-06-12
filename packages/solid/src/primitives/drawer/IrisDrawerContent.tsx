@@ -58,11 +58,30 @@ function panelPositionStyle(side: IrisDrawerSide, size: string): JSX.CSSProperti
     'will-change': 'transform',
     ...safeAreaPadding(side),
   }
+  // `100vh` is the fallback; `max-height: 100dvh` clamps full-height side panels to
+  // the DYNAMIC viewport so they don't overflow under mobile browser chrome (dvh ≤ vh).
+  // A separate property, so it's simply ignored where dvh is unsupported, leaving 100vh.
   switch (side) {
     case 'left':
-      return { ...base, top: '0', bottom: '0', left: '0', width: size, height: '100vh' }
+      return {
+        ...base,
+        top: '0',
+        bottom: '0',
+        left: '0',
+        width: size,
+        height: '100vh',
+        'max-height': '100dvh',
+      }
     case 'right':
-      return { ...base, top: '0', bottom: '0', right: '0', width: size, height: '100vh' }
+      return {
+        ...base,
+        top: '0',
+        bottom: '0',
+        right: '0',
+        width: size,
+        height: '100vh',
+        'max-height': '100dvh',
+      }
     case 'top':
       return { ...base, top: '0', left: '0', right: '0', width: '100vw', height: size }
     case 'bottom':

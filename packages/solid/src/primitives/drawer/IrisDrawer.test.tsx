@@ -72,4 +72,17 @@ describe('IrisDrawer', () => {
     const panel = document.body.querySelector('[role="dialog"]') as HTMLElement
     expect(panel.style.paddingBottom).toContain('env(safe-area-inset-bottom')
   })
+
+  it('side panel clamps to the dynamic viewport (maxHeight 100dvh over 100vh)', () => {
+    const { getByText } = render(() => (
+      <IrisDrawer side="left">
+        <IrisDrawerTrigger>Open</IrisDrawerTrigger>
+        <IrisDrawerContent>Content</IrisDrawerContent>
+      </IrisDrawer>
+    ))
+    fireEvent.click(getByText('Open'))
+    const panel = document.body.querySelector('[role="dialog"]') as HTMLElement
+    expect(panel.style.height).toBe('100vh')
+    expect(panel.style.maxHeight).toBe('100dvh')
+  })
 })

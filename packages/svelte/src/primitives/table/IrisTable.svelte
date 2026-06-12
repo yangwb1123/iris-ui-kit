@@ -3,6 +3,7 @@
     aggregate,
     buildHeaderMatrix,
     compareValues,
+    createCellRange,
     createSelectionModel,
     createExpansion,
     flattenLeafColumns,
@@ -62,6 +63,12 @@
      * behavior). Does not hijack keystrokes while a cell is being edited.
      */
     keyboardNavigation?: boolean
+    /**
+     * Enable rectangular cell-range selection (Excel-style). Click starts a
+     * range; Shift+Click or Shift+Arrow extends it; Escape clears it.
+     * Cells within the range get `data-iris-cell-selected="true"`.
+     */
+    cellRange?: boolean
     onUpdateSelection?: (value: Array<string | number>) => void
     onUpdateSort?: (value: IrisTableSortState | null) => void
     onRowClick?: (row: Record<string, unknown>, index: number) => void
@@ -87,6 +94,7 @@
     onExpandedRowsChange,
     getSubRows,
     keyboardNavigation = false,
+    cellRange = false,
     onUpdateSelection,
     onUpdateSort,
     onRowClick,
@@ -370,6 +378,60 @@
       : rowIndex === 0 && colIndex === 0
     return isActive ? 0 : -1
   }
+
+  // Cell-range selection (opt-in via `cellRange`). The controller is created
+  // once; its state is bridged into Svelte via a $state variable subscribed to
+  // the core store.
+  // svelte-ignore state_referenced_locally
+  const cellRangeCtrl = createCellRange()
+  let cellRangeState = $state(cellRangeCtrl.getState())
+  // Subscribe to core store — Svelte's $effect cleanup will run on destroy.
+  $effect(() => {
+    const unsub = cellRangeCtrl.subscribe((s) => {
+      cellRangeState = s
+    })
+    return unsub
+  })
+
+  function isInRange(row: number, col: number): boolean {
+    const { anchor, active } = cellRangeState
+    if (!anchor || !active) return false
+    const minRow = Math.min(anchor.row, active.row)
+    const maxRow = Math.max(anchor.row, active.row)
+    const minCol = Math.min(anchor.col, active.col)
+    const maxCol = Math.max(anchor.col, active.col)
+    return row >= minRow && row <= maxRow && col >= minCol && col <= maxCol
+  }
+
+  function handleCellRangeKey(e: KeyboardEvent): void {
+    if (e.key === 'Escape') {
+      cellRangeCtrl.clearRange()
+      return
+    }
+    const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
+    if (!e.shiftKey || !ARROW_KEYS.has(e.key)) return
+    const target = e.target as HTMLElement
+    const rowAttr = target.dataset.irisCellRow
+    const colAttr = target.dataset.irisCellCol
+    if (rowAttr === undefined || colAttr === undefined) return
+    e.preventDefault()
+    const anchor = cellRangeCtrl.getState().anchor
+    const active = anchor
+      ? (cellRangeCtrl.getState().active ?? { row: Number(rowAttr), col: Number(colAttr) })
+      : { row: Number(rowAttr), col: Number(colAttr) }
+    let nextRow = active.row
+    let nextCol = active.col
+    if (e.key === 'ArrowUp') nextRow = Math.max(0, nextRow - 1)
+    else if (e.key === 'ArrowDown') nextRow = Math.min(bodyData.length - 1, nextRow + 1)
+    else if (e.key === 'ArrowLeft') nextCol = Math.max(0, nextCol - 1)
+    else nextCol = Math.min(leafColumns.length - 1, nextCol + 1)
+    cellRangeCtrl.extendRange(nextRow, nextCol)
+  }
+
+  function handleRootKeyDown(e: KeyboardEvent): void {
+    if (keyboardNavigation) handleGridKey(e)
+    if (cellRange) handleCellRangeKey(e)
+  }
 </script>
 
 <div
@@ -377,7 +439,7 @@
   bind:this={rootEl}
   role={keyboardNavigation ? 'grid' : 'table'}
   data-iris-table
-  onkeydown={keyboardNavigation ? handleGridKey : undefined}
+  onkeydown={(keyboardNavigation || cellRange) ? handleRootKeyDown : undefined}
   style="background: var(--iris-background); color: var(--iris-foreground); border: {bordered ? '1px solid var(--iris-border)' : 'none'}; border-radius: var(--iris-radius-md, 6px); overflow: hidden;{style ? ' ' + style : ''}"
 >
   <!-- Header row -->
@@ -541,10 +603,14 @@
               data-editing={isEditing ? '' : undefined}
               data-grid-row={keyboardNavigation ? index : undefined}
               data-grid-col={keyboardNavigation ? ci : undefined}
+              data-iris-cell-row={cellRange ? index : undefined}
+              data-iris-cell-col={cellRange ? ci : undefined}
+              data-iris-cell-selected={cellRange && isInRange(index, ci) ? 'true' : undefined}
               tabindex={keyboardNavigation ? cellTabIndex(index, ci) : undefined}
               onfocus={keyboardNavigation ? () => (focusedCell = { row: index, col: ci }) : undefined}
+              onclick={cellRange ? (e: MouseEvent) => { if (e.shiftKey) { cellRangeCtrl.extendRange(index, ci) } else { cellRangeCtrl.startRange(index, ci) } } : undefined}
               ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}
-              style="display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: {isEditing ? '4px' : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable ? 'cell' : 'default'}"
+              style="display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: {isEditing ? '4px' : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable ? 'cell' : 'default'}{cellRange && isInRange(index, ci) ? '; background: var(--iris-surface-selected, rgba(99,102,241,0.12))' : ''}"
             >
               {#if treeMeta && ci === 0}
                 <span

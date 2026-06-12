@@ -1004,3 +1004,61 @@ describe('@iris-ui/react IrisTable column virtualization', () => {
     expect(document.querySelector('[data-iris-table-header="c7"]')).not.toBeNull()
   })
 })
+
+describe('@iris-ui/react IrisTable cellRange', () => {
+  function cell(rowIdx: number, colIdx: number): HTMLElement {
+    return document.querySelector(
+      `[data-iris-cell-row="${rowIdx}"][data-iris-cell-col="${colIdx}"]`,
+    ) as HTMLElement
+  }
+  function selectedCells(): HTMLElement[] {
+    return Array.from(document.querySelectorAll('[data-iris-cell-selected="true"]'))
+  }
+
+  it('renders data-iris-cell-row/col attributes on all data cells when cellRange=true', () => {
+    render(<IrisTable columns={baseColumns} data={rows} cellRange />)
+    // 3 rows × 2 columns = 6 cells with cell-range attributes
+    expect(document.querySelectorAll('[data-iris-cell-row]').length).toBe(6)
+    expect(cell(0, 0)).not.toBeNull()
+    expect(cell(2, 1)).not.toBeNull()
+  })
+
+  it('click on a cell starts a 1×1 range and marks it selected', () => {
+    render(<IrisTable columns={baseColumns} data={rows} cellRange />)
+    act(() => {
+      fireEvent.click(cell(1, 0))
+    })
+    expect(selectedCells().length).toBe(1)
+    expect(cell(1, 0).getAttribute('data-iris-cell-selected')).toBe('true')
+  })
+
+  it('Shift+Click extends the range and selects all cells within the rectangle', () => {
+    render(<IrisTable columns={baseColumns} data={rows} cellRange />)
+    act(() => {
+      fireEvent.click(cell(0, 0))
+    })
+    act(() => {
+      fireEvent.click(cell(2, 1), { shiftKey: true })
+    })
+    // 3 rows × 2 columns = 6 cells all selected
+    expect(selectedCells().length).toBe(6)
+  })
+
+  it('does NOT add cell-range attributes when cellRange is false (default)', () => {
+    render(<IrisTable columns={baseColumns} data={rows} />)
+    expect(document.querySelectorAll('[data-iris-cell-row]').length).toBe(0)
+  })
+
+  it('Escape clears the selection', () => {
+    render(<IrisTable columns={baseColumns} data={rows} cellRange />)
+    act(() => {
+      fireEvent.click(cell(0, 0))
+    })
+    expect(selectedCells().length).toBe(1)
+    const table = document.querySelector('[data-iris-table]') as HTMLElement
+    act(() => {
+      fireEvent.keyDown(table, { key: 'Escape' })
+    })
+    expect(selectedCells().length).toBe(0)
+  })
+})

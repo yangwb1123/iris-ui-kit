@@ -16,11 +16,13 @@ import {
   buildHeaderMatrix,
   compareValues,
   computeVirtualRange,
+  createCellRange,
   createExpansion,
   createSelectionModel,
   flattenLeafColumns,
   flattenTree,
   nextGridCell,
+  type CellRangeState,
   type GridNavKey,
   type TreeRow,
 } from '@iris-ui/core'
@@ -140,6 +142,12 @@ export const IrisTable = defineComponent({
      * rendered) and does not hijack keystrokes while a cell is being edited.
      */
     keyboardNavigation: { type: Boolean, default: false },
+    /**
+     * Enable rectangular cell-range selection (Excel-style). Click starts a
+     * range; Shift+Click or Shift+Arrow extends it; Escape clears it.
+     * Cells within the range get `data-iris-cell-selected="true"`.
+     */
+    cellRange: { type: Boolean, default: false },
     /**
      * Render an expandable detail panel beneath a row. Providing this adds a
      * leading expand-toggle column; clicking it reveals a full-width detail row.
@@ -462,6 +470,26 @@ export const IrisTable = defineComponent({
       return parts.join(' ')
     })
 
+    // -------- Cell-range selection (opt-in via `cellRange`) --------
+    // The controller is created once and bridged into Vue reactivity via a
+    // shallowRef subscribed to the store.
+    const cellRangeCtrl = createCellRange()
+    const cellRangeState = shallowRef<CellRangeState>(cellRangeCtrl.getState())
+    onBeforeUnmount(
+      cellRangeCtrl.subscribe((s) => {
+        cellRangeState.value = s
+      }),
+    )
+    const isInRange = (row: number, col: number): boolean => {
+      const { anchor, active } = cellRangeState.value
+      if (!anchor || !active) return false
+      const minRow = Math.min(anchor.row, active.row)
+      const maxRow = Math.max(anchor.row, active.row)
+      const minCol = Math.min(anchor.col, active.col)
+      const maxCol = Math.max(anchor.col, active.col)
+      return row >= minRow && row <= maxRow && col >= minCol && col <= maxCol
+    }
+
     // -------- Grid keyboard navigation (opt-in via keyboardNavigation) --------
     // Roving 2D cell focus: exactly one data cell is tabbable; Arrow/Home/End/
     // Page keys move the focus via the core `nextGridCell` math. Off by default
@@ -497,6 +525,33 @@ export const IrisTable = defineComponent({
         `[data-grid-row="${next.row}"][data-grid-col="${next.col}"]`,
       )
       cell?.focus()
+    }
+
+    // Cell-range keyboard handler: Shift+Arrow extends, Escape clears.
+    const CELL_RANGE_ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
+    const handleCellRangeKey = (e: KeyboardEvent): void => {
+      if (!props.cellRange) return
+      if (e.key === 'Escape') {
+        cellRangeCtrl.clearRange()
+        return
+      }
+      if (!e.shiftKey || !CELL_RANGE_ARROW_KEYS.has(e.key)) return
+      const target = e.target as HTMLElement
+      const rowAttr = target.dataset.irisCellRow
+      const colAttr = target.dataset.irisCellCol
+      if (rowAttr === undefined || colAttr === undefined) return
+      e.preventDefault()
+      const anchor = cellRangeCtrl.getState().anchor
+      const active = anchor
+        ? (cellRangeCtrl.getState().active ?? { row: Number(rowAttr), col: Number(colAttr) })
+        : { row: Number(rowAttr), col: Number(colAttr) }
+      let nextRow = active.row
+      let nextCol = active.col
+      if (e.key === 'ArrowUp') nextRow = Math.max(0, nextRow - 1)
+      else if (e.key === 'ArrowDown') nextRow = Math.min(bodyData.value.length - 1, nextRow + 1)
+      else if (e.key === 'ArrowLeft') nextCol = Math.max(0, nextCol - 1)
+      else nextCol = Math.min(leafColumns.value.length - 1, nextCol + 1)
+      cellRangeCtrl.extendRange(nextRow, nextCol)
     }
 
     // -------- Column virtualization (opt-in) --------
@@ -1138,6 +1193,21 @@ export const IrisTable = defineComponent({
                       },
                     }
                   : {}),
+                // Cell-range selection (opt-in): data attributes + click handler.
+                ...(props.cellRange
+                  ? {
+                      'data-iris-cell-row': index,
+                      'data-iris-cell-col': ci,
+                      'data-iris-cell-selected': isInRange(index, ci) ? 'true' : undefined,
+                      onClick: (e: MouseEvent) => {
+                        if (e.shiftKey) {
+                          cellRangeCtrl.extendRange(index, ci)
+                        } else {
+                          cellRangeCtrl.startRange(index, ci)
+                        }
+                      },
+                    }
+                  : {}),
                 onDblclick: col.editable ? () => beginEdit(row, col, id) : undefined,
                 style: {
                   display: 'flex',
@@ -1151,6 +1221,9 @@ export const IrisTable = defineComponent({
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   cursor: col.editable ? 'cell' : 'default',
+                  ...(props.cellRange && isInRange(index, ci)
+                    ? { background: 'var(--iris-surface-selected, rgba(99,102,241,0.12))' }
+                    : {}),
                   ...(visibleColSet.value ? { gridColumnStart: String(colTrack(ci)) } : {}),
                   ...pinnedStyle(col.key),
                 },
@@ -1378,7 +1451,13 @@ export const IrisTable = defineComponent({
           'data-iris-table': '',
           'data-virtual': props.virtualScroll ? '' : undefined,
           'data-column-virtualized': props.columnVirtualization ? 'true' : undefined,
-          onKeydown: props.keyboardNavigation ? handleGridKey : undefined,
+          onKeydown:
+            props.keyboardNavigation || props.cellRange
+              ? (e: KeyboardEvent) => {
+                  if (props.keyboardNavigation) handleGridKey(e)
+                  if (props.cellRange) handleCellRangeKey(e)
+                }
+              : undefined,
           onScroll: props.columnVirtualization
             ? (e: Event) => {
                 scrollLeft.value = (e.currentTarget as HTMLElement).scrollLeft

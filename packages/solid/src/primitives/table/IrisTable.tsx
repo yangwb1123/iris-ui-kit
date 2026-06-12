@@ -1,8 +1,18 @@
-import { createEffect, createMemo, createSignal, For, mergeProps, Show, type JSX } from 'solid-js'
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  mergeProps,
+  onCleanup,
+  Show,
+  type JSX,
+} from 'solid-js'
 import {
   aggregate,
   buildHeaderMatrix,
   compareValues,
+  createCellRange,
   createExpansion,
   createSelectionModel,
   flattenLeafColumns,
@@ -58,6 +68,12 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * behavior). Does not hijack keystrokes while a cell is being edited.
    */
   keyboardNavigation?: boolean
+  /**
+   * Enable rectangular cell-range selection (Excel-style). Click starts a
+   * range; Shift+Click or Shift+Arrow extends it; Escape clears it.
+   * Cells within the range get `data-iris-cell-selected="true"`.
+   */
+  cellRange?: boolean
   style?: JSX.CSSProperties
 }
 
@@ -97,6 +113,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       loading: false,
       error: false,
       keyboardNavigation: false,
+      cellRange: false,
     },
     props,
   )
@@ -336,6 +353,49 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     cell?.focus()
   }
 
+  // ---- Cell-range selection (opt-in via `cellRange`) ----
+  // Controller lives outside reactive tracking; bridged into Solid via a signal
+  // subscribed to the core store.
+  const cellRangeCtrl = createCellRange()
+  const [cellRangeState, setCellRangeState] = createSignal(cellRangeCtrl.getState())
+  onCleanup(cellRangeCtrl.subscribe((s) => setCellRangeState(s)))
+
+  const isInRange = (row: number, col: number): boolean => {
+    const { anchor, active } = cellRangeState()
+    if (!anchor || !active) return false
+    const minRow = Math.min(anchor.row, active.row)
+    const maxRow = Math.max(anchor.row, active.row)
+    const minCol = Math.min(anchor.col, active.col)
+    const maxCol = Math.max(anchor.col, active.col)
+    return row >= minRow && row <= maxRow && col >= minCol && col <= maxCol
+  }
+
+  const handleCellRangeKey = (e: KeyboardEvent): void => {
+    if (!merged.cellRange) return
+    if (e.key === 'Escape') {
+      cellRangeCtrl.clearRange()
+      return
+    }
+    const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
+    if (!e.shiftKey || !ARROW_KEYS.has(e.key)) return
+    const target = e.target as HTMLElement
+    const rowAttr = target.dataset.irisCellRow
+    const colAttr = target.dataset.irisCellCol
+    if (rowAttr === undefined || colAttr === undefined) return
+    e.preventDefault()
+    const anchor = cellRangeCtrl.getState().anchor
+    const active = anchor
+      ? (cellRangeCtrl.getState().active ?? { row: Number(rowAttr), col: Number(colAttr) })
+      : { row: Number(rowAttr), col: Number(colAttr) }
+    let nextRow = active.row
+    let nextCol = active.col
+    if (e.key === 'ArrowUp') nextRow = Math.max(0, nextRow - 1)
+    else if (e.key === 'ArrowDown') nextRow = Math.min(bodyRows().length - 1, nextRow + 1)
+    else if (e.key === 'ArrowLeft') nextCol = Math.max(0, nextCol - 1)
+    else nextCol = Math.min(leafColumns().length - 1, nextCol + 1)
+    cellRangeCtrl.extendRange(nextRow, nextCol)
+  }
+
   // ---- Grid template ----
   const SELECTION_COL_WIDTH = 40
   const EXPAND_COL_WIDTH = 40
@@ -383,7 +443,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       ref={rootRef}
       role={merged.keyboardNavigation ? 'grid' : 'table'}
       data-iris-table=""
-      onKeyDown={merged.keyboardNavigation ? handleGridKey : undefined}
+      onKeyDown={
+        merged.keyboardNavigation || merged.cellRange
+          ? (e: KeyboardEvent) => {
+              if (merged.keyboardNavigation) handleGridKey(e)
+              if (merged.cellRange) handleCellRangeKey(e)
+            }
+          : undefined
+      }
       style={{
         background: 'var(--iris-background)',
         color: 'var(--iris-foreground)',
@@ -718,12 +785,28 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                               data-editing={isEditing() ? '' : undefined}
                               data-grid-row={merged.keyboardNavigation ? index : undefined}
                               data-grid-col={merged.keyboardNavigation ? colIndex : undefined}
+                              data-iris-cell-row={merged.cellRange ? index : undefined}
+                              data-iris-cell-col={merged.cellRange ? colIndex : undefined}
+                              data-iris-cell-selected={
+                                merged.cellRange && isInRange(index, colIndex) ? 'true' : undefined
+                              }
                               tabindex={
                                 merged.keyboardNavigation ? (isFocused() ? 0 : -1) : undefined
                               }
                               onFocus={
                                 merged.keyboardNavigation
                                   ? () => setFocusedCell({ row: index, col: colIndex })
+                                  : undefined
+                              }
+                              onClick={
+                                merged.cellRange
+                                  ? (e: MouseEvent) => {
+                                      if (e.shiftKey) {
+                                        cellRangeCtrl.extendRange(index, colIndex)
+                                      } else {
+                                        cellRangeCtrl.startRange(index, colIndex)
+                                      }
+                                    }
                                   : undefined
                               }
                               onDblClick={col.editable ? () => beginEdit(row, col, id) : undefined}
@@ -743,6 +826,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                                 overflow: 'hidden',
                                 'text-overflow': 'ellipsis',
                                 cursor: col.editable ? 'cell' : 'default',
+                                background:
+                                  merged.cellRange && isInRange(index, colIndex)
+                                    ? 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
+                                    : undefined,
                               }}
                             >
                               <Show when={treeMeta && isFirstCol}>

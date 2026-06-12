@@ -4,11 +4,13 @@ import {
   buildHeaderMatrix,
   compareValues,
   computeVirtualRange,
+  createCellRange,
   createExpansion,
   createSelectionModel,
   flattenLeafColumns,
   flattenTree,
   nextGridCell,
+  type CellRangeController,
   type ExpansionModel,
   type GridNavKey,
   type SelectionModel,
@@ -178,6 +180,12 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * so alignment, resize, and pinned columns keep working.
    */
   columnVirtualization?: boolean
+  /**
+   * Enable rectangular cell-range selection (Excel-style). Click starts a
+   * range; Shift+Click or Shift+Arrow extends it; Escape clears it.
+   * Cells within the range get `data-iris-cell-selected="true"`.
+   */
+  cellRange?: boolean
   /** Empty state node (replaces the row body when `data` is empty). */
   emptyState?: React.ReactNode
   /** Show the loading state instead of rows. */
@@ -223,6 +231,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onExpandedRowsChange,
   getSubRows,
   keyboardNavigation = false,
+  cellRange = false,
   virtualScroll,
   columnVirtualization = false,
   emptyState,
@@ -519,6 +528,37 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const [scrollLeft, setScrollLeft] = React.useState(0)
   const [viewportWidth, setViewportWidth] = React.useState(0)
 
+  // Cell-range selection (opt-in via `cellRange`). The controller lives in a
+  // ref so it is never re-created; we bridge it to React via
+  // useSyncExternalStore through the controller's getState/subscribe API.
+  const cellRangeRef = React.useRef<CellRangeController | null>(null)
+  if (cellRangeRef.current === null) {
+    cellRangeRef.current = createCellRange()
+  }
+  const cellRangeCtrl = cellRangeRef.current
+  // Subscribe React to the range store — re-renders whenever anchor/active changes.
+  // `cellRangeState` drives re-renders; `isInRange` reads fresh state at render time.
+  const cellRangeState = React.useSyncExternalStore(
+    cellRangeCtrl.subscribe,
+    cellRangeCtrl.getState,
+    cellRangeCtrl.getState,
+  )
+  // Derive a stable isInRange function from the subscribed snapshot so that
+  // TypeScript treats `cellRangeState` as consumed and every cell reads the
+  // current range (computed from anchor/active in the snapshot, not a closure).
+  const isInRange = React.useCallback(
+    (row: number, col: number): boolean => {
+      const { anchor, active } = cellRangeState
+      if (!anchor || !active) return false
+      const minRow = Math.min(anchor.row, active.row)
+      const maxRow = Math.max(anchor.row, active.row)
+      const minCol = Math.min(anchor.col, active.col)
+      const maxCol = Math.max(anchor.col, active.col)
+      return row >= minRow && row <= maxRow && col >= minCol && col <= maxCol
+    },
+    [cellRangeState],
+  )
+
   // Grid keyboard navigation (opt-in): roving cell focus over the data cells.
   const [focusedCell, setFocusedCell] = React.useState<{ row: number; col: number } | null>(null)
   const GRID_NAV_KEYS = new Set([
@@ -549,6 +589,33 @@ export function IrisTable<Row extends Record<string, unknown>>({
       `[data-grid-row="${next.row}"][data-grid-col="${next.col}"]`,
     )
     cell?.focus()
+  }
+
+  // Cell-range keyboard handler: Shift+Arrow extends the range, Escape clears it.
+  const CELL_RANGE_ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
+  const handleCellRangeKey = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (!cellRange) return
+    if (e.key === 'Escape') {
+      cellRangeCtrl.clearRange()
+      return
+    }
+    if (!e.shiftKey || !CELL_RANGE_ARROW_KEYS.has(e.key)) return
+    const target = e.target as HTMLElement
+    const rowAttr = target.dataset.irisCellRow
+    const colAttr = target.dataset.irisCellCol
+    if (rowAttr === undefined || colAttr === undefined) return
+    e.preventDefault()
+    const row = Number(rowAttr)
+    const col = Number(colAttr)
+    const anchor = cellRangeCtrl.getState().anchor
+    const active = anchor ? (cellRangeCtrl.getState().active ?? { row, col }) : { row, col }
+    let nextRow = active.row
+    let nextCol = active.col
+    if (e.key === 'ArrowUp') nextRow = Math.max(0, nextRow - 1)
+    else if (e.key === 'ArrowDown') nextRow = Math.min(bodyData.length - 1, nextRow + 1)
+    else if (e.key === 'ArrowLeft') nextCol = Math.max(0, nextCol - 1)
+    else nextCol = Math.min(leafColumns.length - 1, nextCol + 1)
+    cellRangeCtrl.extendRange(nextRow, nextCol)
   }
 
   const resolvedColWidths = React.useMemo(
@@ -711,6 +778,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     onFocus: () => setFocusedCell({ row: idx, col: ci }),
                   }
                 : null)}
+              {...(cellRange
+                ? {
+                    'data-iris-cell-row': idx,
+                    'data-iris-cell-col': ci,
+                    'data-iris-cell-selected': isInRange(idx, ci) ? 'true' : undefined,
+                    onClick: (e: React.MouseEvent) => {
+                      if (e.shiftKey) {
+                        cellRangeCtrl.extendRange(idx, ci)
+                      } else {
+                        cellRangeCtrl.startRange(idx, ci)
+                      }
+                    },
+                  }
+                : null)}
               onDoubleClick={col.editable ? () => beginEdit(row, col, k) : undefined}
               style={{
                 ...baseCellStyle,
@@ -721,9 +802,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     : col.align === 'center'
                       ? 'center'
                       : 'flex-start',
-                background: striped && idx % 2 === 1 ? 'var(--iris-surface)' : 'transparent',
+                background:
+                  cellRange && isInRange(idx, ci)
+                    ? 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
+                    : striped && idx % 2 === 1
+                      ? 'var(--iris-surface)'
+                      : 'transparent',
                 borderBottom: borderStyle,
-                cursor: col.editable ? 'cell' : undefined,
+                cursor: col.editable ? 'cell' : cellRange ? 'default' : undefined,
                 ...(editing ? { padding: '4px 8px' } : null),
                 ...pinnedStyle(col.key),
               }}
@@ -833,7 +919,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
       data-striped={striped ? 'true' : undefined}
       data-column-virtualized={columnVirtualization ? 'true' : undefined}
       className={className}
-      onKeyDown={keyboardNavigation ? handleGridKey : undefined}
+      onKeyDown={
+        keyboardNavigation || cellRange
+          ? (e) => {
+              if (keyboardNavigation) handleGridKey(e)
+              if (cellRange) handleCellRangeKey(e)
+            }
+          : undefined
+      }
       onScroll={
         columnVirtualization
           ? (e) => setScrollLeft((e.currentTarget as HTMLDivElement).scrollLeft)

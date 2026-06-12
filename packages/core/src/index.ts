@@ -225,3 +225,10 @@ export {
   type PluginRegistry,
   type CollectedRegistrations,
 } from './plugin'
+export {
+  createCellRange,
+  type CellAddress,
+  type CellRange,
+  type CellRangeState,
+  type CellRangeController,
+} from './cell-range'

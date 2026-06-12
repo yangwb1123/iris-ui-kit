@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { createSortable, type SortableRect } from '@iris-ui/core'
 import { createKanban, type KanbanConfig } from '../core'
 
 export type { KanbanCard, KanbanColumn, KanbanConfig, KanbanState, KanbanStore } from '../core'
@@ -9,10 +10,31 @@ export interface IrisKanbanProps {
   style?: React.CSSProperties
 }
 
+/** Collect drop-target rects (id + client rect) for every `[attr]` under `root`. */
+function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
+  if (!root) return []
+  return Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).map((el) => {
+    const r = el.getBoundingClientRect()
+    return {
+      id: el.getAttribute(attr)!,
+      left: r.left,
+      top: r.top,
+      width: r.width,
+      height: r.height,
+    }
+  })
+}
+
 /**
  * Render a Kanban board from a declarative config (React). Columns are laid out
- * horizontally; each card is draggable via native HTML5 DnD and can be dropped
- * onto any column. WIP-limit columns refuse drops when full. Themed via CSS vars.
+ * horizontally; each card can be moved to any column. WIP-limit columns refuse
+ * drops when full. Themed via CSS vars.
+ *
+ * Two coexisting drag paths: desktop **mouse** uses native HTML5 DnD; **touch /
+ * pen** uses the pointer-based `createSortable` controller (native HTML5 DnD
+ * never fires on touch, so the board would otherwise be unusable under
+ * Cordova / touch laptops). The pointer path is gated on `pointerType !== 'mouse'`
+ * so the mouse flow — and its tests — are unchanged.
  */
 export function IrisKanban({ config, className, style }: IrisKanbanProps) {
   // Create the store ONCE (it owns all state); reads config at construction only.
@@ -26,6 +48,42 @@ export function IrisKanban({ config, className, style }: IrisKanbanProps) {
 
   // Track the dragged card id in a ref — no re-render needed on dragstart/over.
   const dragCardId = React.useRef<string | null>(null)
+
+  // Touch/pen reorder via the shared core controller. Subscribing re-renders the
+  // board only when the hovered column (overId) actually changes — the store
+  // bails on same-value updates — so we get a live drop highlight cheaply.
+  const sortable = React.useRef(createSortable()).current
+  const sortableState = React.useSyncExternalStore(
+    sortable.subscribe,
+    sortable.getState,
+    sortable.getState,
+  )
+
+  const isAtLimit = (colId: string): boolean => {
+    const col = store.getState().columns.find((c) => c.id === colId)
+    return col?.limit !== undefined && col.cards.length >= col.limit
+  }
+
+  const onCardPointerDown = (cardId: string) => (e: React.PointerEvent<HTMLElement>) => {
+    if (e.pointerType === 'mouse') return // desktop mouse → native HTML5 DnD
+    // setPointerCapture can throw (inactive pointer / jsdom) — best-effort.
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+    sortable.start(cardId)
+  }
+  const onCardPointerMove = (cardId: string) => (e: React.PointerEvent<HTMLElement>) => {
+    if (!sortable.isActive(cardId)) return
+    const root = e.currentTarget.closest<HTMLElement>('[data-iris-kanban]')
+    sortable.moveOver({ x: e.clientX, y: e.clientY }, collectRects(root, 'data-iris-kanban-column'))
+  }
+  const onCardPointerUp = (cardId: string) => () => {
+    if (!sortable.isActive(cardId)) return
+    const { activeId, overId } = sortable.end()
+    if (activeId && overId && !isAtLimit(overId)) store.moveCard(activeId, overId)
+  }
 
   return (
     <div
@@ -51,6 +109,12 @@ export function IrisKanban({ config, className, style }: IrisKanbanProps) {
               display: 'flex',
               flexDirection: 'column',
               gap: 8,
+              // Live drop highlight for the touch/pen pointer path.
+              outline:
+                sortableState.activeId && sortableState.overId === col.id && !atLimit
+                  ? '2px solid var(--iris-color-primary, #2563eb)'
+                  : undefined,
+              outlineOffset: 2,
             }}
             onDragOver={(e) => {
               e.preventDefault()
@@ -108,6 +172,9 @@ export function IrisKanban({ config, className, style }: IrisKanbanProps) {
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 4,
+                  // Let the pointer path own touch gestures on the card (otherwise
+                  // the browser claims them for scrolling and no pointermove fires).
+                  touchAction: 'none',
                 }}
                 onDragStart={(e) => {
                   dragCardId.current = card.id
@@ -115,6 +182,12 @@ export function IrisKanban({ config, className, style }: IrisKanbanProps) {
                 }}
                 onDragEnd={() => {
                   dragCardId.current = null
+                }}
+                onPointerDown={onCardPointerDown(card.id)}
+                onPointerMove={onCardPointerMove(card.id)}
+                onPointerUp={onCardPointerUp(card.id)}
+                onPointerCancel={() => {
+                  if (sortable.isActive(card.id)) sortable.cancel()
                 }}
               >
                 <span data-iris-kanban-card-title="" style={{ fontWeight: 500 }}>

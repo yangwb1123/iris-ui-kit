@@ -1,7 +1,23 @@
 import * as React from 'react'
+import { createSortable, type SortableRect } from '@iris-ui/core'
 import { proTableLabel, type ProTableStore, type ProTableLabels } from '../core'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
+
+/** Collect drop-target rects (id + client rect) for every `[attr]` under `root`. */
+function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
+  if (!root) return []
+  return Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).map((el) => {
+    const r = el.getBoundingClientRect()
+    return {
+      id: el.getAttribute(attr)!,
+      left: r.left,
+      top: r.top,
+      width: r.width,
+      height: r.height,
+    }
+  })
+}
 
 export interface IrisProTableProps<Row extends Record<string, unknown>> {
   store: ProTableStore<Row>
@@ -43,6 +59,38 @@ export function IrisProTable<Row extends Record<string, unknown>>({
   // don't need React state (no re-render on dragstart/dragover).
   const dragKey = React.useRef<string | null>(null)
 
+  // Touch/pen column reorder via the shared core controller. Native HTML5 DnD
+  // (the `draggable` <th>) never fires on touch, so the pointer path drives the
+  // reorder there; it is gated on `pointerType !== 'mouse'` so the mouse flow is
+  // unchanged. A bare tap (down→up, no move) leaves overId null → no reorder,
+  // so header-tap sorting still works.
+  const sortable = React.useRef(createSortable()).current
+  const sortableState = React.useSyncExternalStore(
+    sortable.subscribe,
+    sortable.getState,
+    sortable.getState,
+  )
+
+  const onHeaderPointerDown = (key: string) => (e: React.PointerEvent<HTMLElement>) => {
+    if (!columnReorder || e.pointerType === 'mouse') return
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+    sortable.start(key)
+  }
+  const onHeaderPointerMove = (key: string) => (e: React.PointerEvent<HTMLElement>) => {
+    if (!sortable.isActive(key)) return
+    const root = e.currentTarget.closest<HTMLElement>('[data-iris-pro-table]')
+    sortable.moveOver({ x: e.clientX, y: e.clientY }, collectRects(root, 'data-iris-col-key'))
+  }
+  const onHeaderPointerUp = (key: string) => () => {
+    if (!sortable.isActive(key)) return
+    const { activeId, overId } = sortable.end()
+    if (activeId && overId && activeId !== overId) store.reorderColumns(activeId, overId)
+  }
+
   const [draft, setDraft] = React.useState('')
   React.useEffect(() => {
     if (state.editing) {
@@ -83,15 +131,30 @@ export function IrisProTable<Row extends Record<string, unknown>>({
               <th
                 key={c.key}
                 scope="col"
+                data-iris-col-key={c.key}
                 aria-sort={ariaSort(c)}
                 tabIndex={c.sortable ? 0 : undefined}
                 style={{
                   textAlign: c.align,
                   width: c.width,
                   cursor: columnReorder ? 'grab' : undefined,
+                  touchAction: columnReorder ? 'none' : undefined,
+                  outline:
+                    sortableState.activeId &&
+                    sortableState.overId === c.key &&
+                    sortableState.activeId !== c.key
+                      ? '2px solid var(--iris-color-primary, #2563eb)'
+                      : undefined,
+                  outlineOffset: -2,
                   ...pinnedStyle(c),
                 }}
                 onClick={c.sortable ? () => store.toggleSort(c.key) : undefined}
+                onPointerDown={onHeaderPointerDown(c.key)}
+                onPointerMove={onHeaderPointerMove(c.key)}
+                onPointerUp={onHeaderPointerUp(c.key)}
+                onPointerCancel={() => {
+                  if (sortable.isActive(c.key)) sortable.cancel()
+                }}
                 onKeyDown={
                   c.sortable
                     ? (e) => {

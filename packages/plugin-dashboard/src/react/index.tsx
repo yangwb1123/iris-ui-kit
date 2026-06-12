@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { createSortable, type SortableRect } from '@iris-ui/core'
 import { createDashboard, type DashboardConfig, type DashboardWidget } from '../core'
 
 export type { DashboardWidget, DashboardConfig, DashboardState, DashboardStore } from '../core'
@@ -9,11 +10,30 @@ export interface IrisDashboardProps {
   style?: React.CSSProperties
 }
 
+/** Collect drop-target rects (id + client rect) for every `[attr]` under `root`. */
+function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
+  if (!root) return []
+  return Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).map((el) => {
+    const r = el.getBoundingClientRect()
+    return {
+      id: el.getAttribute(attr)!,
+      left: r.left,
+      top: r.top,
+      width: r.width,
+      height: r.height,
+    }
+  })
+}
+
 /**
  * Render a CSS Grid dashboard from a declarative config (React). Each widget
- * is positioned using `grid-column` and `grid-row`. Widgets are draggable via
- * native HTML5 DnD: dragging a widget header stores the widget id; dropping
- * onto an invisible drop cell calls `store.moveWidget`. Themed via CSS vars.
+ * is positioned using `grid-column` and `grid-row`.
+ *
+ * Two coexisting drag paths: desktop **mouse** uses native HTML5 DnD (drag a
+ * widget header, drop onto an invisible cell → `store.moveWidget`); **touch /
+ * pen** uses the pointer-based `createSortable` controller, since native HTML5
+ * DnD never fires on touch. The pointer path is gated on `pointerType !== 'mouse'`
+ * so the mouse flow — and its tests — are unchanged.
  */
 export function IrisDashboard({ config, className, style }: IrisDashboardProps) {
   // Create the store ONCE (it owns all state); reads config at construction only.
@@ -28,6 +48,42 @@ export function IrisDashboard({ config, className, style }: IrisDashboardProps) 
   // Track the dragged widget id in a ref — no re-render needed on dragstart/over.
   const dragWidgetId = React.useRef<string | null>(null)
 
+  // Touch/pen reorder via the shared core controller (cell id is `${col}-${row}`).
+  const sortable = React.useRef(createSortable()).current
+  const sortableState = React.useSyncExternalStore(
+    sortable.subscribe,
+    sortable.getState,
+    sortable.getState,
+  )
+
+  const commitMove = (widgetId: string, cellId: string): void => {
+    const [c, r] = cellId.split('-').map(Number)
+    if (Number.isFinite(c) && Number.isFinite(r)) store.moveWidget(widgetId, c!, r!)
+  }
+
+  const onHeaderPointerDown = (widgetId: string) => (e: React.PointerEvent<HTMLElement>) => {
+    if (e.pointerType === 'mouse') return // desktop mouse → native HTML5 DnD
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+    sortable.start(widgetId)
+  }
+  const onHeaderPointerMove = (widgetId: string) => (e: React.PointerEvent<HTMLElement>) => {
+    if (!sortable.isActive(widgetId)) return
+    const root = e.currentTarget.closest<HTMLElement>('[data-iris-dashboard]')
+    sortable.moveOver(
+      { x: e.clientX, y: e.clientY },
+      collectRects(root, 'data-iris-dashboard-cell'),
+    )
+  }
+  const onHeaderPointerUp = (widgetId: string) => () => {
+    if (!sortable.isActive(widgetId)) return
+    const { activeId, overId } = sortable.end()
+    if (activeId && overId) commitMove(activeId, overId)
+  }
+
   const { widgets, columns } = dashboardState
   const rows = Math.ceil(widgets.length / columns) + 1
 
@@ -37,14 +93,21 @@ export function IrisDashboard({ config, className, style }: IrisDashboardProps) 
     for (let c = 1; c <= columns; c++) {
       const col = c
       const row = r
+      const cellId = `${c}-${r}`
       dropCells.push(
         <div
           key={`cell-${r}-${c}`}
-          data-iris-dashboard-cell={`${c}-${r}`}
+          data-iris-dashboard-cell={cellId}
           style={{
             gridColumn: `${col} / span 1`,
             gridRow: `${row} / span 1`,
             pointerEvents: 'all',
+            // Live drop highlight for the touch/pen pointer path.
+            outline:
+              sortableState.activeId && sortableState.overId === cellId
+                ? '2px dashed var(--iris-color-primary, #2563eb)'
+                : undefined,
+            outlineOffset: -2,
           }}
           onDragOver={(e) => {
             e.preventDefault()
@@ -108,6 +171,8 @@ export function IrisDashboard({ config, className, style }: IrisDashboardProps) 
               borderBottom: '1px solid var(--iris-color-border, #e5e7eb)',
               fontWeight: 600,
               userSelect: 'none',
+              // Let the pointer path own touch gestures on the drag handle.
+              touchAction: 'none',
             }}
             onDragStart={(e) => {
               dragWidgetId.current = widget.id
@@ -115,6 +180,12 @@ export function IrisDashboard({ config, className, style }: IrisDashboardProps) 
             }}
             onDragEnd={() => {
               dragWidgetId.current = null
+            }}
+            onPointerDown={onHeaderPointerDown(widget.id)}
+            onPointerMove={onHeaderPointerMove(widget.id)}
+            onPointerUp={onHeaderPointerUp(widget.id)}
+            onPointerCancel={() => {
+              if (sortable.isActive(widget.id)) sortable.cancel()
             }}
           >
             <span

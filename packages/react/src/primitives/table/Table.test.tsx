@@ -951,6 +951,46 @@ describe('@iris-ui/react IrisTable virtual scroll', () => {
     )
     expect(headers().length).toBe(2)
   })
+
+  it('virtualizes tree mode (uniform-height rows) with tree decoration intact', () => {
+    const tree: Row[] = [
+      {
+        id: 1,
+        name: 'Root',
+        age: 0,
+        children: Array.from({ length: 40 }, (_, i) => ({ id: 100 + i, name: `C${i}`, age: i })),
+      },
+    ]
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={tree}
+        getSubRows={(r) => r.children as Row[] | undefined}
+        defaultExpandedRowKeys={[1]}
+        virtualScroll={{ itemHeight: 36, height: 200 }}
+      />,
+    )
+    // Tree mode now uses the virtual scroller (was previously excluded).
+    expect(document.querySelector('[data-iris-virtual-scroll]')).not.toBeNull()
+    // Tree meta still flows into the virtualized rows (the parent toggle renders).
+    expect(document.querySelector('[data-iris-table-tree-toggle]')).not.toBeNull()
+    // Windowed: far fewer than the 41 total rows are in the DOM.
+    expect(rowEls().length).toBeLessThan(41)
+  })
+
+  it('does NOT virtualize tree mode when renderDetail is set (variable-height rows)', () => {
+    const tree: Row[] = [{ id: 1, name: 'Root', age: 0, children: [{ id: 2, name: 'C', age: 1 }] }]
+    render(
+      <IrisTable
+        columns={baseColumns}
+        data={tree}
+        getSubRows={(r) => r.children as Row[] | undefined}
+        renderDetail={(r) => <div>d{r.id}</div>}
+        virtualScroll={{ itemHeight: 36, height: 200 }}
+      />,
+    )
+    expect(document.querySelector('[data-iris-virtual-scroll]')).toBeNull()
+  })
 })
 
 describe('@iris-ui/react IrisTable pinned columns', () => {

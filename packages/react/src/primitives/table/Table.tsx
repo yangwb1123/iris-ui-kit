@@ -161,8 +161,9 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * tree mode: `data` is treated as the root rows, each row's first cell gains a
    * depth indent + an expand/collapse toggle (when it has children), and the
    * expand state reuses `defaultExpandedRowKeys`/`onExpandedRowsChange`. Column
-   * sort reorders siblings hierarchically (each level sorted, structure kept);
-   * v1 tree mode renders the non-virtualized body.
+   * sort reorders siblings hierarchically (each level sorted, structure kept),
+   * and tree rows virtualize like flat rows when `virtualScroll` is set (unless
+   * `renderDetail` is also used, since detail panels are variable-height).
    */
   getSubRows?: (row: Row) => Row[] | undefined
   /**
@@ -1190,14 +1191,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
         <div role="row" data-iris-table-row="empty" style={STATE_ROW_STYLE}>
           {emptyState ?? t('table.empty')}
         </div>
-      ) : virtualScroll && !treeMode ? (
+      ) : virtualScroll && (!treeMode || !hasDetail) ? (
+        // Virtualize flat mode, and tree mode too — tree rows are uniform height,
+        // so the only thing that bars it is variable-height detail panels, hence
+        // the `!hasDetail` guard. `bodyData` is the flattened visible rows (=
+        // `sortedData` in flat mode); `flatTree?.[idx]` supplies each row's tree
+        // meta (depth + toggle), with `idx` the absolute row index from the scroller.
         <IrisVirtualScroll
-          items={sortedData}
+          items={bodyData}
           itemHeight={virtualScroll.itemHeight}
           height={virtualScroll.height}
           buffer={virtualScroll.buffer}
           keyOf={(row) => rowKeyOf(row)}
-          renderItem={(row, idx) => renderRow(row, idx, { height: '100%' })}
+          renderItem={(row, idx) => renderRow(row, idx, { height: '100%' }, flatTree?.[idx])}
         />
       ) : (
         bodyData.map((row, idx) => {

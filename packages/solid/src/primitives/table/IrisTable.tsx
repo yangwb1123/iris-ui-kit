@@ -17,6 +17,7 @@ import {
   createSelectionModel,
   flattenLeafColumns,
   flattenTree,
+  withSortedChildren,
   nextGridCell,
   type ExpansionModel,
   type GridNavKey,
@@ -56,9 +57,10 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   /**
    * Return a row's child rows to enable TREE MODE: `data` is treated as the root
    * rows, each parent gets an inline expand toggle in its first cell, and the
-   * (shared) expansion model controls which branches are visible. Additive —
-   * absent means the table stays in flat mode. Mutually exclusive with
-   * `renderDetail` (detail panels).
+   * (shared) expansion model controls which branches are visible. Column sort
+   * reorders siblings hierarchically (each level sorted, structure kept).
+   * Additive — absent means the table stays in flat mode. Mutually exclusive
+   * with `renderDetail` (detail panels).
    */
   getSubRows?: (row: Row) => Row[] | undefined
   /**
@@ -138,18 +140,24 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const effectiveSort = (): IrisTableSortState | null =>
     props.sort !== undefined ? (props.sort ?? null) : internalSort()
 
-  const sortedRows = createMemo(() => {
+  // The active sort comparator (or null). Shared by the root-row sort AND the
+  // tree-mode child sort so a sortable tree reorders siblings at every depth.
+  const sortComparator = createMemo<((a: Row, b: Row) => number) | null>(() => {
     const state = effectiveSort()
-    if (!state) return merged.data
+    if (!state) return null
     const column = leafColumns().find((c) => c.key === state.key)
-    if (!column) return merged.data
+    if (!column) return null
+    const dir = state.direction === 'asc' ? 1 : -1
     const sorter =
       column.sorter ??
       ((a: Row, b: Row) => compareValues(getCellValue(a, column), getCellValue(b, column)))
-    const arr = [...merged.data]
-    arr.sort(sorter)
-    if (state.direction === 'desc') arr.reverse()
-    return arr
+    return (a, b) => sorter(a, b) * dir
+  })
+
+  const sortedRows = createMemo(() => {
+    const compare = sortComparator()
+    if (!compare) return merged.data
+    return [...merged.data].sort(compare)
   })
 
   const handleHeaderClick = (column: IrisTableColumn<Row>): void => {
@@ -196,9 +204,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const flatTree = createMemo<Array<TreeRow<Row>> | null>(() => {
     if (props.getSubRows === undefined) return null
     const keys = expandedKeys()
+    const compare = sortComparator()
     return flattenTree<Row>(sortedRows(), {
       getKey: (r) => String(rowId(r, 0)),
-      getChildren: (r) => props.getSubRows!(r),
+      // With an active sort, sort each level's children by the same comparator
+      // so the whole tree reorders hierarchically.
+      getChildren: compare
+        ? withSortedChildren((r: Row) => props.getSubRows!(r), compare)
+        : (r) => props.getSubRows!(r),
       isExpanded: (k) => keys.includes(k),
     })
   })

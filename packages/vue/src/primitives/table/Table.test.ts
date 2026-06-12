@@ -1034,6 +1034,39 @@ describe('IrisTable tree rows', () => {
     expect(wrapper.find('[data-iris-table-tree-toggle]').exists()).toBe(false)
     expect(wrapper.find('[data-iris-table-tree-indent]').exists()).toBe(false)
   })
+
+  it('column sort reorders tree siblings hierarchically (roots and children)', async () => {
+    const data: TreeRowData[] = [
+      {
+        id: 1,
+        name: 'Root B',
+        children: [
+          { id: 12, name: 'Child B2' },
+          { id: 11, name: 'Child B1' },
+        ],
+      },
+      { id: 2, name: 'Root A' },
+    ]
+    const sortableCols: IrisTableColumn<TreeRowData>[] = [
+      { key: 'name', title: 'Name', sortable: true },
+    ]
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: sortableCols,
+        data,
+        rowKey: 'id',
+        getSubRows,
+        defaultExpandedRowKeys: [1],
+      },
+      attachTo: host,
+    })
+    // Unsorted: roots and children keep their source order.
+    expect(visibleNames(wrapper)).toEqual(['Root B', 'Child B2', 'Child B1', 'Root A'])
+    // Sort asc by name: roots reorder (A before B) AND Root B's children reorder.
+    await wrapper.find('[data-iris-table-header="name"]').trigger('click')
+    await nextTick()
+    expect(visibleNames(wrapper)).toEqual(['Root A', 'Root B', 'Child B1', 'Child B2'])
+  })
 })
 
 describe('IrisTable multi-level (grouped) headers', () => {

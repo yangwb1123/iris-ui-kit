@@ -356,6 +356,31 @@ describe('IrisTable tree rows', () => {
     expect(container.querySelector('[data-iris-table-tree-toggle]')).toBeNull()
     expect(container.querySelector('[data-iris-table-tree-indent]')).toBeNull()
   })
+
+  it('column sort reorders tree siblings hierarchically (roots and children)', async () => {
+    // Roots AND Root B's children are out of alphabetical order in the source.
+    const data = [
+      {
+        id: 1,
+        name: 'Root B',
+        children: [
+          { id: 12, name: 'Child B2' },
+          { id: 11, name: 'Child B1' },
+        ],
+      },
+      { id: 2, name: 'Root A' },
+    ]
+    const sortableCols = [{ key: 'name', title: 'Name', sortable: true }]
+    const { container } = render(IrisTable, {
+      props: { columns: sortableCols, data, getSubRows, defaultExpandedRowKeys: [1] },
+    })
+    // Unsorted: roots and children keep their source order.
+    expect(visibleNames(container)).toEqual(['Root B', 'Child B2', 'Child B1', 'Root A'])
+    // Sort asc by name: roots reorder (A before B) AND Root B's children reorder.
+    const header = container.querySelector('[data-iris-table-header="name"]')!
+    await fireEvent.click(header)
+    expect(visibleNames(container)).toEqual(['Root A', 'Root B', 'Child B1', 'Child B2'])
+  })
 })
 
 describe('IrisTable grid keyboard navigation', () => {

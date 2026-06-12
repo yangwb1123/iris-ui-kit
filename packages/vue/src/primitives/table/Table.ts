@@ -21,6 +21,7 @@ import {
   createSelectionModel,
   flattenLeafColumns,
   flattenTree,
+  withSortedChildren,
   nextGridCell,
   type CellRangeState,
   type GridNavKey,
@@ -172,8 +173,9 @@ export const IrisTable = defineComponent({
      * enables tree mode: `data` is treated as the root rows, each row's first
      * cell gains a depth indent + an expand/collapse toggle (when it has
      * children), and the expand state reuses `defaultExpandedRowKeys` /
-     * `expandedRowsChange`. Tree mode renders the non-virtualized body and is
-     * mutually exclusive with `renderDetail`.
+     * `expandedRowsChange`. Column sort reorders siblings hierarchically (each
+     * level sorted, structure kept). Tree mode renders the non-virtualized body
+     * and is mutually exclusive with `renderDetail`.
      */
     getSubRows: {
       type: Function as PropType<
@@ -214,19 +216,27 @@ export const IrisTable = defineComponent({
       },
     })
 
-    const sortedRows = computed(() => {
+    // The active sort comparator (or null). Shared by the root-row sort AND the
+    // tree-mode child sort so a sortable tree reorders siblings at every depth.
+    const sortComparator = computed<
+      ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
+    >(() => {
       const state = internalSort.value
-      if (!state) return props.data
+      if (!state) return null
       const column = leafColumns.value.find((c) => c.key === state.key)
-      if (!column) return props.data
+      if (!column) return null
+      const dir = state.direction === 'asc' ? 1 : -1
       const sorter =
         column.sorter ??
         ((a: Record<string, unknown>, b: Record<string, unknown>) =>
           compareValues(getCellValue(a, column), getCellValue(b, column)))
-      const arr = [...props.data]
-      arr.sort(sorter)
-      if (state.direction === 'desc') arr.reverse()
-      return arr
+      return (a, b) => sorter(a, b) * dir
+    })
+
+    const sortedRows = computed(() => {
+      const compare = sortComparator.value
+      if (!compare) return props.data
+      return [...props.data].sort(compare)
     })
 
     // -------- Selection (single-sourced via core createSelectionModel) --------
@@ -305,7 +315,11 @@ export const IrisTable = defineComponent({
       treeMode.value
         ? flattenTree(sortedRows.value, {
             getKey: (r) => String(r[props.rowKey]),
-            getChildren: (r) => props.getSubRows!(r),
+            // With an active sort, sort each level's children by the same
+            // comparator so the whole tree reorders hierarchically.
+            getChildren: sortComparator.value
+              ? withSortedChildren((r) => props.getSubRows!(r), sortComparator.value)
+              : (r) => props.getSubRows!(r),
             isExpanded: (k) => expandedKeys.value.includes(k),
           })
         : null,

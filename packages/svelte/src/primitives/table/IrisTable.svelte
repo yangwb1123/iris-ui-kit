@@ -8,6 +8,7 @@
     createExpansion,
     flattenLeafColumns,
     flattenTree,
+    withSortedChildren,
     nextGridCell,
     type GridNavKey,
     type TreeRow,
@@ -52,8 +53,9 @@
      * enables tree mode: `data` is treated as the root rows, each row's first
      * cell gains a depth indent + an expand/collapse toggle (when it has
      * children), and the expand state reuses
-     * `defaultExpandedRowKeys`/`onExpandedRowsChange`. Mutually exclusive with
-     * `renderDetail`.
+     * `defaultExpandedRowKeys`/`onExpandedRowsChange`. Column sort reorders
+     * siblings hierarchically (each level sorted, structure kept). Mutually
+     * exclusive with `renderDetail`.
      */
     getSubRows?: (row: Record<string, unknown>) => Array<Record<string, unknown>> | undefined
     /**
@@ -133,17 +135,27 @@
   let internalSort = $state<IrisTableSortState | null>(null)
   const effectiveSort = $derived(sort !== undefined ? sort : internalSort)
 
-  const sortedRows = $derived((): Array<Record<string, unknown>> => {
+  // The active sort comparator (or null). Shared by the root-row sort AND the
+  // tree-mode child sort so a sortable tree reorders siblings at every depth.
+  const sortComparator = $derived<
+    () => ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
+  >(() => {
     const state = effectiveSort
-    if (!state) return data
+    if (!state) return null
     const column = leafColumns.find((c) => c.key === state.key)
-    if (!column) return data
-    const sorter = column.sorter ?? ((a: Record<string, unknown>, b: Record<string, unknown>) =>
-      compareValues(getCellValue(a, column), getCellValue(b, column)))
-    const arr = [...data]
-    arr.sort(sorter)
-    if (state.direction === 'desc') arr.reverse()
-    return arr
+    if (!column) return null
+    const dir = state.direction === 'asc' ? 1 : -1
+    const sorter =
+      column.sorter ??
+      ((a: Record<string, unknown>, b: Record<string, unknown>) =>
+        compareValues(getCellValue(a, column), getCellValue(b, column)))
+    return (a, b) => sorter(a, b) * dir
+  })
+
+  const sortedRows = $derived((): Array<Record<string, unknown>> => {
+    const compare = sortComparator()
+    if (!compare) return data
+    return [...data].sort(compare)
   })
 
   function handleHeaderClick(column: IrisTableColumn): void {
@@ -224,7 +236,11 @@
     treeMode
       ? flattenTree(sortedRows(), {
           getKey: (r) => String(rowId(r, 0)),
-          getChildren: (r) => getSubRows!(r),
+          // With an active sort, sort each level's children by the same
+          // comparator so the whole tree reorders hierarchically.
+          getChildren: sortComparator()
+            ? withSortedChildren((r) => getSubRows!(r), sortComparator()!)
+            : (r) => getSubRows!(r),
           isExpanded: (k) => $expandedKeys.includes(k),
         })
       : null,

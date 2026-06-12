@@ -1,4 +1,5 @@
 import type { IrisTheme } from '@iris-ui/tokens'
+import { hexToRgba, rgbToHex } from '@iris-ui/core'
 import { toCssVarName } from './toCssVarName'
 import { applyCssVars, type CssVarEntries } from './applyCssVars'
 
@@ -7,16 +8,43 @@ export interface ApplyThemeResult {
   revert(): void
 }
 
+// Semantic colors that get a precomputed tonal "subtle" variant, and the weight
+// (≈14%) at which the color is composited over the background.
+const SUBTLE_SOURCES = ['iris.primary', 'iris.success', 'iris.warning', 'iris.danger', 'iris.muted']
+const SUBTLE_WEIGHT = 0.14
+
+/** Composite `colorHex` over `bgHex` at `weight` (opaque result). */
+function mixOver(colorHex: string, bgHex: string, weight: number): string | null {
+  const c = hexToRgba(colorHex)
+  const b = hexToRgba(bgHex)
+  if (!c || !b) return null
+  const ch = (k: 'r' | 'g' | 'b'): number => Math.round(c[k] * weight + b[k] * (1 - weight))
+  return rgbToHex({ r: ch('r'), g: ch('g'), b: ch('b'), a: 1 })
+}
+
 /**
  * The CSS-custom-property `[name, value]` entries for a theme — colors as-is,
  * spacing/radii suffixed with `px`. The single source of truth shared by the
  * runtime {@link applyTheme} and the static {@link themeToCss} export, so both
  * always emit identical var names and values.
+ *
+ * Also emits a `--iris-{name}-subtle` per semantic color (the color composited
+ * ~14% over the background). Components use it as the static fallback under
+ * `color-mix()` so tonal surfaces still tint on engines without color-mix
+ * (pre-2022 WebKitGTK / WKWebView) — modern engines keep the exact color-mix.
  */
 export function themeCssVarEntries(theme: IrisTheme): CssVarEntries {
   const out: CssVarEntries = []
-  for (const [key, value] of Object.entries(theme.colors)) {
+  const colors = theme.colors as Record<string, string>
+  for (const [key, value] of Object.entries(colors)) {
     out.push([toCssVarName(key), value])
+  }
+  const bg = colors['iris.background']
+  if (bg) {
+    for (const key of SUBTLE_SOURCES) {
+      const subtle = colors[key] ? mixOver(colors[key], bg, SUBTLE_WEIGHT) : null
+      if (subtle) out.push([toCssVarName(`${key}.subtle`), subtle])
+    }
   }
   for (const [key, value] of Object.entries(theme.spacing)) {
     out.push([toCssVarName(key), `${value}px`])

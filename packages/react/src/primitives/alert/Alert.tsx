@@ -60,6 +60,9 @@ export function IrisAlert({
         padding: 'var(--iris-padding-md, 12px)',
         borderRadius: 'var(--iris-radius-md, 6px)',
         border: `1px solid ${tonalVar}`,
+        // `backgroundColor` is the precomputed fallback under color-mix (engines
+        // without it); the `background` shorthand overrides with the exact mix.
+        backgroundColor: `var(${TONE_TO_VAR[tone]}-subtle)`,
         background: `color-mix(in srgb, ${tonalVar} 10%, var(--iris-background))`,
         color: 'var(--iris-foreground)',
         alignItems: 'flex-start',

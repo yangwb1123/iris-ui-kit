@@ -1,10 +1,28 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { IrisBadge } from './Badge'
 
 afterEach(() => cleanup())
 
 describe('@iris-ui/react IrisBadge', () => {
+  it('emits a precomputed subtle fallback before the color-mix background', () => {
+    // SSR markup serializes the style object verbatim (no CSSOM folding), so we
+    // can see BOTH declarations: the static `background-color` fallback (for
+    // engines without color-mix) and the `background` color-mix that overrides it.
+    const html = renderToStaticMarkup(
+      <IrisBadge variant="subtle" tone="danger">
+        x
+      </IrisBadge>,
+    )
+    expect(html).toContain('background-color:var(--iris-danger-subtle)')
+    expect(html).toContain('background:color-mix(')
+    // Fallback must precede the override in source order (cascade correctness).
+    expect(html.indexOf('background-color:var(--iris-danger-subtle)')).toBeLessThan(
+      html.indexOf('background:color-mix('),
+    )
+  })
+
   it('renders a span with content', () => {
     render(<IrisBadge>3</IrisBadge>)
     const el = screen.getByText('3')

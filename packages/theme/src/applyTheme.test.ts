@@ -22,6 +22,19 @@ describe('applyTheme', () => {
     expect(target.style.getPropertyValue('--iris-primary')).toBe(lightTheme.colors['iris.primary'])
   })
 
+  it('derives a precomputed --iris-{semantic}-subtle for the color-mix fallback', () => {
+    applyTheme(lightTheme, target)
+    // danger composited ~14% over the white background → a light-red tint that
+    // is a valid hex everywhere (the static fallback under color-mix()).
+    const subtle = target.style.getPropertyValue('--iris-danger-subtle')
+    expect(subtle).toMatch(/^#[0-9a-f]{6}$/i)
+    expect(subtle).not.toBe(lightTheme.colors['iris.danger'])
+    // present for every semantic source.
+    for (const name of ['primary', 'success', 'warning', 'danger', 'muted']) {
+      expect(target.style.getPropertyValue(`--iris-${name}-subtle`)).toMatch(/^#[0-9a-f]{6}$/i)
+    }
+  })
+
   it('writes spacing tokens with px units', () => {
     applyTheme(lightTheme, target)
     expect(target.style.getPropertyValue('--iris-gap-md')).toBe(

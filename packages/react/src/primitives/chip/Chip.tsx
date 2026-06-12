@@ -50,6 +50,8 @@ function chipStyle(
     case 'subtle':
       return {
         ...base,
+        // Precomputed fallback first; color-mix shorthand overrides on modern engines.
+        backgroundColor: `var(${TONE_TO_VAR[tone]}-subtle)`,
         background: `color-mix(in srgb, ${v} 14%, transparent)`,
         color: v,
         border: '1px solid transparent',

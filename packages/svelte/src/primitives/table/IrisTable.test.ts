@@ -357,15 +357,50 @@ describe('IrisTable tree rows', () => {
     expect(container.querySelector('[data-iris-table-tree-indent]')).toBeNull()
   })
 
-  it('exposes aria-level on tree rows for screen-reader depth', () => {
+  it('exposes aria-level/setsize/posinset on tree rows for screen readers', () => {
     const { container } = render(IrisTable, {
       props: { columns: treeCols, data: treeData, getSubRows, defaultExpandedRowKeys: [1] },
     })
-    // Flattened order: [Root A, Child A1, Child A2, Root B]; root is level 1, child is level 2.
-    const levelAt = (index: number): string | null =>
-      bodyRows(container)[index].getAttribute('aria-level')
-    expect(levelAt(0)).toBe('1') // root
-    expect(levelAt(1)).toBe('2') // child
+    // Flattened order: [Root A, Child A1, Child A2, Root B]. Svelte body rows
+    // carry no key attribute, so each row is addressed by its position.
+    const attrs = (index: number) => ({
+      level: bodyRows(container)[index].getAttribute('aria-level'),
+      setsize: bodyRows(container)[index].getAttribute('aria-setsize'),
+      posinset: bodyRows(container)[index].getAttribute('aria-posinset'),
+    })
+    // Root A (idx 0): level 1, 2 roots, position 1.
+    expect(attrs(0)).toEqual({ level: '1', setsize: '2', posinset: '1' })
+    // Child A1 (idx 1): level 2, 2 children, position 1.
+    expect(attrs(1)).toEqual({ level: '2', setsize: '2', posinset: '1' })
+  })
+
+  it('uses role=treegrid for a keyboard-navigable tree (else grid/table)', () => {
+    const root = (container: HTMLElement): string | null =>
+      container.querySelector('[data-iris-table]')!.getAttribute('role')
+    // Tree + keyboardNavigation → treegrid.
+    expect(
+      root(
+        render(IrisTable, {
+          props: { columns: treeCols, data: treeData, getSubRows, keyboardNavigation: true },
+        }).container,
+      ),
+    ).toBe('treegrid')
+    // Non-tree + keyboardNavigation → grid.
+    expect(
+      root(
+        render(IrisTable, {
+          props: { columns: treeCols, data: treeData, keyboardNavigation: true },
+        }).container,
+      ),
+    ).toBe('grid')
+    // Tree without keyboardNavigation → table.
+    expect(
+      root(
+        render(IrisTable, {
+          props: { columns: treeCols, data: treeData, getSubRows },
+        }).container,
+      ),
+    ).toBe('table')
   })
 
   it('column sort reorders tree siblings hierarchically (roots and children)', async () => {

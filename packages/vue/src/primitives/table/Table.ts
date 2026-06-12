@@ -1252,9 +1252,11 @@ export const IrisTable = defineComponent({
           {
             key: String(id),
             role: 'row',
-            // Tree depth for screen readers (1-based); the toggle button carries
-            // aria-expanded for the control itself.
+            // Tree depth/position for screen readers (1-based); the toggle button
+            // carries aria-expanded for the control itself.
             'aria-level': treeMeta ? treeMeta.depth + 1 : undefined,
+            'aria-setsize': treeMeta ? treeMeta.setSize : undefined,
+            'aria-posinset': treeMeta ? treeMeta.posInset : undefined,
             'data-iris-table-row': '',
             'data-state': selected ? 'selected' : undefined,
             onClick: () => emit('rowClick', row, index),
@@ -1471,7 +1473,9 @@ export const IrisTable = defineComponent({
           ref: (el: unknown) => {
             rootRef.value = (el ?? null) as HTMLElement | null
           },
-          role: props.keyboardNavigation ? 'grid' : 'table',
+          // A keyboard-navigable hierarchical table is a `treegrid`; otherwise the
+          // grid/table role as before (treegrid implies managed cell focus).
+          role: props.keyboardNavigation ? (treeMode.value ? 'treegrid' : 'grid') : 'table',
           'data-iris-table': '',
           'data-virtual': props.virtualScroll ? '' : undefined,
           'data-column-virtualized': props.columnVirtualization ? 'true' : undefined,

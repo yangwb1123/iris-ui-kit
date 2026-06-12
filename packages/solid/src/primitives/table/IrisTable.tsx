@@ -480,9 +480,11 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         role="row"
         data-iris-table-row=""
         data-state={selected() ? 'selected' : undefined}
-        // Tree depth for screen readers (1-based); the toggle button carries
-        // aria-expanded for the control itself.
+        // Tree depth/position for screen readers (1-based); the toggle button
+        // carries aria-expanded for the control itself.
         aria-level={treeMeta ? treeMeta.depth + 1 : undefined}
+        aria-setsize={treeMeta ? treeMeta.setSize : undefined}
+        aria-posinset={treeMeta ? treeMeta.posInset : undefined}
         onClick={() => merged.onRowClick?.(row, index)}
         style={{
           display: 'grid',
@@ -735,7 +737,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   return (
     <div
       ref={rootRef}
-      role={merged.keyboardNavigation ? 'grid' : 'table'}
+      // A keyboard-navigable hierarchical table is a `treegrid`; otherwise the
+      // grid/table role as before (treegrid implies managed cell focus).
+      role={merged.keyboardNavigation ? (treeMode() ? 'treegrid' : 'grid') : 'table'}
       data-iris-table=""
       onKeyDown={
         merged.keyboardNavigation || merged.cellRange

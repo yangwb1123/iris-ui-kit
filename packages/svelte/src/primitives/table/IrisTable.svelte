@@ -464,7 +464,7 @@
 <div
   {...rest}
   bind:this={rootEl}
-  role={keyboardNavigation ? 'grid' : 'table'}
+  role={keyboardNavigation ? (treeMode ? 'treegrid' : 'grid') : 'table'}
   data-iris-table
   onkeydown={(keyboardNavigation || cellRange) ? handleRootKeyDown : undefined}
   style="background: var(--iris-background); color: var(--iris-foreground); border: {bordered ? '1px solid var(--iris-border)' : 'none'}; border-radius: var(--iris-radius-md, 6px); overflow: hidden;{style ? ' ' + style : ''}"
@@ -632,6 +632,8 @@
       data-iris-table-row
       data-state={selected ? 'selected' : undefined}
       aria-level={treeMeta ? treeMeta.depth + 1 : undefined}
+      aria-setsize={treeMeta ? treeMeta.setSize : undefined}
+      aria-posinset={treeMeta ? treeMeta.posInset : undefined}
       onclick={() => onRowClick?.(row, index)}
       style="display: grid; grid-template-columns: {gridTemplate()};{fillHeight ? ' height: 100%;' : ''} background: {selected ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))' : striped && index % 2 === 1 ? 'var(--iris-surface)' : 'transparent'}; transition: background-color 120ms ease; cursor: default"
     >

@@ -1035,7 +1035,7 @@ describe('IrisTable tree rows', () => {
     expect(wrapper.find('[data-iris-table-tree-indent]').exists()).toBe(false)
   })
 
-  it('exposes aria-level on tree rows for screen-reader depth', () => {
+  it('exposes aria-level/setsize/posinset on tree rows for screen readers', () => {
     const wrapper = mount(IrisTable, {
       props: {
         columns: treeCols,
@@ -1047,12 +1047,43 @@ describe('IrisTable tree rows', () => {
       attachTo: host,
     })
     // Visible body rows in order: Root A (depth 0), Child A1 (depth 1),
-    // Child A2 (depth 1), Root B (depth 0) → aria-level is depth + 1 (1-based).
+    // Child A2 (depth 1), Root B (depth 0) → aria-level is depth + 1 (1-based);
+    // aria-setsize is the sibling count at that level, aria-posinset the 1-based
+    // position among siblings.
     const rows = wrapper.findAll('[data-iris-table-row]')
-    const levelAt = (rowIndex: number): string | null =>
-      rows[rowIndex]!.element.getAttribute('aria-level')
-    expect(levelAt(0)).toBe('1') // Root A (root)
-    expect(levelAt(1)).toBe('2') // Child A1 (child)
+    const attrsAt = (rowIndex: number) => ({
+      level: rows[rowIndex]!.element.getAttribute('aria-level'),
+      setsize: rows[rowIndex]!.element.getAttribute('aria-setsize'),
+      posinset: rows[rowIndex]!.element.getAttribute('aria-posinset'),
+    })
+    // Root A: level 1, 2 roots, position 1.
+    expect(attrsAt(0)).toEqual({ level: '1', setsize: '2', posinset: '1' })
+    // Child A1: level 2, 2 children, position 1.
+    expect(attrsAt(1)).toEqual({ level: '2', setsize: '2', posinset: '1' })
+    // Child A2: level 2, 2 children, position 2.
+    expect(attrsAt(2)).toEqual({ level: '2', setsize: '2', posinset: '2' })
+    // Root B: level 1, 2 roots, position 2.
+    expect(attrsAt(3)).toEqual({ level: '1', setsize: '2', posinset: '2' })
+  })
+
+  it('uses role=treegrid for a keyboard-navigable tree (else grid/table)', async () => {
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: treeCols,
+        data: treeData,
+        rowKey: 'id',
+        getSubRows,
+        keyboardNavigation: true,
+      },
+      attachTo: host,
+    })
+    const role = () => wrapper.find('[data-iris-table]').element.getAttribute('role')
+    expect(role()).toBe('treegrid')
+    // Without tree mode it stays a grid; without keyboard nav, a table.
+    await wrapper.setProps({ getSubRows: undefined, keyboardNavigation: true })
+    expect(role()).toBe('grid')
+    await wrapper.setProps({ getSubRows, keyboardNavigation: false })
+    expect(role()).toBe('table')
   })
 
   it('column sort reorders tree siblings hierarchically (roots and children)', async () => {

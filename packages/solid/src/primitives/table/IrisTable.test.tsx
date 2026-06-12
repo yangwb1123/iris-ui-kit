@@ -422,6 +422,29 @@ describe('IrisTable tree rows', () => {
     expect(levelOf('Child A1')).toBe('2') // child
   })
 
+  it('exposes aria-setsize/aria-posinset on tree rows for sibling position', () => {
+    render(() => (
+      <IrisTable
+        columns={treeCols}
+        data={treeData}
+        getSubRows={(r) => r.children}
+        defaultExpandedRowKeys={[1]}
+      />
+    ))
+    // The Solid row carries data-iris-table-row="" (no id); read the aria attrs
+    // off the first-column cell's parent (the row element).
+    const rowFor = (name: string): HTMLElement | null | undefined =>
+      nameCellFor(name)?.parentElement
+    // Two roots → setsize 2; Root A is the first (posinset 1), Root B second.
+    expect(rowFor('Root A')?.getAttribute('aria-setsize')).toBe('2')
+    expect(rowFor('Root A')?.getAttribute('aria-posinset')).toBe('1')
+    expect(rowFor('Root B')?.getAttribute('aria-posinset')).toBe('2')
+    // Root A has two children → child setsize 2; Child A1 is first, A2 second.
+    expect(rowFor('Child A1')?.getAttribute('aria-setsize')).toBe('2')
+    expect(rowFor('Child A1')?.getAttribute('aria-posinset')).toBe('1')
+    expect(rowFor('Child A2')?.getAttribute('aria-posinset')).toBe('2')
+  })
+
   it('column sort reorders tree siblings hierarchically (roots and children)', () => {
     const data: TreeRowData[] = [
       {
@@ -520,6 +543,35 @@ describe('IrisTable grid keyboard navigation', () => {
     expect(document.querySelector('[role=grid]')).not.toBeNull()
     expect(cellAt(0, 0)!.getAttribute('tabindex')).toBe('0') // first cell focusable
     expect(cellAt(0, 1)!.getAttribute('tabindex')).toBe('-1')
+  })
+
+  it('container role upgrades to treegrid only for a keyboard-navigable tree', () => {
+    interface TRow extends Record<string, unknown> {
+      id: number
+      name: string
+      children?: TRow[]
+    }
+    const tCols: IrisTableColumn<TRow>[] = [{ key: 'name', title: 'Name' }]
+    const tData: TRow[] = [{ id: 1, name: 'Root', children: [{ id: 2, name: 'Child' }] }]
+    // tree + keyboardNavigation → treegrid.
+    const treeKbd = render(() => (
+      <IrisTable columns={tCols} data={tData} getSubRows={(r) => r.children} keyboardNavigation />
+    ))
+    expect(treeKbd.container.querySelector('[data-iris-table]')?.getAttribute('role')).toBe(
+      'treegrid',
+    )
+    treeKbd.unmount()
+    // non-tree + keyboardNavigation → grid (unchanged).
+    const flatKbd = render(() => <IrisTable columns={columns} data={data} keyboardNavigation />)
+    expect(flatKbd.container.querySelector('[data-iris-table]')?.getAttribute('role')).toBe('grid')
+    flatKbd.unmount()
+    // tree WITHOUT keyboardNavigation → table (no managed cell focus).
+    const treeOnly = render(() => (
+      <IrisTable columns={tCols} data={tData} getSubRows={(r) => r.children} />
+    ))
+    expect(treeOnly.container.querySelector('[data-iris-table]')?.getAttribute('role')).toBe(
+      'table',
+    )
   })
 
   it('ArrowRight / ArrowDown move the focused cell and roving tabindex', () => {

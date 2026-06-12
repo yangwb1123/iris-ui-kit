@@ -1,3 +1,4 @@
+import { saveFile } from '@iris-ui/core'
 import type { IrisTableColumn } from './types'
 
 function csvCell(value: unknown): string {
@@ -32,11 +33,17 @@ export function exportCsv<Row extends Record<string, unknown>>(
   return body.length > 0 ? `${header}\n${body}` : header
 }
 
-/** Trigger a browser download of the given CSV string. SSR-safe. */
+/**
+ * Trigger a download of the given CSV string. A host `FileSaveHandler` (set via
+ * `setFileSaveHandler`) intercepts it for native save in desktop/mobile shells;
+ * otherwise falls back to the browser `<a download>`. SSR-safe.
+ */
 export function downloadCsv(filename: string, csv: string): void {
-  if (typeof document === 'undefined') return
   const BOM = String.fromCharCode(0xfeff)
-  const blob = new Blob([BOM, csv], { type: 'text/csv;charset=utf-8;' })
+  const content = BOM + csv
+  if (saveFile({ filename, content, mimeType: 'text/csv;charset=utf-8;' })) return
+  if (typeof document === 'undefined') return
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url

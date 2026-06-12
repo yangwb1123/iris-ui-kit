@@ -1,4 +1,4 @@
-import { toSpreadsheetXml, type SpreadsheetXmlOptions } from '@iris-ui/core'
+import { saveFile, toSpreadsheetXml, type SpreadsheetXmlOptions } from '@iris-ui/core'
 import type { IrisTableColumn } from './types'
 
 /**
@@ -22,8 +22,15 @@ export function exportExcel<Row extends Record<string, unknown>>(
   )
 }
 
-/** Trigger a browser download of the given SpreadsheetML string. SSR-safe. */
+/**
+ * Trigger a download of the given SpreadsheetML string. A host `FileSaveHandler`
+ * (set via `setFileSaveHandler`) intercepts it for native save in desktop/mobile
+ * shells; otherwise falls back to the browser `<a download>`. SSR-safe.
+ */
 export function downloadExcel(filename: string, xml: string): void {
+  if (saveFile({ filename, content: xml, mimeType: 'application/vnd.ms-excel;charset=utf-8;' })) {
+    return
+  }
   if (typeof document === 'undefined') return
   const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' })
   const url = URL.createObjectURL(blob)

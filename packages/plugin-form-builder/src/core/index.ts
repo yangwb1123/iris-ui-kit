@@ -1,4 +1,10 @@
-import { createFormStore, createPlugin, type FormStore, type FormValues } from '@iris-ui/core'
+import {
+  createFormStore,
+  createPlugin,
+  type FormState,
+  type FormStore,
+  type FormValues,
+} from '@iris-ui/core'
 
 export type { FormValues } from '@iris-ui/core'
 
@@ -51,6 +57,14 @@ export interface FormSchema {
   fields: FieldSpec[]
   /** Submit button label. Default `'Submit'`. */
   submitLabel?: string
+  /**
+   * Multi-step (wizard) configuration. Each entry lists the `name`s of the
+   * fields it owns. When set, the renderer shows one step at a time and
+   * "Submit" is replaced by "Next" until the final step.
+   */
+  steps?: Array<{ id?: string; fields: string[] }>
+  /** Label for the "Next step" button. Default `'Next'`. */
+  nextStepLabel?: string
 }
 
 export interface FormBuilderConfig {
@@ -83,6 +97,22 @@ export interface FormBuilder {
   isVisible(field: FieldSpec, values: FormValues): boolean
   /** The fields visible for the given values — what renderers should draw. */
   visibleFields(values: FormValues): FieldSpec[]
+  /** Total number of configured steps (1 when no `steps` in the schema). */
+  stepCount: number
+  /** Label for the "Next step" button (from schema, default `'Next'`). */
+  nextStepLabel: string
+  /**
+   * The fields to render for the given state: respects both the current step
+   * filter and each field's `when` predicate. Equivalent to `visibleFields`
+   * when no `steps` are configured.
+   */
+  stepFields(state: FormState<FormValues>): FieldSpec[]
+  /** True when the form is on the last (or only) step. */
+  isLastStep(state: FormState<FormValues>): boolean
+  /** Validate the current step and advance. Returns `false` if validation fails. */
+  nextStep(): Promise<boolean>
+  /** Navigate to the previous step without validating. */
+  prevStep(): void
 }
 
 /** Humanize a camelCase / snake_case name into a Title Case label. */
@@ -126,7 +156,22 @@ export function createFormBuilder(schema: FormSchema, config: FormBuilderConfig 
     parse: config.parse,
     transform: config.transform,
     dependencies: config.dependencies,
+    ...(schema.steps ? { steps: schema.steps } : {}),
   })
+
+  const stepCount = form.stepCount()
+
+  const stepFields = (state: FormState<FormValues>): FieldSpec[] => {
+    const step = schema.steps?.[state.currentStep]
+    const stepNames = step ? new Set(step.fields) : null
+    return schema.fields.filter((f) => {
+      if (stepNames && !stepNames.has(f.name)) return false
+      return isVisible(f, state.values)
+    })
+  }
+
+  const isLastStep = (state: FormState<FormValues>): boolean =>
+    !schema.steps || state.currentStep >= stepCount - 1
 
   return {
     form,
@@ -135,6 +180,12 @@ export function createFormBuilder(schema: FormSchema, config: FormBuilderConfig 
     labelOf,
     isVisible,
     visibleFields: (values) => schema.fields.filter((f) => isVisible(f, values)),
+    stepCount,
+    nextStepLabel: schema.nextStepLabel ?? 'Next',
+    stepFields,
+    isLastStep,
+    nextStep: () => form.nextStep(),
+    prevStep: () => form.prevStep(),
   }
 }
 

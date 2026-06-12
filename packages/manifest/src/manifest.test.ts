@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { buildManifest } from './build'
 import { renderLlmsText } from './llms'
 import { discover, findRepoRoot } from './discover'
-import type { RawDiscovery } from './schema'
+import { classifyProps } from './props'
+import type { ManifestProp, RawDiscovery } from './schema'
 
 const sample: RawDiscovery = {
   components: [
@@ -144,5 +145,48 @@ describe('discover (real repo)', () => {
     // distinct-component lookalikes that merely share a prefix are NOT parts.
     expect(m.components.find((c) => c.name === 'IrisProgress')?.subComponents).toBeUndefined()
     expect(m.components.find((c) => c.name === 'IrisTree')?.subComponents).toBeUndefined()
+  })
+})
+
+describe('classifyProps', () => {
+  it('classifies on[A-Z] props as events', () => {
+    const props: ManifestProp[] = [
+      { name: 'onClick', type: '() => void', optional: true },
+      { name: 'onValueChange', type: '(v: string) => void', optional: true },
+      { name: 'label', type: 'string', optional: false },
+    ]
+    const { events, slots } = classifyProps(props)
+    expect(events).toEqual(['onClick', 'onValueChange'])
+    expect(slots).toEqual([])
+  })
+
+  it('classifies ReactNode props as slots, normalising children → default', () => {
+    const props: ManifestProp[] = [
+      { name: 'children', type: 'React.ReactNode', optional: true },
+      { name: 'trigger', type: 'ReactNode', optional: true },
+      { name: 'label', type: 'string', optional: false },
+    ]
+    const { events, slots } = classifyProps(props)
+    expect(events).toEqual([])
+    expect(slots).toEqual(['default', 'trigger'])
+  })
+
+  it('deduplicates slot names', () => {
+    const props: ManifestProp[] = [
+      { name: 'children', type: 'React.ReactNode', optional: true },
+      { name: 'children', type: 'ReactNode', optional: true },
+    ]
+    const { slots } = classifyProps(props)
+    expect(slots).toEqual(['default'])
+  })
+
+  it('returns empty arrays when no events or slots found', () => {
+    const props: ManifestProp[] = [
+      { name: 'size', type: "'sm' | 'md' | 'lg'", optional: true },
+      { name: 'disabled', type: 'boolean', optional: true },
+    ]
+    const { events, slots } = classifyProps(props)
+    expect(events).toEqual([])
+    expect(slots).toEqual([])
   })
 })

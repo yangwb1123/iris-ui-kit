@@ -36,7 +36,17 @@ export const IrisFormBuilder = defineComponent({
       onSubmit: props.onSubmit,
       validateOnChange: props.validateOnChange,
     })
-    const { form, submitLabel, labelOf } = builder
+    const {
+      form,
+      submitLabel,
+      labelOf,
+      stepCount,
+      nextStepLabel,
+      stepFields,
+      isLastStep,
+      nextStep,
+      prevStep,
+    } = builder
 
     const state = shallowRef(form.getState())
     let unsub = () => {}
@@ -51,7 +61,7 @@ export const IrisFormBuilder = defineComponent({
       form.setFieldValue(field.name, value as FormValues[string])
 
     return () => {
-      const fieldNodes: VNode[] = builder.visibleFields(state.value.values).map((field) => {
+      const fieldNodes: VNode[] = stepFields(state.value).map((field) => {
         const id = `iris-fb-${field.name}`
         const value = state.value.values[field.name]
         const error = state.value.errors[field.name]
@@ -156,7 +166,12 @@ export const IrisFormBuilder = defineComponent({
         },
         [
           ...fieldNodes,
-          h('button', { type: 'submit', disabled: state.value.isSubmitting }, submitLabel),
+          isLastStep(state.value)
+            ? h('button', { type: 'submit', disabled: state.value.isSubmitting }, submitLabel)
+            : h('button', { type: 'button', onClick: () => void nextStep() }, nextStepLabel),
+          stepCount > 1 && state.value.currentStep > 0
+            ? h('button', { type: 'button', onClick: prevStep }, 'Previous')
+            : null,
         ],
       )
     }

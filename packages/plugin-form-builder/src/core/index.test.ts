@@ -120,6 +120,53 @@ describe('dependencies (cross-field re-validation)', () => {
   })
 })
 
+describe('wizard (multi-step)', () => {
+  const wizardSchema: FormSchema = {
+    steps: [{ fields: ['fullName'] }, { fields: ['age', 'role'] }],
+    fields: schema.fields,
+    submitLabel: 'Create',
+    nextStepLabel: 'Continue',
+  }
+
+  it('stepFields returns only the current step fields on step 0', () => {
+    const fb = createFormBuilder(wizardSchema)
+    expect(fb.stepFields(fb.form.getState()).map((f) => f.name)).toEqual(['fullName'])
+  })
+
+  it('stepFields returns step 1 fields after advancing', async () => {
+    const fb = createFormBuilder(wizardSchema)
+    fb.form.setFieldValue('fullName', 'Ada')
+    await fb.nextStep()
+    expect(fb.stepFields(fb.form.getState()).map((f) => f.name)).toEqual(['age', 'role'])
+  })
+
+  it('isLastStep is false on step 0, true on the last step', async () => {
+    const fb = createFormBuilder(wizardSchema)
+    expect(fb.isLastStep(fb.form.getState())).toBe(false)
+    fb.form.setFieldValue('fullName', 'Ada')
+    await fb.nextStep()
+    expect(fb.isLastStep(fb.form.getState())).toBe(true)
+  })
+
+  it('nextStepLabel and stepCount reflect the schema', () => {
+    const fb = createFormBuilder(wizardSchema)
+    expect(fb.nextStepLabel).toBe('Continue')
+    expect(fb.stepCount).toBe(2)
+    const noSteps = createFormBuilder(schema)
+    expect(noSteps.nextStepLabel).toBe('Next')
+    expect(noSteps.stepCount).toBe(1)
+    expect(noSteps.isLastStep(noSteps.form.getState())).toBe(true)
+  })
+
+  it('prevStep returns to step 0', async () => {
+    const fb = createFormBuilder(wizardSchema)
+    fb.form.setFieldValue('fullName', 'Ada')
+    await fb.nextStep()
+    fb.prevStep()
+    expect(fb.form.getState().currentStep).toBe(0)
+  })
+})
+
 describe('formBuilderPlugin', () => {
   it('registers form tokens', () => {
     const { tokens } = runPlugins([formBuilderPlugin])

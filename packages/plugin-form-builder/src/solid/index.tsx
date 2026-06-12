@@ -21,12 +21,22 @@ export function IrisFormBuilder(props: IrisFormBuilderProps) {
     onSubmit: props.onSubmit,
     validateOnChange: props.validateOnChange,
   })
-  const { form, submitLabel, labelOf } = builder
+  const {
+    form,
+    submitLabel,
+    labelOf,
+    stepCount,
+    nextStepLabel,
+    stepFields,
+    isLastStep,
+    nextStep,
+    prevStep,
+  } = builder
 
   const [state, setState] = createSignal(form.getState())
   onCleanup(form.subscribe(setState))
 
-  const visibleFields = createMemo(() => builder.visibleFields(state().values))
+  const visibleFields = createMemo(() => stepFields(state()))
 
   const setValue = (field: FieldSpec, value: unknown) =>
     form.setFieldValue(field.name, value as FormValues[string])
@@ -121,9 +131,23 @@ export function IrisFormBuilder(props: IrisFormBuilderProps) {
           )
         }}
       </For>
-      <button type="submit" disabled={state().isSubmitting}>
-        {submitLabel}
-      </button>
+      <Show
+        when={isLastStep(state())}
+        fallback={
+          <button type="button" onClick={() => void nextStep()}>
+            {nextStepLabel}
+          </button>
+        }
+      >
+        <button type="submit" disabled={state().isSubmitting}>
+          {submitLabel}
+        </button>
+      </Show>
+      <Show when={stepCount > 1 && state().currentStep > 0}>
+        <button type="button" onClick={prevStep}>
+          Previous
+        </button>
+      </Show>
     </form>
   )
 }

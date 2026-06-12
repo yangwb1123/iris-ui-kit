@@ -48,6 +48,31 @@ describe('IrisFormBuilder (solid)', () => {
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ name: 'Ada' }))
   })
 
+  it('wizard: renders Next/Previous and advances steps on click', async () => {
+    const wizard: FormSchema = {
+      steps: [{ fields: ['name'] }, { fields: ['bio'] }],
+      fields: [
+        { name: 'name', type: 'text', required: true },
+        { name: 'bio', type: 'textarea' },
+      ],
+    }
+    const { container, getByText, queryByText } = render(() => <IrisFormBuilder schema={wizard} />)
+    expect(container.querySelector('[data-iris-form-field="name"]')).not.toBeNull()
+    expect(container.querySelector('[data-iris-form-field="bio"]')).toBeNull()
+    expect(getByText('Next')).toBeTruthy()
+    expect(queryByText('Submit')).toBeNull()
+    fireEvent.input(container.querySelector('[data-iris-form-field="name"] input')!, {
+      target: { value: 'Ada' },
+    })
+    fireEvent.click(getByText('Next'))
+    await waitFor(() =>
+      expect(container.querySelector('[data-iris-form-field="bio"]')).not.toBeNull(),
+    )
+    expect(container.querySelector('[data-iris-form-field="name"]')).toBeNull()
+    expect(getByText('Submit')).toBeTruthy()
+    expect(getByText('Previous')).toBeTruthy()
+  })
+
   it('hides a conditional (when) field until its predicate passes', async () => {
     const conditional: FormSchema = {
       fields: [

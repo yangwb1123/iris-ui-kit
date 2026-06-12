@@ -23,7 +23,7 @@
   // (mirrors the React renderer's lazy-ref). No new form logic lives here.
   // svelte-ignore state_referenced_locally
   const builder = createFormBuilder(schema, { onSubmit, validateOnChange })
-  const { form, submitLabel, labelOf } = builder
+  const { form, submitLabel, labelOf, stepCount, nextStepLabel, stepFields, isLastStep, nextStep, prevStep } = builder
 
   // NB: do not name this `state` — a leading `$` would make Svelte read
   // `$state` as a store auto-subscription instead of the rune.
@@ -51,7 +51,7 @@
     void form.handleSubmit()
   }}
 >
-  {#each builder.visibleFields(formState.values) as field (field.name)}
+  {#each stepFields(formState) as field (field.name)}
     {@const type = field.type ?? 'text'}
     {@const id = idOf(field.name)}
     {@const value = formState.values[field.name]}
@@ -124,5 +124,12 @@
     </div>
   {/each}
 
-  <button type="submit" disabled={formState.isSubmitting}>{submitLabel}</button>
+  {#if isLastStep(formState)}
+    <button type="submit" disabled={formState.isSubmitting}>{submitLabel}</button>
+  {:else}
+    <button type="button" onclick={() => void nextStep()}>{nextStepLabel}</button>
+  {/if}
+  {#if stepCount > 1 && formState.currentStep > 0}
+    <button type="button" onclick={prevStep}>Previous</button>
+  {/if}
 </form>

@@ -27,7 +27,17 @@ export function IrisFormBuilder({
     builderRef.current = createFormBuilder(schema, { onSubmit, validateOnChange })
   }
   const builder = builderRef.current
-  const { form, submitLabel, labelOf } = builder
+  const {
+    form,
+    submitLabel,
+    labelOf,
+    stepCount,
+    nextStepLabel,
+    stepFields,
+    isLastStep,
+    nextStep,
+    prevStep,
+  } = builder
   const state = React.useSyncExternalStore(form.subscribe, form.getState, form.getState)
 
   const setValue = (field: FieldSpec, value: unknown) =>
@@ -44,7 +54,7 @@ export function IrisFormBuilder({
       }}
       noValidate
     >
-      {builder.visibleFields(state.values).map((field) => {
+      {stepFields(state).map((field) => {
         const id = `iris-fb-${field.name}`
         const value = state.values[field.name]
         const error = state.errors[field.name]
@@ -120,9 +130,20 @@ export function IrisFormBuilder({
           </div>
         )
       })}
-      <button type="submit" disabled={state.isSubmitting}>
-        {submitLabel}
-      </button>
+      {isLastStep(state) ? (
+        <button type="submit" disabled={state.isSubmitting}>
+          {submitLabel}
+        </button>
+      ) : (
+        <button type="button" onClick={() => void nextStep()}>
+          {nextStepLabel}
+        </button>
+      )}
+      {stepCount > 1 && state.currentStep > 0 && (
+        <button type="button" onClick={prevStep}>
+          Previous
+        </button>
+      )}
     </form>
   )
 }

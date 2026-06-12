@@ -48,6 +48,29 @@ describe('IrisFormBuilder (vue)', () => {
     wrapper.unmount()
   })
 
+  it('wizard: renders Next/Previous and advances steps on click', async () => {
+    const wizard: FormSchema = {
+      steps: [{ fields: ['name'] }, { fields: ['bio'] }],
+      fields: [
+        { name: 'name', type: 'text', required: true },
+        { name: 'bio', type: 'textarea' },
+      ],
+    }
+    const wrapper = mount(IrisFormBuilder, { props: { schema: wizard } })
+    expect(wrapper.find('[data-iris-form-field="name"]').exists()).toBe(true)
+    expect(wrapper.find('[data-iris-form-field="bio"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Next')
+    expect(wrapper.text()).not.toContain('Submit')
+    await wrapper.find('[data-iris-form-field="name"] input').setValue('Ada')
+    await wrapper.find('button[type="button"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-iris-form-field="bio"]').exists()).toBe(true)
+    expect(wrapper.find('[data-iris-form-field="name"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Submit')
+    expect(wrapper.text()).toContain('Previous')
+    wrapper.unmount()
+  })
+
   it('hides a conditional (when) field until its predicate passes', async () => {
     const conditional: FormSchema = {
       fields: [

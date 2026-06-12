@@ -1035,6 +1035,26 @@ describe('IrisTable tree rows', () => {
     expect(wrapper.find('[data-iris-table-tree-indent]').exists()).toBe(false)
   })
 
+  it('exposes aria-level on tree rows for screen-reader depth', () => {
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: treeCols,
+        data: treeData,
+        rowKey: 'id',
+        getSubRows,
+        defaultExpandedRowKeys: [1],
+      },
+      attachTo: host,
+    })
+    // Visible body rows in order: Root A (depth 0), Child A1 (depth 1),
+    // Child A2 (depth 1), Root B (depth 0) → aria-level is depth + 1 (1-based).
+    const rows = wrapper.findAll('[data-iris-table-row]')
+    const levelAt = (rowIndex: number): string | null =>
+      rows[rowIndex]!.element.getAttribute('aria-level')
+    expect(levelAt(0)).toBe('1') // Root A (root)
+    expect(levelAt(1)).toBe('2') // Child A1 (child)
+  })
+
   it('column sort reorders tree siblings hierarchically (roots and children)', async () => {
     const data: TreeRowData[] = [
       {

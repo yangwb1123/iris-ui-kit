@@ -480,6 +480,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         role="row"
         data-iris-table-row=""
         data-state={selected() ? 'selected' : undefined}
+        // Tree depth for screen readers (1-based); the toggle button carries
+        // aria-expanded for the control itself.
+        aria-level={treeMeta ? treeMeta.depth + 1 : undefined}
         onClick={() => merged.onRowClick?.(row, index)}
         style={{
           display: 'grid',

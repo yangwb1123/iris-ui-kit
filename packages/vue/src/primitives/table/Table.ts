@@ -1252,6 +1252,9 @@ export const IrisTable = defineComponent({
           {
             key: String(id),
             role: 'row',
+            // Tree depth for screen readers (1-based); the toggle button carries
+            // aria-expanded for the control itself.
+            'aria-level': treeMeta ? treeMeta.depth + 1 : undefined,
             'data-iris-table-row': '',
             'data-state': selected ? 'selected' : undefined,
             onClick: () => emit('rowClick', row, index),

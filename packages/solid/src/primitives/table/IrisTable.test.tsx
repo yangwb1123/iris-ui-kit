@@ -405,6 +405,23 @@ describe('IrisTable tree rows', () => {
     expect(document.querySelector('[data-iris-table-tree-indent]')).toBeNull()
   })
 
+  it('exposes aria-level on tree rows for screen-reader depth', () => {
+    render(() => (
+      <IrisTable
+        columns={treeCols}
+        data={treeData}
+        getSubRows={(r) => r.children}
+        defaultExpandedRowKeys={[1]}
+      />
+    ))
+    // The Solid row carries data-iris-table-row="" (no id); its first-column
+    // cell's parent is the row element, so read aria-level off that.
+    const levelOf = (name: string): string | null | undefined =>
+      nameCellFor(name)?.parentElement?.getAttribute('aria-level')
+    expect(levelOf('Root A')).toBe('1') // root
+    expect(levelOf('Child A1')).toBe('2') // child
+  })
+
   it('column sort reorders tree siblings hierarchically (roots and children)', () => {
     const data: TreeRowData[] = [
       {

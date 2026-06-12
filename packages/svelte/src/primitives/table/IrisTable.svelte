@@ -631,6 +631,7 @@
       role="row"
       data-iris-table-row
       data-state={selected ? 'selected' : undefined}
+      aria-level={treeMeta ? treeMeta.depth + 1 : undefined}
       onclick={() => onRowClick?.(row, index)}
       style="display: grid; grid-template-columns: {gridTemplate()};{fillHeight ? ' height: 100%;' : ''} background: {selected ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))' : striped && index % 2 === 1 ? 'var(--iris-surface)' : 'transparent'}; transition: background-color 120ms ease; cursor: default"
     >

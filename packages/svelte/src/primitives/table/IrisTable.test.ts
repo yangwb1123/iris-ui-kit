@@ -357,6 +357,17 @@ describe('IrisTable tree rows', () => {
     expect(container.querySelector('[data-iris-table-tree-indent]')).toBeNull()
   })
 
+  it('exposes aria-level on tree rows for screen-reader depth', () => {
+    const { container } = render(IrisTable, {
+      props: { columns: treeCols, data: treeData, getSubRows, defaultExpandedRowKeys: [1] },
+    })
+    // Flattened order: [Root A, Child A1, Child A2, Root B]; root is level 1, child is level 2.
+    const levelAt = (index: number): string | null =>
+      bodyRows(container)[index].getAttribute('aria-level')
+    expect(levelAt(0)).toBe('1') // root
+    expect(levelAt(1)).toBe('2') // child
+  })
+
   it('column sort reorders tree siblings hierarchically (roots and children)', async () => {
     // Roots AND Root B's children are out of alphabetical order in the source.
     const data = [

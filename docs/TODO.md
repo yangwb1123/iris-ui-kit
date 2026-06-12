@@ -4,8 +4,8 @@
 
 ## Now (next iterations)
 
-- [ ] P0: excel export mime — drop the non-standard `;charset=utf-8;` param on `application/vnd.ms-excel` in react+vue `exportExcel` (saveFile payload + Blob). ~2 files/fw. Cosmetic-correctness.
 - [ ] P0: contract tests — add `@iris-ui/core/contracts` scenarios for `createSortable` (press→tryStart→over→end transitions) so all 4 adapters assert identical store migrations.
+- [x] ~~P0: excel export mime — drop non-standard `;charset=utf-8;`~~ done (iter 2).
 
 ## Later
 

@@ -2,7 +2,12 @@
 
 > Human-readable completed work, newest first. Per-package semver lives in changesets; this is the factory's narrative log.
 
-## Cross-platform + enterprise-table arc (current cycle)
+## Factory iterations
+
+- **iter 2** — excel export mime cleanup: dropped the non-standard `;charset=utf-8;` param on `application/vnd.ms-excel` (react+vue; SpreadsheetML XML declares its own encoding).
+- **iter 1** — established `/docs/` autonomous-factory memory system (ROADMAP/TODO/CHANGELOG/DECISIONS/ARCHITECTURE/AGENTS/STATE).
+
+## Cross-platform + enterprise-table arc (prior cycle)
 
 - **color-mix legacy fallback ×4** — theme derives `--iris-{semantic}-subtle` (color ~14% over background); components use source-order cascade (static longhand fallback before color-mix shorthand). Zero modern-browser regression; pre-2022 WebViews now tint correctly.
 - **Table virtualization ×4** — flat+tree rows window via `IrisVirtualScroll`, gated `(!treeMode || !hasDetail)`. Solid & Svelte gained a virtual path they previously lacked.

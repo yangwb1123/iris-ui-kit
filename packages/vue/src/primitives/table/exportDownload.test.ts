@@ -38,7 +38,7 @@ describe('@iris-ui/vue table download → file-save handler', () => {
     expect(handler).toHaveBeenCalledWith({
       filename: 'data.xls',
       content: '<xml/>',
-      mimeType: 'application/vnd.ms-excel;charset=utf-8;',
+      mimeType: 'application/vnd.ms-excel',
     })
     expect(URL.createObjectURL).not.toHaveBeenCalled()
   })

@@ -28,11 +28,11 @@ export function exportExcel<Row extends Record<string, unknown>>(
  * shells; otherwise falls back to the browser `<a download>`. SSR-safe.
  */
 export function downloadExcel(filename: string, xml: string): void {
-  if (saveFile({ filename, content: xml, mimeType: 'application/vnd.ms-excel;charset=utf-8;' })) {
+  if (saveFile({ filename, content: xml, mimeType: 'application/vnd.ms-excel' })) {
     return
   }
   if (typeof document === 'undefined') return
-  const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+  const blob = new Blob([xml], { type: 'application/vnd.ms-excel' })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url

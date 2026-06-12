@@ -72,6 +72,13 @@ export {
   type TableHtmlOptions,
 } from './table-export'
 export {
+  setFileSaveHandler,
+  getFileSaveHandler,
+  saveFile,
+  type SaveFilePayload,
+  type FileSaveHandler,
+} from './file-save'
+export {
   compareValues,
   cycleSort,
   filterSort,

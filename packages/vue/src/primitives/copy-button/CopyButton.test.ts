@@ -1,9 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
+import { setClipboardHandler } from '@iris-ui/core'
 import { IrisCopyButton } from './CopyButton'
 
-afterEach(() => vi.useRealTimers())
+afterEach(() => {
+  vi.useRealTimers()
+  setClipboardHandler(null)
+})
 
 const btn = (w: ReturnType<typeof mount>) => w.find('[data-iris-copy-button]')
 
@@ -22,6 +26,28 @@ describe('IrisCopyButton', () => {
     expect(w.emitted('copy')?.[0]).toEqual(['hello'])
     expect(btn(w).attributes('data-copied')).toBe('true')
     expect(btn(w).text()).toBe('Copied')
+  })
+
+  it('routes the copy through a host clipboard handler, skipping navigator.clipboard', async () => {
+    const writeText = vi.fn()
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const handler = vi.fn()
+    setClipboardHandler(handler)
+    const w = mount(IrisCopyButton, { props: { text: 'hello' } })
+    await btn(w).trigger('click')
+    expect(handler).toHaveBeenCalledWith('hello')
+    expect(writeText).not.toHaveBeenCalled()
+    expect(w.emitted('copy')?.[0]).toEqual(['hello'])
+    expect(btn(w).attributes('data-copied')).toBe('true')
+  })
+
+  it('falls through to navigator.clipboard when the handler declines', async () => {
+    const writeText = vi.fn()
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    setClipboardHandler(() => false)
+    const w = mount(IrisCopyButton, { props: { text: 'x' } })
+    await btn(w).trigger('click')
+    expect(writeText).toHaveBeenCalledWith('x')
   })
 
   it('reverts after the timeout', async () => {

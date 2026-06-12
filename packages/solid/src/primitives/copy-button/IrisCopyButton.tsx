@@ -1,4 +1,5 @@
 import { createSignal, mergeProps, onCleanup, splitProps, type JSX } from 'solid-js'
+import { copyText } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 
 export type IrisCopyButtonSize = 'sm' | 'md' | 'lg'
@@ -52,10 +53,14 @@ export function IrisCopyButton(props: IrisCopyButtonProps): JSX.Element {
 
   const copy = (): void => {
     if (local.disabled) return
-    try {
-      void navigator.clipboard?.writeText?.(local.text)
-    } catch {
-      /* clipboard unavailable */
+    // A host clipboard handler (setClipboardHandler) wins — needed where
+    // navigator.clipboard is unavailable (Cordova file://, custom protocols).
+    if (!copyText(local.text)) {
+      try {
+        void navigator.clipboard?.writeText?.(local.text)
+      } catch {
+        /* clipboard unavailable */
+      }
     }
     setCopied(true)
     local.onCopy?.(local.text)

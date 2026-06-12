@@ -1,8 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@solidjs/testing-library'
+import { setClipboardHandler } from '@iris-ui/core'
 import { IrisCopyButton } from './IrisCopyButton'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  setClipboardHandler(null)
+})
 
 describe('IrisCopyButton', () => {
   it('renders with default label', () => {
@@ -35,5 +39,29 @@ describe('IrisCopyButton', () => {
     const { container } = render(() => <IrisCopyButton text="my-text" onCopy={onCopy} />)
     fireEvent.click(container.querySelector('button')!)
     expect(onCopy).toHaveBeenCalledWith('my-text')
+  })
+
+  it('routes the copy through a host clipboard handler, skipping navigator.clipboard', () => {
+    const writeText = vi.fn()
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const handler = vi.fn()
+    setClipboardHandler(handler)
+    const onCopy = vi.fn()
+    const { container } = render(() => <IrisCopyButton text="hello" onCopy={onCopy} />)
+    const btn = container.querySelector('[data-iris-copy-button]') as HTMLButtonElement
+    fireEvent.click(btn)
+    expect(handler).toHaveBeenCalledWith('hello')
+    expect(writeText).not.toHaveBeenCalled()
+    expect(onCopy).toHaveBeenCalledWith('hello')
+    expect(btn.getAttribute('data-copied')).toBe('true')
+  })
+
+  it('falls through to navigator.clipboard when the handler declines', () => {
+    const writeText = vi.fn()
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    setClipboardHandler(() => false)
+    const { container } = render(() => <IrisCopyButton text="x" />)
+    fireEvent.click(container.querySelector('[data-iris-copy-button]') as HTMLButtonElement)
+    expect(writeText).toHaveBeenCalledWith('x')
   })
 })

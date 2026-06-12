@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { copyText } from '@iris-ui/core'
   import { useI18n } from '../../i18n'
 
   const { t } = useI18n()
@@ -40,10 +41,14 @@
 
   function copy(): void {
     if (disabled) return
-    try {
-      void navigator.clipboard?.writeText?.(text)
-    } catch {
-      // clipboard unavailable — still surface the copied state
+    // A host clipboard handler (setClipboardHandler) wins — needed where
+    // navigator.clipboard is unavailable (Cordova file://, custom protocols).
+    if (!copyText(text)) {
+      try {
+        void navigator.clipboard?.writeText?.(text)
+      } catch {
+        // clipboard unavailable — still surface the copied state
+      }
     }
     copied = true
     oncopy?.(text)

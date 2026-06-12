@@ -1,4 +1,5 @@
 import { defineComponent, h, onBeforeUnmount, ref, type PropType } from 'vue'
+import { copyText } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 
 export type IrisCopyButtonSize = 'sm' | 'md' | 'lg'
@@ -36,10 +37,14 @@ export const IrisCopyButton = defineComponent({
 
     const copy = () => {
       if (props.disabled) return
-      try {
-        void navigator.clipboard?.writeText?.(props.text)
-      } catch {
-        /* clipboard unavailable — still surface the copied state */
+      // A host clipboard handler (setClipboardHandler) wins — needed where
+      // navigator.clipboard is unavailable (Cordova file://, custom protocols).
+      if (!copyText(props.text)) {
+        try {
+          void navigator.clipboard?.writeText?.(props.text)
+        } catch {
+          /* clipboard unavailable — still surface the copied state */
+        }
       }
       copied.value = true
       emit('copy', props.text)

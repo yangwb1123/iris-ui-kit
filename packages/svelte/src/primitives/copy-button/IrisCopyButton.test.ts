@@ -1,7 +1,12 @@
 import { render, fireEvent } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
+import { setClipboardHandler } from '@iris-ui/core'
 import IrisCopyButton from './IrisCopyButton.svelte'
+
+afterEach(() => {
+  setClipboardHandler(null)
+})
 
 describe('IrisCopyButton', () => {
   it('renders a copy button', () => {
@@ -27,5 +32,32 @@ describe('IrisCopyButton', () => {
     await fireEvent.click(btn)
     flushSync()
     expect(oncopy).toHaveBeenCalledWith('hello')
+  })
+
+  it('routes the copy through a host clipboard handler, skipping navigator.clipboard', async () => {
+    const writeText = vi.fn()
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const handler = vi.fn()
+    setClipboardHandler(handler)
+    const oncopy = vi.fn()
+    const { container } = render(IrisCopyButton, { props: { text: 'hello', oncopy } })
+    const btn = container.querySelector('[data-iris-copy-button]')!
+    await fireEvent.click(btn)
+    flushSync()
+    expect(handler).toHaveBeenCalledWith('hello')
+    expect(writeText).not.toHaveBeenCalled()
+    expect(oncopy).toHaveBeenCalledWith('hello')
+    expect(btn.getAttribute('data-copied')).toBe('true')
+  })
+
+  it('falls through to navigator.clipboard when the handler declines', async () => {
+    const writeText = vi.fn()
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    setClipboardHandler(() => false)
+    const { container } = render(IrisCopyButton, { props: { text: 'x' } })
+    const btn = container.querySelector('[data-iris-copy-button]')!
+    await fireEvent.click(btn)
+    flushSync()
+    expect(writeText).toHaveBeenCalledWith('x')
   })
 })

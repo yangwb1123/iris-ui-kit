@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, fireEvent, cleanup } from '@testing-library/svelte'
 import DrawerHarness from './DrawerHarness.svelte'
+import SafeAreaDrawerHarness from './SafeAreaDrawerHarness.svelte'
 
 afterEach(cleanup)
 
@@ -26,5 +27,12 @@ describe('IrisDrawer', () => {
     await fireEvent.click(getByText('Open Drawer'))
     await fireEvent.click(getByText('Close'))
     expect(document.querySelector('[data-iris-drawer-content]')).toBeNull()
+  })
+
+  it('bottom panel padding carries safe-area inset (mobile home-bar clearance)', () => {
+    render(SafeAreaDrawerHarness, { props: { side: 'bottom' } })
+    const panel = document.querySelector('[role=dialog]')!
+    const style = panel.getAttribute('style') ?? ''
+    expect(style).toContain('env(safe-area-inset-bottom')
   })
 })

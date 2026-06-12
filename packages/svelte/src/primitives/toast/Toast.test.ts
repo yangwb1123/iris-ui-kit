@@ -241,4 +241,14 @@ describe('@iris-ui/svelte IrisToast', () => {
     pushToast({ title: 'x' })
     expect(getToasts().length).toBe(1)
   })
+
+  it('viewport padding carries safe-area insets (mobile notch/home-bar clearance)', () => {
+    render(IrisToastViewport, { props: { position: 'bottom-center' } })
+    flushSync()
+    // The viewport portals to document.body.
+    const vp = document.querySelector('[data-iris-toast-viewport]')!
+    const style = vp.getAttribute('style') ?? ''
+    expect(style).toContain('env(safe-area-inset-bottom')
+    expect(style).toContain('env(safe-area-inset-top')
+  })
 })

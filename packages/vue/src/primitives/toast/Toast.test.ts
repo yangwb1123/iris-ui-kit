@@ -191,4 +191,18 @@ describe('IrisToastViewport', () => {
     expect(called).toBe(1)
     expect(getToasts().length).toBe(0)
   })
+
+  it('viewport padding carries safe-area insets (mobile notch/home-bar clearance)', async () => {
+    // Default teleport target is document.body, so query the document.
+    mount(
+      defineComponent({
+        setup: () => () => h(IrisToastViewport, { position: 'bottom-center' }),
+      }),
+      { attachTo: host },
+    )
+    await nextTick()
+    const vp = document.querySelector('[data-iris-toast-viewport]') as HTMLElement
+    expect(vp.style.paddingBottom).toContain('env(safe-area-inset-bottom')
+    expect(vp.style.paddingTop).toContain('env(safe-area-inset-top')
+  })
 })

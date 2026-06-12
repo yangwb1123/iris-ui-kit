@@ -44,15 +44,31 @@
     e.stopPropagation()
   }
 
+  // Safe-area padding for the screen edges the panel actually touches, so its
+  // content clears the notch / home indicator on mobile webviews (Cordova). The
+  // insets resolve to 0 on devices/orientations without a cutout, and the whole
+  // declaration is simply ignored on engines without env() support.
+  // (Host must set <meta name="viewport" content="...,viewport-fit=cover">.)
+  function safeAreaPadding(side: import('./context').IrisDrawerSide): string {
+    const top = 'padding-top: max(0px, env(safe-area-inset-top)); '
+    const right = 'padding-right: max(0px, env(safe-area-inset-right)); '
+    const bottom = 'padding-bottom: max(0px, env(safe-area-inset-bottom)); '
+    const left = 'padding-left: max(0px, env(safe-area-inset-left)); '
+    if (side === 'left') return top + bottom + left
+    if (side === 'right') return top + bottom + right
+    if (side === 'top') return top + left + right
+    return bottom + left + right
+  }
+
   // Compute drawer panel position based on side
   const panelStyle = $derived(() => {
     const s = ctx.side
     const sz = ctx.size
-    const base = 'position: fixed; z-index: 1200; background: var(--iris-surface); color: var(--iris-foreground); border: 1px solid var(--iris-border); box-shadow: 0 24px 48px -16px rgba(0,0,0,0.32); overflow: auto; outline: none;'
-    if (s === 'left') return `${base} top: 0; left: 0; bottom: 0; width: ${sz}; border-left: none;`
-    if (s === 'right') return `${base} top: 0; right: 0; bottom: 0; width: ${sz}; border-right: none;`
-    if (s === 'top') return `${base} top: 0; left: 0; right: 0; height: ${sz}; border-top: none;`
-    return `${base} bottom: 0; left: 0; right: 0; height: ${sz}; border-bottom: none;`
+    const base = `position: fixed; z-index: 1200; background: var(--iris-surface); color: var(--iris-foreground); border: 1px solid var(--iris-border); box-shadow: 0 24px 48px -16px rgba(0,0,0,0.32); overflow: auto; outline: none; ${safeAreaPadding(s)}`
+    if (s === 'left') return `${base}top: 0; left: 0; bottom: 0; width: ${sz}; border-left: none;`
+    if (s === 'right') return `${base}top: 0; right: 0; bottom: 0; width: ${sz}; border-right: none;`
+    if (s === 'top') return `${base}top: 0; left: 0; right: 0; height: ${sz}; border-top: none;`
+    return `${base}bottom: 0; left: 0; right: 0; height: ${sz}; border-bottom: none;`
   })
 </script>
 

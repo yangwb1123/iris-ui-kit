@@ -169,6 +169,10 @@
   }
 
   function positionStyle(pos: IrisToastPosition): string {
+    // `padding` is the fallback; the per-side longhands add safe-area insets so
+    // toasts clear the notch / home indicator on mobile webviews (Cordova). On
+    // engines without env() the longhands are invalid and the shorthand applies.
+    // (Host must set <meta name="viewport" content="...,viewport-fit=cover">.)
     const parts = [
       'position: fixed',
       'z-index: 1400',
@@ -176,6 +180,10 @@
       'flex-direction: column',
       'gap: var(--iris-gap-md, 12px)',
       'padding: 16px',
+      'padding-top: max(16px, env(safe-area-inset-top))',
+      'padding-right: max(16px, env(safe-area-inset-right))',
+      'padding-bottom: max(16px, env(safe-area-inset-bottom))',
+      'padding-left: max(16px, env(safe-area-inset-left))',
       'max-width: 420px',
       'width: 100%',
       'pointer-events: none',

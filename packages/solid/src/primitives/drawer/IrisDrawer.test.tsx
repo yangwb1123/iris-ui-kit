@@ -60,4 +60,16 @@ describe('IrisDrawer', () => {
     fireEvent.click(getByText('Open'))
     expect(document.body.querySelector('[data-iris-drawer-close]')).not.toBeNull()
   })
+
+  it('bottom panel padding carries safe-area inset (mobile home-bar clearance)', () => {
+    const { getByText } = render(() => (
+      <IrisDrawer side="bottom">
+        <IrisDrawerTrigger>Open</IrisDrawerTrigger>
+        <IrisDrawerContent>Content</IrisDrawerContent>
+      </IrisDrawer>
+    ))
+    fireEvent.click(getByText('Open'))
+    const panel = document.body.querySelector('[role="dialog"]') as HTMLElement
+    expect(panel.style.paddingBottom).toContain('env(safe-area-inset-bottom')
+  })
 })

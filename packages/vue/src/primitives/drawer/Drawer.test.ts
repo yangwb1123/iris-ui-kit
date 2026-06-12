@@ -151,4 +151,11 @@ describe('IrisDrawer', () => {
     await nextTick()
     expect(backdrop.getAttribute('data-state')).toBe('closed')
   })
+
+  it('bottom panel padding carries safe-area inset (mobile home-bar clearance)', async () => {
+    mount(Harness({ defaultOpen: true, side: 'bottom' }))
+    await nextTick()
+    const panel = document.querySelector('[role=dialog]') as HTMLElement
+    expect(panel.style.paddingBottom).toContain('env(safe-area-inset-bottom')
+  })
 })

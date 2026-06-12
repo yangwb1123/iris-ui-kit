@@ -19,6 +19,32 @@ const SIDE_TO_TRANSFORM: Record<IrisDrawerSide, string> = {
   bottom: 'translateY(100%)',
 }
 
+/**
+ * Safe-area padding for the screen edges the panel actually touches, so its
+ * content clears the notch / home indicator on mobile webviews (Cordova). The
+ * insets resolve to 0 on devices/orientations without a cutout, and the whole
+ * declaration is simply ignored on engines without env() support.
+ * (Host must set <meta name="viewport" content="...,viewport-fit=cover">.)
+ */
+function safeAreaPadding(side: IrisDrawerSide): JSX.CSSProperties {
+  const top = 'max(0px, env(safe-area-inset-top))'
+  const right = 'max(0px, env(safe-area-inset-right))'
+  const bottom = 'max(0px, env(safe-area-inset-bottom))'
+  const left = 'max(0px, env(safe-area-inset-left))'
+  switch (side) {
+    case 'left':
+      return { 'padding-top': top, 'padding-bottom': bottom, 'padding-left': left }
+    case 'right':
+      return { 'padding-top': top, 'padding-bottom': bottom, 'padding-right': right }
+    case 'top':
+      return { 'padding-top': top, 'padding-left': left, 'padding-right': right }
+    case 'bottom':
+      return { 'padding-bottom': bottom, 'padding-left': left, 'padding-right': right }
+    default:
+      return {}
+  }
+}
+
 function panelPositionStyle(side: IrisDrawerSide, size: string): JSX.CSSProperties {
   const base: JSX.CSSProperties = {
     position: 'fixed',
@@ -30,6 +56,7 @@ function panelPositionStyle(side: IrisDrawerSide, size: string): JSX.CSSProperti
     overflow: 'auto',
     transition: 'transform 220ms ease',
     'will-change': 'transform',
+    ...safeAreaPadding(side),
   }
   switch (side) {
     case 'left':

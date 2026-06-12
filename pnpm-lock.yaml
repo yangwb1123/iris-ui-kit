@@ -244,7 +244,22 @@ importers:
         specifier: ^5.4.11
         version: 5.4.21(@types/node@20.19.41)
 
+  packages/cli:
+    dependencies:
+      '@iris-ui/manifest':
+        specifier: workspace:*
+        version: link:../manifest
+
   packages/core: {}
+
+  packages/eslint-plugin:
+    devDependencies:
+      '@types/eslint':
+        specifier: ^9.6.1
+        version: 9.6.1
+      eslint:
+        specifier: ^9.17.0
+        version: 9.39.4
 
   packages/icons: {}
 
@@ -338,7 +353,135 @@ importers:
         specifier: ^3.5.13
         version: 3.5.34(typescript@5.9.3)
 
+  packages/plugin-calendar:
+    dependencies:
+      '@iris-ui/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@solidjs/testing-library':
+        specifier: ^0.8.10
+        version: 0.8.10(solid-js@1.9.13)
+      '@sveltejs/package':
+        specifier: ^2.3.7
+        version: 2.5.8(svelte@5.56.1(@typescript-eslint/types@8.59.4))(typescript@5.9.3)
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^4.0.4
+        version: 4.0.4(svelte@5.56.1(@typescript-eslint/types@8.59.4))(vite@5.4.21(@types/node@20.19.41))
+      '@testing-library/jest-dom':
+        specifier: ^6.6.3
+        version: 6.9.1
+      '@testing-library/react':
+        specifier: ^16.1.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.29))(@types/react@18.3.29)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@testing-library/svelte':
+        specifier: ^5.2.6
+        version: 5.3.1(svelte@5.56.1(@typescript-eslint/types@8.59.4))(vite@5.4.21(@types/node@20.19.41))(vitest@2.1.9(@types/node@20.19.41)(jsdom@25.0.1))
+      '@types/react':
+        specifier: ^18.3.0
+        version: 18.3.29
+      '@types/react-dom':
+        specifier: ^18.3.0
+        version: 18.3.7(@types/react@18.3.29)
+      '@vue/test-utils':
+        specifier: ^2.4.6
+        version: 2.4.10(@vue/compiler-dom@3.5.34)(@vue/server-renderer@3.5.34(vue@3.5.34(typescript@5.9.3)))(vue@3.5.34(typescript@5.9.3))
+      esbuild-plugin-solid:
+        specifier: ^0.6.0
+        version: 0.6.0(esbuild@0.27.7)(solid-js@1.9.13)
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+      solid-js:
+        specifier: ^1.9.0
+        version: 1.9.13
+      svelte:
+        specifier: ^5.16.0
+        version: 5.56.1(@typescript-eslint/types@8.59.4)
+      svelte-check:
+        specifier: ^4.1.1
+        version: 4.5.0(picomatch@4.0.4)(svelte@5.56.1(@typescript-eslint/types@8.59.4))(typescript@5.9.3)
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(postcss@8.5.15)(typescript@5.9.3)(yaml@2.9.0)
+      vite-plugin-solid:
+        specifier: ^2.11.0
+        version: 2.11.12(@testing-library/jest-dom@6.9.1)(solid-js@1.9.13)(vite@5.4.21(@types/node@20.19.41))
+      vue:
+        specifier: ^3.5.13
+        version: 3.5.34(typescript@5.9.3)
+
   packages/plugin-charts:
+    dependencies:
+      '@iris-ui/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@solidjs/testing-library':
+        specifier: ^0.8.10
+        version: 0.8.10(solid-js@1.9.13)
+      '@sveltejs/package':
+        specifier: ^2.3.7
+        version: 2.5.8(svelte@5.56.1(@typescript-eslint/types@8.59.4))(typescript@5.9.3)
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^4.0.4
+        version: 4.0.4(svelte@5.56.1(@typescript-eslint/types@8.59.4))(vite@5.4.21(@types/node@20.19.41))
+      '@testing-library/jest-dom':
+        specifier: ^6.6.3
+        version: 6.9.1
+      '@testing-library/react':
+        specifier: ^16.1.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.29))(@types/react@18.3.29)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@testing-library/svelte':
+        specifier: ^5.2.6
+        version: 5.3.1(svelte@5.56.1(@typescript-eslint/types@8.59.4))(vite@5.4.21(@types/node@20.19.41))(vitest@2.1.9(@types/node@20.19.41)(jsdom@25.0.1))
+      '@types/react':
+        specifier: ^18.3.0
+        version: 18.3.29
+      '@types/react-dom':
+        specifier: ^18.3.0
+        version: 18.3.7(@types/react@18.3.29)
+      '@vue/test-utils':
+        specifier: ^2.4.6
+        version: 2.4.10(@vue/compiler-dom@3.5.34)(@vue/server-renderer@3.5.34(vue@3.5.34(typescript@5.9.3)))(vue@3.5.34(typescript@5.9.3))
+      esbuild-plugin-solid:
+        specifier: ^0.6.0
+        version: 0.6.0(esbuild@0.27.7)(solid-js@1.9.13)
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+      solid-js:
+        specifier: ^1.9.0
+        version: 1.9.13
+      svelte:
+        specifier: ^5.16.0
+        version: 5.56.1(@typescript-eslint/types@8.59.4)
+      svelte-check:
+        specifier: ^4.1.1
+        version: 4.5.0(picomatch@4.0.4)(svelte@5.56.1(@typescript-eslint/types@8.59.4))(typescript@5.9.3)
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(postcss@8.5.15)(typescript@5.9.3)(yaml@2.9.0)
+      vite-plugin-solid:
+        specifier: ^2.11.0
+        version: 2.11.12(@testing-library/jest-dom@6.9.1)(solid-js@1.9.13)(vite@5.4.21(@types/node@20.19.41))
+      vue:
+        specifier: ^3.5.13
+        version: 3.5.34(typescript@5.9.3)
+
+  packages/plugin-dashboard:
     dependencies:
       '@iris-ui/core':
         specifier: workspace:*
@@ -563,11 +706,139 @@ importers:
         specifier: ^3.5.13
         version: 3.5.34(typescript@5.9.3)
 
+  packages/plugin-kanban:
+    dependencies:
+      '@iris-ui/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@solidjs/testing-library':
+        specifier: ^0.8.10
+        version: 0.8.10(solid-js@1.9.13)
+      '@sveltejs/package':
+        specifier: ^2.3.7
+        version: 2.5.8(svelte@5.56.1(@typescript-eslint/types@8.59.4))(typescript@5.9.3)
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^4.0.4
+        version: 4.0.4(svelte@5.56.1(@typescript-eslint/types@8.59.4))(vite@5.4.21(@types/node@20.19.41))
+      '@testing-library/jest-dom':
+        specifier: ^6.6.3
+        version: 6.9.1
+      '@testing-library/react':
+        specifier: ^16.1.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.29))(@types/react@18.3.29)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@testing-library/svelte':
+        specifier: ^5.2.6
+        version: 5.3.1(svelte@5.56.1(@typescript-eslint/types@8.59.4))(vite@5.4.21(@types/node@20.19.41))(vitest@2.1.9(@types/node@20.19.41)(jsdom@25.0.1))
+      '@types/react':
+        specifier: ^18.3.0
+        version: 18.3.29
+      '@types/react-dom':
+        specifier: ^18.3.0
+        version: 18.3.7(@types/react@18.3.29)
+      '@vue/test-utils':
+        specifier: ^2.4.6
+        version: 2.4.10(@vue/compiler-dom@3.5.34)(@vue/server-renderer@3.5.34(vue@3.5.34(typescript@5.9.3)))(vue@3.5.34(typescript@5.9.3))
+      esbuild-plugin-solid:
+        specifier: ^0.6.0
+        version: 0.6.0(esbuild@0.27.7)(solid-js@1.9.13)
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+      solid-js:
+        specifier: ^1.9.0
+        version: 1.9.13
+      svelte:
+        specifier: ^5.16.0
+        version: 5.56.1(@typescript-eslint/types@8.59.4)
+      svelte-check:
+        specifier: ^4.1.1
+        version: 4.5.0(picomatch@4.0.4)(svelte@5.56.1(@typescript-eslint/types@8.59.4))(typescript@5.9.3)
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(postcss@8.5.15)(typescript@5.9.3)(yaml@2.9.0)
+      vite-plugin-solid:
+        specifier: ^2.11.0
+        version: 2.11.12(@testing-library/jest-dom@6.9.1)(solid-js@1.9.13)(vite@5.4.21(@types/node@20.19.41))
+      vue:
+        specifier: ^3.5.13
+        version: 3.5.34(typescript@5.9.3)
+
   packages/plugin-locale-zh:
     dependencies:
       '@iris-ui/core':
         specifier: workspace:*
         version: link:../core
+
+  packages/plugin-markdown:
+    dependencies:
+      '@iris-ui/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@solidjs/testing-library':
+        specifier: ^0.8.10
+        version: 0.8.10(solid-js@1.9.13)
+      '@sveltejs/package':
+        specifier: ^2.3.7
+        version: 2.5.8(svelte@5.56.1(@typescript-eslint/types@8.59.4))(typescript@5.9.3)
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^4.0.4
+        version: 4.0.4(svelte@5.56.1(@typescript-eslint/types@8.59.4))(vite@5.4.21(@types/node@20.19.41))
+      '@testing-library/jest-dom':
+        specifier: ^6.6.3
+        version: 6.9.1
+      '@testing-library/react':
+        specifier: ^16.1.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.29))(@types/react@18.3.29)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@testing-library/svelte':
+        specifier: ^5.2.6
+        version: 5.3.1(svelte@5.56.1(@typescript-eslint/types@8.59.4))(vite@5.4.21(@types/node@20.19.41))(vitest@2.1.9(@types/node@20.19.41)(jsdom@25.0.1))
+      '@types/react':
+        specifier: ^18.3.0
+        version: 18.3.29
+      '@types/react-dom':
+        specifier: ^18.3.0
+        version: 18.3.7(@types/react@18.3.29)
+      '@vue/test-utils':
+        specifier: ^2.4.6
+        version: 2.4.10(@vue/compiler-dom@3.5.34)(@vue/server-renderer@3.5.34(vue@3.5.34(typescript@5.9.3)))(vue@3.5.34(typescript@5.9.3))
+      esbuild-plugin-solid:
+        specifier: ^0.6.0
+        version: 0.6.0(esbuild@0.27.7)(solid-js@1.9.13)
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+      solid-js:
+        specifier: ^1.9.0
+        version: 1.9.13
+      svelte:
+        specifier: ^5.16.0
+        version: 5.56.1(@typescript-eslint/types@8.59.4)
+      svelte-check:
+        specifier: ^4.1.1
+        version: 4.5.0(picomatch@4.0.4)(svelte@5.56.1(@typescript-eslint/types@8.59.4))(typescript@5.9.3)
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(postcss@8.5.15)(typescript@5.9.3)(yaml@2.9.0)
+      vite-plugin-solid:
+        specifier: ^2.11.0
+        version: 2.11.12(@testing-library/jest-dom@6.9.1)(solid-js@1.9.13)(vite@5.4.21(@types/node@20.19.41))
+      vue:
+        specifier: ^3.5.13
+        version: 3.5.34(typescript@5.9.3)
 
   packages/plugin-notifications:
     dependencies:
@@ -2089,6 +2360,9 @@ packages:
 
   '@types/babel__traverse@7.28.0':
     resolution: {integrity: sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==}
+
+  '@types/eslint@9.6.1':
+    resolution: {integrity: sha512-FXx2pKgId/WyYo2jXw63kk7/+TY7u7AziEJxJAnSFzHlqTAS3Ync6SvgYAN/k4/PQpnnVuzoMuVnByKK2qp0ag==}
 
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
@@ -5807,6 +6081,11 @@ snapshots:
   '@types/babel__traverse@7.28.0':
     dependencies:
       '@babel/types': 7.29.0
+
+  '@types/eslint@9.6.1':
+    dependencies:
+      '@types/estree': 1.0.9
+      '@types/json-schema': 7.0.15
 
   '@types/estree@1.0.8': {}
 

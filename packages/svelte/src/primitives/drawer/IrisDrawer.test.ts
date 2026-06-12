@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { render, fireEvent, cleanup } from '@testing-library/svelte'
 import DrawerHarness from './DrawerHarness.svelte'
 import SafeAreaDrawerHarness from './SafeAreaDrawerHarness.svelte'
+import EscapeDrawerHarness from './EscapeDrawerHarness.svelte'
 
 afterEach(cleanup)
 
@@ -27,6 +28,20 @@ describe('IrisDrawer', () => {
     await fireEvent.click(getByText('Open Drawer'))
     await fireEvent.click(getByText('Close'))
     expect(document.querySelector('[data-iris-drawer-content]')).toBeNull()
+  })
+
+  it('closes on Escape key when closeOnEscape is enabled', async () => {
+    render(EscapeDrawerHarness)
+    expect(document.querySelector('[data-iris-drawer-content]')).not.toBeNull()
+    await fireEvent.keyDown(document, { key: 'Escape' })
+    expect(document.querySelector('[data-iris-drawer-content]')).toBeNull()
+  })
+
+  it('stays open on Escape key when closeOnEscape is false', async () => {
+    render(EscapeDrawerHarness, { props: { closeOnEscape: false } })
+    expect(document.querySelector('[data-iris-drawer-content]')).not.toBeNull()
+    await fireEvent.keyDown(document, { key: 'Escape' })
+    expect(document.querySelector('[data-iris-drawer-content]')).not.toBeNull()
   })
 
   it('bottom panel padding carries safe-area inset (mobile home-bar clearance)', () => {

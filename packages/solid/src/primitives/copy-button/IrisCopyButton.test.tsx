@@ -56,6 +56,18 @@ describe('IrisCopyButton', () => {
     expect(btn.getAttribute('data-copied')).toBe('true')
   })
 
+  it('still flips copied state and fires onCopy when the host handler throws', () => {
+    setClipboardHandler(() => {
+      throw new Error('host clipboard failed')
+    })
+    const onCopy = vi.fn()
+    const { container } = render(() => <IrisCopyButton text="boom" onCopy={onCopy} />)
+    const btn = container.querySelector('[data-iris-copy-button]') as HTMLButtonElement
+    expect(() => fireEvent.click(btn)).not.toThrow()
+    expect(btn.getAttribute('data-copied')).toBe('true')
+    expect(onCopy).toHaveBeenCalledWith('boom')
+  })
+
   it('falls through to navigator.clipboard when the handler declines', () => {
     const writeText = vi.fn()
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })

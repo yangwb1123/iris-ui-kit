@@ -53,14 +53,15 @@ export function IrisCopyButton(props: IrisCopyButtonProps): JSX.Element {
 
   const copy = (): void => {
     if (local.disabled) return
-    // A host clipboard handler (setClipboardHandler) wins — needed where
-    // navigator.clipboard is unavailable (Cordova file://, custom protocols).
-    if (!copyText(local.text)) {
-      try {
-        void navigator.clipboard?.writeText?.(local.text)
-      } catch {
-        /* clipboard unavailable */
+    try {
+      // A host clipboard handler (setClipboardHandler) wins — needed where
+      // navigator.clipboard is unavailable (Cordova file://, custom protocols).
+      if (!copyText(local.text)) {
+        // writeText returns a Promise; swallow async rejection (permission denied).
+        void navigator.clipboard?.writeText?.(local.text)?.catch(() => {})
       }
+    } catch {
+      /* host handler / clipboard unavailable — still surface the copied state */
     }
     setCopied(true)
     local.onCopy?.(local.text)

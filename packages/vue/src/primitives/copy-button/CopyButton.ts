@@ -37,14 +37,15 @@ export const IrisCopyButton = defineComponent({
 
     const copy = () => {
       if (props.disabled) return
-      // A host clipboard handler (setClipboardHandler) wins — needed where
-      // navigator.clipboard is unavailable (Cordova file://, custom protocols).
-      if (!copyText(props.text)) {
-        try {
-          void navigator.clipboard?.writeText?.(props.text)
-        } catch {
-          /* clipboard unavailable — still surface the copied state */
+      try {
+        // A host clipboard handler (setClipboardHandler) wins — needed where
+        // navigator.clipboard is unavailable (Cordova file://, custom protocols).
+        if (!copyText(props.text)) {
+          // writeText returns a Promise; swallow async rejection (permission denied).
+          void navigator.clipboard?.writeText?.(props.text)?.catch(() => {})
         }
+      } catch {
+        /* host handler / clipboard unavailable — still surface the copied state */
       }
       copied.value = true
       emit('copy', props.text)

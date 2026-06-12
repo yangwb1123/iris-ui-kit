@@ -41,6 +41,16 @@ describe('IrisCopyButton', () => {
     expect(btn(w).attributes('data-copied')).toBe('true')
   })
 
+  it('still flips the copied state and fires copy when a host handler throws', async () => {
+    setClipboardHandler(() => {
+      throw new Error('host clipboard exploded')
+    })
+    const w = mount(IrisCopyButton, { props: { text: 'hello' } })
+    await expect(btn(w).trigger('click')).resolves.not.toThrow()
+    expect(w.emitted('copy')?.[0]).toEqual(['hello'])
+    expect(btn(w).attributes('data-copied')).toBe('true')
+  })
+
   it('falls through to navigator.clipboard when the handler declines', async () => {
     const writeText = vi.fn()
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })

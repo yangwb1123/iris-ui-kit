@@ -10,7 +10,7 @@
 ## Later
 
 - [x] ~~P1: a11y of tree rows — aria-level (iter 3) + aria-setsize/posinset + role=treegrid (iter 4). WAI-ARIA treegrid pattern complete ×4.~~
-- [ ] P1: horizontal/2D virtualization primitive.
+- [x] ~~P1: horizontal/2D virtualization — columnVirtualization ported to solid+svelte (iter 5); all 4 at virtualization parity.~~
 - [ ] P2: Tauri demo shell to validate native bridges (BLOCKED: Rust toolchain absent → Blocker report).
 
 ## Deferred-by-design (do NOT pick without explicit ask)

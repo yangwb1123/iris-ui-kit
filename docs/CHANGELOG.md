@@ -4,6 +4,7 @@
 
 ## Factory iterations
 
+- **iter 5** — port opt-in `columnVirtualization` (horizontal) to solid+svelte (react/vue had it). All 4 Tables now have vertical + tree + horizontal virtualization parity. Additive/opt-in → zero regression.
 - **iter 4** — a11y: completed WAI-ARIA treegrid ×4 — core `flattenTree` emits `setSize`/`posInset`; tree rows get `aria-setsize`/`aria-posinset`; keyboard-navigable tree tables use `role="treegrid"`.
 - **iter 3** — a11y: tree rows expose `aria-level` (depth+1) for screen-reader hierarchy ×4 frameworks (toggle keeps aria-expanded).
 - **iter 2** — excel export mime cleanup: dropped the non-standard `;charset=utf-8;` param on `application/vnd.ms-excel` (react+vue; SpreadsheetML XML declares its own encoding).

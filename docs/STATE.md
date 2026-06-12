@@ -19,6 +19,6 @@
 
 **技术债 (Debt):** all Low/cosmetic. None High/Medium open.
 
-**下一步推荐 (Next):** Iteration 5 = scope the 2D/horizontal virtualization gap (Phase 1 read of the existing column-virtualization in Table + `computeVirtualRange` in core). If the gap is real and large, decompose; if already mostly covered, mark P1 done and pick the next. Otherwise the remaining roadmap is blocked/strategic → surface a Blocker for publish/Tauri rather than manufacture churn.
+**下一步推荐 (Next):** Explicit roadmap P0/P1 now exhausted (iter 5 closed the last — column-virt parity). Remaining named items are BLOCKED (Tauri toolchain, npm-publish decision). Phase 0 RE-DISCOVERY in progress: a cross-framework PARITY audit (column-virt proved gaps exist) to auto-find new bounded work. If it surfaces real gaps → implement top ones as ≤5-file iterations. If it confirms parity → the project is at a quality plateau; refresh roadmap + surface the strategic Blockers (publish) rather than manufacture churn.
 
-**Iteration count since last STATE refresh:** 0 (just refreshed at the iter-4/5 boundary).
+**Iteration count since last STATE refresh:** 1 (iter 5).

@@ -12,6 +12,12 @@ export interface IrisProTableProps<Row extends Record<string, unknown>> {
    * directly. Defaults to English.
    */
   labels?: ProTableLabels
+  /**
+   * Enable drag-to-reorder column headers. When `true` every column `<th>`
+   * becomes draggable and drop onto another header calls `store.reorderColumns`.
+   * Default `false` — existing layouts are unchanged.
+   */
+  columnReorder?: boolean
 }
 
 function pinnedStyle(column: { pinned?: 'left' | 'right' }): React.CSSProperties | undefined {
@@ -28,9 +34,14 @@ export function IrisProTable<Row extends Record<string, unknown>>({
   store,
   className,
   labels,
+  columnReorder = false,
 }: IrisProTableProps<Row>) {
   const state = React.useSyncExternalStore(store.subscribe, store.getState, store.getState)
   const columns = store.visibleColumns()
+
+  // Drag-to-reorder: track the key of the column being dragged in a ref so we
+  // don't need React state (no re-render on dragstart/dragover).
+  const dragKey = React.useRef<string | null>(null)
 
   const [draft, setDraft] = React.useState('')
   React.useEffect(() => {
@@ -74,7 +85,12 @@ export function IrisProTable<Row extends Record<string, unknown>>({
                 scope="col"
                 aria-sort={ariaSort(c)}
                 tabIndex={c.sortable ? 0 : undefined}
-                style={{ textAlign: c.align, width: c.width, ...pinnedStyle(c) }}
+                style={{
+                  textAlign: c.align,
+                  width: c.width,
+                  cursor: columnReorder ? 'grab' : undefined,
+                  ...pinnedStyle(c),
+                }}
                 onClick={c.sortable ? () => store.toggleSort(c.key) : undefined}
                 onKeyDown={
                   c.sortable
@@ -87,6 +103,34 @@ export function IrisProTable<Row extends Record<string, unknown>>({
                     : undefined
                 }
                 data-sortable={c.sortable ? '' : undefined}
+                draggable={columnReorder ? true : undefined}
+                onDragStart={
+                  columnReorder
+                    ? (e) => {
+                        dragKey.current = c.key
+                        e.dataTransfer.effectAllowed = 'move'
+                      }
+                    : undefined
+                }
+                onDragOver={
+                  columnReorder
+                    ? (e) => {
+                        e.preventDefault()
+                        e.dataTransfer.dropEffect = 'move'
+                      }
+                    : undefined
+                }
+                onDrop={
+                  columnReorder
+                    ? (e) => {
+                        e.preventDefault()
+                        if (dragKey.current && dragKey.current !== c.key) {
+                          store.reorderColumns(dragKey.current, c.key)
+                        }
+                        dragKey.current = null
+                      }
+                    : undefined
+                }
               >
                 {c.title}
                 <span aria-hidden="true">{sortIndicator(c.key)}</span>

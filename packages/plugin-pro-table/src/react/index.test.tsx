@@ -35,6 +35,15 @@ describe('IrisProTable (react)', () => {
     expect(store.getState().sort).toEqual({ key: 'age', direction: 'asc' })
   })
 
+  it('reorderColumns moves column from position A to B', () => {
+    const store = createProTableStore<User>({ columns, rowKey: 'id', data })
+    // Initial order: name (0), age (1)
+    expect(store.visibleColumns().map((c) => c.key)).toEqual(['name', 'age'])
+    store.reorderColumns('age', 'name')
+    // After: age (0), name (1)
+    expect(store.visibleColumns().map((c) => c.key)).toEqual(['age', 'name'])
+  })
+
   it('localizes UI strings via the labels prop (defaults to English)', () => {
     const store = createProTableStore<User>({
       columns: [{ ...columns[0]!, filterable: true }, columns[1]!],

@@ -33,6 +33,15 @@ describe('IrisProTable (svelte)', () => {
     expect(store.getState().sort).toEqual({ key: 'age', direction: 'asc' })
   })
 
+  it('reorderColumns moves column from position A to B', () => {
+    const store = createProTableStore<User>({ columns, rowKey: 'id', data })
+    // Initial order: name (0), age (1)
+    expect(store.visibleColumns().map((c) => c.key)).toEqual(['name', 'age'])
+    store.reorderColumns('age', 'name')
+    // After: age (0), name (1)
+    expect(store.visibleColumns().map((c) => c.key)).toEqual(['age', 'name'])
+  })
+
   it('exposes aria-sort and keyboard semantics on sortable headers', async () => {
     const store = createProTableStore<User>({ columns, rowKey: 'id', data })
     const { container } = render(IrisProTable, { props: { store } })

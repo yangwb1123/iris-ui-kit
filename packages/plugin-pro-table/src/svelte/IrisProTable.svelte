@@ -7,6 +7,7 @@
     store,
     class: klass = '',
     labels,
+    columnReorder = false,
   }: {
     store: ProTableStore<Row>
     class?: string
@@ -16,7 +17,16 @@
      * directly. Defaults to English.
      */
     labels?: ProTableLabels
+    /**
+     * Enable drag-to-reorder column headers. When `true` every column `<th>`
+     * becomes draggable and drop onto another header calls `store.reorderColumns`.
+     * Default `false` — existing layouts are unchanged.
+     */
+    columnReorder?: boolean
   } = $props()
+
+  // Drag-to-reorder: plain mutable — no $state needed (no re-render on drag events).
+  let dragKey: string | null = null
 
   // NB: do not name this `state` — a leading `$` would make Svelte read `$state`
   // as a store auto-subscription instead of the rune.
@@ -83,7 +93,7 @@
             scope="col"
             aria-sort={ariaSort(c)}
             tabindex={c.sortable ? 0 : undefined}
-            style={`text-align:${c.align ?? 'left'};${pinnedStyle(c)}`}
+            style={`text-align:${c.align ?? 'left'};${columnReorder ? 'cursor:grab;' : ''}${pinnedStyle(c)}`}
             data-sortable={c.sortable ? '' : undefined}
             onclick={c.sortable ? () => store.toggleSort(c.key) : undefined}
             onkeydown={(e) => {
@@ -92,6 +102,20 @@
                 store.toggleSort(c.key)
               }
             }}
+            draggable={columnReorder ? true : undefined}
+            ondragstart={columnReorder ? (e) => {
+              dragKey = c.key
+              if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+            } : undefined}
+            ondragover={columnReorder ? (e) => {
+              e.preventDefault()
+              if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+            } : undefined}
+            ondrop={columnReorder ? (e) => {
+              e.preventDefault()
+              if (dragKey && dragKey !== c.key) store.reorderColumns(dragKey, c.key)
+              dragKey = null
+            } : undefined}
           >
             {c.title}<span aria-hidden="true">{sortIndicator(c.key)}</span>
           </th>

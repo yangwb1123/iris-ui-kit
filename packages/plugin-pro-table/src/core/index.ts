@@ -98,6 +98,8 @@ export interface ProTableState<Row = Record<string, unknown>> {
   /** Rows for the current page, already filtered + sorted (or server result). */
   rows: Row[]
   columns: ProTableColumn<Row>[]
+  /** Ordered column keys; reflects drag-reorder. Initialized from schema order. */
+  columnOrder: string[]
   sort: SortState | null
   filters: Record<string, string>
   selectedKeys: string[]
@@ -136,6 +138,12 @@ export interface ProTableStore<Row = Record<string, unknown>> {
   exportJson(): string
   /** Export the visible columns + processed rows as an HTML `<table>` (print/email). */
   exportHtml(options?: TableHtmlOptions): string
+  /**
+   * Move the column identified by `from` key to the position currently occupied
+   * by the column identified by `to` key. No-op if either key is absent or they
+   * are the same. Triggers a store update so all renderers re-render.
+   */
+  reorderColumns(from: string, to: string): void
 }
 
 export function createProTableStore<Row extends Record<string, unknown>>(
@@ -161,6 +169,7 @@ export function createProTableStore<Row extends Record<string, unknown>>(
   const store = createStore<ProTableState<Row>>({
     rows: [],
     columns: config.columns,
+    columnOrder: config.columns.map((c) => c.key),
     sort: null,
     filters: {},
     selectedKeys: [],
@@ -227,8 +236,15 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     store.setState((st) => ({ ...st, editing: s.editing }))
   })
 
-  const visibleColumns = (): ProTableColumn<Row>[] =>
-    store.getState().columns.filter((c) => !c.hidden)
+  const visibleColumns = (): ProTableColumn<Row>[] => {
+    const { columns: cols, columnOrder } = store.getState()
+    // Build a lookup for O(1) access, then project in columnOrder sequence.
+    const byKey = new Map(cols.map((c) => [c.key, c]))
+    return columnOrder.flatMap((k) => {
+      const col = byKey.get(k)
+      return col && !col.hidden ? [col] : []
+    })
+  }
 
   /** Filtered + sorted rows across ALL pages (client mode; for export too). */
   function processedAll(): Row[] {
@@ -315,6 +331,18 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     exportHtml: (options) => {
       const { rows, cols } = exportData()
       return toHtml(rows, cols, options)
+    },
+
+    reorderColumns(from, to) {
+      if (from === to) return
+      const { columnOrder } = store.getState()
+      const fromIdx = columnOrder.indexOf(from)
+      const toIdx = columnOrder.indexOf(to)
+      if (fromIdx === -1 || toIdx === -1) return
+      const next = [...columnOrder]
+      next.splice(fromIdx, 1)
+      next.splice(toIdx, 0, from)
+      store.setState((st) => ({ ...st, columnOrder: next }))
     },
   }
 

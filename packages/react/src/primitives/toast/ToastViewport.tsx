@@ -40,7 +40,15 @@ function positionStyle(position: IrisToastPosition): React.CSSProperties {
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--iris-gap-md, 12px)',
+    // `padding` is the fallback; the per-side longhands add safe-area insets so
+    // toasts clear the notch / home indicator on mobile webviews (Cordova). On
+    // engines without env() the longhands are invalid and the shorthand applies.
+    // (Host must set <meta name="viewport" content="...,viewport-fit=cover">.)
     padding: 16,
+    paddingTop: 'max(16px, env(safe-area-inset-top))',
+    paddingRight: 'max(16px, env(safe-area-inset-right))',
+    paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+    paddingLeft: 'max(16px, env(safe-area-inset-left))',
     maxWidth: 420,
     width: '100%',
     pointerEvents: 'none',

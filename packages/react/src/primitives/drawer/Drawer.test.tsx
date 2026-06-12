@@ -220,4 +220,10 @@ describe('@iris-ui/react IrisDrawer', () => {
     )
     e.mockRestore()
   })
+
+  it('bottom panel padding carries safe-area inset (mobile home-bar clearance)', () => {
+    render(harness({ defaultOpen: true, side: 'bottom' }))
+    const panel = dialog()!
+    expect(panel.style.paddingBottom).toContain('env(safe-area-inset-bottom')
+  })
 })

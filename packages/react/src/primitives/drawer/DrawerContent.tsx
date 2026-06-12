@@ -13,6 +13,30 @@ const SIDE_TO_TRANSFORM: Record<IrisDrawerSide, string> = {
   bottom: 'translateY(100%)',
 }
 
+/**
+ * Safe-area padding for the screen edges the panel actually touches, so its
+ * content clears the notch / home indicator on mobile webviews (Cordova). The
+ * insets resolve to 0 on devices/orientations without a cutout, and the whole
+ * declaration is simply ignored on engines without env() support.
+ * (Host must set <meta name="viewport" content="...,viewport-fit=cover">.)
+ */
+function safeAreaPadding(side: IrisDrawerSide): React.CSSProperties {
+  const top = 'max(0px, env(safe-area-inset-top))'
+  const right = 'max(0px, env(safe-area-inset-right))'
+  const bottom = 'max(0px, env(safe-area-inset-bottom))'
+  const left = 'max(0px, env(safe-area-inset-left))'
+  switch (side) {
+    case 'left':
+      return { paddingTop: top, paddingBottom: bottom, paddingLeft: left }
+    case 'right':
+      return { paddingTop: top, paddingBottom: bottom, paddingRight: right }
+    case 'top':
+      return { paddingTop: top, paddingLeft: left, paddingRight: right }
+    case 'bottom':
+      return { paddingBottom: bottom, paddingLeft: left, paddingRight: right }
+  }
+}
+
 function panelPositionStyle(side: IrisDrawerSide, size: string): React.CSSProperties {
   const base: React.CSSProperties = {
     position: 'fixed',
@@ -24,6 +48,7 @@ function panelPositionStyle(side: IrisDrawerSide, size: string): React.CSSProper
     overflow: 'auto',
     transition: 'transform 220ms ease',
     willChange: 'transform',
+    ...safeAreaPadding(side),
   }
   switch (side) {
     case 'left':

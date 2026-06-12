@@ -289,4 +289,12 @@ describe('@iris-ui/react IrisToast', () => {
     })
     expect(getToasts().length).toBe(1)
   })
+
+  it('viewport padding carries safe-area insets (mobile notch/home-bar clearance)', () => {
+    render(<IrisToastViewport position="bottom-center" />)
+    // The viewport portals to document.body.
+    const vp = document.querySelector('[data-iris-toast-viewport]') as HTMLElement
+    expect(vp.style.paddingBottom).toContain('env(safe-area-inset-bottom')
+    expect(vp.style.paddingTop).toContain('env(safe-area-inset-top')
+  })
 })

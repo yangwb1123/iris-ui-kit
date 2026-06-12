@@ -4,7 +4,15 @@
 
 ## Now (next iterations)
 
-- [ ] P0: contract tests — add `@iris-ui/core/contracts` scenarios for `createSortable` (press→tryStart→over→end transitions) so all 4 adapters assert identical store migrations.
+- [ ] P1 (iter 6): port Table **column resizing** (resizableColumns/columnWidths/onColumnWidthsChange + resize handles) to solid+svelte — VERIFIED gap (solid 0/0/0; svelte prop-stub only; react/vue full). Additive/opt-in. Same shape as column-virt.
+- [ ] P0: contract tests — add `@iris-ui/core/contracts` scenarios for `createSortable`.
+
+### Parity-discovery (wf wumk73p7o) triage — VERIFIED before acting
+
+- REAL+large: column resizing (above).
+- REAL+cosmetic (rename = public-interface Blocker; only via additive alias): textarea `autoResize`(solid) vs `autosize`(others); otp-input `autoFocus` casing. Low priority.
+- NEEDS deeper check (grep ambiguous): checkbox aria-label (react/svelte may handle via rest-spread); Banner close-callback naming; Select renderTrigger; Table custom-cell-render signature.
+- FALSE POSITIVE (dismissed): Tour onOpenChange "missing in react" — react HAS it (vue=0). Explore agents are excerpt-based → always verify.
 - [x] ~~P0: excel export mime — drop non-standard `;charset=utf-8;`~~ done (iter 2).
 
 ## Later

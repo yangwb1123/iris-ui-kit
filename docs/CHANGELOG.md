@@ -4,6 +4,7 @@
 
 ## Factory iterations
 
+- **iter 3** — a11y: tree rows expose `aria-level` (depth+1) for screen-reader hierarchy ×4 frameworks (toggle keeps aria-expanded).
 - **iter 2** — excel export mime cleanup: dropped the non-standard `;charset=utf-8;` param on `application/vnd.ms-excel` (react+vue; SpreadsheetML XML declares its own encoding).
 - **iter 1** — established `/docs/` autonomous-factory memory system (ROADMAP/TODO/CHANGELOG/DECISIONS/ARCHITECTURE/AGENTS/STATE).
 

@@ -9,7 +9,7 @@
 
 ## Later
 
-- [ ] P1: a11y audit of virtualized tree rows (aria-level/setsize/grid roles).
+- [~] P1: a11y of tree rows — `aria-level` done (iter 3); REMAINING: `aria-setsize`/`aria-posinset` (needs sibling counts; enhance core `flattenTree` to emit them) + `role="treegrid"` on the container in tree mode.
 - [ ] P1: horizontal/2D virtualization primitive.
 - [ ] P2: Tauri demo shell to validate native bridges (BLOCKED: Rust toolchain absent → Blocker report).
 

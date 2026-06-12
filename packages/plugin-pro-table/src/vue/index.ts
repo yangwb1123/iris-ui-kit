@@ -210,11 +210,61 @@ export const IrisProTable = defineComponent({
         ])
       })
 
+      const activeFilters = Object.keys(state.value.filters).filter((k) => state.value.filters[k])
+      const colByKey = new Map(state.value.columns.map((c: ProTableColumn) => [c.key, c]))
+      const filterChips =
+        activeFilters.length > 0
+          ? h(
+              'div',
+              {
+                'data-iris-filter-chips': '',
+                style: 'display:flex;flex-wrap:wrap;gap:0.25rem;padding:0.25rem 0;',
+              },
+              [
+                ...activeFilters.map((k) => {
+                  const col = colByKey.get(k) as ProTableColumn | undefined
+                  const title = col?.title ?? k
+                  return h(
+                    'span',
+                    {
+                      key: k,
+                      style:
+                        'display:inline-flex;align-items:center;gap:0.25rem;padding:0.125rem 0.5rem;background:var(--iris-chip-bg,var(--iris-surface-alt,#f3f4f6));border-radius:9999px;',
+                    },
+                    [
+                      `${title}: "${state.value.filters[k]}"`,
+                      h(
+                        'button',
+                        {
+                          type: 'button',
+                          'aria-label': `Clear filter ${title}`,
+                          onClick: () => props.store.setFilter(k, ''),
+                          style: 'background:none;border:none;cursor:pointer;padding:0;',
+                        },
+                        '×',
+                      ),
+                    ],
+                  )
+                }),
+                h(
+                  'button',
+                  {
+                    type: 'button',
+                    onClick: () => props.store.clearFilters(),
+                    style: 'background:none;border:none;cursor:pointer;',
+                  },
+                  'Clear all ×',
+                ),
+              ],
+            )
+          : null
+
       return h('div', { 'data-iris-pro-table': '' }, [
         h('table', [
           h('thead', filterRow ? [h('tr', headerCells), filterRow] : [h('tr', headerCells)]),
           h('tbody', bodyRows),
         ]),
+        ...(filterChips ? [filterChips] : []),
         h('div', { 'data-iris-pro-table-footer': '' }, [
           h(
             'button',

@@ -175,6 +175,30 @@
       {/each}
     </tbody>
   </table>
+  {#if Object.keys(tableState.filters).some((k) => tableState.filters[k])}
+    {@const activeFilters = Object.keys(tableState.filters).filter((k) => tableState.filters[k])}
+    {@const colByKey = new Map(tableState.columns.map((c) => [c.key, c]))}
+    <div data-iris-filter-chips style="display:flex;flex-wrap:wrap;gap:0.25rem;padding:0.25rem 0;">
+      {#each activeFilters as k (k)}
+        {@const col = colByKey.get(k)}
+        {@const title = col?.title ?? k}
+        <span style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.125rem 0.5rem;background:var(--iris-chip-bg,var(--iris-surface-alt,#f3f4f6));border-radius:9999px;">
+          {title}: "{tableState.filters[k]}"
+          <button
+            type="button"
+            aria-label="Clear filter {title}"
+            onclick={() => store.setFilter(k, '')}
+            style="background:none;border:none;cursor:pointer;padding:0;"
+          >×</button>
+        </span>
+      {/each}
+      <button
+        type="button"
+        onclick={() => store.clearFilters()}
+        style="background:none;border:none;cursor:pointer;"
+      >Clear all ×</button>
+    </div>
+  {/if}
   <div data-iris-pro-table-footer>
     <button
       type="button"

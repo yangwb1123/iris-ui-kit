@@ -199,6 +199,52 @@ export function IrisProTable<Row extends Record<string, unknown>>({
           })}
         </tbody>
       </table>
+      {(() => {
+        const activeFilters = Object.keys(state.filters).filter((k) => state.filters[k])
+        if (activeFilters.length === 0) return null
+        const colByKey = new Map(state.columns.map((c) => [c.key, c]))
+        return (
+          <div
+            data-iris-filter-chips=""
+            style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', padding: '0.25rem 0' }}
+          >
+            {activeFilters.map((k) => {
+              const col = colByKey.get(k)
+              const title = col?.title ?? k
+              return (
+                <span
+                  key={k}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    padding: '0.125rem 0.5rem',
+                    background: 'var(--iris-chip-bg, var(--iris-surface-alt, #f3f4f6))',
+                    borderRadius: '9999px',
+                  }}
+                >
+                  {title}: &ldquo;{state.filters[k]}&rdquo;
+                  <button
+                    type="button"
+                    aria-label={`Clear filter ${title}`}
+                    onClick={() => store.setFilter(k, '')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  >
+                    ×
+                  </button>
+                </span>
+              )
+            })}
+            <button
+              type="button"
+              onClick={() => store.clearFilters()}
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              Clear all ×
+            </button>
+          </div>
+        )
+      })()}
       <div data-iris-pro-table-footer="">
         <button
           type="button"

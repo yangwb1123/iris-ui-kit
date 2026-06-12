@@ -44,6 +44,36 @@ describe('IrisProTable (react)', () => {
     expect(store.visibleColumns().map((c) => c.key)).toEqual(['age', 'name'])
   })
 
+  it('shows a filter chip when a filter is active', () => {
+    const store = createProTableStore<User>({
+      columns: [{ key: 'name', title: 'Name', filterable: true }, columns[1]!],
+      rowKey: 'id',
+      data,
+    })
+    store.setFilter('name', 'Alice')
+    const { container } = render(<IrisProTable store={store} />)
+    const bar = container.querySelector('[data-iris-filter-chips]')
+    expect(bar).toBeTruthy()
+    expect(bar!.textContent).toContain('Name')
+    expect(bar!.textContent).toContain('Alice')
+  })
+
+  it('clicking × on a chip clears that filter', () => {
+    const store = createProTableStore<User>({
+      columns: [{ key: 'name', title: 'Name', filterable: true }, columns[1]!],
+      rowKey: 'id',
+      data,
+    })
+    store.setFilter('name', 'Alice')
+    const { container } = render(<IrisProTable store={store} />)
+    const clearBtn = container.querySelector(
+      '[aria-label="Clear filter Name"]',
+    ) as HTMLButtonElement
+    expect(clearBtn).toBeTruthy()
+    fireEvent.click(clearBtn)
+    expect(store.getState().filters['name'] ?? '').toBe('')
+  })
+
   it('localizes UI strings via the labels prop (defaults to English)', () => {
     const store = createProTableStore<User>({
       columns: [{ ...columns[0]!, filterable: true }, columns[1]!],

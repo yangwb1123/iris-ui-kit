@@ -206,6 +206,48 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
           </For>
         </tbody>
       </table>
+      <Show when={Object.keys(state().filters).some((k) => state().filters[k])}>
+        <div
+          data-iris-filter-chips=""
+          style={{ display: 'flex', 'flex-wrap': 'wrap', gap: '0.25rem', padding: '0.25rem 0' }}
+        >
+          <For each={Object.keys(state().filters).filter((k) => state().filters[k])}>
+            {(k) => {
+              const col = state().columns.find((c) => c.key === k)
+              const title = col?.title ?? k
+              return (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    'align-items': 'center',
+                    gap: '0.25rem',
+                    padding: '0.125rem 0.5rem',
+                    background: 'var(--iris-chip-bg, var(--iris-surface-alt, #f3f4f6))',
+                    'border-radius': '9999px',
+                  }}
+                >
+                  {title}: &ldquo;{state().filters[k]}&rdquo;
+                  <button
+                    type="button"
+                    aria-label={`Clear filter ${title}`}
+                    onClick={() => props.store.setFilter(k, '')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0' }}
+                  >
+                    ×
+                  </button>
+                </span>
+              )
+            }}
+          </For>
+          <button
+            type="button"
+            onClick={() => props.store.clearFilters()}
+            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            Clear all ×
+          </button>
+        </div>
+      </Show>
       <div data-iris-pro-table-footer="">
         <button
           type="button"

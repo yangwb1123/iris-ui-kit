@@ -42,6 +42,38 @@ describe('IrisProTable (svelte)', () => {
     expect(store.visibleColumns().map((c) => c.key)).toEqual(['age', 'name'])
   })
 
+  it('shows a filter chip when a filter is active', async () => {
+    const store = createProTableStore<User>({
+      columns: [{ key: 'name', title: 'Name', filterable: true }, columns[1]!],
+      rowKey: 'id',
+      data,
+    })
+    store.setFilter('name', 'Alice')
+    const { container } = render(IrisProTable, { props: { store } })
+    await Promise.resolve()
+    const bar = container.querySelector('[data-iris-filter-chips]')
+    expect(bar).toBeTruthy()
+    expect(bar!.textContent).toContain('Name')
+    expect(bar!.textContent).toContain('Alice')
+  })
+
+  it('clicking × on a chip clears that filter', async () => {
+    const store = createProTableStore<User>({
+      columns: [{ key: 'name', title: 'Name', filterable: true }, columns[1]!],
+      rowKey: 'id',
+      data,
+    })
+    store.setFilter('name', 'Alice')
+    const { container } = render(IrisProTable, { props: { store } })
+    await Promise.resolve()
+    const clearBtn = container.querySelector(
+      '[aria-label="Clear filter Name"]',
+    ) as HTMLButtonElement
+    expect(clearBtn).toBeTruthy()
+    await fireEvent.click(clearBtn)
+    expect(store.getState().filters['name'] ?? '').toBe('')
+  })
+
   it('exposes aria-sort and keyboard semantics on sortable headers', async () => {
     const store = createProTableStore<User>({ columns, rowKey: 'id', data })
     const { container } = render(IrisProTable, { props: { store } })

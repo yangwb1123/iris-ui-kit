@@ -705,9 +705,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
         key={String(k ?? idx)}
         role="row"
         aria-selected={selectable !== 'none' ? selected : undefined}
-        // Tree depth for screen readers (1-based); the toggle button carries
-        // aria-expanded for the control itself.
+        // Tree depth/position for screen readers (1-based); the toggle button
+        // carries aria-expanded for the control itself.
         aria-level={treeMeta ? treeMeta.depth + 1 : undefined}
+        aria-setsize={treeMeta ? treeMeta.setSize : undefined}
+        aria-posinset={treeMeta ? treeMeta.posInset : undefined}
         data-iris-table-row={String(k ?? idx)}
         data-iris-table-row-selected={selected ? 'true' : undefined}
         style={{ display: 'grid', gridTemplateColumns, ...extraStyle }}
@@ -930,7 +932,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   return (
     <div
       ref={rootRef}
-      role={keyboardNavigation ? 'grid' : 'table'}
+      // A keyboard-navigable hierarchical table is a `treegrid`; otherwise the
+      // grid/table role as before (treegrid implies managed cell focus).
+      role={keyboardNavigation ? (treeMode ? 'treegrid' : 'grid') : 'table'}
       data-iris-table=""
       data-bordered={bordered ? 'true' : undefined}
       data-striped={striped ? 'true' : undefined}

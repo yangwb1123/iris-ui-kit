@@ -307,6 +307,17 @@ describe('flattenTree', () => {
     expect(out.find((r) => r.key === 'a2')).toMatchObject({ depth: 1, hasChildren: true })
   })
 
+  it('emits setSize + 1-based posInset per sibling group (for aria-setsize/posinset)', () => {
+    const out = flattenTree(tree, opts(new Set(['a'])))
+    const by = (k: string) => out.find((r) => r.key === k)!
+    // roots: a (1/2), b (2/2)
+    expect(by('a')).toMatchObject({ setSize: 2, posInset: 1 })
+    expect(by('b')).toMatchObject({ setSize: 2, posInset: 2 })
+    // a's children: a1 (1/2), a2 (2/2)
+    expect(by('a1')).toMatchObject({ setSize: 2, posInset: 1 })
+    expect(by('a2')).toMatchObject({ setSize: 2, posInset: 2 })
+  })
+
   it('expands transitively only along expanded keys', () => {
     const out = flattenTree(tree, opts(new Set(['a', 'a2'])))
     expect(out.map((r) => r.key)).toEqual(['a', 'a1', 'a2', 'a2x', 'b'])

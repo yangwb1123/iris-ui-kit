@@ -788,7 +788,7 @@ describe('@iris-ui/react IrisTable tree rows', () => {
     expect(document.querySelector('[data-iris-table-tree-indent]')).toBeNull()
   })
 
-  it('exposes aria-level on tree rows for screen-reader depth', () => {
+  it('exposes aria-level/setsize/posinset on tree rows for screen readers', () => {
     render(
       <IrisTable
         columns={treeCols}
@@ -797,10 +797,33 @@ describe('@iris-ui/react IrisTable tree rows', () => {
         defaultExpandedRowKeys={[1]}
       />,
     )
-    const levelOf = (rowId: number) =>
-      document.querySelector(`[data-iris-table-row="${rowId}"]`)?.getAttribute('aria-level')
-    expect(levelOf(1)).toBe('1') // root
-    expect(levelOf(11)).toBe('2') // child
+    const rowEl = (rowId: number) => document.querySelector(`[data-iris-table-row="${rowId}"]`)!
+    const attrs = (rowId: number) => ({
+      level: rowEl(rowId).getAttribute('aria-level'),
+      setsize: rowEl(rowId).getAttribute('aria-setsize'),
+      posinset: rowEl(rowId).getAttribute('aria-posinset'),
+    })
+    // Root A (id 1): level 1, 2 roots, position 1.
+    expect(attrs(1)).toEqual({ level: '1', setsize: '2', posinset: '1' })
+    // Child A1 (id 11): level 2, 2 children, position 1.
+    expect(attrs(11)).toEqual({ level: '2', setsize: '2', posinset: '1' })
+  })
+
+  it('uses role=treegrid for a keyboard-navigable tree (else grid/table)', () => {
+    const { container, rerender } = render(
+      <IrisTable
+        columns={treeCols}
+        data={treeData}
+        getSubRows={(r) => r.children}
+        keyboardNavigation
+      />,
+    )
+    expect(container.querySelector('[data-iris-table]')?.getAttribute('role')).toBe('treegrid')
+    // Without tree mode it stays a grid; without keyboard nav, a table.
+    rerender(<IrisTable columns={treeCols} data={treeData} keyboardNavigation />)
+    expect(container.querySelector('[data-iris-table]')?.getAttribute('role')).toBe('grid')
+    rerender(<IrisTable columns={treeCols} data={treeData} getSubRows={(r) => r.children} />)
+    expect(container.querySelector('[data-iris-table]')?.getAttribute('role')).toBe('table')
   })
 
   it('column sort reorders tree siblings hierarchically (roots and children)', () => {

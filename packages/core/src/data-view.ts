@@ -323,6 +323,10 @@ export interface TreeRow<Row> {
   hasChildren: boolean
   /** Whether this node's children are currently visible. */
   expanded: boolean
+  /** Sibling count at this node's level under its parent (for `aria-setsize`). */
+  setSize: number
+  /** 1-based position among its siblings (for `aria-posinset`). */
+  posInset: number
 }
 
 export interface FlattenTreeOptions<Row> {
@@ -351,16 +355,17 @@ export function flattenTree<Row>(
   const out: Array<TreeRow<Row>> = []
   const seen = new Set<string>()
   const walk = (nodes: readonly Row[], depth: number): void => {
-    for (const row of nodes) {
+    const setSize = nodes.length
+    nodes.forEach((row, i) => {
       const key = getKey(row)
-      if (seen.has(key)) continue // cycle / duplicate-key guard
+      if (seen.has(key)) return // cycle / duplicate-key guard
       seen.add(key)
       const children = getChildren(row)
       const hasChildren = !!children && children.length > 0
       const expanded = hasChildren && isExpanded(key)
-      out.push({ row, key, depth, hasChildren, expanded })
+      out.push({ row, key, depth, hasChildren, expanded, setSize, posInset: i + 1 })
       if (expanded) walk(children!, depth + 1)
-    }
+    })
   }
   walk(roots, 0)
   return out

@@ -71,6 +71,9 @@ export function IrisProTable<Row extends Record<string, unknown>>({
     sortable.getState,
   )
 
+  // Header rects, measured ONCE when a drag actually starts (not per move).
+  const dragRects = React.useRef<SortableRect[]>([])
+
   const onHeaderPointerDown = (key: string) => (e: React.PointerEvent<HTMLElement>) => {
     if (!columnReorder || e.pointerType === 'mouse') return
     try {
@@ -78,15 +81,22 @@ export function IrisProTable<Row extends Record<string, unknown>>({
     } catch {
       /* ignore */
     }
-    sortable.start(key)
+    // Record a pending press — no store write, so a tap (header sort) never re-renders.
+    sortable.press(key, e.clientX, e.clientY)
   }
   const onHeaderPointerMove = (key: string) => (e: React.PointerEvent<HTMLElement>) => {
+    if (sortable.tryStart(e.clientX, e.clientY)) {
+      const root = e.currentTarget.closest<HTMLElement>('[data-iris-pro-table]')
+      dragRects.current = collectRects(root, 'data-iris-col-key')
+    }
     if (!sortable.isActive(key)) return
-    const root = e.currentTarget.closest<HTMLElement>('[data-iris-pro-table]')
-    sortable.moveOver({ x: e.clientX, y: e.clientY }, collectRects(root, 'data-iris-col-key'))
+    sortable.moveOver({ x: e.clientX, y: e.clientY }, dragRects.current)
   }
   const onHeaderPointerUp = (key: string) => () => {
-    if (!sortable.isActive(key)) return
+    if (!sortable.isActive(key)) {
+      sortable.cancel() // clear a pending tap (idle → no re-render); header-tap sort still works
+      return
+    }
     const { activeId, overId } = sortable.end()
     if (activeId && overId && activeId !== overId) store.reorderColumns(activeId, overId)
   }
@@ -152,9 +162,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
                 onPointerDown={onHeaderPointerDown(c.key)}
                 onPointerMove={onHeaderPointerMove(c.key)}
                 onPointerUp={onHeaderPointerUp(c.key)}
-                onPointerCancel={() => {
-                  if (sortable.isActive(c.key)) sortable.cancel()
-                }}
+                onPointerCancel={() => sortable.cancel()}
                 onKeyDown={
                   c.sortable
                     ? (e) => {

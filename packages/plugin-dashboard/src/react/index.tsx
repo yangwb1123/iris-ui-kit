@@ -56,6 +56,9 @@ export function IrisDashboard({ config, className, style }: IrisDashboardProps) 
     sortable.getState,
   )
 
+  // Drop-cell rects, measured ONCE when a drag actually starts (not per move).
+  const dragRects = React.useRef<SortableRect[]>([])
+
   const commitMove = (widgetId: string, cellId: string): void => {
     const [c, r] = cellId.split('-').map(Number)
     if (Number.isFinite(c) && Number.isFinite(r)) store.moveWidget(widgetId, c!, r!)
@@ -68,18 +71,22 @@ export function IrisDashboard({ config, className, style }: IrisDashboardProps) 
     } catch {
       /* ignore */
     }
-    sortable.start(widgetId)
+    // Record a pending press — no store write, so a tap never re-renders.
+    sortable.press(widgetId, e.clientX, e.clientY)
   }
   const onHeaderPointerMove = (widgetId: string) => (e: React.PointerEvent<HTMLElement>) => {
+    if (sortable.tryStart(e.clientX, e.clientY)) {
+      const root = e.currentTarget.closest<HTMLElement>('[data-iris-dashboard]')
+      dragRects.current = collectRects(root, 'data-iris-dashboard-cell')
+    }
     if (!sortable.isActive(widgetId)) return
-    const root = e.currentTarget.closest<HTMLElement>('[data-iris-dashboard]')
-    sortable.moveOver(
-      { x: e.clientX, y: e.clientY },
-      collectRects(root, 'data-iris-dashboard-cell'),
-    )
+    sortable.moveOver({ x: e.clientX, y: e.clientY }, dragRects.current)
   }
   const onHeaderPointerUp = (widgetId: string) => () => {
-    if (!sortable.isActive(widgetId)) return
+    if (!sortable.isActive(widgetId)) {
+      sortable.cancel() // clear a pending tap (idle → no re-render)
+      return
+    }
     const { activeId, overId } = sortable.end()
     if (activeId && overId) commitMove(activeId, overId)
   }
@@ -184,9 +191,7 @@ export function IrisDashboard({ config, className, style }: IrisDashboardProps) 
             onPointerDown={onHeaderPointerDown(widget.id)}
             onPointerMove={onHeaderPointerMove(widget.id)}
             onPointerUp={onHeaderPointerUp(widget.id)}
-            onPointerCancel={() => {
-              if (sortable.isActive(widget.id)) sortable.cancel()
-            }}
+            onPointerCancel={() => sortable.cancel()}
           >
             <span
               data-iris-dashboard-drag-handle=""

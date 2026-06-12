@@ -126,4 +126,60 @@ describe('createSortable', () => {
     s.over('col-2')
     expect(cb).toHaveBeenCalledTimes(1)
   })
+
+  it('press records a pending drag WITHOUT touching the store or notifying', () => {
+    const s = createSortable()
+    const cb = vi.fn()
+    s.subscribe(cb)
+    s.press('card-1', 10, 10)
+    expect(s.isPending()).toBe(true)
+    expect(s.getState()).toEqual({ activeId: null, overId: null })
+    expect(cb).not.toHaveBeenCalled()
+  })
+
+  it('tryStart stays pending below the threshold, promotes once past it', () => {
+    const s = createSortable()
+    s.press('card-1', 0, 0)
+    expect(s.tryStart(2, 2)).toBe(false) // within default 4px
+    expect(s.isPending()).toBe(true)
+    expect(s.getState().activeId).toBeNull()
+    expect(s.tryStart(10, 0)).toBe(true) // crossed threshold
+    expect(s.isActive('card-1')).toBe(true)
+    expect(s.isPending()).toBe(false)
+    expect(s.tryStart(20, 0)).toBe(false) // already promoted → no repeat
+  })
+
+  it('tryStart honors a custom threshold', () => {
+    const s = createSortable()
+    s.press('c', 0, 0)
+    expect(s.tryStart(8, 0, 12)).toBe(false)
+    expect(s.tryStart(13, 0, 12)).toBe(true)
+  })
+
+  it('a press→cancel tap causes NO notification (store stays idle)', () => {
+    const s = createSortable()
+    const cb = vi.fn()
+    s.subscribe(cb)
+    s.press('card-1', 5, 5)
+    s.cancel()
+    expect(cb).not.toHaveBeenCalled()
+    expect(s.isPending()).toBe(false)
+    expect(s.getState()).toEqual({ activeId: null, overId: null })
+  })
+
+  it('start() clears a pending press', () => {
+    const s = createSortable()
+    s.press('card-1', 0, 0)
+    s.start('card-2')
+    expect(s.isPending()).toBe(false)
+    expect(s.isActive('card-2')).toBe(true)
+  })
+
+  it('cancel() does not notify when already idle', () => {
+    const s = createSortable()
+    const cb = vi.fn()
+    s.subscribe(cb)
+    s.cancel()
+    expect(cb).not.toHaveBeenCalled()
+  })
 })

@@ -59,6 +59,9 @@ export function IrisKanban({ config, className, style }: IrisKanbanProps) {
     sortable.getState,
   )
 
+  // Drop-target rects, measured ONCE when a drag actually starts (not per move).
+  const dragRects = React.useRef<SortableRect[]>([])
+
   const isAtLimit = (colId: string): boolean => {
     const col = store.getState().columns.find((c) => c.id === colId)
     return col?.limit !== undefined && col.cards.length >= col.limit
@@ -72,15 +75,24 @@ export function IrisKanban({ config, className, style }: IrisKanbanProps) {
     } catch {
       /* ignore */
     }
-    sortable.start(cardId)
+    // Record a pending press — no store write, so a tap never re-renders.
+    sortable.press(cardId, e.clientX, e.clientY)
   }
   const onCardPointerMove = (cardId: string) => (e: React.PointerEvent<HTMLElement>) => {
+    // Promote the pending press once it moves past the threshold; cache the
+    // column rects at that moment (one getBoundingClientRect sweep per drag).
+    if (sortable.tryStart(e.clientX, e.clientY)) {
+      const root = e.currentTarget.closest<HTMLElement>('[data-iris-kanban]')
+      dragRects.current = collectRects(root, 'data-iris-kanban-column')
+    }
     if (!sortable.isActive(cardId)) return
-    const root = e.currentTarget.closest<HTMLElement>('[data-iris-kanban]')
-    sortable.moveOver({ x: e.clientX, y: e.clientY }, collectRects(root, 'data-iris-kanban-column'))
+    sortable.moveOver({ x: e.clientX, y: e.clientY }, dragRects.current)
   }
   const onCardPointerUp = (cardId: string) => () => {
-    if (!sortable.isActive(cardId)) return
+    if (!sortable.isActive(cardId)) {
+      sortable.cancel() // clear a pending tap (idle → no re-render)
+      return
+    }
     const { activeId, overId } = sortable.end()
     if (activeId && overId && !isAtLimit(overId)) store.moveCard(activeId, overId)
   }
@@ -186,9 +198,7 @@ export function IrisKanban({ config, className, style }: IrisKanbanProps) {
                 onPointerDown={onCardPointerDown(card.id)}
                 onPointerMove={onCardPointerMove(card.id)}
                 onPointerUp={onCardPointerUp(card.id)}
-                onPointerCancel={() => {
-                  if (sortable.isActive(card.id)) sortable.cancel()
-                }}
+                onPointerCancel={() => sortable.cancel()}
               >
                 <span data-iris-kanban-card-title="" style={{ fontWeight: 500 }}>
                   {card.title}

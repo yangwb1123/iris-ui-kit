@@ -34,6 +34,22 @@ export interface SortableController {
   subscribe(cb: (s: SortableState) => void): () => void
   /** Begin dragging `id`; clears any previous `overId`. */
   start(id: string): void
+  /**
+   * Record a PENDING press at `(x, y)` without activating the drag. Pending
+   * state lives OUTSIDE the store, so a press (and a press→release tap) causes
+   * NO subscriber notification / re-render. Promote it to an active drag with
+   * {@link tryStart} once the pointer moves past a threshold.
+   */
+  press(id: string, x: number, y: number): void
+  /** True while a press is pending but not yet promoted to an active drag. */
+  isPending(): boolean
+  /**
+   * If a press is pending and the pointer has moved more than `threshold` px
+   * (default 4) from the press point on either axis, promote it to an active
+   * drag (sets `activeId`) and return `true` EXACTLY ONCE (so the binding can
+   * collect drop-target rects at that moment). Otherwise return `false`.
+   */
+  tryStart(x: number, y: number, threshold?: number): boolean
   /** Set the drop target currently under the pointer (ignored when idle). */
   over(id: string | null): void
   /**
@@ -107,10 +123,22 @@ export function createSortable(): SortableController {
     overId: null,
   })
 
+  // Pending press lives OUTSIDE the store so a press / tap never re-renders.
+  let pending: { id: string; x: number; y: number } | null = null
+
   const setOver = (id: string | null): void => {
     store.setState((prev) =>
       prev.activeId === null || prev.overId === id ? prev : { ...prev, overId: id },
     )
+  }
+
+  // Reset to idle WITHOUT notifying when already idle (avoids a redundant
+  // re-render when a tap or cancelled press resolves with no active drag).
+  const reset = (): void => {
+    pending = null
+    const { activeId, overId } = store.getState()
+    if (activeId === null && overId === null) return
+    store.setState({ activeId: null, overId: null })
   }
 
   return {
@@ -118,7 +146,25 @@ export function createSortable(): SortableController {
     subscribe: (cb) => store.subscribe(cb),
 
     start(id) {
+      pending = null
       store.setState({ activeId: id, overId: null })
+    },
+
+    press(id, x, y) {
+      pending = { id, x, y }
+    },
+
+    isPending() {
+      return pending !== null
+    },
+
+    tryStart(x, y, threshold = 4) {
+      if (!pending) return false
+      if (Math.abs(x - pending.x) < threshold && Math.abs(y - pending.y) < threshold) return false
+      const id = pending.id
+      pending = null
+      store.setState({ activeId: id, overId: null })
+      return true
     },
 
     over: setOver,
@@ -131,13 +177,11 @@ export function createSortable(): SortableController {
 
     end() {
       const { activeId, overId } = store.getState()
-      store.setState({ activeId: null, overId: null })
+      reset()
       return { activeId, overId }
     },
 
-    cancel() {
-      store.setState({ activeId: null, overId: null })
-    },
+    cancel: reset,
 
     isActive(id) {
       return store.getState().activeId === id

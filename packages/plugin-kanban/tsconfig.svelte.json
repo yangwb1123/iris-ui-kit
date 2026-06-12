@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "types": [],
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src/svelte/**/*.ts", "src/svelte/**/*.svelte"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}

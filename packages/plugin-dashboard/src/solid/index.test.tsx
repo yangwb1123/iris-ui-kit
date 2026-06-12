@@ -3,6 +3,38 @@ import { render, fireEvent } from '@solidjs/testing-library'
 import { IrisDashboard } from './index'
 import type { DashboardConfig } from '../core'
 
+// jsdom drops clientX/clientY/pointerType from synthetic PointerEvents, so we
+// dispatch a MouseEvent (which carries clientX/Y in jsdom) typed as a pointer
+// event with pointerType defined — the same shape the component reads.
+function pointer(
+  el: Element,
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  opts: { clientX: number; clientY: number; pointerType?: string; pointerId?: number },
+) {
+  const ev = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: opts.clientX,
+    clientY: opts.clientY,
+  })
+  Object.defineProperty(ev, 'pointerType', { value: opts.pointerType ?? 'touch' })
+  Object.defineProperty(ev, 'pointerId', { value: opts.pointerId ?? 1 })
+  fireEvent(el, ev)
+}
+
+const stubRect = (el: Element, left: number, top: number) =>
+  vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+    left,
+    top,
+    width: 100,
+    height: 100,
+    right: left + 100,
+    bottom: top + 100,
+    x: left,
+    y: top,
+    toJSON: () => ({}),
+  } as DOMRect)
+
 const config = (): DashboardConfig => ({
   widgets: [
     { id: 'w1', title: 'Widget 1', col: 1, row: 1, colSpan: 1, rowSpan: 1 },
@@ -50,5 +82,38 @@ describe('IrisDashboard (solid)', () => {
     fireEvent.drop(targetCell)
 
     expect(onMove).toHaveBeenCalledWith('w1', 2, 2)
+  })
+
+  it('touch: pointer-drag a widget header onto a cell calls moveWidget', () => {
+    const onMove = vi.fn()
+    const { container } = render(() => <IrisDashboard config={{ ...config(), onMove }} />)
+    const header = container.querySelector('[data-iris-dashboard-widget-header="w1"]')!
+    // Place cell "2-2" far from the others so closestCenter resolves to it.
+    container.querySelectorAll<HTMLElement>('[data-iris-dashboard-cell]').forEach((cell) => {
+      const id = cell.getAttribute('data-iris-dashboard-cell')!
+      stubRect(cell, id === '2-2' ? 500 : 0, id === '2-2' ? 500 : 0)
+    })
+
+    pointer(header, 'pointerdown', { clientX: 10, clientY: 10 })
+    pointer(header, 'pointermove', { clientX: 550, clientY: 550 })
+    pointer(header, 'pointerup', { clientX: 550, clientY: 550 })
+
+    expect(onMove).toHaveBeenCalledWith('w1', 2, 2)
+  })
+
+  it('touch: mouse pointers do NOT trigger the pointer path (native DnD owns mouse)', () => {
+    const onMove = vi.fn()
+    const { container } = render(() => <IrisDashboard config={{ ...config(), onMove }} />)
+    const header = container.querySelector('[data-iris-dashboard-widget-header="w1"]')!
+    container.querySelectorAll<HTMLElement>('[data-iris-dashboard-cell]').forEach((cell) => {
+      const id = cell.getAttribute('data-iris-dashboard-cell')!
+      stubRect(cell, id === '2-2' ? 500 : 0, id === '2-2' ? 500 : 0)
+    })
+
+    pointer(header, 'pointerdown', { clientX: 10, clientY: 10, pointerType: 'mouse' })
+    pointer(header, 'pointermove', { clientX: 550, clientY: 550, pointerType: 'mouse' })
+    pointer(header, 'pointerup', { clientX: 550, clientY: 550, pointerType: 'mouse' })
+
+    expect(onMove).not.toHaveBeenCalled()
   })
 })

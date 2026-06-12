@@ -1,7 +1,40 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createProTableStore, type ProTableColumn } from '../core'
 import { IrisProTable } from './index'
+
+// jsdom drops clientX/clientY/pointerType from synthetic PointerEvents, so we
+// dispatch a MouseEvent (which carries clientX/Y in jsdom) typed as a pointer
+// event with pointerType defined — the same shape the component reads.
+// (@testing-library/vue is not a dep here, so we dispatch on the DOM node.)
+function pointer(
+  el: Element,
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  opts: { clientX: number; clientY: number; pointerType?: string; pointerId?: number },
+) {
+  const ev = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: opts.clientX,
+    clientY: opts.clientY,
+  })
+  Object.defineProperty(ev, 'pointerType', { value: opts.pointerType ?? 'touch' })
+  Object.defineProperty(ev, 'pointerId', { value: opts.pointerId ?? 1 })
+  el.dispatchEvent(ev)
+}
+
+const stubRect = (el: Element, left: number) =>
+  vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+    left,
+    top: 0,
+    width: 80,
+    height: 32,
+    right: left + 80,
+    bottom: 32,
+    x: left,
+    y: 0,
+    toJSON: () => ({}),
+  } as DOMRect)
 
 interface User extends Record<string, unknown> {
   id: number
@@ -43,6 +76,55 @@ describe('IrisProTable (vue)', () => {
     store.reorderColumns('age', 'name')
     // After: age (0), name (1)
     expect(store.visibleColumns().map((c) => c.key)).toEqual(['age', 'name'])
+  })
+
+  it('touch: pointer-drag a header onto another header calls reorderColumns', () => {
+    const store = createProTableStore<User>({ columns, rowKey: 'id', data })
+    const wrapper = mount(IrisProTable, { props: { store, columnReorder: true } })
+    const el = wrapper.element as HTMLElement
+    const nameTh = el.querySelector('[data-iris-col-key="name"]')!
+    stubRect(el.querySelector('[data-iris-col-key="name"]')!, 0)
+    stubRect(el.querySelector('[data-iris-col-key="age"]')!, 200)
+
+    // Drag the 'name' header over the 'age' header → name moves after age.
+    pointer(nameTh, 'pointerdown', { clientX: 20, clientY: 10 })
+    pointer(nameTh, 'pointermove', { clientX: 220, clientY: 10 })
+    pointer(nameTh, 'pointerup', { clientX: 220, clientY: 10 })
+
+    expect(store.visibleColumns().map((c) => c.key)).toEqual(['age', 'name'])
+    wrapper.unmount()
+  })
+
+  it('touch: a bare header tap does NOT reorder (overId stays null)', () => {
+    const store = createProTableStore<User>({ columns, rowKey: 'id', data })
+    const wrapper = mount(IrisProTable, { props: { store, columnReorder: true } })
+    const el = wrapper.element as HTMLElement
+    const nameTh = el.querySelector('[data-iris-col-key="name"]')!
+    stubRect(nameTh, 0)
+    stubRect(el.querySelector('[data-iris-col-key="age"]')!, 200)
+
+    // down → up with no move: no reorder.
+    pointer(nameTh, 'pointerdown', { clientX: 20, clientY: 10 })
+    pointer(nameTh, 'pointerup', { clientX: 20, clientY: 10 })
+
+    expect(store.visibleColumns().map((c) => c.key)).toEqual(['name', 'age'])
+    wrapper.unmount()
+  })
+
+  it('touch: mouse pointers do NOT trigger the pointer reorder path', () => {
+    const store = createProTableStore<User>({ columns, rowKey: 'id', data })
+    const wrapper = mount(IrisProTable, { props: { store, columnReorder: true } })
+    const el = wrapper.element as HTMLElement
+    const nameTh = el.querySelector('[data-iris-col-key="name"]')!
+    stubRect(nameTh, 0)
+    stubRect(el.querySelector('[data-iris-col-key="age"]')!, 200)
+
+    pointer(nameTh, 'pointerdown', { clientX: 20, clientY: 10, pointerType: 'mouse' })
+    pointer(nameTh, 'pointermove', { clientX: 220, clientY: 10, pointerType: 'mouse' })
+    pointer(nameTh, 'pointerup', { clientX: 220, clientY: 10, pointerType: 'mouse' })
+
+    expect(store.visibleColumns().map((c) => c.key)).toEqual(['name', 'age'])
+    wrapper.unmount()
   })
 
   it('shows a filter chip when a filter is active', async () => {

@@ -8,6 +8,7 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
+import { createSortable, type SortableRect } from '@iris-ui/core'
 import {
   proTableLabel,
   type ProTableColumn,
@@ -16,6 +17,21 @@ import {
 } from '../core'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
+
+/** Collect drop-target rects (id + client rect) for every `[attr]` under `root`. */
+function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
+  if (!root) return []
+  return Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).map((el) => {
+    const r = el.getBoundingClientRect()
+    return {
+      id: el.getAttribute(attr)!,
+      left: r.left,
+      top: r.top,
+      width: r.width,
+      height: r.height,
+    }
+  })
+}
 
 function pinnedStyle(column: ProTableColumn): Record<string, string> | undefined {
   if (!column.pinned) return undefined
@@ -51,6 +67,38 @@ export const IrisProTable = defineComponent({
     let dragKey: string | null = null
     let unsub = () => {}
 
+    // Touch/pen column reorder via the shared core controller. Native HTML5 DnD
+    // (the `draggable` <th>) never fires on touch, so the pointer path drives the
+    // reorder there; it is gated on `pointerType !== 'mouse'` so the mouse flow is
+    // unchanged. A bare tap (down→up, no move) leaves overId null → no reorder,
+    // so header-tap sorting still works.
+    const sortable = createSortable()
+    const sortableState = shallowRef(sortable.getState())
+    let unsubSortable = () => {}
+
+    const onHeaderPointerDown = (key: string) => (e: PointerEvent) => {
+      if (!props.columnReorder || e.pointerType === 'mouse') return
+      try {
+        ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+      } catch {
+        /* ignore */
+      }
+      sortable.start(key)
+    }
+    const onHeaderPointerMove = (key: string) => (e: PointerEvent) => {
+      if (!sortable.isActive(key)) return
+      const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-pro-table]')
+      sortable.moveOver({ x: e.clientX, y: e.clientY }, collectRects(root, 'data-iris-col-key'))
+    }
+    const onHeaderPointerUp = (key: string) => () => {
+      if (!sortable.isActive(key)) return
+      const { activeId, overId } = sortable.end()
+      if (activeId && overId && activeId !== overId) props.store.reorderColumns(activeId, overId)
+    }
+    const onHeaderPointerCancel = (key: string) => () => {
+      if (sortable.isActive(key)) sortable.cancel()
+    }
+
     onMounted(() => {
       unsub = props.store.subscribe((s) => {
         state.value = s
@@ -60,8 +108,14 @@ export const IrisProTable = defineComponent({
           if (row && col) draft.value = String(props.store.cellValue(row, col) ?? '')
         }
       })
+      unsubSortable = sortable.subscribe(() => {
+        sortableState.value = sortable.getState()
+      })
     })
-    onUnmounted(() => unsub())
+    onUnmounted(() => {
+      unsub()
+      unsubSortable()
+    })
 
     const sortIndicator = (key: string): string => {
       const sort = state.value.sort
@@ -100,12 +154,21 @@ export const IrisProTable = defineComponent({
             {
               key: c.key,
               scope: 'col',
+              'data-iris-col-key': c.key,
               'aria-sort': ariaSort(c),
               tabindex: c.sortable ? 0 : undefined,
               style: {
                 textAlign: c.align,
                 width: c.width,
                 cursor: props.columnReorder ? 'grab' : undefined,
+                touchAction: props.columnReorder ? 'none' : undefined,
+                outline:
+                  sortableState.value.activeId &&
+                  sortableState.value.overId === c.key &&
+                  sortableState.value.activeId !== c.key
+                    ? '2px solid var(--iris-color-primary, #2563eb)'
+                    : undefined,
+                outlineOffset: '-2px',
                 ...pinnedStyle(c),
               },
               'data-sortable': c.sortable ? '' : undefined,
@@ -118,6 +181,10 @@ export const IrisProTable = defineComponent({
                     }
                   }
                 : undefined,
+              onPointerdown: onHeaderPointerDown(c.key),
+              onPointermove: onHeaderPointerMove(c.key),
+              onPointerup: onHeaderPointerUp(c.key),
+              onPointercancel: onHeaderPointerCancel(c.key),
               draggable: props.columnReorder ? true : undefined,
               onDragstart: props.columnReorder
                 ? (e: DragEvent) => {

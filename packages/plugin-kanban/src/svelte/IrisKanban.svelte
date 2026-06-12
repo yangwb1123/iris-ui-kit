@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createSortable, type SortableRect } from '@iris-ui/core'
   import { createKanban, type KanbanConfig, type KanbanColumn } from '../core'
 
   let {
@@ -20,6 +21,16 @@
 
   $effect(() => store.subscribe((s) => (kanbanState = s)))
 
+  // Touch/pen reorder via the shared core controller. Native HTML5 DnD never
+  // fires on touch, so the board would otherwise be unusable under Cordova /
+  // touch laptops. The pointer path is gated on `pointerType !== 'mouse'` so
+  // the desktop mouse flow — and its tests — are unchanged.
+  // NB: do not name this `state` — Svelte 5 reads `$state` as a rune.
+  // svelte-ignore state_referenced_locally
+  const sortable = createSortable()
+  let sortableState = $state(sortable.getState())
+  $effect(() => sortable.subscribe((s) => (sortableState = s)))
+
   // Track dragged card id in a plain variable — no reactive overhead.
   let dragCardId: string | null = null
 
@@ -34,6 +45,61 @@
   function colCount(col: KanbanColumn): string {
     return col.limit !== undefined ? `${col.cards.length}/${col.limit}` : String(col.cards.length)
   }
+
+  /** Collect drop-target rects (id + client rect) for every `[attr]` under `root`. */
+  function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
+    if (!root) return []
+    return Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).map((el) => {
+      const r = el.getBoundingClientRect()
+      return {
+        id: el.getAttribute(attr)!,
+        left: r.left,
+        top: r.top,
+        width: r.width,
+        height: r.height,
+      }
+    })
+  }
+
+  function isAtLimit(colId: string): boolean {
+    const col = store.getState().columns.find((c) => c.id === colId)
+    return col?.limit !== undefined && col.cards.length >= col.limit
+  }
+
+  function onCardPointerDown(cardId: string, e: PointerEvent) {
+    if (e.pointerType === 'mouse') return // desktop mouse → native HTML5 DnD
+    // setPointerCapture can throw (inactive pointer / jsdom) — best-effort.
+    try {
+      ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+    sortable.start(cardId)
+  }
+  function onCardPointerMove(cardId: string, e: PointerEvent) {
+    if (!sortable.isActive(cardId)) return
+    const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-kanban]')
+    sortable.moveOver({ x: e.clientX, y: e.clientY }, collectRects(root, 'data-iris-kanban-column'))
+  }
+  function onCardPointerUp(cardId: string) {
+    if (!sortable.isActive(cardId)) return
+    const { activeId, overId } = sortable.end()
+    if (activeId && overId && !isAtLimit(overId)) store.moveCard(activeId, overId)
+  }
+  function onCardPointerCancel(cardId: string) {
+    if (sortable.isActive(cardId)) sortable.cancel()
+  }
+
+  // Live drop highlight (outline) for the touch/pen pointer path.
+  function colStyle(col: KanbanColumn, limited: boolean): string {
+    const base =
+      'width:var(--iris-kanban-col-width,280px);flex-shrink:0;display:flex;flex-direction:column;gap:8px'
+    const over =
+      sortableState.activeId && sortableState.overId === col.id && !limited
+        ? ';outline:2px solid var(--iris-color-primary,#2563eb);outline-offset:2px'
+        : ''
+    return base + over
+  }
 </script>
 
 <div data-iris-kanban class={klass} style={boardStyle}>
@@ -41,7 +107,7 @@
     {@const limited = atLimit(col)}
     <div
       data-iris-kanban-column={col.id}
-      style="width:var(--iris-kanban-col-width,280px);flex-shrink:0;display:flex;flex-direction:column;gap:8px"
+      style={colStyle(col, limited)}
       ondragover={(e) => {
         e.preventDefault()
         if (e.dataTransfer) e.dataTransfer.dropEffect = limited ? 'none' : 'move'
@@ -77,7 +143,7 @@
         <div
           data-iris-kanban-card={card.id}
           draggable="true"
-          style="background:var(--iris-kanban-card-bg,#fff);border:1px solid var(--iris-color-border,#e5e7eb);border-radius:6px;padding:8px 10px;cursor:grab;display:flex;flex-direction:column;gap:4px"
+          style="background:var(--iris-kanban-card-bg,#fff);border:1px solid var(--iris-color-border,#e5e7eb);border-radius:6px;padding:8px 10px;cursor:grab;display:flex;flex-direction:column;gap:4px;touch-action:none"
           ondragstart={(e) => {
             dragCardId = card.id
             if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
@@ -85,6 +151,10 @@
           ondragend={() => {
             dragCardId = null
           }}
+          onpointerdown={(e) => onCardPointerDown(card.id, e)}
+          onpointermove={(e) => onCardPointerMove(card.id, e)}
+          onpointerup={() => onCardPointerUp(card.id)}
+          onpointercancel={() => onCardPointerCancel(card.id)}
         >
           <span data-iris-kanban-card-title style="font-weight:500">{card.title}</span>
           {#if card.description}

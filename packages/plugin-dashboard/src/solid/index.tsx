@@ -1,4 +1,5 @@
 import { createSignal, onCleanup, For, type JSX } from 'solid-js'
+import { createSortable, type SortableRect } from '@iris-ui/core'
 import { createDashboard, type DashboardConfig, type DashboardWidget } from '../core'
 
 export type { DashboardWidget, DashboardConfig, DashboardState, DashboardStore } from '../core'
@@ -7,6 +8,21 @@ export interface IrisDashboardProps {
   config: DashboardConfig
   class?: string
   style?: JSX.CSSProperties
+}
+
+/** Collect drop-target rects (id + client rect) for every `[attr]` under `root`. */
+function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
+  if (!root) return []
+  return Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).map((el) => {
+    const r = el.getBoundingClientRect()
+    return {
+      id: el.getAttribute(attr)!,
+      left: r.left,
+      top: r.top,
+      width: r.width,
+      height: r.height,
+    }
+  })
 }
 
 /**
@@ -21,8 +37,44 @@ export function IrisDashboard(props: IrisDashboardProps) {
   const [dashboardState, setDashboardState] = createSignal(store.getState())
   onCleanup(store.subscribe(setDashboardState))
 
+  // Touch/pen reorder via the shared core controller (cell id is `${col}-${row}`).
+  const sortable = createSortable()
+  const [sortableState, setSortableState] = createSignal(sortable.getState())
+  onCleanup(sortable.subscribe(setSortableState))
+
   // Track dragged widget id in a plain variable — no reactive overhead.
   let dragWidgetId: string | null = null
+
+  const commitMove = (widgetId: string, cellId: string): void => {
+    const [c, r] = cellId.split('-').map(Number)
+    if (Number.isFinite(c) && Number.isFinite(r)) store.moveWidget(widgetId, c!, r!)
+  }
+
+  const onHeaderPointerDown = (widgetId: string, e: PointerEvent): void => {
+    if (e.pointerType === 'mouse') return // desktop mouse → native HTML5 DnD
+    try {
+      ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+    sortable.start(widgetId)
+  }
+  const onHeaderPointerMove = (widgetId: string, e: PointerEvent): void => {
+    if (!sortable.isActive(widgetId)) return
+    const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-dashboard]')
+    sortable.moveOver(
+      { x: e.clientX, y: e.clientY },
+      collectRects(root, 'data-iris-dashboard-cell'),
+    )
+  }
+  const onHeaderPointerUp = (widgetId: string): void => {
+    if (!sortable.isActive(widgetId)) return
+    const { activeId, overId } = sortable.end()
+    if (activeId && overId) commitMove(activeId, overId)
+  }
+  const onHeaderPointerCancel = (widgetId: string): void => {
+    if (sortable.isActive(widgetId)) sortable.cancel()
+  }
 
   const rows = () => Math.ceil(dashboardState().widgets.length / dashboardState().columns) + 1
 
@@ -58,6 +110,12 @@ export function IrisDashboard(props: IrisDashboardProps) {
               'grid-column': `${c} / span 1`,
               'grid-row': `${r} / span 1`,
               'pointer-events': 'all',
+              // Live drop highlight for the touch/pen pointer path.
+              outline:
+                sortableState().activeId && sortableState().overId === `${c}-${r}`
+                  ? '2px dashed var(--iris-color-primary, #2563eb)'
+                  : undefined,
+              'outline-offset': '-2px',
             }}
             onDragOver={(e) => {
               e.preventDefault()
@@ -105,6 +163,8 @@ export function IrisDashboard(props: IrisDashboardProps) {
                 'border-bottom': '1px solid var(--iris-color-border, #e5e7eb)',
                 'font-weight': '600',
                 'user-select': 'none',
+                // Let the pointer path own touch gestures on the drag handle.
+                'touch-action': 'none',
               }}
               onDragStart={(e) => {
                 dragWidgetId = widget.id
@@ -113,6 +173,10 @@ export function IrisDashboard(props: IrisDashboardProps) {
               onDragEnd={() => {
                 dragWidgetId = null
               }}
+              onPointerDown={(e) => onHeaderPointerDown(widget.id, e)}
+              onPointerMove={(e) => onHeaderPointerMove(widget.id, e)}
+              onPointerUp={() => onHeaderPointerUp(widget.id)}
+              onPointerCancel={() => onHeaderPointerCancel(widget.id)}
             >
               <span
                 data-iris-dashboard-drag-handle=""

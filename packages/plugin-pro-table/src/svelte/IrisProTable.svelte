@@ -1,7 +1,23 @@
 <script lang="ts">
+  import { createSortable, type SortableRect } from '@iris-ui/core'
   import { proTableLabel, type ProTableLabels, type ProTableState, type ProTableStore } from '../core'
 
   type Row = Record<string, unknown>
+
+  /** Collect drop-target rects (id + client rect) for every `[attr]` under `root`. */
+  function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
+    if (!root) return []
+    return Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).map((el) => {
+      const r = el.getBoundingClientRect()
+      return {
+        id: el.getAttribute(attr)!,
+        left: r.left,
+        top: r.top,
+        width: r.width,
+        height: r.height,
+      }
+    })
+  }
 
   let {
     store,
@@ -44,6 +60,43 @@
     })
     return unsub
   })
+
+  // Touch/pen column reorder via the shared core controller. Native HTML5 DnD
+  // (the `draggable` <th>) never fires on touch, so the pointer path drives the
+  // reorder there; it is gated on `pointerType !== 'mouse'` so the mouse flow is
+  // unchanged. A bare tap (down→up, no move) leaves overId null → no reorder,
+  // so header-tap sorting still works. NB: never name a variable `state`.
+  const sortable = createSortable()
+  let sortableState = $state(sortable.getState())
+  $effect(() => {
+    const unsub = sortable.subscribe(() => {
+      sortableState = sortable.getState()
+    })
+    return unsub
+  })
+
+  function onHeaderPointerDown(key: string, e: PointerEvent): void {
+    if (!columnReorder || e.pointerType === 'mouse') return
+    try {
+      ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+    sortable.start(key)
+  }
+  function onHeaderPointerMove(key: string, e: PointerEvent): void {
+    if (!sortable.isActive(key)) return
+    const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-pro-table]')
+    sortable.moveOver({ x: e.clientX, y: e.clientY }, collectRects(root, 'data-iris-col-key'))
+  }
+  function onHeaderPointerUp(key: string): void {
+    if (!sortable.isActive(key)) return
+    const { activeId, overId } = sortable.end()
+    if (activeId && overId && activeId !== overId) store.reorderColumns(activeId, overId)
+  }
+  function onHeaderPointerCancel(key: string): void {
+    if (sortable.isActive(key)) sortable.cancel()
+  }
 
   const columns = $derived(store.visibleColumns())
 
@@ -91,9 +144,16 @@
         {#each columns as c (c.key)}
           <th
             scope="col"
+            data-iris-col-key={c.key}
             aria-sort={ariaSort(c)}
             tabindex={c.sortable ? 0 : undefined}
-            style={`text-align:${c.align ?? 'left'};${columnReorder ? 'cursor:grab;' : ''}${pinnedStyle(c)}`}
+            style={`text-align:${c.align ?? 'left'};${columnReorder ? 'cursor:grab;touch-action:none;' : ''}${
+              sortableState.activeId &&
+              sortableState.overId === c.key &&
+              sortableState.activeId !== c.key
+                ? 'outline:2px solid var(--iris-color-primary, #2563eb);outline-offset:-2px;'
+                : ''
+            }${pinnedStyle(c)}`}
             data-sortable={c.sortable ? '' : undefined}
             onclick={c.sortable ? () => store.toggleSort(c.key) : undefined}
             onkeydown={(e) => {
@@ -102,6 +162,10 @@
                 store.toggleSort(c.key)
               }
             }}
+            onpointerdown={(e) => onHeaderPointerDown(c.key, e)}
+            onpointermove={(e) => onHeaderPointerMove(c.key, e)}
+            onpointerup={() => onHeaderPointerUp(c.key)}
+            onpointercancel={() => onHeaderPointerCancel(c.key)}
             draggable={columnReorder ? true : undefined}
             ondragstart={columnReorder ? (e) => {
               dragKey = c.key

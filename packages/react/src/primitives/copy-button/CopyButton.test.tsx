@@ -43,6 +43,17 @@ describe('@iris-ui/react IrisCopyButton', () => {
     expect(btn(container).getAttribute('data-copied')).toBe('true')
   })
 
+  it('still surfaces the copied state + onCopy when the host handler throws', () => {
+    setClipboardHandler(() => {
+      throw new Error('native clipboard failed')
+    })
+    const onCopy = vi.fn()
+    const { container } = render(<IrisCopyButton text="hello" onCopy={onCopy} />)
+    expect(() => fireEvent.click(btn(container))).not.toThrow()
+    expect(onCopy).toHaveBeenCalledWith('hello')
+    expect(btn(container).getAttribute('data-copied')).toBe('true')
+  })
+
   it('falls through to navigator.clipboard when the handler declines', () => {
     const writeText = vi.fn()
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })

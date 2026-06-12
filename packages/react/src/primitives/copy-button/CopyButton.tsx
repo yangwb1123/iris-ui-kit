@@ -50,14 +50,15 @@ export function IrisCopyButton({
 
   const copy = () => {
     if (disabled) return
-    // A host clipboard handler (setClipboardHandler) wins — needed where
-    // navigator.clipboard is unavailable (Cordova file://, custom protocols).
-    if (!copyText(text)) {
-      try {
-        void navigator.clipboard?.writeText?.(text)
-      } catch {
-        /* clipboard unavailable — still surface the copied state */
+    try {
+      // A host clipboard handler (setClipboardHandler) wins — needed where
+      // navigator.clipboard is unavailable (Cordova file://, custom protocols).
+      if (!copyText(text)) {
+        // writeText returns a Promise; swallow async rejection (permission denied).
+        void navigator.clipboard?.writeText?.(text)?.catch(() => {})
       }
+    } catch {
+      /* host handler / clipboard unavailable — still surface the copied state */
     }
     setCopied(true)
     onCopy?.(text)

@@ -1261,7 +1261,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               >
                 {op != null && value != null
                   ? col.renderSummary
-                    ? col.renderSummary(value, sortedData)
+                    ? col.renderSummary(value, bodyData)
                     : String(value)
                   : null}
               </div>

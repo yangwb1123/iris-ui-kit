@@ -79,6 +79,12 @@ export {
   type FileSaveHandler,
 } from './file-save'
 export {
+  setClipboardHandler,
+  getClipboardHandler,
+  copyText,
+  type ClipboardHandler,
+} from './clipboard'
+export {
   compareValues,
   cycleSort,
   filterSort,

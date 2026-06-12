@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
+import { setClipboardHandler } from '@iris-ui/core'
 import { IrisCopyButton } from './CopyButton'
 
 afterEach(() => {
   cleanup()
   vi.useRealTimers()
+  setClipboardHandler(null)
 })
 
 const btn = (c: HTMLElement) => c.querySelector('[data-iris-copy-button]') as HTMLElement
@@ -25,6 +27,29 @@ describe('@iris-ui/react IrisCopyButton', () => {
     expect(onCopy).toHaveBeenCalledWith('hello')
     expect(btn(container).getAttribute('data-copied')).toBe('true')
     expect(btn(container).textContent).toBe('Copied')
+  })
+
+  it('routes the copy through a host clipboard handler, skipping navigator.clipboard', () => {
+    const writeText = vi.fn()
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const handler = vi.fn()
+    setClipboardHandler(handler)
+    const onCopy = vi.fn()
+    const { container } = render(<IrisCopyButton text="hello" onCopy={onCopy} />)
+    fireEvent.click(btn(container))
+    expect(handler).toHaveBeenCalledWith('hello')
+    expect(writeText).not.toHaveBeenCalled()
+    expect(onCopy).toHaveBeenCalledWith('hello')
+    expect(btn(container).getAttribute('data-copied')).toBe('true')
+  })
+
+  it('falls through to navigator.clipboard when the handler declines', () => {
+    const writeText = vi.fn()
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    setClipboardHandler(() => false)
+    const { container } = render(<IrisCopyButton text="x" />)
+    fireEvent.click(btn(container))
+    expect(writeText).toHaveBeenCalledWith('x')
   })
 
   it('reverts after the timeout', () => {

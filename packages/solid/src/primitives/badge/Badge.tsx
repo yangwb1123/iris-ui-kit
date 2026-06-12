@@ -12,7 +12,12 @@ const TONE_TO_VAR: Record<IrisBadgeTone, string> = {
   neutral: '--iris-muted',
 }
 
-function badgeStyle(
+/**
+ * Internal style resolver. Exported for unit tests (NOT in the package barrel)
+ * so the source-order cascade — static subtle fallback BEFORE the color-mix
+ * shorthand — can be asserted without CSSOM folding collapsing the longhand.
+ */
+export function badgeStyle(
   variant: IrisBadgeVariant,
   tone: IrisBadgeTone,
   size: IrisBadgeSize,
@@ -41,6 +46,8 @@ function badgeStyle(
     return { ...base, background: 'transparent', color: v, border: `1px solid ${v}` }
   return {
     ...base,
+    // Precomputed fallback first; color-mix shorthand overrides on modern engines.
+    'background-color': `var(${TONE_TO_VAR[tone]}-subtle)`,
     background: `color-mix(in srgb, ${v} 12%, transparent)`,
     color: v,
     border: '1px solid transparent',

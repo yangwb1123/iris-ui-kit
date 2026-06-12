@@ -16,6 +16,14 @@ const SKELETON_CSS = `
   border-radius: var(--iris-radius-sm, 4px);
 }
 [data-iris-skeleton][data-iris-skeleton-animated="true"] {
+  /* Fallback shimmer (no color-mix) for engines without it; the color-mix
+     gradient below overrides it on modern engines (same source-order cascade). */
+  background-image: linear-gradient(
+    90deg,
+    var(--iris-surface) 0%,
+    var(--iris-muted-subtle) 50%,
+    var(--iris-surface) 100%
+  );
   background-image: linear-gradient(
     90deg,
     var(--iris-surface) 0%,

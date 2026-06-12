@@ -58,9 +58,16 @@ export const IrisBanner = defineComponent({
       gap: 'var(--iris-gap-md, 12px)',
       padding: '8px var(--iris-padding-md, 16px)',
       width: '100%',
+      // Tonal surface: `backgroundColor` is the precomputed fallback (used on
+      // engines without color-mix); the `background` shorthand (later in source
+      // order) overrides it with the exact color-mix on modern engines.
+      backgroundColor: `var(${TONE_TO_VAR[props.tone]}-subtle)`,
       background: `color-mix(in srgb, ${tonalVar.value} 14%, var(--iris-background))`,
       color: 'var(--iris-foreground)',
-      borderBottom: `1px solid color-mix(in srgb, ${tonalVar.value} 50%, transparent)`,
+      // Border: shorthand carries width/style + a solid fallback color; the
+      // `borderBottomColor` longhand (later) refines it to the color-mix.
+      borderBottom: `1px solid ${tonalVar.value}`,
+      borderBottomColor: `color-mix(in srgb, ${tonalVar.value} 50%, transparent)`,
       ...(props.sticky ? { position: 'sticky' as const, top: '0', zIndex: '40' } : {}),
     }))
 

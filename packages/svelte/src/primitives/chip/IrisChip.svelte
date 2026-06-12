@@ -30,7 +30,8 @@
       case 'outline':
         return `${base} background:transparent; color:${v}; border:1px solid ${v};`
       case 'subtle':
-        return `${base} background:color-mix(in srgb,${v} 14%,transparent); color:${v}; border:1px solid transparent;`
+        // Precomputed fallback first; color-mix shorthand overrides on modern engines.
+        return `${base} background-color:var(${TONE_TO_VAR[tone]}-subtle); background:color-mix(in srgb,${v} 14%,transparent); color:${v}; border:1px solid transparent;`
     }
   }
 

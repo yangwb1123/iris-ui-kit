@@ -69,9 +69,16 @@ export function IrisBanner(props: IrisBannerProps): JSX.Element {
           gap: 'var(--iris-gap-md, 12px)',
           padding: '8px var(--iris-padding-md, 16px)',
           width: '100%',
+          // Tonal surface: `background-color` is the precomputed fallback (used on
+          // engines without color-mix); the `background` shorthand (later in source
+          // order) overrides it with the exact color-mix on modern engines.
+          'background-color': `var(${TONE_TO_VAR[local.tone]}-subtle)`,
           background: `color-mix(in srgb, ${tonalVar()} 14%, var(--iris-background, #fff))`,
           color: 'var(--iris-foreground)',
-          'border-bottom': `1px solid color-mix(in srgb, ${tonalVar()} 50%, transparent)`,
+          // Border: shorthand carries width/style + a solid fallback color; the
+          // `border-bottom-color` longhand (later) refines it to the color-mix.
+          'border-bottom': `1px solid ${tonalVar()}`,
+          'border-bottom-color': `color-mix(in srgb, ${tonalVar()} 50%, transparent)`,
           ...(local.sticky ? { position: 'sticky' as const, top: '0', 'z-index': '40' } : {}),
           ...((local.style as JSX.CSSProperties) ?? {}),
         }}

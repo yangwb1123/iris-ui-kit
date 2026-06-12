@@ -52,6 +52,8 @@ function chipStyle(
     default:
       return {
         ...base,
+        // Precomputed fallback first; color-mix shorthand overrides on modern engines.
+        'background-color': `var(${TONE_TO_VAR[tone]}-subtle)`,
         background: `color-mix(in srgb, ${v} 14%, transparent)`,
         color: v,
         border: '1px solid transparent',

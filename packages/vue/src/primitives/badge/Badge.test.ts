@@ -1,8 +1,27 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createSSRApp, h } from 'vue'
+import { renderToString } from '@vue/server-renderer'
 import { IrisBadge } from './Badge'
 
 describe('IrisBadge', () => {
+  it('emits a precomputed subtle fallback before the color-mix background', async () => {
+    // SSR serializes the style object verbatim (no CSSOM folding), so we can see
+    // BOTH declarations: the static `background-color` fallback (for engines
+    // without color-mix) and the `background` color-mix that overrides it.
+    const html = await renderToString(
+      createSSRApp({
+        render: () => h(IrisBadge, { variant: 'subtle', tone: 'danger' }, { default: () => 'x' }),
+      }),
+    )
+    expect(html).toContain('background-color:var(--iris-danger-subtle)')
+    expect(html).toContain('background:color-mix(')
+    // Fallback must precede the override in source order (cascade correctness).
+    expect(html.indexOf('background-color:var(--iris-danger-subtle)')).toBeLessThan(
+      html.indexOf('background:color-mix('),
+    )
+  })
+
   it('renders a span with the slot content', () => {
     const w = mount(IrisBadge, { slots: { default: '3' } })
     expect(w.element.tagName).toBe('SPAN')

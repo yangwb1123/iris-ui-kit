@@ -69,6 +69,9 @@ export const IrisAlert = defineComponent({
       padding: 'var(--iris-padding-md, 12px)',
       borderRadius: 'var(--iris-radius-md, 6px)',
       border: `1px solid ${tonalVar.value}`,
+      // `backgroundColor` is the precomputed fallback under color-mix (engines
+      // without it); the `background` shorthand overrides with the exact mix.
+      backgroundColor: `var(${TONE_TO_VAR[props.tone]}-subtle)`,
       background: `color-mix(in srgb, ${tonalVar.value} 10%, var(--iris-background))`,
       color: 'var(--iris-foreground)',
       alignItems: 'flex-start',

@@ -45,6 +45,9 @@
       padding: 'var(--iris-padding-md, 12px)',
       'border-radius': 'var(--iris-radius-md, 6px)',
       border: `1px solid ${tonalVar}`,
+      // `background-color` is the precomputed fallback under color-mix (engines
+      // without it); the `background` shorthand overrides with the exact mix.
+      'background-color': `var(${TONE_TO_VAR[tone as AlertTone]}-subtle)`,
       background: `color-mix(in srgb, ${tonalVar} 10%, var(--iris-background))`,
       color: 'var(--iris-foreground)',
       'align-items': 'flex-start',

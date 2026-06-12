@@ -532,3 +532,63 @@ describe('IrisTable grid keyboard navigation', () => {
     expect(document.activeElement).toBe(cellAt(0, 1)) // 2 columns → last is col 1
   })
 })
+
+describe('IrisTable virtual scroll', () => {
+  interface VRow extends Record<string, unknown> {
+    id: number
+    name: string
+    children?: VRow[]
+  }
+  const vcols: IrisTableColumn<VRow>[] = [{ key: 'name', title: 'Name' }]
+  const rowEls = (): Element[] => Array.from(document.querySelectorAll('[data-iris-table-row=""]'))
+
+  it('renders the body inside a virtual scroller that windows the rows', () => {
+    const many: VRow[] = Array.from({ length: 50 }, (_, i) => ({ id: i + 1, name: `N${i}` }))
+    render(() => (
+      <IrisTable columns={vcols} data={many} virtualScroll={{ itemHeight: 36, height: 200 }} />
+    ))
+    expect(document.querySelector('[data-iris-virtual-scroll]')).not.toBeNull()
+    const count = rowEls().length
+    expect(count).toBeGreaterThan(0)
+    expect(count).toBeLessThan(50)
+  })
+
+  it('virtualizes tree mode (uniform-height rows) with tree decoration intact', () => {
+    const tree: VRow[] = [
+      {
+        id: 1,
+        name: 'Root',
+        children: Array.from({ length: 40 }, (_, i) => ({ id: 100 + i, name: `C${i}` })),
+      },
+    ]
+    render(() => (
+      <IrisTable
+        columns={vcols}
+        data={tree}
+        getSubRows={(r) => r.children}
+        defaultExpandedRowKeys={[1]}
+        virtualScroll={{ itemHeight: 36, height: 200 }}
+      />
+    ))
+    // Tree mode now uses the virtual scroller (was previously excluded).
+    expect(document.querySelector('[data-iris-virtual-scroll]')).not.toBeNull()
+    // Tree meta still flows into the virtualized rows (the parent toggle renders).
+    expect(document.querySelector('[data-iris-table-tree-toggle]')).not.toBeNull()
+    // Windowed: far fewer than the 41 total rows are in the DOM.
+    expect(rowEls().length).toBeLessThan(41)
+  })
+
+  it('does NOT virtualize tree mode when renderDetail is set (variable-height rows)', () => {
+    const tree: VRow[] = [{ id: 1, name: 'Root', children: [{ id: 2, name: 'C' }] }]
+    render(() => (
+      <IrisTable
+        columns={vcols}
+        data={tree}
+        getSubRows={(r) => r.children}
+        renderDetail={(r) => <div>d{(r as VRow).id}</div>}
+        virtualScroll={{ itemHeight: 36, height: 200 }}
+      />
+    ))
+    expect(document.querySelector('[data-iris-virtual-scroll]')).toBeNull()
+  })
+})

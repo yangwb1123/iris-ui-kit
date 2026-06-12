@@ -174,8 +174,9 @@ export const IrisTable = defineComponent({
      * cell gains a depth indent + an expand/collapse toggle (when it has
      * children), and the expand state reuses `defaultExpandedRowKeys` /
      * `expandedRowsChange`. Column sort reorders siblings hierarchically (each
-     * level sorted, structure kept). Tree mode renders the non-virtualized body
-     * and is mutually exclusive with `renderDetail`.
+     * level sorted, structure kept), and tree rows virtualize like flat rows
+     * when `virtualScroll` is set (unless `renderDetail` is also used, since
+     * detail panels are variable-height).
      */
     getSubRows: {
       type: Function as PropType<
@@ -1303,11 +1304,17 @@ export const IrisTable = defineComponent({
           { role: 'row', 'data-iris-table-row': 'empty', style: stateRowStyle },
           slots.empty ? slots.empty() : t('table.empty'),
         )
-      } else if (props.virtualScroll && !treeMode.value) {
+      } else if (props.virtualScroll && (!treeMode.value || !hasDetail.value)) {
+        // Virtualize flat mode, and tree mode too — tree rows are uniform
+        // height, so the only thing that bars it is variable-height detail
+        // panels, hence the `!hasDetail` guard. `bodyData` is the flattened
+        // visible rows (= `sortedRows` in flat mode); `flatTree?.[index]`
+        // supplies each row's tree meta (depth + toggle), with `index` the
+        // absolute row index from the scroller.
         bodyNode = h(
           IrisVirtualScroll,
           {
-            items: sortedRows.value,
+            items: bodyData.value,
             itemHeight: props.virtualScroll.itemHeight,
             height: props.virtualScroll.height,
             buffer: props.virtualScroll.buffer,
@@ -1316,7 +1323,7 @@ export const IrisTable = defineComponent({
           },
           {
             item: ({ item, index }: { item: Record<string, unknown>; index: number }) =>
-              renderRow(item, index),
+              renderRow(item, index, undefined, flatTree.value?.[index]),
           },
         )
       } else {

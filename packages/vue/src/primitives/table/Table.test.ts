@@ -1067,6 +1067,50 @@ describe('IrisTable tree rows', () => {
     await nextTick()
     expect(visibleNames(wrapper)).toEqual(['Root A', 'Root B', 'Child B1', 'Child B2'])
   })
+
+  it('virtualizes tree mode (uniform-height rows) with tree decoration intact', async () => {
+    const tree: TreeRowData[] = [
+      {
+        id: 1,
+        name: 'Root',
+        children: Array.from({ length: 40 }, (_, i) => ({ id: 100 + i, name: `C${i}` })),
+      },
+    ]
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: treeCols,
+        data: tree,
+        rowKey: 'id',
+        getSubRows,
+        defaultExpandedRowKeys: [1],
+        virtualScroll: { itemHeight: 36, height: 200 },
+      },
+      attachTo: host,
+    })
+    await nextTick()
+    // Tree mode now uses the virtual scroller (was previously excluded).
+    expect(wrapper.find('[data-iris-virtual-scroll]').exists()).toBe(true)
+    // Tree meta still flows into the virtualized rows (the parent toggle renders).
+    expect(wrapper.find('[data-iris-table-tree-toggle]').exists()).toBe(true)
+    // Windowed: far fewer than the 41 total rows are in the DOM.
+    expect(wrapper.findAll('[data-iris-table-row]').length).toBeLessThan(41)
+  })
+
+  it('does NOT virtualize tree mode when renderDetail is set (variable-height rows)', () => {
+    const tree: TreeRowData[] = [{ id: 1, name: 'Root', children: [{ id: 2, name: 'C' }] }]
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: treeCols,
+        data: tree,
+        rowKey: 'id',
+        getSubRows,
+        renderDetail: (row: Record<string, unknown>) => h('div', `d${(row as TreeRowData).id}`),
+        virtualScroll: { itemHeight: 36, height: 200 },
+      },
+      attachTo: host,
+    })
+    expect(wrapper.find('[data-iris-virtual-scroll]').exists()).toBe(false)
+  })
 })
 
 describe('IrisTable multi-level (grouped) headers', () => {

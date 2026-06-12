@@ -15,6 +15,7 @@
   } from '@iris-ui/core'
   import { toStore } from '../../useStore'
   import { useI18n } from '../../i18n'
+  import IrisVirtualScroll from '../virtual-scroll/IrisVirtualScroll.svelte'
   import type {
     IrisTableColumn,
     IrisTableSortState,
@@ -54,8 +55,9 @@
      * cell gains a depth indent + an expand/collapse toggle (when it has
      * children), and the expand state reuses
      * `defaultExpandedRowKeys`/`onExpandedRowsChange`. Column sort reorders
-     * siblings hierarchically (each level sorted, structure kept). Mutually
-     * exclusive with `renderDetail`.
+     * siblings hierarchically (each level sorted, structure kept), and tree rows
+     * virtualize like flat rows when `virtualScroll` is set (unless
+     * `renderDetail` is also used, since detail panels are variable-height).
      */
     getSubRows?: (row: Record<string, unknown>) => Array<Record<string, unknown>> | undefined
     /**
@@ -90,6 +92,7 @@
     bordered = true,
     loading = false,
     error = false,
+    virtualScroll,
     renderDetail,
     rowExpandable,
     defaultExpandedRowKeys,
@@ -448,6 +451,14 @@
     if (keyboardNavigation) handleGridKey(e)
     if (cellRange) handleCellRangeKey(e)
   }
+
+  // Virtualize flat mode, and tree mode too — tree rows are uniform height, so
+  // the only blocker is variable-height detail panels: virtualize unless BOTH
+  // tree mode and detail panels are on. `!(treeMode && hasDetail)` is De
+  // Morgan-equivalent to React's `!treeMode || !hasDetail` (same truth table
+  // across all four flat/tree × detail combinations). When `virtualScroll` is
+  // unset this is false, so the non-virtual body path renders unchanged.
+  const useVirtual = $derived(virtualScroll != null && !(treeMode && hasDetail))
 </script>
 
 <div
@@ -565,120 +576,32 @@
     <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>{t('table.loading')}</div>
   {:else if bodyData.length === 0}
     <div role="row" data-iris-table-row="empty" style={stateRowStyle}>{t('table.empty')}</div>
+  {:else if useVirtual}
+    <!-- Virtualize flat mode, and tree mode too — tree rows are uniform height,
+         so the only thing that bars it is variable-height detail panels, hence
+         the `!hasDetail` guard. `bodyData` is the flattened visible rows (=
+         `sortedRows()` in flat mode); `flatTree?.[index]` supplies each row's
+         tree meta (depth + toggle), with `index` the absolute row index from
+         the scroller. -->
+    <IrisVirtualScroll
+      data-iris-table-body=""
+      items={bodyData}
+      itemHeight={virtualScroll!.itemHeight}
+      height={virtualScroll!.height}
+      buffer={virtualScroll!.buffer}
+      keyOf={(row, index) => rowId(row as Record<string, unknown>, index)}
+    >
+      {#snippet item({ item: row, index })}
+        {@render bodyRow(row as Record<string, unknown>, index, flatTree ? flatTree[index] : null, true)}
+      {/snippet}
+    </IrisVirtualScroll>
   {:else}
     <div role="rowgroup" data-iris-table-body>
       {#each bodyData as row, index}
         {@const id = rowId(row, index)}
-        {@const selected = isSelected(id)}
-        {@const treeMeta = flatTree ? flatTree[index] : null}
-        <div
-          role="row"
-          data-iris-table-row
-          data-state={selected ? 'selected' : undefined}
-          onclick={() => onRowClick?.(row, index)}
-          style="display: grid; grid-template-columns: {gridTemplate()}; background: {selected ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))' : striped && index % 2 === 1 ? 'var(--iris-surface)' : 'transparent'}; transition: background-color 120ms ease; cursor: default"
-        >
-          {#if hasDetail}
-            <div
-              role="cell"
-              data-iris-table-cell="__expand"
-              style="display: flex; align-items: center; justify-content: center; padding: 8px; border-bottom: 1px solid var(--iris-border)"
-            >
-              {#if isRowExpandable(row, index)}
-                <button
-                  type="button"
-                  data-iris-table-expand-toggle=""
-                  aria-expanded={$expandedKeys.includes(String(id))}
-                  aria-label={t($expandedKeys.includes(String(id)) ? 'treeSelect.collapse' : 'treeSelect.expand')}
-                  onclick={(e) => { e.stopPropagation(); expansion.toggle(String(id)) }}
-                  style="border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--iris-foreground); transform: {$expandedKeys.includes(String(id)) ? 'rotate(90deg)' : 'none'}; transition: transform 150ms"
-                >▶</button>
-              {/if}
-            </div>
-          {/if}
-          {#if showSelection}
-            <div
-              role="cell"
-              style="display: flex; align-items: center; justify-content: center; padding: 8px; border-bottom: 1px solid var(--iris-border)"
-            >
-              <input
-                type="checkbox"
-                checked={selected}
-                onchange={() => toggleRow(id)}
-                onclick={(e) => e.stopPropagation()}
-                aria-label={t('table.selectRow', { key: id })}
-              />
-            </div>
-          {/if}
-          {#each leafColumns as col, ci}
-            {@const isEditing = editingCellId === cellId(id, col.key)}
-            <div
-              role="cell"
-              data-iris-table-cell={col.key}
-              data-editable={col.editable ? '' : undefined}
-              data-editing={isEditing ? '' : undefined}
-              data-grid-row={keyboardNavigation ? index : undefined}
-              data-grid-col={keyboardNavigation ? ci : undefined}
-              data-iris-cell-row={cellRange ? index : undefined}
-              data-iris-cell-col={cellRange ? ci : undefined}
-              data-iris-cell-selected={cellRange && isInRange(index, ci) ? 'true' : undefined}
-              tabindex={keyboardNavigation ? cellTabIndex(index, ci) : undefined}
-              onfocus={keyboardNavigation ? () => (focusedCell = { row: index, col: ci }) : undefined}
-              onclick={cellRange ? (e: MouseEvent) => { if (e.shiftKey) { cellRangeCtrl.extendRange(index, ci) } else { cellRangeCtrl.startRange(index, ci) } } : undefined}
-              ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}
-              style="display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: {isEditing ? '4px' : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable ? 'cell' : 'default'}{cellRange && isInRange(index, ci) ? '; background: var(--iris-surface-selected, rgba(99,102,241,0.12))' : ''}"
-            >
-              {#if treeMeta && ci === 0}
-                <span
-                  data-iris-table-tree-indent=""
-                  style="display: inline-flex; align-items: center; flex: none; padding-left: {treeMeta.depth * 16}px"
-                >
-                  {#if treeMeta.hasChildren}
-                    <button
-                      type="button"
-                      data-iris-table-tree-toggle=""
-                      aria-expanded={treeMeta.expanded}
-                      aria-label={t(treeMeta.expanded ? 'treeSelect.collapse' : 'treeSelect.expand')}
-                      onclick={(e) => { e.stopPropagation(); expansion.toggle(treeMeta.key) }}
-                      style="border: none; background: transparent; cursor: pointer; padding: 0; margin-right: 4px; font: inherit; color: var(--iris-foreground); transform: {treeMeta.expanded ? 'rotate(90deg)' : 'none'}; transition: transform 150ms"
-                    >▶</button>
-                  {:else}
-                    <span style="display: inline-block; width: 16px" aria-hidden="true"></span>
-                  {/if}
-                </span>
-              {/if}
-              {#if isEditing}
-                <input
-                  type={col.editor === 'number' ? 'number' : 'text'}
-                  value={editingDraft}
-                  data-iris-table-editor
-                  aria-invalid={editError ? 'true' : undefined}
-                  aria-describedby={editError ? `${cellId(id, col.key)}-error` : undefined}
-                  oninput={(e) => { editingDraft = (e.target as HTMLInputElement).value }}
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter') { e.preventDefault(); commitEdit(row, col, index) }
-                    else if (e.key === 'Escape') { e.preventDefault(); cancelEdit() }
-                  }}
-                  onblur={() => commitEdit(row, col, index)}
-                  onclick={(e) => e.stopPropagation()}
-                  style="width: 100%; border: 1px solid {editError ? 'var(--iris-danger)' : 'var(--iris-primary)'}; border-radius: var(--iris-radius-sm, 4px); padding: 4px 6px; font: inherit; background: var(--iris-background); color: var(--iris-foreground); outline: none"
-                />
-                {#if editError}
-                  <div
-                    id={`${cellId(id, col.key)}-error`}
-                    role="alert"
-                    data-iris-table-editor-error
-                    style="margin-top: 2px; font-size: 12px; color: var(--iris-danger)"
-                  >{editError}</div>
-                {/if}
-              {:else}
-                {String(getCellValue(row, col) ?? '')}
-              {/if}
-            </div>
-          {/each}
-        </div>
+        {@render bodyRow(row, index, flatTree ? flatTree[index] : null, false)}
         <!-- Full-width detail panel beneath an expanded, expandable row (spans
-             all grid tracks). Not emitted in any virtual path (none here). -->
+             all grid tracks). Only in the non-virtualized path. -->
         {#if hasDetail && isRowExpandable(row, index) && $expandedKeys.includes(String(id))}
           <div
             role="row"
@@ -695,6 +618,122 @@
       {/each}
     </div>
   {/if}
+
+  <!-- One body row. Shared by the non-virtual `{#each}` and the virtual
+       scroller's `item` snippet so the markup is identical either way. The
+       virtual path passes `fillHeight` so the row fills its absolutely-sized
+       window slot; `treeMeta` carries the per-row depth/toggle (flatTree[index]
+       at the row's absolute index). -->
+  {#snippet bodyRow(row: Record<string, unknown>, index: number, treeMeta: TreeRow<Record<string, unknown>> | null, fillHeight: boolean)}
+    {@const id = rowId(row, index)}
+    {@const selected = isSelected(id)}
+    <div
+      role="row"
+      data-iris-table-row
+      data-state={selected ? 'selected' : undefined}
+      onclick={() => onRowClick?.(row, index)}
+      style="display: grid; grid-template-columns: {gridTemplate()};{fillHeight ? ' height: 100%;' : ''} background: {selected ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))' : striped && index % 2 === 1 ? 'var(--iris-surface)' : 'transparent'}; transition: background-color 120ms ease; cursor: default"
+    >
+      {#if hasDetail}
+        <div
+          role="cell"
+          data-iris-table-cell="__expand"
+          style="display: flex; align-items: center; justify-content: center; padding: 8px; border-bottom: 1px solid var(--iris-border)"
+        >
+          {#if isRowExpandable(row, index)}
+            <button
+              type="button"
+              data-iris-table-expand-toggle=""
+              aria-expanded={$expandedKeys.includes(String(id))}
+              aria-label={t($expandedKeys.includes(String(id)) ? 'treeSelect.collapse' : 'treeSelect.expand')}
+              onclick={(e) => { e.stopPropagation(); expansion.toggle(String(id)) }}
+              style="border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--iris-foreground); transform: {$expandedKeys.includes(String(id)) ? 'rotate(90deg)' : 'none'}; transition: transform 150ms"
+            >▶</button>
+          {/if}
+        </div>
+      {/if}
+      {#if showSelection}
+        <div
+          role="cell"
+          style="display: flex; align-items: center; justify-content: center; padding: 8px; border-bottom: 1px solid var(--iris-border)"
+        >
+          <input
+            type="checkbox"
+            checked={selected}
+            onchange={() => toggleRow(id)}
+            onclick={(e) => e.stopPropagation()}
+            aria-label={t('table.selectRow', { key: id })}
+          />
+        </div>
+      {/if}
+      {#each leafColumns as col, ci}
+        {@const isEditing = editingCellId === cellId(id, col.key)}
+        <div
+          role="cell"
+          data-iris-table-cell={col.key}
+          data-editable={col.editable ? '' : undefined}
+          data-editing={isEditing ? '' : undefined}
+          data-grid-row={keyboardNavigation ? index : undefined}
+          data-grid-col={keyboardNavigation ? ci : undefined}
+          data-iris-cell-row={cellRange ? index : undefined}
+          data-iris-cell-col={cellRange ? ci : undefined}
+          data-iris-cell-selected={cellRange && isInRange(index, ci) ? 'true' : undefined}
+          tabindex={keyboardNavigation ? cellTabIndex(index, ci) : undefined}
+          onfocus={keyboardNavigation ? () => (focusedCell = { row: index, col: ci }) : undefined}
+          onclick={cellRange ? (e: MouseEvent) => { if (e.shiftKey) { cellRangeCtrl.extendRange(index, ci) } else { cellRangeCtrl.startRange(index, ci) } } : undefined}
+          ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}
+          style="display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: {isEditing ? '4px' : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable ? 'cell' : 'default'}{cellRange && isInRange(index, ci) ? '; background: var(--iris-surface-selected, rgba(99,102,241,0.12))' : ''}"
+        >
+          {#if treeMeta && ci === 0}
+            <span
+              data-iris-table-tree-indent=""
+              style="display: inline-flex; align-items: center; flex: none; padding-left: {treeMeta.depth * 16}px"
+            >
+              {#if treeMeta.hasChildren}
+                <button
+                  type="button"
+                  data-iris-table-tree-toggle=""
+                  aria-expanded={treeMeta.expanded}
+                  aria-label={t(treeMeta.expanded ? 'treeSelect.collapse' : 'treeSelect.expand')}
+                  onclick={(e) => { e.stopPropagation(); expansion.toggle(treeMeta.key) }}
+                  style="border: none; background: transparent; cursor: pointer; padding: 0; margin-right: 4px; font: inherit; color: var(--iris-foreground); transform: {treeMeta.expanded ? 'rotate(90deg)' : 'none'}; transition: transform 150ms"
+                >▶</button>
+              {:else}
+                <span style="display: inline-block; width: 16px" aria-hidden="true"></span>
+              {/if}
+            </span>
+          {/if}
+          {#if isEditing}
+            <input
+              type={col.editor === 'number' ? 'number' : 'text'}
+              value={editingDraft}
+              data-iris-table-editor
+              aria-invalid={editError ? 'true' : undefined}
+              aria-describedby={editError ? `${cellId(id, col.key)}-error` : undefined}
+              oninput={(e) => { editingDraft = (e.target as HTMLInputElement).value }}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); commitEdit(row, col, index) }
+                else if (e.key === 'Escape') { e.preventDefault(); cancelEdit() }
+              }}
+              onblur={() => commitEdit(row, col, index)}
+              onclick={(e) => e.stopPropagation()}
+              style="width: 100%; border: 1px solid {editError ? 'var(--iris-danger)' : 'var(--iris-primary)'}; border-radius: var(--iris-radius-sm, 4px); padding: 4px 6px; font: inherit; background: var(--iris-background); color: var(--iris-foreground); outline: none"
+            />
+            {#if editError}
+              <div
+                id={`${cellId(id, col.key)}-error`}
+                role="alert"
+                data-iris-table-editor-error
+                style="margin-top: 2px; font-size: 12px; color: var(--iris-danger)"
+              >{editError}</div>
+            {/if}
+          {:else}
+            {String(getCellValue(row, col) ?? '')}
+          {/if}
+        </div>
+      {/each}
+    </div>
+  {/snippet}
 
   <!-- Summary / footer row: each column with a `summary` op aggregates over the
        full sorted dataset (the core `aggregate` material). -->

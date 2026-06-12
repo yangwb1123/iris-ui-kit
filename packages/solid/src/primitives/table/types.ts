@@ -10,6 +10,15 @@ export type IrisTableEditor = 'text' | 'number'
 /** Aggregation op for a column's summary/footer cell. */
 export type IrisTableAggregateOp = 'sum' | 'avg' | 'min' | 'max' | 'count'
 
+export interface IrisTableVirtualOptions {
+  /** Per-row height in px (uniform). */
+  itemHeight: number
+  /** Viewport height. Number → px; string → CSS length. */
+  height: number | string
+  /** Extra rows rendered above and below the viewport. */
+  buffer?: number
+}
+
 export interface IrisTableColumn<Row = Record<string, unknown>> {
   key: string
   title: string

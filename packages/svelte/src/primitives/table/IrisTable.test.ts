@@ -383,6 +383,55 @@ describe('IrisTable tree rows', () => {
   })
 })
 
+describe('IrisTable virtual tree rows', () => {
+  // Tree rows are uniform height, so they virtualize like flat rows when
+  // `virtualScroll` is set — UNLESS `renderDetail` is also on (detail panels
+  // are variable-height, which the virtual scroller can't window).
+  const treeCols = [{ key: 'name', title: 'Name' }]
+  const getSubRows = (r: Record<string, unknown>) =>
+    r.children as Array<Record<string, unknown>> | undefined
+
+  it('virtualizes an expanded tree (uniform-height rows) with the tree toggle intact + windows', () => {
+    // One root expanded with ~40 children → 41 total flattened rows.
+    const tree = [
+      {
+        id: 1,
+        name: 'Root',
+        children: Array.from({ length: 40 }, (_, i) => ({ id: 100 + i, name: `C${i}` })),
+      },
+    ]
+    const { container } = render(IrisTable, {
+      props: {
+        columns: treeCols,
+        data: tree,
+        getSubRows,
+        defaultExpandedRowKeys: [1],
+        virtualScroll: { itemHeight: 36, height: 200 },
+      },
+    })
+    // Tree mode now uses the virtual scroller (was previously excluded).
+    expect(container.querySelector('[data-iris-virtual-scroll]')).not.toBeNull()
+    // Tree meta still flows into the virtualized rows (the parent toggle renders).
+    expect(container.querySelector('[data-iris-table-tree-toggle]')).not.toBeNull()
+    // Windowed: far fewer than the 41 total rows are in the DOM.
+    expect(container.querySelectorAll('[data-iris-table-row]').length).toBeLessThan(41)
+  })
+
+  it('does NOT virtualize tree mode when renderDetail is set (variable-height rows)', () => {
+    const tree = [{ id: 1, name: 'Root', children: [{ id: 2, name: 'C' }] }]
+    const { container } = render(IrisTable, {
+      props: {
+        columns: treeCols,
+        data: tree,
+        getSubRows,
+        renderDetail: (r: Record<string, unknown>) => `d-${r.id}`,
+        virtualScroll: { itemHeight: 36, height: 200 },
+      },
+    })
+    expect(container.querySelector('[data-iris-virtual-scroll]')).toBeNull()
+  })
+})
+
 describe('IrisTable grid keyboard navigation', () => {
   // Fixture: 2 columns (name, age) × 3 rows from the shared `columns`/`data`.
   function cellAt(container: HTMLElement, r: number, c: number): HTMLElement | null {

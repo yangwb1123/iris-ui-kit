@@ -46,6 +46,12 @@ export function renderLlmsText(manifest: IrisManifest): string {
         const names = component.props.map((p) => `${p.name}${p.optional ? '?' : ''}`).join(', ')
         lines.push(`  props: ${names}`)
       }
+      if (component?.events && component.events.length > 0) {
+        lines.push(`  events: ${component.events.join(', ')}`)
+      }
+      if (component?.slots && component.slots.length > 0) {
+        lines.push(`  slots: ${component.slots.join(', ')}`)
+      }
     }
   }
   lines.push('')

@@ -87,7 +87,53 @@ describe('discover (real repo)', () => {
     const proTable = m.components.find((c) => c.name === 'IrisProTable')
     expect(proTable?.plugin).toBe('@iris-ui/plugin-pro-table')
     // llms.txt surfaces the activation hint for plugin components.
-    expect(renderLlmsText(m)).toContain('via @iris-ui/plugin-editor')
+    const llms = renderLlmsText(m)
+    expect(llms).toContain('via @iris-ui/plugin-editor')
+    // All four sub-path imports are present.
+    expect(editor?.importFrom.vue).toBe('@iris-ui/plugin-editor/vue')
+    expect(editor?.importFrom.solid).toBe('@iris-ui/plugin-editor/solid')
+    expect(editor?.importFrom.svelte).toBe('@iris-ui/plugin-editor/svelte')
+  })
+
+  it('discovers IrisFormBuilder and all other plugin components across every plugin package', () => {
+    const m = buildManifest(discover())
+    const pluginComponents = m.components.filter((c) => c.group === 'plugin')
+    // All 9 plugin components (admin, charts×3, editor, form-builder, notifications,
+    // pro-table, query-builder) should be discoverable.
+    expect(pluginComponents.length).toBeGreaterThanOrEqual(9)
+
+    // IrisFormBuilder — recently extended with async validation + debounce.
+    const formBuilder = m.components.find((c) => c.name === 'IrisFormBuilder')
+    expect(formBuilder?.group).toBe('plugin')
+    expect(formBuilder?.plugin).toBe('@iris-ui/plugin-form-builder')
+    expect(formBuilder?.importFrom.react).toBe('@iris-ui/plugin-form-builder/react')
+    expect(formBuilder?.importFrom.vue).toBe('@iris-ui/plugin-form-builder/vue')
+    expect(formBuilder?.importFrom.solid).toBe('@iris-ui/plugin-form-builder/solid')
+    expect(formBuilder?.importFrom.svelte).toBe('@iris-ui/plugin-form-builder/svelte')
+    expect(formBuilder?.frameworks.slice().sort()).toEqual(['react', 'solid', 'svelte', 'vue'])
+
+    // Charts package exports three components under one plugin.
+    const charts = pluginComponents.filter((c) => c.plugin === '@iris-ui/plugin-charts')
+    expect(charts.map((c) => c.name).sort()).toEqual([
+      'IrisBarChart',
+      'IrisLineChart',
+      'IrisSparkline',
+    ])
+
+    // Every plugin component carries an activation hint in llms.txt.
+    const llms = renderLlmsText(m)
+    for (const c of pluginComponents) {
+      expect(llms).toContain(`via ${c.plugin}`)
+    }
+  })
+
+  it('renders events and slots in llms.txt for components that have them', () => {
+    const m = buildManifest(discover())
+    const llms = renderLlmsText(m)
+    // At least one component has events/slots rendered.
+    // IrisButton has onClick; Dialog-family has slots.
+    expect(llms).toMatch(/events:/)
+    expect(llms).toMatch(/slots:/)
   })
 
   it('extracts typed props from component interfaces (name/type/optional/JSDoc)', () => {

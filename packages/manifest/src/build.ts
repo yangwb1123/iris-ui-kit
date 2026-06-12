@@ -51,6 +51,8 @@ export function buildManifest(raw: RawDiscovery): IrisManifest {
         importFrom,
         plugin: c.plugin,
         props: c.props,
+        ...(c.events && c.events.length > 0 ? { events: c.events } : {}),
+        ...(c.slots && c.slots.length > 0 ? { slots: c.slots } : {}),
       }
     })
     .sort((a, b) => a.name.localeCompare(b.name))

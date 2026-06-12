@@ -232,15 +232,13 @@ export function classifyProps(props: ManifestProp[]): {
   return { events, slots }
 }
 
-export function extractComponentProps(repoRoot: string): Map<string, ManifestProp[]> {
-  const result = new Map<string, ManifestProp[]>()
-  const srcRoot = join(repoRoot, 'packages', 'react', 'src')
-  if (!existsSync(srcRoot)) return result
-
-  // Type aliases come from both the React adapter and the framework-agnostic
-  // core (where shared unions like `Variant`/`Size`/`Placement` live).
-  const aliases = extractTypeAliases([srcRoot, join(repoRoot, 'packages', 'core', 'src')])
-
+/** Scan a single source root and add discovered props into `result`. */
+function scanSrcRoot(
+  srcRoot: string,
+  result: Map<string, ManifestProp[]>,
+  aliases: Map<string, string>,
+): void {
+  if (!existsSync(srcRoot)) return
   for (const file of walkTs(srcRoot)) {
     const text = readFileSync(file, 'utf8')
     for (const match of text.matchAll(PROPS_INTERFACE_RE)) {
@@ -260,5 +258,37 @@ export function extractComponentProps(repoRoot: string): Map<string, ManifestPro
       result.set(name, props)
     }
   }
+}
+
+export function extractComponentProps(repoRoot: string): Map<string, ManifestProp[]> {
+  const result = new Map<string, ManifestProp[]>()
+  const srcRoot = join(repoRoot, 'packages', 'react', 'src')
+  if (!existsSync(srcRoot)) return result
+
+  // Type aliases come from the React adapter, framework-agnostic core, and each
+  // plugin's React sub-entry (so plugin prop types resolve correctly).
+  const pluginsDir = join(repoRoot, 'packages')
+  const pluginReactRoots: string[] = existsSync(pluginsDir)
+    ? readdirSync(pluginsDir, { withFileTypes: true })
+        .filter((e) => e.isDirectory() && e.name.startsWith('plugin-'))
+        .map((e) => join(pluginsDir, e.name, 'src', 'react'))
+        .filter(existsSync)
+    : []
+
+  const aliases = extractTypeAliases([
+    srcRoot,
+    join(repoRoot, 'packages', 'core', 'src'),
+    ...pluginReactRoots,
+  ])
+
+  // Core React adapter — primary source for all core component props.
+  scanSrcRoot(srcRoot, result, aliases)
+
+  // Plugin packages — each plugin's React sub-entry carries its own Props
+  // interfaces (e.g. `IrisCodeEditorProps`, `IrisFormBuilderProps`).
+  for (const pluginRoot of pluginReactRoots) {
+    scanSrcRoot(pluginRoot, result, aliases)
+  }
+
   return result
 }

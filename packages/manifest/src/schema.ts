@@ -50,6 +50,17 @@ export interface RawComponent {
   plugin?: string
   /** Props extracted from the component's `Iris<Name>Props` interface (React source). */
   props?: ManifestProp[]
+  /**
+   * Event-handler prop names (`on[A-Z]` pattern) classified from `props`.
+   * Populated by the discovery pass when props are available.
+   */
+  events?: string[]
+  /**
+   * Renderable content prop names (`'default'` for `children`, prop name for
+   * named render-slots) classified from `props`.
+   * Populated by the discovery pass when props are available.
+   */
+  slots?: string[]
 }
 
 export interface RawTokens {

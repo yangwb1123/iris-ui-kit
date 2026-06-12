@@ -226,4 +226,11 @@ describe('@iris-ui/react IrisDrawer', () => {
     const panel = dialog()!
     expect(panel.style.paddingBottom).toContain('env(safe-area-inset-bottom')
   })
+
+  it('side panel clamps to the dynamic viewport (maxHeight 100dvh over 100vh)', () => {
+    render(harness({ defaultOpen: true, side: 'left' }))
+    const panel = dialog()!
+    expect(panel.style.height).toBe('100vh')
+    expect(panel.style.maxHeight).toBe('100dvh')
+  })
 })

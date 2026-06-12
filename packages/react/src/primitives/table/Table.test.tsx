@@ -788,6 +788,21 @@ describe('@iris-ui/react IrisTable tree rows', () => {
     expect(document.querySelector('[data-iris-table-tree-indent]')).toBeNull()
   })
 
+  it('exposes aria-level on tree rows for screen-reader depth', () => {
+    render(
+      <IrisTable
+        columns={treeCols}
+        data={treeData}
+        getSubRows={(r) => r.children}
+        defaultExpandedRowKeys={[1]}
+      />,
+    )
+    const levelOf = (rowId: number) =>
+      document.querySelector(`[data-iris-table-row="${rowId}"]`)?.getAttribute('aria-level')
+    expect(levelOf(1)).toBe('1') // root
+    expect(levelOf(11)).toBe('2') // child
+  })
+
   it('column sort reorders tree siblings hierarchically (roots and children)', () => {
     const data: TreeRowData[] = [
       {

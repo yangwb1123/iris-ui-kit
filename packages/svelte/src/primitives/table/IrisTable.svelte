@@ -3,6 +3,7 @@
     aggregate,
     buildHeaderMatrix,
     compareValues,
+    computeVirtualRange,
     createCellRange,
     createSelectionModel,
     createExpansion,
@@ -36,6 +37,13 @@
     loading?: boolean
     error?: boolean
     virtualScroll?: IrisTableVirtualOptions
+    /**
+     * Render only the horizontally-visible columns (plus pinned + a small
+     * overscan) for very wide tables. Needs numeric column widths; the table
+     * becomes a horizontal scroll container. Off-screen grid tracks stay sized,
+     * so alignment, resize, and pinned columns keep working.
+     */
+    columnVirtualization?: boolean
     resizableColumns?: boolean
     columnWidths?: IrisTableColumnWidths
     /**
@@ -93,6 +101,7 @@
     loading = false,
     error = false,
     virtualScroll,
+    columnVirtualization = false,
     renderDetail,
     rowExpandable,
     defaultExpandedRowKeys,
@@ -452,6 +461,64 @@
     if (cellRange) handleCellRangeKey(e)
   }
 
+  // -------- Column virtualization (opt-in) --------
+  // Render only the horizontally-visible columns (+ pinned + a small overscan)
+  // for very wide tables. The root becomes a horizontal scroll container; we
+  // track its scrollLeft + measured clientWidth and feed them to the core
+  // `computeVirtualRange` to get the visible window. Off-screen tracks stay
+  // sized (the grid template is unchanged), so alignment/resize keep working.
+  let scrollLeft = $state(0)
+  let viewportWidth = $state(0)
+
+  // Measure the root's width on mount + on resize (when columnVirtualization is
+  // on). Guard ResizeObserver — jsdom and old runtimes lack it; a single mount
+  // measurement still seeds the window.
+  $effect(() => {
+    if (!columnVirtualization || !rootEl) return
+    const el = rootEl
+    const measure = (): void => {
+      viewportWidth = el.clientWidth
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  })
+
+  function handleRootScroll(e: Event): void {
+    scrollLeft = (e.currentTarget as HTMLElement).scrollLeft
+  }
+
+  // Set of leaf-column indices to render: the visible window (+ overscan),
+  // always unioned with pinned columns. `null` ⇒ render every column (off).
+  const visibleColSet = $derived<Set<number> | null>(
+    (() => {
+      if (!columnVirtualization) return null
+      const cols = leafColumns
+      const w = computeVirtualRange({
+        itemCount: cols.length,
+        scrollTop: scrollLeft,
+        viewportSize: viewportWidth,
+        itemSize: (i) => internalWidths[cols[i].key] ?? resolveInitialWidth(cols[i]),
+        buffer: 2,
+      })
+      const set = new Set<number>()
+      for (let i = w.startIndex; i <= w.endIndex; i += 1) set.add(i)
+      cols.forEach((col, i) => {
+        if (col.pinned) set.add(i)
+      })
+      return set
+    })(),
+  )
+
+  // 1-based grid track for a leaf-column index (after the optional detail +
+  // selection tracks), so a rendered cell lands in the right place even when
+  // earlier cells are skipped.
+  function colTrack(i: number): number {
+    return (hasDetail ? 1 : 0) + (showSelection ? 2 : 1) + i
+  }
+
   // Virtualize flat mode, and tree mode too — tree rows are uniform height, so
   // the only blocker is variable-height detail panels: virtualize unless BOTH
   // tree mode and detail panels are on. `!(treeMode && hasDetail)` is De
@@ -466,8 +533,10 @@
   bind:this={rootEl}
   role={keyboardNavigation ? (treeMode ? 'treegrid' : 'grid') : 'table'}
   data-iris-table
+  data-column-virtualized={columnVirtualization ? 'true' : undefined}
   onkeydown={(keyboardNavigation || cellRange) ? handleRootKeyDown : undefined}
-  style="background: var(--iris-background); color: var(--iris-foreground); border: {bordered ? '1px solid var(--iris-border)' : 'none'}; border-radius: var(--iris-radius-md, 6px); overflow: hidden;{style ? ' ' + style : ''}"
+  onscroll={columnVirtualization ? handleRootScroll : undefined}
+  style="background: var(--iris-background); color: var(--iris-foreground); border: {bordered ? '1px solid var(--iris-border)' : 'none'}; border-radius: var(--iris-radius-md, 6px); overflow: {columnVirtualization ? 'auto' : 'hidden'};{style ? ' ' + style : ''}"
 >
   <!-- Header row -->
   {#if grouped && headerMatrix}
@@ -549,13 +618,15 @@
           {/if}
         </div>
       {/if}
-      {#each columns as col}
+      {#each columns as col, ci}
+        {#if !visibleColSet || visibleColSet.has(ci)}
         <div
           role="columnheader"
           data-iris-table-header={col.key}
+          data-iris-table-pinned={col.pinned}
           onclick={() => handleHeaderClick(col)}
           aria-sort={effectiveSort?.key === col.key ? effectiveSort.direction === 'asc' ? 'ascending' : 'descending' : col.sortable ? 'none' : undefined}
-          style="position: relative; display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: 8px var(--iris-padding-md, 12px); cursor: {col.sortable ? 'pointer' : 'default'}; user-select: {col.sortable ? 'none' : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: 13px; color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+          style="position: relative; display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'};{visibleColSet ? ` grid-column-start: ${colTrack(ci)};` : ''} padding: 8px var(--iris-padding-md, 12px); cursor: {col.sortable ? 'pointer' : 'default'}; user-select: {col.sortable ? 'none' : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: 13px; color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
         >
           {col.title}
           {#if col.sortable}
@@ -565,6 +636,7 @@
             </span>
           {/if}
         </div>
+        {/if}
       {/each}
     </div>
   {/if}
@@ -670,10 +742,12 @@
         </div>
       {/if}
       {#each leafColumns as col, ci}
+        {#if !visibleColSet || visibleColSet.has(ci)}
         {@const isEditing = editingCellId === cellId(id, col.key)}
         <div
           role="cell"
           data-iris-table-cell={col.key}
+          data-iris-table-pinned={col.pinned}
           data-editable={col.editable ? '' : undefined}
           data-editing={isEditing ? '' : undefined}
           data-grid-row={keyboardNavigation ? index : undefined}
@@ -685,7 +759,7 @@
           onfocus={keyboardNavigation ? () => (focusedCell = { row: index, col: ci }) : undefined}
           onclick={cellRange ? (e: MouseEvent) => { if (e.shiftKey) { cellRangeCtrl.extendRange(index, ci) } else { cellRangeCtrl.startRange(index, ci) } } : undefined}
           ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}
-          style="display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: {isEditing ? '4px' : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable ? 'cell' : 'default'}{cellRange && isInRange(index, ci) ? '; background: var(--iris-surface-selected, rgba(99,102,241,0.12))' : ''}"
+          style="display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'};{visibleColSet ? ` grid-column-start: ${colTrack(ci)};` : ''} padding: {isEditing ? '4px' : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable ? 'cell' : 'default'}{cellRange && isInRange(index, ci) ? '; background: var(--iris-surface-selected, rgba(99,102,241,0.12))' : ''}"
         >
           {#if treeMeta && ci === 0}
             <span
@@ -734,6 +808,7 @@
             {String(getCellValue(row, col) ?? '')}
           {/if}
         </div>
+        {/if}
       {/each}
     </div>
   {/snippet}
@@ -749,17 +824,19 @@
       {#if showSelection}
         <div role="cell" data-iris-table-cell="__selection" style={summaryCellStyle({ key: '__selection' } as IrisTableColumn)}></div>
       {/if}
-      {#each leafColumns as col}
+      {#each leafColumns as col, ci}
+        {#if !visibleColSet || visibleColSet.has(ci)}
         {@const op = col.summary}
         {@const value = op ? aggregate(bodyData, (r) => getCellValue(r, col), op) : null}
         <div
           role="cell"
           data-iris-table-cell={col.key}
           data-iris-table-summary-cell={op ? '' : undefined}
-          style={summaryCellStyle(col)}
+          style="{summaryCellStyle(col)}{visibleColSet ? `; grid-column-start: ${colTrack(ci)}` : ''}"
         >
           {#if op != null && value != null}{col.renderSummary ? col.renderSummary(value, bodyData) : String(value)}{/if}
         </div>
+        {/if}
       {/each}
     </div>
   {/if}

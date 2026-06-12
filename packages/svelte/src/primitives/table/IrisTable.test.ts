@@ -590,6 +590,55 @@ describe('IrisTable multi-level (grouped) headers', () => {
   })
 })
 
+describe('IrisTable column virtualization', () => {
+  // 8 fixed-width columns; with jsdom's clientWidth of 0 the visible window is a
+  // small slice (start + overscan), so only a few of the 8 render when enabled.
+  const wideCols = Array.from({ length: 8 }, (_, i) => ({
+    key: `c${i}`,
+    title: `C${i}`,
+    width: 120,
+  }))
+  const wideRows = [Object.fromEntries([['id', 1], ...wideCols.map((c) => [c.key, `${c.key}-v`])])]
+
+  it('renders every column when disabled (default)', () => {
+    const { container } = render(IrisTable, { props: { columns: wideCols, data: wideRows } })
+    expect(container.querySelectorAll('[data-iris-table-header]').length).toBe(8)
+    // No virtualization marker / horizontal scroll attribute on the root.
+    expect(container.querySelector('[data-iris-table][data-column-virtualized]')).toBeNull()
+  })
+
+  it('renders only a window of columns when enabled, marks the root, and tracks cells', () => {
+    const { container } = render(IrisTable, {
+      props: { columns: wideCols, data: wideRows, columnVirtualization: true },
+    })
+    const headerCount = container.querySelectorAll('[data-iris-table-header]').length
+    expect(headerCount).toBeGreaterThan(0)
+    expect(headerCount).toBeLessThan(8) // windowed — fewer than all 8
+    expect(
+      container.querySelector('[data-iris-table][data-column-virtualized="true"]'),
+    ).not.toBeNull()
+    // Body cells are windowed too (fewer than the 8 leaf columns).
+    const bodyCells = container.querySelectorAll('[data-iris-table-body] [data-iris-table-cell]')
+    expect(bodyCells.length).toBeGreaterThan(0)
+    expect(bodyCells.length).toBeLessThan(8)
+    // Rendered header cells carry an explicit grid track so they land correctly.
+    const first = container.querySelector('[data-iris-table-header]') as HTMLElement
+    expect(first.style.gridColumnStart).toBeTruthy()
+  })
+
+  it('always renders pinned columns even when out of the window', () => {
+    const cols = wideCols.map((c, i) => (i === 7 ? { ...c, pinned: 'right' as const } : c))
+    const { container } = render(IrisTable, {
+      props: { columns: cols, data: wideRows, columnVirtualization: true },
+    })
+    // The far pinned column (index 7) renders despite being outside the window.
+    expect(container.querySelector('[data-iris-table-header="c7"]')).not.toBeNull()
+    expect(
+      container.querySelector('[data-iris-table-body] [data-iris-table-cell="c7"]'),
+    ).not.toBeNull()
+  })
+})
+
 describe('IrisTable controlled selection', () => {
   const bodyRows = (container: HTMLElement) =>
     container.querySelectorAll('[data-iris-table-body] [data-iris-table-row]')

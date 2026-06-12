@@ -5,6 +5,7 @@ import {
   For,
   mergeProps,
   onCleanup,
+  onMount,
   Show,
   type JSX,
 } from 'solid-js'
@@ -12,6 +13,7 @@ import {
   aggregate,
   buildHeaderMatrix,
   compareValues,
+  computeVirtualRange,
   createCellRange,
   createExpansion,
   createSelectionModel,
@@ -85,6 +87,13 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   cellRange?: boolean
   /** Enable virtual scrolling for the body (renders only the visible window). */
   virtualScroll?: IrisTableVirtualOptions
+  /**
+   * Render only the horizontally-visible columns (plus pinned + a small
+   * overscan) for very wide tables. Needs numeric column widths; the table
+   * becomes a horizontal scroll container. Off-screen grid tracks stay sized,
+   * so alignment, resize, and pinned columns keep working.
+   */
+  columnVirtualization?: boolean
   style?: JSX.CSSProperties
 }
 
@@ -126,6 +135,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       error: false,
       keyboardNavigation: false,
       cellRange: false,
+      columnVirtualization: false,
     },
     props,
   )
@@ -432,6 +442,54 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     return parts.join(' ')
   })
 
+  // ---- Column virtualization (opt-in via `columnVirtualization`) ----
+  // Render only the horizontally-visible columns (+ pinned + overscan) for very
+  // wide tables. The root becomes a horizontal scroll container; off-screen grid
+  // tracks stay sized via `gridTemplateColumns`, and each rendered cell is placed
+  // on its 1-based grid track (`colTrack`) so it lands correctly even when
+  // earlier cells are skipped. Off by default → `visibleColSet()` is null and
+  // every column renders unchanged.
+  const [scrollLeft, setScrollLeft] = createSignal(0)
+  const [viewportWidth, setViewportWidth] = createSignal(0)
+
+  // 1-based grid track for a column index, after the optional detail + selection
+  // tracks, so a windowed cell lands in the right place.
+  const colTrack = (i: number): number =>
+    (hasDetail() ? 1 : 0) + (merged.selectable !== 'none' ? 2 : 1) + i
+
+  onMount(() => {
+    if (!merged.columnVirtualization || !rootRef) return
+    const el = rootRef
+    const measure = (): void => {
+      setViewportWidth(el.clientWidth)
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    onCleanup(() => ro.disconnect())
+  })
+
+  // Set of column indices to render: the visible window + overscan, always
+  // unioned with pinned columns. `null` ⇒ render every column (feature off).
+  const visibleColSet = createMemo<Set<number> | null>(() => {
+    if (!merged.columnVirtualization) return null
+    const cols = leafColumns()
+    const w = computeVirtualRange({
+      itemCount: cols.length,
+      scrollTop: scrollLeft(),
+      viewportSize: viewportWidth(),
+      itemSize: (i) => resolveInitialWidth(cols[i] as IrisTableColumn<Record<string, unknown>>),
+      buffer: 2,
+    })
+    const set = new Set<number>()
+    for (let i = w.startIndex; i <= w.endIndex; i += 1) set.add(i)
+    cols.forEach((col, i) => {
+      if (col.pinned) set.add(i)
+    })
+    return set
+  })
+
   const sortIndicator = (col: IrisTableColumn<Row>): JSX.Element => {
     if (!col.sortable) return <></>
     const state = effectiveSort()
@@ -566,167 +624,177 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
               const fc = focusedCell()
               return fc ? fc.row === index && fc.col === colIndex : index === 0 && colIndex === 0
             }
+            // Column virtualization: skip cells outside the visible window (+
+            // pinned). When windowing, place the rendered cell on its grid track.
+            const inWindow = (): boolean => {
+              const set = visibleColSet()
+              return !set || set.has(colIndex)
+            }
             return (
-              <div
-                role="cell"
-                data-iris-table-cell={col.key}
-                data-editable={col.editable ? '' : undefined}
-                data-editing={isEditing() ? '' : undefined}
-                data-grid-row={merged.keyboardNavigation ? index : undefined}
-                data-grid-col={merged.keyboardNavigation ? colIndex : undefined}
-                data-iris-cell-row={merged.cellRange ? index : undefined}
-                data-iris-cell-col={merged.cellRange ? colIndex : undefined}
-                data-iris-cell-selected={
-                  merged.cellRange && isInRange(index, colIndex) ? 'true' : undefined
-                }
-                tabindex={merged.keyboardNavigation ? (isFocused() ? 0 : -1) : undefined}
-                onFocus={
-                  merged.keyboardNavigation
-                    ? () => setFocusedCell({ row: index, col: colIndex })
-                    : undefined
-                }
-                onClick={
-                  merged.cellRange
-                    ? (e: MouseEvent) => {
-                        if (e.shiftKey) {
-                          cellRangeCtrl.extendRange(index, colIndex)
-                        } else {
-                          cellRangeCtrl.startRange(index, colIndex)
-                        }
-                      }
-                    : undefined
-                }
-                onDblClick={col.editable ? () => beginEdit(row, col, id) : undefined}
-                style={{
-                  display: 'flex',
-                  'align-items': 'center',
-                  'justify-content':
-                    col.align === 'right'
-                      ? 'flex-end'
-                      : col.align === 'center'
-                        ? 'center'
-                        : 'flex-start',
-                  padding: isEditing() ? '4px' : '8px var(--iris-padding-md)',
-                  'border-bottom': '1px solid var(--iris-border)',
-                  'font-size': '14px',
-                  'white-space': 'nowrap',
-                  overflow: 'hidden',
-                  'text-overflow': 'ellipsis',
-                  cursor: col.editable ? 'cell' : 'default',
-                  background:
-                    merged.cellRange && isInRange(index, colIndex)
-                      ? 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
-                      : undefined,
-                }}
-              >
-                <Show when={treeMeta && isFirstCol}>
-                  <span
-                    data-iris-table-tree-indent=""
-                    style={{
-                      display: 'inline-flex',
-                      'align-items': 'center',
-                      flex: 'none',
-                      'padding-left': `${treeMeta!.depth * 16}px`,
-                    }}
-                  >
-                    <Show
-                      when={treeMeta!.hasChildren}
-                      fallback={
-                        <span
-                          aria-hidden="true"
-                          style={{ display: 'inline-block', width: '16px' }}
-                        />
-                      }
-                    >
-                      <button
-                        type="button"
-                        data-iris-table-tree-toggle=""
-                        aria-expanded={expandedKeys().includes(treeMeta!.key)}
-                        aria-label={t(
-                          expandedKeys().includes(treeMeta!.key)
-                            ? 'treeSelect.collapse'
-                            : 'treeSelect.expand',
-                        )}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          expansion.toggle(treeMeta!.key)
-                        }}
-                        style={{
-                          border: 'none',
-                          background: 'transparent',
-                          cursor: 'pointer',
-                          padding: '0',
-                          'margin-right': '4px',
-                          font: 'inherit',
-                          color: 'var(--iris-foreground)',
-                          transform: expandedKeys().includes(treeMeta!.key)
-                            ? 'rotate(90deg)'
-                            : 'none',
-                          transition: 'transform 150ms',
-                        }}
-                      >
-                        ▶
-                      </button>
-                    </Show>
-                  </span>
-                </Show>
-                <Show
-                  when={isEditing()}
-                  fallback={
-                    <Show when={col.renderCell} fallback={String(getCellValue(row, col) ?? '')}>
-                      {col.renderCell!(row, index)}
-                    </Show>
+              <Show when={inWindow()}>
+                <div
+                  role="cell"
+                  data-iris-table-cell={col.key}
+                  data-iris-table-pinned={col.pinned}
+                  data-editable={col.editable ? '' : undefined}
+                  data-editing={isEditing() ? '' : undefined}
+                  data-grid-row={merged.keyboardNavigation ? index : undefined}
+                  data-grid-col={merged.keyboardNavigation ? colIndex : undefined}
+                  data-iris-cell-row={merged.cellRange ? index : undefined}
+                  data-iris-cell-col={merged.cellRange ? colIndex : undefined}
+                  data-iris-cell-selected={
+                    merged.cellRange && isInRange(index, colIndex) ? 'true' : undefined
                   }
-                >
-                  <>
-                    <input
-                      type={col.editor === 'number' ? 'number' : 'text'}
-                      value={editingDraft()}
-                      data-iris-table-editor=""
-                      aria-invalid={editError() ? 'true' : undefined}
-                      aria-describedby={editError() ? `${cid}-error` : undefined}
-                      onInput={(e) => setEditingDraft((e.target as HTMLInputElement).value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          commitEdit(row, col, index)
-                        } else if (e.key === 'Escape') {
-                          e.preventDefault()
-                          cancelEdit()
+                  tabindex={merged.keyboardNavigation ? (isFocused() ? 0 : -1) : undefined}
+                  onFocus={
+                    merged.keyboardNavigation
+                      ? () => setFocusedCell({ row: index, col: colIndex })
+                      : undefined
+                  }
+                  onClick={
+                    merged.cellRange
+                      ? (e: MouseEvent) => {
+                          if (e.shiftKey) {
+                            cellRangeCtrl.extendRange(index, colIndex)
+                          } else {
+                            cellRangeCtrl.startRange(index, colIndex)
+                          }
                         }
-                      }}
-                      onBlur={() => commitEdit(row, col, index)}
-                      onClick={(e) => e.stopPropagation()}
+                      : undefined
+                  }
+                  onDblClick={col.editable ? () => beginEdit(row, col, id) : undefined}
+                  style={{
+                    display: 'flex',
+                    'align-items': 'center',
+                    'justify-content':
+                      col.align === 'right'
+                        ? 'flex-end'
+                        : col.align === 'center'
+                          ? 'center'
+                          : 'flex-start',
+                    padding: isEditing() ? '4px' : '8px var(--iris-padding-md)',
+                    'border-bottom': '1px solid var(--iris-border)',
+                    'font-size': '14px',
+                    'white-space': 'nowrap',
+                    overflow: 'hidden',
+                    'text-overflow': 'ellipsis',
+                    cursor: col.editable ? 'cell' : 'default',
+                    background:
+                      merged.cellRange && isInRange(index, colIndex)
+                        ? 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
+                        : undefined,
+                    ...(visibleColSet() ? { 'grid-column-start': String(colTrack(colIndex)) } : {}),
+                  }}
+                >
+                  <Show when={treeMeta && isFirstCol}>
+                    <span
+                      data-iris-table-tree-indent=""
                       style={{
-                        width: '100%',
-                        border: `1px solid ${
-                          editError() ? 'var(--iris-danger)' : 'var(--iris-primary)'
-                        }`,
-                        'border-radius': 'var(--iris-radius-sm)',
-                        padding: '4px 6px',
-                        font: 'inherit',
-                        background: 'var(--iris-background)',
-                        color: 'var(--iris-foreground)',
-                        outline: 'none',
+                        display: 'inline-flex',
+                        'align-items': 'center',
+                        flex: 'none',
+                        'padding-left': `${treeMeta!.depth * 16}px`,
                       }}
-                    />
-                    <Show when={editError()}>
-                      <div
-                        id={`${cid}-error`}
-                        role="alert"
-                        data-iris-table-editor-error=""
-                        style={{
-                          'margin-top': '2px',
-                          'font-size': '12px',
-                          color: 'var(--iris-danger)',
-                        }}
+                    >
+                      <Show
+                        when={treeMeta!.hasChildren}
+                        fallback={
+                          <span
+                            aria-hidden="true"
+                            style={{ display: 'inline-block', width: '16px' }}
+                          />
+                        }
                       >
-                        {editError()}
-                      </div>
-                    </Show>
-                  </>
-                </Show>
-              </div>
+                        <button
+                          type="button"
+                          data-iris-table-tree-toggle=""
+                          aria-expanded={expandedKeys().includes(treeMeta!.key)}
+                          aria-label={t(
+                            expandedKeys().includes(treeMeta!.key)
+                              ? 'treeSelect.collapse'
+                              : 'treeSelect.expand',
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            expansion.toggle(treeMeta!.key)
+                          }}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            padding: '0',
+                            'margin-right': '4px',
+                            font: 'inherit',
+                            color: 'var(--iris-foreground)',
+                            transform: expandedKeys().includes(treeMeta!.key)
+                              ? 'rotate(90deg)'
+                              : 'none',
+                            transition: 'transform 150ms',
+                          }}
+                        >
+                          ▶
+                        </button>
+                      </Show>
+                    </span>
+                  </Show>
+                  <Show
+                    when={isEditing()}
+                    fallback={
+                      <Show when={col.renderCell} fallback={String(getCellValue(row, col) ?? '')}>
+                        {col.renderCell!(row, index)}
+                      </Show>
+                    }
+                  >
+                    <>
+                      <input
+                        type={col.editor === 'number' ? 'number' : 'text'}
+                        value={editingDraft()}
+                        data-iris-table-editor=""
+                        aria-invalid={editError() ? 'true' : undefined}
+                        aria-describedby={editError() ? `${cid}-error` : undefined}
+                        onInput={(e) => setEditingDraft((e.target as HTMLInputElement).value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            commitEdit(row, col, index)
+                          } else if (e.key === 'Escape') {
+                            e.preventDefault()
+                            cancelEdit()
+                          }
+                        }}
+                        onBlur={() => commitEdit(row, col, index)}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          width: '100%',
+                          border: `1px solid ${
+                            editError() ? 'var(--iris-danger)' : 'var(--iris-primary)'
+                          }`,
+                          'border-radius': 'var(--iris-radius-sm)',
+                          padding: '4px 6px',
+                          font: 'inherit',
+                          background: 'var(--iris-background)',
+                          color: 'var(--iris-foreground)',
+                          outline: 'none',
+                        }}
+                      />
+                      <Show when={editError()}>
+                        <div
+                          id={`${cid}-error`}
+                          role="alert"
+                          data-iris-table-editor-error=""
+                          style={{
+                            'margin-top': '2px',
+                            'font-size': '12px',
+                            color: 'var(--iris-danger)',
+                          }}
+                        >
+                          {editError()}
+                        </div>
+                      </Show>
+                    </>
+                  </Show>
+                </div>
+              </Show>
             )
           }}
         </For>
@@ -741,6 +809,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       // grid/table role as before (treegrid implies managed cell focus).
       role={merged.keyboardNavigation ? (treeMode() ? 'treegrid' : 'grid') : 'table'}
       data-iris-table=""
+      data-column-virtualized={merged.columnVirtualization ? 'true' : undefined}
       onKeyDown={
         merged.keyboardNavigation || merged.cellRange
           ? (e: KeyboardEvent) => {
@@ -749,12 +818,18 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             }
           : undefined
       }
+      onScroll={
+        merged.columnVirtualization
+          ? (e: Event) => setScrollLeft((e.currentTarget as HTMLElement).scrollLeft)
+          : undefined
+      }
       style={{
         background: 'var(--iris-background)',
         color: 'var(--iris-foreground)',
         border: merged.bordered ? '1px solid var(--iris-border)' : 'none',
         'border-radius': 'var(--iris-radius-md)',
-        overflow: 'hidden',
+        // Column virtualization turns the table into a horizontal scroll container.
+        overflow: merged.columnVirtualization ? 'auto' : 'hidden',
         ...(merged.style ?? {}),
       }}
     >
@@ -903,47 +978,62 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             </div>
           </Show>
           <For each={merged.columns}>
-            {(col) => (
-              <div
-                role="columnheader"
-                data-iris-table-header={col.key}
-                onClick={() => handleHeaderClick(col)}
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  'align-items': 'center',
-                  'justify-content':
-                    col.align === 'right'
-                      ? 'flex-end'
-                      : col.align === 'center'
-                        ? 'center'
-                        : 'flex-start',
-                  padding: '8px var(--iris-padding-md)',
-                  cursor: col.sortable ? 'pointer' : 'default',
-                  'user-select': col.sortable ? 'none' : 'auto',
-                  background: 'var(--iris-surface)',
-                  'border-bottom': '1px solid var(--iris-border)',
-                  'font-weight': '600',
-                  'font-size': '13px',
-                  color: 'var(--iris-foreground)',
-                  'white-space': 'nowrap',
-                  overflow: 'hidden',
-                  'text-overflow': 'ellipsis',
-                }}
-                aria-sort={
-                  effectiveSort()?.key === col.key
-                    ? effectiveSort()!.direction === 'asc'
-                      ? 'ascending'
-                      : 'descending'
-                    : col.sortable
-                      ? 'none'
-                      : undefined
-                }
-              >
-                {col.title}
-                {sortIndicator(col)}
-              </div>
-            )}
+            {(col, colIndexAccessor) => {
+              const colIndex = colIndexAccessor()
+              // Column virtualization: skip headers outside the visible window
+              // (+ pinned); place rendered headers on their grid track.
+              const inWindow = (): boolean => {
+                const set = visibleColSet()
+                return !set || set.has(colIndex)
+              }
+              return (
+                <Show when={inWindow()}>
+                  <div
+                    role="columnheader"
+                    data-iris-table-header={col.key}
+                    data-iris-table-pinned={col.pinned}
+                    onClick={() => handleHeaderClick(col)}
+                    style={{
+                      position: 'relative',
+                      display: 'flex',
+                      'align-items': 'center',
+                      'justify-content':
+                        col.align === 'right'
+                          ? 'flex-end'
+                          : col.align === 'center'
+                            ? 'center'
+                            : 'flex-start',
+                      padding: '8px var(--iris-padding-md)',
+                      cursor: col.sortable ? 'pointer' : 'default',
+                      'user-select': col.sortable ? 'none' : 'auto',
+                      background: 'var(--iris-surface)',
+                      'border-bottom': '1px solid var(--iris-border)',
+                      'font-weight': '600',
+                      'font-size': '13px',
+                      color: 'var(--iris-foreground)',
+                      'white-space': 'nowrap',
+                      overflow: 'hidden',
+                      'text-overflow': 'ellipsis',
+                      ...(visibleColSet()
+                        ? { 'grid-column-start': String(colTrack(colIndex)) }
+                        : {}),
+                    }}
+                    aria-sort={
+                      effectiveSort()?.key === col.key
+                        ? effectiveSort()!.direction === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : col.sortable
+                          ? 'none'
+                          : undefined
+                    }
+                  >
+                    {col.title}
+                    {sortIndicator(col)}
+                  </div>
+                </Show>
+              )
+            }}
           </For>
         </div>
       </Show>
@@ -1073,37 +1163,49 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             />
           </Show>
           <For each={leafColumns()}>
-            {(col) => {
+            {(col, colIndexAccessor) => {
+              const colIndex = colIndexAccessor()
               const op = col.summary
               const value = op ? aggregate(bodyRows(), (r) => getCellValue(r, col), op) : null
+              // Column virtualization: skip summary cells outside the window
+              // (+ pinned); place rendered cells on their grid track.
+              const inWindow = (): boolean => {
+                const set = visibleColSet()
+                return !set || set.has(colIndex)
+              }
               return (
-                <div
-                  role="cell"
-                  data-iris-table-cell={col.key}
-                  data-iris-table-summary-cell={op ? '' : undefined}
-                  style={{
-                    display: 'flex',
-                    'align-items': 'center',
-                    'justify-content':
-                      col.align === 'right'
-                        ? 'flex-end'
-                        : col.align === 'center'
-                          ? 'center'
-                          : 'flex-start',
-                    padding: '8px var(--iris-padding-md)',
-                    'border-bottom': '1px solid var(--iris-border)',
-                    'font-size': '14px',
-                    'white-space': 'nowrap',
-                    overflow: 'hidden',
-                    'text-overflow': 'ellipsis',
-                  }}
-                >
-                  <Show when={op != null && value != null}>
-                    <Show when={col.renderSummary} fallback={String(value)}>
-                      {col.renderSummary!(value!, bodyRows())}
+                <Show when={inWindow()}>
+                  <div
+                    role="cell"
+                    data-iris-table-cell={col.key}
+                    data-iris-table-summary-cell={op ? '' : undefined}
+                    style={{
+                      display: 'flex',
+                      'align-items': 'center',
+                      'justify-content':
+                        col.align === 'right'
+                          ? 'flex-end'
+                          : col.align === 'center'
+                            ? 'center'
+                            : 'flex-start',
+                      padding: '8px var(--iris-padding-md)',
+                      'border-bottom': '1px solid var(--iris-border)',
+                      'font-size': '14px',
+                      'white-space': 'nowrap',
+                      overflow: 'hidden',
+                      'text-overflow': 'ellipsis',
+                      ...(visibleColSet()
+                        ? { 'grid-column-start': String(colTrack(colIndex)) }
+                        : {}),
+                    }}
+                  >
+                    <Show when={op != null && value != null}>
+                      <Show when={col.renderSummary} fallback={String(value)}>
+                        {col.renderSummary!(value!, bodyRows())}
+                      </Show>
                     </Show>
-                  </Show>
-                </div>
+                  </div>
+                </Show>
               )
             }}
           </For>

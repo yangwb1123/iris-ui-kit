@@ -45,6 +45,10 @@ export function IrisDashboard(props: IrisDashboardProps) {
   // Track dragged widget id in a plain variable — no reactive overhead.
   let dragWidgetId: string | null = null
 
+  // Drop-cell rects, measured ONCE when a drag actually starts (not per move).
+  // A plain variable — rects never drive rendering, so no signal needed.
+  let dragRects: SortableRect[] = []
+
   const commitMove = (widgetId: string, cellId: string): void => {
     const [c, r] = cellId.split('-').map(Number)
     if (Number.isFinite(c) && Number.isFinite(r)) store.moveWidget(widgetId, c!, r!)
@@ -57,23 +61,27 @@ export function IrisDashboard(props: IrisDashboardProps) {
     } catch {
       /* ignore */
     }
-    sortable.start(widgetId)
+    // Record a pending press — no store write, so a tap never re-renders.
+    sortable.press(widgetId, e.clientX, e.clientY)
   }
   const onHeaderPointerMove = (widgetId: string, e: PointerEvent): void => {
+    if (sortable.tryStart(e.clientX, e.clientY)) {
+      const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-dashboard]')
+      dragRects = collectRects(root, 'data-iris-dashboard-cell')
+    }
     if (!sortable.isActive(widgetId)) return
-    const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-dashboard]')
-    sortable.moveOver(
-      { x: e.clientX, y: e.clientY },
-      collectRects(root, 'data-iris-dashboard-cell'),
-    )
+    sortable.moveOver({ x: e.clientX, y: e.clientY }, dragRects)
   }
   const onHeaderPointerUp = (widgetId: string): void => {
-    if (!sortable.isActive(widgetId)) return
+    if (!sortable.isActive(widgetId)) {
+      sortable.cancel() // clear a pending tap (idle → no re-render)
+      return
+    }
     const { activeId, overId } = sortable.end()
     if (activeId && overId) commitMove(activeId, overId)
   }
-  const onHeaderPointerCancel = (widgetId: string): void => {
-    if (sortable.isActive(widgetId)) sortable.cancel()
+  const onHeaderPointerCancel = (): void => {
+    sortable.cancel() // cancel is idle-safe now (no isActive guard needed)
   }
 
   const rows = () => Math.ceil(dashboardState().widgets.length / dashboardState().columns) + 1
@@ -176,7 +184,7 @@ export function IrisDashboard(props: IrisDashboardProps) {
               onPointerDown={(e) => onHeaderPointerDown(widget.id, e)}
               onPointerMove={(e) => onHeaderPointerMove(widget.id, e)}
               onPointerUp={() => onHeaderPointerUp(widget.id)}
-              onPointerCancel={() => onHeaderPointerCancel(widget.id)}
+              onPointerCancel={() => onHeaderPointerCancel()}
             >
               <span
                 data-iris-dashboard-drag-handle=""

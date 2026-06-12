@@ -106,6 +106,21 @@ describe('IrisKanban (solid)', () => {
     expect(onMove).toHaveBeenCalledWith('c1', 'todo', 'done')
   })
 
+  it('touch: a tap (no movement past threshold) does NOT move the card', () => {
+    const onMove = vi.fn()
+    const { container } = render(() => <IrisKanban config={{ ...config(), onMove }} />)
+    const card = container.querySelector('[data-iris-kanban-card="c1"]')!
+    stubRect(container.querySelector('[data-iris-kanban-column="todo"]')!, 0)
+    stubRect(container.querySelector('[data-iris-kanban-column="done"]')!, 200)
+
+    // down then up at the same point (a tap) — and a sub-threshold jitter move.
+    pointer(card, 'pointerdown', { clientX: 50, clientY: 50 })
+    pointer(card, 'pointermove', { clientX: 52, clientY: 51 })
+    pointer(card, 'pointerup', { clientX: 52, clientY: 51 })
+
+    expect(onMove).not.toHaveBeenCalled()
+  })
+
   it('touch: mouse pointers do NOT trigger the pointer path (native DnD owns mouse)', () => {
     const onMove = vi.fn()
     const { container } = render(() => <IrisKanban config={{ ...config(), onMove }} />)

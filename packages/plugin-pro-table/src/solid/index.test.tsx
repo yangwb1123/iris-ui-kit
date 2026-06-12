@@ -104,6 +104,21 @@ describe('IrisProTable (solid)', () => {
     expect(store.visibleColumns().map((c) => c.key)).toEqual(['name', 'age'])
   })
 
+  it('touch: a tap (no movement past threshold) does NOT move/reorder', () => {
+    const store = createProTableStore<User>({ columns, rowKey: 'id', data })
+    const { container } = render(() => <IrisProTable store={store} columnReorder />)
+    const nameTh = container.querySelector('[data-iris-col-key="name"]')!
+    stubRect(nameTh, 0)
+    stubRect(container.querySelector('[data-iris-col-key="age"]')!, 200)
+
+    // down → sub-threshold move (+2px) → up: stays pending, never promotes → no reorder.
+    pointer(nameTh, 'pointerdown', { clientX: 20, clientY: 10 })
+    pointer(nameTh, 'pointermove', { clientX: 22, clientY: 10 })
+    pointer(nameTh, 'pointerup', { clientX: 22, clientY: 10 })
+
+    expect(store.visibleColumns().map((c) => c.key)).toEqual(['name', 'age'])
+  })
+
   it('touch: mouse pointers do NOT trigger the pointer reorder path', () => {
     const store = createProTableStore<User>({ columns, rowKey: 'id', data })
     const { container } = render(() => <IrisProTable store={store} columnReorder />)

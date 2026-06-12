@@ -74,6 +74,9 @@
     })
     return unsub
   })
+  // Header rects, measured ONCE when a drag actually starts (not per move).
+  // Plain mutable var — no $state needed (rects don't drive rendering).
+  let dragRects: SortableRect[] = []
 
   function onHeaderPointerDown(key: string, e: PointerEvent): void {
     if (!columnReorder || e.pointerType === 'mouse') return
@@ -82,20 +85,27 @@
     } catch {
       /* ignore */
     }
-    sortable.start(key)
+    // Record a pending press — no store write, so a tap (header sort) never re-renders.
+    sortable.press(key, e.clientX, e.clientY)
   }
   function onHeaderPointerMove(key: string, e: PointerEvent): void {
+    if (sortable.tryStart(e.clientX, e.clientY)) {
+      const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-pro-table]')
+      dragRects = collectRects(root, 'data-iris-col-key')
+    }
     if (!sortable.isActive(key)) return
-    const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-pro-table]')
-    sortable.moveOver({ x: e.clientX, y: e.clientY }, collectRects(root, 'data-iris-col-key'))
+    sortable.moveOver({ x: e.clientX, y: e.clientY }, dragRects)
   }
   function onHeaderPointerUp(key: string): void {
-    if (!sortable.isActive(key)) return
+    if (!sortable.isActive(key)) {
+      sortable.cancel() // clear a pending tap (idle → no re-render); header-tap sort still works
+      return
+    }
     const { activeId, overId } = sortable.end()
     if (activeId && overId && activeId !== overId) store.reorderColumns(activeId, overId)
   }
-  function onHeaderPointerCancel(key: string): void {
-    if (sortable.isActive(key)) sortable.cancel()
+  function onHeaderPointerCancel(): void {
+    sortable.cancel()
   }
 
   const columns = $derived(store.visibleColumns())
@@ -165,7 +175,7 @@
             onpointerdown={(e) => onHeaderPointerDown(c.key, e)}
             onpointermove={(e) => onHeaderPointerMove(c.key, e)}
             onpointerup={() => onHeaderPointerUp(c.key)}
-            onpointercancel={() => onHeaderPointerCancel(c.key)}
+            onpointercancel={() => onHeaderPointerCancel()}
             draggable={columnReorder ? true : undefined}
             ondragstart={columnReorder ? (e) => {
               dragKey = c.key

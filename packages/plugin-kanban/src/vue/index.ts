@@ -74,6 +74,9 @@ export const IrisKanban = defineComponent({
     // Track dragged card id without reactive overhead.
     let dragCardId: string | null = null
 
+    // Drop-target rects, measured ONCE when a drag actually starts (not per move).
+    let dragRects: SortableRect[] = []
+
     const isAtLimit = (colId: string): boolean => {
       const col = store.getState().columns.find((c) => c.id === colId)
       return col?.limit !== undefined && col.cards.length >= col.limit
@@ -87,23 +90,29 @@ export const IrisKanban = defineComponent({
       } catch {
         /* ignore */
       }
-      sortable.start(cardId)
+      // Record a pending press — no store write, so a tap never re-renders.
+      sortable.press(cardId, e.clientX, e.clientY)
     }
     const onCardPointerMove = (cardId: string) => (e: PointerEvent) => {
+      // Promote the pending press once it moves past the threshold; cache the
+      // column rects at that moment (one getBoundingClientRect sweep per drag).
+      if (sortable.tryStart(e.clientX, e.clientY)) {
+        const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-kanban]')
+        dragRects = collectRects(root, 'data-iris-kanban-column')
+      }
       if (!sortable.isActive(cardId)) return
-      const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-kanban]')
-      sortable.moveOver(
-        { x: e.clientX, y: e.clientY },
-        collectRects(root, 'data-iris-kanban-column'),
-      )
+      sortable.moveOver({ x: e.clientX, y: e.clientY }, dragRects)
     }
     const onCardPointerUp = (cardId: string) => () => {
-      if (!sortable.isActive(cardId)) return
+      if (!sortable.isActive(cardId)) {
+        sortable.cancel() // clear a pending tap (idle → no re-render)
+        return
+      }
       const { activeId, overId } = sortable.end()
       if (activeId && overId && !isAtLimit(overId)) store.moveCard(activeId, overId)
     }
-    const onCardPointerCancel = (cardId: string) => () => {
-      if (sortable.isActive(cardId)) sortable.cancel()
+    const onCardPointerCancel = () => () => {
+      sortable.cancel()
     }
 
     return () => {
@@ -220,7 +229,7 @@ export const IrisKanban = defineComponent({
               onPointerdown: onCardPointerDown(card.id),
               onPointermove: onCardPointerMove(card.id),
               onPointerup: onCardPointerUp(card.id),
-              onPointercancel: onCardPointerCancel(card.id),
+              onPointercancel: onCardPointerCancel(),
             },
             cardChildren,
           )

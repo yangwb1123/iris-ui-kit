@@ -34,6 +34,10 @@
   // Track dragged card id in a plain variable — no reactive overhead.
   let dragCardId: string | null = null
 
+  // Drop-target rects, measured ONCE when a drag actually starts (not per move).
+  // Plain variable: rects do not drive rendering, so no $state needed.
+  let dragRects: SortableRect[] = []
+
   const boardStyle = $derived(
     `display:flex;gap:var(--iris-kanban-gap, 16px);align-items:flex-start;overflow-x:auto;${style}`,
   )
@@ -74,20 +78,29 @@
     } catch {
       /* ignore */
     }
-    sortable.start(cardId)
+    // Record a pending press — no store write, so a tap never re-renders.
+    sortable.press(cardId, e.clientX, e.clientY)
   }
   function onCardPointerMove(cardId: string, e: PointerEvent) {
+    // Promote the pending press once it moves past the threshold; cache the
+    // column rects at that moment (one getBoundingClientRect sweep per drag).
+    if (sortable.tryStart(e.clientX, e.clientY)) {
+      const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-kanban]')
+      dragRects = collectRects(root, 'data-iris-kanban-column')
+    }
     if (!sortable.isActive(cardId)) return
-    const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-kanban]')
-    sortable.moveOver({ x: e.clientX, y: e.clientY }, collectRects(root, 'data-iris-kanban-column'))
+    sortable.moveOver({ x: e.clientX, y: e.clientY }, dragRects)
   }
   function onCardPointerUp(cardId: string) {
-    if (!sortable.isActive(cardId)) return
+    if (!sortable.isActive(cardId)) {
+      sortable.cancel() // clear a pending tap (idle → no re-render)
+      return
+    }
     const { activeId, overId } = sortable.end()
     if (activeId && overId && !isAtLimit(overId)) store.moveCard(activeId, overId)
   }
-  function onCardPointerCancel(cardId: string) {
-    if (sortable.isActive(cardId)) sortable.cancel()
+  function onCardPointerCancel() {
+    sortable.cancel()
   }
 
   // Live drop highlight (outline) for the touch/pen pointer path.
@@ -154,7 +167,7 @@
           onpointerdown={(e) => onCardPointerDown(card.id, e)}
           onpointermove={(e) => onCardPointerMove(card.id, e)}
           onpointerup={() => onCardPointerUp(card.id)}
-          onpointercancel={() => onCardPointerCancel(card.id)}
+          onpointercancel={() => onCardPointerCancel()}
         >
           <span data-iris-kanban-card-title style="font-weight:500">{card.title}</span>
           {#if card.description}

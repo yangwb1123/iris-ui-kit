@@ -108,6 +108,23 @@ describe('IrisDashboard (vue)', () => {
     expect(onMove).toHaveBeenCalledWith('w1', 2, 2)
   })
 
+  it('touch: a tap (no movement past threshold) does NOT move/reorder', () => {
+    const onMove = vi.fn()
+    const wrapper = mount(IrisDashboard, { props: { config: { ...config(), onMove } } })
+    const header = wrapper.find('[data-iris-dashboard-widget-header="w1"]').element
+    wrapper.element.querySelectorAll<HTMLElement>('[data-iris-dashboard-cell]').forEach((cell) => {
+      const id = cell.getAttribute('data-iris-dashboard-cell')!
+      stubRect(cell, id === '2-2' ? 500 : 0, id === '2-2' ? 500 : 0)
+    })
+
+    // down then up at the same point (a tap) — and a sub-threshold jitter move.
+    pointer(header, 'pointerdown', { clientX: 10, clientY: 10 })
+    pointer(header, 'pointermove', { clientX: 12, clientY: 11 })
+    pointer(header, 'pointerup', { clientX: 12, clientY: 11 })
+
+    expect(onMove).not.toHaveBeenCalled()
+  })
+
   it('touch: mouse pointers do NOT trigger the pointer path (native DnD owns mouse)', () => {
     const onMove = vi.fn()
     const wrapper = mount(IrisDashboard, { props: { config: { ...config(), onMove } } })

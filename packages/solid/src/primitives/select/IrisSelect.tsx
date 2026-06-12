@@ -3,7 +3,13 @@ import { Portal } from 'solid-js/web'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useI18n } from '../../i18n'
-import { firstEnabledIndex, nextEnabledIndex, type Placement, type Size } from '@iris-ui/core'
+import {
+  firstEnabledIndex,
+  matchTypeahead,
+  nextEnabledIndex,
+  type Placement,
+  type Size,
+} from '@iris-ui/core'
 
 export type IrisSelectSize = Size
 
@@ -89,6 +95,8 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
 
   const isEnabled = (i: number): boolean => !merged.items[i]?.disabled
 
+  const typeahead = { buffer: '', timer: null as ReturnType<typeof setTimeout> | null }
+
   const handleKeyDown = (e: KeyboardEvent): void => {
     if (merged.disabled) return
     if (e.key === 'ArrowDown') {
@@ -121,6 +129,20 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
         e.preventDefault()
         setOpen(false)
       }
+    } else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      typeahead.buffer += e.key
+      if (typeahead.timer) clearTimeout(typeahead.timer)
+      typeahead.timer = setTimeout(() => {
+        typeahead.buffer = ''
+      }, 500)
+      const labels = merged.items.map((it) => it.label ?? String(it.value))
+      const match = matchTypeahead(
+        labels,
+        typeahead.buffer,
+        activeIndex(),
+        (i) => !!merged.items[i]?.disabled,
+      )
+      if (match >= 0) setActiveIndex(match)
     }
   }
 

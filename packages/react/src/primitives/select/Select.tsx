@@ -2,6 +2,7 @@ import * as React from 'react'
 import {
   firstEnabledIndex,
   lastEnabledIndex,
+  matchTypeahead,
   nextEnabledIndex,
   type Placement,
   type Size,
@@ -98,6 +99,10 @@ export function IrisSelect<T = unknown>({
   }, [open, initialActive])
 
   const listRef = React.useRef<HTMLUListElement | null>(null)
+  const typeaheadRef = React.useRef<{
+    buffer: string
+    timer: ReturnType<typeof setTimeout> | null
+  }>({ buffer: '', timer: null })
 
   // When activeIndex changes while open, focus that option.
   React.useEffect(() => {
@@ -149,6 +154,19 @@ export function IrisSelect<T = unknown>({
           if (item) selectItem(item)
         }
         break
+      }
+      default: {
+        if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          const ta = typeaheadRef.current
+          ta.buffer += e.key
+          if (ta.timer) clearTimeout(ta.timer)
+          ta.timer = setTimeout(() => {
+            ta.buffer = ''
+          }, 500)
+          const labels = items.map((it) => it.label ?? String(it.value))
+          const match = matchTypeahead(labels, ta.buffer, activeIndex, (i) => !!items[i]?.disabled)
+          if (match >= 0) setActiveIndex(match)
+        }
       }
     }
   }

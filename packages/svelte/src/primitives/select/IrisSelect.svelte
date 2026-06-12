@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { generateId } from '@iris-ui/core'
+  import { generateId, matchTypeahead } from '@iris-ui/core'
   import { useFloating } from '../../floating/useFloating.svelte'
   import { useDismiss } from '../../floating/useDismiss.svelte'
   import { portal } from '../../internal/portal'
@@ -93,6 +93,27 @@
     onValueChange?.(item.value)
     open = false
   }
+
+  const _typeahead = { buffer: '', timer: null as ReturnType<typeof setTimeout> | null }
+
+  function handleListKeyDown(e: KeyboardEvent): void {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      open = false
+      return
+    }
+    if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      _typeahead.buffer += e.key
+      if (_typeahead.timer) clearTimeout(_typeahead.timer)
+      _typeahead.timer = setTimeout(() => { _typeahead.buffer = '' }, 500)
+      const labels = items.map((it) => (it.label ?? String(it.value)) as string)
+      const focusedEl = document.activeElement
+      const options = Array.from(document.querySelectorAll<HTMLElement>(`#${listboxId} [role="option"]`))
+      const currentIdx = focusedEl ? options.indexOf(focusedEl as HTMLElement) : -1
+      const match = matchTypeahead(labels, _typeahead.buffer, currentIdx, (i) => !!items[i]?.disabled)
+      if (match >= 0) options[match]?.focus()
+    }
+  }
 </script>
 
 <button
@@ -124,6 +145,7 @@
     role="listbox"
     aria-label={t('select.options')}
     data-iris-select-listbox
+    onkeydown={handleListKeyDown}
     style="{floating.floatingStyles}; background: var(--iris-background); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-sm, 4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 180px; list-style: none; margin: 0; z-index: 1000; max-height: 240px; overflow-y: auto"
   >
     {#each items as item}

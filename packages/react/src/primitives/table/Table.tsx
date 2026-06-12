@@ -9,6 +9,7 @@ import {
   createSelectionModel,
   flattenLeafColumns,
   flattenTree,
+  withSortedChildren,
   nextGridCell,
   type CellRangeController,
   type ExpansionModel,
@@ -159,8 +160,9 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * Read a row's child rows to render the table as a TREE. Providing this enables
    * tree mode: `data` is treated as the root rows, each row's first cell gains a
    * depth indent + an expand/collapse toggle (when it has children), and the
-   * expand state reuses `defaultExpandedRowKeys`/`onExpandedRowsChange`. v1 tree
-   * mode renders the non-virtualized body and does not reorder on column sort.
+   * expand state reuses `defaultExpandedRowKeys`/`onExpandedRowsChange`. Column
+   * sort reorders siblings hierarchically (each level sorted, structure kept);
+   * v1 tree mode renders the non-virtualized body.
    */
   getSubRows?: (row: Row) => Row[] | undefined
   /**
@@ -390,15 +392,22 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
 
   // Sorted data.
-  const sortedData = React.useMemo(() => {
-    if (!sort) return data
+  // The active sort comparator (or null). Shared by the root-row sort AND the
+  // tree-mode child sort so a sortable tree reorders siblings at every depth.
+  const sortComparator = React.useMemo<((a: Row, b: Row) => number) | null>(() => {
+    if (!sort) return null
     const col = leafColumns.find((c) => c.key === sort.key)
-    if (!col) return data
+    if (!col) return null
     const dir = sort.direction === 'asc' ? 1 : -1
     const sorter =
       col.sorter ?? ((a: Row, b: Row) => compareValues(getCellValue(a, col), getCellValue(b, col)))
-    return [...data].sort((a, b) => sorter(a, b) * dir)
-  }, [data, columns, sort])
+    return (a, b) => sorter(a, b) * dir
+  }, [leafColumns, sort])
+
+  const sortedData = React.useMemo(() => {
+    if (!sortComparator) return data
+    return [...data].sort(sortComparator)
+  }, [data, sortComparator])
 
   const setSort = (next: IrisTableSortState | null) => {
     if (!sortControlled) setSortInternal(next)
@@ -448,12 +457,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
       treeMode
         ? flattenTree<Row>(sortedData, {
             getKey: (r) => String(rowKeyOf(r)),
-            getChildren: (r) => getSubRows!(r),
+            // With an active sort, sort each level's children by the same
+            // comparator so the whole tree reorders hierarchically.
+            getChildren: sortComparator
+              ? withSortedChildren((r) => getSubRows!(r), sortComparator)
+              : (r) => getSubRows!(r),
             isExpanded: (k) => expandedKeys.includes(k),
           })
         : null,
-    // Recompute on data / expansion / accessor change (rowKeyOf reads `rowKey`).
-    [treeMode, sortedData, getSubRows, expandedKeys, rowKey],
+    // Recompute on data / expansion / accessor / sort change (rowKeyOf reads `rowKey`).
+    [treeMode, sortedData, getSubRows, expandedKeys, rowKey, sortComparator],
   )
   const bodyData = flatTree ? flatTree.map((t) => t.row) : sortedData
 

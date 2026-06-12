@@ -367,6 +367,24 @@ export function flattenTree<Row>(
 }
 
 /**
+ * Wrap a `getChildren` accessor so every node's children are returned sorted by
+ * `compare`. Combined with sorting the root rows by the same comparator, this
+ * sorts a whole tree HIERARCHICALLY — siblings reorder at each depth while the
+ * parent/child structure is preserved. Pure: source arrays are never mutated
+ * (each level is copied before sorting). Pass as `flattenTree`'s `getChildren`
+ * when a tree table has an active column sort.
+ */
+export function withSortedChildren<Row>(
+  getChildren: (row: Row) => readonly Row[] | undefined,
+  compare: (a: Row, b: Row) => number,
+): (row: Row) => readonly Row[] | undefined {
+  return (row) => {
+    const children = getChildren(row)
+    return children ? [...children].sort(compare) : children
+  }
+}
+
+/**
  * The set of keys to KEEP when filtering a tree: a node is kept when it OR any
  * descendant satisfies `predicate`, so the ancestors of a match are retained for
  * context (a deep match still shows its path). Pair with {@link flattenTree} —

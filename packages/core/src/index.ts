@@ -94,6 +94,7 @@ export {
   summarize,
   groupRows,
   flattenTree,
+  withSortedChildren,
   treeMatchKeys,
   paginate,
   pageCount,

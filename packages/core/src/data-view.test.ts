@@ -9,6 +9,7 @@ import {
   summarize,
   groupRows,
   flattenTree,
+  withSortedChildren,
   treeMatchKeys,
   paginate,
   pageCount,
@@ -372,5 +373,53 @@ describe('treeMatchKeys', () => {
     const y: N = { id: 'y', label: 'Y', children: [x] }
     x.children = [y]
     expect(() => treeMatchKeys([x], (n) => n.label === 'Y', opts)).not.toThrow()
+  })
+})
+
+describe('withSortedChildren', () => {
+  interface Node {
+    id: string
+    n: number
+    children?: Node[]
+  }
+  const tree: Node[] = [
+    {
+      id: 'a',
+      n: 2,
+      children: [
+        { id: 'a2', n: 30 },
+        { id: 'a1', n: 10 },
+        { id: 'a3', n: 20 },
+      ],
+    },
+    { id: 'b', n: 1 },
+  ]
+  const byN = (a: Node, b: Node) => a.n - b.n
+  const getChildren = (node: Node): readonly Node[] | undefined => node.children
+
+  it("returns each node's children sorted by the comparator", () => {
+    const sorted = withSortedChildren(getChildren, byN)
+    expect(sorted(tree[0]!)!.map((c) => c.id)).toEqual(['a1', 'a3', 'a2'])
+  })
+
+  it('passes through undefined for a leaf (no children)', () => {
+    const sorted = withSortedChildren(getChildren, byN)
+    expect(sorted(tree[1]!)).toBeUndefined()
+  })
+
+  it('does not mutate the source array', () => {
+    const before = tree[0]!.children!.map((c) => c.id)
+    withSortedChildren(getChildren, byN)(tree[0]!)
+    expect(tree[0]!.children!.map((c) => c.id)).toEqual(before)
+  })
+
+  it('flattenTree + withSortedChildren sorts a whole tree hierarchically', () => {
+    const roots = [...tree].sort(byN) // root sort: b(1) before a(2)
+    const flat = flattenTree(roots, {
+      getKey: (r) => r.id,
+      getChildren: withSortedChildren(getChildren, byN),
+      isExpanded: () => true,
+    })
+    expect(flat.map((tr) => tr.key)).toEqual(['b', 'a', 'a1', 'a3', 'a2'])
   })
 })

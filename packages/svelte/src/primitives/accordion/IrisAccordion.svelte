@@ -9,6 +9,7 @@
     defaultValue,
     multiple = false,
     collapsible = false,
+    onValueChange,
     children,
     ...rest
   }: {
@@ -16,6 +17,7 @@
     defaultValue?: AccordionValue
     multiple?: boolean
     collapsible?: boolean
+    onValueChange?: (next: AccordionValue) => void
     children?: import('svelte').Snippet
     [key: string]: unknown
   } = $props()
@@ -44,20 +46,28 @@
   }
 
   function toggle(val: string): void {
+    const prev = current
     let next: AccordionValue
     if (multiple) {
-      const arr = Array.isArray(current) ? current : []
+      const arr = Array.isArray(prev) ? prev : []
       const idx = arr.indexOf(val)
       next = idx >= 0 ? arr.filter((v) => v !== val) : [...arr, val]
     } else {
-      if (current === val) {
+      if (prev === val) {
         if (collapsible) next = null
         else return
       } else {
         next = val
       }
     }
-    if (!isControlled) internal = next
+    // Controlled: emit only; the parent owns state. Uncontrolled: mutate
+    // internal and emit on real change. Mirrors the React/Vue/Solid contract.
+    if (isControlled) {
+      onValueChange?.(next)
+      return
+    }
+    if (next !== prev) onValueChange?.(next)
+    internal = next
   }
 
   setAccordionContext({

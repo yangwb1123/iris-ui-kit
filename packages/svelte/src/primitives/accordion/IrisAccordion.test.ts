@@ -31,4 +31,33 @@ describe('IrisAccordion', () => {
 
     expect(queryByText('Content A')).toBeFalsy()
   })
+
+  it('emits onValueChange when an item is toggled (uncontrolled)', async () => {
+    const seen: (string | string[] | null)[] = []
+    const { getByText } = render(AccordionHarness, {
+      props: { onValueChange: (next) => seen.push(next) },
+    })
+
+    await fireEvent.click(getByText('Item A'))
+    flushSync()
+    await fireEvent.click(getByText('Item B'))
+    flushSync()
+
+    expect(seen).toEqual(['a', 'b'])
+  })
+
+  it('is controlled when `value` is set: clicks emit but do not self-open', async () => {
+    const seen: (string | string[] | null)[] = []
+    const { getByText, queryByText } = render(AccordionHarness, {
+      props: { value: null, onValueChange: (next) => seen.push(next) },
+    })
+
+    await fireEvent.click(getByText('Item A'))
+    flushSync()
+
+    // Parent owns state — without writing `value` back, nothing opens...
+    expect(queryByText('Content A')).toBeFalsy()
+    // ...but the change is still emitted so the parent can react.
+    expect(seen).toEqual(['a'])
+  })
 })

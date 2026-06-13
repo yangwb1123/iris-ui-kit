@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { runPlugins } from '@iris-ui/core'
+import { runPlugins, defaultMessages } from '@iris-ui/core'
 import { localeZhPlugin, zhCNMessages } from './index'
 
 describe('localeZhPlugin', () => {
@@ -23,5 +23,17 @@ describe('localeZhPlugin', () => {
     expect(zhCNMessages['pagination.page']).toContain('{page}')
     expect(zhCNMessages['tour.step']).toContain('{current}')
     expect(zhCNMessages['tour.step']).toContain('{total}')
+  })
+
+  it('translates EVERY built-in key (no English fallback) — guards future drift', () => {
+    const untranslated = Object.keys(defaultMessages).filter((k) => !(k in zhCNMessages))
+    expect(untranslated).toEqual([])
+  })
+
+  it('preserves every {placeholder} token from the English source', () => {
+    const tokens = (s: string) => (s.match(/\{[a-zA-Z]+\}/g) ?? []).sort()
+    for (const [key, en] of Object.entries(defaultMessages)) {
+      expect(tokens(zhCNMessages[key]!)).toEqual(tokens(en))
+    }
   })
 })

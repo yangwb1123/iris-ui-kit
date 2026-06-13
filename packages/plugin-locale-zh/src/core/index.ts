@@ -53,6 +53,76 @@ export const zhCNMessages: Record<string, string> = {
   'tree.loading': '加载中…',
   'tree.error': '加载失败',
   'clearable.clear': '清除',
+  // admin shell
+  'admin.close': '关闭',
+  'admin.closeAll': '关闭全部',
+  'admin.closeOthers': '关闭其他',
+  'admin.closeTab': '关闭 {title}',
+  'admin.collapseSidebar': '收起侧边栏',
+  'admin.expandSidebar': '展开侧边栏',
+  'admin.nav': '主导航',
+  'admin.openPages': '打开的页面',
+  'admin.refresh': '刷新',
+  'admin.tabActions': '标签页操作',
+  // dismiss / remove
+  'alert.close': '关闭',
+  'banner.close': '关闭',
+  'chip.remove': '移除',
+  'toast.dismiss': '关闭',
+  'fileUpload.remove': '移除 {name}',
+  // navigation / structure
+  'breadcrumb.label': '面包屑导航',
+  'tree.label': '树',
+  'cascader.level': '第 {level} 级',
+  // calendar / date / time
+  'calendar.nextMonth': '下个月',
+  'calendar.previousMonth': '上个月',
+  'datePicker.placeholder': '请选择日期…',
+  'dateRangePicker.placeholder': '请选择日期范围…',
+  'dateRangePicker.start': '开始日期',
+  'dateRangePicker.end': '结束日期',
+  'timePicker.hours': '时',
+  'timePicker.minutes': '分',
+  'timePicker.seconds': '秒',
+  'timePicker.togglePeriod': '切换上午/下午',
+  // carousel
+  'carousel.label': '轮播图',
+  'carousel.slides': '幻灯片',
+  'carousel.goTo': '跳转到第 {index} 张',
+  // color picker
+  'colorPicker.hex': '十六进制',
+  'colorPicker.red': '红色',
+  'colorPicker.green': '绿色',
+  'colorPicker.blue': '蓝色',
+  'colorPicker.alpha': '透明度',
+  // command palette
+  'commandPalette.label': '命令面板',
+  'commandPalette.commands': '命令',
+  'commandPalette.search': '搜索命令',
+  // error boundary
+  'errorBoundary.message': '出错了。',
+  'errorBoundary.retry': '重试',
+  // inputs
+  'numberInput.increment': '增加',
+  'numberInput.decrement': '减少',
+  'passwordInput.show': '显示密码',
+  'passwordInput.hide': '隐藏密码',
+  'rangeSlider.start': '开始',
+  'rangeSlider.end': '结束',
+  'slider.label': '值',
+  'rating.label': '评分',
+  // select / table
+  'select.options': '选项',
+  'table.selectAll': '全选',
+  'table.selectRow': '选择第 {key} 行',
+  // transfer
+  'transfer.sourceTitle': '可选',
+  'transfer.targetTitle': '已选',
+  'transfer.selectAllSource': '全选可选项',
+  'transfer.selectAllTarget': '全选已选项',
+  // loading
+  'skeleton.loading': '加载中',
+  'spinner.loading': '加载中',
 }
 
 /**

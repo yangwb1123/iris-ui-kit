@@ -238,6 +238,14 @@
         if (fn.hasChildren && expandedSet.has(fn.node.id)) toggleExpand(fn.node)
         else if (fn.parentId) activeId = fn.parentId
         break
+      case 'Home':
+        e.preventDefault()
+        if (flat[0]) activeId = flat[0].node.id
+        break
+      case 'End':
+        e.preventDefault()
+        if (flat[flat.length - 1]) activeId = flat[flat.length - 1].node.id
+        break
       case 'Enter':
       case ' ':
         e.preventDefault()
@@ -275,6 +283,7 @@
         aria-expanded={fn.hasChildren ? isExpanded : undefined}
         aria-selected={selectionMode !== 'none' ? isSelected : undefined}
         aria-disabled={fn.node.disabled ? 'true' : undefined}
+        aria-level={fn.depth + 1}
         tabindex={isFocused || (idx === 0 && !activeId) ? 0 : -1}
         data-iris-tree-item
         data-state={isSelected ? 'selected' : 'idle'}

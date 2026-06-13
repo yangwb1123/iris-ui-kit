@@ -42,6 +42,44 @@ describe('IrisTree', () => {
     expect(container.querySelector('[data-iris-state="loading"]')).toBeTruthy()
   })
 
+  describe('keyboard navigation (WAI-ARIA tree)', () => {
+    const items = (c: HTMLElement) =>
+      Array.from(c.querySelectorAll('[data-iris-tree-item]')) as HTMLElement[]
+
+    it('exposes aria-level reflecting depth', () => {
+      const { container } = render(IrisTree, { props: { nodes, defaultExpanded: ['1'] } })
+      const list = items(container) // visible: Root A, Child A1, Child A2, Root B
+      expect(list[0].getAttribute('aria-level')).toBe('1')
+      expect(list[1].getAttribute('aria-level')).toBe('2')
+    })
+
+    it('ArrowDown moves roving focus to the next visible node', async () => {
+      const { container } = render(IrisTree, { props: { nodes, defaultExpanded: ['1'] } })
+      await fireEvent.keyDown(items(container)[0], { key: 'ArrowDown' })
+      flushSync()
+      const list = items(container)
+      expect(list[1].getAttribute('tabindex')).toBe('0')
+      expect(list[0].getAttribute('tabindex')).toBe('-1')
+    })
+
+    it('Home / End jump to the first / last visible node', async () => {
+      const { container } = render(IrisTree, { props: { nodes, defaultExpanded: ['1'] } })
+      await fireEvent.keyDown(items(container)[0], { key: 'End' })
+      flushSync()
+      expect(items(container)[3].getAttribute('tabindex')).toBe('0') // last visible = Root B
+      await fireEvent.keyDown(items(container)[0], { key: 'Home' })
+      flushSync()
+      expect(items(container)[0].getAttribute('tabindex')).toBe('0')
+    })
+
+    it('Enter selects the active node', async () => {
+      const { container } = render(IrisTree, { props: { nodes, defaultExpanded: ['1'] } })
+      await fireEvent.keyDown(items(container)[0], { key: 'Enter' })
+      flushSync()
+      expect(items(container)[0].getAttribute('aria-selected')).toBe('true')
+    })
+  })
+
   describe('checkable', () => {
     const checkNodes = [
       {

@@ -20,10 +20,6 @@ Of 13 Explore candidates, **only 2 were real+actionable** — column-virtualizat
 - COSMETIC RENAME = public-interface Blocker (deferred unless asked): textarea `autoResize`(solid) vs `autosize`(others); otp `autoFocus` casing.
 - LESSON: Explore agents read excerpts → ALWAYS verify candidates against source (~85% were noise here).
 
-## Open a11y-parity finding (iter-40 audit)
-
-- **Transfer list items lack `role="option"` + `aria-selected` in react/vue/svelte** — solid's `IrisTransfer` correctly wraps each list in `role="listbox"` with `role="option"` + `aria-selected` items (proper WAI-ARIA), but react/vue/svelte render selectable items with only `data-iris-transfer-item` (no role, no aria-selected) → screen-reader users can't perceive the transfer lists as selectable. Real a11y gap (solid is the reference here, inverse of the carousel finding). Fix = add `role="listbox"`/`role="option"` + `aria-selected` (wired to the existing per-item selection state) to react/vue/svelte `IrisTransfer`, mirroring solid. Medium effort (3 components + tests); also the internal data-attr names diverge (`list`/`panel`/`source`-`target`) but that's cosmetic. **Worth doing — next a11y-parity target.**
-
 ## Low-priority sweep findings (recorded; weigh value before picking)
 
 - **plugin-notifications hardcoded aria-labels** (found iter-34 i18n sweep): `IrisNotificationCenter` hardcodes `aria-label="Dismiss"` + `aria-label="{n} unread"` in all 4 adapters — user-visible screen-reader strings not localizable. This plugin uses **prop-based** localization (`title`/`emptyText` props with English defaults), NOT the core `t()` system, so the consistent fix = add defaulted props (`dismissLabel`, `unreadLabel`) ×4 (additive/backward-compat, completes the existing prop pattern). Deferred: marginal value, expands 4 plugin APIs. Pick only if a localization need is raised. NOTE: the core primitives (Breadcrumb/Pagination/Table/etc.) correctly use `t()` — this gap is isolated to the notifications plugin's prop-based design.
@@ -43,6 +39,8 @@ Of 13 Explore candidates, **only 2 were real+actionable** — column-virtualizat
 - `skeletons/DashboardTemplate` (react+solid) hardcode `aria-label="Primary"` instead of `t()`. Templates are scaffolding that uses NO i18n by design (users customize). Marginal; fix only if a "templates should localize" decision is made.
 
 ## Resolved-as-non-issue (recorded so they aren't re-raised)
+
+- **Transfer items' a11y (iter-40/41 audit) — NOT a gap.** A grep for `aria-selected` found it only on solid, suggesting react/vue/svelte lacked it. Re-verification: ALL FOUR transfer adapters render each item with `<input type="checkbox">` (fully accessible — the checkbox announces selection). Solid ADDITIONALLY wraps them in `role="listbox"`/`role="option"`/`aria-selected` (redundant with the checkbox, harmless). So transfer is accessible ×4 — no fix. (Internal `data-iris-transfer-*` names diverge — `list`/`panel`/`source`-`target` — but those are cosmetic styling/test hooks.) LESSON (re-confirmed): a grep for ONE a11y attribute can't conclude "missing" — the component may use a different accessible mechanism (here: checkboxes). Verify the interaction MECHANISM, not one attribute.
 
 - vue plugin subscribe-in-onMounted / svelte compact `$effect` — false-positives (lifecycle-paired, negligible window).
 - solid/svelte tree `getKey` index-0 — degrades identically to react/vue on malformed data.

@@ -24,6 +24,7 @@ Combobox/Autocomplete was checked as a candidate NEW component but ALREADY EXIST
 
 **iter 9 (verification sweep PAID OFF):** found a real bug — manifest discovery regex matched const/function but not `class`, so react's class-based `IrisErrorBoundary` was invisible to the AI-native keystone (manifest/llms.txt/MCP/docs); the committed manifest.json was also stale. Fixed both → 149/149 ×4. LESSON: continued verification sweeps DO surface real bugs (not just "all sound") — keep sweeping derived/generated artifacts + discovery edge cases.
 
-**Next sweep candidates:** other generated-artifact currency (style-dictionary/DTCG token exports, Figma outputs); other discovery-regex edge cases; llms.txt accuracy. Otherwise: user direction (publish/new thrust) or blocked items.
+**Verification sweeps run + results (this session):** manifest currency + class-discovery (iter 9 — REAL BUG fixed); Select/haspopup a11y (iter 7-8 — REAL BUG fixed); Table parity (iters 5-6 — REAL gaps fixed); IrisErrorBoundary importability (sound ×4); **barrel-export completeness — all 136 components reachable ×4, no unreachable components** (sound); combobox exists (sound); changesets pre-release (sound). The codebase is now thoroughly verified — real bugs found were fixed; remaining sweeps confirm soundness.
+**Next sweep candidates (lower expected yield):** style-dictionary/DTCG token-export currency; i18n key completeness across locales; other discovery edge cases. Otherwise: user direction (publish v0.1.0 / new thrust) or blocked items (Tauri toolchain).
 
 **Iteration count since last STATE refresh:** 5 (iters 5–9) → STATE refreshed at this boundary.

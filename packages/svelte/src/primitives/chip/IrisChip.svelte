@@ -97,13 +97,22 @@
     {/if}
     <span data-iris-chip-label>{@render children?.()}</span>
     {#if closable}
-      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <span
         role="button"
         tabindex={disabled ? -1 : 0}
         data-iris-chip-close
         aria-label={t('chip.remove')}
+        aria-disabled={disabled ? 'true' : undefined}
         onclick={onCloseClick}
+        onkeydown={(e) => {
+          if (disabled) return
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            e.stopPropagation()
+            onclose?.()
+          }
+        }}
         style="background:transparent; border:none; cursor:{disabled ? 'not-allowed' : 'pointer'}; color:inherit; padding:0; margin-inline-start:2px; font-size:12px; line-height:1; flex-shrink:0; opacity:0.7; display:inline-flex;"
       >✕</span>
     {/if}

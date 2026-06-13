@@ -25,4 +25,18 @@ describe('IrisChip', () => {
     flushSync()
     expect(onclose).toHaveBeenCalled()
   })
+
+  it('close control is keyboard-activatable in the clickable+closable path', async () => {
+    const onclose = vi.fn()
+    const { container } = render(IrisChip, {
+      props: { clickable: true, closable: true, onclose },
+    })
+    const closeBtn = container.querySelector('[data-iris-chip-close]')!
+    await fireEvent.keyDown(closeBtn, { key: 'Enter' })
+    flushSync()
+    expect(onclose).toHaveBeenCalledTimes(1)
+    await fireEvent.keyDown(closeBtn, { key: ' ' })
+    flushSync()
+    expect(onclose).toHaveBeenCalledTimes(2)
+  })
 })

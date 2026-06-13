@@ -4,6 +4,8 @@
 
 ## Factory iterations
 
+- **iter 11-12** — test(manifest): two CI-enforced invariant guards — (11) barrel reachability (every component must be package-exported; catches "implemented but not exported"), (12) 4-framework parity (every component must exist in all 4). Converts manual verifications into permanent regression guards.
+
 - **iter 10** — fix(locale-zh): added 58 missing Chinese translations (zh covered only 46/104 built-in keys) + drift-guard tests (zh must cover every defaultMessages key; placeholders preserved). Found via i18n sweep.
 
 - **iter 9** — fix(manifest): discovery regex now matches `export class` (was const/function only) — React's class-based `IrisErrorBoundary` was invisible to the AI-native manifest/llms.txt/MCP/docs (react 148 vs 149). Regenerated the also-stale manifest.json + llms.txt. Now 149/149 ×4. (Found via a verification sweep — real bug, not noise.)

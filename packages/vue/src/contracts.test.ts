@@ -16,6 +16,7 @@ import {
   ratingScenario,
   paginationScenario,
   stepperScenario,
+  tableSortScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -36,6 +37,7 @@ import { IrisRating } from './primitives/rating/Rating'
 import { IrisPagination } from './primitives/pagination/Pagination'
 import { IrisStepper } from './primitives/stepper/Stepper'
 import { IrisStepperStep } from './primitives/stepper/StepperStep'
+import { IrisTable } from './primitives/table/Table'
 
 enableAutoUnmount(afterEach)
 
@@ -504,5 +506,35 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     const wrapper = mount(StepperHarness, { attachTo: host })
     await nextTick()
     await runContract(stepperScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  /**
+   * IrisTable manages sort UNCONTROLLED by default: the `sort` prop is omitted
+   * (`undefined`), so the table keeps internal sort state and cycles it on each
+   * header click (none → asc → desc → none) — no v-model harness needed, so we
+   * mount it directly like the React reference. The sortable `name` column
+   * header (`[data-iris-table-header="name"]`, `role="columnheader"`) exposes
+   * `aria-sort` reflecting that state. Same `{ key, title, sortable }` column
+   * shape + `data` array as every other adapter.
+   */
+  it('satisfies the shared Table sort contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(IrisTable, {
+      attachTo: host,
+      props: {
+        columns: [
+          { key: 'name', title: 'Name', sortable: true },
+          { key: 'age', title: 'Age', sortable: true },
+        ],
+        data: [
+          { id: '1', name: 'Bravo', age: 30 },
+          { id: '2', name: 'Alpha', age: 25 },
+          { id: '3', name: 'Charlie', age: 35 },
+        ],
+      },
+    })
+    await nextTick()
+    await runContract(tableSortScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

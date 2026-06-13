@@ -15,6 +15,7 @@ import {
   ratingScenario,
   paginationScenario,
   stepperScenario,
+  tableSortScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import {
@@ -34,6 +35,7 @@ import { IrisNumberInput } from './primitives/number-input'
 import { IrisRating } from './primitives/rating'
 import { IrisPagination } from './primitives/pagination'
 import { IrisStepper, IrisStepperStep } from './primitives/stepper'
+import { IrisTable } from './primitives/table/IrisTable'
 
 afterEach(cleanup)
 
@@ -179,5 +181,22 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
       </IrisStepper>
     ))
     await runContract(stepperScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared TableSort contract', async () => {
+    const { container } = render(() => (
+      <IrisTable
+        columns={[
+          { key: 'name', title: 'Name', sortable: true },
+          { key: 'age', title: 'Age', sortable: true },
+        ]}
+        data={[
+          { id: '1', name: 'Bravo', age: 30 },
+          { id: '2', name: 'Alpha', age: 25 },
+          { id: '3', name: 'Charlie', age: 35 },
+        ]}
+      />
+    ))
+    await runContract(tableSortScenario, driverFor(container), expect)
   })
 })

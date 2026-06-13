@@ -15,6 +15,7 @@ import {
   paginationScenario,
   stepperScenario,
   toggleGroupMultiScenario,
+  tableSortScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -36,6 +37,7 @@ import { IrisRating } from './primitives/rating/Rating'
 import { IrisPagination } from './primitives/pagination/Pagination'
 import { IrisStepper } from './primitives/stepper/Stepper'
 import { IrisStepperStep } from './primitives/stepper/StepperStep'
+import { IrisTable } from './primitives/table/Table'
 
 afterEach(cleanup)
 
@@ -178,5 +180,22 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       </IrisToggleGroup>,
     )
     await runContract(toggleGroupMultiScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Table column-sort contract', async () => {
+    const { container } = render(
+      <IrisTable
+        columns={[
+          { key: 'name', title: 'Name', sortable: true },
+          { key: 'age', title: 'Age', sortable: true },
+        ]}
+        data={[
+          { id: '1', name: 'Bravo', age: 30 },
+          { id: '2', name: 'Alpha', age: 25 },
+          { id: '3', name: 'Charlie', age: 35 },
+        ]}
+      />,
+    )
+    await runContract(tableSortScenario, driverFor(container), expect)
   })
 })

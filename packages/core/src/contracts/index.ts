@@ -12,6 +12,7 @@ export { ratingScenario } from './scenarios/rating'
 export { paginationScenario } from './scenarios/pagination'
 export { stepperScenario } from './scenarios/stepper'
 export { toggleGroupMultiScenario } from './scenarios/toggle-group-multi'
+export { tableSortScenario } from './scenarios/table-sort'
 export type {
   ContractScenario,
   ContractStep,

@@ -16,11 +16,13 @@ import {
   ratingScenario,
   paginationScenario,
   stepperScenario,
+  tableSortScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
 import RatingContractHarness from './RatingContractHarness.svelte'
 import ToggleGroupMultiContractHarness from './ToggleGroupMultiContractHarness.svelte'
+import TableSortContractHarness from './TableSortContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -115,5 +117,16 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // (count === 1) assertion. See RatingContractHarness.svelte for the full note.
     const { container } = render(RatingContractHarness)
     await runContract(ratingScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Table column-sort contract', async () => {
+    // Rendered in a dedicated harness (not the shared ContractsHarness) so the
+    // table's many header/row/cell elements stay out of the shared container and
+    // can't collide with other scenarios' role-based selector counts. Sort is
+    // uncontrolled (no `sort` prop), so the harness holds no state — the table
+    // cycles aria-sort none→ascending→descending→none internally. See
+    // TableSortContractHarness.svelte for the full note.
+    const { container } = render(TableSortContractHarness)
+    await runContract(tableSortScenario, driverFor(container), expect)
   })
 })

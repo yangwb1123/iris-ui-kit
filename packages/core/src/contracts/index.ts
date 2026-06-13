@@ -11,6 +11,7 @@ export { numberInputScenario } from './scenarios/number-input'
 export { ratingScenario } from './scenarios/rating'
 export { paginationScenario } from './scenarios/pagination'
 export { stepperScenario } from './scenarios/stepper'
+export { toggleGroupMultiScenario } from './scenarios/toggle-group-multi'
 export type {
   ContractScenario,
   ContractStep,

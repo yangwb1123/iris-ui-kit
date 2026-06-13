@@ -8,6 +8,7 @@ import {
   accordionScenario,
   segmentedScenario,
   toggleGroupScenario,
+  toggleGroupMultiScenario,
   sliderScenario,
   radioScenario,
   numberInputScenario,
@@ -121,6 +122,17 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
       </IrisToggleGroup>
     ))
     await runContract(toggleGroupScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared ToggleGroup (multiple) contract', async () => {
+    const { container } = render(() => (
+      <IrisToggleGroup type="multiple" defaultValue={[]}>
+        <IrisToggleGroupItem value="a">A</IrisToggleGroupItem>
+        <IrisToggleGroupItem value="b">B</IrisToggleGroupItem>
+        <IrisToggleGroupItem value="c">C</IrisToggleGroupItem>
+      </IrisToggleGroup>
+    ))
+    await runContract(toggleGroupMultiScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Slider contract', async () => {

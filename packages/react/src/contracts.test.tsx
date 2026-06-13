@@ -14,6 +14,7 @@ import {
   ratingScenario,
   paginationScenario,
   stepperScenario,
+  toggleGroupMultiScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -166,5 +167,16 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       </IrisStepper>,
     )
     await runContract(stepperScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared multiple-mode ToggleGroup contract', async () => {
+    const { container } = render(
+      <IrisToggleGroup type="multiple" defaultValue={[]}>
+        <IrisToggleGroupItem value="a">A</IrisToggleGroupItem>
+        <IrisToggleGroupItem value="b">B</IrisToggleGroupItem>
+        <IrisToggleGroupItem value="c">C</IrisToggleGroupItem>
+      </IrisToggleGroup>,
+    )
+    await runContract(toggleGroupMultiScenario, driverFor(container), expect)
   })
 })

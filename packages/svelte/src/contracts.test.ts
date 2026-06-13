@@ -9,6 +9,7 @@ import {
   accordionScenario,
   segmentedScenario,
   toggleGroupScenario,
+  toggleGroupMultiScenario,
   sliderScenario,
   radioScenario,
   numberInputScenario,
@@ -19,6 +20,7 @@ import {
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
 import RatingContractHarness from './RatingContractHarness.svelte'
+import ToggleGroupMultiContractHarness from './ToggleGroupMultiContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -69,6 +71,16 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
   it('satisfies the shared ToggleGroup contract', async () => {
     const { container } = render(ContractsHarness)
     await runContract(toggleGroupScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared multiple-mode ToggleGroup contract', async () => {
+    // Rendered in a dedicated harness (not the shared ContractsHarness) so its
+    // three `[data-iris-toggle-group-item]` buttons do not collide with the
+    // single-mode group's three in the shared harness — which would make that
+    // selector count 6 and break both groups' `count === 3` assertions. See
+    // ToggleGroupMultiContractHarness.svelte for the full note.
+    const { container } = render(ToggleGroupMultiContractHarness)
+    await runContract(toggleGroupMultiScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Slider contract', async () => {

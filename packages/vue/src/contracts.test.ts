@@ -9,6 +9,7 @@ import {
   accordionScenario,
   segmentedScenario,
   toggleGroupScenario,
+  toggleGroupMultiScenario,
   sliderScenario,
   radioScenario,
   numberInputScenario,
@@ -185,6 +186,40 @@ const ToggleGroupHarness = defineComponent({
           modelValue: value.value,
           'onUpdate:modelValue': (v: string | string[] | null) => {
             value.value = (v as string | null) ?? null
+          },
+        },
+        () => [
+          h(IrisToggleGroupItem, { value: 'a' }, () => 'A'),
+          h(IrisToggleGroupItem, { value: 'b' }, () => 'B'),
+          h(IrisToggleGroupItem, { value: 'c' }, () => 'C'),
+        ],
+      )
+  },
+})
+
+/**
+ * IrisToggleGroup (`type="multiple"`) is the multi-selection counterpart: its
+ * `modelValue` is a `string[]`, so — like the single-mode harness — mount it
+ * inside a wrapper holding a reactive `string[]` bound with v-model, rendering
+ * three IrisToggleGroupItem children with values a/b/c. In multiple mode items
+ * expose `aria-pressed` (toggle, not radio) and each toggles INDEPENDENTLY:
+ * pressing a second item emits `update:modelValue` with the combined array
+ * (first stays pressed), and re-pressing an active item removes it from the
+ * array (toggles off). Starts EMPTY (`[]`) → none pressed, matching the
+ * uncontrolled React reference (`defaultValue={[]}`).
+ */
+const ToggleGroupMultiHarness = defineComponent({
+  name: 'ToggleGroupMultiHarness',
+  setup() {
+    const value = ref<string[]>([])
+    return () =>
+      h(
+        IrisToggleGroup,
+        {
+          type: 'multiple',
+          modelValue: value.value,
+          'onUpdate:modelValue': (v: string | string[] | null) => {
+            value.value = Array.isArray(v) ? v : v == null ? [] : [v]
           },
         },
         () => [
@@ -413,6 +448,14 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     const wrapper = mount(ToggleGroupHarness, { attachTo: host })
     await nextTick()
     await runContract(toggleGroupScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared multiple-mode ToggleGroup contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(ToggleGroupMultiHarness, { attachTo: host })
+    await nextTick()
+    await runContract(toggleGroupMultiScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 
   it('satisfies the shared Slider keyboard contract', async () => {

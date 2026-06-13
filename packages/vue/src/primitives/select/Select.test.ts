@@ -36,6 +36,11 @@ describe('IrisSelect', () => {
     expect(wrapper.text()).toContain('Banana')
   })
 
+  it('trigger announces a listbox popup (not the popover default dialog)', () => {
+    const wrapper = mount(IrisSelect, { props: { items, modelValue: null }, attachTo: host })
+    expect(wrapper.find('[data-iris-select-trigger]').attributes('aria-haspopup')).toBe('listbox')
+  })
+
   it('opens the dropdown on trigger click', async () => {
     const wrapper = mount(IrisSelect, {
       props: { items, modelValue: null },

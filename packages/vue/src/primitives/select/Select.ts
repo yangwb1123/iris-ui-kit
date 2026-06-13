@@ -138,6 +138,9 @@ export const IrisSelect = defineComponent({
                       'data-iris-select-trigger': '',
                       'data-iris-select-size': props.size,
                       'data-state': open.value ? 'open' : 'closed',
+                      // A select opens a listbox, not a generic dialog — override
+                      // the popover trigger's default aria-haspopup="dialog".
+                      'aria-haspopup': 'listbox',
                       'aria-invalid': props.invalid ? 'true' : undefined,
                       'aria-describedby': props.ariaDescribedby,
                       style: {

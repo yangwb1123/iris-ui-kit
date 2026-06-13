@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { discover, findRepoRoot } from './discover'
 import { buildManifest } from './build'
@@ -64,6 +64,29 @@ describe('barrel reachability', () => {
         .map((c) => c.name)
       const unreachable = components.filter((name) => !exported.has(name))
       expect(unreachable).toEqual([])
+    })
+  }
+})
+
+/**
+ * Guards test-coverage drift: every primitive component MODULE must ship with a
+ * test file beside it. Component tests import via relative paths, so an entirely
+ * untested module otherwise passes CI silently (as happened for 5 solid + 5
+ * svelte modules before they were backfilled).
+ */
+describe('module test coverage', () => {
+  const root = findRepoRoot()
+  for (const [fw, src] of Object.entries(ADAPTER_SRC)) {
+    it(`${fw}: every primitive module has a test file`, () => {
+      const primitives = join(root, src, 'primitives')
+      const untested = readdirSync(primitives, { withFileTypes: true })
+        .filter((e) => e.isDirectory())
+        .filter((e) => {
+          const files = readdirSync(join(primitives, e.name))
+          return !files.some((f) => /\.test\.(ts|tsx)$/.test(f))
+        })
+        .map((e) => e.name)
+      expect(untested).toEqual([])
     })
   }
 })

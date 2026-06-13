@@ -13,6 +13,7 @@ import {
   radioScenario,
   numberInputScenario,
   ratingScenario,
+  paginationScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -82,6 +83,11 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
   it('satisfies the shared NumberInput contract', async () => {
     const { container } = render(ContractsHarness)
     await runContract(numberInputScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Pagination contract', async () => {
+    const { container } = render(ContractsHarness)
+    await runContract(paginationScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Rating contract', async () => {

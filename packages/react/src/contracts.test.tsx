@@ -12,6 +12,7 @@ import {
   radioScenario,
   numberInputScenario,
   ratingScenario,
+  paginationScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -30,6 +31,7 @@ import { IrisRadio } from './primitives/radio/Radio'
 import { IrisRadioGroup } from './primitives/radio/RadioGroup'
 import { IrisNumberInput } from './primitives/number-input/NumberInput'
 import { IrisRating } from './primitives/rating/Rating'
+import { IrisPagination } from './primitives/pagination/Pagination'
 
 afterEach(cleanup)
 
@@ -145,5 +147,10 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
   it('satisfies the shared Rating contract', async () => {
     const { container } = render(<IrisRating defaultValue={0} max={5} aria-label="Score" />)
     await runContract(ratingScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Pagination contract', async () => {
+    const { container } = render(<IrisPagination defaultValue={1} total={30} pageSize={10} />)
+    await runContract(paginationScenario, driverFor(container), expect)
   })
 })

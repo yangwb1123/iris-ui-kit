@@ -24,6 +24,7 @@
   import IrisRadioGroup from './primitives/radio/IrisRadioGroup.svelte'
   import IrisRadio from './primitives/radio/IrisRadio.svelte'
   import IrisNumberInput from './primitives/number-input/IrisNumberInput.svelte'
+  import IrisPagination from './primitives/pagination/IrisPagination.svelte'
 
   let checkboxValue = $state(false)
 
@@ -48,6 +49,13 @@
   // `value` back. Seed to 5 (the initial the shared NumberInput contract
   // expects) with min=0 max=10 step=1, then write back from `onchange`.
   let numberValue = $state<number | null>(5)
+
+  // IrisPagination is value-prop-driven too: clicking a page button emits
+  // `onchange` but `aria-current="page"` only moves when the parent writes
+  // `value` back. Seed to 1 (page 1 current, the initial the shared Pagination
+  // contract expects) over total=30 pageSize=10 (→ exactly 3 page buttons),
+  // then write back from `onchange`.
+  let pageValue = $state(1)
 </script>
 
 <IrisTabs defaultValue="a">
@@ -111,4 +119,11 @@
   step={1}
   aria-label="Quantity"
   onchange={(next) => (numberValue = next)}
+/>
+
+<IrisPagination
+  value={pageValue}
+  total={30}
+  pageSize={10}
+  onchange={(next) => (pageValue = next)}
 />

@@ -13,6 +13,7 @@ import {
   radioScenario,
   numberInputScenario,
   ratingScenario,
+  paginationScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -30,6 +31,7 @@ import { IrisSlider } from './primitives/slider/Slider'
 import { IrisRadioGroup, IrisRadio } from './primitives/radio/Radio'
 import { IrisNumberInput } from './primitives/number-input/NumberInput'
 import { IrisRating } from './primitives/rating/Rating'
+import { IrisPagination } from './primitives/pagination/Pagination'
 
 enableAutoUnmount(afterEach)
 
@@ -303,6 +305,30 @@ const RatingHarness = defineComponent({
   },
 })
 
+/**
+ * IrisPagination is modelValue-based (emits `update:modelValue`), so — like the
+ * Slider harness — mount it inside a wrapper holding a reactive number bound with
+ * v-model. Clicking a page button emits `update:modelValue`, flipping the ref and
+ * re-rendering with `aria-current="page"` moved to the new active page button.
+ * Starts at 1 over total=30/pageSize=10 (→ exactly 3 always-visible page buttons,
+ * no ellipsis), matching the uncontrolled React reference (`defaultValue={1}`).
+ */
+const PaginationHarness = defineComponent({
+  name: 'PaginationHarness',
+  setup() {
+    const value = ref(1)
+    return () =>
+      h(IrisPagination, {
+        modelValue: value.value,
+        total: 30,
+        pageSize: 10,
+        'onUpdate:modelValue': (v: number) => {
+          value.value = v
+        },
+      })
+  },
+})
+
 describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Tabs contract', async () => {
     const host = document.createElement('div')
@@ -382,5 +408,13 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     const wrapper = mount(RatingHarness, { attachTo: host })
     await nextTick()
     await runContract(ratingScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared Pagination contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(PaginationHarness, { attachTo: host })
+    await nextTick()
+    await runContract(paginationScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

@@ -28,4 +28,26 @@ describe('IrisTimePicker', () => {
     fireEvent.input(hoursInput, { target: { value: '10' } })
     expect(onChange).toHaveBeenCalledOnce()
   })
+
+  it('ArrowUp/ArrowDown step the minutes by minuteStep', () => {
+    const onChange = vi.fn()
+    const { container } = render(() => (
+      <IrisTimePicker value={{ hours: 0, minutes: 0 }} minuteStep={15} onChange={onChange} />
+    ))
+    const minutesInput = container.querySelector(
+      '[data-iris-time-picker-minutes]',
+    ) as HTMLInputElement
+    fireEvent.keyDown(minutesInput, { key: 'ArrowUp' })
+    expect(onChange).toHaveBeenLastCalledWith({ hours: 0, minutes: 15 })
+  })
+
+  it('ArrowUp steps hours with format-aware wrap (24h: 23 -> 0)', () => {
+    const onChange = vi.fn()
+    const { container } = render(() => (
+      <IrisTimePicker value={{ hours: 23, minutes: 0 }} onChange={onChange} />
+    ))
+    const hoursInput = container.querySelector('[data-iris-time-picker-hours]') as HTMLInputElement
+    fireEvent.keyDown(hoursInput, { key: 'ArrowUp' })
+    expect(onChange).toHaveBeenLastCalledWith({ hours: 0, minutes: 0 })
+  })
 })

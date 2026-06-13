@@ -108,6 +108,45 @@ export function IrisTimePicker(props: IrisTimePickerProps): JSX.Element {
     if (!Number.isNaN(v)) setMinutes(v)
   }
 
+  // Arrow-key stepping with format-aware wrap (matches React/Vue).
+  const stepHours = (delta: number) => {
+    const max = local.format === '12h' ? 12 : 23
+    const min = local.format === '12h' ? 1 : 0
+    let next = display().h + delta
+    if (next < min) next = max
+    if (next > max) next = min
+    if (local.format === '12h') {
+      const wrap = next === 12 ? 0 : next
+      setHours24(meridiem() === 'PM' ? wrap + 12 : wrap)
+    } else {
+      setHours24(next)
+    }
+  }
+  const stepMinutes = (delta: number) => {
+    let next = currentValue().minutes + delta * local.minuteStep
+    if (next < 0) next = 60 - local.minuteStep
+    if (next >= 60) next = 0
+    setMinutes(next)
+  }
+  const onHoursKey = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      stepHours(1)
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      stepHours(-1)
+    }
+  }
+  const onMinutesKey = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      stepMinutes(1)
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      stepMinutes(-1)
+    }
+  }
+
   const inputStyle: JSX.CSSProperties = {
     width: '48px',
     padding: '4px 6px',
@@ -136,6 +175,7 @@ export function IrisTimePicker(props: IrisTimePickerProps): JSX.Element {
         disabled={local.disabled || undefined}
         aria-label={t('timePicker.hours')}
         onInput={onHoursInput}
+        onKeyDown={onHoursKey}
         style={inputStyle}
       />
       <span style={{ color: 'var(--iris-foreground)', 'font-weight': '600' }}>:</span>
@@ -149,6 +189,7 @@ export function IrisTimePicker(props: IrisTimePickerProps): JSX.Element {
         disabled={local.disabled || undefined}
         aria-label={t('timePicker.minutes')}
         onInput={onMinutesInput}
+        onKeyDown={onMinutesKey}
         style={inputStyle}
       />
       <Show when={local.format === '12h'}>

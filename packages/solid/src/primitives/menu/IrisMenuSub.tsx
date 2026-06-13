@@ -52,9 +52,15 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
         e.preventDefault()
         items[nextEnabledIndex(index, -1, items.length)]?.focus()
         break
+      case 'ArrowLeft':
       case 'Escape':
+        e.preventDefault()
+        e.stopPropagation()
         setOpen(false)
         trigger()?.focus()
+        break
+      case 'Tab':
+        ctx.closeRoot()
         break
     }
   }
@@ -62,6 +68,22 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
   // Close sub when root closes
   createEffect(() => {
     if (!ctx.open()) setOpen(false)
+  })
+
+  // Focus first item on open; restore focus to this submenu's trigger on close.
+  let wasOpen = false
+  createEffect(() => {
+    const isOpen = open()
+    if (isOpen && !wasOpen) {
+      queueMicrotask(() => {
+        submenu()
+          ?.querySelector<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])')
+          ?.focus()
+      })
+    } else if (!isOpen && wasOpen) {
+      trigger()?.focus?.()
+    }
+    wasOpen = isOpen
   })
 
   return (
@@ -82,6 +104,9 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
           if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
             if (!props.disabled) setOpen(true)
+          } else if (e.key === 'ArrowLeft') {
+            e.preventDefault()
+            setOpen(false)
           }
         }}
         style={{

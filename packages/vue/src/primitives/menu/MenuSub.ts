@@ -124,7 +124,25 @@ export const IrisMenuSub = defineComponent({
     })
 
     const onContentKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowLeft' || event.key === 'Escape') {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault()
+        const items = Array.from(
+          contentRef.value?.querySelectorAll<HTMLElement>(
+            '[role="menuitem"]:not([aria-disabled="true"])',
+          ) ?? [],
+        )
+        if (items.length === 0) return
+        const index = items.indexOf(document.activeElement as HTMLElement)
+        const next =
+          event.key === 'ArrowDown'
+            ? index < 0
+              ? 0
+              : (index + 1) % items.length
+            : index <= 0
+              ? items.length - 1
+              : index - 1
+        items[next]?.focus()
+      } else if (event.key === 'ArrowLeft' || event.key === 'Escape') {
         event.preventDefault()
         event.stopPropagation()
         open.value = false

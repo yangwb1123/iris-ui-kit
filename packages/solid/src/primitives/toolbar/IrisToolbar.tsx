@@ -22,8 +22,11 @@ export function IrisToolbar(props: IrisToolbarProps): JSX.Element {
 
   const getItems = (): HTMLElement[] => {
     if (!rootRef) return []
+    // Filter ONLY disabled items — NOT `tabIndex >= 0`. Roving sets non-active
+    // items to tabIndex -1, so a `>= 0` filter would collapse the list to the
+    // single active item and break arrow navigation (matches React/Vue/Svelte).
     return (Array.from(rootRef.querySelectorAll(SELECTOR)) as HTMLElement[]).filter(
-      (el) => !el.hasAttribute('disabled') && el.tabIndex >= 0,
+      (el) => !el.hasAttribute('disabled'),
     )
   }
 

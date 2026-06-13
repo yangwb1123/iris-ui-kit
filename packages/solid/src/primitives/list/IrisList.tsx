@@ -6,6 +6,8 @@ import {
   nextEnabledIndex,
 } from '@iris-ui/core'
 import { useStore } from '../../useStore'
+import { useI18n } from '../../i18n'
+import { useDataState } from '../../motion'
 
 export interface IrisListItem<T = unknown> {
   value: T
@@ -31,6 +33,16 @@ export interface IrisListProps<T = unknown> extends Omit<
   /** Render prop for custom item content. */
   renderItem?: (item: IrisListItem<T>, selected: boolean) => JSX.Element
   onChange?: (value: T | T[]) => void
+  /** Show the loading state instead of items. */
+  loading?: boolean
+  /** Show the error state instead of items (takes precedence over loading). */
+  error?: boolean
+  /** Custom empty-state node (defaults to the localized `list.empty`). */
+  emptyState?: JSX.Element
+  /** Custom loading-state node (defaults to the localized `list.loading`). */
+  loadingState?: JSX.Element
+  /** Custom error-state node (defaults to the localized `list.error`). */
+  errorState?: JSX.Element
 }
 
 /**
@@ -38,7 +50,10 @@ export interface IrisListProps<T = unknown> extends Omit<
  * role="listbox", roving tabindex, arrow-key navigation, Enter/Space to select.
  */
 export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
-  const merged = mergeProps({ items: [] as IrisListItem<T>[], multi: false, loop: true }, props)
+  const merged = mergeProps(
+    { items: [] as IrisListItem<T>[], multi: false, loop: true, loading: false, error: false },
+    props,
+  )
   const [local, rest] = splitProps(merged as typeof merged & { style?: JSX.CSSProperties }, [
     'items',
     'value',
@@ -49,7 +64,19 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
     'renderItem',
     'onChange',
     'style',
+    'loading',
+    'error',
+    'emptyState',
+    'loadingState',
+    'errorState',
   ])
+
+  const { t } = useI18n()
+  const { state, isContent, stateProps } = useDataState(() => ({
+    loading: local.loading,
+    error: local.error,
+    empty: local.items.length === 0,
+  }))
 
   const isEnabled = (i: number): boolean => !local.items[i]?.disabled
 
@@ -106,6 +133,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
   }
 
   const onKeyDown: JSX.EventHandlerUnion<HTMLUListElement, KeyboardEvent> = (e) => {
+    if (!isContent()) return
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
@@ -145,6 +173,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
       role="listbox"
       aria-label={local.ariaLabel}
       aria-multiselectable={local.multi ? 'true' : undefined}
+      aria-busy={state() === 'loading' ? 'true' : undefined}
       data-iris-list=""
       onKeyDown={onKeyDown}
       style={{
@@ -158,53 +187,78 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
         ...((local.style as JSX.CSSProperties) ?? {}),
       }}
     >
-      <For each={local.items}>
-        {(item, index) => {
-          const i = index()
-          const selected = () => isSelected(item.value)
-          const active = () => i === activeIndex()
+      <Show
+        when={isContent()}
+        fallback={
+          <li
+            role="presentation"
+            data-iris-list-state={state()}
+            aria-live="polite"
+            {...stateProps()}
+            style={{
+              'list-style': 'none',
+              padding: '12px',
+              'text-align': 'center',
+              color: 'var(--iris-muted)',
+              'font-size': '14px',
+            }}
+          >
+            {state() === 'error'
+              ? (local.errorState ?? t('list.error'))
+              : state() === 'loading'
+                ? (local.loadingState ?? t('list.loading'))
+                : (local.emptyState ?? t('list.empty'))}
+          </li>
+        }
+      >
+        <For each={local.items}>
+          {(item, index) => {
+            const i = index()
+            const selected = () => isSelected(item.value)
+            const active = () => i === activeIndex()
 
-          return (
-            <li
-              role="option"
-              tabIndex={active() ? 0 : -1}
-              aria-selected={selected() ? 'true' : 'false'}
-              aria-disabled={item.disabled ? 'true' : undefined}
-              data-iris-list-index={i}
-              data-iris-list-item=""
-              data-state={selected() ? 'selected' : active() ? 'active' : 'idle'}
-              onClick={() => {
-                if (!item.disabled) {
-                  setActiveIndex(i)
-                  select(item)
-                }
-              }}
-              onFocus={() => setActiveIndex(i)}
-              style={{
-                display: 'flex',
-                'align-items': 'center',
-                gap: 'var(--iris-gap-sm, 6px)',
-                padding: '6px var(--iris-padding-md, 12px)',
-                'border-radius': 'var(--iris-radius-sm, 4px)',
-                cursor: item.disabled ? 'not-allowed' : 'pointer',
-                opacity: item.disabled ? '0.5' : '1',
-                'font-size': '14px',
-                background: selected()
-                  ? 'var(--iris-primary)'
-                  : active()
-                    ? 'var(--iris-surface-hover)'
-                    : 'transparent',
-                color: selected() ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
-                outline: 'none',
-              }}
-            >
-              <Show when={local.renderItem} fallback={<>{item.label ?? String(item.value)}</>}>
-                {local.renderItem!(item, selected())}
-              </Show>
-            </li>
-          )
-        }}
-      </For>
+            return (
+              <li
+                role="option"
+                tabIndex={active() ? 0 : -1}
+                aria-selected={selected() ? 'true' : 'false'}
+                aria-disabled={item.disabled ? 'true' : undefined}
+                data-iris-list-index={i}
+                data-iris-list-item=""
+                data-state={selected() ? 'selected' : active() ? 'active' : 'idle'}
+                onClick={() => {
+                  if (!item.disabled) {
+                    setActiveIndex(i)
+                    select(item)
+                  }
+                }}
+                onFocus={() => setActiveIndex(i)}
+                style={{
+                  display: 'flex',
+                  'align-items': 'center',
+                  gap: 'var(--iris-gap-sm, 6px)',
+                  padding: '6px var(--iris-padding-md, 12px)',
+                  'border-radius': 'var(--iris-radius-sm, 4px)',
+                  cursor: item.disabled ? 'not-allowed' : 'pointer',
+                  opacity: item.disabled ? '0.5' : '1',
+                  'font-size': '14px',
+                  background: selected()
+                    ? 'var(--iris-primary)'
+                    : active()
+                      ? 'var(--iris-surface-hover)'
+                      : 'transparent',
+                  color: selected() ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
+                  outline: 'none',
+                }}
+              >
+                <Show when={local.renderItem} fallback={<>{item.label ?? String(item.value)}</>}>
+                  {local.renderItem!(item, selected())}
+                </Show>
+              </li>
+            )
+          }}
+        </For>
+      </Show>
     </ul>
   )
 }

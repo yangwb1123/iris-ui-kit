@@ -65,4 +65,21 @@ describe('IrisList', () => {
     const items = container.querySelectorAll('[role="option"]')
     expect(items[1].getAttribute('aria-selected')).toBe('true')
   })
+
+  it('renders the empty state when items is empty', () => {
+    const { container } = render(() => <IrisList items={[]} />)
+    expect(container.querySelector('[data-iris-list-state="empty"]')).not.toBeNull()
+    expect(container.querySelectorAll('[role="option"]')).toHaveLength(0)
+  })
+
+  it('renders the loading state with aria-busy', () => {
+    const { container } = render(() => <IrisList items={fruits} loading />)
+    expect(container.querySelector('[data-iris-list-state="loading"]')).not.toBeNull()
+    expect(container.querySelector('ul')!.getAttribute('aria-busy')).toBe('true')
+  })
+
+  it('error state takes precedence over loading', () => {
+    const { container } = render(() => <IrisList items={fruits} loading error />)
+    expect(container.querySelector('[data-iris-list-state="error"]')).not.toBeNull()
+  })
 })

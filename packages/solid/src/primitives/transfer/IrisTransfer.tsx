@@ -101,6 +101,25 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
     m.toggle(value)
   }
 
+  // Select-all per pane: check every eligible item, or clear if all already
+  // checked (mirrors React/Vue/Svelte).
+  const eligibleValues = (side: 'source' | 'target'): string[] =>
+    (side === 'source' ? sourceItems() : targetItems())
+      .filter((o) => !o.disabled && !local.disabled)
+      .map((o) => o.value)
+
+  const allChecked = (side: 'source' | 'target'): boolean => {
+    const m = side === 'source' ? sourceModel : targetModel
+    const eligible = eligibleValues(side)
+    return eligible.length > 0 && eligible.every((v) => m.isSelected(v))
+  }
+
+  const toggleAll = (side: 'source' | 'target'): void => {
+    const m = side === 'source' ? sourceModel : targetModel
+    if (allChecked(side)) m.clear()
+    else m.set(eligibleValues(side))
+  }
+
   const panelStyle: JSX.CSSProperties = {
     flex: '1',
     border: '1px solid var(--iris-border)',
@@ -123,6 +142,9 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
     <div data-iris-transfer-panel={side} style={panelStyle}>
       <div
         style={{
+          display: 'flex',
+          'align-items': 'center',
+          gap: '8px',
           padding: '8px 12px',
           'border-bottom': '1px solid var(--iris-border)',
           'font-size': '13px',
@@ -130,8 +152,19 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
           color: 'var(--iris-foreground)',
         }}
       >
-        {title}
-        <span style={{ float: 'right', 'font-weight': 'normal', color: 'var(--iris-muted)' }}>
+        <input
+          type="checkbox"
+          aria-label={t(
+            side === 'source' ? 'transfer.selectAllSource' : 'transfer.selectAllTarget',
+          )}
+          checked={allChecked(side)}
+          disabled={local.disabled || undefined}
+          onChange={() => toggleAll(side)}
+        />
+        <span>{title}</span>
+        <span
+          style={{ 'margin-left': 'auto', 'font-weight': 'normal', color: 'var(--iris-muted)' }}
+        >
           {checked().length}/{items().length}
         </span>
       </div>
@@ -251,7 +284,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
           data-iris-transfer-move-right=""
           disabled={local.disabled || sourceChecked().length === 0 || undefined}
           onClick={moveToTarget}
-          title={t('transfer.toTarget')}
+          aria-label={t('transfer.toTarget')}
           style={{ ...btnStyle, opacity: sourceChecked().length === 0 ? '0.4' : '1' }}
         >
           ›
@@ -261,7 +294,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
           data-iris-transfer-move-left=""
           disabled={local.disabled || targetChecked().length === 0 || undefined}
           onClick={moveToSource}
-          title={t('transfer.toSource')}
+          aria-label={t('transfer.toSource')}
           style={{ ...btnStyle, opacity: targetChecked().length === 0 ? '0.4' : '1' }}
         >
           ‹

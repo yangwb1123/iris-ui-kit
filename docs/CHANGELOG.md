@@ -4,6 +4,8 @@
 
 ## Factory iterations
 
+- **iter 14-15** — test(manifest): two more CI-enforced guards — (14) module test-coverage (every primitive module must have a test; locks in iter-13), (15) CSS-variable reference validity (every no-fallback var(--iris-\*) must resolve to a defined token — catches silent typos). Guard suite now 7-strong.
+
 - **iter 13** — test: filled 10 missing component-module tests (solid + svelte each had 5 untested: avatar/form-field/input/switch + breadcrumb[solid]/drag-useDrag[svelte]) mirroring react coverage (+88 tests); flipped solid vitest isolate:false→true (fixed a latent cross-file reactive-owner leak flake; matches react/vue defaults). No component source changed.
 
 - **iter 11-12** — test(manifest): two CI-enforced invariant guards — (11) barrel reachability (every component must be package-exported; catches "implemented but not exported"), (12) 4-framework parity (every component must exist in all 4). Converts manual verifications into permanent regression guards.

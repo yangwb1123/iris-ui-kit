@@ -107,6 +107,7 @@
   tabindex={disabled ? -1 : 0}
   aria-haspopup="menu"
   aria-expanded={open}
+  aria-controls={subId}
   aria-disabled={disabled ? 'true' : undefined}
   data-iris-menu-sub-trigger
   {...rest}

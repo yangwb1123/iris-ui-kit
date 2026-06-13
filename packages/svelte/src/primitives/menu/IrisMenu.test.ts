@@ -57,6 +57,8 @@ describe('IrisMenu', () => {
       await fireEvent.keyDown(subTrigger(), { key: 'ArrowRight' })
       expect(subContent()).not.toBeNull()
       expect(subTrigger().getAttribute('aria-expanded')).toBe('true')
+      // aria-controls references the submenu panel (not an unreferenced id).
+      expect(subTrigger().getAttribute('aria-controls')).toBe(subContent()!.id)
     })
 
     it('ArrowLeft on the sub-trigger closes the submenu', async () => {

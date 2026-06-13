@@ -18,6 +18,7 @@ import {
   stepperScenario,
   tableSortScenario,
   tableSelectScenario,
+  tableExpandScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -25,6 +26,7 @@ import RatingContractHarness from './RatingContractHarness.svelte'
 import ToggleGroupMultiContractHarness from './ToggleGroupMultiContractHarness.svelte'
 import TableSortContractHarness from './TableSortContractHarness.svelte'
 import TableSelectContractHarness from './TableSelectContractHarness.svelte'
+import TableExpandContractHarness from './TableExpandContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -142,5 +144,19 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // TableSelectContractHarness.svelte for the full note.
     const { container } = render(TableSelectContractHarness)
     await runContract(tableSelectScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Table row-expansion contract', async () => {
+    // Rendered in a dedicated harness (not the shared ContractsHarness) so the
+    // table's many header/row/cell elements stay out of the shared container and
+    // can't collide with other scenarios' role-based selector counts. Expansion
+    // is uncontrolled (no `defaultExpandedRowKeys`/controlled expanded prop), so
+    // the harness holds no state — providing `renderDetail` adds the leading
+    // expand-toggle column, and each toggle flips its row's aria-expanded and
+    // mounts/unmounts its `[data-iris-table-detail-cell]` internally. See
+    // TableExpandContractHarness.svelte for the full note (incl. the Svelte
+    // function-prop renderDetail idiom).
+    const { container } = render(TableExpandContractHarness)
+    await runContract(tableExpandScenario, driverFor(container), expect)
   })
 })

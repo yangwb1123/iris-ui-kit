@@ -18,6 +18,7 @@ import {
   stepperScenario,
   tableSortScenario,
   tableSelectScenario,
+  tableExpandScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -566,5 +567,35 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     })
     await nextTick()
     await runContract(tableSelectScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  /**
+   * IrisTable accepts the expandable detail panel via the `renderDetail` PROP (a
+   * function `(row, rowIndex) => VNodeChild`, per types.ts) — NOT a slot — so we
+   * mount it directly like the React reference, passing `renderDetail` in `props`.
+   * Providing it adds a leading expand-toggle column where every row gets a
+   * `[data-iris-table-expand-toggle]` button owning `aria-expanded`. Expansion is
+   * UNCONTROLLED by default (no controlled prop → the internal core `createExpansion`
+   * model toggles on click), so no v-model harness is needed. Clicking a toggle
+   * mounts/unmounts that row's full-width `[data-iris-table-detail-cell]`. Same
+   * `{ key, title }` column shape + three-row `data` array as the other adapters.
+   */
+  it('satisfies the shared Table expandable-detail contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(IrisTable, {
+      attachTo: host,
+      props: {
+        columns: [{ key: 'name', title: 'Name' }],
+        data: [
+          { id: '1', name: 'Bravo' },
+          { id: '2', name: 'Alpha' },
+          { id: '3', name: 'Charlie' },
+        ],
+        renderDetail: (row: Record<string, unknown>) => h('div', `Detail ${String(row.name)}`),
+      },
+    })
+    await nextTick()
+    await runContract(tableExpandScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

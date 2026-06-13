@@ -17,6 +17,7 @@ import {
   stepperScenario,
   tableSortScenario,
   tableSelectScenario,
+  tableExpandScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import {
@@ -214,5 +215,20 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
       />
     ))
     await runContract(tableSelectScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared TableExpand contract', async () => {
+    const { container } = render(() => (
+      <IrisTable
+        columns={[{ key: 'name', title: 'Name' }]}
+        data={[
+          { id: '1', name: 'Bravo' },
+          { id: '2', name: 'Alpha' },
+          { id: '3', name: 'Charlie' },
+        ]}
+        renderDetail={(row) => <div>Detail {String(row.name)}</div>}
+      />
+    ))
+    await runContract(tableExpandScenario, driverFor(container), expect)
   })
 })

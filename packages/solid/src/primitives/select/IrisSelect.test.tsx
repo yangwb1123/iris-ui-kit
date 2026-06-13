@@ -43,4 +43,35 @@ describe('IrisSelect', () => {
     const { container } = render(() => <IrisSelect items={items} value="cherry" />)
     expect(container.querySelector('[data-iris-select-trigger]')?.textContent).toContain('Cherry')
   })
+
+  describe('keyboard navigation', () => {
+    const open = (c: HTMLElement) => {
+      const trigger = c.querySelector('[data-iris-select-trigger]') as HTMLElement
+      fireEvent.keyDown(trigger, { key: 'ArrowDown' }) // opens + active = first enabled
+      return trigger
+    }
+
+    it('End moves the active option to the last (Enter selects it)', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisSelect items={items} onChange={onChange} portalTarget={false} />
+      ))
+      const trigger = open(container)
+      fireEvent.keyDown(trigger, { key: 'End' })
+      fireEvent.keyDown(trigger, { key: 'Enter' })
+      expect(onChange).toHaveBeenCalledWith('cherry')
+    })
+
+    it('Home moves the active option back to the first (Enter selects it)', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisSelect items={items} onChange={onChange} portalTarget={false} />
+      ))
+      const trigger = open(container)
+      fireEvent.keyDown(trigger, { key: 'ArrowDown' }) // active = banana
+      fireEvent.keyDown(trigger, { key: 'Home' }) // active = apple
+      fireEvent.keyDown(trigger, { key: 'Enter' })
+      expect(onChange).toHaveBeenCalledWith('apple')
+    })
+  })
 })

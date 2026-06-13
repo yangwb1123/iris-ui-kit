@@ -5,6 +5,7 @@ import { useDismiss } from '../../floating/useDismiss'
 import { useI18n } from '../../i18n'
 import {
   firstEnabledIndex,
+  lastEnabledIndex,
   matchTypeahead,
   nextEnabledIndex,
   type Placement,
@@ -41,8 +42,8 @@ const SIZE_MAP: Record<IrisSelectSize, { padding: string; fontSize: string; minH
 }
 
 /**
- * Single-select dropdown. Floating listbox; keyboard nav (Up/Down/Enter/Escape).
- * Solid port of the Vue IrisSelect.
+ * Single-select dropdown. Floating listbox; keyboard nav (Up/Down/Home/End/
+ * Enter/Escape + typeahead). Solid port of the Vue IrisSelect.
  */
 export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element {
   const merged = mergeProps(
@@ -111,6 +112,14 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
       e.preventDefault()
       if (!open()) return
       setActiveIndex(nextEnabledIndex(activeIndex(), -1, merged.items.length, isEnabled))
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      if (!open()) return
+      setActiveIndex(firstEnabledIndex(merged.items.length, isEnabled))
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      if (!open()) return
+      setActiveIndex(lastEnabledIndex(merged.items.length, isEnabled))
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       if (!open()) {

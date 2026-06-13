@@ -28,9 +28,11 @@ import {
 } from '@iris-ui/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
+import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/IrisVirtualScroll'
 import type {
   IrisTableColumn,
+  IrisTableColumnWidths,
   IrisTableSortState,
   IrisTableCellEditEvent,
   IrisTableVirtualOptions,
@@ -49,6 +51,14 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   bordered?: boolean
   loading?: boolean
   error?: boolean
+  /** Enable column resizing (drag the header's trailing edge or focus + arrow keys). */
+  resizableColumns?: boolean
+  /** Controlled per-column pixel widths, keyed by column `key`. */
+  columnWidths?: IrisTableColumnWidths
+  /** Uncontrolled initial per-column pixel widths, keyed by column `key`. */
+  defaultColumnWidths?: IrisTableColumnWidths
+  /** Notified with the full width map whenever the user resizes a column. */
+  onColumnWidthsChange?: (next: IrisTableColumnWidths) => void
   onRowClick?: (row: Row, index: number) => void
   onCellEdit?: (event: IrisTableCellEditEvent<Row>) => void
   /**
@@ -98,6 +108,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
 }
 
 const DEFAULT_COL_WIDTH = 140
+const DEFAULT_MIN_WIDTH = 60
+const RESIZE_STEP = 16
 
 function resolveInitialWidth(col: IrisTableColumn<Record<string, unknown>>): number {
   if (typeof col.width === 'number') return col.width
@@ -117,6 +129,69 @@ function getCellValue<Row extends Record<string, unknown>>(
 }
 
 /**
+ * Focusable resize grip at a column header's trailing edge. Pointer drag (via
+ * `useDrag`) or Arrow-Left/Right adjusts the column's pixel width, min/max
+ * clamped. `role="separator"` + `aria-orientation` follow the WAI-ARIA
+ * window-splitter pattern. Solid mirror of the React `ColumnResizeHandle`.
+ */
+function ColumnResizeHandle(props: {
+  colKey: string
+  label: string
+  /** Reads the column's current resolved width at drag/keypress time. */
+  width: () => number
+  minWidth: number
+  maxWidth: number
+  onResize: (key: string, width: number) => void
+}): JSX.Element {
+  const [handle, setHandle] = createSignal<HTMLElement | null>(null)
+  let startWidth = 0
+  const clamp = (w: number): number =>
+    Math.max(props.minWidth, Math.min(props.maxWidth, Math.round(w)))
+
+  useDrag({
+    handle,
+    onStart: () => {
+      startWidth = props.width()
+    },
+    onDrag: ({ dx }) => props.onResize(props.colKey, clamp(startWidth + dx)),
+  })
+
+  return (
+    <span
+      ref={setHandle}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={`Resize ${props.label}`}
+      tabindex={0}
+      data-iris-table-resize-handle=""
+      data-column-key={props.colKey}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault()
+          e.stopPropagation()
+          props.onResize(props.colKey, clamp(props.width() - RESIZE_STEP))
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault()
+          e.stopPropagation()
+          props.onResize(props.colKey, clamp(props.width() + RESIZE_STEP))
+        }
+      }}
+      style={{
+        position: 'absolute',
+        top: '0',
+        right: '0',
+        bottom: '0',
+        width: '8px',
+        cursor: 'col-resize',
+        'touch-action': 'none',
+        'user-select': 'none',
+      }}
+    />
+  )
+}
+
+/**
  * Data table. Renders as a CSS-grid layout. Supports sorting, row selection,
  * and inline editing. Opt-in virtual scrolling windows the body (flat AND tree
  * rows, which are uniform height) unless `renderDetail` is also set (detail
@@ -133,6 +208,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       bordered: true,
       loading: false,
       error: false,
+      resizableColumns: false,
       keyboardNavigation: false,
       cellRange: false,
       columnVirtualization: false,
@@ -154,6 +230,43 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const headerMatrix = createMemo<HeaderCell<IrisTableColumn<Row>>[][] | null>(() =>
     grouped() ? buildHeaderMatrix(merged.columns) : null,
   )
+
+  // ---- Column widths (opt-in resizing) ----
+  // Uncontrolled widths live in `internalWidths`, seeded from each LEAF column's
+  // resolved width (a header-group column carries no body width; only its leaves
+  // do) plus any `defaultColumnWidths` override. Controlled tables render from
+  // the `columnWidths` prop. `effectiveWidths()` is the map the grid template +
+  // column virtualization read; in the off/unset case it still resolves to each
+  // column's natural width, so the rendered grid is unchanged from before.
+  const [internalWidths, setInternalWidths] = createSignal<IrisTableColumnWidths>({
+    ...(props.defaultColumnWidths ?? {}),
+  })
+  // Seed any not-yet-seen leaf column on column change (keeps existing entries,
+  // including user-resized + defaultColumnWidths values).
+  createEffect(() => {
+    const cols = leafColumns()
+    setInternalWidths((prev) => {
+      let changed = false
+      const seeded = { ...prev }
+      for (const col of cols) {
+        if (seeded[col.key] === undefined) {
+          seeded[col.key] = resolveInitialWidth(col as IrisTableColumn<Record<string, unknown>>)
+          changed = true
+        }
+      }
+      return changed ? seeded : prev
+    })
+  })
+  const widthsControlled = (): boolean => props.columnWidths !== undefined
+  const effectiveWidths = (): IrisTableColumnWidths =>
+    widthsControlled() ? props.columnWidths! : internalWidths()
+  const widthOf = (col: IrisTableColumn<Row>): number =>
+    effectiveWidths()[col.key] ??
+    resolveInitialWidth(col as IrisTableColumn<Record<string, unknown>>)
+  const setColumnWidths = (next: IrisTableColumnWidths): void => {
+    if (!widthsControlled()) setInternalWidths(next)
+    merged.onColumnWidthsChange?.(next)
+  }
 
   // ---- Sort ----
   const [internalSort, setInternalSort] = createSignal<IrisTableSortState | null>(null)
@@ -437,7 +550,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     if (hasDetail()) parts.push(`${EXPAND_COL_WIDTH}px`)
     if (merged.selectable !== 'none') parts.push(`${SELECTION_COL_WIDTH}px`)
     for (const col of leafColumns()) {
-      parts.push(`${resolveInitialWidth(col as IrisTableColumn<Record<string, unknown>>)}px`)
+      parts.push(`${widthOf(col)}px`)
     }
     return parts.join(' ')
   })
@@ -479,7 +592,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       itemCount: cols.length,
       scrollTop: scrollLeft(),
       viewportSize: viewportWidth(),
-      itemSize: (i) => resolveInitialWidth(cols[i] as IrisTableColumn<Record<string, unknown>>),
+      itemSize: (i) => widthOf(cols[i]),
       buffer: 2,
     })
     const set = new Set<number>()
@@ -1030,6 +1143,16 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                   >
                     {col.title}
                     {sortIndicator(col)}
+                    <Show when={merged.resizableColumns}>
+                      <ColumnResizeHandle
+                        colKey={col.key}
+                        label={col.title}
+                        width={() => widthOf(col)}
+                        minWidth={col.minWidth ?? DEFAULT_MIN_WIDTH}
+                        maxWidth={col.maxWidth ?? Infinity}
+                        onResize={(key, w) => setColumnWidths({ ...effectiveWidths(), [key]: w })}
+                      />
+                    </Show>
                   </div>
                 </Show>
               )

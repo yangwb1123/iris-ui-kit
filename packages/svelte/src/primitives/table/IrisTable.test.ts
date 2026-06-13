@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { render, fireEvent, cleanup } from '@testing-library/svelte'
+import { render, fireEvent, createEvent, cleanup } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
 import IrisTable from './IrisTable.svelte'
 
@@ -712,5 +712,136 @@ describe('IrisTable controlled selection', () => {
     await fireEvent.click(rowCheckbox(container, 2))
     flushSync()
     expect(onUpdateSelection).toHaveBeenLastCalledWith([1, 3])
+  })
+})
+
+describe('IrisTable column resize', () => {
+  // jsdom's PointerEvent drops clientX / button / pointerId from its init, so
+  // build the event and define them explicitly to drive the useDrag handlers
+  // (useDrag filters on button === 0 + matches the pointerId across the drag).
+  async function dragPointer(
+    node: Element,
+    kind: 'pointerDown' | 'pointerMove' | 'pointerUp',
+    clientX: number,
+  ): Promise<void> {
+    const ev = createEvent[kind](node)
+    Object.defineProperty(ev, 'clientX', { value: clientX, configurable: true })
+    Object.defineProperty(ev, 'button', { value: 0, configurable: true })
+    Object.defineProperty(ev, 'pointerId', { value: 1, configurable: true })
+    await fireEvent(node, ev)
+  }
+
+  const handle = (container: HTMLElement, key: string): HTMLElement | null =>
+    container.querySelector(`[data-iris-table-resize-handle][data-column-key="${key}"]`)
+
+  const gridCols = (container: HTMLElement): string =>
+    (container.querySelector('[data-iris-table-header-row]') as HTMLElement).style
+      .gridTemplateColumns
+
+  it('renders no resize handles unless resizableColumns', () => {
+    const { container } = render(IrisTable, { props: { columns, data } })
+    expect(container.querySelectorAll('[data-iris-table-resize-handle]').length).toBe(0)
+  })
+
+  it('renders a separator handle per column when resizableColumns', () => {
+    const { container } = render(IrisTable, {
+      props: { columns, data, resizableColumns: true },
+    })
+    expect(container.querySelectorAll('[data-iris-table-resize-handle]').length).toBe(2)
+    const h = handle(container, 'name')!
+    expect(h.getAttribute('role')).toBe('separator')
+    expect(h.getAttribute('aria-orientation')).toBe('vertical')
+  })
+
+  it('ArrowRight grows the column width (uncontrolled)', async () => {
+    const { container } = render(IrisTable, {
+      props: { columns, data, resizableColumns: true, defaultColumnWidths: { name: 100 } },
+    })
+    expect(gridCols(container)).toContain('100px')
+    await fireEvent.keyDown(handle(container, 'name')!, { key: 'ArrowRight' })
+    flushSync()
+    expect(gridCols(container)).toContain('116px')
+  })
+
+  it('ArrowLeft shrinks but clamps to the column minWidth', async () => {
+    const cols = [
+      { key: 'name', title: 'Name', minWidth: 90 },
+      { key: 'age', title: 'Age' },
+    ]
+    const { container } = render(IrisTable, {
+      props: { columns: cols, data, resizableColumns: true, defaultColumnWidths: { name: 100 } },
+    })
+    // 100 - 16 = 84 → clamp up to minWidth 90.
+    await fireEvent.keyDown(handle(container, 'name')!, { key: 'ArrowLeft' })
+    flushSync()
+    expect(gridCols(container)).toContain('90px')
+  })
+
+  it('ArrowRight clamps to the column maxWidth', async () => {
+    const cols = [
+      { key: 'name', title: 'Name', maxWidth: 110 },
+      { key: 'age', title: 'Age' },
+    ]
+    const { container } = render(IrisTable, {
+      props: { columns: cols, data, resizableColumns: true, defaultColumnWidths: { name: 100 } },
+    })
+    // 100 + 16 = 116 → clamp down to maxWidth 110.
+    await fireEvent.keyDown(handle(container, 'name')!, { key: 'ArrowRight' })
+    flushSync()
+    expect(gridCols(container)).toContain('110px')
+  })
+
+  it('onColumnWidthsChange fires with the new widths', async () => {
+    const onColumnWidthsChange = vi.fn()
+    const { container } = render(IrisTable, {
+      props: {
+        columns,
+        data,
+        resizableColumns: true,
+        defaultColumnWidths: { name: 100 },
+        onColumnWidthsChange,
+      },
+    })
+    await fireEvent.keyDown(handle(container, 'name')!, { key: 'ArrowRight' })
+    flushSync()
+    expect(onColumnWidthsChange).toHaveBeenCalledWith({ name: 116 })
+  })
+
+  it('controlled columnWidths render the given widths', () => {
+    const { container } = render(IrisTable, {
+      props: { columns, data, resizableColumns: true, columnWidths: { name: 150, age: 80 } },
+    })
+    expect(gridCols(container)).toContain('150px')
+    expect(gridCols(container)).toContain('80px')
+  })
+
+  it('clicking the resize handle does not trigger sort', async () => {
+    const onUpdateSort = vi.fn()
+    const { container } = render(IrisTable, {
+      props: { columns, data, resizableColumns: true, onUpdateSort },
+    })
+    await fireEvent.click(handle(container, 'name')!)
+    flushSync()
+    expect(onUpdateSort).not.toHaveBeenCalled()
+  })
+
+  it('dragging the handle adjusts the column width + fires onColumnWidthsChange', async () => {
+    const onColumnWidthsChange = vi.fn()
+    const { container } = render(IrisTable, {
+      props: {
+        columns,
+        data,
+        resizableColumns: true,
+        defaultColumnWidths: { name: 100 },
+        onColumnWidthsChange,
+      },
+    })
+    const h = handle(container, 'name')!
+    await dragPointer(h, 'pointerDown', 0)
+    await dragPointer(h, 'pointerMove', 40) // dx = 40 → 100 + 40 = 140
+    await dragPointer(h, 'pointerUp', 40)
+    flushSync()
+    expect(onColumnWidthsChange).toHaveBeenLastCalledWith({ name: 140 })
+    expect(gridCols(container)).toContain('140px')
   })
 })

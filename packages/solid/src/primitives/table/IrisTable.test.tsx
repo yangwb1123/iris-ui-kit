@@ -698,3 +698,159 @@ describe('IrisTable column virtualization', () => {
     expect(document.querySelector('[data-iris-table-header="c7"]')).not.toBeNull()
   })
 })
+
+describe('IrisTable column resize', () => {
+  // jsdom may not implement PointerEvent — fall back to a synthetic Event
+  // decorated with the fields useDrag reads (mirrors the useDrag test idiom).
+  function makePointerEvent(type: string, init: PointerEventInit = {}): Event {
+    const PointerCtor = (globalThis as Record<string, unknown>).PointerEvent
+    if (typeof PointerCtor === 'function') {
+      return new (PointerCtor as new (type: string, init?: EventInit) => Event)(type, {
+        bubbles: true,
+        ...init,
+      })
+    }
+    const event = new Event(type, { bubbles: true })
+    Object.assign(event, {
+      button: init.button ?? 0,
+      buttons: init.buttons ?? 1,
+      clientX: init.clientX ?? 0,
+      clientY: init.clientY ?? 0,
+      pointerId: init.pointerId ?? 1,
+    })
+    return event
+  }
+
+  function handle(key: string): HTMLElement | null {
+    return document.querySelector(`[data-iris-table-resize-handle][data-column-key="${key}"]`)
+  }
+  function gridCols(): string {
+    // The column template lives on each row's grid (flat header row here).
+    return (document.querySelector('[data-iris-table-header-row]') as HTMLElement).style
+      .gridTemplateColumns
+  }
+
+  it('renders no resize handles unless resizableColumns', () => {
+    render(() => <IrisTable columns={columns} data={data} />)
+    expect(document.querySelectorAll('[data-iris-table-resize-handle]').length).toBe(0)
+  })
+
+  it('renders a separator handle per column when resizableColumns', () => {
+    render(() => <IrisTable columns={columns} data={data} resizableColumns />)
+    expect(document.querySelectorAll('[data-iris-table-resize-handle]').length).toBe(2)
+    expect(handle('name')!.getAttribute('role')).toBe('separator')
+    expect(handle('name')!.getAttribute('aria-orientation')).toBe('vertical')
+  })
+
+  it('ArrowRight grows the column width (uncontrolled)', () => {
+    render(() => (
+      <IrisTable
+        columns={columns}
+        data={data}
+        resizableColumns
+        defaultColumnWidths={{ name: 100 }}
+      />
+    ))
+    expect(gridCols()).toContain('100px')
+    fireEvent.keyDown(handle('name')!, { key: 'ArrowRight' })
+    expect(gridCols()).toContain('116px')
+  })
+
+  it('ArrowLeft shrinks but clamps to the column minWidth', () => {
+    const cols: IrisTableColumn[] = [
+      { key: 'name', title: 'Name', minWidth: 90 },
+      { key: 'age', title: 'Age' },
+    ]
+    render(() => (
+      <IrisTable columns={cols} data={data} resizableColumns defaultColumnWidths={{ name: 100 }} />
+    ))
+    fireEvent.keyDown(handle('name')!, { key: 'ArrowLeft' }) // 100-16=84 → clamp to 90
+    expect(gridCols()).toContain('90px')
+  })
+
+  it('ArrowRight clamps to the column maxWidth', () => {
+    const cols: IrisTableColumn[] = [
+      { key: 'name', title: 'Name', maxWidth: 110 },
+      { key: 'age', title: 'Age' },
+    ]
+    render(() => (
+      <IrisTable columns={cols} data={data} resizableColumns defaultColumnWidths={{ name: 100 }} />
+    ))
+    fireEvent.keyDown(handle('name')!, { key: 'ArrowRight' }) // 100+16=116 → clamp to 110
+    expect(gridCols()).toContain('110px')
+  })
+
+  it('onColumnWidthsChange fires with the new widths', () => {
+    const onChange = vi.fn()
+    render(() => (
+      <IrisTable
+        columns={columns}
+        data={data}
+        resizableColumns
+        defaultColumnWidths={{ name: 100 }}
+        onColumnWidthsChange={onChange}
+      />
+    ))
+    fireEvent.keyDown(handle('name')!, { key: 'ArrowRight' })
+    expect(onChange).toHaveBeenCalled()
+    expect(onChange.mock.calls.at(-1)![0]).toMatchObject({ name: 116 })
+  })
+
+  it('controlled columnWidths render the given widths', () => {
+    render(() => (
+      <IrisTable
+        columns={columns}
+        data={data}
+        resizableColumns
+        columnWidths={{ name: 150, age: 80 }}
+      />
+    ))
+    expect(gridCols()).toContain('150px')
+    expect(gridCols()).toContain('80px')
+  })
+
+  it('controlled columnWidths do not change on local resize (parent owns state)', () => {
+    const onChange = vi.fn()
+    render(() => (
+      <IrisTable
+        columns={columns}
+        data={data}
+        resizableColumns
+        columnWidths={{ name: 150, age: 80 }}
+        onColumnWidthsChange={onChange}
+      />
+    ))
+    fireEvent.keyDown(handle('name')!, { key: 'ArrowRight' })
+    // The callback fires with the intended next value...
+    expect(onChange.mock.calls.at(-1)![0]).toMatchObject({ name: 166 })
+    // ...but the displayed grid still reflects the controlling prop.
+    expect(gridCols()).toContain('150px')
+  })
+
+  it('a pointer drag on the handle resizes the column + fires onColumnWidthsChange', () => {
+    const onChange = vi.fn()
+    render(() => (
+      <IrisTable
+        columns={columns}
+        data={data}
+        resizableColumns
+        defaultColumnWidths={{ name: 100 }}
+        onColumnWidthsChange={onChange}
+      />
+    ))
+    const h = handle('name')!
+    h.dispatchEvent(makePointerEvent('pointerdown', { clientX: 200, clientY: 0 }))
+    h.dispatchEvent(makePointerEvent('pointermove', { clientX: 240, clientY: 0 }))
+    h.dispatchEvent(makePointerEvent('pointerup', { clientX: 240, clientY: 0 }))
+    // start width 100 + dx 40 → 140, min-clamped (>= 60), no max.
+    expect(onChange.mock.calls.at(-1)![0]).toMatchObject({ name: 140 })
+    expect(gridCols()).toContain('140px')
+  })
+
+  it('clicking the resize handle does not trigger sort', () => {
+    const onSort = vi.fn()
+    render(() => <IrisTable columns={columns} data={data} resizableColumns onSortChange={onSort} />)
+    fireEvent.click(handle('name')!)
+    expect(onSort).not.toHaveBeenCalled()
+  })
+})

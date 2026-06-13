@@ -16,6 +16,7 @@
   } from '@iris-ui/core'
   import { toStore } from '../../useStore'
   import { useI18n } from '../../i18n'
+  import { useDrag } from '../drag/useDrag.svelte'
   import IrisVirtualScroll from '../virtual-scroll/IrisVirtualScroll.svelte'
   import type {
     IrisTableColumn,
@@ -44,8 +45,14 @@
      * so alignment, resize, and pinned columns keep working.
      */
     columnVirtualization?: boolean
+    /** Enable per-column resize handles (drag the header's trailing edge or focus + arrow keys). */
     resizableColumns?: boolean
+    /** Controlled per-column pixel widths, keyed by column `key`. */
     columnWidths?: IrisTableColumnWidths
+    /** Uncontrolled initial per-column pixel widths (seeds the internal width state). */
+    defaultColumnWidths?: IrisTableColumnWidths
+    /** Called with the full width map whenever a column is resized. */
+    onColumnWidthsChange?: (next: IrisTableColumnWidths) => void
     /**
      * Render an expandable detail panel beneath a row. Providing this adds a
      * leading expand-toggle column; clicking it reveals a full-width detail row.
@@ -102,6 +109,10 @@
     error = false,
     virtualScroll,
     columnVirtualization = false,
+    resizableColumns = false,
+    columnWidths,
+    defaultColumnWidths,
+    onColumnWidthsChange,
     renderDetail,
     rowExpandable,
     defaultExpandedRowKeys,
@@ -120,6 +131,8 @@
   const { t } = useI18n()
 
   const DEFAULT_COL_WIDTH = 140
+  const DEFAULT_MIN_WIDTH = 60
+  const RESIZE_STEP = 16
 
   function resolveInitialWidth(col: IrisTableColumn): number {
     if (typeof col.width === 'number') return col.width
@@ -285,16 +298,83 @@
     selectionModel.toggleAll(allRowIds)
   }
 
-  // Column widths — seed from columns prop; use untracked read to avoid cycles
-  function seedWidths(cols: IrisTableColumn[]): IrisTableColumnWidths {
-    const seeded: IrisTableColumnWidths = {}
-    for (const col of cols) {
-      seeded[col.key] = resolveInitialWidth(col)
-    }
-    return seeded
-  }
+  // Column widths — uncontrolled state seeded ONLY from `defaultColumnWidths`
+  // (mirroring React's `widthsInternal = defaultColumnWidths ?? {}`); columns
+  // without an explicit override resolve through `gridTemplate`'s
+  // `?? resolveInitialWidth(col)` fallback, so the emitted map stays sparse
+  // (a resize emits just the touched keys, like React). A controlled
+  // `columnWidths` prop overrides the internal state via `effectiveWidths`, and
+  // every resize emits the resulting map through `onColumnWidthsChange`.
   // svelte-ignore state_referenced_locally
-  let internalWidths = $state<IrisTableColumnWidths>(seedWidths(columns))
+  let internalWidths = $state<IrisTableColumnWidths>({ ...(defaultColumnWidths ?? {}) })
+
+  // Controlled (`columnWidths` prop) wins over the internal state; uncontrolled
+  // reads the seeded internal map. The `!== undefined` check means an empty {}
+  // prop still controls (matching React/Vue's controlled-detection).
+  const widthsControlled = $derived(columnWidths !== undefined)
+  const effectiveWidths = $derived<IrisTableColumnWidths>(
+    widthsControlled ? columnWidths! : internalWidths,
+  )
+  function setColumnWidth(key: string, width: number): void {
+    const next = { ...effectiveWidths, [key]: width }
+    if (!widthsControlled) internalWidths = next
+    onColumnWidthsChange?.(next)
+  }
+
+  // -------- Interactive column resizing (opt-in via `resizableColumns`) --------
+  // Each header gains a draggable separator grip on its trailing edge. Pointer
+  // drag (via the in-repo `useDrag` primitive) or focus + Arrow-Left/Right
+  // adjusts that column's pixel width, clamped to [minWidth, maxWidth]. The grip
+  // element refs live in a reactive map (mirroring IrisResizer); `useDrag` is
+  // wired once per leaf column at init and its handle getter is reactive, so the
+  // drag attaches when the grip mounts. When `resizableColumns` is off no grip
+  // renders and the drag getter stays null — a true no-op.
+  function clampWidth(col: IrisTableColumn, w: number): number {
+    const minW = col.minWidth ?? DEFAULT_MIN_WIDTH
+    const maxW = col.maxWidth ?? Infinity
+    return Math.max(minW, Math.min(maxW, Math.round(w)))
+  }
+  const resizeHandleEls = $state<Record<string, HTMLElement | undefined>>({})
+  // Wire a pointer drag per leaf column (over the initial column set, like
+  // IrisResizer wires over its fixed handle list). Each drag reads the live
+  // start width on pointerdown and writes a clamped width on every move. The
+  // initial `leafColumns` snapshot is intentional — useDrag's own $effect
+  // attaches lazily once each grip mounts, so static columns are fully wired.
+  // svelte-ignore state_referenced_locally
+  for (const col of leafColumns) {
+    let startWidth = 0
+    useDrag({
+      handle: () => resizeHandleEls[col.key],
+      disabled: () => !resizableColumns,
+      onStart: () => {
+        startWidth = effectiveWidths[col.key] ?? resolveInitialWidth(col)
+      },
+      onDrag: ({ dx }) => {
+        setColumnWidth(col.key, clampWidth(col, startWidth + dx))
+      },
+    })
+  }
+  function registerResizeHandle(
+    node: HTMLElement,
+    key: string,
+  ): { destroy: () => void } {
+    resizeHandleEls[key] = node
+    return {
+      destroy: () => {
+        resizeHandleEls[key] = undefined
+      },
+    }
+  }
+  // Focus + Arrow-Left/Right nudge the column width by RESIZE_STEP (keyboard
+  // analogue of the pointer drag); clicking the grip must not bubble to sort.
+  function onResizeHandleKeydown(e: KeyboardEvent, col: IrisTableColumn): void {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    e.preventDefault()
+    e.stopPropagation()
+    const cur = effectiveWidths[col.key] ?? resolveInitialWidth(col)
+    const delta = e.key === 'ArrowRight' ? RESIZE_STEP : -RESIZE_STEP
+    setColumnWidth(col.key, clampWidth(col, cur + delta))
+  }
 
   const showSelection = $derived(selectable !== 'none')
 
@@ -314,7 +394,7 @@
     if (hasDetail) parts.push('40px')
     if (showSelection) parts.push('40px')
     for (const col of leafColumns) {
-      parts.push(`${internalWidths[col.key] ?? resolveInitialWidth(col)}px`)
+      parts.push(`${effectiveWidths[col.key] ?? resolveInitialWidth(col)}px`)
     }
     return parts.join(' ')
   })
@@ -500,7 +580,7 @@
         itemCount: cols.length,
         scrollTop: scrollLeft,
         viewportSize: viewportWidth,
-        itemSize: (i) => internalWidths[cols[i].key] ?? resolveInitialWidth(cols[i]),
+        itemSize: (i) => effectiveWidths[cols[i].key] ?? resolveInitialWidth(cols[i]),
         buffer: 2,
       })
       const set = new Set<number>()
@@ -634,6 +714,27 @@
               <span style="opacity: {effectiveSort?.key === col.key && effectiveSort.direction === 'asc' ? '1' : '0.45'}">▲</span>
               <span style="opacity: {effectiveSort?.key === col.key && effectiveSort.direction === 'desc' ? '1' : '0.45'}">▼</span>
             </span>
+          {/if}
+          {#if resizableColumns}
+            <!-- Draggable resize grip at the header's trailing edge. role=
+                 "separator" + aria-orientation follow the WAI-ARIA window-
+                 splitter pattern; the click-stop keeps a drag from toggling sort.
+                 The grip IS the interactive control (focusable, keyboard-resizable),
+                 so the noninteractive-* a11y heuristics don't apply here. -->
+            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+            <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+            <span
+              use:registerResizeHandle={col.key}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label={`Resize ${col.title}`}
+              tabindex="0"
+              data-iris-table-resize-handle=""
+              data-column-key={col.key}
+              onclick={(e) => e.stopPropagation()}
+              onkeydown={(e) => onResizeHandleKeydown(e, col)}
+              style="position: absolute; top: 0; right: 0; bottom: 0; width: 6px; cursor: col-resize; touch-action: none; user-select: none; z-index: 1"
+            ></span>
           {/if}
         </div>
         {/if}

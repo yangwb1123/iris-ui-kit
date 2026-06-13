@@ -2,7 +2,7 @@
   import { getDropdownContext } from './context'
   import type { IrisDropdownTriggerProps } from './types'
 
-  let { onclick, children, ...rest }: IrisDropdownTriggerProps = $props()
+  let { onclick, onkeydown, children, ...rest }: IrisDropdownTriggerProps = $props()
   const ctx = getDropdownContext('IrisDropdownTrigger')
 
   function setTriggerRef(node: HTMLElement) {
@@ -13,6 +13,16 @@
   function handleClick(e: MouseEvent & { currentTarget: EventTarget & HTMLButtonElement }) {
     onclick?.(e)
     ctx.setOpen(!ctx.open)
+  }
+
+  // ArrowDown/Enter/Space open the menu (which focuses its first item), matching
+  // the Vue trigger + the WAI-ARIA menu-button pattern.
+  function handleKeyDown(e: KeyboardEvent): void {
+    onkeydown?.(e as KeyboardEvent & { currentTarget: EventTarget & HTMLButtonElement })
+    if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      ctx.setOpen(true)
+    }
   }
 </script>
 
@@ -25,6 +35,7 @@
   aria-controls={ctx.contentId}
   data-state={ctx.open ? 'open' : 'closed'}
   onclick={handleClick}
+  onkeydown={handleKeyDown}
 >
   {@render children?.()}
 </button>

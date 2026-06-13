@@ -12,7 +12,10 @@ export interface IrisDropdownTriggerProps extends Omit<
 }
 
 export const IrisDropdownTrigger = React.forwardRef<HTMLElement, IrisDropdownTriggerProps>(
-  function IrisDropdownTrigger({ asChild = false, onClick, children, ...rest }, forwardedRef) {
+  function IrisDropdownTrigger(
+    { asChild = false, onClick, onKeyDown, children, ...rest },
+    forwardedRef,
+  ) {
     const ctx = useDropdownContext('IrisDropdownTrigger')
 
     const captureRef = React.useCallback(
@@ -30,12 +33,25 @@ export const IrisDropdownTrigger = React.forwardRef<HTMLElement, IrisDropdownTri
       () => ctx.setOpen(!ctx.open),
     )
 
+    // ArrowDown/Enter/Space open the menu (which then focuses its first item),
+    // matching the Vue dropdown trigger + the WAI-ARIA menu-button pattern.
+    const handleKeyDown = composeEventHandlers(
+      onKeyDown as ((e: React.KeyboardEvent<HTMLElement>) => void) | undefined,
+      (e: React.KeyboardEvent<HTMLElement>) => {
+        if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          ctx.setOpen(true)
+        }
+      },
+    )
+
     const triggerProps = {
       'aria-haspopup': 'menu' as const,
       'aria-expanded': ctx.open,
       'aria-controls': ctx.contentId,
       'data-state': ctx.open ? 'open' : 'closed',
       onClick: handleClick,
+      onKeyDown: handleKeyDown,
     }
 
     if (asChild) {

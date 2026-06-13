@@ -53,6 +53,15 @@ describe('@iris-ui/react IrisDropdown', () => {
     expect(menu()).not.toBeNull()
   })
 
+  it('ArrowDown on the closed trigger opens the menu', () => {
+    const { container } = render(harness())
+    expect(menu()).toBeNull()
+    act(() => {
+      fireEvent.keyDown(container.querySelector('button')!, { key: 'ArrowDown' })
+    })
+    expect(menu()).not.toBeNull()
+  })
+
   it('aria-haspopup="menu" + aria-expanded reflect state', () => {
     const { container } = render(harness())
     const btn = container.querySelector('button')!

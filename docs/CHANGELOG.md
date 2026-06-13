@@ -4,6 +4,8 @@
 
 ## Factory iterations
 
+- **iter 10** — fix(locale-zh): added 58 missing Chinese translations (zh covered only 46/104 built-in keys) + drift-guard tests (zh must cover every defaultMessages key; placeholders preserved). Found via i18n sweep.
+
 - **iter 9** — fix(manifest): discovery regex now matches `export class` (was const/function only) — React's class-based `IrisErrorBoundary` was invisible to the AI-native manifest/llms.txt/MCP/docs (react 148 vs 149). Regenerated the also-stale manifest.json + llms.txt. Now 149/149 ×4. (Found via a verification sweep — real bug, not noise.)
 - **iter 7–8** — a11y: Select trigger announces `aria-haspopup="listbox"` (react+vue) instead of the popover's `dialog` default — real WAI-ARIA fix (solid/svelte were already correct). Found via verified a11y audit.
 - **iter 6** — port interactive **column resizing** to solid+svelte (resize handles via useDrag + controlled/uncontrolled widths + onColumnWidthsChange). Completes Table feature parity ×4. Opt-in → zero regression.

@@ -20,6 +20,17 @@ Of 13 Explore candidates, **only 2 were real+actionable** — column-virtualizat
 - COSMETIC RENAME = public-interface Blocker (deferred unless asked): textarea `autoResize`(solid) vs `autosize`(others); otp `autoFocus` casing.
 - LESSON: Explore agents read excerpts → ALWAYS verify candidates against source (~85% were noise here).
 
+## Wave-2 behavioral-audit residue (iters 7–15 of the 2026-06-13 session — deferred, lower-value)
+
+These came from the 2nd 4-agent cross-framework audit (selection-wrappers / overlays / nav-stepper / date-time). The clear defects were all FIXED (TreeSelect+Cascader trigger keyboard ×Solid/Svelte, Solid Cascader aria, Solid Tabs id-linkage, Svelte Stepper uncontrolled, Svelte MenuSub aria-controls, Solid Transfer select-all+aria-label, Mentions ×Solid/Svelte, Popover focus ×Solid/Svelte, Solid date-picker popover ARIA). Remaining (deliberately deferred):
+
+- **Submenu hover-open delay** — React/Vue debounce submenu open by 100ms (`HOVER_OPEN_DELAY`); Solid + Svelte open immediately on pointerenter. A 2-vs-2 UX split, not an a11y/correctness defect. Unify to the 100ms delay only if a user reports accidental-open jitter. (Touches solid+svelte `IrisMenuSub`.)
+- **Svelte MenuSub nested context** — Svelte's `IrisMenuSub` consumes the root menu context but never `setMenuContext`s a nested one, so 3+-level-deep submenus don't get a per-level open/close (React/Vue/Solid provide nested context). Real but rare (most menus are 1 level deep). Fix = provide a nested context inside the Svelte submenu.
+
+## Blocked / decision-gated — TimePicker value-shape divergence (NEW 2026-06-13, needs user direction)
+
+- **Svelte `IrisTimePicker` is a DIFFERENT component from React/Vue/Solid.** The other three are a numeric hours/minutes input pair + AM/PM toggle with value shape `{ hours, minutes }`, `format` (12h/24h), `minuteStep`, and ArrowUp/Down stepping. The Svelte one is a 3-column listbox with value shape **`{ hour, minute, second }`** and none of those props. The value contracts are **incompatible** — a consumer cannot swap frameworks without rewriting the bound value. Bringing Svelte to parity is a **public-interface + data-structure change (Blocker per the autonomous spec)** — reimplementing the Svelte TimePicker to the numeric `{ hours, minutes }` design would break any existing consumer of the current Svelte shape. **Needs a user decision**: (a) reimplement Svelte to match the other three (breaking change for current Svelte TimePicker users), or (b) migrate the other three to a richer shape, or (c) accept the divergence and document it. Not actionable autonomously.
+
 ## Low-priority sweep findings (recorded; weigh value before picking)
 
 - **plugin-notifications hardcoded aria-labels** (found iter-34 i18n sweep): `IrisNotificationCenter` hardcodes `aria-label="Dismiss"` + `aria-label="{n} unread"` in all 4 adapters — user-visible screen-reader strings not localizable. This plugin uses **prop-based** localization (`title`/`emptyText` props with English defaults), NOT the core `t()` system, so the consistent fix = add defaulted props (`dismissLabel`, `unreadLabel`) ×4 (additive/backward-compat, completes the existing prop pattern). Deferred: marginal value, expands 4 plugin APIs. Pick only if a localization need is raised. NOTE: the core primitives (Breadcrumb/Pagination/Table/etc.) correctly use `t()` — this gap is isolated to the notifications plugin's prop-based design.

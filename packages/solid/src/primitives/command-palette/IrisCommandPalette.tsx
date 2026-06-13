@@ -12,6 +12,7 @@ import {
 import { firstEnabledIndex, nextEnabledIndex } from '@iris-ui/core'
 import { type IrisCommandItem, defaultFilter } from './types'
 import { useI18n } from '../../i18n'
+import { useFocusTrap } from '../../modal-utils'
 
 export interface IrisCommandPaletteProps {
   open?: boolean
@@ -111,6 +112,11 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
     wasOpen = o
   })
 
+  // Trap Tab focus inside the panel and restore focus to the previously-focused
+  // element on close (matches React/Vue, which use the same focus-trap).
+  let panelEl: HTMLDivElement | undefined
+  useFocusTrap({ container: () => panelEl, active: open })
+
   // Global keyboard shortcut: Cmd/Ctrl+K to open
   const onDocKeyDown = (e: KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -174,6 +180,7 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
         }}
       >
         <div
+          ref={panelEl}
           data-iris-command-palette-panel=""
           style={{
             width: '100%',

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { portal } from '../../internal/portal'
   import { useI18n } from '../../i18n'
+  import { useFocusTrap } from '../modal-utils/useFocusTrap.svelte'
   import type { IrisCommandItem } from './types'
   import { defaultFilter } from './types'
 
@@ -31,6 +32,11 @@
   let query = $state('')
   let activeIndex = $state(0)
   let inputEl = $state<HTMLInputElement | undefined>(undefined)
+  let panelEl = $state<HTMLElement | undefined>(undefined)
+
+  // Trap Tab focus inside the panel and restore focus to the previously-focused
+  // element on close (matches React/Vue, which use the same focus-trap).
+  useFocusTrap({ container: () => panelEl, active: () => open })
 
   $effect(() => {
     if (open) {
@@ -135,6 +141,7 @@
     style:background="rgba(0,0,0,0.4)"
   >
     <div
+      bind:this={panelEl}
       data-iris-command-palette
       role="dialog"
       aria-modal="true"

@@ -58,6 +58,13 @@ describe('IrisCommandPalette', () => {
     expect(onSelect.mock.calls[1][0].id).toBe('a')
   })
 
+  it('focuses the search input when opened (focus-trap initial focus)', async () => {
+    const { container } = render(() => <IrisCommandPalette open items={items} />)
+    const input = container.querySelector('[data-iris-command-palette-input]')
+    await new Promise((r) => requestAnimationFrame(() => r(null)))
+    expect(document.activeElement).toBe(input)
+  })
+
   it('honors a custom filter prop', () => {
     const filter = (_q: string, item: { label: string }) => (item.label === 'Settings' ? 0 : null)
     const { container } = render(() => <IrisCommandPalette open items={items} filter={filter} />)

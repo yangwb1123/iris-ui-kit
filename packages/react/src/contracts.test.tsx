@@ -13,6 +13,7 @@ import {
   numberInputScenario,
   ratingScenario,
   paginationScenario,
+  stepperScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -32,6 +33,8 @@ import { IrisRadioGroup } from './primitives/radio/RadioGroup'
 import { IrisNumberInput } from './primitives/number-input/NumberInput'
 import { IrisRating } from './primitives/rating/Rating'
 import { IrisPagination } from './primitives/pagination/Pagination'
+import { IrisStepper } from './primitives/stepper/Stepper'
+import { IrisStepperStep } from './primitives/stepper/StepperStep'
 
 afterEach(cleanup)
 
@@ -152,5 +155,16 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
   it('satisfies the shared Pagination contract', async () => {
     const { container } = render(<IrisPagination defaultValue={1} total={30} pageSize={10} />)
     await runContract(paginationScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Stepper contract', async () => {
+    const { container } = render(
+      <IrisStepper defaultValue={0} linear={false}>
+        <IrisStepperStep title="Step 1" />
+        <IrisStepperStep title="Step 2" />
+        <IrisStepperStep title="Step 3" />
+      </IrisStepper>,
+    )
+    await runContract(stepperScenario, driverFor(container), expect)
   })
 })

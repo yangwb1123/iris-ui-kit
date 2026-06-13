@@ -10,6 +10,7 @@ export { radioScenario } from './scenarios/radio'
 export { numberInputScenario } from './scenarios/number-input'
 export { ratingScenario } from './scenarios/rating'
 export { paginationScenario } from './scenarios/pagination'
+export { stepperScenario } from './scenarios/stepper'
 export type {
   ContractScenario,
   ContractStep,

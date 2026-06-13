@@ -14,6 +14,7 @@ import {
   numberInputScenario,
   ratingScenario,
   paginationScenario,
+  stepperScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -32,6 +33,8 @@ import { IrisRadioGroup, IrisRadio } from './primitives/radio/Radio'
 import { IrisNumberInput } from './primitives/number-input/NumberInput'
 import { IrisRating } from './primitives/rating/Rating'
 import { IrisPagination } from './primitives/pagination/Pagination'
+import { IrisStepper } from './primitives/stepper/Stepper'
+import { IrisStepperStep } from './primitives/stepper/StepperStep'
 
 enableAutoUnmount(afterEach)
 
@@ -329,6 +332,40 @@ const PaginationHarness = defineComponent({
   },
 })
 
+/**
+ * IrisStepper is modelValue-based (emits `update:modelValue`) and is a compound
+ * component (IrisStepper + IrisStepperStep children, passed via the default
+ * slot exactly like ToggleGroup/Accordion). So — like the Pagination harness —
+ * mount it inside a wrapper holding a reactive step index bound with v-model,
+ * rendering three IrisStepperStep children. With `linear: false`, every step's
+ * `[data-iris-stepper-step-trigger]` button is clickable; clicking one calls
+ * `goTo`, emitting `update:modelValue`, flipping the ref and re-rendering with
+ * `aria-current="step"` moved to the new active step `<li>`. Starts at 0 over
+ * three steps, matching the uncontrolled React reference (`defaultValue={0}`).
+ */
+const StepperHarness = defineComponent({
+  name: 'StepperHarness',
+  setup() {
+    const value = ref(0)
+    return () =>
+      h(
+        IrisStepper,
+        {
+          modelValue: value.value,
+          linear: false,
+          'onUpdate:modelValue': (v: number) => {
+            value.value = v
+          },
+        },
+        () => [
+          h(IrisStepperStep, { title: 'Step 1' }),
+          h(IrisStepperStep, { title: 'Step 2' }),
+          h(IrisStepperStep, { title: 'Step 3' }),
+        ],
+      )
+  },
+})
+
 describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Tabs contract', async () => {
     const host = document.createElement('div')
@@ -416,5 +453,13 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     const wrapper = mount(PaginationHarness, { attachTo: host })
     await nextTick()
     await runContract(paginationScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared Stepper contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(StepperHarness, { attachTo: host })
+    await nextTick()
+    await runContract(stepperScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

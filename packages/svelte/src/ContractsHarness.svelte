@@ -25,6 +25,8 @@
   import IrisRadio from './primitives/radio/IrisRadio.svelte'
   import IrisNumberInput from './primitives/number-input/IrisNumberInput.svelte'
   import IrisPagination from './primitives/pagination/IrisPagination.svelte'
+  import IrisStepper from './primitives/stepper/IrisStepper.svelte'
+  import IrisStepperStep from './primitives/stepper/IrisStepperStep.svelte'
 
   let checkboxValue = $state(false)
 
@@ -56,6 +58,13 @@
   // contract expects) over total=30 pageSize=10 (→ exactly 3 page buttons),
   // then write back from `onchange`.
   let pageValue = $state(1)
+
+  // IrisStepper is value-prop-driven too: clicking a step trigger emits
+  // `onchange` but `aria-current="step"` only moves when the parent writes
+  // `value` back. Seed to 0 (step 0 active, the initial the shared Stepper
+  // contract expects) over 3 IrisStepperStep children with linear={false}
+  // (any step directly clickable), then write back from `onchange`.
+  let stepperValue = $state(0)
 </script>
 
 <IrisTabs defaultValue="a">
@@ -127,3 +136,13 @@
   pageSize={10}
   onchange={(next) => (pageValue = next)}
 />
+
+<IrisStepper
+  value={stepperValue}
+  linear={false}
+  onchange={(next) => (stepperValue = next)}
+>
+  <IrisStepperStep title="Step 1" />
+  <IrisStepperStep title="Step 2" />
+  <IrisStepperStep title="Step 3" />
+</IrisStepper>

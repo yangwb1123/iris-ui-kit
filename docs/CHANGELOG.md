@@ -4,6 +4,7 @@
 
 ## Factory iterations
 
+- **iter 7–8** — a11y: Select trigger announces `aria-haspopup="listbox"` (react+vue) instead of the popover's `dialog` default — real WAI-ARIA fix (solid/svelte were already correct). Found via verified a11y audit.
 - **iter 6** — port interactive **column resizing** to solid+svelte (resize handles via useDrag + controlled/uncontrolled widths + onColumnWidthsChange). Completes Table feature parity ×4. Opt-in → zero regression.
 - **iter 5** — port opt-in `columnVirtualization` (horizontal) to solid+svelte (react/vue had it). All 4 Tables now have vertical + tree + horizontal virtualization parity. Additive/opt-in → zero regression.
 - **iter 4** — a11y: completed WAI-ARIA treegrid ×4 — core `flattenTree` emits `setSize`/`posInset`; tree rows get `aria-setsize`/`aria-posinset`; keyboard-navigable tree tables use `role="treegrid"`.

@@ -1,4 +1,12 @@
 <script lang="ts">
+  import {
+    createSelectionModel,
+    firstEnabledIndex,
+    lastEnabledIndex,
+    nextEnabledIndex,
+    type SelectionKey,
+  } from '@iris-ui/core'
+  import { toStore } from '../../useStore'
   import { styleToString, mergeStyle } from '../../internal/style'
   import { useI18n } from '../../i18n'
 
@@ -8,31 +16,161 @@
     disabled?: boolean
   }
 
+  type ItemState = { selected: boolean; active: boolean; index: number }
+
+  interface Props {
+    items?: ListItem[]
+    /** Selected value(s). For multi mode, pass an array. Controlled when set. */
+    value?: unknown
+    defaultValue?: unknown
+    onValueChange?: (next: unknown) => void
+    onSelect?: (item: ListItem) => void
+    multi?: boolean
+    /** Loop arrow nav at boundaries. Default true. */
+    loop?: boolean
+    ariaLabel?: string
+    /** Show the loading state instead of items. */
+    loading?: boolean
+    /** Show the error state instead of items (takes precedence over loading). */
+    error?: boolean
+    style?: string
+    emptyState?: import('svelte').Snippet
+    loadingState?: import('svelte').Snippet
+    errorState?: import('svelte').Snippet
+    renderItem?: import('svelte').Snippet<[ListItem, ItemState]>
+    /** Legacy: fallback content for the empty state. */
+    children?: import('svelte').Snippet
+    [key: string]: unknown
+  }
+
   let {
-    items = [] as ListItem[],
-    value: modelValue = undefined as unknown,
+    items = [],
+    value = undefined,
+    defaultValue = undefined,
+    onValueChange,
+    onSelect,
     multi = false,
-    ariaLabel = undefined as string | undefined,
+    loop = true,
+    ariaLabel = undefined,
+    loading = false,
+    error = false,
     style,
+    emptyState,
+    loadingState,
+    errorState,
+    renderItem,
     children,
     ...rest
-  } = $props()
+  }: Props = $props()
 
   const { t } = useI18n()
 
-  // svelte-ignore state_referenced_locally
-  let activeIndex = $state(0)
+  // List values are generic; the selection model is keyed by string|number and
+  // compares keys by identity — bridge T <-> key at this edge, mirroring React.
+  const asKey = (v: unknown): SelectionKey => v as SelectionKey
+  const toKeys = (v: unknown): SelectionKey[] =>
+    v == null ? [] : Array.isArray(v) ? v.map(asKey) : [asKey(v)]
+  const fromKeys = (keys: SelectionKey[]): unknown => (multi ? keys : (keys[0] ?? null))
 
-  const isSelected = (val: unknown): boolean => {
-    if (multi) {
-      return Array.isArray(modelValue) && (modelValue as unknown[]).includes(val)
+  const isControlled = $derived(value !== undefined)
+
+  // svelte-ignore state_referenced_locally — initial seed; controlled changes sync below.
+  const model = createSelectionModel<SelectionKey>({
+    mode: multi ? 'multiple' : 'single',
+    defaultSelected: toKeys(value !== undefined ? value : defaultValue),
+    onChange: (keys) => onValueChange?.(fromKeys(keys)),
+  })
+  const selectedKeys = toStore(model.store)
+
+  // Controlled: mirror the prop into the model without re-emitting onValueChange.
+  $effect(() => {
+    if (isControlled) model.sync(toKeys(value))
+  })
+
+  // Controlled lists RENDER from the prop (true controlled semantics); a click
+  // emits onValueChange but the selection only changes when the parent writes
+  // `value` back. Uncontrolled lists render from the model store.
+  const displaySelectedKeys = $derived(isControlled ? toKeys(value) : $selectedKeys)
+  const isSelected = (v: unknown): boolean => displaySelectedKeys.includes(asKey(v))
+
+  // Data-state precedence (error > loading > empty > content) mirrors core
+  // resolveDataState / the React adapter.
+  const dataState = $derived(
+    error ? 'error' : loading ? 'loading' : items.length === 0 ? 'empty' : 'content',
+  )
+  const isContent = $derived(dataState === 'content')
+
+  const isEnabled = (i: number): boolean => !items[i]?.disabled
+
+  // svelte-ignore state_referenced_locally
+  let activeIndex = $state(firstEnabledIndex(items.length, (i) => !items[i]?.disabled))
+
+  // Keep the roving index valid as items change.
+  $effect(() => {
+    if (activeIndex < 0 || activeIndex >= items.length || items[activeIndex]?.disabled) {
+      activeIndex = firstEnabledIndex(items.length, isEnabled)
     }
-    return modelValue === val
+  })
+
+  let listEl = $state<HTMLElement | undefined>(undefined)
+
+  function setList(node: HTMLElement): { destroy: () => void } {
+    listEl = node
+    return { destroy: () => { listEl = undefined } }
   }
 
-  function handleClick(item: ListItem, index: number) {
-    if (item.disabled) return
+  function focusAt(index: number): void {
     activeIndex = index
+    listEl?.querySelector<HTMLElement>(`[data-iris-list-index="${index}"]`)?.focus()
+  }
+
+  function moveActive(delta: 1 | -1): void {
+    const next = nextEnabledIndex(activeIndex, delta, items.length, isEnabled, loop)
+    if (next >= 0) focusAt(next)
+  }
+
+  function select(item: ListItem): void {
+    if (item.disabled) return
+    // Re-base on the prop so the emitted value is computed against what the
+    // parent holds (controlled). Single mode never toggles off, so use `set`.
+    if (isControlled) model.sync(toKeys(value))
+    if (multi) model.toggle(asKey(item.value))
+    else model.set([asKey(item.value)])
+    onSelect?.(item)
+  }
+
+  function onKeyDown(e: KeyboardEvent): void {
+    if (!isContent) return
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        moveActive(1)
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        moveActive(-1)
+        break
+      case 'Home': {
+        e.preventDefault()
+        const first = firstEnabledIndex(items.length, isEnabled)
+        if (first >= 0) focusAt(first)
+        break
+      }
+      case 'End': {
+        e.preventDefault()
+        const last = lastEnabledIndex(items.length, isEnabled)
+        if (last >= 0) focusAt(last)
+        break
+      }
+      case 'Enter':
+      case ' ':
+        if (activeIndex >= 0) {
+          e.preventDefault()
+          const it = items[activeIndex]
+          if (it) select(it)
+        }
+        break
+    }
   }
 
   const listStyle = $derived(
@@ -46,28 +184,54 @@
       outline: 'none',
     }),
   )
+
+  function itemStyle(selected: boolean, active: boolean, disabled?: boolean): string {
+    return styleToString({
+      display: 'flex',
+      'align-items': 'center',
+      gap: 'var(--iris-gap-sm)',
+      padding: '6px var(--iris-padding-md)',
+      'border-radius': 'var(--iris-radius-sm)',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      opacity: disabled ? '0.5' : '1',
+      'font-size': '14px',
+      background: selected
+        ? 'var(--iris-primary)'
+        : active
+          ? 'var(--iris-surface-hover)'
+          : 'transparent',
+      color: selected ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
+      outline: 'none',
+    })
+  }
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <ul
   {...rest}
+  use:setList
   role="listbox"
   aria-label={ariaLabel}
   aria-multiselectable={multi ? 'true' : undefined}
+  aria-busy={dataState === 'loading' ? 'true' : undefined}
   data-iris-list
+  onkeydown={onKeyDown}
   style={mergeStyle(listStyle, style)}
 >
-  {#if items.length === 0}
+  {#if !isContent}
     <li
       role="presentation"
-      data-iris-list-state="empty"
+      data-iris-list-state={dataState}
       aria-live="polite"
       style="list-style: none; padding: 12px; text-align: center; color: var(--iris-muted); font-size: 14px"
     >
-      {#if children}
-        {@render children()}
-      {:else}
-        {t('list.empty')}
-      {/if}
+      {#if dataState === 'error'}
+        {#if errorState}{@render errorState()}{:else}{t('list.error')}{/if}
+      {:else if dataState === 'loading'}
+        {#if loadingState}{@render loadingState()}{:else}{t('list.loading')}{/if}
+      {:else if emptyState}{@render emptyState()}
+      {:else if children}{@render children()}
+      {:else}{t('list.empty')}{/if}
     </li>
   {:else}
     {#each items as item, index (String(item.value ?? index))}
@@ -81,27 +245,12 @@
         data-iris-list-index={index}
         data-iris-list-item
         data-state={selected ? 'selected' : active ? 'active' : 'idle'}
-        onclick={() => handleClick(item, index)}
-        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(item, index) } }}
-        style={styleToString({
-          display: 'flex',
-          'align-items': 'center',
-          gap: 'var(--iris-gap-sm)',
-          padding: '6px var(--iris-padding-md)',
-          'border-radius': 'var(--iris-radius-sm)',
-          cursor: item.disabled ? 'not-allowed' : 'pointer',
-          opacity: item.disabled ? '0.5' : '1',
-          'font-size': '14px',
-          background: selected
-            ? 'var(--iris-primary)'
-            : active
-              ? 'var(--iris-surface-hover)'
-              : 'transparent',
-          color: selected ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
-          outline: 'none',
-        })}
+        onclick={() => select(item)}
+        onfocus={() => { activeIndex = index }}
+        style={itemStyle(selected, active, item.disabled)}
       >
-        {item.label ?? String(item.value)}
+        {#if renderItem}{@render renderItem(item, { selected, active, index })}
+        {:else}{item.label ?? String(item.value)}{/if}
       </li>
     {/each}
   {/if}

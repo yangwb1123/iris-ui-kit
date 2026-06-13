@@ -26,6 +26,16 @@ describe('IrisTabs', () => {
     expect(getByText('Content A')).toBeTruthy()
   })
 
+  it('wires trigger<->panel via aria-controls / aria-labelledby', () => {
+    const { container } = render(() => <BasicTabs />)
+    const trigger = container.querySelector('[data-iris-tabs-trigger][data-value="a"]')!
+    const panel = container.querySelector('[data-iris-tabs-content][data-value="a"]')!
+    expect(trigger.getAttribute('aria-controls')).toBe(panel.id)
+    expect(panel.getAttribute('aria-labelledby')).toBe(trigger.id)
+    expect(trigger.id).toBeTruthy()
+    expect(panel.id).toBeTruthy()
+  })
+
   it('switches content on trigger click', () => {
     const { getByText, container } = render(() => <BasicTabs />)
     const triggerB = container.querySelector('[data-value="b"]') as HTMLButtonElement

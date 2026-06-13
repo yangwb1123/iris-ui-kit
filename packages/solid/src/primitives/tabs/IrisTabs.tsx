@@ -210,6 +210,8 @@ export function IrisTabsTrigger(props: IrisTabsTriggerProps): JSX.Element {
       {...rest}
       type="button"
       role="tab"
+      id={`iris-tabs-trigger-${local.value}`}
+      aria-controls={`iris-tabs-content-${local.value}`}
       data-iris-tabs-trigger=""
       data-value={local.value}
       data-state={isActive() ? 'active' : 'inactive'}
@@ -265,6 +267,8 @@ export function IrisTabsContent(props: IrisTabsContentProps): JSX.Element {
       <div
         {...rest}
         role="tabpanel"
+        id={`iris-tabs-content-${local.value}`}
+        aria-labelledby={`iris-tabs-trigger-${local.value}`}
         data-iris-tabs-content=""
         data-value={local.value}
         data-state={isActive() ? 'active' : 'inactive'}

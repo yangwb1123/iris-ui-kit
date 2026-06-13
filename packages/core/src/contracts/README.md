@@ -107,6 +107,13 @@ How to drive a stateful component to a known starting state differs by adapter:
   `aria-expanded` + `tabindex`, so it passes regardless of `selectionMode`).
 - **`equals: null` means the attribute is absent** (`getAttribute` → `null`).
   Use it to assert e.g. `aria-current` is unset on non-active items.
+- **Observe state via a reflected ATTRIBUTE, never an input's `.value` property.**
+  The runner reads `getAttribute` only, so live `<input>.value` is invisible to it.
+  When a component's state lives in an input value, look for a reflected
+  data-attr instead — e.g. OTP cells expose `data-filled="true"`, so the
+  contract observes fill-state without ever reading `.value`. If a stateful
+  component reflects nothing, it isn't contractable until it does (or the driver
+  grows a value-reader — see below).
 
 ## Deferred by design
 
@@ -119,3 +126,19 @@ How to drive a stateful component to a known starting state differs by adapter:
   per-framework unit tests + verified keyboard parity, so the gap is covered.
 - **Table column-resize** — needs a pointer-drag with real coordinates, which
   jsdom handles awkwardly; low marginal value over the existing per-fw tests.
+- **Text ENTRY** (typing chars into inputs: textarea / password / mentions, and
+  OTP _entry_ as opposed to OTP _editing_) — the `ContractDriver` has only
+  `click` / `keydown`, no `type` action that sets an input value and fires the
+  `input`/`change` event. Adding one (plus a `ContractElement` value-reader for
+  asserting the result) would unblock this class; until then, drive these via
+  `keydown` on already-seeded state (e.g. the OTP contract pre-fills with
+  `defaultValue` and exercises Backspace, which IS a keydown).
+
+## Coverage at a glance
+
+21 scenarios across 15 components: tabs, switch, checkbox, accordion, segmented,
+toggle-group (single + multiple), slider, range-slider, radio, number-input,
+rating, pagination, stepper, calendar, tag-input, otp-input, tree (keyboard), and
+the Table trio (sort / multi-select / row-expand). The `contract-coverage` guard
+(`packages/manifest/src/contract-coverage.test.ts`) enforces all of them run on
+all four adapters.

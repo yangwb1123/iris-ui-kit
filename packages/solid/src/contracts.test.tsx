@@ -18,6 +18,7 @@ import {
   tableSortScenario,
   tableSelectScenario,
   tableExpandScenario,
+  treeScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import {
@@ -38,6 +39,7 @@ import { IrisRating } from './primitives/rating'
 import { IrisPagination } from './primitives/pagination'
 import { IrisStepper, IrisStepperStep } from './primitives/stepper'
 import { IrisTable } from './primitives/table/IrisTable'
+import { IrisTree } from './primitives/tree'
 
 afterEach(cleanup)
 
@@ -230,5 +232,24 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
       />
     ))
     await runContract(tableExpandScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Tree contract', async () => {
+    const { container } = render(() => (
+      <IrisTree
+        nodes={[
+          {
+            id: 'a',
+            label: 'A',
+            children: [
+              { id: 'a1', label: 'A1' },
+              { id: 'a2', label: 'A2' },
+            ],
+          },
+          { id: 'b', label: 'B' },
+        ]}
+      />
+    ))
+    await runContract(treeScenario, driverFor(container), expect)
   })
 })

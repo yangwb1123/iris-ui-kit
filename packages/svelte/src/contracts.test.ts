@@ -19,6 +19,7 @@ import {
   tableSortScenario,
   tableSelectScenario,
   tableExpandScenario,
+  treeScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -27,6 +28,7 @@ import ToggleGroupMultiContractHarness from './ToggleGroupMultiContractHarness.s
 import TableSortContractHarness from './TableSortContractHarness.svelte'
 import TableSelectContractHarness from './TableSelectContractHarness.svelte'
 import TableExpandContractHarness from './TableExpandContractHarness.svelte'
+import TreeContractHarness from './TreeContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -158,5 +160,21 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // function-prop renderDetail idiom).
     const { container } = render(TableExpandContractHarness)
     await runContract(tableExpandScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Tree keyboard contract', async () => {
+    // Rendered in a dedicated harness (not the shared ContractsHarness) so the
+    // tree's many `role="treeitem"` elements stay out of the shared container
+    // and can't collide with other scenarios' role-based selector counts.
+    // Expansion is uncontrolled (no `expanded`/`defaultExpanded` prop), so the
+    // harness holds no state — both roots start collapsed, activeId starts null
+    // (so item 0 is roving-active via the `idx===0 && !activeId` tabindex
+    // fallback), and the tree's per-item keydown handler expands the active node
+    // and migrates roving focus internally. Svelte attaches its handler per-item,
+    // and the shared driver dispatches a bubbling keydown on the
+    // `[role="treeitem"][tabindex="0"]` active node, firing it directly. See
+    // TreeContractHarness.svelte for the full note.
+    const { container } = render(TreeContractHarness)
+    await runContract(treeScenario, driverFor(container), expect)
   })
 })

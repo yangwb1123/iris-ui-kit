@@ -19,6 +19,7 @@ import {
   tableSortScenario,
   tableSelectScenario,
   tableExpandScenario,
+  treeScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -40,6 +41,7 @@ import { IrisPagination } from './primitives/pagination/Pagination'
 import { IrisStepper } from './primitives/stepper/Stepper'
 import { IrisStepperStep } from './primitives/stepper/StepperStep'
 import { IrisTable } from './primitives/table/Table'
+import { IrisTree } from './primitives/tree/Tree'
 
 enableAutoUnmount(afterEach)
 
@@ -597,5 +599,41 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     })
     await nextTick()
     await runContract(tableExpandScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  /**
+   * IrisTree manages expansion + roving focus UNCONTROLLED by default: with no
+   * `expanded`/`selected` props it keeps internal state, so we mount it directly
+   * like the React reference, passing the `nodes` array (`{ id, label, children }`
+   * shape) in `props`. The tree starts collapsed (no `defaultExpanded`) with the
+   * first node roving-active (`tabindex="0"`); the rest are `-1`. Vue attaches its
+   * keydown handler PER-ITEM (`onKeyDown(event, flatNode)`), but `role="treeitem"`
+   * and `tabindex` live on the SAME element, so the scenario's `[role="treeitem"]
+   * [tabindex="0"]` target dispatches the bubbling keydown straight onto the active
+   * item — firing its handler directly. ArrowRight expands the active parent
+   * (revealing its two children → 4 visible items), ArrowDown roves focus to the
+   * first child, and ArrowLeft from that leaf child returns focus to the parent.
+   */
+  it('satisfies the shared Tree keyboard contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(IrisTree, {
+      attachTo: host,
+      props: {
+        nodes: [
+          {
+            id: 'a',
+            label: 'A',
+            children: [
+              { id: 'a1', label: 'A1' },
+              { id: 'a2', label: 'A2' },
+            ],
+          },
+          { id: 'b', label: 'B' },
+        ],
+      },
+    })
+    await nextTick()
+    await runContract(treeScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

@@ -4,29 +4,32 @@
 
 ## Now (next iterations)
 
-- [ ] P1 (iter 6): port Table **column resizing** (resizableColumns/columnWidths/onColumnWidthsChange + resize handles) to solid+svelte — VERIFIED gap (solid 0/0/0; svelte prop-stub only; react/vue full). Additive/opt-in. Same shape as column-virt.
-- [ ] P0: contract tests — add `@iris-ui/core/contracts` scenarios for `createSortable`.
+- (empty) — explicit P0/P1 roadmap exhausted; all real parity gaps closed (iters 2–6). Remaining items are Blocker-gated or marginal (below).
 
-### Parity-discovery (wf wumk73p7o) triage — VERIFIED before acting
+## Parity-discovery (wf wumk73p7o) — FULLY TRIAGED & CLOSED
 
-- REAL+large: column resizing (above).
-- REAL+cosmetic (rename = public-interface Blocker; only via additive alias): textarea `autoResize`(solid) vs `autosize`(others); otp-input `autoFocus` casing. Low priority.
-- NEEDS deeper check (grep ambiguous): checkbox aria-label (react/svelte may handle via rest-spread); Banner close-callback naming; Select renderTrigger; Table custom-cell-render signature.
-- FALSE POSITIVE (dismissed): Tour onOpenChange "missing in react" — react HAS it (vue=0). Explore agents are excerpt-based → always verify.
-- [x] ~~P0: excel export mime — drop non-standard `;charset=utf-8;`~~ done (iter 2).
+Of 13 Explore candidates, **only 2 were real+actionable** — column-virtualization (iter 5) + column-resizing (iter 6), both DONE (Table feature parity ×4 now complete). After reading actual source, the rest:
 
-## Later
+- FALSE POSITIVES: Tour onOpenChange (react HAS it; vue=0); checkbox ariaLabel (react accepts native `aria-label` via `{...rest}` + `extends InputHTMLAttributes`; svelte HAS `ariaLabel` — grep misread); various callback "gaps" (naming-only / present).
+- FRAMEWORK IDIOM (not a gap): Select `renderTrigger` (render-prop = React/Solid fn vs Vue/Svelte slot/snippet, intentionally not 1:1); solid Table extra `renderCell` alias.
+- COSMETIC RENAME = public-interface Blocker (deferred unless asked): textarea `autoResize`(solid) vs `autosize`(others); otp `autoFocus` casing.
+- LESSON: Explore agents read excerpts → ALWAYS verify candidates against source (~85% were noise here).
 
-- [x] ~~P1: a11y of tree rows — aria-level (iter 3) + aria-setsize/posinset + role=treegrid (iter 4). WAI-ARIA treegrid pattern complete ×4.~~
-- [x] ~~P1: horizontal/2D virtualization — columnVirtualization ported to solid+svelte (iter 5); all 4 at virtualization parity.~~
-- [ ] P2: Tauri demo shell to validate native bridges (BLOCKED: Rust toolchain absent → Blocker report).
+## Blocked / decision-gated (Blocker conditions — need user input or external resource)
+
+- P2: Tauri demo shell to validate native bridges — needs Rust toolchain (absent in sandbox).
+- First npm publish — maintainer/release decision (pipeline + changesets ready).
 
 ## Deferred-by-design (do NOT pick without explicit ask)
 
 - Variable-height (tree+detail) virtualization — complexity > value.
-- First npm publish — maintainer/business decision (Blocker conditions: public release).
+- `createSortable` contract tests — single-impl core, already unit-tested 21×; marginal.
 
 ## Resolved-as-non-issue (recorded so they aren't re-raised)
 
 - vue plugin subscribe-in-onMounted / svelte compact `$effect` — false-positives (lifecycle-paired, negligible window).
 - solid/svelte tree `getKey` index-0 — degrades identically to react/vue on malformed data.
+
+## Done (factory iters 2–6)
+
+excel mime (2) · tree aria-level (3) · WAI-ARIA treegrid (4) · column-virtualization parity (5) · column-resizing parity (6).

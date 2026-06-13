@@ -25,3 +25,7 @@
 ## ADR-001 — 4-framework parity over a shared core
 
 日期: project inception · 决策: identical component names/semantics across React/Vue/Solid/Svelte. · 原因: differentiation + AI-native manifest. · 影响: every feature ships ×4. · 替代方案: single-framework (rejected).
+
+## ADR-007 — Table feature parity completed via additive opt-in ports; discovery requires verification
+
+日期: 2026-06 · 决策: port columnVirtualization (iter 5) + interactive column resizing (iter 6) to Solid/Svelte as ADDITIVE, opt-in (default-off) features reusing core `computeVirtualRange` + each adapter's `useDrag`; verify every Explore-discovery candidate against source before acting. · 原因: React/Vue had these; Solid/Svelte didn't — a real parity gap. Opt-in = zero regression to existing tables. Explore agents read excerpts (~85% of the 13 parity candidates were noise/idiom/false-positive). · 影响: all 4 Tables at full feature parity; the discovery loop now has a documented verify-first discipline. · 替代方案: rename-for-parity (rejected — public-interface Blocker); skip (rejected — real gap).

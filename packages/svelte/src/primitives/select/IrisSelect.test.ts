@@ -38,4 +38,41 @@ describe('IrisSelect', () => {
     await fireEvent.click(opts[1])
     expect(onValueChange).toHaveBeenCalledWith('banana')
   })
+
+  describe('keyboard navigation', () => {
+    const optionEls = () =>
+      Array.from(document.querySelectorAll('[role="option"]')) as HTMLElement[]
+    const listbox = () => document.querySelector('[data-iris-select-listbox]') as HTMLElement
+
+    it('focuses the first option on open, ArrowDown moves to next, Enter selects it', async () => {
+      const onValueChange = vi.fn()
+      const { container } = render(IrisSelect, { props: { items, onValueChange } })
+      await fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+      await Promise.resolve() // flush the focusOnOpen microtask
+      const options = optionEls()
+      expect(document.activeElement).toBe(options[0])
+      await fireEvent.keyDown(listbox(), { key: 'ArrowDown' })
+      expect(document.activeElement).toBe(options[1])
+      await fireEvent.keyDown(options[1], { key: 'Enter' })
+      expect(onValueChange).toHaveBeenCalledWith('banana')
+    })
+
+    it('End focuses the last option, Home the first', async () => {
+      const { container } = render(IrisSelect, { props: { items } })
+      await fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+      await Promise.resolve()
+      const options = optionEls()
+      await fireEvent.keyDown(listbox(), { key: 'End' })
+      expect(document.activeElement).toBe(options[2])
+      await fireEvent.keyDown(listbox(), { key: 'Home' })
+      expect(document.activeElement).toBe(options[0])
+    })
+
+    it('opens on selected value and focuses the selected option', async () => {
+      const { container } = render(IrisSelect, { props: { items, value: 'cherry' } })
+      await fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+      await Promise.resolve()
+      expect(document.activeElement).toBe(optionEls()[2])
+    })
+  })
 })

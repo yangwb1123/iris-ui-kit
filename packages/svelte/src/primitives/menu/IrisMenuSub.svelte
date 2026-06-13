@@ -5,6 +5,7 @@
    */
   import { generateId } from '@iris-ui/core'
   import { useFloating } from '../../floating/useFloating.svelte'
+  import { useDismiss } from '../../floating/useDismiss.svelte'
   import { portal } from '../../internal/portal'
   import { getMenuContext, setMenuContext } from './context'
 
@@ -49,6 +50,35 @@
     offset: 0,
   })
 
+  // Outside-pointer-down closes this submenu (Escape is handled by the content
+  // keydown). With this in place, pointer-LEAVE no longer needs to close — the
+  // submenu stays open until ArrowLeft / Escape / select / outside-click,
+  // matching the React/Vue reference hover model.
+  useDismiss({
+    enabled: () => open,
+    exclude: [() => triggerEl, () => contentEl],
+    onDismiss: () => { open = false },
+    escape: false,
+  })
+
+  // Hover open is debounced ~100ms; pointer-leave only cancels a pending open.
+  const HOVER_OPEN_DELAY = 100
+  let openTimer: ReturnType<typeof setTimeout> | null = null
+  function clearTimer(): void {
+    if (openTimer) {
+      clearTimeout(openTimer)
+      openTimer = null
+    }
+  }
+  function scheduleOpen(): void {
+    if (disabled) return
+    clearTimer()
+    openTimer = setTimeout(() => {
+      open = true
+      openTimer = null
+    }, HOVER_OPEN_DELAY)
+  }
+
   function setTrigger(node: HTMLElement): { destroy: () => void } {
     triggerEl = node
     return { destroy: () => { triggerEl = undefined } }
@@ -62,6 +92,7 @@
   function onTriggerKeyDown(e: KeyboardEvent): void {
     if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
+      clearTimer()
       if (!disabled) open = true
     } else if (e.key === 'ArrowLeft') {
       e.preventDefault()
@@ -128,9 +159,9 @@
   data-iris-menu-sub-trigger
   {...rest}
   use:setTrigger
-  onpointerenter={() => { if (!disabled) open = true }}
-  onpointerleave={() => { open = false }}
-  onclick={() => { if (!disabled) open = !open }}
+  onpointerenter={scheduleOpen}
+  onpointerleave={clearTimer}
+  onclick={() => { clearTimer(); if (!disabled) open = !open }}
   onkeydown={onTriggerKeyDown}
   style="padding: var(--iris-padding-sm, 4px) var(--iris-padding-md, 8px); cursor: {disabled ? 'not-allowed' : 'pointer'}; border-radius: var(--iris-radius-sm, 3px); display: flex; align-items: center; justify-content: space-between; gap: 8px; color: {disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)'}; outline: none"
 >
@@ -146,8 +177,7 @@
     role="menu"
     tabindex={-1}
     data-iris-menu-sub-content
-    onpointerenter={() => { open = true }}
-    onpointerleave={() => { open = false }}
+    onpointerenter={clearTimer}
     onkeydown={onContentKeyDown}
     style="{floating.floatingStyles}; background: var(--iris-surface); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-sm, 4px); box-shadow: 0 8px 24px -8px rgba(0,0,0,0.16); min-width: 140px; z-index: 1001; outline: none"
   >

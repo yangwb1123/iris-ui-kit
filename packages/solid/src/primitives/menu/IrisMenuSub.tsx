@@ -1,4 +1,4 @@
-import { createEffect, createSignal, createUniqueId, Show, type JSX } from 'solid-js'
+import { createEffect, createSignal, createUniqueId, onCleanup, Show, type JSX } from 'solid-js'
 import { nextEnabledIndex } from '@iris-ui/core'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
@@ -65,6 +65,27 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
     }
   }
 
+  // Hover open is debounced ~100ms and pointer-leave does NOT close (it only
+  // cancels a pending open) — the submenu stays open until ArrowLeft / Escape /
+  // select / outside-dismiss. Matches the React/Vue reference hover model.
+  const HOVER_OPEN_DELAY = 100
+  let openTimer: ReturnType<typeof setTimeout> | null = null
+  const clearTimer = (): void => {
+    if (openTimer) {
+      clearTimeout(openTimer)
+      openTimer = null
+    }
+  }
+  const scheduleOpen = (): void => {
+    if (props.disabled) return
+    clearTimer()
+    openTimer = setTimeout(() => {
+      setOpen(true)
+      openTimer = null
+    }, HOVER_OPEN_DELAY)
+  }
+  onCleanup(clearTimer)
+
   // Close sub when root closes
   createEffect(() => {
     if (!ctx.open()) setOpen(false)
@@ -97,12 +118,16 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
         aria-controls={submenuId}
         aria-disabled={props.disabled ? 'true' : undefined}
         data-iris-menu-sub-trigger=""
-        onPointerEnter={() => !props.disabled && setOpen(true)}
-        onPointerLeave={() => setOpen(false)}
-        onClick={() => !props.disabled && setOpen((v) => !v)}
+        onPointerEnter={scheduleOpen}
+        onPointerLeave={clearTimer}
+        onClick={() => {
+          clearTimer()
+          if (!props.disabled) setOpen((v) => !v)
+        }}
         onKeyDown={(e: KeyboardEvent) => {
           if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
+            clearTimer()
             if (!props.disabled) setOpen(true)
           } else if (e.key === 'ArrowLeft') {
             e.preventDefault()
@@ -134,8 +159,7 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
           tabindex={-1}
           data-iris-menu-sub-content=""
           data-state="open"
-          onPointerEnter={() => setOpen(true)}
-          onPointerLeave={() => setOpen(false)}
+          onPointerEnter={clearTimer}
           onKeyDown={handleKeyDown}
           style={{
             ...floatingStyles(),

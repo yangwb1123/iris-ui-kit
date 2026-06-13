@@ -1,4 +1,13 @@
-import { createSignal, createEffect, mergeProps, splitProps, Show, For, type JSX } from 'solid-js'
+import {
+  createSignal,
+  createEffect,
+  createMemo,
+  mergeProps,
+  splitProps,
+  Show,
+  For,
+  type JSX,
+} from 'solid-js'
 import { createTreeSelection, type TreeSelectionNode } from '@iris-ui/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
@@ -42,12 +51,14 @@ function IrisTreeNodeItem(nodeProps: {
   depth: number
   expanded: () => boolean
   selected: () => boolean
+  active: () => boolean
   checked: () => boolean
   indeterminate: () => boolean
   checkable: boolean
   disabled: boolean
   onToggleExpand: () => void
   onSelect: () => void
+  onActivate: () => void
   onCheck: () => void
   children?: JSX.Element
 }): JSX.Element {
@@ -67,13 +78,19 @@ function IrisTreeNodeItem(nodeProps: {
       role="treeitem"
       aria-selected={nodeProps.selected()}
       aria-expanded={!isLeaf() ? nodeProps.expanded() : undefined}
+      aria-level={nodeProps.depth + 1}
+      aria-disabled={isDisabled() ? 'true' : undefined}
+      tabindex={nodeProps.active() ? 0 : -1}
       data-iris-tree-node={nodeProps.node.id}
       data-depth={nodeProps.depth}
+      data-state={nodeProps.selected() ? 'selected' : nodeProps.active() ? 'active' : 'idle'}
+      onFocus={() => nodeProps.onActivate()}
     >
       <div
         data-iris-tree-node-row=""
         onClick={() => {
           if (isDisabled()) return
+          nodeProps.onActivate()
           if (!isLeaf()) nodeProps.onToggleExpand()
           nodeProps.onSelect()
         }}
@@ -233,6 +250,100 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
     local.onSelect?.(next)
   }
 
+  // Flattened list of the currently-VISIBLE nodes (depth-first, respecting
+  // expansion) — the linear order keyboard navigation moves through. Mirrors the
+  // React/Vue/Svelte adapters so arrow-key behavior is identical across all four.
+  interface FlatNode {
+    node: IrisTreeNode
+    depth: number
+    parentId: string | null
+    hasChildren: boolean
+  }
+  const flat = createMemo<FlatNode[]>(() => {
+    const out: FlatNode[] = []
+    const expandedNow = expandedIds()
+    const walk = (ns: IrisTreeNode[], depth: number, parentId: string | null): void => {
+      for (const node of ns) {
+        const kids = node.children ?? []
+        const hasChildren = !node.isLeaf && kids.length > 0
+        out.push({ node, depth, parentId, hasChildren })
+        if (hasChildren && expandedNow.includes(node.id)) walk(kids, depth + 1, node.id)
+      }
+    }
+    walk(local.nodes, 0, null)
+    return out
+  })
+
+  // Roving focus: exactly one node is the keyboard target (tabindex=0). Seed it to
+  // the first visible node and keep it valid as the visible set changes.
+  const [activeId, setActiveId] = createSignal<string | null>(null)
+  createEffect(() => {
+    const list = flat()
+    const cur = activeId()
+    if (!cur || !list.some((f) => f.node.id === cur)) {
+      setActiveId(list[0]?.node.id ?? null)
+    }
+  })
+
+  const moveActive = (delta: 1 | -1): void => {
+    const list = flat()
+    if (list.length === 0) return
+    const cur = activeId()
+    const idx = cur ? list.findIndex((f) => f.node.id === cur) : -1
+    let next = idx + delta
+    if (next < 0) next = 0
+    if (next >= list.length) next = list.length - 1
+    setActiveId(list[next]!.node.id)
+  }
+
+  // WAI-ARIA tree keyboard pattern (container-level handler reads the active node,
+  // so it works regardless of which item bubbled the event):
+  //   ↑/↓ move · → expand or into-first-child · ← collapse or to-parent ·
+  //   Home/End first/last · Enter/Space (de)select.
+  const onKeyDown = (e: KeyboardEvent): void => {
+    if (local.disabled) return
+    const cur = activeId()
+    if (!cur) return
+    const list = flat()
+    const current = list.find((f) => f.node.id === cur)
+    if (!current) return
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        moveActive(1)
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        moveActive(-1)
+        break
+      case 'ArrowRight':
+        e.preventDefault()
+        if (current.hasChildren) {
+          if (expandedIds().includes(cur)) moveActive(1)
+          else toggleExpand(cur)
+        }
+        break
+      case 'ArrowLeft':
+        e.preventDefault()
+        if (current.hasChildren && expandedIds().includes(cur)) toggleExpand(cur)
+        else if (current.parentId) setActiveId(current.parentId)
+        break
+      case 'Home':
+        e.preventDefault()
+        setActiveId(list[0]!.node.id)
+        break
+      case 'End':
+        e.preventDefault()
+        setActiveId(list[list.length - 1]!.node.id)
+        break
+      case 'Enter':
+      case ' ':
+        e.preventDefault()
+        selectNode(cur)
+        break
+    }
+  }
+
   const renderNodes = (nodes: IrisTreeNode[], depth: number): JSX.Element => (
     <For each={nodes}>
       {(node) => (
@@ -241,12 +352,14 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
           depth={depth}
           expanded={() => expandedIds().includes(node.id)}
           selected={() => selectedIds().includes(node.id)}
+          active={() => activeId() === node.id}
           checked={() => isChecked(node.id)}
           indeterminate={() => isIndeterminate(node.id)}
           checkable={local.checkable}
           disabled={local.disabled}
           onToggleExpand={() => toggleExpand(node.id)}
           onSelect={() => selectNode(node.id)}
+          onActivate={() => setActiveId(node.id)}
           onCheck={() => checkModel.toggle(node.id)}
         >
           {node.children && node.children.length > 0
@@ -263,6 +376,8 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
       role="tree"
       aria-label={local.ariaLabel ?? t('tree.label')}
       data-disabled={local.disabled ? '' : undefined}
+      tabindex={-1}
+      onKeyDown={onKeyDown}
       style={{ 'list-style': 'none', margin: '0', padding: '0' }}
     >
       {renderNodes(local.nodes, 0)}

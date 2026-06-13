@@ -47,6 +47,79 @@ describe('IrisTree', () => {
     expect(onSelect).toHaveBeenCalledWith(['b'])
   })
 
+  describe('keyboard navigation (WAI-ARIA tree)', () => {
+    const tree = (c: HTMLElement) => c.querySelector('[data-iris-tree]') as HTMLElement
+    const item = (c: HTMLElement, id: string) =>
+      c.querySelector(`[data-iris-tree-node="${id}"]`) as HTMLElement
+
+    it('seeds roving tabindex on the first visible node', () => {
+      const { container } = render(() => <IrisTree nodes={nodes} />)
+      expect(item(container, 'a').getAttribute('tabindex')).toBe('0')
+      expect(item(container, 'b').getAttribute('tabindex')).toBe('-1')
+    })
+
+    it('exposes aria-level reflecting depth', () => {
+      const { container } = render(() => <IrisTree nodes={nodes} defaultExpandedIds={['a']} />)
+      expect(item(container, 'a').getAttribute('aria-level')).toBe('1')
+      expect(item(container, 'a1').getAttribute('aria-level')).toBe('2')
+    })
+
+    it('ArrowRight expands the active parent node', () => {
+      const onExpand = vi.fn()
+      const { container, queryByText } = render(() => (
+        <IrisTree nodes={nodes} onExpand={onExpand} />
+      ))
+      expect(queryByText('Child A1')).toBeNull()
+      fireEvent.keyDown(tree(container), { key: 'ArrowRight' })
+      expect(item(container, 'a').getAttribute('aria-expanded')).toBe('true')
+      expect(queryByText('Child A1')).not.toBeNull()
+      expect(onExpand).toHaveBeenCalledWith(['a'])
+    })
+
+    it('ArrowDown / ArrowUp move roving focus through visible nodes', () => {
+      const { container } = render(() => <IrisTree nodes={nodes} defaultExpandedIds={['a']} />)
+      // visible order: a, a1, a2, b
+      fireEvent.keyDown(tree(container), { key: 'ArrowDown' })
+      expect(item(container, 'a1').getAttribute('tabindex')).toBe('0')
+      expect(item(container, 'a').getAttribute('tabindex')).toBe('-1')
+      fireEvent.keyDown(tree(container), { key: 'ArrowUp' })
+      expect(item(container, 'a').getAttribute('tabindex')).toBe('0')
+    })
+
+    it('ArrowLeft collapses an expanded active node', () => {
+      const { container, queryByText } = render(() => (
+        <IrisTree nodes={nodes} defaultExpandedIds={['a']} />
+      ))
+      fireEvent.keyDown(tree(container), { key: 'ArrowLeft' })
+      expect(item(container, 'a').getAttribute('aria-expanded')).toBe('false')
+      expect(queryByText('Child A1')).toBeNull()
+    })
+
+    it('ArrowLeft from a leaf child moves focus to its parent', () => {
+      const { container } = render(() => <IrisTree nodes={nodes} defaultExpandedIds={['a']} />)
+      fireEvent.keyDown(tree(container), { key: 'ArrowDown' }) // active = a1 (leaf)
+      expect(item(container, 'a1').getAttribute('tabindex')).toBe('0')
+      fireEvent.keyDown(tree(container), { key: 'ArrowLeft' })
+      expect(item(container, 'a').getAttribute('tabindex')).toBe('0')
+    })
+
+    it('Enter selects the active node', () => {
+      const onSelect = vi.fn()
+      const { container } = render(() => <IrisTree nodes={nodes} onSelect={onSelect} />)
+      fireEvent.keyDown(tree(container), { key: 'Enter' })
+      expect(onSelect).toHaveBeenCalledWith(['a'])
+      expect(item(container, 'a').getAttribute('aria-selected')).toBe('true')
+    })
+
+    it('Home / End jump to the first / last visible node', () => {
+      const { container } = render(() => <IrisTree nodes={nodes} defaultExpandedIds={['a']} />)
+      fireEvent.keyDown(tree(container), { key: 'End' })
+      expect(item(container, 'b').getAttribute('tabindex')).toBe('0') // last visible = b
+      fireEvent.keyDown(tree(container), { key: 'Home' })
+      expect(item(container, 'a').getAttribute('tabindex')).toBe('0')
+    })
+  })
+
   describe('checkable', () => {
     const checkboxFor = (container: HTMLElement, id: string) =>
       container.querySelector(

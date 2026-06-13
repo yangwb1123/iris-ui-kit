@@ -13,6 +13,7 @@
     "clean": "rm -rf dist .turbo .svelte-kit"
   },
   "dependencies": {
+    "@iris-ui/core": "workspace:*",
     "@iris-ui/svelte": "workspace:*",
     "@iris-ui/tokens": "workspace:*",
     "svelte": "^5.16.0"

@@ -1,0 +1,19 @@
+{
+  "name": "iris-desktop",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Electron desktop shell demo — hosts any Iris UI CMS (React/Vue/Solid/Svelte) and wires the @iris-ui/core native save + clipboard bridges to real OS APIs.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:react": "IRIS_FW=react electron .",
+    "start:vue": "IRIS_FW=vue electron .",
+    "start:solid": "IRIS_FW=solid electron .",
+    "start:svelte": "IRIS_FW=svelte electron .",
+    "smoke": "node smoke.js",
+    "test": "node smoke.js"
+  },
+  "devDependencies": {
+    "electron": "^42.4.0"
+  }
+}

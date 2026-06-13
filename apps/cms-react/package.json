@@ -13,6 +13,7 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
+    "@iris-ui/core": "workspace:*",
     "@iris-ui/react": "workspace:*",
     "@iris-ui/tokens": "workspace:*",
     "react": "^18.3.1",

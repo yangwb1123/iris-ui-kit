@@ -13,6 +13,7 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
+    "@iris-ui/core": "workspace:*",
     "@iris-ui/solid": "workspace:*",
     "@iris-ui/tokens": "workspace:*",
     "solid-js": "^1.9.3"

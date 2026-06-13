@@ -25,6 +25,10 @@ Of 13 Explore candidates, **only 2 were real+actionable** — column-virtualizat
 - Variable-height (tree+detail) virtualization — complexity > value.
 - `createSortable` contract tests — single-impl core, already unit-tested 21×; marginal.
 
+## Low-priority / by-design (recorded; weigh value before picking)
+
+- `skeletons/DashboardTemplate` (react+solid) hardcode `aria-label="Primary"` instead of `t()`. Templates are scaffolding that uses NO i18n by design (users customize). Marginal; fix only if a "templates should localize" decision is made.
+
 ## Resolved-as-non-issue (recorded so they aren't re-raised)
 
 - vue plugin subscribe-in-onMounted / svelte compact `$effect` — false-positives (lifecycle-paired, negligible window).

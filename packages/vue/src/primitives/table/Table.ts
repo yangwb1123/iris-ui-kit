@@ -1252,6 +1252,9 @@ export const IrisTable = defineComponent({
           {
             key: String(id),
             role: 'row',
+            // Announce selection to assistive tech (parity with the React
+            // adapter); `data-state` below stays as the styling hook.
+            'aria-selected': props.selectable !== 'none' ? selected : undefined,
             // Tree depth/position for screen readers (1-based); the toggle button
             // carries aria-expanded for the control itself.
             'aria-level': treeMeta ? treeMeta.depth + 1 : undefined,

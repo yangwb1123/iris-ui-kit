@@ -16,6 +16,7 @@ import {
   stepperScenario,
   toggleGroupMultiScenario,
   tableSortScenario,
+  tableSelectScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -197,5 +198,20 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       />,
     )
     await runContract(tableSortScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Table multi row-selection contract', async () => {
+    const { container } = render(
+      <IrisTable
+        selectable="multi"
+        columns={[{ key: 'name', title: 'Name' }]}
+        data={[
+          { id: '1', name: 'Bravo' },
+          { id: '2', name: 'Alpha' },
+          { id: '3', name: 'Charlie' },
+        ]}
+      />,
+    )
+    await runContract(tableSelectScenario, driverFor(container), expect)
   })
 })

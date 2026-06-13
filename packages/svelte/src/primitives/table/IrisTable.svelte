@@ -802,6 +802,7 @@
     {@const selected = isSelected(id)}
     <div
       role="row"
+      aria-selected={selectable !== 'none' ? selected : undefined}
       data-iris-table-row
       data-state={selected ? 'selected' : undefined}
       aria-level={treeMeta ? treeMeta.depth + 1 : undefined}

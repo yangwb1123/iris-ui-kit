@@ -16,6 +16,7 @@ import {
   paginationScenario,
   stepperScenario,
   tableSortScenario,
+  tableSelectScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import {
@@ -198,5 +199,20 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
       />
     ))
     await runContract(tableSortScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared TableSelect contract', async () => {
+    const { container } = render(() => (
+      <IrisTable
+        selectable="multi"
+        columns={[{ key: 'name', title: 'Name' }]}
+        data={[
+          { id: '1', name: 'Bravo' },
+          { id: '2', name: 'Alpha' },
+          { id: '3', name: 'Charlie' },
+        ]}
+      />
+    ))
+    await runContract(tableSelectScenario, driverFor(container), expect)
   })
 })

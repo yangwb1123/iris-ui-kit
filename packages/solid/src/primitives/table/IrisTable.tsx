@@ -649,6 +649,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     return (
       <div
         role="row"
+        // Announce selection to assistive tech (parity with the React adapter);
+        // `data-state` below stays as the styling hook.
+        aria-selected={merged.selectable !== 'none' ? selected() : undefined}
         data-iris-table-row=""
         data-state={selected() ? 'selected' : undefined}
         // Tree depth/position for screen readers (1-based); the toggle button

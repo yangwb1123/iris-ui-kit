@@ -17,6 +17,7 @@ import {
   paginationScenario,
   stepperScenario,
   tableSortScenario,
+  tableSelectScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -536,5 +537,34 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     })
     await nextTick()
     await runContract(tableSortScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  /**
+   * IrisTable manages row selection UNCONTROLLED by default: with `selectable`
+   * "multi" and no controlled selection prop, the table keeps an internal
+   * selection model and toggles it per-row on each row-checkbox click (multi =
+   * independent toggles) — no v-model harness needed, so we mount it directly
+   * like the React reference. Each selectable body row (`[role="row"]`) carries
+   * `aria-selected` ("true"/"false"); selection checkboxes are the native
+   * `input[type="checkbox"]` rendered by IrisCheckbox (index 0 = the master
+   * select-all in the header, body-row checkboxes follow at 1/2/3).
+   */
+  it('satisfies the shared Table multi row-selection contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(IrisTable, {
+      attachTo: host,
+      props: {
+        selectable: 'multi',
+        columns: [{ key: 'name', title: 'Name' }],
+        data: [
+          { id: '1', name: 'Bravo' },
+          { id: '2', name: 'Alpha' },
+          { id: '3', name: 'Charlie' },
+        ],
+      },
+    })
+    await nextTick()
+    await runContract(tableSelectScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

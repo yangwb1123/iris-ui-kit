@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { generateId } from '@iris-ui/core'
+
   export interface IrisMentionOption {
     label: string
     value: string
@@ -11,6 +13,7 @@
 
   interface Props {
     value?: string
+    defaultValue?: string
     options?: IrisMentionOption[]
     prefix?: string
     placeholder?: string
@@ -24,7 +27,8 @@
   }
 
   let {
-    value = '',
+    value = undefined,
+    defaultValue = '',
     options = [],
     prefix = '@',
     placeholder,
@@ -37,6 +41,17 @@
     class: className,
     ...rest
   }: Props = $props()
+
+  // Controlled when `value` is supplied; otherwise self-manage from defaultValue
+  // so an uncontrolled textarea actually updates as the user types (previously
+  // it bound straight to the prop and froze without a parent write-back).
+  const isControlled = $derived(value !== undefined)
+  // svelte-ignore state_referenced_locally
+  let internal = $state(defaultValue)
+  const text = $derived(isControlled ? (value as string) : internal)
+
+  const baseId = generateId()
+  const listboxId = `${baseId}-listbox`
 
   let textareaEl = $state<HTMLTextAreaElement | undefined>(undefined)
   let activeIndex = $state(0)
@@ -62,13 +77,15 @@
   })
 
   const open = $derived(active !== null && filtered().length > 0)
+  const activeId = $derived(open ? `${baseId}-opt-${activeIndex}` : undefined)
 
   function onInput(e: Event) {
     const ta = e.target as HTMLTextAreaElement
-    const text = ta.value
-    const caret = ta.selectionStart ?? text.length
-    onValueChange?.(text)
-    active = detect(text, caret)
+    const next = ta.value
+    const caret = ta.selectionStart ?? next.length
+    if (!isControlled) internal = next
+    onValueChange?.(next)
+    active = detect(next, caret)
     activeIndex = 0
   }
 
@@ -78,11 +95,11 @@
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
-        activeIndex = (activeIndex + 1) % list.length
+        activeIndex = Math.min(list.length - 1, activeIndex + 1)
         break
       case 'ArrowUp':
         e.preventDefault()
-        activeIndex = (activeIndex - 1 + list.length) % list.length
+        activeIndex = Math.max(0, activeIndex - 1)
         break
       case 'Enter':
         if (list[activeIndex]) {
@@ -91,6 +108,7 @@
         }
         break
       case 'Escape':
+        e.preventDefault()
         active = null
         break
     }
@@ -98,9 +116,10 @@
 
   function selectOption(opt: IrisMentionOption) {
     if (!active || !textareaEl) return
-    const before = value.slice(0, active.start)
-    const after = value.slice(active.start + 1 + active.query.length)
+    const before = text.slice(0, active.start)
+    const after = text.slice(active.start + 1 + active.query.length)
     const newVal = `${before}${prefix}${opt.label} ${after}`
+    if (!isControlled) internal = newVal
     onValueChange?.(newVal)
     active = null
     textareaEl.focus()
@@ -118,10 +137,15 @@
   <textarea
     bind:this={textareaEl}
     {id}
-    {value}
+    value={text}
     {placeholder}
     {rows}
     {disabled}
+    role="combobox"
+    aria-autocomplete="list"
+    aria-expanded={open}
+    aria-controls={listboxId}
+    aria-activedescendant={activeId}
     aria-invalid={invalid ? 'true' : undefined}
     data-iris-mentions-textarea
     oninput={onInput}
@@ -142,6 +166,7 @@
 
   {#if open}
     <ul
+      id={listboxId}
       data-iris-mentions-list
       role="listbox"
       style:position="absolute"
@@ -164,6 +189,7 @@
     >
       {#each filtered() as opt, i (opt.value)}
         <li
+          id={`${baseId}-opt-${i}`}
           role="option"
           aria-selected={i === activeIndex}
           data-iris-mentions-item

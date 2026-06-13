@@ -27,4 +27,13 @@ describe('IrisMentions', () => {
     fireEvent.input(ta, { target: { value: 'hello' } })
     expect(onChange).toHaveBeenCalledWith('hello')
   })
+
+  it('exposes combobox ARIA wiring on the textarea', () => {
+    const { container } = render(() => <IrisMentions options={options} />)
+    const ta = container.querySelector('[data-iris-mentions-textarea]') as HTMLTextAreaElement
+    expect(ta.getAttribute('role')).toBe('combobox')
+    expect(ta.getAttribute('aria-autocomplete')).toBe('list')
+    expect(ta.getAttribute('aria-expanded')).toBe('false')
+    expect(ta.getAttribute('aria-controls')).toBeTruthy()
+  })
 })

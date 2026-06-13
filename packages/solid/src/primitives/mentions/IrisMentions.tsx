@@ -1,4 +1,13 @@
-import { createSignal, createMemo, mergeProps, splitProps, Show, For, type JSX } from 'solid-js'
+import {
+  createSignal,
+  createMemo,
+  createUniqueId,
+  mergeProps,
+  splitProps,
+  Show,
+  For,
+  type JSX,
+} from 'solid-js'
 
 export interface IrisMentionOption {
   label: string
@@ -70,6 +79,9 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
 
   const currentValue = () => (local.value !== undefined ? local.value : internalValue())
 
+  const baseId = createUniqueId()
+  const listboxId = `${baseId}-listbox`
+
   const filtered = createMemo(() => {
     const a = active()
     if (!a) return []
@@ -78,6 +90,9 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
       (o) => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
     )
   })
+
+  const isOpen = (): boolean => active() !== null && filtered().length > 0
+  const activeId = (): string | undefined => (isOpen() ? `${baseId}-opt-${activeIdx()}` : undefined)
 
   const updateValue = (v: string) => {
     if (local.value === undefined) setInternalValue(v)
@@ -117,6 +132,7 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
       const item = items[activeIdx()]
       if (item) pickOption(item)
     } else if (e.key === 'Escape') {
+      e.preventDefault()
       setActive(null)
     }
   }
@@ -130,6 +146,11 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
         placeholder={local.placeholder}
         value={currentValue()}
         disabled={local.disabled || undefined}
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={isOpen()}
+        aria-controls={listboxId}
+        aria-activedescendant={activeId()}
         aria-invalid={local.invalid ? 'true' : undefined}
         onInput={onInput}
         onKeyDown={onKeyDown}
@@ -150,6 +171,7 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
       />
       <Show when={active() && filtered().length > 0}>
         <ul
+          id={listboxId}
           data-iris-mentions-list=""
           role="listbox"
           style={{
@@ -173,6 +195,7 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
           <For each={filtered()}>
             {(opt, i) => (
               <li
+                id={`${baseId}-opt-${i()}`}
                 role="option"
                 aria-selected={i() === activeIdx()}
                 data-iris-mentions-item={opt.value}

@@ -4,7 +4,8 @@
 
 ## Now (next iterations)
 
-- (empty) — explicit P0/P1 roadmap exhausted; all real parity gaps closed (iters 2–6). Remaining items are Blocker-gated or marginal (below).
+- **P1 (next substantive autonomous effort): expand `@iris-ui/core/contracts`** — the cross-framework behavior-contract harness currently covers ~4 components; extend it so the same event-script asserts identical core-store migrations across all 4 adapters for high-value stateful components (selection, sort, expansion, data-source). Turns "parity by author discipline" (now guarded structurally by the manifest parity test) into asserted BEHAVIORAL parity. Multi-iteration; decompose per component (≤5 files each). Needs no user input — best run as a fresh cycle from STATE.md.
+- Verification sweeps + invariant guards mode continues (iters 9–15 found real bugs + built 7 guards); remaining sweep dimensions are lower-yield (docs/demo coverage, hardcoded visible strings, perf) — pick when a concrete signal appears.
 
 ## Parity-discovery (wf wumk73p7o) — FULLY TRIAGED & CLOSED
 

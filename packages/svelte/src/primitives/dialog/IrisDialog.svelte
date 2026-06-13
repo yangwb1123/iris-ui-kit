@@ -47,6 +47,11 @@
   const titleId = `${baseId}-title`
   const descriptionId = `${baseId}-desc`
 
+  // Refcount mounted Title/Description so the content wires aria-labelledby /
+  // aria-describedby only when one is actually present (mirrors React).
+  let titleCount = $state(0)
+  let descriptionCount = $state(0)
+
   setDialogContext({
     get open() { return open },
     setOpen,
@@ -57,6 +62,16 @@
     contentId,
     titleId,
     descriptionId,
+    get hasTitle() { return titleCount > 0 },
+    get hasDescription() { return descriptionCount > 0 },
+    registerTitle: () => {
+      titleCount += 1
+      return () => { titleCount -= 1 }
+    },
+    registerDescription: () => {
+      descriptionCount += 1
+      return () => { descriptionCount -= 1 }
+    },
     get closeOnOutsideClick() { return closeOnOutsideClick },
     get closeOnEscape() { return closeOnEscape },
   })

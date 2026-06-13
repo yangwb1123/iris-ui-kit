@@ -12,6 +12,14 @@ export interface DialogContextValue {
   contentId: string
   titleId: string
   descriptionId: string
+  /** True while at least one IrisDialogTitle is mounted. */
+  readonly hasTitle: boolean
+  /** True while at least one IrisDialogDescription is mounted. */
+  readonly hasDescription: boolean
+  /** Register a mounted title; returns a cleanup to call on unmount. */
+  registerTitle: () => () => void
+  /** Register a mounted description; returns a cleanup to call on unmount. */
+  registerDescription: () => () => void
   readonly closeOnOutsideClick: boolean
   readonly closeOnEscape: boolean
 }

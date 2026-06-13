@@ -60,6 +60,8 @@
       id={ctx.contentId}
       role="dialog"
       aria-modal="true"
+      aria-labelledby={ctx.hasTitle ? ctx.titleId : undefined}
+      aria-describedby={ctx.hasDescription ? ctx.descriptionId : undefined}
       tabindex={-1}
       data-iris-dialog-content
       data-state="open"

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import { getDialogContext } from './context'
 
   interface Props {
@@ -9,6 +10,10 @@
 
   let { as: tag = 'p', children, ...rest }: Props = $props()
   const ctx = getDialogContext('IrisDialogDescription')
+
+  // Tell the dialog a description is present so it wires aria-describedby.
+  // untrack so the counter's read-modify-write doesn't self-trigger (see Title).
+  $effect(() => untrack(() => ctx.registerDescription()))
 </script>
 
 <svelte:element

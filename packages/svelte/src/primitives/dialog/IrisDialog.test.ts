@@ -36,6 +36,16 @@ describe('IrisDialog', () => {
     expect(desc?.id).toBeTruthy()
   })
 
+  it('wires aria-labelledby/aria-describedby to the mounted title and description', async () => {
+    const { getByText } = render(DialogHarness)
+    await fireEvent.click(getByText('Open Dialog'))
+    const content = document.querySelector('[role="dialog"]')!
+    const title = document.querySelector('[data-iris-dialog-title]')!
+    const desc = document.querySelector('[data-iris-dialog-description]')!
+    expect(content.getAttribute('aria-labelledby')).toBe(title.id)
+    expect(content.getAttribute('aria-describedby')).toBe(desc.id)
+  })
+
   it('closes when Close button is clicked', async () => {
     const { getByText } = render(DialogHarness)
     await fireEvent.click(getByText('Open Dialog'))

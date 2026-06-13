@@ -34,7 +34,7 @@ describe('IrisCarousel', () => {
         <div>Slide 3</div>
       </IrisCarousel>
     ))
-    const dots = container.querySelectorAll('[data-iris-carousel-dot]')
+    const dots = container.querySelectorAll('[data-iris-carousel-indicator]')
     expect(dots.length).toBe(3)
   })
 
@@ -47,7 +47,7 @@ describe('IrisCarousel', () => {
     ))
     const nextBtn = container.querySelector('[data-iris-carousel-next]') as HTMLButtonElement
     fireEvent.click(nextBtn)
-    const dot1 = container.querySelector('[data-iris-carousel-dot="1"]') as HTMLButtonElement
+    const dot1 = container.querySelector('[data-iris-carousel-indicator="1"]') as HTMLButtonElement
     expect(dot1.getAttribute('aria-selected')).toBe('true')
   })
 })

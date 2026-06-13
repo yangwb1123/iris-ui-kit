@@ -210,7 +210,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
                 role="tab"
                 aria-selected={i() === currentIndex()}
                 aria-label={t('carousel.goTo', { index: i() + 1 })}
-                data-iris-carousel-dot={i()}
+                data-iris-carousel-indicator={i()}
                 onClick={() => goTo(i())}
                 style={{
                   width: '8px',

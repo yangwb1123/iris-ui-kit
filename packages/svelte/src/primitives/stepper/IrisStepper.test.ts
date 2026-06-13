@@ -29,4 +29,16 @@ describe('IrisStepper', () => {
     flushSync()
     expect(onchange).toHaveBeenCalledWith(0)
   })
+
+  it('advances the active step on click when uncontrolled (no value bound)', async () => {
+    const onchange = vi.fn()
+    const { container } = render(StepperHarness, { props: { linear: false, onchange } })
+    const triggers = container.querySelectorAll('[data-iris-stepper-step-trigger]')
+    await fireEvent.click(triggers[2] as HTMLButtonElement)
+    flushSync()
+    expect(onchange).toHaveBeenCalledWith(2)
+    const steps = container.querySelectorAll('[data-iris-stepper-step]')
+    expect(steps[2].getAttribute('data-iris-stepper-step-status')).toBe('active')
+    expect(steps[0].getAttribute('data-iris-stepper-step-status')).toBe('completed')
+  })
 })

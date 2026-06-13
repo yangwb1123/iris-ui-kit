@@ -2,7 +2,8 @@
   import { setStepperContext, type IrisStepperOrientation, type IrisStepStatus } from './context'
 
   let {
-    value = 0,
+    value = undefined,
+    defaultValue = 0,
     orientation = 'horizontal',
     linear = true,
     onchange,
@@ -11,6 +12,7 @@
     ...rest
   }: {
     value?: number
+    defaultValue?: number
     orientation?: IrisStepperOrientation
     linear?: boolean
     onchange?: (value: number) => void
@@ -19,8 +21,13 @@
     [key: string]: unknown
   } = $props()
 
+  // Controlled when `value` is supplied; otherwise self-manage from defaultValue.
+  const isControlled = $derived(value !== undefined)
+  // svelte-ignore state_referenced_locally
+  let internal = $state(defaultValue)
   let stepCount = $state(0)
-  const current = $derived(Math.max(0, Math.min(Math.max(0, stepCount - 1), value)))
+  const raw = $derived(isControlled ? (value as number) : internal)
+  const current = $derived(Math.max(0, Math.min(Math.max(0, stepCount - 1), raw)))
 
   function registerStep(): number {
     const idx = stepCount
@@ -42,6 +49,9 @@
     if (index < 0 || index >= stepCount) return
     if (linear && index > current) return
     if (index === current) return
+    // Uncontrolled: advance internal state. Controlled: emit only (parent owns
+    // state). Mirrors React/Solid and the fixed Accordion.
+    if (!isControlled) internal = index
     onchange?.(index)
   }
 

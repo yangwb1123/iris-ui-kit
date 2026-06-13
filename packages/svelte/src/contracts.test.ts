@@ -23,6 +23,7 @@ import {
   treeScenario,
   calendarScenario,
   tagInputScenario,
+  otpInputScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -222,5 +223,19 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // drops that tag and the remaining tags reflow.
     const { container } = render(ContractsHarness)
     await runContract(tagInputScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared OtpInput contract', async () => {
+    // Lives in the shared ContractsHarness: IrisOtpInput renders only
+    // role="group" + plain `<input>` cells (no role="slider"/role="spinbutton"),
+    // so its five `[data-iris-otp-input-cell]` inputs can't collide with the
+    // Slider/Rating/NumberInput scenarios' role-based selector counts, and it is
+    // the only OTP rendered there (so exactly five cells exist). IrisOtpInput is
+    // `value`-controlled (a `string`) + emits `onchange`, so the harness holds
+    // local `otpValue` seeded to '123' over length={5} (five cells, first three
+    // filled) and writes the emitted contiguous string back; a Backspace keydown
+    // on a filled cell removes that char and the value contracts left.
+    const { container } = render(ContractsHarness)
+    await runContract(otpInputScenario, driverFor(container), expect)
   })
 })

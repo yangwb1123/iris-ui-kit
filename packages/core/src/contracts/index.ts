@@ -19,6 +19,7 @@ export { treeScenario } from './scenarios/tree'
 export { calendarScenario } from './scenarios/calendar'
 export { rangeSliderScenario } from './scenarios/range-slider'
 export { tagInputScenario } from './scenarios/tag-input'
+export { otpInputScenario } from './scenarios/otp-input'
 export type {
   ContractScenario,
   ContractStep,

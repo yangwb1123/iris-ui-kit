@@ -28,6 +28,7 @@
   import IrisStepper from './primitives/stepper/IrisStepper.svelte'
   import IrisStepperStep from './primitives/stepper/IrisStepperStep.svelte'
   import IrisTagInput from './primitives/tag-input/IrisTagInput.svelte'
+  import IrisOtpInput from './primitives/otp-input/IrisOtpInput.svelte'
 
   let checkboxValue = $state(false)
 
@@ -77,6 +78,18 @@
   // harness without colliding with the Slider/Rating/NumberInput scenarios'
   // role-based selector counts.
   let tagValue = $state<string[]>(['Alpha', 'Bravo', 'Charlie'])
+
+  // IrisOtpInput is value-prop-driven too (a `string`): a Backspace keydown on a
+  // filled cell emits `onchange` with the next contiguous value but the rendered
+  // cells' `data-filled` only updates when the parent writes `value` back. Seed
+  // to '123' over length=5 (the five-cell, first-three-filled initial the shared
+  // OtpInput contract expects) and write the emitted string back from `onchange`,
+  // exactly like the controlled wraps above. The OTP renders only `role="group"`
+  // + plain `<input>` cells (no role="slider"/role="spinbutton"), so it can live
+  // in this shared harness without colliding with the Slider/Rating/NumberInput
+  // scenarios' role-based selector counts; it is the only OTP here, so exactly
+  // five `[data-iris-otp-input-cell]` exist.
+  let otpValue = $state('123')
 </script>
 
 <IrisTabs defaultValue="a">
@@ -160,3 +173,5 @@
 </IrisStepper>
 
 <IrisTagInput value={tagValue} onchange={(next) => (tagValue = next)} />
+
+<IrisOtpInput length={5} value={otpValue} onchange={(next) => (otpValue = next)} />

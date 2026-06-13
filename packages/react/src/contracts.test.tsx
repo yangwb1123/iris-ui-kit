@@ -22,6 +22,7 @@ import {
   calendarScenario,
   rangeSliderScenario,
   tagInputScenario,
+  otpInputScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -48,6 +49,7 @@ import { IrisTree } from './primitives/tree/Tree'
 import { IrisCalendar } from './primitives/calendar/Calendar'
 import { IrisRangeSlider } from './primitives/range-slider/RangeSlider'
 import { IrisTagInput } from './primitives/tag-input/TagInput'
+import { IrisOtpInput } from './primitives/otp-input/OtpInput'
 
 afterEach(cleanup)
 
@@ -273,5 +275,10 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
   it('satisfies the shared TagInput contract', async () => {
     const { container } = render(<IrisTagInput defaultValue={['Alpha', 'Bravo', 'Charlie']} />)
     await runContract(tagInputScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared OtpInput contract', async () => {
+    const { container } = render(<IrisOtpInput length={5} defaultValue="123" />)
+    await runContract(otpInputScenario, driverFor(container), expect)
   })
 })

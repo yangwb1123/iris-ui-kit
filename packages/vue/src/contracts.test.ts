@@ -23,6 +23,7 @@ import {
   calendarScenario,
   rangeSliderScenario,
   tagInputScenario,
+  otpInputScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -48,6 +49,7 @@ import { IrisTable } from './primitives/table/Table'
 import { IrisTree } from './primitives/tree/Tree'
 import { IrisCalendar } from './primitives/calendar/Calendar'
 import { IrisTagInput } from './primitives/tag-input/TagInput'
+import { IrisOtpInput } from './primitives/otp-input/OtpInput'
 
 enableAutoUnmount(afterEach)
 
@@ -490,6 +492,34 @@ const TagInputHarness = defineComponent({
   },
 })
 
+/**
+ * IrisOtpInput is modelValue-based (a contiguous `string`) over a `length` prop,
+ * so — like the Slider harness — mount it inside a wrapper holding a reactive
+ * string bound with v-model. The component renders `length` cells, each a
+ * `[data-iris-otp-input-cell]` `<input>` carrying `data-filled="true"` when it
+ * holds a char (absent → null when empty). Its keydown handler is bound PER-CELL
+ * capturing that cell's index (`onKeydown: (e) => onKeyDown(i, e)`), so the
+ * driver's keydown on the index-th cell fires the right handler directly without
+ * relying on focus — Backspace on a filled cell emits `update:modelValue` with
+ * that char removed, flipping the ref and re-rendering the contracted (still
+ * contiguous) value. Starts with `'123'` over `length=5`, matching the
+ * React/Solid reference (uncontrolled `defaultValue="123"`).
+ */
+const OtpInputHarness = defineComponent({
+  name: 'OtpInputHarness',
+  setup() {
+    const value = ref('123')
+    return () =>
+      h(IrisOtpInput, {
+        modelValue: value.value,
+        length: 5,
+        'onUpdate:modelValue': (v: string) => {
+          value.value = v
+        },
+      })
+  },
+})
+
 describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Tabs contract', async () => {
     const host = document.createElement('div')
@@ -749,5 +779,13 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     const wrapper = mount(TagInputHarness, { attachTo: host })
     await nextTick()
     await runContract(tagInputScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared OtpInput contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(OtpInputHarness, { attachTo: host })
+    await nextTick()
+    await runContract(otpInputScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

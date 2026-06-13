@@ -26,4 +26,10 @@ describe('IrisDragger', () => {
     const { container } = render(IrisDragger)
     expect(container.querySelector('[data-iris-dragger]')?.getAttribute('data-state')).toBe('idle')
   })
+
+  it('renders from defaultValue when uncontrolled (no value bound)', () => {
+    const { container } = render(IrisDragger, { props: { defaultValue: { x: 30, y: 40 } } })
+    const el = container.querySelector('[data-iris-dragger]') as HTMLElement
+    expect(el.style.transform).toContain('translate3d(30px, 40px, 0)')
+  })
 })

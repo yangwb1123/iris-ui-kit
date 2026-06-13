@@ -8,6 +8,7 @@
 
   interface Props {
     value?: IrisDraggerPosition
+    defaultValue?: IrisDraggerPosition
     disabled?: boolean
     bounds?: { minX?: number; maxX?: number; minY?: number; maxY?: number }
     onValueChange?: (pos: IrisDraggerPosition) => void
@@ -20,7 +21,8 @@
   }
 
   let {
-    value = { x: 0, y: 0 },
+    value = undefined,
+    defaultValue = { x: 0, y: 0 },
     disabled = false,
     bounds = {},
     onValueChange,
@@ -31,6 +33,19 @@
     style,
     ...rest
   }: Props = $props()
+
+  // Controlled when `value` is supplied; otherwise self-manage the position from
+  // defaultValue so an uncontrolled dragger actually moves without the parent
+  // feeding `value` back (mirrors React/Solid; it renders its own transform).
+  const isControlled = $derived(value !== undefined)
+  // svelte-ignore state_referenced_locally
+  let internal = $state<IrisDraggerPosition>(defaultValue)
+  const current = $derived(isControlled ? (value as IrisDraggerPosition) : internal)
+
+  function commit(pos: IrisDraggerPosition): void {
+    if (!isControlled) internal = pos
+    onValueChange?.(pos)
+  }
 
   let rootEl = $state<HTMLElement | undefined>(undefined)
   let handleEl = $state<HTMLElement | undefined>(undefined)
@@ -51,16 +66,16 @@
     handle: () => effectiveHandle,
     disabled: () => disabled,
     onStart: () => {
-      startPos = { ...value }
+      startPos = { ...current }
       dragging = true
       onDragStart?.(startPos)
     },
     onDrag: ({ dx, dy }) => {
-      onValueChange?.(clamp({ x: startPos.x + dx, y: startPos.y + dy }))
+      commit(clamp({ x: startPos.x + dx, y: startPos.y + dy }))
     },
     onEnd: () => {
       dragging = false
-      onDragEnd?.({ ...value })
+      onDragEnd?.({ ...current })
     },
   })
 
@@ -79,7 +94,7 @@
   use:setRoot
   data-iris-dragger
   data-state={dragging ? 'dragging' : 'idle'}
-  style="position: absolute; left: 0; top: 0; transform: translate3d({value.x}px, {value.y}px, 0); cursor: {handle ? 'default' : disabled ? 'not-allowed' : 'grab'}; touch-action: none;{style ? ' ' + style : ''}"
+  style="position: absolute; left: 0; top: 0; transform: translate3d({current.x}px, {current.y}px, 0); cursor: {handle ? 'default' : disabled ? 'not-allowed' : 'grab'}; touch-action: none;{style ? ' ' + style : ''}"
 >
   {#if handle}
     <div

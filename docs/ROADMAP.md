@@ -19,11 +19,10 @@ Iris UI — token-driven, 4-framework (React/Vue/Solid/Svelte) UI infrastructure
 
 ### P1 — 价值 (value)
 
-- **Combobox / Autocomplete** (NEW component) — editable text input + filtered listbox; the genuine missing piece vs the non-editable Select (which already has typeahead). LARGE: decompose into a core filter/active-option controller + 4 adapters (≈6–8 ≤5-file iterations). The clearest real expansion opportunity.
-
-- Deepen a11y: audit the newly-added virtual tree rows for `aria-level`/`aria-setsize`/grid semantics.
-- 2D / horizontal virtualization primitive (currently vertical only).
-- Productize a real shell demo (Tauri) to validate the native bridges end-to-end. **Blocked**: needs Rust toolchain (not available in sandbox) → Blocker report when attempted.
+- ~~Combobox/Autocomplete~~ — ALREADY EXISTS ×4 with the full WAI-ARIA combobox pattern (role=combobox + aria-expanded/controls/activedescendant/autocomplete). Verified — NOT a gap. (Recorded so it is not re-investigated; ditto a11y/2D-virt below, all DONE.)
+- ~~a11y of tree rows~~ DONE (iters 3-4, WAI-ARIA treegrid). ~~2D/horizontal virtualization~~ DONE (iters 5-6). ~~Select haspopup a11y~~ DONE (iters 7-8).
+- Productize a real shell demo (Tauri) to validate the native bridges end-to-end. **BLOCKED**: needs Rust toolchain (not available in sandbox) → Blocker.
+- **No confirmed non-blocked feature gaps remain.** Library is feature-complete, parity-complete, accessible, 126/126 green. Next real progress = a user-chosen direction OR the blocked items (publish/Tauri).
 
 ### P2 — 战略 (strategic)
 

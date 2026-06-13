@@ -23,6 +23,14 @@ describe('IrisDrawer', () => {
     expect(document.querySelector('[data-iris-drawer-content]')).not.toBeNull()
   })
 
+  it('wires aria-labelledby to the mounted title', async () => {
+    const { getByText } = render(DrawerHarness)
+    await fireEvent.click(getByText('Open Drawer'))
+    const content = document.querySelector('[role="dialog"]')!
+    const title = document.querySelector('[data-iris-drawer-title]')!
+    expect(content.getAttribute('aria-labelledby')).toBe(title.id)
+  })
+
   it('closes on Close button click', async () => {
     const { getByText } = render(DrawerHarness)
     await fireEvent.click(getByText('Open Drawer'))

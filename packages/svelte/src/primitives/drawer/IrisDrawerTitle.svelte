@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import { getDrawerContext } from './context'
 
   interface Props {
@@ -9,6 +10,10 @@
 
   let { as: tag = 'h2', children, ...rest }: Props = $props()
   const ctx = getDrawerContext('IrisDrawerTitle')
+
+  // Tell the drawer a title is present so it wires aria-labelledby. untrack so
+  // the counter's read-modify-write doesn't make this effect self-trigger.
+  $effect(() => untrack(() => ctx.registerTitle()))
 </script>
 
 <svelte:element

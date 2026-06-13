@@ -105,6 +105,7 @@
     id={ctx.contentId}
     role="dialog"
     aria-modal="true"
+    aria-labelledby={ctx.hasTitle ? ctx.titleId : undefined}
     tabindex={-1}
     data-iris-drawer-content
     data-iris-drawer-side={ctx.side}

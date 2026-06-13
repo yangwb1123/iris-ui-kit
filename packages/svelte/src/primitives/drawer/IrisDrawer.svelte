@@ -50,6 +50,10 @@
   let contentEl = $state<HTMLElement | undefined>(undefined)
   const baseId = generateId()
 
+  // Refcount mounted Title so the content wires aria-labelledby only when one
+  // is present (mirrors React). Drawers have no Description component.
+  let titleCount = $state(0)
+
   setDrawerContext({
     get open() { return open },
     setOpen,
@@ -59,6 +63,11 @@
     setContent: (el) => { contentEl = el },
     contentId: `${baseId}-content`,
     titleId: `${baseId}-title`,
+    get hasTitle() { return titleCount > 0 },
+    registerTitle: () => {
+      titleCount += 1
+      return () => { titleCount -= 1 }
+    },
     get side() { return side },
     get size() { return size },
     get closeOnOutsideClick() { return closeOnOutsideClick },

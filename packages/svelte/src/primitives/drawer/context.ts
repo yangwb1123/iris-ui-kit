@@ -13,6 +13,10 @@ export interface DrawerContextValue {
   setContent: (el: HTMLElement | undefined) => void
   contentId: string
   titleId: string
+  /** True while at least one IrisDrawerTitle is mounted. */
+  readonly hasTitle: boolean
+  /** Register a mounted title; returns a cleanup to call on unmount. */
+  registerTitle: () => () => void
   readonly side: IrisDrawerSide
   readonly size: string
   readonly closeOnOutsideClick: boolean

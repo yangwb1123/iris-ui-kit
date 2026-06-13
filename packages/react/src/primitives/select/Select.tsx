@@ -204,6 +204,9 @@ export function IrisSelect<T = unknown>({
       data-iris-select-trigger=""
       data-iris-select-size={size}
       data-state={open ? 'open' : 'closed'}
+      // A select opens a listbox, not a generic dialog — override the popover
+      // trigger's default aria-haspopup="dialog" (child props win in IrisSlot).
+      aria-haspopup="listbox"
       aria-invalid={invalid ? 'true' : undefined}
       aria-describedby={ariaDescribedby}
       style={triggerStyle}

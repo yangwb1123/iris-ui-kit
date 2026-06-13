@@ -33,6 +33,11 @@ describe('@iris-ui/react IrisSelect', () => {
     expect(trigger().textContent).toContain('Bravo')
   })
 
+  it('trigger announces a listbox popup (not the popover default dialog)', () => {
+    render(<IrisSelect items={items} />)
+    expect(trigger().getAttribute('aria-haspopup')).toBe('listbox')
+  })
+
   it('renders listbox on open', () => {
     render(<IrisSelect items={items} />)
     expect(listbox()).toBeNull()

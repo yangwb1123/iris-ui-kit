@@ -13,6 +13,12 @@ export interface MenuContextValue {
   contentId: string
   readonly placement: Placement
   readonly offset: number
+  /**
+   * Close the entire menu tree (the ROOT menu). A nested submenu propagates the
+   * root's `closeRoot` so selecting any leaf — however deep — collapses
+   * everything. At the root this is just `setOpen(false)`.
+   */
+  closeRoot: () => void
 }
 
 export function setMenuContext(value: MenuContextValue): void {

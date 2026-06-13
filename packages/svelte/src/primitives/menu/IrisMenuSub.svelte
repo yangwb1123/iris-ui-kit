@@ -6,7 +6,7 @@
   import { generateId } from '@iris-ui/core'
   import { useFloating } from '../../floating/useFloating.svelte'
   import { portal } from '../../internal/portal'
-  import { getMenuContext } from './context'
+  import { getMenuContext, setMenuContext } from './context'
 
   interface Props {
     label: string
@@ -24,6 +24,22 @@
   let triggerEl = $state<HTMLElement | undefined>(undefined)
   let contentEl = $state<HTMLElement | undefined>(undefined)
   const subId = generateId()
+
+  // Provide a NESTED menu context so descendant items / deeper IrisMenuSubs use
+  // THIS submenu's open state (not the root's), while `closeRoot` still points
+  // at the root menu — so any leaf, however deep, collapses the whole tree.
+  setMenuContext({
+    get open() { return open },
+    setOpen: (next: boolean) => { open = next },
+    get trigger() { return triggerEl },
+    setTrigger: (el) => { triggerEl = el },
+    get content() { return contentEl },
+    setContent: (el) => { contentEl = el },
+    contentId: subId,
+    placement: 'right-start',
+    offset: 0,
+    closeRoot: ctx.closeRoot,
+  })
 
   const floating = useFloating({
     anchor: () => triggerEl,
@@ -80,7 +96,7 @@
       open = false
       triggerEl?.focus()
     } else if (e.key === 'Tab') {
-      ctx.setOpen(false)
+      ctx.closeRoot()
     }
   }
 

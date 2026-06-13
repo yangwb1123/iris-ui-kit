@@ -8,10 +8,12 @@
 
   interface Props {
     onSelect?: () => void
+    onDeepSelect?: () => void
     withSub?: boolean
+    withNestedSub?: boolean
   }
 
-  let { onSelect, withSub = false }: Props = $props()
+  let { onSelect, onDeepSelect, withSub = false, withNestedSub = false }: Props = $props()
 </script>
 
 <IrisMenu>
@@ -24,6 +26,11 @@
       <IrisMenuSub label="More">
         <IrisMenuItem>Sub 1</IrisMenuItem>
         <IrisMenuItem>Sub 2</IrisMenuItem>
+        {#if withNestedSub}
+          <IrisMenuSub label="Even more">
+            <IrisMenuItem onclick={onDeepSelect}>Deep 1</IrisMenuItem>
+          </IrisMenuSub>
+        {/if}
       </IrisMenuSub>
     {/if}
   </IrisMenuContent>

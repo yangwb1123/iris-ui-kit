@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@testing-library/svelte'
+import { flushSync } from 'svelte'
 import MenuHarness from './MenuHarness.svelte'
 
 afterEach(cleanup)
@@ -86,6 +87,28 @@ describe('IrisMenu', () => {
       items[0]!.focus()
       await fireEvent.keyDown(subContent()!, { key: 'ArrowDown' })
       expect(document.activeElement).toBe(items[1])
+    })
+
+    it('a nested (2-level) submenu opens independently and a deep leaf closes the whole tree', async () => {
+      const onDeepSelect = vi.fn()
+      const { getByText } = render(MenuHarness, {
+        props: { withSub: true, withNestedSub: true, onDeepSelect },
+      })
+      await fireEvent.click(getByText('Menu'))
+      const subTriggers = () =>
+        document.querySelectorAll<HTMLElement>('[data-iris-menu-sub-trigger]')
+      await fireEvent.keyDown(subTriggers()[0]!, { key: 'ArrowRight' })
+      // a second, nested sub-trigger ("Even more") now exists inside the first panel
+      const nested = Array.from(subTriggers()).find((t) => t.textContent?.includes('Even more'))!
+      expect(nested).toBeTruthy()
+      await fireEvent.keyDown(nested, { key: 'ArrowRight' })
+      const deep = getByText('Deep 1')
+      expect(deep).toBeTruthy()
+      // selecting the deep leaf collapses the ENTIRE tree (root closes)
+      await fireEvent.click(deep)
+      flushSync()
+      expect(onDeepSelect).toHaveBeenCalledTimes(1)
+      expect(document.querySelector('[data-iris-menu-content]')).toBeNull()
     })
   })
 })

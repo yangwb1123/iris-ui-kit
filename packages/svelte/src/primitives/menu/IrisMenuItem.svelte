@@ -14,7 +14,9 @@
   function handleClick(e: MouseEvent): void {
     if (disabled) return
     onclick?.(e)
-    ctx.setOpen(false)
+    // Close the whole tree — a leaf inside a submenu collapses everything
+    // (matches React/Solid). At the root, closeRoot === setOpen(false).
+    ctx.closeRoot()
   }
 </script>
 

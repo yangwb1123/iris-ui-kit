@@ -55,6 +55,7 @@
     contentId,
     get placement() { return placement },
     get offset() { return offset },
+    closeRoot: () => setOpen(false),
   })
 </script>
 

@@ -19,6 +19,8 @@ Iris UI — token-driven, 4-framework (React/Vue/Solid/Svelte) UI infrastructure
 
 ### P1 — 价值 (value)
 
+- **Combobox / Autocomplete** (NEW component) — editable text input + filtered listbox; the genuine missing piece vs the non-editable Select (which already has typeahead). LARGE: decompose into a core filter/active-option controller + 4 adapters (≈6–8 ≤5-file iterations). The clearest real expansion opportunity.
+
 - Deepen a11y: audit the newly-added virtual tree rows for `aria-level`/`aria-setsize`/grid semantics.
 - 2D / horizontal virtualization primitive (currently vertical only).
 - Productize a real shell demo (Tauri) to validate the native bridges end-to-end. **Blocked**: needs Rust toolchain (not available in sandbox) → Blocker report when attempted.

@@ -11,11 +11,21 @@ export interface IrisMenuTriggerProps extends JSX.ButtonHTMLAttributes<HTMLButto
  */
 export function IrisMenuTrigger(props: IrisMenuTriggerProps): JSX.Element {
   const ctx = useMenuContext('IrisMenuTrigger')
-  const [local, others] = splitProps(props, ['onClick', 'children'])
+  const [local, others] = splitProps(props, ['onClick', 'onKeyDown', 'children'])
 
   const handleClick: JSX.EventHandler<HTMLButtonElement, MouseEvent> = (e) => {
     if (typeof local.onClick === 'function') local.onClick(e)
     ctx.setOpen(!ctx.open())
+  }
+
+  // Keyboard open: ArrowDown/Enter/Space open the menu (which then focuses
+  // its first item). Matches the Vue/React/Svelte triggers.
+  const handleKeyDown: JSX.EventHandler<HTMLButtonElement, KeyboardEvent> = (e) => {
+    if (typeof local.onKeyDown === 'function') local.onKeyDown(e)
+    if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      ctx.setOpen(true)
+    }
   }
 
   return (
@@ -28,6 +38,7 @@ export function IrisMenuTrigger(props: IrisMenuTriggerProps): JSX.Element {
       aria-controls={ctx.contentId}
       data-state={ctx.open() ? 'open' : 'closed'}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
     >
       {local.children}
     </button>

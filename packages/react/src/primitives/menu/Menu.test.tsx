@@ -60,6 +60,15 @@ describe('@iris-ui/react IrisMenu', () => {
     expect(menuEl()?.getAttribute('role')).toBe('menu')
   })
 
+  it('ArrowDown on the closed trigger opens the menu', () => {
+    const { container } = render(flat())
+    expect(menuEl()).toBeNull()
+    act(() => {
+      fireEvent.keyDown(container.querySelector('button')!, { key: 'ArrowDown' })
+    })
+    expect(menuEl()).not.toBeNull()
+  })
+
   it('clicking a menu item fires onSelect and closes the menu', () => {
     const onSelect = vi.fn()
     render(flat({ defaultOpen: true, onSelectA: onSelect }))

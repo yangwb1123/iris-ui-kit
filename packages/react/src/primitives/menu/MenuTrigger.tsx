@@ -12,7 +12,10 @@ export interface IrisMenuTriggerProps extends Omit<
 }
 
 export const IrisMenuTrigger = React.forwardRef<HTMLElement, IrisMenuTriggerProps>(
-  function IrisMenuTrigger({ asChild = false, onClick, children, ...rest }, forwardedRef) {
+  function IrisMenuTrigger(
+    { asChild = false, onClick, onKeyDown, children, ...rest },
+    forwardedRef,
+  ) {
     const ctx = useMenuContext('IrisMenuTrigger')
 
     const captureRef = React.useCallback(
@@ -30,12 +33,25 @@ export const IrisMenuTrigger = React.forwardRef<HTMLElement, IrisMenuTriggerProp
       () => ctx.setOpen(!ctx.open),
     )
 
+    // Keyboard open: ArrowDown/Enter/Space open the menu (which then focuses
+    // its first item). Matches the Vue/Solid/Svelte triggers.
+    const handleKeyDown = composeEventHandlers(
+      onKeyDown as ((e: React.KeyboardEvent<HTMLElement>) => void) | undefined,
+      (e: React.KeyboardEvent<HTMLElement>) => {
+        if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          ctx.setOpen(true)
+        }
+      },
+    )
+
     const triggerProps = {
       'aria-haspopup': 'menu' as const,
       'aria-expanded': ctx.open,
       'aria-controls': ctx.contentId,
       'data-state': ctx.open ? 'open' : 'closed',
       onClick: handleClick,
+      onKeyDown: handleKeyDown,
     }
 
     if (asChild) {

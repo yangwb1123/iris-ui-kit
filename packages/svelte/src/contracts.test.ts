@@ -11,6 +11,7 @@ import {
   toggleGroupScenario,
   toggleGroupMultiScenario,
   sliderScenario,
+  rangeSliderScenario,
   radioScenario,
   numberInputScenario,
   ratingScenario,
@@ -25,6 +26,7 @@ import {
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
 import RatingContractHarness from './RatingContractHarness.svelte'
+import RangeSliderContractHarness from './RangeSliderContractHarness.svelte'
 import ToggleGroupMultiContractHarness from './ToggleGroupMultiContractHarness.svelte'
 import TableSortContractHarness from './TableSortContractHarness.svelte'
 import TableSelectContractHarness from './TableSelectContractHarness.svelte'
@@ -96,6 +98,20 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
   it('satisfies the shared Slider contract', async () => {
     const { container } = render(ContractsHarness)
     await runContract(sliderScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared RangeSlider contract', async () => {
+    // Rendered in a dedicated harness (not the shared ContractsHarness) so the
+    // range slider's TWO role="slider" thumbs do not collide with the IrisSlider
+    // thumb in the shared harness — which would make the shared Slider scenario's
+    // globally-unique `[role="slider"]` (count === 1) assertion see 3 and break.
+    // IrisRangeSlider is `value`-controlled (a `[number, number]`) + emits
+    // `onchange`, so the harness holds local `value` state seeded to [20, 80] and
+    // writes the emitted pair back; ArrowRight/Left on a thumb steps only that
+    // thumb's `aria-valuenow`. See RangeSliderContractHarness.svelte for the full
+    // note.
+    const { container } = render(RangeSliderContractHarness)
+    await runContract(rangeSliderScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Radio contract', async () => {

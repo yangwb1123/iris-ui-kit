@@ -17,6 +17,7 @@ export { tableSelectScenario } from './scenarios/table-select'
 export { tableExpandScenario } from './scenarios/table-expand'
 export { treeScenario } from './scenarios/tree'
 export { calendarScenario } from './scenarios/calendar'
+export { rangeSliderScenario } from './scenarios/range-slider'
 export type {
   ContractScenario,
   ContractStep,

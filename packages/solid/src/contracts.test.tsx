@@ -10,6 +10,7 @@ import {
   toggleGroupScenario,
   toggleGroupMultiScenario,
   sliderScenario,
+  rangeSliderScenario,
   radioScenario,
   numberInputScenario,
   ratingScenario,
@@ -34,6 +35,7 @@ import { IrisAccordion, IrisAccordionItem } from './primitives/accordion'
 import { IrisSegmented } from './primitives/segmented'
 import { IrisToggleGroup, IrisToggleGroupItem } from './primitives/toggle-group'
 import { IrisSlider } from './primitives/slider'
+import { IrisRangeSlider } from './primitives/range-slider'
 import { IrisRadioGroup, IrisRadio } from './primitives/radio'
 import { IrisNumberInput } from './primitives/number-input'
 import { IrisRating } from './primitives/rating'
@@ -148,6 +150,13 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
       <IrisSlider defaultValue={50} min={0} max={100} step={10} label="Volume" />
     ))
     await runContract(sliderScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared RangeSlider contract', async () => {
+    const { container } = render(() => (
+      <IrisRangeSlider defaultValue={[20, 80]} min={0} max={100} step={10} />
+    ))
+    await runContract(rangeSliderScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Radio contract', async () => {

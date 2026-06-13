@@ -21,6 +21,7 @@ import {
   tableExpandScenario,
   treeScenario,
   calendarScenario,
+  rangeSliderScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -35,6 +36,7 @@ import { IrisSegmented } from './primitives/segmented/Segmented'
 import { IrisToggleGroup } from './primitives/toggle-group/ToggleGroup'
 import { IrisToggleGroupItem } from './primitives/toggle-group/ToggleGroupItem'
 import { IrisSlider } from './primitives/slider/Slider'
+import { IrisRangeSlider } from './primitives/range-slider/RangeSlider'
 import { IrisRadioGroup, IrisRadio } from './primitives/radio/Radio'
 import { IrisNumberInput } from './primitives/number-input/NumberInput'
 import { IrisRating } from './primitives/rating/Rating'
@@ -259,6 +261,34 @@ const SliderHarness = defineComponent({
         label: 'Volume',
         'onUpdate:modelValue': (v: number) => {
           value.value = v
+        },
+      })
+  },
+})
+
+/**
+ * IrisRangeSlider is v-model based with a two-element `[number, number]`
+ * modelValue (start/end), so — like the Slider harness — mount it inside a
+ * wrapper holding a reactive tuple bound with v-model. Each thumb
+ * (`[data-iris-range-slider-thumb]`, `role="slider"`) owns its own
+ * `aria-valuenow`; ArrowRight/Left on a thumb emits `update:modelValue` with the
+ * new tuple, flipping the ref and re-rendering only that thumb's value (the two
+ * thumbs are independent and never cross). Starts at `[20, 80]` over min=0/
+ * max=100/step=10, matching the uncontrolled React reference
+ * (`defaultValue={[20, 80]}`).
+ */
+const RangeSliderHarness = defineComponent({
+  name: 'RangeSliderHarness',
+  setup() {
+    const value = ref<[number, number]>([20, 80])
+    return () =>
+      h(IrisRangeSlider, {
+        modelValue: value.value,
+        min: 0,
+        max: 100,
+        step: 10,
+        'onUpdate:modelValue': (v: readonly [number, number]) => {
+          value.value = [v[0], v[1]]
         },
       })
   },
@@ -497,6 +527,14 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     const wrapper = mount(SliderHarness, { attachTo: host })
     await nextTick()
     await runContract(sliderScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared RangeSlider contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(RangeSliderHarness, { attachTo: host })
+    await nextTick()
+    await runContract(rangeSliderScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 
   it('satisfies the shared Radio contract', async () => {

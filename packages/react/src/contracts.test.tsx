@@ -20,6 +20,7 @@ import {
   tableExpandScenario,
   treeScenario,
   calendarScenario,
+  rangeSliderScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -44,6 +45,7 @@ import { IrisStepperStep } from './primitives/stepper/StepperStep'
 import { IrisTable } from './primitives/table/Table'
 import { IrisTree } from './primitives/tree/Tree'
 import { IrisCalendar } from './primitives/calendar/Calendar'
+import { IrisRangeSlider } from './primitives/range-slider/RangeSlider'
 
 afterEach(cleanup)
 
@@ -257,5 +259,12 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
   it('satisfies the shared Calendar contract', async () => {
     const { container } = render(<IrisCalendar defaultMonth={new Date(2024, 5, 1)} />)
     await runContract(calendarScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared RangeSlider contract', async () => {
+    const { container } = render(
+      <IrisRangeSlider defaultValue={[20, 80]} min={0} max={100} step={10} />,
+    )
+    await runContract(rangeSliderScenario, driverFor(container), expect)
   })
 })

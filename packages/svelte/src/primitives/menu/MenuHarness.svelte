@@ -4,12 +4,14 @@
   import IrisMenuContent from './IrisMenuContent.svelte'
   import IrisMenuItem from './IrisMenuItem.svelte'
   import IrisMenuSeparator from './IrisMenuSeparator.svelte'
+  import IrisMenuSub from './IrisMenuSub.svelte'
 
   interface Props {
     onSelect?: () => void
+    withSub?: boolean
   }
 
-  let { onSelect }: Props = $props()
+  let { onSelect, withSub = false }: Props = $props()
 </script>
 
 <IrisMenu>
@@ -18,5 +20,11 @@
     <IrisMenuItem onclick={onSelect}>Item 1</IrisMenuItem>
     <IrisMenuSeparator />
     <IrisMenuItem>Item 2</IrisMenuItem>
+    {#if withSub}
+      <IrisMenuSub label="More">
+        <IrisMenuItem>Sub 1</IrisMenuItem>
+        <IrisMenuItem>Sub 2</IrisMenuItem>
+      </IrisMenuSub>
+    {/if}
   </IrisMenuContent>
 </IrisMenu>

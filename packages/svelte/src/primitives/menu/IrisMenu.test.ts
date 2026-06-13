@@ -45,4 +45,45 @@ describe('IrisMenu', () => {
     await fireEvent.keyDown(document, { key: 'Escape' })
     expect(document.querySelector('[role="menu"]')).toBeNull()
   })
+
+  describe('submenu keyboard', () => {
+    const subTrigger = () => document.querySelector<HTMLElement>('[data-iris-menu-sub-trigger]')!
+    const subContent = () => document.querySelector<HTMLElement>('[data-iris-menu-sub-content]')
+
+    it('ArrowRight on the sub-trigger opens the submenu', async () => {
+      const { getByText } = render(MenuHarness, { props: { withSub: true } })
+      await fireEvent.click(getByText('Menu'))
+      expect(subContent()).toBeNull()
+      await fireEvent.keyDown(subTrigger(), { key: 'ArrowRight' })
+      expect(subContent()).not.toBeNull()
+      expect(subTrigger().getAttribute('aria-expanded')).toBe('true')
+    })
+
+    it('ArrowLeft on the sub-trigger closes the submenu', async () => {
+      const { getByText } = render(MenuHarness, { props: { withSub: true } })
+      await fireEvent.click(getByText('Menu'))
+      await fireEvent.keyDown(subTrigger(), { key: 'ArrowRight' })
+      expect(subContent()).not.toBeNull()
+      await fireEvent.keyDown(subTrigger(), { key: 'ArrowLeft' })
+      expect(subContent()).toBeNull()
+    })
+
+    it('Escape inside the submenu closes it', async () => {
+      const { getByText } = render(MenuHarness, { props: { withSub: true } })
+      await fireEvent.click(getByText('Menu'))
+      await fireEvent.keyDown(subTrigger(), { key: 'ArrowRight' })
+      await fireEvent.keyDown(subContent()!, { key: 'Escape' })
+      expect(subContent()).toBeNull()
+    })
+
+    it('ArrowDown inside the submenu moves focus between items', async () => {
+      const { getByText } = render(MenuHarness, { props: { withSub: true } })
+      await fireEvent.click(getByText('Menu'))
+      await fireEvent.keyDown(subTrigger(), { key: 'ArrowRight' })
+      const items = Array.from(subContent()!.querySelectorAll<HTMLElement>('[role="menuitem"]'))
+      items[0]!.focus()
+      await fireEvent.keyDown(subContent()!, { key: 'ArrowDown' })
+      expect(document.activeElement).toBe(items[1])
+    })
+  })
 })

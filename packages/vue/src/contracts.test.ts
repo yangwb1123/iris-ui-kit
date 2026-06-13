@@ -12,6 +12,7 @@ import {
   sliderScenario,
   radioScenario,
   numberInputScenario,
+  ratingScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -28,6 +29,7 @@ import { IrisToggleGroupItem } from './primitives/toggle-group/ToggleGroupItem'
 import { IrisSlider } from './primitives/slider/Slider'
 import { IrisRadioGroup, IrisRadio } from './primitives/radio/Radio'
 import { IrisNumberInput } from './primitives/number-input/NumberInput'
+import { IrisRating } from './primitives/rating/Rating'
 
 enableAutoUnmount(afterEach)
 
@@ -272,6 +274,35 @@ const NumberInputHarness = defineComponent({
   },
 })
 
+/**
+ * IrisRating is v-model based (modelValue: number), so — like the Slider harness —
+ * mount it inside a wrapper holding a reactive number bound with v-model. Clicking a
+ * star emits `update:modelValue` (whole-star, no allowHalf → star index i sets i+1),
+ * flipping the ref and re-rendering the `[role="slider"][data-iris-rating]` container
+ * with the new `aria-valuenow`. Starts at 0 over max=5, matching the uncontrolled
+ * React reference (`defaultValue={0}`). Unlike Slider, IrisRating puts `role="slider"`
+ * on its OWN root element, so we wrap it in a host `<div>` — the driver's
+ * `container.querySelectorAll` only matches descendants, mirroring React's `render`
+ * container that wraps the component.
+ */
+const RatingHarness = defineComponent({
+  name: 'RatingHarness',
+  setup() {
+    const value = ref(0)
+    return () =>
+      h('div', null, [
+        h(IrisRating, {
+          modelValue: value.value,
+          max: 5,
+          'aria-label': 'Score',
+          'onUpdate:modelValue': (v: number) => {
+            value.value = v
+          },
+        }),
+      ])
+  },
+})
+
 describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Tabs contract', async () => {
     const host = document.createElement('div')
@@ -343,5 +374,13 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     const wrapper = mount(NumberInputHarness, { attachTo: host })
     await nextTick()
     await runContract(numberInputScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared Rating contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(RatingHarness, { attachTo: host })
+    await nextTick()
+    await runContract(ratingScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

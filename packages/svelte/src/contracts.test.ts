@@ -12,9 +12,11 @@ import {
   sliderScenario,
   radioScenario,
   numberInputScenario,
+  ratingScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
+import RatingContractHarness from './RatingContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -80,5 +82,14 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
   it('satisfies the shared NumberInput contract', async () => {
     const { container } = render(ContractsHarness)
     await runContract(numberInputScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Rating contract', async () => {
+    // Rendered in a dedicated harness (not the shared ContractsHarness) so the
+    // rating's role="slider" container does not collide with the IrisSlider thumb,
+    // which would break the shared Slider scenario's globally-unique `[role="slider"]`
+    // (count === 1) assertion. See RatingContractHarness.svelte for the full note.
+    const { container } = render(RatingContractHarness)
+    await runContract(ratingScenario, driverFor(container), expect)
   })
 })

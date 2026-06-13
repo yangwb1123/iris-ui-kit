@@ -38,7 +38,7 @@ These came from the 2nd 4-agent cross-framework audit (selection-wrappers / over
 
 ## Blocked / decision-gated (Blocker conditions — need user input or external resource)
 
-- P2: Tauri demo shell to validate native bridges — needs Rust toolchain (absent in sandbox).
+- ~~Desktop shell demo to validate native bridges~~ — **DONE (Electron, iter 80): `apps/desktop`** hosts all 4 CMS demos + wires save/clipboard to native; validated headlessly (Node smoke in pipeline + real `xvfb` Electron load ×4). **Tauri/Wails remain blocked on `libwebkit2gtk-4.1` system libs** (need root to apt-install; cargo+go toolchains are present) — drop-in once installed.
 - First npm publish — maintainer/release decision (pipeline + changesets ready).
 
 ## Deferred-by-design (do NOT pick without explicit ask)

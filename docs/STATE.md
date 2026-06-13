@@ -23,7 +23,7 @@
 
 **技术债 (Debt):** all Low/by-design — props.ts interface-only extractor misses IrisToggleGroup union-type props; skeleton templates hardcode example aria-labels. (Possible tiny follow-up: svelte tree could gain `data-iris-tree-node={id}` to match react/solid's per-id selector — cosmetic, only if a test needs it.) See TODO.
 
-**GATED (need user / external):** publish v0.1.0 (irreversible — will NOT run `npm publish` autonomously; maintainer's call); Tauri E2E demo (no Rust toolchain in sandbox); new product direction (Angular/Qwik adapter, new plugin, deeper MCP codegen).
+**GATED (need user / external):** publish v0.1.0 (irreversible — will NOT run `npm publish` autonomously; maintainer's call); new product direction (Angular/Qwik adapter, new plugin, deeper MCP codegen). **Desktop demo: DONE for Electron** (`apps/desktop` hosts the CMS ×4 + native bridges, validated headlessly via xvfb; pipeline now 127/127). Tauri/Wails blocked only on `libwebkit2gtk-4.1` system libs (need root; cargo+go present) — drop-in once installed.
 
 **下一步推荐 (Next):** Sustainable autonomous mode = (1) source-level behavioral-parity audits of stateful components → fix real gaps (P1 correctness); (2) lock verified parity into the contracts harness or a guard test (P5 automation); (3) clean click-based contract additions. Both need no user input. Avoid marginal/cosmetic churn; do NOT run irreversible publish.
 

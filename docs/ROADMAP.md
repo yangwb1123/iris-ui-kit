@@ -21,8 +21,8 @@ Iris UI — token-driven, 4-framework (React/Vue/Solid/Svelte) UI infrastructure
 
 - ~~Combobox/Autocomplete~~ — ALREADY EXISTS ×4 with the full WAI-ARIA combobox pattern (role=combobox + aria-expanded/controls/activedescendant/autocomplete). Verified — NOT a gap. (Recorded so it is not re-investigated; ditto a11y/2D-virt below, all DONE.)
 - ~~a11y of tree rows~~ DONE (iters 3-4, WAI-ARIA treegrid). ~~2D/horizontal virtualization~~ DONE (iters 5-6). ~~Select haspopup a11y~~ DONE (iters 7-8).
-- Productize a real shell demo (Tauri) to validate the native bridges end-to-end. **BLOCKED**: needs Rust toolchain (not available in sandbox) → Blocker.
-- **No confirmed non-blocked feature gaps remain.** Library is feature-complete, parity-complete, accessible, 126/126 green. Next real progress = a user-chosen direction OR the blocked items (publish/Tauri).
+- ~~Productize a real shell demo to validate the native bridges end-to-end~~ — **DONE (Electron): `apps/desktop`** hosts all four CMS demos (React/Vue/Solid/Svelte) and wires `setFileSaveHandler`/`setClipboardHandler` to native `dialog.showSaveDialog`/`clipboard`. Validated headlessly: a Node static-server smoke test (in the turbo pipeline → 127/127) AND a real Electron load under `xvfb` for all four frameworks (app mounted + Iris nodes + `window.irisNative` present). **Tauri/Wails still BLOCKED** — not on the toolchain (cargo + go ARE present) but on the `libwebkit2gtk-4.1` system libs, which need root to apt-install (unavailable here); they're a drop-in once those libs exist (identical renderer-side `desktopBridge.ts`).
+- **No confirmed non-blocked feature gaps remain.** Library is feature-complete, parity-complete, accessible, 127/127 green, with a working Electron desktop demo. Next real progress = a user-chosen direction OR the blocked items (publish / Tauri-Wails-system-libs).
 
 ### P2 — 战略 (strategic)
 

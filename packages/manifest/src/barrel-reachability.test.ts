@@ -90,3 +90,51 @@ describe('module test coverage', () => {
     })
   }
 })
+
+/**
+ * Guards CSS-variable typos: a `var(--iris-typo)` reference WITHOUT a fallback
+ * silently renders as nothing (invalid → ignored), a bug no test catches. Every
+ * no-fallback `var(--iris-*)` in component source must resolve to a theme-defined
+ * token (or the derived `-subtle` vars). References WITH a fallback are exempt.
+ */
+describe('css variable reference validity', () => {
+  const root = findRepoRoot()
+  const definedTokenVars = (): Set<string> => {
+    const light = readFileSync(join(root, 'packages/tokens/src/light.ts'), 'utf8')
+    const set = new Set<string>()
+    for (const m of light.matchAll(/['"]iris\.([a-zA-Z.]+)['"]/g)) {
+      set.add(`--iris-${m[1]!.replace(/\./g, '-')}`)
+    }
+    for (const s of ['primary', 'success', 'warning', 'danger', 'muted'])
+      set.add(`--iris-${s}-subtle`)
+    return set
+  }
+  const noFallbackRefs = (dir: string): Set<string> => {
+    const refs = new Set<string>()
+    const walk = (d: string): void => {
+      for (const e of readdirSync(d, { withFileTypes: true })) {
+        const p = join(d, e.name)
+        if (e.isDirectory()) walk(p)
+        else if (/\.(tsx|ts|svelte)$/.test(e.name) && !e.name.includes('.test.')) {
+          for (const m of readFileSync(p, 'utf8').matchAll(
+            /var\(\s*(--iris-[a-zA-Z0-9-]+)\s*\)/g,
+          )) {
+            refs.add(m[1]!)
+          }
+        }
+      }
+    }
+    walk(dir)
+    return refs
+  }
+
+  const defined = definedTokenVars()
+  for (const [fw, src] of Object.entries(ADAPTER_SRC)) {
+    it(`${fw}: every no-fallback var(--iris-*) resolves to a defined token`, () => {
+      const undefinedRefs = [...noFallbackRefs(join(root, src, 'primitives'))]
+        .filter((v) => !defined.has(v))
+        .sort()
+      expect(undefinedRefs).toEqual([])
+    })
+  }
+})

@@ -28,6 +28,32 @@ describe('IrisCalendar', () => {
     expect(onChange.mock.calls[0][0]).toBeInstanceOf(Date)
   })
 
+  it('reflects selection in aria-selected when uncontrolled (clicking a day)', () => {
+    // Regression: the component accepted `defaultValue` and advertised
+    // uncontrolled use, but `aria-selected` read only the controlled `value`, so
+    // clicking a day fired onChange yet never showed a selection. It now keeps an
+    // internal selected signal seeded from `defaultValue`.
+    const { container } = render(() => <IrisCalendar defaultMonth={new Date(2024, 5, 1)} />)
+    const day = (iso: string) =>
+      container.querySelector(`[data-iris-calendar-day-iso="${iso}"]`) as HTMLButtonElement
+    expect(day('2024-06-10').getAttribute('aria-selected')).toBe('false')
+    fireEvent.click(day('2024-06-10'))
+    expect(day('2024-06-10').getAttribute('aria-selected')).toBe('true')
+    fireEvent.click(day('2024-06-20'))
+    expect(day('2024-06-20').getAttribute('aria-selected')).toBe('true')
+    expect(day('2024-06-10').getAttribute('aria-selected')).toBe('false')
+  })
+
+  it('honors defaultValue as the initial uncontrolled selection', () => {
+    const { container } = render(() => (
+      <IrisCalendar defaultValue={new Date(2024, 5, 15)} defaultMonth={new Date(2024, 5, 1)} />
+    ))
+    const day = container.querySelector(
+      '[data-iris-calendar-day-iso="2024-06-15"]',
+    ) as HTMLButtonElement
+    expect(day.getAttribute('aria-selected')).toBe('true')
+  })
+
   it('shows prev/next navigation buttons', () => {
     const { container } = render(() => <IrisCalendar />)
     expect(container.querySelector('[data-iris-calendar-prev]')).not.toBeNull()

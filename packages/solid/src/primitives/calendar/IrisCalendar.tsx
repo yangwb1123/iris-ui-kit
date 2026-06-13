@@ -70,6 +70,17 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
     clampDate(local.value ?? local.defaultValue ?? new Date(), local.min, local.max),
   )
 
+  // Selection: controlled via `value`, otherwise an internal signal seeded from
+  // `defaultValue` (parity with the React adapter). Previously `aria-selected`
+  // read only `local.value`, so a `defaultValue` / uncontrolled calendar never
+  // reflected a selection — clicking a day fired `onChange` but nothing showed.
+  const isControlled = (): boolean => local.value !== undefined
+  const [internalSelected, setInternalSelected] = createSignal<Date | null>(
+    local.defaultValue ?? null,
+  )
+  const selectedValue = (): Date | null =>
+    isControlled() ? (local.value ?? null) : internalSelected()
+
   // Sync visible month when controlled value changes to a different month
   createEffect(() => {
     const v = local.value
@@ -118,7 +129,9 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
   const selectDate = (date: Date) => {
     if (local.disabled) return
     if (isOutOfRange(date, local.min, local.max)) return
-    local.onChange?.(startOfDay(date))
+    const next = startOfDay(date)
+    if (!isControlled()) setInternalSelected(next)
+    local.onChange?.(next)
   }
 
   const onGridKeyDown = (event: KeyboardEvent) => {
@@ -289,7 +302,10 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
               <For each={row}>
                 {(date) => {
                   const inMonth = () => isSameMonth(date, visibleMonth())
-                  const selected = () => (local.value ? isSameDay(date, local.value) : false)
+                  const selected = () => {
+                    const sv = selectedValue()
+                    return sv ? isSameDay(date, sv) : false
+                  }
                   const focused = () => isSameDay(date, focusDate())
                   const isToday = () => isSameDay(date, today)
                   const oof = () => isOutOfRange(date, local.min, local.max)

@@ -20,6 +20,9 @@ describe('IrisCarousel', () => {
     const indicators = container.querySelector('[data-iris-carousel-indicators]')
     expect(indicators).toBeTruthy()
     expect(indicators!.querySelectorAll('button').length).toBe(3)
+    // The dots are real activatable controls — the container must NOT be
+    // aria-hidden (which would hide them from assistive tech).
+    expect(indicators!.getAttribute('aria-hidden')).toBeNull()
   })
 
   it('marks the active indicator with aria-current for assistive tech', () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@solidjs/testing-library'
 import { IrisCarousel } from './IrisCarousel'
 
@@ -49,5 +49,19 @@ describe('IrisCarousel', () => {
     fireEvent.click(nextBtn)
     const dot1 = container.querySelector('[data-iris-carousel-indicator="1"]') as HTMLButtonElement
     expect(dot1.getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('does not emit onChange when the target index is already active (no-op guard)', () => {
+    const onChange = vi.fn()
+    const { container } = render(() => (
+      <IrisCarousel defaultIndex={0} loop={false} onChange={onChange}>
+        <div>Slide 1</div>
+        <div>Slide 2</div>
+      </IrisCarousel>
+    ))
+    // prev at index 0 with loop off clamps to 0 (no change) -> must not emit
+    const prevBtn = container.querySelector('[data-iris-carousel-prev]') as HTMLButtonElement
+    fireEvent.click(prevBtn)
+    expect(onChange).not.toHaveBeenCalled()
   })
 })

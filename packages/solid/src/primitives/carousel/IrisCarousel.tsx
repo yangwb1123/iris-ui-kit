@@ -60,6 +60,14 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
 
   const [internalIndex, setInternalIndex] = createSignal(local.defaultIndex)
   const [paused, setPaused] = createSignal(false)
+  const [focusedWithin, setFocusedWithin] = createSignal(false)
+
+  // True when the user prefers reduced motion (SSR / jsdom safe). Autoplay is
+  // disabled in that case, matching React/Vue/Svelte.
+  const reducedMotion = (): boolean =>
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   const currentIndex = () => (local.index !== undefined ? local.index : internalIndex())
 
@@ -77,6 +85,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
     } else {
       next = Math.max(0, Math.min(count() - 1, idx))
     }
+    if (next === currentIndex()) return
     if (local.index === undefined) setInternalIndex(next)
     local.onChange?.(next)
   }
@@ -84,9 +93,10 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
   const prev = () => goTo(currentIndex() - 1)
   const next = () => goTo(currentIndex() + 1)
 
-  // Autoplay
+  // Autoplay — paused on hover/focus and when the user prefers reduced motion
+  // (matches React/Vue/Svelte).
   createEffect(() => {
-    if (!local.autoplay || paused()) return
+    if (!local.autoplay || paused() || focusedWithin() || count() <= 1 || reducedMotion()) return
     const id = setInterval(() => {
       goTo(currentIndex() + 1)
     }, local.interval)
@@ -128,6 +138,8 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
       }}
       onMouseEnter={() => local.pauseOnHover && setPaused(true)}
       onMouseLeave={() => setPaused(false)}
+      onFocusIn={() => setFocusedWithin(true)}
+      onFocusOut={() => setFocusedWithin(false)}
       tabIndex={0}
       style={{
         position: 'relative',

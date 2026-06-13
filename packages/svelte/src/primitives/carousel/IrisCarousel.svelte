@@ -194,7 +194,6 @@
   {#if showIndicators && slideCount > 0}
     <div
       data-iris-carousel-indicators
-      aria-hidden="true"
       style:display="flex"
       style:justify-content="center"
       style:gap="6px"

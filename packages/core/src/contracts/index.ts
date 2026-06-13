@@ -6,6 +6,7 @@ export { accordionScenario } from './scenarios/accordion'
 export { segmentedScenario } from './scenarios/segmented'
 export { toggleGroupScenario } from './scenarios/toggle-group'
 export { sliderScenario } from './scenarios/slider'
+export { radioScenario } from './scenarios/radio'
 export type {
   ContractScenario,
   ContractStep,

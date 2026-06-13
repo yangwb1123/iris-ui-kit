@@ -10,6 +10,7 @@ import {
   segmentedScenario,
   toggleGroupScenario,
   sliderScenario,
+  radioScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -68,5 +69,10 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
   it('satisfies the shared Slider contract', async () => {
     const { container } = render(ContractsHarness)
     await runContract(sliderScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Radio contract', async () => {
+    const { container } = render(ContractsHarness)
+    await runContract(radioScenario, driverFor(container), expect)
   })
 })

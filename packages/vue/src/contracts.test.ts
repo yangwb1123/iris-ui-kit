@@ -10,6 +10,7 @@ import {
   segmentedScenario,
   toggleGroupScenario,
   sliderScenario,
+  radioScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -24,6 +25,7 @@ import { IrisSegmented } from './primitives/segmented/Segmented'
 import { IrisToggleGroup } from './primitives/toggle-group/ToggleGroup'
 import { IrisToggleGroupItem } from './primitives/toggle-group/ToggleGroupItem'
 import { IrisSlider } from './primitives/slider/Slider'
+import { IrisRadioGroup, IrisRadio } from './primitives/radio/Radio'
 
 enableAutoUnmount(afterEach)
 
@@ -210,6 +212,38 @@ const SliderHarness = defineComponent({
   },
 })
 
+/**
+ * IrisRadioGroup is v-model based (modelValue: string | null), so — like the
+ * Switch/ToggleGroup harnesses — mount it inside a wrapper holding a reactive
+ * string bound with v-model, rendering three IrisRadio children with values
+ * a/b/c. A native click on a distinct radio's hidden `<input type=radio>` fires
+ * `change`, routing `setValue(value)` to the group which emits
+ * `update:modelValue`, flipping the ref and re-rendering every radio wrapper
+ * with the new `data-state` (single-selection: the prior sibling auto-unchecks).
+ * Starts on "a", matching the uncontrolled React reference (`defaultValue="a"`).
+ */
+const RadioHarness = defineComponent({
+  name: 'RadioHarness',
+  setup() {
+    const value = ref<string | null>('a')
+    return () =>
+      h(
+        IrisRadioGroup,
+        {
+          modelValue: value.value,
+          'onUpdate:modelValue': (v: string | number | boolean) => {
+            value.value = v as string
+          },
+        },
+        () => [
+          h(IrisRadio, { value: 'a' }, () => 'A'),
+          h(IrisRadio, { value: 'b' }, () => 'B'),
+          h(IrisRadio, { value: 'c' }, () => 'C'),
+        ],
+      )
+  },
+})
+
 describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Tabs contract', async () => {
     const host = document.createElement('div')
@@ -265,5 +299,13 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     const wrapper = mount(SliderHarness, { attachTo: host })
     await nextTick()
     await runContract(sliderScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared Radio contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(RadioHarness, { attachTo: host })
+    await nextTick()
+    await runContract(radioScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

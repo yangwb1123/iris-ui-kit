@@ -21,6 +21,8 @@
   import IrisToggleGroup from './primitives/toggle-group/IrisToggleGroup.svelte'
   import IrisToggleGroupItem from './primitives/toggle-group/IrisToggleGroupItem.svelte'
   import IrisSlider from './primitives/slider/IrisSlider.svelte'
+  import IrisRadioGroup from './primitives/radio/IrisRadioGroup.svelte'
+  import IrisRadio from './primitives/radio/IrisRadio.svelte'
 
   let checkboxValue = $state(false)
 
@@ -33,6 +35,12 @@
   let segmentedValue = $state('a')
   let toggleGroupValue = $state<string | string[] | null>('a')
   let sliderValue = $state(50)
+
+  // IrisRadioGroup is true controlled too: a radio click emits the group's
+  // `onchange` but the DOM `data-state` only flips when the parent writes `value`
+  // back. Seed to 'a' (first checked) to present the uncontrolled initial the
+  // shared radio contract expects, then write back from `onchange`.
+  let radioValue = $state<string | number | boolean>('a')
 </script>
 
 <IrisTabs defaultValue="a">
@@ -82,3 +90,9 @@
   step={10}
   onchange={(next) => (sliderValue = next)}
 />
+
+<IrisRadioGroup value={radioValue} onchange={(next) => (radioValue = next)}>
+  <IrisRadio value="a">A</IrisRadio>
+  <IrisRadio value="b">B</IrisRadio>
+  <IrisRadio value="c">C</IrisRadio>
+</IrisRadioGroup>

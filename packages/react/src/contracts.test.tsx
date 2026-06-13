@@ -9,6 +9,7 @@ import {
   segmentedScenario,
   toggleGroupScenario,
   sliderScenario,
+  radioScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -23,6 +24,8 @@ import { IrisSegmented } from './primitives/segmented/Segmented'
 import { IrisToggleGroup } from './primitives/toggle-group/ToggleGroup'
 import { IrisToggleGroupItem } from './primitives/toggle-group/ToggleGroupItem'
 import { IrisSlider } from './primitives/slider/Slider'
+import { IrisRadio } from './primitives/radio/Radio'
+import { IrisRadioGroup } from './primitives/radio/RadioGroup'
 
 afterEach(cleanup)
 
@@ -115,5 +118,16 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       <IrisSlider defaultValue={50} min={0} max={100} step={10} label="Volume" />,
     )
     await runContract(sliderScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Radio contract', async () => {
+    const { container } = render(
+      <IrisRadioGroup defaultValue="a">
+        <IrisRadio value="a">A</IrisRadio>
+        <IrisRadio value="b">B</IrisRadio>
+        <IrisRadio value="c">C</IrisRadio>
+      </IrisRadioGroup>,
+    )
+    await runContract(radioScenario, driverFor(container), expect)
   })
 })

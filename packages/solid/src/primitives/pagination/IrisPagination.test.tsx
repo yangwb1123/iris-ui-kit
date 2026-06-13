@@ -35,4 +35,21 @@ describe('IrisPagination', () => {
     const active = container.querySelector('[data-iris-pagination-active="true"]')!
     expect(active.getAttribute('aria-current')).toBe('page')
   })
+
+  it('moves aria-current to the clicked page in uncontrolled mode', () => {
+    // Regression: page buttons render inside <For>, which only re-runs its
+    // callback when an item's identity changes. getPageRange returns the same
+    // page-number primitives when only the current page moves, so a plain
+    // `active` boolean froze on the initial page (aria-current never followed an
+    // uncontrolled click). `active` is now a thunk, so it re-evaluates reactively.
+    const { container } = render(() => <IrisPagination defaultPage={1} total={30} pageSize={10} />)
+    const pages = () =>
+      Array.from(
+        container.querySelectorAll('[data-iris-pagination-item="page"]'),
+      ) as HTMLButtonElement[]
+    expect(pages()[0].getAttribute('aria-current')).toBe('page')
+    fireEvent.click(pages()[2]) // → page 3
+    expect(pages()[2].getAttribute('aria-current')).toBe('page')
+    expect(pages()[0].getAttribute('aria-current')).toBeNull()
+  })
 })

@@ -93,31 +93,37 @@ export function IrisPagination(props: IrisPaginationProps): JSX.Element {
     'line-height': '1',
   })
 
-  // `label` is a thunk so `t()` runs inside the JSX attribute/child effects and
-  // stays reactive to locale changes (For's map callback itself is untracked).
+  // `label` and `active` are thunks so they run inside the JSX attribute/child
+  // effects and stay reactive: `<For>`'s map callback is untracked AND only
+  // re-runs for items whose identity changes — but `getPageRange` returns the
+  // same page-number primitives when only `current()` moves, so a plain `active`
+  // boolean computed at map-callback time would freeze on the initial page. As a
+  // thunk, `aria-current` / the active highlight re-evaluate when `current()`
+  // changes even though the row isn't re-rendered. (`t()` likewise stays locale-
+  // reactive.)
   const renderBtn = (
     page: number | null,
     label: () => string,
-    opts: { kind: string; disabled?: boolean; active?: boolean },
+    opts: { kind: string; disabled?: boolean; active?: () => boolean },
   ): JSX.Element => {
-    const isDisabled = opts.disabled || local.disabled
-    const isActive = opts.active === true
+    const isDisabled = (): boolean => Boolean(opts.disabled) || local.disabled
+    const isActive = (): boolean => opts.active?.() === true
     return (
       <button
         type="button"
         data-iris-pagination-item={opts.kind}
-        data-iris-pagination-active={isActive ? 'true' : undefined}
+        data-iris-pagination-active={isActive() ? 'true' : undefined}
         aria-label={label()}
-        aria-current={isActive ? 'page' : undefined}
-        disabled={isDisabled}
+        aria-current={isActive() ? 'page' : undefined}
+        disabled={isDisabled()}
         onClick={() => {
           if (page !== null) go(page)
         }}
         style={{
           ...baseBtnStyle(),
-          cursor: isDisabled ? 'not-allowed' : 'pointer',
-          opacity: isDisabled ? 0.5 : 1,
-          ...(isActive
+          cursor: isDisabled() ? 'not-allowed' : 'pointer',
+          opacity: isDisabled() ? 0.5 : 1,
+          ...(isActive()
             ? {
                 background: 'var(--iris-primary)',
                 color: 'var(--iris-primary-foreground, #fff)',
@@ -172,7 +178,7 @@ export function IrisPagination(props: IrisPaginationProps): JSX.Element {
           }
           return renderBtn(item, () => t('pagination.page', { page: item }), {
             kind: 'page',
-            active: item === current(),
+            active: () => item === current(),
           })
         }}
       </For>

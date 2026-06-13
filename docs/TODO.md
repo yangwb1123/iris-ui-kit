@@ -20,6 +20,10 @@ Of 13 Explore candidates, **only 2 were real+actionable** — column-virtualizat
 - COSMETIC RENAME = public-interface Blocker (deferred unless asked): textarea `autoResize`(solid) vs `autosize`(others); otp `autoFocus` casing.
 - LESSON: Explore agents read excerpts → ALWAYS verify candidates against source (~85% were noise here).
 
+## Low-priority sweep findings (recorded; weigh value before picking)
+
+- **plugin-notifications hardcoded aria-labels** (found iter-34 i18n sweep): `IrisNotificationCenter` hardcodes `aria-label="Dismiss"` + `aria-label="{n} unread"` in all 4 adapters — user-visible screen-reader strings not localizable. This plugin uses **prop-based** localization (`title`/`emptyText` props with English defaults), NOT the core `t()` system, so the consistent fix = add defaulted props (`dismissLabel`, `unreadLabel`) ×4 (additive/backward-compat, completes the existing prop pattern). Deferred: marginal value, expands 4 plugin APIs. Pick only if a localization need is raised. NOTE: the core primitives (Breadcrumb/Pagination/Table/etc.) correctly use `t()` — this gap is isolated to the notifications plugin's prop-based design.
+
 ## Blocked / decision-gated (Blocker conditions — need user input or external resource)
 
 - P2: Tauri demo shell to validate native bridges — needs Rust toolchain (absent in sandbox).

@@ -25,4 +25,18 @@ describe('IrisDateRangePicker', () => {
     fireEvent.click(startBtn)
     expect(container.querySelector('[data-iris-date-range-picker-panel]')).not.toBeNull()
   })
+
+  it('triggers expose aria-haspopup=dialog; panel is role=dialog', () => {
+    const { container } = render(() => <IrisDateRangePicker />)
+    const startBtn = container.querySelector(
+      '[data-iris-date-range-picker-start]',
+    ) as HTMLButtonElement
+    const endBtn = container.querySelector('[data-iris-date-range-picker-end]') as HTMLButtonElement
+    expect(startBtn.getAttribute('aria-haspopup')).toBe('dialog')
+    expect(endBtn.getAttribute('aria-haspopup')).toBe('dialog')
+    fireEvent.click(startBtn)
+    expect(
+      container.querySelector('[data-iris-date-range-picker-panel]')!.getAttribute('role'),
+    ).toBe('dialog')
+  })
 })

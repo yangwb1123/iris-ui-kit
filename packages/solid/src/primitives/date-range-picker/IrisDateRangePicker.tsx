@@ -94,6 +94,8 @@ export function IrisDateRangePicker(props: IrisDateRangePickerProps): JSX.Elemen
       <button
         type="button"
         disabled={local.disabled || undefined}
+        aria-haspopup="dialog"
+        aria-expanded={open()}
         data-iris-date-range-picker-start=""
         data-state={open() && selecting() === 'start' ? 'selecting' : 'idle'}
         onClick={() => {
@@ -121,6 +123,8 @@ export function IrisDateRangePicker(props: IrisDateRangePickerProps): JSX.Elemen
       <button
         type="button"
         disabled={local.disabled || undefined}
+        aria-haspopup="dialog"
+        aria-expanded={open()}
         data-iris-date-range-picker-end=""
         data-state={open() && selecting() === 'end' ? 'selecting' : 'idle'}
         onClick={() => {
@@ -145,6 +149,7 @@ export function IrisDateRangePicker(props: IrisDateRangePickerProps): JSX.Elemen
 
       <Show when={open()}>
         <div
+          role="dialog"
           data-iris-date-range-picker-panel=""
           style={{
             position: 'absolute',

@@ -71,6 +71,8 @@ export function IrisDatePicker(props: IrisDatePickerProps): JSX.Element {
         id={local.id}
         disabled={local.disabled || undefined}
         aria-invalid={local.invalid ? 'true' : undefined}
+        aria-haspopup="dialog"
+        aria-expanded={open()}
         data-iris-date-picker-trigger=""
         data-iris-date-picker-iso={currentValue() ? formatLocalISO(currentValue()!) : undefined}
         data-state={open() ? 'open' : 'closed'}
@@ -101,6 +103,7 @@ export function IrisDatePicker(props: IrisDatePickerProps): JSX.Element {
 
       <Show when={open()}>
         <div
+          role="dialog"
           data-iris-date-picker-panel=""
           style={{
             position: 'absolute',

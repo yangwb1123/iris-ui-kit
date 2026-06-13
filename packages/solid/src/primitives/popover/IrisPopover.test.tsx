@@ -42,4 +42,20 @@ describe('IrisPopover', () => {
     fireEvent.click(getByText('Open'))
     expect(queryByRole('dialog')).toBeNull()
   })
+
+  it('focuses the panel on open and restores focus to the trigger on close', async () => {
+    const { getByText, queryByRole } = render(() => (
+      <IrisPopover>
+        <IrisPopoverTrigger>Open</IrisPopoverTrigger>
+        <IrisPopoverContent portalTarget={false}>Content</IrisPopoverContent>
+      </IrisPopover>
+    ))
+    const trigger = getByText('Open')
+    fireEvent.click(trigger)
+    const panel = queryByRole('dialog')!
+    await Promise.resolve()
+    expect(document.activeElement).toBe(panel)
+    fireEvent.click(trigger)
+    expect(document.activeElement).toBe(trigger)
+  })
 })

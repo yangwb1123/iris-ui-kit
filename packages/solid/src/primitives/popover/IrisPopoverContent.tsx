@@ -1,4 +1,4 @@
-import { splitProps, Show, type JSX } from 'solid-js'
+import { createEffect, splitProps, Show, type JSX } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
@@ -7,6 +7,10 @@ import { usePopoverContext } from './context'
 export interface IrisPopoverContentProps extends JSX.HTMLAttributes<HTMLDivElement> {
   /** Portal target; `false` renders in place. Default `document.body`. */
   portalTarget?: HTMLElement | false
+  /** Focus the panel when it opens. Default `true`. */
+  autoFocus?: boolean
+  /** Restore focus to the trigger when it closes. Default `true`. */
+  restoreFocus?: boolean
   children?: JSX.Element
 }
 
@@ -16,7 +20,13 @@ export interface IrisPopoverContentProps extends JSX.HTMLAttributes<HTMLDivEleme
  */
 export function IrisPopoverContent(props: IrisPopoverContentProps): JSX.Element {
   const ctx = usePopoverContext('IrisPopoverContent')
-  const [local, others] = splitProps(props, ['portalTarget', 'style', 'children'])
+  const [local, others] = splitProps(props, [
+    'portalTarget',
+    'autoFocus',
+    'restoreFocus',
+    'style',
+    'children',
+  ])
 
   const { floatingStyles } = useFloating({
     anchor: ctx.trigger,
@@ -32,12 +42,28 @@ export function IrisPopoverContent(props: IrisPopoverContentProps): JSX.Element 
     onDismiss: () => ctx.setOpen(false),
   })
 
+  // Focus the panel on open; restore focus to the trigger on close (mirrors
+  // React/Vue; defaults on).
+  let wasOpen = false
+  let lastFocused: HTMLElement | null = null
+  createEffect(() => {
+    const isOpen = ctx.open()
+    if (isOpen && !wasOpen) {
+      lastFocused = (document.activeElement as HTMLElement | null) ?? ctx.trigger() ?? null
+      if (local.autoFocus ?? true) queueMicrotask(() => ctx.content()?.focus())
+    } else if (!isOpen && wasOpen) {
+      if (local.restoreFocus ?? true) (ctx.trigger() ?? lastFocused)?.focus()
+    }
+    wasOpen = isOpen
+  })
+
   const panel = (): JSX.Element => (
     <div
       {...(others as JSX.HTMLAttributes<HTMLDivElement>)}
       ref={ctx.setContent}
       id={ctx.contentId}
       role="dialog"
+      tabindex={-1}
       data-state="open"
       data-iris-popover-content=""
       style={{

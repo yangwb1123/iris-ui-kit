@@ -6,12 +6,31 @@
 
   interface Props {
     style?: string
+    /** Focus the panel when it opens. Default true. */
+    autoFocus?: boolean
+    /** Restore focus to the trigger when it closes. Default true. */
+    restoreFocus?: boolean
     children?: import('svelte').Snippet
     [key: string]: unknown
   }
 
-  let { style, children, ...rest }: Props = $props()
+  let { style, autoFocus = true, restoreFocus = true, children, ...rest }: Props = $props()
   const ctx = getPopoverContext('IrisPopoverContent')
+
+  // Focus the panel on open; restore focus to the trigger on close (mirrors
+  // React/Vue; defaults on).
+  let wasOpen = false
+  let lastFocused: HTMLElement | null = null
+  $effect(() => {
+    const isOpen = ctx.open
+    if (isOpen && !wasOpen) {
+      lastFocused = (document.activeElement as HTMLElement | null) ?? ctx.trigger ?? null
+      if (autoFocus) queueMicrotask(() => ctx.content?.focus())
+    } else if (!isOpen && wasOpen) {
+      if (restoreFocus) (ctx.trigger ?? lastFocused)?.focus()
+    }
+    wasOpen = isOpen
+  })
 
   const floating = useFloating({
     anchor: () => ctx.trigger,

@@ -9,6 +9,7 @@ import {
   onCleanup,
   type JSX,
 } from 'solid-js'
+import { firstEnabledIndex, nextEnabledIndex } from '@iris-ui/core'
 import { type IrisCommandItem, defaultFilter } from './types'
 import { useI18n } from '../../i18n'
 
@@ -18,6 +19,8 @@ export interface IrisCommandPaletteProps {
   items?: IrisCommandItem[]
   placeholder?: string
   emptyText?: string
+  /** Custom fuzzy-match scorer; return null to exclude. Defaults to `defaultFilter`. */
+  filter?: (query: string, item: IrisCommandItem) => number | null
   onOpenChange?: (open: boolean) => void
   onSelect?: (item: IrisCommandItem) => void
 }
@@ -41,6 +44,7 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
     'items',
     'placeholder',
     'emptyText',
+    'filter',
     'onOpenChange',
     'onSelect',
   ])
@@ -55,10 +59,12 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
     local.onOpenChange?.(v)
   }
 
+  const filterFn = () => local.filter ?? defaultFilter
   const filtered = createMemo(() => {
     const q = query()
+    const score = filterFn()
     const results = local.items
-      .map((item) => ({ item, score: defaultFilter(q, item) }))
+      .map((item) => ({ item, score: score(q, item) }))
       .filter((r) => r.score !== null)
       .sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
     return results.map((r) => r.item)
@@ -85,10 +91,24 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
     setQuery('')
   }
 
-  // Reset active idx when filtered changes
+  const isEnabled = (i: number): boolean => !flatItems()[i]?.disabled
+
+  // Reset active idx to the first ENABLED item when the filtered list changes.
   createEffect(() => {
-    filtered()
-    setActiveIdx(0)
+    const items = filtered()
+    const first = firstEnabledIndex(items.length, (i) => !items[i]?.disabled)
+    setActiveIdx(first >= 0 ? first : 0)
+  })
+
+  // Reset query + active index when the palette (re)opens, matching React/Vue/Svelte.
+  let wasOpen = false
+  createEffect(() => {
+    const o = open()
+    if (o && !wasOpen) {
+      setQuery('')
+      setActiveIdx(0)
+    }
+    wasOpen = o
   })
 
   // Global keyboard shortcut: Cmd/Ctrl+K to open
@@ -112,10 +132,11 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
     const items = flatItems()
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActiveIdx((i) => Math.min(i + 1, items.length - 1))
+      // Skip disabled rows and wrap at the ends (mirrors React/Vue/Svelte).
+      setActiveIdx((i) => nextEnabledIndex(i, 1, items.length, isEnabled, true))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setActiveIdx((i) => Math.max(i - 1, 0))
+      setActiveIdx((i) => nextEnabledIndex(i, -1, items.length, isEnabled, true))
     } else if (e.key === 'Enter') {
       e.preventDefault()
       const item = items[activeIdx()]

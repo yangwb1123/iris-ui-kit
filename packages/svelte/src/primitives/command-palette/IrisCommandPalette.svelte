@@ -138,7 +138,7 @@
       data-iris-command-palette
       role="dialog"
       aria-modal="true"
-      aria-label={resolvedPlaceholder}
+      aria-label={t('commandPalette.label')}
       style:background="var(--iris-background)"
       style:border="1px solid var(--iris-border)"
       style:border-radius="var(--iris-radius-lg, 8px)"

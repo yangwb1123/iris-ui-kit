@@ -29,6 +29,17 @@ describe('IrisCascader', () => {
     expect(container.querySelector('[data-iris-cascader-dropdown]')).toBeTruthy()
   })
 
+  it('opens on ArrowDown and closes on Escape from the trigger', async () => {
+    const { container } = render(IrisCascader, { props: { options } })
+    const trigger = container.querySelector('[data-iris-cascader-trigger]')!
+    await fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+    flushSync()
+    expect(container.querySelector('[data-iris-cascader-dropdown]')).toBeTruthy()
+    await fireEvent.keyDown(trigger, { key: 'Escape' })
+    flushSync()
+    expect(container.querySelector('[data-iris-cascader-dropdown]')).toBeFalsy()
+  })
+
   it('expands children on parent click', async () => {
     let changed: string[] | null = null
     const { container } = render(IrisCascader, {

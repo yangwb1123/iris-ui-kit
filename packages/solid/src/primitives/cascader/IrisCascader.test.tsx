@@ -34,6 +34,16 @@ describe('IrisCascader', () => {
     expect(container.querySelector('[data-iris-cascader-dropdown]')).not.toBeNull()
   })
 
+  it('trigger has aria-haspopup=listbox and opens on ArrowDown / closes on Escape', () => {
+    const { container } = render(() => <IrisCascader options={options} />)
+    const trigger = container.querySelector('[data-iris-cascader-trigger]') as HTMLButtonElement
+    expect(trigger.getAttribute('aria-haspopup')).toBe('listbox')
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+    expect(container.querySelector('[data-iris-cascader-dropdown]')).not.toBeNull()
+    fireEvent.keyDown(trigger, { key: 'Escape' })
+    expect(container.querySelector('[data-iris-cascader-dropdown]')).toBeNull()
+  })
+
   it('shows first level options when open', () => {
     const { container } = render(() => <IrisCascader options={options} />)
     const trigger = container.querySelector('[data-iris-cascader-trigger]') as HTMLButtonElement

@@ -85,6 +85,20 @@
     open = !open
   }
 
+  // Trigger keyboard: Escape closes; ArrowDown/Enter open (mirrors React/Vue).
+  function onTriggerKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && open) {
+      e.preventDefault()
+      open = false
+    } else if ((e.key === 'ArrowDown' || e.key === 'Enter') && !open) {
+      e.preventDefault()
+      if (!disabled) {
+        activePath = [...value]
+        open = true
+      }
+    }
+  }
+
   function selectOption(colIndex: number, node: IrisCascaderNode) {
     if (node.disabled) return
     const nextPath = [...activePath.slice(0, colIndex), node.value]
@@ -128,6 +142,7 @@
     aria-expanded={open}
     aria-haspopup="listbox"
     data-iris-cascader-trigger
+    onkeydown={onTriggerKeyDown}
     data-state={open ? 'open' : 'closed'}
     onclick={toggle}
     style:display="inline-flex"

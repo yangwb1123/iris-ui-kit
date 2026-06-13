@@ -137,8 +137,21 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
         data-state={open() ? 'open' : 'closed'}
         disabled={local.disabled || undefined}
         aria-invalid={local.invalid ? 'true' : undefined}
+        aria-haspopup="listbox"
         aria-expanded={open()}
         onClick={onTriggerClick}
+        onKeyDown={(e: KeyboardEvent) => {
+          if (e.key === 'Escape' && open()) {
+            e.preventDefault()
+            setOpen(false)
+          } else if ((e.key === 'ArrowDown' || e.key === 'Enter') && !open()) {
+            e.preventDefault()
+            if (!local.disabled) {
+              setOpen(true)
+              setActivePath([...currentValue()])
+            }
+          }
+        }}
         style={{
           display: 'inline-flex',
           'align-items': 'center',
@@ -201,6 +214,7 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
                       <li
                         role="option"
                         aria-selected={isActive()}
+                        aria-disabled={node.disabled ? 'true' : undefined}
                         data-iris-cascader-option={node.value}
                         onClick={() => onOptionClick(colIdx(), node)}
                         style={{

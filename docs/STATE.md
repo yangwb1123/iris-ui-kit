@@ -9,6 +9,7 @@
 - iters 1–6: `/docs/` memory system · excel mime · WAI-ARIA treegrid (aria-level/setsize/posinset + role) · column-virtualization parity · column-resizing parity → Table at full feature parity ×4.
 - iters 7–10: REAL bugs fixed via verification sweeps — Select `aria-haspopup` dialog→listbox; manifest discovery missed `export class` (IrisErrorBoundary invisible) + stale snapshot; **58 untranslated zh i18n keys**.
 - iters 11–14: **structural invariant GUARD tests** (CI-enforced, prevent regression) — barrel reachability (every component exported); 4-framework parity (every component ×4); 10 backfilled missing tests + solid `isolate:true` flake fix; module test-coverage (every module has a test). Plus pre-existing guards: token-export completeness, zh-coverage + placeholder preservation, manifest class-discovery.
+- iters 15–16: two more CI guards (module test-coverage, CSS-var reference validity) + **expanded `@iris-ui/core/contracts` 4→7 components** (segmented/toggle-group/slider behavioral contracts replayed ×4 adapters; zero divergence). Harness now asserts BEHAVIORAL parity (not just name parity) for 7 stateful components.
 
 **未完成 (Open):** No confirmed non-blocked feature/bug backlog. Comprehensively verified across ~9 dimensions; invariants now guarded. GATED items: publish v0.1.0 (irreversible release — won't run `npm publish` autonomously, but the decision is the user's), Tauri E2E demo (absent Rust toolchain), new product direction (user choice: Angular/Qwik adapter, new plugin, MCP codegen depth).
 
@@ -16,4 +17,4 @@
 
 **下一步推荐 (Next):** SUSTAINABLE AUTONOMOUS MODE = (1) targeted verification sweeps that occasionally surface real gaps (coverage gap found iter 13; i18n iter 10) → fix; (2) convert each verified invariant into a permanent GUARD test. Both are correctness(P1)/automation(P5) work needing no user input. Candidate next sweeps: CSS-var reference validity (typos), docs/demo coverage per component, i18n usage (hardcoded visible strings), cross-fw behavior contracts expansion. Avoid marginal/cosmetic churn; do NOT run irreversible publish.
 
-**Iteration count since last STATE refresh:** 0 (refreshed at iter-14 boundary).
+**Iteration count since last STATE refresh:** 2 (iter-16; last full refresh at iter-14 boundary — refresh due at ~iter-19).

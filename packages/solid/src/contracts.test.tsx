@@ -6,6 +6,9 @@ import {
   switchScenario,
   checkboxScenario,
   accordionScenario,
+  segmentedScenario,
+  toggleGroupScenario,
+  sliderScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import {
@@ -17,6 +20,9 @@ import {
 import { IrisSwitch } from './primitives/switch/Switch'
 import { IrisCheckbox } from './primitives/checkbox'
 import { IrisAccordion, IrisAccordionItem } from './primitives/accordion'
+import { IrisSegmented } from './primitives/segmented'
+import { IrisToggleGroup, IrisToggleGroupItem } from './primitives/toggle-group'
+import { IrisSlider } from './primitives/slider'
 
 afterEach(cleanup)
 
@@ -80,5 +86,37 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
       </IrisAccordion>
     ))
     await runContract(accordionScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Segmented contract', async () => {
+    const { container } = render(() => (
+      <IrisSegmented
+        options={[
+          { label: 'A', value: 'a' },
+          { label: 'B', value: 'b' },
+          { label: 'C', value: 'c' },
+        ]}
+        defaultValue="a"
+      />
+    ))
+    await runContract(segmentedScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared ToggleGroup contract', async () => {
+    const { container } = render(() => (
+      <IrisToggleGroup type="single" defaultValue="a">
+        <IrisToggleGroupItem value="a">A</IrisToggleGroupItem>
+        <IrisToggleGroupItem value="b">B</IrisToggleGroupItem>
+        <IrisToggleGroupItem value="c">C</IrisToggleGroupItem>
+      </IrisToggleGroup>
+    ))
+    await runContract(toggleGroupScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Slider contract', async () => {
+    const { container } = render(() => (
+      <IrisSlider defaultValue={50} min={0} max={100} step={10} label="Volume" />
+    ))
+    await runContract(sliderScenario, driverFor(container), expect)
   })
 })

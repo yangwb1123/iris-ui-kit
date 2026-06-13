@@ -7,6 +7,9 @@ import {
   switchScenario,
   checkboxScenario,
   accordionScenario,
+  segmentedScenario,
+  toggleGroupScenario,
+  sliderScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -50,5 +53,20 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
   it('satisfies the shared Accordion contract', async () => {
     const { container } = render(ContractsHarness)
     await runContract(accordionScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Segmented contract', async () => {
+    const { container } = render(ContractsHarness)
+    await runContract(segmentedScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared ToggleGroup contract', async () => {
+    const { container } = render(ContractsHarness)
+    await runContract(toggleGroupScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Slider contract', async () => {
+    const { container } = render(ContractsHarness)
+    await runContract(sliderScenario, driverFor(container), expect)
   })
 })

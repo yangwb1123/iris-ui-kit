@@ -4,6 +4,8 @@
 
 ## Factory iterations
 
+- **iter 16** — test(contracts): expanded the `@iris-ui/core/contracts` behavioral-parity harness **4→7 components ×4 adapters**. Added `segmentedScenario` (single-selection: `aria-checked` moves across `[data-iris-segmented-item]`), `toggleGroupScenario` (single-mode radio semantics on `[data-iris-toggle-group-item]`), and `sliderScenario` (keyboard ArrowRight/End/Home arithmetic on the `[role="slider"]` thumb's `aria-valuenow`). Same event-script replayed through each adapter's driver: React/Solid uncontrolled `defaultValue`, Vue `v-model` harnesses, Svelte controlled `$state` harness. **Zero behavioral divergence** — all four frameworks satisfy each contract identically. 126/126 gates green. (Radio deferred: its hidden `<input>` inside a `<label>` is `fireEvent`-flaky in jsdom → would need `userEvent`.) Authored core scenarios + React reference inline, then fanned out 3 parallel agents (one per remaining adapter) to mirror.
+
 - **iter 14-15** — test(manifest): two more CI-enforced guards — (14) module test-coverage (every primitive module must have a test; locks in iter-13), (15) CSS-variable reference validity (every no-fallback var(--iris-\*) must resolve to a defined token — catches silent typos). Guard suite now 7-strong.
 
 - **iter 13** — test: filled 10 missing component-module tests (solid + svelte each had 5 untested: avatar/form-field/input/switch + breadcrumb[solid]/drag-useDrag[svelte]) mirroring react coverage (+88 tests); flipped solid vitest isolate:false→true (fixed a latent cross-file reactive-owner leak flake; matches react/vue defaults). No component source changed.

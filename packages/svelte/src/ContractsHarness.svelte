@@ -17,8 +17,22 @@
   import IrisCheckbox from './primitives/checkbox/IrisCheckbox.svelte'
   import IrisAccordion from './primitives/accordion/IrisAccordion.svelte'
   import IrisAccordionItem from './primitives/accordion/IrisAccordionItem.svelte'
+  import IrisSegmented from './primitives/segmented/IrisSegmented.svelte'
+  import IrisToggleGroup from './primitives/toggle-group/IrisToggleGroup.svelte'
+  import IrisToggleGroupItem from './primitives/toggle-group/IrisToggleGroupItem.svelte'
+  import IrisSlider from './primitives/slider/IrisSlider.svelte'
 
   let checkboxValue = $state(false)
+
+  // Segmented / ToggleGroup / Slider are value-prop-driven (true controlled
+  // semantics: a click/key emits onchange but the DOM only flips when the parent
+  // writes `value` back). To present the UNCONTROLLED initial state the shared
+  // contracts expect (segmented/toggle-group `defaultValue="a"`; slider
+  // `defaultValue={50}`), we hold local state here — seeded to that initial —
+  // and write it back from `onchange`, exactly like the checkbox wrap above.
+  let segmentedValue = $state('a')
+  let toggleGroupValue = $state<string | string[] | null>('a')
+  let sliderValue = $state(50)
 </script>
 
 <IrisTabs defaultValue="a">
@@ -40,3 +54,31 @@
   <IrisAccordionItem value="a" title="A">Panel A</IrisAccordionItem>
   <IrisAccordionItem value="b" title="B">Panel B</IrisAccordionItem>
 </IrisAccordion>
+
+<IrisSegmented
+  options={[
+    { label: 'A', value: 'a' },
+    { label: 'B', value: 'b' },
+    { label: 'C', value: 'c' },
+  ]}
+  value={segmentedValue}
+  onchange={(next) => (segmentedValue = next)}
+/>
+
+<IrisToggleGroup
+  type="single"
+  value={toggleGroupValue}
+  onchange={(next) => (toggleGroupValue = next)}
+>
+  <IrisToggleGroupItem value="a">A</IrisToggleGroupItem>
+  <IrisToggleGroupItem value="b">B</IrisToggleGroupItem>
+  <IrisToggleGroupItem value="c">C</IrisToggleGroupItem>
+</IrisToggleGroup>
+
+<IrisSlider
+  value={sliderValue}
+  min={0}
+  max={100}
+  step={10}
+  onchange={(next) => (sliderValue = next)}
+/>

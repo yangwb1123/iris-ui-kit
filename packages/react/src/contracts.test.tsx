@@ -6,6 +6,9 @@ import {
   switchScenario,
   checkboxScenario,
   accordionScenario,
+  segmentedScenario,
+  toggleGroupScenario,
+  sliderScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -16,6 +19,10 @@ import { IrisSwitch } from './primitives/switch/Switch'
 import { IrisCheckbox } from './primitives/checkbox/Checkbox'
 import { IrisAccordion } from './primitives/accordion/Accordion'
 import { IrisAccordionItem } from './primitives/accordion/AccordionItem'
+import { IrisSegmented } from './primitives/segmented/Segmented'
+import { IrisToggleGroup } from './primitives/toggle-group/ToggleGroup'
+import { IrisToggleGroupItem } from './primitives/toggle-group/ToggleGroupItem'
+import { IrisSlider } from './primitives/slider/Slider'
 
 afterEach(cleanup)
 
@@ -76,5 +83,37 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       </IrisAccordion>,
     )
     await runContract(accordionScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Segmented contract', async () => {
+    const { container } = render(
+      <IrisSegmented
+        options={[
+          { label: 'A', value: 'a' },
+          { label: 'B', value: 'b' },
+          { label: 'C', value: 'c' },
+        ]}
+        defaultValue="a"
+      />,
+    )
+    await runContract(segmentedScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared single-mode ToggleGroup contract', async () => {
+    const { container } = render(
+      <IrisToggleGroup type="single" defaultValue="a">
+        <IrisToggleGroupItem value="a">A</IrisToggleGroupItem>
+        <IrisToggleGroupItem value="b">B</IrisToggleGroupItem>
+        <IrisToggleGroupItem value="c">C</IrisToggleGroupItem>
+      </IrisToggleGroup>,
+    )
+    await runContract(toggleGroupScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Slider keyboard contract', async () => {
+    const { container } = render(
+      <IrisSlider defaultValue={50} min={0} max={100} step={10} label="Volume" />,
+    )
+    await runContract(sliderScenario, driverFor(container), expect)
   })
 })

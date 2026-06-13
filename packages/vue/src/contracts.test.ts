@@ -7,6 +7,9 @@ import {
   switchScenario,
   checkboxScenario,
   accordionScenario,
+  segmentedScenario,
+  toggleGroupScenario,
+  sliderScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -17,6 +20,10 @@ import { IrisSwitch } from './primitives/switch/Switch'
 import { IrisCheckbox } from './primitives/checkbox/Checkbox'
 import { IrisAccordion } from './primitives/accordion/Accordion'
 import { IrisAccordionItem } from './primitives/accordion/AccordionItem'
+import { IrisSegmented } from './primitives/segmented/Segmented'
+import { IrisToggleGroup } from './primitives/toggle-group/ToggleGroup'
+import { IrisToggleGroupItem } from './primitives/toggle-group/ToggleGroupItem'
+import { IrisSlider } from './primitives/slider/Slider'
 
 enableAutoUnmount(afterEach)
 
@@ -121,6 +128,88 @@ const TabsHarness = defineComponent({
   },
 })
 
+/**
+ * IrisSegmented is v-model based (options + modelValue), so — like the Switch
+ * harness — mount it inside a wrapper holding a reactive string bound with
+ * v-model. Clicking a segment emits `update:modelValue`, flipping the ref and
+ * re-rendering with the new `aria-checked`. Starts on "a", matching the
+ * uncontrolled React reference (`defaultValue="a"` over three options a/b/c).
+ */
+const SegmentedHarness = defineComponent({
+  name: 'SegmentedHarness',
+  setup() {
+    const value = ref('a')
+    return () =>
+      h(IrisSegmented, {
+        options: [
+          { label: 'A', value: 'a' },
+          { label: 'B', value: 'b' },
+          { label: 'C', value: 'c' },
+        ],
+        modelValue: value.value,
+        'onUpdate:modelValue': (v: string) => {
+          value.value = v
+        },
+      })
+  },
+})
+
+/**
+ * IrisToggleGroup (`type="single"`) is v-model based (modelValue: string | null),
+ * so — like the Switch harness — mount it inside a wrapper holding a reactive
+ * string bound with v-model, rendering three IrisToggleGroupItem children with
+ * values a/b/c. Clicking a distinct item emits `update:modelValue`, flipping the
+ * ref and re-rendering with the new `aria-checked` (radio semantics). Starts on
+ * "a", matching the uncontrolled React reference (`defaultValue="a"`).
+ */
+const ToggleGroupHarness = defineComponent({
+  name: 'ToggleGroupHarness',
+  setup() {
+    const value = ref<string | null>('a')
+    return () =>
+      h(
+        IrisToggleGroup,
+        {
+          type: 'single',
+          modelValue: value.value,
+          'onUpdate:modelValue': (v: string | string[] | null) => {
+            value.value = (v as string | null) ?? null
+          },
+        },
+        () => [
+          h(IrisToggleGroupItem, { value: 'a' }, () => 'A'),
+          h(IrisToggleGroupItem, { value: 'b' }, () => 'B'),
+          h(IrisToggleGroupItem, { value: 'c' }, () => 'C'),
+        ],
+      )
+  },
+})
+
+/**
+ * IrisSlider is v-model based (modelValue: number), so — like the Switch harness —
+ * mount it inside a wrapper holding a reactive number bound with v-model. Keyboard
+ * input on the `[role="slider"]` thumb emits `update:modelValue`, flipping the ref
+ * and re-rendering with the new `aria-valuenow`. Starts at 50 over min=0/max=100/
+ * step=10, matching the uncontrolled React reference (`defaultValue={50}`).
+ */
+const SliderHarness = defineComponent({
+  name: 'SliderHarness',
+  setup() {
+    const value = ref(50)
+    return () =>
+      h(IrisSlider, {
+        modelValue: value.value,
+        min: 0,
+        max: 100,
+        step: 10,
+        label: 'Volume',
+        'onUpdate:modelValue': (v: number) => {
+          value.value = v
+        },
+      })
+  },
+})
+
 describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Tabs contract', async () => {
     const host = document.createElement('div')
@@ -152,5 +241,29 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     const wrapper = mount(AccordionHarness, { attachTo: host })
     await nextTick()
     await runContract(accordionScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared Segmented contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(SegmentedHarness, { attachTo: host })
+    await nextTick()
+    await runContract(segmentedScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared single-mode ToggleGroup contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(ToggleGroupHarness, { attachTo: host })
+    await nextTick()
+    await runContract(toggleGroupScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared Slider keyboard contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(SliderHarness, { attachTo: host })
+    await nextTick()
+    await runContract(sliderScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

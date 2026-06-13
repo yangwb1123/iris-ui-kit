@@ -24,6 +24,7 @@
 
   interface Props {
     value?: IrisFileUploadFile[]
+    defaultValue?: IrisFileUploadFile[]
     accept?: string
     multiple?: boolean
     maxSize?: number
@@ -40,7 +41,8 @@
   }
 
   let {
-    value = [],
+    value = undefined,
+    defaultValue = [],
     accept = '',
     multiple = false,
     maxSize = 0,
@@ -55,6 +57,19 @@
     children: _children,
     ...rest
   }: Props = $props()
+
+  // Controlled when `value` is supplied; otherwise self-manage the list from
+  // defaultValue so an uncontrolled uploader actually shows added/removed files
+  // without the parent feeding `value` back (mirrors React/Solid).
+  const isControlled = $derived(value !== undefined)
+  // svelte-ignore state_referenced_locally
+  let internal = $state<IrisFileUploadFile[]>(defaultValue)
+  const current = $derived(isControlled ? (value as IrisFileUploadFile[]) : internal)
+
+  function commit(next: IrisFileUploadFile[]): void {
+    if (!isControlled) internal = next
+    onchange?.(next)
+  }
 
   let inputEl = $state<HTMLInputElement | undefined>(undefined)
   let dragOver = $state(false)
@@ -76,7 +91,7 @@
   function validate(incoming: File[]) {
     const accepted: IrisFileUploadFile[] = []
     const rejected: { file: IrisFileUploadFile; reason: 'size' | 'count' | 'type' }[] = []
-    const existing = value.length
+    const existing = current.length
     let acceptedCount = 0
     for (const f of incoming) {
       const wrapped = wrapFile(f)
@@ -94,8 +109,8 @@
   function applyFiles(incoming: File[]) {
     if (disabled) return
     const { accepted, rejected } = validate(incoming)
-    const next = multiple ? [...value, ...accepted] : accepted.slice(0, 1)
-    onchange?.(next)
+    const next = multiple ? [...current, ...accepted] : accepted.slice(0, 1)
+    commit(next)
     if (accepted.length > 0) onaccept?.(accepted)
     if (rejected.length > 0) onreject?.(rejected)
   }
@@ -117,9 +132,9 @@
   }
 
   function removeAt(index: number) {
-    const next = [...value]
+    const next = [...current]
     next.splice(index, 1)
-    onchange?.(next)
+    commit(next)
   }
 
   const zoneStyle = $derived(styleToString({
@@ -179,12 +194,12 @@
     {/if}
   </div>
   <!-- File list -->
-  {#if value.length > 0}
+  {#if current.length > 0}
     <ul
       data-iris-file-upload-list
       style="list-style: none; margin: 8px 0 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px;"
     >
-      {#each value as item, idx (item.name + '-' + idx)}
+      {#each current as item, idx (item.name + '-' + idx)}
         <li
           data-iris-file-upload-item
           style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--iris-surface); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-sm, 4px); font-size: 13px;"

@@ -60,6 +60,14 @@ describe('discover (real repo)', () => {
     expect(() => findRepoRoot()).not.toThrow()
   })
 
+  it('discovers class-based components (React IrisErrorBoundary) in all 4 frameworks', () => {
+    // React authors IrisErrorBoundary as `export class` — the discovery regex
+    // must match `class`, not only const/function, or react drops out of parity.
+    const m = buildManifest(discover())
+    const eb = m.components.find((c) => c.name === 'IrisErrorBoundary')
+    expect(eb?.frameworks.slice().sort()).toEqual(['react', 'solid', 'svelte', 'vue'])
+  })
+
   it('discovers the real inventory from all adapters', () => {
     const raw = discover()
     const button = raw.components.find((c) => c.name === 'IrisButton')

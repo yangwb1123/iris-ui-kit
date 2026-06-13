@@ -80,13 +80,17 @@
     },
     {
       "group": "plugin",
-      "count": 9,
+      "count": 13,
       "components": [
         "IrisAdminApp",
         "IrisBarChart",
         "IrisCodeEditor",
+        "IrisDashboard",
+        "IrisEventCalendar",
         "IrisFormBuilder",
+        "IrisKanban",
         "IrisLineChart",
+        "IrisMarkdown",
         "IrisNotificationCenter",
         "IrisProTable",
         "IrisQueryBuilder",
@@ -270,6 +274,9 @@
           "default": "false"
         }
       ],
+      "events": [
+        "onValueChange"
+      ],
       "subComponents": [
         "IrisAccordionItem"
       ]
@@ -307,6 +314,9 @@
           "optional": true,
           "default": "false"
         }
+      ],
+      "slots": [
+        "title"
       ]
     },
     {
@@ -324,7 +334,23 @@
         "svelte": "@iris-ui/plugin-admin/svelte",
         "vue": "@iris-ui/plugin-admin/vue"
       },
-      "plugin": "@iris-ui/plugin-admin"
+      "plugin": "@iris-ui/plugin-admin",
+      "props": [
+        {
+          "name": "schema",
+          "type": "AdminAppSchema",
+          "optional": false
+        },
+        {
+          "name": "renderPage",
+          "type": "(key: string) => React.ReactNode",
+          "optional": true,
+          "description": "Render a custom page by key (for pages of type `'custom'`)."
+        }
+      ],
+      "slots": [
+        "renderPage"
+      ]
     },
     {
       "name": "IrisAdminBreadcrumb",
@@ -373,6 +399,9 @@
           "type": "(key: string, node: NavNode) => void",
           "optional": true
         }
+      ],
+      "events": [
+        "onSelect"
       ]
     },
     {
@@ -498,6 +527,15 @@
           "optional": true,
           "description": "Page content; render-prop receives `{ activeKey }`."
         }
+      ],
+      "events": [
+        "onActiveKeyChange",
+        "onCollapsedChange",
+        "onSelect"
+      ],
+      "slots": [
+        "toolbar",
+        "footer"
       ]
     },
     {
@@ -537,6 +575,11 @@
           "type": "(key: string) => void",
           "optional": true
         }
+      ],
+      "events": [
+        "onChange",
+        "onClose",
+        "onRefresh"
       ]
     },
     {
@@ -594,6 +637,12 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onChange"
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -656,6 +705,14 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "events": [
+        "onClose"
+      ],
+      "slots": [
+        "title",
+        "icon",
+        "default"
       ]
     },
     {
@@ -713,6 +770,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onChange"
       ]
     },
     {
@@ -753,6 +813,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -820,6 +883,9 @@
           ],
           "default": "circle"
         }
+      ],
+      "slots": [
+        "fallbackContent"
       ]
     },
     {
@@ -884,6 +950,12 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onClick"
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -942,6 +1014,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -1020,6 +1095,14 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "events": [
+        "onOpenChange"
+      ],
+      "slots": [
+        "icon",
+        "actions",
+        "default"
       ]
     },
     {
@@ -1037,7 +1120,55 @@
         "svelte": "@iris-ui/plugin-charts/svelte",
         "vue": "@iris-ui/plugin-charts/vue"
       },
-      "plugin": "@iris-ui/plugin-charts"
+      "plugin": "@iris-ui/plugin-charts",
+      "props": [
+        {
+          "name": "data",
+          "type": "number[]",
+          "optional": false
+        },
+        {
+          "name": "width",
+          "type": "number",
+          "optional": true,
+          "default": "320"
+        },
+        {
+          "name": "height",
+          "type": "number",
+          "optional": true,
+          "default": "160"
+        },
+        {
+          "name": "nice",
+          "type": "boolean",
+          "optional": true,
+          "default": "true"
+        },
+        {
+          "name": "gap",
+          "type": "number",
+          "optional": true,
+          "description": "Fractional gap between bars (0..1). Default 0.2.",
+          "default": "0.2"
+        },
+        {
+          "name": "ariaLabel",
+          "type": "string",
+          "optional": true,
+          "default": "Bar chart"
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "style",
+          "type": "React.CSSProperties",
+          "optional": true
+        }
+      ]
     },
     {
       "name": "IrisBreadcrumb",
@@ -1068,6 +1199,10 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "separator",
+        "default"
       ],
       "subComponents": [
         "IrisBreadcrumbItem"
@@ -1107,6 +1242,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -1203,6 +1341,13 @@
           "type": "MouseEventHandler<HTMLElement>",
           "optional": true
         }
+      ],
+      "events": [
+        "onClick"
+      ],
+      "slots": [
+        "leading",
+        "default"
       ]
     },
     {
@@ -1281,6 +1426,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange"
       ]
     },
     {
@@ -1344,6 +1492,11 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "header",
+        "footer",
+        "default"
       ]
     },
     {
@@ -1442,6 +1595,12 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onIndexChange"
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -1537,6 +1696,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange"
       ]
     },
     {
@@ -1601,6 +1763,12 @@
           "optional": true,
           "description": "Label content rendered next to the box."
         }
+      ],
+      "events": [
+        "onChange"
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -1692,6 +1860,14 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "events": [
+        "onClose",
+        "onClick"
+      ],
+      "slots": [
+        "icon",
+        "default"
       ]
     },
     {
@@ -1733,6 +1909,12 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "events": [
+        "onOutside"
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -1750,7 +1932,54 @@
         "svelte": "@iris-ui/plugin-editor/svelte",
         "vue": "@iris-ui/plugin-editor/vue"
       },
-      "plugin": "@iris-ui/plugin-editor"
+      "plugin": "@iris-ui/plugin-editor",
+      "props": [
+        {
+          "name": "value",
+          "type": "string",
+          "optional": true,
+          "description": "Controlled document text."
+        },
+        {
+          "name": "defaultValue",
+          "type": "string",
+          "optional": true,
+          "description": "Uncontrolled initial text."
+        },
+        {
+          "name": "language",
+          "type": "EditorLanguage",
+          "optional": true,
+          "description": "Syntax-highlighting language. Default `'plain'`.",
+          "default": "plain"
+        },
+        {
+          "name": "readOnly",
+          "type": "boolean",
+          "optional": true,
+          "description": "Render read-only. Default `false`.",
+          "default": "false"
+        },
+        {
+          "name": "onChange",
+          "type": "(value: string) => void",
+          "optional": true,
+          "description": "Called with the full text on every change."
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "style",
+          "type": "React.CSSProperties",
+          "optional": true
+        }
+      ],
+      "events": [
+        "onChange"
+      ]
     },
     {
       "name": "IrisColorPicker",
@@ -1798,6 +2027,9 @@
           "optional": true,
           "default": "false"
         }
+      ],
+      "events": [
+        "onChange"
       ]
     },
     {
@@ -1895,6 +2127,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange"
       ]
     },
     {
@@ -1952,6 +2187,10 @@
           "type": "(item: IrisCommandItem) => void",
           "optional": true
         }
+      ],
+      "events": [
+        "onOpenChange",
+        "onSelect"
       ]
     },
     {
@@ -2064,6 +2303,13 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onCopy"
+      ],
+      "slots": [
+        "default",
+        "copiedLabel"
       ]
     },
     {
@@ -2136,6 +2382,48 @@
         {
           "name": "className",
           "type": "string",
+          "optional": true
+        }
+      ],
+      "events": [
+        "onFinish"
+      ],
+      "slots": [
+        "title",
+        "prefix",
+        "suffix"
+      ]
+    },
+    {
+      "name": "IrisDashboard",
+      "group": "plugin",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/plugin-dashboard/react",
+        "solid": "@iris-ui/plugin-dashboard/solid",
+        "svelte": "@iris-ui/plugin-dashboard/svelte",
+        "vue": "@iris-ui/plugin-dashboard/vue"
+      },
+      "plugin": "@iris-ui/plugin-dashboard",
+      "props": [
+        {
+          "name": "config",
+          "type": "DashboardConfig",
+          "optional": false
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "style",
+          "type": "React.CSSProperties",
           "optional": true
         }
       ]
@@ -2307,6 +2595,16 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onActiveIdChange",
+        "onCollapsedChange"
+      ],
+      "slots": [
+        "header",
+        "sidebarHeader",
+        "default",
+        "cardSlots"
       ]
     },
     {
@@ -2407,6 +2705,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange"
       ]
     },
     {
@@ -2505,6 +2806,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange"
       ]
     },
     {
@@ -2622,6 +2926,12 @@
           "optional": true
         }
       ],
+      "events": [
+        "onOpenChange"
+      ],
+      "slots": [
+        "default"
+      ],
       "subComponents": [
         "IrisDialogClose",
         "IrisDialogContent",
@@ -2658,6 +2968,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -2688,6 +3001,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -2769,6 +3085,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -2819,6 +3138,10 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "label",
+        "default"
       ]
     },
     {
@@ -2881,6 +3204,14 @@
           "optional": true,
           "description": "Optional drag handle (restricts the draggable region)."
         }
+      ],
+      "events": [
+        "onValueChange",
+        "onDragStart",
+        "onDragEnd"
+      ],
+      "slots": [
+        "handle"
       ]
     },
     {
@@ -2953,6 +3284,12 @@
           "optional": true
         }
       ],
+      "events": [
+        "onOpenChange"
+      ],
+      "slots": [
+        "default"
+      ],
       "subComponents": [
         "IrisDrawerClose",
         "IrisDrawerContent",
@@ -2988,6 +3325,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -3017,6 +3357,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -3064,6 +3407,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -3117,6 +3463,12 @@
           "optional": true
         }
       ],
+      "events": [
+        "onOpenChange"
+      ],
+      "slots": [
+        "default"
+      ],
       "subComponents": [
         "IrisDropdownItem",
         "IrisDropdownMenu",
@@ -3160,6 +3512,9 @@
           "optional": true,
           "description": "Emitted on click or Enter/Space."
         }
+      ],
+      "events": [
+        "onSelect"
       ]
     },
     {
@@ -3189,6 +3544,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -3236,6 +3594,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -3280,17 +3641,26 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "title",
+        "description",
+        "icon",
+        "action",
+        "default"
       ]
     },
     {
       "name": "IrisErrorBoundary",
       "group": "other",
       "frameworks": [
+        "react",
         "solid",
         "svelte",
         "vue"
       ],
       "importFrom": {
+        "react": "@iris-ui/react",
         "solid": "@iris-ui/solid",
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
@@ -3313,6 +3683,47 @@
           "type": "(error: Error, info: React.ErrorInfo) => void",
           "optional": true,
           "description": "Invoked with the caught error (and React error info) for logging."
+        }
+      ],
+      "events": [
+        "onError"
+      ],
+      "slots": [
+        "default",
+        "fallback"
+      ]
+    },
+    {
+      "name": "IrisEventCalendar",
+      "group": "plugin",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/plugin-calendar/react",
+        "solid": "@iris-ui/plugin-calendar/solid",
+        "svelte": "@iris-ui/plugin-calendar/svelte",
+        "vue": "@iris-ui/plugin-calendar/vue"
+      },
+      "plugin": "@iris-ui/plugin-calendar",
+      "props": [
+        {
+          "name": "config",
+          "type": "CalendarConfig",
+          "optional": false
+        },
+        {
+          "name": "class",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "style",
+          "type": "React.CSSProperties",
+          "optional": true
         }
       ]
     },
@@ -3365,6 +3776,11 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "slots": [
+        "legend",
+        "hint",
+        "default"
       ]
     },
     {
@@ -3470,6 +3886,11 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange",
+        "onAccept",
+        "onReject"
       ]
     },
     {
@@ -3541,6 +3962,13 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onClick"
+      ],
+      "slots": [
+        "icon",
+        "default"
       ]
     },
     {
@@ -3571,6 +3999,9 @@
           "optional": true
         }
       ],
+      "slots": [
+        "default"
+      ],
       "subComponents": [
         "IrisFormField"
       ]
@@ -3590,7 +4021,24 @@
         "svelte": "@iris-ui/plugin-form-builder/svelte",
         "vue": "@iris-ui/plugin-form-builder/vue"
       },
-      "plugin": "@iris-ui/plugin-form-builder"
+      "plugin": "@iris-ui/plugin-form-builder",
+      "props": [
+        {
+          "name": "schema",
+          "type": "FormSchema",
+          "optional": false
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "style",
+          "type": "React.CSSProperties",
+          "optional": true
+        }
+      ]
     },
     {
       "name": "IrisFormField",
@@ -3652,6 +4100,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -3740,6 +4191,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "slots": [
+        "format"
       ]
     },
     {
@@ -3848,6 +4302,11 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "header",
+        "footer",
+        "default"
       ]
     },
     {
@@ -3907,6 +4366,12 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "events": [
+        "onTrigger"
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -3960,6 +4425,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -4148,6 +4616,44 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "prefix",
+        "suffix"
+      ]
+    },
+    {
+      "name": "IrisKanban",
+      "group": "plugin",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/plugin-kanban/react",
+        "solid": "@iris-ui/plugin-kanban/solid",
+        "svelte": "@iris-ui/plugin-kanban/svelte",
+        "vue": "@iris-ui/plugin-kanban/vue"
+      },
+      "plugin": "@iris-ui/plugin-kanban",
+      "props": [
+        {
+          "name": "config",
+          "type": "KanbanConfig",
+          "optional": false
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "style",
+          "type": "React.CSSProperties",
+          "optional": true
+        }
       ]
     },
     {
@@ -4193,6 +4699,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -4210,7 +4719,58 @@
         "svelte": "@iris-ui/plugin-charts/svelte",
         "vue": "@iris-ui/plugin-charts/vue"
       },
-      "plugin": "@iris-ui/plugin-charts"
+      "plugin": "@iris-ui/plugin-charts",
+      "props": [
+        {
+          "name": "data",
+          "type": "number[]",
+          "optional": false,
+          "description": "The numeric series to plot."
+        },
+        {
+          "name": "width",
+          "type": "number",
+          "optional": true,
+          "default": "320"
+        },
+        {
+          "name": "height",
+          "type": "number",
+          "optional": true,
+          "default": "160"
+        },
+        {
+          "name": "area",
+          "type": "boolean",
+          "optional": true,
+          "description": "Fill the area under the line. Default false.",
+          "default": "false"
+        },
+        {
+          "name": "nice",
+          "type": "boolean",
+          "optional": true,
+          "description": "Round the Y domain to nice bounds. Default true.",
+          "default": "true"
+        },
+        {
+          "name": "ariaLabel",
+          "type": "string",
+          "optional": true,
+          "description": "Accessible description of the chart.",
+          "default": "Line chart"
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "style",
+          "type": "React.CSSProperties",
+          "optional": true
+        }
+      ]
     },
     {
       "name": "IrisList",
@@ -4331,6 +4891,15 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange",
+        "onSelect"
+      ],
+      "slots": [
+        "emptyState",
+        "loadingState",
+        "errorState"
       ]
     },
     {
@@ -4418,6 +4987,44 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onSubmit"
+      ],
+      "slots": [
+        "header",
+        "forgot",
+        "footer"
+      ]
+    },
+    {
+      "name": "IrisMarkdown",
+      "group": "plugin",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/plugin-markdown/react",
+        "solid": "@iris-ui/plugin-markdown/solid",
+        "svelte": "@iris-ui/plugin-markdown/svelte",
+        "vue": "@iris-ui/plugin-markdown/vue"
+      },
+      "plugin": "@iris-ui/plugin-markdown",
+      "props": [
+        {
+          "name": "content",
+          "type": "string",
+          "optional": false,
+          "description": "Markdown text to render."
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        }
       ]
     },
     {
@@ -4482,6 +5089,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -4530,6 +5140,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -4621,6 +5234,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange"
       ]
     },
     {
@@ -4674,6 +5290,12 @@
           "optional": true
         }
       ],
+      "events": [
+        "onOpenChange"
+      ],
+      "slots": [
+        "default"
+      ],
       "subComponents": [
         "IrisMenuContent",
         "IrisMenuItem",
@@ -4709,6 +5331,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -4747,6 +5372,9 @@
           "optional": true,
           "description": "Triggered on click or Enter/Space."
         }
+      ],
+      "events": [
+        "onSelect"
       ]
     },
     {
@@ -4798,6 +5426,10 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "label",
+        "default"
       ]
     },
     {
@@ -4828,6 +5460,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -4894,6 +5529,14 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "events": [
+        "onPositionChange",
+        "onDragStart",
+        "onDragEnd"
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -4958,6 +5601,10 @@
           "type": "(keys: string[]) => void",
           "optional": true
         }
+      ],
+      "events": [
+        "onSelect",
+        "onExpandedKeysChange"
       ]
     },
     {
@@ -4975,7 +5622,33 @@
         "svelte": "@iris-ui/plugin-notifications/svelte",
         "vue": "@iris-ui/plugin-notifications/vue"
       },
-      "plugin": "@iris-ui/plugin-notifications"
+      "plugin": "@iris-ui/plugin-notifications",
+      "props": [
+        {
+          "name": "center",
+          "type": "NotificationCenter",
+          "optional": false
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "optional": true,
+          "description": "Panel header text. Default `'Notifications'`.",
+          "default": "Notifications"
+        },
+        {
+          "name": "emptyText",
+          "type": "string",
+          "optional": true,
+          "description": "Shown when there are no notifications. Default `'No notifications'`.",
+          "default": "No notifications"
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        }
+      ]
     },
     {
       "name": "IrisNumberInput",
@@ -5053,6 +5726,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onChange"
       ]
     },
     {
@@ -5179,6 +5855,10 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange",
+        "onComplete"
       ]
     },
     {
@@ -5256,6 +5936,9 @@
           "optional": true,
           "default": "false"
         }
+      ],
+      "events": [
+        "onValueChange"
       ]
     },
     {
@@ -5294,6 +5977,10 @@
           "optional": true,
           "description": "Custom prefix slot."
         }
+      ],
+      "slots": [
+        "suffix",
+        "prefix"
       ]
     },
     {
@@ -5352,6 +6039,12 @@
           "optional": true
         }
       ],
+      "events": [
+        "onOpenChange"
+      ],
+      "slots": [
+        "default"
+      ],
       "subComponents": [
         "IrisPopoverContent",
         "IrisPopoverTrigger"
@@ -5399,6 +6092,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -5430,6 +6126,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -5570,6 +6269,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "slots": [
+        "format"
       ]
     },
     {
@@ -5587,7 +6289,32 @@
         "svelte": "@iris-ui/plugin-pro-table/svelte",
         "vue": "@iris-ui/plugin-pro-table/vue"
       },
-      "plugin": "@iris-ui/plugin-pro-table"
+      "plugin": "@iris-ui/plugin-pro-table",
+      "props": [
+        {
+          "name": "store",
+          "type": "ProTableStore<Row>",
+          "optional": false
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "labels",
+          "type": "ProTableLabels",
+          "optional": true,
+          "description": "Host-overridable UI strings (aria-labels + pager). Pass localized values (e.g. from the adapter's `useI18n().t`) — plugins can't reach adapter i18n directly. Defaults to English."
+        },
+        {
+          "name": "columnReorder",
+          "type": "boolean",
+          "optional": true,
+          "description": "Enable drag-to-reorder column headers. When `true` every column `<th>` becomes draggable and drop onto another header calls `store.reorderColumns`. Default `false` — existing layouts are unchanged.",
+          "default": "false"
+        }
+      ]
     },
     {
       "name": "IrisProvider",
@@ -5653,6 +6380,9 @@
           "type": "ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -5670,7 +6400,35 @@
         "svelte": "@iris-ui/plugin-query-builder/svelte",
         "vue": "@iris-ui/plugin-query-builder/vue"
       },
-      "plugin": "@iris-ui/plugin-query-builder"
+      "plugin": "@iris-ui/plugin-query-builder",
+      "props": [
+        {
+          "name": "builder",
+          "type": "FilterBuilder",
+          "optional": false
+        },
+        {
+          "name": "onChange",
+          "type": "(rules: FilterRule[]) => void",
+          "optional": true,
+          "description": "Called with the compiled `FilterRule[]` whenever the rules change."
+        },
+        {
+          "name": "addLabel",
+          "type": "string",
+          "optional": true,
+          "description": "Label for the add-rule button. Default `'Add rule'`.",
+          "default": "Add rule"
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        }
+      ],
+      "events": [
+        "onChange"
+      ]
     },
     {
       "name": "IrisRadio",
@@ -5710,6 +6468,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -5771,6 +6532,12 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "events": [
+        "onChange"
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -5839,6 +6606,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onChange"
       ]
     },
     {
@@ -5955,6 +6725,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange"
       ]
     },
     {
@@ -6043,6 +6816,14 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "events": [
+        "onSizeChange",
+        "onResizeStart",
+        "onResizeEnd"
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -6122,6 +6903,11 @@
           "description": "Maintain `width / height` ratio when dragging corner handles.",
           "default": "false"
         }
+      ],
+      "events": [
+        "onValueChange",
+        "onResizeStart",
+        "onResizeEnd"
       ]
     },
     {
@@ -6191,6 +6977,13 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "slots": [
+        "title",
+        "subtitle",
+        "icon",
+        "extra",
+        "default"
       ]
     },
     {
@@ -6247,6 +7040,10 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "slots": [
+        "text",
+        "default"
       ]
     },
     {
@@ -6302,6 +7099,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -6380,6 +7180,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange"
       ]
     },
     {
@@ -6481,6 +7284,12 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange"
+      ],
+      "slots": [
+        "renderTrigger"
       ]
     },
     {
@@ -6550,6 +7359,13 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "events": [
+        "onCollapsedChange"
+      ],
+      "slots": [
+        "sidebar",
+        "default"
       ]
     },
     {
@@ -6671,6 +7487,9 @@
           "optional": true,
           "description": "Accessible label for screen readers."
         }
+      ],
+      "events": [
+        "onChange"
       ]
     },
     {
@@ -6695,6 +7514,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -6712,7 +7534,42 @@
         "svelte": "@iris-ui/plugin-charts/svelte",
         "vue": "@iris-ui/plugin-charts/vue"
       },
-      "plugin": "@iris-ui/plugin-charts"
+      "plugin": "@iris-ui/plugin-charts",
+      "props": [
+        {
+          "name": "data",
+          "type": "number[]",
+          "optional": false
+        },
+        {
+          "name": "width",
+          "type": "number",
+          "optional": true,
+          "default": "96"
+        },
+        {
+          "name": "height",
+          "type": "number",
+          "optional": true,
+          "default": "24"
+        },
+        {
+          "name": "ariaLabel",
+          "type": "string",
+          "optional": true,
+          "default": "Sparkline"
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "style",
+          "type": "React.CSSProperties",
+          "optional": true
+        }
+      ]
     },
     {
       "name": "IrisSpinner",
@@ -6830,6 +7687,12 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onClick"
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -6908,6 +7771,13 @@
           "optional": true,
           "description": "End pane content."
         }
+      ],
+      "events": [
+        "onValueChange"
+      ],
+      "slots": [
+        "start",
+        "end"
       ]
     },
     {
@@ -7064,6 +7934,14 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "slots": [
+        "label",
+        "value",
+        "prefix",
+        "suffix",
+        "description",
+        "trendValue"
       ]
     },
     {
@@ -7117,6 +7995,9 @@
           "default": "true"
         }
       ],
+      "events": [
+        "onValueChange"
+      ],
       "subComponents": [
         "IrisStepperStep"
       ]
@@ -7166,6 +8047,10 @@
           "optional": true,
           "default": "false"
         }
+      ],
+      "slots": [
+        "title",
+        "description"
       ]
     },
     {
@@ -7222,6 +8107,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onChange"
       ]
     },
     {
@@ -7369,7 +8257,7 @@
           "name": "getSubRows",
           "type": "(row: Row) => Row[] | undefined",
           "optional": true,
-          "description": "Read a row's child rows to render the table as a TREE. Providing this enables tree mode: `data` is treated as the root rows, each row's first cell gains a depth indent + an expand/collapse toggle (when it has children), and the expand state reuses `defaultExpandedRowKeys`/`onExpandedRowsChange`. v1 tree mode renders the non-virtualized body and does not reorder on column sort."
+          "description": "Read a row's child rows to render the table as a TREE. Providing this enables tree mode: `data` is treated as the root rows, each row's first cell gains a depth indent + an expand/collapse toggle (when it has children), and the expand state reuses `defaultExpandedRowKeys`/`onExpandedRowsChange`. Column sort reorders siblings hierarchically (each level sorted, structure kept), and tree rows virtualize like flat rows when `virtualScroll` is set (unless `renderDetail` is also used, since detail panels are variable-height)."
         },
         {
           "name": "keyboardNavigation",
@@ -7389,6 +8277,13 @@
           "type": "boolean",
           "optional": true,
           "description": "Render only the horizontally-visible columns (plus pinned + a small overscan) for very wide tables. Needs numeric column widths; the table becomes a horizontal scroll container. Off-screen grid tracks stay sized, so alignment, resize, and pinned columns keep working.",
+          "default": "false"
+        },
+        {
+          "name": "cellRange",
+          "type": "boolean",
+          "optional": true,
+          "description": "Enable rectangular cell-range selection (Excel-style). Click starts a range; Shift+Click or Shift+Arrow extends it; Escape clears it. Cells within the range get `data-iris-cell-selected=\"true\"`.",
           "default": "false"
         },
         {
@@ -7433,6 +8328,19 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onSelectionChange",
+        "onSortChange",
+        "onColumnWidthsChange",
+        "onCellEdit",
+        "onExpandedRowsChange"
+      ],
+      "slots": [
+        "renderDetail",
+        "emptyState",
+        "loadingState",
+        "errorState"
       ]
     },
     {
@@ -7498,6 +8406,12 @@
           "optional": true
         }
       ],
+      "events": [
+        "onValueChange"
+      ],
+      "slots": [
+        "default"
+      ],
       "subComponents": [
         "IrisTabsContent",
         "IrisTabsList",
@@ -7538,6 +8452,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -7590,6 +8507,9 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -7674,6 +8594,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange"
       ]
     },
     {
@@ -7767,6 +8690,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "slots": [
+        "renderItem"
       ]
     },
     {
@@ -7852,6 +8778,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange"
       ]
     },
     {
@@ -7982,6 +8911,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -8053,6 +8985,10 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "content",
+        "default"
       ]
     },
     {
@@ -8113,6 +9049,11 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onChange",
+        "onClose",
+        "onFinish"
       ]
     },
     {
@@ -8182,6 +9123,12 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange"
+      ],
+      "slots": [
+        "titles"
       ]
     },
     {
@@ -8313,6 +9260,16 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onExpandedChange",
+        "onSelectedChange",
+        "onCheckedChange"
+      ],
+      "slots": [
+        "emptyState",
+        "loadingState",
+        "errorState"
       ]
     },
     {
@@ -8408,6 +9365,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onValueChange"
       ]
     },
     {
@@ -8491,6 +9451,13 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "events": [
+        "onScroll",
+        "onRangeChange"
+      ],
+      "slots": [
+        "renderItem"
       ]
     },
     {
@@ -8582,6 +9549,9 @@
           "type": "string",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
       ]
     }
   ],
@@ -8638,13 +9608,13 @@
     ]
   },
   "stats": {
-    "total": 145,
-    "full": 144,
+    "total": 149,
+    "full": 149,
     "byFramework": {
-      "react": 144,
-      "vue": 145,
-      "solid": 145,
-      "svelte": 145
+      "react": 149,
+      "vue": 149,
+      "solid": 149,
+      "svelte": 149
     }
   }
 }

@@ -16,10 +16,11 @@ const KNOWN_GROUPS: ComponentGroup[] = [
   'modal-utils',
 ]
 
-// `export const IrisX = ...` / `export function IrisX(...)`. Types
+// `export const IrisX = ...` / `export function IrisX(...)` / `export class IrisX`
+// (the last covers React class components like IrisErrorBoundary). Types
 // (`export type IrisXProps`) are intentionally excluded. Used for the
-// React/Vue/Solid adapters (all author components as exported functions/consts).
-const EXPORT_RE = /export\s+(?:const|function)\s+(Iris[A-Za-z0-9]+)/g
+// React/Vue/Solid adapters.
+const EXPORT_RE = /export\s+(?:const|function|class)\s+(Iris[A-Za-z0-9]+)/g
 
 // Svelte components are single-file `.svelte` modules re-exported from a barrel
 // as `export { default as IrisX } from './X.svelte'`, so they are discovered

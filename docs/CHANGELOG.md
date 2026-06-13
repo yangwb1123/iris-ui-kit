@@ -4,6 +4,8 @@
 
 ## Factory iterations
 
+- **iter 22** — test(contracts): added `numberInputScenario` ×4 → behavioral-parity harness now **9 components**. Spinbutton step arithmetic: clicking `[data-iris-number-input-inc]`/`-dec` steps the `[role="spinbutton"]` `aria-valuenow` by `step` (5→6→7→6). React/Solid uncontrolled `defaultValue`; Vue/Svelte model harnesses. Authored core scenario + React reference, fanned out 3 parallel agents to mirror; zero divergence. 126/126 gates green.
+
 - **iter 21** — fix(a11y/svelte): svelte `IrisSelect` gained full listbox keyboard nav — **ArrowDown/Up** (`nextEnabledIndex`), **Home/End** (`firstEnabledIndex`/`lastEnabledIndex`), and **focus-the-selected/first-option-on-open** (a `use:` action deferred a microtask past the portal move) — it previously had only Escape + typeahead + per-option Enter/Space. +3 tests (the flow asserted behaviorally: open→ArrowDown→Enter selects the 2nd item; End/Home move focus to last/first). Brings all four adapters' Select to full WAI-ARIA listbox keyboard parity. 126/126 gates green.
   - **Correction to iter-20's note:** vue Select is NOT keyboard-less — it composes `IrisPopover` + `IrisList`, and `IrisList` already provides full keyboard nav (Arrow/Home/End/Enter + roving `activeIndex` + `focusActive`). The iter-20 audit grep was scoped to the `select/` dir and missed that delegation (a "verify before acting" miss — verified before any vue change, so no wasted edit). Net real gaps were only solid (Home/End, iter-20) and svelte (arrows + open-focus, this iter).
 

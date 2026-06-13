@@ -23,6 +23,7 @@
   import IrisSlider from './primitives/slider/IrisSlider.svelte'
   import IrisRadioGroup from './primitives/radio/IrisRadioGroup.svelte'
   import IrisRadio from './primitives/radio/IrisRadio.svelte'
+  import IrisNumberInput from './primitives/number-input/IrisNumberInput.svelte'
 
   let checkboxValue = $state(false)
 
@@ -41,6 +42,12 @@
   // back. Seed to 'a' (first checked) to present the uncontrolled initial the
   // shared radio contract expects, then write back from `onchange`.
   let radioValue = $state<string | number | boolean>('a')
+
+  // IrisNumberInput is value-prop-driven too: clicking inc/dec emits `onchange`
+  // but the spinbutton's `aria-valuenow` only flips when the parent writes
+  // `value` back. Seed to 5 (the initial the shared NumberInput contract
+  // expects) with min=0 max=10 step=1, then write back from `onchange`.
+  let numberValue = $state<number | null>(5)
 </script>
 
 <IrisTabs defaultValue="a">
@@ -96,3 +103,12 @@
   <IrisRadio value="b">B</IrisRadio>
   <IrisRadio value="c">C</IrisRadio>
 </IrisRadioGroup>
+
+<IrisNumberInput
+  value={numberValue}
+  min={0}
+  max={10}
+  step={1}
+  aria-label="Quantity"
+  onchange={(next) => (numberValue = next)}
+/>

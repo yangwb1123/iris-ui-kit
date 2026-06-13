@@ -10,6 +10,7 @@ import {
   toggleGroupScenario,
   sliderScenario,
   radioScenario,
+  numberInputScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -26,6 +27,7 @@ import { IrisToggleGroupItem } from './primitives/toggle-group/ToggleGroupItem'
 import { IrisSlider } from './primitives/slider/Slider'
 import { IrisRadio } from './primitives/radio/Radio'
 import { IrisRadioGroup } from './primitives/radio/RadioGroup'
+import { IrisNumberInput } from './primitives/number-input/NumberInput'
 
 afterEach(cleanup)
 
@@ -129,5 +131,12 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       </IrisRadioGroup>,
     )
     await runContract(radioScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared NumberInput contract', async () => {
+    const { container } = render(
+      <IrisNumberInput defaultValue={5} min={0} max={10} step={1} aria-label="Quantity" />,
+    )
+    await runContract(numberInputScenario, driverFor(container), expect)
   })
 })

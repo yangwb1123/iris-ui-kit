@@ -11,6 +11,7 @@ import {
   toggleGroupScenario,
   sliderScenario,
   radioScenario,
+  numberInputScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -26,6 +27,7 @@ import { IrisToggleGroup } from './primitives/toggle-group/ToggleGroup'
 import { IrisToggleGroupItem } from './primitives/toggle-group/ToggleGroupItem'
 import { IrisSlider } from './primitives/slider/Slider'
 import { IrisRadioGroup, IrisRadio } from './primitives/radio/Radio'
+import { IrisNumberInput } from './primitives/number-input/NumberInput'
 
 enableAutoUnmount(afterEach)
 
@@ -244,6 +246,32 @@ const RadioHarness = defineComponent({
   },
 })
 
+/**
+ * IrisNumberInput is v-model based (modelValue: number | null), so — like the
+ * Slider harness — mount it inside a wrapper holding a reactive number bound with
+ * v-model. Clicking the inc/dec buttons calls `increment(±1)`, emitting
+ * `update:modelValue`, flipping the ref and re-rendering the `[role="spinbutton"]`
+ * input with the new `aria-valuenow`. Starts at 5 over min=0/max=10/step=1,
+ * matching the uncontrolled React reference (`defaultValue={5}`).
+ */
+const NumberInputHarness = defineComponent({
+  name: 'NumberInputHarness',
+  setup() {
+    const value = ref<number | null>(5)
+    return () =>
+      h(IrisNumberInput, {
+        modelValue: value.value,
+        min: 0,
+        max: 10,
+        step: 1,
+        'aria-label': 'Quantity',
+        'onUpdate:modelValue': (v: number | null) => {
+          value.value = v
+        },
+      })
+  },
+})
+
 describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Tabs contract', async () => {
     const host = document.createElement('div')
@@ -307,5 +335,13 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     const wrapper = mount(RadioHarness, { attachTo: host })
     await nextTick()
     await runContract(radioScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared NumberInput contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(NumberInputHarness, { attachTo: host })
+    await nextTick()
+    await runContract(numberInputScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

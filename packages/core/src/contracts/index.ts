@@ -7,6 +7,7 @@ export { segmentedScenario } from './scenarios/segmented'
 export { toggleGroupScenario } from './scenarios/toggle-group'
 export { sliderScenario } from './scenarios/slider'
 export { radioScenario } from './scenarios/radio'
+export { numberInputScenario } from './scenarios/number-input'
 export type {
   ContractScenario,
   ContractStep,

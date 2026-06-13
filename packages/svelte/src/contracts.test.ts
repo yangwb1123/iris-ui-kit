@@ -11,6 +11,7 @@ import {
   toggleGroupScenario,
   sliderScenario,
   radioScenario,
+  numberInputScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -74,5 +75,10 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
   it('satisfies the shared Radio contract', async () => {
     const { container } = render(ContractsHarness)
     await runContract(radioScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared NumberInput contract', async () => {
+    const { container } = render(ContractsHarness)
+    await runContract(numberInputScenario, driverFor(container), expect)
   })
 })

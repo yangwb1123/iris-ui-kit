@@ -27,4 +27,22 @@ describe('IrisTreeSelect', () => {
     fireEvent.click(btn)
     expect(container.querySelector('[data-iris-tree-select-panel]')).not.toBeNull()
   })
+
+  it('ArrowDown on the closed trigger opens the panel; Escape closes it', () => {
+    const { container } = render(() => <IrisTreeSelect nodes={nodes} />)
+    const btn = container.querySelector('[data-iris-tree-select-trigger]') as HTMLButtonElement
+    fireEvent.keyDown(btn, { key: 'ArrowDown' })
+    expect(container.querySelector('[data-iris-tree-select-panel]')).not.toBeNull()
+    fireEvent.keyDown(btn, { key: 'Escape' })
+    expect(container.querySelector('[data-iris-tree-select-panel]')).toBeNull()
+  })
+
+  it('closes the panel on outside click', () => {
+    const { container } = render(() => <IrisTreeSelect nodes={nodes} />)
+    const btn = container.querySelector('[data-iris-tree-select-trigger]') as HTMLButtonElement
+    fireEvent.click(btn)
+    expect(container.querySelector('[data-iris-tree-select-panel]')).not.toBeNull()
+    fireEvent.mouseDown(document.body)
+    expect(container.querySelector('[data-iris-tree-select-panel]')).toBeNull()
+  })
 })

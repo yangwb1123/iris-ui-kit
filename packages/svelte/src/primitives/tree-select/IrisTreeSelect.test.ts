@@ -22,4 +22,15 @@ describe('IrisTreeSelect', () => {
     expect(container.querySelector('[data-iris-tree-select-panel]')).toBeTruthy()
     expect(container.querySelector('[data-iris-tree]')).toBeTruthy()
   })
+
+  it('ArrowDown opens the panel and Escape closes it', async () => {
+    const { container } = render(IrisTreeSelect, { props: { nodes } })
+    const trigger = container.querySelector('[data-iris-tree-select-trigger]')!
+    await fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+    flushSync()
+    expect(container.querySelector('[data-iris-tree-select-panel]')).toBeTruthy()
+    await fireEvent.keyDown(trigger, { key: 'Escape' })
+    flushSync()
+    expect(container.querySelector('[data-iris-tree-select-panel]')).toBeFalsy()
+  })
 })

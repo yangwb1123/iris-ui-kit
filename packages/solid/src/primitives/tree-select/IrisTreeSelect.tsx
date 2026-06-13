@@ -1,4 +1,13 @@
-import { createSignal, createMemo, mergeProps, splitProps, Show, type JSX } from 'solid-js'
+import {
+  createSignal,
+  createMemo,
+  mergeProps,
+  onCleanup,
+  onMount,
+  splitProps,
+  Show,
+  type JSX,
+} from 'solid-js'
 import { IrisTree, type IrisTreeNode, type IrisTreeSelectionMode } from '../tree/IrisTree'
 import { useI18n } from '../../i18n'
 
@@ -73,8 +82,22 @@ export function IrisTreeSelect(props: IrisTreeSelectProps): JSX.Element {
     }
   }
 
+  let rootEl: HTMLDivElement | undefined
+  // Close on outside click (mirrors React/Vue/Svelte).
+  onMount(() => {
+    const onDown = (e: MouseEvent): void => {
+      if (open() && rootEl && !rootEl.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    onCleanup(() => document.removeEventListener('mousedown', onDown))
+  })
+
   return (
-    <div data-iris-tree-select="" style={{ position: 'relative', display: 'inline-block' }}>
+    <div
+      ref={rootEl}
+      data-iris-tree-select=""
+      style={{ position: 'relative', display: 'inline-block' }}
+    >
       <button
         id={local.id}
         type="button"
@@ -85,6 +108,15 @@ export function IrisTreeSelect(props: IrisTreeSelectProps): JSX.Element {
         aria-expanded={open()}
         aria-haspopup="tree"
         onClick={() => !local.disabled && setOpen((v) => !v)}
+        onKeyDown={(e: KeyboardEvent) => {
+          if (e.key === 'Escape' && open()) {
+            e.preventDefault()
+            setOpen(false)
+          } else if ((e.key === 'ArrowDown' || e.key === 'Enter') && !open()) {
+            e.preventDefault()
+            if (!local.disabled) setOpen(true)
+          }
+        }}
         style={{
           display: 'inline-flex',
           'align-items': 'center',

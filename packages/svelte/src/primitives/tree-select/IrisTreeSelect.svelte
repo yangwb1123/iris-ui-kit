@@ -52,6 +52,17 @@
     open = !open
   }
 
+  // Trigger keyboard: Escape closes; ArrowDown/Enter open (mirrors React/Vue).
+  function onTriggerKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && open) {
+      e.preventDefault()
+      open = false
+    } else if ((e.key === 'ArrowDown' || e.key === 'Enter') && !open) {
+      e.preventDefault()
+      if (!disabled) open = true
+    }
+  }
+
   function onSelect(ids: string[]) {
     onValueChange?.(ids)
     if (selectionMode === 'single') open = false
@@ -86,6 +97,7 @@
     data-iris-tree-select-trigger
     data-state={open ? 'open' : 'closed'}
     onclick={toggle}
+    onkeydown={onTriggerKeyDown}
     style:display="inline-flex"
     style:align-items="center"
     style:justify-content="space-between"

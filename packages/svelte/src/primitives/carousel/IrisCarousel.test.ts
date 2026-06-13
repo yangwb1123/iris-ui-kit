@@ -22,6 +22,17 @@ describe('IrisCarousel', () => {
     expect(indicators!.querySelectorAll('button').length).toBe(3)
   })
 
+  it('marks the active indicator with aria-current for assistive tech', () => {
+    // Regression: indicators previously exposed only a `data-state` styling hook,
+    // so screen-reader users couldn't tell which slide was active (react/vue
+    // already used aria-current).
+    const { container } = render(IrisCarousel, { props: { slideCount: 3, value: 1 } })
+    const dots = container.querySelectorAll('[data-iris-carousel-indicators] button')
+    expect(dots[0]!.getAttribute('aria-current')).toBeNull()
+    expect(dots[1]!.getAttribute('aria-current')).toBe('true')
+    expect(dots[2]!.getAttribute('aria-current')).toBeNull()
+  })
+
   it('calls onValueChange on next click', async () => {
     let changed: number | null = null
     const { container } = render(IrisCarousel, {

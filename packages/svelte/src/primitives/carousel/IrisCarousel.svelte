@@ -204,6 +204,7 @@
         <button
           type="button"
           aria-label={t('carousel.goTo', { index: i + 1 })}
+          aria-current={i === value ? 'true' : undefined}
           data-state={i === value ? 'active' : 'idle'}
           onclick={() => goTo(i)}
           style:width={i === value ? '20px' : '8px'}

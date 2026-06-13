@@ -27,6 +27,7 @@
   import IrisPagination from './primitives/pagination/IrisPagination.svelte'
   import IrisStepper from './primitives/stepper/IrisStepper.svelte'
   import IrisStepperStep from './primitives/stepper/IrisStepperStep.svelte'
+  import IrisTagInput from './primitives/tag-input/IrisTagInput.svelte'
 
   let checkboxValue = $state(false)
 
@@ -65,6 +66,17 @@
   // contract expects) over 3 IrisStepperStep children with linear={false}
   // (any step directly clickable), then write back from `onchange`.
   let stepperValue = $state(0)
+
+  // IrisTagInput is value-prop-driven too (a `string[]`): clicking a tag's
+  // remove button emits `onchange` with the next array but the rendered
+  // `[data-iris-tag-input-tag]` spans only reflow when the parent writes `value`
+  // back. Seed to ['Alpha', 'Bravo', 'Charlie'] (the three tags the shared
+  // TagInput contract expects) and write the emitted array back from `onchange`,
+  // exactly like the controlled wraps above. The tag input adds no
+  // role="slider"/role="spinbutton" element, so it can live in this shared
+  // harness without colliding with the Slider/Rating/NumberInput scenarios'
+  // role-based selector counts.
+  let tagValue = $state<string[]>(['Alpha', 'Bravo', 'Charlie'])
 </script>
 
 <IrisTabs defaultValue="a">
@@ -146,3 +158,5 @@
   <IrisStepperStep title="Step 2" />
   <IrisStepperStep title="Step 3" />
 </IrisStepper>
+
+<IrisTagInput value={tagValue} onchange={(next) => (tagValue = next)} />

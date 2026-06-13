@@ -22,6 +22,7 @@ import {
   treeScenario,
   calendarScenario,
   rangeSliderScenario,
+  tagInputScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -46,6 +47,7 @@ import { IrisStepperStep } from './primitives/stepper/StepperStep'
 import { IrisTable } from './primitives/table/Table'
 import { IrisTree } from './primitives/tree/Tree'
 import { IrisCalendar } from './primitives/calendar/Calendar'
+import { IrisTagInput } from './primitives/tag-input/TagInput'
 
 enableAutoUnmount(afterEach)
 
@@ -464,6 +466,30 @@ const CalendarHarness = defineComponent({
   },
 })
 
+/**
+ * IrisTagInput is modelValue-based with a `string[]` value, so — like the Slider
+ * harness — mount it inside a wrapper holding a reactive `string[]` bound with
+ * v-model. Each tag renders a `[data-iris-tag-input-tag][data-value="<tag>"]`
+ * chip plus a `[data-iris-tag-input-remove]` button; clicking a remove button
+ * emits `update:modelValue` with that index filtered out, flipping the ref and
+ * re-rendering the chip list (the removed tag drops, the rest shift down).
+ * Starts with `['Alpha', 'Bravo', 'Charlie']`, matching the uncontrolled
+ * React/Solid/Svelte reference (`defaultValue={['Alpha', 'Bravo', 'Charlie']}`).
+ */
+const TagInputHarness = defineComponent({
+  name: 'TagInputHarness',
+  setup() {
+    const value = ref<string[]>(['Alpha', 'Bravo', 'Charlie'])
+    return () =>
+      h(IrisTagInput, {
+        modelValue: value.value,
+        'onUpdate:modelValue': (v: string[]) => {
+          value.value = v
+        },
+      })
+  },
+})
+
 describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Tabs contract', async () => {
     const host = document.createElement('div')
@@ -715,5 +741,13 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     const wrapper = mount(CalendarHarness, { attachTo: host })
     await nextTick()
     await runContract(calendarScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared TagInput contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(TagInputHarness, { attachTo: host })
+    await nextTick()
+    await runContract(tagInputScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

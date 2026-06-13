@@ -21,6 +21,7 @@ import {
   tableExpandScenario,
   treeScenario,
   calendarScenario,
+  tagInputScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import {
@@ -44,6 +45,7 @@ import { IrisStepper, IrisStepperStep } from './primitives/stepper'
 import { IrisTable } from './primitives/table/IrisTable'
 import { IrisTree } from './primitives/tree'
 import { IrisCalendar } from './primitives/calendar'
+import { IrisTagInput } from './primitives/tag-input'
 
 afterEach(cleanup)
 
@@ -267,5 +269,12 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
   it('satisfies the shared Calendar contract', async () => {
     const { container } = render(() => <IrisCalendar defaultMonth={new Date(2024, 5, 1)} />)
     await runContract(calendarScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared TagInput contract', async () => {
+    const { container } = render(() => (
+      <IrisTagInput defaultValue={['Alpha', 'Bravo', 'Charlie']} />
+    ))
+    await runContract(tagInputScenario, driverFor(container), expect)
   })
 })

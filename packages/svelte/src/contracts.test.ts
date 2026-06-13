@@ -22,6 +22,7 @@ import {
   tableExpandScenario,
   treeScenario,
   calendarScenario,
+  tagInputScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -208,5 +209,18 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // CalendarContractHarness.svelte for the full note.
     const { container } = render(CalendarContractHarness)
     await runContract(calendarScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared TagInput contract', async () => {
+    // Lives in the shared ContractsHarness: IrisTagInput renders no
+    // role="slider"/role="spinbutton" element, so its three
+    // `[data-iris-tag-input-tag]` spans can't collide with the Slider/Rating/
+    // NumberInput scenarios' role-based selector counts. IrisTagInput is
+    // `value`-controlled (a `string[]`) + emits `onchange`, so the harness holds
+    // local `tagValue` seeded to ['Alpha', 'Bravo', 'Charlie'] and writes the
+    // emitted array back; clicking a tag's `[data-iris-tag-input-remove]` button
+    // drops that tag and the remaining tags reflow.
+    const { container } = render(ContractsHarness)
+    await runContract(tagInputScenario, driverFor(container), expect)
   })
 })

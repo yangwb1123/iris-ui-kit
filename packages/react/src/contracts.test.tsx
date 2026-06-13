@@ -21,6 +21,7 @@ import {
   treeScenario,
   calendarScenario,
   rangeSliderScenario,
+  tagInputScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -46,6 +47,7 @@ import { IrisTable } from './primitives/table/Table'
 import { IrisTree } from './primitives/tree/Tree'
 import { IrisCalendar } from './primitives/calendar/Calendar'
 import { IrisRangeSlider } from './primitives/range-slider/RangeSlider'
+import { IrisTagInput } from './primitives/tag-input/TagInput'
 
 afterEach(cleanup)
 
@@ -266,5 +268,10 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       <IrisRangeSlider defaultValue={[20, 80]} min={0} max={100} step={10} />,
     )
     await runContract(rangeSliderScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared TagInput contract', async () => {
+    const { container } = render(<IrisTagInput defaultValue={['Alpha', 'Bravo', 'Charlie']} />)
+    await runContract(tagInputScenario, driverFor(container), expect)
   })
 })

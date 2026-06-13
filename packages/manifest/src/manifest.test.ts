@@ -86,6 +86,18 @@ describe('discover (real repo)', () => {
     expect(m.components.some((c) => /Key$|Context$/.test(c.name))).toBe(false)
   })
 
+  it('enforces 4-framework parity: EVERY component exists in react+vue+solid+svelte', () => {
+    // The library's core invariant. Catches the #1 regression — a component
+    // added to one framework but not mirrored to the other three. If a genuinely
+    // framework-specific component is ever introduced, allow-list it here.
+    const ALL = ['react', 'solid', 'svelte', 'vue']
+    const m = buildManifest(discover())
+    const offParity = m.components
+      .filter((c) => c.frameworks.slice().sort().join(',') !== ALL.join(','))
+      .map((c) => `${c.name} [${c.frameworks.slice().sort().join('/')}]`)
+    expect(offParity).toEqual([])
+  })
+
   it('discovers plugin components tagged with their owning package + sub-path import', () => {
     const m = buildManifest(discover())
     const editor = m.components.find((c) => c.name === 'IrisCodeEditor')

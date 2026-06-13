@@ -1,41 +1,54 @@
-// Headless end-to-end self-test: launch the real Electron shell (hidden window,
-// under xvfb), load the chosen framework's CMS over the static server, and via
-// the renderer verify (a) the app mounted real Iris UI nodes and (b) the native
-// API (window.irisNative, from preload) is present. Prints a SELFTEST_RESULT
-// JSON line and exits 0/1. Run: IRIS_FW=react xvfb-run -a electron selftest.js
+// Headless end-to-end self-test of the LIVE framework switcher: start one static
+// server per built framework, open a single hidden Electron window, then cycle
+// it through every framework (exactly what the Framework menu / Cmd+1–4 does)
+// and verify each one mounts real Iris UI nodes, exposes window.irisNative
+// (from preload), and reports the correct framework identity via `?fw=`.
+// Run: xvfb-run -a electron selftest.js   (prints SELFTEST_RESULT lines; exit 0/1)
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
+const fs = require('fs')
 const { createStaticServer } = require('./server')
 
-const FW = process.env.IRIS_FW || 'react'
-const DIST_BY_FW = {
-  react: '../cms-react/dist',
-  vue: '../cms/dist',
-  solid: '../cms-solid/dist',
-  svelte: '../cms-svelte/dist',
-}
-const distDir = path.resolve(__dirname, DIST_BY_FW[FW] || DIST_BY_FW.react)
+const FRAMEWORKS = [
+  { fw: 'react', dist: '../cms-react/dist' },
+  { fw: 'vue', dist: '../cms/dist' },
+  { fw: 'solid', dist: '../cms-solid/dist' },
+  { fw: 'svelte', dist: '../cms-svelte/dist' },
+]
 
-let done = false
-function finish(ok, detail, server, win) {
-  if (done) return
-  done = true
-  console.log('SELFTEST_RESULT ' + JSON.stringify({ fw: FW, ok, ...detail }))
-  try {
-    if (server) server.close()
-  } catch {}
-  try {
-    if (win) win.destroy()
-  } catch {}
-  app.exit(ok ? 0 : 1)
+function load(win, url) {
+  return new Promise((resolve, reject) => {
+    const ok = () => {
+      cleanup()
+      resolve()
+    }
+    const fail = (_e, code, desc) => {
+      cleanup()
+      reject(new Error(`did-fail-load ${code} ${desc}`))
+    }
+    const cleanup = () => {
+      win.webContents.off('did-finish-load', ok)
+      win.webContents.off('did-fail-load', fail)
+    }
+    win.webContents.once('did-finish-load', ok)
+    win.webContents.once('did-fail-load', fail)
+    win.loadURL(url)
+  })
 }
 
 app.whenReady().then(async () => {
-  const { server, port } = await createStaticServer(distDir)
+  const ports = {}
+  for (const f of FRAMEWORKS) {
+    const distDir = path.resolve(__dirname, f.dist)
+    if (fs.existsSync(path.join(distDir, 'index.html'))) {
+      ports[f.fw] = (await createStaticServer(distDir)).port
+    }
+  }
+
   const win = new BrowserWindow({
     show: false,
-    width: 1280,
-    height: 840,
+    width: 1320,
+    height: 860,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -44,30 +57,41 @@ app.whenReady().then(async () => {
     },
   })
 
-  win.webContents.on('did-fail-load', (_e, code, desc) =>
-    finish(false, { failLoad: desc, code }, server, win),
-  )
-  win.webContents.on('did-finish-load', async () => {
+  let failed = 0
+  for (const f of FRAMEWORKS) {
+    if (!ports[f.fw]) {
+      console.log(`SELFTEST_RESULT ${JSON.stringify({ fw: f.fw, skipped: true })}`)
+      continue
+    }
     try {
-      await new Promise((r) => setTimeout(r, 1000)) // let the framework mount
+      await load(win, `http://127.0.0.1:${ports[f.fw]}/?fw=${f.fw}`)
+      await new Promise((r) => setTimeout(r, 900)) // let the framework mount
       const res = await win.webContents.executeJavaScript(`(() => {
         const mount = document.querySelector('#root, #app');
         const mounted = !!(mount && mount.children.length > 0);
-        const hasNative = typeof window.irisNative === 'object' && !!window.irisNative
-          && typeof window.irisNative.saveFile === 'function'
-          && typeof window.irisNative.writeClipboard === 'function';
+        const n = window.irisNative;
+        const hasNative = !!n && typeof n.saveFile === 'function' && typeof n.writeClipboard === 'function';
         const irisNodes = document.querySelectorAll(
           '[data-iris-admin-layout],[data-iris-admin-shell],[class*="iris"],[data-iris-table],[role="navigation"]'
         ).length;
-        return { mounted, hasNative, title: document.title, irisNodes };
+        return { mounted, hasNative, fwReported: n && n.framework, irisNodes };
       })()`)
-      finish(Boolean(res.mounted && res.hasNative && res.irisNodes > 0), res, server, win)
+      const ok = Boolean(
+        res.mounted && res.hasNative && res.irisNodes > 0 && res.fwReported === f.fw,
+      )
+      if (!ok) failed++
+      console.log(`SELFTEST_RESULT ${JSON.stringify({ fw: f.fw, ok, ...res })}`)
     } catch (e) {
-      finish(false, { error: String(e) }, server, win)
+      failed++
+      console.log(`SELFTEST_RESULT ${JSON.stringify({ fw: f.fw, ok: false, error: String(e) })}`)
     }
-  })
+  }
 
-  win.loadURL(`http://127.0.0.1:${port}/`)
+  win.destroy()
+  app.exit(failed > 0 ? 1 : 0)
 })
 
-setTimeout(() => finish(false, { timeout: true }), 25000)
+setTimeout(() => {
+  console.log('SELFTEST_RESULT ' + JSON.stringify({ ok: false, timeout: true }))
+  app.exit(1)
+}, 60000)

@@ -5,9 +5,13 @@
 //   setClipboardHandler((text) => { window.irisNative.writeClipboard(text); return true })
 const { contextBridge, ipcRenderer } = require('electron')
 
+// The main process appends `?fw=<framework>` when it points the window at a
+// framework's server, so this stays accurate after live switching.
+const fwFromUrl = new URLSearchParams(globalThis.location?.search || '').get('fw')
+
 contextBridge.exposeInMainWorld('irisNative', {
   platform: 'electron',
-  framework: process.env.IRIS_FW || 'react',
+  framework: fwFromUrl || process.env.IRIS_FW || 'react',
   /** Route a library file-save through the native Save dialog. */
   saveFile: (payload) => ipcRenderer.invoke('iris:save-file', payload),
   /** Route a library clipboard copy through the native clipboard. */

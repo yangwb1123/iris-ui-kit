@@ -26,18 +26,24 @@ are unaffected.
 
 ## Run
 
-Build the CMS apps first, then start the shell for a framework:
+Build the CMS apps first, then start the shell. It opens **all four frameworks
+in one window** — switch live via the **Framework** menu or **Cmd/Ctrl+1–4**
+(1 React · 2 Vue · 3 Solid · 4 Svelte). Each framework's `dist/` is served on its
+own loopback port; switching just re-points the window.
 
 ```sh
 pnpm turbo run build --filter=cms --filter=cms-react --filter=cms-solid --filter=cms-svelte
-pnpm --filter iris-desktop start:react    # or start:vue / start:solid / start:svelte
+pnpm --filter iris-desktop start            # opens the switcher (starts on React)
+# or jump straight to one framework:
+pnpm --filter iris-desktop start:vue        # start:react / start:solid / start:svelte
 ```
 
 ## Verify headlessly (no display)
 
 ```sh
-pnpm --filter iris-desktop test            # static-server smoke (pure Node)
-IRIS_FW=react xvfb-run -a electron selftest.js   # real Electron load + mount + bridge check
+pnpm --filter iris-desktop test            # static-server smoke (pure Node, all 4)
+xvfb-run -a electron selftest.js           # real Electron: cycles ALL 4 in one window,
+                                           # checks mount + window.irisNative + fw identity
 ```
 
 ## Tauri / Wails

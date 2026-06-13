@@ -19,6 +19,7 @@ import {
   tableSelectScenario,
   tableExpandScenario,
   treeScenario,
+  calendarScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import {
@@ -40,6 +41,7 @@ import { IrisPagination } from './primitives/pagination'
 import { IrisStepper, IrisStepperStep } from './primitives/stepper'
 import { IrisTable } from './primitives/table/IrisTable'
 import { IrisTree } from './primitives/tree'
+import { IrisCalendar } from './primitives/calendar'
 
 afterEach(cleanup)
 
@@ -251,5 +253,10 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
       />
     ))
     await runContract(treeScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Calendar contract', async () => {
+    const { container } = render(() => <IrisCalendar defaultMonth={new Date(2024, 5, 1)} />)
+    await runContract(calendarScenario, driverFor(container), expect)
   })
 })

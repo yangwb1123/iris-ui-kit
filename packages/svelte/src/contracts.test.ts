@@ -20,6 +20,7 @@ import {
   tableSelectScenario,
   tableExpandScenario,
   treeScenario,
+  calendarScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -29,6 +30,7 @@ import TableSortContractHarness from './TableSortContractHarness.svelte'
 import TableSelectContractHarness from './TableSelectContractHarness.svelte'
 import TableExpandContractHarness from './TableExpandContractHarness.svelte'
 import TreeContractHarness from './TreeContractHarness.svelte'
+import CalendarContractHarness from './CalendarContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -176,5 +178,19 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // TreeContractHarness.svelte for the full note.
     const { container } = render(TreeContractHarness)
     await runContract(treeScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Calendar contract', async () => {
+    // Rendered in a dedicated harness (not the shared ContractsHarness) so the
+    // calendar's full month of `role="gridcell"` day cells stay out of the shared
+    // container and can't collide with other scenarios' role-based selector
+    // counts. IrisCalendar is `value`-controlled (a `Date | null`) + emits
+    // `onValueChange`, so the harness holds local `selected` state seeded to null
+    // (nothing selected initially) and writes the emitted date back; `defaultMonth`
+    // is fixed to June 2024 so the `data-iris-calendar-day-iso` cells are
+    // deterministic. Clicking a day selects it and clears the prior one. See
+    // CalendarContractHarness.svelte for the full note.
+    const { container } = render(CalendarContractHarness)
+    await runContract(calendarScenario, driverFor(container), expect)
   })
 })

@@ -20,6 +20,7 @@ import {
   tableSelectScenario,
   tableExpandScenario,
   treeScenario,
+  calendarScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -42,6 +43,7 @@ import { IrisStepper } from './primitives/stepper/Stepper'
 import { IrisStepperStep } from './primitives/stepper/StepperStep'
 import { IrisTable } from './primitives/table/Table'
 import { IrisTree } from './primitives/tree/Tree'
+import { IrisCalendar } from './primitives/calendar/Calendar'
 
 enableAutoUnmount(afterEach)
 
@@ -407,6 +409,31 @@ const StepperHarness = defineComponent({
   },
 })
 
+/**
+ * IrisCalendar is modelValue-based (a `Date | null`), so — like the Slider
+ * harness — mount it inside a wrapper holding a reactive `Date | null` bound with
+ * v-model. Clicking a day cell emits `update:modelValue` with that date, flipping
+ * the ref and re-rendering with `aria-selected` moved to the newly-selected day
+ * (single-date: the prior day clears). `defaultMonth` fixes the visible month to
+ * June 2024 so the `2024-06-10`/`2024-06-20` day cells are deterministic. Starts
+ * with `null` (nothing selected), matching the uncontrolled React reference
+ * (no `defaultValue`).
+ */
+const CalendarHarness = defineComponent({
+  name: 'CalendarHarness',
+  setup() {
+    const value = ref<Date | null>(null)
+    return () =>
+      h(IrisCalendar, {
+        modelValue: value.value,
+        defaultMonth: new Date(2024, 5, 1),
+        'onUpdate:modelValue': (v: Date | null) => {
+          value.value = v
+        },
+      })
+  },
+})
+
 describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Tabs contract', async () => {
     const host = document.createElement('div')
@@ -635,5 +662,20 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     })
     await nextTick()
     await runContract(treeScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  /**
+   * IrisCalendar is modelValue-based, so we mount it via the CalendarHarness
+   * (a `ref<Date | null>(null)` bound with v-model) with `defaultMonth` fixed to
+   * June 2024. Day cells carry `data-iris-calendar-day-iso="YYYY-MM-DD"` +
+   * `aria-selected` ("true"/"false"); clicking June-10 then June-20 moves the
+   * single-date selection, matching the React/Solid/Svelte reference.
+   */
+  it('satisfies the shared Calendar contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(CalendarHarness, { attachTo: host })
+    await nextTick()
+    await runContract(calendarScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

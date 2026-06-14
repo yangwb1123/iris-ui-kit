@@ -13,6 +13,7 @@
     "start:svelte": "IRIS_FW=svelte electron .",
     "smoke": "node smoke.js",
     "test": "node smoke.js",
+    "build": "./gate-build.sh",
     "build:cms": "cd ../.. && pnpm turbo run build --filter=cms --filter=cms-react --filter=cms-solid --filter=cms-svelte",
     "pack": "pnpm run build:cms && electron-builder --dir",
     "dist": "pnpm run build:cms && electron-builder",

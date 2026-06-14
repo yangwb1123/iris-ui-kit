@@ -28,6 +28,43 @@
     },
     "clean": {
       "cache": false
+    },
+
+    "iris-desktop#build": {
+      "dependsOn": ["cms#build", "cms-react#build", "cms-solid#build", "cms-svelte#build"],
+      "cache": false
+    },
+    "iris-desktop#test": {
+      "dependsOn": ["cms#build", "cms-react#build", "cms-solid#build", "cms-svelte#build"],
+      "cache": false
+    },
+    "iris-desktop-tauri#build": {
+      "dependsOn": ["cms#build", "cms-react#build", "cms-solid#build", "cms-svelte#build"],
+      "cache": false
+    },
+    "iris-desktop-tauri#test": {
+      "dependsOn": [
+        "iris-desktop-tauri#build",
+        "cms#build",
+        "cms-react#build",
+        "cms-solid#build",
+        "cms-svelte#build"
+      ],
+      "cache": false
+    },
+    "iris-desktop-wails#build": {
+      "dependsOn": ["cms#build", "cms-react#build", "cms-solid#build", "cms-svelte#build"],
+      "cache": false
+    },
+    "iris-desktop-wails#test": {
+      "dependsOn": [
+        "iris-desktop-wails#build",
+        "cms#build",
+        "cms-react#build",
+        "cms-solid#build",
+        "cms-svelte#build"
+      ],
+      "cache": false
     }
   }
 }

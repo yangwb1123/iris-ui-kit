@@ -196,6 +196,10 @@ importers:
         specifier: ^25.1.8
         version: 25.1.8(electron-builder-squirrel-windows@25.1.8)
 
+  apps/desktop-tauri: {}
+
+  apps/desktop-wails: {}
+
   apps/docs:
     dependencies:
       '@iris-ui/theme':

@@ -2,3 +2,5 @@
 !/frontend/dist/.gitkeep
 /frontend/wailsjs/
 /build/bin/
+/release/
+/desktop-wails

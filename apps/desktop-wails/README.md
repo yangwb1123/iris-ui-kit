@@ -32,6 +32,21 @@ Build with the `webkit2_41` tag (Wails defaults to the older 4.0):
 `build.sh` runs `wails build -tags webkit2_41 -s` (the `-s` skips the Wails
 frontend build since we pre-embed the CMS dists).
 
+## Package (release artifacts)
+
+```sh
+pnpm --filter iris-desktop-wails dist            # -> release/*.deb + *.tar.gz
+```
+
+`dist.sh` builds the release binary then produces a `.deb` (declares
+`libwebkit2gtk-4.1-0` / `libgtk-3-0` as runtime deps — not bundled) and a
+portable `.tar.gz`. (An AppImage would need `appimagetool` +
+`linuxdeploy-plugin-gtk` to bundle WebKitGTK — out of scope; the `.deb` is the
+recommended Linux distributable.)
+
+Validated here: the `.deb` is well-formed (`dpkg-deb --info/--contents`) and its
+packaged binary boots under `xvfb`.
+
 ## Test (headless)
 
 ```sh

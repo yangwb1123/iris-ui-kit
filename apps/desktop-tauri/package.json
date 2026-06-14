@@ -5,6 +5,8 @@
   "description": "Tauri (Rust) desktop shell hosting the Iris UI CMS across React/Vue/Solid/Svelte. The turbo build/test tasks are toolchain-guarded (skip when Rust/WebKitGTK absent).",
   "scripts": {
     "build": "./gate.sh build",
-    "test": "./gate.sh test"
+    "test": "./gate.sh test",
+    "dist": "./dist.sh",
+    "dist:appimage": "./dist.sh --bundles appimage"
   }
 }

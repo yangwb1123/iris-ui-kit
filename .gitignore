@@ -17,3 +17,4 @@ apps/docs/.vitepress/dist/
 apps/docs/.vitepress/cache/
 apps/docs/components.md
 apps/docs/.vitepress/theme/iris-tokens.css
+apps/desktop/release/

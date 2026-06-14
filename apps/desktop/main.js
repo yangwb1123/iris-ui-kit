@@ -10,11 +10,18 @@ const fs = require('fs')
 const { createStaticServer } = require('./server')
 
 const FRAMEWORKS = [
-  { fw: 'react', label: 'React', dist: '../cms-react/dist' },
-  { fw: 'vue', label: 'Vue', dist: '../cms/dist' },
-  { fw: 'solid', label: 'Solid', dist: '../cms-solid/dist' },
-  { fw: 'svelte', label: 'Svelte', dist: '../cms-svelte/dist' },
+  { fw: 'react', label: 'React', dist: '../cms-react/dist', res: 'cms-react' },
+  { fw: 'vue', label: 'Vue', dist: '../cms/dist', res: 'cms-vue' },
+  { fw: 'solid', label: 'Solid', dist: '../cms-solid/dist', res: 'cms-solid' },
+  { fw: 'svelte', label: 'Svelte', dist: '../cms-svelte/dist', res: 'cms-svelte' },
 ]
+
+// Where a framework's built `dist/` lives, in BOTH modes:
+//  - dev (electron .):     sibling workspace app, e.g. ../cms-react/dist
+//  - packaged (installer): bundled by electron-builder under resources/<res>
+function distDirFor(f) {
+  return app.isPackaged ? path.join(process.resourcesPath, f.res) : path.resolve(__dirname, f.dist)
+}
 
 // ── Native bridges (the whole point of the demo) ─────────────────────────────
 // The library calls these via window.irisNative (see preload.js); here they hit
@@ -101,7 +108,7 @@ function createWindow(initialFw) {
 app.whenReady().then(async () => {
   // Start one static server per BUILT framework (skip any not yet built).
   for (const f of FRAMEWORKS) {
-    const distDir = path.resolve(__dirname, f.dist)
+    const distDir = distDirFor(f)
     if (!fs.existsSync(path.join(distDir, 'index.html'))) continue
     const { port } = await createStaticServer(distDir)
     ports[f.fw] = port
@@ -120,6 +127,20 @@ app.whenReady().then(async () => {
   // Initial framework: IRIS_FW if it's built, else the first built one.
   const initial = ports[process.env.IRIS_FW] ? process.env.IRIS_FW : built[0].fw
   createWindow(initial)
+  console.log(
+    `[iris-desktop] ready — ${built.length} framework(s): ${built.map((f) => f.fw).join(', ')} ` +
+      `| start=${initial} | packaged=${app.isPackaged}`,
+  )
+
+  // Headless packaging smoke: IRIS_SMOKE_MS=NNNN quits after the window loads so
+  // CI can confirm a packaged build boots + resolves its bundled dists.
+  const smokeMs = parseInt(process.env.IRIS_SMOKE_MS || '0', 10)
+  if (smokeMs > 0) {
+    win.webContents.once('did-finish-load', () => {
+      console.log('[iris-desktop] smoke: window loaded OK')
+      setTimeout(() => app.quit(), smokeMs)
+    })
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow(initial)

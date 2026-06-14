@@ -1,8 +1,9 @@
 {
   "name": "iris-desktop",
   "private": true,
-  "version": "0.0.0",
-  "description": "Electron desktop shell demo — hosts any Iris UI CMS (React/Vue/Solid/Svelte) and wires the @iris-ui/core native save + clipboard bridges to real OS APIs.",
+  "version": "0.1.0",
+  "description": "Electron desktop shell demo — hosts all four Iris UI CMS demos (React/Vue/Solid/Svelte) in one window and wires the @iris-ui/core native save + clipboard bridges to real OS APIs.",
+  "author": "Iris UI",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -11,9 +12,65 @@
     "start:solid": "IRIS_FW=solid electron .",
     "start:svelte": "IRIS_FW=svelte electron .",
     "smoke": "node smoke.js",
-    "test": "node smoke.js"
+    "test": "node smoke.js",
+    "build:cms": "cd ../.. && pnpm turbo run build --filter=cms --filter=cms-react --filter=cms-solid --filter=cms-svelte",
+    "pack": "pnpm run build:cms && electron-builder --dir",
+    "dist": "pnpm run build:cms && electron-builder",
+    "dist:linux": "pnpm run build:cms && electron-builder --linux AppImage",
+    "dist:linux:deb": "pnpm run build:cms && electron-builder --linux deb",
+    "dist:mac": "pnpm run build:cms && electron-builder --mac dmg",
+    "dist:win": "pnpm run build:cms && electron-builder --win nsis"
   },
   "devDependencies": {
-    "electron": "^42.4.0"
+    "electron": "^42.4.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "dev.iris-ui.desktop",
+    "productName": "Iris CMS Desktop",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "server.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../cms-react/dist",
+        "to": "cms-react"
+      },
+      {
+        "from": "../cms/dist",
+        "to": "cms-vue"
+      },
+      {
+        "from": "../cms-solid/dist",
+        "to": "cms-solid"
+      },
+      {
+        "from": "../cms-svelte/dist",
+        "to": "cms-svelte"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
   }
 }

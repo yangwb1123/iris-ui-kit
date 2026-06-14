@@ -38,6 +38,29 @@ pnpm --filter iris-desktop start            # opens the switcher (starts on Reac
 pnpm --filter iris-desktop start:vue        # start:react / start:solid / start:svelte
 ```
 
+## Package (electron-builder)
+
+Produce a self-contained installer that bundles all four CMS builds (as
+`extraResources` under `resources/cms-*`; `main.js` resolves them via
+`process.resourcesPath` when `app.isPackaged`). Output goes to `release/`.
+
+```sh
+pnpm --filter iris-desktop pack          # unpacked app dir only (fast, no installer)
+pnpm --filter iris-desktop dist          # installer(s) for the current OS
+pnpm --filter iris-desktop dist:linux    # Linux AppImage
+pnpm --filter iris-desktop dist:mac      # macOS dmg   (run on macOS)
+pnpm --filter iris-desktop dist:win      # Windows nsis (run on Windows / wine)
+```
+
+Each `dist*` script first builds the four CMS apps. The Linux `AppImage` target
+is self-contained and needs no system libs; `deb`/`rpm` additionally need `fpm`
+(`pnpm --filter iris-desktop dist:linux:deb`). `mac`/`win` installers must be
+built on (or cross-built from) their target OS.
+
+Validated here: `electron-builder --dir` + a real `AppImage` both build and,
+launched under `xvfb`, boot with `packaged=true`, resolve the four bundled CMS
+dists, and load the window.
+
 ## Verify headlessly (no display)
 
 ```sh

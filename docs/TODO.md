@@ -38,7 +38,7 @@ These came from the 2nd 4-agent cross-framework audit (selection-wrappers / over
 
 ## Blocked / decision-gated (Blocker conditions — need user input or external resource)
 
-- ~~Desktop shell demo to validate native bridges~~ — **DONE (Electron, iter 80): `apps/desktop`** hosts all 4 CMS demos + wires save/clipboard to native; validated headlessly (Node smoke in pipeline + real `xvfb` Electron load ×4). **Tauri/Wails remain blocked on `libwebkit2gtk-4.1` system libs** (need root to apt-install; cargo+go toolchains are present) — drop-in once installed.
+- ~~Desktop shell demo to validate native bridges~~ — **DONE for all three shells**: Electron (`apps/desktop`, iter 80–81, + electron-builder packaging), **Tauri** (`apps/desktop-tauri`, Rust) and **Wails** (`apps/desktop-wails`, Go) (iter 82). All host the CMS ×4 with a live Framework switcher + native save/clipboard via the shared `window.irisNative` contract; validated headlessly (Node/Go/cargo tests + xvfb boot). Tauri/Wails build against the system webkit2gtk-4.1 (Tauri's `librsvg2-dev` extracted into a user prefix — no root needed after all). **No desktop work remains.**
 - First npm publish — maintainer/release decision (pipeline + changesets ready).
 
 ## Deferred-by-design (do NOT pick without explicit ask)

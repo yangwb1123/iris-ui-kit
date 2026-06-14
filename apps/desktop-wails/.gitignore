@@ -1,0 +1,4 @@
+/frontend/dist/*
+!/frontend/dist/.gitkeep
+/frontend/wailsjs/
+/build/bin/

@@ -1,0 +1,4 @@
+/dist/*
+!/dist/.gitkeep
+/src-tauri/target/
+/src-tauri/gen/

@@ -2,6 +2,7 @@ import DefaultTheme from 'vitepress/theme'
 import type { App } from 'vue'
 import * as Iris from '@iris-ui/vue'
 import IrisDemo from './IrisDemo.vue'
+import IrisExplorer from './components/IrisExplorer.vue'
 import './iris-tokens.css'
 
 // Iris Vue components used by the curated live demos in the generated
@@ -28,5 +29,9 @@ export default {
       if (comp) app.component(name, comp as never)
     }
     app.component('IrisDemo', IrisDemo)
+    // R17 interactive explorer — resolves the live-preview Iris component itself
+    // via the `Iris` namespace import (<component :is>), so the curated set needs
+    // no extra global registration here.
+    app.component('IrisExplorer', IrisExplorer)
   },
 }

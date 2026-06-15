@@ -23,8 +23,11 @@ import {
   rangeSliderScenario,
   tagInputScenario,
   otpInputScenario,
+  dataSourceScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
+import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
+import { useDataSource } from './data/useDataSource'
 import { IrisTabs } from './primitives/tabs/Tabs'
 import { IrisTabsList } from './primitives/tabs/TabsList'
 import { IrisTabsTrigger } from './primitives/tabs/TabsTrigger'
@@ -69,6 +72,48 @@ function driverFor(container: HTMLElement): ContractDriver {
     },
     flush: () => {},
   }
+}
+
+/** Shared harness data for the DataSource contract (Charlie/Alice/Bob, name filterable). */
+interface DsRow extends Record<string, unknown> {
+  id: number
+  name: string
+  age: number
+}
+const dsData: DsRow[] = [
+  { id: 1, name: 'Charlie', age: 30 },
+  { id: 2, name: 'Alice', age: 25 },
+  { id: 3, name: 'Bob', age: 35 },
+]
+const dsColumns: DataViewColumn<DsRow>[] = [
+  { key: 'name', getValue: (r) => r.name, filterable: true },
+  { key: 'age', getValue: (r) => r.age },
+]
+
+/** Tiny component exercising the useDataSource bridge for the DataSource contract. */
+function DataSourceHarness() {
+  const ds = useDataSource<DsRow>({
+    fetcher: createSyncClientDataSource(dsData, dsColumns),
+    pageSize: 10,
+  })
+  return (
+    <div>
+      <button data-iris-ds-sort onClick={() => ds.setSort({ key: 'age', direction: 'asc' })}>
+        sort
+      </button>
+      <button data-iris-ds-filter onClick={() => ds.setFilter('name', 'li')}>
+        filter
+      </button>
+      <button data-iris-ds-clear onClick={() => ds.clearFilters()}>
+        clear
+      </button>
+      {ds.state.rows.map((r) => (
+        <div key={r.id} data-iris-ds-row>
+          {r.name}
+        </div>
+      ))}
+    </div>
+  )
 }
 
 describe('@iris-ui/react — cross-framework behavior contracts', () => {
@@ -280,5 +325,10 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
   it('satisfies the shared OtpInput contract', async () => {
     const { container } = render(<IrisOtpInput length={5} defaultValue="123" />)
     await runContract(otpInputScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared DataSource contract', async () => {
+    const { container } = render(<DataSourceHarness />)
+    await runContract(dataSourceScenario, driverFor(container), expect)
   })
 })

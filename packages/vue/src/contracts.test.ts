@@ -24,8 +24,11 @@ import {
   rangeSliderScenario,
   tagInputScenario,
   otpInputScenario,
+  dataSourceScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
+import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
+import { useDataSource } from './data/useDataSource'
 import { IrisTabs } from './primitives/tabs/Tabs'
 import { IrisTabsList } from './primitives/tabs/TabsList'
 import { IrisTabsTrigger } from './primitives/tabs/TabsTrigger'
@@ -520,6 +523,70 @@ const OtpInputHarness = defineComponent({
   },
 })
 
+/** Shared harness data for the DataSource contract (Charlie/Alice/Bob, name filterable). */
+interface DsRow extends Record<string, unknown> {
+  id: number
+  name: string
+  age: number
+}
+const dsData: DsRow[] = [
+  { id: 1, name: 'Charlie', age: 30 },
+  { id: 2, name: 'Alice', age: 25 },
+  { id: 3, name: 'Bob', age: 35 },
+]
+const dsColumns: DataViewColumn<DsRow>[] = [
+  { key: 'name', getValue: (r) => r.name, filterable: true },
+  { key: 'age', getValue: (r) => r.age },
+]
+
+/**
+ * Drives the Vue `useDataSource` bridge over the SAME `createSyncClientDataSource`
+ * data/columns as the React reference. The bridge mirrors the core store into a
+ * reactive `state` ref (a `shallowRef` updated on every store emission), so reading
+ * `ds.state.value.rows` inside the render function tracks reactively — setSort /
+ * setFilter / clearFilters re-render the row list. Renders the shared selectors:
+ * `data-iris-ds-sort` / `data-iris-ds-filter` / `data-iris-ds-clear` triggers and a
+ * `data-iris-ds-row` per live row (text = the row's `name`). A thin bridge — all
+ * logic lives in `@iris-ui/core`.
+ */
+const DataSourceHarness = defineComponent({
+  name: 'DataSourceHarness',
+  setup() {
+    const ds = useDataSource<DsRow>({
+      fetcher: createSyncClientDataSource(dsData, dsColumns),
+      pageSize: 10,
+    })
+    return () =>
+      h('div', null, [
+        h(
+          'button',
+          {
+            'data-iris-ds-sort': '',
+            onClick: () => ds.setSort({ key: 'age', direction: 'asc' }),
+          },
+          'sort',
+        ),
+        h(
+          'button',
+          {
+            'data-iris-ds-filter': '',
+            onClick: () => ds.setFilter('name', 'li'),
+          },
+          'filter',
+        ),
+        h(
+          'button',
+          {
+            'data-iris-ds-clear': '',
+            onClick: () => ds.clearFilters(),
+          },
+          'clear',
+        ),
+        ...ds.state.value.rows.map((r) => h('div', { key: r.id, 'data-iris-ds-row': '' }, r.name)),
+      ])
+  },
+})
+
 describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Tabs contract', async () => {
     const host = document.createElement('div')
@@ -787,5 +854,23 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     const wrapper = mount(OtpInputHarness, { attachTo: host })
     await nextTick()
     await runContract(otpInputScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  /**
+   * The Vue `useDataSource` bridge over `createDataSource` (the unified data
+   * engine) — mounted via the DataSourceHarness whose render function reads
+   * `ds.state.value.rows` (a reactive `shallowRef`), so setSort / setFilter /
+   * clearFilters re-render the row list. The harness kicks its initial sync
+   * client load from `onMounted`, so we await one extra `nextTick()` after mount
+   * for the first rows to render before the driver runs. Same data/columns/
+   * behavior as the React reference.
+   */
+  it('satisfies the shared DataSource contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(DataSourceHarness, { attachTo: host })
+    await nextTick()
+    await nextTick()
+    await runContract(dataSourceScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 })

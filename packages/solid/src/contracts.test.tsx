@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { For } from 'solid-js'
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import {
   runContract,
@@ -23,8 +24,10 @@ import {
   calendarScenario,
   tagInputScenario,
   otpInputScenario,
+  dataSourceScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
+import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
 import {
   IrisTabs,
   IrisTabsList,
@@ -48,8 +51,54 @@ import { IrisTree } from './primitives/tree'
 import { IrisCalendar } from './primitives/calendar'
 import { IrisTagInput } from './primitives/tag-input'
 import { IrisOtpInput } from './primitives/otp-input/IrisOtpInput'
+import { useDataSource } from './data/useDataSource'
 
 afterEach(cleanup)
+
+interface DsRow extends Record<string, unknown> {
+  id: number
+  name: string
+  age: number
+}
+
+const dsData: DsRow[] = [
+  { id: 1, name: 'Charlie', age: 30 },
+  { id: 2, name: 'Alice', age: 25 },
+  { id: 3, name: 'Bob', age: 35 },
+]
+
+const dsColumns: DataViewColumn<DsRow>[] = [
+  { key: 'name', getValue: (r) => r.name, filterable: true },
+  { key: 'age', getValue: (r) => r.age },
+]
+
+/**
+ * Mirrors the React DataSource harness in Solid idioms. `useDataSource` returns
+ * `state` as a Solid accessor, so rows are read via `ds.state().rows` and
+ * rendered through `<For>` so the list re-renders reactively on
+ * setSort / setFilter / clearFilters. A sync client fetcher keeps it
+ * deterministic — no timers, no async settling.
+ */
+function DataSourceHarness() {
+  const ds = useDataSource<DsRow>({
+    fetcher: createSyncClientDataSource(dsData, dsColumns),
+    pageSize: 10,
+  })
+  return (
+    <div>
+      <button data-iris-ds-sort onClick={() => ds.setSort({ key: 'age', direction: 'asc' })}>
+        sort
+      </button>
+      <button data-iris-ds-filter onClick={() => ds.setFilter('name', 'li')}>
+        filter
+      </button>
+      <button data-iris-ds-clear onClick={() => ds.clearFilters()}>
+        clear
+      </button>
+      <For each={ds.state().rows}>{(r) => <div data-iris-ds-row>{r.name}</div>}</For>
+    </div>
+  )
+}
 
 /**
  * A ContractDriver over a Solid-testing-library container. Solid reactivity is
@@ -283,5 +332,10 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
   it('satisfies the shared OtpInput contract', async () => {
     const { container } = render(() => <IrisOtpInput length={5} defaultValue="123" />)
     await runContract(otpInputScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared DataSource contract', async () => {
+    const { container } = render(() => <DataSourceHarness />)
+    await runContract(dataSourceScenario, driverFor(container), expect)
   })
 })

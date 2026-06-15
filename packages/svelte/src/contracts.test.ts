@@ -24,6 +24,7 @@ import {
   calendarScenario,
   tagInputScenario,
   otpInputScenario,
+  dataSourceScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -35,6 +36,7 @@ import TableSelectContractHarness from './TableSelectContractHarness.svelte'
 import TableExpandContractHarness from './TableExpandContractHarness.svelte'
 import TreeContractHarness from './TreeContractHarness.svelte'
 import CalendarContractHarness from './CalendarContractHarness.svelte'
+import DataSourceContractHarness from './DataSourceContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -237,5 +239,18 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // on a filled cell removes that char and the value contracts left.
     const { container } = render(ContractsHarness)
     await runContract(otpInputScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared DataSource contract', async () => {
+    // Rendered in a dedicated harness (not the shared ContractsHarness) so its
+    // live `[data-iris-ds-row]` rows and sort/filter/clear triggers stay out of
+    // the shared container — exactly like the React reference's dedicated
+    // <DataSourceHarness>. The Svelte `useDataSource` bridge exposes the live
+    // engine state through a `$state` rune, so the harness's `{#each}` over
+    // `ds.state.rows` re-renders REACTIVELY on each store emission (initial
+    // sync-client load → setSort → setFilter → clearFilters), with no manual
+    // bookkeeping. See DataSourceContractHarness.svelte for the full note.
+    const { container } = render(DataSourceContractHarness)
+    await runContract(dataSourceScenario, driverFor(container), expect)
   })
 })

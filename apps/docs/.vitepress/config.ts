@@ -7,6 +7,9 @@ export default defineConfig({
   description: 'Token-driven, cross-framework (React · Vue · Solid · Svelte) UI infrastructure.',
   cleanUrls: true,
   themeConfig: {
+    // Built-in, fully-offline full-text search over all pages — makes the
+    // 149-component generated reference actually navigable.
+    search: { provider: 'local' },
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Components', link: '/components' },

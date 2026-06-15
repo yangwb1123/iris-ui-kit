@@ -104,6 +104,10 @@ for (const group of manifest.groups) {
     lines.push('')
     lines.push(`<small>${fw}${via}</small>`)
     lines.push('')
+    if (component.description) {
+      lines.push(component.description)
+      lines.push('')
+    }
     if (component.subComponents && component.subComponents.length > 0) {
       lines.push(`Parts: ${component.subComponents.map((s) => `\`${s}\``).join(', ')}`)
       lines.push('')
@@ -126,6 +130,31 @@ for (const group of manifest.groups) {
           `| \`${p.name}\` | \`${cell(p.type)}\` | ${p.optional ? '' : '✓'} | ${cell((p.description ?? '') + enumNote + defaultNote)} |`,
         )
       }
+      lines.push('')
+    }
+
+    const events = component.events ?? []
+    if (events.length > 0) {
+      lines.push('**Events**')
+      lines.push('')
+      lines.push(events.map((e) => `\`${e}\``).join(' · '))
+      lines.push('')
+    }
+
+    const slots = component.slots ?? []
+    if (slots.length > 0) {
+      lines.push('**Slots**')
+      lines.push('')
+      lines.push(slots.map((s) => `\`${s}\``).join(' · '))
+      lines.push('')
+    }
+
+    if (component.example) {
+      lines.push('**Example**')
+      lines.push('')
+      lines.push('```tsx')
+      lines.push(component.example.replace(/^\n+|\n+$/g, ''))
+      lines.push('```')
       lines.push('')
     }
   }

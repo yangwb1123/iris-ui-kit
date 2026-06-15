@@ -6,8 +6,20 @@ export {
   type MachineState,
   type MachineConfig,
   type Transition,
+  type DelayedTransition,
   type StateNode,
+  type Action,
+  type InitEvent,
+  type Scheduler,
 } from './machine'
+export {
+  createHoverIntent,
+  type HoverIntent,
+  type HoverIntentOptions,
+  type HoverIntentMachine,
+  type HoverIntentState,
+  type HoverIntentEvent,
+} from './hover-intent'
 export {
   createFloatingMachine,
   type FloatingMachine,

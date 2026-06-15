@@ -24,6 +24,7 @@
     "preview:vue": "turbo run preview --filter=playground",
     "preview:react": "turbo run preview --filter=playground-react",
     "test": "turbo run test",
+    "bench": "turbo run bench",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "gen:manifest": "pnpm --filter @iris-ui/manifest build && node packages/manifest/dist/generate.js",

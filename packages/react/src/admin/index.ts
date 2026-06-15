@@ -16,6 +16,8 @@ export {
   findNavPath,
   firstLeaf,
   isBranch,
+  filterNavByAccess,
+  nodeAllowsRoles,
   type NavNode,
   type TabItem,
   type TabsNav,

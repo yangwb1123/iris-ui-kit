@@ -26,6 +26,14 @@ export interface NavNode {
   hidden?: boolean
   /** Sort order among siblings (ascending; missing sorts last, stably). */
   order?: number
+  /**
+   * Roles allowed to see this node (RBAC). A node with no `roles` (undefined or
+   * empty) is visible to everyone; otherwise it is shown only when the current
+   * user holds at least one of the listed roles. Consumed by the
+   * `roles`-array form of {@link filterNavByAccess}. A branch's own `roles`
+   * gate the branch itself; children carry their own `roles`.
+   */
+  roles?: string[]
   /** Child nodes — the node is a branch (group / submenu) when this is non-empty. */
   children?: NavNode[]
 }
@@ -111,16 +119,38 @@ export function branchTrail(nodes: NavNode[], key: string): string[] {
 }
 
 /**
- * Filter the tree by an access predicate (role/permission/ACL) — the pure
- * complement to {@link visibleNav}'s static `hidden` filter. A node is dropped
- * when `can(node)` is false; by default a branch whose children are all dropped
- * is pruned too (pass `pruneEmptyBranches: false` to keep empty groups).
+ * Whether `node` is reachable by a user holding `userRoles`, per the node's
+ * `roles` (RBAC): a node with no `roles` (undefined or empty) is open to all;
+ * otherwise the user must hold at least one of the node's listed roles. The
+ * default access rule used by the `roles`-array form of {@link filterNavByAccess}.
+ */
+export function nodeAllowsRoles(node: NavNode, userRoles: readonly string[]): boolean {
+  if (!node.roles || node.roles.length === 0) return true
+  return node.roles.some((r) => userRoles.includes(r))
+}
+
+/**
+ * Filter the tree by access — the pure complement to {@link visibleNav}'s static
+ * `hidden` filter. Pass either:
+ *
+ * - a **predicate** `(node) => boolean`: a node is dropped when it returns false
+ *   (the original ACL form — full permission/condition control); or
+ * - a **roles array** `string[]` (the current user's roles): each node is gated
+ *   by {@link nodeAllowsRoles} — kept when it has no `roles`, or when the user
+ *   holds one of the node's `roles`.
+ *
+ * By default a branch whose children are all dropped is pruned too (pass
+ * `pruneEmptyBranches: false` to keep empty groups). Back-compatible: existing
+ * predicate callers are unchanged.
  */
 export function filterNavByAccess(
   nodes: NavNode[],
-  can: (node: NavNode) => boolean,
+  access: ((node: NavNode) => boolean) | readonly string[],
   pruneEmptyBranches = true,
 ): NavNode[] {
+  const can: (node: NavNode) => boolean = Array.isArray(access)
+    ? (node) => nodeAllowsRoles(node, access)
+    : (access as (node: NavNode) => boolean)
   const out: NavNode[] = []
   for (const n of nodes) {
     if (!can(n)) continue

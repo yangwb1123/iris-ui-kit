@@ -239,6 +239,7 @@ export {
   firstLeaf,
   branchTrail,
   filterNavByAccess,
+  nodeAllowsRoles,
   type NavNode,
 } from './nav'
 export {

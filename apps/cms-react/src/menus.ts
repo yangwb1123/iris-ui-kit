@@ -4,6 +4,11 @@ import type { NavNode } from '@iris-ui/react'
  * The single nav-tree config that drives the whole shell: the sidebar menu, the
  * header breadcrumb, and (through the host) the open tabs. Icons are names from
  * the built-in Iris icon registry.
+ *
+ * RBAC: nodes carry an optional `roles`. A node with no `roles` is visible to
+ * everyone; the Admin group (and "Roles & access") are gated to `admin`, so a
+ * viewer session sees a smaller menu — the shell filters this tree through
+ * `filterNavByAccess(menus, [session.role])`.
  */
 export const menus: NavNode[] = [
   { key: 'dashboard', title: 'Dashboard', icon: 'menu', order: 1 },
@@ -25,7 +30,7 @@ export const menus: NavNode[] = [
     order: 3,
     children: [
       { key: 'all-users', title: 'All users', icon: 'eye' },
-      { key: 'roles', title: 'Roles & access', icon: 'check-circle' },
+      { key: 'roles', title: 'Roles & access', icon: 'check-circle', roles: ['admin'] },
     ],
   },
   {
@@ -39,5 +44,16 @@ export const menus: NavNode[] = [
     ],
   },
   { key: 'calendar', title: 'Calendar', icon: 'calendar', order: 5 },
-  { key: 'settings', title: 'Settings', icon: 'info', order: 6 },
+  // Admin-only section: viewers won't see this at all.
+  {
+    key: 'admin',
+    title: 'Admin',
+    icon: 'info',
+    order: 6,
+    roles: ['admin'],
+    children: [
+      { key: 'settings', title: 'Settings', icon: 'info' },
+      { key: 'audit-log', title: 'Audit log', icon: 'clock' },
+    ],
+  },
 ]

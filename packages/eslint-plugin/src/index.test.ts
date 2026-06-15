@@ -1,8 +1,14 @@
+import { readdirSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
 import { RuleTester } from 'eslint'
 import { describe, it, expect } from 'vitest'
 import noInternalImport from './rules/no-internal-import.js'
 import useIrisProvider from './rules/use-iris-provider.js'
-import pluginNeedsRegistration from './rules/plugin-needs-registration.js'
+import pluginNeedsRegistration, {
+  EXPECTED_PLUGIN_PACKAGE_COUNT,
+  KNOWN_PLUGIN_FACTORIES,
+} from './rules/plugin-needs-registration.js'
 import plugin from './index.js'
 
 const tester = new RuleTester({
@@ -120,7 +126,13 @@ describe('plugin-needs-registration', () => {
   it('passes valid cases and reports invalid cases', () => {
     tester.run('plugin-needs-registration', pluginNeedsRegistration, {
       valid: [
-        // IrisCodeEditor with its plugin imported
+        // IrisCodeEditor with its canonical plugin (editorPlugin) imported
+        {
+          code: `
+            import { IrisCodeEditor, editorPlugin } from '@iris-ui/plugin-editor'
+          `,
+        },
+        // Back-compat: the legacy alias codeMirrorPlugin still satisfies it
         {
           code: `
             import { IrisCodeEditor, codeMirrorPlugin } from '@iris-ui/plugin-editor'
@@ -138,24 +150,58 @@ describe('plugin-needs-registration', () => {
             import { IrisFormBuilder, formBuilderPlugin } from '@iris-ui/plugin-form-builder'
           `,
         },
+        // Newly-recognized plugins, each with its factory registered
+        {
+          code: "import { IrisAdminApp, adminPlugin } from '@iris-ui/plugin-admin'",
+        },
+        {
+          code: "import { IrisEventCalendar, calendarPlugin } from '@iris-ui/plugin-calendar'",
+        },
+        {
+          code: "import { IrisLineChart, chartsPlugin } from '@iris-ui/plugin-charts'",
+        },
+        // A different charts component is covered by the same chartsPlugin
+        {
+          code: "import { IrisSparkline, chartsPlugin } from '@iris-ui/plugin-charts'",
+        },
+        {
+          code: "import { IrisDashboard, dashboardPlugin } from '@iris-ui/plugin-dashboard'",
+        },
+        {
+          code: "import { IrisKanban, kanbanPlugin } from '@iris-ui/plugin-kanban'",
+        },
+        {
+          code: "import { IrisMarkdown, markdownPlugin } from '@iris-ui/plugin-markdown'",
+        },
+        {
+          code: "import { IrisNotificationCenter, notificationsPlugin } from '@iris-ui/plugin-notifications'",
+        },
+        {
+          code: "import { IrisQueryBuilder, queryBuilderPlugin } from '@iris-ui/plugin-query-builder'",
+        },
         // Plugin component not imported — no warning
         {
           code: "import { IrisButton } from '@iris-ui/react'",
         },
-        // All three plugin components with all three plugins registered
+        // All three original plugin components with all three plugins registered
         {
           code: `
-            import { IrisCodeEditor, codeMirrorPlugin } from '@iris-ui/plugin-editor'
+            import { IrisCodeEditor, editorPlugin } from '@iris-ui/plugin-editor'
             import { IrisProTable, proTablePlugin } from '@iris-ui/plugin-pro-table'
             import { IrisFormBuilder, formBuilderPlugin } from '@iris-ui/plugin-form-builder'
           `,
         },
       ],
       invalid: [
-        // IrisCodeEditor without codeMirrorPlugin
+        // IrisCodeEditor without its plugin — message names the canonical factory
         {
           code: "import { IrisCodeEditor } from '@iris-ui/plugin-editor'",
-          errors: [{ messageId: 'missingPluginRegistration' }],
+          errors: [
+            {
+              messageId: 'missingPluginRegistration',
+              data: { component: 'IrisCodeEditor', plugin: 'editorPlugin' },
+            },
+          ],
         },
         // IrisProTable without proTablePlugin
         {
@@ -166,6 +212,38 @@ describe('plugin-needs-registration', () => {
         {
           code: "import { IrisFormBuilder } from '@iris-ui/plugin-form-builder'",
           errors: [{ messageId: 'missingPluginRegistration' }],
+        },
+        // Newly-recognized plugins now flagged when their factory is missing
+        {
+          code: "import { IrisDashboard } from '@iris-ui/plugin-dashboard'",
+          errors: [
+            {
+              messageId: 'missingPluginRegistration',
+              data: { component: 'IrisDashboard', plugin: 'dashboardPlugin' },
+            },
+          ],
+        },
+        {
+          code: "import { IrisKanban } from '@iris-ui/plugin-kanban'",
+          errors: [{ messageId: 'missingPluginRegistration' }],
+        },
+        {
+          code: "import { IrisNotificationCenter } from '@iris-ui/plugin-notifications'",
+          errors: [{ messageId: 'missingPluginRegistration' }],
+        },
+        {
+          code: "import { IrisQueryBuilder } from '@iris-ui/plugin-query-builder'",
+          errors: [{ messageId: 'missingPluginRegistration' }],
+        },
+        // A charts component without chartsPlugin
+        {
+          code: "import { IrisBarChart } from '@iris-ui/plugin-charts'",
+          errors: [
+            {
+              messageId: 'missingPluginRegistration',
+              data: { component: 'IrisBarChart', plugin: 'chartsPlugin' },
+            },
+          ],
         },
         // Two plugin components, both missing their plugins
         {
@@ -180,6 +258,52 @@ describe('plugin-needs-registration', () => {
         },
       ],
     })
+  })
+})
+
+// ──────────────────────────────────────────────────────────────────
+// plugin-needs-registration — source-of-truth completeness
+// ──────────────────────────────────────────────────────────────────
+describe('plugin-needs-registration source-of-truth', () => {
+  // Resolve packages/plugin-* relative to this test file:
+  // <repo>/packages/eslint-plugin/src/index.test.ts → <repo>/packages
+  const packagesDir = resolve(dirname(fileURLToPath(import.meta.url)), '../../')
+  const firstPartyPlugins = readdirSync(packagesDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && d.name.startsWith('plugin-'))
+    .map((d) => `@iris-ui/${d.name}`)
+    .sort()
+
+  it('expects the same number of plugins that actually exist on disk', () => {
+    // Guards against the on-disk plugin set drifting from the rule's constant.
+    expect(firstPartyPlugins.length).toBe(EXPECTED_PLUGIN_PACKAGE_COUNT)
+  })
+
+  it('recognizes a plugin factory for every component-bearing plugin', () => {
+    // locale-zh is component-less, so it has no factory in the registration
+    // rule; every other on-disk plugin must contribute exactly one factory.
+    const componentBearing = firstPartyPlugins.filter((p) => p !== '@iris-ui/plugin-locale-zh')
+    expect(KNOWN_PLUGIN_FACTORIES.length).toBe(componentBearing.length)
+    expect(KNOWN_PLUGIN_FACTORIES.length).toBe(EXPECTED_PLUGIN_PACKAGE_COUNT - 1)
+  })
+
+  it('recognizes all 12 expected plugin factories by name (not truncated)', () => {
+    const expected = [
+      'adminPlugin',
+      'calendarPlugin',
+      'chartsPlugin',
+      'dashboardPlugin',
+      'editorPlugin',
+      'formBuilderPlugin',
+      'kanbanPlugin',
+      'markdownPlugin',
+      'notificationsPlugin',
+      'proTablePlugin',
+      'queryBuilderPlugin',
+    ]
+    for (const factory of expected) {
+      expect(KNOWN_PLUGIN_FACTORIES).toContain(factory)
+    }
+    expect(new Set(KNOWN_PLUGIN_FACTORIES).size).toBe(KNOWN_PLUGIN_FACTORIES.length)
   })
 })
 

@@ -17,6 +17,11 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],
+    // The hydration / SSR test must run under the dedicated SSR config
+    // (`vitest.ssr.config.ts`: server resolve condition + `generate: 'ssr'`).
+    // Under this default (browser-condition, DOM-compiled) config
+    // `renderToString` is an unsupported stub, so exclude it here.
+    exclude: ['src/hydration.test.tsx', '**/node_modules/**', '**/dist/**'],
     globals: false,
     isolate: true,
   },

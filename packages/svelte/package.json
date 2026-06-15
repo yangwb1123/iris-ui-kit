@@ -23,7 +23,7 @@
   "scripts": {
     "build": "svelte-package -i src -o dist",
     "dev": "svelte-package -i src -o dist --watch",
-    "test": "vitest run",
+    "test": "vitest run && vitest run --config vitest.ssr.config.ts",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json",
     "lint": "eslint src",
     "clean": "rm -rf dist .turbo .svelte-kit"

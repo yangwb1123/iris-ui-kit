@@ -3,12 +3,6 @@ import { createSelectionModel, type SelectionModel } from '@iris-ui/core'
 import { useStore } from '../../useStore'
 import { RadioGroupContext } from './context'
 
-let __counter = 0
-function generateGroupName(): string {
-  __counter += 1
-  return `iris-radio-${__counter}`
-}
-
 export interface IrisRadioGroupProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
   'onChange' | 'defaultValue'
@@ -56,7 +50,13 @@ export function IrisRadioGroup({
     if (isControlled) model.sync(toKeys(value))
   }, [value, isControlled, model])
 
-  const groupName = React.useMemo(() => name ?? generateGroupName(), [name])
+  // Auto-generate via the framework-native, SSR-stable `useId` so the radio
+  // group `name` is identical on the server and on client hydration. A
+  // module-level counter (the previous approach) increments once per process,
+  // so it drifted (`iris-radio-1` server vs `iris-radio-2` client) and broke
+  // hydration on the `name` attribute.
+  const autoName = React.useId()
+  const groupName = name ?? `iris-radio-${autoName}`
 
   const setValue = (next: string) => {
     if (disabled) return

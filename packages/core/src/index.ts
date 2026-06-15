@@ -39,7 +39,18 @@ export {
   type ArrayKey,
   type ArrayElement,
   type FormStep,
+  type FieldPath,
 } from './form'
+export {
+  parsePath,
+  formatPath,
+  getByPath,
+  setByPath,
+  deleteByPath,
+  rekeyByArrayMutation,
+  type Path,
+  type PathSegment,
+} from './path'
 export {
   createI18n,
   defaultMessages,

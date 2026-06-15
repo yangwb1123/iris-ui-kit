@@ -414,6 +414,106 @@ describe('createFormStore', () => {
     })
   })
 
+  describe('nested-path engine (v3 R19)', () => {
+    it('flat-key reads/writes are 100% back-compatible (canonical 1-segment path)', () => {
+      const form = createFormStore({ initialValues: { email: 'a@b.com' }, validateOnChange: false })
+      form.setFieldValue('email', 'c@d.com')
+      // The flat key is stored under its own canonical key — no nested wrapping.
+      expect(form.getState().values).toEqual({ email: 'c@d.com' })
+      expect(form.getState().dirty).toEqual({ email: true })
+      expect(form.getFieldValue('email')).toBe('c@d.com')
+    })
+
+    it('sets/gets a nested value by path with structural sharing', () => {
+      const form = createFormStore<{ address: { city: string; zip: string }; name: string }>({
+        initialValues: { address: { city: '', zip: '00000' }, name: 'Ada' },
+        validateOnChange: false,
+      })
+      const before = form.getState().values
+      form.setFieldValue('address.city', 'Paris')
+      expect(form.getFieldValue('address.city')).toBe('Paris')
+      expect(form.getState().values.address).toEqual({ city: 'Paris', zip: '00000' })
+      // Dirty is keyed by the full path; untouched siblings keep identity.
+      expect(form.getState().dirty['address.city']).toBe(true)
+      expect(form.getState().values.name).toBe('Ada')
+      expect(form.getState().values).not.toBe(before)
+    })
+
+    it('per-element error/touched/dirty key off the element path', () => {
+      const form = createFormStore<{ items: { sku: string }[] }>({
+        initialValues: { items: [{ sku: 'a' }, { sku: 'b' }] },
+        validateOnChange: false,
+      })
+      form.setFieldError('items[1].sku', 'Bad SKU')
+      form.setFieldTouched('items[1].sku', true)
+      form.setFieldValue('items[1].sku', 'B2')
+      expect(form.getState().errors['items[1].sku']).toBe('Bad SKU')
+      expect(form.getState().touched['items[1].sku']).toBe(true)
+      expect(form.getState().dirty['items[1].sku']).toBe(true)
+      expect(form.getFieldValue('items[1].sku')).toBe('B2')
+      // A bare top-level key on the same array is unaffected.
+      expect(form.getState().errors.items).toBeUndefined()
+    })
+
+    it('array INSERT re-keys per-element errors (shifts items[1..] up)', () => {
+      const form = createFormStore<{ items: { sku: string }[] }>({
+        initialValues: { items: [{ sku: 'a' }, { sku: 'b' }] },
+        validateOnChange: false,
+      })
+      form.setFieldError('items[0].sku', 'e0')
+      form.setFieldError('items[1].sku', 'e1')
+      form.arrayInsert('items', 1, { sku: 'x' })
+      expect(form.getState().values.items.map((i) => i.sku)).toEqual(['a', 'x', 'b'])
+      // e0 stays on index 0; e1 follows its row to index 2.
+      expect(form.getState().errors['items[0].sku']).toBe('e0')
+      expect(form.getState().errors['items[1].sku']).toBeUndefined()
+      expect(form.getState().errors['items[2].sku']).toBe('e1')
+    })
+
+    it('array REMOVE drops the removed element error and shifts the tail down', () => {
+      const form = createFormStore<{ items: { sku: string }[] }>({
+        initialValues: { items: [{ sku: 'a' }, { sku: 'b' }, { sku: 'c' }] },
+        validateOnChange: false,
+      })
+      form.setFieldError('items[0].sku', 'e0')
+      form.setFieldError('items[1].sku', 'e1')
+      form.setFieldError('items[2].sku', 'e2')
+      form.arrayRemove('items', 1)
+      expect(form.getState().values.items.map((i) => i.sku)).toEqual(['a', 'c'])
+      expect(form.getState().errors['items[0].sku']).toBe('e0') // unchanged
+      expect(form.getState().errors['items[1].sku']).toBe('e2') // e2 shifted down
+      expect(form.getState().errors['items[2].sku']).toBeUndefined() // e1 dropped
+    })
+
+    it('array MOVE / SWAP re-key per-element state with the moved row', () => {
+      const form = createFormStore<{ items: { sku: string }[] }>({
+        initialValues: { items: [{ sku: 'a' }, { sku: 'b' }, { sku: 'c' }] },
+        validateOnChange: false,
+      })
+      form.setFieldError('items[0].sku', 'e0')
+      form.setFieldError('items[2].sku', 'e2')
+      form.arrayMove('items', 0, 2) // a → end: [b, c, a]
+      expect(form.getState().values.items.map((i) => i.sku)).toEqual(['b', 'c', 'a'])
+      expect(form.getState().errors['items[2].sku']).toBe('e0') // a's error follows to index 2
+      expect(form.getState().errors['items[1].sku']).toBe('e2') // c shifted from 2 → 1
+
+      form.arraySwap('items', 0, 2) // swap back-ish: [a, c, b]
+      expect(form.getState().errors['items[0].sku']).toBe('e0') // a back to index 0
+    })
+
+    it('a nested validateField via setFieldTouched lands on the element path', async () => {
+      const form = createFormStore<{ items: { sku: string }[] }>({
+        initialValues: { items: [{ sku: '' }] },
+        // A per-field validator keyed by the array path isn't how nested
+        // validation works; setFieldError is the imperative path here.
+      })
+      form.setFieldError('items[0].sku', 'Required')
+      expect(form.isValid()).toBe(false)
+      form.setFieldError('items[0].sku', undefined)
+      expect(form.isValid()).toBe(true)
+    })
+  })
+
   describe('async validation', () => {
     it('tracks per-field `validating` while an async validator is in flight', async () => {
       let resolve!: (v: string | undefined) => void

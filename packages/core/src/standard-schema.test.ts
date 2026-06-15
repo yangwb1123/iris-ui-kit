@@ -63,6 +63,53 @@ describe('standardSchemaValidator', () => {
     })
   })
 
+  it('maps a NESTED issue path to its full-path key (v3 R19)', async () => {
+    const schema = fakeSchema(() => ({
+      issues: [
+        { message: 'City required', path: ['address', 'city'] },
+        { message: 'Bad SKU', path: ['items', 2, 'sku'] },
+      ],
+    }))
+    expect(await standardSchemaValidator(schema)({})).toEqual({
+      'address.city': 'City required',
+      'items[2].sku': 'Bad SKU',
+    })
+  })
+
+  it('handles Zod-style object segments AND numeric-string array indices', async () => {
+    // Zod 3.24 emits path elements as raw keys; some adapters serialize an array
+    // index as the string "2" — both must canonicalize to a bracket index.
+    const schema: StandardSchemaV1 = {
+      '~standard': {
+        version: 1,
+        vendor: 'zod',
+        validate: () => ({
+          issues: [{ message: 'Bad', path: [{ key: 'items' }, { key: '2' }, { key: 'sku' }] }],
+        }),
+      },
+    }
+    expect(await standardSchemaValidator(schema)({})).toEqual({ 'items[2].sku': 'Bad' })
+  })
+
+  it('a nested schema error surfaces on items[2].sku via createFormStore, not items', async () => {
+    const schema = fakeSchema((value) => {
+      const v = value as { items: { sku: string }[] }
+      const issues = v.items
+        .map((it, i) => (it.sku ? null : { message: 'SKU required', path: ['items', i, 'sku'] }))
+        .filter(Boolean) as ReadonlyArray<{ message: string; path: ReadonlyArray<PropertyKey> }>
+      return issues.length ? { issues } : { value }
+    })
+    const form = createFormStore<{ items: { sku: string }[] }>({
+      initialValues: { items: [{ sku: 'ok' }, { sku: 'ok' }, { sku: '' }] },
+      validate: standardSchemaValidator(schema),
+    })
+    const errors = await form.validateForm()
+    expect(errors).toEqual({ 'items[2].sku': 'SKU required' })
+    // The error lands on the element field, NOT collapsed onto the array.
+    expect(form.getState().errors['items[2].sku']).toBe('SKU required')
+    expect(form.getState().errors.items).toBeUndefined()
+  })
+
   it('supports async schemas', async () => {
     const schema = fakeSchema(async () => ({ issues: [{ message: 'nope', path: ['age'] }] }))
     expect(await standardSchemaValidator<Values>(schema)({ email: '', age: 0 })).toEqual({

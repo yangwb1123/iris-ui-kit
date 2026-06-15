@@ -103,6 +103,43 @@ describe('@iris-ui/react useForm / useField', () => {
   })
 })
 
+describe('@iris-ui/react useField nested path (v3 R19)', () => {
+  function SkuField() {
+    const sku = useField<string>('items[1].sku')
+    return (
+      <>
+        <input aria-label="sku" {...sku.inputProps} />
+        <span data-testid="error">{sku.error ?? ''}</span>
+        <span data-testid="dirty">{String(sku.dirty)}</span>
+      </>
+    )
+  }
+  function NestedDemo() {
+    const form = useForm<{ items: { sku: string }[] }>({
+      initialValues: { items: [{ sku: '' }, { sku: '' }] },
+      validateOnChange: false,
+    })
+    return (
+      <IrisForm form={form.form}>
+        <SkuField />
+        <button type="button" onClick={() => form.form.setFieldError('items[1].sku', 'Bad SKU')}>
+          Err
+        </button>
+      </IrisForm>
+    )
+  }
+
+  it('binds a nested field by path: value write + error read land on the element', () => {
+    render(<NestedDemo />)
+    const input = screen.getByLabelText<HTMLInputElement>('sku')
+    fireEvent.change(input, { target: { value: 'X1' } })
+    expect(input.value).toBe('X1')
+    expect(screen.getByTestId('dirty').textContent).toBe('true')
+    fireEvent.click(screen.getByText('Err'))
+    expect(screen.getByTestId('error').textContent).toBe('Bad SKU')
+  })
+})
+
 describe('@iris-ui/react IrisForm focus-first-error', () => {
   function MultiField() {
     const email = useField<string>('email')

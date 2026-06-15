@@ -1,5 +1,5 @@
 import { createSignal, onCleanup, createMemo, type Accessor } from 'solid-js'
-import type { FormState, FormValues } from '@iris-ui/core'
+import { formatPath, getByPath, type FormState, type FormValues } from '@iris-ui/core'
 import { useFormContext } from './context'
 
 export interface FieldBindProps {
@@ -23,6 +23,10 @@ export interface UseFieldReturn<T> {
 /**
  * Binds a single field to the surrounding `<IrisForm>`.
  * Solid port of the Vue useField.
+ *
+ * `name` may be a flat top-level key OR a nested PATH (`'address.city'`,
+ * `'items[2].sku'`); a flat key is a 1-segment path and stays back-compatible
+ * (v3 R19).
  */
 export function useField<T = unknown>(name: string): UseFieldReturn<T> {
   const form = useFormContext()
@@ -32,15 +36,17 @@ export function useField<T = unknown>(name: string): UseFieldReturn<T> {
   })
   onCleanup(unsubscribe)
 
-  const value = createMemo(() => state().values[name] as T)
-  const error = createMemo(() => state().errors[name])
+  // Canonical key for per-field state lookups (a flat key maps to itself).
+  const key = formatPath(name)
+  const value = createMemo(() => getByPath(state().values, name) as T)
+  const error = createMemo(() => state().errors[key])
 
   return {
     name,
     value,
     error,
-    touched: createMemo(() => Boolean(state().touched[name])),
-    dirty: createMemo(() => Boolean(state().dirty[name])),
+    touched: createMemo(() => Boolean(state().touched[key])),
+    dirty: createMemo(() => Boolean(state().dirty[key])),
     setValue: (next) => form.setFieldValue(name, next as never),
     setTouched: (touched = true) => form.setFieldTouched(name, touched),
     fieldProps: createMemo(() => ({

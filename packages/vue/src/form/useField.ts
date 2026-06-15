@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, ref, type ComputedRef, type Ref } from 'vue'
-import type { FormState, FormValues } from '@iris-ui/core'
+import { formatPath, getByPath, type FormState, type FormValues } from '@iris-ui/core'
 import { useFormContext } from './context'
 
 export interface FieldBindProps {
@@ -28,6 +28,10 @@ export interface UseFieldReturn<T> {
 /**
  * Binds a single field to the surrounding `<IrisForm>`. `T` is the value type
  * at the call site (the injection erases the form's generic).
+ *
+ * `name` may be a flat top-level key OR a nested PATH (`'address.city'`,
+ * `'items[2].sku'`); a flat key is a 1-segment path and stays back-compatible
+ * (v3 R19).
  */
 export function useField<T = unknown>(name: string): UseFieldReturn<T> {
   const form = useFormContext()
@@ -37,15 +41,17 @@ export function useField<T = unknown>(name: string): UseFieldReturn<T> {
   })
   onBeforeUnmount(unsubscribe)
 
-  const value = computed(() => state.value.values[name] as T)
-  const error = computed(() => state.value.errors[name])
+  // Canonical key for per-field state lookups (a flat key maps to itself).
+  const key = formatPath(name)
+  const value = computed(() => getByPath(state.value.values, name) as T)
+  const error = computed(() => state.value.errors[key])
 
   return {
     name,
     value,
     error,
-    touched: computed(() => Boolean(state.value.touched[name])),
-    dirty: computed(() => Boolean(state.value.dirty[name])),
+    touched: computed(() => Boolean(state.value.touched[key])),
+    dirty: computed(() => Boolean(state.value.dirty[key])),
     setValue: (next) => form.setFieldValue(name, next as never),
     setTouched: (touched = true) => form.setFieldTouched(name, touched),
     fieldProps: computed(() => ({

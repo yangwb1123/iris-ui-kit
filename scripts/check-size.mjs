@@ -41,7 +41,13 @@ const BUDGETS = {
   // Bumped 21→23 (v3 R11): createColumnState — the resize/pin/reorder/visibility
   // controller that defines an enterprise grid, sunk to core so the 4 adapters +
   // pro-table share one implementation instead of re-coding drag-reorder each.
-  core: 23,
+  // Bumped 23→24 (v3 R19): the nested-path form engine — path.ts (parse/format/
+  // get/set with structural sharing + rekeyByArrayMutation) plus the form
+  // setters keying errors/touched/dirty/validating by full path and the array
+  // helpers re-keying per-element state across insert/remove/move/swap. This is
+  // the table-stakes capability that unblocks plugin-form-builder array/sub-form
+  // field types; ~1.4KB for a genuinely new engine, not drift.
+  core: 24,
   tokens: 2,
   theme: 3.5,
   skins: 5,

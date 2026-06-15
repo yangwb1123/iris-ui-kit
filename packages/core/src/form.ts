@@ -1,5 +1,13 @@
 import { createStore, type Store } from './store'
 import { debounce } from './data-view'
+import {
+  formatPath,
+  getByPath,
+  setByPath,
+  rekeyByArrayMutation,
+  type Path,
+  type PathSegment,
+} from './path'
 
 /**
  * Framework-agnostic form engine. Owns value aggregation, dirty/touched
@@ -8,11 +16,30 @@ import { debounce } from './data-view'
  * nothing to do with any UI framework. The React (`useForm`/`useField`) and
  * Vue (`useForm` + provide/inject) adapters are thin bridges over the
  * `Store<FormState>` exposed here, exactly like every other Iris primitive.
+ *
+ * The per-field state maps (errors/touched/dirty/validating) are keyed by a
+ * canonical PATH string (v3 R19): a flat top-level key is just a 1-segment path
+ * (`formatPath(parsePath(key)) === key`), so every flat-key call stays 100%
+ * back-compatible, while a nested key (`address.city`, `items[2].sku`) lands on
+ * its own field. The value setters/getters and the schema validator understand
+ * the FULL path, which is what unblocks array / sub-form field types.
  */
 
 export type FormValues = Record<string, unknown>
 
 type Key<V> = keyof V & string
+
+/**
+ * A field reference: a flat top-level key OR a nested path string
+ * (`address.city`, `items[2].sku`) / a parsed segment array. Widening `Key<V>`
+ * to also accept a `Path` keeps existing `keyof V` call-sites type-checking
+ * while opening up nested binding. The string `(string & {})` member preserves
+ * the literal-key autocomplete for `Key<V>`.
+ */
+export type FieldPath<V> = Key<V> | (string & {}) | readonly PathSegment[]
+
+/** The canonical string key under which a field's per-field state is stored. */
+const pathKey = (ref: FieldPath<unknown>): string => formatPath(ref as Path)
 
 /** Keys of `V` whose value is an array (the targets of the `array*` helpers). */
 export type ArrayKey<V> = { [K in Key<V>]: V[K] extends readonly unknown[] ? K : never }[Key<V>]
@@ -107,7 +134,15 @@ export interface FormStore<V extends FormValues> {
   store: Store<FormState<V>>
   getState(): FormState<V>
   subscribe(listener: (state: FormState<V>) => void): () => void
+  /**
+   * Set a field's value. A flat top-level key is type-checked as `V[K]`; a
+   * nested PATH (`address.city`, `items[2].sku`) is accepted too (value typed
+   * loosely) and written with structural sharing along the touched path only.
+   */
   setFieldValue<K extends Key<V>>(name: K, value: V[K]): void
+  setFieldValue(path: FieldPath<V>, value: unknown): void
+  /** Read a field's value by flat key or nested path. */
+  getFieldValue(path: FieldPath<V>): unknown
   setValues(values: Partial<V>): void
   /** Append `item` to an array field. */
   arrayPush<K extends ArrayKey<V>>(name: K, item: ArrayElement<V[K]>): void
@@ -119,10 +154,10 @@ export interface FormStore<V extends FormValues> {
   arraySwap<K extends ArrayKey<V>>(name: K, a: number, b: number): void
   /** Move an element of an array field from one index to another. */
   arrayMove<K extends ArrayKey<V>>(name: K, from: number, to: number): void
-  setFieldTouched(name: Key<V>, touched?: boolean): void
-  setFieldError(name: Key<V>, error: string | undefined): void
+  setFieldTouched(name: FieldPath<V>, touched?: boolean): void
+  setFieldError(name: FieldPath<V>, error: string | undefined): void
   setErrors(errors: FieldErrors<V>): void
-  validateField(name: Key<V>): Promise<string | undefined>
+  validateField(name: FieldPath<V>): Promise<string | undefined>
   validateForm(): Promise<FieldErrors<V>>
   /** Validate just the fields of step `index` (default: the current step). */
   validateStep(index?: number): Promise<boolean>
@@ -164,16 +199,17 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
 
   // Monotonic per-field token. A validation result is only applied if its
   // field's token is still the latest when it resolves — so a slow async
-  // validator that lost a race can never overwrite a newer answer.
-  const tokens = new Map<Key<V>, number>()
-  const nextToken = (name: Key<V>): number => {
+  // validator that lost a race can never overwrite a newer answer. Keyed by the
+  // canonical path string (a flat key is its own canonical key).
+  const tokens = new Map<string, number>()
+  const nextToken = (name: string): number => {
     const t = (tokens.get(name) ?? 0) + 1
     tokens.set(name, t)
     return t
   }
-  const isCurrent = (name: Key<V>, token: number): boolean => tokens.get(name) === token
+  const isCurrent = (name: string, token: number): boolean => tokens.get(name) === token
 
-  const writeError = (name: Key<V>, error: string | undefined): void => {
+  const writeError = (name: string, error: string | undefined): void => {
     store.setState((s) => {
       if (error) {
         if (s.errors[name] === error) return s
@@ -186,22 +222,26 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     })
   }
 
-  const runFieldValidator = async (name: Key<V>, values: V): Promise<string | undefined> => {
-    const validator = validators[name]
+  // Per-field validators are keyed by the (top-level) field name. A nested path
+  // has no per-field validator — its errors come from the schema-level
+  // `validate` — so this returns undefined for it.
+  const runFieldValidator = async (key: string, values: V): Promise<string | undefined> => {
+    const validator = validators[key as Key<V>]
     if (!validator) return undefined
-    return validator(values[name], values)
+    return validator(getByPath(values, key) as V[Key<V>], values)
   }
 
-  const setValidating = (name: Key<V>, on: boolean): void => {
+  const setValidating = (name: string, on: boolean): void => {
     store.setState((s) => ({ ...s, validating: { ...s.validating, [name]: on } }))
   }
 
-  const validateField: FormStore<V>['validateField'] = async (name) => {
+  const validateField: FormStore<V>['validateField'] = async (ref) => {
+    const name = pathKey(ref)
     const token = nextToken(name)
     setValidating(name, true)
     const error = await runFieldValidator(name, store.getState().values)
     // A newer validation superseded this one — leave it to clear the flag.
-    if (!isCurrent(name, token)) return store.getState().errors[name]
+    if (!isCurrent(name, token)) return store.getState().errors[name as Key<V>]
     setValidating(name, false)
     writeError(name, error)
     return error
@@ -210,8 +250,8 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
   // Debounced per-field validate-on-change (one debouncer per field), so an
   // async validator isn't fired on every keystroke. Immediate when debounce is 0.
   const debounceMs = config.validationDebounceMs ?? 0
-  const fieldDebouncers = new Map<Key<V>, () => void>()
-  const scheduleValidate = (name: Key<V>): void => {
+  const fieldDebouncers = new Map<string, () => void>()
+  const scheduleValidate = (name: string): void => {
     if (debounceMs <= 0) {
       void validateField(name)
       return
@@ -284,22 +324,31 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
 
   const dependencies: Partial<Record<Key<V>, Key<V>[]>> = config.dependencies ?? {}
 
-  const setFieldValue: FormStore<V>['setFieldValue'] = (name, value) => {
+  const setFieldValue: FormStore<V>['setFieldValue'] = (
+    ref: FieldPath<V>,
+    value: unknown,
+  ): void => {
+    const key = pathKey(ref)
     store.setState((s) => ({
       ...s,
-      values: { ...s.values, [name]: value },
-      dirty: { ...s.dirty, [name]: !Object.is(value, initialValues[name]) },
+      // Structural-sharing set along the touched path only (a flat key reduces
+      // to `{ ...values, [key]: value }`, so flat behavior is unchanged).
+      values: setByPath(s.values, key, value),
+      dirty: { ...s.dirty, [key]: !Object.is(value, getByPath(initialValues, key)) },
     }))
     if (validateOnChange) {
-      scheduleValidate(name)
+      scheduleValidate(key)
       // Re-validate dependent fields (one level deep) so a cross-field rule
       // (e.g. confirmPassword depends on password) updates inline, not only on
       // submit. Only fields with a validator are re-run.
-      for (const dep of dependencies[name] ?? []) {
+      for (const dep of dependencies[key as Key<V>] ?? []) {
         if (validators[dep]) scheduleValidate(dep)
       }
     }
   }
+
+  const getFieldValue: FormStore<V>['getFieldValue'] = (ref) =>
+    getByPath(store.getState().values, ref as Path)
 
   const setValues: FormStore<V>['setValues'] = (values) => {
     const keys = Object.keys(values) as Key<V>[]
@@ -319,10 +368,44 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
   // Array-field helpers. Each reads the current array, produces a new array
   // immutably, writes it back as a dirty value, and re-validates the field —
   // the per-framework `useFieldArray` bridges are thin wrappers over these.
+  //
+  // `remap` re-keys the per-ELEMENT state (errors/touched/dirty/validating
+  // stored under `name[i]…`) so a row's nested error/touched/dirty follows it
+  // across insert/remove/move/swap (an insert at index 1 shifts items[1..]).
+  // It maps a 0-based element index to its new index, or `null` to drop it.
+  const rekeyElements = (prefix: string, remap: (index: number) => number | null): void => {
+    store.setState((s) => ({
+      ...s,
+      errors: rekeyByArrayMutation(
+        s.errors as Record<string, string>,
+        prefix,
+        remap,
+      ) as FieldErrors<V>,
+      touched: rekeyByArrayMutation(
+        s.touched as Record<string, boolean>,
+        prefix,
+        remap,
+      ) as FieldFlags<V>,
+      dirty: rekeyByArrayMutation(
+        s.dirty as Record<string, boolean>,
+        prefix,
+        remap,
+      ) as FieldFlags<V>,
+      validating: rekeyByArrayMutation(
+        s.validating as Record<string, boolean>,
+        prefix,
+        remap,
+      ) as FieldFlags<V>,
+    }))
+  }
+
   const updateArray = <K extends ArrayKey<V>>(
     name: K,
     fn: (arr: ArrayElement<V[K]>[]) => ArrayElement<V[K]>[],
+    remap?: (index: number) => number | null,
   ): void => {
+    const prefix = pathKey(name)
+    if (remap) rekeyElements(prefix, remap)
     const current = store.getState().values[name]
     const arr = Array.isArray(current) ? (current as ArrayElement<V[K]>[]) : []
     setFieldValue(name, fn([...arr]) as unknown as V[K])
@@ -333,41 +416,75 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
       arr.push(item)
       return arr
     })
-  const arrayInsert: FormStore<V>['arrayInsert'] = (name, index, item) =>
-    updateArray(name, (arr) => {
-      arr.splice(Math.max(0, Math.min(index, arr.length)), 0, item)
-      return arr
-    })
-  const arrayRemove: FormStore<V>['arrayRemove'] = (name, index) =>
-    updateArray(name, (arr) => {
-      if (index >= 0 && index < arr.length) arr.splice(index, 1)
-      return arr
-    })
-  const arraySwap: FormStore<V>['arraySwap'] = (name, a, b) =>
-    updateArray(name, (arr) => {
-      if (a >= 0 && a < arr.length && b >= 0 && b < arr.length) {
+  const arrayInsert: FormStore<V>['arrayInsert'] = (name, index, item) => {
+    const current = store.getState().values[name]
+    const len = Array.isArray(current) ? current.length : 0
+    const at = Math.max(0, Math.min(index, len))
+    updateArray(
+      name,
+      (arr) => {
+        arr.splice(at, 0, item)
+        return arr
+      },
+      (i) => (i >= at ? i + 1 : i), // shift element keys at/after the insertion up
+    )
+  }
+  const arrayRemove: FormStore<V>['arrayRemove'] = (name, index) => {
+    const current = store.getState().values[name]
+    const len = Array.isArray(current) ? current.length : 0
+    if (index < 0 || index >= len) return
+    updateArray(
+      name,
+      (arr) => {
+        arr.splice(index, 1)
+        return arr
+      },
+      (i) => (i === index ? null : i > index ? i - 1 : i), // drop the removed row, shift the tail down
+    )
+  }
+  const arraySwap: FormStore<V>['arraySwap'] = (name, a, b) => {
+    const current = store.getState().values[name]
+    const len = Array.isArray(current) ? current.length : 0
+    if (a < 0 || a >= len || b < 0 || b >= len) return
+    updateArray(
+      name,
+      (arr) => {
         const tmp = arr[a]!
         arr[a] = arr[b]!
         arr[b] = tmp
-      }
-      return arr
-    })
-  const arrayMove: FormStore<V>['arrayMove'] = (name, from, to) =>
-    updateArray(name, (arr) => {
-      if (from >= 0 && from < arr.length && to >= 0 && to < arr.length) {
+        return arr
+      },
+      (i) => (i === a ? b : i === b ? a : i),
+    )
+  }
+  const arrayMove: FormStore<V>['arrayMove'] = (name, from, to) => {
+    const current = store.getState().values[name]
+    const len = Array.isArray(current) ? current.length : 0
+    if (from < 0 || from >= len || to < 0 || to >= len) return
+    updateArray(
+      name,
+      (arr) => {
         const [moved] = arr.splice(from, 1)
         arr.splice(to, 0, moved!)
-      }
-      return arr
-    })
-
-  const setFieldTouched: FormStore<V>['setFieldTouched'] = (name, touched = true) => {
-    store.setState((s) => ({ ...s, touched: { ...s.touched, [name]: touched } }))
-    if (touched && validateOnBlur) void validateField(name)
+        return arr
+      },
+      (i) => {
+        if (i === from) return to
+        // Elements between from and to shift by one toward the vacated slot.
+        if (from < to) return i > from && i <= to ? i - 1 : i
+        return i >= to && i < from ? i + 1 : i
+      },
+    )
   }
 
-  const setFieldError: FormStore<V>['setFieldError'] = (name, error) => {
-    writeError(name, error)
+  const setFieldTouched: FormStore<V>['setFieldTouched'] = (ref, touched = true) => {
+    const key = pathKey(ref)
+    store.setState((s) => ({ ...s, touched: { ...s.touched, [key]: touched } }))
+    if (touched && validateOnBlur) void validateField(key)
+  }
+
+  const setFieldError: FormStore<V>['setFieldError'] = (ref, error) => {
+    writeError(pathKey(ref), error)
   }
 
   const setErrors: FormStore<V>['setErrors'] = (errors) => {
@@ -416,6 +533,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     getState: store.getState,
     subscribe: store.subscribe,
     setFieldValue,
+    getFieldValue,
     setValues,
     arrayPush,
     arrayInsert,

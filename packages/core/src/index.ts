@@ -47,6 +47,13 @@ export {
   type GridVirtualWindow,
 } from './virtual'
 export {
+  createVirtualizer,
+  type Virtualizer,
+  type VirtualizerConfig,
+  type VirtualizerState,
+  type VirtualItem,
+} from './virtualizer'
+export {
   createAsyncResource,
   type AsyncResource,
   type AsyncState,

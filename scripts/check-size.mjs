@@ -31,14 +31,22 @@ const BUDGETS = {
   // optimistic mutate) + createCellEdit + column accessors. The convergence
   // round (pro-table/resource → createDataSource) is expected to reclaim some of
   // this by replacing their duplicated logic with thin wrappers.
-  core: 18,
+  // Bumped 18→21 (v3 R10): createVirtualizer — the stateful measurement-feedback
+  // virtualizer (keyed measured-size cache + a Fenwick/BIT tree for O(log n)
+  // incremental offsets and lower-bound, scroll-anchoring, scrollToIndex). This
+  // is the scale engine that removes the flagship grid's 100k-row cliff; the
+  // Fenwick math is the bytes. Wiring it into pro-table/base Table (R12/R13) is
+  // expected to reclaim some by deleting their bespoke row rendering.
+  core: 21,
   tokens: 2,
   theme: 3.5,
   skins: 5,
   icons: 4,
   react: 80,
   vue: 88,
-  solid: 85,
+  // Bumped 85→87 (v3 R10): the adapters re-export core's new createVirtualizer
+  // through their barrel; react/vue had headroom, solid sat at the edge.
+  solid: 87,
   svelte: 6,
   manifest: 2,
 }

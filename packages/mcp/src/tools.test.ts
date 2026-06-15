@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildManifest, discover } from '@iris-ui/manifest'
+import { buildManifest, discover, type Framework } from '@iris-ui/manifest'
 import {
   listComponents,
   searchComponents,
@@ -8,7 +8,10 @@ import {
   scaffoldView,
   suggestComponents,
   validateUsage,
+  generateView,
+  generateTest,
 } from './tools'
+import { detectControlledPair } from './codegen'
 
 const manifest = buildManifest(discover())
 
@@ -142,5 +145,147 @@ describe('validateUsage', () => {
         /Unknown prop/.test(i.message),
       ),
     ).toBe(true)
+  })
+})
+
+describe('detectControlledPair', () => {
+  it('finds value+onValueChange on IrisSelect', () => {
+    const pair = detectControlledPair(getComponentApi(manifest, 'IrisSelect')!)
+    expect(pair).toMatchObject({ value: 'value', handler: 'onValueChange' })
+  })
+  it('finds checked+onChange on IrisSwitch (generic handler)', () => {
+    const pair = detectControlledPair(getComponentApi(manifest, 'IrisSwitch')!)
+    expect(pair).toMatchObject({ value: 'checked', handler: 'onChange' })
+  })
+  it('finds open+onOpenChange on IrisDialog', () => {
+    const pair = detectControlledPair(getComponentApi(manifest, 'IrisDialog')!)
+    expect(pair).toMatchObject({ value: 'open', handler: 'onOpenChange' })
+  })
+  it('returns null for a component with no controlled value (IrisButton)', () => {
+    expect(detectControlledPair(getComponentApi(manifest, 'IrisButton')!)).toBeNull()
+  })
+})
+
+describe('scaffoldSnippet wiring (controlled components)', () => {
+  // The state hook each framework must emit + the binding it must produce for a
+  // controlled component (IrisSelect: value + onValueChange).
+  const expectations: Record<Framework, { state: RegExp; binding: RegExp }> = {
+    react: {
+      state: /const \[value, setValue\] = React\.useState\(/,
+      binding: /value=\{value\} onValueChange=\{setValue\}/,
+    },
+    solid: {
+      state: /const \[value, setValue\] = createSignal\(/,
+      binding: /value=\{value\(\)\} onValueChange=\{setValue\}/,
+    },
+    svelte: {
+      state: /let value = \$state\(/,
+      binding: /bind:value=\{value\}/,
+    },
+    vue: {
+      state: /const value = ref\(/,
+      binding: /v-model="value"/,
+    },
+  }
+
+  for (const fw of ['react', 'solid', 'svelte', 'vue'] as Framework[]) {
+    it(`emits real ${fw} state scaffolding + binding for a controlled component`, () => {
+      const code = scaffoldSnippet(manifest, 'IrisSelect', fw)!
+      expect(code).toMatch(expectations[fw].state)
+      expect(code).toMatch(expectations[fw].binding)
+      expect(code).toContain('IrisSelect')
+    })
+  }
+
+  it('seeds the state from the manifest default (IrisDialog open defaults to false)', () => {
+    const code = scaffoldSnippet(manifest, 'IrisDialog', 'react')!
+    expect(code).toMatch(/const \[open, setOpen\] = React\.useState\(false\)/)
+    expect(code).toContain('open={open} onOpenChange={setOpen}')
+  })
+
+  it('keeps the import + bare tag shape for a non-controlled component (stable)', () => {
+    const code = scaffoldSnippet(manifest, 'IrisButton', 'react')!
+    expect(code).toContain("import { IrisButton } from '@iris-ui/react'")
+    expect(code).not.toContain('useState')
+  })
+
+  it('is deterministic (same input → same output)', () => {
+    expect(scaffoldSnippet(manifest, 'IrisSelect', 'react')).toBe(
+      scaffoldSnippet(manifest, 'IrisSelect', 'react'),
+    )
+  })
+})
+
+describe('generateView (wired composed view)', () => {
+  it('composes >1 component and includes a data-wiring stub (table)', () => {
+    const view = generateView(manifest, {
+      framework: 'react',
+      components: ['IrisProTable', 'IrisSelect'],
+    })!
+    expect(view).not.toBeNull()
+    // More than one component is present.
+    expect(view).toContain('<IrisProTable')
+    expect(view).toContain('<IrisSelect')
+    // A real data-wiring stub for the table.
+    expect(view).toContain('createProTableStore({ data: rows, columns, rowKey:')
+    expect(view).toContain("import { createProTableStore } from '@iris-ui/plugin-pro-table/core'")
+    expect(view).toContain('store={store}')
+    // The controlled component is wired with real state.
+    expect(view).toMatch(/const \[value, setValue\] = React\.useState\(/)
+  })
+
+  it('wires a form-builder schema stub and binds it', () => {
+    const view = generateView(manifest, {
+      framework: 'vue',
+      components: ['IrisFormBuilder', 'IrisSwitch'],
+      layout: 'IrisCard',
+    })!
+    expect(view).toContain('const schema = {')
+    expect(view).toContain(':schema="schema"')
+    expect(view).toContain('<IrisCard>')
+    // Switch gets a vue v-model binding for its controlled `checked`.
+    expect(view).toContain('v-model:checked="checked"')
+  })
+
+  it('returns null for empty input or an unknown/unsupported component', () => {
+    expect(generateView(manifest, { framework: 'react', components: [] })).toBeNull()
+    expect(
+      generateView(manifest, { framework: 'react', components: ['IrisSelect', 'IrisNope'] }),
+    ).toBeNull()
+  })
+
+  it('is deterministic (same input → same output)', () => {
+    const req = { framework: 'react' as const, components: ['IrisProTable', 'IrisSelect'] }
+    expect(generateView(manifest, req)).toBe(generateView(manifest, req))
+  })
+})
+
+describe('generateTest (test skeleton)', () => {
+  for (const fw of ['react', 'solid', 'svelte', 'vue'] as Framework[]) {
+    it(`emits a ${fw} test referencing the component + an event`, () => {
+      const test = generateTest(manifest, 'IrisSwitch', fw)!
+      expect(test).toContain('IrisSwitch')
+      // The component's first event (onChange) is spied + asserted.
+      expect(test).toContain('const onChange = vi.fn()')
+      expect(test).toContain('expect(onChange).not.toHaveBeenCalled()')
+      // Uses the framework's testing-library.
+      const tl = {
+        react: '@testing-library/react',
+        solid: '@solidjs/testing-library',
+        svelte: '@testing-library/svelte',
+        vue: '@vue/test-utils',
+      }[fw]
+      expect(test).toContain(tl)
+    })
+  }
+
+  it('returns null for an unknown/unsupported component', () => {
+    expect(generateTest(manifest, 'IrisNope', 'react')).toBeNull()
+  })
+
+  it('is deterministic (same input → same output)', () => {
+    expect(generateTest(manifest, 'IrisSwitch', 'react')).toBe(
+      generateTest(manifest, 'IrisSwitch', 'react'),
+    )
   })
 })

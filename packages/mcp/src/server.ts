@@ -12,6 +12,8 @@ import {
   scaffoldView,
   suggestComponents,
   validateUsage,
+  generateView,
+  generateTest,
 } from './tools'
 
 /**
@@ -109,6 +111,59 @@ server.registerTool(
     })
     return {
       content: [{ type: 'text' as const, text: view ?? `Cannot compose a view for ${framework}.` }],
+    }
+  },
+)
+
+server.registerTool(
+  'generate_view',
+  {
+    description:
+      'Generate a WIRED, runnable-against-stub view: deduped imports + state scaffolding (useState/ref/createSignal/$state for each controlled component) + a deterministic data stub (createProTableStore for a table, a schema for IrisFormBuilder) + markup binding each component to its state/stub. The wired counterpart to scaffold_view — emit a composed view that already glues data and handlers.',
+    inputSchema: {
+      framework: z.enum(ALL_FRAMEWORKS as [string, ...string[]]).describe('Target framework'),
+      components: z
+        .array(z.string())
+        .describe('Component names to compose, in order, e.g. ["IrisProTable", "IrisInput"]'),
+      layout: z
+        .string()
+        .optional()
+        .describe('Optional container component to wrap the children, e.g. "IrisCard"'),
+    },
+  },
+  async ({ framework, components, layout }) => {
+    const view = generateView(manifest, {
+      framework: framework as (typeof ALL_FRAMEWORKS)[number],
+      components,
+      layout,
+    })
+    return {
+      content: [
+        { type: 'text' as const, text: view ?? `Cannot generate a view for ${framework}.` },
+      ],
+    }
+  },
+)
+
+server.registerTool(
+  'generate_test',
+  {
+    description:
+      "Generate a minimal render/interaction test skeleton for a component using the framework's testing-library (@testing-library/react|svelte, @solidjs/testing-library, @vue/test-utils). Derived from the manifest: renders the component (controlled prop seeded, required props filled) and asserts on one declared event via a spy.",
+    inputSchema: {
+      name: z.string().describe('Exact component name, e.g. "IrisSwitch"'),
+      framework: z.enum(ALL_FRAMEWORKS as [string, ...string[]]).describe('Target framework'),
+    },
+  },
+  async ({ name, framework }) => {
+    const test = generateTest(manifest, name, framework as (typeof ALL_FRAMEWORKS)[number])
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: test ?? `Cannot generate a test for ${name} (${framework}).`,
+        },
+      ],
     }
   },
 )

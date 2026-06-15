@@ -1,10 +1,13 @@
 import type { Framework, IrisManifest, ManifestComponent } from '@iris-ui/manifest'
+import { detectControlledPair, wiredTag } from './codegen'
 
 /**
  * Pure query/codegen logic over an {@link IrisManifest}. These are the bodies of
  * the MCP tools, kept framework- and transport-free so they can be unit-tested
  * directly (the `server.ts` MCP wiring is a thin adapter over them).
  */
+
+export { generateTest, generateView, type GenerateViewRequest } from './codegen'
 
 /** A compact component summary for `list_components` / `search_components`. */
 export interface ComponentSummary {
@@ -43,10 +46,15 @@ export function getComponentApi(manifest: IrisManifest, name: string): ManifestC
 }
 
 /**
- * Emit a ready-to-edit code snippet for a component in a framework: the import
- * line (core adapter or plugin sub-path) plus a JSX/tag usage pre-filled with
- * the component's REQUIRED (non-optional) props as placeholders. Returns null
- * for an unknown component or a framework the component doesn't support.
+ * Emit a ready-to-edit WIRED code snippet for a component in a framework: the
+ * import line (core adapter or plugin sub-path) plus the usage. When the
+ * component has a controlled value/handler pair (detected from the manifest prop
+ * names — `value`+`onValueChange`, `checked`+`onChange`, `open`+`onOpenChange`,
+ * …) it emits REAL state scaffolding for the target framework
+ * (`useState`/`ref`/`createSignal`/`$state`) seeded from the manifest default
+ * and binds it; non-controlled required props are filled from their manifest
+ * default else a typed placeholder. Returns null for an unknown component or a
+ * framework the component doesn't support.
  */
 export function scaffoldSnippet(
   manifest: IrisManifest,
@@ -57,23 +65,36 @@ export function scaffoldSnippet(
   if (!component || !component.frameworks.includes(framework)) return null
 
   const importPath = component.importFrom[framework] ?? `@iris-ui/${framework}`
-  const required = (component.props ?? []).filter((p) => !p.optional)
-  const attrs = required.map((p) => `${p.name}={/* ${p.type} */}`).join(' ')
-  const open = attrs ? `<${name} ${attrs}>` : `<${name}>`
-
   const pluginNote = component.plugin
     ? `\n// Requires <IrisProvider plugins={[…]}> — install ${component.plugin}`
     : ''
 
-  if (framework === 'vue') {
-    const vueAttrs = required.map((p) => `:${p.name}="/* ${p.type} */"`).join(' ')
-    return `import { ${name} } from '${importPath}'${pluginNote}\n<${name}${vueAttrs ? ' ' + vueAttrs : ''} />`
-  }
-  if (framework === 'svelte') {
-    return `import { ${name} } from '${importPath}'${pluginNote}\n${open}</${name}>`
-  }
-  // react / solid share JSX.
-  return `import { ${name} } from '${importPath}'${pluginNote}\n${open}</${name}>`
+  const pair = detectControlledPair(component)
+  const tag = wiredTag(component, framework, pair)
+
+  // No controlled state → keep the original import + bare-tag shape (stable).
+  if (!pair) return `import { ${name} } from '${importPath}'${pluginNote}\n${tag}`
+
+  // Controlled → prepend a real state declaration for the framework.
+  const { local, default: seed } = pair
+  const setter = `set${local[0]!.toUpperCase()}${local.slice(1)}`
+  const decl =
+    framework === 'react'
+      ? `const [${local}, ${setter}] = React.useState(${seed})`
+      : framework === 'solid'
+        ? `const [${local}, ${setter}] = createSignal(${seed})`
+        : framework === 'vue'
+          ? `const ${local} = ref(${seed})`
+          : `let ${local} = $state(${seed})`
+  const stateImport =
+    framework === 'react'
+      ? "import * as React from 'react'\n"
+      : framework === 'solid'
+        ? "import { createSignal } from 'solid-js'\n"
+        : framework === 'vue'
+          ? "import { ref } from 'vue'\n"
+          : ''
+  return `${stateImport}import { ${name} } from '${importPath}'${pluginNote}\n\n${decl}\n${tag}`
 }
 
 /** The bare element/tag for `component` in `framework`, required props pre-filled (no import). */

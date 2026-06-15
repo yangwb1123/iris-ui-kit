@@ -151,6 +151,16 @@ export {
   type ColumnAccessor,
 } from './columns'
 export {
+  createColumnState,
+  type ColumnStateController,
+  type ColumnStateConfig,
+  type ColumnDef,
+  type ColumnStateItem,
+  type ColumnLayout,
+  type ColumnStateSnapshot,
+  type ColumnPin,
+} from './column-state'
+export {
   createCellEdit,
   type CellEdit,
   type CellEditState,

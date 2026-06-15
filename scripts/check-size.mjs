@@ -37,7 +37,10 @@ const BUDGETS = {
   // is the scale engine that removes the flagship grid's 100k-row cliff; the
   // Fenwick math is the bytes. Wiring it into pro-table/base Table (R12/R13) is
   // expected to reclaim some by deleting their bespoke row rendering.
-  core: 21,
+  // Bumped 21→23 (v3 R11): createColumnState — the resize/pin/reorder/visibility
+  // controller that defines an enterprise grid, sunk to core so the 4 adapters +
+  // pro-table share one implementation instead of re-coding drag-reorder each.
+  core: 23,
   tokens: 2,
   theme: 3.5,
   skins: 5,

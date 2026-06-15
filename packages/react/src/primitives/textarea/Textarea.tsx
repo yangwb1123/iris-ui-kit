@@ -19,6 +19,10 @@ export interface IrisTextareaProps extends Omit<
   maxRows?: number
 }
 
+/**
+ * Multi-line text input with size variants and an `invalid` state. Optionally
+ * grows to fit its content when `autosize` is set, capped at `maxRows`.
+ */
 export const IrisTextarea = React.forwardRef<HTMLTextAreaElement, IrisTextareaProps>(
   function IrisTextarea(
     {

@@ -203,6 +203,35 @@ describe('discover (real repo)', () => {
     expect(withDefaults.length).toBeGreaterThan(100)
   })
 
+  it('harvests per-component descriptions from leading JSDoc (React reference source)', () => {
+    const m = buildManifest(discover())
+    // Flagship components carry a prose summary harvested from their JSDoc.
+    const select = m.components.find((c) => c.name === 'IrisSelect')
+    expect(select?.description).toContain('Single-select dropdown')
+    const dialog = m.components.find((c) => c.name === 'IrisDialog')
+    expect(dialog?.description).toMatch(/dialog/i)
+    // A meaningful majority of components end up described (never fabricated;
+    // components with no leading JSDoc simply get none).
+    const described = m.components.filter((c) => c.description && c.description.length > 0)
+    expect(described.length).toBeGreaterThan(100)
+    // Descriptions are single-line (whitespace-collapsed), never multi-line.
+    expect(described.every((c) => !c.description!.includes('\n'))).toBe(true)
+  })
+
+  it('harvests the @example snippet when present, into the component example field', () => {
+    const m = buildManifest(discover())
+    const tooltip = m.components.find((c) => c.name === 'IrisTooltip')
+    expect(tooltip?.example).toContain('<IrisTooltip')
+    // Code-fence markers are stripped from harvested examples.
+    expect(tooltip?.example).not.toContain('```')
+  })
+
+  it('surfaces component descriptions in llms.txt', () => {
+    const m = buildManifest(discover())
+    const llms = renderLlmsText(m)
+    expect(llms).toContain('Single-select dropdown')
+  })
+
   it('detects compound sub-components by the part-suffix naming convention', () => {
     const m = buildManifest(discover())
     const dialog = m.components.find((c) => c.name === 'IrisDialog')

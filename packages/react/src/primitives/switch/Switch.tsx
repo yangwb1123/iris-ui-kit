@@ -20,6 +20,10 @@ export interface IrisSwitchProps extends Omit<
   ariaDescribedby?: string
 }
 
+/**
+ * Toggle switch for an on/off boolean, in controlled (`checked`) or
+ * uncontrolled (`defaultChecked`) modes. Rendered with `role="switch"`.
+ */
 export const IrisSwitch = React.forwardRef<HTMLInputElement, IrisSwitchProps>(function IrisSwitch(
   {
     checked,

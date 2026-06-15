@@ -50,6 +50,8 @@ export function buildManifest(raw: RawDiscovery): IrisManifest {
         frameworks,
         importFrom,
         plugin: c.plugin,
+        ...(c.description ? { description: c.description } : {}),
+        ...(c.example ? { example: c.example } : {}),
         props: c.props,
         ...(c.events && c.events.length > 0 ? { events: c.events } : {}),
         ...(c.slots && c.slots.length > 0 ? { slots: c.slots } : {}),

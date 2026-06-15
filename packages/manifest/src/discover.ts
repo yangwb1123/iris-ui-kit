@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import type { ComponentGroup, Framework, RawComponent, RawDiscovery, RawTokens } from './schema'
 import { ALL_FRAMEWORKS } from './schema'
 import { extractComponentProps, classifyProps } from './props'
+import { extractComponentDocs } from './descriptions'
 
 const KNOWN_GROUPS: ComponentGroup[] = [
   'primitives',
@@ -153,6 +154,7 @@ export function discover(repoRoot: string = findRepoRoot()): RawDiscovery {
   for (const map of perFramework) for (const name of map.keys()) names.add(name)
 
   const propsByName = extractComponentProps(repoRoot)
+  const docsByName = extractComponentDocs(repoRoot)
 
   const components: RawComponent[] = []
   for (const name of names) {
@@ -162,12 +164,15 @@ export function discover(repoRoot: string = findRepoRoot()): RawDiscovery {
     const frameworks = records.flatMap((r) => r.frameworks)
     const base = records[0]
     const props = propsByName.get(name)
+    const doc = docsByName.get(name)
     const classified = props ? classifyProps(props) : { events: [], slots: [] }
     components.push({
       name,
       group: base.group,
       module: records.find((r) => r.module)?.module,
       frameworks,
+      ...(doc?.description ? { description: doc.description } : {}),
+      ...(doc?.example ? { example: doc.example } : {}),
       ...(props ? { props } : {}),
       ...(classified.events.length ? { events: classified.events } : {}),
       ...(classified.slots.length ? { slots: classified.slots } : {}),
@@ -178,9 +183,13 @@ export function discover(repoRoot: string = findRepoRoot()): RawDiscovery {
   // shadowed by a plugin one; they carry their owning package + activation group.
   for (const record of discoverPlugins(repoRoot).values()) {
     const props = propsByName.get(record.name)
+    const doc = docsByName.get(record.name)
     const classified = props ? classifyProps(props) : { events: [], slots: [] }
     components.push({
-      ...(props ? { ...record, props } : record),
+      ...record,
+      ...(doc?.description ? { description: doc.description } : {}),
+      ...(doc?.example ? { example: doc.example } : {}),
+      ...(props ? { props } : {}),
       ...(classified.events.length ? { events: classified.events } : {}),
       ...(classified.slots.length ? { slots: classified.slots } : {}),
     })

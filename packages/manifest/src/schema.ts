@@ -48,6 +48,10 @@ export interface RawComponent {
   frameworks: Framework[]
   /** Owning plugin package (e.g. `@iris-ui/plugin-editor`) for plugin components. */
   plugin?: string
+  /** Prose summary harvested from the component's leading JSDoc (React source). */
+  description?: string
+  /** Usage snippet harvested from the component's JSDoc `@example`, if present. */
+  example?: string
   /** Props extracted from the component's `Iris<Name>Props` interface (React source). */
   props?: ManifestProp[]
   /**
@@ -80,6 +84,19 @@ export interface ManifestComponent {
   /** For `primitives`, the owning sub-module directory (e.g. `button`). */
   module?: string
   frameworks: Framework[]
+  /**
+   * Prose summary of what the component is/does, harvested from the first
+   * paragraph of the leading JSDoc block above its exported symbol in the React
+   * reference source (the four adapters share semantics). Lets an agent
+   * understand a component's purpose without opening the source. Absent when the
+   * component has no leading JSDoc — never fabricated.
+   */
+  description?: string
+  /**
+   * A usage snippet harvested from the component's JSDoc `@example` tag, when
+   * present. Absent when the component has no `@example`.
+   */
+  example?: string
   /** Import specifier per framework the component is available in. */
   importFrom: Partial<Record<Framework, string>>
   /**

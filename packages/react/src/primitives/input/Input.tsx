@@ -22,6 +22,10 @@ export interface IrisInputProps extends Omit<
   suffix?: React.ReactNode
 }
 
+/**
+ * Single-line text input with size variants, an `invalid` state, and optional
+ * `prefix`/`suffix` adornments. Forwards its ref to the native `<input>`.
+ */
 export const IrisInput = React.forwardRef<HTMLInputElement, IrisInputProps>(function IrisInput(
   {
     size = 'md',

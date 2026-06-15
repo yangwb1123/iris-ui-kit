@@ -24,6 +24,10 @@ export interface IrisCheckboxProps extends Omit<
   children?: React.ReactNode
 }
 
+/**
+ * Tri-state checkbox supporting `true`, `false`, and `'indeterminate'`, in both
+ * controlled (`checked`) and uncontrolled (`defaultChecked`) modes.
+ */
 export const IrisCheckbox = React.forwardRef<HTMLInputElement, IrisCheckboxProps>(
   function IrisCheckbox(
     {

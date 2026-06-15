@@ -35,6 +35,11 @@
       "cache": false
     },
 
+    "ssr-next#build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
+
     "iris-desktop#build": {
       "dependsOn": ["cms#build", "cms-react#build", "cms-solid#build", "cms-svelte#build"],
       "cache": false

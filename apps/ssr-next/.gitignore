@@ -1,0 +1,9 @@
+# Next.js build output
+/.next/
+/out/
+
+# Next typegen
+next-env.d.ts
+
+# turbo
+.turbo

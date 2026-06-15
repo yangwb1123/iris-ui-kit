@@ -295,32 +295,48 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
       return fetchPage({ append: true, page: s.page + 1 })
     },
     setPage(page) {
-      store.setState((s) => ({ ...s, page }))
-      void fetchPage({ append: false, page })
+      // batch: the page write + the fetch's synchronous loading/applyResult
+      // writes coalesce into ONE notification per user action (was 2-3 emits).
+      store.batch(() => {
+        store.setState((s) => ({ ...s, page }))
+        void fetchPage({ append: false, page })
+      })
     },
     setPageSize(size) {
-      store.setState((s) => ({ ...s, pageSize: size, page: 1 }))
-      void reloadFromStart()
+      store.batch(() => {
+        store.setState((s) => ({ ...s, pageSize: size, page: 1 }))
+        void reloadFromStart()
+      })
     },
     setSort(sort) {
-      store.setState((s) => ({ ...s, sort, page: 1 }))
-      void reloadFromStart()
+      store.batch(() => {
+        store.setState((s) => ({ ...s, sort, page: 1 }))
+        void reloadFromStart()
+      })
     },
     setMultiSort(multiSort) {
-      store.setState((s) => ({ ...s, multiSort, sort: null, page: 1 }))
-      void reloadFromStart()
+      store.batch(() => {
+        store.setState((s) => ({ ...s, multiSort, sort: null, page: 1 }))
+        void reloadFromStart()
+      })
     },
     setFilter(key, value) {
-      store.setState((s) => ({ ...s, filters: { ...s.filters, [key]: value }, page: 1 }))
-      void reloadFromStart()
+      store.batch(() => {
+        store.setState((s) => ({ ...s, filters: { ...s.filters, [key]: value }, page: 1 }))
+        void reloadFromStart()
+      })
     },
     setFilterRules(rules) {
-      store.setState((s) => ({ ...s, filterRules: rules, page: 1 }))
-      void reloadFromStart()
+      store.batch(() => {
+        store.setState((s) => ({ ...s, filterRules: rules, page: 1 }))
+        void reloadFromStart()
+      })
     },
     clearFilters() {
-      store.setState((s) => ({ ...s, filters: {}, filterRules: [], page: 1 }))
-      void reloadFromStart()
+      store.batch(() => {
+        store.setState((s) => ({ ...s, filters: {}, filterRules: [], page: 1 }))
+        void reloadFromStart()
+      })
     },
     pageCount() {
       const s = store.getState()

@@ -102,11 +102,6 @@ export function createStore<T>(initial: T): Store<T> {
   }
 }
 
-/** Read the state type out of a `Store`. */
-type StateOf<S> = S extends Store<infer U> ? U : never
-/** Tuple of the state types for a tuple of stores. */
-type StatesOf<S extends readonly Store<unknown>[]> = { [K in keyof S]: StateOf<S[K]> }
-
 /**
  * Compose one or more source stores into a read-only DERIVED store whose value
  * is `combiner(...sourceStates)`, recomputed whenever any source changes and
@@ -125,20 +120,43 @@ type StatesOf<S extends readonly Store<unknown>[]> = { [K in keyof S]: StateOf<S
  *
  * The returned store is read-only: `setState` throws.
  */
-export function derived<S extends readonly Store<unknown>[], R>(
-  stores: [...S],
-  combiner: (...states: StatesOf<S>) => R,
+export function derived<S extends readonly unknown[], R>(
+  stores: readonly [...{ [K in keyof S]: Store<S[K]> }],
+  combiner: (...states: S) => R,
   equals: (a: R, b: R) => boolean = Object.is,
 ): Store<R> {
-  const compute = (): R => combiner(...(stores.map((s) => s.getState()) as StatesOf<S>))
+  const readInputs = (): S => stores.map((s) => s.getState()) as unknown as S
   const listeners = new Set<(value: R) => void>()
-  let value = compute()
+  let inputs = readInputs()
+  let value = combiner(...inputs)
   let unsubs: Array<() => void> | null = null
 
-  const recompute = (): void => {
-    const next = compute()
-    if (equals(value, next)) return
-    value = next
+  // Recompute `value` ONLY when a source state changed identity, so `getState`
+  // returns a STABLE reference while the sources are unchanged. This is required
+  // for React's `useSyncExternalStore` (an unstable snapshot loops), while still
+  // reflecting source changes on demand — even while unobserved. Returns whether
+  // `value` moved per `equals`.
+  const refresh = (): boolean => {
+    const next = readInputs()
+    let inputsChanged = next.length !== inputs.length
+    if (!inputsChanged) {
+      for (let i = 0; i < next.length; i++) {
+        if (!Object.is(next[i], inputs[i])) {
+          inputsChanged = true
+          break
+        }
+      }
+    }
+    if (!inputsChanged) return false
+    inputs = next
+    const computed = combiner(...next)
+    if (equals(value, computed)) return false
+    value = computed
+    return true
+  }
+
+  const onSourceChange = (): void => {
+    if (!refresh()) return
     for (const listener of [...listeners]) {
       if (listeners.has(listener)) listener(value)
     }
@@ -146,9 +164,8 @@ export function derived<S extends readonly Store<unknown>[], R>(
 
   const ensureSubscribed = (): void => {
     if (unsubs) return
-    // Refresh once on (re)attach in case sources moved while we were detached.
-    value = compute()
-    unsubs = stores.map((s) => s.subscribe(recompute))
+    refresh() // sync in case sources moved while we were detached
+    unsubs = stores.map((s) => s.subscribe(onSourceChange))
   }
 
   const maybeUnsubscribe = (): void => {
@@ -158,7 +175,10 @@ export function derived<S extends readonly Store<unknown>[], R>(
     }
   }
 
-  const getState = (): R => (unsubs ? value : compute())
+  const getState = (): R => {
+    refresh()
+    return value
+  }
 
   const subscribe = (listener: (value: R) => void): (() => void) => {
     listeners.add(listener)

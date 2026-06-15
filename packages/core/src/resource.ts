@@ -1,4 +1,4 @@
-import { createStore, type Store } from './store'
+import { derived, type Store } from './store'
 import { createDataSource } from './data-source'
 import { type SelectionModel } from './selection'
 import { filterSort, paginate, type SortState, type DataViewColumn } from './data-view'
@@ -81,10 +81,10 @@ export interface ResourceController<T> {
   /**
    * Tear down the controller: abort any in-flight fetch so a late response
    * never writes back to a torn-down (e.g. unmounted) instance. Call from the
-   * host adapter on unmount. Idempotent, and safe to load again afterwards
-   * (the internal store subscriptions are intentionally left intact — they are
-   * self-referential and collected with the controller — so a React StrictMode
-   * remount that re-loads still propagates).
+   * host adapter on unmount. Idempotent, and safe to load again afterwards: the
+   * exposed store is a `derived` projection of the data source whose source
+   * subscription is reference-counted, so a React StrictMode remount that
+   * re-subscribes re-projects and re-loads correctly.
    */
   destroy(): void
 }
@@ -92,18 +92,6 @@ export interface ResourceController<T> {
 export function createResourceController<T>(
   config: ResourceControllerConfig<T>,
 ): ResourceController<T> {
-  const store = createStore<ResourceState<T>>({
-    rows: [],
-    total: 0,
-    page: 1,
-    pageSize: config.pageSize ?? 10,
-    sort: null,
-    filters: {},
-    loading: false,
-    error: undefined,
-    selectedKeys: [],
-  })
-
   // The unified data engine does the work; this controller is a thin projection
   // of it onto the narrower ResourceState (a strict subset of DataSourceState),
   // so resource, the base Table, and pro-table all share ONE engine. A
@@ -114,20 +102,23 @@ export function createResourceController<T>(
     pageSize: config.pageSize ?? 10,
     immediate: false,
   })
-  ds.subscribe((s) => {
-    store.setState((st) => ({
-      ...st,
-      rows: s.rows,
-      total: s.total,
-      page: s.page,
-      pageSize: s.pageSize,
-      sort: s.sort,
-      filters: s.filters,
-      loading: s.loading,
-      error: s.error,
-      selectedKeys: s.selectedKeys,
-    }))
-  })
+
+  // Project the data-source state onto ResourceState with `derived` rather than a
+  // manual `ds.subscribe(s => store.setState(...))` bridge: one read-only store,
+  // no double-emit hop, and source subscription is reference-counted (attaches
+  // only while observed). `ds.store` outlives a derived detach, so a StrictMode
+  // remount that re-subscribes re-projects correctly.
+  const store: Store<ResourceState<T>> = derived([ds.store], (s) => ({
+    rows: s.rows,
+    total: s.total,
+    page: s.page,
+    pageSize: s.pageSize,
+    sort: s.sort,
+    filters: s.filters,
+    loading: s.loading,
+    error: s.error,
+    selectedKeys: s.selectedKeys,
+  }))
 
   const controller: ResourceController<T> = {
     store,

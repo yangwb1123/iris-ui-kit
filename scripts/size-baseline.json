@@ -1,0 +1,13 @@
+{
+  "core": 21.53,
+  "tokens": 1.58,
+  "theme": 2.05,
+  "skins": 4.33,
+  "icons": 2.09,
+  "react": 72.74,
+  "vue": 81.36,
+  "solid": 85.78,
+  "svelte": 1.06,
+  "manifest": 0.15,
+  "probe:icons: import any → full defaultIcons map": 1.03
+}

@@ -9,11 +9,12 @@
 // size. Raise a budget deliberately (in a reviewed commit) when a real feature
 // grows a package — that visibility is the point.
 import { gzipSync } from 'node:zlib'
-import { readFileSync, existsSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dirname, join } from 'node:path'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
+const UPDATE_BASELINE = process.argv.includes('--update-baseline')
 
 /** Gzipped-KB budget per package entry. */
 const BUDGETS = {
@@ -54,9 +55,46 @@ const BUDGETS = {
   manifest: 2,
 }
 
+/**
+ * Per-EXPORT import-cost tripwires — the gzip cost a consumer pays to import a
+ * SINGLE thing, which the whole-bundle budget above is blind to. Today icons
+ * ship as one `defaultIcons` object literal (no per-icon exports), so importing
+ * ANY icon pulls the entire set: this measures + caps that unavoidable payload so
+ * it can't silently bloat, and stands as the explicit marker of a known
+ * non-tree-shakeable export (a future round can split icons into per-icon
+ * modules and shrink this dramatically).
+ */
+const IMPORT_PROBES = [
+  {
+    name: 'icons: import any → full defaultIcons map',
+    budgetKb: 6,
+    async measure() {
+      const entry = join(repoRoot, 'packages/icons/dist/index.js')
+      if (!existsSync(entry)) return null
+      const mod = await import(pathToFileURL(entry).href)
+      const map = mod.defaultIcons ?? {}
+      const count = Object.keys(map).length
+      const gzipKb = gzipSync(Buffer.from(JSON.stringify(map))).length / KB
+      return { gzipKb, note: `${count} icons, non-tree-shakeable` }
+    },
+  },
+]
+
 const KB = 1024
+const baselinePath = join(repoRoot, 'scripts', 'size-baseline.json')
+const baseline = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, 'utf8')) : {}
+const current = {}
 let failed = false
 const rows = []
+
+/** Format the delta vs the committed baseline (advisory — never fails). */
+const deltaOf = (key, kb) => {
+  const prev = baseline[key]
+  if (prev === undefined) return ''
+  const d = kb - prev
+  if (Math.abs(d) < 0.05) return ' (Δ ~0)'
+  return ` (Δ ${d > 0 ? '+' : ''}${d.toFixed(1)}KB)`
+}
 
 for (const [pkg, budgetKb] of Object.entries(BUDGETS)) {
   const entry = join(repoRoot, 'packages', pkg, 'dist', 'index.js')
@@ -66,13 +104,38 @@ for (const [pkg, budgetKb] of Object.entries(BUDGETS)) {
     continue
   }
   const gzipKb = gzipSync(readFileSync(entry)).length / KB
+  current[pkg] = Number(gzipKb.toFixed(2))
   const over = gzipKb > budgetKb
   if (over) failed = true
   rows.push({
     pkg,
     status: over ? 'OVER' : 'ok',
-    detail: `${gzipKb.toFixed(1)}KB / ${budgetKb}KB gzip`,
+    detail: `${gzipKb.toFixed(1)}KB / ${budgetKb}KB gzip${deltaOf(pkg, gzipKb)}`,
   })
+}
+
+for (const probe of IMPORT_PROBES) {
+  const result = await probe.measure()
+  if (!result) {
+    rows.push({ pkg: probe.name, status: 'MISSING', detail: 'build first' })
+    failed = true
+    continue
+  }
+  const key = `probe:${probe.name}`
+  current[key] = Number(result.gzipKb.toFixed(2))
+  const over = result.gzipKb > probe.budgetKb
+  if (over) failed = true
+  rows.push({
+    pkg: probe.name,
+    status: over ? 'OVER' : 'ok',
+    detail: `${result.gzipKb.toFixed(1)}KB / ${probe.budgetKb}KB gzip${deltaOf(key, result.gzipKb)} — ${result.note}`,
+  })
+}
+
+if (UPDATE_BASELINE) {
+  writeFileSync(baselinePath, JSON.stringify(current, null, 2) + '\n')
+  // eslint-disable-next-line no-console
+  console.log(`\nWrote size baseline → scripts/size-baseline.json (${Object.keys(current).length} entries)\n`)
 }
 
 const pad = (s, n) => String(s).padEnd(n)
@@ -80,8 +143,11 @@ const pad = (s, n) => String(s).padEnd(n)
 console.log('\nBundle size budget (gzip)\n' + '─'.repeat(48))
 for (const r of rows) {
   const mark = r.status === 'ok' ? '✓' : '✗'
+  // Package rows get the @iris-ui/ prefix + aligned columns; probe rows (whose
+  // name carries spaces) print as a free-form line.
+  const label = r.pkg.includes(' ') ? r.pkg : '@iris-ui/' + r.pkg
   // eslint-disable-next-line no-console
-  console.log(`${mark} ${pad('@iris-ui/' + r.pkg, 20)} ${pad(r.status, 8)} ${r.detail}`)
+  console.log(`${mark} ${pad(label, 20)} ${pad(r.status, 8)} ${r.detail}`)
 }
 // eslint-disable-next-line no-console
 console.log('─'.repeat(48))

@@ -1,5 +1,5 @@
-import { createSignal, onCleanup, For, Show, type JSX } from 'solid-js'
-import { createSortable, type SortableRect } from '@iris-ui/core'
+import { createSignal, createEffect, onCleanup, For, Show, type JSX } from 'solid-js'
+import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
 import { proTableLabel, type ProTableStore, type ProTableLabels } from '../core'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
@@ -34,6 +34,17 @@ export interface IrisProTableProps<Row extends Record<string, unknown>> {
    * Default `false` — existing layouts are unchanged.
    */
   columnReorder?: boolean
+  /**
+   * Opt-in row virtualization. When `true` the body region becomes a scroll
+   * container and only the visible window of rows is rendered (via core's
+   * `createVirtualizer`), so a 100k-row table renders a handful of `<tr>` rather
+   * than every row. Default `false` — behavior is UNCHANGED (all rows render).
+   */
+  virtualized?: boolean
+  /** Estimated row height in px (drives the virtualizer). Default `40`. */
+  rowHeight?: number
+  /** Scroll viewport height in px when virtualized. Default `400`. */
+  maxHeight?: number
 }
 
 function pinnedStyle(column: { pinned?: 'left' | 'right' }): JSX.CSSProperties | undefined {
@@ -100,6 +111,35 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
   }
 
   const columns = () => props.store.visibleColumns()
+
+  // --- Row virtualization (opt-in) -----------------------------------------
+  // Defaults mirror the React reference exactly.
+  const rowHeight = () => props.rowHeight ?? 40
+  const maxHeight = () => props.maxHeight ?? 400
+
+  // Create the virtualizer ONCE. viewportSize is driven from the `maxHeight`
+  // PROP (not a measured clientHeight) so the window is deterministic in jsdom.
+  // `getItemKey` reads `state().rows` so it always sees the current page's data.
+  const virtualizer = createVirtualizer({
+    count: state().rows.length,
+    estimateSize: rowHeight(),
+    viewportSize: maxHeight(),
+    getItemKey: (i) => String(props.store.rowKeyOf(state().rows[i]!)),
+  })
+
+  // Bridge the virtualizer store the SAME way the component bridges the
+  // pro-table store: a signal updated on every emit, read through `<For>` /
+  // accessor calls so the window re-renders reactively on setScroll. A plain
+  // .map outside a tracked scope would NOT update.
+  const [vState, setVState] = createSignal(virtualizer.getState())
+  onCleanup(virtualizer.subscribe(() => setVState(virtualizer.getState())))
+
+  // Keep the virtualizer's count synced with the current page's row count, and
+  // its viewport synced if the maxHeight prop changes. These run in tracked
+  // scopes so they react to store/prop changes.
+  createEffect(() => virtualizer.setCount(state().rows.length))
+  createEffect(() => virtualizer.setViewportSize(maxHeight()))
+
   const sortIndicator = (key: string): string => {
     const sort = state().sort
     return sort?.key === key ? (sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
@@ -120,160 +160,207 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
         : undefined
   }
 
-  return (
-    <div data-iris-pro-table="" class={props.class}>
-      <table>
-        <thead>
+  // +1 for the leading checkbox column.
+  const totalColumnCount = () => columns().length + 1
+
+  // Single source of truth for a data row's markup — shared by the windowed
+  // (virtualized) and full (non-virtualized) render paths so selection, inline
+  // edit, filters, and pinnedStyle are identical in both.
+  const renderRow = (row: Row): JSX.Element => {
+    const key = props.store.rowKeyOf(row)
+    return (
+      <tr data-selected={props.store.isSelected(key) ? '' : undefined}>
+        <td>
+          <input
+            type="checkbox"
+            aria-label={proTableLabel(props.labels, 'selectRow', { key: String(key) })}
+            checked={props.store.isSelected(key)}
+            onChange={() => props.store.toggleRow(key)}
+          />
+        </td>
+        <For each={columns()}>
+          {(c) => {
+            const editing = () =>
+              state().editing?.rowKey === key && state().editing?.columnKey === c.key
+            return (
+              <td
+                style={{ 'text-align': c.align, ...pinnedStyle(c) }}
+                onDblClick={c.editable ? () => props.store.startEdit(key, c.key) : undefined}
+              >
+                <Show when={editing()} fallback={String(props.store.cellValue(row, c) ?? '')}>
+                  <input
+                    type={c.editor === 'number' ? 'number' : 'text'}
+                    value={draft()}
+                    onInput={(e) => setDraft(e.currentTarget.value)}
+                    onBlur={() => props.store.commitEdit(draft())}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') props.store.commitEdit(draft())
+                      if (e.key === 'Escape') props.store.cancelEdit()
+                    }}
+                  />
+                </Show>
+              </td>
+            )
+          }}
+        </For>
+      </tr>
+    )
+  }
+
+  // Pixel height of the bottom spacer = total scroll size minus the offset
+  // before the window minus the summed height of the rendered window.
+  const offsetAfter = (): number => {
+    const v = vState()
+    const windowSize = v.items.reduce((sum, it) => sum + it.size, 0)
+    return Math.max(0, v.totalSize - v.offsetBefore - windowSize)
+  }
+
+  // The <tbody> contents. When virtualized, render ONLY the windowed rows with a
+  // top/bottom spacer <tr> so the scrollbar height is preserved.
+  const tbody = () => (
+    <tbody>
+      <Show
+        when={props.virtualized}
+        fallback={<For each={state().rows}>{(row) => renderRow(row)}</For>}
+      >
+        <Show when={vState().offsetBefore > 0}>
+          <tr style={{ height: `${vState().offsetBefore}px` }} aria-hidden="true">
+            <td colSpan={totalColumnCount()} />
+          </tr>
+        </Show>
+        <For each={vState().items}>
+          {(item) => {
+            const row = state().rows[item.index]
+            return <Show when={row !== undefined}>{renderRow(row!)}</Show>
+          }}
+        </For>
+        <Show when={offsetAfter() > 0}>
+          <tr style={{ height: `${offsetAfter()}px` }} aria-hidden="true">
+            <td colSpan={totalColumnCount()} />
+          </tr>
+        </Show>
+      </Show>
+    </tbody>
+  )
+
+  const tableEl = () => (
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">
+            <input
+              type="checkbox"
+              aria-label={proTableLabel(props.labels, 'selectAll')}
+              checked={props.store.isAllSelected()}
+              onChange={() => props.store.toggleAll()}
+            />
+          </th>
+          <For each={columns()}>
+            {(c) => (
+              <th
+                scope="col"
+                data-iris-col-key={c.key}
+                aria-sort={ariaSort(c)}
+                tabindex={c.sortable ? 0 : undefined}
+                style={{
+                  'text-align': c.align,
+                  width: typeof c.width === 'number' ? `${c.width}px` : c.width,
+                  cursor: props.columnReorder ? 'grab' : undefined,
+                  'touch-action': props.columnReorder ? 'none' : undefined,
+                  outline:
+                    sortableState().activeId &&
+                    sortableState().overId === c.key &&
+                    sortableState().activeId !== c.key
+                      ? '2px solid var(--iris-color-primary, #2563eb)'
+                      : undefined,
+                  'outline-offset': '-2px',
+                  ...pinnedStyle(c),
+                }}
+                data-sortable={c.sortable ? '' : undefined}
+                onClick={c.sortable ? () => props.store.toggleSort(c.key) : undefined}
+                onKeyDown={
+                  c.sortable
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          props.store.toggleSort(c.key)
+                        }
+                      }
+                    : undefined
+                }
+                onPointerDown={onHeaderPointerDown(c.key)}
+                onPointerMove={onHeaderPointerMove(c.key)}
+                onPointerUp={onHeaderPointerUp(c.key)}
+                onPointerCancel={() => sortable.cancel()}
+                draggable={props.columnReorder ? true : undefined}
+                onDragStart={
+                  props.columnReorder
+                    ? (e) => {
+                        dragKey = c.key
+                        e.dataTransfer!.effectAllowed = 'move'
+                      }
+                    : undefined
+                }
+                onDragOver={
+                  props.columnReorder
+                    ? (e) => {
+                        e.preventDefault()
+                        e.dataTransfer!.dropEffect = 'move'
+                      }
+                    : undefined
+                }
+                onDrop={
+                  props.columnReorder
+                    ? (e) => {
+                        e.preventDefault()
+                        if (dragKey && dragKey !== c.key) {
+                          props.store.reorderColumns(dragKey, c.key)
+                        }
+                        dragKey = null
+                      }
+                    : undefined
+                }
+              >
+                {c.title}
+                <span aria-hidden="true">{sortIndicator(c.key)}</span>
+              </th>
+            )}
+          </For>
+        </tr>
+        <Show when={columns().some((c) => c.filterable)}>
           <tr>
-            <th scope="col">
-              <input
-                type="checkbox"
-                aria-label={proTableLabel(props.labels, 'selectAll')}
-                checked={props.store.isAllSelected()}
-                onChange={() => props.store.toggleAll()}
-              />
-            </th>
+            <th />
             <For each={columns()}>
               {(c) => (
-                <th
-                  scope="col"
-                  data-iris-col-key={c.key}
-                  aria-sort={ariaSort(c)}
-                  tabindex={c.sortable ? 0 : undefined}
-                  style={{
-                    'text-align': c.align,
-                    width: typeof c.width === 'number' ? `${c.width}px` : c.width,
-                    cursor: props.columnReorder ? 'grab' : undefined,
-                    'touch-action': props.columnReorder ? 'none' : undefined,
-                    outline:
-                      sortableState().activeId &&
-                      sortableState().overId === c.key &&
-                      sortableState().activeId !== c.key
-                        ? '2px solid var(--iris-color-primary, #2563eb)'
-                        : undefined,
-                    'outline-offset': '-2px',
-                    ...pinnedStyle(c),
-                  }}
-                  data-sortable={c.sortable ? '' : undefined}
-                  onClick={c.sortable ? () => props.store.toggleSort(c.key) : undefined}
-                  onKeyDown={
-                    c.sortable
-                      ? (e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            props.store.toggleSort(c.key)
-                          }
-                        }
-                      : undefined
-                  }
-                  onPointerDown={onHeaderPointerDown(c.key)}
-                  onPointerMove={onHeaderPointerMove(c.key)}
-                  onPointerUp={onHeaderPointerUp(c.key)}
-                  onPointerCancel={() => sortable.cancel()}
-                  draggable={props.columnReorder ? true : undefined}
-                  onDragStart={
-                    props.columnReorder
-                      ? (e) => {
-                          dragKey = c.key
-                          e.dataTransfer!.effectAllowed = 'move'
-                        }
-                      : undefined
-                  }
-                  onDragOver={
-                    props.columnReorder
-                      ? (e) => {
-                          e.preventDefault()
-                          e.dataTransfer!.dropEffect = 'move'
-                        }
-                      : undefined
-                  }
-                  onDrop={
-                    props.columnReorder
-                      ? (e) => {
-                          e.preventDefault()
-                          if (dragKey && dragKey !== c.key) {
-                            props.store.reorderColumns(dragKey, c.key)
-                          }
-                          dragKey = null
-                        }
-                      : undefined
-                  }
-                >
-                  {c.title}
-                  <span aria-hidden="true">{sortIndicator(c.key)}</span>
+                <th>
+                  <Show when={c.filterable}>
+                    <input
+                      aria-label={proTableLabel(props.labels, 'filterColumn', { title: c.title })}
+                      value={state().filters[c.key] ?? ''}
+                      onInput={(e) => props.store.setFilter(c.key, e.currentTarget.value)}
+                    />
+                  </Show>
                 </th>
               )}
             </For>
           </tr>
-          <Show when={columns().some((c) => c.filterable)}>
-            <tr>
-              <th />
-              <For each={columns()}>
-                {(c) => (
-                  <th>
-                    <Show when={c.filterable}>
-                      <input
-                        aria-label={proTableLabel(props.labels, 'filterColumn', { title: c.title })}
-                        value={state().filters[c.key] ?? ''}
-                        onInput={(e) => props.store.setFilter(c.key, e.currentTarget.value)}
-                      />
-                    </Show>
-                  </th>
-                )}
-              </For>
-            </tr>
-          </Show>
-        </thead>
-        <tbody>
-          <For each={state().rows}>
-            {(row) => {
-              const key = props.store.rowKeyOf(row)
-              return (
-                <tr data-selected={props.store.isSelected(key) ? '' : undefined}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      aria-label={proTableLabel(props.labels, 'selectRow', { key: String(key) })}
-                      checked={props.store.isSelected(key)}
-                      onChange={() => props.store.toggleRow(key)}
-                    />
-                  </td>
-                  <For each={columns()}>
-                    {(c) => {
-                      const editing = () =>
-                        state().editing?.rowKey === key && state().editing?.columnKey === c.key
-                      return (
-                        <td
-                          style={{ 'text-align': c.align, ...pinnedStyle(c) }}
-                          onDblClick={
-                            c.editable ? () => props.store.startEdit(key, c.key) : undefined
-                          }
-                        >
-                          <Show
-                            when={editing()}
-                            fallback={String(props.store.cellValue(row, c) ?? '')}
-                          >
-                            <input
-                              type={c.editor === 'number' ? 'number' : 'text'}
-                              value={draft()}
-                              onInput={(e) => setDraft(e.currentTarget.value)}
-                              onBlur={() => props.store.commitEdit(draft())}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') props.store.commitEdit(draft())
-                                if (e.key === 'Escape') props.store.cancelEdit()
-                              }}
-                            />
-                          </Show>
-                        </td>
-                      )
-                    }}
-                  </For>
-                </tr>
-              )
-            }}
-          </For>
-        </tbody>
-      </table>
+        </Show>
+      </thead>
+      {tbody()}
+    </table>
+  )
+
+  return (
+    <div data-iris-pro-table="" class={props.class}>
+      <Show when={props.virtualized} fallback={tableEl()}>
+        <div
+          data-iris-pro-table-scroll=""
+          style={{ overflow: 'auto', height: `${maxHeight()}px` }}
+          onScroll={(e) => virtualizer.setScroll(e.currentTarget.scrollTop)}
+        >
+          {tableEl()}
+        </div>
+      </Show>
       <Show when={Object.keys(state().filters).some((k) => state().filters[k])}>
         <div
           data-iris-filter-chips=""

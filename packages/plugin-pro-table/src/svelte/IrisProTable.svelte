@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createSortable, type SortableRect } from '@iris-ui/core'
+  import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
   import { proTableLabel, type ProTableLabels, type ProTableState, type ProTableStore } from '../core'
 
   type Row = Record<string, unknown>
@@ -24,6 +24,9 @@
     class: klass = '',
     labels,
     columnReorder = false,
+    virtualized = false,
+    rowHeight = 40,
+    maxHeight = 400,
   }: {
     store: ProTableStore<Row>
     class?: string
@@ -39,6 +42,17 @@
      * Default `false` — existing layouts are unchanged.
      */
     columnReorder?: boolean
+    /**
+     * Opt-in row virtualization. When `true` the body region becomes a scroll
+     * container and only the visible window of rows is rendered (via core's
+     * `createVirtualizer`), so a 100k-row table renders a handful of `<tr>` rather
+     * than every row. Default `false` — behavior is UNCHANGED (all rows render).
+     */
+    virtualized?: boolean
+    /** Estimated row height in px (drives the virtualizer). Default `40`. */
+    rowHeight?: number
+    /** Scroll viewport height in px when virtualized. Default `400`. */
+    maxHeight?: number
   } = $props()
 
   // Drag-to-reorder: plain mutable — no $state needed (no re-render on drag events).
@@ -110,6 +124,45 @@
 
   const columns = $derived(store.visibleColumns())
 
+  // --- Row virtualization (opt-in) -----------------------------------------
+  // Create the virtualizer ONCE. viewportSize is driven from the `maxHeight`
+  // PROP (not a measured clientHeight) so the window is deterministic in jsdom.
+  // `getItemKey` reads the live `tableState.rows` so it always reflects the
+  // current page's data.
+  // svelte-ignore state_referenced_locally — one-time init reads; count/viewport
+  // are kept synced below via setCount/setViewportSize.
+  const virtualizer = createVirtualizer({
+    count: tableState.rows.length,
+    estimateSize: rowHeight,
+    viewportSize: maxHeight,
+    getItemKey: (i) => String(store.rowKeyOf(tableState.rows[i]!)),
+  })
+  // Bridge the virtualizer store into a $state rune the SAME way as the
+  // pro-table/sortable stores, so {#each vState.items} re-renders on setScroll.
+  // NB: never name a $state variable `state`.
+  let vState = $state(virtualizer.getState())
+  $effect(() => {
+    const unsub = virtualizer.subscribe((s) => {
+      vState = s
+    })
+    return unsub
+  })
+  // Keep the virtualizer's count in sync with the current page's row count.
+  $effect(() => {
+    virtualizer.setCount(tableState.rows.length)
+  })
+  // Keep the viewport in sync if the maxHeight prop changes.
+  $effect(() => {
+    virtualizer.setViewportSize(maxHeight)
+  })
+  // +1 for the leading checkbox column.
+  const totalColumnCount = $derived(columns.length + 1)
+  // Bottom spacer height: total scrollable size minus what's above + in window.
+  const spacerAfter = $derived.by(() => {
+    const windowSize = vState.items.reduce((sum, it) => sum + it.size, 0)
+    return Math.max(0, vState.totalSize - vState.offsetBefore - windowSize)
+  })
+
   function sortIndicator(key: string): string {
     return tableState.sort?.key === key
       ? tableState.sort.direction === 'asc'
@@ -140,6 +193,19 @@
 </script>
 
 <div data-iris-pro-table class={klass}>
+  {#if virtualized}
+    <div
+      data-iris-pro-table-scroll
+      style={`overflow:auto;height:${maxHeight}px;`}
+      onscroll={(e) => virtualizer.setScroll(e.currentTarget.scrollTop)}
+    >
+      {@render tableEl()}
+    </div>
+  {:else}
+    {@render tableEl()}
+  {/if}
+
+  {#snippet tableEl()}
   <table>
     <thead>
       <tr>
@@ -212,43 +278,70 @@
         </tr>
       {/if}
     </thead>
-    <tbody>
-      {#each tableState.rows as row (store.rowKeyOf(row))}
-        {@const key = store.rowKeyOf(row)}
-        <tr data-selected={store.isSelected(key) ? '' : undefined}>
-          <td>
-            <input
-              type="checkbox"
-              aria-label={proTableLabel(labels, 'selectRow', { key: String(key) })}
-              checked={store.isSelected(key)}
-              onchange={() => store.toggleRow(key)}
-            />
-          </td>
-          {#each columns as c (c.key)}
-            <td
-              style={`text-align:${c.align ?? 'left'};${pinnedStyle(c)}`}
-              ondblclick={c.editable ? () => store.startEdit(key, c.key) : undefined}
-            >
-              {#if tableState.editing?.rowKey === key && tableState.editing?.columnKey === c.key}
-                <input
-                  type={c.editor === 'number' ? 'number' : 'text'}
-                  value={draft}
-                  oninput={(e) => (draft = e.currentTarget.value)}
-                  onblur={() => store.commitEdit(draft)}
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter') store.commitEdit(draft)
-                    if (e.key === 'Escape') store.cancelEdit()
-                  }}
-                />
-              {:else}
-                {String(store.cellValue(row, c) ?? '')}
-              {/if}
-            </td>
-          {/each}
-        </tr>
-      {/each}
-    </tbody>
+    {#if virtualized}
+      <tbody>
+        {#if vState.offsetBefore > 0}
+          <tr style={`height:${vState.offsetBefore}px`} aria-hidden="true">
+            <td colspan={totalColumnCount}></td>
+          </tr>
+        {/if}
+        {#each vState.items as item (item.key)}
+          {@const row = tableState.rows[item.index]}
+          {#if row !== undefined}
+            {@render rowMarkup(row)}
+          {/if}
+        {/each}
+        {#if spacerAfter > 0}
+          <tr style={`height:${spacerAfter}px`} aria-hidden="true">
+            <td colspan={totalColumnCount}></td>
+          </tr>
+        {/if}
+      </tbody>
+    {:else}
+      <tbody>
+        {#each tableState.rows as row (store.rowKeyOf(row))}
+          {@render rowMarkup(row)}
+        {/each}
+      </tbody>
+    {/if}
   </table>
+  {/snippet}
+
+  {#snippet rowMarkup(row: Row)}
+    {@const key = store.rowKeyOf(row)}
+    <tr data-selected={store.isSelected(key) ? '' : undefined}>
+      <td>
+        <input
+          type="checkbox"
+          aria-label={proTableLabel(labels, 'selectRow', { key: String(key) })}
+          checked={store.isSelected(key)}
+          onchange={() => store.toggleRow(key)}
+        />
+      </td>
+      {#each columns as c (c.key)}
+        <td
+          style={`text-align:${c.align ?? 'left'};${pinnedStyle(c)}`}
+          ondblclick={c.editable ? () => store.startEdit(key, c.key) : undefined}
+        >
+          {#if tableState.editing?.rowKey === key && tableState.editing?.columnKey === c.key}
+            <input
+              type={c.editor === 'number' ? 'number' : 'text'}
+              value={draft}
+              oninput={(e) => (draft = e.currentTarget.value)}
+              onblur={() => store.commitEdit(draft)}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') store.commitEdit(draft)
+                if (e.key === 'Escape') store.cancelEdit()
+              }}
+            />
+          {:else}
+            {String(store.cellValue(row, c) ?? '')}
+          {/if}
+        </td>
+      {/each}
+    </tr>
+  {/snippet}
+
   {#if Object.keys(tableState.filters).some((k) => tableState.filters[k])}
     {@const activeFilters = Object.keys(tableState.filters).filter((k) => tableState.filters[k])}
     {@const colByKey = new Map(tableState.columns.map((c) => [c.key, c]))}

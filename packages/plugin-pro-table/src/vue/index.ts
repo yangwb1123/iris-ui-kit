@@ -5,10 +5,11 @@ import {
   onUnmounted,
   ref,
   shallowRef,
+  watch,
   type PropType,
   type VNode,
 } from 'vue'
-import { createSortable, type SortableRect } from '@iris-ui/core'
+import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
 import {
   proTableLabel,
   type ProTableColumn,
@@ -59,6 +60,17 @@ export const IrisProTable = defineComponent({
      * Default `false` — existing layouts are unchanged.
      */
     columnReorder: { type: Boolean, default: false },
+    /**
+     * Opt-in row virtualization. When `true` the body region becomes a scroll
+     * container and only the visible window of rows is rendered (via core's
+     * `createVirtualizer`), so a 100k-row table renders a handful of `<tr>` rather
+     * than every row. Default `false` — behavior is UNCHANGED (all rows render).
+     */
+    virtualized: { type: Boolean, default: false },
+    /** Estimated row height in px (drives the virtualizer). Default `40`. */
+    rowHeight: { type: Number, default: 40 },
+    /** Scroll viewport height in px when virtualized. Default `400`. */
+    maxHeight: { type: Number, default: 400 },
   },
   setup(props) {
     const state = shallowRef(props.store.getState())
@@ -78,6 +90,22 @@ export const IrisProTable = defineComponent({
     // Header rects, measured ONCE when a drag actually starts (not per move).
     // Plain closure var — no reactivity needed (rects don't drive rendering).
     let dragRects: SortableRect[] = []
+
+    // --- Row virtualization (opt-in) -----------------------------------------
+    // Create the virtualizer ONCE. viewportSize is driven from the `maxHeight`
+    // PROP (not a measured clientHeight) so the window is deterministic in jsdom.
+    // `getItemKey` reads `state.value.rows` so it always sees the current page's
+    // data (the virtualizer instance is created once).
+    const virtualizer = createVirtualizer({
+      count: state.value.rows.length,
+      estimateSize: props.rowHeight,
+      viewportSize: props.maxHeight,
+      getItemKey: (i) => String(props.store.rowKeyOf(state.value.rows[i]!)),
+    })
+    // Bridge the virtualizer store reactively the SAME way the pro-table store is
+    // bridged: a shallowRef updated from its subscription (set up in onMounted).
+    const vState = shallowRef(virtualizer.getState())
+    let unsubVirtual = () => {}
 
     const onHeaderPointerDown = (key: string) => (e: PointerEvent) => {
       if (!props.columnReorder || e.pointerType === 'mouse') return
@@ -121,11 +149,26 @@ export const IrisProTable = defineComponent({
       unsubSortable = sortable.subscribe(() => {
         sortableState.value = sortable.getState()
       })
+      unsubVirtual = virtualizer.subscribe((s) => {
+        vState.value = s
+      })
     })
     onUnmounted(() => {
       unsub()
       unsubSortable()
+      unsubVirtual()
     })
+
+    // Keep the virtualizer's count in sync with the current page's row count, and
+    // its viewport in sync if the maxHeight prop changes (mirrors React's effects).
+    watch(
+      () => state.value.rows.length,
+      (len) => virtualizer.setCount(len),
+    )
+    watch(
+      () => props.maxHeight,
+      (h) => virtualizer.setViewportSize(h),
+    )
 
     const sortIndicator = (key: string): string => {
       const sort = state.value.sort
@@ -247,7 +290,10 @@ export const IrisProTable = defineComponent({
           ])
         : null
 
-      const bodyRows = state.value.rows.map((row) => {
+      // Single source of truth for a data row's markup — shared by the windowed
+      // (virtualized) and full (non-virtualized) render paths so selection, inline
+      // edit, filters, and pinnedStyle are identical in both.
+      const renderRow = (row: Record<string, unknown>): VNode => {
         const key = props.store.rowKeyOf(row)
         return h('tr', { key, 'data-selected': props.store.isSelected(key) ? '' : undefined }, [
           h('td', [
@@ -285,7 +331,41 @@ export const IrisProTable = defineComponent({
             )
           }),
         ])
-      })
+      }
+
+      // +1 for the leading checkbox column.
+      const totalColumnCount = columns.length + 1
+
+      // The <tbody> children. When virtualized, render ONLY the windowed rows with
+      // a top/bottom spacer <tr> so the scrollbar height is preserved. Spacers use
+      // a single colspan <td> and are aria-hidden so tests can exclude them.
+      let bodyRows: VNode[]
+      if (props.virtualized) {
+        const v = vState.value
+        const windowSize = v.items.reduce((sum, it) => sum + it.size, 0)
+        const after = Math.max(0, v.totalSize - v.offsetBefore - windowSize)
+        bodyRows = []
+        if (v.offsetBefore > 0) {
+          bodyRows.push(
+            h('tr', { style: { height: `${v.offsetBefore}px` }, 'aria-hidden': 'true' }, [
+              h('td', { colspan: totalColumnCount }),
+            ]),
+          )
+        }
+        for (const item of v.items) {
+          const row = state.value.rows[item.index]
+          if (row !== undefined) bodyRows.push(renderRow(row))
+        }
+        if (after > 0) {
+          bodyRows.push(
+            h('tr', { style: { height: `${after}px` }, 'aria-hidden': 'true' }, [
+              h('td', { colspan: totalColumnCount }),
+            ]),
+          )
+        }
+      } else {
+        bodyRows = state.value.rows.map((row) => renderRow(row))
+      }
 
       const activeFilters = Object.keys(state.value.filters).filter((k) => state.value.filters[k])
       const colByKey = new Map(state.value.columns.map((c: ProTableColumn) => [c.key, c]))
@@ -336,11 +416,24 @@ export const IrisProTable = defineComponent({
             )
           : null
 
+      const tableEl = h('table', [
+        h('thead', filterRow ? [h('tr', headerCells), filterRow] : [h('tr', headerCells)]),
+        h('tbody', bodyRows),
+      ])
+
       return h('div', { 'data-iris-pro-table': '' }, [
-        h('table', [
-          h('thead', filterRow ? [h('tr', headerCells), filterRow] : [h('tr', headerCells)]),
-          h('tbody', bodyRows),
-        ]),
+        props.virtualized
+          ? h(
+              'div',
+              {
+                'data-iris-pro-table-scroll': '',
+                style: { overflow: 'auto', height: `${props.maxHeight}px` },
+                onScroll: (e: Event) =>
+                  virtualizer.setScroll((e.currentTarget as HTMLElement).scrollTop),
+              },
+              [tableEl],
+            )
+          : tableEl,
         ...(filterChips ? [filterChips] : []),
         h('div', { 'data-iris-pro-table-footer': '' }, [
           h(

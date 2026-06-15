@@ -198,6 +198,83 @@ describe('IrisProTable (vue)', () => {
     wrapper.unmount()
   })
 
+  it('virtualized: renders only a small window of rows for a huge dataset', async () => {
+    const bigData: User[] = Array.from({ length: 1000 }, (_, i) => ({
+      id: i,
+      name: `User ${i}`,
+      age: 20 + (i % 50),
+    }))
+    const store = createProTableStore<User>({
+      columns,
+      rowKey: 'id',
+      data: bigData,
+      pageSize: 1000, // whole dataset on one page so virtualization windows it
+    })
+    const wrapper = mount(IrisProTable, {
+      props: { store, virtualized: true, maxHeight: 400, rowHeight: 40 },
+    })
+    await wrapper.vm.$nextTick()
+    const container = wrapper.element as HTMLElement
+
+    // Scroll container exists with the configured viewport height.
+    const scroll = container.querySelector('[data-iris-pro-table-scroll]') as HTMLElement
+    expect(scroll).toBeTruthy()
+
+    // Data <tr> = body rows excluding the spacer rows (which use colspan and are
+    // aria-hidden). Only the visible window should be rendered.
+    const dataRows = () =>
+      Array.from(container.querySelectorAll('tbody tr')).filter(
+        (tr) => tr.getAttribute('aria-hidden') !== 'true',
+      )
+
+    expect(dataRows().length).toBeLessThan(30)
+    expect(dataRows().length).toBeGreaterThan(0)
+    // First visible row is row 0.
+    expect(dataRows()[0]!.textContent).toContain('User 0')
+    // Window 'User 0' is rendered; a row far down the list is NOT.
+    expect(container.textContent).toContain('User 0')
+    expect(container.textContent).not.toContain('User 900')
+
+    // Spacer rows preserve the scrollbar height: bottom spacer present.
+    const spacers = Array.from(container.querySelectorAll('tbody tr[aria-hidden="true"]'))
+    expect(spacers.length).toBeGreaterThan(0)
+
+    // Scroll far down → the rendered window changes to later rows.
+    // jsdom doesn't lay out / scroll, so set scrollTop explicitly before firing.
+    Object.defineProperty(scroll, 'scrollTop', { configurable: true, value: 38_000 })
+    scroll.dispatchEvent(new Event('scroll', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+    const after = dataRows()
+    expect(after[0]!.textContent).not.toContain('User 0')
+    expect(after[0]!.textContent).toMatch(/User 9\d\d/)
+    expect(container.textContent).not.toContain('User 0')
+    wrapper.unmount()
+  })
+
+  it('virtualized=false: still renders ALL rows (behavior unchanged)', () => {
+    const bigData: User[] = Array.from({ length: 50 }, (_, i) => ({
+      id: i,
+      name: `User ${i}`,
+      age: 20 + i,
+    }))
+    const store = createProTableStore<User>({
+      columns,
+      rowKey: 'id',
+      data: bigData,
+      pageSize: 50,
+    })
+    const wrapper = mount(IrisProTable, { props: { store } })
+    const container = wrapper.element as HTMLElement
+    // No scroll container, no spacer rows; every row present.
+    expect(container.querySelector('[data-iris-pro-table-scroll]')).toBeNull()
+    expect(container.querySelector('tbody tr[aria-hidden="true"]')).toBeNull()
+    const dataRows = container.querySelectorAll('tbody tr')
+    expect(dataRows.length).toBe(50)
+    expect(container.textContent).toContain('User 0')
+    expect(container.textContent).toContain('User 49')
+    wrapper.unmount()
+  })
+
   it('localizes UI strings via the labels prop (defaults to English)', () => {
     const store = createProTableStore<User>({
       columns: [{ ...columns[0]!, filterable: true }, columns[1]!],

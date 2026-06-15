@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { createSortable, type SortableRect } from '@iris-ui/core'
+import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
 import { proTableLabel, type ProTableStore, type ProTableLabels } from '../core'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
@@ -34,6 +34,17 @@ export interface IrisProTableProps<Row extends Record<string, unknown>> {
    * Default `false` — existing layouts are unchanged.
    */
   columnReorder?: boolean
+  /**
+   * Opt-in row virtualization. When `true` the body region becomes a scroll
+   * container and only the visible window of rows is rendered (via core's
+   * `createVirtualizer`), so a 100k-row table renders a handful of `<tr>` rather
+   * than every row. Default `false` — behavior is UNCHANGED (all rows render).
+   */
+  virtualized?: boolean
+  /** Estimated row height in px (drives the virtualizer). Default `40`. */
+  rowHeight?: number
+  /** Scroll viewport height in px when virtualized. Default `400`. */
+  maxHeight?: number
 }
 
 function pinnedStyle(column: { pinned?: 'left' | 'right' }): React.CSSProperties | undefined {
@@ -51,6 +62,9 @@ export function IrisProTable<Row extends Record<string, unknown>>({
   className,
   labels,
   columnReorder = false,
+  virtualized = false,
+  rowHeight = 40,
+  maxHeight = 400,
 }: IrisProTableProps<Row>) {
   const state = React.useSyncExternalStore(store.subscribe, store.getState, store.getState)
   const columns = store.visibleColumns()
@@ -110,6 +124,115 @@ export function IrisProTable<Row extends Record<string, unknown>>({
     }
   }, [state.editing])
 
+  // --- Row virtualization (opt-in) -----------------------------------------
+  // Keep the latest rows in a ref so the virtualizer's `getItemKey` always reads
+  // the current page's data (the virtualizer is created once via useRef).
+  const rowsRef = React.useRef(state.rows)
+  rowsRef.current = state.rows
+
+  // Create the virtualizer ONCE. viewportSize is driven from the `maxHeight`
+  // PROP (not a measured clientHeight) so the window is deterministic in jsdom.
+  const virtualizer = React.useRef(
+    createVirtualizer({
+      count: state.rows.length,
+      estimateSize: rowHeight,
+      viewportSize: maxHeight,
+      getItemKey: (i) => String(store.rowKeyOf(rowsRef.current[i]!)),
+    }),
+  ).current
+
+  // Subscribe to the virtualizer store reactively (same useSyncExternalStore
+  // bridge the component uses for the pro-table store).
+  const vState = React.useSyncExternalStore(
+    virtualizer.subscribe,
+    virtualizer.getState,
+    virtualizer.getState,
+  )
+
+  // Keep the virtualizer's count in sync with the current page's row count.
+  React.useEffect(() => {
+    virtualizer.setCount(state.rows.length)
+  }, [state.rows.length, virtualizer])
+  // Keep the viewport in sync if the maxHeight prop changes.
+  React.useEffect(() => {
+    virtualizer.setViewportSize(maxHeight)
+  }, [maxHeight, virtualizer])
+
+  // +1 for the leading checkbox column.
+  const totalColumnCount = columns.length + 1
+
+  // Single source of truth for a data row's markup — shared by the windowed
+  // (virtualized) and full (non-virtualized) render paths so selection, inline
+  // edit, filters, and pinnedStyle are identical in both.
+  const renderRow = (row: Row): React.ReactElement => {
+    const key = store.rowKeyOf(row)
+    return (
+      <tr key={key} data-selected={store.isSelected(key) ? '' : undefined}>
+        <td>
+          <input
+            type="checkbox"
+            aria-label={proTableLabel(labels, 'selectRow', { key: String(key) })}
+            checked={store.isSelected(key)}
+            onChange={() => store.toggleRow(key)}
+          />
+        </td>
+        {columns.map((c) => {
+          const editing = state.editing?.rowKey === key && state.editing?.columnKey === c.key
+          return (
+            <td
+              key={c.key}
+              style={{ textAlign: c.align, ...pinnedStyle(c) }}
+              onDoubleClick={c.editable ? () => store.startEdit(key, c.key) : undefined}
+            >
+              {editing ? (
+                <input
+                  autoFocus
+                  type={c.editor === 'number' ? 'number' : 'text'}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onBlur={() => store.commitEdit(draft)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') store.commitEdit(draft)
+                    if (e.key === 'Escape') store.cancelEdit()
+                  }}
+                />
+              ) : (
+                String(store.cellValue(row, c) ?? '')
+              )}
+            </td>
+          )
+        })}
+      </tr>
+    )
+  }
+
+  // The <tbody> contents. When virtualized, render ONLY the windowed rows with a
+  // top/bottom spacer <tr> so the scrollbar height is preserved.
+  const tbody = virtualized ? (
+    <tbody>
+      {vState.offsetBefore > 0 && (
+        <tr style={{ height: vState.offsetBefore }} aria-hidden="true">
+          <td colSpan={totalColumnCount} />
+        </tr>
+      )}
+      {vState.items.map((item) => {
+        const row = state.rows[item.index]
+        return row === undefined ? null : renderRow(row)
+      })}
+      {(() => {
+        const windowSize = vState.items.reduce((sum, it) => sum + it.size, 0)
+        const after = Math.max(0, vState.totalSize - vState.offsetBefore - windowSize)
+        return after > 0 ? (
+          <tr style={{ height: after }} aria-hidden="true">
+            <td colSpan={totalColumnCount} />
+          </tr>
+        ) : null
+      })()}
+    </tbody>
+  ) : (
+    <tbody>{state.rows.map((row) => renderRow(row))}</tbody>
+  )
+
   const sortIndicator = (key: string) =>
     state.sort?.key === key ? (state.sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
   // WAI-ARIA grid sort semantics: aria-sort on the header conveys state to
@@ -124,152 +247,123 @@ export function IrisProTable<Row extends Record<string, unknown>>({
         ? 'none'
         : undefined
 
-  return (
-    <div data-iris-pro-table="" className={className}>
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">
-              <input
-                type="checkbox"
-                aria-label={proTableLabel(labels, 'selectAll')}
-                checked={store.isAllSelected()}
-                onChange={() => store.toggleAll()}
-              />
+  const tableEl = (
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">
+            <input
+              type="checkbox"
+              aria-label={proTableLabel(labels, 'selectAll')}
+              checked={store.isAllSelected()}
+              onChange={() => store.toggleAll()}
+            />
+          </th>
+          {columns.map((c) => (
+            <th
+              key={c.key}
+              scope="col"
+              data-iris-col-key={c.key}
+              aria-sort={ariaSort(c)}
+              tabIndex={c.sortable ? 0 : undefined}
+              style={{
+                textAlign: c.align,
+                width: c.width,
+                cursor: columnReorder ? 'grab' : undefined,
+                touchAction: columnReorder ? 'none' : undefined,
+                outline:
+                  sortableState.activeId &&
+                  sortableState.overId === c.key &&
+                  sortableState.activeId !== c.key
+                    ? '2px solid var(--iris-color-primary, #2563eb)'
+                    : undefined,
+                outlineOffset: -2,
+                ...pinnedStyle(c),
+              }}
+              onClick={c.sortable ? () => store.toggleSort(c.key) : undefined}
+              onPointerDown={onHeaderPointerDown(c.key)}
+              onPointerMove={onHeaderPointerMove(c.key)}
+              onPointerUp={onHeaderPointerUp(c.key)}
+              onPointerCancel={() => sortable.cancel()}
+              onKeyDown={
+                c.sortable
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        store.toggleSort(c.key)
+                      }
+                    }
+                  : undefined
+              }
+              data-sortable={c.sortable ? '' : undefined}
+              draggable={columnReorder ? true : undefined}
+              onDragStart={
+                columnReorder
+                  ? (e) => {
+                      dragKey.current = c.key
+                      e.dataTransfer.effectAllowed = 'move'
+                    }
+                  : undefined
+              }
+              onDragOver={
+                columnReorder
+                  ? (e) => {
+                      e.preventDefault()
+                      e.dataTransfer.dropEffect = 'move'
+                    }
+                  : undefined
+              }
+              onDrop={
+                columnReorder
+                  ? (e) => {
+                      e.preventDefault()
+                      if (dragKey.current && dragKey.current !== c.key) {
+                        store.reorderColumns(dragKey.current, c.key)
+                      }
+                      dragKey.current = null
+                    }
+                  : undefined
+              }
+            >
+              {c.title}
+              <span aria-hidden="true">{sortIndicator(c.key)}</span>
             </th>
+          ))}
+        </tr>
+        {columns.some((c) => c.filterable) && (
+          <tr>
+            <th />
             {columns.map((c) => (
-              <th
-                key={c.key}
-                scope="col"
-                data-iris-col-key={c.key}
-                aria-sort={ariaSort(c)}
-                tabIndex={c.sortable ? 0 : undefined}
-                style={{
-                  textAlign: c.align,
-                  width: c.width,
-                  cursor: columnReorder ? 'grab' : undefined,
-                  touchAction: columnReorder ? 'none' : undefined,
-                  outline:
-                    sortableState.activeId &&
-                    sortableState.overId === c.key &&
-                    sortableState.activeId !== c.key
-                      ? '2px solid var(--iris-color-primary, #2563eb)'
-                      : undefined,
-                  outlineOffset: -2,
-                  ...pinnedStyle(c),
-                }}
-                onClick={c.sortable ? () => store.toggleSort(c.key) : undefined}
-                onPointerDown={onHeaderPointerDown(c.key)}
-                onPointerMove={onHeaderPointerMove(c.key)}
-                onPointerUp={onHeaderPointerUp(c.key)}
-                onPointerCancel={() => sortable.cancel()}
-                onKeyDown={
-                  c.sortable
-                    ? (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          store.toggleSort(c.key)
-                        }
-                      }
-                    : undefined
-                }
-                data-sortable={c.sortable ? '' : undefined}
-                draggable={columnReorder ? true : undefined}
-                onDragStart={
-                  columnReorder
-                    ? (e) => {
-                        dragKey.current = c.key
-                        e.dataTransfer.effectAllowed = 'move'
-                      }
-                    : undefined
-                }
-                onDragOver={
-                  columnReorder
-                    ? (e) => {
-                        e.preventDefault()
-                        e.dataTransfer.dropEffect = 'move'
-                      }
-                    : undefined
-                }
-                onDrop={
-                  columnReorder
-                    ? (e) => {
-                        e.preventDefault()
-                        if (dragKey.current && dragKey.current !== c.key) {
-                          store.reorderColumns(dragKey.current, c.key)
-                        }
-                        dragKey.current = null
-                      }
-                    : undefined
-                }
-              >
-                {c.title}
-                <span aria-hidden="true">{sortIndicator(c.key)}</span>
+              <th key={c.key}>
+                {c.filterable && (
+                  <input
+                    aria-label={proTableLabel(labels, 'filterColumn', { title: c.title })}
+                    value={state.filters[c.key] ?? ''}
+                    onChange={(e) => store.setFilter(c.key, e.target.value)}
+                  />
+                )}
               </th>
             ))}
           </tr>
-          {columns.some((c) => c.filterable) && (
-            <tr>
-              <th />
-              {columns.map((c) => (
-                <th key={c.key}>
-                  {c.filterable && (
-                    <input
-                      aria-label={proTableLabel(labels, 'filterColumn', { title: c.title })}
-                      value={state.filters[c.key] ?? ''}
-                      onChange={(e) => store.setFilter(c.key, e.target.value)}
-                    />
-                  )}
-                </th>
-              ))}
-            </tr>
-          )}
-        </thead>
-        <tbody>
-          {state.rows.map((row) => {
-            const key = store.rowKeyOf(row)
-            return (
-              <tr key={key} data-selected={store.isSelected(key) ? '' : undefined}>
-                <td>
-                  <input
-                    type="checkbox"
-                    aria-label={proTableLabel(labels, 'selectRow', { key: String(key) })}
-                    checked={store.isSelected(key)}
-                    onChange={() => store.toggleRow(key)}
-                  />
-                </td>
-                {columns.map((c) => {
-                  const editing =
-                    state.editing?.rowKey === key && state.editing?.columnKey === c.key
-                  return (
-                    <td
-                      key={c.key}
-                      style={{ textAlign: c.align, ...pinnedStyle(c) }}
-                      onDoubleClick={c.editable ? () => store.startEdit(key, c.key) : undefined}
-                    >
-                      {editing ? (
-                        <input
-                          autoFocus
-                          type={c.editor === 'number' ? 'number' : 'text'}
-                          value={draft}
-                          onChange={(e) => setDraft(e.target.value)}
-                          onBlur={() => store.commitEdit(draft)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') store.commitEdit(draft)
-                            if (e.key === 'Escape') store.cancelEdit()
-                          }}
-                        />
-                      ) : (
-                        String(store.cellValue(row, c) ?? '')
-                      )}
-                    </td>
-                  )
-                })}
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+        )}
+      </thead>
+      {tbody}
+    </table>
+  )
+
+  return (
+    <div data-iris-pro-table="" className={className}>
+      {virtualized ? (
+        <div
+          data-iris-pro-table-scroll=""
+          style={{ overflow: 'auto', height: maxHeight }}
+          onScroll={(e) => virtualizer.setScroll(e.currentTarget.scrollTop)}
+        >
+          {tableEl}
+        </div>
+      ) : (
+        tableEl
+      )}
       {(() => {
         const activeFilters = Object.keys(state.filters).filter((k) => state.filters[k])
         if (activeFilters.length === 0) return null

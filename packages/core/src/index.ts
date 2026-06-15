@@ -1,4 +1,4 @@
-export { createStore, type Store } from './store'
+export { createStore, derived, type Store } from './store'
 export {
   createMachine,
   type Machine,

@@ -20,11 +20,35 @@ export interface Store<T> {
     listener: (value: U) => void,
     equals?: (a: U, b: U) => boolean,
   ): () => void
+  /**
+   * Coalesce every `setState` inside `fn` into a SINGLE notification flush.
+   * State is updated synchronously (so `getState()` inside `fn` is current), but
+   * listeners are notified once — with the final state — when the outermost
+   * `batch` returns. Nested `batch` calls join the outermost flush. If no state
+   * actually changed, no notification fires. Returns `fn`'s result.
+   *
+   * This is the emit-coalescing primitive composite controllers use to turn an
+   * N-slice update (e.g. `setSort` → reload → page/rows/loading) into one render
+   * pass instead of N.
+   */
+  batch<R>(fn: () => R): R
 }
 
 export function createStore<T>(initial: T): Store<T> {
   let state = initial
   const listeners = new Set<(state: T) => void>()
+  let batchDepth = 0
+  let pendingFlush = false
+
+  const notify = (): void => {
+    // Snapshot before notifying so subscribe/unsubscribe DURING a notify is
+    // well-defined: listeners present at emit-start are notified (ones added
+    // mid-emit are not), and a listener removed mid-emit (e.g. by an earlier
+    // listener tearing down a sibling) is skipped rather than called stale.
+    for (const listener of [...listeners]) {
+      if (listeners.has(listener)) listener(state)
+    }
+  }
 
   const subscribe = (listener: (state: T) => void): (() => void) => {
     listeners.add(listener)
@@ -41,12 +65,23 @@ export function createStore<T>(initial: T): Store<T> {
       const next = typeof updater === 'function' ? (updater as (prev: T) => T)(state) : updater
       if (Object.is(next, state)) return
       state = next
-      // Snapshot before notifying so subscribe/unsubscribe DURING a notify is
-      // well-defined: listeners present at emit-start are notified (ones added
-      // mid-emit are not), and a listener removed mid-emit (e.g. by an earlier
-      // listener tearing down a sibling) is skipped rather than called stale.
-      for (const listener of [...listeners]) {
-        if (listeners.has(listener)) listener(state)
+      if (batchDepth > 0) {
+        // Defer the flush to the outermost batch boundary so N writes coalesce.
+        pendingFlush = true
+        return
+      }
+      notify()
+    },
+    batch<R>(fn: () => R): R {
+      batchDepth++
+      try {
+        return fn()
+      } finally {
+        batchDepth--
+        if (batchDepth === 0 && pendingFlush) {
+          pendingFlush = false
+          notify()
+        }
       }
     },
     subscribe,
@@ -59,6 +94,101 @@ export function createStore<T>(initial: T): Store<T> {
       return subscribe((s) => {
         const next = selector(s)
         if (!equals(last, next)) {
+          last = next
+          listener(next)
+        }
+      })
+    },
+  }
+}
+
+/** Read the state type out of a `Store`. */
+type StateOf<S> = S extends Store<infer U> ? U : never
+/** Tuple of the state types for a tuple of stores. */
+type StatesOf<S extends readonly Store<unknown>[]> = { [K in keyof S]: StateOf<S[K]> }
+
+/**
+ * Compose one or more source stores into a read-only DERIVED store whose value
+ * is `combiner(...sourceStates)`, recomputed whenever any source changes and
+ * re-emitted only when the result changes per `equals` (default `Object.is`).
+ *
+ * Subscription to the sources is lazy and reference-counted: the derived store
+ * subscribes to its sources only while it has at least one listener, and
+ * unsubscribes when the last listener leaves — so a derived store that is never
+ * observed (or whose observers have all unmounted) holds no source
+ * subscriptions. `getState()` always returns a fresh value (recomputed on
+ * demand while unsubscribed, cached while subscribed).
+ *
+ * This is the composition primitive for composite controllers: instead of a
+ * manual `source.subscribe(s => target.setState(project(s)))` bridge (an extra
+ * hop that double-emits), project with `derived([source], project)`.
+ *
+ * The returned store is read-only: `setState` throws.
+ */
+export function derived<S extends readonly Store<unknown>[], R>(
+  stores: [...S],
+  combiner: (...states: StatesOf<S>) => R,
+  equals: (a: R, b: R) => boolean = Object.is,
+): Store<R> {
+  const compute = (): R => combiner(...(stores.map((s) => s.getState()) as StatesOf<S>))
+  const listeners = new Set<(value: R) => void>()
+  let value = compute()
+  let unsubs: Array<() => void> | null = null
+
+  const recompute = (): void => {
+    const next = compute()
+    if (equals(value, next)) return
+    value = next
+    for (const listener of [...listeners]) {
+      if (listeners.has(listener)) listener(value)
+    }
+  }
+
+  const ensureSubscribed = (): void => {
+    if (unsubs) return
+    // Refresh once on (re)attach in case sources moved while we were detached.
+    value = compute()
+    unsubs = stores.map((s) => s.subscribe(recompute))
+  }
+
+  const maybeUnsubscribe = (): void => {
+    if (unsubs && listeners.size === 0) {
+      for (const u of unsubs) u()
+      unsubs = null
+    }
+  }
+
+  const getState = (): R => (unsubs ? value : compute())
+
+  const subscribe = (listener: (value: R) => void): (() => void) => {
+    listeners.add(listener)
+    ensureSubscribed()
+    return () => {
+      listeners.delete(listener)
+      maybeUnsubscribe()
+    }
+  }
+
+  return {
+    getState,
+    setState() {
+      throw new Error('derived store is read-only')
+    },
+    batch<R2>(fn: () => R2): R2 {
+      // A derived store has no own writes to coalesce; emits are driven by its
+      // sources (batch THEM to coalesce). Run inline so the contract holds.
+      return fn()
+    },
+    subscribe,
+    subscribeWith<U>(
+      selector: (state: R) => U,
+      listener: (value: U) => void,
+      equals2: (a: U, b: U) => boolean = Object.is,
+    ): () => void {
+      let last = selector(getState())
+      return subscribe((s) => {
+        const next = selector(s)
+        if (!equals2(last, next)) {
           last = next
           listener(next)
         }

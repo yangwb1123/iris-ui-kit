@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createStore } from './store'
+import { createStore, derived } from './store'
 import { createMachine } from './machine'
 
 describe('createStore', () => {
@@ -210,5 +210,142 @@ describe('createMachine (smoke)', () => {
     expect(m.store.getState().value).toBe('a')
     m.send({ type: 'GO', ok: true })
     expect(m.store.getState().value).toBe('b')
+  })
+})
+
+describe('createStore.batch', () => {
+  it('coalesces N setState calls into ONE notification with the final state', () => {
+    const store = createStore({ a: 0, b: 0 })
+    const listener = vi.fn()
+    store.subscribe(listener)
+    store.batch(() => {
+      store.setState((s) => ({ ...s, a: 1 }))
+      store.setState((s) => ({ ...s, b: 2 }))
+      store.setState((s) => ({ ...s, a: 3 }))
+    })
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener).toHaveBeenCalledWith({ a: 3, b: 2 })
+  })
+
+  it('updates state synchronously inside the batch (getState is current)', () => {
+    const store = createStore({ count: 0 })
+    store.batch(() => {
+      store.setState({ count: 5 })
+      expect(store.getState()).toEqual({ count: 5 })
+      store.setState((s) => ({ count: s.count + 1 }))
+      expect(store.getState()).toEqual({ count: 6 })
+    })
+    expect(store.getState()).toEqual({ count: 6 })
+  })
+
+  it('does not notify when the batch produces no net change path', () => {
+    const store = createStore(0)
+    const listener = vi.fn()
+    store.subscribe(listener)
+    store.batch(() => {
+      store.setState(0)
+      store.setState(0)
+    })
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('nested batches flush once at the outermost boundary', () => {
+    const store = createStore({ count: 0 })
+    const listener = vi.fn()
+    store.subscribe(listener)
+    store.batch(() => {
+      store.setState((s) => ({ count: s.count + 1 }))
+      store.batch(() => {
+        store.setState((s) => ({ count: s.count + 1 }))
+      })
+      expect(listener).not.toHaveBeenCalled()
+    })
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener).toHaveBeenCalledWith({ count: 2 })
+  })
+
+  it('returns the result of fn and flushes even if fn throws', () => {
+    const store = createStore({ count: 0 })
+    const listener = vi.fn()
+    store.subscribe(listener)
+    expect(store.batch(() => 42)).toBe(42)
+    expect(() =>
+      store.batch(() => {
+        store.setState({ count: 1 })
+        throw new Error('boom')
+      }),
+    ).toThrow('boom')
+    // the write before the throw is still flushed once the batch unwinds
+    expect(store.getState()).toEqual({ count: 1 })
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('derived', () => {
+  it('computes its value from the source stores', () => {
+    const a = createStore(2)
+    const b = createStore(3)
+    const sum = derived([a, b], (x, y) => x + y)
+    expect(sum.getState()).toBe(5)
+  })
+
+  it('recomputes and emits when a source changes', () => {
+    const a = createStore(1)
+    const doubled = derived([a], (x) => x * 2)
+    const listener = vi.fn()
+    doubled.subscribe(listener)
+    a.setState(5)
+    expect(doubled.getState()).toBe(10)
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener).toHaveBeenCalledWith(10)
+  })
+
+  it('does not emit when the derived result is unchanged per equals', () => {
+    const a = createStore({ n: 1, other: 'x' })
+    const justN = derived([a], (s) => s.n)
+    const listener = vi.fn()
+    justN.subscribe(listener)
+    a.setState((s) => ({ ...s, other: 'y' })) // n unchanged
+    expect(listener).not.toHaveBeenCalled()
+    a.setState((s) => ({ ...s, n: 2 }))
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
+  it('lazily (un)subscribes from sources by listener reference count', () => {
+    let liveSubs = 0
+    const base = createStore(0)
+    const tracked = {
+      ...base,
+      subscribe(listener: (s: number) => void) {
+        liveSubs++
+        const off = base.subscribe(listener)
+        return () => {
+          liveSubs--
+          off()
+        }
+      },
+    }
+    const d = derived([tracked], (x) => x + 1)
+    expect(liveSubs).toBe(0) // no listeners → no source subscription
+    const off1 = d.subscribe(() => {})
+    const off2 = d.subscribe(() => {})
+    expect(liveSubs).toBe(1) // one source subscription shared across listeners
+    off1()
+    expect(liveSubs).toBe(1)
+    off2()
+    expect(liveSubs).toBe(0) // last listener gone → source unsubscribed
+  })
+
+  it('getState reflects source changes even while unobserved', () => {
+    const a = createStore(1)
+    const d = derived([a], (x) => x * 10)
+    a.setState(4) // no listeners attached
+    expect(d.getState()).toBe(40)
+  })
+
+  it('is read-only: setState throws', () => {
+    const a = createStore(1)
+    const d = derived([a], (x) => x)
+    expect(() => d.setState(2)).toThrow(/read-only/)
   })
 })

@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@iris-ui/core": "workspace:*",
+    "@iris-ui/plugin-notifications": "workspace:^",
     "@iris-ui/react": "workspace:*",
     "@iris-ui/tokens": "workspace:*",
     "react": "^18.3.1",

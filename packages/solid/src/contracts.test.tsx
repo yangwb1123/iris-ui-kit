@@ -30,6 +30,8 @@ import {
   drawerScenario,
   dropdownScenario,
   tooltipScenario,
+  comboboxScenario,
+  toastScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
@@ -63,9 +65,15 @@ import { IrisPopover, IrisPopoverTrigger, IrisPopoverContent } from './primitive
 import { IrisDrawer, IrisDrawerTrigger, IrisDrawerContent } from './primitives/drawer'
 import { IrisDropdown, IrisDropdownTrigger, IrisDropdownMenu } from './primitives/dropdown'
 import { IrisTooltip } from './primitives/tooltip'
+import { IrisCombobox } from './primitives/combobox/IrisCombobox'
+import { IrisToastViewport } from './primitives/toast'
+import { pushToast, clearToasts } from './primitives/toast/toastStore'
 import { useDataSource } from './data/useDataSource'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  clearToasts()
+})
 
 interface DsRow extends Record<string, unknown> {
   id: number
@@ -123,11 +131,21 @@ function driverFor(container: HTMLElement): ContractDriver {
     queryAll: (selector) => Array.from(container.querySelectorAll(selector)),
     click: (selector, index) => {
       const el = at(selector, index)
-      if (el) fireEvent.click(el)
+      if (el) {
+        el.focus()
+        fireEvent.click(el)
+      }
     },
     keydown: (selector, index, key) => {
       const el = at(selector, index)
       if (el) fireEvent.keyDown(el, { key })
+    },
+    type: (selector, index, text) => {
+      const el = at(selector, index) as HTMLInputElement
+      if (el) {
+        el.value = text
+        fireEvent.input(el)
+      }
     },
     pointer: (selector, index, event) => {
       const el = at(selector, index)
@@ -434,5 +452,43 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
   it('satisfies the shared Tooltip contract', async () => {
     const { container } = render(() => <TooltipContractHarness />)
     await runContract(tooltipScenario, driverFor(container), expect)
+  })
+
+  function ComboboxContractHarness() {
+    return (
+      <IrisCombobox
+        options={[
+          { label: 'Apple', value: 'apple' },
+          { label: 'Banana', value: 'banana' },
+          { label: 'Apricot', value: 'apricot' },
+          { label: 'Grape', value: 'grape' },
+        ]}
+      />
+    )
+  }
+
+  it('satisfies the shared Combobox contract', async () => {
+    const { container } = render(() => <ComboboxContractHarness />)
+    await runContract(comboboxScenario, driverFor(container), expect)
+  })
+
+  function ToastContractHarness() {
+    return (
+      <div>
+        <button
+          type="button"
+          data-iris-toast-push
+          onClick={() => pushToast({ title: 'Hello Toast' })}
+        >
+          Push Toast
+        </button>
+        <IrisToastViewport portalTarget={false} />
+      </div>
+    )
+  }
+
+  it('satisfies the shared Toast notification contract', async () => {
+    const { container } = render(() => <ToastContractHarness />)
+    await runContract(toastScenario, driverFor(container), expect)
   })
 })

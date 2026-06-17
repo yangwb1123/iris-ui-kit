@@ -29,8 +29,11 @@ import {
   drawerScenario,
   dataSourceScenario,
   tooltipScenario,
+  comboboxScenario,
+  toastScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
+import { useCallback } from 'react'
 import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
 import { useDataSource } from './data/useDataSource'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -72,8 +75,14 @@ import { IrisDropdownTrigger } from './primitives/dropdown/DropdownTrigger'
 import { IrisDropdownMenu } from './primitives/dropdown/DropdownMenu'
 import { IrisDropdownItem } from './primitives/dropdown/DropdownItem'
 import { IrisTooltip } from './primitives/tooltip'
+import { IrisCombobox } from './primitives/combobox/Combobox'
+import { IrisToastViewport } from './primitives/toast/ToastViewport'
+import { pushToast, clearToasts } from './primitives/toast/toastStore'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  clearToasts()
+})
 
 /** A ContractDriver over a React-testing-library container (fireEvent auto-flushes). */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -83,7 +92,10 @@ function driverFor(container: HTMLElement): ContractDriver {
     queryAll: (selector) => Array.from(container.querySelectorAll(selector)),
     click: (selector, index) => {
       const el = at(selector, index)
-      if (el) fireEvent.click(el)
+      if (el) {
+        fireEvent.focus(el)
+        fireEvent.click(el)
+      }
     },
     keydown: (selector, index, key) => {
       const el = at(selector, index)
@@ -94,6 +106,13 @@ function driverFor(container: HTMLElement): ContractDriver {
       if (!el) return
       if (event === 'enter') fireEvent.pointerEnter(el)
       else fireEvent.pointerLeave(el)
+    },
+    type: (sel, idx, text) => {
+      const el = at(sel, idx) as HTMLInputElement
+      if (!el) return
+      act(() => {
+        fireEvent.change(el, { target: { value: text } })
+      })
     },
     flush: async () => {
       // Allow pending requestAnimationFrame callbacks (e.g. DrawerContent
@@ -428,5 +447,38 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       </div>,
     )
     await runContract(dropdownScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Combobox contract', async () => {
+    const { container } = render(
+      <div>
+        <IrisCombobox
+          data-iris-combobox-input="wrapper"
+          options={[
+            { value: 'apple', label: 'Apple' },
+            { value: 'banana', label: 'Banana' },
+            { value: 'apricot', label: 'Apricot' },
+            { value: 'grape', label: 'Grape' },
+          ]}
+        />
+      </div>,
+    )
+    await runContract(comboboxScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Toast notification contract', async () => {
+    function ToastContractHarness() {
+      const push = useCallback(() => pushToast({ title: 'Hello Toast' }), [])
+      return (
+        <div>
+          <button type="button" data-iris-toast-push onClick={push}>
+            Push Toast
+          </button>
+          <IrisToastViewport portalTarget={false} />
+        </div>
+      )
+    }
+    const { container } = render(<ToastContractHarness />)
+    await runContract(toastScenario, driverFor(container), expect)
   })
 })

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, afterEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
 import {
@@ -22,6 +22,8 @@ import {
   tableExpandScenario,
   treeScenario,
   calendarScenario,
+  comboboxScenario,
+  toastScenario,
   tagInputScenario,
   otpInputScenario,
   dialogScenario,
@@ -41,6 +43,8 @@ import TableSelectContractHarness from './TableSelectContractHarness.svelte'
 import TableExpandContractHarness from './TableExpandContractHarness.svelte'
 import TreeContractHarness from './TreeContractHarness.svelte'
 import CalendarContractHarness from './CalendarContractHarness.svelte'
+import ComboboxContractHarness from './ComboboxContractHarness.svelte'
+import ToastContractHarness from './ToastContractHarness.svelte'
 import DataSourceContractHarness from './DataSourceContractHarness.svelte'
 import DialogContractHarness from './DialogContractHarness.svelte'
 import PopoverContractHarness from './PopoverContractHarness.svelte'
@@ -56,7 +60,10 @@ function driverFor(container: HTMLElement): ContractDriver {
     queryAll: (selector) => Array.from(container.querySelectorAll(selector)),
     click: async (selector, index) => {
       const el = at(selector, index)
-      if (el) await fireEvent.click(el)
+      if (el) {
+        fireEvent.focus(el)
+        await fireEvent.click(el)
+      }
     },
     keydown: async (selector, index, key) => {
       const el = at(selector, index)
@@ -73,6 +80,17 @@ function driverFor(container: HTMLElement): ContractDriver {
     },
     flush: () => {
       flushSync()
+    },
+    type: (selector, index, text) => {
+      const el = at(selector, index) as HTMLInputElement
+      if (el) {
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype,
+          'value',
+        )?.set
+        nativeInputValueSetter?.call(el, text)
+        el.dispatchEvent(new Event('input', { bubbles: true }))
+      }
     },
   }
 }
@@ -340,5 +358,30 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // scenario: closed → pointer enter → open → pointer leave → closed.
     const { container } = render(TooltipContractHarness)
     await runContract(tooltipScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Combobox contract', async () => {
+    // Rendered in a dedicated harness (not the shared ContractsHarness) so the
+    // combobox's `[role="listbox"]` and `[data-iris-combobox-option]` elements
+    // stay out of the shared container and can't collide with other scenarios'
+    // role-based selector counts. The harness is uncontrolled (no `value` prop),
+    // so the combobox manages its own open/close/filter state internally — the
+    // scenario: closed → click input → listbox opens → type "Ap" → options
+    // filtered (Apple, Apricot) → click first option → listbox closes, value
+    // reflects the selection.
+    const { container } = render(ComboboxContractHarness)
+    await runContract(comboboxScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Toast notification contract', async () => {
+    // Rendered in a dedicated harness (not the shared ContractsHarness) so the
+    // toast's `[data-iris-toast]` and `[data-iris-toast-push]` elements stay
+    // out of the shared container and can't collide with other scenarios'
+    // role-based selector counts. The harness renders an inline viewport
+    // (portalTarget={false}) and a push button. The scenario: empty viewport
+    // → click push → toast appears with title → click dismiss × → toast gone.
+    // clearToasts() runs in afterEach via the before/after hooks below.
+    const { container } = render(ToastContractHarness)
+    await runContract(toastScenario, driverFor(container), expect)
   })
 })

@@ -30,6 +30,8 @@ import {
   popoverScenario,
   drawerScenario,
   dropdownScenario,
+  comboboxScenario,
+  toastScenario,
 } from '@iris-ui/core/contracts'
 import {
   driverFor,
@@ -67,8 +69,15 @@ import { IrisDropdown } from './primitives/dropdown/Dropdown'
 import { IrisDropdownTrigger } from './primitives/dropdown/DropdownTrigger'
 import { IrisDropdownMenu } from './primitives/dropdown/DropdownMenu'
 import { IrisTooltip } from './primitives/tooltip/Tooltip'
+import { IrisCombobox } from './primitives/combobox/Combobox'
+import { IrisToastViewport } from './primitives/toast'
+import { pushToast, clearToasts } from './primitives/toast/store'
 
 enableAutoUnmount(afterEach)
+
+afterEach(() => {
+  clearToasts()
+})
 
 describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   const makeHost = () => {
@@ -289,6 +298,46 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     )
     await nextTick()
     await runContract(dropdownScenario, driverFor(host), expect)
+  })
+
+  it('satisfies the shared Combobox contract', async () => {
+    const el = makeHost()
+    const wrapper = mount(
+      () =>
+        h(IrisCombobox, {
+          options: [
+            { label: 'Apple', value: 'apple' },
+            { label: 'Banana', value: 'banana' },
+            { label: 'Apricot', value: 'apricot' },
+            { label: 'Grape', value: 'grape' },
+          ],
+        }),
+      { attachTo: el },
+    )
+    await nextTick()
+    await runContract(comboboxScenario, driverFor(el), expect)
+  })
+
+  it('satisfies the shared Toast notification contract', async () => {
+    const el = makeHost()
+    const wrapper = mount(
+      () =>
+        h('div', [
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-iris-toast-push': '',
+              onClick: () => pushToast({ title: 'Hello Toast' }),
+            },
+            'Push Toast',
+          ),
+          h(IrisToastViewport, { portalTarget: false }),
+        ]),
+      { attachTo: el },
+    )
+    await nextTick()
+    await runContract(toastScenario, driverFor(el), expect)
   })
 
   it('satisfies the shared DataSource contract', async () => {

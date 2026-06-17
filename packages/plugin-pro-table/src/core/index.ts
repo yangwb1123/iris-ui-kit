@@ -8,6 +8,8 @@ import {
   cycleSort,
   dataIndexOf,
   readCell,
+  flattenLeafColumns,
+  buildHeaderMatrix,
   toCsv,
   toSpreadsheetXml,
   toJson,
@@ -15,6 +17,7 @@ import {
   type Store,
   type DataViewColumn,
   type TableHtmlOptions,
+  type HeaderCell,
 } from '@iris-ui/core'
 
 /**
@@ -38,6 +41,8 @@ export interface ProTableColumn<Row = Record<string, unknown>> {
   key: string
   /** Header label. */
   title: string
+  /** Nested columns for multi-level (grouped) headers. Leaf columns drive body. */
+  children?: ProTableColumn<Row>[]
   /** Field read from each row; defaults to `key`. */
   dataIndex?: string
   /** Allow sorting by this column. */
@@ -122,6 +127,8 @@ export interface ProTableStore<Row = Record<string, unknown>> {
   subscribe(listener: (state: ProTableState<Row>) => void): () => void
   rowKeyOf(row: Row): string
   visibleColumns(): ProTableColumn<Row>[]
+  /** Header matrix: one row per nesting level, each cell with col/row spans. */
+  headerMatrix(): HeaderCell<ProTableColumn<Row>>[][]
   cellValue(row: Row, column: ProTableColumn<Row>): unknown
   toggleSort(key: string): void
   setFilter(key: string, value: string): void
@@ -251,13 +258,25 @@ export function createProTableStore<Row extends Record<string, unknown>>(
 
   const visibleColumns = (): ProTableColumn<Row>[] => {
     const { columns: cols, columnOrder } = store.getState()
-    // Build a lookup for O(1) access, then project in columnOrder sequence.
-    const byKey = new Map(cols.map((c) => [c.key, c]))
+    // Multi-level support: flatten the column tree to leaves.
+    const leaves = flattenLeafColumns(cols)
+    const byKey = new Map(leaves.map((c) => [c.key, c]))
     return columnOrder.flatMap((k) => {
       const col = byKey.get(k)
       return col && !col.hidden ? [col] : []
     })
   }
+
+  // Cache header matrix; invalidate on any store change (cheap recompute).
+  let headerMatrixCache: HeaderCell<ProTableColumn<Row>>[][] | null = null
+  const headerMatrix = (): HeaderCell<ProTableColumn<Row>>[][] => {
+    const { columns: cols } = store.getState()
+    if (!headerMatrixCache) headerMatrixCache = buildHeaderMatrix(cols)
+    return headerMatrixCache
+  }
+  store.subscribe(() => {
+    headerMatrixCache = null
+  })
 
   /** Filtered + sorted rows across ALL pages (client mode; for export too). */
   function processedAll(): Row[] {
@@ -292,6 +311,7 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     subscribe: store.subscribe,
     rowKeyOf,
     visibleColumns,
+    headerMatrix,
     cellValue,
 
     toggleSort: (key) => dataSource.setSort(cycleSort(dataSource.getState().sort, key)),

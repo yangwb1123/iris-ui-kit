@@ -124,6 +124,13 @@
 
   const columns = $derived(store.visibleColumns())
 
+  // Multi-level (grouped) headers: a column with `children` forms a header group.
+  // The BODY always renders the leaf columns (`columns` is already the flattened
+  // leaf view from `visibleColumns()`); only the header gains extra rows.
+  // When nothing is grouped, `headerMatrix` is 1 row → `grouped` is false.
+  const headerMatrix = $derived(store.headerMatrix())
+  const grouped = $derived(headerMatrix.length > 1)
+
   // --- Row virtualization (opt-in) -----------------------------------------
   // Create the virtualizer ONCE. viewportSize is driven from the `maxHeight`
   // PROP (not a measured clientHeight) so the window is deterministic in jsdom.
@@ -208,82 +215,181 @@
   {#snippet tableEl()}
   <table>
     <thead>
-      <tr>
-        <th scope="col">
-          <input
-            type="checkbox"
-            aria-label={proTableLabel(labels, 'selectAll')}
-            checked={store.isAllSelected()}
-            onchange={() => store.toggleAll()}
-          />
-        </th>
-        {#each columns as c (c.key)}
-          {@const colWidth = tableState.columnSizes[c.key] ?? c.width}
-          <th
-            scope="col"
-            data-iris-col-key={c.key}
-            aria-sort={ariaSort(c)}
-            tabindex={c.sortable ? 0 : undefined}
-            style={`position:relative;text-align:${c.align ?? 'left'};width:${typeof colWidth === 'number' ? colWidth + 'px' : colWidth ?? ''};${columnReorder ? 'cursor:grab;touch-action:none;' : ''}${
-              sortableState.activeId &&
-              sortableState.overId === c.key &&
-              sortableState.activeId !== c.key
-                ? 'outline:2px solid var(--iris-color-primary, #2563eb);outline-offset:-2px;'
-                : ''
-            }${pinnedStyle(c)}`}
-            data-sortable={c.sortable ? '' : undefined}
-            onclick={c.sortable ? () => store.toggleSort(c.key) : undefined}
-            onkeydown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                store.toggleSort(c.key)
-              }
-            }}
-            onpointerdown={(e) => onHeaderPointerDown(c.key, e)}
-            onpointermove={(e) => onHeaderPointerMove(c.key, e)}
-            onpointerup={() => onHeaderPointerUp(c.key)}
-            onpointercancel={() => onHeaderPointerCancel()}
-            draggable={columnReorder ? true : undefined}
-            ondragstart={columnReorder ? (e) => {
-              dragKey = c.key
-              if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
-            } : undefined}
-            ondragover={columnReorder ? (e) => {
-              e.preventDefault()
-              if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
-            } : undefined}
-            ondrop={columnReorder ? (e) => {
-              e.preventDefault()
-              if (dragKey && dragKey !== c.key) store.reorderColumns(dragKey, c.key)
-              dragKey = null
-            } : undefined}
-          >
-            {c.title}<span aria-hidden="true">{sortIndicator(c.key)}</span>
-            {#if (c.resizable ?? typeof c.width === 'number')}
-              <span
-                data-iris-col-resize-handle
-                style="position:absolute;top:0;right:0;bottom:0;width:4px;cursor:col-resize;z-index:2;"
-                onpointerdown={(e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
-                  const startX = e.clientX
-                  const startW = +colWidth
-                  const onMove = (ev: PointerEvent) => {
-                    ev.preventDefault()
-                    store.setColumnWidth(c.key, startW + ev.clientX - startX)
-                  }
-                  const onUp = () => {
-                    document.removeEventListener('pointermove', onMove)
-                    document.removeEventListener('pointerup', onUp)
-                  }
-                  document.addEventListener('pointermove', onMove)
-                  document.addEventListener('pointerup', onUp)
-                }}
-              />
+      {#if grouped}
+        {#each headerMatrix as rowCells, ri}
+          <tr>
+            {#if ri === 0}
+              <th scope="col" rowspan={headerMatrix.length}>
+                <input
+                  type="checkbox"
+                  aria-label={proTableLabel(labels, 'selectAll')}
+                  checked={store.isAllSelected()}
+                  onchange={() => store.toggleAll()}
+                />
+              </th>
             {/if}
-          </th>
+            {#each rowCells as cell}
+              {@const col = cell.column}
+              {@const isLeaf = !col.children || col.children.length === 0}
+              {#if isLeaf}
+                {@const colWidth = tableState.columnSizes[col.key] ?? col.width}
+                <th
+                  scope="col"
+                  data-iris-col-key={col.key}
+                  aria-sort={ariaSort(col)}
+                  tabindex={col.sortable ? 0 : undefined}
+                  style={`position:relative;text-align:${col.align ?? 'left'};width:${typeof colWidth === 'number' ? colWidth + 'px' : colWidth ?? ''};${columnReorder ? 'cursor:grab;touch-action:none;' : ''}${
+                    sortableState.activeId &&
+                    sortableState.overId === col.key &&
+                    sortableState.activeId !== col.key
+                      ? 'outline:2px solid var(--iris-color-primary, #2563eb);outline-offset:-2px;'
+                      : ''
+                  }${pinnedStyle(col)}`}
+                  colspan={cell.colSpan}
+                  rowspan={cell.rowSpan}
+                  data-sortable={col.sortable ? '' : undefined}
+                  onclick={col.sortable ? () => store.toggleSort(col.key) : undefined}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      store.toggleSort(col.key)
+                    }
+                  }}
+                  onpointerdown={(e) => onHeaderPointerDown(col.key, e)}
+                  onpointermove={(e) => onHeaderPointerMove(col.key, e)}
+                  onpointerup={() => onHeaderPointerUp(col.key)}
+                  onpointercancel={() => onHeaderPointerCancel()}
+                  draggable={columnReorder ? true : undefined}
+                  ondragstart={columnReorder ? (e) => {
+                    dragKey = col.key
+                    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+                  } : undefined}
+                  ondragover={columnReorder ? (e) => {
+                    e.preventDefault()
+                    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+                  } : undefined}
+                  ondrop={columnReorder ? (e) => {
+                    e.preventDefault()
+                    if (dragKey && dragKey !== col.key) store.reorderColumns(dragKey, col.key)
+                    dragKey = null
+                  } : undefined}
+                >
+                  {col.title}<span aria-hidden="true">{sortIndicator(col.key)}</span>
+                  {#if (col.resizable ?? typeof col.width === 'number')}
+                    <span
+                      data-iris-col-resize-handle
+                      style="position:absolute;top:0;right:0;bottom:0;width:4px;cursor:col-resize;z-index:2;"
+                      onpointerdown={(e) => {
+                        e.stopPropagation()
+                        e.preventDefault()
+                        const startX = e.clientX
+                        const startW = +colWidth
+                        const onMove = (ev: PointerEvent) => {
+                          ev.preventDefault()
+                          store.setColumnWidth(col.key, startW + ev.clientX - startX)
+                        }
+                        const onUp = () => {
+                          document.removeEventListener('pointermove', onMove)
+                          document.removeEventListener('pointerup', onUp)
+                        }
+                        document.addEventListener('pointermove', onMove)
+                        document.addEventListener('pointerup', onUp)
+                      }}
+                    />
+                  {/if}
+                </th>
+              {:else}
+                <th
+                  scope="col"
+                  data-iris-col-key={col.key}
+                  colspan={cell.colSpan}
+                  rowspan={cell.rowSpan}
+                  style={`position:relative;text-align:center;${pinnedStyle(col)}`}
+                >
+                  {col.title}
+                </th>
+              {/if}
+            {/each}
+          </tr>
         {/each}
-      </tr>
+      {:else}
+        <tr>
+          <th scope="col">
+            <input
+              type="checkbox"
+              aria-label={proTableLabel(labels, 'selectAll')}
+              checked={store.isAllSelected()}
+              onchange={() => store.toggleAll()}
+            />
+          </th>
+          {#each columns as c (c.key)}
+            {@const colWidth = tableState.columnSizes[c.key] ?? c.width}
+            <th
+              scope="col"
+              data-iris-col-key={c.key}
+              aria-sort={ariaSort(c)}
+              tabindex={c.sortable ? 0 : undefined}
+              style={`position:relative;text-align:${c.align ?? 'left'};width:${typeof colWidth === 'number' ? colWidth + 'px' : colWidth ?? ''};${columnReorder ? 'cursor:grab;touch-action:none;' : ''}${
+                sortableState.activeId &&
+                sortableState.overId === c.key &&
+                sortableState.activeId !== c.key
+                  ? 'outline:2px solid var(--iris-color-primary, #2563eb);outline-offset:-2px;'
+                  : ''
+              }${pinnedStyle(c)}`}
+              data-sortable={c.sortable ? '' : undefined}
+              onclick={c.sortable ? () => store.toggleSort(c.key) : undefined}
+              onkeydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  store.toggleSort(c.key)
+                }
+              }}
+              onpointerdown={(e) => onHeaderPointerDown(c.key, e)}
+              onpointermove={(e) => onHeaderPointerMove(c.key, e)}
+              onpointerup={() => onHeaderPointerUp(c.key)}
+              onpointercancel={() => onHeaderPointerCancel()}
+              draggable={columnReorder ? true : undefined}
+              ondragstart={columnReorder ? (e) => {
+                dragKey = c.key
+                if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+              } : undefined}
+              ondragover={columnReorder ? (e) => {
+                e.preventDefault()
+                if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+              } : undefined}
+              ondrop={columnReorder ? (e) => {
+                e.preventDefault()
+                if (dragKey && dragKey !== c.key) store.reorderColumns(dragKey, c.key)
+                dragKey = null
+              } : undefined}
+            >
+              {c.title}<span aria-hidden="true">{sortIndicator(c.key)}</span>
+              {#if (c.resizable ?? typeof c.width === 'number')}
+                <span
+                  data-iris-col-resize-handle
+                  style="position:absolute;top:0;right:0;bottom:0;width:4px;cursor:col-resize;z-index:2;"
+                  onpointerdown={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
+                    const startX = e.clientX
+                    const startW = +colWidth
+                    const onMove = (ev: PointerEvent) => {
+                      ev.preventDefault()
+                      store.setColumnWidth(c.key, startW + ev.clientX - startX)
+                    }
+                    const onUp = () => {
+                      document.removeEventListener('pointermove', onMove)
+                      document.removeEventListener('pointerup', onUp)
+                    }
+                    document.addEventListener('pointermove', onMove)
+                    document.addEventListener('pointerup', onUp)
+                  }}
+                />
+              {/if}
+            </th>
+          {/each}
+        </tr>
+      {/if}
       {#if columns.some((c) => c.filterable)}
         <tr>
           <th></th>

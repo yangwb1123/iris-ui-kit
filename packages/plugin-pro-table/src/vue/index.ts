@@ -9,7 +9,12 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
+import {
+  createSortable,
+  createVirtualizer,
+  type SortableRect,
+  type HeaderCell,
+} from '@iris-ui/core'
 import {
   collectRects,
   proTableLabel,
@@ -25,71 +30,33 @@ function pinnedStyle(column: ProTableColumn): Record<string, string> | undefined
   return { position: 'sticky', [column.pinned]: '0', zIndex: '1' }
 }
 
-/**
- * vxe-table-style CRUD data table for Vue (render-function authored, matching
- * the `@iris-ui/vue` convention). Subscribes to the framework-agnostic
- * {@link ProTableStore}.
- */
 export const IrisProTable = defineComponent({
   name: 'IrisProTable',
   props: {
     store: { type: Object as PropType<ProTableStore>, required: true },
-    /**
-     * Host-overridable UI strings (aria-labels + pager). Pass localized values
-     * (e.g. from the adapter's `useI18n().t`) — plugins can't reach adapter i18n
-     * directly. Defaults to English.
-     */
     labels: { type: Object as PropType<ProTableLabels>, default: undefined },
-    /**
-     * Enable drag-to-reorder column headers. When `true` every column `<th>`
-     * becomes draggable and drop onto another header calls `store.reorderColumns`.
-     * Default `false` — existing layouts are unchanged.
-     */
     columnReorder: { type: Boolean, default: false },
-    /**
-     * Opt-in row virtualization. When `true` the body region becomes a scroll
-     * container and only the visible window of rows is rendered (via core's
-     * `createVirtualizer`), so a 100k-row table renders a handful of `<tr>` rather
-     * than every row. Default `false` — behavior is UNCHANGED (all rows render).
-     */
     virtualized: { type: Boolean, default: false },
-    /** Estimated row height in px (drives the virtualizer). Default `40`. */
     rowHeight: { type: Number, default: 40 },
-    /** Scroll viewport height in px when virtualized. Default `400`. */
     maxHeight: { type: Number, default: 400 },
   },
   setup(props) {
     const state = shallowRef(props.store.getState())
     const draft = ref('')
-    // Drag-to-reorder: mutable ref — no reactivity needed (no re-render on drag).
     let dragKey: string | null = null
     let unsub = () => {}
 
-    // Touch/pen column reorder via the shared core controller. Native HTML5 DnD
-    // (the `draggable` <th>) never fires on touch, so the pointer path drives the
-    // reorder there; it is gated on `pointerType !== 'mouse'` so the mouse flow is
-    // unchanged. A bare tap (down→up, no move) leaves overId null → no reorder,
-    // so header-tap sorting still works.
     const sortable = createSortable()
     const sortableState = shallowRef(sortable.getState())
     let unsubSortable = () => {}
-    // Header rects, measured ONCE when a drag actually starts (not per move).
-    // Plain closure var — no reactivity needed (rects don't drive rendering).
     let dragRects: SortableRect[] = []
 
-    // --- Row virtualization (opt-in) -----------------------------------------
-    // Create the virtualizer ONCE. viewportSize is driven from the `maxHeight`
-    // PROP (not a measured clientHeight) so the window is deterministic in jsdom.
-    // `getItemKey` reads `state.value.rows` so it always sees the current page's
-    // data (the virtualizer instance is created once).
     const virtualizer = createVirtualizer({
       count: state.value.rows.length,
       estimateSize: props.rowHeight,
       viewportSize: props.maxHeight,
       getItemKey: (i) => String(props.store.rowKeyOf(state.value.rows[i]!)),
     })
-    // Bridge the virtualizer store reactively the SAME way the pro-table store is
-    // bridged: a shallowRef updated from its subscription (set up in onMounted).
     const vState = shallowRef(virtualizer.getState())
     let unsubVirtual = () => {}
 
@@ -100,7 +67,6 @@ export const IrisProTable = defineComponent({
       } catch {
         /* ignore */
       }
-      // Record a pending press — no store write, so a tap (header sort) never re-renders.
       sortable.press(key, e.clientX, e.clientY)
     }
     const onHeaderPointerMove = (key: string) => (e: PointerEvent) => {
@@ -113,7 +79,7 @@ export const IrisProTable = defineComponent({
     }
     const onHeaderPointerUp = (key: string) => () => {
       if (!sortable.isActive(key)) {
-        sortable.cancel() // clear a pending tap (idle → no re-render); header-tap sort still works
+        sortable.cancel()
         return
       }
       const { activeId, overId } = sortable.end()
@@ -145,8 +111,6 @@ export const IrisProTable = defineComponent({
       unsubVirtual()
     })
 
-    // Keep the virtualizer's count in sync with the current page's row count, and
-    // its viewport in sync if the maxHeight prop changes (mirrors React's effects).
     watch(
       () => state.value.rows.length,
       (len) => virtualizer.setCount(len),
@@ -160,9 +124,6 @@ export const IrisProTable = defineComponent({
       const sort = state.value.sort
       return sort?.key === key ? (sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
     }
-    // WAI-ARIA grid sort semantics: aria-sort on the header conveys state to
-    // screen readers (the visual ▲/▼ is decorative/aria-hidden), and sortable
-    // headers are keyboard-operable (Enter/Space) — mirrors the base IrisTable.
     const ariaSort = (c: ProTableColumn): 'ascending' | 'descending' | 'none' | undefined => {
       const sort = state.value.sort
       return sort?.key === c.key
@@ -177,116 +138,137 @@ export const IrisProTable = defineComponent({
     return () => {
       const columns = props.store.visibleColumns()
       const hasFilter = columns.some((c) => c.filterable)
+      const matrix = props.store.headerMatrix()
 
-      const headerCells: VNode[] = [
-        h('th', { scope: 'col' }, [
-          h('input', {
-            type: 'checkbox',
-            'aria-label': proTableLabel(props.labels, 'selectAll'),
-            checked: props.store.isAllSelected(),
-            onChange: () => props.store.toggleAll(),
+      const headerRows: VNode[] = matrix.map((row, ri) =>
+        h('tr', { key: ri }, [
+          ...(ri === 0
+            ? [
+                h('th', { scope: 'col', rowSpan: matrix.length }, [
+                  h('input', {
+                    type: 'checkbox',
+                    'aria-label': proTableLabel(props.labels, 'selectAll'),
+                    checked: props.store.isAllSelected(),
+                    onChange: () => props.store.toggleAll(),
+                  }),
+                ]),
+              ]
+            : []),
+          ...row.map((cell: HeaderCell<ProTableColumn>) => {
+            const c = cell.column
+            const isLeaf =
+              !(c as ProTableColumn).children ||
+              ((c as ProTableColumn).children as any[]).length === 0
+            const colWidth = state.value.columnSizes[c.key] ?? c.width
+            return h(
+              'th',
+              isLeaf
+                ? {
+                    key: c.key,
+                    scope: 'col',
+                    'data-iris-col-key': c.key,
+                    'aria-sort': ariaSort(c),
+                    tabindex: c.sortable ? 0 : undefined,
+                    style: {
+                      textAlign: c.align,
+                      width: colWidth,
+                      cursor: props.columnReorder ? 'grab' : undefined,
+                      touchAction: props.columnReorder ? 'none' : undefined,
+                      outline:
+                        sortableState.value.activeId &&
+                        sortableState.value.overId === c.key &&
+                        sortableState.value.activeId !== c.key
+                          ? '2px solid var(--iris-color-primary, #2563eb)'
+                          : undefined,
+                      outlineOffset: '-2px',
+                      ...pinnedStyle(c),
+                    },
+                    'data-sortable': c.sortable ? '' : undefined,
+                    onClick: c.sortable ? () => props.store.toggleSort(c.key) : undefined,
+                    onKeydown: c.sortable
+                      ? (e: KeyboardEvent) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            props.store.toggleSort(c.key)
+                          }
+                        }
+                      : undefined,
+                    onPointerdown: onHeaderPointerDown(c.key),
+                    onPointermove: onHeaderPointerMove(c.key),
+                    onPointerup: onHeaderPointerUp(c.key),
+                    onPointercancel: onHeaderPointerCancel(),
+                    draggable: props.columnReorder ? true : undefined,
+                    onDragstart: props.columnReorder
+                      ? (e: DragEvent) => {
+                          dragKey = c.key
+                          if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+                        }
+                      : undefined,
+                    onDragover: props.columnReorder
+                      ? (e: DragEvent) => {
+                          e.preventDefault()
+                          if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+                        }
+                      : undefined,
+                    onDrop: props.columnReorder
+                      ? (e: DragEvent) => {
+                          e.preventDefault()
+                          if (dragKey && dragKey !== c.key) {
+                            props.store.reorderColumns(dragKey, c.key)
+                          }
+                          dragKey = null
+                        }
+                      : undefined,
+                  }
+                : {
+                    key: c.key,
+                    scope: 'colgroup',
+                    colSpan: cell.colSpan > 1 ? cell.colSpan : undefined,
+                    rowSpan: cell.rowSpan > 0 ? cell.rowSpan : undefined,
+                    style: { textAlign: 'center' },
+                  },
+              isLeaf
+                ? [
+                    c.title,
+                    h('span', { 'aria-hidden': 'true' }, sortIndicator(c.key)),
+                    ...((c.resizable ?? typeof c.width === 'number')
+                      ? [
+                          h('span', {
+                            'data-iris-col-resize-handle': '',
+                            style: {
+                              position: 'absolute',
+                              top: 0,
+                              right: 0,
+                              bottom: 0,
+                              width: '4px',
+                              cursor: 'col-resize',
+                              zIndex: 2,
+                            },
+                            onPointerdown: (e: PointerEvent) => {
+                              e.stopPropagation()
+                              e.preventDefault()
+                              const startX = e.clientX
+                              const startW = colWidth as number
+                              const onMove = (ev: PointerEvent) => {
+                                ev.preventDefault()
+                                props.store.setColumnWidth(c.key, startW + ev.clientX - startX)
+                              }
+                              const onUp = () => {
+                                document.removeEventListener('pointermove', onMove)
+                                document.removeEventListener('pointerup', onUp)
+                              }
+                              document.addEventListener('pointermove', onMove)
+                              document.addEventListener('pointerup', onUp)
+                            },
+                          }),
+                        ]
+                      : []),
+                  ]
+                : [c.title],
+            )
           }),
         ]),
-        ...columns.map((c) => {
-          const colWidth = state.value.columnSizes[c.key] ?? c.width
-          return h(
-            'th',
-            {
-              key: c.key,
-              scope: 'col',
-              'data-iris-col-key': c.key,
-              'aria-sort': ariaSort(c),
-              tabindex: c.sortable ? 0 : undefined,
-              style: {
-                textAlign: c.align,
-                width: colWidth,
-                cursor: props.columnReorder ? 'grab' : undefined,
-                touchAction: props.columnReorder ? 'none' : undefined,
-                outline:
-                  sortableState.value.activeId &&
-                  sortableState.value.overId === c.key &&
-                  sortableState.value.activeId !== c.key
-                    ? '2px solid var(--iris-color-primary, #2563eb)'
-                    : undefined,
-                outlineOffset: '-2px',
-                ...pinnedStyle(c),
-              },
-              'data-sortable': c.sortable ? '' : undefined,
-              onClick: c.sortable ? () => props.store.toggleSort(c.key) : undefined,
-              onKeydown: c.sortable
-                ? (e: KeyboardEvent) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      props.store.toggleSort(c.key)
-                    }
-                  }
-                : undefined,
-              onPointerdown: onHeaderPointerDown(c.key),
-              onPointermove: onHeaderPointerMove(c.key),
-              onPointerup: onHeaderPointerUp(c.key),
-              onPointercancel: onHeaderPointerCancel(),
-              draggable: props.columnReorder ? true : undefined,
-              onDragstart: props.columnReorder
-                ? (e: DragEvent) => {
-                    dragKey = c.key
-                    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
-                  }
-                : undefined,
-              onDragover: props.columnReorder
-                ? (e: DragEvent) => {
-                    e.preventDefault()
-                    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
-                  }
-                : undefined,
-              onDrop: props.columnReorder
-                ? (e: DragEvent) => {
-                    e.preventDefault()
-                    if (dragKey && dragKey !== c.key) {
-                      props.store.reorderColumns(dragKey, c.key)
-                    }
-                    dragKey = null
-                  }
-                : undefined,
-            },
-            [
-              c.title,
-              h('span', { 'aria-hidden': 'true' }, sortIndicator(c.key)),
-              ...((c.resizable ?? typeof c.width === 'number')
-                ? [
-                    h('span', {
-                      'data-iris-col-resize-handle': '',
-                      style: {
-                        position: 'absolute',
-                        top: 0,
-                        right: 0,
-                        bottom: 0,
-                        width: '4px',
-                        cursor: 'col-resize',
-                        zIndex: 2,
-                      },
-                      onPointerdown: (e: PointerEvent) => {
-                        e.stopPropagation()
-                        e.preventDefault()
-                        const startX = e.clientX
-                        const startW = colWidth as number
-                        const onMove = (ev: PointerEvent) => {
-                          ev.preventDefault()
-                          props.store.setColumnWidth(c.key, startW + ev.clientX - startX)
-                        }
-                        const onUp = () => {
-                          document.removeEventListener('pointermove', onMove)
-                          document.removeEventListener('pointerup', onUp)
-                        }
-                        document.addEventListener('pointermove', onMove)
-                        document.addEventListener('pointerup', onUp)
-                      },
-                    }),
-                  ]
-                : []),
-            ],
-          )
-        }),
-      ]
+      )
 
       const filterRow = hasFilter
         ? h('tr', [
@@ -312,9 +294,6 @@ export const IrisProTable = defineComponent({
           ])
         : null
 
-      // Single source of truth for a data row's markup — shared by the windowed
-      // (virtualized) and full (non-virtualized) render paths so selection, inline
-      // edit, filters, and pinnedStyle are identical in both.
       const renderRow = (row: Record<string, unknown>): VNode => {
         const key = props.store.rowKeyOf(row)
         return h('tr', { key, 'data-selected': props.store.isSelected(key) ? '' : undefined }, [
@@ -355,12 +334,8 @@ export const IrisProTable = defineComponent({
         ])
       }
 
-      // +1 for the leading checkbox column.
       const totalColumnCount = columns.length + 1
 
-      // The <tbody> children. When virtualized, render ONLY the windowed rows with
-      // a top/bottom spacer <tr> so the scrollbar height is preserved. Spacers use
-      // a single colspan <td> and are aria-hidden so tests can exclude them.
       let bodyRows: VNode[]
       if (props.virtualized) {
         const v = vState.value
@@ -439,7 +414,7 @@ export const IrisProTable = defineComponent({
           : null
 
       const tableEl = h('table', [
-        h('thead', filterRow ? [h('tr', headerCells), filterRow] : [h('tr', headerCells)]),
+        h('thead', [...headerRows, filterRow ? filterRow : null]),
         h('tbody', bodyRows),
       ])
 

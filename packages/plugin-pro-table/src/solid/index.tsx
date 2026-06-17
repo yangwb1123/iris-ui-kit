@@ -96,6 +96,9 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
   }
 
   const columns = () => props.store.visibleColumns()
+  const matrix = () => props.store.headerMatrix()
+  const headerRowCount = () => matrix().length
+  const hasFilterRow = () => columns().some((c) => c.filterable)
 
   // --- Row virtualization (opt-in) -----------------------------------------
   // Defaults mirror the React reference exactly.
@@ -231,121 +234,149 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
   const tableEl = () => (
     <table>
       <thead>
-        <tr>
-          <th scope="col">
-            <input
-              type="checkbox"
-              aria-label={proTableLabel(props.labels, 'selectAll')}
-              checked={props.store.isAllSelected()}
-              onChange={() => props.store.toggleAll()}
-            />
-          </th>
-          <For each={columns()}>
-            {(c) => {
-              const colWidth = state().columnSizes[c.key] ?? c.width
-              return (
-                <th
-                  scope="col"
-                  data-iris-col-key={c.key}
-                  aria-sort={ariaSort(c)}
-                  tabindex={c.sortable ? 0 : undefined}
-                  style={{
-                    'text-align': c.align,
-                    width: typeof colWidth === 'number' ? `${colWidth}px` : colWidth,
-                    cursor: props.columnReorder ? 'grab' : undefined,
-                    'touch-action': props.columnReorder ? 'none' : undefined,
-                    outline:
-                      sortableState().activeId &&
-                      sortableState().overId === c.key &&
-                      sortableState().activeId !== c.key
-                        ? '2px solid var(--iris-color-primary, #2563eb)'
-                        : undefined,
-                    'outline-offset': '-2px',
-                    ...pinnedStyle(c),
-                  }}
-                  data-sortable={c.sortable ? '' : undefined}
-                  onClick={c.sortable ? () => props.store.toggleSort(c.key) : undefined}
-                  onKeyDown={
-                    c.sortable
-                      ? (e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            props.store.toggleSort(c.key)
-                          }
-                        }
-                      : undefined
-                  }
-                  onPointerDown={onHeaderPointerDown(c.key)}
-                  onPointerMove={onHeaderPointerMove(c.key)}
-                  onPointerUp={onHeaderPointerUp(c.key)}
-                  onPointerCancel={() => sortable.cancel()}
-                  draggable={props.columnReorder ? true : undefined}
-                  onDragStart={
-                    props.columnReorder
-                      ? (e) => {
-                          dragKey = c.key
-                          e.dataTransfer!.effectAllowed = 'move'
-                        }
-                      : undefined
-                  }
-                  onDragOver={
-                    props.columnReorder
-                      ? (e) => {
-                          e.preventDefault()
-                          e.dataTransfer!.dropEffect = 'move'
-                        }
-                      : undefined
-                  }
-                  onDrop={
-                    props.columnReorder
-                      ? (e) => {
-                          e.preventDefault()
-                          if (dragKey && dragKey !== c.key) {
-                            props.store.reorderColumns(dragKey, c.key)
-                          }
-                          dragKey = null
-                        }
-                      : undefined
-                  }
-                >
-                  {c.title}
-                  <span aria-hidden="true">{sortIndicator(c.key)}</span>
-                  {(c.resizable ?? typeof c.width === 'number') && (
-                    <span
-                      data-iris-col-resize-handle
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        right: 0,
-                        bottom: 0,
-                        width: 4,
-                        cursor: 'col-resize',
-                        'z-index': 2,
-                      }}
-                      onPointerDown={(e) => {
-                        e.stopPropagation()
-                        e.preventDefault()
-                        const startX = e.clientX
-                        const startW = colWidth as number
-                        const onMove = (ev: PointerEvent) => {
-                          ev.preventDefault()
-                          props.store.setColumnWidth(c.key, startW + ev.clientX - startX)
-                        }
-                        const onUp = () => {
-                          document.removeEventListener('pointermove', onMove)
-                          document.removeEventListener('pointerup', onUp)
-                        }
-                        document.addEventListener('pointermove', onMove)
-                        document.addEventListener('pointerup', onUp)
-                      }}
-                    />
-                  )}
+        <For each={matrix()}>
+          {(row, rowIdx) => (
+            <tr>
+              <Show when={rowIdx() === 0}>
+                <th scope="col" rowSpan={headerRowCount() + (hasFilterRow() ? 1 : 0)}>
+                  <input
+                    type="checkbox"
+                    aria-label={proTableLabel(props.labels, 'selectAll')}
+                    checked={props.store.isAllSelected()}
+                    onChange={() => props.store.toggleAll()}
+                  />
                 </th>
-              )
-            }}
-          </For>
-        </tr>
-        <Show when={columns().some((c) => c.filterable)}>
+              </Show>
+              <For each={row}>
+                {(cell) => {
+                  const isLeaf = !cell.column.children || cell.column.children.length === 0
+                  const colWidth = state().columnSizes[cell.column.key] ?? cell.column.width
+                  return (
+                    <th
+                      scope="col"
+                      data-iris-col-key={isLeaf ? cell.column.key : undefined}
+                      aria-sort={isLeaf ? ariaSort(cell.column) : undefined}
+                      tabindex={isLeaf && cell.column.sortable ? 0 : undefined}
+                      colSpan={cell.colSpan > 1 ? cell.colSpan : undefined}
+                      rowSpan={!isLeaf && cell.rowSpan > 0 ? cell.rowSpan : undefined}
+                      style={{
+                        'text-align': cell.column.align,
+                        width:
+                          isLeaf && typeof colWidth === 'number'
+                            ? `${colWidth}px`
+                            : isLeaf
+                              ? colWidth
+                              : undefined,
+                        cursor: props.columnReorder && isLeaf ? 'grab' : undefined,
+                        'touch-action': props.columnReorder && isLeaf ? 'none' : undefined,
+                        outline:
+                          isLeaf &&
+                          sortableState().activeId &&
+                          sortableState().overId === cell.column.key &&
+                          sortableState().activeId !== cell.column.key
+                            ? '2px solid var(--iris-color-primary, #2563eb)'
+                            : undefined,
+                        'outline-offset': '-2px',
+                        ...pinnedStyle(cell.column),
+                      }}
+                      data-sortable={isLeaf && cell.column.sortable ? '' : undefined}
+                      onClick={
+                        isLeaf && cell.column.sortable
+                          ? () => props.store.toggleSort(cell.column.key)
+                          : undefined
+                      }
+                      onKeyDown={
+                        isLeaf && cell.column.sortable
+                          ? (e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                props.store.toggleSort(cell.column.key)
+                              }
+                            }
+                          : undefined
+                      }
+                      onPointerDown={isLeaf ? onHeaderPointerDown(cell.column.key) : undefined}
+                      onPointerMove={isLeaf ? onHeaderPointerMove(cell.column.key) : undefined}
+                      onPointerUp={isLeaf ? onHeaderPointerUp(cell.column.key) : undefined}
+                      onPointerCancel={isLeaf ? () => sortable.cancel() : undefined}
+                      draggable={props.columnReorder && isLeaf ? true : undefined}
+                      onDragStart={
+                        props.columnReorder && isLeaf
+                          ? (e) => {
+                              dragKey = cell.column.key
+                              e.dataTransfer!.effectAllowed = 'move'
+                            }
+                          : undefined
+                      }
+                      onDragOver={
+                        props.columnReorder && isLeaf
+                          ? (e) => {
+                              e.preventDefault()
+                              e.dataTransfer!.dropEffect = 'move'
+                            }
+                          : undefined
+                      }
+                      onDrop={
+                        props.columnReorder && isLeaf
+                          ? (e) => {
+                              e.preventDefault()
+                              if (dragKey && dragKey !== cell.column.key) {
+                                props.store.reorderColumns(dragKey, cell.column.key)
+                              }
+                              dragKey = null
+                            }
+                          : undefined
+                      }
+                    >
+                      {cell.column.title}
+                      <Show when={isLeaf}>
+                        <span aria-hidden="true">{sortIndicator(cell.column.key)}</span>
+                      </Show>
+                      <Show
+                        when={
+                          isLeaf && (cell.column.resizable ?? typeof cell.column.width === 'number')
+                        }
+                      >
+                        <span
+                          data-iris-col-resize-handle
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            right: 0,
+                            bottom: 0,
+                            width: 4,
+                            cursor: 'col-resize',
+                            'z-index': 2,
+                          }}
+                          onPointerDown={(e) => {
+                            e.stopPropagation()
+                            e.preventDefault()
+                            const startX = e.clientX
+                            const startW = colWidth as number
+                            const onMove = (ev: PointerEvent) => {
+                              ev.preventDefault()
+                              props.store.setColumnWidth(
+                                cell.column.key,
+                                startW + ev.clientX - startX,
+                              )
+                            }
+                            const onUp = () => {
+                              document.removeEventListener('pointermove', onMove)
+                              document.removeEventListener('pointerup', onUp)
+                            }
+                            document.addEventListener('pointermove', onMove)
+                            document.addEventListener('pointerup', onUp)
+                          }}
+                        />
+                      </Show>
+                    </th>
+                  )
+                }}
+              </For>
+            </tr>
+          )}
+        </For>
+        <Show when={hasFilterRow()}>
           <tr>
             <th />
             <For each={columns()}>

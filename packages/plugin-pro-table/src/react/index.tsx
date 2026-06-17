@@ -53,6 +53,8 @@ export function IrisProTable<Row extends Record<string, unknown>>({
 }: IrisProTableProps<Row>) {
   const state = React.useSyncExternalStore(store.subscribe, store.getState, store.getState)
   const columns = store.visibleColumns()
+  const headerMat = store.headerMatrix()
+  const headerDepth = headerMat.length
 
   // Drag-to-reorder: track the key of the column being dragged in a ref so we
   // don't need React state (no re-render on dragstart/dragover).
@@ -235,119 +237,138 @@ export function IrisProTable<Row extends Record<string, unknown>>({
   const tableEl = (
     <table>
       <thead>
-        <tr>
-          <th scope="col">
-            <input
-              type="checkbox"
-              aria-label={proTableLabel(labels, 'selectAll')}
-              checked={store.isAllSelected()}
-              onChange={() => store.toggleAll()}
-            />
-          </th>
-          {columns.map((c) => {
-            const colWidth = state.columnSizes[c.key] ?? c.width
-            return (
-              <th
-                key={c.key}
-                scope="col"
-                data-iris-col-key={c.key}
-                aria-sort={ariaSort(c)}
-                tabIndex={c.sortable ? 0 : undefined}
-                style={{
-                  textAlign: c.align,
-                  width: colWidth,
-                  cursor: columnReorder ? 'grab' : undefined,
-                  touchAction: columnReorder ? 'none' : undefined,
-                  outline:
-                    sortableState.activeId &&
-                    sortableState.overId === c.key &&
-                    sortableState.activeId !== c.key
-                      ? '2px solid var(--iris-color-primary, #2563eb)'
-                      : undefined,
-                  outlineOffset: -2,
-                  ...pinnedStyle(c),
-                }}
-                onClick={c.sortable ? () => store.toggleSort(c.key) : undefined}
-                onPointerDown={onHeaderPointerDown(c.key)}
-                onPointerMove={onHeaderPointerMove(c.key)}
-                onPointerUp={onHeaderPointerUp(c.key)}
-                onPointerCancel={() => sortable.cancel()}
-                onKeyDown={
-                  c.sortable
-                    ? (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          store.toggleSort(c.key)
-                        }
-                      }
-                    : undefined
-                }
-                data-sortable={c.sortable ? '' : undefined}
-                draggable={columnReorder ? true : undefined}
-                onDragStart={
-                  columnReorder
-                    ? (e) => {
-                        dragKey.current = c.key
-                        e.dataTransfer.effectAllowed = 'move'
-                      }
-                    : undefined
-                }
-                onDragOver={
-                  columnReorder
-                    ? (e) => {
-                        e.preventDefault()
-                        e.dataTransfer.dropEffect = 'move'
-                      }
-                    : undefined
-                }
-                onDrop={
-                  columnReorder
-                    ? (e) => {
-                        e.preventDefault()
-                        if (dragKey.current && dragKey.current !== c.key) {
-                          store.reorderColumns(dragKey.current, c.key)
-                        }
-                        dragKey.current = null
-                      }
-                    : undefined
-                }
-              >
-                {c.title}
-                <span aria-hidden="true">{sortIndicator(c.key)}</span>
-                {(c.resizable ?? typeof c.width === 'number') && (
-                  <span
-                    data-iris-col-resize-handle
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      right: 0,
-                      bottom: 0,
-                      width: 4,
-                      cursor: 'col-resize',
-                      zIndex: 2,
-                    }}
-                    onPointerDown={(e) => {
-                      e.stopPropagation()
-                      e.preventDefault()
-                      const startX = e.clientX
-                      const startW = colWidth as number
-                      const onMove = (ev: PointerEvent) => {
-                        ev.preventDefault()
-                        store.setColumnWidth(c.key, startW + ev.clientX - startX)
-                      }
-                      const onUp = () => {
-                        document.removeEventListener('pointermove', onMove)
-                        document.removeEventListener('pointerup', onUp)
-                      }
-                      document.addEventListener('pointermove', onMove)
-                      document.addEventListener('pointerup', onUp)
-                    }}
-                  />
-                )}
+        {headerMat.map((row, ri) => (
+          <tr key={ri}>
+            {ri === 0 && (
+              <th scope="col" rowSpan={headerDepth}>
+                <input
+                  type="checkbox"
+                  aria-label={proTableLabel(labels, 'selectAll')}
+                  checked={store.isAllSelected()}
+                  onChange={() => store.toggleAll()}
+                />
               </th>
-            )
-          })}
-        </tr>
+            )}
+            {row.map((cell) => {
+              const col = cell.column
+              const isLeaf = !col.children || col.children.length === 0
+              const colWidth = state.columnSizes[col.key] ?? col.width
+              return isLeaf ? (
+                <th
+                  key={col.key}
+                  scope="col"
+                  data-iris-col-key={col.key}
+                  aria-sort={ariaSort(col)}
+                  tabIndex={col.sortable ? 0 : undefined}
+                  style={{
+                    textAlign: col.align,
+                    width: colWidth,
+                    cursor: columnReorder ? 'grab' : undefined,
+                    touchAction: columnReorder ? 'none' : undefined,
+                    outline:
+                      sortableState.activeId &&
+                      sortableState.overId === col.key &&
+                      sortableState.activeId !== col.key
+                        ? '2px solid var(--iris-color-primary, #2563eb)'
+                        : undefined,
+                    outlineOffset: -2,
+                    ...pinnedStyle(col),
+                  }}
+                  onClick={col.sortable ? () => store.toggleSort(col.key) : undefined}
+                  onPointerDown={onHeaderPointerDown(col.key)}
+                  onPointerMove={onHeaderPointerMove(col.key)}
+                  onPointerUp={onHeaderPointerUp(col.key)}
+                  onPointerCancel={() => sortable.cancel()}
+                  onKeyDown={
+                    col.sortable
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            store.toggleSort(col.key)
+                          }
+                        }
+                      : undefined
+                  }
+                  data-sortable={col.sortable ? '' : undefined}
+                  draggable={columnReorder ? true : undefined}
+                  onDragStart={
+                    columnReorder
+                      ? (e) => {
+                          dragKey.current = col.key
+                          e.dataTransfer.effectAllowed = 'move'
+                        }
+                      : undefined
+                  }
+                  onDragOver={
+                    columnReorder
+                      ? (e) => {
+                          e.preventDefault()
+                          e.dataTransfer.dropEffect = 'move'
+                        }
+                      : undefined
+                  }
+                  onDrop={
+                    columnReorder
+                      ? (e) => {
+                          e.preventDefault()
+                          if (dragKey.current && dragKey.current !== col.key) {
+                            store.reorderColumns(dragKey.current, col.key)
+                          }
+                          dragKey.current = null
+                        }
+                      : undefined
+                  }
+                >
+                  {col.title}
+                  <span aria-hidden="true">{sortIndicator(col.key)}</span>
+                  {(col.resizable ?? typeof col.width === 'number') && (
+                    <span
+                      data-iris-col-resize-handle
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: 4,
+                        cursor: 'col-resize',
+                        zIndex: 2,
+                      }}
+                      onPointerDown={(e) => {
+                        e.stopPropagation()
+                        e.preventDefault()
+                        const startX = e.clientX
+                        const startW = colWidth as number
+                        const onMove = (ev: PointerEvent) => {
+                          ev.preventDefault()
+                          store.setColumnWidth(col.key, startW + ev.clientX - startX)
+                        }
+                        const onUp = () => {
+                          document.removeEventListener('pointermove', onMove)
+                          document.removeEventListener('pointerup', onUp)
+                        }
+                        document.addEventListener('pointermove', onMove)
+                        document.addEventListener('pointerup', onUp)
+                      }}
+                    />
+                  )}
+                </th>
+              ) : (
+                <th
+                  key={col.key}
+                  scope="colgroup"
+                  colSpan={cell.colSpan}
+                  rowSpan={cell.rowSpan}
+                  data-iris-col-key={col.key}
+                  style={{
+                    textAlign: 'center',
+                  }}
+                >
+                  {col.title}
+                </th>
+              )
+            })}
+          </tr>
+        ))}
         {columns.some((c) => c.filterable) && (
           <tr>
             <th />

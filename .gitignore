@@ -19,3 +19,8 @@ apps/docs/components.md
 apps/docs/.vitepress/theme/iris-tokens.css
 apps/docs/.vitepress/theme/explorer-data.ts
 apps/desktop/release/
+
+# SSR app build outputs
+build/
+.nuxt/
+.output/

@@ -24,6 +24,7 @@ import {
   tagInputScenario,
   otpInputScenario,
   dialogScenario,
+  popoverScenario,
   dataSourceScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
@@ -57,6 +58,9 @@ import { IrisOtpInput } from './primitives/otp-input/OtpInput'
 import { IrisDialog } from './primitives/dialog/Dialog'
 import { IrisDialogTrigger } from './primitives/dialog/DialogTrigger'
 import { IrisDialogContent } from './primitives/dialog/DialogContent'
+import { IrisPopover } from './primitives/popover/Popover'
+import { IrisPopoverTrigger } from './primitives/popover/PopoverTrigger'
+import { IrisPopoverContent } from './primitives/popover/PopoverContent'
 
 afterEach(cleanup)
 
@@ -341,6 +345,18 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       </IrisDialog>,
     )
     await runContract(dialogScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Popover contract', async () => {
+    const { container } = render(
+      <IrisPopover defaultOpen={false}>
+        <IrisPopoverTrigger data-iris-popover-trigger>Open</IrisPopoverTrigger>
+        <IrisPopoverContent portalTarget={false}>
+          <p>Popover content</p>
+        </IrisPopoverContent>
+      </IrisPopover>,
+    )
+    await runContract(popoverScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared DataSource contract', async () => {

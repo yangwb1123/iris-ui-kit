@@ -26,6 +26,7 @@ import {
   otpInputScenario,
   dataSourceScenario,
   dialogScenario,
+  popoverScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
@@ -55,6 +56,7 @@ import { IrisOtpInput } from './primitives/otp-input/IrisOtpInput'
 import { IrisDialog } from './primitives/dialog/IrisDialog'
 import { IrisDialogTrigger } from './primitives/dialog/IrisDialogTrigger'
 import { IrisDialogContent } from './primitives/dialog/IrisDialogContent'
+import { IrisPopover, IrisPopoverTrigger, IrisPopoverContent } from './primitives/popover'
 import { useDataSource } from './data/useDataSource'
 
 afterEach(cleanup)
@@ -353,5 +355,23 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
       </IrisDialog>
     ))
     await runContract(dialogScenario, driverFor(container), expect)
+  })
+
+  function PopoverContractHarness() {
+    return (
+      <div>
+        <IrisPopover defaultOpen={false}>
+          <IrisPopoverTrigger data-iris-popover-trigger>Open</IrisPopoverTrigger>
+          <IrisPopoverContent portalTarget={false}>
+            <p>Popover content</p>
+          </IrisPopoverContent>
+        </IrisPopover>
+      </div>
+    )
+  }
+
+  it('Popover contract', async () => {
+    const { container } = render(() => <PopoverContractHarness />)
+    await runContract(popoverScenario, driverFor(container), expect)
   })
 })

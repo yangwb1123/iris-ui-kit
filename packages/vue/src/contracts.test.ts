@@ -26,6 +26,7 @@ import {
   otpInputScenario,
   dataSourceScenario,
   dialogScenario,
+  popoverScenario,
 } from '@iris-ui/core/contracts'
 import {
   driverFor,
@@ -53,6 +54,9 @@ import { IrisTree } from './primitives/tree/Tree'
 import { IrisDialog } from './primitives/dialog/Dialog'
 import { IrisDialogTrigger } from './primitives/dialog/DialogTrigger'
 import { IrisDialogContent } from './primitives/dialog/DialogContent'
+import { IrisPopover } from './primitives/popover/Popover'
+import { IrisPopoverTrigger } from './primitives/popover/PopoverTrigger'
+import { IrisPopoverContent } from './primitives/popover/PopoverContent'
 
 enableAutoUnmount(afterEach)
 
@@ -194,6 +198,27 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     )
     await nextTick()
     await runContract(dialogScenario, driverFor(host), expect)
+  })
+
+  it('satisfies the shared Popover contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(
+      () =>
+        h(
+          IrisPopover,
+          { defaultOpen: false },
+          {
+            default: () => [
+              h(IrisPopoverTrigger, { 'data-iris-popover-trigger': '' }, () => 'Open'),
+              h(IrisPopoverContent, { teleport: false }, () => h('p', 'Popover content')),
+            ],
+          },
+        ),
+      { attachTo: host },
+    )
+    await nextTick()
+    await runContract(popoverScenario, driverFor(host), expect)
   })
 
   it('satisfies the shared DataSource contract', async () => {

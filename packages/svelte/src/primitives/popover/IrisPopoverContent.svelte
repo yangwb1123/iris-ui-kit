@@ -10,11 +10,13 @@
     autoFocus?: boolean
     /** Restore focus to the trigger when it closes. Default true. */
     restoreFocus?: boolean
+    /** Portal target — pass `false` to render in place. */
+    portalTarget?: HTMLElement | false
     children?: import('svelte').Snippet
     [key: string]: unknown
   }
 
-  let { style, autoFocus = true, restoreFocus = true, children, ...rest }: Props = $props()
+  let { style, autoFocus = true, restoreFocus = true, portalTarget, children, ...rest }: Props = $props()
   const ctx = getPopoverContext('IrisPopoverContent')
 
   // Focus the panel on open; restore focus to the trigger on close (mirrors
@@ -59,7 +61,7 @@
   <div
     {...rest}
     use:setContentRef
-    use:portal
+    use:portal={portalTarget}
     id={ctx.contentId}
     role="dialog"
     tabindex={-1}

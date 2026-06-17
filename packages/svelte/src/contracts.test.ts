@@ -25,6 +25,7 @@ import {
   tagInputScenario,
   otpInputScenario,
   dialogScenario,
+  popoverScenario,
   dataSourceScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
@@ -39,6 +40,7 @@ import TreeContractHarness from './TreeContractHarness.svelte'
 import CalendarContractHarness from './CalendarContractHarness.svelte'
 import DataSourceContractHarness from './DataSourceContractHarness.svelte'
 import DialogContractHarness from './DialogContractHarness.svelte'
+import PopoverContractHarness from './PopoverContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -255,6 +257,20 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // DialogContractHarness.svelte for the full note.
     const { container } = render(DialogContractHarness)
     await runContract(dialogScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Popover contract', async () => {
+    // Rendered in a dedicated harness so the popover's `[role="dialog"]` and
+    // `[data-iris-popover-trigger]` elements stay out of the shared container
+    // and can't collide with other scenarios' role-based selector counts.
+    // IrisPopover is uncontrolled (no `open` prop), starts closed
+    // (defaultOpen={false}). The harness passes portalTarget={false} so the
+    // popover content renders inline in the test container (the contract
+    // driver's `queryAll` is container-scoped). Unlike Dialog, the popover's
+    // trigger TOGGLES — clicking it opens AND closes. See
+    // PopoverContractHarness.svelte for the full note.
+    const { container } = render(PopoverContractHarness)
+    await runContract(popoverScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared DataSource contract', async () => {

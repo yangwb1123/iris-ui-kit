@@ -23,6 +23,13 @@ describe('createEditor', () => {
     handle.destroy()
   })
 
+  it('completions=false does not throw and editor still mounts', () => {
+    const handle = createEditor({ parent: mount(), doc: 'test', completions: false })
+    expect(handle.getValue()).toBe('test')
+    expect(host?.querySelector('.cm-editor')).toBeTruthy()
+    handle.destroy()
+  })
+
   it('setValue replaces the document', () => {
     const handle = createEditor({ parent: mount(), doc: 'a' })
     handle.setValue('b')

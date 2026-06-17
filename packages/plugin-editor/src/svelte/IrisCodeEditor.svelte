@@ -7,6 +7,7 @@
     defaultValue?: string
     language?: EditorLanguage
     readOnly?: boolean
+    completions?: boolean
     onChange?: (value: string) => void
     class?: string
   }
@@ -16,6 +17,7 @@
     defaultValue = '',
     language = 'plain',
     readOnly = false,
+    completions = undefined,
     onChange,
     class: klass = '',
   }: Props = $props()
@@ -31,6 +33,7 @@
       doc: untrack(() => value ?? defaultValue),
       language: untrack(() => language),
       readOnly: untrack(() => readOnly),
+      completions: untrack(() => completions),
       onChange: (v) => onChange?.(v),
     })
     handle = created

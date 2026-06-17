@@ -12,6 +12,8 @@ export interface IrisCodeEditorProps {
   language?: EditorLanguage
   /** Render read-only. Default `false`. */
   readOnly?: boolean
+  /** Enable autocompletion popup. Default `true`. */
+  completions?: boolean
   /** Called with the full text on every change. */
   onChange?: (value: string) => void
   className?: string
@@ -27,6 +29,7 @@ export function IrisCodeEditor({
   defaultValue,
   language = 'plain',
   readOnly = false,
+  completions,
   onChange,
   className,
   style,
@@ -43,6 +46,7 @@ export function IrisCodeEditor({
       doc: value ?? defaultValue ?? '',
       language,
       readOnly,
+      completions,
       onChange: (v) => onChangeRef.current?.(v),
     })
     handleRef.current = handle

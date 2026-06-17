@@ -7,6 +7,12 @@ import {
   highlightActiveLineGutter,
   drawSelection,
 } from '@codemirror/view'
+import {
+  autocompletion,
+  closeBrackets,
+  closeBracketsKeymap,
+  completionKeymap,
+} from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import {
   syntaxHighlighting,
@@ -44,8 +50,8 @@ function languageExtension(language: EditorLanguage): Extension {
 }
 
 /** Static extensions shared by every editor instance (a trimmed basic-setup). */
-function baseExtensions(): Extension[] {
-  return [
+function baseExtensions(completions: boolean): Extension[] {
+  const exts: Extension[] = [
     lineNumbers(),
     highlightActiveLineGutter(),
     highlightActiveLine(),
@@ -56,6 +62,11 @@ function baseExtensions(): Extension[] {
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
   ]
+  if (completions) {
+    exts.push(autocompletion(), closeBrackets())
+    exts.push(keymap.of([...closeBracketsKeymap, ...completionKeymap]))
+  }
+  return exts
 }
 
 export interface CreateEditorOptions {
@@ -67,6 +78,8 @@ export interface CreateEditorOptions {
   language?: EditorLanguage
   /** Render read-only (non-editable). Default `false`. */
   readOnly?: boolean
+  /** Enable autocompletion popup. Default `true`. */
+  completions?: boolean
   /** Called with the full document text whenever it changes. */
   onChange?: (value: string) => void
 }
@@ -104,7 +117,7 @@ export function createEditor(options: CreateEditorOptions): EditorHandle {
   const state = EditorState.create({
     doc: options.doc ?? '',
     extensions: [
-      ...baseExtensions(),
+      ...baseExtensions(options.completions ?? true),
       languageComp.of(languageExtension(options.language ?? 'plain')),
       readOnlyComp.of(EditorState.readOnly.of(options.readOnly ?? false)),
       updateListener,

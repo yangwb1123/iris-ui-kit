@@ -8,6 +8,7 @@ export interface IrisCodeEditorProps {
   defaultValue?: string
   language?: EditorLanguage
   readOnly?: boolean
+  completions?: boolean
   onChange?: (value: string) => void
   class?: string
 }
@@ -27,6 +28,7 @@ export function IrisCodeEditor(props: IrisCodeEditorProps) {
       doc: props.value ?? props.defaultValue ?? '',
       language: props.language ?? 'plain',
       readOnly: props.readOnly ?? false,
+      completions: props.completions,
       onChange: (v) => props.onChange?.(v),
     })
   })

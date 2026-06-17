@@ -27,6 +27,7 @@ import {
   dataSourceScenario,
   dialogScenario,
   popoverScenario,
+  drawerScenario,
 } from '@iris-ui/core/contracts'
 import {
   driverFor,
@@ -57,6 +58,9 @@ import { IrisDialogContent } from './primitives/dialog/DialogContent'
 import { IrisPopover } from './primitives/popover/Popover'
 import { IrisPopoverTrigger } from './primitives/popover/PopoverTrigger'
 import { IrisPopoverContent } from './primitives/popover/PopoverContent'
+import { IrisDrawer } from './primitives/drawer/Drawer'
+import { IrisDrawerTrigger } from './primitives/drawer/DrawerTrigger'
+import { IrisDrawerContent } from './primitives/drawer/DrawerContent'
 
 enableAutoUnmount(afterEach)
 
@@ -219,6 +223,27 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     )
     await nextTick()
     await runContract(popoverScenario, driverFor(host), expect)
+  })
+
+  it('satisfies the shared Drawer contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(
+      () =>
+        h(
+          IrisDrawer,
+          { defaultOpen: false, closeOnOutsideClick: false },
+          {
+            default: () => [
+              h(IrisDrawerTrigger, { 'data-iris-drawer-trigger': '' }, () => 'Open'),
+              h(IrisDrawerContent, { teleport: false }, () => h('p', 'Drawer body')),
+            ],
+          },
+        ),
+      { attachTo: host },
+    )
+    await nextTick()
+    await runContract(drawerScenario, driverFor(host), expect)
   })
 
   it('satisfies the shared DataSource contract', async () => {

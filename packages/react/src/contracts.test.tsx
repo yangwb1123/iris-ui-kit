@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import {
   runContract,
   tabsScenario,
@@ -25,6 +25,7 @@ import {
   otpInputScenario,
   dialogScenario,
   popoverScenario,
+  drawerScenario,
   dataSourceScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
@@ -61,6 +62,9 @@ import { IrisDialogContent } from './primitives/dialog/DialogContent'
 import { IrisPopover } from './primitives/popover/Popover'
 import { IrisPopoverTrigger } from './primitives/popover/PopoverTrigger'
 import { IrisPopoverContent } from './primitives/popover/PopoverContent'
+import { IrisDrawer } from './primitives/drawer/Drawer'
+import { IrisDrawerTrigger } from './primitives/drawer/DrawerTrigger'
+import { IrisDrawerContent } from './primitives/drawer/DrawerContent'
 
 afterEach(cleanup)
 
@@ -78,7 +82,13 @@ function driverFor(container: HTMLElement): ContractDriver {
       const el = at(selector, index)
       if (el) fireEvent.keyDown(el, { key })
     },
-    flush: () => {},
+    flush: async () => {
+      // Allow pending requestAnimationFrame callbacks (e.g. DrawerContent
+      // 2-stage mount) to fire, then flush any resulting React updates.
+      await act(async () => {
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      })
+    },
   }
 }
 
@@ -120,6 +130,19 @@ function DataSourceHarness() {
           {r.name}
         </div>
       ))}
+    </div>
+  )
+}
+
+function DrawerContractHarness() {
+  return (
+    <div>
+      <IrisDrawer defaultOpen={false}>
+        <IrisDrawerTrigger data-iris-drawer-trigger>Open</IrisDrawerTrigger>
+        <IrisDrawerContent portalTarget={false}>
+          <p>Drawer content</p>
+        </IrisDrawerContent>
+      </IrisDrawer>
     </div>
   )
 }
@@ -357,6 +380,11 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       </IrisPopover>,
     )
     await runContract(popoverScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Drawer contract', async () => {
+    const { container } = render(<DrawerContractHarness />)
+    await runContract(drawerScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared DataSource contract', async () => {

@@ -27,6 +27,7 @@ import {
   dataSourceScenario,
   dialogScenario,
   popoverScenario,
+  drawerScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
@@ -57,6 +58,7 @@ import { IrisDialog } from './primitives/dialog/IrisDialog'
 import { IrisDialogTrigger } from './primitives/dialog/IrisDialogTrigger'
 import { IrisDialogContent } from './primitives/dialog/IrisDialogContent'
 import { IrisPopover, IrisPopoverTrigger, IrisPopoverContent } from './primitives/popover'
+import { IrisDrawer, IrisDrawerTrigger, IrisDrawerContent } from './primitives/drawer'
 import { useDataSource } from './data/useDataSource'
 
 afterEach(cleanup)
@@ -373,5 +375,23 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
   it('Popover contract', async () => {
     const { container } = render(() => <PopoverContractHarness />)
     await runContract(popoverScenario, driverFor(container), expect)
+  })
+
+  function DrawerContractHarness() {
+    return (
+      <div>
+        <IrisDrawer>
+          <IrisDrawerTrigger data-iris-drawer-trigger>Open</IrisDrawerTrigger>
+          <IrisDrawerContent portalTarget={false}>
+            <p>Drawer content</p>
+          </IrisDrawerContent>
+        </IrisDrawer>
+      </div>
+    )
+  }
+
+  it('Drawer contract', async () => {
+    const { container } = render(() => <DrawerContractHarness />)
+    await runContract(drawerScenario, driverFor(container), expect)
   })
 })

@@ -1,5 +1,6 @@
 export { dialogScenario } from './scenarios/dialog'
 export { popoverScenario } from './scenarios/popover'
+export { drawerScenario } from './scenarios/drawer'
 export { runContract } from './runner'
 export { tabsScenario } from './scenarios/tabs'
 export { switchScenario } from './scenarios/switch'

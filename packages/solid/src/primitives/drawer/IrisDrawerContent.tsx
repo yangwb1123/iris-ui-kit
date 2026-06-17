@@ -92,6 +92,8 @@ function panelPositionStyle(side: IrisDrawerSide, size: string): JSX.CSSProperti
 }
 
 export interface IrisDrawerContentProps extends JSX.HTMLAttributes<HTMLDivElement> {
+  /** Portal target; `false` renders in place. Default renders to body. */
+  portalTarget?: HTMLElement | false
   children?: JSX.Element
 }
 
@@ -102,11 +104,10 @@ export interface IrisDrawerContentProps extends JSX.HTMLAttributes<HTMLDivElemen
  */
 export function IrisDrawerContent(props: IrisDrawerContentProps): JSX.Element {
   const ctx = useDrawerContext('IrisDrawerContent')
-  const [local, others] = splitProps(props, ['style', 'children'])
+  const [local, portalAndOthers] = splitProps(props, ['style', 'children', 'portalTarget'])
 
   const [mounted, setMounted] = createSignal(false)
   const [visible, setVisible] = createSignal(false)
-
   let exitTimer: ReturnType<typeof setTimeout> | null = null
 
   createEffect(() => {
@@ -163,42 +164,48 @@ export function IrisDrawerContent(props: IrisDrawerContentProps): JSX.Element {
   const panelStyle = createMemo(() => panelPositionStyle(ctx.side(), ctx.size()))
   const offScreen = createMemo(() => SIDE_TO_TRANSFORM[ctx.side()] ?? 'translateX(100%)')
 
+  const contentElement = () => (
+    <div
+      data-iris-drawer-backdrop=""
+      data-state={ctx.open() ? 'open' : 'closed'}
+      onClick={onBackdropClick}
+      style={{
+        position: 'fixed',
+        inset: '0',
+        background: 'rgba(0,0,0,.4)',
+        opacity: visible() ? '1' : '0',
+        transition: 'opacity 220ms ease',
+      }}
+    >
+      <div
+        {...(portalAndOthers as JSX.HTMLAttributes<HTMLDivElement>)}
+        ref={ctx.setContentRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={ctx.hasTitle() ? ctx.titleId : undefined}
+        id={ctx.contentId}
+        data-iris-drawer-content=""
+        data-iris-drawer-side={ctx.side()}
+        data-state={ctx.open() ? 'open' : 'closed'}
+        tabindex={-1}
+        style={{
+          ...panelStyle(),
+          transform: visible() ? 'translate(0,0)' : offScreen(),
+          ...((local.style as JSX.CSSProperties) ?? {}),
+        }}
+      >
+        {local.children}
+      </div>
+    </div>
+  )
+
   return (
     <Show when={mounted()}>
-      <Portal>
-        <div
-          data-iris-drawer-backdrop=""
-          data-state={visible() ? 'open' : 'closed'}
-          onClick={onBackdropClick}
-          style={{
-            position: 'fixed',
-            inset: '0',
-            background: 'rgba(0,0,0,.4)',
-            opacity: visible() ? '1' : '0',
-            transition: 'opacity 220ms ease',
-          }}
-        >
-          <div
-            {...(others as JSX.HTMLAttributes<HTMLDivElement>)}
-            ref={ctx.setContentRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={ctx.hasTitle() ? ctx.titleId : undefined}
-            id={ctx.contentId}
-            data-iris-drawer-content=""
-            data-iris-drawer-side={ctx.side()}
-            data-state={visible() ? 'open' : 'closed'}
-            tabindex={-1}
-            style={{
-              ...panelStyle(),
-              transform: visible() ? 'translate(0,0)' : offScreen(),
-              ...((local.style as JSX.CSSProperties) ?? {}),
-            }}
-          >
-            {local.children}
-          </div>
-        </div>
-      </Portal>
+      <Show when={local.portalTarget !== false} fallback={contentElement()}>
+        <Portal mount={local.portalTarget instanceof HTMLElement ? local.portalTarget : undefined}>
+          {contentElement()}
+        </Portal>
+      </Show>
     </Show>
   )
 }

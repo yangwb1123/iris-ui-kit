@@ -98,7 +98,13 @@ function panelPositionStyle(side: string, size: string): Record<string, string> 
 export const IrisDrawerContent = defineComponent({
   name: 'IrisDrawerContent',
   inheritAttrs: false,
-  setup(_props, { slots, attrs }) {
+  props: {
+    teleport: {
+      type: [String, Object, Boolean] as import('vue').PropType<string | HTMLElement | false>,
+      default: 'body',
+    },
+  },
+  setup(props, { slots, attrs }) {
     const ctx = inject(DrawerContextKey)
     if (!ctx) {
       throw new Error('IrisDrawerContent must be used inside <IrisDrawer>')
@@ -171,46 +177,47 @@ export const IrisDrawerContent = defineComponent({
       const panelStyle = panelPositionStyle(side, ctx.size.value)
       const offScreen = SIDE_TO_TRANSFORM[side] ?? 'translateX(100%)'
 
-      return h(Teleport, { to: 'body' }, [
+      const backdrop = h(
+        'div',
+        {
+          'data-iris-drawer-backdrop': '',
+          'data-state': visible.value ? 'open' : 'closed',
+          style: {
+            position: 'fixed',
+            inset: '0',
+            background: 'rgba(0,0,0,.4)',
+            opacity: visible.value ? '1' : '0',
+            transition: 'opacity 220ms ease',
+          },
+          onClick: onBackdropClick,
+        },
         h(
           'div',
           {
-            'data-iris-drawer-backdrop': '',
-            'data-state': visible.value ? 'open' : 'closed',
+            ...attrs,
+            ref: (el: unknown) => {
+              ctx.contentRef.value = (el ?? null) as HTMLElement | null
+            },
+            role: 'dialog',
+            'aria-modal': 'true',
+            'aria-labelledby': ctx.hasTitle.value ? ctx.titleId : undefined,
+            id: ctx.contentId,
+            'data-iris-drawer-content': '',
+            'data-iris-drawer-side': side,
+            'data-state': ctx.open.value ? 'open' : 'closed',
+            tabindex: -1,
             style: {
-              position: 'fixed',
-              inset: '0',
-              background: 'rgba(0,0,0,.4)',
-              opacity: visible.value ? '1' : '0',
-              transition: 'opacity 220ms ease',
+              ...panelStyle,
+              transform: visible.value ? 'translate(0,0)' : offScreen,
+              ...((attrs.style as Record<string, string> | undefined) ?? {}),
             },
-            onClick: onBackdropClick,
           },
-          h(
-            'div',
-            {
-              ...attrs,
-              ref: (el: unknown) => {
-                ctx.contentRef.value = (el ?? null) as HTMLElement | null
-              },
-              role: 'dialog',
-              'aria-modal': 'true',
-              'aria-labelledby': ctx.hasTitle.value ? ctx.titleId : undefined,
-              id: ctx.contentId,
-              'data-iris-drawer-content': '',
-              'data-iris-drawer-side': side,
-              'data-state': visible.value ? 'open' : 'closed',
-              tabindex: -1,
-              style: {
-                ...panelStyle,
-                transform: visible.value ? 'translate(0,0)' : offScreen,
-                ...((attrs.style as Record<string, string> | undefined) ?? {}),
-              },
-            },
-            slots.default?.(),
-          ),
+          slots.default?.(),
         ),
-      ])
+      )
+
+      if (props.teleport === false) return backdrop
+      return h(Teleport, { to: props.teleport as string | HTMLElement }, [backdrop])
     }
   },
 })

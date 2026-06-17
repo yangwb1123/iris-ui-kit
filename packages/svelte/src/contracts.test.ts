@@ -27,6 +27,7 @@ import {
   dialogScenario,
   popoverScenario,
   dataSourceScenario,
+  drawerScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -41,6 +42,7 @@ import CalendarContractHarness from './CalendarContractHarness.svelte'
 import DataSourceContractHarness from './DataSourceContractHarness.svelte'
 import DialogContractHarness from './DialogContractHarness.svelte'
 import PopoverContractHarness from './PopoverContractHarness.svelte'
+import DrawerContractHarness from './DrawerContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -284,5 +286,19 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // bookkeeping. See DataSourceContractHarness.svelte for the full note.
     const { container } = render(DataSourceContractHarness)
     await runContract(dataSourceScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Drawer contract', async () => {
+    // Rendered in a dedicated harness so the drawer's `[role="dialog"]` and
+    // `[data-iris-drawer-trigger]` elements stay out of the shared container
+    // and can't collide with other scenarios' role-based selector counts.
+    // IrisDrawer is uncontrolled (no `open` prop), starts closed
+    // (defaultOpen={false}). The harness passes portalTarget={false} so the
+    // drawer content renders inline in the test container (the contract
+    // driver's `queryAll` is container-scoped). Unlike Popover, the drawer
+    // trigger only OPENS (it does not toggle); Escape is the canonical close.
+    // See DrawerContractHarness.svelte for the full note.
+    const { container } = render(DrawerContractHarness)
+    await runContract(drawerScenario, driverFor(container), expect)
   })
 })

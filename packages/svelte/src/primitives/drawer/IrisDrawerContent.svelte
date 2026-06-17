@@ -6,11 +6,13 @@
 
   interface Props {
     style?: string
+    /** Portal target — pass `false` to render in place. */
+    portalTarget?: HTMLElement | false
     children?: import('svelte').Snippet
     [key: string]: unknown
   }
 
-  let { style, children, ...rest }: Props = $props()
+  let { style, portalTarget, children, ...rest }: Props = $props()
   const ctx = getDrawerContext('IrisDrawerContent')
 
   let contentEl = $state<HTMLElement | undefined>(undefined)
@@ -91,7 +93,7 @@
 {#if ctx.open}
   <!-- backdrop -->
   <div
-    use:portal
+    use:portal={portalTarget}
     data-iris-drawer-backdrop
     onpointerdown={handleBackdropPointerDown}
     style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1199"
@@ -101,7 +103,7 @@
   <div
     {...rest}
     use:setContentRef
-    use:portal
+    use:portal={portalTarget}
     id={ctx.contentId}
     role="dialog"
     aria-modal="true"

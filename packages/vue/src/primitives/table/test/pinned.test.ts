@@ -1,16 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { IrisI18nProvider } from '../../i18n'
 import { IrisTable } from '../Table'
-import { exportCsv } from '../exportCsv'
-import { exportExcel } from '../exportExcel'
-import type {
-  IrisTableCellEditEvent,
-  IrisTableColumn,
-  IrisTableColumnWidths,
-  IrisTableSortState,
-} from '../types'
+import type { IrisTableColumn } from '../types'
 
 enableAutoUnmount(afterEach)
 
@@ -24,11 +15,6 @@ const rows: Row[] = [
   { id: 1, name: 'Carol', age: 31 },
   { id: 2, name: 'Alice', age: 28 },
   { id: 3, name: 'Bob', age: 42 },
-]
-
-const columns: IrisTableColumn<Row>[] = [
-  { key: 'name', title: 'Name', sortable: true },
-  { key: 'age', title: 'Age', sortable: true, align: 'right' },
 ]
 
 let host: HTMLDivElement

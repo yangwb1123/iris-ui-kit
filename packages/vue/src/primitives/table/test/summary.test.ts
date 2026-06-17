@@ -1,16 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { h } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { IrisI18nProvider } from '../../i18n'
 import { IrisTable } from '../Table'
-import { exportCsv } from '../exportCsv'
-import { exportExcel } from '../exportExcel'
-import type {
-  IrisTableCellEditEvent,
-  IrisTableColumn,
-  IrisTableColumnWidths,
-  IrisTableSortState,
-} from '../types'
+import type { IrisTableColumn } from '../types'
 
 enableAutoUnmount(afterEach)
 

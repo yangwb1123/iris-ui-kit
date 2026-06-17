@@ -29,6 +29,7 @@ import {
   dataSourceScenario,
   drawerScenario,
   dropdownScenario,
+  tooltipScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -45,6 +46,7 @@ import DialogContractHarness from './DialogContractHarness.svelte'
 import PopoverContractHarness from './PopoverContractHarness.svelte'
 import DrawerContractHarness from './DrawerContractHarness.svelte'
 import DropdownContractHarness from './DropdownContractHarness.svelte'
+import TooltipContractHarness from './TooltipContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -59,6 +61,15 @@ function driverFor(container: HTMLElement): ContractDriver {
     keydown: async (selector, index, key) => {
       const el = at(selector, index)
       if (el) await fireEvent.keyDown(el, { key })
+    },
+    pointer: async (selector, index, eventType) => {
+      const el = at(selector, index)
+      if (!el) return
+      const ev = new MouseEvent(eventType === 'enter' ? 'pointerenter' : 'pointerleave', {
+        bubbles: true,
+      })
+      Object.defineProperty(ev, 'pointerType', { value: 'mouse' })
+      await fireEvent(el, ev)
     },
     flush: () => {
       flushSync()
@@ -316,5 +327,18 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // dismiss mechanism. See DropdownContractHarness.svelte for the full note.
     const { container } = render(DropdownContractHarness)
     await runContract(dropdownScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Tooltip contract', async () => {
+    // Rendered in a dedicated harness so the tooltip's `[role="tooltip"]` and
+    // `[data-iris-tooltip-trigger]` elements stay out of the shared container
+    // and can't collide with other scenarios' role-based selector counts.
+    // IrisTooltip is uncontrolled (no `open` prop), starts closed. The harness
+    // passes openDelay={0} (instant open) and closeDelay={0} (instant close),
+    // and portalTarget={false} so the tooltip renders inline in the test
+    // container (the contract driver's `queryAll` is container-scoped). The
+    // scenario: closed → pointer enter → open → pointer leave → closed.
+    const { container } = render(TooltipContractHarness)
+    await runContract(tooltipScenario, driverFor(container), expect)
   })
 })

@@ -20,6 +20,7 @@ import {
   tableSelectScenario,
   tableExpandScenario,
   treeScenario,
+  tooltipScenario,
   calendarScenario,
   rangeSliderScenario,
   tagInputScenario,
@@ -65,6 +66,7 @@ import { IrisDrawerContent } from './primitives/drawer/DrawerContent'
 import { IrisDropdown } from './primitives/dropdown/Dropdown'
 import { IrisDropdownTrigger } from './primitives/dropdown/DropdownTrigger'
 import { IrisDropdownMenu } from './primitives/dropdown/DropdownMenu'
+import { IrisTooltip } from './primitives/tooltip/Tooltip'
 
 enableAutoUnmount(afterEach)
 
@@ -227,6 +229,24 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     )
     await nextTick()
     await runContract(popoverScenario, driverFor(host), expect)
+  })
+
+  it('satisfies the shared Tooltip contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(
+      () =>
+        h(
+          IrisTooltip,
+          { content: 'Tooltip text', openDelay: 0, closeDelay: 0, teleport: false },
+          {
+            default: () => h('button', { 'data-iris-tooltip-trigger': '' }, 'Hover me'),
+          },
+        ),
+      { attachTo: host },
+    )
+    await nextTick()
+    await runContract(tooltipScenario, driverFor(host), expect)
   })
 
   it('satisfies the shared Drawer contract', async () => {

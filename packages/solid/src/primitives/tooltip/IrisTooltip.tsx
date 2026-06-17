@@ -6,6 +6,7 @@ import {
   mergeProps,
   onCleanup,
   Show,
+  splitProps,
   type JSX,
 } from 'solid-js'
 import { Portal } from 'solid-js/web'
@@ -30,6 +31,8 @@ export interface IrisTooltipProps {
   portalTarget?: HTMLElement | false
   children?: JSX.Element
   style?: JSX.CSSProperties
+  /** Additional attributes forwarded to the trigger span (e.g. data-* attrs). */
+  [key: string]: unknown
 }
 
 /**
@@ -42,6 +45,17 @@ export interface IrisTooltipProps {
  * Solid port of the Vue IrisTooltip.
  */
 export function IrisTooltip(props: IrisTooltipProps): JSX.Element {
+  const [local, htmlAttrs] = splitProps(props, [
+    'content',
+    'placement',
+    'offset',
+    'openDelay',
+    'closeDelay',
+    'disabled',
+    'portalTarget',
+    'children',
+    'style',
+  ])
   const merged = mergeProps(
     {
       placement: 'top' as Placement,
@@ -50,7 +64,7 @@ export function IrisTooltip(props: IrisTooltipProps): JSX.Element {
       closeDelay: 0,
       disabled: false,
     },
-    props,
+    local,
   )
 
   const tooltipId = createUniqueId()
@@ -135,6 +149,7 @@ export function IrisTooltip(props: IrisTooltipProps): JSX.Element {
     <>
       <span
         ref={setTrigger}
+        {...htmlAttrs}
         style={{ display: 'contents' }}
         aria-describedby={open() ? tooltipId : undefined}
         onPointerEnter={handleEnter}
@@ -146,12 +161,12 @@ export function IrisTooltip(props: IrisTooltipProps): JSX.Element {
           if (!merged.disabled) hi().close()
         }}
       >
-        {props.children}
+        {local.children}
       </span>
       <Show when={open()}>
-        <Show when={props.portalTarget !== false} fallback={tooltipContent()}>
+        <Show when={local.portalTarget !== false} fallback={tooltipContent()}>
           <Portal
-            mount={props.portalTarget instanceof HTMLElement ? props.portalTarget : undefined}
+            mount={local.portalTarget instanceof HTMLElement ? local.portalTarget : undefined}
           >
             {tooltipContent()}
           </Portal>

@@ -29,6 +29,7 @@ import {
   popoverScenario,
   drawerScenario,
   dropdownScenario,
+  tooltipScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
@@ -61,6 +62,7 @@ import { IrisDialogContent } from './primitives/dialog/IrisDialogContent'
 import { IrisPopover, IrisPopoverTrigger, IrisPopoverContent } from './primitives/popover'
 import { IrisDrawer, IrisDrawerTrigger, IrisDrawerContent } from './primitives/drawer'
 import { IrisDropdown, IrisDropdownTrigger, IrisDropdownMenu } from './primitives/dropdown'
+import { IrisTooltip } from './primitives/tooltip'
 import { useDataSource } from './data/useDataSource'
 
 afterEach(cleanup)
@@ -126,6 +128,10 @@ function driverFor(container: HTMLElement): ContractDriver {
     keydown: (selector, index, key) => {
       const el = at(selector, index)
       if (el) fireEvent.keyDown(el, { key })
+    },
+    pointer: (selector, index, event) => {
+      const el = at(selector, index)
+      if (el) fireEvent(el, new MouseEvent(`pointer${event}`, { bubbles: true }))
     },
     flush: () => {},
   }
@@ -413,5 +419,20 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
   it('satisfies the shared Dropdown contract', async () => {
     const { container } = render(() => <DropdownContractHarness />)
     await runContract(dropdownScenario, driverFor(container), expect)
+  })
+
+  function TooltipContractHarness() {
+    return (
+      <div>
+        <IrisTooltip content="Hello" openDelay={0} portalTarget={false} data-iris-tooltip-trigger>
+          <span>hover me</span>
+        </IrisTooltip>
+      </div>
+    )
+  }
+
+  it('satisfies the shared Tooltip contract', async () => {
+    const { container } = render(() => <TooltipContractHarness />)
+    await runContract(tooltipScenario, driverFor(container), expect)
   })
 })

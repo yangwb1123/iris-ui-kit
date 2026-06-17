@@ -36,6 +36,7 @@ import {
   menuScenario,
   alertScenario,
   bannerScenario,
+  splitButtonScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { useCallback } from 'react'
@@ -84,6 +85,7 @@ import { IrisCombobox } from './primitives/combobox/Combobox'
 import { IrisCopyButton } from './primitives/copy-button/CopyButton'
 import { IrisAlert } from './primitives/alert/Alert'
 import { IrisBanner } from './primitives/banner/Banner'
+import { IrisSplitButton } from './primitives/split-button/SplitButton'
 import { IrisToastViewport } from './primitives/toast/ToastViewport'
 import { pushToast, clearToasts } from './primitives/toast/toastStore'
 
@@ -557,5 +559,39 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
   it('satisfies the shared Banner contract', async () => {
     const { container } = render(<IrisBanner closable>Hello</IrisBanner>)
     await runContract(bannerScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared SplitButton contract', async () => {
+    render(
+      <IrisSplitButton
+        actions={[
+          { key: 'a', label: 'A' },
+          { key: 'b', label: 'B' },
+        ]}
+      >
+        Main
+      </IrisSplitButton>,
+    )
+    const q = (sel: string) => [...document.querySelectorAll<HTMLElement>(sel)]
+    const docDriver: ContractDriver = {
+      queryAll: (sel) => q(sel),
+      click: (sel, idx) => {
+        const el = q(sel)[idx ?? 0]
+        if (el) {
+          el.focus()
+          el.click()
+        }
+      },
+      keydown: (sel, idx, key) => {
+        const el = q(sel)[idx ?? 0]
+        if (el) el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+      },
+      type: () => undefined,
+      pointer: () => undefined,
+      flush: async () => {
+        await act(() => {})
+      },
+    }
+    await runContract(splitButtonScenario, docDriver, expect)
   })
 })

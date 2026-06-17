@@ -1,5 +1,6 @@
 import type { JSX } from 'solid-js'
-import { SkinProvider } from '@iris-ui/solid'
+import { SkinProvider, IrisProvider } from '@iris-ui/solid'
+import { notificationsPlugin } from '@iris-ui/plugin-notifications/core'
 import { skinEngine } from './skin'
 import { AuthProvider, useAuth } from './auth'
 import { Shell } from './Shell'
@@ -14,9 +15,11 @@ function Gate(): JSX.Element {
 export function App(): JSX.Element {
   return (
     <SkinProvider engine={skinEngine}>
-      <AuthProvider>
-        <Gate />
-      </AuthProvider>
+      <IrisProvider plugins={[notificationsPlugin]}>
+        <AuthProvider>
+          <Gate />
+        </AuthProvider>
+      </IrisProvider>
     </SkinProvider>
   )
 }

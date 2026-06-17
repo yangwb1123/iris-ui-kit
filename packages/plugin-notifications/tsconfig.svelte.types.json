@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src/svelte",
+    "outDir": "dist/svelte",
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "moduleResolution": "Bundler",
+    "types": [],
+    "verbatimModuleSyntax": true,
+    "noEmit": false
+  },
+  "include": ["src/svelte/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}

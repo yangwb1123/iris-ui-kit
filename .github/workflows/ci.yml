@@ -57,3 +57,6 @@ jobs:
 
       - name: Size (advisory — not gate-failing)
         run: pnpm size
+
+      - name: Arch check (advisory — not gate-failing)
+        run: pnpm arch-check

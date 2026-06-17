@@ -36,6 +36,11 @@
       "cache": false,
       "outputs": []
     },
+    "arch-check": {
+      "dependsOn": [],
+      "cache": false,
+      "outputs": []
+    },
     "clean": {
       "cache": false
     },

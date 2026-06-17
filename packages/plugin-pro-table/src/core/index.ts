@@ -46,6 +46,10 @@ export interface ProTableColumn<Row = Record<string, unknown>> {
   filterable?: boolean
   /** Column width (px or CSS length). */
   width?: number | string
+  /** Allow interactive resize of this column. Default `true` when `width` is set. */
+  resizable?: boolean
+  /** Minimum width in px when resizable. Default `60`. */
+  minWidth?: number
   /** Cell + header alignment. */
   align?: 'left' | 'center' | 'right'
   /** Freeze to an edge during horizontal scroll (`position: sticky`). */
@@ -100,6 +104,8 @@ export interface ProTableState<Row = Record<string, unknown>> {
   columns: ProTableColumn<Row>[]
   /** Ordered column keys; reflects drag-reorder. Initialized from schema order. */
   columnOrder: string[]
+  /** Current column widths in px (from `width` prop or resize interaction). */
+  columnSizes: Record<string, number>
   sort: SortState | null
   filters: Record<string, string>
   selectedKeys: string[]
@@ -144,6 +150,8 @@ export interface ProTableStore<Row = Record<string, unknown>> {
    * are the same. Triggers a store update so all renderers re-render.
    */
   reorderColumns(from: string, to: string): void
+  /** Set a column's width in px (clamped to minWidth). Triggers re-render. */
+  setColumnWidth(key: string, width: number): void
 }
 
 export function createProTableStore<Row extends Record<string, unknown>>(
@@ -170,6 +178,11 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     rows: [],
     columns: config.columns,
     columnOrder: config.columns.map((c) => c.key),
+    columnSizes: Object.fromEntries(
+      config.columns
+        .filter((c) => typeof c.width === 'number')
+        .map((c) => [c.key, c.width as number]),
+    ),
     sort: null,
     filters: {},
     selectedKeys: [],
@@ -344,6 +357,15 @@ export function createProTableStore<Row extends Record<string, unknown>>(
       next.splice(toIdx, 0, from)
       store.setState((st) => ({ ...st, columnOrder: next }))
     },
+
+    setColumnWidth(key, width) {
+      const col = config.columns.find((c) => c.key === key)
+      const min = col?.minWidth ?? 60
+      store.setState((st) => ({
+        ...st,
+        columnSizes: { ...st.columnSizes, [key]: Math.max(min, width) },
+      }))
+    },
   }
 
   return api
@@ -397,6 +419,35 @@ export const proTableTokens: Record<string, string> = {
   '--iris-pro-table-header-bg': 'var(--iris-color-bg-subtle, #f9fafb)',
   '--iris-pro-table-row-hover': 'var(--iris-color-bg-subtle, #f3f4f6)',
   '--iris-pro-table-selected-bg': 'var(--iris-color-primary-soft, #eff6ff)',
+}
+
+/**
+ * Collect bounding rects for all elements matching `[attr]` under `root`.
+ * Used by drag-to-reorder column headers across all framework adapters.
+ */
+export function collectRects(
+  root: HTMLElement | null,
+  attr: string,
+): { id: string; left: number; top: number; width: number; height: number }[] {
+  if (!root) return []
+  return Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).map((el) => {
+    const r = el.getBoundingClientRect()
+    return {
+      id: el.getAttribute(attr)!,
+      left: r.left,
+      top: r.top,
+      width: r.width,
+      height: r.height,
+    }
+  })
+}
+
+/** Compute sticky positioning for a pinned column (framework-agnostic). */
+export function pinnedStyle(column: {
+  pinned?: 'left' | 'right'
+}): Record<string, string | number> | undefined {
+  if (!column.pinned) return undefined
+  return { position: 'sticky', [column.pinned]: 0, zIndex: 1 }
 }
 
 /**

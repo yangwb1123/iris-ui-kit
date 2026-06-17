@@ -60,3 +60,9 @@ jobs:
 
       - name: Arch check (advisory — not gate-failing)
         run: pnpm arch-check
+
+      - name: RSC check
+        run: pnpm check:rsc
+
+      - name: Format check
+        run: pnpm format:check

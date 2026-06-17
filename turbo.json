@@ -41,6 +41,15 @@
       "cache": false,
       "outputs": []
     },
+    "check:rsc": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "outputs": []
+    },
+    "format:check": {
+      "cache": false,
+      "outputs": []
+    },
     "clean": {
       "cache": false
     },

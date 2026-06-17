@@ -305,26 +305,28 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                       tabindex={isLeaf && cell.column.sortable ? 0 : undefined}
                       colSpan={cell.colSpan > 1 ? cell.colSpan : undefined}
                       rowSpan={!isLeaf && cell.rowSpan > 0 ? cell.rowSpan : undefined}
-                      style={{
-                        'text-align': cell.column.align,
-                        width:
-                          isLeaf && typeof colWidth === 'number'
-                            ? `${colWidth}px`
-                            : isLeaf
-                              ? colWidth
+style={
+                        {
+                          'text-align': cell.column.align,
+                          width:
+                            isLeaf && typeof colWidth === 'number'
+                              ? `${colWidth}px`
+                              : isLeaf
+                                ? colWidth
+                                : undefined,
+                          cursor: props.columnReorder && isLeaf ? 'grab' : undefined,
+                          'touch-action': props.columnReorder && isLeaf ? 'none' : undefined,
+                          outline:
+                            isLeaf &&
+                            sortableState().activeId &&
+                            sortableState().overId === cell.column.key &&
+                            sortableState().activeId !== cell.column.key
+                              ? '2px solid var(--iris-color-primary, #2563eb)'
                               : undefined,
-                        cursor: props.columnReorder && isLeaf ? 'grab' : undefined,
-                        'touch-action': props.columnReorder && isLeaf ? 'none' : undefined,
-                        outline:
-                          isLeaf &&
-                          sortableState().activeId &&
-                          sortableState().overId === cell.column.key &&
-                          sortableState().activeId !== cell.column.key
-                            ? '2px solid var(--iris-color-primary, #2563eb)'
-                            : undefined,
-                        'outline-offset': '-2px',
-                        ...pinnedStyle(cell.column),
-                      }}
+                          'outline-offset': '-2px',
+                          ...pinnedStyle(cell.column),
+                        } as any
+                      }
                       data-sortable={isLeaf && cell.column.sortable ? '' : undefined}
                       onClick={
                         isLeaf && cell.column.sortable

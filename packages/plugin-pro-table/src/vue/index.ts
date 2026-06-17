@@ -18,6 +18,7 @@ import {
 import {
   collectRects,
   proTableLabel,
+  applyColumnWindow,
   type ProTableColumn,
   type ProTableStore,
   type ProTableLabels,
@@ -156,6 +157,12 @@ export const IrisProTable = defineComponent({
 
     return () => {
       const columns = props.store.visibleColumns()
+      const colWindow = props.columnVirtualized ? props.store.columnWindow() : null
+      const { visible: displayColumns, offsetBefore: colOffset } = applyColumnWindow(
+        columns,
+        colWindow,
+      )
+      const renderColumns = props.columnVirtualized && colWindow ? displayColumns : columns
       const hasFilter = columns.some((c) => c.filterable)
       const matrix = props.store.headerMatrix()
 
@@ -291,7 +298,7 @@ export const IrisProTable = defineComponent({
       const filterRow = hasFilter
         ? h('tr', [
             h('th'),
-            ...columns.map((c) =>
+            ...renderColumns.map((c) =>
               h(
                 'th',
                 { key: c.key },
@@ -359,7 +366,7 @@ export const IrisProTable = defineComponent({
         )
         return h('tr', { key, 'data-selected': props.store.isSelected(key) ? '' : undefined }, [
           h('td', { style: { paddingLeft: `${depth * 24}px` } }, checkboxChildren),
-          ...columns.map((c) => {
+          ...renderColumns.map((c) => {
             const editing =
               state.value.editing?.rowKey === key && state.value.editing?.columnKey === c.key
             return h(
@@ -467,28 +474,32 @@ export const IrisProTable = defineComponent({
             )
           : null
 
-      const tableEl = h('table', [
-        h('thead', [...headerRows, filterRow ? filterRow : null]),
-        h('tbody', bodyRows),
-        ...(Object.keys(state.value.summaryValues).length > 0
-          ? [
-              h('tfoot', [
-                h('tr', [
-                  h('th', { scope: 'row' }, props.labels?.summaryLabel ?? ''),
-                  ...columns.map((c) =>
-                    h(
-                      'td',
-                      { key: c.key, style: { fontWeight: 600, textAlign: c.align ?? 'right' } },
-                      c.key in state.value.summaryValues
-                        ? String(state.value.summaryValues[c.key])
-                        : '',
+      const tableEl = h(
+        'table',
+        { style: colOffset > 0 ? { marginLeft: -colOffset } : undefined },
+        [
+          h('thead', [...headerRows, filterRow ? filterRow : null]),
+          h('tbody', bodyRows),
+          ...(Object.keys(state.value.summaryValues).length > 0
+            ? [
+                h('tfoot', [
+                  h('tr', [
+                    h('th', { scope: 'row' }, props.labels?.summaryLabel ?? ''),
+                    ...renderColumns.map((c) =>
+                      h(
+                        'td',
+                        { key: c.key, style: { fontWeight: 600, textAlign: c.align ?? 'right' } },
+                        c.key in state.value.summaryValues
+                          ? String(state.value.summaryValues[c.key])
+                          : '',
+                      ),
                     ),
-                  ),
+                  ]),
                 ]),
-              ]),
-            ]
-          : []),
-      ])
+              ]
+            : []),
+        ],
+      )
 
       let tableContent: VNode = tableEl
       if (props.columnVirtualized) {

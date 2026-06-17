@@ -1,6 +1,12 @@
 import { createSignal, createEffect, createMemo, onCleanup, For, Show, type JSX } from 'solid-js'
 import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
-import { collectRects, proTableLabel, type ProTableStore, type ProTableLabels } from '../core'
+import {
+  collectRects,
+  proTableLabel,
+  applyColumnWindow,
+  type ProTableStore,
+  type ProTableLabels,
+} from '../core'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
 
@@ -157,6 +163,17 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
     onCleanup(() => ro.disconnect())
   })
 
+  const colWindow = createMemo(() => {
+    if (!props.columnVirtualized) return null
+    state() // track store changes
+    return props.store.columnWindow()
+  })
+  const columnWindowResult = createMemo(() => applyColumnWindow(columns(), colWindow()))
+  const displayColumns = () => columnWindowResult().visible
+  const colOffset = () => columnWindowResult().offsetBefore
+  const renderColumns = () =>
+    props.columnVirtualized && colWindow() ? displayColumns() : columns()
+
   const sortIndicator = (key: string): string => {
     const sort = state().sort
     return sort?.key === key ? (sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
@@ -212,7 +229,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
             onChange={() => props.store.toggleRow(key)}
           />
         </td>
-        <For each={columns()}>
+        <For each={renderColumns()}>
           {(c) => {
             const editing = () =>
               state().editing?.rowKey === key && state().editing?.columnKey === c.key
@@ -278,7 +295,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
   )
 
   const tableEl = () => (
-    <table>
+    <table style={colOffset() > 0 ? { 'margin-left': `${-colOffset()}px` } : undefined}>
       <thead>
         <For each={matrix()}>
           {(row, rowIdx) => (
@@ -305,7 +322,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                       tabindex={isLeaf && cell.column.sortable ? 0 : undefined}
                       colSpan={cell.colSpan > 1 ? cell.colSpan : undefined}
                       rowSpan={!isLeaf && cell.rowSpan > 0 ? cell.rowSpan : undefined}
-style={
+                      style={
                         {
                           'text-align': cell.column.align,
                           width:

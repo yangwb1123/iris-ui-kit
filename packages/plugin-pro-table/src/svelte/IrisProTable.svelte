@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createSortable, createVirtualizer, type SortableRect, type TreeRow } from '@iris-ui/core'
-  import { proTableLabel, type ProTableLabels, type ProTableState, type ProTableStore } from '../core'
+  import { applyColumnWindow, proTableLabel, type ProTableLabels, type ProTableState, type ProTableStore } from '../core'
 
   type Row = Record<string, unknown>
 
@@ -132,6 +132,13 @@
 
   const columns = $derived(store.visibleColumns())
 
+  // Column virtualization: window the visible columns.
+  const colWindow = $derived(columnVirtualized ? store.columnWindow() : null)
+  const _applyResult = $derived(applyColumnWindow(columns, colWindow))
+  const displayColumns = $derived(_applyResult.visible)
+  const colOffset = $derived(_applyResult.offsetBefore)
+  const renderColumns = $derived(columnVirtualized && colWindow ? displayColumns : columns)
+
   // Multi-level (grouped) headers: a column with `children` forms a header group.
   // The BODY always renders the leaf columns (`columns` is already the flattened
   // leaf view from `visibleColumns()`); only the header gains extra rows.
@@ -252,7 +259,7 @@
   {/if}
 
   {#snippet tableEl()}
-  <table>
+  <table style={colOffset > 0 ? `margin-left:-${colOffset}px` : ''}>
     <thead>
       {#if grouped}
         {#each headerMatrix as rowCells, ri}
@@ -516,7 +523,7 @@
           onchange={() => store.toggleRow(key)}
         />
       </td>
-      {#each columns as c (c.key)}
+      {#each renderColumns as c (c.key)}
         <td
           style={`text-align:${c.align ?? 'left'};${pinnedStyle(c)}`}
           ondblclick={c.editable ? () => store.startEdit(key, c.key) : undefined}

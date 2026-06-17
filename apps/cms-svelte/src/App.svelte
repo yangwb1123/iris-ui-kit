@@ -1,9 +1,12 @@
 <script lang="ts">
   import { SkinProvider } from '@iris-ui/svelte'
   import { skinEngine } from './skin'
-  import Shell from './Shell.svelte'
+  import AuthProvider from './AuthProvider.svelte'
+  import Gate from './Gate.svelte'
 </script>
 
 <SkinProvider engine={skinEngine}>
-  <Shell />
+  <AuthProvider>
+    <Gate />
+  </AuthProvider>
 </SkinProvider>

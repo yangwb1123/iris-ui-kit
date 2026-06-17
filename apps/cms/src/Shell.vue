@@ -13,7 +13,7 @@ import {
   useTabsNav,
   findNavNode,
 } from '@iris-ui/vue'
-import { filterNavByAccess } from '@iris-ui/core'
+import { filterNavByAccess, type NavNode } from '@iris-ui/core'
 import { authStore, logout } from './auth'
 import { menus as flatMenus } from './menus'
 import { tabsNav } from './tabs'
@@ -23,8 +23,7 @@ const menus = computed(() => filterNavByAccess(flatMenus, [role.value]))
 const paletteOpen = ref(false)
 const commandItems = computed(() => {
   const items = []
-  const walk = (nodes: any[]) => {
-    // eslint-disable-line @typescript-eslint/no-explicit-any
+  const walk = (nodes: NavNode[]) => {
     for (const n of nodes) {
       if (n.children && n.children.length > 0) walk(n.children)
       else

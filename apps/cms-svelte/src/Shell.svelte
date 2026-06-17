@@ -11,13 +11,20 @@
     useSkin,
     useTabsNav,
   } from '@iris-ui/svelte'
+  import { filterNavByAccess } from '@iris-ui/core'
   import { menus } from './menus'
   import { tabsNav } from './tabs'
+  import { useAuth } from './auth'
   import PageHost from './PageHost.svelte'
 
   const { skin, setSkin, setMode, getActiveId, availableSkins } = useSkin()
   const t = useTabsNav(tabsNav)
   const { tabs, cacheKeys } = t
+  const { session, logout } = useAuth()
+
+  // RBAC: filter nav tree by the current user's role.
+  const role = $derived($session?.role)
+  const visibleMenus = $derived(role ? filterNavByAccess(menus, [role]) : menus)
 
   let activeKey = $state('dashboard')
 
@@ -46,7 +53,7 @@
 </script>
 
 <IrisAdminLayout
-  {menus}
+  menus={visibleMenus}
   {activeKey}
   onActiveKeyChange={(k) => (activeKey = k)}
   tabs={tabsNav}
@@ -77,12 +84,12 @@
         aria-label="Account"
         style="border: none; background: transparent; cursor: pointer; padding: 0"
       >
-        <IrisAvatar name="Ada Lovelace" size={32} />
+        <IrisAvatar name={$session?.username ?? 'User'} size={32} />
       </IrisDropdownTrigger>
       <IrisDropdownMenu>
         <IrisDropdownItem>Profile</IrisDropdownItem>
         <IrisDropdownItem>Account settings</IrisDropdownItem>
-        <IrisDropdownItem>Sign out</IrisDropdownItem>
+        <IrisDropdownItem onclick={logout}>Sign out</IrisDropdownItem>
       </IrisDropdownMenu>
     </IrisDropdown>
   {/snippet}

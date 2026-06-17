@@ -34,6 +34,7 @@ import {
   copyButtonScenario,
   selectScenario,
   menuScenario,
+  alertScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { useCallback } from 'react'
@@ -80,6 +81,7 @@ import { IrisDropdownItem } from './primitives/dropdown/DropdownItem'
 import { IrisTooltip } from './primitives/tooltip'
 import { IrisCombobox } from './primitives/combobox/Combobox'
 import { IrisCopyButton } from './primitives/copy-button/CopyButton'
+import { IrisAlert } from './primitives/alert/Alert'
 import { IrisToastViewport } from './primitives/toast/ToastViewport'
 import { pushToast, clearToasts } from './primitives/toast/toastStore'
 
@@ -544,5 +546,9 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       },
     }
     await runContract(menuScenario, docDriver, expect)
+  })
+  it('satisfies the shared Alert contract', async () => {
+    const { container } = render(<IrisAlert closable>Hello</IrisAlert>)
+    await runContract(alertScenario, driverFor(container), expect)
   })
 })

@@ -34,6 +34,7 @@ import {
   drawerScenario,
   dropdownScenario,
   tooltipScenario,
+  menuScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -55,6 +56,7 @@ import DrawerContractHarness from './DrawerContractHarness.svelte'
 import DropdownContractHarness from './DropdownContractHarness.svelte'
 import TooltipContractHarness from './TooltipContractHarness.svelte'
 import SelectContractHarness from './SelectContractHarness.svelte'
+import MenuContractHarness from './MenuContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -397,5 +399,19 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
   it('satisfies the shared Select contract', async () => {
     const { container } = render(SelectContractHarness)
     await runContract(selectScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Menu contract', async () => {
+    // Rendered in a dedicated harness so the menu's `[role="menu"]` and
+    // `[aria-haspopup="menu"]` elements stay out of the shared container
+    // and can't collide with other scenarios' role-based selector counts.
+    // IrisMenu is uncontrolled (no `open` prop), starts closed
+    // (defaultOpen={false}). The harness passes portalTarget={false} so the
+    // menu content renders inline in the test container (the contract
+    // driver's `queryAll` is container-scoped). Like Popover and Dropdown,
+    // the menu trigger TOGGLES — clicking it opens AND closes; Escape is
+    // the keyboard dismiss mechanism.
+    const { container } = render(MenuContractHarness)
+    await runContract(menuScenario, driverFor(container), expect)
   })
 })

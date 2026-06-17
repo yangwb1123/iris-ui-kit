@@ -34,6 +34,7 @@ import {
   toastScenario,
   copyButtonScenario,
   selectScenario,
+  menuScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
@@ -70,6 +71,7 @@ import { IrisTooltip } from './primitives/tooltip'
 import { IrisCombobox } from './primitives/combobox/IrisCombobox'
 import { IrisCopyButton } from './primitives/copy-button'
 import { SelectContractHarness } from './SelectContractHarness'
+import { MenuContractHarness } from './MenuContractHarness'
 import { IrisToastViewport } from './primitives/toast'
 import { pushToast, clearToasts } from './primitives/toast/toastStore'
 import { useDataSource } from './data/useDataSource'
@@ -504,5 +506,10 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
   it('satisfies the shared Select contract', async () => {
     const { container } = render(() => <SelectContractHarness />)
     await runContract(selectScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Menu contract', async () => {
+    const { container } = render(() => <MenuContractHarness />)
+    await runContract(menuScenario, driverFor(container), expect)
   })
 })

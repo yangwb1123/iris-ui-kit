@@ -33,6 +33,7 @@ import {
   toastScenario,
   copyButtonScenario,
   selectScenario,
+  menuScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { useCallback } from 'react'
@@ -83,6 +84,7 @@ import { IrisToastViewport } from './primitives/toast/ToastViewport'
 import { pushToast, clearToasts } from './primitives/toast/toastStore'
 
 import { SelectContractHarness } from './SelectContractHarness'
+import { MenuContractHarness } from './MenuContractHarness'
 
 afterEach(() => {
   cleanup()
@@ -511,10 +513,36 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
         if (el) el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
       },
       type: () => undefined,
+      pointer: (_sel, _idx, _event) => undefined,
       flush: async () => {
         await act(() => {})
       },
     }
     await runContract(selectScenario, docDriver, expect)
+  })
+
+  it('satisfies the shared Menu contract', async () => {
+    render(<MenuContractHarness />)
+    const q = (sel: string) => [...document.querySelectorAll<HTMLElement>(sel)]
+    const docDriver: ContractDriver = {
+      queryAll: (sel) => q(sel),
+      click: (sel, idx) => {
+        const el = q(sel)[idx ?? 0]
+        if (el) {
+          el.focus()
+          el.click()
+        }
+      },
+      keydown: (sel, idx, key) => {
+        const el = q(sel)[idx ?? 0]
+        if (el) el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+      },
+      type: () => undefined,
+      pointer: () => undefined,
+      flush: async () => {
+        await act(() => {})
+      },
+    }
+    await runContract(menuScenario, docDriver, expect)
   })
 })

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { generateId } from '@iris-ui/core'
+  import { generateId, createHoverIntent } from '@iris-ui/core'
   import { useFloating } from '../../floating/useFloating.svelte'
   import { portal } from '../../internal/portal'
   import type { Placement } from '@iris-ui/core'
@@ -11,6 +11,8 @@
     openDelay?: number
     closeDelay?: number
     disabled?: boolean
+    /** Portal target — pass `false` to render in place. */
+    portalTarget?: HTMLElement | false
     class?: string
     style?: string
     children?: import('svelte').Snippet
@@ -25,6 +27,7 @@
     openDelay = 600,
     closeDelay = 0,
     disabled = false,
+    portalTarget,
     children,
     'content-slot': contentSlot,
     ...rest
@@ -35,32 +38,33 @@
   let tooltipEl = $state<HTMLElement | undefined>(undefined)
   const tooltipId = generateId()
 
-  let openTimer: ReturnType<typeof setTimeout> | null = null
-  let closeTimer: ReturnType<typeof setTimeout> | null = null
+  // createHoverIntent — state machine driven timing for open/close delays.
+  // The onChange callback synchronously sets the reactive $state variable.
+  // Created eagerly so event handlers on first mount have a valid `hi`.
+  let hi: ReturnType<typeof createHoverIntent> = createHoverIntent({
+    openDelay,
+    closeDelay,
+    onChange: (v) => { open = v },
+  })
 
-  function clearTimers(): void {
-    if (openTimer) { clearTimeout(openTimer); openTimer = null }
-    if (closeTimer) { clearTimeout(closeTimer); closeTimer = null }
-  }
+  // Re-create when openDelay/closeDelay change; cleanup on unmount.
+  $effect(() => {
+    void openDelay
+    void closeDelay
+    hi.stop()
+    hi = createHoverIntent({
+      openDelay,
+      closeDelay,
+      onChange: (v) => { open = v },
+    })
+    return () => hi.stop()
+  })
 
-  function scheduleOpen(): void {
-    if (disabled) return
-    clearTimers()
-    if (openDelay <= 0) { open = true; return }
-    openTimer = setTimeout(() => { open = true; openTimer = null }, openDelay)
-  }
-
-  function scheduleClose(): void {
-    clearTimers()
-    if (closeDelay <= 0) { open = false; return }
-    closeTimer = setTimeout(() => { open = false; closeTimer = null }, closeDelay)
-  }
-
-  // Close immediately on Escape
+  // Escape closes immediately
   $effect(() => {
     if (!open || typeof document === 'undefined') return
     const onKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') { clearTimers(); open = false }
+      if (e.key === 'Escape') { hi.close() }
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
@@ -68,7 +72,7 @@
 
   // If disabled while open, close immediately
   $effect(() => {
-    if (disabled && open) { clearTimers(); open = false }
+    if (disabled && open) { hi.close() }
   })
 
   const floating = useFloating({
@@ -90,14 +94,14 @@
   }
 </script>
 
-<!-- Trigger wrapper — we render the children in a span and attach events -->
+<!-- Trigger wrapper -->
 <span
   use:setTrigger
   aria-describedby={open ? tooltipId : undefined}
-  onpointerenter={scheduleOpen}
-  onpointerleave={scheduleClose}
-  onfocus={scheduleOpen}
-  onblur={scheduleClose}
+  onpointerenter={() => { if (openDelay > 0) hi.pointerEnter(); else hi.open() }}
+  onpointerleave={() => { if (closeDelay > 0) hi.pointerLeave(); else hi.close() }}
+  onfocus={() => hi.open()}
+  onblur={() => hi.close()}
   data-iris-tooltip-trigger
   style="display: contents"
 >
@@ -108,7 +112,7 @@
   <div
     {...rest}
     use:setTooltip
-    use:portal
+    use:portal={portalTarget}
     id={tooltipId}
     role="tooltip"
     data-iris-tooltip

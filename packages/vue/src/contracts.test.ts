@@ -33,6 +33,7 @@ import {
   comboboxScenario,
   toastScenario,
   copyButtonScenario,
+  splitButtonScenario,
   selectScenario,
   menuScenario,
   alertScenario,
@@ -78,6 +79,7 @@ import { IrisCombobox } from './primitives/combobox/Combobox'
 import { IrisCopyButton } from './primitives/copy-button/CopyButton'
 import { IrisAlert } from './primitives/alert/Alert'
 import { IrisBanner } from './primitives/banner/Banner'
+import { IrisSplitButton } from './primitives/split-button/SplitButton'
 import { SelectContractHarness } from './SelectContractHarness'
 import { MenuContractHarness } from './MenuContractHarness'
 import { IrisToastViewport } from './primitives/toast'
@@ -369,6 +371,28 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     mount(() => h(IrisBanner, { closable: true }, { default: () => 'Hello' }), { attachTo: el })
     await nextTick()
     await runContract(bannerScenario, driverFor(el), expect)
+  })
+
+  it('satisfies the shared SplitButton contract', async () => {
+    const el = makeHost()
+    mount(
+      () =>
+        h(
+          IrisSplitButton,
+          {
+            actions: [
+              { key: 'a', label: 'A' },
+              { key: 'b', label: 'B' },
+            ],
+          },
+          {
+            default: () => 'Main',
+          },
+        ),
+      { attachTo: el },
+    )
+    await nextTick()
+    await runContract(splitButtonScenario, driverFor(el), expect)
   })
 
   it('satisfies the shared Select contract', async () => {

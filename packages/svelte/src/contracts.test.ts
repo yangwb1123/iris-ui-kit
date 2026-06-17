@@ -37,6 +37,7 @@ import {
   menuScenario,
   alertScenario,
   bannerScenario,
+  splitButtonScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -53,6 +54,7 @@ import ToastContractHarness from './ToastContractHarness.svelte'
 import IrisCopyButton from './primitives/copy-button/IrisCopyButton.svelte'
 import IrisAlert from './primitives/alert/IrisAlert.svelte'
 import IrisBanner from './primitives/banner/IrisBanner.svelte'
+import IrisSplitButton from './primitives/split-button/IrisSplitButton.svelte'
 import DataSourceContractHarness from './DataSourceContractHarness.svelte'
 import DialogContractHarness from './DialogContractHarness.svelte'
 import PopoverContractHarness from './PopoverContractHarness.svelte'
@@ -427,5 +429,17 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
   it('satisfies the shared Banner contract', async () => {
     const { container } = render(IrisBanner, { props: { closable: true } })
     await runContract(bannerScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared SplitButton contract', async () => {
+    const { container } = render(IrisSplitButton, {
+      props: {
+        actions: [
+          { key: 'a', label: 'A' },
+          { key: 'b', label: 'B' },
+        ],
+      },
+    })
+    await runContract(splitButtonScenario, driverFor(container), expect)
   })
 })

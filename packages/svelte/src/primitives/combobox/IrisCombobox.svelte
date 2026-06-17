@@ -142,38 +142,39 @@
     onblur={() => { focused = false; close() }}
     style="box-sizing: border-box; width: 100%; padding: {sz.padding}; min-height: {sz.minHeight}; font-size: {sz.fontSize}; font-family: inherit; color: var(--iris-foreground); background: var(--iris-background); border: 1px solid {borderColor}; border-radius: var(--iris-radius-md, 6px); outline: none; opacity: {disabled ? '0.6' : '1'}; box-shadow: {focused ? `0 0 0 3px ${invalid ? 'rgba(239,68,68,0.18)' : 'rgba(99,102,241,0.18)'}` : 'none'}; transition: border-color 120ms ease, box-shadow 120ms ease"
   />
-  <ul
-    id={listboxId}
-    role="listbox"
-    data-iris-combobox-listbox
-    hidden={!open}
-    style="display: {open ? 'block' : 'none'}; position: absolute; inset-inline-start: 0; inset-inline-end: 0; top: 100%; margin-block-start: 4px; max-height: 240px; overflow-y: auto; list-style: none; margin: 0; padding: 4px; z-index: 50; background: var(--iris-background); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); box-shadow: 0 8px 24px rgba(0,0,0,0.12)"
-  >
-    {#if filtered().length === 0}
-      <li
-        data-iris-combobox-empty
-        aria-disabled="true"
-        style="padding: 6px 10px; color: var(--iris-muted); font-size: {sz.fontSize}"
-      >
-        {emptyText ?? t('combobox.empty')}
-      </li>
-    {:else}
-      {#each filtered() as opt, i}
+  {#if open}
+    <ul
+      id={listboxId}
+      role="listbox"
+      data-iris-combobox-listbox
+      style="position: absolute; inset-inline-start: 0; inset-inline-end: 0; top: 100%; margin-block-start: 4px; max-height: 240px; overflow-y: auto; list-style: none; margin: 0; padding: 4px; z-index: 50; background: var(--iris-background); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); box-shadow: 0 8px 24px rgba(0,0,0,0.12)"
+    >
+      {#if filtered().length === 0}
         <li
-          id={optionId(i)}
-          role="option"
-          aria-selected={opt.value === value ? 'true' : 'false'}
-          aria-disabled={opt.disabled ? 'true' : undefined}
-          data-iris-combobox-option
-          data-active={i === activeIndex ? 'true' : undefined}
-          onmousedown={(e) => e.preventDefault()}
-          onmouseenter={() => { activeIndex = i }}
-          onclick={() => selectOption(opt)}
-          style="padding: 6px 10px; font-size: {sz.fontSize}; border-radius: var(--iris-radius-sm, 4px); cursor: {opt.disabled ? 'not-allowed' : 'pointer'}; color: {opt.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)'}; background: {i === activeIndex ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))' : 'transparent'}; font-weight: {opt.value === value ? '600' : '400'}"
+          data-iris-combobox-empty
+          aria-disabled="true"
+          style="padding: 6px 10px; color: var(--iris-muted); font-size: {sz.fontSize}"
         >
-          {opt.label}
+          {emptyText ?? t('combobox.empty')}
         </li>
-      {/each}
-    {/if}
-  </ul>
+      {:else}
+        {#each filtered() as opt, i}
+          <li
+            id={optionId(i)}
+            role="option"
+            aria-selected={opt.value === value ? 'true' : 'false'}
+            aria-disabled={opt.disabled ? 'true' : undefined}
+            data-iris-combobox-option
+            data-active={i === activeIndex ? 'true' : undefined}
+            onmousedown={(e) => e.preventDefault()}
+            onmouseenter={() => { activeIndex = i }}
+            onclick={() => selectOption(opt)}
+            style="padding: 6px 10px; font-size: {sz.fontSize}; border-radius: var(--iris-radius-sm, 4px); cursor: {opt.disabled ? 'not-allowed' : 'pointer'}; color: {opt.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)'}; background: {i === activeIndex ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))' : 'transparent'}; font-weight: {opt.value === value ? '600' : '400'}"
+          >
+            {opt.label}
+          </li>
+        {/each}
+      {/if}
+    </ul>
+  {/if}
 </div>

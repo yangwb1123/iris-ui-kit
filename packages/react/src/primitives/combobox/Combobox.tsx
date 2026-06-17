@@ -78,7 +78,7 @@ export function IrisCombobox({
   const display = filtering ? query : (selected?.label ?? '')
   const needle = query.trim().toLowerCase()
   const filtered =
-    filtering && needle ? options.filter((o) => o.label.toLowerCase().includes(needle)) : options
+    filtering && needle ? options.filter((o) => o.label.toLowerCase().startsWith(needle)) : options
 
   const close = () => {
     setOpen(false)
@@ -203,72 +203,72 @@ export function IrisCombobox({
           transition: 'border-color 120ms ease, box-shadow 120ms ease',
         }}
       />
-      <ul
-        id={listboxId}
-        role="listbox"
-        data-iris-combobox-listbox=""
-        hidden={!open}
-        style={{
-          display: open ? 'block' : 'none',
-          position: 'absolute',
-          insetInlineStart: 0,
-          insetInlineEnd: 0,
-          top: '100%',
-          marginBlockStart: 4,
-          maxHeight: 240,
-          overflowY: 'auto',
-          listStyle: 'none',
-          margin: 0,
-          padding: 4,
-          zIndex: 50,
-          background: 'var(--iris-background)',
-          border: '1px solid var(--iris-border)',
-          borderRadius: 'var(--iris-radius-md, 6px)',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-        }}
-      >
-        {filtered.length === 0 ? (
-          <li
-            data-iris-combobox-empty=""
-            aria-disabled="true"
-            style={{ padding: '6px 10px', color: 'var(--iris-muted)', fontSize: sz.fontSize }}
-          >
-            {resolvedEmpty}
-          </li>
-        ) : (
-          filtered.map((opt, i) => {
-            const isActive = i === activeIndex
-            const isSelected = opt.value === currentValue
-            return (
-              <li
-                key={opt.value}
-                id={optionId(i)}
-                role="option"
-                aria-selected={isSelected}
-                aria-disabled={opt.disabled ? 'true' : undefined}
-                data-iris-combobox-option=""
-                data-active={isActive ? 'true' : undefined}
-                onMouseDown={(e) => e.preventDefault()}
-                onMouseEnter={() => setActiveIndex(i)}
-                onClick={() => selectOption(opt)}
-                style={{
-                  padding: '6px 10px',
-                  fontSize: sz.fontSize,
-                  borderRadius: 'var(--iris-radius-sm, 4px)',
-                  cursor: opt.disabled ? 'not-allowed' : 'pointer',
-                  color: opt.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
-                  background: isActive
-                    ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-                    : 'transparent',
-                  fontWeight: isSelected ? 600 : 400,
-                }}
-              >
-                {opt.label}
-              </li>
-            )
-          })
-        )}
-      </ul>
+      {open && (
+        <ul
+          id={listboxId}
+          role="listbox"
+          data-iris-combobox-listbox=""
+          style={{
+            position: 'absolute',
+            insetInlineStart: 0,
+            insetInlineEnd: 0,
+            top: '100%',
+            marginBlockStart: 4,
+            maxHeight: 240,
+            overflowY: 'auto',
+            listStyle: 'none',
+            margin: 0,
+            padding: 4,
+            zIndex: 50,
+            background: 'var(--iris-background)',
+            border: '1px solid var(--iris-border)',
+            borderRadius: 'var(--iris-radius-md, 6px)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+          }}
+        >
+          {filtered.length === 0 ? (
+            <li
+              data-iris-combobox-empty=""
+              aria-disabled="true"
+              style={{ padding: '6px 10px', color: 'var(--iris-muted)', fontSize: sz.fontSize }}
+            >
+              {resolvedEmpty}
+            </li>
+          ) : (
+            filtered.map((opt, i) => {
+              const isActive = i === activeIndex
+              const isSelected = opt.value === currentValue
+              return (
+                <li
+                  key={opt.value}
+                  id={optionId(i)}
+                  role="option"
+                  aria-selected={isSelected}
+                  aria-disabled={opt.disabled ? 'true' : undefined}
+                  data-iris-combobox-option=""
+                  data-active={isActive ? 'true' : undefined}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onMouseEnter={() => setActiveIndex(i)}
+                  onClick={() => selectOption(opt)}
+                  style={{
+                    padding: '6px 10px',
+                    fontSize: sz.fontSize,
+                    borderRadius: 'var(--iris-radius-sm, 4px)',
+                    cursor: opt.disabled ? 'not-allowed' : 'pointer',
+                    color: opt.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
+                    background: isActive
+                      ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+                      : 'transparent',
+                    fontWeight: isSelected ? 600 : 400,
+                  }}
+                >
+                  {opt.label}
+                </li>
+              )
+            })
+          )}
+        </ul>
+      )}
     </div>
   )
 }

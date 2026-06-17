@@ -60,7 +60,7 @@ export const IrisCombobox = defineComponent({
     const filtered = computed(() => {
       const needle = query.value.trim().toLowerCase()
       return filtering.value && needle
-        ? props.options.filter((o) => o.label.toLowerCase().includes(needle))
+        ? props.options.filter((o) => o.label.toLowerCase().startsWith(needle))
         : props.options
     })
 
@@ -169,6 +169,12 @@ export const IrisCombobox = defineComponent({
             'data-iris-combobox-input': '',
             onInput,
             onKeydown: onKeyDown,
+            onMousedown: (e: MouseEvent) => {
+              if (props.disabled) return
+              focused.value = true
+              open.value = true
+              filtering.value = false
+            },
             onFocus: () => {
               if (props.disabled) return
               focused.value = true
@@ -198,82 +204,82 @@ export const IrisCombobox = defineComponent({
               transition: 'border-color 120ms ease, box-shadow 120ms ease',
             },
           }),
-          h(
-            'ul',
-            {
-              id: listboxId,
-              role: 'listbox',
-              'data-iris-combobox-listbox': '',
-              hidden: !open.value,
-              style: {
-                display: open.value ? 'block' : 'none',
-                position: 'absolute',
-                insetInlineStart: '0',
-                insetInlineEnd: '0',
-                top: '100%',
-                marginBlockStart: '4px',
-                maxHeight: '240px',
-                overflowY: 'auto',
-                listStyle: 'none',
-                margin: '0',
-                padding: '4px',
-                zIndex: '50',
-                background: 'var(--iris-background)',
-                border: '1px solid var(--iris-border)',
-                borderRadius: 'var(--iris-radius-md, 6px)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-              },
-            },
-            list.length === 0
-              ? [
-                  h(
-                    'li',
-                    {
-                      'data-iris-combobox-empty': '',
-                      'aria-disabled': 'true',
-                      style: {
-                        padding: '6px 10px',
-                        color: 'var(--iris-muted)',
-                        fontSize: sz.fontSize,
-                      },
-                    },
-                    resolvedEmpty,
-                  ),
-                ]
-              : list.map((opt, i) => {
-                  const isActive = i === activeIndex.value
-                  const isSelected = opt.value === props.modelValue
-                  return h(
-                    'li',
-                    {
-                      key: opt.value,
-                      id: optionId(i),
-                      role: 'option',
-                      'aria-selected': isSelected ? 'true' : 'false',
-                      'aria-disabled': opt.disabled ? 'true' : undefined,
-                      'data-iris-combobox-option': '',
-                      'data-active': isActive ? 'true' : undefined,
-                      onMousedown: (e: MouseEvent) => e.preventDefault(),
-                      onMouseenter: () => {
-                        activeIndex.value = i
-                      },
-                      onClick: () => selectOption(opt),
-                      style: {
-                        padding: '6px 10px',
-                        fontSize: sz.fontSize,
-                        borderRadius: 'var(--iris-radius-sm, 4px)',
-                        cursor: opt.disabled ? 'not-allowed' : 'pointer',
-                        color: opt.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
-                        background: isActive
-                          ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-                          : 'transparent',
-                        fontWeight: isSelected ? '600' : '400',
-                      },
-                    },
-                    opt.label,
-                  )
-                }),
-          ),
+          open.value
+            ? h(
+                'ul',
+                {
+                  id: listboxId,
+                  role: 'listbox',
+                  'data-iris-combobox-listbox': '',
+                  style: {
+                    position: 'absolute',
+                    insetInlineStart: '0',
+                    insetInlineEnd: '0',
+                    top: '100%',
+                    marginBlockStart: '4px',
+                    maxHeight: '240px',
+                    overflowY: 'auto',
+                    listStyle: 'none',
+                    margin: '0',
+                    padding: '4px',
+                    zIndex: '50',
+                    background: 'var(--iris-background)',
+                    border: '1px solid var(--iris-border)',
+                    borderRadius: 'var(--iris-radius-md, 6px)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                  },
+                },
+                list.length === 0
+                  ? [
+                      h(
+                        'li',
+                        {
+                          'data-iris-combobox-empty': '',
+                          'aria-disabled': 'true',
+                          style: {
+                            padding: '6px 10px',
+                            color: 'var(--iris-muted)',
+                            fontSize: sz.fontSize,
+                          },
+                        },
+                        resolvedEmpty,
+                      ),
+                    ]
+                  : list.map((opt, i) => {
+                      const isActive = i === activeIndex.value
+                      const isSelected = opt.value === props.modelValue
+                      return h(
+                        'li',
+                        {
+                          key: opt.value,
+                          id: optionId(i),
+                          role: 'option',
+                          'aria-selected': isSelected ? 'true' : 'false',
+                          'aria-disabled': opt.disabled ? 'true' : undefined,
+                          'data-iris-combobox-option': '',
+                          'data-active': isActive ? 'true' : undefined,
+                          onMousedown: (e: MouseEvent) => e.preventDefault(),
+                          onMouseenter: () => {
+                            activeIndex.value = i
+                          },
+                          onClick: () => selectOption(opt),
+                          style: {
+                            padding: '6px 10px',
+                            fontSize: sz.fontSize,
+                            borderRadius: 'var(--iris-radius-sm, 4px)',
+                            cursor: opt.disabled ? 'not-allowed' : 'pointer',
+                            color: opt.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
+                            background: isActive
+                              ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+                              : 'transparent',
+                            fontWeight: isSelected ? '600' : '400',
+                          },
+                        },
+                        opt.label,
+                      )
+                    }),
+              )
+            : null,
         ],
       )
     }

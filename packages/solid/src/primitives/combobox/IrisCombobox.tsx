@@ -63,7 +63,7 @@ export function IrisCombobox(props: IrisComboboxProps): JSX.Element {
   const filtered = createMemo(() => {
     const needle = query().trim().toLowerCase()
     return filtering() && needle
-      ? merged.options.filter((o) => o.label.toLowerCase().includes(needle))
+      ? merged.options.filter((o) => o.label.toLowerCase().startsWith(needle))
       : merged.options
   })
 

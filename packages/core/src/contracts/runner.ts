@@ -44,6 +44,7 @@ export async function runContract(
       else if (step.action === 'keydown') await driver.keydown(selector, index, step.key ?? '')
       else if (step.action === 'pointer')
         await driver.pointer(selector, index, step.pointerEvent ?? 'enter')
+      else if (step.action === 'type') await driver.type(selector, index, step.typeText ?? '')
     }
     await driver.flush()
     for (const a of step.expect) check(driver, scenario.name, step.label, a, expect)

@@ -131,7 +131,7 @@ export function toSpreadsheetXml(
     .map((row) => `<Row>${columns.map((c) => cell(row[c.dataIndex ?? c.key])).join('')}</Row>`)
     .join('')
   return (
-    '<?xml version="1.0"?>\n' +
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<?mso-application progid="Excel.Sheet"?>\n' +
     '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' +
     ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' +

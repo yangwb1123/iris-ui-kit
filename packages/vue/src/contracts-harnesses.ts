@@ -32,7 +32,10 @@ export function driverFor(container: HTMLElement): ContractDriver {
     queryAll: (selector) => Array.from(container.querySelectorAll(selector)),
     click: (selector, index) => {
       const el = at(selector, index)
-      if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+      if (el) {
+        el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
+        el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+      }
     },
     keydown: (selector, index, key) => {
       const el = at(selector, index)
@@ -54,6 +57,13 @@ export function driverFor(container: HTMLElement): ContractDriver {
           el.dispatchEvent(new Event(`pointer${event}`, { bubbles: true, cancelable: true }))
         }
       }
+    },
+    type: (selector, index, text) => {
+      const el = at(selector, index)
+      if (!el) return
+      el.dispatchEvent(new FocusEvent('focus', { bubbles: true }))
+      ;(el as HTMLInputElement).value = text
+      el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }))
     },
     flush: () => nextTick(),
   }

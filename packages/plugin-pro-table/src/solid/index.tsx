@@ -1,23 +1,8 @@
 import { createSignal, createEffect, onCleanup, For, Show, type JSX } from 'solid-js'
 import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
-import { proTableLabel, type ProTableStore, type ProTableLabels } from '../core'
+import { collectRects, proTableLabel, type ProTableStore, type ProTableLabels } from '../core'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
-
-/** Collect drop-target rects (id + client rect) for every `[attr]` under `root`. */
-function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
-  if (!root) return []
-  return Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).map((el) => {
-    const r = el.getBoundingClientRect()
-    return {
-      id: el.getAttribute(attr)!,
-      left: r.left,
-      top: r.top,
-      width: r.width,
-      height: r.height,
-    }
-  })
-}
 
 export interface IrisProTableProps<Row extends Record<string, unknown>> {
   store: ProTableStore<Row>
@@ -256,75 +241,108 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
             />
           </th>
           <For each={columns()}>
-            {(c) => (
-              <th
-                scope="col"
-                data-iris-col-key={c.key}
-                aria-sort={ariaSort(c)}
-                tabindex={c.sortable ? 0 : undefined}
-                style={{
-                  'text-align': c.align,
-                  width: typeof c.width === 'number' ? `${c.width}px` : c.width,
-                  cursor: props.columnReorder ? 'grab' : undefined,
-                  'touch-action': props.columnReorder ? 'none' : undefined,
-                  outline:
-                    sortableState().activeId &&
-                    sortableState().overId === c.key &&
-                    sortableState().activeId !== c.key
-                      ? '2px solid var(--iris-color-primary, #2563eb)'
-                      : undefined,
-                  'outline-offset': '-2px',
-                  ...pinnedStyle(c),
-                }}
-                data-sortable={c.sortable ? '' : undefined}
-                onClick={c.sortable ? () => props.store.toggleSort(c.key) : undefined}
-                onKeyDown={
-                  c.sortable
-                    ? (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+            {(c) => {
+              const colWidth = state().columnSizes[c.key] ?? c.width
+              return (
+                <th
+                  scope="col"
+                  data-iris-col-key={c.key}
+                  aria-sort={ariaSort(c)}
+                  tabindex={c.sortable ? 0 : undefined}
+                  style={{
+                    'text-align': c.align,
+                    width: typeof colWidth === 'number' ? `${colWidth}px` : colWidth,
+                    cursor: props.columnReorder ? 'grab' : undefined,
+                    'touch-action': props.columnReorder ? 'none' : undefined,
+                    outline:
+                      sortableState().activeId &&
+                      sortableState().overId === c.key &&
+                      sortableState().activeId !== c.key
+                        ? '2px solid var(--iris-color-primary, #2563eb)'
+                        : undefined,
+                    'outline-offset': '-2px',
+                    ...pinnedStyle(c),
+                  }}
+                  data-sortable={c.sortable ? '' : undefined}
+                  onClick={c.sortable ? () => props.store.toggleSort(c.key) : undefined}
+                  onKeyDown={
+                    c.sortable
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            props.store.toggleSort(c.key)
+                          }
+                        }
+                      : undefined
+                  }
+                  onPointerDown={onHeaderPointerDown(c.key)}
+                  onPointerMove={onHeaderPointerMove(c.key)}
+                  onPointerUp={onHeaderPointerUp(c.key)}
+                  onPointerCancel={() => sortable.cancel()}
+                  draggable={props.columnReorder ? true : undefined}
+                  onDragStart={
+                    props.columnReorder
+                      ? (e) => {
+                          dragKey = c.key
+                          e.dataTransfer!.effectAllowed = 'move'
+                        }
+                      : undefined
+                  }
+                  onDragOver={
+                    props.columnReorder
+                      ? (e) => {
                           e.preventDefault()
-                          props.store.toggleSort(c.key)
+                          e.dataTransfer!.dropEffect = 'move'
                         }
-                      }
-                    : undefined
-                }
-                onPointerDown={onHeaderPointerDown(c.key)}
-                onPointerMove={onHeaderPointerMove(c.key)}
-                onPointerUp={onHeaderPointerUp(c.key)}
-                onPointerCancel={() => sortable.cancel()}
-                draggable={props.columnReorder ? true : undefined}
-                onDragStart={
-                  props.columnReorder
-                    ? (e) => {
-                        dragKey = c.key
-                        e.dataTransfer!.effectAllowed = 'move'
-                      }
-                    : undefined
-                }
-                onDragOver={
-                  props.columnReorder
-                    ? (e) => {
-                        e.preventDefault()
-                        e.dataTransfer!.dropEffect = 'move'
-                      }
-                    : undefined
-                }
-                onDrop={
-                  props.columnReorder
-                    ? (e) => {
-                        e.preventDefault()
-                        if (dragKey && dragKey !== c.key) {
-                          props.store.reorderColumns(dragKey, c.key)
+                      : undefined
+                  }
+                  onDrop={
+                    props.columnReorder
+                      ? (e) => {
+                          e.preventDefault()
+                          if (dragKey && dragKey !== c.key) {
+                            props.store.reorderColumns(dragKey, c.key)
+                          }
+                          dragKey = null
                         }
-                        dragKey = null
-                      }
-                    : undefined
-                }
-              >
-                {c.title}
-                <span aria-hidden="true">{sortIndicator(c.key)}</span>
-              </th>
-            )}
+                      : undefined
+                  }
+                >
+                  {c.title}
+                  <span aria-hidden="true">{sortIndicator(c.key)}</span>
+                  {(c.resizable ?? typeof c.width === 'number') && (
+                    <span
+                      data-iris-col-resize-handle
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: 4,
+                        cursor: 'col-resize',
+                        'z-index': 2,
+                      }}
+                      onPointerDown={(e) => {
+                        e.stopPropagation()
+                        e.preventDefault()
+                        const startX = e.clientX
+                        const startW = colWidth as number
+                        const onMove = (ev: PointerEvent) => {
+                          ev.preventDefault()
+                          props.store.setColumnWidth(c.key, startW + ev.clientX - startX)
+                        }
+                        const onUp = () => {
+                          document.removeEventListener('pointermove', onMove)
+                          document.removeEventListener('pointerup', onUp)
+                        }
+                        document.addEventListener('pointermove', onMove)
+                        document.addEventListener('pointerup', onUp)
+                      }}
+                    />
+                  )}
+                </th>
+              )
+            }}
           </For>
         </tr>
         <Show when={columns().some((c) => c.filterable)}>

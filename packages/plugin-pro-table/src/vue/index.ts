@@ -11,6 +11,7 @@ import {
 } from 'vue'
 import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
 import {
+  collectRects,
   proTableLabel,
   type ProTableColumn,
   type ProTableStore,
@@ -18,21 +19,6 @@ import {
 } from '../core'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
-
-/** Collect drop-target rects (id + client rect) for every `[attr]` under `root`. */
-function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
-  if (!root) return []
-  return Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).map((el) => {
-    const r = el.getBoundingClientRect()
-    return {
-      id: el.getAttribute(attr)!,
-      left: r.left,
-      top: r.top,
-      width: r.width,
-      height: r.height,
-    }
-  })
-}
 
 function pinnedStyle(column: ProTableColumn): Record<string, string> | undefined {
   if (!column.pinned) return undefined
@@ -201,8 +187,9 @@ export const IrisProTable = defineComponent({
             onChange: () => props.store.toggleAll(),
           }),
         ]),
-        ...columns.map((c) =>
-          h(
+        ...columns.map((c) => {
+          const colWidth = state.value.columnSizes[c.key] ?? c.width
+          return h(
             'th',
             {
               key: c.key,
@@ -212,7 +199,7 @@ export const IrisProTable = defineComponent({
               tabindex: c.sortable ? 0 : undefined,
               style: {
                 textAlign: c.align,
-                width: c.width,
+                width: colWidth,
                 cursor: props.columnReorder ? 'grab' : undefined,
                 touchAction: props.columnReorder ? 'none' : undefined,
                 outline:
@@ -261,9 +248,44 @@ export const IrisProTable = defineComponent({
                   }
                 : undefined,
             },
-            [c.title, h('span', { 'aria-hidden': 'true' }, sortIndicator(c.key))],
-          ),
-        ),
+            [
+              c.title,
+              h('span', { 'aria-hidden': 'true' }, sortIndicator(c.key)),
+              ...((c.resizable ?? typeof c.width === 'number')
+                ? [
+                    h('span', {
+                      'data-iris-col-resize-handle': '',
+                      style: {
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: '4px',
+                        cursor: 'col-resize',
+                        zIndex: 2,
+                      },
+                      onPointerdown: (e: PointerEvent) => {
+                        e.stopPropagation()
+                        e.preventDefault()
+                        const startX = e.clientX
+                        const startW = colWidth as number
+                        const onMove = (ev: PointerEvent) => {
+                          ev.preventDefault()
+                          props.store.setColumnWidth(c.key, startW + ev.clientX - startX)
+                        }
+                        const onUp = () => {
+                          document.removeEventListener('pointermove', onMove)
+                          document.removeEventListener('pointerup', onUp)
+                        }
+                        document.addEventListener('pointermove', onMove)
+                        document.addEventListener('pointerup', onUp)
+                      },
+                    }),
+                  ]
+                : []),
+            ],
+          )
+        }),
       ]
 
       const filterRow = hasFilter

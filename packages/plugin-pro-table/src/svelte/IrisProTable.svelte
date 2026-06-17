@@ -218,12 +218,13 @@
           />
         </th>
         {#each columns as c (c.key)}
+          {@const colWidth = tableState.columnSizes[c.key] ?? c.width}
           <th
             scope="col"
             data-iris-col-key={c.key}
             aria-sort={ariaSort(c)}
             tabindex={c.sortable ? 0 : undefined}
-            style={`text-align:${c.align ?? 'left'};${columnReorder ? 'cursor:grab;touch-action:none;' : ''}${
+            style={`position:relative;text-align:${c.align ?? 'left'};width:${typeof colWidth === 'number' ? colWidth + 'px' : colWidth ?? ''};${columnReorder ? 'cursor:grab;touch-action:none;' : ''}${
               sortableState.activeId &&
               sortableState.overId === c.key &&
               sortableState.activeId !== c.key
@@ -258,6 +259,28 @@
             } : undefined}
           >
             {c.title}<span aria-hidden="true">{sortIndicator(c.key)}</span>
+            {#if (c.resizable ?? typeof c.width === 'number')}
+              <span
+                data-iris-col-resize-handle
+                style="position:absolute;top:0;right:0;bottom:0;width:4px;cursor:col-resize;z-index:2;"
+                onpointerdown={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  const startX = e.clientX
+                  const startW = +colWidth
+                  const onMove = (ev: PointerEvent) => {
+                    ev.preventDefault()
+                    store.setColumnWidth(c.key, startW + ev.clientX - startX)
+                  }
+                  const onUp = () => {
+                    document.removeEventListener('pointermove', onMove)
+                    document.removeEventListener('pointerup', onUp)
+                  }
+                  document.addEventListener('pointermove', onMove)
+                  document.addEventListener('pointerup', onUp)
+                }}
+              />
+            {/if}
           </th>
         {/each}
       </tr>

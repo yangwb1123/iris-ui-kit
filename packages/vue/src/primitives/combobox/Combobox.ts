@@ -169,7 +169,7 @@ export const IrisCombobox = defineComponent({
             'data-iris-combobox-input': '',
             onInput,
             onKeydown: onKeyDown,
-            onMousedown: (e: MouseEvent) => {
+            onMousedown: (_e: MouseEvent) => {
               if (props.disabled) return
               focused.value = true
               open.value = true

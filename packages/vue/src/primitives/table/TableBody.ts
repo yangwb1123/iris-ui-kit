@@ -2,7 +2,7 @@ import { h, type Component, type VNode } from 'vue'
 import { aggregate } from '@iris-ui/core'
 import type { TreeRow } from '@iris-ui/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
-import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll' // eslint-disable-line
+import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import type { IrisTableColumn } from './types'
 import type { TableState } from './useTableState'
 import { getCellValue } from './useTableState'

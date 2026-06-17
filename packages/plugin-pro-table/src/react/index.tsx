@@ -80,7 +80,10 @@ export function IrisProTable<Row extends Record<string, unknown>>({
     state.columnSizes,
     state.columns,
   ])
-  const { visible: displayColumns, offsetBefore: colOffset } = applyColumnWindow(columns, colWindow)
+  const { visible: _displayColumns, offsetBefore: _colOffset } = applyColumnWindow(
+    columns,
+    colWindow,
+  )
   const scrollRef = React.useRef<HTMLDivElement>(null)
   React.useEffect(() => {
     if (!columnVirtualized) return

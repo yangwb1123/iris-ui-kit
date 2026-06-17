@@ -1,12 +1,6 @@
 import { createSignal, createEffect, createMemo, onCleanup, For, Show, type JSX } from 'solid-js'
 import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
-import {
-  collectRects,
-  proTableLabel,
-  applyColumnWindow,
-  type ProTableStore,
-  type ProTableLabels,
-} from '../core'
+import { collectRects, proTableLabel, type ProTableStore, type ProTableLabels } from '../core'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
 

@@ -176,8 +176,7 @@ export const IrisProTable = defineComponent({
           ...row.map((cell: HeaderCell<ProTableColumn>) => {
             const c = cell.column
             const isLeaf =
-              !(c as ProTableColumn).children ||
-              ((c as ProTableColumn).children as any[]).length === 0
+              !(c as ProTableColumn).children || ((c as ProTableColumn).children ?? []).length === 0
             const colWidth = state.value.columnSizes[c.key] ?? c.width
             return h(
               'th',

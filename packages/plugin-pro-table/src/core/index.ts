@@ -303,7 +303,7 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     }: {
       page: number
       pageSize: number
-      sort: any
+      sort: { key: string; direction: 'asc' | 'desc' } | null
       filters: Record<string, string>
     }): { rows: Row[]; total: number } => {
       const flat = flattenTree(treeRoots, {

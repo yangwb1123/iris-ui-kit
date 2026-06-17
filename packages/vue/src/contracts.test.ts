@@ -203,7 +203,7 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Dialog contract', async () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
-    const wrapper = mount(
+    mount(
       () =>
         h(
           IrisDialog,
@@ -224,7 +224,7 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Popover contract', async () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
-    const wrapper = mount(
+    mount(
       () =>
         h(
           IrisPopover,
@@ -245,7 +245,7 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Tooltip contract', async () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
-    const wrapper = mount(
+    mount(
       () =>
         h(
           IrisTooltip,
@@ -263,7 +263,7 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Drawer contract', async () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
-    const wrapper = mount(
+    mount(
       () =>
         h(
           IrisDrawer,
@@ -284,7 +284,7 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Dropdown contract', async () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
-    const wrapper = mount(
+    mount(
       () =>
         h(
           IrisDropdown,
@@ -304,7 +304,7 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
 
   it('satisfies the shared Combobox contract', async () => {
     const el = makeHost()
-    const wrapper = mount(
+    mount(
       () =>
         h(IrisCombobox, {
           options: [
@@ -322,7 +322,7 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
 
   it('satisfies the shared Toast notification contract', async () => {
     const el = makeHost()
-    const wrapper = mount(
+    mount(
       () =>
         h('div', [
           h(
@@ -344,7 +344,7 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
 
   it('satisfies the shared CopyButton contract', async () => {
     const el = makeHost()
-    const wrapper = mount(() => h(IrisCopyButton, { text: 'hello' }), { attachTo: el })
+    mount(() => h(IrisCopyButton, { text: 'hello' }), { attachTo: el })
     await nextTick()
     await runContract(copyButtonScenario, driverFor(el), expect)
   })

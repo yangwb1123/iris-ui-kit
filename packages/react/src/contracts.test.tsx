@@ -37,6 +37,7 @@ import {
   alertScenario,
   bannerScenario,
   splitButtonScenario,
+  formScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { useCallback } from 'react'
@@ -91,6 +92,7 @@ import { pushToast, clearToasts } from './primitives/toast/toastStore'
 
 import { SelectContractHarness } from './SelectContractHarness'
 import { MenuContractHarness } from './MenuContractHarness'
+import { FormContractHarness } from './FormContractHarness'
 
 afterEach(() => {
   cleanup()
@@ -593,5 +595,10 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       },
     }
     await runContract(splitButtonScenario, docDriver, expect)
+  })
+
+  it('satisfies the shared Form contract', async () => {
+    const { container } = render(<FormContractHarness />)
+    await runContract(formScenario, driverFor(container), expect)
   })
 })

@@ -275,4 +275,42 @@ describe('IrisProTable (react)', () => {
     // Restore
     ;(globalThis as any).ResizeObserver = OrigRO
   })
+
+  it('toggleColumn hides and shows a column', () => {
+    const cols: ProTableColumn[] = [
+      { key: 'a', title: 'A', width: 100 },
+      { key: 'b', title: 'B', width: 100 },
+    ]
+    const store = createProTableStore({
+      columns: cols,
+      rowKey: 'id',
+      data: [{ id: 1, a: 'A1', b: 'B1' }],
+      pageSize: 50,
+    })
+    expect(store.visibleColumns().length).toBe(2)
+    store.toggleColumn('b')
+    expect(store.visibleColumns().length).toBe(1)
+    expect(store.visibleColumns()[0].key).toBe('a')
+    store.toggleColumn('b')
+    expect(store.visibleColumns().length).toBe(2)
+  })
+
+  it('resetColumns restores initial state', () => {
+    const cols: ProTableColumn[] = [
+      { key: 'a', title: 'A', width: 100 },
+      { key: 'b', title: 'B', width: 100 },
+    ]
+    const store = createProTableStore({
+      columns: cols,
+      rowKey: 'id',
+      data: [{ id: 1, a: 'A1', b: 'B1' }],
+      pageSize: 50,
+    })
+    store.setColumnWidth('a', 200)
+    store.toggleColumn('b')
+    expect(store.visibleColumns().length).toBe(1)
+    store.resetColumns()
+    expect(store.visibleColumns().length).toBe(2)
+    expect(store.getState().columnSizes).toEqual({})
+  })
 })

@@ -190,6 +190,10 @@ export interface ProTableStore<Row = Record<string, unknown>> {
   reorderColumns(from: string, to: string): void
   /** Set a column's width in px (clamped to minWidth). Triggers re-render. */
   setColumnWidth(key: string, width: number): void
+  /** Toggle a column's visibility. When hidden it is excluded from visibleColumns(). */
+  toggleColumn(key: string): void
+  /** Reset column state (order, width, hidden) to initial config values. */
+  resetColumns(): void
   /** Toggle expansion of a tree node. No-op when not tree mode. */
   toggleExpand(key: string): void
   /** Expand all tree nodes. */
@@ -517,6 +521,20 @@ export function createProTableStore<Row extends Record<string, unknown>>(
       store.setState((st) => ({
         ...st,
         columnSizes: { ...st.columnSizes, [key]: Math.max(min, width) },
+      }))
+    },
+    toggleColumn(key) {
+      store.setState((s) => ({
+        ...s,
+        columns: s.columns.map((c) => (c.key === key ? { ...c, hidden: !c.hidden } : c)),
+      }))
+    },
+    resetColumns() {
+      store.setState((s) => ({
+        ...s,
+        columnOrder: [...s.columns.map((c) => c.key)],
+        columnSizes: {},
+        columns: s.columns.map((c) => ({ ...c, hidden: undefined })),
       }))
     },
 

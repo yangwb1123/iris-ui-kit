@@ -40,7 +40,7 @@
   ]
 </script>
 
-<ThemeProvider {themeStore}>
+<ThemeProvider store={themeStore}>
   <main style="max-width:880px;margin:0 auto;padding:40px 24px">
     <header style="margin-bottom:24px">
       <h1 style="margin:0 0 4px;font-size:24px">Iris UI · SvelteKit SSR smoke</h1>
@@ -53,12 +53,12 @@
     <section style="display:grid;gap:24px">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <IrisButton variant="solid">Primary action</IrisButton>
-        <IrisInput bind:value={name} placeholder="Type your name…" style="max-width:240px" />
+        <IrisInput value={name} oninput={(e: Event) => name = (e.target as HTMLInputElement).value} placeholder="Type your name…" style="max-width:240px" />
         <IrisBadge tone="primary" variant="solid">{name ? `Hi, ${name}` : 'live badge'}</IrisBadge>
       </div>
 
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <IrisDialog bind:open={dialogOpen}>
+        <IrisDialog open={dialogOpen} onOpenChange={(v) => dialogOpen = v}>
           <IrisDialogTrigger asChild>
             <IrisButton variant="outline">Open dialog</IrisButton>
           </IrisDialogTrigger>
@@ -78,7 +78,7 @@
 
       <div>
         <h2 style="font-size:16px;margin:0 0 8px">Team</h2>
-        <IrisTable {columns} data={rows} rowKey="id" />
+        <IrisTable {columns} data={rows as unknown as Record<string, unknown>[]} rowKey="id" />
       </div>
     </section>
   </main>

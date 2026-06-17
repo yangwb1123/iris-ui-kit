@@ -62,6 +62,11 @@ export const IrisToastViewport = defineComponent({
       type: [String, Object, Boolean] as PropType<string | HTMLElement | false>,
       default: 'body',
     },
+    /** Portal target (cross-framework alias for `teleport`). Overrides `teleport` when set. */
+    portalTarget: {
+      type: [String, Object, Boolean] as PropType<string | HTMLElement | false>,
+      default: undefined,
+    },
     /** Maximum simultaneous toasts; older entries are evicted when exceeded. */
     max: { type: Number, default: 5 },
   },
@@ -312,8 +317,9 @@ export const IrisToastViewport = defineComponent({
         },
         toasts.value.map(renderToast),
       )
-      if (props.teleport === false) return viewport
-      return h(Teleport, { to: props.teleport as string | HTMLElement }, [viewport])
+      const portalDest = props.portalTarget !== undefined ? props.portalTarget : props.teleport
+      if (portalDest === false) return viewport
+      return h(Teleport, { to: portalDest as string | HTMLElement }, [viewport])
     }
   },
 })

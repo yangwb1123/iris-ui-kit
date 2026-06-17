@@ -1,4 +1,5 @@
 import { createStore, type Store } from './store'
+import { normalizeKeys } from './utils'
 
 /**
  * Framework-agnostic expansion model — the open/closed set of keys behind
@@ -13,68 +14,98 @@ import { createStore, type Store } from './store'
  */
 export type ExpansionMode = 'single' | 'multiple'
 
-export interface ExpansionConfig {
+export interface ExpansionConfig<K extends string | number = string> {
   mode?: ExpansionMode
-  defaultExpanded?: string[]
-  onChange?: (keys: string[]) => void
+  defaultExpanded?: K[]
+  onChange?: (keys: K[]) => void
 }
 
-export interface ExpansionModel {
-  store: Store<string[]>
-  get(): string[]
-  isExpanded(key: string): boolean
-  toggle(key: string): void
-  expand(key: string): void
-  collapse(key: string): void
-  set(keys: string[]): void
+export interface ExpansionModel<K extends string | number = string> {
+  store: Store<K[]>
+  get(): K[]
+  isExpanded(key: K): boolean
+  toggle(key: K): void
+  expand(key: K): void
+  collapse(key: K): void
+  set(keys: K[]): void
   /** Union `keys` into the current set (no removals). No-op if all present. */
-  merge(keys: string[]): void
+  merge(keys: K[]): void
+  /** Expand every key in `keys`. In single mode, expands only the last key. */
+  expandAll(keys: K[]): void
+  /** Collapse all expanded keys. */
+  collapseAll(): void
 }
 
-export function createExpansion(config: ExpansionConfig = {}): ExpansionModel {
+export function createExpansion<K extends string | number = string>(
+  config: ExpansionConfig<K> = {},
+): ExpansionModel<K> {
   const mode: ExpansionMode = config.mode ?? 'multiple'
-  const store = createStore<string[]>(normalize(config.defaultExpanded ?? [], mode))
+  const initial = normalizeKeys(config.defaultExpanded ?? [], mode)
+  const store = createStore<K[]>(initial)
 
-  function commit(next: string[]): void {
-    const value = normalize(next, mode)
+  // Set index for O(1) lookups and O(1) deletions (vs filter O(n))
+  let index = new Set<K>(initial)
+
+  function syncIndex(keys: K[]): void {
+    index = new Set<K>(keys)
+  }
+  store.subscribe(syncIndex)
+
+  function commit(next: K[]): void {
+    const value = normalizeKeys(next, mode)
     store.setState(value)
+    syncIndex(value)
     config.onChange?.(value)
+  }
+
+  function has(key: K): boolean {
+    return index.has(key)
   }
 
   return {
     store,
     get: store.getState,
-    isExpanded: (key) => store.getState().includes(key),
+    isExpanded: has,
     toggle(key) {
-      const cur = store.getState()
-      if (cur.includes(key)) {
-        commit(cur.filter((k) => k !== key))
+      if (has(key)) {
+        // O(1) collapse via Set — avoids filter O(n) on the array
+        const next = new Set(index)
+        next.delete(key)
+        commit(Array.from(next))
       } else {
-        commit(mode === 'single' ? [key] : [...cur, key])
+        commit(mode === 'single' ? [key] : [...store.getState(), key])
       }
     },
     expand(key) {
-      const cur = store.getState()
-      if (cur.includes(key)) return
-      commit(mode === 'single' ? [key] : [...cur, key])
+      if (has(key)) return
+      commit(mode === 'single' ? [key] : [...store.getState(), key])
     },
     collapse(key) {
-      commit(store.getState().filter((k) => k !== key))
+      if (!has(key)) return
+      // O(1) via Set
+      const next = new Set(index)
+      next.delete(key)
+      commit(Array.from(next))
     },
     set(keys) {
       commit(keys)
     },
     merge(keys) {
-      const cur = store.getState()
-      if (keys.every((k) => cur.includes(k))) return
+      if (keys.every((k) => has(k))) return
       // merge implies multiple-open; single mode keeps the last per normalize.
-      commit([...cur, ...keys])
+      commit([...store.getState(), ...keys])
+    },
+    expandAll(keys) {
+      if (keys.length === 0) return
+      if (mode === 'single') {
+        commit([keys[keys.length - 1]!])
+        return
+      }
+      commit([...store.getState(), ...keys])
+    },
+    collapseAll() {
+      if (index.size === 0) return
+      commit([])
     },
   }
-}
-
-function normalize(keys: string[], mode: ExpansionMode): string[] {
-  const deduped = Array.from(new Set(keys))
-  if (mode === 'single' && deduped.length > 1) return [deduped[deduped.length - 1]]
-  return deduped
 }

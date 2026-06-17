@@ -1,145 +1,46 @@
-import { createStore, type Store } from './store'
-import { createSelectionModel, type SelectionModel } from './selection'
-import {
-  pageCount as computePageCount,
-  filterSort,
-  paginate,
-  type SortState,
-  type FilterRule,
-  type DataViewColumn,
-} from './data-view'
-
 /**
- * Framework-agnostic unified data engine (L4 composite) — the convergence point
- * the audit's dir-1 calls for. A superset of {@link createResourceController}:
- * the same list + pagination + selection + (optimistic) mutate workload, plus
- * the depth a production grid needs — multi-column sort, typed filter operators,
- * an `infinite` (load-more) mode alongside `paged`, and per-row pending/error
- * state for row-scoped mutations. pro-table, the base Table, and the resource
- * controller can all consume ONE engine instead of three. The loader is token-
- * and abort-guarded (the same race protection as {@link createAsyncResource},
- * extended for infinite append), so a slow page can never clobber a newer one.
+ * Framework-agnostic unified data engine (L4 composite).
+ *
+ * The convergence point for the list + pagination + selection + (optimistic)
+ * mutate workload that pro-table, the base Table, and the resource controller
+ * all consume from ONE engine. Supports both `paged` (replace on page change)
+ * and `infinite` (append via loadMore) modes, with row-scoped mutate tracking.
+ *
+ * This is the public entry point / barrel. It re-exports from:
+ *
+ *   types.ts  — type declarations
+ *   client.ts — createClientDataSource / createSyncClientDataSource
+ *
+ * createDataSource itself stays inline because it's the core factory (~220 lines).
  */
+import { createStore } from './store'
+import { createSelectionModel } from './selection'
+import { pageCount as computePageCount } from './data-view'
+import type {
+  DataSourceQuery,
+  DataSourceMode,
+  DataSourceConfig,
+  DataSourceState,
+  DataSourceController,
+} from './data-source/types'
+
+export type {
+  DataSourceQuery,
+  DataSourceMode,
+  DataSourceConfig,
+  DataSourceState,
+  MutateOptions,
+  RowMutateOptions,
+  DataSourceController,
+} from './data-source/types'
+export { createClientDataSource, createSyncClientDataSource } from './data-source/client'
+
 function isThenable<T>(value: unknown): value is Promise<T> {
   return (
     value != null &&
     (typeof value === 'object' || typeof value === 'function') &&
     typeof (value as { then?: unknown }).then === 'function'
   )
-}
-
-export interface DataSourceQuery {
-  page: number
-  pageSize: number
-  /** Single-column sort (takes precedence). */
-  sort: SortState | null
-  /** Multi-column sort, applied when `sort` is null (most-significant first). */
-  multiSort: SortState[]
-  /** key → substring (case-insensitive); empty strings ignored. */
-  filters: Record<string, string>
-  /** Typed operator filters, AND-ed with `filters`. */
-  filterRules: FilterRule[]
-}
-
-export type DataSourceMode = 'paged' | 'infinite'
-
-export interface DataSourceConfig<T> {
-  /**
-   * Fetch one page for the query. Return a value SYNCHRONOUSLY (client mode —
-   * applied immediately with no loading flicker, so rows are ready right after
-   * construction) or a `Promise` (server mode). An `AbortSignal` is appended as
-   * an optional trailing arg for the async case (aborted when a newer load
-   * supersedes this one); ignore it and the token guard still prevents stale
-   * writes.
-   */
-  fetcher: (
-    query: DataSourceQuery,
-    signal?: AbortSignal,
-  ) => { rows: T[]; total: number } | Promise<{ rows: T[]; total: number }>
-  /** Rows per page. Default 10. */
-  pageSize?: number
-  /** `'paged'` (default) replaces rows per page; `'infinite'` appends via loadMore. */
-  mode?: DataSourceMode
-  /** Auto-load the first page on creation. Default true. */
-  immediate?: boolean
-}
-
-export interface DataSourceState<T> {
-  /** Current page (paged) or all accumulated rows (infinite). */
-  rows: T[]
-  total: number
-  page: number
-  pageSize: number
-  sort: SortState | null
-  multiSort: SortState[]
-  filters: Record<string, string>
-  filterRules: FilterRule[]
-  /** A full (replace) load is in flight. */
-  loading: boolean
-  /** An infinite `loadMore` (append) is in flight. */
-  loadingMore: boolean
-  error: unknown
-  /** Whether more rows are available (paged: more pages; infinite: accumulated < total). */
-  hasMore: boolean
-  selectedKeys: string[]
-  /** Row keys with an in-flight row-scoped mutate. */
-  pendingRows: string[]
-  /** Row key → last row-scoped mutate error. */
-  rowErrors: Record<string, unknown>
-}
-
-/** Options for a table-level (optionally optimistic) {@link DataSourceController.mutate}. */
-export interface MutateOptions<T> {
-  optimistic?: (rows: T[]) => T[]
-  skipReload?: boolean
-}
-
-/** Options for a row-scoped {@link DataSourceController.mutateRow}. */
-export interface RowMutateOptions<T> {
-  optimistic?: (rows: T[]) => T[]
-  skipReload?: boolean
-}
-
-export interface DataSourceController<T> {
-  store: Store<DataSourceState<T>>
-  selection: SelectionModel
-  getState(): DataSourceState<T>
-  subscribe(listener: (state: DataSourceState<T>) => void): () => void
-  /** (Re)load the current page, replacing rows. */
-  load(): Promise<void>
-  reload(): Promise<void>
-  /** Infinite mode: fetch the next page and APPEND it. No-op otherwise / when exhausted. */
-  loadMore(): Promise<void>
-  setPage(page: number): void
-  setPageSize(size: number): void
-  /** Set single-column sort and reload from page 1. */
-  setSort(sort: SortState | null): void
-  /** Set multi-column sort (clears single sort) and reload from page 1. */
-  setMultiSort(multiSort: SortState[]): void
-  /** Set one substring filter and reload from page 1 (empty string clears it). */
-  setFilter(key: string, value: string): void
-  /** Set typed operator filters and reload from page 1. */
-  setFilterRules(rules: FilterRule[]): void
-  /** Clear all substring + typed filters and reload from page 1. */
-  clearFilters(): void
-  pageCount(): number
-  hasMore(): boolean
-  isRowPending(rowKey: string): boolean
-  rowError(rowKey: string): unknown
-  /** Run a table-level CRUD side-effect then reload; optionally optimistic. */
-  mutate(action: () => Promise<unknown>, options?: MutateOptions<T>): Promise<void>
-  /**
-   * Run a row-scoped side-effect: marks the row pending, optionally applies an
-   * optimistic row update, records a per-row error on rejection (rolling back any
-   * optimistic update), then clears pending and reloads.
-   */
-  mutateRow(
-    rowKey: string,
-    action: () => Promise<unknown>,
-    options?: RowMutateOptions<T>,
-  ): Promise<void>
-  /** Abort any in-flight load so a late response never writes back. Idempotent. */
-  destroy(): void
 }
 
 export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceController<T> {
@@ -163,11 +64,10 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
   })
 
   const selection = createSelectionModel({ mode: 'multiple' })
-  selection.store.subscribe((keys) => store.setState((s) => ({ ...s, selectedKeys: keys })))
+  const unsubSelection = selection.store.subscribe((keys) =>
+    store.setState((s) => ({ ...s, selectedKeys: keys })),
+  )
 
-  // Single token + abort authority for ALL fetches (replace + append), so a
-  // stale page can never clobber a newer load and a superseding load aborts the
-  // previous request.
   let epoch = 0
   let inFlight: AbortController | null = null
 
@@ -216,70 +116,28 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
     inFlight = ac
     const query = buildQuery(opts.page)
 
-    let result: { rows: T[]; total: number } | Promise<{ rows: T[]; total: number }>
     try {
-      result = ac ? config.fetcher(query, ac.signal) : config.fetcher(query)
+      const result = ac ? config.fetcher(query, ac.signal) : config.fetcher(query)
+      if (isThenable(result)) {
+        store.setState((s) => ({ ...s, loading: !append, loadingMore: append, error: undefined }))
+        const awaited = await result
+        if (token !== epoch) return
+        applyResult(awaited, append, opts.page)
+        return
+      }
+      applyResult(result, append, opts.page)
     } catch (error) {
       if (token !== epoch) return
-      inFlight = null
+      if (ac?.signal.aborted) return
       store.setState((s) => ({ ...s, loading: false, loadingMore: false, error }))
-      return
-    }
-
-    // Synchronous fetcher (client mode): apply immediately, no loading flicker,
-    // so rows are ready right after construction.
-    if (!isThenable(result)) {
-      inFlight = null
-      applyResult(result, append, opts.page)
-      return
-    }
-
-    // Async fetcher (server mode): show loading, await, drop stale/aborted results.
-    store.setState((s) => ({ ...s, loading: !append, loadingMore: append, error: undefined }))
-    try {
-      const awaited = await result
-      if (token !== epoch) return // superseded
-      inFlight = null
-      applyResult(awaited, append, opts.page)
-    } catch (error) {
-      if (token !== epoch) return // superseded
-      inFlight = null
-      if (ac?.signal.aborted) return // canceled, not a real error
-      store.setState((s) => ({ ...s, loading: false, loadingMore: false, error }))
+    } finally {
+      if (inFlight === ac) inFlight = null
     }
   }
 
-  const load = (): Promise<void> => fetchPage({ append: false })
-
-  /** Reset to page 1 and replace (a sort/filter change invalidates offsets). */
   const reloadFromStart = (): Promise<void> => {
     store.setState((s) => ({ ...s, page: 1 }))
     return fetchPage({ append: false, page: 1 })
-  }
-
-  const setPendingRow = (rowKey: string, pending: boolean): void => {
-    store.setState((s) => {
-      const has = s.pendingRows.includes(rowKey)
-      if (pending === has) return s
-      return {
-        ...s,
-        pendingRows: pending
-          ? [...s.pendingRows, rowKey]
-          : s.pendingRows.filter((k) => k !== rowKey),
-      }
-    })
-  }
-
-  const setRowError = (rowKey: string, error: unknown): void => {
-    store.setState((s) => {
-      if (error === undefined) {
-        if (!(rowKey in s.rowErrors)) return s
-        const next = { ...s.rowErrors }
-        delete next[rowKey]
-        return { ...s, rowErrors: next }
-      }
-      return { ...s, rowErrors: { ...s.rowErrors, [rowKey]: error } }
-    })
   }
 
   const controller: DataSourceController<T> = {
@@ -287,16 +145,14 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
     selection,
     getState: store.getState,
     subscribe: store.subscribe,
-    load,
-    reload: load,
+    load: () => fetchPage({ append: false }),
+    reload: () => fetchPage({ append: false }),
     loadMore() {
       const s = store.getState()
       if (mode !== 'infinite' || !s.hasMore || s.loadingMore || s.loading) return Promise.resolve()
       return fetchPage({ append: true, page: s.page + 1 })
     },
     setPage(page) {
-      // batch: the page write + the fetch's synchronous loading/applyResult
-      // writes coalesce into ONE notification per user action (was 2-3 emits).
       store.batch(() => {
         store.setState((s) => ({ ...s, page }))
         void fetchPage({ append: false, page })
@@ -338,87 +194,53 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
         void reloadFromStart()
       })
     },
-    pageCount() {
-      const s = store.getState()
-      return computePageCount(s.total, s.pageSize)
-    },
+    pageCount: () => computePageCount(store.getState().total, store.getState().pageSize),
     hasMore: () => store.getState().hasMore,
     isRowPending: (rowKey) => store.getState().pendingRows.includes(rowKey),
     rowError: (rowKey) => store.getState().rowErrors[rowKey],
     async mutate(action, options) {
       const snapshot = store.getState().rows
-      if (options?.optimistic) {
-        store.setState((s) => ({ ...s, rows: options.optimistic!(s.rows) }))
-      }
+      if (options?.optimistic) store.setState((s) => ({ ...s, rows: options.optimistic!(s.rows) }))
       try {
         await action()
       } catch (error) {
         if (options?.optimistic) store.setState((s) => ({ ...s, rows: snapshot }))
-        await load()
+        await controller.load()
         throw error
       }
-      if (!options?.skipReload) await load()
+      if (!options?.skipReload) await controller.load()
     },
     async mutateRow(rowKey, action, options) {
       const snapshot = store.getState().rows
-      setRowError(rowKey, undefined)
-      setPendingRow(rowKey, true)
-      if (options?.optimistic) {
-        store.setState((s) => ({ ...s, rows: options.optimistic!(s.rows) }))
-      }
+      store.setState((s) => ({
+        ...s,
+        rowErrors: { ...s.rowErrors, [rowKey]: undefined },
+        pendingRows: [...s.pendingRows, rowKey],
+      }))
+      if (options?.optimistic) store.setState((s) => ({ ...s, rows: options.optimistic!(s.rows) }))
       try {
         await action()
       } catch (error) {
         if (options?.optimistic) store.setState((s) => ({ ...s, rows: snapshot }))
-        setRowError(rowKey, error)
-        setPendingRow(rowKey, false)
+        store.setState((s) => ({
+          ...s,
+          rowErrors: { ...s.rowErrors, [rowKey]: error },
+          pendingRows: s.pendingRows.filter((k) => k !== rowKey),
+        }))
         throw error
       }
-      setPendingRow(rowKey, false)
-      if (!options?.skipReload) await load()
+      store.setState((s) => ({ ...s, pendingRows: s.pendingRows.filter((k) => k !== rowKey) }))
+      if (!options?.skipReload) await controller.load()
     },
     destroy() {
+      unsubSelection()
       epoch += 1
       inFlight?.abort()
       inFlight = null
     },
   }
 
-  if (config.immediate !== false) void load()
+  if (config.immediate !== false) void controller.load()
 
   return controller
-}
-
-/**
- * Build a client-side `fetcher` for {@link createDataSource} from an in-memory
- * dataset: applies the query's substring filters + typed filter rules + single
- * or multi-column sort locally (via the core {@link filterSort} pipeline) and
- * slices the page — making the data source symmetric (client/server) and usable
- * with no backend.
- */
-export function createClientDataSource<T>(
-  data: readonly T[],
-  columns: readonly DataViewColumn<T>[],
-): (query: DataSourceQuery) => Promise<{ rows: T[]; total: number }> {
-  return async ({ page, pageSize, sort, multiSort, filters, filterRules }) => {
-    const processed = filterSort(data, columns, { filters, sort, multiSort, filterRules })
-    return { rows: paginate(processed, page, pageSize), total: processed.length }
-  }
-}
-
-/**
- * Like {@link createClientDataSource} but SYNCHRONOUS — returns the page value
- * directly (no Promise). {@link createDataSource} applies a sync fetcher
- * immediately with no loading flicker, so rows are ready right after
- * construction. Use this for in-memory client tables that need synchronous
- * data (e.g. a server that composes the engine but exposes a sync client mode).
- */
-export function createSyncClientDataSource<T>(
-  data: readonly T[],
-  columns: readonly DataViewColumn<T>[],
-): (query: DataSourceQuery) => { rows: T[]; total: number } {
-  return ({ page, pageSize, sort, multiSort, filters, filterRules }) => {
-    const processed = filterSort(data, columns, { filters, sort, multiSort, filterRules })
-    return { rows: paginate(processed, page, pageSize), total: processed.length }
-  }
 }

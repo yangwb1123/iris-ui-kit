@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onUnmounted } from 'vue'
 import {
   IrisAdminLayout,
   IrisAvatar,
@@ -20,6 +20,44 @@ import { tabsNav } from './tabs'
 
 const role = computed(() => authStore.getState()?.session?.role ?? 'viewer')
 const menus = computed(() => filterNavByAccess(flatMenus, [role.value]))
+const paletteOpen = ref(false)
+const commandItems = computed(() => {
+  const items = []
+  const walk = (nodes: any[]) => {
+    // eslint-disable-line @typescript-eslint/no-explicit-any
+    for (const n of nodes) {
+      if (n.children && n.children.length > 0) walk(n.children)
+      else
+        items.push({
+          id: 'nav:' + n.key,
+          label: 'Go to ' + n.title,
+          group: 'Navigate',
+          icon: '\u2192',
+          action: () => {
+            activeKey.value = n.key
+          },
+        })
+    }
+  }
+  walk(menus.value)
+  items.push({
+    id: 'action:log-out',
+    label: 'Sign out',
+    group: 'Actions',
+    icon: '\u2716',
+    action: () => logout(),
+  })
+  return items
+})
+// Register Cmd+K keyboard shortcut
+function onKeyDown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault()
+    paletteOpen.value = !paletteOpen.value
+  }
+}
+if (typeof window !== 'undefined') window.addEventListener('keydown', onKeyDown)
+onUnmounted(() => typeof window !== 'undefined' && window.removeEventListener('keydown', onKeyDown))
 import DashboardPage from './pages/DashboardPage.vue'
 import UsersPage from './pages/UsersPage.vue'
 import SettingsPage from './pages/SettingsPage.vue'
@@ -100,6 +138,11 @@ const activeCacheKey = computed(() => {
           <IrisDropdownItem @click="logout">Sign out</IrisDropdownItem>
         </IrisDropdownMenu>
       </IrisDropdown>
+      <IrisCommandPalette
+        v-model:open="paletteOpen"
+        :items="commandItems"
+        placeholder="Search pages and actions…"
+      />
     </template>
 
     <template #default="{ activeKey: key }">

@@ -35,6 +35,7 @@ import {
   selectScenario,
   menuScenario,
   alertScenario,
+  bannerScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { useCallback } from 'react'
@@ -82,6 +83,7 @@ import { IrisTooltip } from './primitives/tooltip'
 import { IrisCombobox } from './primitives/combobox/Combobox'
 import { IrisCopyButton } from './primitives/copy-button/CopyButton'
 import { IrisAlert } from './primitives/alert/Alert'
+import { IrisBanner } from './primitives/banner/Banner'
 import { IrisToastViewport } from './primitives/toast/ToastViewport'
 import { pushToast, clearToasts } from './primitives/toast/toastStore'
 
@@ -550,5 +552,10 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
   it('satisfies the shared Alert contract', async () => {
     const { container } = render(<IrisAlert closable>Hello</IrisAlert>)
     await runContract(alertScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Banner contract', async () => {
+    const { container } = render(<IrisBanner closable>Hello</IrisBanner>)
+    await runContract(bannerScenario, driverFor(container), expect)
   })
 })

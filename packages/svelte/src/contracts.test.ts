@@ -36,6 +36,7 @@ import {
   tooltipScenario,
   menuScenario,
   alertScenario,
+  bannerScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -51,6 +52,7 @@ import ComboboxContractHarness from './ComboboxContractHarness.svelte'
 import ToastContractHarness from './ToastContractHarness.svelte'
 import IrisCopyButton from './primitives/copy-button/IrisCopyButton.svelte'
 import IrisAlert from './primitives/alert/IrisAlert.svelte'
+import IrisBanner from './primitives/banner/IrisBanner.svelte'
 import DataSourceContractHarness from './DataSourceContractHarness.svelte'
 import DialogContractHarness from './DialogContractHarness.svelte'
 import PopoverContractHarness from './PopoverContractHarness.svelte'
@@ -420,5 +422,10 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
   it('satisfies the shared Alert contract', async () => {
     const { container } = render(IrisAlert, { props: { closable: true } })
     await runContract(alertScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Banner contract', async () => {
+    const { container } = render(IrisBanner, { props: { closable: true } })
+    await runContract(bannerScenario, driverFor(container), expect)
   })
 })

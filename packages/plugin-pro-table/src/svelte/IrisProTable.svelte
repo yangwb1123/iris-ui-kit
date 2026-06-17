@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
+  import { createSortable, createVirtualizer, type SortableRect, type TreeRow } from '@iris-ui/core'
   import { proTableLabel, type ProTableLabels, type ProTableState, type ProTableStore } from '../core'
 
   type Row = Record<string, unknown>
@@ -130,6 +130,13 @@
   // When nothing is grouped, `headerMatrix` is 1 row → `grouped` is false.
   const headerMatrix = $derived(store.headerMatrix())
   const grouped = $derived(headerMatrix.length > 1)
+
+  // Map from row key → TreeRow metadata for tree/hierarchical rendering.
+  // When tree mode is inactive (treeRows is null), the map is empty.
+  const treeRowMap = $derived.by(() => {
+    if (!tableState.treeRows) return new Map<string, TreeRow<Row>>()
+    return new Map(tableState.treeRows.map((tr) => [tr.key, tr]))
+  })
 
   // --- Row virtualization (opt-in) -----------------------------------------
   // Create the virtualizer ONCE. viewportSize is driven from the `maxHeight`
@@ -450,8 +457,26 @@
 
   {#snippet rowMarkup(row: Row)}
     {@const key = store.rowKeyOf(row)}
+    {@const treeRow = treeRowMap.get(key) ?? null}
     <tr data-selected={store.isSelected(key) ? '' : undefined}>
-      <td>
+      <td style={treeRow ? `padding-left:${treeRow.depth * 24}px` : ''}>
+        {#if treeRow?.hasChildren}
+          <span
+            role="button"
+            tabindex="0"
+            aria-expanded={treeRow.expanded}
+            aria-label={treeRow.expanded ? 'Collapse' : 'Expand'}
+            onclick={() => store.toggleExpand(key)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                store.toggleExpand(key)
+              }
+            }}
+          >{treeRow.expanded ? '▼' : '▶'}</span>
+        {:else if treeRow && treeRow.depth > 0}
+          <span style="display:inline-block;width:20px;"></span>
+        {/if}
         <input
           type="checkbox"
           aria-label={proTableLabel(labels, 'selectRow', { key: String(key) })}

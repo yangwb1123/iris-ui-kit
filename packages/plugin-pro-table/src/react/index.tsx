@@ -151,11 +151,46 @@ export function IrisProTable<Row extends Record<string, unknown>>({
   // Single source of truth for a data row's markup — shared by the windowed
   // (virtualized) and full (non-virtualized) render paths so selection, inline
   // edit, filters, and pinnedStyle are identical in both.
+  // Build a tree-row lookup map so renderRow can access depth/expand state in O(1).
+  const treeRowMap = React.useMemo(() => {
+    if (!state.treeRows) return null
+    return new Map(state.treeRows.map((t) => [t.key, t]))
+  }, [state.treeRows])
+
   const renderRow = (row: Row): React.ReactElement => {
     const key = store.rowKeyOf(row)
+    const treeRow = treeRowMap?.get(key)
+    const depth = treeRow?.depth ?? 0
     return (
       <tr key={key} data-selected={store.isSelected(key) ? '' : undefined}>
-        <td>
+        <td style={{ paddingLeft: `${depth * 24}px` }}>
+          {treeRow?.hasChildren ? (
+            <span
+              role="button"
+              tabIndex={0}
+              aria-expanded={treeRow.expanded}
+              aria-label={treeRow.expanded ? 'Collapse row' : 'Expand row'}
+              style={{
+                cursor: 'pointer',
+                userSelect: 'none',
+                marginRight: 4,
+                display: 'inline-block',
+                width: 16,
+                textAlign: 'center',
+              }}
+              onClick={() => store.toggleExpand(key)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  store.toggleExpand(key)
+                }
+              }}
+            >
+              {treeRow.expanded ? '▼' : '▶'}
+            </span>
+          ) : depth > 0 ? (
+            <span style={{ display: 'inline-block', width: 20 }} />
+          ) : null}
           <input
             type="checkbox"
             aria-label={proTableLabel(labels, 'selectRow', { key: String(key) })}

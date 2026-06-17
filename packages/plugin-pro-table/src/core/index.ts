@@ -4,13 +4,16 @@ import {
   createCellEdit,
   createDataSource,
   createSyncClientDataSource,
+  createExpansion,
   filterSort,
   cycleSort,
   dataIndexOf,
   readCell,
   flattenLeafColumns,
   buildHeaderMatrix,
+  flattenTree,
   summarize,
+  paginate,
   toCsv,
   toSpreadsheetXml,
   toJson,
@@ -20,6 +23,8 @@ import {
   type TableHtmlOptions,
   type HeaderCell,
   type AggregateSpec,
+  type ExpansionModel,
+  type TreeRow,
 } from '@iris-ui/core'
 
 /**
@@ -33,7 +38,7 @@ import {
  * framework entries are render-only adapters that read this store.
  */
 
-export type { SortDirection, SortState } from '@iris-ui/core'
+export type { SortDirection, SortState, TreeRow } from '@iris-ui/core'
 import type { SortState } from '@iris-ui/core'
 
 export type CellEditor = 'text' | 'number'
@@ -89,6 +94,13 @@ export interface CellEditEvent<Row = Record<string, unknown>> {
 
 export type ProTableMode = 'client' | 'server'
 
+export interface ProTableTreeConfig<Row = Record<string, unknown>> {
+  /** Accessor returning child rows for each row. */
+  getChildren: (row: Row) => Row[] | undefined
+  /** Keys expanded by default. */
+  defaultExpandedKeys?: string[]
+}
+
 export interface ProTableConfig<Row = Record<string, unknown>> {
   columns: ProTableColumn<Row>[]
   /** Field name or function producing each row's stable key. */
@@ -97,6 +109,8 @@ export interface ProTableConfig<Row = Record<string, unknown>> {
   data?: Row[]
   /** Per-column aggregation specs for the summary footer row. */
   summary?: AggregateSpec[]
+  /** Tree/hierarchical mode: rows with children render expand/collapse toggles. */
+  tree?: ProTableTreeConfig<Row>
   /** Rows per page. Default 10. */
   pageSize?: number
   /** `'client'` (default) processes `data` locally; `'server'` calls {@link ProTableConfig.onLoad}. */
@@ -121,6 +135,10 @@ export interface ProTableState<Row = Record<string, unknown>> {
   /** Aggregated values for the summary footer row (computed from processed rows). */
   summaryValues: Record<string, number>
   editing: { rowKey: string; columnKey: string } | null
+  /** Tree expansion state — keys of expanded nodes. Empty when not tree mode. */
+  expandedKeys: string[]
+  /** Flattened tree rows with depth/expand metadata, or null when not tree mode. */
+  treeRows: TreeRow<Row>[] | null
   page: number
   pageSize: number
   total: number
@@ -165,6 +183,14 @@ export interface ProTableStore<Row = Record<string, unknown>> {
   reorderColumns(from: string, to: string): void
   /** Set a column's width in px (clamped to minWidth). Triggers re-render. */
   setColumnWidth(key: string, width: number): void
+  /** Toggle expansion of a tree node. No-op when not tree mode. */
+  toggleExpand(key: string): void
+  /** Expand all tree nodes. */
+  expandAll(): void
+  /** Collapse all tree nodes. */
+  collapseAll(): void
+  /** Check if a tree node is expanded. */
+  isExpanded(key: string): boolean
 }
 
 export function createProTableStore<Row extends Record<string, unknown>>(
@@ -172,6 +198,33 @@ export function createProTableStore<Row extends Record<string, unknown>>(
 ): ProTableStore<Row> {
   const mode: ProTableMode = config.mode ?? 'client'
   const allRows: Row[] = [...(config.data ?? [])]
+
+  // Tree mode: expansion model + root data
+  const treeRoots: Row[] | null = config.tree ? [...(config.data ?? [])] : null
+  let expansion: ExpansionModel<string> | null = null
+  if (config.tree && treeRoots) {
+    expansion = createExpansion<string>({
+      mode: 'multiple',
+      defaultExpanded: config.tree.defaultExpandedKeys,
+    })
+  }
+
+  // Collect ALL tree nodes into a flat array for inline editing (tree mode).
+  // In flat mode, `allRows` is already the full dataset.
+  function collectAllRows(): Row[] {
+    if (!config.tree || !treeRoots) return allRows
+    const out: Row[] = []
+    const walk = (nodes: Row[]) => {
+      for (const n of nodes) {
+        out.push(n)
+        const kids = config.tree!.getChildren(n)
+        if (kids?.length) walk(kids)
+      }
+    }
+    walk(treeRoots)
+    return out
+  }
+  const allRowsForEdit = config.tree ? collectAllRows() : allRows
 
   const rowKeyOf = (row: Row): string =>
     typeof config.rowKey === 'function' ? config.rowKey(row) : String(row[config.rowKey])
@@ -201,6 +254,8 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     selectedKeys: [],
     summaryValues: {},
     editing: null,
+    expandedKeys: [],
+    treeRows: null,
     page: 1,
     pageSize: config.pageSize ?? 10,
     total: 0,
@@ -214,18 +269,68 @@ export function createProTableStore<Row extends Record<string, unknown>>(
   // fetcher (token-guarded against stale/out-of-order pages). The ProTable no
   // longer re-implements any of this — it consumes the same engine the base
   // Table and the resource controller compose.
+  // In tree mode, the fetcher first flattens the tree via `flattenTree`, then
+  // applies filter/sort/pagination on the flattened flat list. Expansion changes
+  // trigger a reload via `expansion.subscribe`.
+  function buildSyncFetcher() {
+    if (!config.tree || !expansion || !treeRoots) {
+      return createSyncClientDataSource(allRows, dataViewColumns())
+    }
+    // Tree-aware fetcher: flatten → filter/sort → paginate
+    return ({
+      page,
+      pageSize,
+      sort,
+      filters,
+    }: {
+      page: number
+      pageSize: number
+      sort: any
+      filters: Record<string, string>
+    }): { rows: Row[]; total: number } => {
+      const flat = flattenTree(treeRoots, {
+        getKey: rowKeyOf,
+        getChildren: config.tree!.getChildren,
+        isExpanded: (k) => expansion!.isExpanded(k),
+      })
+      const processed = filterSort(
+        flat.map((t) => t.row),
+        dataViewColumns(),
+        { filters, sort },
+      )
+      return { rows: paginate(processed, page, pageSize), total: processed.length }
+    }
+  }
+
   const dataSource = createDataSource<Row>({
     fetcher:
       mode === 'server' && config.onLoad
         ? (q) =>
             config.onLoad!({ page: q.page, pageSize: q.pageSize, sort: q.sort, filters: q.filters })
-        : createSyncClientDataSource(allRows, dataViewColumns()),
+        : buildSyncFetcher(),
     pageSize: config.pageSize ?? 10,
     immediate: false,
   })
+
+  // When tree expansion changes, re-flatten and reload the data source.
+  if (expansion) {
+    expansion.store.subscribe(() => {
+      void dataSource.reload()
+    })
+  }
+
   // Mirror the engine's state into ProTableState so subscribers (renderers)
   // re-render on any query / selection / loading change.
   dataSource.subscribe((s) => {
+    // In tree mode, compute treeRows from the current expansion + root data.
+    let treeRows: TreeRow<Row>[] | null = null
+    if (config.tree && expansion && treeRoots) {
+      treeRows = flattenTree(treeRoots, {
+        getKey: rowKeyOf,
+        getChildren: config.tree.getChildren,
+        isExpanded: (k) => expansion!.isExpanded(k),
+      })
+    }
     store.setState((st) => ({
       ...st,
       rows: s.rows,
@@ -236,6 +341,8 @@ export function createProTableStore<Row extends Record<string, unknown>>(
       total: s.total,
       loading: s.loading,
       selectedKeys: s.selectedKeys,
+      expandedKeys: expansion ? expansion.get() : [],
+      treeRows,
       summaryValues: config.summary ? summarize(s.rows, dataViewColumns(), config.summary) : {},
     }))
   })
@@ -249,13 +356,13 @@ export function createProTableStore<Row extends Record<string, unknown>>(
       const column = config.columns.find((c) => c.key === columnKey)
       if (!column) return
       const dataIndex = dataIndexOf(column)
-      const idx = allRows.findIndex((r) => rowKeyOf(r) === rowKey)
-      const oldValue = idx >= 0 ? allRows[idx][dataIndex] : undefined
+      const idx = allRowsForEdit.findIndex((r) => rowKeyOf(r) === rowKey)
+      const oldValue = idx >= 0 ? allRowsForEdit[idx][dataIndex] : undefined
       const newValue = column.editor === 'number' ? Number(value) : value
       let updatedRow = {} as Row
       if (idx >= 0) {
-        updatedRow = { ...allRows[idx], [dataIndex]: newValue }
-        allRows[idx] = updatedRow
+        updatedRow = { ...allRowsForEdit[idx], [dataIndex]: newValue }
+        allRowsForEdit[idx] = updatedRow
       }
       config.onCellEdit?.({ rowKey, columnKey, dataIndex, oldValue, newValue, row: updatedRow })
     },
@@ -393,6 +500,30 @@ export function createProTableStore<Row extends Record<string, unknown>>(
         ...st,
         columnSizes: { ...st.columnSizes, [key]: Math.max(min, width) },
       }))
+    },
+
+    toggleExpand(key) {
+      expansion?.toggle(key)
+    },
+    expandAll() {
+      if (expansion && treeRoots && config.tree) {
+        const keys: string[] = []
+        const walk = (nodes: Row[]) => {
+          for (const n of nodes) {
+            keys.push(rowKeyOf(n))
+            const kids = config.tree!.getChildren(n)
+            if (kids?.length) walk(kids)
+          }
+        }
+        walk(treeRoots)
+        expansion.expandAll(keys)
+      }
+    },
+    collapseAll() {
+      expansion?.collapseAll()
+    },
+    isExpanded(key) {
+      return expansion?.isExpanded(key) ?? false
     },
   }
 

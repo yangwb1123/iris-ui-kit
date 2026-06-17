@@ -21,6 +21,7 @@ import {
   type ProTableColumn,
   type ProTableStore,
   type ProTableLabels,
+  type TreeRow,
 } from '../core'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
@@ -294,17 +295,53 @@ export const IrisProTable = defineComponent({
           ])
         : null
 
+      const treeRowMap = new Map<string, TreeRow<Record<string, unknown>>>()
+      if (state.value.treeRows) {
+        for (const tr of state.value.treeRows) {
+          treeRowMap.set(tr.key, tr)
+        }
+      }
+
       const renderRow = (row: Record<string, unknown>): VNode => {
         const key = props.store.rowKeyOf(row)
+        const treeRow = treeRowMap.get(key)
+        const depth = treeRow?.depth ?? 0
+        const checkboxChildren: VNode[] = []
+        if (treeRow?.hasChildren) {
+          checkboxChildren.push(
+            h(
+              'span',
+              {
+                role: 'button',
+                tabindex: 0,
+                'aria-expanded': treeRow.expanded ? 'true' : 'false',
+                'aria-label': treeRow.expanded ? 'Collapse row' : 'Expand row',
+                style:
+                  'cursor:pointer;user-select:none;margin-right:4px;display:inline-block;width:16px;text-align:center;',
+                onClick: () => props.store.toggleExpand(key),
+                onKeydown: (e: KeyboardEvent) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    props.store.toggleExpand(key)
+                  }
+                },
+              },
+              treeRow.expanded ? '▼' : '▶',
+            ),
+          )
+        } else if (depth > 0) {
+          checkboxChildren.push(h('span', { style: 'display:inline-block;width:20px;' }))
+        }
+        checkboxChildren.push(
+          h('input', {
+            type: 'checkbox',
+            'aria-label': proTableLabel(props.labels, 'selectRow', { key: String(key) }),
+            checked: props.store.isSelected(key),
+            onChange: () => props.store.toggleRow(key),
+          }),
+        )
         return h('tr', { key, 'data-selected': props.store.isSelected(key) ? '' : undefined }, [
-          h('td', [
-            h('input', {
-              type: 'checkbox',
-              'aria-label': proTableLabel(props.labels, 'selectRow', { key: String(key) }),
-              checked: props.store.isSelected(key),
-              onChange: () => props.store.toggleRow(key),
-            }),
-          ]),
+          h('td', { style: { paddingLeft: `${depth * 24}px` } }, checkboxChildren),
           ...columns.map((c) => {
             const editing =
               state.value.editing?.rowKey === key && state.value.editing?.columnKey === c.key

@@ -1,4 +1,4 @@
-import { createSignal, createEffect, onCleanup, For, Show, type JSX } from 'solid-js'
+import { createSignal, createEffect, createMemo, onCleanup, For, Show, type JSX } from 'solid-js'
 import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
 import { collectRects, proTableLabel, type ProTableStore, type ProTableLabels } from '../core'
 
@@ -55,6 +55,15 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
     }
   })
   onCleanup(unsub)
+
+  // Tree row lookup map for O(1) access in renderRow.
+  const treeRowMap = createMemo(() => {
+    const treeRows = state().treeRows
+    if (!treeRows) return null
+    const map = new Map<string, (typeof treeRows)[number]>()
+    for (const t of treeRows) map.set(t.key, t)
+    return map
+  })
 
   // Touch/pen column reorder via the shared core controller. Native HTML5 DnD
   // (the `draggable` <th>) never fires on touch, so the pointer path drives the
@@ -156,9 +165,26 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
   // edit, filters, and pinnedStyle are identical in both.
   const renderRow = (row: Row): JSX.Element => {
     const key = props.store.rowKeyOf(row)
+    const treeRow = treeRowMap()?.get(key)
+    const depth = treeRow?.depth ?? 0
+    const hasChildren = treeRow?.hasChildren ?? false
+    const expanded = treeRow?.expanded ?? false
     return (
       <tr data-selected={props.store.isSelected(key) ? '' : undefined}>
-        <td>
+        <td style={depth > 0 ? { 'padding-left': `${depth * 24}px` } : undefined}>
+          <Show when={hasChildren}>
+            <button
+              type="button"
+              aria-label={expanded ? 'Collapse row' : 'Expand row'}
+              onClick={() => props.store.toggleExpand(key)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px' }}
+            >
+              {expanded ? '▼' : '▶'}
+            </button>
+          </Show>
+          <Show when={!hasChildren && depth > 0}>
+            <span style={{ display: 'inline-block', width: '20px' }} />
+          </Show>
           <input
             type="checkbox"
             aria-label={proTableLabel(props.labels, 'selectRow', { key: String(key) })}

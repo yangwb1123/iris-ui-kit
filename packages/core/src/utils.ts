@@ -27,3 +27,16 @@ export function generateId(prefix = 'iris'): string {
   idCounter += 1
   return `${prefix}-${idCounter}`
 }
+
+/**
+ * Dedupe an array (preserve order); in single mode keep at most the last key.
+ * Used by `createExpansion` and `createSelectionModel`.
+ */
+export function normalizeKeys<K extends string | number>(
+  keys: K[],
+  mode: 'single' | 'multiple',
+): K[] {
+  const deduped = Array.from(new Set(keys))
+  if (mode === 'single' && deduped.length > 1) return [deduped[deduped.length - 1]!]
+  return deduped
+}

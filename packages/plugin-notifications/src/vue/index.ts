@@ -31,10 +31,10 @@ export const IrisNotificationCenter = defineComponent({
   name: 'IrisNotificationCenter',
   props: {
     center: { type: Object as PropType<NotificationCenter>, required: true },
-    /** Panel header text. Default `'Notifications'`. */
     title: { type: String, default: 'Notifications' },
-    /** Shown when there are no notifications. Default `'No notifications'`. */
     emptyText: { type: String, default: 'No notifications' },
+    dismissLabel: { type: String, default: 'Dismiss' },
+    unreadLabel: { type: String, default: '{n} unread' },
     className: { type: String, default: undefined },
   },
   setup(props) {
@@ -58,7 +58,10 @@ export const IrisNotificationCenter = defineComponent({
         headerChildren.push(
           h(
             'span',
-            { 'data-iris-notifications-badge': '', 'aria-label': `${unread} unread` },
+            {
+              'data-iris-notifications-badge': '',
+              'aria-label': props.unreadLabel.replace('{n}', String(unread)),
+            },
             String(unread),
           ),
         )
@@ -120,7 +123,7 @@ export const IrisNotificationCenter = defineComponent({
                       {
                         type: 'button',
                         'data-iris-notification-dismiss': '',
-                        'aria-label': 'Dismiss',
+                        'aria-label': props.dismissLabel,
                         onClick: () => center.dismiss(n.id),
                       },
                       '×',

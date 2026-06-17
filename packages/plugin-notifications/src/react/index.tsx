@@ -16,6 +16,10 @@ export interface IrisNotificationCenterProps {
   title?: string
   /** Shown when there are no notifications. Default `'No notifications'`. */
   emptyText?: string
+  /** Accessible label for the dismiss button on each notification. Default `'Dismiss'`. */
+  dismissLabel?: string
+  /** Accessible label for the unread badge. `{n}` is replaced with the count. Default `'{n} unread'`. */
+  unreadLabel?: string
   className?: string
 }
 
@@ -29,6 +33,8 @@ export function IrisNotificationCenter({
   center,
   title = 'Notifications',
   emptyText = 'No notifications',
+  dismissLabel = 'Dismiss',
+  unreadLabel = '{n} unread',
   className,
 }: IrisNotificationCenterProps): React.ReactElement {
   const state = React.useSyncExternalStore(center.subscribe, center.getState, center.getState)
@@ -39,7 +45,10 @@ export function IrisNotificationCenter({
       <div data-iris-notifications-header="">
         <span data-iris-notifications-title="">{title}</span>
         {unread > 0 ? (
-          <span data-iris-notifications-badge="" aria-label={`${unread} unread`}>
+          <span
+            data-iris-notifications-badge=""
+            aria-label={unreadLabel.replace('{n}', String(unread))}
+          >
             {unread}
           </span>
         ) : null}
@@ -76,7 +85,7 @@ export function IrisNotificationCenter({
               <button
                 type="button"
                 data-iris-notification-dismiss=""
-                aria-label="Dismiss"
+                aria-label={dismissLabel}
                 onClick={() => center.dismiss(n.id)}
               >
                 ×

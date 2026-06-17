@@ -5,6 +5,8 @@
     center,
     title = 'Notifications',
     emptyText = 'No notifications',
+    dismissLabel = 'Dismiss',
+    unreadLabel = '{n} unread',
     class: klass = undefined,
   }: {
     center: NotificationCenter
@@ -12,6 +14,10 @@
     title?: string
     /** Shown when there are no notifications. Default `'No notifications'`. */
     emptyText?: string
+    /** Accessible label for the dismiss button. Default `'Dismiss'`. */
+    dismissLabel?: string
+    /** Accessible label for the unread badge. `{n}` = count. Default `'{n} unread'`. */
+    unreadLabel?: string
     class?: string
   } = $props()
 
@@ -33,7 +39,7 @@
   <div data-iris-notifications-header>
     <span data-iris-notifications-title>{title}</span>
     {#if unread > 0}
-      <span data-iris-notifications-badge aria-label={`${unread} unread`}>{unread}</span>
+          <span data-iris-notifications-badge aria-label={unreadLabel.replace('{n}', String(unread))}>{unread}</span>
     {/if}
     <button type="button" data-iris-notifications-mark-all onclick={() => center.markAllRead()}>
       Mark all read
@@ -57,7 +63,7 @@
           <button
             type="button"
             data-iris-notification-dismiss
-            aria-label="Dismiss"
+              aria-label={dismissLabel}
             onclick={() => center.dismiss(n.id)}
           >
             ×

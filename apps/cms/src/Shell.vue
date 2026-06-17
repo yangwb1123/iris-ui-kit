@@ -14,7 +14,7 @@ import {
   findNavNode,
 } from '@iris-ui/vue'
 import { filterNavByAccess } from '@iris-ui/core'
-import { authStore } from './auth'
+import { authStore, logout } from './auth'
 import { menus as flatMenus } from './menus'
 import { tabsNav } from './tabs'
 
@@ -97,7 +97,7 @@ const activeCacheKey = computed(() => {
         <IrisDropdownMenu>
           <IrisDropdownItem>Profile</IrisDropdownItem>
           <IrisDropdownItem>Account settings</IrisDropdownItem>
-          <IrisDropdownItem>Sign out</IrisDropdownItem>
+          <IrisDropdownItem @click="logout">Sign out</IrisDropdownItem>
         </IrisDropdownMenu>
       </IrisDropdown>
     </template>

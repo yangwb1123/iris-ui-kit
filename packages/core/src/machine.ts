@@ -187,20 +187,6 @@ export function createMachine<TState extends string, TContext, TEvent extends Ma
     for (const key of Object.keys(afterMap)) {
       const ms = Number(key)
       const delayed = afterMap[ms]
-      if (ms <= 0 && config.scheduler === undefined) {
-        // 0-delay transition with the default scheduler fires as a microtask
-        // rather than synchronously inside send(). This avoids nested store
-        // updates during React's batched event context that can confuse
-        // useSyncExternalStore subscriptions, while still firing before any
-        // macrotask. Custom schedulers (tests) still get synchronous 0-delay
-        // via scheduler.setTimeout(fn, 0) for deterministic control.
-        queueMicrotask(() => {
-          if (stopped) return
-          if (store.getState().value !== value) return
-          fireDelayed(value, delayed)
-        })
-        continue
-      }
       const handle = scheduler.setTimeout(() => {
         if (stopped) return
         // Re-validate: only fire if still in the state that scheduled this.

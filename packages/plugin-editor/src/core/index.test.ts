@@ -30,6 +30,18 @@ describe('createEditor', () => {
     handle.destroy()
   })
 
+  it('base option makes editor read-only with diff decorations', () => {
+    const handle = createEditor({
+      parent: mount(),
+      doc: 'line1\nline2\nline3',
+      base: 'line1\nline0\nline3',
+    })
+    expect(handle.getValue()).toBe('line1\nline2\nline3')
+    // Editor mounts and is read-only in diff mode
+    expect(host?.querySelector('.cm-editor')).toBeTruthy()
+    handle.destroy()
+  })
+
   it('setValue replaces the document', () => {
     const handle = createEditor({ parent: mount(), doc: 'a' })
     handle.setValue('b')

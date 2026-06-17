@@ -15,6 +15,7 @@ export const IrisCodeEditor = defineComponent({
     language: { type: String as PropType<EditorLanguage>, default: 'plain' },
     readOnly: { type: Boolean, default: false },
     completions: { type: Boolean, default: undefined },
+    base: { type: String, default: undefined },
   },
   emits: {
     'update:value': (_value: string) => true,
@@ -32,6 +33,7 @@ export const IrisCodeEditor = defineComponent({
         language: props.language,
         readOnly: props.readOnly,
         completions: props.completions,
+        base: props.base,
         onChange: (v) => {
           emit('update:value', v)
           emit('change', v)

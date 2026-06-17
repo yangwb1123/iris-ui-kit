@@ -10,10 +10,12 @@ export interface IrisCodeEditorProps {
   defaultValue?: string
   /** Syntax-highlighting language. Default `'plain'`. */
   language?: EditorLanguage
-  /** Render read-only. Default `false`. */
+  /** Render read-only (non-editable). Default `false`. */
   readOnly?: boolean
   /** Enable autocompletion popup. Default `true`. */
   completions?: boolean
+  /** Base text for inline diff view. Editor enters read-only diff mode. */
+  base?: string
   /** Called with the full text on every change. */
   onChange?: (value: string) => void
   className?: string
@@ -30,6 +32,7 @@ export function IrisCodeEditor({
   language = 'plain',
   readOnly = false,
   completions,
+  base,
   onChange,
   className,
   style,
@@ -47,6 +50,7 @@ export function IrisCodeEditor({
       language,
       readOnly,
       completions,
+      base,
       onChange: (v) => onChangeRef.current?.(v),
     })
     handleRef.current = handle

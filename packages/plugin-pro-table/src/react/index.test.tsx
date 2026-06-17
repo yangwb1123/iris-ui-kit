@@ -244,4 +244,35 @@ describe('IrisProTable (react)', () => {
     expect(container.textContent).toContain('Précédent')
     expect(container.textContent).toContain('Suivant')
   })
+
+  it('columnVirtualized enables column-level windowing', () => {
+    // jsdom doesn't implement ResizeObserver; mock it for this test.
+    const OrigRO = (globalThis as any).ResizeObserver
+    ;(globalThis as any).ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    const wideCols: ProTableColumn[] = [
+      { key: 'a', title: 'A', width: 100 },
+      { key: 'b', title: 'B', width: 100 },
+      { key: 'c', title: 'C', width: 100 },
+      { key: 'd', title: 'D', width: 100 },
+      { key: 'e', title: 'E', width: 100 },
+    ]
+    const data2 = [{ id: 1, a: 'A1', b: 'B1', c: 'C1', d: 'D1', e: 'E1' }]
+    const store = createProTableStore({
+      columns: wideCols,
+      rowKey: 'id',
+      data: data2,
+      pageSize: 50,
+    })
+    store.getState().columnSizes = { a: 100, b: 100, c: 100, d: 100, e: 100 }
+    store.setColumnViewportWidth(150)
+    const { container } = render(<IrisProTable store={store} columnVirtualized />)
+    // With viewport 150 and 100px columns, first column should render
+    expect(container.textContent).toContain('A1')
+    // Restore
+    ;(globalThis as any).ResizeObserver = OrigRO
+  })
 })

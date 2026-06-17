@@ -135,7 +135,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: center, title?, emptyText?, className?
 - IrisProTable [react/solid/svelte/vue] — via @iris-ui/plugin-pro-table (IrisProvider plugins)
   vxe-table-style CRUD data table for React. All logic lives in the framework-agnostic {@link ProTableStore}; this component subscribes to it and renders header (sortable), selection, inline editors, rows, and a pager.
-  props: store, className?, labels?, columnReorder?
+  props: store, className?, labels?, columnReorder?, virtualized?, rowHeight?, maxHeight?
 - IrisQueryBuilder [react/solid/svelte/vue] — via @iris-ui/plugin-query-builder (IrisProvider plugins)
   Visual query builder for React: stacked rule rows (column → operator → value) over a {@link FilterBuilder}, emitting compiled `FilterRule[]` via `onChange` (wire it to `dataSource.setFilterRules`). All logic lives in the builder.
   props: builder, onChange?, addLabel?, className?
@@ -477,7 +477,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   events: onValueChange
 - IrisSelect [react/solid/svelte/vue]
   Single-select dropdown. Composes Popover (positioning + dismiss) with an inline listbox (keyboard nav + selection). Each option is `role="option"` inside a `role="listbox"` ul.
-  props: items, value?, defaultValue?, onValueChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, style?, className?
+  props: items, value?, defaultValue?, onValueChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, searchable?, searchPlaceholder?, style?, className?
   events: onValueChange
   slots: renderTrigger
 - IrisSkeleton [react/solid/svelte/vue]

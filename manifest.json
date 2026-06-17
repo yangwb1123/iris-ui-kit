@@ -6411,6 +6411,27 @@
           "optional": true,
           "description": "Enable drag-to-reorder column headers. When `true` every column `<th>` becomes draggable and drop onto another header calls `store.reorderColumns`. Default `false` — existing layouts are unchanged.",
           "default": "false"
+        },
+        {
+          "name": "virtualized",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in row virtualization. When `true` the body region becomes a scroll container and only the visible window of rows is rendered (via core's `createVirtualizer`), so a 100k-row table renders a handful of `<tr>` rather than every row. Default `false` — behavior is UNCHANGED (all rows render).",
+          "default": "false"
+        },
+        {
+          "name": "rowHeight",
+          "type": "number",
+          "optional": true,
+          "description": "Estimated row height in px (drives the virtualizer). Default `40`.",
+          "default": "40"
+        },
+        {
+          "name": "maxHeight",
+          "type": "number",
+          "optional": true,
+          "description": "Scroll viewport height in px when virtualized. Default `400`.",
+          "default": "400"
         }
       ]
     },
@@ -7387,6 +7408,19 @@
           "description": "Custom render for the trigger button. Receives current label + open state."
         },
         {
+          "name": "searchable",
+          "type": "boolean",
+          "optional": true,
+          "description": "Enable search/filter by typing in the opened dropdown. Default `false`.",
+          "default": "false"
+        },
+        {
+          "name": "searchPlaceholder",
+          "type": "string",
+          "optional": true,
+          "description": "Placeholder for the search input when `searchable` is true."
+        },
+        {
           "name": "style",
           "type": "React.CSSProperties",
           "optional": true
@@ -8268,8 +8302,7 @@
           "name": "rowKey",
           "type": "string",
           "optional": true,
-          "description": "Field to use as the row key.",
-          "default": "id"
+          "description": "Field to use as the row key."
         },
         {
           "name": "selectable",
@@ -8280,8 +8313,7 @@
             "none",
             "single",
             "multi"
-          ],
-          "default": "none"
+          ]
         },
         {
           "name": "selection",
@@ -8316,27 +8348,22 @@
         {
           "name": "striped",
           "type": "boolean",
-          "optional": true,
-          "default": "false"
+          "optional": true
         },
         {
           "name": "bordered",
           "type": "boolean",
-          "optional": true,
-          "default": "true"
+          "optional": true
         },
         {
           "name": "resizableColumns",
           "type": "boolean",
-          "optional": true,
-          "description": "Enable column resizing (drag the header's trailing edge or focus + arrow keys).",
-          "default": "false"
+          "optional": true
         },
         {
           "name": "columnWidths",
           "type": "IrisTableColumnWidths",
-          "optional": true,
-          "description": "Controlled per-column pixel widths, keyed by column `key`."
+          "optional": true
         },
         {
           "name": "defaultColumnWidths",
@@ -8351,97 +8378,77 @@
         {
           "name": "onCellEdit",
           "type": "(event: IrisTableCellEditEvent<Row>) => void",
-          "optional": true,
-          "description": "Called when an inline-editable cell is committed with a changed value."
+          "optional": true
         },
         {
           "name": "renderDetail",
           "type": "(row: Row, rowIndex: number) => React.ReactNode",
-          "optional": true,
-          "description": "Render an expandable detail panel beneath a row. Providing this adds a leading expand-toggle column; clicking it reveals a full-width detail row. (Not applied in the virtual-scroll path.)"
+          "optional": true
         },
         {
           "name": "rowExpandable",
           "type": "(row: Row, rowIndex: number) => boolean",
-          "optional": true,
-          "description": "Which rows can expand a detail panel. Defaults to all rows when `renderDetail` is set."
+          "optional": true
         },
         {
           "name": "defaultExpandedRowKeys",
           "type": "Array<string | number>",
-          "optional": true,
-          "description": "Initially-expanded row keys (uncontrolled). Shared by detail rows + tree rows."
+          "optional": true
         },
         {
           "name": "onExpandedRowsChange",
           "type": "(keys: Array<string | number>) => void",
-          "optional": true,
-          "description": "Notified with the expanded row keys whenever they change."
+          "optional": true
         },
         {
           "name": "getSubRows",
           "type": "(row: Row) => Row[] | undefined",
-          "optional": true,
-          "description": "Read a row's child rows to render the table as a TREE. Providing this enables tree mode: `data` is treated as the root rows, each row's first cell gains a depth indent + an expand/collapse toggle (when it has children), and the expand state reuses `defaultExpandedRowKeys`/`onExpandedRowsChange`. Column sort reorders siblings hierarchically (each level sorted, structure kept), and tree rows virtualize like flat rows when `virtualScroll` is set (unless `renderDetail` is also used, since detail panels are variable-height)."
+          "optional": true
         },
         {
           "name": "keyboardNavigation",
           "type": "boolean",
-          "optional": true,
-          "description": "Enable WAI-ARIA grid keyboard navigation: the table becomes `role=\"grid\"` and Arrow / Home / End / Page Up·Down move a roving cell focus across the data cells. Off by default; opt-in and additive (no effect on mouse / Tab behavior). Pairs best without virtualization (the focused cell must be rendered) and does not hijack keystrokes while a cell is being edited.",
-          "default": "false"
+          "optional": true
         },
         {
           "name": "virtualScroll",
           "type": "IrisTableVirtualOptions",
-          "optional": true,
-          "description": "Enable virtual scrolling for the body (renders only the visible window)."
+          "optional": true
         },
         {
           "name": "columnVirtualization",
           "type": "boolean",
-          "optional": true,
-          "description": "Render only the horizontally-visible columns (plus pinned + a small overscan) for very wide tables. Needs numeric column widths; the table becomes a horizontal scroll container. Off-screen grid tracks stay sized, so alignment, resize, and pinned columns keep working.",
-          "default": "false"
+          "optional": true
         },
         {
           "name": "cellRange",
           "type": "boolean",
-          "optional": true,
-          "description": "Enable rectangular cell-range selection (Excel-style). Click starts a range; Shift+Click or Shift+Arrow extends it; Escape clears it. Cells within the range get `data-iris-cell-selected=\"true\"`.",
-          "default": "false"
+          "optional": true
         },
         {
           "name": "emptyState",
           "type": "React.ReactNode",
-          "optional": true,
-          "description": "Empty state node (replaces the row body when `data` is empty)."
+          "optional": true
         },
         {
           "name": "loading",
           "type": "boolean",
-          "optional": true,
-          "description": "Show the loading state instead of rows.",
-          "default": "false"
+          "optional": true
         },
         {
           "name": "error",
           "type": "boolean",
-          "optional": true,
-          "description": "Show the error state instead of rows (takes precedence over loading).",
-          "default": "false"
+          "optional": true
         },
         {
           "name": "loadingState",
           "type": "React.ReactNode",
-          "optional": true,
-          "description": "Custom loading-state node (defaults to the localized `table.loading`)."
+          "optional": true
         },
         {
           "name": "errorState",
           "type": "React.ReactNode",
-          "optional": true,
-          "description": "Custom error-state node (defaults to the localized `table.error`)."
+          "optional": true
         },
         {
           "name": "style",
@@ -9333,27 +9340,22 @@
             "none",
             "single",
             "multi"
-          ],
-          "default": "single"
+          ]
         },
         {
           "name": "checkable",
           "type": "boolean",
-          "optional": true,
-          "description": "Show a checkbox per node with parent/child cascade + indeterminate (tri-state) propagation, independent of `selectionMode`. Driven by the framework-agnostic `createTreeSelection`.",
-          "default": "false"
+          "optional": true
         },
         {
           "name": "defaultChecked",
           "type": "string[]",
-          "optional": true,
-          "description": "Initially checked node ids (uncontrolled; reconciled through the cascade)."
+          "optional": true
         },
         {
           "name": "onCheckedChange",
           "type": "(checked: string[]) => void",
-          "optional": true,
-          "description": "Notified with the fully-reconciled checked node ids on every check change."
+          "optional": true
         },
         {
           "name": "ariaLabel",
@@ -9363,34 +9365,27 @@
         {
           "name": "loading",
           "type": "boolean",
-          "optional": true,
-          "description": "Show the loading state instead of nodes.",
-          "default": "false"
+          "optional": true
         },
         {
           "name": "error",
           "type": "boolean",
-          "optional": true,
-          "description": "Show the error state instead of nodes (takes precedence over loading).",
-          "default": "false"
+          "optional": true
         },
         {
           "name": "emptyState",
           "type": "React.ReactNode",
-          "optional": true,
-          "description": "Custom empty-state node (defaults to the localized `tree.empty`)."
+          "optional": true
         },
         {
           "name": "loadingState",
           "type": "React.ReactNode",
-          "optional": true,
-          "description": "Custom loading-state node (defaults to the localized `tree.loading`)."
+          "optional": true
         },
         {
           "name": "errorState",
           "type": "React.ReactNode",
-          "optional": true,
-          "description": "Custom error-state node (defaults to the localized `tree.error`)."
+          "optional": true
         },
         {
           "name": "style",

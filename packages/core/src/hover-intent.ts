@@ -17,6 +17,13 @@ export interface HoverIntentOptions {
   closeDelay?: number
   /** Injectable timer; defaults to setTimeout/clearTimeout. Inject in tests. */
   scheduler?: Scheduler
+  /**
+   * Called synchronously on every open/close transition (from within
+   * `machine.send()`). Fires with `true` when the surface should be visible
+   * (states `open` or `closing`), `false` when hidden. Use in React components
+   * with `useState` to avoid useSyncExternalStore subtlety during batched events.
+   */
+  onChange?: (open: boolean) => void
 }
 
 export interface HoverIntent {
@@ -49,16 +56,16 @@ export interface HoverIntent {
  * rather than scattered timers. `FORCE_OPEN`/`FORCE_CLOSE` bypass the delays.
  *
  * The injectable `scheduler` makes the timing deterministic in tests (no
- * real-time waits, no jsdom flake — the flaky-Solid-tooltip cautionary tale).
+ * real-time waits, no jsdom flake).
  *
- * DEFERRED (v3 R18): wiring this into the shipped Tooltip/Toast across the four
- * framework adapters is intentionally NOT done here — those ship hand-rolled
- * setTimeout and replacing it risks regressing live timing. This primitive is
- * the opt-in sink demonstration; adoption is a separate, scoped follow-up.
+ * The optional `onChange` callback fires synchronously on every open/close
+ * transition, making it framework-friendly: React components pass `useState`
+ * setter, Vue passes a ref setter, etc. — no manual store subscription needed.
  */
 export function createHoverIntent(options: HoverIntentOptions = {}): HoverIntent {
   const openDelay = options.openDelay ?? 0
   const closeDelay = options.closeDelay ?? 0
+  const { onChange } = options
 
   const machine = createMachine<HoverIntentState, Record<string, never>, HoverIntentEvent>({
     initial: 'closed',
@@ -98,12 +105,20 @@ export function createHoverIntent(options: HoverIntentOptions = {}): HoverIntent
     },
   })
 
+  function isOpen(): boolean {
+    const v = machine.store.getState().value
+    return v === 'open' || v === 'closing'
+  }
+
+  // Fire onChange synchronously on every store transition.
+  if (onChange) {
+    onChange(isOpen())
+    machine.store.subscribe(() => onChange(isOpen()))
+  }
+
   return {
     machine,
-    isOpen: () => {
-      const v = machine.store.getState().value
-      return v === 'open' || v === 'closing'
-    },
+    isOpen,
     pointerEnter: () => machine.send({ type: 'POINTER_ENTER' }),
     pointerLeave: () => machine.send({ type: 'POINTER_LEAVE' }),
     open: () => machine.send({ type: 'FORCE_OPEN' }),

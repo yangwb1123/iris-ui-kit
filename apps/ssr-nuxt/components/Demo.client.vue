@@ -70,7 +70,7 @@ interface Row {
   role: string
   status: string
 }
-const rows: Row[] = [
+const rows: Record<string, unknown>[] = [
   { id: 1, name: 'Ada Lovelace', role: 'Engineer', status: 'active' },
   { id: 2, name: 'Alan Turing', role: 'Researcher', status: 'active' },
   { id: 3, name: 'Grace Hopper', role: 'Architect', status: 'away' },

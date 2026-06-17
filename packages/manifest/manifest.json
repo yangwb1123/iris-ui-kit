@@ -3362,6 +3362,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "A button that closes the drawer when clicked. Supports `asChild` for custom trigger elements. Emits `onClick` then calls `setOpen(false)`.",
       "props": [
         {
           "name": "asChild",
@@ -3427,7 +3428,8 @@
         "solid": "@iris-ui/solid",
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
-      }
+      },
+      "description": "The drawer's header title, rendered as an `<h2>`. Automatically wired to `aria-labelledby` on the content panel for accessible naming."
     },
     {
       "name": "IrisDrawerTrigger",
@@ -3445,6 +3447,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "The trigger that opens the drawer when clicked. Renders as a `<button>` (or as custom children when `asChild`). Injects `aria-haspopup=\"dialog\"` and `aria-expanded` for screen-reader awareness.",
       "props": [
         {
           "name": "asChild",
@@ -3618,7 +3621,8 @@
         "solid": "@iris-ui/solid",
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
-      }
+      },
+      "description": "A visual separator (horizontal rule) within a dropdown menu. Renders a `role=\"separator\"` `<div>` styled with the theme's border colour."
     },
     {
       "name": "IrisDropdownTrigger",
@@ -3636,6 +3640,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "The trigger element that toggles the dropdown open/closed on click or ArrowDown/Enter/Space. Renders as a `<button>` (or custom element via `asChild`) with `aria-haspopup=\"menu\"` and `aria-expanded`.",
       "props": [
         {
           "name": "asChild",
@@ -5435,6 +5440,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "An individual selectable item in a menu. Renders as a `role=\"menuitem\"` `<div>`. Calls `onSelect`, then closes the root menu (unless `keepOpen`). Disabled items are skipped by keyboard navigation.",
       "props": [
         {
           "name": "disabled",
@@ -5475,7 +5481,8 @@
         "solid": "@iris-ui/solid",
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
-      }
+      },
+      "description": "A visual separator within a menu — renders a `role=\"separator\"` `<div>`."
     },
     {
       "name": "IrisMenuSub",
@@ -5532,6 +5539,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "The trigger that toggles the menu open/closed. Renders as a `<button>` (or custom via `asChild`) with `aria-haspopup=\"menu\"`. Opens on click, ArrowDown, Enter, or Space.",
       "props": [
         {
           "name": "asChild",
@@ -6243,6 +6251,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "A horizontal progress bar. Supports determinate mode (controlled `value`) and indeterminate (indefinite animation) for ongoing operations. Customisable via `tone` and `size` props; renders `role=\"progressbar\"`.",
       "props": [
         {
           "name": "value",
@@ -6410,6 +6419,34 @@
           "type": "boolean",
           "optional": true,
           "description": "Enable drag-to-reorder column headers. When `true` every column `<th>` becomes draggable and drop onto another header calls `store.reorderColumns`. Default `false` — existing layouts are unchanged.",
+          "default": "false"
+        },
+        {
+          "name": "virtualized",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in row virtualization. When `true` the body region becomes a scroll container and only the visible window of rows is rendered (via core's `createVirtualizer`), so a 100k-row table renders a handful of `<tr>` rather than every row. Default `false` — behavior is UNCHANGED (all rows render).",
+          "default": "false"
+        },
+        {
+          "name": "rowHeight",
+          "type": "number",
+          "optional": true,
+          "description": "Estimated row height in px (drives the virtualizer). Default `40`.",
+          "default": "40"
+        },
+        {
+          "name": "maxHeight",
+          "type": "number",
+          "optional": true,
+          "description": "Scroll viewport height in px when virtualized. Default `400`.",
+          "default": "400"
+        },
+        {
+          "name": "columnVirtualized",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in column virtualization. When `true` columns outside the horizontal viewport are not rendered, reducing DOM for very wide tables. The table container becomes horizontally scrollable. Default `false`.",
           "default": "false"
         }
       ]
@@ -7497,6 +7534,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "A placeholder shape that pulses to indicate content is loading. Supports `rect`, `circle`, and `text` shapes with configurable dimensions. Its shimmer animation respects `prefers-reduced-motion`.",
       "props": [
         {
           "name": "width",
@@ -9069,7 +9107,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
-      "description": "Hover / focus triggered tooltip. Wraps a single child element (no wrapping markup is added — behavior is attached via `IrisSlot`). Opens after `openDelay` ms of pointer hover or focus on the trigger; closes after `closeDelay` ms when the pointer leaves and focus departs. Escape closes immediately while open.",
+      "description": "Hover / focus triggered tooltip. Powered by `createHoverIntent` state machine.",
       "example": "  <IrisTooltip content=\"Save changes\">\n    <button>Save</button>\n  </IrisTooltip>",
       "props": [
         {

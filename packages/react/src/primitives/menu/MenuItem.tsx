@@ -10,6 +10,11 @@ export interface IrisMenuItemProps extends Omit<React.HTMLAttributes<HTMLDivElem
   onSelect?: (event: React.SyntheticEvent) => void
 }
 
+/**
+ * An individual selectable item in a menu. Renders as a `role="menuitem"` `<div>`.
+ * Calls `onSelect`, then closes the root menu (unless `keepOpen`). Disabled
+ * items are skipped by keyboard navigation.
+ */
 export const IrisMenuItem = React.forwardRef<HTMLDivElement, IrisMenuItemProps>(
   function IrisMenuItem(
     { disabled = false, keepOpen = false, onSelect, onClick, onKeyDown, style, children, ...rest },
@@ -75,9 +80,11 @@ export const IrisMenuItem = React.forwardRef<HTMLDivElement, IrisMenuItemProps>(
   },
 )
 
-/** Visual divider between item groups. */
 export type IrisMenuSeparatorProps = React.HTMLAttributes<HTMLDivElement>
 
+/**
+ * A visual separator within a menu — renders a `role="separator"` `<div>`.
+ */
 export const IrisMenuSeparator = React.forwardRef<HTMLDivElement, IrisMenuSeparatorProps>(
   function IrisMenuSeparator({ style, ...rest }, ref) {
     return (

@@ -24,6 +24,11 @@ export interface IrisProgressProps extends Omit<React.HTMLAttributes<HTMLDivElem
   size?: IrisProgressSize
 }
 
+/**
+ * A horizontal progress bar. Supports determinate mode (controlled `value`)
+ * and indeterminate (indefinite animation) for ongoing operations. Customisable
+ * via `tone` and `size` props; renders `role="progressbar"`.
+ */
 export function IrisProgress({
   value = null,
   max = 100,

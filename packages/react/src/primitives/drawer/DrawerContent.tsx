@@ -211,6 +211,10 @@ export const IrisDrawerContent = React.forwardRef<HTMLDivElement, IrisDrawerCont
 
 export type IrisDrawerTitleProps = React.HTMLAttributes<HTMLHeadingElement>
 
+/**
+ * The drawer's header title, rendered as an `<h2>`. Automatically wired to
+ * `aria-labelledby` on the content panel for accessible naming.
+ */
 export const IrisDrawerTitle = React.forwardRef<HTMLHeadingElement, IrisDrawerTitleProps>(
   function IrisDrawerTitle({ style, children, ...rest }, ref) {
     const ctx = useDrawerContext('IrisDrawerTitle')
@@ -244,6 +248,10 @@ export interface IrisDrawerCloseProps extends Omit<
   children?: React.ReactNode
 }
 
+/**
+ * A button that closes the drawer when clicked. Supports `asChild` for custom
+ * trigger elements. Emits `onClick` then calls `setOpen(false)`.
+ */
 export const IrisDrawerClose = React.forwardRef<HTMLElement, IrisDrawerCloseProps>(
   function IrisDrawerClose({ asChild = false, onClick, children, ...rest }, forwardedRef) {
     const ctx = useDrawerContext('IrisDrawerClose')

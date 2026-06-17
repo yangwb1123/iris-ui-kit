@@ -85,6 +85,10 @@ export const IrisDropdownItem = React.forwardRef<HTMLDivElement, IrisDropdownIte
 
 export type IrisDropdownSeparatorProps = React.HTMLAttributes<HTMLDivElement>
 
+/**
+ * A visual separator (horizontal rule) within a dropdown menu. Renders a
+ * `role="separator"` `<div>` styled with the theme's border colour.
+ */
 export const IrisDropdownSeparator = React.forwardRef<HTMLDivElement, IrisDropdownSeparatorProps>(
   function IrisDropdownSeparator({ style, ...rest }, ref) {
     return (

@@ -11,6 +11,11 @@ export interface IrisDropdownTriggerProps extends Omit<
   children?: React.ReactNode
 }
 
+/**
+ * The trigger element that toggles the dropdown open/closed on click or
+ * ArrowDown/Enter/Space. Renders as a `<button>` (or custom element via
+ * `asChild`) with `aria-haspopup="menu"` and `aria-expanded`.
+ */
 export const IrisDropdownTrigger = React.forwardRef<HTMLElement, IrisDropdownTriggerProps>(
   function IrisDropdownTrigger(
     { asChild = false, onClick, onKeyDown, children, ...rest },

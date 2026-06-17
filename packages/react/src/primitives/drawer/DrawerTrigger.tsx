@@ -11,6 +11,11 @@ export interface IrisDrawerTriggerProps extends Omit<
   children?: React.ReactNode
 }
 
+/**
+ * The trigger that opens the drawer when clicked. Renders as a `<button>` (or
+ * as custom children when `asChild`). Injects `aria-haspopup="dialog"` and
+ * `aria-expanded` for screen-reader awareness.
+ */
 export const IrisDrawerTrigger = React.forwardRef<HTMLElement, IrisDrawerTriggerProps>(
   function IrisDrawerTrigger({ asChild = false, onClick, children, ...rest }, forwardedRef) {
     const ctx = useDrawerContext('IrisDrawerTrigger')

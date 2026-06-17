@@ -11,6 +11,11 @@ export interface IrisMenuTriggerProps extends Omit<
   children?: React.ReactNode
 }
 
+/**
+ * The trigger that toggles the menu open/closed. Renders as a `<button>` (or
+ * custom via `asChild`) with `aria-haspopup="menu"`. Opens on click,
+ * ArrowDown, Enter, or Space.
+ */
 export const IrisMenuTrigger = React.forwardRef<HTMLElement, IrisMenuTriggerProps>(
   function IrisMenuTrigger(
     { asChild = false, onClick, onKeyDown, children, ...rest },

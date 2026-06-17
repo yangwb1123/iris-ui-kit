@@ -3362,6 +3362,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "A button that closes the drawer when clicked. Supports `asChild` for custom trigger elements. Emits `onClick` then calls `setOpen(false)`.",
       "props": [
         {
           "name": "asChild",
@@ -3427,7 +3428,8 @@
         "solid": "@iris-ui/solid",
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
-      }
+      },
+      "description": "The drawer's header title, rendered as an `<h2>`. Automatically wired to `aria-labelledby` on the content panel for accessible naming."
     },
     {
       "name": "IrisDrawerTrigger",
@@ -3445,6 +3447,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "The trigger that opens the drawer when clicked. Renders as a `<button>` (or as custom children when `asChild`). Injects `aria-haspopup=\"dialog\"` and `aria-expanded` for screen-reader awareness.",
       "props": [
         {
           "name": "asChild",
@@ -3618,7 +3621,8 @@
         "solid": "@iris-ui/solid",
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
-      }
+      },
+      "description": "A visual separator (horizontal rule) within a dropdown menu. Renders a `role=\"separator\"` `<div>` styled with the theme's border colour."
     },
     {
       "name": "IrisDropdownTrigger",
@@ -3636,6 +3640,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "The trigger element that toggles the dropdown open/closed on click or ArrowDown/Enter/Space. Renders as a `<button>` (or custom element via `asChild`) with `aria-haspopup=\"menu\"` and `aria-expanded`.",
       "props": [
         {
           "name": "asChild",
@@ -5435,6 +5440,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "An individual selectable item in a menu. Renders as a `role=\"menuitem\"` `<div>`. Calls `onSelect`, then closes the root menu (unless `keepOpen`). Disabled items are skipped by keyboard navigation.",
       "props": [
         {
           "name": "disabled",
@@ -5475,7 +5481,8 @@
         "solid": "@iris-ui/solid",
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
-      }
+      },
+      "description": "A visual separator within a menu — renders a `role=\"separator\"` `<div>`."
     },
     {
       "name": "IrisMenuSub",
@@ -5532,6 +5539,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "The trigger that toggles the menu open/closed. Renders as a `<button>` (or custom via `asChild`) with `aria-haspopup=\"menu\"`. Opens on click, ArrowDown, Enter, or Space.",
       "props": [
         {
           "name": "asChild",
@@ -6243,6 +6251,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "A horizontal progress bar. Supports determinate mode (controlled `value`) and indeterminate (indefinite animation) for ongoing operations. Customisable via `tone` and `size` props; renders `role=\"progressbar\"`.",
       "props": [
         {
           "name": "value",
@@ -6432,6 +6441,13 @@
           "optional": true,
           "description": "Scroll viewport height in px when virtualized. Default `400`.",
           "default": "400"
+        },
+        {
+          "name": "columnVirtualized",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in column virtualization. When `true` columns outside the horizontal viewport are not rendered, reducing DOM for very wide tables. The table container becomes horizontally scrollable. Default `false`.",
+          "default": "false"
         }
       ]
     },
@@ -7408,19 +7424,6 @@
           "description": "Custom render for the trigger button. Receives current label + open state."
         },
         {
-          "name": "searchable",
-          "type": "boolean",
-          "optional": true,
-          "description": "Enable search/filter by typing in the opened dropdown. Default `false`.",
-          "default": "false"
-        },
-        {
-          "name": "searchPlaceholder",
-          "type": "string",
-          "optional": true,
-          "description": "Placeholder for the search input when `searchable` is true."
-        },
-        {
           "name": "style",
           "type": "React.CSSProperties",
           "optional": true
@@ -7531,6 +7534,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
+      "description": "A placeholder shape that pulses to indicate content is loading. Supports `rect`, `circle`, and `text` shapes with configurable dimensions. Its shimmer animation respects `prefers-reduced-motion`.",
       "props": [
         {
           "name": "width",
@@ -8302,7 +8306,8 @@
           "name": "rowKey",
           "type": "string",
           "optional": true,
-          "description": "Field to use as the row key."
+          "description": "Field to use as the row key.",
+          "default": "id"
         },
         {
           "name": "selectable",
@@ -8313,7 +8318,8 @@
             "none",
             "single",
             "multi"
-          ]
+          ],
+          "default": "none"
         },
         {
           "name": "selection",
@@ -8348,22 +8354,27 @@
         {
           "name": "striped",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "false"
         },
         {
           "name": "bordered",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "default": "true"
         },
         {
           "name": "resizableColumns",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "description": "Enable column resizing (drag the header's trailing edge or focus + arrow keys).",
+          "default": "false"
         },
         {
           "name": "columnWidths",
           "type": "IrisTableColumnWidths",
-          "optional": true
+          "optional": true,
+          "description": "Controlled per-column pixel widths, keyed by column `key`."
         },
         {
           "name": "defaultColumnWidths",
@@ -8378,77 +8389,97 @@
         {
           "name": "onCellEdit",
           "type": "(event: IrisTableCellEditEvent<Row>) => void",
-          "optional": true
+          "optional": true,
+          "description": "Called when an inline-editable cell is committed with a changed value."
         },
         {
           "name": "renderDetail",
           "type": "(row: Row, rowIndex: number) => React.ReactNode",
-          "optional": true
+          "optional": true,
+          "description": "Render an expandable detail panel beneath a row. Providing this adds a leading expand-toggle column; clicking it reveals a full-width detail row. (Not applied in the virtual-scroll path.)"
         },
         {
           "name": "rowExpandable",
           "type": "(row: Row, rowIndex: number) => boolean",
-          "optional": true
+          "optional": true,
+          "description": "Which rows can expand a detail panel. Defaults to all rows when `renderDetail` is set."
         },
         {
           "name": "defaultExpandedRowKeys",
           "type": "Array<string | number>",
-          "optional": true
+          "optional": true,
+          "description": "Initially-expanded row keys (uncontrolled). Shared by detail rows + tree rows."
         },
         {
           "name": "onExpandedRowsChange",
           "type": "(keys: Array<string | number>) => void",
-          "optional": true
+          "optional": true,
+          "description": "Notified with the expanded row keys whenever they change."
         },
         {
           "name": "getSubRows",
           "type": "(row: Row) => Row[] | undefined",
-          "optional": true
+          "optional": true,
+          "description": "Read a row's child rows to render the table as a TREE. Providing this enables tree mode: `data` is treated as the root rows, each row's first cell gains a depth indent + an expand/collapse toggle (when it has children), and the expand state reuses `defaultExpandedRowKeys`/`onExpandedRowsChange`. Column sort reorders siblings hierarchically (each level sorted, structure kept), and tree rows virtualize like flat rows when `virtualScroll` is set (unless `renderDetail` is also used, since detail panels are variable-height)."
         },
         {
           "name": "keyboardNavigation",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "description": "Enable WAI-ARIA grid keyboard navigation: the table becomes `role=\"grid\"` and Arrow / Home / End / Page Up·Down move a roving cell focus across the data cells. Off by default; opt-in and additive (no effect on mouse / Tab behavior). Pairs best without virtualization (the focused cell must be rendered) and does not hijack keystrokes while a cell is being edited.",
+          "default": "false"
         },
         {
           "name": "virtualScroll",
           "type": "IrisTableVirtualOptions",
-          "optional": true
+          "optional": true,
+          "description": "Enable virtual scrolling for the body (renders only the visible window)."
         },
         {
           "name": "columnVirtualization",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "description": "Render only the horizontally-visible columns (plus pinned + a small overscan) for very wide tables. Needs numeric column widths; the table becomes a horizontal scroll container. Off-screen grid tracks stay sized, so alignment, resize, and pinned columns keep working.",
+          "default": "false"
         },
         {
           "name": "cellRange",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "description": "Enable rectangular cell-range selection (Excel-style). Click starts a range; Shift+Click or Shift+Arrow extends it; Escape clears it. Cells within the range get `data-iris-cell-selected=\"true\"`.",
+          "default": "false"
         },
         {
           "name": "emptyState",
           "type": "React.ReactNode",
-          "optional": true
+          "optional": true,
+          "description": "Empty state node (replaces the row body when `data` is empty)."
         },
         {
           "name": "loading",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "description": "Show the loading state instead of rows.",
+          "default": "false"
         },
         {
           "name": "error",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "description": "Show the error state instead of rows (takes precedence over loading).",
+          "default": "false"
         },
         {
           "name": "loadingState",
           "type": "React.ReactNode",
-          "optional": true
+          "optional": true,
+          "description": "Custom loading-state node (defaults to the localized `table.loading`)."
         },
         {
           "name": "errorState",
           "type": "React.ReactNode",
-          "optional": true
+          "optional": true,
+          "description": "Custom error-state node (defaults to the localized `table.error`)."
         },
         {
           "name": "style",
@@ -9076,7 +9107,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
-      "description": "Hover / focus triggered tooltip. Wraps a single child element (no wrapping markup is added — behavior is attached via `IrisSlot`). Opens after `openDelay` ms of pointer hover or focus on the trigger; closes after `closeDelay` ms when the pointer leaves and focus departs. Escape closes immediately while open.",
+      "description": "Hover / focus triggered tooltip. Powered by `createHoverIntent` state machine.",
       "example": "  <IrisTooltip content=\"Save changes\">\n    <button>Save</button>\n  </IrisTooltip>",
       "props": [
         {
@@ -9340,22 +9371,27 @@
             "none",
             "single",
             "multi"
-          ]
+          ],
+          "default": "single"
         },
         {
           "name": "checkable",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "description": "Show a checkbox per node with parent/child cascade + indeterminate (tri-state) propagation, independent of `selectionMode`. Driven by the framework-agnostic `createTreeSelection`.",
+          "default": "false"
         },
         {
           "name": "defaultChecked",
           "type": "string[]",
-          "optional": true
+          "optional": true,
+          "description": "Initially checked node ids (uncontrolled; reconciled through the cascade)."
         },
         {
           "name": "onCheckedChange",
           "type": "(checked: string[]) => void",
-          "optional": true
+          "optional": true,
+          "description": "Notified with the fully-reconciled checked node ids on every check change."
         },
         {
           "name": "ariaLabel",
@@ -9365,27 +9401,34 @@
         {
           "name": "loading",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "description": "Show the loading state instead of nodes.",
+          "default": "false"
         },
         {
           "name": "error",
           "type": "boolean",
-          "optional": true
+          "optional": true,
+          "description": "Show the error state instead of nodes (takes precedence over loading).",
+          "default": "false"
         },
         {
           "name": "emptyState",
           "type": "React.ReactNode",
-          "optional": true
+          "optional": true,
+          "description": "Custom empty-state node (defaults to the localized `tree.empty`)."
         },
         {
           "name": "loadingState",
           "type": "React.ReactNode",
-          "optional": true
+          "optional": true,
+          "description": "Custom loading-state node (defaults to the localized `tree.loading`)."
         },
         {
           "name": "errorState",
           "type": "React.ReactNode",
-          "optional": true
+          "optional": true,
+          "description": "Custom error-state node (defaults to the localized `tree.error`)."
         },
         {
           "name": "style",

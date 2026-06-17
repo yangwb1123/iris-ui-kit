@@ -27,6 +27,11 @@ export interface IrisSkeletonProps extends Omit<React.HTMLAttributes<HTMLDivElem
   animated?: boolean
 }
 
+/**
+ * A placeholder shape that pulses to indicate content is loading. Supports
+ * `rect`, `circle`, and `text` shapes with configurable dimensions. Its
+ * shimmer animation respects `prefers-reduced-motion`.
+ */
 export function IrisSkeleton({
   width,
   height,

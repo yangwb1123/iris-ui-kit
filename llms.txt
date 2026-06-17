@@ -135,7 +135,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: center, title?, emptyText?, className?
 - IrisProTable [react/solid/svelte/vue] — via @iris-ui/plugin-pro-table (IrisProvider plugins)
   vxe-table-style CRUD data table for React. All logic lives in the framework-agnostic {@link ProTableStore}; this component subscribes to it and renders header (sortable), selection, inline editors, rows, and a pager.
-  props: store, className?, labels?, columnReorder?, virtualized?, rowHeight?, maxHeight?
+  props: store, className?, labels?, columnReorder?, virtualized?, rowHeight?, maxHeight?, columnVirtualized?
 - IrisQueryBuilder [react/solid/svelte/vue] — via @iris-ui/plugin-query-builder (IrisProvider plugins)
   Visual query builder for React: stacked rule rows (column → operator → value) over a {@link FilterBuilder}, emitting compiled `FilterRule[]` via `onChange` (wire it to `dataSource.setFilterRules`). All logic lives in the builder.
   props: builder, onChange?, addLabel?, className?
@@ -300,6 +300,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   events: onOpenChange
   slots: default
 - IrisDrawerClose [react/solid/svelte/vue]
+  A button that closes the drawer when clicked. Supports `asChild` for custom trigger elements. Emits `onClick` then calls `setOpen(false)`.
   props: asChild?, children?
   slots: default
 - IrisDrawerContent [react/solid/svelte/vue]
@@ -307,7 +308,9 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: portalTarget?, children?
   slots: default
 - IrisDrawerTitle [react/solid/svelte/vue]
+  The drawer's header title, rendered as an `<h2>`. Automatically wired to `aria-labelledby` on the content panel for accessible naming.
 - IrisDrawerTrigger [react/solid/svelte/vue]
+  The trigger that opens the drawer when clicked. Renders as a `<button>` (or as custom children when `asChild`). Injects `aria-haspopup="dialog"` and `aria-expanded` for screen-reader awareness.
   props: asChild?, children?
   slots: default
 - IrisDropdown [react/solid/svelte/vue]
@@ -324,7 +327,9 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: portalTarget?, children?
   slots: default
 - IrisDropdownSeparator [react/solid/svelte/vue]
+  A visual separator (horizontal rule) within a dropdown menu. Renders a `role="separator"` `<div>` styled with the theme's border colour.
 - IrisDropdownTrigger [react/solid/svelte/vue]
+  The trigger element that toggles the dropdown open/closed on click or ArrowDown/Enter/Space. Renders as a `<button>` (or custom element via `asChild`) with `aria-haspopup="menu"` and `aria-expanded`.
   props: asChild?, children?
   slots: default
 - IrisEmptyState [react/solid/svelte/vue]
@@ -393,14 +398,17 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: portalTarget?, children?
   slots: default
 - IrisMenuItem [react/solid/svelte/vue]
+  An individual selectable item in a menu. Renders as a `role="menuitem"` `<div>`. Calls `onSelect`, then closes the root menu (unless `keepOpen`). Disabled items are skipped by keyboard navigation.
   props: disabled?, keepOpen?, onSelect?
   events: onSelect
 - IrisMenuSeparator [react/solid/svelte/vue]
+  A visual separator within a menu — renders a `role="separator"` `<div>`.
 - IrisMenuSub [react/solid/svelte/vue]
   Nested submenu. Renders its own trigger (a `[role="menuitem"]` inside the parent menu) and floating content panel. Opens on hover (with a short delay) and on ArrowRight / Enter; closes on ArrowLeft.
   props: label?, portalTarget?, children?
   slots: label, default
 - IrisMenuTrigger [react/solid/svelte/vue]
+  The trigger that toggles the menu open/closed. Renders as a `<button>` (or custom via `asChild`) with `aria-haspopup="menu"`. Opens on click, ArrowDown, Enter, or Space.
   props: asChild?, children?
   slots: default
 - IrisNumberInput [react/solid/svelte/vue]
@@ -433,6 +441,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: asChild?, children?
   slots: default
 - IrisProgress [react/solid/svelte/vue]
+  A horizontal progress bar. Supports determinate mode (controlled `value`) and indeterminate (indefinite animation) for ongoing operations. Customisable via `tone` and `size` props; renders `role="progressbar"`.
   props: value?, max?, indeterminate?, tone?, size?
 - IrisProgressCircle [react/solid/svelte/vue]
   Circular (ring) progress indicator built from a structured SVG — a track circle plus a value circle whose `stroke-dashoffset` encodes the ratio. An optional centered percent label sits on top. Distinct from the linear `IrisProgress`.
@@ -477,10 +486,11 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   events: onValueChange
 - IrisSelect [react/solid/svelte/vue]
   Single-select dropdown. Composes Popover (positioning + dismiss) with an inline listbox (keyboard nav + selection). Each option is `role="option"` inside a `role="listbox"` ul.
-  props: items, value?, defaultValue?, onValueChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, searchable?, searchPlaceholder?, style?, className?
+  props: items, value?, defaultValue?, onValueChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, style?, className?
   events: onValueChange
   slots: renderTrigger
 - IrisSkeleton [react/solid/svelte/vue]
+  A placeholder shape that pulses to indicate content is loading. Supports `rect`, `circle`, and `text` shapes with configurable dimensions. Its shimmer animation respects `prefers-reduced-motion`.
   props: width?, height?, shape?, animated?
 - IrisSlider [react/solid/svelte/vue]
   Numeric slider with keyboard + pointer support.
@@ -567,7 +577,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: children?, orientation?, ariaLabel?, style?, className?
   slots: default
 - IrisTooltip [react/solid/svelte/vue]
-  Hover / focus triggered tooltip. Wraps a single child element (no wrapping markup is added — behavior is attached via `IrisSlot`). Opens after `openDelay` ms of pointer hover or focus on the trigger; closes after `closeDelay` ms when the pointer leaves and focus departs. Escape closes immediately while open.
+  Hover / focus triggered tooltip. Powered by `createHoverIntent` state machine.
   props: content?, placement?, offset?, openDelay?, closeDelay?, portalTarget?, disabled?, children?
   slots: content, default
 - IrisTour [react/solid/svelte/vue]

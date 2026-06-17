@@ -55,7 +55,7 @@
   const filtered = $derived(() => {
     const needle = query.trim().toLowerCase()
     return filtering && needle
-      ? options.filter((o) => o.label.toLowerCase().includes(needle))
+      ? options.filter((o) => o.label.toLowerCase().startsWith(needle))
       : options
   })
 

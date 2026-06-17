@@ -51,3 +51,6 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Bench (advisory — not gate-failing)
+        run: pnpm bench

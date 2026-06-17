@@ -13,8 +13,13 @@ import {
   useTabsNav,
   findNavNode,
 } from '@iris-ui/vue'
-import { menus } from './menus'
+import { filterNavByAccess } from '@iris-ui/core'
+import { authStore } from './auth'
+import { menus as flatMenus } from './menus'
 import { tabsNav } from './tabs'
+
+const role = computed(() => authStore.getState()?.session?.role ?? 'viewer')
+const menus = computed(() => filterNavByAccess(flatMenus, [role.value]))
 import DashboardPage from './pages/DashboardPage.vue'
 import UsersPage from './pages/UsersPage.vue'
 import SettingsPage from './pages/SettingsPage.vue'
@@ -46,7 +51,7 @@ const pages: Record<string, unknown> = {
 }
 const pageComp = (key: string): unknown => pages[key] ?? GenericPage
 const pageProps = (key: string): Record<string, unknown> =>
-  pages[key] ? {} : { title: findNavNode(menus, key)?.title ?? key }
+  pages[key] ? {} : { title: findNavNode(menus.value, key)?.title ?? key }
 
 // Keep-alive cache key for the active tab (changes on refresh → remount).
 const activeCacheKey = computed(() => {

@@ -6,7 +6,7 @@ AI-native cross-framework component infrastructure. From meta UI primitives to f
 
 ## Status
 
-🔧 **Alpha** — not yet published to npm. **141 components across four frameworks (React 141 · Vue 141 · Solid 140 · Svelte 138)**, generated from one set of framework-agnostic engines, with a deep test suite (2,100+ specs) and four green quality gates (test · typecheck · lint · build) plus bundle-size and RSC-directive guards.
+🔧 **Alpha** — not yet published to npm. **149 components across four frameworks (149 each)**, generated from one set of framework-agnostic engines, with a deep test suite (1,500+ specs) and four green quality gates (test · typecheck · lint · build) plus bundle-size, RSC-directive, bench, and format checks.
 
 ## Packages
 

@@ -54,3 +54,6 @@ jobs:
 
       - name: Bench (advisory — not gate-failing)
         run: pnpm bench
+
+      - name: Size (advisory — not gate-failing)
+        run: pnpm size

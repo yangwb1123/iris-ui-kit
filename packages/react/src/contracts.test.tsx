@@ -31,6 +31,7 @@ import {
   tooltipScenario,
   comboboxScenario,
   toastScenario,
+  copyButtonScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { useCallback } from 'react'
@@ -76,6 +77,7 @@ import { IrisDropdownMenu } from './primitives/dropdown/DropdownMenu'
 import { IrisDropdownItem } from './primitives/dropdown/DropdownItem'
 import { IrisTooltip } from './primitives/tooltip'
 import { IrisCombobox } from './primitives/combobox/Combobox'
+import { IrisCopyButton } from './primitives/copy-button/CopyButton'
 import { IrisToastViewport } from './primitives/toast/ToastViewport'
 import { pushToast, clearToasts } from './primitives/toast/toastStore'
 
@@ -480,5 +482,10 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
     }
     const { container } = render(<ToastContractHarness />)
     await runContract(toastScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared CopyButton contract', async () => {
+    const { container } = render(<IrisCopyButton text="hello" />)
+    await runContract(copyButtonScenario, driverFor(container), expect)
   })
 })

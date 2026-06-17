@@ -24,6 +24,7 @@ import {
   calendarScenario,
   comboboxScenario,
   toastScenario,
+  copyButtonScenario,
   tagInputScenario,
   otpInputScenario,
   dialogScenario,
@@ -45,6 +46,7 @@ import TreeContractHarness from './TreeContractHarness.svelte'
 import CalendarContractHarness from './CalendarContractHarness.svelte'
 import ComboboxContractHarness from './ComboboxContractHarness.svelte'
 import ToastContractHarness from './ToastContractHarness.svelte'
+import IrisCopyButton from './primitives/copy-button/IrisCopyButton.svelte'
 import DataSourceContractHarness from './DataSourceContractHarness.svelte'
 import DialogContractHarness from './DialogContractHarness.svelte'
 import PopoverContractHarness from './PopoverContractHarness.svelte'
@@ -383,5 +385,10 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // clearToasts() runs in afterEach via the before/after hooks below.
     const { container } = render(ToastContractHarness)
     await runContract(toastScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared CopyButton contract', async () => {
+    const { container } = render(IrisCopyButton, { props: { text: 'hello' } })
+    await runContract(copyButtonScenario, driverFor(container), expect)
   })
 })

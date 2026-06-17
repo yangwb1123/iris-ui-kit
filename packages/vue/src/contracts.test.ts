@@ -32,6 +32,7 @@ import {
   dropdownScenario,
   comboboxScenario,
   toastScenario,
+  copyButtonScenario,
 } from '@iris-ui/core/contracts'
 import {
   driverFor,
@@ -70,6 +71,7 @@ import { IrisDropdownTrigger } from './primitives/dropdown/DropdownTrigger'
 import { IrisDropdownMenu } from './primitives/dropdown/DropdownMenu'
 import { IrisTooltip } from './primitives/tooltip/Tooltip'
 import { IrisCombobox } from './primitives/combobox/Combobox'
+import { IrisCopyButton } from './primitives/copy-button/CopyButton'
 import { IrisToastViewport } from './primitives/toast'
 import { pushToast, clearToasts } from './primitives/toast/store'
 
@@ -338,6 +340,13 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     )
     await nextTick()
     await runContract(toastScenario, driverFor(el), expect)
+  })
+
+  it('satisfies the shared CopyButton contract', async () => {
+    const el = makeHost()
+    const wrapper = mount(() => h(IrisCopyButton, { text: 'hello' }), { attachTo: el })
+    await nextTick()
+    await runContract(copyButtonScenario, driverFor(el), expect)
   })
 
   it('satisfies the shared DataSource contract', async () => {

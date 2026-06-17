@@ -1,5 +1,6 @@
 import { defineComponent, h } from 'vue'
 import { IrisForm, useForm, useField } from './form'
+import type { FormStore, FormValues } from '@iris-ui/core'
 
 /**
  * A field that binds to the `'name'` key on the parent `<IrisForm>` store.
@@ -38,7 +39,7 @@ export const FormContractHarness = defineComponent({
     return () =>
       h(
         IrisForm,
-        { form: form.form as any },
+        { form: form.form as unknown as FormStore<FormValues> },
         {
           default: () => h(NameField),
         },

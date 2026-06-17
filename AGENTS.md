@@ -4,7 +4,7 @@
 
 ## 状态（2026-06）
 
-- **四框架完全对齐**：`react` / `vue` / `solid` / `svelte`，**同名同语义**导出 + 子路径 `exports`。manifest 实测 **135 组件**（react 135 · vue 135 · solid 134 · svelte 132；132 个四端齐备）。约 3000+ 测试，四道质量门 + size 预算 + RSC + manifest 全绿。
+- **四框架完全对齐**：`react` / `vue` / `solid` / `svelte`，**同名同语义**导出 + 子路径 `exports`。manifest 实测 **149 组件**（全部 4 框架 149 对齐）。约 1500+ 测试，四道质量门 + size 预算 + RSC + bench + format + arch-check 全绿。
 - **核心是复用逻辑之家**：组件行为（选择 / 展开 / 数据视图 / 键盘 roving / 表单 / 异步 / 分页 / admin shell / CRUD 资源 …）全部沉淀在 core，四框架共享；适配器只渲染 + 桥接反应式。
 - **插件层就绪**：`IrisProvider(plugins=[…])` + `createPlugin`/`runPlugins`。首批：`plugin-locale-zh`（中文包）、`plugin-editor`（CodeMirror 6，SQL/JSON/JS）、`plugin-pro-table`（vxe 式 CRUD 表格）。
 - **生产就绪面闭环**：SSR 安全（`useId` + 无 DOM 测试 + React `'use client'`）· axe 无障碍门 · i18n · RTL（逻辑属性）· `prefers-reduced-motion`/`-color-scheme` · 可加载/可继承皮肤 + 市场 SDK · VitePress 文档站 · changesets 发布流水线。
@@ -151,4 +151,4 @@ const store = usePluginStore<T>('key')       // 缺失则 throw
 
 1. **首个 npm 发布**：`release.yml` 就绪，属不可逆对外动作，按维护者授权 + 版本决定后执行。
 2. **QRCode**：需正确 QR 编码器（可扫描性 jsdom 无法验证），按决定跳过。
-3. **插件后续**：editor 的 diff/补全；pro-table Phase 2（列宽拖拽/树形行/多级表头/聚合行/列虚拟化）。
+3. **ROADMAP v3 方向**：bench CI、嵌套路径表单、型录 admin 参考实现、状态机做厚——架构级投入，需维护者选择。

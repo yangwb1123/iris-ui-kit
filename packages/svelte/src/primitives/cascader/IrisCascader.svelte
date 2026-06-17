@@ -24,7 +24,10 @@
     class?: string
   }
 
-  const SIZE_MAP: Record<IrisCascaderSize, { padding: string; fontSize: string; minHeight: string }> = {
+  const SIZE_MAP: Record<
+    IrisCascaderSize,
+    { padding: string; fontSize: string; minHeight: string }
+  > = {
     sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
     md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
     lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
@@ -130,7 +133,7 @@
   data-disabled={disabled ? '' : undefined}
   style:position="relative"
   style:display="inline-flex"
-  style={style}
+  {style}
   class={className}
   {...rest}
 >
@@ -160,7 +163,9 @@
     style:cursor={disabled ? 'not-allowed' : 'pointer'}
     style:font-family="inherit"
   >
-    <span style:flex="1" style:text-align="start">{display || (placeholder ?? t('select.placeholder'))}</span>
+    <span style:flex="1" style:text-align="start"
+      >{display || (placeholder ?? t('select.placeholder'))}</span
+    >
     <span aria-hidden="true" style:font-size="10px">{open ? '▲' : '▼'}</span>
   </button>
 

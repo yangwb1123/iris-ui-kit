@@ -39,10 +39,7 @@
   )}
 >
   {#if label != null}
-    <div
-      data-iris-statistic-label
-      style="font-size: 13px; color: var(--iris-muted)"
-    >
+    <div data-iris-statistic-label style="font-size: 13px; color: var(--iris-muted)">
       {String(label)}
     </div>
   {/if}
@@ -61,7 +58,9 @@
   {#if trend != null || trendValue != null}
     <div
       data-iris-statistic-trend
-      style="display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: {trend ? TREND_COLOR[trend] : 'var(--iris-muted)'}"
+      style="display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: {trend
+        ? TREND_COLOR[trend]
+        : 'var(--iris-muted)'}"
     >
       {#if trend && TREND_ARROW[trend]}
         <span aria-hidden="true">{TREND_ARROW[trend]}</span>

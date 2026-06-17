@@ -21,8 +21,14 @@
     children?: Snippet
   }
 
-  let { locale, messages, i18n: i18nProp, autoDirection, directionTarget, children }: Props =
-    $props()
+  let {
+    locale,
+    messages,
+    i18n: i18nProp,
+    autoDirection,
+    directionTarget,
+    children,
+  }: Props = $props()
 
   // svelte-ignore state_referenced_locally — instance is created once; props sync via $effect
   const instance = i18nProp ?? createI18n({ locale, messages })

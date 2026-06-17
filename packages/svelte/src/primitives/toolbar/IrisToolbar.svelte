@@ -11,13 +11,7 @@
     [key: string]: unknown
   }
 
-  let {
-    orientation = 'horizontal',
-    ariaLabel,
-    style,
-    children,
-    ...rest
-  }: Props = $props()
+  let { orientation = 'horizontal', ariaLabel, style, children, ...rest }: Props = $props()
 
   let rootEl = $state<HTMLElement | undefined>(undefined)
 
@@ -33,7 +27,9 @@
   $effect(() => {
     // Initialize roving tabindex after mount
     const list = getItems()
-    list.forEach((el, i) => { el.tabIndex = i === 0 ? 0 : -1 })
+    list.forEach((el, i) => {
+      el.tabIndex = i === 0 ? 0 : -1
+    })
   })
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -49,16 +45,20 @@
     else if (e.key === 'End') target = list.length - 1
     else return
     e.preventDefault()
-    list.forEach((el, i) => { el.tabIndex = i === target ? 0 : -1 })
+    list.forEach((el, i) => {
+      el.tabIndex = i === target ? 0 : -1
+    })
     list[target]?.focus()
   }
 
-  const rootStyle = $derived(styleToString({
-    display: 'inline-flex',
-    'flex-direction': orientation === 'vertical' ? 'column' : 'row',
-    'align-items': 'center',
-    gap: '4px',
-  }))
+  const rootStyle = $derived(
+    styleToString({
+      display: 'inline-flex',
+      'flex-direction': orientation === 'vertical' ? 'column' : 'row',
+      'align-items': 'center',
+      gap: '4px',
+    }),
+  )
 </script>
 
 <div

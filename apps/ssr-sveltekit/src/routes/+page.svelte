@@ -53,12 +53,17 @@
     <section style="display:grid;gap:24px">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <IrisButton variant="solid">Primary action</IrisButton>
-        <IrisInput value={name} oninput={(e: Event) => name = (e.target as HTMLInputElement).value} placeholder="Type your name…" style="max-width:240px" />
+        <IrisInput
+          value={name}
+          oninput={(e: Event) => (name = (e.target as HTMLInputElement).value)}
+          placeholder="Type your name…"
+          style="max-width:240px"
+        />
         <IrisBadge tone="primary" variant="solid">{name ? `Hi, ${name}` : 'live badge'}</IrisBadge>
       </div>
 
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <IrisDialog open={dialogOpen} onOpenChange={(v) => dialogOpen = v}>
+        <IrisDialog open={dialogOpen} onOpenChange={(v) => (dialogOpen = v)}>
           <IrisDialogTrigger asChild>
             <IrisButton variant="outline">Open dialog</IrisButton>
           </IrisDialogTrigger>

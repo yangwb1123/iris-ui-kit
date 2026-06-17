@@ -84,7 +84,8 @@
     return () => document.removeEventListener('keydown', onKey)
   })
 
-  const btnBase = 'padding: 4px 12px; font-size: 13px; border-radius: var(--iris-radius-sm, 4px); cursor: pointer'
+  const btnBase =
+    'padding: 4px 12px; font-size: 13px; border-radius: var(--iris-radius-sm, 4px); cursor: pointer'
   const btnGhost = `${btnBase}; border: 1px solid var(--iris-border); background: transparent; color: var(--iris-foreground)`
   const btnPrimary = `${btnBase}; border: none; background: var(--iris-primary); color: #fff`
 </script>
@@ -110,7 +111,9 @@
       {#if spotlit && sl}
         <div
           data-iris-tour-spotlight
-          style="position: fixed; top: {sl.top - 4}px; inset-inline-start: {sl.left - 4}px; width: {sl.width + 8}px; height: {sl.height + 8}px; border: 2px solid var(--iris-primary); border-radius: var(--iris-radius-sm, 4px); box-shadow: 0 0 0 9999px rgba(0,0,0,0.45); z-index: 1001; pointer-events: none"
+          style="position: fixed; top: {sl.top - 4}px; inset-inline-start: {sl.left -
+            4}px; width: {sl.width + 8}px; height: {sl.height +
+            8}px; border: 2px solid var(--iris-primary); border-radius: var(--iris-radius-sm, 4px); box-shadow: 0 0 0 9999px rgba(0,0,0,0.45); z-index: 1001; pointer-events: none"
         ></div>
       {/if}
 
@@ -120,25 +123,42 @@
         role="dialog"
         aria-modal="true"
         aria-label={data.title ?? t('tour.step', { current: current + 1, total })}
-        style="position: fixed; z-index: 1002; max-width: 320px; padding: 16px; background: var(--iris-background); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); box-shadow: 0 8px 24px rgba(0,0,0,0.18); {spotlit && sl ? `top: ${sl.top + sl.height + 12}px; inset-inline-start: ${sl.left}px` : 'top: 50%; inset-inline-start: 50%; transform: translate(-50%, -50%)'}"
+        style="position: fixed; z-index: 1002; max-width: 320px; padding: 16px; background: var(--iris-background); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); box-shadow: 0 8px 24px rgba(0,0,0,0.18); {spotlit &&
+        sl
+          ? `top: ${sl.top + sl.height + 12}px; inset-inline-start: ${sl.left}px`
+          : 'top: 50%; inset-inline-start: 50%; transform: translate(-50%, -50%)'}"
       >
         {#if data.title != null}
-          <div data-iris-tour-title style="font-weight: 600; margin-block-end: 6px">{data.title}</div>
+          <div data-iris-tour-title style="font-weight: 600; margin-block-end: 6px">
+            {data.title}
+          </div>
         {/if}
         {#if data.description != null}
-          <div data-iris-tour-description style="font-size: 14px; color: var(--iris-foreground); margin-block-end: 12px">{data.description}</div>
+          <div
+            data-iris-tour-description
+            style="font-size: 14px; color: var(--iris-foreground); margin-block-end: 12px"
+          >
+            {data.description}
+          </div>
         {/if}
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
-          <span data-iris-tour-indicator style="font-size: 12px; color: var(--iris-muted)">{current + 1} / {total}</span>
+          <span data-iris-tour-indicator style="font-size: 12px; color: var(--iris-muted)"
+            >{current + 1} / {total}</span
+          >
           <div style="display: flex; gap: 8px">
-            <button type="button" data-iris-tour-skip onclick={close} style={btnGhost}>{t('tour.skip')}</button>
+            <button type="button" data-iris-tour-skip onclick={close} style={btnGhost}
+              >{t('tour.skip')}</button
+            >
             {#if current > 0}
               <button
                 type="button"
                 data-iris-tour-prev
-                onclick={() => { step = current - 1; onChange?.(current - 1) }}
-                style={btnGhost}
-              >{t('tour.prev')}</button>
+                onclick={() => {
+                  step = current - 1
+                  onChange?.(current - 1)
+                }}
+                style={btnGhost}>{t('tour.prev')}</button
+              >
             {/if}
             <button
               type="button"

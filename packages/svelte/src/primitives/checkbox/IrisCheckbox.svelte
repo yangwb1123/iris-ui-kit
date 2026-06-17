@@ -59,7 +59,9 @@
   data-iris-checkbox
   data-iris-checkbox-size={size}
   data-state={checkState}
-  style="display:inline-flex; align-items:center; gap:var(--iris-gap-sm); cursor:{disabled ? 'not-allowed' : 'pointer'}; user-select:none;"
+  style="display:inline-flex; align-items:center; gap:var(--iris-gap-sm); cursor:{disabled
+    ? 'not-allowed'
+    : 'pointer'}; user-select:none;"
 >
   <input
     bind:this={inputEl}
@@ -69,7 +71,11 @@
     value={checkboxValue}
     checked={valueProp === true}
     {disabled}
-    aria-checked={checkState === 'indeterminate' ? 'mixed' : checkState === 'checked' ? 'true' : 'false'}
+    aria-checked={checkState === 'indeterminate'
+      ? 'mixed'
+      : checkState === 'checked'
+        ? 'true'
+        : 'false'}
     aria-describedby={ariaDescribedby}
     aria-label={ariaLabel}
     aria-invalid={invalid ? 'true' : undefined}

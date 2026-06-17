@@ -2,11 +2,11 @@
   "name": "ssr-sveltekit",
   "version": "0.0.0",
   "private": true,
-  "description": "SvelteKit SSR smoke app \u2014 the SSR-compat proof for @iris-ui/svelte (ROADMAP v3 R14, deferred)",
+  "description": "SvelteKit SSR smoke app — the SSR-compat proof for @iris-ui/svelte (ROADMAP v3 R14, deferred)",
   "scripts": {
     "dev": "vite dev --port 5182",
     "build": "vite build",
-    "test": "echo \"(ssr-sveltekit) build IS the test \u2014 vite build server-renders every route\" && exit 0",
+    "test": "echo \"(ssr-sveltekit) build IS the test — vite build server-renders every route\" && exit 0",
     "typecheck": "svelte-check",
     "clean": "rm -rf .svelte-kit build node_modules/.cache"
   },

@@ -115,7 +115,9 @@
     <div
       data-iris-dashboard-cell={`${c}-${r}`}
       aria-hidden="true"
-      style="grid-column:{c}/span 1;grid-row:{r}/span 1;pointer-events:all{cellOutline(`${c}-${r}`)}"
+      style="grid-column:{c}/span 1;grid-row:{r}/span 1;pointer-events:all{cellOutline(
+        `${c}-${r}`,
+      )}"
       ondragover={(e) => {
         e.preventDefault()
         if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
@@ -160,16 +162,13 @@
         <span
           data-iris-dashboard-drag-handle
           aria-hidden="true"
-          style="font-size:1rem;line-height:1;color:var(--iris-color-muted,#9ca3af)"
-        >⠿</span>
+          style="font-size:1rem;line-height:1;color:var(--iris-color-muted,#9ca3af)">⠿</span
+        >
         <span data-iris-dashboard-widget-title={w.id}>{w.title}</span>
       </div>
 
       <!-- Widget content area -->
-      <div
-        data-iris-dashboard-widget-content={w.id}
-        style="flex:1;padding:12px"
-      ></div>
+      <div data-iris-dashboard-widget-content={w.id} style="flex:1;padding:12px"></div>
     </div>
   {/each}
 </div>

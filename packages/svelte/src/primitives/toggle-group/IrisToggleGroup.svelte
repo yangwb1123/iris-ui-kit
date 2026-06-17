@@ -32,7 +32,10 @@
   }: Props = $props()
 
   // Plain non-reactive array for focus movement registration
-  interface ItemReg { value: string; getEl: () => HTMLElement | null }
+  interface ItemReg {
+    value: string
+    getEl: () => HTMLElement | null
+  }
   const itemRegistry: ItemReg[] = []
 
   // Selection logic (single/multiple toggle, dedup) is single-sourced in the
@@ -98,11 +101,21 @@
   }
 
   setToggleGroupContext({
-    get type() { return type },
-    get orientation() { return orientation },
-    get size() { return size },
-    get variant() { return variant },
-    get disabled() { return disabled },
+    get type() {
+      return type
+    },
+    get orientation() {
+      return orientation
+    },
+    get size() {
+      return size
+    },
+    get variant() {
+      return variant
+    },
+    get disabled() {
+      return disabled
+    },
     isActive,
     toggle,
     registerItem,
@@ -110,14 +123,16 @@
     moveFocus,
   })
 
-  const rootStyle = $derived(styleToString({
-    display: 'inline-flex',
-    'flex-direction': orientation === 'horizontal' ? 'row' : 'column',
-    'border-radius': 'var(--iris-radius-md, 6px)',
-    overflow: 'hidden',
-    background: variant === 'outline' ? 'transparent' : 'var(--iris-surface)',
-    border: variant === 'outline' ? '1px solid var(--iris-border)' : '1px solid transparent',
-  }))
+  const rootStyle = $derived(
+    styleToString({
+      display: 'inline-flex',
+      'flex-direction': orientation === 'horizontal' ? 'row' : 'column',
+      'border-radius': 'var(--iris-radius-md, 6px)',
+      overflow: 'hidden',
+      background: variant === 'outline' ? 'transparent' : 'var(--iris-surface)',
+      border: variant === 'outline' ? '1px solid var(--iris-border)' : '1px solid transparent',
+    }),
+  )
 </script>
 
 <div

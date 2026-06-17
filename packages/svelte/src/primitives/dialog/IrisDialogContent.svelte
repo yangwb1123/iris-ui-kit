@@ -20,7 +20,12 @@
   function setContentRef(node: HTMLElement): { destroy: () => void } {
     contentEl = node
     ctx.setContent(node)
-    return { destroy: () => { contentEl = undefined; ctx.setContent(undefined) } }
+    return {
+      destroy: () => {
+        contentEl = undefined
+        ctx.setContent(undefined)
+      },
+    }
   }
 
   const { lockScroll, unlockScroll } = useBodyScrollLock()
@@ -80,7 +85,9 @@
       data-iris-dialog-content
       data-state="open"
       onpointerdown={stopPropagation}
-      style="background: var(--iris-surface); color: var(--iris-foreground); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-lg, 8px); padding: var(--iris-padding-lg, 24px); box-shadow: 0 24px 48px -16px rgba(0,0,0,0.32), 0 8px 16px -4px rgba(0,0,0,0.16); max-width: 90vw; max-height: 85vh; overflow: auto; outline: none;{style ? ' ' + style : ''}"
+      style="background: var(--iris-surface); color: var(--iris-foreground); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-lg, 8px); padding: var(--iris-padding-lg, 24px); box-shadow: 0 24px 48px -16px rgba(0,0,0,0.32), 0 8px 16px -4px rgba(0,0,0,0.16); max-width: 90vw; max-height: 85vh; overflow: auto; outline: none;{style
+        ? ' ' + style
+        : ''}"
     >
       {@render children?.()}
     </div>

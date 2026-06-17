@@ -149,7 +149,7 @@
     collapsed={currentCollapsed}
     onCollapsedChange={setCollapsed}
     width={sidebarWidth}
-    collapsedWidth={collapsedWidth}
+    {collapsedWidth}
     style="height: 100vh"
     sidebar={sidebarRegion}
   >

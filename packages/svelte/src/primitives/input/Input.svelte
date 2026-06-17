@@ -3,11 +3,12 @@
   import { styleToString, mergeStyle } from '../../internal/style'
   import type { IrisInputProps, IrisInputSize } from './types'
 
-  const SIZE_MAP: Record<IrisInputSize, { padding: string; fontSize: string; minHeight: string }> = {
-    sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
-    md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
-    lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
-  }
+  const SIZE_MAP: Record<IrisInputSize, { padding: string; fontSize: string; minHeight: string }> =
+    {
+      sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
+      md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
+      lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
+    }
 
   let {
     size = 'md',

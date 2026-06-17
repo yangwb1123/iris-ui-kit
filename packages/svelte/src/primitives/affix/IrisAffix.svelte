@@ -11,15 +11,7 @@
     [key: string]: unknown
   }
 
-  let {
-    offsetTop,
-    offsetBottom,
-    target,
-    style,
-    children,
-    onchange,
-    ...rest
-  }: Props = $props()
+  let { offsetTop, offsetBottom, target, style, children, onchange, ...rest }: Props = $props()
 
   let affixed = $state(false)
   let fixedStyle = $state<string | undefined>(undefined)
@@ -72,16 +64,9 @@
   {...rest}
   data-iris-affix
   data-affixed={affixed ? 'true' : undefined}
-  style={mergeStyle(
-    affixed && reserve != null ? `height: ${reserve}px` : '',
-    style,
-  )}
+  style={mergeStyle(affixed && reserve != null ? `height: ${reserve}px` : '', style)}
 >
-  <div
-    bind:this={contentEl}
-    data-iris-affix-content
-    style={affixed ? fixedStyle : undefined}
-  >
+  <div bind:this={contentEl} data-iris-affix-content style={affixed ? fixedStyle : undefined}>
     {@render children?.()}
   </div>
 </div>

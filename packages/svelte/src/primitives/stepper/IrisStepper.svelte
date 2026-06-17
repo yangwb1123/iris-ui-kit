@@ -80,7 +80,9 @@
   data-iris-stepper
   data-iris-stepper-orientation={orientation}
   role="list"
-  style="display:flex; flex-direction:{orientation === 'horizontal' ? 'row' : 'column'}; gap:0; margin:0; padding:0; list-style:none;{style ? ' ' + style : ''}"
+  style="display:flex; flex-direction:{orientation === 'horizontal'
+    ? 'row'
+    : 'column'}; gap:0; margin:0; padding:0; list-style:none;{style ? ' ' + style : ''}"
 >
   {@render children?.()}
 </ol>

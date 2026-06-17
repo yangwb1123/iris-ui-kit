@@ -36,11 +36,7 @@
   let focused = $state(false)
 
   function canAdd(txt: string, list: string[]) {
-    return (
-      !!txt &&
-      (allowDuplicates || !list.includes(txt)) &&
-      (!max || list.length < max)
-    )
+    return !!txt && (allowDuplicates || !list.includes(txt)) && (!max || list.length < max)
   }
 
   function addTag() {
@@ -133,8 +129,10 @@
         aria-label={t('tagInput.remove', { tag })}
         {disabled}
         onclick={() => removeAt(i)}
-        style="border: none; background: transparent; color: var(--iris-muted); cursor: {disabled ? 'not-allowed' : 'pointer'}; font-size: 14px; line-height: 1; padding: 0;"
-      >×</button>
+        style="border: none; background: transparent; color: var(--iris-muted); cursor: {disabled
+          ? 'not-allowed'
+          : 'pointer'}; font-size: 14px; line-height: 1; padding: 0;">×</button
+      >
     </span>
   {/each}
   <input
@@ -148,8 +146,12 @@
     aria-describedby={ariaDescribedby}
     oninput={handleInput}
     onkeydown={handleKeyDown}
-    onfocus={() => { focused = true }}
-    onblur={() => { focused = false }}
+    onfocus={() => {
+      focused = true
+    }}
+    onblur={() => {
+      focused = false
+    }}
     style="flex: 1; min-width: 80px; border: none; outline: none; background: transparent; color: var(--iris-foreground); font-family: inherit; font-size: 14px; padding: 2px 0;"
   />
 </div>

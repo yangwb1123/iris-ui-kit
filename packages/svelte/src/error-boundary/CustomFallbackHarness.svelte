@@ -9,7 +9,7 @@
 
 <IrisErrorBoundary>
   {#snippet children()}
-    <ThrowingChild shouldThrow message={message} />
+    <ThrowingChild shouldThrow {message} />
   {/snippet}
   {#snippet fallback({ error, reset })}
     <div data-testid="custom-fallback">

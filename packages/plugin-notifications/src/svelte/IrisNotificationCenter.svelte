@@ -39,7 +39,9 @@
   <div data-iris-notifications-header>
     <span data-iris-notifications-title>{title}</span>
     {#if unread > 0}
-          <span data-iris-notifications-badge aria-label={unreadLabel.replace('{n}', String(unread))}>{unread}</span>
+      <span data-iris-notifications-badge aria-label={unreadLabel.replace('{n}', String(unread))}
+        >{unread}</span
+      >
     {/if}
     <button type="button" data-iris-notifications-mark-all onclick={() => center.markAllRead()}>
       Mark all read
@@ -63,7 +65,7 @@
           <button
             type="button"
             data-iris-notification-dismiss
-              aria-label={dismissLabel}
+            aria-label={dismissLabel}
             onclick={() => center.dismiss(n.id)}
           >
             ×

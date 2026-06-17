@@ -42,6 +42,11 @@
   )
 </script>
 
-<div {...rest} data-iris-stack data-iris-stack-direction={direction} style={mergeStyle(base, style)}>
+<div
+  {...rest}
+  data-iris-stack
+  data-iris-stack-direction={direction}
+  style={mergeStyle(base, style)}
+>
   {@render children?.()}
 </div>

@@ -69,7 +69,10 @@
   function focusCell(i: number) {
     const idx = Math.max(0, Math.min(length - 1, i))
     const el = cellEls[idx]
-    if (el) { el.focus(); el.select() }
+    if (el) {
+      el.focus()
+      el.select()
+    }
   }
 
   function commit(next: string) {
@@ -84,8 +87,7 @@
     if (!clean) return
     const start = Math.min(startIndex, cells.length)
     const arr = cells.split('')
-    for (let k = 0; k < clean.length && start + k < length; k++)
-      arr[start + k] = clean.charAt(k)
+    for (let k = 0; k < clean.length && start + k < length; k++) arr[start + k] = clean.charAt(k)
     commit(arr.join('').slice(0, length))
     focusCell(start + clean.length)
   }
@@ -112,13 +114,17 @@
       e.preventDefault()
       if (v[i]) commit(v.slice(0, i) + v.slice(i + 1))
     } else if (key === 'ArrowLeft') {
-      e.preventDefault(); focusCell(i - 1)
+      e.preventDefault()
+      focusCell(i - 1)
     } else if (key === 'ArrowRight') {
-      e.preventDefault(); focusCell(i + 1)
+      e.preventDefault()
+      focusCell(i + 1)
     } else if (key === 'Home') {
-      e.preventDefault(); focusCell(0)
+      e.preventDefault()
+      focusCell(0)
     } else if (key === 'End') {
-      e.preventDefault(); focusCell(v.length)
+      e.preventDefault()
+      focusCell(v.length)
     } else if (key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       if (!PATTERNS[type].test(key)) e.preventDefault()
     }
@@ -142,13 +148,20 @@
   data-state={invalid ? 'invalid' : 'idle'}
   role="group"
   aria-disabled={disabled ? 'true' : undefined}
-  style={mergeStyle(styleToString({ display: 'inline-flex', gap: '8px', direction: 'inherit' }), style)}
+  style={mergeStyle(
+    styleToString({ display: 'inline-flex', gap: '8px', direction: 'inherit' }),
+    style,
+  )}
 >
   {#each Array.from({ length }) as _, i (i)}
     {@const char = cells.charAt(i)}
     {@const isFocused = focusedIndex === i}
     {@const sz = SIZE_MAP[size]}
-    {@const borderColor = invalid ? 'var(--iris-danger)' : isFocused ? 'var(--iris-primary)' : 'var(--iris-border)'}
+    {@const borderColor = invalid
+      ? 'var(--iris-danger)'
+      : isFocused
+        ? 'var(--iris-primary)'
+        : 'var(--iris-border)'}
     <input
       bind:this={cellEls[i]}
       id={i === 0 ? id : undefined}
@@ -167,8 +180,13 @@
       oninput={(e) => handleInput(i, e)}
       onkeydown={(e) => handleKeyDown(i, e)}
       onpaste={(e) => handlePaste(i, e)}
-      onfocus={(e) => { focusedIndex = i; (e.target as HTMLInputElement).select() }}
-      onblur={() => { focusedIndex = -1 }}
+      onfocus={(e) => {
+        focusedIndex = i
+        ;(e.target as HTMLInputElement).select()
+      }}
+      onblur={() => {
+        focusedIndex = -1
+      }}
       style={styleToString({
         width: sz.box,
         height: sz.height,

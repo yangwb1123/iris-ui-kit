@@ -25,7 +25,9 @@
   const isControlled = $derived(openProp !== undefined)
 
   // svelte-ignore state_referenced_locally
-  const { state: machineState, send } = toMachine(createFloatingMachine(defaultOpen ? 'open' : 'closed'))
+  const { state: machineState, send } = toMachine(
+    createFloatingMachine(defaultOpen ? 'open' : 'closed'),
+  )
   const internalOpen = $derived($machineState.value === 'open')
 
   $effect(() => {
@@ -46,15 +48,29 @@
   const contentId = generateId()
 
   setPopoverContext({
-    get open() { return open },
+    get open() {
+      return open
+    },
     setOpen,
-    get trigger() { return triggerEl },
-    setTrigger: (el) => { triggerEl = el },
-    get content() { return contentEl },
-    setContent: (el) => { contentEl = el },
+    get trigger() {
+      return triggerEl
+    },
+    setTrigger: (el) => {
+      triggerEl = el
+    },
+    get content() {
+      return contentEl
+    },
+    setContent: (el) => {
+      contentEl = el
+    },
     contentId,
-    get placement() { return placement },
-    get offset() { return offset },
+    get placement() {
+      return placement
+    },
+    get offset() {
+      return offset
+    },
   })
 </script>
 

@@ -35,9 +35,7 @@
   const w = $derived(width !== undefined ? toCss(width) : defaultWidth(shape))
   const h = $derived(height !== undefined ? toCss(height) : defaultHeight(shape, width))
 
-  const computedStyle = $derived(
-    styleToString({ width: w, height: h }),
-  )
+  const computedStyle = $derived(styleToString({ width: w, height: h }))
 
   $effect(() => {
     installSkeletonStyles()

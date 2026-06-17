@@ -51,9 +51,7 @@
     activeIndex = 0
   })
 
-  type Row =
-    | { kind: 'header'; label: string }
-    | { kind: 'item'; item: IrisCommandItem }
+  type Row = { kind: 'header'; label: string } | { kind: 'item'; item: IrisCommandItem }
 
   const matches = $derived(
     (() => {
@@ -63,7 +61,7 @@
         if (score !== null) result.push({ item, score })
       }
       return result.sort((a, b) => a.score - b.score)
-    })()
+    })(),
   )
 
   const rows = $derived<Row[]>(
@@ -79,11 +77,13 @@
         out.push({ kind: 'item', item: m.item })
       }
       return out
-    })()
+    })(),
   )
 
   const enabledItems = $derived(
-    rows.filter((r): r is { kind: 'item'; item: IrisCommandItem } => r.kind === 'item' && !r.item.disabled)
+    rows.filter(
+      (r): r is { kind: 'item'; item: IrisCommandItem } => r.kind === 'item' && !r.item.disabled,
+    ),
   )
 
   function close() {
@@ -188,7 +188,9 @@
             style:text-align="center"
             style:color="var(--iris-muted)"
             style:font-size="14px"
-          >{emptyText ?? t('commandPalette.empty')}</div>
+          >
+            {emptyText ?? t('commandPalette.empty')}
+          </div>
         {:else}
           {#each rows as row, i (row.kind === 'item' ? row.item.id : `header-${i}`)}
             {#if row.kind === 'header'}
@@ -200,9 +202,11 @@
                 style:color="var(--iris-muted)"
                 style:text-transform="uppercase"
                 style:letter-spacing="0.05em"
-              >{row.label}</div>
+              >
+                {row.label}
+              </div>
             {:else}
-              {@const eiIdx = enabledItems.findIndex(x => x.item.id === row.item.id)}
+              {@const eiIdx = enabledItems.findIndex((x) => x.item.id === row.item.id)}
               {@const isActive = eiIdx === activeIndex && !row.item.disabled}
               <button
                 type="button"
@@ -238,8 +242,8 @@
                     style:border="1px solid var(--iris-border)"
                     style:border-radius="3px"
                     style:background="var(--iris-surface)"
-                    style:color="var(--iris-muted)"
-                  >{row.item.shortcut}</kbd>
+                    style:color="var(--iris-muted)">{row.item.shortcut}</kbd
+                  >
                 {/if}
               </button>
             {/if}

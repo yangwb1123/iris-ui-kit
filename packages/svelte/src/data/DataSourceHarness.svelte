@@ -18,5 +18,9 @@
 
 <div data-count>{ds.state.rows.length}</div>
 <div data-has-more>{ds.state.hasMore}</div>
-<div data-rows>{ds.state.rows.map((r) => String((r as Record<string, unknown>).name)).join(',')}</div>
-<div data-ages>{ds.state.rows.map((r) => String((r as Record<string, unknown>).age)).join(',')}</div>
+<div data-rows>
+  {ds.state.rows.map((r) => String((r as Record<string, unknown>).name)).join(',')}
+</div>
+<div data-ages>
+  {ds.state.rows.map((r) => String((r as Record<string, unknown>).age)).join(',')}
+</div>

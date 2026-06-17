@@ -49,7 +49,11 @@
   let typeaheadTimer: ReturnType<typeof setTimeout> | null = null
 
   // Clear typeahead timer on unmount
-  $effect(() => { return () => { if (typeaheadTimer) clearTimeout(typeaheadTimer) } })
+  $effect(() => {
+    return () => {
+      if (typeaheadTimer) clearTimeout(typeaheadTimer)
+    }
+  })
 
   function handleKeyDown(e: KeyboardEvent & { currentTarget: EventTarget & HTMLDivElement }) {
     onkeydown?.(e)

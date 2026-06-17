@@ -28,8 +28,17 @@
   data-disabled={disabled ? '' : undefined}
   {...rest}
   onclick={handleClick}
-  onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(e as unknown as MouseEvent) } }}
-  style="padding: var(--iris-padding-sm, 4px) var(--iris-padding-md, 8px); cursor: {disabled ? 'not-allowed' : 'pointer'}; border-radius: var(--iris-radius-sm, 3px); color: {disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)'}; outline: none; {(rest.style as string) ?? ''}"
+  onkeydown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleClick(e as unknown as MouseEvent)
+    }
+  }}
+  style="padding: var(--iris-padding-sm, 4px) var(--iris-padding-md, 8px); cursor: {disabled
+    ? 'not-allowed'
+    : 'pointer'}; border-radius: var(--iris-radius-sm, 3px); color: {disabled
+    ? 'var(--iris-muted)'
+    : 'var(--iris-foreground)'}; outline: none; {(rest.style as string) ?? ''}"
 >
   {@render children?.()}
 </div>

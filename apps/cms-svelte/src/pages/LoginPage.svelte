@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { IrisButton, IrisFormField, IrisInput, IrisSelect, IrisIcon, IrisStack } from '@iris-ui/svelte'
+  import {
+    IrisButton,
+    IrisFormField,
+    IrisInput,
+    IrisSelect,
+    IrisIcon,
+    IrisStack,
+  } from '@iris-ui/svelte'
   import type { IrisSelectItem } from '@iris-ui/svelte'
   import { useAuth, type Role } from '../auth'
 
@@ -45,17 +52,31 @@
     <div style="margin-top: 20px">
       <IrisStack spacing={16}>
         <IrisFormField label="Username" {error}>
-          <IrisInput value={username} oninput={(e) => (username = e.currentTarget.value)} placeholder="any non-empty value" aria-label="Username" />
+          <IrisInput
+            value={username}
+            oninput={(e) => (username = e.currentTarget.value)}
+            placeholder="any non-empty value"
+            aria-label="Username"
+          />
         </IrisFormField>
         <IrisFormField label="Password">
-          <IrisInput type="password" value={password} oninput={(e) => (password = e.currentTarget.value)} placeholder="any non-empty value" aria-label="Password" />
+          <IrisInput
+            type="password"
+            value={password}
+            oninput={(e) => (password = e.currentTarget.value)}
+            placeholder="any non-empty value"
+            aria-label="Password"
+          />
         </IrisFormField>
         <IrisFormField label="Sign in as" hint="Drives RBAC: viewers see fewer menu items.">
-          <IrisSelect items={roleItems} value={role} onValueChange={(v) => (role = v as Role)} style="width: 100%" />
+          <IrisSelect
+            items={roleItems}
+            value={role}
+            onValueChange={(v) => (role = v as Role)}
+            style="width: 100%"
+          />
         </IrisFormField>
-        <IrisButton type="submit" variant="solid" style="width: 100%">
-          Sign in
-        </IrisButton>
+        <IrisButton type="submit" variant="solid" style="width: 100%">Sign in</IrisButton>
       </IrisStack>
     </div>
   </form>

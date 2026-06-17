@@ -22,7 +22,9 @@
   {...rest}
   data-iris-fieldset
   {disabled}
-  style="min-inline-size:0; margin:0; padding:16px; border:1px solid var(--iris-border); border-radius:var(--iris-radius-md,6px); opacity:{disabled ? '0.6' : '1'};{style ? ' ' + style : ''}"
+  style="min-inline-size:0; margin:0; padding:16px; border:1px solid var(--iris-border); border-radius:var(--iris-radius-md,6px); opacity:{disabled
+    ? '0.6'
+    : '1'};{style ? ' ' + style : ''}"
 >
   {#if legendSnippet || legend != null}
     <legend

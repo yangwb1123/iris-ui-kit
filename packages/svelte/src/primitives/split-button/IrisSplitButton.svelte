@@ -40,7 +40,10 @@
   let open = $state(false)
   let rootEl = $state<HTMLElement | undefined>(undefined)
 
-  const SIZE_MAP: Record<IrisSplitButtonSize, { padding: string; fontSize: string; height: string }> = {
+  const SIZE_MAP: Record<
+    IrisSplitButtonSize,
+    { padding: string; fontSize: string; height: string }
+  > = {
     sm: { padding: '4px 10px', fontSize: '12px', height: '28px' },
     md: { padding: '6px 14px', fontSize: '14px', height: '34px' },
     lg: { padding: '8px 18px', fontSize: '16px', height: '40px' },
@@ -48,16 +51,29 @@
 
   const sz = $derived(SIZE_MAP[size])
   const isPrimary = $derived(variant === 'primary')
-  const colors = $derived(isPrimary
-    ? { background: 'var(--iris-primary)', color: '#fff', border: '1px solid var(--iris-primary)' }
-    : { background: 'var(--iris-surface)', color: 'var(--iris-foreground)', border: '1px solid var(--iris-border)' }
+  const colors = $derived(
+    isPrimary
+      ? {
+          background: 'var(--iris-primary)',
+          color: '#fff',
+          border: '1px solid var(--iris-primary)',
+        }
+      : {
+          background: 'var(--iris-surface)',
+          color: 'var(--iris-foreground)',
+          border: '1px solid var(--iris-border)',
+        },
   )
 
   const hasActions = $derived(!!actions && actions.length > 0)
 
   function setRootRef(node: HTMLElement): { destroy: () => void } {
     rootEl = node
-    return { destroy: () => { rootEl = undefined } }
+    return {
+      destroy: () => {
+        rootEl = undefined
+      },
+    }
   }
 
   function handleMainClick(): void {
@@ -103,7 +119,9 @@
     data-iris-split-button-main
     disabled={disabled || undefined}
     onclick={handleMainClick}
-    style="background: {colors.background}; color: {colors.color}; border: {colors.border}; padding: {sz.padding}; min-height: {sz.height}; font-size: {sz.fontSize}; font-family: inherit; border-start-start-radius: var(--iris-radius-md, 6px); border-end-start-radius: var(--iris-radius-md, 6px); cursor: {disabled ? 'not-allowed' : 'pointer'}; opacity: {disabled ? '0.6' : '1'}"
+    style="background: {colors.background}; color: {colors.color}; border: {colors.border}; padding: {sz.padding}; min-height: {sz.height}; font-size: {sz.fontSize}; font-family: inherit; border-start-start-radius: var(--iris-radius-md, 6px); border-end-start-radius: var(--iris-radius-md, 6px); cursor: {disabled
+      ? 'not-allowed'
+      : 'pointer'}; opacity: {disabled ? '0.6' : '1'}"
   >
     {@render children?.()}
   </button>
@@ -117,7 +135,11 @@
       aria-label={menuAriaLabel ?? t('splitButton.more')}
       disabled={disabled || undefined}
       onclick={handleChevronClick}
-      style="background: {colors.background}; color: {colors.color}; border-inline-start: {isPrimary ? '1px solid rgba(255,255,255,0.3)' : '1px solid var(--iris-border)'}; border-top: {colors.border}; border-right: {colors.border}; border-bottom: {colors.border}; padding: 0 8px; min-height: {sz.height}; font-size: 10px; border-start-end-radius: var(--iris-radius-md, 6px); border-end-end-radius: var(--iris-radius-md, 6px); cursor: {disabled ? 'not-allowed' : 'pointer'}; opacity: {disabled ? '0.6' : '1'}; display: inline-flex; align-items: center"
+      style="background: {colors.background}; color: {colors.color}; border-inline-start: {isPrimary
+        ? '1px solid rgba(255,255,255,0.3)'
+        : '1px solid var(--iris-border)'}; border-top: {colors.border}; border-right: {colors.border}; border-bottom: {colors.border}; padding: 0 8px; min-height: {sz.height}; font-size: 10px; border-start-end-radius: var(--iris-radius-md, 6px); border-end-end-radius: var(--iris-radius-md, 6px); cursor: {disabled
+        ? 'not-allowed'
+        : 'pointer'}; opacity: {disabled ? '0.6' : '1'}; display: inline-flex; align-items: center"
     >
       ▾
     </button>
@@ -137,7 +159,9 @@
           data-iris-split-button-item
           data-key={action.key}
           onclick={() => selectAction(action)}
-          style="padding: 6px 10px; font-size: 14px; border-radius: var(--iris-radius-sm, 4px); cursor: {action.disabled ? 'not-allowed' : 'pointer'}; color: {action.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)'}"
+          style="padding: 6px 10px; font-size: 14px; border-radius: var(--iris-radius-sm, 4px); cursor: {action.disabled
+            ? 'not-allowed'
+            : 'pointer'}; color: {action.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)'}"
         >
           {action.label}
         </li>

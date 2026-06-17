@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { createSelectionModel, nextEnabledIndex, firstEnabledIndex, lastEnabledIndex } from '@iris-ui/core'
+  import {
+    createSelectionModel,
+    nextEnabledIndex,
+    firstEnabledIndex,
+    lastEnabledIndex,
+  } from '@iris-ui/core'
   import { toStore } from '../../useStore'
   import type { IrisSegmentedOption } from './types'
 
@@ -118,7 +123,11 @@
   data-iris-segmented
   data-iris-segmented-size={size}
   data-disabled={disabled ? 'true' : undefined}
-  style="display:{block ? 'flex' : 'inline-flex'}; {block ? 'width:100%;' : ''} gap:2px; padding:2px; background:var(--iris-surface); border-radius:var(--iris-radius-md,6px); opacity:{disabled ? '0.6' : '1'};{style ? ' ' + style : ''}"
+  style="display:{block ? 'flex' : 'inline-flex'}; {block
+    ? 'width:100%;'
+    : ''} gap:2px; padding:2px; background:var(--iris-surface); border-radius:var(--iris-radius-md,6px); opacity:{disabled
+    ? '0.6'
+    : '1'};{style ? ' ' + style : ''}"
 >
   {#each norm as opt, i (opt.value)}
     {@const selected = displaySelected.includes(opt.value)}
@@ -134,7 +143,20 @@
       data-selected={selected ? 'true' : undefined}
       onclick={() => select(i)}
       onkeydown={(e) => onKeyDown(e, i)}
-      style="flex:{block ? '1' : undefined}; padding:{sz.padding}; min-height:{sz.height}; font-size:{sz.fontSize}; font-family:inherit; border:none; border-radius:var(--iris-radius-sm,4px); cursor:{disabled || opt.disabled ? 'not-allowed' : 'pointer'}; background:{selected ? 'var(--iris-background)' : 'transparent'}; color:{selected ? 'var(--iris-foreground)' : 'var(--iris-muted)'}; box-shadow:{selected ? '0 1px 3px rgba(0,0,0,0.12)' : 'none'}; font-weight:{selected ? '600' : '400'}; transition:background-color 120ms ease,color 120ms ease; white-space:nowrap;"
+      style="flex:{block
+        ? '1'
+        : undefined}; padding:{sz.padding}; min-height:{sz.height}; font-size:{sz.fontSize}; font-family:inherit; border:none; border-radius:var(--iris-radius-sm,4px); cursor:{disabled ||
+      opt.disabled
+        ? 'not-allowed'
+        : 'pointer'}; background:{selected
+        ? 'var(--iris-background)'
+        : 'transparent'}; color:{selected
+        ? 'var(--iris-foreground)'
+        : 'var(--iris-muted)'}; box-shadow:{selected
+        ? '0 1px 3px rgba(0,0,0,0.12)'
+        : 'none'}; font-weight:{selected
+        ? '600'
+        : '400'}; transition:background-color 120ms ease,color 120ms ease; white-space:nowrap;"
     >
       {opt.label}
     </button>

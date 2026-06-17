@@ -20,7 +20,12 @@
   function setContentRef(node: HTMLElement): { destroy: () => void } {
     contentEl = node
     ctx.setContent(node)
-    return { destroy: () => { contentEl = undefined; ctx.setContent(undefined) } }
+    return {
+      destroy: () => {
+        contentEl = undefined
+        ctx.setContent(undefined)
+      },
+    }
   }
 
   const { lockScroll, unlockScroll } = useBodyScrollLock()
@@ -83,8 +88,10 @@
     // panels to the DYNAMIC viewport (dvh <= vh) so they don't overflow under
     // mobile browser chrome. Separate property, so it's simply ignored where dvh
     // is unsupported, leaving the 100vh fallback.
-    if (s === 'left') return `${base}top: 0; left: 0; bottom: 0; width: ${sz}; height: 100vh; max-height: 100dvh; border-left: none;`
-    if (s === 'right') return `${base}top: 0; right: 0; bottom: 0; width: ${sz}; height: 100vh; max-height: 100dvh; border-right: none;`
+    if (s === 'left')
+      return `${base}top: 0; left: 0; bottom: 0; width: ${sz}; height: 100vh; max-height: 100dvh; border-left: none;`
+    if (s === 'right')
+      return `${base}top: 0; right: 0; bottom: 0; width: ${sz}; height: 100vh; max-height: 100dvh; border-right: none;`
     if (s === 'top') return `${base}top: 0; left: 0; right: 0; height: ${sz}; border-top: none;`
     return `${base}bottom: 0; left: 0; right: 0; height: ${sz}; border-bottom: none;`
   })
@@ -97,8 +104,7 @@
     data-iris-drawer-backdrop
     onpointerdown={handleBackdropPointerDown}
     style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1199"
-  >
-  </div>
+  ></div>
   <!-- panel -->
   <div
     {...rest}

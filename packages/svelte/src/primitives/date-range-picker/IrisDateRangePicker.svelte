@@ -100,7 +100,7 @@
   style:display="inline-flex"
   style:align-items="center"
   style:gap="4px"
-  style={style}
+  {style}
   class={className}
   {...rest}
 >
@@ -120,7 +120,8 @@
     style:font-family="inherit"
     style:min-height="34px"
     style:min-width="140px"
-  >{fmt(value.start) || (startPlaceholder ?? t('dateRangePicker.start'))}</button>
+    >{fmt(value.start) || (startPlaceholder ?? t('dateRangePicker.start'))}</button
+  >
 
   <span aria-hidden="true" style:color="var(--iris-muted)">–</span>
 
@@ -139,8 +140,8 @@
     style:font-size="14px"
     style:font-family="inherit"
     style:min-height="34px"
-    style:min-width="140px"
-  >{fmt(value.end) || (endPlaceholder ?? t('dateRangePicker.end'))}</button>
+    style:min-width="140px">{fmt(value.end) || (endPlaceholder ?? t('dateRangePicker.end'))}</button
+  >
 
   {#if open}
     <div

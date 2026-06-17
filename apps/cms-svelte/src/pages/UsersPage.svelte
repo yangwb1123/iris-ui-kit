@@ -62,11 +62,7 @@
   )
 
   const ariaSort = (key: string): 'ascending' | 'descending' | 'none' =>
-    $view.sort?.key === key
-      ? $view.sort.direction === 'asc'
-        ? 'ascending'
-        : 'descending'
-      : 'none'
+    $view.sort?.key === key ? ($view.sort.direction === 'asc' ? 'ascending' : 'descending') : 'none'
   const sortGlyph = (key: string) =>
     $view.sort?.key === key ? ($view.sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
 
@@ -84,8 +80,8 @@
 <section>
   <h1 class="page-title">All users</h1>
   <p class="page-desc">
-    Driven by <code>createResourceController</code> in client mode (<code>createClientFetcher</code>)
-    — keyword filter + sortable columns + pagination + selection, all from @iris-ui/core.{#if $view.selectedKeys.length > 0}
+    Driven by <code>createResourceController</code> in client mode (<code>createClientFetcher</code
+    >) — keyword filter + sortable columns + pagination + selection, all from @iris-ui/core.{#if $view.selectedKeys.length > 0}
       · {$view.selectedKeys.length} selected{/if}
   </p>
   <div style="max-width: 260px; margin-bottom: 12px">

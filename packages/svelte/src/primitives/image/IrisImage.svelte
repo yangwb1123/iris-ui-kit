@@ -74,7 +74,9 @@
     aria-label={alt || t('image.preview')}
     tabindex="-1"
     onclick={handleClose}
-    onkeydown={(e) => { if (e.key === 'Escape') handleClose() }}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') handleClose()
+    }}
     style="position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); cursor: zoom-out"
   >
     <img
@@ -87,7 +89,10 @@
       type="button"
       data-iris-image-preview-close
       aria-label={t('dialog.close')}
-      onclick={(e) => { e.stopPropagation(); handleClose() }}
+      onclick={(e) => {
+        e.stopPropagation()
+        handleClose()
+      }}
       style="position: absolute; inset-block-start: 16px; inset-inline-end: 16px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,0.5); color: #fff; font-size: 22px; line-height: 1; cursor: pointer"
     >
       ×

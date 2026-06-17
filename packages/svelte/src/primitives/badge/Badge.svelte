@@ -32,7 +32,12 @@
         border: '1px solid transparent',
       })
     if (variant === 'outline')
-      return styleToString({ ...base, background: 'transparent', color: v, border: `1px solid ${v}` })
+      return styleToString({
+        ...base,
+        background: 'transparent',
+        color: v,
+        border: `1px solid ${v}`,
+      })
     return styleToString({
       ...base,
       // Precomputed fallback first; color-mix shorthand overrides on modern engines.
@@ -43,8 +48,14 @@
     })
   }
 
-  let { variant = 'subtle', tone = 'primary', size = 'md', style, children, ...rest }: IrisBadgeProps =
-    $props()
+  let {
+    variant = 'subtle',
+    tone = 'primary',
+    size = 'md',
+    style,
+    children,
+    ...rest
+  }: IrisBadgeProps = $props()
   const base = $derived(badgeStyle(variant, tone, size))
 </script>
 

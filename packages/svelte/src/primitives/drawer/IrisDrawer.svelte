@@ -29,7 +29,7 @@
 
   // svelte-ignore state_referenced_locally
   const { state: machineState, send } = toMachine(
-    createFloatingMachine((openProp ?? defaultOpen) ? 'open' : 'closed')
+    createFloatingMachine((openProp ?? defaultOpen) ? 'open' : 'closed'),
   )
   const internalOpen = $derived($machineState.value === 'open')
 
@@ -55,23 +55,45 @@
   let titleCount = $state(0)
 
   setDrawerContext({
-    get open() { return open },
+    get open() {
+      return open
+    },
     setOpen,
-    get trigger() { return triggerEl },
-    setTrigger: (el) => { triggerEl = el },
-    get content() { return contentEl },
-    setContent: (el) => { contentEl = el },
+    get trigger() {
+      return triggerEl
+    },
+    setTrigger: (el) => {
+      triggerEl = el
+    },
+    get content() {
+      return contentEl
+    },
+    setContent: (el) => {
+      contentEl = el
+    },
     contentId: `${baseId}-content`,
     titleId: `${baseId}-title`,
-    get hasTitle() { return titleCount > 0 },
+    get hasTitle() {
+      return titleCount > 0
+    },
     registerTitle: () => {
       titleCount += 1
-      return () => { titleCount -= 1 }
+      return () => {
+        titleCount -= 1
+      }
     },
-    get side() { return side },
-    get size() { return size },
-    get closeOnOutsideClick() { return closeOnOutsideClick },
-    get closeOnEscape() { return closeOnEscape },
+    get side() {
+      return side
+    },
+    get size() {
+      return size
+    },
+    get closeOnOutsideClick() {
+      return closeOnOutsideClick
+    },
+    get closeOnEscape() {
+      return closeOnEscape
+    },
   })
 </script>
 

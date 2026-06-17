@@ -61,13 +61,18 @@
   let contentEl = $state<HTMLElement | undefined>(undefined)
 
   const selectedItem = $derived(items.find((item) => item.value === value) ?? null)
-  const triggerLabel = $derived(selectedItem ? (selectedItem.label ?? String(selectedItem.value)) : (placeholder ?? t('select.placeholder')))
+  const triggerLabel = $derived(
+    selectedItem
+      ? (selectedItem.label ?? String(selectedItem.value))
+      : (placeholder ?? t('select.placeholder')),
+  )
 
-  const SIZE_MAP: Record<IrisSelectSize, { padding: string; fontSize: string; minHeight: string }> = {
-    sm: { padding: '4px 24px 4px 8px', fontSize: '12px', minHeight: '28px' },
-    md: { padding: '6px 28px 6px 12px', fontSize: '14px', minHeight: '34px' },
-    lg: { padding: '8px 32px 8px 12px', fontSize: '16px', minHeight: '40px' },
-  }
+  const SIZE_MAP: Record<IrisSelectSize, { padding: string; fontSize: string; minHeight: string }> =
+    {
+      sm: { padding: '4px 24px 4px 8px', fontSize: '12px', minHeight: '28px' },
+      md: { padding: '6px 28px 6px 12px', fontSize: '14px', minHeight: '34px' },
+      lg: { padding: '8px 32px 8px 12px', fontSize: '16px', minHeight: '40px' },
+    }
   const sz = $derived(SIZE_MAP[size])
 
   const floating = useFloating({
@@ -81,16 +86,26 @@
   useDismiss({
     enabled: () => open,
     exclude: [() => triggerEl, () => contentEl],
-    onDismiss: () => { open = false },
+    onDismiss: () => {
+      open = false
+    },
   })
 
   function setTrigger(node: HTMLElement): { destroy: () => void } {
     triggerEl = node
-    return { destroy: () => { triggerEl = undefined } }
+    return {
+      destroy: () => {
+        triggerEl = undefined
+      },
+    }
   }
   function setContent(node: HTMLElement): { destroy: () => void } {
     contentEl = node
-    return { destroy: () => { contentEl = undefined } }
+    return {
+      destroy: () => {
+        contentEl = undefined
+      },
+    }
   }
 
   function handleToggle(): void {
@@ -158,7 +173,12 @@
         _typeahead.buffer = ''
       }, 500)
       const labels = items.map((it) => (it.label ?? String(it.value)) as string)
-      const match = matchTypeahead(labels, _typeahead.buffer, currentIdx, (i) => !!items[i]?.disabled)
+      const match = matchTypeahead(
+        labels,
+        _typeahead.buffer,
+        currentIdx,
+        (i) => !!items[i]?.disabled,
+      )
       if (match >= 0) options[match]?.focus()
     }
   }
@@ -177,11 +197,34 @@
   {...rest}
   use:setTrigger
   onclick={handleToggle}
-  style="display: inline-flex; align-items: center; gap: var(--iris-gap-sm, 4px); background: var(--iris-background); color: {selectedItem ? 'var(--iris-foreground)' : 'var(--iris-muted)'}; border: 1px solid {invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}; border-radius: var(--iris-radius-md, 6px); cursor: {disabled ? 'not-allowed' : 'pointer'}; opacity: {disabled ? '0.6' : '1'}; text-align: start; font-family: inherit; position: relative; min-width: 140px; padding: {sz.padding}; font-size: {sz.fontSize}; min-height: {sz.minHeight};{style ? ' ' + style : ''}"
+  style="display: inline-flex; align-items: center; gap: var(--iris-gap-sm, 4px); background: var(--iris-background); color: {selectedItem
+    ? 'var(--iris-foreground)'
+    : 'var(--iris-muted)'}; border: 1px solid {invalid
+    ? 'var(--iris-danger)'
+    : 'var(--iris-border)'}; border-radius: var(--iris-radius-md, 6px); cursor: {disabled
+    ? 'not-allowed'
+    : 'pointer'}; opacity: {disabled
+    ? '0.6'
+    : '1'}; text-align: start; font-family: inherit; position: relative; min-width: 140px; padding: {sz.padding}; font-size: {sz.fontSize}; min-height: {sz.minHeight};{style
+    ? ' ' + style
+    : ''}"
 >
   <span style="flex: 1; min-width: 0">{triggerLabel}</span>
-  <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--iris-muted); pointer-events: none">
-    <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 16 16"
+    width="14"
+    height="14"
+    style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--iris-muted); pointer-events: none"
+  >
+    <path
+      d="M4 6l4 4 4-4"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
   </svg>
 </button>
 
@@ -204,9 +247,20 @@
         aria-disabled={item.disabled ? 'true' : undefined}
         data-iris-select-option
         onclick={() => selectItem(item)}
-        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectItem(item) } }}
+        onkeydown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            selectItem(item)
+          }
+        }}
         tabindex={item.disabled ? -1 : 0}
-        style="padding: 6px 10px; font-size: {sz.fontSize}; border-radius: var(--iris-radius-sm, 4px); cursor: {item.disabled ? 'not-allowed' : 'pointer'}; color: {item.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)'}; background: {item.value === value ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))' : 'transparent'}; font-weight: {item.value === value ? '600' : '400'}"
+        style="padding: 6px 10px; font-size: {sz.fontSize}; border-radius: var(--iris-radius-sm, 4px); cursor: {item.disabled
+          ? 'not-allowed'
+          : 'pointer'}; color: {item.disabled
+          ? 'var(--iris-muted)'
+          : 'var(--iris-foreground)'}; background: {item.value === value
+          ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+          : 'transparent'}; font-weight: {item.value === value ? '600' : '400'}"
       >
         {item.label ?? String(item.value)}
       </li>

@@ -17,11 +17,6 @@
   }
 </script>
 
-<button
-  type="button"
-  {...rest}
-  data-iris-dialog-close
-  onclick={handleClick}
->
+<button type="button" {...rest} data-iris-dialog-close onclick={handleClick}>
   {@render children?.()}
 </button>

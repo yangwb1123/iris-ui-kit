@@ -88,13 +88,28 @@
       const v = handle === 'start' ? startVal : endVal
       let next = v
       switch (e.key) {
-        case 'ArrowLeft': case 'ArrowDown': next = v - step; break
-        case 'ArrowRight': case 'ArrowUp': next = v + step; break
-        case 'Home': next = handle === 'start' ? min : startVal; break
-        case 'End': next = handle === 'end' ? max : endVal; break
-        case 'PageDown': next = v - step * 10; break
-        case 'PageUp': next = v + step * 10; break
-        default: return
+        case 'ArrowLeft':
+        case 'ArrowDown':
+          next = v - step
+          break
+        case 'ArrowRight':
+        case 'ArrowUp':
+          next = v + step
+          break
+        case 'Home':
+          next = handle === 'start' ? min : startVal
+          break
+        case 'End':
+          next = handle === 'end' ? max : endVal
+          break
+        case 'PageDown':
+          next = v - step * 10
+          break
+        case 'PageUp':
+          next = v + step * 10
+          break
+        default:
+          return
       }
       e.preventDefault()
       updateAt(handle, next)
@@ -122,17 +137,19 @@
   const startPct = $derived(percent(startVal))
   const endPct = $derived(percent(endVal))
 
-  const thumbBase = $derived(styleToString({
-    position: 'absolute',
-    top: '50%',
-    width: '16px',
-    height: '16px',
-    'border-radius': '50%',
-    background: 'var(--iris-background, #fff)',
-    cursor: disabled ? 'not-allowed' : 'grab',
-    'touch-action': 'none',
-    outline: 'none',
-  }))
+  const thumbBase = $derived(
+    styleToString({
+      position: 'absolute',
+      top: '50%',
+      width: '16px',
+      height: '16px',
+      'border-radius': '50%',
+      background: 'var(--iris-background, #fff)',
+      cursor: disabled ? 'not-allowed' : 'grab',
+      'touch-action': 'none',
+      outline: 'none',
+    }),
+  )
 </script>
 
 <div
@@ -152,7 +169,10 @@
     <!-- Range fill -->
     <div
       data-iris-range-slider-range
-      style="position: absolute; top: 0; bottom: 0; inset-inline-start: {startPct}%; width: {endPct - startPct}%; background: {disabled ? 'var(--iris-muted)' : 'var(--iris-primary)'}; border-radius: inherit;"
+      style="position: absolute; top: 0; bottom: 0; inset-inline-start: {startPct}%; width: {endPct -
+        startPct}%; background: {disabled
+        ? 'var(--iris-muted)'
+        : 'var(--iris-primary)'}; border-radius: inherit;"
     ></div>
     <!-- Start thumb -->
     <div
@@ -167,7 +187,9 @@
       data-dragging={dragging === 'start' ? 'true' : undefined}
       onkeydown={keyHandler('start')}
       {...makePointerHandlers('start')}
-      style="{thumbBase}; inset-inline-start: {startPct}%; transform: translate(-50%, -50%); border: 2px solid {disabled ? 'var(--iris-muted)' : 'var(--iris-primary)'};"
+      style="{thumbBase}; inset-inline-start: {startPct}%; transform: translate(-50%, -50%); border: 2px solid {disabled
+        ? 'var(--iris-muted)'
+        : 'var(--iris-primary)'};"
     ></div>
     <!-- End thumb -->
     <div
@@ -182,7 +204,9 @@
       data-dragging={dragging === 'end' ? 'true' : undefined}
       onkeydown={keyHandler('end')}
       {...makePointerHandlers('end')}
-      style="{thumbBase}; inset-inline-start: {endPct}%; transform: translate(-50%, -50%); border: 2px solid {disabled ? 'var(--iris-muted)' : 'var(--iris-primary)'};"
+      style="{thumbBase}; inset-inline-start: {endPct}%; transform: translate(-50%, -50%); border: 2px solid {disabled
+        ? 'var(--iris-muted)'
+        : 'var(--iris-primary)'};"
     ></div>
   </div>
 </div>

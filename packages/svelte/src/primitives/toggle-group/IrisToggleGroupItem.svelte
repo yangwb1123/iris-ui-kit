@@ -25,10 +25,14 @@
   const isSingle = $derived(ctx.type === 'single')
 
   const SIZE_PADDING: Record<'sm' | 'md' | 'lg', string> = {
-    sm: '4px 10px', md: '6px 14px', lg: '8px 18px',
+    sm: '4px 10px',
+    md: '6px 14px',
+    lg: '8px 18px',
   }
   const SIZE_FONT: Record<'sm' | 'md' | 'lg', string> = {
-    sm: '12px', md: '13px', lg: '14px',
+    sm: '12px',
+    md: '13px',
+    lg: '14px',
   }
 
   function handleClick() {
@@ -39,16 +43,29 @@
   function handleKeyDown(e: KeyboardEvent) {
     if (isDisabled) return
     switch (e.key) {
-      case ' ': case 'Enter':
-        e.preventDefault(); ctx.toggle(value); break
-      case 'ArrowRight': case 'ArrowDown':
-        e.preventDefault(); ctx.moveFocus(value, 1); break
-      case 'ArrowLeft': case 'ArrowUp':
-        e.preventDefault(); ctx.moveFocus(value, -1); break
+      case ' ':
+      case 'Enter':
+        e.preventDefault()
+        ctx.toggle(value)
+        break
+      case 'ArrowRight':
+      case 'ArrowDown':
+        e.preventDefault()
+        ctx.moveFocus(value, 1)
+        break
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        e.preventDefault()
+        ctx.moveFocus(value, -1)
+        break
       case 'Home':
-        e.preventDefault(); ctx.moveFocus(value, 'home'); break
+        e.preventDefault()
+        ctx.moveFocus(value, 'home')
+        break
       case 'End':
-        e.preventDefault(); ctx.moveFocus(value, 'end'); break
+        e.preventDefault()
+        ctx.moveFocus(value, 'end')
+        break
     }
   }
 </script>
@@ -67,7 +84,19 @@
   data-state={isActive ? 'on' : 'off'}
   onclick={handleClick}
   onkeydown={handleKeyDown}
-  style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: {SIZE_PADDING[ctx.size]}; font-size: {SIZE_FONT[ctx.size]}; font-family: inherit; font-weight: 500; line-height: 1; background: {isActive ? 'var(--iris-primary)' : 'transparent'}; color: {isActive ? 'var(--iris-primary-foreground, #fff)' : 'var(--iris-foreground)'}; border: none; cursor: {isDisabled ? 'not-allowed' : 'pointer'}; opacity: {isDisabled ? '0.5' : '1'}; transition: background-color 120ms ease, color 120ms ease; {style ?? ''}"
+  style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: {SIZE_PADDING[
+    ctx.size
+  ]}; font-size: {SIZE_FONT[
+    ctx.size
+  ]}; font-family: inherit; font-weight: 500; line-height: 1; background: {isActive
+    ? 'var(--iris-primary)'
+    : 'transparent'}; color: {isActive
+    ? 'var(--iris-primary-foreground, #fff)'
+    : 'var(--iris-foreground)'}; border: none; cursor: {isDisabled
+    ? 'not-allowed'
+    : 'pointer'}; opacity: {isDisabled
+    ? '0.5'
+    : '1'}; transition: background-color 120ms ease, color 120ms ease; {style ?? ''}"
 >
   {@render children?.()}
 </button>

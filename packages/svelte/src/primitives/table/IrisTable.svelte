@@ -274,10 +274,10 @@
 
   const allRowIds = $derived(bodyData.map((r, i) => rowId(r, i)))
   const allSelected = $derived(
-    allRowIds.length > 0 && allRowIds.every((id) => displaySelection.includes(id))
+    allRowIds.length > 0 && allRowIds.every((id) => displaySelection.includes(id)),
   )
   const someSelected = $derived(
-    !allSelected && allRowIds.some((id) => displaySelection.includes(id))
+    !allSelected && allRowIds.some((id) => displaySelection.includes(id)),
   )
 
   function isSelected(id: string | number): boolean {
@@ -354,10 +354,7 @@
       },
     })
   }
-  function registerResizeHandle(
-    node: HTMLElement,
-    key: string,
-  ): { destroy: () => void } {
+  function registerResizeHandle(node: HTMLElement, key: string): { destroy: () => void } {
     resizeHandleEls[key] = node
     return {
       destroy: () => {
@@ -408,7 +405,11 @@
     return `${rowIdent}::${colKey}`
   }
 
-  function beginEdit(row: Record<string, unknown>, column: IrisTableColumn, rowIdent: string | number): void {
+  function beginEdit(
+    row: Record<string, unknown>,
+    column: IrisTableColumn,
+    rowIdent: string | number,
+  ): void {
     if (!column.editable) return
     editingCellId = cellId(rowIdent, column.key)
     const current = getCellValue(row, column)
@@ -416,13 +417,20 @@
     editError = null
   }
 
-  function commitEdit(row: Record<string, unknown>, column: IrisTableColumn, rowIndex: number): void {
+  function commitEdit(
+    row: Record<string, unknown>,
+    column: IrisTableColumn,
+    rowIndex: number,
+  ): void {
     if (editingCellId === null) return
     const oldValue = getCellValue(row, column)
     const draft = editingDraft
-    const newValue = column.editor === 'number'
-      ? draft === '' || isNaN(Number(draft)) ? oldValue : Number(draft)
-      : draft
+    const newValue =
+      column.editor === 'number'
+        ? draft === '' || isNaN(Number(draft))
+          ? oldValue
+          : Number(draft)
+        : draft
     // A column validator can reject the draft: keep the editor open, surface the
     // message, and skip the commit until the value is valid (or the user cancels).
     if (column.validate) {
@@ -614,9 +622,13 @@
   role={keyboardNavigation ? (treeMode ? 'treegrid' : 'grid') : 'table'}
   data-iris-table
   data-column-virtualized={columnVirtualization ? 'true' : undefined}
-  onkeydown={(keyboardNavigation || cellRange) ? handleRootKeyDown : undefined}
+  onkeydown={keyboardNavigation || cellRange ? handleRootKeyDown : undefined}
   onscroll={columnVirtualization ? handleRootScroll : undefined}
-  style="background: var(--iris-background); color: var(--iris-foreground); border: {bordered ? '1px solid var(--iris-border)' : 'none'}; border-radius: var(--iris-radius-md, 6px); overflow: {columnVirtualization ? 'auto' : 'hidden'};{style ? ' ' + style : ''}"
+  style="background: var(--iris-background); color: var(--iris-foreground); border: {bordered
+    ? '1px solid var(--iris-border)'
+    : 'none'}; border-radius: var(--iris-radius-md, 6px); overflow: {columnVirtualization
+    ? 'auto'
+    : 'hidden'};{style ? ' ' + style : ''}"
 >
   <!-- Header row -->
   {#if grouped && headerMatrix}
@@ -630,12 +642,17 @@
       style="display: grid; grid-template-columns: {gridTemplate()}; grid-template-rows: repeat({headerMatrix.length}, auto)"
     >
       {#if hasDetail}
-        <div role="columnheader" style="grid-column: 1; grid-row: 1 / -1; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"></div>
+        <div
+          role="columnheader"
+          style="grid-column: 1; grid-row: 1 / -1; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+        ></div>
       {/if}
       {#if showSelection}
         <div
           role="columnheader"
-          style="grid-column: {hasDetail ? 2 : 1}; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+          style="grid-column: {hasDetail
+            ? 2
+            : 1}; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
         >
           {#if selectable === 'multi'}
             <input
@@ -659,14 +676,48 @@
             data-iris-table-header-group={isGroup ? '' : undefined}
             aria-colspan={cell.colSpan}
             onclick={sortable ? () => handleHeaderClick(col) : undefined}
-            aria-sort={sortable ? (effectiveSort?.key === col.key ? effectiveSort.direction === 'asc' ? 'ascending' : 'descending' : 'none') : undefined}
-            style="position: relative; display: flex; align-items: center; justify-content: {isGroup ? 'center' : col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; grid-column: {lead + cell.colStart} / span {cell.colSpan}; grid-row: {cell.level + 1} / span {cell.rowSpan}; padding: 8px var(--iris-padding-md, 12px); cursor: {sortable ? 'pointer' : 'default'}; user-select: {sortable ? 'none' : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: 13px; color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+            aria-sort={sortable
+              ? effectiveSort?.key === col.key
+                ? effectiveSort.direction === 'asc'
+                  ? 'ascending'
+                  : 'descending'
+                : 'none'
+              : undefined}
+            style="position: relative; display: flex; align-items: center; justify-content: {isGroup
+              ? 'center'
+              : col.align === 'right'
+                ? 'flex-end'
+                : col.align === 'center'
+                  ? 'center'
+                  : 'flex-start'}; grid-column: {lead +
+              cell.colStart} / span {cell.colSpan}; grid-row: {cell.level +
+              1} / span {cell.rowSpan}; padding: 8px var(--iris-padding-md, 12px); cursor: {sortable
+              ? 'pointer'
+              : 'default'}; user-select: {sortable
+              ? 'none'
+              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: 13px; color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
           >
             {col.title}
             {#if sortable}
-              <span aria-hidden="true" style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: 8px; color: {effectiveSort?.key === col.key ? 'var(--iris-primary)' : 'var(--iris-muted)'}">
-                <span style="opacity: {effectiveSort?.key === col.key && effectiveSort.direction === 'asc' ? '1' : '0.45'}">▲</span>
-                <span style="opacity: {effectiveSort?.key === col.key && effectiveSort.direction === 'desc' ? '1' : '0.45'}">▼</span>
+              <span
+                aria-hidden="true"
+                style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: 8px; color: {effectiveSort?.key ===
+                col.key
+                  ? 'var(--iris-primary)'
+                  : 'var(--iris-muted)'}"
+              >
+                <span
+                  style="opacity: {effectiveSort?.key === col.key &&
+                  effectiveSort.direction === 'asc'
+                    ? '1'
+                    : '0.45'}">▲</span
+                >
+                <span
+                  style="opacity: {effectiveSort?.key === col.key &&
+                  effectiveSort.direction === 'desc'
+                    ? '1'
+                    : '0.45'}">▼</span
+                >
               </span>
             {/if}
           </div>
@@ -674,7 +725,11 @@
       {/each}
     </div>
   {:else}
-    <div role="row" data-iris-table-header-row style="display: grid; grid-template-columns: {gridTemplate()}">
+    <div
+      role="row"
+      data-iris-table-header-row
+      style="display: grid; grid-template-columns: {gridTemplate()}"
+    >
       {#if hasDetail}
         <div
           role="columnheader"
@@ -700,43 +755,76 @@
       {/if}
       {#each columns as col, ci}
         {#if !visibleColSet || visibleColSet.has(ci)}
-        <div
-          role="columnheader"
-          data-iris-table-header={col.key}
-          data-iris-table-pinned={col.pinned}
-          onclick={() => handleHeaderClick(col)}
-          aria-sort={effectiveSort?.key === col.key ? effectiveSort.direction === 'asc' ? 'ascending' : 'descending' : col.sortable ? 'none' : undefined}
-          style="position: relative; display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'};{visibleColSet ? ` grid-column-start: ${colTrack(ci)};` : ''} padding: 8px var(--iris-padding-md, 12px); cursor: {col.sortable ? 'pointer' : 'default'}; user-select: {col.sortable ? 'none' : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: 13px; color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
-        >
-          {col.title}
-          {#if col.sortable}
-            <span aria-hidden="true" style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: 8px; color: {effectiveSort?.key === col.key ? 'var(--iris-primary)' : 'var(--iris-muted)'}">
-              <span style="opacity: {effectiveSort?.key === col.key && effectiveSort.direction === 'asc' ? '1' : '0.45'}">▲</span>
-              <span style="opacity: {effectiveSort?.key === col.key && effectiveSort.direction === 'desc' ? '1' : '0.45'}">▼</span>
-            </span>
-          {/if}
-          {#if resizableColumns}
-            <!-- Draggable resize grip at the header's trailing edge. role=
+          <div
+            role="columnheader"
+            data-iris-table-header={col.key}
+            data-iris-table-pinned={col.pinned}
+            onclick={() => handleHeaderClick(col)}
+            aria-sort={effectiveSort?.key === col.key
+              ? effectiveSort.direction === 'asc'
+                ? 'ascending'
+                : 'descending'
+              : col.sortable
+                ? 'none'
+                : undefined}
+            style="position: relative; display: flex; align-items: center; justify-content: {col.align ===
+            'right'
+              ? 'flex-end'
+              : col.align === 'center'
+                ? 'center'
+                : 'flex-start'};{visibleColSet
+              ? ` grid-column-start: ${colTrack(ci)};`
+              : ''} padding: 8px var(--iris-padding-md, 12px); cursor: {col.sortable
+              ? 'pointer'
+              : 'default'}; user-select: {col.sortable
+              ? 'none'
+              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: 13px; color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+          >
+            {col.title}
+            {#if col.sortable}
+              <span
+                aria-hidden="true"
+                style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: 8px; color: {effectiveSort?.key ===
+                col.key
+                  ? 'var(--iris-primary)'
+                  : 'var(--iris-muted)'}"
+              >
+                <span
+                  style="opacity: {effectiveSort?.key === col.key &&
+                  effectiveSort.direction === 'asc'
+                    ? '1'
+                    : '0.45'}">▲</span
+                >
+                <span
+                  style="opacity: {effectiveSort?.key === col.key &&
+                  effectiveSort.direction === 'desc'
+                    ? '1'
+                    : '0.45'}">▼</span
+                >
+              </span>
+            {/if}
+            {#if resizableColumns}
+              <!-- Draggable resize grip at the header's trailing edge. role=
                  "separator" + aria-orientation follow the WAI-ARIA window-
                  splitter pattern; the click-stop keeps a drag from toggling sort.
                  The grip IS the interactive control (focusable, keyboard-resizable),
                  so the noninteractive-* a11y heuristics don't apply here. -->
-            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-            <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-            <span
-              use:registerResizeHandle={col.key}
-              role="separator"
-              aria-orientation="vertical"
-              aria-label={`Resize ${col.title}`}
-              tabindex="0"
-              data-iris-table-resize-handle=""
-              data-column-key={col.key}
-              onclick={(e) => e.stopPropagation()}
-              onkeydown={(e) => onResizeHandleKeydown(e, col)}
-              style="position: absolute; top: 0; right: 0; bottom: 0; width: 6px; cursor: col-resize; touch-action: none; user-select: none; z-index: 1"
-            ></span>
-          {/if}
-        </div>
+              <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+              <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+              <span
+                use:registerResizeHandle={col.key}
+                role="separator"
+                aria-orientation="vertical"
+                aria-label={`Resize ${col.title}`}
+                tabindex="0"
+                data-iris-table-resize-handle=""
+                data-column-key={col.key}
+                onclick={(e) => e.stopPropagation()}
+                onkeydown={(e) => onResizeHandleKeydown(e, col)}
+                style="position: absolute; top: 0; right: 0; bottom: 0; width: 6px; cursor: col-resize; touch-action: none; user-select: none; z-index: 1"
+              ></span>
+            {/if}
+          </div>
         {/if}
       {/each}
     </div>
@@ -746,7 +834,9 @@
   {#if error}
     <div role="row" data-iris-table-row="error" style={stateRowStyle}>{t('table.error')}</div>
   {:else if loading}
-    <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>{t('table.loading')}</div>
+    <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>
+      {t('table.loading')}
+    </div>
   {:else if bodyData.length === 0}
     <div role="row" data-iris-table-row="empty" style={stateRowStyle}>{t('table.empty')}</div>
   {:else if useVirtual}
@@ -765,7 +855,12 @@
       keyOf={(row, index) => rowId(row as Record<string, unknown>, index)}
     >
       {#snippet item({ item: row, index })}
-        {@render bodyRow(row as Record<string, unknown>, index, flatTree ? flatTree[index] : null, true)}
+        {@render bodyRow(
+          row as Record<string, unknown>,
+          index,
+          flatTree ? flatTree[index] : null,
+          true,
+        )}
       {/snippet}
     </IrisVirtualScroll>
   {:else}
@@ -785,7 +880,9 @@
               role="cell"
               data-iris-table-detail-cell=""
               style="grid-column: 1 / -1; padding: 8px 12px; border-bottom: 1px solid var(--iris-border)"
-            >{renderDetail?.(row, index)}</div>
+            >
+              {renderDetail?.(row, index)}
+            </div>
           </div>
         {/if}
       {/each}
@@ -797,7 +894,12 @@
        virtual path passes `fillHeight` so the row fills its absolutely-sized
        window slot; `treeMeta` carries the per-row depth/toggle (flatTree[index]
        at the row's absolute index). -->
-  {#snippet bodyRow(row: Record<string, unknown>, index: number, treeMeta: TreeRow<Record<string, unknown>> | null, fillHeight: boolean)}
+  {#snippet bodyRow(
+    row: Record<string, unknown>,
+    index: number,
+    treeMeta: TreeRow<Record<string, unknown>> | null,
+    fillHeight: boolean,
+  )}
     {@const id = rowId(row, index)}
     {@const selected = isSelected(id)}
     <div
@@ -809,7 +911,13 @@
       aria-setsize={treeMeta ? treeMeta.setSize : undefined}
       aria-posinset={treeMeta ? treeMeta.posInset : undefined}
       onclick={() => onRowClick?.(row, index)}
-      style="display: grid; grid-template-columns: {gridTemplate()};{fillHeight ? ' height: 100%;' : ''} background: {selected ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))' : striped && index % 2 === 1 ? 'var(--iris-surface)' : 'transparent'}; transition: background-color 120ms ease; cursor: default"
+      style="display: grid; grid-template-columns: {gridTemplate()};{fillHeight
+        ? ' height: 100%;'
+        : ''} background: {selected
+        ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+        : striped && index % 2 === 1
+          ? 'var(--iris-surface)'
+          : 'transparent'}; transition: background-color 120ms ease; cursor: default"
     >
       {#if hasDetail}
         <div
@@ -822,10 +930,19 @@
               type="button"
               data-iris-table-expand-toggle=""
               aria-expanded={$expandedKeys.includes(String(id))}
-              aria-label={t($expandedKeys.includes(String(id)) ? 'treeSelect.collapse' : 'treeSelect.expand')}
-              onclick={(e) => { e.stopPropagation(); expansion.toggle(String(id)) }}
-              style="border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--iris-foreground); transform: {$expandedKeys.includes(String(id)) ? 'rotate(90deg)' : 'none'}; transition: transform 150ms"
-            >▶</button>
+              aria-label={t(
+                $expandedKeys.includes(String(id)) ? 'treeSelect.collapse' : 'treeSelect.expand',
+              )}
+              onclick={(e) => {
+                e.stopPropagation()
+                expansion.toggle(String(id))
+              }}
+              style="border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--iris-foreground); transform: {$expandedKeys.includes(
+                String(id),
+              )
+                ? 'rotate(90deg)'
+                : 'none'}; transition: transform 150ms">▶</button
+            >
           {/if}
         </div>
       {/if}
@@ -845,71 +962,108 @@
       {/if}
       {#each leafColumns as col, ci}
         {#if !visibleColSet || visibleColSet.has(ci)}
-        {@const isEditing = editingCellId === cellId(id, col.key)}
-        <div
-          role="cell"
-          data-iris-table-cell={col.key}
-          data-iris-table-pinned={col.pinned}
-          data-editable={col.editable ? '' : undefined}
-          data-editing={isEditing ? '' : undefined}
-          data-grid-row={keyboardNavigation ? index : undefined}
-          data-grid-col={keyboardNavigation ? ci : undefined}
-          data-iris-cell-row={cellRange ? index : undefined}
-          data-iris-cell-col={cellRange ? ci : undefined}
-          data-iris-cell-selected={cellRange && isInRange(index, ci) ? 'true' : undefined}
-          tabindex={keyboardNavigation ? cellTabIndex(index, ci) : undefined}
-          onfocus={keyboardNavigation ? () => (focusedCell = { row: index, col: ci }) : undefined}
-          onclick={cellRange ? (e: MouseEvent) => { if (e.shiftKey) { cellRangeCtrl.extendRange(index, ci) } else { cellRangeCtrl.startRange(index, ci) } } : undefined}
-          ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}
-          style="display: flex; align-items: center; justify-content: {col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'};{visibleColSet ? ` grid-column-start: ${colTrack(ci)};` : ''} padding: {isEditing ? '4px' : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable ? 'cell' : 'default'}{cellRange && isInRange(index, ci) ? '; background: var(--iris-surface-selected, rgba(99,102,241,0.12))' : ''}"
-        >
-          {#if treeMeta && ci === 0}
-            <span
-              data-iris-table-tree-indent=""
-              style="display: inline-flex; align-items: center; flex: none; padding-left: {treeMeta.depth * 16}px"
-            >
-              {#if treeMeta.hasChildren}
-                <button
-                  type="button"
-                  data-iris-table-tree-toggle=""
-                  aria-expanded={treeMeta.expanded}
-                  aria-label={t(treeMeta.expanded ? 'treeSelect.collapse' : 'treeSelect.expand')}
-                  onclick={(e) => { e.stopPropagation(); expansion.toggle(treeMeta.key) }}
-                  style="border: none; background: transparent; cursor: pointer; padding: 0; margin-right: 4px; font: inherit; color: var(--iris-foreground); transform: {treeMeta.expanded ? 'rotate(90deg)' : 'none'}; transition: transform 150ms"
-                >▶</button>
-              {:else}
-                <span style="display: inline-block; width: 16px" aria-hidden="true"></span>
-              {/if}
-            </span>
-          {/if}
-          {#if isEditing}
-            <input
-              type={col.editor === 'number' ? 'number' : 'text'}
-              value={editingDraft}
-              data-iris-table-editor
-              aria-invalid={editError ? 'true' : undefined}
-              aria-describedby={editError ? `${cellId(id, col.key)}-error` : undefined}
-              oninput={(e) => { editingDraft = (e.target as HTMLInputElement).value }}
-              onkeydown={(e) => {
-                if (e.key === 'Enter') { e.preventDefault(); commitEdit(row, col, index) }
-                else if (e.key === 'Escape') { e.preventDefault(); cancelEdit() }
-              }}
-              onblur={() => commitEdit(row, col, index)}
-              onclick={(e) => e.stopPropagation()}
-              style="width: 100%; border: 1px solid {editError ? 'var(--iris-danger)' : 'var(--iris-primary)'}; border-radius: var(--iris-radius-sm, 4px); padding: 4px 6px; font: inherit; background: var(--iris-background); color: var(--iris-foreground); outline: none"
-            />
-            {#if editError}
-              <div
-                id={`${cellId(id, col.key)}-error`}
-                role="alert"
-                data-iris-table-editor-error
-                style="margin-top: 2px; font-size: 12px; color: var(--iris-danger)"
-              >{editError}</div>
+          {@const isEditing = editingCellId === cellId(id, col.key)}
+          <div
+            role="cell"
+            data-iris-table-cell={col.key}
+            data-iris-table-pinned={col.pinned}
+            data-editable={col.editable ? '' : undefined}
+            data-editing={isEditing ? '' : undefined}
+            data-grid-row={keyboardNavigation ? index : undefined}
+            data-grid-col={keyboardNavigation ? ci : undefined}
+            data-iris-cell-row={cellRange ? index : undefined}
+            data-iris-cell-col={cellRange ? ci : undefined}
+            data-iris-cell-selected={cellRange && isInRange(index, ci) ? 'true' : undefined}
+            tabindex={keyboardNavigation ? cellTabIndex(index, ci) : undefined}
+            onfocus={keyboardNavigation ? () => (focusedCell = { row: index, col: ci }) : undefined}
+            onclick={cellRange
+              ? (e: MouseEvent) => {
+                  if (e.shiftKey) {
+                    cellRangeCtrl.extendRange(index, ci)
+                  } else {
+                    cellRangeCtrl.startRange(index, ci)
+                  }
+                }
+              : undefined}
+            ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}
+            style="display: flex; align-items: center; justify-content: {col.align === 'right'
+              ? 'flex-end'
+              : col.align === 'center'
+                ? 'center'
+                : 'flex-start'};{visibleColSet
+              ? ` grid-column-start: ${colTrack(ci)};`
+              : ''} padding: {isEditing
+              ? '4px'
+              : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable
+              ? 'cell'
+              : 'default'}{cellRange && isInRange(index, ci)
+              ? '; background: var(--iris-surface-selected, rgba(99,102,241,0.12))'
+              : ''}"
+          >
+            {#if treeMeta && ci === 0}
+              <span
+                data-iris-table-tree-indent=""
+                style="display: inline-flex; align-items: center; flex: none; padding-left: {treeMeta.depth *
+                  16}px"
+              >
+                {#if treeMeta.hasChildren}
+                  <button
+                    type="button"
+                    data-iris-table-tree-toggle=""
+                    aria-expanded={treeMeta.expanded}
+                    aria-label={t(treeMeta.expanded ? 'treeSelect.collapse' : 'treeSelect.expand')}
+                    onclick={(e) => {
+                      e.stopPropagation()
+                      expansion.toggle(treeMeta.key)
+                    }}
+                    style="border: none; background: transparent; cursor: pointer; padding: 0; margin-right: 4px; font: inherit; color: var(--iris-foreground); transform: {treeMeta.expanded
+                      ? 'rotate(90deg)'
+                      : 'none'}; transition: transform 150ms">▶</button
+                  >
+                {:else}
+                  <span style="display: inline-block; width: 16px" aria-hidden="true"></span>
+                {/if}
+              </span>
             {/if}
-          {:else}
-            {String(getCellValue(row, col) ?? '')}
-          {/if}
-        </div>
+            {#if isEditing}
+              <input
+                type={col.editor === 'number' ? 'number' : 'text'}
+                value={editingDraft}
+                data-iris-table-editor
+                aria-invalid={editError ? 'true' : undefined}
+                aria-describedby={editError ? `${cellId(id, col.key)}-error` : undefined}
+                oninput={(e) => {
+                  editingDraft = (e.target as HTMLInputElement).value
+                }}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    commitEdit(row, col, index)
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault()
+                    cancelEdit()
+                  }
+                }}
+                onblur={() => commitEdit(row, col, index)}
+                onclick={(e) => e.stopPropagation()}
+                style="width: 100%; border: 1px solid {editError
+                  ? 'var(--iris-danger)'
+                  : 'var(--iris-primary)'}; border-radius: var(--iris-radius-sm, 4px); padding: 4px 6px; font: inherit; background: var(--iris-background); color: var(--iris-foreground); outline: none"
+              />
+              {#if editError}
+                <div
+                  id={`${cellId(id, col.key)}-error`}
+                  role="alert"
+                  data-iris-table-editor-error
+                  style="margin-top: 2px; font-size: 12px; color: var(--iris-danger)"
+                >
+                  {editError}
+                </div>
+              {/if}
+            {:else}
+              {String(getCellValue(row, col) ?? '')}
+            {/if}
+          </div>
         {/if}
       {/each}
     </div>
@@ -924,20 +1078,28 @@
       style="display: grid; grid-template-columns: {gridTemplate()}; font-weight: 600; border-top: 2px solid var(--iris-border); background: var(--iris-surface)"
     >
       {#if showSelection}
-        <div role="cell" data-iris-table-cell="__selection" style={summaryCellStyle({ key: '__selection' } as IrisTableColumn)}></div>
+        <div
+          role="cell"
+          data-iris-table-cell="__selection"
+          style={summaryCellStyle({ key: '__selection' } as IrisTableColumn)}
+        ></div>
       {/if}
       {#each leafColumns as col, ci}
         {#if !visibleColSet || visibleColSet.has(ci)}
-        {@const op = col.summary}
-        {@const value = op ? aggregate(bodyData, (r) => getCellValue(r, col), op) : null}
-        <div
-          role="cell"
-          data-iris-table-cell={col.key}
-          data-iris-table-summary-cell={op ? '' : undefined}
-          style="{summaryCellStyle(col)}{visibleColSet ? `; grid-column-start: ${colTrack(ci)}` : ''}"
-        >
-          {#if op != null && value != null}{col.renderSummary ? col.renderSummary(value, bodyData) : String(value)}{/if}
-        </div>
+          {@const op = col.summary}
+          {@const value = op ? aggregate(bodyData, (r) => getCellValue(r, col), op) : null}
+          <div
+            role="cell"
+            data-iris-table-cell={col.key}
+            data-iris-table-summary-cell={op ? '' : undefined}
+            style="{summaryCellStyle(col)}{visibleColSet
+              ? `; grid-column-start: ${colTrack(ci)}`
+              : ''}"
+          >
+            {#if op != null && value != null}{col.renderSummary
+                ? col.renderSummary(value, bodyData)
+                : String(value)}{/if}
+          </div>
         {/if}
       {/each}
     </div>

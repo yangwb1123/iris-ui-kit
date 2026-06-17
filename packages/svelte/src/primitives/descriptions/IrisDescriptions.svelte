@@ -40,12 +40,7 @@
   )
 </script>
 
-<dl
-  {...rest}
-  data-iris-descriptions
-  data-layout={layout}
-  style={mergeStyle(gridStyle, style)}
->
+<dl {...rest} data-iris-descriptions data-layout={layout} style={mergeStyle(gridStyle, style)}>
   {#each items as item, i (item.key ?? i)}
     {#if isHorizontal}
       <dt

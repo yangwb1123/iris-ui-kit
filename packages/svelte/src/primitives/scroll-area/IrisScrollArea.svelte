@@ -12,14 +12,7 @@
     [key: string]: unknown
   }
 
-  let {
-    maxHeight,
-    maxWidth,
-    axis = 'vertical',
-    style,
-    children,
-    ...rest
-  }: Props = $props()
+  let { maxHeight, maxWidth, axis = 'vertical', style, children, ...rest }: Props = $props()
 
   const OVERFLOW: Record<Axis, string> = {
     vertical: 'overflow-y: auto; overflow-x: hidden;',
@@ -32,12 +25,16 @@
     return typeof v === 'number' ? `${v}px` : v
   }
 
-  const baseStyle = $derived([
-    OVERFLOW[axis],
-    maxHeight ? `max-height: ${px(maxHeight)};` : '',
-    maxWidth ? `max-width: ${px(maxWidth)};` : '',
-    'outline: none;',
-  ].filter(Boolean).join(' '))
+  const baseStyle = $derived(
+    [
+      OVERFLOW[axis],
+      maxHeight ? `max-height: ${px(maxHeight)};` : '',
+      maxWidth ? `max-width: ${px(maxWidth)};` : '',
+      'outline: none;',
+    ]
+      .filter(Boolean)
+      .join(' '),
+  )
 </script>
 
 <div

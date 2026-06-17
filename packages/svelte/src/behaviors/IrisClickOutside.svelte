@@ -26,10 +26,6 @@
   })
 </script>
 
-<span
-  bind:this={wrapperEl}
-  data-iris-click-outside
-  style:display="contents"
->
+<span bind:this={wrapperEl} data-iris-click-outside style:display="contents">
   {@render children?.()}
 </span>

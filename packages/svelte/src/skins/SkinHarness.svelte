@@ -5,8 +5,7 @@
   import SkinConsumer from './SkinConsumer.svelte'
   import type { UseSkinReturn } from './useSkin'
 
-  let { engine, onready }: { engine: SkinEngine; onready?: (api: UseSkinReturn) => void } =
-    $props()
+  let { engine, onready }: { engine: SkinEngine; onready?: (api: UseSkinReturn) => void } = $props()
 </script>
 
 <SkinProvider {engine}>

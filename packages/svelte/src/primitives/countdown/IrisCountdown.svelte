@@ -100,7 +100,9 @@
   {/if}
   <div
     data-iris-countdown-value
-    style="display:inline-flex; align-items:baseline; gap:4px; font-size:{VALUE_FONT[size]}px; font-weight:600; color:var(--iris-foreground); font-variant-numeric:tabular-nums;"
+    style="display:inline-flex; align-items:baseline; gap:4px; font-size:{VALUE_FONT[
+      size
+    ]}px; font-weight:600; color:var(--iris-foreground); font-variant-numeric:tabular-nums;"
   >
     {#if prefix != null}
       <span style="font-size:0.6em; color:var(--iris-muted);">{String(prefix)}</span>

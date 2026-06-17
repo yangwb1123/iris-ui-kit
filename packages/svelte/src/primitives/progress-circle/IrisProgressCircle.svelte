@@ -50,18 +50,15 @@
   aria-valuemax={max}
   aria-valuetext="{percent}%"
   aria-label={ariaLabel}
-  style="position:relative; display:inline-flex; width:{size}px; height:{size}px;{style ? ' ' + style : ''}"
+  style="position:relative; display:inline-flex; width:{size}px; height:{size}px;{style
+    ? ' ' + style
+    : ''}"
 >
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 {size} {size}"
-    aria-hidden="true"
-  >
+  <svg width={size} height={size} viewBox="0 0 {size} {size}" aria-hidden="true">
     <circle
       cx={center}
       cy={center}
-      r={r}
+      {r}
       fill="none"
       stroke="var(--iris-border)"
       stroke-width={strokeWidth}
@@ -70,7 +67,7 @@
       data-iris-progress-circle-value
       cx={center}
       cy={center}
-      r={r}
+      {r}
       fill="none"
       stroke={COLOR[status]}
       stroke-width={strokeWidth}
@@ -84,7 +81,9 @@
   {#if showLabel}
     <span
       data-iris-progress-circle-label
-      style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:{Math.round(size * 0.25)}px; font-weight:600; color:var(--iris-foreground); font-variant-numeric:tabular-nums;"
+      style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:{Math.round(
+        size * 0.25,
+      )}px; font-weight:600; color:var(--iris-foreground); font-variant-numeric:tabular-nums;"
     >
       {format ? format(percent) : `${percent}%`}
     </span>

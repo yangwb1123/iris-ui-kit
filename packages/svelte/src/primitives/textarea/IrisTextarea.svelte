@@ -135,7 +135,8 @@
     onfocus={handleFocus}
     onblur={handleBlur}
     style="width: 100%; border: none; outline: none; background: transparent; color: inherit; font-family: inherit; font-size: inherit; line-height: inherit; padding: 0; resize: vertical;"
-  >{value}</textarea>
+    >{value}</textarea
+  >
   {#if maxLength !== undefined}
     <span
       data-iris-textarea-counter

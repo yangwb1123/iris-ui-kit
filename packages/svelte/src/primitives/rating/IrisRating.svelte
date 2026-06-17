@@ -120,8 +120,16 @@
   aria-invalid={invalid ? 'true' : undefined}
   aria-describedby={ariaDescribedby}
   onkeydown={onKeyDown}
-  onmouseleave={() => { hover = null }}
-  style="display:inline-flex; gap:{Math.round(px * 0.18)}px; line-height:1; color:var(--iris-border); cursor:{interactive ? 'pointer' : 'default'}; opacity:{disabled ? '0.6' : '1'}; outline:none; direction:inherit;{style ? ' ' + style : ''}"
+  onmouseleave={() => {
+    hover = null
+  }}
+  style="display:inline-flex; gap:{Math.round(
+    px * 0.18,
+  )}px; line-height:1; color:var(--iris-border); cursor:{interactive
+    ? 'pointer'
+    : 'default'}; opacity:{disabled ? '0.6' : '1'}; outline:none; direction:inherit;{style
+    ? ' ' + style
+    : ''}"
 >
   {#each Array.from({ length: max }, (_u, i) => i) as i (i)}
     {@const fill = clamp(display - i, 0, 1) * 100}
@@ -131,14 +139,19 @@
       data-iris-rating-star
       data-filled={fill >= 100 ? 'true' : fill > 0 ? 'half' : undefined}
       onclick={(e) => onClick(i, e)}
-      onmousemove={interactive ? (e: MouseEvent) => { hover = valueAt(i, e) } : undefined}
+      onmousemove={interactive
+        ? (e: MouseEvent) => {
+            hover = valueAt(i, e)
+          }
+        : undefined}
       style="position:relative; display:inline-block; width:{px}px; height:{px}px; font-size:{px}px;"
     >
       <span aria-hidden="true">★</span>
       <span
         aria-hidden="true"
         style="position:absolute; inset-block-start:0; inset-inline-start:0; overflow:hidden; width:{fill}%; color:{fillColor}; white-space:nowrap;"
-      >★</span>
+        >★</span
+      >
     </span>
   {/each}
 </div>

@@ -22,11 +22,7 @@
   let value = $state<string[]>([])
 </script>
 
-<IrisToggleGroup
-  type="multiple"
-  {value}
-  onchange={(next) => (value = (next ?? []) as string[])}
->
+<IrisToggleGroup type="multiple" {value} onchange={(next) => (value = (next ?? []) as string[])}>
   <IrisToggleGroupItem value="a">A</IrisToggleGroupItem>
   <IrisToggleGroupItem value="b">B</IrisToggleGroupItem>
   <IrisToggleGroupItem value="c">C</IrisToggleGroupItem>

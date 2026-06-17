@@ -63,8 +63,8 @@
       aria-label={t('pagination.first')}
       disabled={disabled || current <= 1 || undefined}
       onclick={() => go(1)}
-      style={btnStyle(false, current <= 1)}
-    >«</button>
+      style={btnStyle(false, current <= 1)}>«</button
+    >
   {/if}
   <button
     type="button"
@@ -72,14 +72,15 @@
     aria-label={t('pagination.previous')}
     disabled={disabled || current <= 1 || undefined}
     onclick={() => go(current - 1)}
-    style={btnStyle(false, current <= 1)}
-  >‹</button>
+    style={btnStyle(false, current <= 1)}>‹</button
+  >
   {#each items as item (item)}
     {#if item === 'ellipsis-left' || item === 'ellipsis-right'}
       <span
         data-iris-pagination-ellipsis={item === 'ellipsis-left' ? 'left' : 'right'}
         style="display:inline-flex; align-items:center; justify-content:center; min-width:{btnSize}; height:{btnSize}; color:var(--iris-muted); font-size:{fontSize};"
-      >…</span>
+        >…</span
+      >
     {:else}
       <button
         type="button"
@@ -89,8 +90,8 @@
         aria-current={item === current ? 'page' : undefined}
         disabled={disabled || undefined}
         onclick={() => go(item as number)}
-        style={btnStyle(item === current, false)}
-      >{item}</button>
+        style={btnStyle(item === current, false)}>{item}</button
+      >
     {/if}
   {/each}
   <button
@@ -99,8 +100,8 @@
     aria-label={t('pagination.next')}
     disabled={disabled || current >= totalPages || undefined}
     onclick={() => go(current + 1)}
-    style={btnStyle(false, current >= totalPages)}
-  >›</button>
+    style={btnStyle(false, current >= totalPages)}>›</button
+  >
   {#if showFirstLast}
     <button
       type="button"
@@ -108,7 +109,7 @@
       aria-label={t('pagination.last')}
       disabled={disabled || current >= totalPages || undefined}
       onclick={() => go(totalPages)}
-      style={btnStyle(false, current >= totalPages)}
-    >»</button>
+      style={btnStyle(false, current >= totalPages)}>»</button
+    >
   {/if}
 </nav>

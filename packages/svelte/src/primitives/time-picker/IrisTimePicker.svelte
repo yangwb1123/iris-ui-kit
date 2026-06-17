@@ -190,7 +190,9 @@
       aria-label={t('timePicker.togglePeriod')}
       data-iris-time-picker-meridiem={meridiem}
       onclick={toggleMeridiem}
-      style="height:34px;padding:4px 8px;background:var(--iris-background);color:var(--iris-foreground);border:1px solid var(--iris-border);border-radius:var(--iris-radius-sm, 4px);cursor:{disabled ? 'not-allowed' : 'pointer'};font-size:13px;font-family:inherit;font-weight:600;"
-    >{meridiem}</button>
+      style="height:34px;padding:4px 8px;background:var(--iris-background);color:var(--iris-foreground);border:1px solid var(--iris-border);border-radius:var(--iris-radius-sm, 4px);cursor:{disabled
+        ? 'not-allowed'
+        : 'pointer'};font-size:13px;font-family:inherit;font-weight:600;">{meridiem}</button
+    >
   {/if}
 </div>

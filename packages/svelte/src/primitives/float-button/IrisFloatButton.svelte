@@ -86,9 +86,12 @@
           data-iris-float-button-action
           data-key={action.key}
           aria-label={action.ariaLabel ?? action.label}
-          onclick={() => { action.onclick?.(); open = false }}
-          style={fabStyle(40, false)}
-        >{action.icon ?? action.label}</button>
+          onclick={() => {
+            action.onclick?.()
+            open = false
+          }}
+          style={fabStyle(40, false)}>{action.icon ?? action.label}</button
+        >
       {/each}
     </div>
   {/if}

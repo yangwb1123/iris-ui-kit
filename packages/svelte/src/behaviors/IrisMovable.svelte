@@ -1,8 +1,16 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
 
-  export interface IrisMovablePosition { x: number; y: number }
-  export interface IrisMovableBounds { minX?: number; maxX?: number; minY?: number; maxY?: number }
+  export interface IrisMovablePosition {
+    x: number
+    y: number
+  }
+  export interface IrisMovableBounds {
+    minX?: number
+    maxX?: number
+    minY?: number
+    maxY?: number
+  }
 
   interface Props {
     position?: IrisMovablePosition

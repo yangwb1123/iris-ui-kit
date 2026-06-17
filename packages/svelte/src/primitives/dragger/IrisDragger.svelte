@@ -81,11 +81,19 @@
 
   function setRoot(node: HTMLElement): { destroy: () => void } {
     rootEl = node
-    return { destroy: () => { rootEl = undefined } }
+    return {
+      destroy: () => {
+        rootEl = undefined
+      },
+    }
   }
   function setHandle(node: HTMLElement): { destroy: () => void } {
     handleEl = node
-    return { destroy: () => { handleEl = undefined } }
+    return {
+      destroy: () => {
+        handleEl = undefined
+      },
+    }
   }
 </script>
 
@@ -94,7 +102,11 @@
   use:setRoot
   data-iris-dragger
   data-state={dragging ? 'dragging' : 'idle'}
-  style="position: absolute; left: 0; top: 0; transform: translate3d({current.x}px, {current.y}px, 0); cursor: {handle ? 'default' : disabled ? 'not-allowed' : 'grab'}; touch-action: none;{style ? ' ' + style : ''}"
+  style="position: absolute; left: 0; top: 0; transform: translate3d({current.x}px, {current.y}px, 0); cursor: {handle
+    ? 'default'
+    : disabled
+      ? 'not-allowed'
+      : 'grab'}; touch-action: none;{style ? ' ' + style : ''}"
 >
   {#if handle}
     <div

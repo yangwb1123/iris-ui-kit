@@ -79,7 +79,10 @@
       style,
     )}
   >
-    <span data-iris-divider-line="before" style="flex: 1; height: 1px; background: var(--iris-border)"></span>
+    <span
+      data-iris-divider-line="before"
+      style="flex: 1; height: 1px; background: var(--iris-border)"
+    ></span>
     <span data-iris-divider-label>
       {#if children}
         {@render children()}
@@ -87,6 +90,9 @@
         {label}
       {/if}
     </span>
-    <span data-iris-divider-line="after" style="flex: 1; height: 1px; background: var(--iris-border)"></span>
+    <span
+      data-iris-divider-line="after"
+      style="flex: 1; height: 1px; background: var(--iris-border)"
+    ></span>
   </div>
 {/if}

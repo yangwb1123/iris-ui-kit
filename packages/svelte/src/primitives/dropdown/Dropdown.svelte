@@ -16,7 +16,9 @@
   const isControlled = $derived(openProp !== undefined)
 
   // svelte-ignore state_referenced_locally — initial machine state; controlled changes sync below.
-  const { state: machineState, send } = toMachine(createFloatingMachine(defaultOpen ? 'open' : 'closed'))
+  const { state: machineState, send } = toMachine(
+    createFloatingMachine(defaultOpen ? 'open' : 'closed'),
+  )
   const internalOpen = $derived($machineState.value === 'open')
 
   // Keep the machine in sync with a controlled `open` prop.

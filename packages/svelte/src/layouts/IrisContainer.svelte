@@ -4,7 +4,11 @@
   export type IrisContainerMaxWidth = 'sm' | 'md' | 'lg' | 'xl' | 'full' | string
 
   const WIDTH_MAP: Record<string, string> = {
-    sm: '640px', md: '768px', lg: '1024px', xl: '1280px', full: '100%',
+    sm: '640px',
+    md: '768px',
+    lg: '1024px',
+    xl: '1280px',
+    full: '100%',
   }
 
   function resolveMaxWidth(input: IrisContainerMaxWidth): string {
@@ -48,7 +52,7 @@
   style:padding={`0 ${pad}`}
   style:margin-inline-start={center ? 'auto' : undefined}
   style:margin-inline-end={center ? 'auto' : undefined}
-  style={style}
+  {style}
   class={className}
   {...rest}
 >

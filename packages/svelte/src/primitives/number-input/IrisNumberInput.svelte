@@ -119,7 +119,12 @@
 
   function increment(factor: 1 | -1) {
     if (disabled || readonly) return
-    const base = value === null || value === undefined ? (Number.isFinite(min) && min !== -Infinity ? min : 0) : value
+    const base =
+      value === null || value === undefined
+        ? Number.isFinite(min) && min !== -Infinity
+          ? min
+          : 0
+        : value
     setValue(base + factor * step)
   }
 
@@ -189,8 +194,8 @@
       aria-label={t('numberInput.decrement')}
       disabled={disabled || atMin || undefined}
       onclick={() => increment(-1)}
-      style="{ctrlBtnStyle}; margin-inline-end: 4px"
-    >−</button>
+      style="{ctrlBtnStyle}; margin-inline-end: 4px">−</button
+    >
   {/if}
   <input
     {id}
@@ -207,7 +212,10 @@
     aria-valuemin={Number.isFinite(min) ? min : undefined}
     aria-valuemax={Number.isFinite(max) ? max : undefined}
     oninput={handleInput}
-    onfocus={(e) => { focused = true; onfocus?.(e) }}
+    onfocus={(e) => {
+      focused = true
+      onfocus?.(e)
+    }}
     onblur={handleBlur}
     onkeydown={handleKeyDown}
     style="flex: 1; min-width: 40px; width: 4ch; border: none; outline: none; background: transparent; color: inherit; font-family: inherit; font-size: inherit; padding: 0; text-align: end;"
@@ -219,7 +227,7 @@
       aria-label={t('numberInput.increment')}
       disabled={disabled || atMax || undefined}
       onclick={() => increment(1)}
-      style="{ctrlBtnStyle}; margin-inline-start: 4px"
-    >+</button>
+      style="{ctrlBtnStyle}; margin-inline-start: 4px">+</button
+    >
   {/if}
 </div>

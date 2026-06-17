@@ -59,12 +59,7 @@
   aria-label={ariaLabel}
   style="position:relative; display:inline-block; width:{size}px;{style ? ' ' + style : ''}"
 >
-  <svg
-    width={size}
-    height={height}
-    viewBox="0 0 {size} {height}"
-    aria-hidden="true"
-  >
+  <svg width={size} {height} viewBox="0 0 {size} {height}" aria-hidden="true">
     <path
       d={pathD}
       fill="none"
@@ -87,7 +82,9 @@
   {#if showValue}
     <div
       data-iris-gauge-label
-      style="position:absolute; inset-block-end:0; inset-inline-start:0; width:100%; text-align:center; font-size:{Math.round(size * 0.18)}px; font-weight:600; color:var(--iris-foreground); font-variant-numeric:tabular-nums;"
+      style="position:absolute; inset-block-end:0; inset-inline-start:0; width:100%; text-align:center; font-size:{Math.round(
+        size * 0.18,
+      )}px; font-weight:600; color:var(--iris-foreground); font-variant-numeric:tabular-nums;"
     >
       {format ? format(value, percent) : `${percent}%`}
     </div>

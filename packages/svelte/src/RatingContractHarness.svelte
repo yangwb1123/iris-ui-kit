@@ -22,9 +22,4 @@
   let ratingValue = $state(0)
 </script>
 
-<IrisRating
-  value={ratingValue}
-  max={5}
-  label="Score"
-  onchange={(next) => (ratingValue = next)}
-/>
+<IrisRating value={ratingValue} max={5} label="Score" onchange={(next) => (ratingValue = next)} />

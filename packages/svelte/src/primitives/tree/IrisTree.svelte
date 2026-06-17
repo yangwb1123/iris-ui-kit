@@ -77,11 +77,11 @@
   let loadingNodes = $state<Set<string>>(new Set())
 
   const expandedSet = $derived(
-    isExpandedControlled ? new Set(expandedProp ?? []) : internalExpanded
+    isExpandedControlled ? new Set(expandedProp ?? []) : internalExpanded,
   )
 
   const selectedSet = $derived(
-    isSelectedControlled ? new Set(selectedProp ?? []) : internalSelected
+    isSelectedControlled ? new Set(selectedProp ?? []) : internalSelected,
   )
 
   let activeId = $state<string | null>(null)
@@ -92,7 +92,11 @@
     for (const node of nodeList) {
       const cachedChildren = childrenCache.get(node.id)
       const resolvedChildren = cachedChildren ?? node.children
-      const hasChildren = node.isLeaf ? false : (resolvedChildren ? resolvedChildren.length > 0 : !!node.loadChildren)
+      const hasChildren = node.isLeaf
+        ? false
+        : resolvedChildren
+          ? resolvedChildren.length > 0
+          : !!node.loadChildren
       out.push({ node, depth, parentId, hasChildren })
       if (hasChildren && expandedSet.has(node.id)) {
         out.push(...flatten(resolvedChildren ?? [], depth + 1, node.id))
@@ -106,7 +110,10 @@
   // Checkable mode: flatten the FULL tree (every node, not just the visible
   // ones) into `{ key, parentKey, disabled }` so the cascade is correct even
   // for collapsed branches, and drive it with the core `createTreeSelection`.
-  function flattenCheckNodes(nodeList: IrisTreeNode[], parentKey: string | undefined): TreeSelectionNode[] {
+  function flattenCheckNodes(
+    nodeList: IrisTreeNode[],
+    parentKey: string | undefined,
+  ): TreeSelectionNode[] {
     const out: TreeSelectionNode[] = []
     for (const node of nodeList) {
       out.push({ key: node.id, parentKey, disabled: node.disabled })
@@ -125,7 +132,7 @@
       nodes: checkNodes,
       defaultChecked,
       onChange: (keys) => onCheckedChange?.(keys),
-    })
+    }),
   )
 
   // Re-render when the checked set changes. Mirror the model's store into local
@@ -261,16 +268,37 @@
   data-iris-tree
   style:display="flex"
   style:flex-direction="column"
-  style={style}
+  {style}
   class={className}
   {...rest}
 >
   {#if loading}
-    <div data-iris-state="loading" style:padding="12px" style:color="var(--iris-muted)" style:font-size="14px">{t('tree.loading')}</div>
+    <div
+      data-iris-state="loading"
+      style:padding="12px"
+      style:color="var(--iris-muted)"
+      style:font-size="14px"
+    >
+      {t('tree.loading')}
+    </div>
   {:else if error}
-    <div data-iris-state="error" style:padding="12px" style:color="var(--iris-danger)" style:font-size="14px">{t('tree.error')}</div>
+    <div
+      data-iris-state="error"
+      style:padding="12px"
+      style:color="var(--iris-danger)"
+      style:font-size="14px"
+    >
+      {t('tree.error')}
+    </div>
   {:else if nodes.length === 0}
-    <div data-iris-state="empty" style:padding="12px" style:color="var(--iris-muted)" style:font-size="14px">{t('tree.empty')}</div>
+    <div
+      data-iris-state="empty"
+      style:padding="12px"
+      style:color="var(--iris-muted)"
+      style:font-size="14px"
+    >
+      {t('tree.empty')}
+    </div>
   {:else}
     {#each flat as fn, idx (fn.node.id)}
       {@const isExpanded = expandedSet.has(fn.node.id)}
@@ -288,7 +316,9 @@
         data-iris-tree-item
         data-state={isSelected ? 'selected' : 'idle'}
         onkeydown={(e) => onKeyDown(e, fn, idx)}
-        onfocus={() => { activeId = fn.node.id }}
+        onfocus={() => {
+          activeId = fn.node.id
+        }}
         onclick={() => {
           activeId = fn.node.id
           selectNode(fn.node)
@@ -311,7 +341,10 @@
             type="button"
             aria-hidden="true"
             tabindex={-1}
-            onclick={(e) => { e.stopPropagation(); toggleExpand(fn.node) }}
+            onclick={(e) => {
+              e.stopPropagation()
+              toggleExpand(fn.node)
+            }}
             style:width="16px"
             style:height="16px"
             style:display="inline-flex"
@@ -323,8 +356,8 @@
             style:cursor="pointer"
             style:padding="0"
             style:font-size="10px"
-            style:flex-shrink="0"
-          >{isExpanded ? '▼' : '▶'}</button>
+            style:flex-shrink="0">{isExpanded ? '▼' : '▶'}</button
+          >
         {:else}
           <span style:width="16px" style:flex-shrink="0"></span>
         {/if}

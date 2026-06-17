@@ -5,14 +5,18 @@
   import ThemeProvider from '../theme/ThemeProvider.svelte'
   import SkinProvider from '../skins/SkinProvider.svelte'
   import IrisI18nProvider from '../i18n/IrisI18nProvider.svelte'
-  import {
-    PLUGIN_STORE_KEY,
-    type IrisProviderProps,
-    type PluginStoreContextValue,
-  } from './context'
+  import { PLUGIN_STORE_KEY, type IrisProviderProps, type PluginStoreContextValue } from './context'
 
-  const { theme, skin, dir, locale, messages, plugins = [], target, children }: IrisProviderProps =
-    $props()
+  const {
+    theme,
+    skin,
+    dir,
+    locale,
+    messages,
+    plugins = [],
+    target,
+    children,
+  }: IrisProviderProps = $props()
 
   // The system's only logic lives in core — this is a thin bridge. Re-collect
   // when the `plugins` array changes (Svelte's idiom for React's `useMemo`).

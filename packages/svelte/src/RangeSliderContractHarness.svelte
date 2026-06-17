@@ -23,10 +23,4 @@
   let value = $state<[number, number]>([20, 80])
 </script>
 
-<IrisRangeSlider
-  {value}
-  min={0}
-  max={100}
-  step={10}
-  onchange={(next) => (value = next)}
-/>
+<IrisRangeSlider {value} min={0} max={100} step={10} onchange={(next) => (value = next)} />

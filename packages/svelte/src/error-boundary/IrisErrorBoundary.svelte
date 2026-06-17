@@ -41,11 +41,7 @@
         <div data-iris-error-boundary-message>
           {messageOf(error)}
         </div>
-        <button
-          type="button"
-          data-iris-error-boundary-retry
-          onclick={reset}
-        >
+        <button type="button" data-iris-error-boundary-retry onclick={reset}>
           {t('errorBoundary.retry')}
         </button>
       </div>

@@ -92,24 +92,29 @@
   }
 
   setTabsContext({
-    get value() { return effectiveValue },
+    get value() {
+      return effectiveValue
+    },
     setValue,
-    get orientation() { return orientation },
-    get disabled() { return disabled },
-    get lazy() { return lazy },
+    get orientation() {
+      return orientation
+    },
+    get disabled() {
+      return disabled
+    },
+    get lazy() {
+      return lazy
+    },
     registerTrigger,
     unregisterTrigger,
     moveFocus,
     getListEl: () => listEl,
-    setListEl: (el) => { listEl = el },
+    setListEl: (el) => {
+      listEl = el
+    },
   })
 </script>
 
-<div
-  {...rest}
-  data-iris-tabs
-  data-iris-tabs-orientation={orientation}
-  {style}
->
+<div {...rest} data-iris-tabs data-iris-tabs-orientation={orientation} {style}>
   {@render children?.()}
 </div>

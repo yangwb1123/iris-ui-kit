@@ -33,12 +33,7 @@
   })
 </script>
 
-<div
-  {...rest}
-  data-iris-result
-  data-status={status}
-  style={mergeStyle(containerStyle, style)}
->
+<div {...rest} data-iris-result data-status={status} style={mergeStyle(containerStyle, style)}>
   <div
     data-iris-result-icon
     aria-hidden="true"

@@ -43,20 +43,31 @@
       duration: Math.max(1, duration) * 1000,
       iterations: Infinity,
     })
-    return () => { anim?.cancel(); anim = null }
+    return () => {
+      anim?.cancel()
+      anim = null
+    }
   })
 
   function setTrack(node: HTMLElement): { destroy: () => void } {
     trackEl = node
-    return { destroy: () => { trackEl = undefined } }
+    return {
+      destroy: () => {
+        trackEl = undefined
+      },
+    }
   }
 </script>
 
 <div
   {...rest}
   data-iris-marquee
-  onmouseenter={() => { if (pauseOnHover) anim?.pause() }}
-  onmouseleave={() => { if (pauseOnHover) anim?.play() }}
+  onmouseenter={() => {
+    if (pauseOnHover) anim?.pause()
+  }}
+  onmouseleave={() => {
+    if (pauseOnHover) anim?.play()
+  }}
   style="display: flex; overflow: hidden;{style ? ' ' + style : ''}"
 >
   <div

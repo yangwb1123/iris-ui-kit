@@ -17,11 +17,6 @@
   }
 </script>
 
-<button
-  type="button"
-  {...rest}
-  data-iris-drawer-close
-  onclick={handleClick}
->
+<button type="button" {...rest} data-iris-drawer-close onclick={handleClick}>
   {@render children?.()}
 </button>

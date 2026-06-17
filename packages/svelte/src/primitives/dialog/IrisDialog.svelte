@@ -24,7 +24,9 @@
   const isControlled = $derived(openProp !== undefined)
 
   // svelte-ignore state_referenced_locally
-  const { state: machineState, send } = toMachine(createFloatingMachine(defaultOpen ? 'open' : 'closed'))
+  const { state: machineState, send } = toMachine(
+    createFloatingMachine(defaultOpen ? 'open' : 'closed'),
+  )
   const internalOpen = $derived($machineState.value === 'open')
 
   $effect(() => {
@@ -53,27 +55,49 @@
   let descriptionCount = $state(0)
 
   setDialogContext({
-    get open() { return open },
+    get open() {
+      return open
+    },
     setOpen,
-    get trigger() { return triggerEl },
-    setTrigger: (el) => { triggerEl = el },
-    get content() { return contentEl },
-    setContent: (el) => { contentEl = el },
+    get trigger() {
+      return triggerEl
+    },
+    setTrigger: (el) => {
+      triggerEl = el
+    },
+    get content() {
+      return contentEl
+    },
+    setContent: (el) => {
+      contentEl = el
+    },
     contentId,
     titleId,
     descriptionId,
-    get hasTitle() { return titleCount > 0 },
-    get hasDescription() { return descriptionCount > 0 },
+    get hasTitle() {
+      return titleCount > 0
+    },
+    get hasDescription() {
+      return descriptionCount > 0
+    },
     registerTitle: () => {
       titleCount += 1
-      return () => { titleCount -= 1 }
+      return () => {
+        titleCount -= 1
+      }
     },
     registerDescription: () => {
       descriptionCount += 1
-      return () => { descriptionCount -= 1 }
+      return () => {
+        descriptionCount -= 1
+      }
     },
-    get closeOnOutsideClick() { return closeOnOutsideClick },
-    get closeOnEscape() { return closeOnEscape },
+    get closeOnOutsideClick() {
+      return closeOnOutsideClick
+    },
+    get closeOnEscape() {
+      return closeOnEscape
+    },
   })
 </script>
 

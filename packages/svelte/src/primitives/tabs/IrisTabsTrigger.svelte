@@ -30,18 +30,26 @@
     const horizontal = ctx.orientation === 'horizontal'
     switch (e.key) {
       case horizontal ? 'ArrowRight' : 'ArrowDown':
-        e.preventDefault(); ctx.moveFocus(value, 1); break
+        e.preventDefault()
+        ctx.moveFocus(value, 1)
+        break
       case horizontal ? 'ArrowLeft' : 'ArrowUp':
-        e.preventDefault(); ctx.moveFocus(value, -1); break
+        e.preventDefault()
+        ctx.moveFocus(value, -1)
+        break
       case 'Home':
-        e.preventDefault(); ctx.moveFocus(value, 'home'); break
+        e.preventDefault()
+        ctx.moveFocus(value, 'home')
+        break
       case 'End':
-        e.preventDefault(); ctx.moveFocus(value, 'end'); break
+        e.preventDefault()
+        ctx.moveFocus(value, 'end')
+        break
     }
   }
 
   const baseStyle = $derived(
-    `padding: 8px var(--iris-padding-md, 12px); font-size: 14px; font-weight: 500; font-family: inherit; cursor: ${isDisabled ? 'not-allowed' : 'pointer'}; opacity: ${isDisabled ? '0.5' : '1'}; border: none; outline: none; margin-bottom: ${ctx.orientation === 'horizontal' ? '-1px' : undefined}; transition: color 120ms ease, border-color 120ms ease; background: transparent; color: ${isActive ? 'var(--iris-primary)' : 'var(--iris-muted)'}; border-bottom: ${ctx.orientation === 'horizontal' ? `2px solid ${isActive ? 'var(--iris-primary)' : 'transparent'}` : 'none'}; border-inline-end: ${ctx.orientation === 'vertical' ? `2px solid ${isActive ? 'var(--iris-primary)' : 'transparent'}` : 'none'}; ${style ?? ''}`
+    `padding: 8px var(--iris-padding-md, 12px); font-size: 14px; font-weight: 500; font-family: inherit; cursor: ${isDisabled ? 'not-allowed' : 'pointer'}; opacity: ${isDisabled ? '0.5' : '1'}; border: none; outline: none; margin-bottom: ${ctx.orientation === 'horizontal' ? '-1px' : undefined}; transition: color 120ms ease, border-color 120ms ease; background: transparent; color: ${isActive ? 'var(--iris-primary)' : 'var(--iris-muted)'}; border-bottom: ${ctx.orientation === 'horizontal' ? `2px solid ${isActive ? 'var(--iris-primary)' : 'transparent'}` : 'none'}; border-inline-end: ${ctx.orientation === 'vertical' ? `2px solid ${isActive ? 'var(--iris-primary)' : 'transparent'}` : 'none'}; ${style ?? ''}`,
   )
 </script>
 

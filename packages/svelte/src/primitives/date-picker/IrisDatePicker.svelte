@@ -82,7 +82,7 @@
   data-iris-date-picker
   style:position="relative"
   style:display="inline-flex"
-  style={style}
+  {style}
   class={className}
 >
   <button

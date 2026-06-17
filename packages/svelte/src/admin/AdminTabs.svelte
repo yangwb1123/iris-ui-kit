@@ -153,11 +153,17 @@
     <IrisDropdownMenu>
       {#if $activeKey}
         {@const key = $activeKey}
-        <IrisDropdownItem onSelect={() => refresh(key)}>{translate('admin.refresh')}</IrisDropdownItem>
+        <IrisDropdownItem onSelect={() => refresh(key)}
+          >{translate('admin.refresh')}</IrisDropdownItem
+        >
         <IrisDropdownItem onSelect={() => close(key)}>{translate('admin.close')}</IrisDropdownItem>
         <IrisDropdownSeparator />
-        <IrisDropdownItem onSelect={() => nav.closeOthers(key)}>{translate('admin.closeOthers')}</IrisDropdownItem>
-        <IrisDropdownItem onSelect={() => nav.closeAll()}>{translate('admin.closeAll')}</IrisDropdownItem>
+        <IrisDropdownItem onSelect={() => nav.closeOthers(key)}
+          >{translate('admin.closeOthers')}</IrisDropdownItem
+        >
+        <IrisDropdownItem onSelect={() => nav.closeAll()}
+          >{translate('admin.closeAll')}</IrisDropdownItem
+        >
       {:else}
         <IrisDropdownItem disabled>No active tab</IrisDropdownItem>
       {/if}

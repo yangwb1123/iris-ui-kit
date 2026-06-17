@@ -17,15 +17,7 @@
     [key: string]: unknown
   }
 
-  let {
-    items = [],
-    target,
-    offset = 0,
-    ariaLabel,
-    style,
-    onchange,
-    ...rest
-  }: Props = $props()
+  let { items = [], target, offset = 0, ariaLabel, style, onchange, ...rest }: Props = $props()
 
   let active = $state('')
   let scrollEl: HTMLElement | Window | undefined
@@ -76,13 +68,10 @@
   }
 </script>
 
-<nav
-  {...rest}
-  data-iris-anchor
-  aria-label={ariaLabel}
-  style={mergeStyle('', style)}
->
-  <ul style="list-style: none; margin: 0; padding: 0; border-inline-start: 2px solid var(--iris-border);">
+<nav {...rest} data-iris-anchor aria-label={ariaLabel} style={mergeStyle('', style)}>
+  <ul
+    style="list-style: none; margin: 0; padding: 0; border-inline-start: 2px solid var(--iris-border);"
+  >
     {#each items as item (item.key ?? item.href)}
       {@const isActive = active === item.href}
       <li data-iris-anchor-item>
@@ -92,8 +81,14 @@
           data-active={isActive ? 'true' : undefined}
           aria-current={isActive ? 'true' : undefined}
           onclick={(e) => handleLinkClick(e, item.href)}
-          style="display: block; padding: 4px 12px; margin-inline-start: -2px; border-inline-start: 2px solid {isActive ? 'var(--iris-primary)' : 'transparent'}; color: {isActive ? 'var(--iris-primary)' : 'var(--iris-foreground)'}; font-weight: {isActive ? '600' : '400'}; text-decoration: none; font-size: 14px;"
-        >{item.title}</a>
+          style="display: block; padding: 4px 12px; margin-inline-start: -2px; border-inline-start: 2px solid {isActive
+            ? 'var(--iris-primary)'
+            : 'transparent'}; color: {isActive
+            ? 'var(--iris-primary)'
+            : 'var(--iris-foreground)'}; font-weight: {isActive
+            ? '600'
+            : '400'}; text-decoration: none; font-size: 14px;">{item.title}</a
+        >
       </li>
     {/each}
   </ul>

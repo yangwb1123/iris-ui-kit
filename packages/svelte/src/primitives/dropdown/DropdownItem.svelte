@@ -3,8 +3,14 @@
   import { styleToString, mergeStyle } from '../../internal/style'
   import type { IrisDropdownItemProps } from './types'
 
-  let { disabled = false, keepOpen = false, onSelect, style, children, ...rest }: IrisDropdownItemProps =
-    $props()
+  let {
+    disabled = false,
+    keepOpen = false,
+    onSelect,
+    style,
+    children,
+    ...rest
+  }: IrisDropdownItemProps = $props()
   const ctx = getDropdownContext('IrisDropdownItem')
   let hovered = $state(false)
 

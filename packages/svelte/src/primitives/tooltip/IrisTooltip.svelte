@@ -44,7 +44,9 @@
   let hi: ReturnType<typeof createHoverIntent> = createHoverIntent({
     openDelay,
     closeDelay,
-    onChange: (v) => { open = v },
+    onChange: (v) => {
+      open = v
+    },
   })
 
   // Re-create when openDelay/closeDelay change; cleanup on unmount.
@@ -55,7 +57,9 @@
     hi = createHoverIntent({
       openDelay,
       closeDelay,
-      onChange: (v) => { open = v },
+      onChange: (v) => {
+        open = v
+      },
     })
     return () => hi.stop()
   })
@@ -64,7 +68,9 @@
   $effect(() => {
     if (!open || typeof document === 'undefined') return
     const onKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') { hi.close() }
+      if (e.key === 'Escape') {
+        hi.close()
+      }
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
@@ -72,7 +78,9 @@
 
   // If disabled while open, close immediately
   $effect(() => {
-    if (disabled && open) { hi.close() }
+    if (disabled && open) {
+      hi.close()
+    }
   })
 
   const floating = useFloating({
@@ -85,12 +93,20 @@
 
   function setTrigger(node: HTMLElement): { destroy: () => void } {
     triggerEl = node
-    return { destroy: () => { triggerEl = undefined } }
+    return {
+      destroy: () => {
+        triggerEl = undefined
+      },
+    }
   }
 
   function setTooltip(node: HTMLElement): { destroy: () => void } {
     tooltipEl = node
-    return { destroy: () => { tooltipEl = undefined } }
+    return {
+      destroy: () => {
+        tooltipEl = undefined
+      },
+    }
   }
 </script>
 
@@ -98,8 +114,14 @@
 <span
   use:setTrigger
   aria-describedby={open ? tooltipId : undefined}
-  onpointerenter={() => { if (openDelay > 0) hi.pointerEnter(); else hi.open() }}
-  onpointerleave={() => { if (closeDelay > 0) hi.pointerLeave(); else hi.close() }}
+  onpointerenter={() => {
+    if (openDelay > 0) hi.pointerEnter()
+    else hi.open()
+  }}
+  onpointerleave={() => {
+    if (closeDelay > 0) hi.pointerLeave()
+    else hi.close()
+  }}
   onfocus={() => hi.open()}
   onblur={() => hi.close()}
   data-iris-tooltip-trigger
@@ -118,7 +140,8 @@
     data-iris-tooltip
     data-state="open"
     data-placement={placement}
-    style="{floating.floatingStyles}; background: var(--iris-foreground); color: var(--iris-background); padding: 4px 8px; border-radius: var(--iris-radius-sm, 4px); font-size: 12px; line-height: 1.4; max-width: 240px; pointer-events: none; z-index: 1100; {rest.style ?? ''}"
+    style="{floating.floatingStyles}; background: var(--iris-foreground); color: var(--iris-background); padding: 4px 8px; border-radius: var(--iris-radius-sm, 4px); font-size: 12px; line-height: 1.4; max-width: 240px; pointer-events: none; z-index: 1100; {rest.style ??
+      ''}"
   >
     {#if contentSlot}
       {@render contentSlot()}

@@ -162,11 +162,7 @@
   onchange={(next) => (pageValue = next)}
 />
 
-<IrisStepper
-  value={stepperValue}
-  linear={false}
-  onchange={(next) => (stepperValue = next)}
->
+<IrisStepper value={stepperValue} linear={false} onchange={(next) => (stepperValue = next)}>
   <IrisStepperStep title="Step 1" />
   <IrisStepperStep title="Step 2" />
   <IrisStepperStep title="Step 3" />

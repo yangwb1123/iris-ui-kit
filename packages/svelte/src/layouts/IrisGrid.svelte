@@ -12,7 +12,8 @@
 
   function toCssSpacing(spacing: string | number): string {
     if (typeof spacing === 'number') return `${spacing}px`
-    if (spacing === 'sm' || spacing === 'md' || spacing === 'lg') return `var(--iris-gap-${spacing})`
+    if (spacing === 'sm' || spacing === 'md' || spacing === 'lg')
+      return `var(--iris-gap-${spacing})`
     return spacing
   }
 
@@ -53,7 +54,7 @@
   style:grid-template-columns={colTemplate}
   style:row-gap={rg}
   style:column-gap={cg}
-  style={style}
+  {style}
   class={className}
   {...rest}
 >

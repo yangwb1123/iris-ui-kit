@@ -30,12 +30,24 @@
   // THIS submenu's open state (not the root's), while `closeRoot` still points
   // at the root menu — so any leaf, however deep, collapses the whole tree.
   setMenuContext({
-    get open() { return open },
-    setOpen: (next: boolean) => { open = next },
-    get trigger() { return triggerEl },
-    setTrigger: (el) => { triggerEl = el },
-    get content() { return contentEl },
-    setContent: (el) => { contentEl = el },
+    get open() {
+      return open
+    },
+    setOpen: (next: boolean) => {
+      open = next
+    },
+    get trigger() {
+      return triggerEl
+    },
+    setTrigger: (el) => {
+      triggerEl = el
+    },
+    get content() {
+      return contentEl
+    },
+    setContent: (el) => {
+      contentEl = el
+    },
     contentId: subId,
     placement: 'right-start',
     offset: 0,
@@ -57,7 +69,9 @@
   useDismiss({
     enabled: () => open,
     exclude: [() => triggerEl, () => contentEl],
-    onDismiss: () => { open = false },
+    onDismiss: () => {
+      open = false
+    },
     escape: false,
   })
 
@@ -81,11 +95,19 @@
 
   function setTrigger(node: HTMLElement): { destroy: () => void } {
     triggerEl = node
-    return { destroy: () => { triggerEl = undefined } }
+    return {
+      destroy: () => {
+        triggerEl = undefined
+      },
+    }
   }
   function setContent(node: HTMLElement): { destroy: () => void } {
     contentEl = node
-    return { destroy: () => { contentEl = undefined } }
+    return {
+      destroy: () => {
+        contentEl = undefined
+      },
+    }
   }
 
   // Trigger keyboard: ArrowRight/Enter/Space open; ArrowLeft closes.
@@ -106,9 +128,8 @@
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
       const items = Array.from(
-        contentEl?.querySelectorAll<HTMLElement>(
-          '[role="menuitem"]:not([aria-disabled="true"])',
-        ) ?? [],
+        contentEl?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])') ??
+          [],
       )
       if (items.length === 0) return
       const index = items.indexOf(document.activeElement as HTMLElement)
@@ -161,9 +182,16 @@
   use:setTrigger
   onpointerenter={scheduleOpen}
   onpointerleave={clearTimer}
-  onclick={() => { clearTimer(); if (!disabled) open = !open }}
+  onclick={() => {
+    clearTimer()
+    if (!disabled) open = !open
+  }}
   onkeydown={onTriggerKeyDown}
-  style="padding: var(--iris-padding-sm, 4px) var(--iris-padding-md, 8px); cursor: {disabled ? 'not-allowed' : 'pointer'}; border-radius: var(--iris-radius-sm, 3px); display: flex; align-items: center; justify-content: space-between; gap: 8px; color: {disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)'}; outline: none"
+  style="padding: var(--iris-padding-sm, 4px) var(--iris-padding-md, 8px); cursor: {disabled
+    ? 'not-allowed'
+    : 'pointer'}; border-radius: var(--iris-radius-sm, 3px); display: flex; align-items: center; justify-content: space-between; gap: 8px; color: {disabled
+    ? 'var(--iris-muted)'
+    : 'var(--iris-foreground)'}; outline: none"
 >
   {label}
   <span aria-hidden="true">▶</span>

@@ -16,7 +16,17 @@
 
   let {
     value = '#3b82f6',
-    presets = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#000000','#ffffff'],
+    presets = [
+      '#ef4444',
+      '#f97316',
+      '#eab308',
+      '#22c55e',
+      '#3b82f6',
+      '#8b5cf6',
+      '#ec4899',
+      '#000000',
+      '#ffffff',
+    ],
     disabled = false,
     onValueChange,
     style,
@@ -128,7 +138,7 @@
   style:border-radius="var(--iris-radius-md, 6px)"
   style:background="var(--iris-background)"
   style:width="220px"
-  style={style}
+  {style}
   class={className}
   {...rest}
 >
@@ -145,9 +155,17 @@
     style:overflow="hidden"
   >
     <!-- White gradient (left to right) -->
-    <div style:position="absolute" style:inset="0" style:background="linear-gradient(to right, #fff, transparent)"></div>
+    <div
+      style:position="absolute"
+      style:inset="0"
+      style:background="linear-gradient(to right, #fff, transparent)"
+    ></div>
     <!-- Black gradient (top to bottom) -->
-    <div style:position="absolute" style:inset="0" style:background="linear-gradient(to bottom, transparent, #000)"></div>
+    <div
+      style:position="absolute"
+      style:inset="0"
+      style:background="linear-gradient(to bottom, transparent, #000)"
+    ></div>
     <!-- Cursor -->
     <div
       style:position="absolute"
@@ -206,7 +224,7 @@
       data-iris-color-picker-hex
       aria-label={t('colorPicker.hex')}
       spellcheck={false}
-      disabled={disabled}
+      {disabled}
       style:flex="1"
       style:padding="4px 8px"
       style:border="1px solid var(--iris-border)"
@@ -221,22 +239,19 @@
 
   <!-- Presets -->
   {#if presets.length > 0}
-    <div
-      data-iris-color-picker-presets
-      style:display="flex"
-      style:flex-wrap="wrap"
-      style:gap="4px"
-    >
+    <div data-iris-color-picker-presets style:display="flex" style:flex-wrap="wrap" style:gap="4px">
       {#each presets as preset (preset)}
         <button
           type="button"
           aria-label={preset}
           onclick={() => applyPreset(preset)}
-          disabled={disabled}
+          {disabled}
           style:width="20px"
           style:height="20px"
           style:border-radius="var(--iris-radius-sm, 4px)"
-          style:border={currentHex === preset ? '2px solid var(--iris-primary)' : '1px solid var(--iris-border)'}
+          style:border={currentHex === preset
+            ? '2px solid var(--iris-primary)'
+            : '1px solid var(--iris-border)'}
           style:background={preset}
           style:cursor={disabled ? 'not-allowed' : 'pointer'}
           style:padding="0"

@@ -102,14 +102,31 @@
     const big = step * 10
     let next: number | null = null
     switch (e.key) {
-      case 'ArrowLeft': case 'ArrowDown': next = value - step; break
-      case 'ArrowRight': case 'ArrowUp': next = value + step; break
-      case 'Home': next = min; break
-      case 'End': next = max; break
-      case 'PageUp': next = value + big; break
-      case 'PageDown': next = value - big; break
+      case 'ArrowLeft':
+      case 'ArrowDown':
+        next = value - step
+        break
+      case 'ArrowRight':
+      case 'ArrowUp':
+        next = value + step
+        break
+      case 'Home':
+        next = min
+        break
+      case 'End':
+        next = max
+        break
+      case 'PageUp':
+        next = value + big
+        break
+      case 'PageDown':
+        next = value - big
+        break
     }
-    if (next !== null) { e.preventDefault(); setValue(next, true) }
+    if (next !== null) {
+      e.preventDefault()
+      setValue(next, true)
+    }
   }
 
   // Drag handling
@@ -132,40 +149,46 @@
     onchange?.(value)
   }
 
-  const trackStyle = $derived(styleToString({
-    position: 'relative',
-    background: 'var(--iris-surface, #e5e7eb)',
-    'border-radius': '9999px',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? '0.6' : '1',
-    ...(isHorizontal ? { width: '100%', height: '6px' } : { width: '6px', height: '120px' }),
-  }))
+  const trackStyle = $derived(
+    styleToString({
+      position: 'relative',
+      background: 'var(--iris-surface, #e5e7eb)',
+      'border-radius': '9999px',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      opacity: disabled ? '0.6' : '1',
+      ...(isHorizontal ? { width: '100%', height: '6px' } : { width: '6px', height: '120px' }),
+    }),
+  )
 
-  const fillStyle = $derived(styleToString({
-    position: 'absolute',
-    background: 'var(--iris-primary)',
-    'border-radius': '9999px',
-    'pointer-events': 'none',
-    ...(isHorizontal
-      ? { top: '0', bottom: '0', 'inset-inline-start': '0', width: `${percent}%` }
-      : { left: '0', right: '0', bottom: '0', height: `${percent}%` }),
-  }))
+  const fillStyle = $derived(
+    styleToString({
+      position: 'absolute',
+      background: 'var(--iris-primary)',
+      'border-radius': '9999px',
+      'pointer-events': 'none',
+      ...(isHorizontal
+        ? { top: '0', bottom: '0', 'inset-inline-start': '0', width: `${percent}%` }
+        : { left: '0', right: '0', bottom: '0', height: `${percent}%` }),
+    }),
+  )
 
-  const thumbStyle = $derived(styleToString({
-    position: 'absolute',
-    width: '16px',
-    height: '16px',
-    'border-radius': '50%',
-    background: 'var(--iris-background, #fff)',
-    border: '2px solid var(--iris-primary)',
-    'box-shadow': dragging ? '0 0 0 4px rgba(99, 102, 241, 0.18)' : '0 1px 2px rgba(0,0,0,.15)',
-    cursor: disabled ? 'not-allowed' : 'grab',
-    transition: 'box-shadow 120ms ease',
-    'touch-action': 'none',
-    ...(isHorizontal
-      ? { top: '50%', 'inset-inline-start': `${percent}%`, transform: 'translate(-50%, -50%)' }
-      : { left: '50%', bottom: `${percent}%`, transform: 'translate(-50%, 50%)' }),
-  }))
+  const thumbStyle = $derived(
+    styleToString({
+      position: 'absolute',
+      width: '16px',
+      height: '16px',
+      'border-radius': '50%',
+      background: 'var(--iris-background, #fff)',
+      border: '2px solid var(--iris-primary)',
+      'box-shadow': dragging ? '0 0 0 4px rgba(99, 102, 241, 0.18)' : '0 1px 2px rgba(0,0,0,.15)',
+      cursor: disabled ? 'not-allowed' : 'grab',
+      transition: 'box-shadow 120ms ease',
+      'touch-action': 'none',
+      ...(isHorizontal
+        ? { top: '50%', 'inset-inline-start': `${percent}%`, transform: 'translate(-50%, -50%)' }
+        : { left: '50%', bottom: `${percent}%`, transform: 'translate(-50%, 50%)' }),
+    }),
+  )
 </script>
 
 <div
@@ -182,12 +205,7 @@
     style,
   )}
 >
-  <div
-    bind:this={trackEl}
-    data-iris-slider-track
-    style={trackStyle}
-    onclick={handleTrackClick}
-  >
+  <div bind:this={trackEl} data-iris-slider-track style={trackStyle} onclick={handleTrackClick}>
     <div data-iris-slider-fill style={fillStyle}></div>
     <div
       bind:this={thumbEl}

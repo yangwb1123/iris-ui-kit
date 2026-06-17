@@ -16,7 +16,14 @@
     [key: string]: unknown
   }
 
-  let { style, autoFocus = true, restoreFocus = true, portalTarget, children, ...rest }: Props = $props()
+  let {
+    style,
+    autoFocus = true,
+    restoreFocus = true,
+    portalTarget,
+    children,
+    ...rest
+  }: Props = $props()
   const ctx = getPopoverContext('IrisPopoverContent')
 
   // Focus the panel on open; restore focus to the trigger on close (mirrors
@@ -53,7 +60,8 @@
     return { destroy: () => ctx.setContent(undefined) }
   }
 
-  const VISUAL = 'background: var(--iris-surface); color: var(--iris-foreground); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-md, 8px); box-shadow: 0 8px 24px -8px rgba(0,0,0,0.16); min-width: 160px; outline: none; z-index: 1000'
+  const VISUAL =
+    'background: var(--iris-surface); color: var(--iris-foreground); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-md, 8px); box-shadow: 0 8px 24px -8px rgba(0,0,0,0.16); min-width: 160px; outline: none; z-index: 1000'
   const mergedStyle = $derived(`${floating.floatingStyles}; ${VISUAL}${style ? '; ' + style : ''}`)
 </script>
 

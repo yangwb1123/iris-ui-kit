@@ -50,7 +50,9 @@
   data-iris-radio
   data-iris-radio-size={size}
   data-state={checked ? 'checked' : 'unchecked'}
-  style="display:inline-flex; align-items:center; gap:var(--iris-gap-sm); cursor:{disabled ? 'not-allowed' : 'pointer'}; user-select:none;"
+  style="display:inline-flex; align-items:center; gap:var(--iris-gap-sm); cursor:{disabled
+    ? 'not-allowed'
+    : 'pointer'}; user-select:none;"
 >
   <input
     type="radio"

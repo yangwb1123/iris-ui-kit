@@ -6,8 +6,7 @@
   import ThemeConsumer from './ThemeConsumer.svelte'
   import type { UseThemeReturn } from './useTheme'
 
-  let { store, onready }: { store: ThemeStore; onready?: (api: UseThemeReturn) => void } =
-    $props()
+  let { store, onready }: { store: ThemeStore; onready?: (api: UseThemeReturn) => void } = $props()
 </script>
 
 <ThemeProvider {store}>

@@ -25,12 +25,7 @@
   })
 </script>
 
-<div
-  {...rest}
-  role="status"
-  data-iris-empty-state
-  style={mergeStyle(containerStyle, style)}
->
+<div {...rest} role="status" data-iris-empty-state style={mergeStyle(containerStyle, style)}>
   {#if icon}
     <div
       data-iris-empty-state-icon

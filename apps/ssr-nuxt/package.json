@@ -2,11 +2,11 @@
   "name": "ssr-nuxt",
   "version": "0.0.0",
   "private": true,
-  "description": "Nuxt 3 SSR smoke app \u2014 the SSR-compat proof for @iris-ui/vue (ROADMAP v3 R14, deferred)",
+  "description": "Nuxt 3 SSR smoke app — the SSR-compat proof for @iris-ui/vue (ROADMAP v3 R14, deferred)",
   "scripts": {
     "dev": "nuxi dev -p 5181",
     "build": "nuxi build",
-    "test": "echo \"(ssr-nuxt) build IS the test \u2014 nuxi build server-renders every route\" && exit 0",
+    "test": "echo \"(ssr-nuxt) build IS the test — nuxi build server-renders every route\" && exit 0",
     "typecheck": "vue-tsc --noEmit -p .nuxt/tsconfig.json",
     "clean": "rm -rf .nuxt .output node_modules/.cache"
   },

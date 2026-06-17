@@ -64,19 +64,13 @@
     style={mergeStyle(containerStyle, style)}
   >
     {#if icon}
-      <span
-        data-iris-alert-icon
-        style="color: {tonalVar}; flex-shrink: 0; display: inline-flex"
-      >
+      <span data-iris-alert-icon style="color: {tonalVar}; flex-shrink: 0; display: inline-flex">
         {@render icon()}
       </span>
     {/if}
     <div data-iris-alert-body style="flex: 1; min-width: 0">
       {#if title || titleSlot}
-        <div
-          data-iris-alert-title
-          style="font-weight: 600; margin-bottom: 4px; color: {tonalVar}"
-        >
+        <div data-iris-alert-title style="font-weight: 600; margin-bottom: 4px; color: {tonalVar}">
           {#if titleSlot}
             {@render titleSlot()}
           {:else}

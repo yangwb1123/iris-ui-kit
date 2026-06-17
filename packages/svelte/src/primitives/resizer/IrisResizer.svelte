@@ -2,8 +2,14 @@
   import { useDrag } from '../drag/useDrag.svelte'
 
   export type IrisResizerHandle =
-    | 'top' | 'right' | 'bottom' | 'left'
-    | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    | 'top'
+    | 'right'
+    | 'bottom'
+    | 'left'
+    | 'top-left'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-right'
 
   export interface IrisResizerSize {
     width: number
@@ -11,14 +17,25 @@
   }
 
   const ALL_HANDLES: IrisResizerHandle[] = [
-    'top', 'right', 'bottom', 'left',
-    'top-left', 'top-right', 'bottom-left', 'bottom-right',
+    'top',
+    'right',
+    'bottom',
+    'left',
+    'top-left',
+    'top-right',
+    'bottom-left',
+    'bottom-right',
   ]
 
   const HANDLE_CURSORS: Record<IrisResizerHandle, string> = {
-    top: 'ns-resize', right: 'ew-resize', bottom: 'ns-resize', left: 'ew-resize',
-    'top-left': 'nwse-resize', 'top-right': 'nesw-resize',
-    'bottom-left': 'nesw-resize', 'bottom-right': 'nwse-resize',
+    top: 'ns-resize',
+    right: 'ew-resize',
+    bottom: 'ns-resize',
+    left: 'ew-resize',
+    'top-left': 'nwse-resize',
+    'top-right': 'nesw-resize',
+    'bottom-left': 'nesw-resize',
+    'bottom-right': 'nwse-resize',
   }
 
   function handlePosition(handle: IrisResizerHandle): string {
@@ -32,9 +49,18 @@
     if (b) parts.push('bottom: -4px')
     if (l) parts.push('left: -4px')
     if (r) parts.push('right: -4px')
-    if (isCorner) { parts.push('width: 12px'); parts.push('height: 12px') }
-    else if (t || b) { parts.push('left: 0'); parts.push('right: 0'); parts.push('height: 8px') }
-    else { parts.push('top: 0'); parts.push('bottom: 0'); parts.push('width: 8px') }
+    if (isCorner) {
+      parts.push('width: 12px')
+      parts.push('height: 12px')
+    } else if (t || b) {
+      parts.push('left: 0')
+      parts.push('right: 0')
+      parts.push('height: 8px')
+    } else {
+      parts.push('top: 0')
+      parts.push('bottom: 0')
+      parts.push('width: 8px')
+    }
     parts.push(`cursor: ${HANDLE_CURSORS[handle]}`)
     return parts.join('; ')
   }
@@ -105,13 +131,19 @@
         nextH = Math.max(minHeight, Math.min(maxHeight, nextH))
         onValueChange?.({ width: nextW, height: nextH })
       },
-      onEnd: () => { onResizeEnd?.({ ...value }) },
+      onEnd: () => {
+        onResizeEnd?.({ ...value })
+      },
     })
   })
 
   function registerHandle(node: HTMLElement, handle: IrisResizerHandle): { destroy: () => void } {
     handleEls[handle] = node
-    return { destroy: () => { handleEls[handle] = undefined } }
+    return {
+      destroy: () => {
+        handleEls[handle] = undefined
+      },
+    }
   }
 </script>
 
@@ -119,7 +151,9 @@
   {...rest}
   data-iris-resizer
   data-state={disabled ? 'disabled' : 'idle'}
-  style="position: relative; display: inline-block; width: {value.width}px; height: {value.height}px;{style ? ' ' + style : ''}"
+  style="position: relative; display: inline-block; width: {value.width}px; height: {value.height}px;{style
+    ? ' ' + style
+    : ''}"
 >
   {@render children?.()}
   {#each handles as handle}

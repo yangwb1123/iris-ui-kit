@@ -53,7 +53,9 @@
     {disabled}
     onclick={onTrigger}
     onkeydown={onKeyDown}
-    style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:var(--iris-padding-md,12px); background:transparent; color:var(--iris-foreground); border:none; cursor:{disabled ? 'not-allowed' : 'pointer'}; opacity:{disabled ? '0.6' : '1'}; font:inherit; text-align:start;"
+    style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:var(--iris-padding-md,12px); background:transparent; color:var(--iris-foreground); border:none; cursor:{disabled
+      ? 'not-allowed'
+      : 'pointer'}; opacity:{disabled ? '0.6' : '1'}; font:inherit; text-align:start;"
   >
     <span data-iris-accordion-title style="flex:1; min-width:0">
       {#if titleSnippet}
@@ -65,8 +67,10 @@
     <span
       aria-hidden="true"
       data-iris-accordion-chevron
-      style="transition:transform 160ms ease; transform:{open ? 'rotate(180deg)' : 'rotate(0deg)'}; color:var(--iris-muted)"
-    >⌄</span>
+      style="transition:transform 160ms ease; transform:{open
+        ? 'rotate(180deg)'
+        : 'rotate(0deg)'}; color:var(--iris-muted)">⌄</span
+    >
   </button>
   {#if open}
     <div

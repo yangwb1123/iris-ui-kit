@@ -153,7 +153,10 @@
   {@const open = expanded.includes(node.key)}
   {@const active = node.key === activeKey}
   {@const trail = branch && activePath.includes(node.key)}
-  <div data-iris-nav-group={branch ? '' : undefined} data-open={branch && open ? 'true' : undefined}>
+  <div
+    data-iris-nav-group={branch ? '' : undefined}
+    data-open={branch && open ? 'true' : undefined}
+  >
     <button
       type="button"
       data-iris-nav-item

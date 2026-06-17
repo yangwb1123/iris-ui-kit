@@ -18,9 +18,7 @@
   } = $props()
 
   const sz = $derived(SIZE_MAP[size as KbdSize] ?? SIZE_MAP.md)
-  const keyList = $derived(
-    typeof keys === 'string' ? (keys ? [keys] : []) : (keys as string[]),
-  )
+  const keyList = $derived(typeof keys === 'string' ? (keys ? [keys] : []) : (keys as string[]))
 
   const baseStyle = $derived(
     styleToString({
@@ -51,24 +49,17 @@
 </script>
 
 {#if children}
-  <kbd
-    {...rest}
-    data-iris-kbd
-    style={mergeStyle(baseStyle, style)}
-  >
+  <kbd {...rest} data-iris-kbd style={mergeStyle(baseStyle, style)}>
     {@render children()}
   </kbd>
 {:else if keyList.length > 0}
-  <span
-    {...rest}
-    data-iris-kbd
-    data-iris-kbd-size={size}
-    style={mergeStyle(baseStyle, style)}
-  >
+  <span {...rest} data-iris-kbd data-iris-kbd-size={size} style={mergeStyle(baseStyle, style)}>
     {#each keyList as key, i (i)}
       <kbd data-iris-kbd-key style={keyStyle}>{key}</kbd>
       {#if i < keyList.length - 1}
-        <span data-iris-kbd-separator aria-hidden="true" style="color: var(--iris-muted)">{separator}</span>
+        <span data-iris-kbd-separator aria-hidden="true" style="color: var(--iris-muted)"
+          >{separator}</span
+        >
       {/if}
     {/each}
   </span>

@@ -50,10 +50,14 @@
   const targetItems = $derived(options.filter((o) => valueSet.has(o.value)))
 
   const filteredSource = $derived(
-    searchable ? sourceItems.filter((o) => o.label.toLowerCase().includes(sourceQuery.toLowerCase())) : sourceItems
+    searchable
+      ? sourceItems.filter((o) => o.label.toLowerCase().includes(sourceQuery.toLowerCase()))
+      : sourceItems,
   )
   const filteredTarget = $derived(
-    searchable ? targetItems.filter((o) => o.label.toLowerCase().includes(targetQuery.toLowerCase())) : targetItems
+    searchable
+      ? targetItems.filter((o) => o.label.toLowerCase().includes(targetQuery.toLowerCase()))
+      : targetItems,
   )
 
   function moveToTarget() {
@@ -67,7 +71,7 @@
   function moveToSource() {
     if (disabled) return
     const removing = new Set(
-      targetItems.filter((o) => !o.disabled && targetModel.isSelected(o.value)).map((o) => o.value)
+      targetItems.filter((o) => !o.disabled && targetModel.isSelected(o.value)).map((o) => o.value),
     )
     if (removing.size === 0) return
     onValueChange?.(value.filter((v) => !removing.has(v)))
@@ -96,7 +100,8 @@
     else targetModel.set(eligible)
   }
 
-  const paneStyle = 'display:flex;flex-direction:column;width:220px;border:1px solid var(--iris-border);border-radius:var(--iris-radius-md,6px);background:var(--iris-background);overflow:hidden;'
+  const paneStyle =
+    'display:flex;flex-direction:column;width:220px;border:1px solid var(--iris-border);border-radius:var(--iris-radius-md,6px);background:var(--iris-background);overflow:hidden;'
 </script>
 
 <div
@@ -105,22 +110,33 @@
   style:display="flex"
   style:align-items="center"
   style:gap="12px"
-  style={style}
+  {style}
   class={className}
   {...rest}
 >
   <!-- Source pane -->
   <div data-iris-transfer-source style={paneStyle}>
-    <div style:padding="8px 12px" style:border-bottom="1px solid var(--iris-border)" style:display="flex" style:align-items="center" style:gap="8px">
+    <div
+      style:padding="8px 12px"
+      style:border-bottom="1px solid var(--iris-border)"
+      style:display="flex"
+      style:align-items="center"
+      style:gap="8px"
+    >
       <input
         type="checkbox"
         aria-label={t('transfer.selectAllSource')}
-        checked={filteredSource.filter(o => !o.disabled).length > 0 && filteredSource.filter(o => !o.disabled).every(o => $sourceChecked.includes(o.value))}
+        checked={filteredSource.filter((o) => !o.disabled).length > 0 &&
+          filteredSource.filter((o) => !o.disabled).every((o) => $sourceChecked.includes(o.value))}
         onchange={toggleAllSource}
-        disabled={disabled}
+        {disabled}
       />
-      <span style:font-size="13px" style:font-weight="600">{titles?.[0] ?? t('transfer.sourceTitle')}</span>
-      <span style:margin-left="auto" style:font-size="12px" style:color="var(--iris-muted)">{$sourceChecked.length}/{filteredSource.length}</span>
+      <span style:font-size="13px" style:font-weight="600"
+        >{titles?.[0] ?? t('transfer.sourceTitle')}</span
+      >
+      <span style:margin-left="auto" style:font-size="12px" style:color="var(--iris-muted)"
+        >{$sourceChecked.length}/{filteredSource.length}</span
+      >
     </div>
     {#if searchable}
       <div style:padding="6px 8px" style:border-bottom="1px solid var(--iris-border)">
@@ -159,13 +175,25 @@
         </label>
       {/each}
       {#if filteredSource.length === 0}
-        <div style:padding="12px" style:color="var(--iris-muted)" style:font-size="13px" style:text-align="center">{t('transfer.empty')}</div>
+        <div
+          style:padding="12px"
+          style:color="var(--iris-muted)"
+          style:font-size="13px"
+          style:text-align="center"
+        >
+          {t('transfer.empty')}
+        </div>
       {/if}
     </div>
   </div>
 
   <!-- Move buttons -->
-  <div style:display="flex" style:flex-direction="column" style:gap="6px" style:align-items="center">
+  <div
+    style:display="flex"
+    style:flex-direction="column"
+    style:gap="6px"
+    style:align-items="center"
+  >
     <button
       type="button"
       aria-label={t('transfer.toTarget')}
@@ -179,8 +207,8 @@
       style:background="var(--iris-background)"
       style:cursor={disabled || $sourceChecked.length === 0 ? 'not-allowed' : 'pointer'}
       style:font-size="14px"
-      style:opacity={disabled || $sourceChecked.length === 0 ? '0.5' : '1'}
-    >›</button>
+      style:opacity={disabled || $sourceChecked.length === 0 ? '0.5' : '1'}>›</button
+    >
     <button
       type="button"
       aria-label={t('transfer.toSource')}
@@ -194,22 +222,33 @@
       style:background="var(--iris-background)"
       style:cursor={disabled || $targetChecked.length === 0 ? 'not-allowed' : 'pointer'}
       style:font-size="14px"
-      style:opacity={disabled || $targetChecked.length === 0 ? '0.5' : '1'}
-    >‹</button>
+      style:opacity={disabled || $targetChecked.length === 0 ? '0.5' : '1'}>‹</button
+    >
   </div>
 
   <!-- Target pane -->
   <div data-iris-transfer-target style={paneStyle}>
-    <div style:padding="8px 12px" style:border-bottom="1px solid var(--iris-border)" style:display="flex" style:align-items="center" style:gap="8px">
+    <div
+      style:padding="8px 12px"
+      style:border-bottom="1px solid var(--iris-border)"
+      style:display="flex"
+      style:align-items="center"
+      style:gap="8px"
+    >
       <input
         type="checkbox"
         aria-label={t('transfer.selectAllTarget')}
-        checked={filteredTarget.filter(o => !o.disabled).length > 0 && filteredTarget.filter(o => !o.disabled).every(o => $targetChecked.includes(o.value))}
+        checked={filteredTarget.filter((o) => !o.disabled).length > 0 &&
+          filteredTarget.filter((o) => !o.disabled).every((o) => $targetChecked.includes(o.value))}
         onchange={toggleAllTarget}
-        disabled={disabled}
+        {disabled}
       />
-      <span style:font-size="13px" style:font-weight="600">{titles?.[1] ?? t('transfer.targetTitle')}</span>
-      <span style:margin-left="auto" style:font-size="12px" style:color="var(--iris-muted)">{$targetChecked.length}/{filteredTarget.length}</span>
+      <span style:font-size="13px" style:font-weight="600"
+        >{titles?.[1] ?? t('transfer.targetTitle')}</span
+      >
+      <span style:margin-left="auto" style:font-size="12px" style:color="var(--iris-muted)"
+        >{$targetChecked.length}/{filteredTarget.length}</span
+      >
     </div>
     {#if searchable}
       <div style:padding="6px 8px" style:border-bottom="1px solid var(--iris-border)">
@@ -248,7 +287,14 @@
         </label>
       {/each}
       {#if filteredTarget.length === 0}
-        <div style:padding="12px" style:color="var(--iris-muted)" style:font-size="13px" style:text-align="center">{t('transfer.empty')}</div>
+        <div
+          style:padding="12px"
+          style:color="var(--iris-muted)"
+          style:font-size="13px"
+          style:text-align="center"
+        >
+          {t('transfer.empty')}
+        </div>
       {/if}
     </div>
   </div>

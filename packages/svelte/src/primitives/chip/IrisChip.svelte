@@ -113,8 +113,11 @@
             onclose?.()
           }
         }}
-        style="background:transparent; border:none; cursor:{disabled ? 'not-allowed' : 'pointer'}; color:inherit; padding:0; margin-inline-start:2px; font-size:12px; line-height:1; flex-shrink:0; opacity:0.7; display:inline-flex;"
-      >✕</span>
+        style="background:transparent; border:none; cursor:{disabled
+          ? 'not-allowed'
+          : 'pointer'}; color:inherit; padding:0; margin-inline-start:2px; font-size:12px; line-height:1; flex-shrink:0; opacity:0.7; display:inline-flex;"
+        >✕</span
+      >
     {/if}
   </button>
 {:else}
@@ -139,8 +142,11 @@
         aria-label={t('chip.remove')}
         {disabled}
         onclick={onCloseClick}
-        style="background:transparent; border:none; cursor:{disabled ? 'not-allowed' : 'pointer'}; color:inherit; padding:0; margin-inline-start:2px; font-size:12px; line-height:1; flex-shrink:0; opacity:0.7;"
-      >✕</button>
+        style="background:transparent; border:none; cursor:{disabled
+          ? 'not-allowed'
+          : 'pointer'}; color:inherit; padding:0; margin-inline-start:2px; font-size:12px; line-height:1; flex-shrink:0; opacity:0.7;"
+        >✕</button
+      >
     {/if}
   </span>
 {/if}

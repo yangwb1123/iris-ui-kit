@@ -139,15 +139,15 @@
         style="display:flex;align-items:center;gap:6px;font-weight:600"
       >
         <span>{col.title}</span>
-        <span
-          data-iris-kanban-count
-          style="font-size:0.8em;color:var(--iris-color-muted,#6b7280)"
-        >{colCount(col)}</span>
+        <span data-iris-kanban-count style="font-size:0.8em;color:var(--iris-color-muted,#6b7280)"
+          >{colCount(col)}</span
+        >
         {#if limited}
           <span
             data-iris-kanban-wip-badge
             style="font-size:0.7em;background:var(--iris-color-warning,#f59e0b);color:#fff;border-radius:4px;padding:1px 5px"
-          >WIP</span>
+            >WIP</span
+          >
         {/if}
       </div>
 
@@ -174,7 +174,8 @@
             <span
               data-iris-kanban-card-desc
               style="font-size:0.85em;color:var(--iris-color-muted,#6b7280)"
-            >{card.description}</span>
+              >{card.description}</span
+            >
           {/if}
           {#if card.tags && card.tags.length > 0}
             <div data-iris-kanban-card-tags style="display:flex;flex-wrap:wrap;gap:4px">
@@ -182,7 +183,8 @@
                 <span
                   data-iris-kanban-tag
                   style="font-size:0.75em;background:var(--iris-color-primary-subtle,#eff6ff);color:var(--iris-color-primary,#2563eb);border-radius:4px;padding:1px 5px"
-                >{tag}</span>
+                  >{tag}</span
+                >
               {/each}
             </div>
           {/if}

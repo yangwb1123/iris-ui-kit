@@ -60,9 +60,9 @@
     if (!scrollEl) return
     const b: ScrollBehavior = prefersReducedMotion() ? 'auto' : behavior
     if (typeof (scrollEl as { scrollTo?: unknown }).scrollTo === 'function') {
-      (scrollEl as Window | HTMLElement).scrollTo({ top: 0, behavior: b })
+      ;(scrollEl as Window | HTMLElement).scrollTo({ top: 0, behavior: b })
     } else {
-      (scrollEl as HTMLElement).scrollTop = 0
+      ;(scrollEl as HTMLElement).scrollTop = 0
     }
     onclick?.()
   }

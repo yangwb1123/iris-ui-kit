@@ -79,7 +79,10 @@
 
   function acceptMatches(file: File): boolean {
     if (!accept) return true
-    const tokens = accept.split(',').map((t) => t.trim()).filter(Boolean)
+    const tokens = accept
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
     if (tokens.length === 0) return true
     return tokens.some((token) => {
       if (token.startsWith('.')) return file.name.toLowerCase().endsWith(token.toLowerCase())
@@ -95,10 +98,17 @@
     let acceptedCount = 0
     for (const f of incoming) {
       const wrapped = wrapFile(f)
-      if (!acceptMatches(f)) { rejected.push({ file: wrapped, reason: 'type' }); continue }
-      if (maxSize > 0 && f.size > maxSize) { rejected.push({ file: wrapped, reason: 'size' }); continue }
+      if (!acceptMatches(f)) {
+        rejected.push({ file: wrapped, reason: 'type' })
+        continue
+      }
+      if (maxSize > 0 && f.size > maxSize) {
+        rejected.push({ file: wrapped, reason: 'size' })
+        continue
+      }
       if (maxFiles > 0 && multiple && existing + acceptedCount + 1 > maxFiles) {
-        rejected.push({ file: wrapped, reason: 'count' }); continue
+        rejected.push({ file: wrapped, reason: 'count' })
+        continue
       }
       accepted.push(wrapped)
       acceptedCount += 1
@@ -128,7 +138,10 @@
 
   function handleKeyDown(e: KeyboardEvent) {
     if (disabled) return
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inputEl?.click() }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      inputEl?.click()
+    }
   }
 
   function removeAt(index: number) {
@@ -137,22 +150,26 @@
     commit(next)
   }
 
-  const zoneStyle = $derived(styleToString({
-    display: 'flex',
-    'flex-direction': 'column',
-    'align-items': 'center',
-    'justify-content': 'center',
-    gap: '6px',
-    padding: 'var(--iris-padding-lg, 20px)',
-    border: `2px dashed ${dragOver ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
-    'border-radius': 'var(--iris-radius-md, 6px)',
-    background: dragOver ? 'var(--iris-surface-hover, var(--iris-surface))' : 'var(--iris-surface)',
-    color: 'var(--iris-foreground)',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? '0.6' : '1',
-    transition: 'border-color 120ms ease, background-color 120ms ease',
-    outline: 'none',
-  }))
+  const zoneStyle = $derived(
+    styleToString({
+      display: 'flex',
+      'flex-direction': 'column',
+      'align-items': 'center',
+      'justify-content': 'center',
+      gap: '6px',
+      padding: 'var(--iris-padding-lg, 20px)',
+      border: `2px dashed ${dragOver ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
+      'border-radius': 'var(--iris-radius-md, 6px)',
+      background: dragOver
+        ? 'var(--iris-surface-hover, var(--iris-surface))'
+        : 'var(--iris-surface)',
+      color: 'var(--iris-foreground)',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      opacity: disabled ? '0.6' : '1',
+      transition: 'border-color 120ms ease, background-color 120ms ease',
+      outline: 'none',
+    }),
+  )
 </script>
 
 <div
@@ -182,13 +199,37 @@
     data-iris-file-upload-zone
     onclick={clickZone}
     onkeydown={handleKeyDown}
-    ondragover={(e) => { if (!disabled) { e.preventDefault() } }}
-    ondragenter={(e) => { if (!disabled) { e.preventDefault(); dragCount += 1; dragOver = true } }}
-    ondragleave={() => { if (!disabled) { dragCount = Math.max(0, dragCount - 1); if (dragCount === 0) dragOver = false } }}
-    ondrop={(e) => { if (!disabled) { e.preventDefault(); dragCount = 0; dragOver = false; applyFiles(e.dataTransfer?.files ? Array.from(e.dataTransfer.files) : []) } }}
+    ondragover={(e) => {
+      if (!disabled) {
+        e.preventDefault()
+      }
+    }}
+    ondragenter={(e) => {
+      if (!disabled) {
+        e.preventDefault()
+        dragCount += 1
+        dragOver = true
+      }
+    }}
+    ondragleave={() => {
+      if (!disabled) {
+        dragCount = Math.max(0, dragCount - 1)
+        if (dragCount === 0) dragOver = false
+      }
+    }}
+    ondrop={(e) => {
+      if (!disabled) {
+        e.preventDefault()
+        dragCount = 0
+        dragOver = false
+        applyFiles(e.dataTransfer?.files ? Array.from(e.dataTransfer.files) : [])
+      }
+    }}
     style={zoneStyle}
   >
-    <div data-iris-file-upload-label style="font-size: 14px; font-weight: 500;">{resolvedLabel}</div>
+    <div data-iris-file-upload-label style="font-size: 14px; font-weight: 500;">
+      {resolvedLabel}
+    </div>
     {#if accept}
       <div style="font-size: 12px; color: var(--iris-muted);">{accept}</div>
     {/if}
@@ -210,9 +251,14 @@
             type="button"
             aria-label={t('fileUpload.remove', { name: item.name })}
             {disabled}
-            onclick={(e) => { e.stopPropagation(); removeAt(idx) }}
-            style="background: transparent; border: none; color: var(--iris-muted); cursor: {disabled ? 'not-allowed' : 'pointer'}; font-size: 16px; line-height: 1; padding: 0 4px;"
-          >×</button>
+            onclick={(e) => {
+              e.stopPropagation()
+              removeAt(idx)
+            }}
+            style="background: transparent; border: none; color: var(--iris-muted); cursor: {disabled
+              ? 'not-allowed'
+              : 'pointer'}; font-size: 16px; line-height: 1; padding: 0 4px;">×</button
+          >
         </li>
       {/each}
     </ul>

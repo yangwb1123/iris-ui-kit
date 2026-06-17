@@ -116,7 +116,11 @@
 
   function setList(node: HTMLElement): { destroy: () => void } {
     listEl = node
-    return { destroy: () => { listEl = undefined } }
+    return {
+      destroy: () => {
+        listEl = undefined
+      },
+    }
   }
 
   function focusAt(index: number): void {
@@ -246,7 +250,9 @@
         data-iris-list-item
         data-state={selected ? 'selected' : active ? 'active' : 'idle'}
         onclick={() => select(item)}
-        onfocus={() => { activeIndex = index }}
+        onfocus={() => {
+          activeIndex = index
+        }}
         style={itemStyle(selected, active, item.disabled)}
       >
         {#if renderItem}{@render renderItem(item, { selected, active, index })}

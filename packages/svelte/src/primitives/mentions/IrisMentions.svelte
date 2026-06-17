@@ -131,7 +131,7 @@
   style:position="relative"
   style:display="inline-flex"
   style:flex-direction="column"
-  style={style}
+  {style}
   class={className}
 >
   <textarea
@@ -201,7 +201,9 @@
           style:border-radius="var(--iris-radius-sm, 4px)"
           style:background={i === activeIndex ? 'var(--iris-surface-hover)' : 'transparent'}
           style:color="var(--iris-foreground)"
-        >{opt.label}</li>
+        >
+          {opt.label}
+        </li>
       {/each}
     </ul>
   {/if}

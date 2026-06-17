@@ -14,10 +14,6 @@
   let renderedHtml = $derived(markdownToHtml(content))
 </script>
 
-<div
-  data-iris-markdown
-  class={klass}
-  style="font-family:var(--iris-md-font)"
->
+<div data-iris-markdown class={klass} style="font-family:var(--iris-md-font)">
   {@html renderedHtml}
 </div>

@@ -60,16 +60,26 @@
       const clamped = Math.max(minStartRatio, Math.min(maxRatio, nextRatio))
       onValueChange?.(clamped)
     },
-    onEnd: () => { dragging = false },
+    onEnd: () => {
+      dragging = false
+    },
   })
 
   function setContainer(node: HTMLElement): { destroy: () => void } {
     containerEl = node
-    return { destroy: () => { containerEl = undefined } }
+    return {
+      destroy: () => {
+        containerEl = undefined
+      },
+    }
   }
   function setHandle(node: HTMLElement): { destroy: () => void } {
     handleEl = node
-    return { destroy: () => { handleEl = undefined } }
+    return {
+      destroy: () => {
+        handleEl = undefined
+      },
+    }
   }
 </script>
 
@@ -79,7 +89,9 @@
   data-iris-splitter
   data-iris-splitter-orientation={orientation}
   data-state={dragging ? 'dragging' : 'idle'}
-  style="display: flex; flex-direction: {isHorizontal ? 'row' : 'column'}; width: 100%; height: 100%; overflow: hidden;{style ? ' ' + style : ''}"
+  style="display: flex; flex-direction: {isHorizontal
+    ? 'row'
+    : 'column'}; width: 100%; height: 100%; overflow: hidden;{style ? ' ' + style : ''}"
 >
   <div
     data-iris-splitter-pane="start"
@@ -96,7 +108,13 @@
     aria-valuemin={0}
     aria-valuemax={100}
     tabindex={disabled ? -1 : 0}
-    style="flex: 0 0 4px; background: {dragging ? 'var(--iris-primary)' : 'var(--iris-border)'}; cursor: {disabled ? 'not-allowed' : isHorizontal ? 'col-resize' : 'row-resize'}; transition: background-color 120ms ease; position: relative; touch-action: none"
+    style="flex: 0 0 4px; background: {dragging
+      ? 'var(--iris-primary)'
+      : 'var(--iris-border)'}; cursor: {disabled
+      ? 'not-allowed'
+      : isHorizontal
+        ? 'col-resize'
+        : 'row-resize'}; transition: background-color 120ms ease; position: relative; touch-action: none"
   ></div>
   <div
     data-iris-splitter-pane="end"

@@ -1,12 +1,7 @@
 <script lang="ts">
   import { styleToString, mergeStyle } from '../../internal/style'
 
-  let {
-    ratio = 16 / 9,
-    style,
-    children,
-    ...rest
-  } = $props()
+  let { ratio = 16 / 9, style, children, ...rest } = $props()
 </script>
 
 <div

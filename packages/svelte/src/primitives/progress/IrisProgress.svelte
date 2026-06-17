@@ -30,7 +30,9 @@
   } = $props()
 
   const isIndeterminate = $derived(indeterminate || value === null || value === undefined)
-  const clamped = $derived(isIndeterminate || value === null ? 0 : Math.max(0, Math.min(max, value)))
+  const clamped = $derived(
+    isIndeterminate || value === null ? 0 : Math.max(0, Math.min(max, value)),
+  )
   const percent = $derived(isIndeterminate ? 0 : (clamped / Math.max(1, max)) * 100)
 
   const containerStyle = $derived(
@@ -47,12 +49,19 @@
 <svelte:head>
   <style>
     @keyframes iris-progress-indeterminate {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(350%); }
+      0% {
+        transform: translateX(-100%);
+      }
+      100% {
+        transform: translateX(350%);
+      }
     }
     @media (prefers-reduced-motion: reduce) {
       @keyframes iris-progress-indeterminate {
-        0%, 100% { transform: translateX(0); }
+        0%,
+        100% {
+          transform: translateX(0);
+        }
       }
     }
   </style>

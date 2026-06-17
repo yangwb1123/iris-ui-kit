@@ -52,7 +52,7 @@
   style:justify-content="center"
   style:min-height="100vh"
   style:background="var(--iris-background)"
-  style={style}
+  {style}
   class={className}
   {...rest}
 >
@@ -65,9 +65,18 @@
       style:width="100%"
     >
       <!-- Title -->
-      <h1 style:margin="0 0 8px" style:font-size="24px" style:font-weight="700" style:color="var(--iris-foreground)">{title}</h1>
+      <h1
+        style:margin="0 0 8px"
+        style:font-size="24px"
+        style:font-weight="700"
+        style:color="var(--iris-foreground)"
+      >
+        {title}
+      </h1>
       {#if description}
-        <p style:margin="0 0 24px" style:font-size="14px" style:color="var(--iris-muted)">{description}</p>
+        <p style:margin="0 0 24px" style:font-size="14px" style:color="var(--iris-muted)">
+          {description}
+        </p>
       {:else}
         <div style:margin-bottom="24px"></div>
       {/if}
@@ -83,7 +92,9 @@
           style:color="var(--iris-danger)"
           style:border-radius="var(--iris-radius-sm, 4px)"
           style:font-size="14px"
-        >{error}</div>
+        >
+          {error}
+        </div>
       {/if}
 
       <form onsubmit={handleSubmit} data-iris-login-form>
@@ -95,8 +106,8 @@
             style:font-size="14px"
             style:font-weight="500"
             style:margin-bottom="6px"
-            style:color="var(--iris-foreground)"
-          >Email</label>
+            style:color="var(--iris-foreground)">Email</label
+          >
           <input
             id="iris-login-email"
             type="email"
@@ -126,8 +137,8 @@
             style:font-size="14px"
             style:font-weight="500"
             style:margin-bottom="6px"
-            style:color="var(--iris-foreground)"
-          >Password</label>
+            style:color="var(--iris-foreground)">Password</label
+          >
           <input
             id="iris-login-password"
             type="password"
@@ -151,14 +162,23 @@
 
         <!-- Remember me -->
         {#if showRemember}
-          <div style:display="flex" style:align-items="center" style:gap="8px" style:margin-bottom="24px">
+          <div
+            style:display="flex"
+            style:align-items="center"
+            style:gap="8px"
+            style:margin-bottom="24px"
+          >
             <input
               id="iris-login-remember"
               type="checkbox"
               bind:checked={remember}
               disabled={loading}
             />
-            <label for="iris-login-remember" style:font-size="14px" style:color="var(--iris-foreground)">Remember me</label>
+            <label
+              for="iris-login-remember"
+              style:font-size="14px"
+              style:color="var(--iris-foreground)">Remember me</label
+            >
           </div>
         {/if}
 
@@ -177,8 +197,8 @@
           style:font-weight="600"
           style:font-family="inherit"
           style:cursor={loading ? 'not-allowed' : 'pointer'}
-          style:opacity={loading ? '0.7' : '1'}
-        >{loading ? 'Signing in…' : submitLabel}</button>
+          style:opacity={loading ? '0.7' : '1'}>{loading ? 'Signing in…' : submitLabel}</button
+        >
       </form>
 
       {#if children}

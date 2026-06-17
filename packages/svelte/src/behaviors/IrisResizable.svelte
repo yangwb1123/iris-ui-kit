@@ -1,12 +1,29 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
 
-  export type IrisResizableHandle = 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
-  export interface IrisResizableSize { width: number; height: number }
+  export type IrisResizableHandle =
+    | 'top'
+    | 'right'
+    | 'bottom'
+    | 'left'
+    | 'top-left'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-right'
+  export interface IrisResizableSize {
+    width: number
+    height: number
+  }
 
   const CURSORS: Record<IrisResizableHandle, string> = {
-    top: 'ns-resize', right: 'ew-resize', bottom: 'ns-resize', left: 'ew-resize',
-    'top-left': 'nwse-resize', 'top-right': 'nesw-resize', 'bottom-left': 'nesw-resize', 'bottom-right': 'nwse-resize',
+    top: 'ns-resize',
+    right: 'ew-resize',
+    bottom: 'ns-resize',
+    left: 'ew-resize',
+    'top-left': 'nwse-resize',
+    'top-right': 'nesw-resize',
+    'bottom-left': 'nesw-resize',
+    'bottom-right': 'nwse-resize',
   }
 
   interface Props {
@@ -90,10 +107,7 @@
     const l = h.includes('left')
     const r = h.includes('right')
     const isCorner = (t || b) && (l || r)
-    const parts: string[] = [
-      'position:absolute;z-index:10;',
-      `cursor:${CURSORS[h]};`,
-    ]
+    const parts: string[] = ['position:absolute;z-index:10;', `cursor:${CURSORS[h]};`]
     if (t) parts.push('top:-4px;')
     if (b) parts.push('bottom:-4px;')
     if (l) parts.push('left:-4px;')

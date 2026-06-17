@@ -60,7 +60,14 @@
 {#snippet sidebarContent()}
   <div style:padding="16px">
     {#if sidebarTitle}
-      <div style:font-weight="700" style:font-size="14px" style:margin-bottom="12px" style:color="var(--iris-foreground)">{sidebarTitle}</div>
+      <div
+        style:font-weight="700"
+        style:font-size="14px"
+        style:margin-bottom="12px"
+        style:color="var(--iris-foreground)"
+      >
+        {sidebarTitle}
+      </div>
     {/if}
     <nav>
       {#each nav as item (item.id)}
@@ -102,7 +109,9 @@
         {#each cards as card (card.id)}
           <IrisDashboardCard title={card.title} colSpan={card.colSpan} rowSpan={card.rowSpan}>
             {#if card.body}
-              <p style:margin="0" style:font-size="14px" style:color="var(--iris-muted)">{card.body}</p>
+              <p style:margin="0" style:font-size="14px" style:color="var(--iris-muted)">
+                {card.body}
+              </p>
             {/if}
           </IrisDashboardCard>
         {/each}
@@ -119,7 +128,7 @@
   style:display="flex"
   style:flex-direction="column"
   style:overflow="hidden"
-  style={style}
+  {style}
   class={className}
   {...rest}
 >

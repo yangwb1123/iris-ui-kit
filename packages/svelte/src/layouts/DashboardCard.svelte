@@ -2,8 +2,14 @@
   import { styleToString, mergeStyle } from '../internal/style'
   import type { IrisDashboardCardProps } from './types'
 
-  let { colSpan = 1, rowSpan = 1, surface = true, style, children, ...rest }: IrisDashboardCardProps =
-    $props()
+  let {
+    colSpan = 1,
+    rowSpan = 1,
+    surface = true,
+    style,
+    children,
+    ...rest
+  }: IrisDashboardCardProps = $props()
 
   const base = $derived(
     styleToString({

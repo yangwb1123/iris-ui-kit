@@ -7,10 +7,6 @@
   let { style, children, ...rest } = $props()
 </script>
 
-<span
-  {...rest}
-  data-iris-visually-hidden
-  style={mergeStyle(SR_ONLY, style)}
->
+<span {...rest} data-iris-visually-hidden style={mergeStyle(SR_ONLY, style)}>
   {@render children?.()}
 </span>

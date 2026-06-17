@@ -97,12 +97,17 @@
   }
 
   function onKeyDown(e: KeyboardEvent) {
-    if (e.key === 'ArrowLeft') { e.preventDefault(); advance(-1) }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); advance(1) }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      advance(-1)
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      advance(1)
+    }
   }
 
   const canPrev = $derived(loop || value > 0)
-  const canNext = $derived(loop || value < (slideCount - 1))
+  const canNext = $derived(loop || value < slideCount - 1)
 </script>
 
 <div
@@ -111,25 +116,28 @@
   aria-roledescription="carousel"
   aria-label={ariaLabel ?? t('carousel.label')}
   onkeydown={onKeyDown}
-  onmouseenter={() => { hovered = true }}
-  onmouseleave={() => { hovered = false }}
-  onfocusin={() => { focusedWithin = true }}
-  onfocusout={() => { focusedWithin = false }}
+  onmouseenter={() => {
+    hovered = true
+  }}
+  onmouseleave={() => {
+    hovered = false
+  }}
+  onfocusin={() => {
+    focusedWithin = true
+  }}
+  onfocusout={() => {
+    focusedWithin = false
+  }}
   style:position="relative"
   style:overflow="hidden"
   style:display="flex"
   style:flex-direction="column"
-  style={style}
+  {style}
   class={className}
   {...rest}
 >
   <!-- Slides viewport -->
-  <div
-    data-iris-carousel-viewport
-    style:position="relative"
-    style:overflow="hidden"
-    style:flex="1"
-  >
+  <div data-iris-carousel-viewport style:position="relative" style:overflow="hidden" style:flex="1">
     {#if slides}
       {@render slides()}
     {:else if children}
@@ -161,8 +169,8 @@
       style:font-size="18px"
       style:display="inline-flex"
       style:align-items="center"
-      style:justify-content="center"
-    >‹</button>
+      style:justify-content="center">‹</button
+    >
 
     <button
       type="button"
@@ -186,8 +194,8 @@
       style:font-size="18px"
       style:display="inline-flex"
       style:align-items="center"
-      style:justify-content="center"
-    >›</button>
+      style:justify-content="center">›</button
+    >
   {/if}
 
   <!-- Indicators -->
@@ -220,5 +228,16 @@
   {/if}
 
   <!-- ARIA live region -->
-  <div aria-live="polite" aria-atomic="true" class="visually-hidden" style:position="absolute" style:width="1px" style:height="1px" style:overflow="hidden" style:clip="rect(0,0,0,0)">{liveText}</div>
+  <div
+    aria-live="polite"
+    aria-atomic="true"
+    class="visually-hidden"
+    style:position="absolute"
+    style:width="1px"
+    style:height="1px"
+    style:overflow="hidden"
+    style:clip="rect(0,0,0,0)"
+  >
+    {liveText}
+  </div>
 </div>

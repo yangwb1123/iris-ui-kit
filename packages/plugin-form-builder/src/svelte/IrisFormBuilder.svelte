@@ -23,7 +23,17 @@
   // (mirrors the React renderer's lazy-ref). No new form logic lives here.
   // svelte-ignore state_referenced_locally
   const builder = createFormBuilder(schema, { onSubmit, validateOnChange })
-  const { form, submitLabel, labelOf, stepCount, nextStepLabel, stepFields, isLastStep, nextStep, prevStep } = builder
+  const {
+    form,
+    submitLabel,
+    labelOf,
+    stepCount,
+    nextStepLabel,
+    stepFields,
+    isLastStep,
+    nextStep,
+    prevStep,
+  } = builder
 
   // NB: do not name this `state` — a leading `$` would make Svelte read
   // `$state` as a store auto-subscription instead of the rune.
@@ -36,9 +46,7 @@
 
   const idOf = (name: string) => `iris-fb-${name}`
 
-  const gridStyle = $derived(
-    `display:grid;gap:var(--iris-form-gap, 16px);${style}`,
-  )
+  const gridStyle = $derived(`display:grid;gap:var(--iris-form-gap, 16px);${style}`)
 </script>
 
 <form

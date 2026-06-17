@@ -98,9 +98,19 @@
     readonly={readonly || undefined}
     aria-invalid={invalid ? 'true' : undefined}
     aria-describedby={ariaDescribedby}
-    oninput={(e) => { const v = (e.target as HTMLInputElement).value; oninput?.(v); onchange?.(v) }}
-    onfocus={(e) => { focused = true; onfocus?.(e) }}
-    onblur={(e) => { focused = false; onblur?.(e) }}
+    oninput={(e) => {
+      const v = (e.target as HTMLInputElement).value
+      oninput?.(v)
+      onchange?.(v)
+    }}
+    onfocus={(e) => {
+      focused = true
+      onfocus?.(e)
+    }}
+    onblur={(e) => {
+      focused = false
+      onblur?.(e)
+    }}
     style="flex: 1; border: none; outline: none; background: transparent; color: inherit; font-family: inherit; font-size: inherit; padding: 0;"
   />
   {#if showToggle}
@@ -110,7 +120,10 @@
       aria-label={visible ? t('passwordInput.hide') : t('passwordInput.show')}
       aria-pressed={visible ? 'true' : 'false'}
       onclick={toggle}
-      style="background: transparent; border: none; cursor: {disabled ? 'not-allowed' : 'pointer'}; color: var(--iris-muted); padding: 0 2px; font-size: 13px; line-height: 1;"
-    >{visible ? '🙈' : '👁'}</button>
+      style="background: transparent; border: none; cursor: {disabled
+        ? 'not-allowed'
+        : 'pointer'}; color: var(--iris-muted); padding: 0 2px; font-size: 13px; line-height: 1;"
+      >{visible ? '🙈' : '👁'}</button
+    >
   {/if}
 </div>

@@ -51,15 +51,13 @@
 
   const fixedHeight = $derived(sizeFn() ? 0 : (itemHeight as number))
   const offsets = $derived(sizeFn() ? buildOffsets(items.length, sizeFn()!) : null)
-  const totalHeight = $derived(
-    offsets ? offsets[items.length] ?? 0 : items.length * fixedHeight
-  )
+  const totalHeight = $derived(offsets ? (offsets[items.length] ?? 0) : items.length * fixedHeight)
 
   function offsetOf(i: number): number {
     return offsets ? (offsets[i] ?? 0) : i * fixedHeight
   }
   function heightOf(i: number): number {
-    return offsets ? ((offsets[i + 1] ?? 0) - (offsets[i] ?? 0)) : fixedHeight
+    return offsets ? (offsets[i + 1] ?? 0) - (offsets[i] ?? 0) : fixedHeight
   }
 
   const range = $derived((): { start: number; end: number } => {
@@ -126,7 +124,11 @@
 
   function setViewport(node: HTMLElement): { destroy: () => void } {
     viewportEl = node
-    return { destroy: () => { viewportEl = undefined } }
+    return {
+      destroy: () => {
+        viewportEl = undefined
+      },
+    }
   }
 
   const heightStyle = $derived(typeof height === 'number' ? `${height}px` : String(height))
@@ -137,12 +139,11 @@
   use:setViewport
   data-iris-virtual-scroll
   onscroll={handleScroll}
-  style="position: relative; overflow: auto; height: {heightStyle}; width: 100%;{style ? ' ' + style : ''}"
+  style="position: relative; overflow: auto; height: {heightStyle}; width: 100%;{style
+    ? ' ' + style
+    : ''}"
 >
-  <div
-    data-iris-virtual-spacer
-    style="position: relative; height: {totalHeight}px; width: 100%"
-  >
+  <div data-iris-virtual-spacer style="position: relative; height: {totalHeight}px; width: 100%">
     {#each { length: range().end - range().start } as _, i}
       {@const idx = range().start + i}
       {@const item = items[idx]}
@@ -150,7 +151,9 @@
         <div
           data-iris-virtual-item
           data-iris-virtual-index={idx}
-          style="position: absolute; top: 0; left: 0; right: 0; {isAuto ? '' : `height: ${heightOf(idx)}px;`} transform: translateY({offsetOf(idx)}px)"
+          style="position: absolute; top: 0; left: 0; right: 0; {isAuto
+            ? ''
+            : `height: ${heightOf(idx)}px;`} transform: translateY({offsetOf(idx)}px)"
         >
           {#if itemSnippet}
             {@render itemSnippet({ item, index: idx })}

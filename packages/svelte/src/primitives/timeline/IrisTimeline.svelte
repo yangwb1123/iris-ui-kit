@@ -33,7 +33,11 @@
     {@const isLast = i === items.length - 1}
     {@const variant = item.variant ?? 'default'}
     {@const dotColor = item.color ?? VARIANT_COLOR[variant]}
-    <li data-iris-timeline-item data-variant={variant} style="display:flex; gap:12px; position:relative;">
+    <li
+      data-iris-timeline-item
+      data-variant={variant}
+      style="display:flex; gap:12px; position:relative;"
+    >
       <div
         data-iris-timeline-marker
         aria-hidden="true"
@@ -58,13 +62,19 @@
           {@render itemSnippet({ item, index: i })}
         {:else}
           {#if item.time != null}
-            <div data-iris-timeline-time style="font-size:12px; color:var(--iris-muted);">{item.time}</div>
+            <div data-iris-timeline-time style="font-size:12px; color:var(--iris-muted);">
+              {item.time}
+            </div>
           {/if}
           {#if item.title != null}
-            <div data-iris-timeline-title style="font-weight:600; color:var(--iris-foreground);">{item.title}</div>
+            <div data-iris-timeline-title style="font-weight:600; color:var(--iris-foreground);">
+              {item.title}
+            </div>
           {/if}
           {#if item.description != null}
-            <div data-iris-timeline-desc style="font-size:14px; color:var(--iris-foreground);">{item.description}</div>
+            <div data-iris-timeline-desc style="font-size:14px; color:var(--iris-foreground);">
+              {item.description}
+            </div>
           {/if}
         {/if}
       </div>

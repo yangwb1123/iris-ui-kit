@@ -18,11 +18,7 @@
   const tiles = $derived(Array.from({ length: TILE_COUNT }, (_, i) => i))
 </script>
 
-<div
-  {...rest}
-  data-iris-watermark
-  style={mergeStyle('position: relative', style)}
->
+<div {...rest} data-iris-watermark style={mergeStyle('position: relative', style)}>
   {@render children?.()}
   <div
     data-iris-watermark-overlay

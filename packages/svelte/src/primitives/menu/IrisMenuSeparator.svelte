@@ -10,5 +10,7 @@
   {...rest}
   role="separator"
   data-iris-menu-separator
-  style="height: 1px; background: var(--iris-border); margin: 4px 0;{(rest.style as string) ? ' ' + (rest.style as string) : ''}"
+  style="height: 1px; background: var(--iris-border); margin: 4px 0;{(rest.style as string)
+    ? ' ' + (rest.style as string)
+    : ''}"
 ></div>

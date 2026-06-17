@@ -12,8 +12,10 @@
     required = false,
     labelFor,
     size = 'md',
-  }: Pick<IrisFormFieldProps, 'label' | 'hint' | 'error' | 'required' | 'labelFor' | 'size'> =
-    $props()
+  }: Pick<
+    IrisFormFieldProps,
+    'label' | 'hint' | 'error' | 'required' | 'labelFor' | 'size'
+  > = $props()
 </script>
 
 <IrisFormField {label} {hint} {error} {required} {labelFor} {size}>

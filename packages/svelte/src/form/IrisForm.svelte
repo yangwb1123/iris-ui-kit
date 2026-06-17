@@ -21,13 +21,17 @@
     const keys = Object.keys(errors)
     if (keys.length === 0) return
     const controls = formEl.querySelectorAll<HTMLElement>(
-      'input[name], select[name], textarea[name], [data-iris-field]'
+      'input[name], select[name], textarea[name], [data-iris-field]',
     )
     for (const el of Array.from(controls)) {
       const name = el.getAttribute('name') ?? el.getAttribute('data-iris-field')
       if (name && keys.includes(name)) {
         el.focus()
-        try { el.scrollIntoView({ block: 'center' }) } catch { /* jsdom */ }
+        try {
+          el.scrollIntoView({ block: 'center' })
+        } catch {
+          /* jsdom */
+        }
         return
       }
     }
@@ -39,10 +43,6 @@
   }
 </script>
 
-<form
-  bind:this={formEl}
-  data-iris-form
-  onsubmit={onSubmit}
->
+<form bind:this={formEl} data-iris-form onsubmit={onSubmit}>
   {@render children?.()}
 </form>

@@ -73,7 +73,9 @@
   )
 
   const prevDisabled = $derived(min ? startOfMonth(visibleMonth) <= startOfMonth(min) : false)
-  const nextDisabled = $derived(max ? startOfMonth(endOfMonth(visibleMonth)) >= startOfMonth(max) : false)
+  const nextDisabled = $derived(
+    max ? startOfMonth(endOfMonth(visibleMonth)) >= startOfMonth(max) : false,
+  )
 
   const today = startOfDay(new Date())
 
@@ -160,7 +162,7 @@
   style:border="1px solid var(--iris-border)"
   style:border-radius="var(--iris-radius-md, 6px)"
   style:min-width="260px"
-  style={style}
+  {style}
   class={className}
   {...rest}
 >
@@ -189,15 +191,12 @@
       style:cursor={prevDisabled ? 'not-allowed' : 'pointer'}
       style:border-radius="var(--iris-radius-sm, 4px)"
       style:font="inherit"
-      style:opacity={prevDisabled ? '0.4' : '1'}
-    >&#8249;</button>
+      style:opacity={prevDisabled ? '0.4' : '1'}>&#8249;</button
+    >
 
-    <div
-      data-iris-calendar-title
-      aria-live="polite"
-      style:font-weight="600"
-      style:font-size="14px"
-    >{title}</div>
+    <div data-iris-calendar-title aria-live="polite" style:font-weight="600" style:font-size="14px">
+      {title}
+    </div>
 
     <button
       type="button"
@@ -216,8 +215,8 @@
       style:cursor={nextDisabled ? 'not-allowed' : 'pointer'}
       style:border-radius="var(--iris-radius-sm, 4px)"
       style:font="inherit"
-      style:opacity={nextDisabled ? '0.4' : '1'}
-    >&#8250;</button>
+      style:opacity={nextDisabled ? '0.4' : '1'}>&#8250;</button
+    >
   </div>
 
   <!-- Weekday names -->
@@ -277,21 +276,31 @@
               focusDate = date
               selectDate(date)
             }}
-            onfocus={() => { focusDate = date }}
+            onfocus={() => {
+              focusDate = date
+            }}
             style:height="32px"
             style:display="inline-flex"
             style:align-items="center"
             style:justify-content="center"
-            style:background={selected ? 'var(--iris-primary)' : isToday ? 'var(--iris-surface-hover)' : 'transparent'}
-            style:color={selected ? 'var(--iris-primary-foreground, #fff)' : inMonth ? 'var(--iris-foreground)' : 'var(--iris-muted)'}
+            style:background={selected
+              ? 'var(--iris-primary)'
+              : isToday
+                ? 'var(--iris-surface-hover)'
+                : 'transparent'}
+            style:color={selected
+              ? 'var(--iris-primary-foreground, #fff)'
+              : inMonth
+                ? 'var(--iris-foreground)'
+                : 'var(--iris-muted)'}
             style:border="none"
             style:border-radius="var(--iris-radius-sm, 4px)"
             style:cursor={isDisabled ? 'not-allowed' : 'pointer'}
             style:opacity={isDisabled ? '0.45' : '1'}
             style:font-size="13px"
             style:font-family="inherit"
-            style:outline="none"
-          >{date.getDate()}</button>
+            style:outline="none">{date.getDate()}</button
+          >
         {/each}
       </div>
     {/each}

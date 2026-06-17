@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
-import { createFloatingMachine, type Placement } from '@iris-ui/core'
-import { useMachine } from '../../useMachine'
+import { createHoverIntent, type Placement } from '@iris-ui/core'
 import { useFloating } from '../../floating/useFloating'
 import { IrisSlot } from '../slot/Slot'
 
@@ -24,16 +23,11 @@ export interface IrisTooltipProps {
 }
 
 /**
- * Hover / focus triggered tooltip. Wraps a single child element (no wrapping
- * markup is added — behavior is attached via `IrisSlot`). Opens after
- * `openDelay` ms of pointer hover or focus on the trigger; closes after
- * `closeDelay` ms when the pointer leaves and focus departs. Escape closes
- * immediately while open.
+ * Hover / focus triggered tooltip. Powered by `createHoverIntent` state machine.
  *
- * Accessibility:
- *   - The tooltip element gets `role="tooltip"` + a stable id.
- *   - The trigger gets `aria-describedby` pointing at that id while open.
- *   - Tooltips do not trap focus and are non-interactive.
+ * Zero-delay uses `hi.open()`/`hi.close()` (FORCE_OPEN/FORCE_CLOSE — single
+ * machine transition) so React renders synchronously. Positive delays use
+ * `hi.pointerEnter()`/`hi.pointerLeave()` with the machine's `after` timer.
  *
  * @example
  *   <IrisTooltip content="Save changes">
@@ -54,71 +48,32 @@ export function IrisTooltip({
   const floatingRef = React.useRef<HTMLElement | null>(null)
   const tooltipId = React.useId()
 
-  const [state, send] = useMachine(() => createFloatingMachine('closed'))
-  const open = state.value === 'open'
+  const [open, setOpen] = React.useState(false)
 
-  const openTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-  const closeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  // createHoverIntent keyed on delays; onChange syncs React state.
+  // setOpen from useState is stable across renders so useMemo dep is clean.
+  const hi = React.useMemo(
+    () => createHoverIntent({ openDelay, closeDelay, onChange: setOpen }),
+    [openDelay, closeDelay],
+  )
 
-  const clearTimers = React.useCallback(() => {
-    if (openTimerRef.current) {
-      clearTimeout(openTimerRef.current)
-      openTimerRef.current = null
-    }
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current)
-      closeTimerRef.current = null
-    }
-  }, [])
-
-  const scheduleOpen = React.useCallback(() => {
-    if (disabled) return
-    clearTimers()
-    if (openDelay <= 0) {
-      send({ type: 'OPEN' })
-      return
-    }
-    openTimerRef.current = setTimeout(() => {
-      send({ type: 'OPEN' })
-      openTimerRef.current = null
-    }, openDelay)
-  }, [disabled, openDelay, send, clearTimers])
-
-  const scheduleClose = React.useCallback(() => {
-    clearTimers()
-    if (closeDelay <= 0) {
-      send({ type: 'CLOSE' })
-      return
-    }
-    closeTimerRef.current = setTimeout(() => {
-      send({ type: 'CLOSE' })
-      closeTimerRef.current = null
-    }, closeDelay)
-  }, [closeDelay, send, clearTimers])
+  // Cleanup on unmount or when delays change.
+  React.useEffect(() => () => hi.stop(), [hi])
 
   // Escape immediately closes (skips closeDelay).
   React.useEffect(() => {
     if (!open) return
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        clearTimers()
-        send({ type: 'CLOSE' })
-      }
+      if (e.key === 'Escape') hi.close()
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [open, clearTimers, send])
+  }, [open, hi])
 
   // If `disabled` flips while open, close immediately.
   React.useEffect(() => {
-    if (disabled && open) {
-      clearTimers()
-      send({ type: 'CLOSE' })
-    }
-  }, [disabled, open, clearTimers, send])
-
-  // Tear down pending timers on unmount.
-  React.useEffect(() => clearTimers, [clearTimers])
+    if (disabled && open) hi.close()
+  }, [disabled, open, hi])
 
   const { floatingStyles } = useFloating({
     anchor: triggerRef,
@@ -142,6 +97,17 @@ export function IrisTooltip({
     }
     return null
   }
+
+  // 0-delay → FORCE_OPEN/COSE (single machine transition, sync React render).
+  // Positive delay → pointerEnter/Leave (machine after-timer).
+  const handleEnter = React.useCallback(
+    () => (openDelay > 0 ? hi.pointerEnter() : hi.open()),
+    [openDelay, hi],
+  )
+  const handleLeave = React.useCallback(
+    () => (closeDelay > 0 ? hi.pointerLeave() : hi.close()),
+    [closeDelay, hi],
+  )
 
   const tooltipNode = open ? (
     <div
@@ -176,10 +142,10 @@ export function IrisTooltip({
     <>
       <IrisSlot
         ref={captureTriggerRef as React.Ref<unknown>}
-        onPointerEnter={scheduleOpen}
-        onPointerLeave={scheduleClose}
-        onFocus={scheduleOpen}
-        onBlur={scheduleClose}
+        onPointerEnter={handleEnter}
+        onPointerLeave={handleLeave}
+        onFocus={() => hi.open()}
+        onBlur={() => hi.close()}
         aria-describedby={open ? tooltipId : undefined}
       >
         {children}

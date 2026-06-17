@@ -1,5 +1,6 @@
 import {
   createEffect,
+  createMemo,
   createSignal,
   createUniqueId,
   mergeProps,
@@ -8,6 +9,7 @@ import {
   type JSX,
 } from 'solid-js'
 import { Portal } from 'solid-js/web'
+import { createHoverIntent } from '@iris-ui/core'
 import { useFloating } from '../../floating/useFloating'
 import type { Placement } from '@iris-ui/core'
 
@@ -31,13 +33,11 @@ export interface IrisTooltipProps {
 }
 
 /**
- * Hover / focus triggered tooltip. Wraps a single child element.
- * Opens after `openDelay` ms of pointer hover or focus on the trigger;
- * closes after `closeDelay` ms when the pointer leaves.
+ * Hover / focus triggered tooltip. Powered by `createHoverIntent` state machine.
  *
- * Accessibility:
- *   - The tooltip element gets `role="tooltip"` + a stable id.
- *   - The trigger gets `aria-describedby` pointing at that id while open.
+ * Zero-delay uses `hi.open()`/`hi.close()` (FORCE_OPEN/FORCE_CLOSE — single
+ * machine transition) so Solid reactively updates synchronously. Positive delays
+ * use `hi.pointerEnter()`/`hi.pointerLeave()` with the machine's after-timer.
  *
  * Solid port of the Vue IrisTooltip.
  */
@@ -58,71 +58,31 @@ export function IrisTooltip(props: IrisTooltipProps): JSX.Element {
   const [trigger, setTrigger] = createSignal<HTMLElement | undefined>()
   const [tooltip, setTooltip] = createSignal<HTMLElement | undefined>()
 
-  let openTimer: ReturnType<typeof setTimeout> | null = null
-  let closeTimer: ReturnType<typeof setTimeout> | null = null
+  // createHoverIntent keyed on delays; onChange syncs the Solid signal.
+  // createMemo re-creates when openDelay/closeDelay change.
+  const hi = createMemo(() =>
+    createHoverIntent({
+      openDelay: merged.openDelay,
+      closeDelay: merged.closeDelay,
+      onChange: setOpen,
+    }),
+  )
 
-  const clearTimers = (): void => {
-    if (openTimer) {
-      clearTimeout(openTimer)
-      openTimer = null
-    }
-    if (closeTimer) {
-      clearTimeout(closeTimer)
-      closeTimer = null
-    }
-  }
+  onCleanup(() => hi().stop())
 
-  const scheduleOpen = (): void => {
-    if (merged.disabled) return
-    clearTimers()
-    if (merged.openDelay <= 0) {
-      setOpen(true)
-      return
-    }
-    openTimer = setTimeout(() => {
-      setOpen(true)
-      openTimer = null
-    }, merged.openDelay)
-  }
-
-  const scheduleClose = (): void => {
-    clearTimers()
-    if (merged.closeDelay <= 0) {
-      setOpen(false)
-      return
-    }
-    closeTimer = setTimeout(() => {
-      setOpen(false)
-      closeTimer = null
-    }, merged.closeDelay)
-  }
-
-  const onKeyDown = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape' && open()) {
-      clearTimers()
-      setOpen(false)
-    }
-  }
-
+  // Escape closes immediately.
   createEffect(() => {
-    if (open()) {
-      document.addEventListener('keydown', onKeyDown)
-    } else {
-      document.removeEventListener('keydown', onKeyDown)
+    if (!open()) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') hi().close()
     }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
   })
 
-  onCleanup(() => {
-    clearTimers()
-    document.removeEventListener('keydown', onKeyDown)
-  })
-
-  // Close immediately if disabled flips while open
+  // Close immediately if disabled flips while open.
   createEffect(() => {
-    if (merged.disabled && open()) {
-      clearTimers()
-      setOpen(false)
-    }
+    if (merged.disabled && open()) hi().close()
   })
 
   const { floatingStyles } = useFloating({
@@ -133,8 +93,19 @@ export function IrisTooltip(props: IrisTooltipProps): JSX.Element {
     offset: merged.offset,
   })
 
-  // The trigger wrapper — we render the child inside a span with attached listeners
-  // (Solid lacks cloneElement; we wrap instead)
+  // 0-delay → FORCE_OPEN/COSE (single transition, sync Solid reactivity).
+  // Positive delay → pointerEnter/Leave (machine after-timer).
+  const handleEnter = (): void => {
+    if (merged.disabled) return
+    if (merged.openDelay > 0) hi().pointerEnter()
+    else hi().open()
+  }
+  const handleLeave = (): void => {
+    if (merged.disabled) return
+    if (merged.closeDelay > 0) hi().pointerLeave()
+    else hi().close()
+  }
+
   const tooltipContent = (): JSX.Element => (
     <div
       ref={setTooltip}
@@ -166,10 +137,14 @@ export function IrisTooltip(props: IrisTooltipProps): JSX.Element {
         ref={setTrigger}
         style={{ display: 'contents' }}
         aria-describedby={open() ? tooltipId : undefined}
-        onPointerEnter={scheduleOpen}
-        onPointerLeave={scheduleClose}
-        onFocus={scheduleOpen}
-        onBlur={scheduleClose}
+        onPointerEnter={handleEnter}
+        onPointerLeave={handleLeave}
+        onFocus={() => {
+          if (!merged.disabled) hi().open()
+        }}
+        onBlur={() => {
+          if (!merged.disabled) hi().close()
+        }}
       >
         {props.children}
       </span>

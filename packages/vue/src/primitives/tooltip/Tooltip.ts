@@ -1,7 +1,6 @@
 import {
   Fragment,
   Teleport,
-  computed,
   defineComponent,
   h,
   onScopeDispose,
@@ -11,21 +10,16 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { createFloatingMachine, type Placement } from '@iris-ui/core'
-import { useMachine } from '../../machine/useMachine'
+import { createHoverIntent, type Placement } from '@iris-ui/core'
 import { useFloating } from '../floating/useFloating'
 import { composeRefs, findFirstElement, mergeSlotProps } from '../slot/Slot'
 
 /**
- * Hover / focus triggered tooltip. Wraps a single child element (no wrapping
- * markup is added — behavior is attached via `mergeSlotProps`). Opens after
- * `openDelay` ms of pointer hover or focus on the trigger; closes after
- * `closeDelay` ms when the pointer leaves and focus departs.
+ * Hover / focus triggered tooltip. Powered by `createHoverIntent` state machine.
  *
- * Accessibility:
- *   - The tooltip element gets `role="tooltip"` + a stable id.
- *   - The trigger gets `aria-describedby` pointing at that id while open.
- *   - Tooltips do not trap focus and are non-interactive.
+ * Zero-delay uses `hi.open()`/`hi.close()` (FORCE_OPEN/FORCE_CLOSE — single
+ * machine transition) so Vue reactively updates synchronously. Positive delays
+ * use `hi.pointerEnter()`/`hi.pointerLeave()` with the machine's after-timer.
  *
  * @example
  *  <IrisTooltip content="Save changes">
@@ -51,6 +45,11 @@ export const IrisTooltip = defineComponent({
       type: [String, Object, Boolean] as PropType<string | HTMLElement | false>,
       default: 'body',
     },
+    /** Portal target (cross-framework alias for `teleport`). Overrides `teleport` when set. */
+    portalTarget: {
+      type: [String, Object, Boolean] as PropType<string | HTMLElement | false>,
+      default: undefined,
+    },
     /** Disable the tooltip without removing the trigger. */
     disabled: { type: Boolean, default: false },
   },
@@ -58,83 +57,49 @@ export const IrisTooltip = defineComponent({
     const triggerRef = ref<HTMLElement | null>(null)
     const tooltipRef = ref<HTMLElement | null>(null)
     const tooltipId = useId()
+    const open = ref(false)
 
-    const machine = createFloatingMachine('closed')
-    const { state, send } = useMachine(machine)
-    const open = computed(() => state.value.value === 'open')
-
-    let openTimer: ReturnType<typeof setTimeout> | null = null
-    let closeTimer: ReturnType<typeof setTimeout> | null = null
-
-    const clearTimers = () => {
-      if (openTimer) {
-        clearTimeout(openTimer)
-        openTimer = null
-      }
-      if (closeTimer) {
-        clearTimeout(closeTimer)
-        closeTimer = null
-      }
-    }
-
-    const scheduleOpen = () => {
-      if (props.disabled) return
-      clearTimers()
-      if (props.openDelay <= 0) {
-        send({ type: 'OPEN' })
-        return
-      }
-      openTimer = setTimeout(() => {
-        send({ type: 'OPEN' })
-        openTimer = null
-      }, props.openDelay)
-    }
-
-    const scheduleClose = () => {
-      clearTimers()
-      if (props.closeDelay <= 0) {
-        send({ type: 'CLOSE' })
-        return
-      }
-      closeTimer = setTimeout(() => {
-        send({ type: 'CLOSE' })
-        closeTimer = null
-      }, props.closeDelay)
-    }
-
-    // Hide immediately on Escape (skip closeDelay).
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && open.value) {
-        clearTimers()
-        send({ type: 'CLOSE' })
-      }
-    }
-
-    watch(
-      open,
-      (isOpen) => {
-        if (typeof document === 'undefined') return
-        if (isOpen) document.addEventListener('keydown', onKeyDown)
-        else document.removeEventListener('keydown', onKeyDown)
+    // createHoverIntent with synchronous onChange bridge to Vue ref.
+    let hi: ReturnType<typeof createHoverIntent> = createHoverIntent({
+      openDelay: props.openDelay,
+      closeDelay: props.closeDelay,
+      onChange: (v) => {
+        open.value = v
       },
-      { flush: 'post' },
-    )
-
-    onScopeDispose(() => {
-      clearTimers()
-      if (typeof document !== 'undefined') {
-        document.removeEventListener('keydown', onKeyDown)
-      }
     })
 
-    // If `disabled` flips while open, close immediately.
+    // Re-create when delays change (watcher fires on mount too).
+    watch(
+      () => [props.openDelay, props.closeDelay],
+      ([od, cd]) => {
+        hi.stop()
+        hi = createHoverIntent({
+          openDelay: od,
+          closeDelay: cd,
+          onChange: (v) => {
+            open.value = v
+          },
+        })
+      },
+    )
+
+    onScopeDispose(() => hi.stop())
+
+    // Escape closes immediately.
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && open.value) hi.close()
+    }
+    watch(open, (isOpen) => {
+      if (typeof document === 'undefined') return
+      if (isOpen) document.addEventListener('keydown', onKeyDown)
+      else document.removeEventListener('keydown', onKeyDown)
+    })
+
+    // If disabled while open, close immediately.
     watch(
       () => props.disabled,
       (disabled) => {
-        if (disabled && open.value) {
-          clearTimers()
-          send({ type: 'CLOSE' })
-        }
+        if (disabled && open.value) hi.close()
       },
     )
 
@@ -146,11 +111,28 @@ export const IrisTooltip = defineComponent({
       offset: props.offset,
     })
 
+    // 0-delay → FORCE_OPEN/COSE (single transition, sync Vue reactivity).
+    // Positive delay → pointerEnter/Leave (machine after-timer).
+    const handleEnter = () => {
+      if (props.disabled) return
+      if (props.openDelay > 0) hi.pointerEnter()
+      else hi.open()
+    }
+    const handleLeave = () => {
+      if (props.disabled) return
+      if (props.closeDelay > 0) hi.pointerLeave()
+      else hi.close()
+    }
+
     const triggerListeners: Record<string, (event: Event) => void> = {
-      onPointerenter: scheduleOpen as unknown as (e: Event) => void,
-      onPointerleave: scheduleClose as unknown as (e: Event) => void,
-      onFocus: scheduleOpen as unknown as (e: Event) => void,
-      onBlur: scheduleClose as unknown as (e: Event) => void,
+      onPointerenter: handleEnter as unknown as (e: Event) => void,
+      onPointerleave: handleLeave as unknown as (e: Event) => void,
+      onFocus: (() => {
+        if (!props.disabled) hi.open()
+      }) as unknown as (e: Event) => void,
+      onBlur: (() => {
+        if (!props.disabled) hi.close()
+      }) as unknown as (e: Event) => void,
     }
 
     const captureTriggerRef = (el: unknown) => {
@@ -175,7 +157,6 @@ export const IrisTooltip = defineComponent({
       }
 
       const merged = mergeSlotProps(parentProps, (root.props ?? {}) as Record<string, unknown>)
-      // If the user's child already had a ref, compose them so theirs still fires.
       if (root.props && 'ref' in root.props) {
         merged.ref = composeRefs(captureTriggerRef, (root.props as Record<string, unknown>).ref)
       }
@@ -211,15 +192,14 @@ export const IrisTooltip = defineComponent({
         },
         slots.content?.() ?? props.content,
       )
-      if (props.teleport === false) return tooltipNode
-      return h(Teleport, { to: props.teleport as string | HTMLElement }, [tooltipNode])
+      const portalDest = props.portalTarget !== undefined ? props.portalTarget : props.teleport
+      if (portalDest === false) return tooltipNode
+      return h(Teleport, { to: portalDest as string | HTMLElement }, [tooltipNode])
     }
 
     return () => {
       const trigger = renderTrigger()
       const tooltip = renderTooltip()
-      // Always return a Fragment so Vue can diff the trigger across open/close
-      // without a shape change. Children may include `null` when closed.
       return h(Fragment, null, [trigger, tooltip])
     }
   },

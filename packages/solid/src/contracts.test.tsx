@@ -35,6 +35,7 @@ import {
   copyButtonScenario,
   selectScenario,
   menuScenario,
+  alertScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
@@ -70,6 +71,7 @@ import { IrisDropdown, IrisDropdownTrigger, IrisDropdownMenu } from './primitive
 import { IrisTooltip } from './primitives/tooltip'
 import { IrisCombobox } from './primitives/combobox/IrisCombobox'
 import { IrisCopyButton } from './primitives/copy-button'
+import { IrisAlert } from './primitives/alert'
 import { SelectContractHarness } from './SelectContractHarness'
 import { MenuContractHarness } from './MenuContractHarness'
 import { IrisToastViewport } from './primitives/toast'
@@ -511,5 +513,10 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
   it('satisfies the shared Menu contract', async () => {
     const { container } = render(() => <MenuContractHarness />)
     await runContract(menuScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Alert contract', async () => {
+    const { container } = render(() => <IrisAlert closable>Hello</IrisAlert>)
+    await runContract(alertScenario, driverFor(container), expect)
   })
 })

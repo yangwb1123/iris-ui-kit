@@ -35,6 +35,7 @@ import {
   copyButtonScenario,
   selectScenario,
   menuScenario,
+  alertScenario,
 } from '@iris-ui/core/contracts'
 import {
   driverFor,
@@ -74,6 +75,7 @@ import { IrisDropdownMenu } from './primitives/dropdown/DropdownMenu'
 import { IrisTooltip } from './primitives/tooltip/Tooltip'
 import { IrisCombobox } from './primitives/combobox/Combobox'
 import { IrisCopyButton } from './primitives/copy-button/CopyButton'
+import { IrisAlert } from './primitives/alert/Alert'
 import { SelectContractHarness } from './SelectContractHarness'
 import { MenuContractHarness } from './MenuContractHarness'
 import { IrisToastViewport } from './primitives/toast'
@@ -351,6 +353,13 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     mount(() => h(IrisCopyButton, { text: 'hello' }), { attachTo: el })
     await nextTick()
     await runContract(copyButtonScenario, driverFor(el), expect)
+  })
+
+  it('satisfies the shared Alert contract', async () => {
+    const el = makeHost()
+    mount(() => h(IrisAlert, { closable: true }, { default: () => 'Hello' }), { attachTo: el })
+    await nextTick()
+    await runContract(alertScenario, driverFor(el), expect)
   })
 
   it('satisfies the shared Select contract', async () => {

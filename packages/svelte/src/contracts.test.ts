@@ -35,6 +35,7 @@ import {
   dropdownScenario,
   tooltipScenario,
   menuScenario,
+  alertScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -49,6 +50,7 @@ import CalendarContractHarness from './CalendarContractHarness.svelte'
 import ComboboxContractHarness from './ComboboxContractHarness.svelte'
 import ToastContractHarness from './ToastContractHarness.svelte'
 import IrisCopyButton from './primitives/copy-button/IrisCopyButton.svelte'
+import IrisAlert from './primitives/alert/IrisAlert.svelte'
 import DataSourceContractHarness from './DataSourceContractHarness.svelte'
 import DialogContractHarness from './DialogContractHarness.svelte'
 import PopoverContractHarness from './PopoverContractHarness.svelte'
@@ -413,5 +415,10 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // the keyboard dismiss mechanism.
     const { container } = render(MenuContractHarness)
     await runContract(menuScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Alert contract', async () => {
+    const { container } = render(IrisAlert, { props: { closable: true } })
+    await runContract(alertScenario, driverFor(container), expect)
   })
 })

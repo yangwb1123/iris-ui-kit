@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
-import { flushSync } from 'svelte'
+import { flushSync, tick } from 'svelte'
 import {
   runContract,
   tabsScenario,
@@ -38,6 +38,7 @@ import {
   alertScenario,
   bannerScenario,
   splitButtonScenario,
+  formScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -63,6 +64,7 @@ import DropdownContractHarness from './DropdownContractHarness.svelte'
 import TooltipContractHarness from './TooltipContractHarness.svelte'
 import SelectContractHarness from './SelectContractHarness.svelte'
 import MenuContractHarness from './MenuContractHarness.svelte'
+import FormContractHarness from './FormContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -441,5 +443,11 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
       },
     })
     await runContract(splitButtonScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Form contract', async () => {
+    const { container } = render(FormContractHarness)
+    await tick()
+    await runContract(formScenario, driverFor(container), expect)
   })
 })

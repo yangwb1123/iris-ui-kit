@@ -331,7 +331,6 @@ export function IrisProTable<Row extends Record<string, unknown>>({
                       e.preventDefault()
                       const startX = e.clientX
                       const startW = colWidth as number
-                      const th = e.currentTarget.closest<HTMLElement>('th')!
                       const onMove = (ev: PointerEvent) => {
                         ev.preventDefault()
                         store.setColumnWidth(c.key, startW + ev.clientX - startX)

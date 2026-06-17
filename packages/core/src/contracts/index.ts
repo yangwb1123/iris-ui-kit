@@ -1,3 +1,4 @@
+export { dialogScenario } from './scenarios/dialog'
 export { runContract } from './runner'
 export { tabsScenario } from './scenarios/tabs'
 export { switchScenario } from './scenarios/switch'

@@ -23,6 +23,7 @@ import {
   rangeSliderScenario,
   tagInputScenario,
   otpInputScenario,
+  dialogScenario,
   dataSourceScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
@@ -53,6 +54,9 @@ import { IrisCalendar } from './primitives/calendar/Calendar'
 import { IrisRangeSlider } from './primitives/range-slider/RangeSlider'
 import { IrisTagInput } from './primitives/tag-input/TagInput'
 import { IrisOtpInput } from './primitives/otp-input/OtpInput'
+import { IrisDialog } from './primitives/dialog/Dialog'
+import { IrisDialogTrigger } from './primitives/dialog/DialogTrigger'
+import { IrisDialogContent } from './primitives/dialog/DialogContent'
 
 afterEach(cleanup)
 
@@ -325,6 +329,18 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
   it('satisfies the shared OtpInput contract', async () => {
     const { container } = render(<IrisOtpInput length={5} defaultValue="123" />)
     await runContract(otpInputScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Dialog contract', async () => {
+    const { container } = render(
+      <IrisDialog defaultOpen={false} closeOnOutsideClick={false}>
+        <IrisDialogTrigger data-iris-dialog-trigger>Open</IrisDialogTrigger>
+        <IrisDialogContent portalTarget={false}>
+          <p>Dialog body</p>
+        </IrisDialogContent>
+      </IrisDialog>,
+    )
+    await runContract(dialogScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared DataSource contract', async () => {

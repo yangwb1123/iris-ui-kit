@@ -25,6 +25,7 @@ import {
   tagInputScenario,
   otpInputScenario,
   dataSourceScenario,
+  dialogScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
@@ -51,6 +52,9 @@ import { IrisTree } from './primitives/tree'
 import { IrisCalendar } from './primitives/calendar'
 import { IrisTagInput } from './primitives/tag-input'
 import { IrisOtpInput } from './primitives/otp-input/IrisOtpInput'
+import { IrisDialog } from './primitives/dialog/IrisDialog'
+import { IrisDialogTrigger } from './primitives/dialog/IrisDialogTrigger'
+import { IrisDialogContent } from './primitives/dialog/IrisDialogContent'
 import { useDataSource } from './data/useDataSource'
 
 afterEach(cleanup)
@@ -337,5 +341,17 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
   it('satisfies the shared DataSource contract', async () => {
     const { container } = render(() => <DataSourceHarness />)
     await runContract(dataSourceScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Dialog contract', async () => {
+    const { container } = render(() => (
+      <IrisDialog defaultOpen={false} closeOnOutsideClick={false}>
+        <IrisDialogTrigger data-iris-dialog-trigger>Open</IrisDialogTrigger>
+        <IrisDialogContent portalTarget={false}>
+          <p>Dialog body</p>
+        </IrisDialogContent>
+      </IrisDialog>
+    ))
+    await runContract(dialogScenario, driverFor(container), expect)
   })
 })

@@ -24,6 +24,7 @@ import {
   calendarScenario,
   tagInputScenario,
   otpInputScenario,
+  dialogScenario,
   dataSourceScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
@@ -37,6 +38,7 @@ import TableExpandContractHarness from './TableExpandContractHarness.svelte'
 import TreeContractHarness from './TreeContractHarness.svelte'
 import CalendarContractHarness from './CalendarContractHarness.svelte'
 import DataSourceContractHarness from './DataSourceContractHarness.svelte'
+import DialogContractHarness from './DialogContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -239,6 +241,20 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // on a filled cell removes that char and the value contracts left.
     const { container } = render(ContractsHarness)
     await runContract(otpInputScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Dialog contract', async () => {
+    // Rendered in a dedicated harness so the dialog's `[role="dialog"]` and
+    // `[data-iris-dialog-trigger]` elements stay out of the shared container
+    // and can't collide with other scenarios' role-based selector counts.
+    // IrisDialog is uncontrolled (no `open` prop), starts closed (`defaultOpen`
+    // defaults to `false`). The harness passes closeOnOutsideClick={false} so
+    // the contract-driven Escape key is the only close mechanism, and
+    // portalTarget={false} so the dialog content renders inline in the test
+    // container (the contract driver's `queryAll` is container-scoped). See
+    // DialogContractHarness.svelte for the full note.
+    const { container } = render(DialogContractHarness)
+    await runContract(dialogScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared DataSource contract', async () => {

@@ -6,11 +6,13 @@
 
   interface Props {
     style?: string
+    /** Portal target — pass `false` to render in place. */
+    portalTarget?: HTMLElement | false
     children?: import('svelte').Snippet
     [key: string]: unknown
   }
 
-  let { style, children, ...rest }: Props = $props()
+  let { style, portalTarget, children, ...rest }: Props = $props()
   const ctx = getDialogContext('IrisDialogContent')
 
   let contentEl = $state<HTMLElement | undefined>(undefined)
@@ -35,6 +37,18 @@
     returnFocusTo: () => ctx.trigger,
   })
 
+  $effect(() => {
+    if (!ctx.open || !ctx.closeOnEscape) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        ctx.setOpen(false)
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  })
+
   function handleBackdropPointerDown(e: PointerEvent): void {
     if (!ctx.closeOnOutsideClick) return
     if (e.target === e.currentTarget) ctx.setOpen(false)
@@ -48,7 +62,7 @@
 {#if ctx.open}
   <!-- backdrop -->
   <div
-    use:portal
+    use:portal={portalTarget}
     data-iris-dialog-backdrop
     onpointerdown={handleBackdropPointerDown}
     style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 24px"

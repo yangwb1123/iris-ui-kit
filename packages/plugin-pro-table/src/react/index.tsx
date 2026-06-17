@@ -80,10 +80,8 @@ export function IrisProTable<Row extends Record<string, unknown>>({
     state.columnSizes,
     state.columns,
   ])
-  const { visible: _displayColumns, offsetBefore: _colOffset } = applyColumnWindow(
-    columns,
-    colWindow,
-  )
+  const { visible: displayColumns, offsetBefore: colOffset } = applyColumnWindow(columns, colWindow)
+  const renderColumns = columnVirtualized && colWindow ? displayColumns : columns
   const scrollRef = React.useRef<HTMLDivElement>(null)
   React.useEffect(() => {
     if (!columnVirtualized) return
@@ -240,7 +238,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
             onChange={() => store.toggleRow(key)}
           />
         </td>
-        {columns.map((c) => {
+        {renderColumns.map((c) => {
           const editing = state.editing?.rowKey === key && state.editing?.columnKey === c.key
           return (
             <td
@@ -312,7 +310,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
         : undefined
 
   const tableEl = (
-    <table>
+    <table style={colOffset > 0 ? { marginLeft: -colOffset } : undefined}>
       <thead>
         {headerMat.map((row, ri) => (
           <tr key={ri}>

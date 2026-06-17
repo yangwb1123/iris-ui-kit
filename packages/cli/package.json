@@ -20,5 +20,9 @@
   },
   "dependencies": {
     "@iris-ui/manifest": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nousresearch/iris-ui.git"
   }
 }

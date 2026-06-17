@@ -36,5 +36,9 @@
     "@iris-ui/core": "workspace:*",
     "@iris-ui/tokens": "workspace:*",
     "@iris-ui/theme": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nousresearch/iris-ui.git"
   }
 }

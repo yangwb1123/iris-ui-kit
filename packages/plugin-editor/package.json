@@ -102,5 +102,9 @@
     "tsup": "^8.3.5",
     "vite-plugin-solid": "^2.11.0",
     "vue": "^3.5.13"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nousresearch/iris-ui.git"
   }
 }

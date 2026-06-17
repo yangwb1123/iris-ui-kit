@@ -31,5 +31,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "clean": "rm -rf dist .turbo"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nousresearch/iris-ui.git"
   }
 }

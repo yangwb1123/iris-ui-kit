@@ -24,3 +24,6 @@ apps/desktop/release/
 build/
 .nuxt/
 .output/
+# SolidStart / Vinxi generated build artifacts
+app.config.timestamp_*.js
+.solid/

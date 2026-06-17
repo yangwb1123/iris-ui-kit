@@ -29,11 +29,12 @@ function coreScenarios(root: string): Set<string> {
   return set
 }
 
-/** Scenario names actually replayed (`runContract(<scenario>, …)`) in an adapter test. */
+/** Scenario names actually replayed (`runContract(<scenario>, …)` or `run(X)(<scenario>)`) in an adapter test. */
 function runScenarios(file: string): Set<string> {
   const text = readFileSync(file, 'utf8')
   const set = new Set<string>()
-  for (const m of text.matchAll(/runContract\(\s*(\w+Scenario)/g)) set.add(m[1]!)
+  // Direct runContract(scenarioName, …) or run(Harness)(scenarioName) calls.
+  for (const m of text.matchAll(/(?:runContract|\))\s*\(\s*(\w+Scenario)/g)) set.add(m[1]!)
   return set
 }
 

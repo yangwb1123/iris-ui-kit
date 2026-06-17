@@ -28,6 +28,7 @@ import {
   popoverScenario,
   dataSourceScenario,
   drawerScenario,
+  dropdownScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -43,6 +44,7 @@ import DataSourceContractHarness from './DataSourceContractHarness.svelte'
 import DialogContractHarness from './DialogContractHarness.svelte'
 import PopoverContractHarness from './PopoverContractHarness.svelte'
 import DrawerContractHarness from './DrawerContractHarness.svelte'
+import DropdownContractHarness from './DropdownContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -300,5 +302,19 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // See DrawerContractHarness.svelte for the full note.
     const { container } = render(DrawerContractHarness)
     await runContract(drawerScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Dropdown contract', async () => {
+    // Rendered in a dedicated harness so the dropdown's `[role="menu"]` and
+    // `[data-iris-dropdown-trigger]` elements stay out of the shared container
+    // and can't collide with other scenarios' role-based selector counts.
+    // IrisDropdown is uncontrolled (no `open` prop), starts closed
+    // (defaultOpen={false}). The harness passes portalTarget={false} so the
+    // dropdown menu renders inline in the test container (the contract
+    // driver's `queryAll` is container-scoped). Like Popover, the dropdown
+    // trigger TOGGLES — clicking it opens AND closes; Escape is the keyboard
+    // dismiss mechanism. See DropdownContractHarness.svelte for the full note.
+    const { container } = render(DropdownContractHarness)
+    await runContract(dropdownScenario, driverFor(container), expect)
   })
 })

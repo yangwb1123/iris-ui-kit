@@ -28,6 +28,7 @@ import {
   dialogScenario,
   popoverScenario,
   drawerScenario,
+  dropdownScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
@@ -59,6 +60,7 @@ import { IrisDialogTrigger } from './primitives/dialog/IrisDialogTrigger'
 import { IrisDialogContent } from './primitives/dialog/IrisDialogContent'
 import { IrisPopover, IrisPopoverTrigger, IrisPopoverContent } from './primitives/popover'
 import { IrisDrawer, IrisDrawerTrigger, IrisDrawerContent } from './primitives/drawer'
+import { IrisDropdown, IrisDropdownTrigger, IrisDropdownMenu } from './primitives/dropdown'
 import { useDataSource } from './data/useDataSource'
 
 afterEach(cleanup)
@@ -393,5 +395,23 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
   it('Drawer contract', async () => {
     const { container } = render(() => <DrawerContractHarness />)
     await runContract(drawerScenario, driverFor(container), expect)
+  })
+
+  function DropdownContractHarness() {
+    return (
+      <div>
+        <IrisDropdown>
+          <IrisDropdownTrigger data-iris-dropdown-trigger>Open</IrisDropdownTrigger>
+          <IrisDropdownMenu portalTarget={false}>
+            <p>Dropdown content</p>
+          </IrisDropdownMenu>
+        </IrisDropdown>
+      </div>
+    )
+  }
+
+  it('satisfies the shared Dropdown contract', async () => {
+    const { container } = render(() => <DropdownContractHarness />)
+    await runContract(dropdownScenario, driverFor(container), expect)
   })
 })

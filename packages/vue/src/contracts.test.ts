@@ -28,6 +28,7 @@ import {
   dialogScenario,
   popoverScenario,
   drawerScenario,
+  dropdownScenario,
 } from '@iris-ui/core/contracts'
 import {
   driverFor,
@@ -61,6 +62,9 @@ import { IrisPopoverContent } from './primitives/popover/PopoverContent'
 import { IrisDrawer } from './primitives/drawer/Drawer'
 import { IrisDrawerTrigger } from './primitives/drawer/DrawerTrigger'
 import { IrisDrawerContent } from './primitives/drawer/DrawerContent'
+import { IrisDropdown } from './primitives/dropdown/Dropdown'
+import { IrisDropdownTrigger } from './primitives/dropdown/DropdownTrigger'
+import { IrisDropdownMenu } from './primitives/dropdown/DropdownMenu'
 
 enableAutoUnmount(afterEach)
 
@@ -244,6 +248,27 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     )
     await nextTick()
     await runContract(drawerScenario, driverFor(host), expect)
+  })
+
+  it('satisfies the shared Dropdown contract', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(
+      () =>
+        h(
+          IrisDropdown,
+          { defaultOpen: false },
+          {
+            default: () => [
+              h(IrisDropdownTrigger, { 'data-iris-dropdown-trigger': '' }, () => 'Open'),
+              h(IrisDropdownMenu, { teleport: false }, () => h('p', 'Dropdown body')),
+            ],
+          },
+        ),
+      { attachTo: host },
+    )
+    await nextTick()
+    await runContract(dropdownScenario, driverFor(host), expect)
   })
 
   it('satisfies the shared DataSource contract', async () => {

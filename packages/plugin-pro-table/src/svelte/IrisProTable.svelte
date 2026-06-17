@@ -27,6 +27,7 @@
     virtualized = false,
     rowHeight = 40,
     maxHeight = 400,
+    columnVirtualized = false,
   }: {
     store: ProTableStore<Row>
     class?: string
@@ -53,6 +54,12 @@
     rowHeight?: number
     /** Scroll viewport height in px when virtualized. Default `400`. */
     maxHeight?: number
+    /**
+     * Opt-in column virtualization. When `true` columns outside the horizontal
+     * viewport are not rendered, reducing DOM for very wide tables. The table
+     * container becomes horizontally scrollable. Default `false`.
+     */
+    columnVirtualized?: boolean
   } = $props()
 
   // Drag-to-reorder: plain mutable — no $state needed (no re-render on drag events).
@@ -62,6 +69,7 @@
   // as a store auto-subscription instead of the rune.
   let tableState: ProTableState<Row> = $state(store.getState())
   let draft = $state('')
+  let scrollDiv: HTMLDivElement | undefined = $state()
 
   $effect(() => {
     const unsub = store.subscribe((s) => {
@@ -169,6 +177,16 @@
   $effect(() => {
     virtualizer.setViewportSize(maxHeight)
   })
+  // Column virtualization: observe horizontal scroll container width.
+  $effect(() => {
+    if (!columnVirtualized || !scrollDiv) return
+    store.setColumnViewportWidth(scrollDiv.clientWidth)
+    const ro = new ResizeObserver(([entry]) => {
+      store.setColumnViewportWidth(entry.contentRect.width)
+    })
+    ro.observe(scrollDiv)
+    return () => ro.disconnect()
+  })
   // +1 for the leading checkbox column.
   const totalColumnCount = $derived(columns.length + 1)
   // Bottom spacer height: total scrollable size minus what's above + in window.
@@ -207,16 +225,30 @@
 </script>
 
 <div data-iris-pro-table class={klass}>
+  {#snippet scrollContent()}
+    {#if columnVirtualized}
+      <div
+        style="overflow-x:auto"
+        onscroll={(e) => store.setHorizontalScroll(e.currentTarget.scrollLeft)}
+        bind:this={scrollDiv}
+      >
+        {@render tableEl()}
+      </div>
+    {:else}
+      {@render tableEl()}
+    {/if}
+  {/snippet}
+
   {#if virtualized}
     <div
       data-iris-pro-table-scroll
       style={`overflow:auto;height:${maxHeight}px;`}
       onscroll={(e) => virtualizer.setScroll(e.currentTarget.scrollTop)}
     >
-      {@render tableEl()}
+      {@render scrollContent()}
     </div>
   {:else}
-    {@render tableEl()}
+    {@render scrollContent()}
   {/if}
 
   {#snippet tableEl()}

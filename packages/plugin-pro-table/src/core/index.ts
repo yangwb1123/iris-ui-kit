@@ -25,6 +25,9 @@ import {
   type AggregateSpec,
   type ExpansionModel,
   type TreeRow,
+  computeVirtualRange,
+  buildOffsets,
+  type VirtualWindow,
 } from '@iris-ui/core'
 
 /**
@@ -139,6 +142,10 @@ export interface ProTableState<Row = Record<string, unknown>> {
   expandedKeys: string[]
   /** Flattened tree rows with depth/expand metadata, or null when not tree mode. */
   treeRows: TreeRow<Row>[] | null
+  /** Horizontal scroll offset for column virtualization. */
+  horizontalScroll: number
+  /** Viewport width in px for column virtualization. 0 = not virtualized. */
+  columnViewportWidth: number
   page: number
   pageSize: number
   total: number
@@ -191,6 +198,15 @@ export interface ProTableStore<Row = Record<string, unknown>> {
   collapseAll(): void
   /** Check if a tree node is expanded. */
   isExpanded(key: string): boolean
+  /** Set horizontal scroll offset (px) for column virtualization. */
+  setHorizontalScroll(scrollLeft: number): void
+  /** Set the horizontal viewport width (px). 0 disables column virtualization. */
+  setColumnViewportWidth(width: number): void
+  /**
+   * Compute which columns are within the visible horizontal viewport.
+   * Returns null when columnVirtualized is disabled (viewportWidth <= 0).
+   */
+  columnWindow(): VirtualWindow | null
 }
 
 export function createProTableStore<Row extends Record<string, unknown>>(
@@ -256,6 +272,8 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     editing: null,
     expandedKeys: [],
     treeRows: null,
+    horizontalScroll: 0,
+    columnViewportWidth: 0,
     page: 1,
     pageSize: config.pageSize ?? 10,
     total: 0,
@@ -525,6 +543,40 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     isExpanded(key) {
       return expansion?.isExpanded(key) ?? false
     },
+
+    setHorizontalScroll(scrollLeft) {
+      store.setState((st) => ({ ...st, horizontalScroll: Math.max(0, scrollLeft) }))
+    },
+
+    setColumnViewportWidth(width) {
+      store.setState((st) => ({ ...st, columnViewportWidth: Math.max(0, width) }))
+    },
+
+    columnWindow() {
+      const { columnViewportWidth, horizontalScroll, columns, columnSizes } = store.getState()
+      if (columnViewportWidth <= 0 || columns.length === 0) return null
+      // Resolve each column's width: explicit numeric width → columnSizes override → 150px fallback
+      const offsets = buildOffsets(columns.length, (i) => {
+        const c = columns[i]
+        if (!c) return 150
+        const size = columnSizes[c.key]
+        if (typeof size === 'number') return size
+        if (typeof c.width === 'number') return c.width
+        return 150
+      })
+      const totalWidth = offsets[columns.length]
+      const clampedLeft = Math.max(
+        0,
+        Math.min(horizontalScroll, Math.max(0, totalWidth - columnViewportWidth)),
+      )
+      return computeVirtualRange({
+        itemCount: columns.length,
+        scrollTop: clampedLeft,
+        viewportSize: columnViewportWidth,
+        itemSize: 150, // unused when offsets is provided
+        offsets,
+      })
+    },
   }
 
   return api
@@ -572,6 +624,21 @@ export function proTableLabel(
     }
   }
   return text
+}
+
+/**
+ * Apply column windowing: filter columns to the visible range and return the
+ * left offset. When `colWindow` is null, returns all columns unchanged.
+ */
+export function applyColumnWindow<T>(
+  columns: T[],
+  colWindow: VirtualWindow | null,
+): { visible: T[]; offsetBefore: number } {
+  if (!colWindow) return { visible: columns, offsetBefore: 0 }
+  return {
+    visible: columns.slice(colWindow.startIndex, colWindow.endIndex + 1),
+    offsetBefore: colWindow.offsetBefore,
+  }
 }
 
 /** CSS custom properties the ProTable reads; overridable by the host theme. */

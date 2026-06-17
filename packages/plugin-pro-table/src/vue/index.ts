@@ -38,6 +38,7 @@ export const IrisProTable = defineComponent({
     labels: { type: Object as PropType<ProTableLabels>, default: undefined },
     columnReorder: { type: Boolean, default: false },
     virtualized: { type: Boolean, default: false },
+    columnVirtualized: { type: Boolean, default: false },
     rowHeight: { type: Number, default: 40 },
     maxHeight: { type: Number, default: 400 },
   },
@@ -46,6 +47,9 @@ export const IrisProTable = defineComponent({
     const draft = ref('')
     let dragKey: string | null = null
     let unsub = () => {}
+
+    const colScrollRef = ref<HTMLDivElement | null>(null)
+    let colObserver: ResizeObserver | null = null
 
     const sortable = createSortable()
     const sortableState = shallowRef(sortable.getState())
@@ -105,11 +109,25 @@ export const IrisProTable = defineComponent({
       unsubVirtual = virtualizer.subscribe((s) => {
         vState.value = s
       })
+      if (props.columnVirtualized) {
+        const el = colScrollRef.value
+        if (el) {
+          props.store.setColumnViewportWidth(el.clientWidth)
+          colObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+              props.store.setColumnViewportWidth(entry.contentRect.width)
+            }
+          })
+          colObserver.observe(el)
+        }
+      }
     })
     onUnmounted(() => {
       unsub()
       unsubSortable()
       unsubVirtual()
+      colObserver?.disconnect()
+      colObserver = null
     })
 
     watch(
@@ -473,6 +491,21 @@ export const IrisProTable = defineComponent({
           : []),
       ])
 
+      let tableContent: VNode = tableEl
+      if (props.columnVirtualized) {
+        tableContent = h(
+          'div',
+          {
+            ref: colScrollRef,
+            style: { overflowX: 'auto' as string },
+            onScroll: (e: Event) => {
+              props.store.setHorizontalScroll((e.currentTarget as HTMLElement).scrollLeft)
+            },
+          },
+          [tableEl],
+        )
+      }
+
       return h('div', { 'data-iris-pro-table': '' }, [
         props.virtualized
           ? h(
@@ -483,9 +516,9 @@ export const IrisProTable = defineComponent({
                 onScroll: (e: Event) =>
                   virtualizer.setScroll((e.currentTarget as HTMLElement).scrollTop),
               },
-              [tableEl],
+              [tableContent],
             )
-          : tableEl,
+          : tableContent,
         ...(filterChips ? [filterChips] : []),
         h('div', { 'data-iris-pro-table-footer': '' }, [
           h(

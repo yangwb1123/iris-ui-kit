@@ -1,6 +1,12 @@
 import { createSignal, createEffect, createMemo, onCleanup, For, Show, type JSX } from 'solid-js'
 import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
-import { collectRects, proTableLabel, type ProTableStore, type ProTableLabels } from '../core'
+import {
+  collectRects,
+  proTableLabel,
+  applyColumnWindow,
+  type ProTableStore,
+  type ProTableLabels,
+} from '../core'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
 
@@ -30,6 +36,12 @@ export interface IrisProTableProps<Row extends Record<string, unknown>> {
   rowHeight?: number
   /** Scroll viewport height in px when virtualized. Default `400`. */
   maxHeight?: number
+  /**
+   * Opt-in column virtualization. When `true` columns outside the horizontal
+   * viewport are not rendered, reducing DOM for very wide tables. The table
+   * container becomes horizontally scrollable. Default `false`.
+   */
+  columnVirtualized?: boolean
 }
 
 function pinnedStyle(column: { pinned?: 'left' | 'right' }): JSX.CSSProperties | undefined {
@@ -136,6 +148,20 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
   // scopes so they react to store/prop changes.
   createEffect(() => virtualizer.setCount(state().rows.length))
   createEffect(() => virtualizer.setViewportSize(maxHeight()))
+
+  // --- Column virtualization (opt-in) --------------------------------------
+  let scrollRef: HTMLDivElement | undefined
+  createEffect(() => {
+    if (!props.columnVirtualized) return
+    const el = scrollRef
+    if (!el) return
+    props.store.setColumnViewportWidth(el.clientWidth)
+    const ro = new ResizeObserver(([entry]) => {
+      props.store.setColumnViewportWidth(entry.contentRect.width)
+    })
+    ro.observe(el)
+    onCleanup(() => ro.disconnect())
+  })
 
   const sortIndicator = (key: string): string => {
     const sort = state().sort
@@ -439,15 +465,31 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
     </table>
   )
 
+  // Table content wrapped in an optional horizontal scroll container for column
+  // virtualization. The outer layer (row virtualization) nests inside.
+  const scrollContent = (): JSX.Element => {
+    const table = tableEl()
+    if (!props.columnVirtualized) return table
+    return (
+      <div
+        ref={scrollRef}
+        style={{ 'overflow-x': 'auto' }}
+        onScroll={(e) => props.store.setHorizontalScroll(e.currentTarget.scrollLeft)}
+      >
+        {table}
+      </div>
+    )
+  }
+
   return (
     <div data-iris-pro-table="" class={props.class}>
-      <Show when={props.virtualized} fallback={tableEl()}>
+      <Show when={props.virtualized} fallback={scrollContent()}>
         <div
           data-iris-pro-table-scroll=""
           style={{ overflow: 'auto', height: `${maxHeight()}px` }}
           onScroll={(e) => virtualizer.setScroll(e.currentTarget.scrollTop)}
         >
-          {tableEl()}
+          {scrollContent()}
         </div>
       </Show>
       <Show when={Object.keys(state().filters).some((k) => state().filters[k])}>

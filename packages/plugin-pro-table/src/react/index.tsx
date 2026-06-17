@@ -1,6 +1,12 @@
 import * as React from 'react'
 import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
-import { collectRects, proTableLabel, type ProTableStore, type ProTableLabels } from '../core'
+import {
+  collectRects,
+  proTableLabel,
+  applyColumnWindow,
+  type ProTableStore,
+  type ProTableLabels,
+} from '../core'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
 
@@ -30,6 +36,12 @@ export interface IrisProTableProps<Row extends Record<string, unknown>> {
   rowHeight?: number
   /** Scroll viewport height in px when virtualized. Default `400`. */
   maxHeight?: number
+  /**
+   * Opt-in column virtualization. When `true` columns outside the horizontal
+   * viewport are not rendered, reducing DOM for very wide tables. The table
+   * container becomes horizontally scrollable. Default `false`.
+   */
+  columnVirtualized?: boolean
 }
 
 function pinnedStyle(column: { pinned?: 'left' | 'right' }): React.CSSProperties | undefined {
@@ -50,11 +62,38 @@ export function IrisProTable<Row extends Record<string, unknown>>({
   virtualized = false,
   rowHeight = 40,
   maxHeight = 400,
+  columnVirtualized = false,
 }: IrisProTableProps<Row>) {
   const state = React.useSyncExternalStore(store.subscribe, store.getState, store.getState)
   const columns = store.visibleColumns()
   const headerMat = store.headerMatrix()
   const headerDepth = headerMat.length
+
+  // Column virtualization: compute visible column window + ResizeObserver.
+  const colWindow = React.useMemo(() => {
+    if (!columnVirtualized) return null
+    return store.columnWindow()
+  }, [
+    columnVirtualized,
+    state.horizontalScroll,
+    state.columnViewportWidth,
+    state.columnSizes,
+    state.columns,
+  ])
+  const { visible: displayColumns, offsetBefore: colOffset } = applyColumnWindow(columns, colWindow)
+  const scrollRef = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    if (!columnVirtualized) return
+    const el = scrollRef.current
+    if (!el) return
+    // Set initial viewport width
+    store.setColumnViewportWidth(el.clientWidth)
+    const ro = new ResizeObserver(([entry]) => {
+      store.setColumnViewportWidth(entry.contentRect.width)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [columnVirtualized, store])
 
   // Drag-to-reorder: track the key of the column being dragged in a ref so we
   // don't need React state (no re-render on dragstart/dragover).
@@ -437,6 +476,22 @@ export function IrisProTable<Row extends Record<string, unknown>>({
     </table>
   )
 
+  // Horizontal scroll event handler for column virtualization.
+  const onHScroll = columnVirtualized
+    ? (e: React.UIEvent<HTMLDivElement>) => {
+        store.setHorizontalScroll(e.currentTarget.scrollLeft)
+      }
+    : undefined
+
+  // Table content, optionally wrapped in a horizontal scroll container.
+  const tableContent = columnVirtualized ? (
+    <div ref={scrollRef} style={{ overflowX: 'auto' }} onScroll={onHScroll}>
+      {tableEl}
+    </div>
+  ) : (
+    tableEl
+  )
+
   return (
     <div data-iris-pro-table="" className={className}>
       {virtualized ? (
@@ -445,10 +500,10 @@ export function IrisProTable<Row extends Record<string, unknown>>({
           style={{ overflow: 'auto', height: maxHeight }}
           onScroll={(e) => virtualizer.setScroll(e.currentTarget.scrollTop)}
         >
-          {tableEl}
+          {tableContent}
         </div>
       ) : (
-        tableEl
+        tableContent
       )}
       {(() => {
         const activeFilters = Object.keys(state.filters).filter((k) => state.filters[k])

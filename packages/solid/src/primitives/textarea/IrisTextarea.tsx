@@ -18,7 +18,10 @@ export interface IrisTextareaProps {
   readonly?: boolean
   invalid?: boolean
   rows?: number
+  /** @deprecated Use `autosize` instead. */
   autoResize?: boolean
+  /** Automatically grow the textarea height as content grows. */
+  autosize?: boolean
   maxRows?: number
   maxLength?: number
   id?: string
@@ -33,7 +36,7 @@ export interface IrisTextareaProps {
 /** Solid port of IrisTextarea — multi-line input with optional autoResize. */
 export function IrisTextarea(props: IrisTextareaProps): JSX.Element {
   const merged = mergeProps(
-    { size: 'md' as IrisTextareaSize, rows: 3, maxRows: 8, autoResize: false },
+    { size: 'md' as IrisTextareaSize, rows: 3, maxRows: 8, autoResize: false, autosize: false },
     props,
   )
   const [local, rest] = splitProps(merged, [
@@ -46,6 +49,7 @@ export function IrisTextarea(props: IrisTextareaProps): JSX.Element {
     'invalid',
     'rows',
     'autoResize',
+    'autosize',
     'maxRows',
     'maxLength',
     'id',
@@ -65,7 +69,7 @@ export function IrisTextarea(props: IrisTextareaProps): JSX.Element {
 
   const resize = () => {
     const el = textareaRef
-    if (!el || !local.autoResize) return
+    if (!el || !(local.autoResize || local.autosize)) return
     const lh = parseFloat(getComputedStyle(el).lineHeight || '0') || 20
     el.style.height = 'auto'
     const maxPx = local.maxRows > 0 ? lh * local.maxRows : Infinity

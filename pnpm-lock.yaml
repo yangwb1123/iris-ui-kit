@@ -89,6 +89,9 @@ importers:
       '@iris-ui/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@iris-ui/plugin-notifications':
+        specifier: workspace:*
+        version: link:../../packages/plugin-notifications
       '@iris-ui/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
@@ -488,7 +491,7 @@ importers:
         version: 2.4.10(@vue/compiler-dom@3.5.34)(@vue/server-renderer@3.5.34(vue@3.5.34(typescript@5.9.3)))(vue@3.5.34(typescript@5.9.3))
       esbuild-plugin-solid:
         specifier: ^0.6.0
-        version: 0.6.0(esbuild@0.28.1)(solid-js@1.9.13)
+        version: 0.6.0(esbuild@0.27.7)(solid-js@1.9.13)
       jsdom:
         specifier: ^25.0.1
         version: 25.0.1
@@ -12996,6 +12999,16 @@ snapshots:
       get-intrinsic: 1.3.0
       has-tostringtag: 1.0.2
       hasown: 2.0.3
+
+  esbuild-plugin-solid@0.6.0(esbuild@0.27.7)(solid-js@1.9.13):
+    dependencies:
+      '@babel/core': 7.29.0
+      '@babel/preset-typescript': 7.29.7(@babel/core@7.29.0)
+      babel-preset-solid: 1.9.12(@babel/core@7.29.0)(solid-js@1.9.13)
+      esbuild: 0.27.7
+      solid-js: 1.9.13
+    transitivePeerDependencies:
+      - supports-color
 
   esbuild-plugin-solid@0.6.0(esbuild@0.28.1)(solid-js@1.9.13):
     dependencies:

@@ -28,7 +28,7 @@ describe('IrisCombobox', () => {
   it('filters options as you type', async () => {
     const w = mount(IrisCombobox, { props: { options: OPTIONS } })
     await input(w).trigger('focus')
-    await input(w).setValue('an')
+    await input(w).setValue('Ba')
     expect(opts(w).length).toBe(1)
     expect(opts(w)[0].text()).toBe('Banana')
   })

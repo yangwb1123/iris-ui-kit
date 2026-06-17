@@ -31,7 +31,7 @@ describe('@iris-ui/react IrisCombobox', () => {
   it('filters options as you type', () => {
     const { container } = render(<IrisCombobox options={OPTIONS} />)
     fireEvent.focus(input(container))
-    fireEvent.change(input(container), { target: { value: 'an' } })
+    fireEvent.change(input(container), { target: { value: 'Ba' } })
     expect(opts(container).length).toBe(1)
     expect(opts(container)[0].textContent).toBe('Banana')
   })

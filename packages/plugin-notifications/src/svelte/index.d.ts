@@ -1,9 +1,11 @@
-export { default as IrisNotificationCenter } from './IrisNotificationCenter.svelte'
 export type {
   NotificationCenter,
   NotificationCenterConfig,
   NotificationInput,
   IrisNotification,
   NotificationTone,
-} from '../core'
-export { createNotificationCenter, notificationsPlugin } from '../core'
+} from '../core/index.js'
+export { createNotificationCenter, notificationsPlugin } from '../core/index.js'
+import type { SvelteComponent } from 'svelte'
+declare const IrisNotificationCenter: typeof SvelteComponent<any>
+export default IrisNotificationCenter

@@ -27,7 +27,8 @@
     },
     "./svelte": {
       "svelte": "./dist/svelte/index.js",
-      "import": "./dist/svelte/index.js"
+      "import": "./dist/svelte/index.js",
+      "types": "./dist/svelte/index.d.ts"
     },
     "./package.json": "./package.json"
   },
@@ -36,7 +37,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsup && svelte-package -i src/svelte -o dist/svelte",
+    "build": "tsup && svelte-package -i src/svelte -o dist/svelte && cp src/svelte/index.d.ts dist/svelte/index.d.ts",
     "test": "vitest run -c vitest.main.config.ts && vitest run -c vitest.solid.config.ts && vitest run -c vitest.svelte.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.solid.json --noEmit && svelte-check --tsconfig ./tsconfig.svelte.json",
     "lint": "eslint src",

@@ -16,7 +16,8 @@
     "@iris-ui/core": "workspace:*",
     "@iris-ui/svelte": "workspace:*",
     "@iris-ui/tokens": "workspace:*",
-    "svelte": "^5.16.0"
+    "svelte": "^5.16.0",
+    "@iris-ui/plugin-notifications": "workspace:*"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^4.0.4",

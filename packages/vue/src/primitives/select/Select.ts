@@ -31,6 +31,11 @@ export const IrisSelect = defineComponent({
     id: { type: String, default: undefined },
     /** Forwarded as `aria-describedby` on the trigger button. Set by IrisFormField. */
     ariaDescribedby: { type: String, default: undefined },
+    /** Pass `false` to render the popover content inline (no teleport). */
+    teleport: {
+      type: [Boolean, Object] as PropType<false | HTMLElement | string>,
+      default: undefined,
+    },
   },
   emits: {
     'update:modelValue': (_value: unknown) => true,
@@ -158,6 +163,7 @@ export const IrisSelect = defineComponent({
               IrisPopoverContent,
               {
                 style: { padding: 'var(--iris-padding-sm)', minWidth: '180px' },
+                ...(props.teleport !== undefined ? { teleport: props.teleport } : {}),
               },
               () =>
                 h(IrisList, {

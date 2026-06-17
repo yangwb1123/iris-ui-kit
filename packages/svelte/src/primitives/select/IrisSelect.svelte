@@ -29,6 +29,8 @@
     placement?: Placement
     invalid?: boolean
     id?: string
+    /** Pass `false` to render the dropdown list inline (no portal). */
+    portalTarget?: HTMLElement | false
     onValueChange?: (value: unknown) => void
     style?: string
     [key: string]: unknown
@@ -43,6 +45,7 @@
     placement = 'bottom-start',
     invalid = false,
     id,
+    portalTarget,
     onValueChange,
     style,
     ...rest
@@ -185,7 +188,7 @@
 {#if open}
   <ul
     use:setContent
-    use:portal
+    use:portal={portalTarget}
     use:focusOnOpen
     id={listboxId}
     role="listbox"

@@ -6,12 +6,14 @@
 
   interface Props {
     style?: string
+    /** Pass `false` to render the menu content inline (no portal). */
+    portalTarget?: HTMLElement | false
     onkeydown?: (e: KeyboardEvent) => void
     children?: import('svelte').Snippet
     [key: string]: unknown
   }
 
-  let { style, onkeydown, children, ...rest }: Props = $props()
+  let { style, portalTarget, onkeydown, children, ...rest }: Props = $props()
   const ctx = getMenuContext('IrisMenuContent')
 
   const floating = useFloating({
@@ -87,7 +89,7 @@
   <div
     {...rest}
     use:setContentRef
-    use:portal
+    use:portal={portalTarget}
     id={ctx.contentId}
     role="menu"
     tabindex={-1}

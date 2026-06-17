@@ -25,6 +25,7 @@ import {
   comboboxScenario,
   toastScenario,
   copyButtonScenario,
+  selectScenario,
   tagInputScenario,
   otpInputScenario,
   dialogScenario,
@@ -53,6 +54,7 @@ import PopoverContractHarness from './PopoverContractHarness.svelte'
 import DrawerContractHarness from './DrawerContractHarness.svelte'
 import DropdownContractHarness from './DropdownContractHarness.svelte'
 import TooltipContractHarness from './TooltipContractHarness.svelte'
+import SelectContractHarness from './SelectContractHarness.svelte'
 
 /** A ContractDriver over a @testing-library/svelte result container. */
 function driverFor(container: HTMLElement): ContractDriver {
@@ -390,5 +392,10 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
   it('satisfies the shared CopyButton contract', async () => {
     const { container } = render(IrisCopyButton, { props: { text: 'hello' } })
     await runContract(copyButtonScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Select contract', async () => {
+    const { container } = render(SelectContractHarness)
+    await runContract(selectScenario, driverFor(container), expect)
   })
 })

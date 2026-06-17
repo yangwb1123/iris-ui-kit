@@ -32,6 +32,7 @@ import {
   comboboxScenario,
   toastScenario,
   copyButtonScenario,
+  selectScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { useCallback } from 'react'
@@ -80,6 +81,8 @@ import { IrisCombobox } from './primitives/combobox/Combobox'
 import { IrisCopyButton } from './primitives/copy-button/CopyButton'
 import { IrisToastViewport } from './primitives/toast/ToastViewport'
 import { pushToast, clearToasts } from './primitives/toast/toastStore'
+
+import { SelectContractHarness } from './SelectContractHarness'
 
 afterEach(() => {
   cleanup()
@@ -487,5 +490,31 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
   it('satisfies the shared CopyButton contract', async () => {
     const { container } = render(<IrisCopyButton text="hello" />)
     await runContract(copyButtonScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Select contract', async () => {
+    render(<SelectContractHarness />)
+    // Document-scoped driver: Select portals its listbox to document.body via
+    // IrisPopoverContent, so a container-scoped queryAll won't find it.
+    const q = (sel: string) => [...document.querySelectorAll<HTMLElement>(sel)]
+    const docDriver: ContractDriver = {
+      queryAll: (sel) => q(sel),
+      click: (sel, idx) => {
+        const el = q(sel)[idx ?? 0]
+        if (el) {
+          el.focus()
+          el.click()
+        }
+      },
+      keydown: (sel, idx, key) => {
+        const el = q(sel)[idx ?? 0]
+        if (el) el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+      },
+      type: () => undefined,
+      flush: async () => {
+        await act(() => {})
+      },
+    }
+    await runContract(selectScenario, docDriver, expect)
   })
 })

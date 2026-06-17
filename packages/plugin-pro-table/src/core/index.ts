@@ -10,6 +10,7 @@ import {
   readCell,
   flattenLeafColumns,
   buildHeaderMatrix,
+  summarize,
   toCsv,
   toSpreadsheetXml,
   toJson,
@@ -18,6 +19,7 @@ import {
   type DataViewColumn,
   type TableHtmlOptions,
   type HeaderCell,
+  type AggregateSpec,
 } from '@iris-ui/core'
 
 /**
@@ -93,6 +95,8 @@ export interface ProTableConfig<Row = Record<string, unknown>> {
   rowKey: string | ((row: Row) => string)
   /** Client-mode dataset (held in full; processed in the store). */
   data?: Row[]
+  /** Per-column aggregation specs for the summary footer row. */
+  summary?: AggregateSpec[]
   /** Rows per page. Default 10. */
   pageSize?: number
   /** `'client'` (default) processes `data` locally; `'server'` calls {@link ProTableConfig.onLoad}. */
@@ -114,6 +118,8 @@ export interface ProTableState<Row = Record<string, unknown>> {
   sort: SortState | null
   filters: Record<string, string>
   selectedKeys: string[]
+  /** Aggregated values for the summary footer row (computed from processed rows). */
+  summaryValues: Record<string, number>
   editing: { rowKey: string; columnKey: string } | null
   page: number
   pageSize: number
@@ -193,6 +199,7 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     sort: null,
     filters: {},
     selectedKeys: [],
+    summaryValues: {},
     editing: null,
     page: 1,
     pageSize: config.pageSize ?? 10,
@@ -229,6 +236,7 @@ export function createProTableStore<Row extends Record<string, unknown>>(
       total: s.total,
       loading: s.loading,
       selectedKeys: s.selectedKeys,
+      summaryValues: config.summary ? summarize(s.rows, dataViewColumns(), config.summary) : {},
     }))
   })
 
@@ -404,6 +412,7 @@ export interface ProTableLabels {
   selectRow?: string
   prev?: string
   next?: string
+  summaryLabel?: string
 }
 
 export const defaultProTableLabels: Required<ProTableLabels> = {
@@ -412,6 +421,7 @@ export const defaultProTableLabels: Required<ProTableLabels> = {
   selectRow: 'Select row {key}',
   prev: 'Prev',
   next: 'Next',
+  summaryLabel: 'Summary',
 }
 
 /**

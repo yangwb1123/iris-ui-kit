@@ -433,6 +433,18 @@
         {/each}
       </tbody>
     {/if}
+    {#if Object.keys(tableState.summaryValues).length > 0}
+    <tfoot>
+      <tr>
+        <th scope="row">{labels?.summaryLabel ?? ''}</th>
+        {#each columns as c}
+          <td style="font-weight:600; text-align:{c.align ?? 'right'}">
+            {c.key in tableState.summaryValues ? tableState.summaryValues[c.key] : ''}
+          </td>
+        {/each}
+      </tr>
+    </tfoot>
+    {/if}
   </table>
   {/snippet}
 

@@ -387,6 +387,18 @@ export function IrisProTable<Row extends Record<string, unknown>>({
         )}
       </thead>
       {tbody}
+      {Object.keys(state.summaryValues).length > 0 && (
+        <tfoot>
+          <tr>
+            <th scope="row">{labels?.summaryLabel ?? ''}</th>
+            {columns.map((c) => (
+              <td key={c.key} style={{ fontWeight: 600, textAlign: c.align ?? 'right' }}>
+                {c.key in state.summaryValues ? state.summaryValues[c.key] : ''}
+              </td>
+            ))}
+          </tr>
+        </tfoot>
+      )}
     </table>
   )
 

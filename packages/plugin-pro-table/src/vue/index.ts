@@ -416,6 +416,24 @@ export const IrisProTable = defineComponent({
       const tableEl = h('table', [
         h('thead', [...headerRows, filterRow ? filterRow : null]),
         h('tbody', bodyRows),
+        ...(Object.keys(state.value.summaryValues).length > 0
+          ? [
+              h('tfoot', [
+                h('tr', [
+                  h('th', { scope: 'row' }, props.labels?.summaryLabel ?? ''),
+                  ...columns.map((c) =>
+                    h(
+                      'td',
+                      { key: c.key, style: { fontWeight: 600, textAlign: c.align ?? 'right' } },
+                      c.key in state.value.summaryValues
+                        ? String(state.value.summaryValues[c.key])
+                        : '',
+                    ),
+                  ),
+                ]),
+              ]),
+            ]
+          : []),
       ])
 
       return h('div', { 'data-iris-pro-table': '' }, [

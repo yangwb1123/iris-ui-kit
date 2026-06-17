@@ -396,6 +396,20 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
         </Show>
       </thead>
       {tbody()}
+      <Show when={Object.keys(state().summaryValues).length > 0}>
+        <tfoot>
+          <tr>
+            <th scope="row">{props.labels?.summaryLabel ?? ''}</th>
+            <For each={columns()}>
+              {(c) => (
+                <td style={{ 'font-weight': 600, 'text-align': c.align ?? 'right' }}>
+                  {c.key in state().summaryValues ? state().summaryValues[c.key] : ''}
+                </td>
+              )}
+            </For>
+          </tr>
+        </tfoot>
+      </Show>
     </table>
   )
 

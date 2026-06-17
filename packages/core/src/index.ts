@@ -175,13 +175,9 @@ export {
 } from './columns'
 export {
   createColumnState,
-  type ColumnStateController,
-  type ColumnStateConfig,
   type ColumnDef,
-  type ColumnStateItem,
-  type ColumnLayout,
+  type ColumnStateManager,
   type ColumnStateSnapshot,
-  type ColumnPin,
 } from './column-state'
 export {
   createCellEdit,

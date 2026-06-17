@@ -1984,8 +1984,20 @@
           "name": "readOnly",
           "type": "boolean",
           "optional": true,
-          "description": "Render read-only. Default `false`.",
+          "description": "Render read-only (non-editable). Default `false`.",
           "default": "false"
+        },
+        {
+          "name": "completions",
+          "type": "boolean",
+          "optional": true,
+          "description": "Enable autocompletion popup. Default `true`."
+        },
+        {
+          "name": "base",
+          "type": "string",
+          "optional": true,
+          "description": "Base text for inline diff view. Editor enters read-only diff mode."
         },
         {
           "name": "onChange",
@@ -5738,6 +5750,20 @@
           "optional": true,
           "description": "Shown when there are no notifications. Default `'No notifications'`.",
           "default": "No notifications"
+        },
+        {
+          "name": "dismissLabel",
+          "type": "string",
+          "optional": true,
+          "description": "Accessible label for the dismiss button on each notification. Default `'Dismiss'`.",
+          "default": "Dismiss"
+        },
+        {
+          "name": "unreadLabel",
+          "type": "string",
+          "optional": true,
+          "description": "Accessible label for the unread badge. `{n}` is replaced with the count. Default `'{n} unread'`.",
+          "default": "{n} unread"
         },
         {
           "name": "className",

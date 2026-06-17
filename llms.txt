@@ -110,7 +110,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: data, width?, height?, nice?, gap?, ariaLabel?, className?, style?
 - IrisCodeEditor [react/solid/svelte/vue] — via @iris-ui/plugin-editor (IrisProvider plugins)
   CodeMirror 6 code editor for React. Mounts the framework-agnostic {@link createEditor} handle and reconciles `value` / `language` / `readOnly`.
-  props: value?, defaultValue?, language?, readOnly?, onChange?, className?, style?
+  props: value?, defaultValue?, language?, readOnly?, completions?, base?, onChange?, className?, style?
   events: onChange
 - IrisDashboard [react/solid/svelte/vue] — via @iris-ui/plugin-dashboard (IrisProvider plugins)
   Render a CSS Grid dashboard from a declarative config (React). Each widget is positioned using `grid-column` and `grid-row`.
@@ -132,7 +132,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: content, className?
 - IrisNotificationCenter [react/solid/svelte/vue] — via @iris-ui/plugin-notifications (IrisProvider plugins)
   Notification-center panel for React: a header (title + unread badge + mark-all / clear) over a list of notifications (click to mark read, × to dismiss). All state lives in the {@link NotificationCenter}; the host wraps this in a popover / drawer behind a bell icon.
-  props: center, title?, emptyText?, className?
+  props: center, title?, emptyText?, dismissLabel?, unreadLabel?, className?
 - IrisProTable [react/solid/svelte/vue] — via @iris-ui/plugin-pro-table (IrisProvider plugins)
   vxe-table-style CRUD data table for React. All logic lives in the framework-agnostic {@link ProTableStore}; this component subscribes to it and renders header (sortable), selection, inline editors, rows, and a pager.
   props: store, className?, labels?, columnReorder?, virtualized?, rowHeight?, maxHeight?, columnVirtualized?

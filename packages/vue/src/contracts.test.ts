@@ -209,7 +209,7 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
           {
             default: () => [
               h(IrisDialogTrigger, { 'data-iris-dialog-trigger': '' }, () => 'Open'),
-              h(IrisDialogContent, { portalTarget: false }, () => h('p', 'Dialog body')),
+              h(IrisDialogContent, { teleport: false }, () => h('p', 'Dialog body')),
             ],
           },
         ),

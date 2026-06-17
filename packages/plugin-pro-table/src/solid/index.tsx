@@ -305,7 +305,9 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                       tabindex={isLeaf && cell.column.sortable ? 0 : undefined}
                       colSpan={cell.colSpan > 1 ? cell.colSpan : undefined}
                       rowSpan={!isLeaf && cell.rowSpan > 0 ? cell.rowSpan : undefined}
-                      style={{\n                        textAlign: cell.column.align,\n                        width:
+                      style={{
+                        textAlign: cell.column.align,
+                        width:
                           isLeaf && typeof colWidth === 'number'
                             ? `${colWidth}px`
                             : isLeaf

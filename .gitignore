@@ -27,3 +27,4 @@ build/
 # SolidStart / Vinxi generated build artifacts
 app.config.timestamp_*.js
 .solid/
+*.timestamp-*.mjs

@@ -36,6 +36,8 @@ const SOURCE_EXT = /\.(ts|tsx|svelte)$/
 const ALLOWED: Record<string, string> = {
   // No current exceptions. Example shape if ever needed:
   // 'packages/foo/src/bar.ts': 'legacy upstream typing — tracked in #123',
+  'packages/plugin-pro-table/src/solid/index.tsx':
+    'SolidJS style prop exceeds TS complexity limit (TS2590); cast is scoped inline',
 }
 
 const ESCAPE_HATCH = /\bas any\b|@ts-ignore|@ts-expect-error/

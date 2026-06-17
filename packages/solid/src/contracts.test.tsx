@@ -38,6 +38,7 @@ import {
   alertScenario,
   bannerScenario,
   splitButtonScenario,
+  formScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
@@ -78,6 +79,7 @@ import { IrisBanner } from './primitives/banner'
 import { IrisSplitButton } from './primitives/split-button'
 import { SelectContractHarness } from './SelectContractHarness'
 import { MenuContractHarness } from './MenuContractHarness'
+import { FormContractHarness } from './FormContractHarness'
 import { IrisToastViewport } from './primitives/toast'
 import { pushToast, clearToasts } from './primitives/toast/toastStore'
 import { useDataSource } from './data/useDataSource'
@@ -541,5 +543,10 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
       </IrisSplitButton>
     ))
     await runContract(splitButtonScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Form contract', async () => {
+    const { container } = render(() => <FormContractHarness />)
+    await runContract(formScenario, driverFor(container), expect)
   })
 })

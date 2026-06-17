@@ -38,6 +38,7 @@ import {
   menuScenario,
   alertScenario,
   bannerScenario,
+  formScenario,
 } from '@iris-ui/core/contracts'
 import {
   driverFor,
@@ -82,6 +83,7 @@ import { IrisBanner } from './primitives/banner/Banner'
 import { IrisSplitButton } from './primitives/split-button/SplitButton'
 import { SelectContractHarness } from './SelectContractHarness'
 import { MenuContractHarness } from './MenuContractHarness'
+import { FormContractHarness } from './FormContractHarness'
 import { IrisToastViewport } from './primitives/toast'
 import { pushToast, clearToasts } from './primitives/toast/store'
 
@@ -415,5 +417,12 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     await nextTick()
     await nextTick()
     await runContract(dataSourceScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared Form contract', async () => {
+    const el = makeHost()
+    mount(() => h(FormContractHarness), { attachTo: el })
+    await nextTick()
+    await runContract(formScenario, driverFor(el), expect)
   })
 })

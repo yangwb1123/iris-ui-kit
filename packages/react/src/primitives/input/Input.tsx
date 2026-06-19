@@ -25,6 +25,9 @@ export interface IrisInputProps extends Omit<
 /**
  * Single-line text input with size variants, an `invalid` state, and optional
  * `prefix`/`suffix` adornments. Forwards its ref to the native `<input>`.
+ *
+ * @example
+ *   <IrisInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
  */
 export const IrisInput = React.forwardRef<HTMLInputElement, IrisInputProps>(function IrisInput(
   {

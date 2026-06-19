@@ -33,7 +33,12 @@ export interface IrisAvatarProps extends Omit<React.HTMLAttributes<HTMLSpanEleme
   shape?: IrisAvatarShape
 }
 
-/** React port of {@link import('@iris-ui/vue').IrisAvatar}. */
+/**
+ * React port of {@link import('@iris-ui/vue').IrisAvatar}.
+ *
+ * @example
+ *   <IrisAvatar src="/me.png" name="Ada Lovelace" size="md" />
+ */
 export function IrisAvatar({
   src = '',
   alt = '',

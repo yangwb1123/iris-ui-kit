@@ -19,7 +19,7 @@ export interface IrisDrawerProps {
  * Slide-in overlay. Mirrors `IrisDialog`'s composition but anchors to a
  * screen edge with a transform-based open animation. Defaults to the right.
  *
- * ```tsx
+ * @example
  *   <IrisDrawer>
  *     <IrisDrawerTrigger>Open</IrisDrawerTrigger>
  *     <IrisDrawerContent>
@@ -28,7 +28,6 @@ export interface IrisDrawerProps {
  *       <IrisDrawerClose>Close</IrisDrawerClose>
  *     </IrisDrawerContent>
  *   </IrisDrawer>
- * ```
  */
 export function IrisDrawer({
   open: openProp,

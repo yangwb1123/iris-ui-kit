@@ -38,7 +38,14 @@ export interface IrisCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   children?: React.ReactNode
 }
 
-/** React port of {@link import('@iris-ui/vue').IrisCard}. */
+/**
+ * React port of {@link import('@iris-ui/vue').IrisCard}.
+ *
+ * @example
+ *   <IrisCard variant="elevated" header={<h3>Title</h3>}>
+ *     Card body content.
+ *   </IrisCard>
+ */
 export function IrisCard({
   variant = 'elevated',
   padding = 'md',

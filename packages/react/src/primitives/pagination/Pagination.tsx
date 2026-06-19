@@ -22,6 +22,9 @@ export interface IrisPaginationProps extends Omit<React.HTMLAttributes<HTMLEleme
 /**
  * Numeric page selector with prev/next + optional first/last buttons and
  * two-sided ellipsis. Stateless visual; the caller owns `value`.
+ *
+ * @example
+ *   <IrisPagination total={240} pageSize={20} value={page} onValueChange={setPage} />
  */
 export function IrisPagination({
   value: valueProp,

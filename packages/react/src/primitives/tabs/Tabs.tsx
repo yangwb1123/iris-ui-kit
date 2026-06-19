@@ -24,6 +24,16 @@ interface TriggerRegistration {
  * Tabs root. Provides context for value, orientation, lazy mounting, and the
  * ordered set of registered triggers so arrow-key navigation can move focus
  * deterministically (skipping disabled triggers).
+ *
+ * @example
+ *   <IrisTabs defaultValue="a">
+ *     <IrisTabsList>
+ *       <IrisTabsTrigger value="a">First</IrisTabsTrigger>
+ *       <IrisTabsTrigger value="b">Second</IrisTabsTrigger>
+ *     </IrisTabsList>
+ *     <IrisTabsContent value="a">Panel A</IrisTabsContent>
+ *     <IrisTabsContent value="b">Panel B</IrisTabsContent>
+ *   </IrisTabs>
  */
 export function IrisTabs({
   value: valueProp,

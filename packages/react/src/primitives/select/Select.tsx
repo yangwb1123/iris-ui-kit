@@ -48,6 +48,14 @@ export interface IrisSelectProps<T = unknown> {
  * Single-select dropdown. Composes Popover (positioning + dismiss) with an
  * inline listbox (keyboard nav + selection). Each option is `role="option"`
  * inside a `role="listbox"` ul.
+ *
+ * @example
+ *   <IrisSelect
+ *     items={[{ value: 'a', label: 'Apple' }, { value: 'b', label: 'Banana' }]}
+ *     value={fruit}
+ *     onValueChange={setFruit}
+ *     placeholder="Pick a fruit"
+ *   />
  */
 export function IrisSelect<T = unknown>({
   items,

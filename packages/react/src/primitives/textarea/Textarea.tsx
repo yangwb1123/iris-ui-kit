@@ -22,6 +22,9 @@ export interface IrisTextareaProps extends Omit<
 /**
  * Multi-line text input with size variants and an `invalid` state. Optionally
  * grows to fit its content when `autosize` is set, capped at `maxRows`.
+ *
+ * @example
+ *   <IrisTextarea value={bio} onChange={(e) => setBio(e.target.value)} autosize maxRows={6} />
  */
 export const IrisTextarea = React.forwardRef<HTMLTextAreaElement, IrisTextareaProps>(
   function IrisTextarea(

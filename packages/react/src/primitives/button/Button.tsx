@@ -87,6 +87,11 @@ export interface IrisButtonProps {
  *
  * Validates the React-readiness promise: any future primitive can be ported
  * by writing a thin .tsx wrapper around the same shared logic.
+ *
+ * @example
+ *   <IrisButton variant="solid" onClick={() => save()}>
+ *     Save
+ *   </IrisButton>
  */
 export function IrisButton({
   variant = 'solid',

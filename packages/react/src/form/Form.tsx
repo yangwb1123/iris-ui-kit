@@ -38,15 +38,14 @@ export interface IrisFormProps<V extends FormValues> extends Omit<
 
 /**
  * Provides the form store to descendant `useField` calls and wires the native
- * `<form>` submit to `handleSubmit` (with `preventDefault`). Composition:
+ * `<form>` submit to `handleSubmit` (with `preventDefault`).
  *
- * ```tsx
- * const f = useForm({ initialValues: { email: '' }, onSubmit })
- * <IrisForm form={f.form}>
- *   <IrisFormField label="Email"><EmailField /></IrisFormField>
- *   <IrisButton type="submit" disabled={f.isSubmitting}>Save</IrisButton>
- * </IrisForm>
- * ```
+ * @example
+ *   const f = useForm({ initialValues: { email: '' }, onSubmit })
+ *   <IrisForm form={f.form}>
+ *     <IrisFormField label="Email"><EmailField /></IrisFormField>
+ *     <IrisButton type="submit" disabled={f.isSubmitting}>Save</IrisButton>
+ *   </IrisForm>
  */
 export function IrisForm<V extends FormValues>({ form, children, ...rest }: IrisFormProps<V>) {
   const formRef = React.useRef<HTMLFormElement | null>(null)

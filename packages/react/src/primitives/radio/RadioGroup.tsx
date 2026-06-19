@@ -17,7 +17,15 @@ export interface IrisRadioGroupProps extends Omit<
   children?: React.ReactNode
 }
 
-/** React port of {@link import('@iris-ui/vue').IrisRadioGroup}. */
+/**
+ * React port of {@link import('@iris-ui/vue').IrisRadioGroup}.
+ *
+ * @example
+ *   <IrisRadioGroup value={plan} onChange={setPlan}>
+ *     <IrisRadio value="free">Free</IrisRadio>
+ *     <IrisRadio value="pro">Pro</IrisRadio>
+ *   </IrisRadioGroup>
+ */
 export function IrisRadioGroup({
   name,
   value,

@@ -28,6 +28,15 @@ export interface IrisDialogProps {
  *   - locks body scroll while open,
  *   - traps Tab focus inside the content,
  *   - renders a backdrop overlay that dismisses on click.
+ *
+ * @example
+ *   <IrisDialog>
+ *     <IrisDialogTrigger>Open</IrisDialogTrigger>
+ *     <IrisDialogContent>
+ *       <IrisDialogTitle>Confirm</IrisDialogTitle>
+ *       <IrisDialogClose>Done</IrisDialogClose>
+ *     </IrisDialogContent>
+ *   </IrisDialog>
  */
 export function IrisDialog({
   open: openProp,

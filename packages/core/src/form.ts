@@ -46,8 +46,8 @@ export type ArrayKey<V> = { [K in Key<V>]: V[K] extends readonly unknown[] ? K :
 /** The element type of an array field value. */
 export type ArrayElement<T> = T extends readonly (infer U)[] ? U : never
 
-export type FieldErrors<V extends FormValues> = Partial<Record<Key<V>, string>>
-export type FieldFlags<V extends FormValues> = Partial<Record<Key<V>, boolean>>
+export type FieldErrors<V extends FormValues> = Partial<Record<Key<V> | (string & {}), string>>
+export type FieldFlags<V extends FormValues> = Partial<Record<Key<V> | (string & {}), boolean>>
 
 /** Returns an error message, or `undefined` when the value is valid. */
 export type Validator<V extends FormValues> = (

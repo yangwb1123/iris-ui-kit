@@ -29,6 +29,14 @@ export {
   type AutoDismissEvent,
 } from './auto-dismiss'
 export {
+  createLongPress,
+  type LongPress,
+  type LongPressOptions,
+  type LongPressMachine,
+  type LongPressState,
+  type LongPressEvent,
+} from './long-press'
+export {
   createFloatingMachine,
   type FloatingMachine,
   type FloatingState,

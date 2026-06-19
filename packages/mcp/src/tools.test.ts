@@ -247,6 +247,62 @@ describe('generateView (wired composed view)', () => {
     expect(view).toContain('v-model:checked="checked"')
   })
 
+  it('wires a Tree nodes stub bound to the manifest `nodes` prop', () => {
+    const view = generateView(manifest, { framework: 'react', components: ['IrisTree'] })!
+    // A deterministic IrisTreeNode[] stub (id + label) bound to `nodes`.
+    expect(view).toContain('const nodes = [')
+    expect(view).toContain("id: 'root'")
+    expect(view).toContain("label: 'Root'")
+    expect(view).toContain('nodes={nodes}')
+    // Tree is selectable → its `selected` controlled pair still gets real state,
+    // not a placeholder fill.
+    expect(view).not.toContain('/* IrisTreeNode[] */')
+  })
+
+  it('uses the Vue `:nodes` binding for a Tree stub', () => {
+    const view = generateView(manifest, { framework: 'vue', components: ['IrisTree'] })!
+    expect(view).toContain('const nodes = [')
+    expect(view).toContain(':nodes="nodes"')
+  })
+
+  it('wires a Select items stub bound to the manifest `items` prop (+ value state)', () => {
+    const view = generateView(manifest, { framework: 'react', components: ['IrisSelect'] })!
+    // A deterministic IrisSelectItem[] stub (value + label) bound to `items` —
+    // NOT the old placeholder fill for the required `items` prop.
+    expect(view).toContain('const items = [')
+    expect(view).toContain("{ value: 'a', label: 'Option A' }")
+    expect(view).toContain('items={items}')
+    expect(view).not.toContain('/* IrisSelectItem')
+    // The controlled `value` pair is still wired with real state.
+    expect(view).toMatch(/const \[value, setValue\] = React\.useState\(/)
+    expect(view).toContain('value={value} onValueChange={setValue}')
+  })
+
+  it('seeds a Calendar `value` with a concrete Date through the idiomatic binding', () => {
+    const react = generateView(manifest, { framework: 'react', components: ['IrisCalendar'] })!
+    // Calendar's value is a controlled pair: seeded with a fixed Date, bound the
+    // normal way (no duplicate / no @valueChange hand-binding).
+    expect(react).toMatch(/const \[value, setValue\] = React\.useState\(new Date\('2026-01-01'\)\)/)
+    expect(react).toContain('value={value} onValueChange={setValue}')
+
+    const vue = generateView(manifest, { framework: 'vue', components: ['IrisCalendar'] })!
+    expect(vue).toContain("const value = ref(new Date('2026-01-01'))")
+    expect(vue).toContain('v-model="value"')
+  })
+
+  it('disambiguates colliding state locals when composing two value-controlled components', () => {
+    // Select and Calendar both control `value` → the second gets `value2` so the
+    // generated view compiles (no re-declared const).
+    const view = generateView(manifest, {
+      framework: 'react',
+      components: ['IrisSelect', 'IrisCalendar'],
+    })!
+    expect(view).toContain('const [value, setValue] = React.useState(')
+    expect(view).toContain('const [value2, setValue2] = React.useState(')
+    expect(view).toContain('value={value} onValueChange={setValue}')
+    expect(view).toContain('value={value2} onValueChange={setValue2}')
+  })
+
   it('returns null for empty input or an unknown/unsupported component', () => {
     expect(generateView(manifest, { framework: 'react', components: [] })).toBeNull()
     expect(
@@ -257,6 +313,8 @@ describe('generateView (wired composed view)', () => {
   it('is deterministic (same input → same output)', () => {
     const req = { framework: 'react' as const, components: ['IrisProTable', 'IrisSelect'] }
     expect(generateView(manifest, req)).toBe(generateView(manifest, req))
+    const data = { framework: 'vue' as const, components: ['IrisTree', 'IrisCalendar'] }
+    expect(generateView(manifest, data)).toBe(generateView(manifest, data))
   })
 })
 

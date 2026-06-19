@@ -1,4 +1,5 @@
 import type { Framework, IrisManifest, ManifestComponent, ManifestProp } from '@iris-ui/manifest'
+import { dataStub, dataWiringKind } from './codegen-stubs'
 
 /**
  * Deterministic, template-driven codegen over the typed {@link IrisManifest}.
@@ -101,19 +102,46 @@ export function detectControlledPair(component: ManifestComponent): ControlledPa
   return null
 }
 
+/**
+ * Return `pair` with a `local` (state var) name unique within `used`, recording
+ * the chosen name. Composing several `value`-controlled components would
+ * otherwise re-declare `value`; collisions get a numeric suffix (`value2`, …).
+ * Mutates `used`. A null pair (or a stub-owned binding) is passed through.
+ */
+function uniqueLocal(pair: ControlledPair | null, used: Set<string>): ControlledPair | null {
+  if (!pair) return null
+  if (!used.has(pair.local)) {
+    used.add(pair.local)
+    return pair
+  }
+  let i = 2
+  while (used.has(`${pair.local}${i}`)) i += 1
+  const local = `${pair.local}${i}`
+  used.add(local)
+  return { ...pair, local }
+}
+
 /* -------------------------------------------------------------------------- */
 /* Required non-controlled prop fill                                          */
 /* -------------------------------------------------------------------------- */
 
-/** Required props excluding the controlled pair (those are bound to state). */
+/**
+ * Required props excluding the controlled pair (bound to state) and any props a
+ * data stub already owns (e.g. a Select's `items`, a Tree's `nodes`) — those are
+ * bound from the stub, so we must not also emit a placeholder fill for them.
+ */
 function otherRequiredProps(
   component: ManifestComponent,
   pair: ControlledPair | null,
+  owned: ReadonlySet<string> = EMPTY_OWNED,
 ): ManifestProp[] {
   return (component.props ?? []).filter(
-    (p) => !p.optional && p.name !== pair?.value && p.name !== pair?.handler,
+    (p) => !p.optional && p.name !== pair?.value && p.name !== pair?.handler && !owned.has(p.name),
   )
 }
+
+/** Shared empty owned-prop set (no allocation on the common no-stub path). */
+const EMPTY_OWNED: ReadonlySet<string> = new Set()
 
 /** The literal to put for a required non-controlled prop: its default else a typed placeholder. */
 function fillValue(prop: ManifestProp): { literal: string; isPlaceholder: boolean } {
@@ -127,9 +155,14 @@ function fillValue(prop: ManifestProp): { literal: string; isPlaceholder: boolea
 /* Per-framework state scaffolding                                            */
 /* -------------------------------------------------------------------------- */
 
-/** The state-declaration line for a controlled pair in `framework`. */
-function stateDecl(pair: ControlledPair, framework: Framework): string {
-  const { local, default: seed } = pair
+/**
+ * The state-declaration line for a controlled pair in `framework`. A
+ * `seedOverride` (e.g. a data stub's concrete `new Date(...)`) takes precedence
+ * over the pair's generic typed default.
+ */
+function stateDecl(pair: ControlledPair, framework: Framework, seedOverride?: string): string {
+  const { local } = pair
+  const seed = seedOverride ?? pair.default
   const setter = `set${local[0]!.toUpperCase()}${local.slice(1)}`
   switch (framework) {
     case 'react':
@@ -196,60 +229,28 @@ function fillAttr(prop: ManifestProp, framework: Framework): string {
 /* Single-component wired snippet                                             */
 /* -------------------------------------------------------------------------- */
 
-/** The element/tag for a wired component (controlled binding + required fills), no import. */
+/**
+ * The element/tag for a wired component, no import. Composes, in order:
+ *  - `dataBind`: a leading attribute string from a data stub (e.g. `nodes={…}`),
+ *  - the controlled binding (when `pair` is present and the stub doesn't own it),
+ *  - placeholder fills for the remaining required props (minus stub-owned ones).
+ */
 export function wiredTag(
   component: ManifestComponent,
   framework: Framework,
   pair: ControlledPair | null,
+  dataBind = '',
+  owned: ReadonlySet<string> = EMPTY_OWNED,
 ): string {
   const { name } = component
   const attrs: string[] = []
-  if (pair) attrs.push(controlledBinding(pair, framework))
-  for (const p of otherRequiredProps(component, pair)) attrs.push(fillAttr(p, framework))
+  if (dataBind) attrs.push(dataBind)
+  // Skip the controlled binding when the stub already owns its value prop.
+  if (pair && !owned.has(pair.value)) attrs.push(controlledBinding(pair, framework))
+  for (const p of otherRequiredProps(component, pair, owned)) attrs.push(fillAttr(p, framework))
   const attrStr = attrs.length ? ' ' + attrs.join(' ') : ''
   if (framework === 'vue') return `<${name}${attrStr} />`
   return `<${name}${attrStr}></${name}>`
-}
-
-/* -------------------------------------------------------------------------- */
-/* Data-wiring stub (table / form data components)                           */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Whether `component` is a data component we know how to wire to a deterministic
- * stub (a table store / a form schema). These map to concrete library APIs.
- */
-function dataWiringKind(component: ManifestComponent): 'table' | 'form' | null {
-  if (component.name === 'IrisProTable') return 'table'
-  if (component.name === 'IrisTable') return 'table'
-  if (component.name === 'IrisFormBuilder') return 'form'
-  return null
-}
-
-/** A deterministic data stub + the prop binding for a table component. */
-function tableStub(framework: Framework): {
-  setup: string[]
-  bind: string
-  extraImports: string[]
-} {
-  // A runnable-against-stub table: in-memory rows + columns fed through the real
-  // engine. ProTable consumes a `store`; we build it with createProTableStore.
-  const rows = `const rows = [\n  { id: 1, name: 'Ada', age: 36 },\n  { id: 2, name: 'Linus', age: 54 },\n]`
-  const columns = `const columns = [\n  { key: 'name', title: 'Name', sortable: true },\n  { key: 'age', title: 'Age', sortable: true },\n]`
-  const store = `const store = createProTableStore({ data: rows, columns, rowKey: 'id' })`
-  const bind = framework === 'vue' ? ':store="store"' : 'store={store}'
-  return {
-    setup: [rows, columns, store],
-    bind,
-    extraImports: [`import { createProTableStore } from '@iris-ui/plugin-pro-table/core'`],
-  }
-}
-
-/** A deterministic data stub + the prop binding for a form-builder component. */
-function formStub(framework: Framework): { setup: string[]; bind: string; extraImports: string[] } {
-  const schema = `const schema = {\n  fields: [\n    { name: 'email', type: 'text', required: true },\n    { name: 'role', type: 'select', options: [{ label: 'Admin', value: 'a' }] },\n  ],\n  submitLabel: 'Save',\n}`
-  const bind = framework === 'vue' ? ':schema="schema"' : 'schema={schema}'
-  return { setup: [schema], bind, extraImports: [] }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -297,23 +298,30 @@ export function generateView(manifest: IrisManifest, req: GenerateViewRequest): 
   const setup: string[] = []
   const extraImports: string[] = []
   const tagByName = new Map<string, string>()
+  // Local state names already emitted — composing two `value`-controlled
+  // components (e.g. Select + Calendar) must not declare `value` twice.
+  const usedLocals = new Set<string>()
 
   for (const name of components) {
     const component = manifest.components.find((c) => c.name === name)!
     const kind = dataWiringKind(component)
-    if (kind) {
-      const stub = kind === 'table' ? tableStub(framework) : formStub(framework)
+    // A data stub (table/form/tree/select/calendar) supplies the data prop(s) it
+    // owns; a controlled pair the stub does NOT own still gets real state. The
+    // two are merged into one wired tag so e.g. a Select shows both its `items`
+    // stub AND `value`/`onValueChange` state.
+    const stub = kind ? dataStub(kind, framework) : null
+    const owned: ReadonlySet<string> = stub ? new Set(stub.owns) : EMPTY_OWNED
+    if (stub) {
       setup.push(...stub.setup)
       extraImports.push(...stub.extraImports)
-      tagByName.set(
-        name,
-        framework === 'vue' ? `<${name} ${stub.bind} />` : `<${name} ${stub.bind}></${name}>`,
-      )
-      continue
     }
-    const pair = detectControlledPair(component)
-    if (pair) setup.push(stateDecl(pair, framework))
-    tagByName.set(name, wiredTag(component, framework, pair))
+    // A controlled pair gets real state only when the stub doesn't own its value
+    // prop; uniquify the local name just for the pairs we actually emit.
+    const detected = detectControlledPair(component)
+    const emitState = !!detected && !owned.has(detected.value)
+    const pair = emitState ? uniqueLocal(detected, usedLocals) : detected
+    if (emitState) setup.push(stateDecl(pair!, framework, stub?.seedOverride))
+    tagByName.set(name, wiredTag(component, framework, pair, stub?.bind ?? '', owned))
   }
 
   // Assemble imports: framework state import (if any state was generated) +

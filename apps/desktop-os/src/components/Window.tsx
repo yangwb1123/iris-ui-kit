@@ -1,8 +1,9 @@
 import * as React from 'react'
 import { IrisMovable, IrisResizable } from '@iris-ui/react'
-import { type DesktopWindow } from '@iris-ui/core/window'
+import { type DesktopWindow, type SnapZone } from '@iris-ui/core/window'
 import { getApp } from '../apps'
-import { useOs, useWm } from '../shell'
+import { useOs, useWm, useWmState } from '../shell'
+import { snapHintFor } from '../depth'
 
 /** Window control buttons (minimize / maximize-restore / close), placement + style per OS. */
 function Controls({ window: w }: { window: DesktopWindow }) {
@@ -132,11 +133,23 @@ function Body({ window: w }: { window: DesktopWindow }) {
   )
 }
 
+export interface WindowProps {
+  window: DesktopWindow
+  /**
+   * Report the live drag-to-edge snap zone (or `null` to clear) so the Desktop
+   * can render the snap preview. Omitted in non-snapping contexts (e.g. tests).
+   */
+  onSnapHint?: (zone: SnapZone | null) => void
+}
+
 /** The window frame, wired to the core window manager + IrisMovable/IrisResizable. */
-export function Window({ window: w }: { window: DesktopWindow }) {
+export function Window({ window: w, onSnapHint }: WindowProps) {
   const wm = useWm()
+  const { workArea } = useWmState()
   const rect = wm.displayRect(w)
   const focused = wm.isFocused(w.id)
+  // The snap zone hinted by the IN-FLIGHT drag (mirrored to Desktop via onSnapHint).
+  const dragZoneRef = React.useRef<SnapZone | null>(null)
   if (w.state === 'minimized') return null
 
   const frame = (
@@ -184,7 +197,21 @@ export function Window({ window: w }: { window: DesktopWindow }) {
   return (
     <IrisMovable
       position={{ x: rect.x, y: rect.y }}
-      onPositionChange={(p) => wm.move(w.id, p.x, p.y)}
+      onPositionChange={(p) => {
+        wm.move(w.id, p.x, p.y)
+        // Detect a snap zone from the (clamped) top-left and surface it to Desktop.
+        const zone = snapHintFor(p, workArea)
+        if (zone !== dragZoneRef.current) {
+          dragZoneRef.current = zone
+          onSnapHint?.(zone)
+        }
+      }}
+      onDragEnd={() => {
+        const zone = dragZoneRef.current
+        dragZoneRef.current = null
+        onSnapHint?.(null)
+        if (zone) wm.snap(w.id, zone)
+      }}
       byHandle
       style={{ zIndex: w.z }}
     >

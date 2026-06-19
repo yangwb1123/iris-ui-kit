@@ -1,9 +1,14 @@
+import * as React from 'react'
 import { getApp } from '../apps'
 import { useWm, useWmState } from '../shell'
 
 const PINNED = ['about', 'files', 'notepad', 'showcase', 'settings']
 
-/** macOS dock: centered translucent pill, pinned + running apps, running dots. */
+const BASE = 46 // resting icon box
+const MAX_BOOST = 26 // extra px added to the icon under the cursor
+const RADIUS = 110 // how far (px) the magnification reaches along the dock
+
+/** macOS dock: centered translucent pill, pinned + running apps, running dots, hover magnification. */
 export function Dock({ onToggleLauncher }: { onToggleLauncher: () => void }) {
   const wm = useWm()
   const state = useWmState()
@@ -12,6 +17,22 @@ export function Dock({ onToggleLauncher }: { onToggleLauncher: () => void }) {
   const seen = new Set<string>()
   const items = ids.filter((id) => (seen.has(id) ? false : (seen.add(id), true)))
 
+  // Pointer X relative to the dock pill; null when the cursor isn't over it.
+  const [pointerX, setPointerX] = React.useState<number | null>(null)
+  // Icons that should bounce (keyed by appId) right after launch.
+  const [bouncing, setBouncing] = React.useState<Set<string>>(new Set())
+
+  const bounce = (appId: string) => {
+    setBouncing((prev) => new Set(prev).add(appId))
+    window.setTimeout(() => {
+      setBouncing((prev) => {
+        const next = new Set(prev)
+        next.delete(appId)
+        return next
+      })
+    }, 560)
+  }
+
   const activate = (appId: string) => {
     const win = state.windows.find((w) => w.appId === appId)
     if (win) {
@@ -19,9 +40,32 @@ export function Dock({ onToggleLauncher }: { onToggleLauncher: () => void }) {
       else wm.focus(win.id)
     } else {
       const app = getApp(appId)
-      if (app) wm.open({ appId, title: app.name, rect: app.defaultSize })
+      if (app) {
+        wm.open({ appId, title: app.name, rect: app.defaultSize })
+        bounce(appId)
+      }
     }
   }
+
+  /** Magnification scale (1 → 1+boost) for an icon centered at `center` px. */
+  const scaleFor = (center: number): number => {
+    if (pointerX == null) return 1
+    const dist = Math.abs(pointerX - center)
+    if (dist >= RADIUS) return 1
+    // Cosine falloff: smooth, peaks at the cursor, settles to 1 at the radius.
+    const t = (Math.cos((dist / RADIUS) * Math.PI) + 1) / 2
+    return 1 + (MAX_BOOST / BASE) * t
+  }
+
+  // Resolve each item's running center so magnification is symmetric around the cursor.
+  let cursor = 0
+  const GAP = 6
+  const PAD = 10
+  const centers = items.map(() => {
+    const c = PAD + cursor + BASE / 2
+    cursor += BASE + GAP
+    return c
+  })
 
   return (
     <div
@@ -38,12 +82,17 @@ export function Dock({ onToggleLauncher }: { onToggleLauncher: () => void }) {
     >
       <div
         className="dock"
+        onPointerMove={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect()
+          setPointerX(e.clientX - rect.left)
+        }}
+        onPointerLeave={() => setPointerX(null)}
         style={{
           pointerEvents: 'auto',
           display: 'flex',
           alignItems: 'flex-end',
-          gap: 6,
-          padding: '8px 10px',
+          gap: GAP,
+          padding: `8px ${PAD}px`,
           background: 'var(--os-bar-bg)',
           backdropFilter: 'var(--os-blur)',
           WebkitBackdropFilter: 'var(--os-blur)',
@@ -52,9 +101,11 @@ export function Dock({ onToggleLauncher }: { onToggleLauncher: () => void }) {
           boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
         }}
       >
-        {items.map((id) => {
+        {items.map((id, i) => {
           const app = getApp(id)
           if (!app) return null
+          const scale = scaleFor(centers[i] ?? 0)
+          const isBouncing = bouncing.has(id)
           return (
             <button
               key={id}
@@ -64,17 +115,26 @@ export function Dock({ onToggleLauncher }: { onToggleLauncher: () => void }) {
               onClick={() => activate(id)}
               style={{
                 position: 'relative',
-                width: 46,
-                height: 46,
+                width: BASE,
+                height: BASE,
                 border: 'none',
                 background: 'transparent',
                 cursor: 'pointer',
                 fontSize: 30,
                 lineHeight: 1,
                 padding: 0,
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'center',
+                transition: 'transform 140ms cubic-bezier(0.25, 1, 0.5, 1)',
+                transformOrigin: 'bottom center',
+                transform: isBouncing
+                  ? 'translateY(-22px) scale(1.08)'
+                  : `scale(${scale.toFixed(3)})`,
+                willChange: 'transform',
               }}
             >
-              {app.icon}
+              <span style={{ display: 'block' }}>{app.icon}</span>
               {running.has(id) && (
                 <span
                   style={{
@@ -107,14 +167,18 @@ export function Dock({ onToggleLauncher }: { onToggleLauncher: () => void }) {
           className="dock-item"
           onClick={onToggleLauncher}
           style={{
-            width: 46,
-            height: 46,
+            width: BASE,
+            height: BASE,
             border: 'none',
             background: 'transparent',
             cursor: 'pointer',
             fontSize: 28,
             padding: 0,
+            transition: 'transform 140ms cubic-bezier(0.25, 1, 0.5, 1)',
+            transformOrigin: 'bottom center',
           }}
+          onPointerEnter={(e) => (e.currentTarget.style.transform = 'scale(1.35)')}
+          onPointerLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
         >
           🚀
         </button>

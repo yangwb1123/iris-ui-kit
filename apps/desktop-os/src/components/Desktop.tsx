@@ -1,7 +1,9 @@
 import * as React from 'react'
+import { type SnapZone } from '@iris-ui/core/window'
 import { APPS } from '../apps'
 import { useWm, useWmState } from '../shell'
 import { Window } from './Window'
+import { SnapPreview } from './SnapPreview'
 import { TopBar, BottomBar, Launcher } from './Bars'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
@@ -11,11 +13,44 @@ export function Desktop() {
   const wm = useWm()
   const state = useWmState()
   const [launcherOpen, setLauncherOpen] = React.useState(false)
+  // Live drag-to-edge snap zone (lifted from Window) → drives the snap preview.
+  const [snapHint, setSnapHint] = React.useState<SnapZone | null>(null)
 
   const open = (appId: string) => {
     const app = APPS.find((a) => a.id === appId)
     if (app) wm.open({ appId: app.id, title: app.name, rect: app.defaultSize })
   }
+
+  // Desktop keyboard shortcuts: Alt+Tab cycles focus, Meta+Space toggles the
+  // launcher, Escape closes it. Registered once; cleaned up on unmount.
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === 'Tab') {
+        e.preventDefault()
+        // Next non-minimized window by ascending z-order, wrapping around.
+        const cyclable = wm.ordered().filter((w) => w.state !== 'minimized')
+        if (cyclable.length === 0) return
+        const focusedId = wm.getState().focusedId
+        const idx = cyclable.findIndex((w) => w.id === focusedId)
+        const next = cyclable[(idx + 1) % cyclable.length]
+        wm.focus(next.id)
+        return
+      }
+      if (e.metaKey && e.code === 'Space') {
+        e.preventDefault()
+        setLauncherOpen((o) => !o)
+        return
+      }
+      if (e.key === 'Escape') {
+        setLauncherOpen((o) => {
+          if (o) e.preventDefault()
+          return false
+        })
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [wm])
 
   return (
     <div
@@ -53,9 +88,12 @@ export function Desktop() {
         })}
       </div>
 
+      {/* Drag-to-edge snap preview — behind windows (z 0), above the wallpaper */}
+      <SnapPreview zone={snapHint} />
+
       {/* Windows (painted in z-order) */}
       {wm.ordered().map((w) => (
-        <Window key={w.id} window={w} />
+        <Window key={w.id} window={w} onSnapHint={setSnapHint} />
       ))}
 
       {/* Empty-desktop hint when nothing is open */}

@@ -2,6 +2,10 @@ import * as React from 'react'
 import { IrisButton, IrisBadge, IrisInput } from '@iris-ui/react'
 import { OS_ORDER, CHROMES } from './os'
 import { useOs, useWm, useWmState } from './shell'
+import { DataApp } from './appviews/Data'
+import { CalculatorApp } from './appviews/Calculator'
+import { TerminalApp } from './appviews/Terminal'
+import { PhotosApp } from './appviews/Photos'
 
 export interface AppDef {
   id: string
@@ -266,6 +270,36 @@ export const APPS: AppDef[] = [
     icon: '📈',
     defaultSize: { width: 420, height: 340 },
     render: () => <TaskManagerApp />,
+  },
+  {
+    id: 'data',
+    name: 'Data',
+    icon: '📊',
+    defaultSize: { width: 560, height: 420 },
+    render: () => <DataApp />,
+  },
+  {
+    id: 'calculator',
+    name: 'Calculator',
+    icon: '🧮',
+    defaultSize: { width: 300, height: 440 },
+    render: () => <CalculatorApp />,
+  },
+  {
+    id: 'terminal',
+    name: 'Terminal',
+    icon: '⌨️',
+    defaultSize: { width: 520, height: 360 },
+    // `APPS` is fully initialized by the time any window renders, so reading it
+    // here (rather than at module top-level) is safe and keeps `apps` live.
+    render: () => <TerminalApp appNames={APPS.map((a) => a.name)} />,
+  },
+  {
+    id: 'photos',
+    name: 'Photos',
+    icon: '🖼️',
+    defaultSize: { width: 520, height: 420 },
+    render: () => <PhotosApp />,
   },
 ]
 

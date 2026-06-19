@@ -2,7 +2,7 @@ import * as React from 'react'
 import { type WindowManager, type WindowManagerState } from '@iris-ui/core/window'
 import { type UserProfile, type ProfileData } from '@iris-ui/core/profile'
 import { type OsChrome, type OsId } from './os'
-import { type AppManifest, BUILTIN_APPS, getManifest } from './catalog'
+import { type AppManifest, BUILTIN_APPS, getManifest, registerCustomApps } from './catalog'
 
 export type Wm = WindowManager
 
@@ -55,19 +55,32 @@ export function useProfileState(): ProfileData {
   )
 }
 
+/** Raw user-added web-app manifests from the profile (`customApps` pref). */
+function readCustomApps(state: ProfileData): AppManifest[] {
+  return (state.prefs.customApps as AppManifest[] | undefined) ?? []
+}
+
 /**
- * The apps to surface in launchers / desktop: every built-in app plus the
- * installed (non-builtin) catalog entries from the profile. Re-derives whenever
- * the profile's installed list changes.
+ * The apps to surface in launchers / desktop: every built-in app, plus the
+ * installed (non-builtin) catalog entries from the profile, plus all user-added
+ * web apps (`customApps`) so they appear in every launcher. Re-derives whenever
+ * the profile's installed list or custom apps change.
+ *
+ * Custom apps live in the profile (not the static catalog), so this also mirrors
+ * them into the catalog's lookup registry — every shell component resolves apps
+ * by id via `getManifest`, and that must find user-added apps too.
  */
 export function useApps(): AppManifest[] {
   const state = useProfileState()
+  const customApps = readCustomApps(state)
+  // Keep `getManifest` able to resolve user-added apps (windows, icons, taskbar).
+  registerCustomApps(customApps)
   return React.useMemo(() => {
     const installed = state.installed
       .map((a) => getManifest(a.appId))
-      .filter((m): m is AppManifest => Boolean(m) && !m!.builtin)
-    return [...BUILTIN_APPS, ...installed]
-  }, [state.installed])
+      .filter((m): m is AppManifest => Boolean(m) && !m!.builtin && !m!.custom)
+    return [...BUILTIN_APPS, ...installed, ...customApps]
+  }, [state.installed, state.prefs.customApps])
 }
 
 /**

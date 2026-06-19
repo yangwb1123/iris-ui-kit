@@ -2,21 +2,49 @@ import * as React from 'react'
 import { type SnapZone } from '@iris-ui/core/window'
 import { OS_ORDER, CHROMES } from '../os'
 import { useApps, useLaunchApp, useOs, useWm, useWmState } from '../shell'
+import { CommandsProvider, useRegisterCommands } from '../commands-context'
+import { useDesktopCommands } from '../deskCommands'
 import { Window } from './Window'
 import { SnapPreview } from './SnapPreview'
+import { CommandPalette } from './CommandPalette'
 import { TopBar, BottomBar, Launcher } from './Bars'
 import { ContextMenu, type MenuItem } from './ContextMenu'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
 const SHORTCUTS = ['about', 'appstore', 'showcase', 'settings']
 
+/**
+ * Registers the live desktop commands into the registry. A standalone component
+ * so it runs INSIDE both the WM/OS providers (for the source state) and the
+ * `CommandsProvider` (the registration target). Renders nothing.
+ */
+function CommandRegistrar() {
+  const commands = useDesktopCommands()
+  // `commands` is memoized in the hook, so its identity IS the change signal:
+  // re-register only when the live command set actually changes.
+  useRegisterCommands(commands, [commands])
+  return null
+}
+
+/** The desktop, scoped to the command registry so ⌘K can search + run actions. */
 export function Desktop() {
+  return (
+    <CommandsProvider>
+      <CommandRegistrar />
+      <DesktopInner />
+    </CommandsProvider>
+  )
+}
+
+function DesktopInner() {
   const wm = useWm()
   const state = useWmState()
   const { setOs } = useOs()
   const apps = useApps()
   const open = useLaunchApp()
   const [launcherOpen, setLauncherOpen] = React.useState(false)
+  // ⌘K / Ctrl+K command palette visibility.
+  const [paletteOpen, setPaletteOpen] = React.useState(false)
   // Live drag-to-edge snap zone (lifted from Window) → drives the snap preview.
   const [snapHint, setSnapHint] = React.useState<SnapZone | null>(null)
   // Right-click desktop menu anchor (null = closed).
@@ -35,6 +63,12 @@ export function Desktop() {
   // launcher, Escape closes it. Registered once; cleaned up on unmount.
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // ⌘K / Ctrl+K toggles the command palette (checked first so it wins).
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        setPaletteOpen((o) => !o)
+        return
+      }
       if (e.altKey && e.key === 'Tab') {
         e.preventDefault()
         // Next non-minimized window by ascending z-order, wrapping around.
@@ -53,6 +87,10 @@ export function Desktop() {
       }
       if (e.key === 'Escape') {
         setLauncherOpen((o) => {
+          if (o) e.preventDefault()
+          return false
+        })
+        setPaletteOpen((o) => {
           if (o) e.preventDefault()
           return false
         })
@@ -136,6 +174,7 @@ export function Desktop() {
       )}
 
       <Launcher open={launcherOpen} onClose={() => setLauncherOpen(false)} />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <BottomBar launcherOpen={launcherOpen} onToggleLauncher={() => setLauncherOpen((o) => !o)} />
 
       {menu && (

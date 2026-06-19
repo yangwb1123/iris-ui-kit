@@ -1,7 +1,9 @@
 import * as React from 'react'
 import { IrisButton, IrisBadge, IrisInput } from '@iris-ui/react'
 import { OS_ORDER, CHROMES } from './os'
-import { useOs, useWm, useWmState } from './shell'
+import { useOs, useWm, useWmState, useApps } from './shell'
+import { type AppManifest } from './catalog'
+import { PERMISSION_META, useGrants } from './permissions'
 import { TerminalApp } from './appviews/Terminal'
 
 /**
@@ -136,10 +138,10 @@ export function ShowcaseView() {
   )
 }
 
-export function SettingsView() {
+function AppearanceSettings() {
   const { chrome, setOs } = useOs()
   return (
-    <Pane>
+    <>
       <h3 style={{ margin: 0 }}>Appearance</h3>
       <p style={{ margin: 0, opacity: 0.7 }}>
         Switch the desktop skin. The window manager, taskbar, and every open window stay exactly the
@@ -196,6 +198,106 @@ export function SettingsView() {
           )
         })}
       </div>
+    </>
+  )
+}
+
+/** One app's permission grant/revoke toggles in the privacy panel. */
+function AppPermissionRow({ app }: { app: AppManifest }) {
+  const { isGranted, grant, revoke } = useGrants()
+  const perms = app.permissions ?? []
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gap: 8,
+        padding: 12,
+        borderRadius: 10,
+        border: '1px solid rgba(127,127,127,0.25)',
+        background: 'color-mix(in srgb, var(--os-window-fg) 4%, transparent)',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 18 }}>{app.icon}</span>
+        <strong style={{ fontSize: 13, flex: 1 }}>{app.name}</strong>
+        {app.custom && (
+          <IrisBadge tone="primary" variant="subtle" size="sm">
+            Yours
+          </IrisBadge>
+        )}
+      </div>
+      {perms.length === 0 ? (
+        <span style={{ fontSize: 12, opacity: 0.6 }}>No permissions requested.</span>
+      ) : (
+        <div style={{ display: 'grid', gap: 6 }}>
+          {perms.map((perm) => {
+            const meta = PERMISSION_META[perm]
+            const granted = isGranted(app.id, perm)
+            return (
+              <div
+                key={perm}
+                style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+                title={meta.description}
+              >
+                <span style={{ fontSize: 15 }} aria-hidden>
+                  {meta.icon}
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <strong style={{ fontSize: 12 }}>{meta.label}</strong>
+                  <br />
+                  <span style={{ fontSize: 11, opacity: 0.6 }}>{meta.description}</span>
+                </span>
+                {granted ? (
+                  <IrisBadge tone="success" variant="subtle" size="sm">
+                    Granted
+                  </IrisBadge>
+                ) : (
+                  <IrisBadge tone="neutral" variant="subtle" size="sm">
+                    Blocked
+                  </IrisBadge>
+                )}
+                <IrisButton
+                  variant={granted ? 'outline' : 'solid'}
+                  size="sm"
+                  onClick={() => (granted ? revoke(app.id, perm) : grant(app.id, perm))}
+                >
+                  {granted ? 'Revoke' : 'Grant'}
+                </IrisButton>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PrivacySettings() {
+  const apps = useApps()
+  // Built-ins ship granted-by-default conceptually, but exposing every app keeps
+  // the model honest + lets users tighten even built-ins. Custom + installed too.
+  return (
+    <>
+      <h3 style={{ margin: 0 }}>Privacy &amp; permissions</h3>
+      <p style={{ margin: 0, opacity: 0.7 }}>
+        Each app declares the capabilities it wants. Grant or revoke them per app — your choices
+        persist in your profile. (Enforcement is advisory in this demo; the transparent contract is
+        the point.)
+      </p>
+      <div style={{ display: 'grid', gap: 10 }}>
+        {apps.map((app) => (
+          <AppPermissionRow key={app.id} app={app} />
+        ))}
+      </div>
+    </>
+  )
+}
+
+export function SettingsView() {
+  return (
+    <Pane>
+      <AppearanceSettings />
+      <PrivacySettings />
     </Pane>
   )
 }

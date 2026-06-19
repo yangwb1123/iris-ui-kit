@@ -14,6 +14,20 @@ import { PhotosApp } from './appviews/Photos'
 import { AppStoreView } from './appviews/AppStore'
 
 /**
+ * Capabilities an app may request. The desktop surfaces these as a transparent
+ * permission contract (App Store badges) the user grants/revokes per app
+ * (Settings → Privacy & permissions). Enforcement is advisory for this demo —
+ * the explicit, user-visible model is the point.
+ *
+ * - `storage`       — read/write data into the user profile.
+ * - `clipboard`     — read/write the system clipboard.
+ * - `notifications` — post desktop notifications.
+ * - `network`       — make external network requests / embed remote content.
+ * - `agent`         — drive the in-app AI agent on the user's behalf.
+ */
+export type Permission = 'storage' | 'clipboard' | 'notifications' | 'network' | 'agent'
+
+/**
  * App-aggregation manifest. The desktop is no longer a fixed set of React panes:
  * it's a catalog of "apps" of several KINDS, some built in, some installable into
  * the user profile. A manifest is the portable description the shell renders +
@@ -39,6 +53,10 @@ export interface AppManifest {
   url?: string
   /** Renderer for `component` kind (the window body). */
   render?: () => React.ReactNode
+  /** Capabilities the app requests; surfaced + granted per app. */
+  permissions?: Permission[]
+  /** User-added web apps (aggregated by URL) carry this flag; they're removable. */
+  custom?: boolean
 }
 
 /**
@@ -65,6 +83,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'Browse and install apps into your profile.',
     defaultSize: { width: 640, height: 480 },
+    permissions: ['storage', 'network'],
     render: () => React.createElement(AppStoreView),
   },
   {
@@ -75,6 +94,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'A simple file browser.',
     defaultSize: { width: 520, height: 400 },
+    permissions: ['storage'],
     render: () => React.createElement(FilesView),
   },
   {
@@ -85,6 +105,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'Jot notes; state lives in the window.',
     defaultSize: { width: 480, height: 360 },
+    permissions: ['storage', 'clipboard'],
     render: () => React.createElement(NotepadView),
   },
   {
@@ -95,6 +116,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'Real Iris components, OS-skinned.',
     defaultSize: { width: 460, height: 380 },
+    permissions: ['agent'],
     render: () => React.createElement(ShowcaseView),
   },
   {
@@ -105,6 +127,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'Switch the desktop skin (persisted).',
     defaultSize: { width: 440, height: 420 },
+    permissions: ['storage'],
     render: () => React.createElement(SettingsView),
   },
   {
@@ -125,6 +148,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'IrisTable in a managed window.',
     defaultSize: { width: 560, height: 420 },
+    permissions: ['storage', 'network'],
     render: () => React.createElement(DataApp),
   },
   {
@@ -148,6 +172,7 @@ export const CATALOG: AppManifest[] = [
     // `CATALOG` is fully initialized by the time any window renders, so reading
     // app names here keeps the terminal's `apps` command live + avoids a cycle.
     render: () => React.createElement(TerminalView, { appNames: CATALOG.map((m) => m.name) }),
+    permissions: ['agent', 'clipboard'],
   },
   {
     id: 'photos',
@@ -157,6 +182,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'A small image gallery.',
     defaultSize: { width: 520, height: 420 },
+    permissions: ['storage'],
     render: () => React.createElement(PhotosApp),
   },
 
@@ -168,6 +194,7 @@ export const CATALOG: AppManifest[] = [
     kind: 'link',
     description: 'Open github.com in a new tab.',
     url: 'https://github.com',
+    permissions: ['network'],
   },
   {
     id: 'wikipedia',
@@ -176,6 +203,7 @@ export const CATALOG: AppManifest[] = [
     kind: 'link',
     description: 'Open wikipedia.org in a new tab.',
     url: 'https://wikipedia.org',
+    permissions: ['network'],
   },
   {
     id: 'hackernews',
@@ -184,6 +212,7 @@ export const CATALOG: AppManifest[] = [
     kind: 'link',
     description: 'Open news.ycombinator.com in a new tab.',
     url: 'https://news.ycombinator.com',
+    permissions: ['network'],
   },
 
   // ── Installable IFRAME apps (embed in a window; may be blocked) ─────────────
@@ -195,6 +224,7 @@ export const CATALOG: AppManifest[] = [
     description: 'OpenStreetMap, embedded.',
     defaultSize: { width: 640, height: 480 },
     url: 'https://www.openstreetmap.org/export/embed.html?bbox=-0.2,51.4,0.0,51.6&layer=mapnik',
+    permissions: ['network'],
   },
   {
     id: 'example',
@@ -204,11 +234,30 @@ export const CATALOG: AppManifest[] = [
     description: 'example.com, embedded.',
     defaultSize: { width: 560, height: 420 },
     url: 'https://example.com',
+    permissions: ['network'],
   },
 ]
 
-/** Look up a manifest by id. */
-export const getManifest = (id: string): AppManifest | undefined => CATALOG.find((m) => m.id === id)
+/**
+ * Runtime registry of USER-ADDED web-app manifests. These live in the user
+ * profile (the `customApps` pref) rather than the static {@link CATALOG}, but
+ * the shell still resolves them through {@link getManifest} — every component
+ * that renders a window / icon / taskbar entry looks an app up by id, so custom
+ * apps must be discoverable the same way. The profile is the source of truth;
+ * the shell mirrors it here (see `registerCustomApps`) so synchronous lookups
+ * work without threading the profile through every component.
+ */
+const customRegistry = new Map<string, AppManifest>()
+
+/** Mirror the profile's custom apps into the lookup registry (shell calls this). */
+export function registerCustomApps(apps: AppManifest[]): void {
+  customRegistry.clear()
+  for (const app of apps) customRegistry.set(app.id, app)
+}
+
+/** Look up a manifest by id (static catalog first, then user-added apps). */
+export const getManifest = (id: string): AppManifest | undefined =>
+  CATALOG.find((m) => m.id === id) ?? customRegistry.get(id)
 
 /** Built-in apps (always available, can't be uninstalled). */
 export const BUILTIN_APPS: AppManifest[] = CATALOG.filter((m) => m.builtin)

@@ -27,12 +27,15 @@ export interface ColumnDef {
   width?: number
   minWidth?: number
   hidden?: boolean
+  /** Pin (freeze) the column to a side. */
+  pinned?: 'left' | 'right'
 }
 
 export interface ColumnStateSnapshot {
   order: string[]
   widths: Record<string, number>
   hidden: Set<string>
+  pinned: Record<string, 'left' | 'right'>
 }
 
 export interface ColumnStateManager {
@@ -54,6 +57,10 @@ export interface ColumnStateManager {
   hide(key: string): void
   /** Show a column. */
   show(key: string): void
+  /** Get a column's pinned side, or null. */
+  getPinned(key: string): 'left' | 'right' | null
+  /** Pin a column to a side; pass null to unpin. */
+  setPinned(key: string, side: 'left' | 'right' | null): void
   /** Columns currently visible, in current order. */
   visibleColumns(): ColumnDef[]
   /** All columns including hidden, in current order. */
@@ -71,11 +78,16 @@ export function createColumnState(columns: ColumnDef[]): ColumnStateManager {
     if (c.width !== undefined) initialWidths[c.key] = c.width
   }
   const initialHidden = columns.filter((c) => c.hidden).map((c) => c.key)
+  const initialPinned: Record<string, 'left' | 'right'> = {}
+  for (const c of columns) {
+    if (c.pinned) initialPinned[c.key] = c.pinned
+  }
 
   const store = createStore({
     order: [...initialOrder],
     widths: { ...initialWidths },
     hidden: new Set(initialHidden),
+    pinned: { ...initialPinned },
   })
 
   const byKey = new Map(columns.map((c) => [c.key, c]))
@@ -118,6 +130,15 @@ export function createColumnState(columns: ColumnDef[]): ColumnStateManager {
         return { ...s, hidden: next }
       })
     },
+    getPinned: (key) => store.getState().pinned[key] ?? null,
+    setPinned: (key, side) => {
+      store.setState((s) => {
+        const pinned = { ...s.pinned }
+        if (side) pinned[key] = side
+        else delete pinned[key]
+        return { ...s, pinned }
+      })
+    },
     visibleColumns: () => {
       const { order, hidden } = store.getState()
       return order
@@ -136,10 +157,18 @@ export function createColumnState(columns: ColumnDef[]): ColumnStateManager {
         order: [...initialOrder],
         widths: { ...initialWidths },
         hidden: new Set(initialHidden),
+        pinned: { ...initialPinned },
       })
     },
     subscribe: (fn) =>
-      store.subscribe((s) => fn({ order: s.order, widths: s.widths, hidden: new Set(s.hidden) })),
+      store.subscribe((s) =>
+        fn({
+          order: s.order,
+          widths: s.widths,
+          hidden: new Set(s.hidden),
+          pinned: { ...s.pinned },
+        }),
+      ),
   }
 
   return api

@@ -69,6 +69,22 @@ describe('createColumnState', () => {
     expect(cs.visibleColumns().map((c) => c.key)).toEqual(['a'])
   })
 
+  it('pin/unpin and reset restores initial pinned', () => {
+    const cs = createColumnState([
+      { key: 'a', title: 'A', pinned: 'left' },
+      { key: 'b', title: 'B' },
+    ])
+    expect(cs.getPinned('a')).toBe('left')
+    expect(cs.getPinned('b')).toBe(null)
+    cs.setPinned('b', 'right')
+    expect(cs.getPinned('b')).toBe('right')
+    cs.setPinned('a', null)
+    expect(cs.getPinned('a')).toBe(null)
+    cs.reset()
+    expect(cs.getPinned('a')).toBe('left')
+    expect(cs.getPinned('b')).toBe(null)
+  })
+
   it('subscribe notifies on changes', () => {
     const cs = createColumnState(cols)
     const snapshots: string[][] = []

@@ -61,6 +61,32 @@ const controlProps = computed<ManifestProp[]>(() => {
 
 const controlNames = computed(() => controlProps.value.map((p) => p.name))
 
+// ---- Events / Slots (read-only docs) ---------------------------------------
+// The manifest carries `events`/`slots` as bare name lists; an event's
+// type/description is the matching prop entry (e.g. `onClick`), so we look it up
+// to surface a richer row. Slots are name-only with an optional matching-prop
+// description (e.g. the `icon`/`prefix` adornment props).
+interface DocRow {
+  name: string
+  type?: string
+  description?: string
+}
+const eventRows = computed<DocRow[]>(() => {
+  const all = component.value?.props ?? []
+  return (component.value?.events ?? []).map((name) => {
+    const p = all.find((x) => x.name === name)
+    return { name, type: p?.type, description: p?.description }
+  })
+})
+const slotRows = computed<DocRow[]>(() => {
+  const all = component.value?.props ?? []
+  return (component.value?.slots ?? []).map((name) => {
+    // `default` is the children slot; named slots often mirror a node prop.
+    const p = all.find((x) => x.name === name)
+    return { name, description: p?.description }
+  })
+})
+
 // ---- Control kind ----------------------------------------------------------
 function kindOf(p: ManifestProp): 'enum' | 'boolean' | 'number' | 'string' {
   if (p.enum && p.enum.length) return 'enum'
@@ -203,6 +229,31 @@ function resetControls() {
             <span class="iris-explorer__label">children</span>
             <input v-model="childText" type="text" class="iris-explorer__input" />
           </label>
+
+          <!-- EVENTS (read-only) -->
+          <div v-if="eventRows.length" class="iris-explorer__meta">
+            <div class="iris-explorer__panel-title">Events</div>
+            <div v-for="ev in eventRows" :key="ev.name" class="iris-explorer__meta-row">
+              <code class="iris-explorer__meta-name">{{ ev.name }}</code>
+              <span v-if="ev.type" class="iris-explorer__meta-type" :title="ev.type">{{
+                ev.type
+              }}</span>
+              <span v-if="ev.description" class="iris-explorer__meta-desc">{{
+                ev.description
+              }}</span>
+            </div>
+          </div>
+
+          <!-- SLOTS (read-only) -->
+          <div v-if="slotRows.length" class="iris-explorer__meta">
+            <div class="iris-explorer__panel-title">Slots</div>
+            <div v-for="sl in slotRows" :key="sl.name" class="iris-explorer__meta-row">
+              <code class="iris-explorer__meta-name">{{ sl.name }}</code>
+              <span v-if="sl.description" class="iris-explorer__meta-desc">{{
+                sl.description
+              }}</span>
+            </div>
+          </div>
         </div>
 
         <!-- LIVE PREVIEW -->
@@ -328,6 +379,42 @@ function resetControls() {
 .iris-explorer__checkbox {
   width: 16px;
   height: 16px;
+}
+.iris-explorer__meta {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--vp-c-divider);
+}
+.iris-explorer__meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.iris-explorer__meta-name {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  color: var(--vp-c-text-1);
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.iris-explorer__meta-type {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  color: var(--vp-c-text-2);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.iris-explorer__meta-desc {
+  flex-basis: 100%;
+  color: var(--vp-c-text-2);
+  font-size: 12px;
 }
 .iris-explorer__preview {
   padding: 14px;

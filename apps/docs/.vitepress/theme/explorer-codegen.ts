@@ -18,6 +18,7 @@ export interface ManifestProp {
   optional?: boolean
   enum?: string[]
   default?: string
+  description?: string
 }
 
 export interface ManifestComponent {
@@ -178,6 +179,56 @@ function attrFor(prop: ManifestProp, value: unknown, framework: Framework): stri
 }
 
 /* -------------------------------------------------------------------------- */
+/* Event-handler stubs + named-slot placeholders (per-framework)              */
+/* -------------------------------------------------------------------------- */
+
+// Vue uses kebab-case `@event` directives; map a React-style `onClick` handler
+// name to its Vue event name (`onClick` -> `@click`).
+function vueEventName(handler: string): string {
+  const base = handler.replace(/^on/, '')
+  return (
+    base.charAt(0).toLowerCase() + base.slice(1).replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())
+  )
+}
+
+/** A single event-handler attribute (deterministic no-op stub) for `framework`. */
+function eventAttr(handler: string, framework: Framework): string {
+  switch (framework) {
+    case 'vue':
+      return `@${vueEventName(handler)}="() => {}"`
+    // react / solid / svelte share the JSX-ish `onEvent={...}` syntax.
+    default:
+      return `${handler}={() => {}}`
+  }
+}
+
+/**
+ * Render named-slot placeholders (everything except `default`, which is handled
+ * by `childText`). Returns the per-framework slot scaffolding to inject INSIDE
+ * the element (Vue/Svelte) or the extra attrs (React/Solid render-prop style).
+ */
+function slotScaffold(slots: string[], framework: Framework): { attrs: string[]; inner: string[] } {
+  const named = slots.filter((s) => s !== 'default')
+  const attrs: string[] = []
+  const inner: string[] = []
+  for (const slot of named) {
+    switch (framework) {
+      case 'vue':
+        inner.push(`<template #${slot}><!-- ${slot} --></template>`)
+        break
+      case 'svelte':
+        inner.push(`{#snippet ${slot}()}<!-- ${slot} -->{/snippet}`)
+        break
+      // react / solid pass named slots as render-prop / node props.
+      default:
+        attrs.push(`${slot}={/* ${slot} */ null}`)
+        break
+    }
+  }
+  return { attrs, inner }
+}
+
+/* -------------------------------------------------------------------------- */
 /* Public: single-component snippet from LIVE control values                  */
 /* -------------------------------------------------------------------------- */
 
@@ -225,16 +276,34 @@ export function snippetFor(
     if (attr) attrs.push(attr)
   }
 
-  const attrStr = attrs.length ? ' ' + attrs.join(' ') : ''
-  const child = opts.childText?.trim() ? opts.childText.trim() : ''
-
-  // Markup
-  let markup: string
-  if (framework === 'vue') {
-    markup = child ? `<${name}${attrStr}>${child}</${name}>` : `<${name}${attrStr} />`
-  } else {
-    markup = child ? `<${name}${attrStr}>${child}</${name}>` : `<${name}${attrStr} />`
+  // Declared events become deterministic no-op handler stubs. Skip the handler
+  // already wired by the controlled value/handler pair (it lives in the v-model /
+  // value+setter binding above), so we don't emit it twice.
+  for (const event of component.events ?? []) {
+    if (pair && event === pair.handler) continue
+    attrs.push(eventAttr(event, framework))
   }
+
+  // Named-slot placeholders. The `default` slot is represented by `childText`
+  // below; a component that declares a `default` slot but has no live child text
+  // still gets a visible placeholder so the slot is discoverable.
+  const slots = component.slots ?? []
+  const { attrs: slotAttrs, inner: slotInner } = slotScaffold(slots, framework)
+  attrs.push(...slotAttrs)
+
+  const attrStr = attrs.length ? ' ' + attrs.join(' ') : ''
+  let child = opts.childText?.trim() ? opts.childText.trim() : ''
+  if (!child && slots.includes('default')) {
+    // Use a framework-valid placeholder for the default slot: an HTML comment in
+    // Vue/Svelte templates, a JSX comment expression in React/Solid.
+    child = framework === 'vue' || framework === 'svelte' ? '<!-- default -->' : '{/* default */}'
+  }
+
+  // Markup — named slots (Vue templates / Svelte snippets) live inside the
+  // element; React/Solid named slots are already in `attrs` as node props.
+  const innerSlots = slotInner.join('')
+  const inner = `${child}${innerSlots}`
+  const markup = inner ? `<${name}${attrStr}>${inner}</${name}>` : `<${name}${attrStr} />`
 
   // Assemble per-framework file shape.
   const needsState = setupLines.length > 0

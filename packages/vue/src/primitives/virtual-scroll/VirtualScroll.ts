@@ -5,17 +5,20 @@ import {
   onBeforeUnmount,
   onMounted,
   ref,
+  shallowRef,
   watch,
   type PropType,
   type VNode,
 } from 'vue'
-import { buildOffsets, computeVirtualRange } from '@iris-ui/core'
+import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui/core'
 
 export type IrisVirtualScrollAlign = 'start' | 'center' | 'end'
 
 export interface IrisVirtualScrollExposed {
   /** Programmatically scroll so the item at `index` is visible. */
   scrollToIndex: (index: number, align?: IrisVirtualScrollAlign) => void
+  /** Imperatively scroll to a pixel offset (clamped to the scrollable range). */
+  scrollToOffset: (offset: number) => void
   /** Force-recompute the visible range (e.g. after resizing externally). */
   refresh: () => void
 }
@@ -28,7 +31,15 @@ export interface IrisVirtualScrollExposed {
  * is sized to the full virtual height, and each visible item is absolutely
  * positioned at its natural Y offset. Scroll events are throttled with
  * `requestAnimationFrame` to avoid layout thrash. `itemHeight` may be a fixed
- * number or a `(index) => px` function for variable-height rows.
+ * number, a `(index) => px` function for variable-height rows, or `'auto'` to
+ * measure rendered rows via `ResizeObserver`.
+ *
+ * Internally driven by the stateful core {@link createVirtualizer}: one
+ * controller owns the measured-size cache (keyed by item, so a row's real
+ * height survives scroll/reorder), the offset tree (O(log n) total/offset/
+ * lower-bound — no O(n) rebuild per scroll), and `scrollToIndex`/`scrollToOffset`.
+ * At a uniform `itemHeight` the visible window is identical to the bare math, so
+ * the public props/output are unchanged.
  *
  * **Limitations (intentional in this iteration)**:
  *   - Vertical only (no horizontal virtualization).
@@ -78,49 +89,111 @@ export const IrisVirtualScroll = defineComponent({
     let rafId: number | null = null
 
     const auto = computed(() => props.itemHeight === 'auto')
+    const userFn = computed<((index: number) => number) | null>(() =>
+      typeof props.itemHeight === 'function' ? props.itemHeight : null,
+    )
+    const fixedHeight = computed(() =>
+      typeof props.itemHeight === 'number' ? props.itemHeight : 0,
+    )
+    // Variable when sizing comes from a user fn or `auto` measurement; for a
+    // plain number the window uses the closed-form fixed formula below.
+    const variable = computed(() => userFn.value !== null || auto.value)
+
     // Auto mode: measured row heights cached by index; bumping `measureVersion`
-    // recomputes the offsets/range after a measurement changes.
+    // recomputes offsets after a measurement changes (semantics preserved; the
+    // virtualizer's keyed cache is fed from this).
     const measuredHeights = new Map<number, number>()
     const measureVersion = ref(0)
 
-    const sizeFn = computed<((index: number) => number) | null>(() => {
-      if (typeof props.itemHeight === 'function') return props.itemHeight
-      if (auto.value) {
-        void measureVersion.value // track so offsets recompute after a measure
-        return (index: number) => measuredHeights.get(index) ?? props.estimatedItemHeight
-      }
-      return null
-    })
-    const fixedHeight = computed(() => (sizeFn.value ? 0 : (props.itemHeight as number)))
-    const offsets = computed(() =>
-      sizeFn.value ? buildOffsets(props.items.length, sizeFn.value) : null,
-    )
-    const totalHeight = computed(() =>
-      offsets.value ? offsets.value[props.items.length] : props.items.length * fixedHeight.value,
-    )
-    const offsetOf = (i: number): number =>
-      offsets.value ? offsets.value[i] : i * fixedHeight.value
-    const heightOf = (i: number): number =>
-      offsets.value ? offsets.value[i + 1] - offsets.value[i] : fixedHeight.value
+    // estimateSize source of truth, read by the virtualizer per index. Reads
+    // live `props`, so the controller never needs recreating on a closure swap.
+    const estimateSize = (index: number): number => {
+      const fn = userFn.value
+      if (fn) return fn(index)
+      if (auto.value) return measuredHeights.get(index) ?? props.estimatedItemHeight
+      return fixedHeight.value
+    }
 
+    // One stateful controller, rebuilt only when count or sizing MODE changes.
+    // Sizing CHANGES within a mode (a new user fn / a measurement) are pushed via
+    // remeasure below — recreating on every change would drop scroll state.
+    // `estimateSize` / `getItemKey` read live `props`, so a fresh closure /
+    // estimate / keyOf never busts this.
+    const buildVirtualizer = (): Virtualizer =>
+      createVirtualizer({
+        count: props.items.length,
+        estimateSize: (index: number) => estimateSize(index),
+        getItemKey: (index: number) => {
+          const fn = props.keyOf
+          const it = props.items[index]
+          return fn && it !== undefined ? fn(it, index) : index
+        },
+        buffer: props.buffer,
+        viewportSize: typeof props.height === 'number' ? props.height : 0,
+      })
+
+    const virtualizer = shallowRef<Virtualizer>(buildVirtualizer())
+    const vstate = shallowRef<VirtualizerState>(virtualizer.value.getState())
+    let unsubscribe: (() => void) | null = virtualizer.value.subscribe((s) => {
+      vstate.value = s
+    })
+
+    // Wire/rewire the controller: subscribe its store into `vstate` and push the
+    // current live scroll + viewport so the new instance reflects reality.
+    const wire = (v: Virtualizer): void => {
+      unsubscribe?.()
+      virtualizer.value = v
+      vstate.value = v.getState()
+      unsubscribe = v.subscribe((s) => {
+        vstate.value = s
+      })
+      v.setViewportSize(viewportHeight.value)
+      v.setScroll(scrollTop.value)
+    }
+
+    // Rebuild only on count / buffer / sizing-mode change (mirrors the React memo
+    // key `[items.length, buffer, variable]`). Sizing changes within a mode go
+    // through remeasure below, preserving scroll + cache.
+    watch([() => props.items.length, () => props.buffer, variable], () => wire(buildVirtualizer()))
+
+    // Push sizing changes (new user fn, a fresh measurement, or estimate change)
+    // into the controller without recreating it: drop the cache + rebuild the
+    // tree from the current `estimateSize`. Cheap; runs only when sizing changes.
+    watch(
+      [userFn, measureVersion, () => props.estimatedItemHeight],
+      () => {
+        if (variable.value) virtualizer.value.remeasure()
+      },
+      { flush: 'post' },
+    )
+
+    // Drive the controller's scroll + viewport from local state so its window,
+    // total size, and offsets reflect the live scroll position. A no-op when
+    // unchanged.
+    watch([scrollTop, viewportHeight], ([st, vh]) => {
+      virtualizer.value.setViewportSize(vh)
+      virtualizer.value.setScroll(st)
+    })
+
+    const totalHeight = computed(() => vstate.value.totalSize)
+    // Offset/size of a single index, sourced from the controller's windowed
+    // items (the render loop only ever asks for in-window indices). For the
+    // common fixed case this is the same `i * height` arithmetic.
+    const itemInState = (i: number) => vstate.value.items.find((it) => it.index === i)
+    const offsetOf = (i: number): number =>
+      variable.value ? (itemInState(i)?.start ?? i * estimateSize(i)) : i * fixedHeight.value
+    const heightOf = (i: number): number =>
+      variable.value ? (itemInState(i)?.size ?? estimateSize(i)) : fixedHeight.value
+
+    // Render window. Fixed: closed-form (preserves the exact uniform-height
+    // window). Variable/auto: the controller's measured window (offset-tree walk).
     const range = computed(() => {
-      const fn = sizeFn.value
-      if (fn) {
-        const w = computeVirtualRange({
-          itemCount: props.items.length,
-          scrollTop: scrollTop.value,
-          viewportSize: viewportHeight.value,
-          itemSize: fn,
-          // Reuse the memoized offsets so each scroll binary-searches the cached
-          // array instead of rebuilding all offsets O(n).
-          offsets: offsets.value ?? undefined,
-          buffer: props.buffer,
-        })
-        return { start: w.startIndex, end: w.endIndex + 1 }
+      if (variable.value) {
+        return { start: vstate.value.startIndex, end: vstate.value.endIndex + 1 }
       }
-      const startRaw = Math.floor(scrollTop.value / Math.max(1, fixedHeight.value))
-      const visibleCount =
-        fixedHeight.value <= 0 ? 0 : Math.ceil(viewportHeight.value / fixedHeight.value)
+      const h0 = fixedHeight.value
+      const startRaw = Math.floor(scrollTop.value / Math.max(1, h0))
+      const visibleCount = h0 <= 0 ? 0 : Math.ceil(viewportHeight.value / h0)
       const start = Math.max(0, startRaw - props.buffer)
       const end = Math.min(props.items.length, startRaw + visibleCount + props.buffer)
       return { start, end }
@@ -200,6 +273,8 @@ export const IrisVirtualScroll = defineComponent({
       observer = null
       rowObserver?.disconnect()
       rowObserver = null
+      unsubscribe?.()
+      unsubscribe = null
     })
 
     // Re-clamp scroll if items shrink so the current scrollTop falls past the new totalHeight.
@@ -217,16 +292,15 @@ export const IrisVirtualScroll = defineComponent({
     const scrollToIndex = (index: number, align: IrisVirtualScrollAlign = 'start') => {
       const el = viewportRef.value
       if (!el) return
-      const clamped = Math.max(0, Math.min(props.items.length - 1, index))
-      const itemTop = offsetOf(clamped)
-      const itemH = heightOf(clamped)
-      let target = itemTop
-      if (align === 'center') {
-        target = itemTop - viewportHeight.value / 2 + itemH / 2
-      } else if (align === 'end') {
-        target = itemTop - viewportHeight.value + itemH
-      }
-      el.scrollTop = Math.max(0, target)
+      // The controller computes (and clamps to the scrollable range) the target
+      // pixel offset; the host scroll element applies it.
+      el.scrollTop = virtualizer.value.scrollToIndex(index, align)
+    }
+
+    const scrollToOffset = (offset: number) => {
+      const el = viewportRef.value
+      if (!el) return
+      el.scrollTop = virtualizer.value.scrollToOffset(offset)
     }
 
     const refresh = () => {
@@ -234,7 +308,7 @@ export const IrisVirtualScroll = defineComponent({
       onScroll()
     }
 
-    expose({ scrollToIndex, refresh } satisfies IrisVirtualScrollExposed)
+    expose({ scrollToIndex, scrollToOffset, refresh } satisfies IrisVirtualScrollExposed)
 
     const containerStyle = computed<Record<string, string>>(() => ({
       position: 'relative',

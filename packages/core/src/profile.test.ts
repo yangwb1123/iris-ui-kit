@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   createUserProfile,
   memoryProfileStorage,
+  httpProfileStorage,
   type ProfileData,
   type ProfileStorage,
 } from './profile'
@@ -101,6 +102,27 @@ describe('createUserProfile — pluggable persistence', () => {
     const p2 = createUserProfile({ storage: cloud })
     await p2.hydrate()
     expect(p2.isInstalled('drive')).toBe(true)
+  })
+
+  it('httpProfileStorage round-trips through an injected fetch (cloud deploy)', async () => {
+    let stored: string | null = null
+    const fetchLike = (url: string, init?: { method?: string; body?: string }) => {
+      if (init?.method === 'PUT') {
+        stored = init.body ?? null
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(null) })
+      }
+      return Promise.resolve({
+        ok: stored !== null,
+        json: () => Promise.resolve(stored ? JSON.parse(stored) : null),
+      })
+    }
+    const cloud = httpProfileStorage({ url: 'https://api.example/profile', fetch: fetchLike })
+    const p1 = createUserProfile({ storage: cloud })
+    p1.install('mail')
+    await p1.flush() // PUT
+    const p2 = createUserProfile({ storage: cloud })
+    await p2.hydrate() // GET
+    expect(p2.isInstalled('mail')).toBe(true)
   })
 
   it('debounced writes coalesce (one save for a burst)', async () => {

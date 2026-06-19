@@ -130,6 +130,46 @@ export function localStorageProfileStorage(key = 'iris-profile'): ProfileStorage
   }
 }
 
+type FetchLike = (
+  url: string,
+  init?: { method?: string; headers?: Record<string, string>; body?: string },
+) => Promise<{ ok: boolean; json(): Promise<unknown> }>
+
+export interface HttpProfileStorageConfig {
+  /** Endpoint that GETs the profile JSON and accepts a PUT to persist it. */
+  url: string
+  /** Auth/headers (e.g. a bearer token). */
+  headers?: Record<string, string>
+  /** Injectable fetch (tests / non-browser runtimes). Defaults to global fetch. */
+  fetch?: FetchLike
+}
+
+/**
+ * Cloud backend over a REST endpoint (GET → load, PUT → save). The simplest way
+ * to "deploy the profile in the cloud" — point it at any object store / function
+ * / KV behind a URL. A distributed/decentralized store (S3, WebDAV, a CRDT relay,
+ * a Solid POD) is the same shape: implement {@link ProfileStorage}.
+ */
+export function httpProfileStorage(config: HttpProfileStorageConfig): ProfileStorage {
+  const doFetch: FetchLike | undefined = config.fetch ?? (globalThis as { fetch?: FetchLike }).fetch
+  return {
+    async load() {
+      if (!doFetch) return null
+      const res = await doFetch(config.url, { headers: config.headers })
+      if (!res.ok) return null
+      return (await res.json()) as ProfileData
+    },
+    async save(data) {
+      if (!doFetch) return
+      await doFetch(config.url, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json', ...config.headers },
+        body: JSON.stringify(data),
+      })
+    },
+  }
+}
+
 export function createUserProfile(config: UserProfileConfig = {}): UserProfile {
   const storage = config.storage ?? memoryProfileStorage()
   const now = config.now ?? Date.now

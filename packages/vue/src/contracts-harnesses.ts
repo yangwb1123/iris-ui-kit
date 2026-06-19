@@ -24,10 +24,17 @@ import { IrisTagInput } from './primitives/tag-input/TagInput'
 import { IrisOtpInput } from './primitives/otp-input/OtpInput'
 import { IrisTable } from './primitives/table/Table'
 
-export function driverFor(container: HTMLElement): ContractDriver {
+/**
+ * A ContractDriver over a Vue-test-utils mounted container. Pass the mounted
+ * wrapper's `unmount` (e.g. `() => wrapper.unmount()`) to drive the
+ * destroy/cleanup contract; the default no-op suffices for scenarios that never
+ * use the `'unmount'` action (the interface still requires the method).
+ */
+export function driverFor(container: HTMLElement, unmount: () => void = () => {}): ContractDriver {
   const at = (selector: string, index: number) =>
     container.querySelectorAll<HTMLElement>(selector)[index]
   return {
+    unmount,
     queryAll: (selector) => Array.from(container.querySelectorAll(selector)),
     click: (selector, index) => {
       const el = at(selector, index)
@@ -74,6 +81,12 @@ export function driverFor(container: HTMLElement): ContractDriver {
       // a second `load()` fetch) — then let Vue's scheduler render. Sync scenarios
       // are unaffected (extra microtask awaits are no-ops when nothing is pending).
       for (let i = 0; i < 4; i++) await Promise.resolve()
+      await nextTick()
+      // Let any pending requestAnimationFrame callbacks fire (the focus trap
+      // restores focus to the trigger on close inside a rAF; DrawerContent's
+      // 2-stage mount also uses rAF), then settle Vue once more. A no-op when
+      // nothing is scheduled.
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
       await nextTick()
     },
   }

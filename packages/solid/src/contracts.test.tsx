@@ -27,6 +27,8 @@ import {
   dataSourceScenario,
   dataSourceAsyncScenario,
   dialogScenario,
+  overlayFocusScenario,
+  overlayDestroyScenario,
   popoverScenario,
   drawerScenario,
   dropdownScenario,
@@ -201,13 +203,53 @@ function DataSourceAsyncHarness() {
 }
 
 /**
- * A ContractDriver over a Solid-testing-library container. Solid reactivity is
- * synchronous in tests, so `flush()` is a no-op; `fireEvent` settles updates.
+ * Trigger + overlay for the focus-lifecycle contract. Renders inline
+ * (`portalTarget={false}`) so the container-scoped `[role="dialog"]` count works;
+ * the focus assertions only read the in-container trigger via document.activeElement.
  */
-function driverFor(container: HTMLElement): ContractDriver {
+function OverlayFocusContractHarness() {
+  return (
+    <div>
+      <IrisDialog defaultOpen={false} closeOnOutsideClick={false}>
+        <IrisDialogTrigger data-iris-dialog-trigger>Open</IrisDialogTrigger>
+        <IrisDialogContent portalTarget={false}>
+          <p>Dialog body</p>
+        </IrisDialogContent>
+      </IrisDialog>
+    </div>
+  )
+}
+
+/**
+ * Trigger + overlay for the destroy/cleanup contract. The overlay PORTALS to
+ * document.body (its default — no `portalTarget={false}`), so the document-scoped
+ * (`global: true`) assertions genuinely exercise portal cleanup on unmount.
+ */
+function OverlayDestroyContractHarness() {
+  return (
+    <div>
+      <IrisDialog defaultOpen={false} closeOnOutsideClick={false}>
+        <IrisDialogTrigger data-iris-dialog-trigger>Open</IrisDialogTrigger>
+        <IrisDialogContent>
+          <p>Dialog body</p>
+        </IrisDialogContent>
+      </IrisDialog>
+    </div>
+  )
+}
+
+/**
+ * A ContractDriver over a Solid-testing-library container. Solid reactivity is
+ * synchronous in tests, so `flush()` only drains pending microtasks +
+ * requestAnimationFrame callbacks. Pass the render result's `unmount` to drive
+ * the destroy/cleanup contract; the default no-op suffices for scenarios that
+ * never use the `'unmount'` action.
+ */
+function driverFor(container: HTMLElement, unmount: () => void = () => {}): ContractDriver {
   const at = (selector: string, index: number) =>
     container.querySelectorAll<HTMLElement>(selector)[index]
   return {
+    unmount,
     queryAll: (selector) => Array.from(container.querySelectorAll(selector)),
     click: (selector, index) => {
       const el = at(selector, index)
@@ -238,9 +280,14 @@ function driverFor(container: HTMLElement): ContractDriver {
     // Solid reactivity is synchronous on signal writes, so sync scenarios need no
     // settling. Async ops still resolve on the microtask queue (an injectable-
     // latency fetcher; an optimistic-mutate ROLLBACK chains a second `load()`),
-    // so drain a few microtask rounds — a no-op when nothing is pending.
+    // so drain a few microtask rounds — a no-op when nothing is pending. The
+    // dialog focus trap also defers its open-focus / dismiss-restore to a
+    // requestAnimationFrame, so wait one rAF (then a microtask) for the overlay
+    // focus-lifecycle contract to observe the settled document.activeElement.
     flush: async () => {
       for (let i = 0; i < 4; i++) await Promise.resolve()
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      await Promise.resolve()
     },
   }
 }
@@ -524,6 +571,16 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
       </IrisDialog>
     ))
     await runContract(dialogScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared overlay focus-lifecycle contract', async () => {
+    const { container } = render(() => <OverlayFocusContractHarness />)
+    await runContract(overlayFocusScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared overlay destroy/cleanup contract', async () => {
+    const { container, unmount } = render(() => <OverlayDestroyContractHarness />)
+    await runContract(overlayDestroyScenario, driverFor(container, unmount), expect)
   })
 
   function PopoverContractHarness() {

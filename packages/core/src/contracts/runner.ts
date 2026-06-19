@@ -1,4 +1,24 @@
-import type { ContractAssertion, ContractDriver, ContractExpect, ContractScenario } from './types'
+import type {
+  ContractAssertion,
+  ContractDriver,
+  ContractElement,
+  ContractExpect,
+  ContractScenario,
+} from './types'
+
+/** The ambient document (jsdom/browser), typed minimally — core stays DOM-lib-free. */
+const doc = () =>
+  (globalThis as { document?: { querySelectorAll(s: string): unknown[]; activeElement: unknown } })
+    .document
+
+/** Read the assertion target value from the resolved element (or null when absent). */
+function readValue(el: ContractElement | undefined, read: string): string | null {
+  if (read === 'focused') return el != null && el === doc()?.activeElement ? 'true' : 'false'
+  if (el == null) return null
+  if (read === 'text') return (el.textContent ?? '').trim()
+  if (read === 'value') return (el as unknown as { value: string }).value ?? ''
+  return el.getAttribute(read)
+}
 
 function check(
   driver: ContractDriver,
@@ -7,21 +27,17 @@ function check(
   a: ContractAssertion,
   expect: ContractExpect,
 ): void {
-  const els = driver.queryAll(a.selector)
-  const where = `${scenario} › ${step} › ${a.selector}`
+  // `global` reads escape the container (document-scoped), so post-unmount /
+  // portal-leak assertions can run with no container to scope to.
+  const els = a.global
+    ? (Array.from(doc()?.querySelectorAll(a.selector) ?? []) as unknown as ContractElement[])
+    : driver.queryAll(a.selector)
+  const where = `${scenario} › ${step} › ${a.selector}${a.global ? ' (global)' : ''}`
   if (a.read === 'count') {
     expect(els.length, `${where} (count)`).toBe(a.equals)
     return
   }
-  const el = els[a.index ?? 0]
-  const actual =
-    el == null
-      ? null
-      : a.read === 'text'
-        ? (el.textContent ?? '').trim()
-        : a.read === 'value'
-          ? ((el as unknown as { value: string }).value ?? '')
-          : el.getAttribute(a.read)
+  const actual = readValue(els[a.index ?? 0], a.read)
   expect(actual, `${where} [${a.index ?? 0}] ${a.read}`).toBe(
     a.equals === null ? null : String(a.equals),
   )
@@ -39,7 +55,9 @@ export async function runContract(
   expect: ContractExpect,
 ): Promise<void> {
   for (const step of scenario.steps) {
-    if (step.action !== 'none') {
+    if (step.action === 'unmount') {
+      await driver.unmount()
+    } else if (step.action !== 'none') {
       const selector = step.target ?? ''
       const index = step.index ?? 0
       expect(

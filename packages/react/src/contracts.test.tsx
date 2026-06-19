@@ -28,6 +28,8 @@ import {
   dropdownScenario,
   popoverScenario,
   drawerScenario,
+  overlayFocusScenario,
+  overlayDestroyScenario,
   dataSourceScenario,
   dataSourceAsyncScenario,
   tooltipScenario,
@@ -106,11 +108,16 @@ afterEach(() => {
   clearToasts()
 })
 
-/** A ContractDriver over a React-testing-library container (fireEvent auto-flushes). */
-function driverFor(container: HTMLElement): ContractDriver {
+/**
+ * A ContractDriver over a React-testing-library container (fireEvent auto-flushes).
+ * Pass the render result's `unmount` to drive the destroy/cleanup contract; the
+ * default no-op suffices for scenarios that never use the `'unmount'` action.
+ */
+function driverFor(container: HTMLElement, unmount: () => void = () => {}): ContractDriver {
   const at = (selector: string, index: number) =>
     container.querySelectorAll<HTMLElement>(selector)[index]
   return {
+    unmount,
     queryAll: (selector) => Array.from(container.querySelectorAll(selector)),
     click: (selector, index) => {
       const el = at(selector, index)
@@ -269,6 +276,42 @@ function DrawerContractHarness() {
           <p>Drawer content</p>
         </IrisDrawerContent>
       </IrisDrawer>
+    </div>
+  )
+}
+
+/**
+ * Trigger + overlay for the focus-lifecycle contract. Renders inline
+ * (`portalTarget={false}`) so the container-scoped `[role="dialog"]` count works;
+ * the focus assertions only read the in-container trigger via document.activeElement.
+ */
+function OverlayFocusContractHarness() {
+  return (
+    <div>
+      <IrisDialog defaultOpen={false} closeOnOutsideClick={false}>
+        <IrisDialogTrigger data-iris-dialog-trigger>Open</IrisDialogTrigger>
+        <IrisDialogContent portalTarget={false}>
+          <p>Dialog body</p>
+        </IrisDialogContent>
+      </IrisDialog>
+    </div>
+  )
+}
+
+/**
+ * Trigger + overlay for the destroy/cleanup contract. The overlay PORTALS to
+ * document.body (its default — no `portalTarget={false}`), so the document-scoped
+ * (`global: true`) assertions genuinely exercise portal cleanup on unmount.
+ */
+function OverlayDestroyContractHarness() {
+  return (
+    <div>
+      <IrisDialog defaultOpen={false} closeOnOutsideClick={false}>
+        <IrisDialogTrigger data-iris-dialog-trigger>Open</IrisDialogTrigger>
+        <IrisDialogContent>
+          <p>Dialog body</p>
+        </IrisDialogContent>
+      </IrisDialog>
     </div>
   )
 }
@@ -559,6 +602,16 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
     await runContract(drawerScenario, driverFor(container), expect)
   })
 
+  it('satisfies the shared overlay focus-lifecycle contract', async () => {
+    const { container } = render(<OverlayFocusContractHarness />)
+    await runContract(overlayFocusScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared overlay destroy/cleanup contract', async () => {
+    const { container, unmount } = render(<OverlayDestroyContractHarness />)
+    await runContract(overlayDestroyScenario, driverFor(container, unmount), expect)
+  })
+
   it('satisfies the shared DataSource contract', async () => {
     const { container } = render(<DataSourceHarness />)
     await runContract(dataSourceScenario, driverFor(container), expect)
@@ -638,6 +691,7 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
     // IrisPopoverContent, so a container-scoped queryAll won't find it.
     const q = (sel: string) => [...document.querySelectorAll<HTMLElement>(sel)]
     const docDriver: ContractDriver = {
+      unmount: () => {},
       queryAll: (sel) => q(sel),
       click: (sel, idx) => {
         const el = q(sel)[idx ?? 0]
@@ -664,6 +718,7 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
     render(<MenuContractHarness />)
     const q = (sel: string) => [...document.querySelectorAll<HTMLElement>(sel)]
     const docDriver: ContractDriver = {
+      unmount: () => {},
       queryAll: (sel) => q(sel),
       click: (sel, idx) => {
         const el = q(sel)[idx ?? 0]
@@ -708,6 +763,7 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
     )
     const q = (sel: string) => [...document.querySelectorAll<HTMLElement>(sel)]
     const docDriver: ContractDriver = {
+      unmount: () => {},
       queryAll: (sel) => q(sel),
       click: (sel, idx) => {
         const el = q(sel)[idx ?? 0]

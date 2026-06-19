@@ -19,17 +19,27 @@ export interface ContractAssertion {
   index?: number
   /**
    * What to read: an attribute name (e.g. `'aria-selected'`), `'text'` for
-   * trimmed `textContent`, or `'count'` for how many elements match `selector`.
+   * trimmed `textContent`, `'count'` for how many elements match `selector`,
+   * `'value'` for a form control's `.value`, or `'focused'` — whether the element
+   * at `(selector,index)` IS `document.activeElement` (`'true'`/`'false'`).
    */
   read: string
   /** Expected value: string for an attr/text, number for `'count'`, null for absent. */
   equals: string | number | null
+  /**
+   * When `true`, the check queries `document.querySelectorAll(selector)`
+   * (document-scoped) instead of the container-scoped `driver.queryAll`. Needed
+   * for post-unmount body-leak assertions (no container to scope to) and any
+   * portal-escaped node. Default container-scoped. (`'focused'` already reads the
+   * global `document.activeElement`, so it composes with `global` either way.)
+   */
+  global?: boolean
 }
 
 /** A single interaction plus the assertions that must hold afterwards. */
 export interface ContractStep {
   label: string
-  action: 'none' | 'click' | 'dblclick' | 'keydown' | 'pointer' | 'type'
+  action: 'none' | 'click' | 'dblclick' | 'keydown' | 'pointer' | 'type' | 'unmount'
   /** Target selector for actions. */
   target?: string
   index?: number
@@ -77,6 +87,13 @@ export interface ContractDriver {
   type(selector: string, index: number, text: string): void | Promise<void>
   /** Dispatch a double-click on the `index`-th match of `selector`. */
   dblclick(selector: string, index: number): void | Promise<void>
+  /**
+   * Tear down the mounted component (the lib's `render(...)` teardown — e.g.
+   * testing-library's `result.unmount()`), driving destroy/cleanup effects. The
+   * runner calls this for the `'unmount'` action, then flushes. Used by the
+   * destroy-cleanup contract to assert no role-bearing nodes leak in `document.body`.
+   */
+  unmount(): void | Promise<void>
   /** Settle pending reactivity so the following assertions see the final DOM. */
   flush(): void | Promise<void>
 }

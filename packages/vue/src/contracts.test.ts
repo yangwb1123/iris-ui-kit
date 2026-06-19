@@ -30,6 +30,8 @@ import {
   dialogScenario,
   popoverScenario,
   drawerScenario,
+  overlayFocusScenario,
+  overlayDestroyScenario,
   dropdownScenario,
   comboboxScenario,
   toastScenario,
@@ -323,6 +325,58 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     )
     await nextTick()
     await runContract(drawerScenario, driverFor(host), expect)
+  })
+
+  it('satisfies the shared overlay focus-lifecycle contract', async () => {
+    // Inline overlay (`teleport: false`) so the container-scoped [role="dialog"]
+    // count works; focus assertions read the in-container trigger via global
+    // document.activeElement (so portaling would be irrelevant either way).
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    mount(
+      () =>
+        h(
+          IrisDialog,
+          { defaultOpen: false, closeOnOutsideClick: false },
+          {
+            default: () => [
+              h(IrisDialogTrigger, { 'data-iris-dialog-trigger': '' }, () => 'Open'),
+              h(IrisDialogContent, { teleport: false }, () => h('p', 'Dialog body')),
+            ],
+          },
+        ),
+      { attachTo: host },
+    )
+    await nextTick()
+    await runContract(overlayFocusScenario, driverFor(host), expect)
+  })
+
+  it('satisfies the shared overlay destroy/cleanup contract', async () => {
+    // Overlay PORTALS to document.body (default teleport — no `teleport: false`),
+    // so the document-scoped (`global: true`) assertions exercise portal cleanup
+    // on unmount. The driver's `unmount` tears down the whole component.
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const wrapper = mount(
+      () =>
+        h(
+          IrisDialog,
+          { defaultOpen: false, closeOnOutsideClick: false },
+          {
+            default: () => [
+              h(IrisDialogTrigger, { 'data-iris-dialog-trigger': '' }, () => 'Open'),
+              h(IrisDialogContent, () => h('p', 'Dialog body')),
+            ],
+          },
+        ),
+      { attachTo: host },
+    )
+    await nextTick()
+    await runContract(
+      overlayDestroyScenario,
+      driverFor(host, () => wrapper.unmount()),
+      expect,
+    )
   })
 
   it('satisfies the shared Dropdown contract', async () => {

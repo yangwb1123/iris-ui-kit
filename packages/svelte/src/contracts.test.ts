@@ -30,6 +30,8 @@ import {
   otpInputScenario,
   dialogScenario,
   popoverScenario,
+  overlayFocusScenario,
+  overlayDestroyScenario,
   dataSourceScenario,
   dataSourceAsyncScenario,
   drawerScenario,
@@ -64,6 +66,8 @@ import IrisSplitButton from './primitives/split-button/IrisSplitButton.svelte'
 import DataSourceContractHarness from './DataSourceContractHarness.svelte'
 import DataSourceAsyncContractHarness from './DataSourceAsyncContractHarness.svelte'
 import DialogContractHarness from './DialogContractHarness.svelte'
+import OverlayFocusContractHarness from './OverlayFocusContractHarness.svelte'
+import OverlayDestroyContractHarness from './OverlayDestroyContractHarness.svelte'
 import PopoverContractHarness from './PopoverContractHarness.svelte'
 import DrawerContractHarness from './DrawerContractHarness.svelte'
 import DropdownContractHarness from './DropdownContractHarness.svelte'
@@ -72,11 +76,16 @@ import SelectContractHarness from './SelectContractHarness.svelte'
 import MenuContractHarness from './MenuContractHarness.svelte'
 import FormContractHarness from './FormContractHarness.svelte'
 
-/** A ContractDriver over a @testing-library/svelte result container. */
-function driverFor(container: HTMLElement): ContractDriver {
+/**
+ * A ContractDriver over a @testing-library/svelte result container. Pass the
+ * render result's `unmount` to drive the destroy/cleanup contract; the default
+ * no-op suffices for scenarios that never use the `'unmount'` action.
+ */
+function driverFor(container: HTMLElement, unmount: () => void = () => {}): ContractDriver {
   const at = (selector: string, index: number) =>
     container.querySelectorAll<HTMLElement>(selector)[index]
   return {
+    unmount,
     queryAll: (selector) => Array.from(container.querySelectorAll(selector)),
     click: async (selector, index) => {
       const el = at(selector, index)
@@ -106,10 +115,18 @@ function driverFor(container: HTMLElement): ContractDriver {
       // that kicks `load()`, `await tick()` then yields to the resolving fetcher's
       // microtasks and re-runs the store→$state rune effect. The extra rounds are
       // no-ops when nothing async is pending, so sync scenarios are unaffected.
+      //
+      // The overlay focus-lifecycle contract additionally relies on useFocusTrap,
+      // which moves focus into the overlay on open and RESTORES it to the trigger
+      // on close inside a requestAnimationFrame. So each round also awaits one
+      // rAF — a no-op for scenarios that schedule none, but it lets the focus
+      // (de)activation settle before the focused assertions run.
+      const raf = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
       for (let i = 0; i < 6; i++) {
         flushSync()
         await tick()
         await Promise.resolve()
+        await raf()
       }
       flushSync()
     },
@@ -350,6 +367,27 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // PopoverContractHarness.svelte for the full note.
     const { container } = render(PopoverContractHarness)
     await runContract(popoverScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared overlay focus-lifecycle contract', async () => {
+    // Inline dialog (portalTarget={false}) so the container-scoped
+    // `[role="dialog"]` count works; the focus assertions read the in-container
+    // trigger via document.activeElement, so portaling is irrelevant to them.
+    // Opening moves focus into the overlay (trigger focused === 'false'); Escape
+    // closes and useFocusTrap restores focus to the trigger (focused === 'true').
+    const { container } = render(OverlayFocusContractHarness)
+    await runContract(overlayFocusScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared overlay destroy/cleanup contract', async () => {
+    // PORTALED dialog (default portalTarget — NOT false), so the document-scoped
+    // (`global: true`) assertions genuinely exercise portal cleanup on unmount.
+    // The driver's `unmount` is threaded from @testing-library/svelte render()'s
+    // result so the 'unmount' action tears the component down; the `use:portal`
+    // action's destroy() must remove the relocated node, leaving zero
+    // `[role="dialog"]` in document.body.
+    const { container, unmount } = render(OverlayDestroyContractHarness)
+    await runContract(overlayDestroyScenario, driverFor(container, unmount), expect)
   })
 
   it('satisfies the shared DataSource contract', async () => {

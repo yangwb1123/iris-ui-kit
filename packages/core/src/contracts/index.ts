@@ -1,6 +1,8 @@
 export { dialogScenario } from './scenarios/dialog'
 export { popoverScenario } from './scenarios/popover'
 export { drawerScenario } from './scenarios/drawer'
+export { overlayFocusScenario } from './scenarios/overlay-focus'
+export { overlayDestroyScenario } from './scenarios/overlay-destroy'
 export { dropdownScenario } from './scenarios/dropdown'
 export { tooltipScenario } from './scenarios/tooltip'
 export { comboboxScenario } from './scenarios/combobox'

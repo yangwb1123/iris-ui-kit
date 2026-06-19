@@ -1,0 +1,128 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Window control buttons (Windows / KDE glyph style) */
+.win-ctl {
+  width: 46px;
+  height: var(--os-titlebar-h);
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s ease;
+}
+.win-ctl:hover {
+  background: rgba(127, 127, 127, 0.2);
+}
+.win-ctl--close:hover {
+  background: #e81123;
+  color: #fff;
+}
+
+/* Taskbar / dock buttons */
+.task-btn {
+  min-width: 44px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 10px;
+  position: relative;
+  transition:
+    background 0.12s ease,
+    transform 0.12s ease;
+}
+.task-btn:hover {
+  background: rgba(127, 127, 127, 0.18);
+}
+.task-btn--start:hover {
+  color: var(--os-accent);
+}
+.task-btn--active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--os-accent);
+}
+
+/* Desktop icons */
+.desktop-icon {
+  width: 84px;
+  height: 84px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.desktop-icon:hover,
+.desktop-icon:focus-visible {
+  background: rgba(255, 255, 255, 0.18);
+  outline: none;
+}
+
+/* Start-menu app tiles */
+.launch-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 88px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.launch-tile:hover {
+  background: rgba(127, 127, 127, 0.16);
+}
+
+/* Slim scrollbars inside windows */
+.win-body::-webkit-scrollbar,
+.startmenu ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.win-body::-webkit-scrollbar-thumb,
+.startmenu ::-webkit-scrollbar-thumb {
+  background: rgba(127, 127, 127, 0.4);
+  border-radius: 6px;
+}

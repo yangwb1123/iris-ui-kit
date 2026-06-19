@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { For } from 'solid-js'
+import { createSignal, For } from 'solid-js'
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import {
   runContract,
@@ -39,6 +39,8 @@ import {
   bannerScenario,
   splitButtonScenario,
   formScenario,
+  tableCellEditScenario,
+  tableColumnResizeScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
@@ -164,6 +166,10 @@ function driverFor(container: HTMLElement): ContractDriver {
     pointer: (selector, index, event) => {
       const el = at(selector, index)
       if (el) fireEvent(el, new MouseEvent(`pointer${event}`, { bubbles: true }))
+    },
+    dblclick: (selector, index) => {
+      const el = at(selector, index)
+      if (el) fireEvent.doubleClick(el)
     },
     flush: () => {},
   }
@@ -344,6 +350,52 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
       />
     ))
     await runContract(tableExpandScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Table column-resize contract', async () => {
+    // Controlled first-column width (initial 200) so `widthOf()` returns the
+    // override, not jsdom's layout-less 0; the probe exposes it observably.
+    function ResizeHarness() {
+      const [widths, setWidths] = createSignal<Record<string, number>>({ name: 200 })
+      return (
+        <>
+          <IrisTable
+            resizableColumns
+            columnWidths={widths()}
+            onColumnWidthsChange={setWidths}
+            columns={[
+              { key: 'name', title: 'Name' },
+              { key: 'age', title: 'Age' },
+            ]}
+            data={[
+              { id: '1', name: 'Charlie', age: 30 },
+              { id: '2', name: 'Alpha', age: 25 },
+              { id: '3', name: 'Bravo', age: 35 },
+            ]}
+          />
+          <div data-col-width={String(widths().name)} />
+        </>
+      )
+    }
+    const { container } = render(() => <ResizeHarness />)
+    await runContract(tableColumnResizeScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Table cell-edit contract', async () => {
+    const { container } = render(() => (
+      <IrisTable
+        columns={[
+          { key: 'name', title: 'Name', editable: true },
+          { key: 'age', title: 'Age' },
+        ]}
+        data={[
+          { id: '1', name: 'Charlie', age: 30 },
+          { id: '2', name: 'Alpha', age: 25 },
+          { id: '3', name: 'Bravo', age: 35 },
+        ]}
+      />
+    ))
+    await runContract(tableCellEditScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Tree contract', async () => {

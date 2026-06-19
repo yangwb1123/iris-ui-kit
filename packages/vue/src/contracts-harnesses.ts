@@ -24,6 +24,7 @@ import { IrisStepperStep } from './primitives/stepper/StepperStep'
 import { IrisCalendar } from './primitives/calendar/Calendar'
 import { IrisTagInput } from './primitives/tag-input/TagInput'
 import { IrisOtpInput } from './primitives/otp-input/OtpInput'
+import { IrisTable } from './primitives/table/Table'
 
 export function driverFor(container: HTMLElement): ContractDriver {
   const at = (selector: string, index: number) =>
@@ -64,6 +65,10 @@ export function driverFor(container: HTMLElement): ContractDriver {
       el.dispatchEvent(new FocusEvent('focus', { bubbles: true }))
       ;(el as HTMLInputElement).value = text
       el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }))
+    },
+    dblclick: (selector, index) => {
+      const el = at(selector, index)
+      if (el) el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }))
     },
     flush: () => nextTick(),
   }
@@ -363,6 +368,40 @@ export const OtpInputHarness = defineComponent({
           value.value = v
         },
       })
+  },
+})
+
+/**
+ * Controlled column-resize harness mirroring the React reference. The first
+ * column ('name') width is CONTROLLED at an initial 200 via a Vue ref bound to
+ * `columnWidths` + `onUpdate:columnWidths`, so the Table's `measure()` returns
+ * the explicit override (not jsdom's layout-less 0). A sibling probe element
+ * exposes the current width as `data-col-width` for the contract to read.
+ */
+export const ColumnResizeHarness = defineComponent({
+  name: 'ColumnResizeHarness',
+  setup() {
+    const widths = ref<Record<string, number>>({ name: 200 })
+    return () =>
+      h('div', null, [
+        h(IrisTable, {
+          resizableColumns: true,
+          columnWidths: widths.value,
+          'onUpdate:columnWidths': (next: Record<string, number>) => {
+            widths.value = next
+          },
+          columns: [
+            { key: 'name', title: 'Name' },
+            { key: 'age', title: 'Age' },
+          ],
+          data: [
+            { id: '1', name: 'Charlie', age: 30 },
+            { id: '2', name: 'Alpha', age: 25 },
+            { id: '3', name: 'Bravo', age: 35 },
+          ],
+        }),
+        h('div', { 'data-col-width': String(widths.value.name) }),
+      ])
   },
 })
 

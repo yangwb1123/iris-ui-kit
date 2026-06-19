@@ -39,6 +39,8 @@ import {
   bannerScenario,
   splitButtonScenario,
   formScenario,
+  tableCellEditScenario,
+  tableColumnResizeScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
@@ -48,6 +50,8 @@ import ToggleGroupMultiContractHarness from './ToggleGroupMultiContractHarness.s
 import TableSortContractHarness from './TableSortContractHarness.svelte'
 import TableSelectContractHarness from './TableSelectContractHarness.svelte'
 import TableExpandContractHarness from './TableExpandContractHarness.svelte'
+import TableCellEditContractHarness from './TableCellEditContractHarness.svelte'
+import ColumnResizeContractHarness from './ColumnResizeContractHarness.svelte'
 import TreeContractHarness from './TreeContractHarness.svelte'
 import CalendarContractHarness from './CalendarContractHarness.svelte'
 import ComboboxContractHarness from './ComboboxContractHarness.svelte'
@@ -105,6 +109,10 @@ function driverFor(container: HTMLElement): ContractDriver {
         nativeInputValueSetter?.call(el, text)
         el.dispatchEvent(new Event('input', { bubbles: true }))
       }
+    },
+    dblclick: async (selector, index) => {
+      const el = at(selector, index)
+      if (el) await fireEvent.doubleClick(el)
     },
   }
 }
@@ -233,6 +241,16 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // function-prop renderDetail idiom).
     const { container } = render(TableExpandContractHarness)
     await runContract(tableExpandScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Table column-resize contract', async () => {
+    const { container } = render(ColumnResizeContractHarness)
+    await runContract(tableColumnResizeScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Table cell-edit contract', async () => {
+    const { container } = render(TableCellEditContractHarness)
+    await runContract(tableCellEditScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Tree keyboard contract', async () => {

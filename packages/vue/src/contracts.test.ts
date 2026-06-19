@@ -39,6 +39,8 @@ import {
   alertScenario,
   bannerScenario,
   formScenario,
+  tableCellEditScenario,
+  tableColumnResizeScenario,
 } from '@iris-ui/core/contracts'
 import {
   driverFor,
@@ -60,6 +62,7 @@ import {
   TagInputHarness,
   OtpInputHarness,
   DataSourceHarness,
+  ColumnResizeHarness,
 } from './contracts-harnesses'
 import { IrisTable } from './primitives/table/Table'
 import { IrisTree } from './primitives/tree/Tree'
@@ -188,6 +191,34 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     })
     await nextTick()
     await runContract(tableExpandScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared Table column-resize contract', async () => {
+    // Controlled first-column width (initial 200) so `measure()` returns the
+    // override, not jsdom's layout-less 0; the probe exposes it observably.
+    const el = makeHost()
+    const wrapper = mount(ColumnResizeHarness, { attachTo: el })
+    await nextTick()
+    await runContract(tableColumnResizeScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared Table cell-edit contract', async () => {
+    const el = makeHost()
+    const wrapper = mount(IrisTable, {
+      attachTo: el,
+      props: {
+        columns: [
+          { key: 'name', title: 'Name', editable: true },
+          { key: 'age', title: 'Age' },
+        ],
+        data: [
+          { id: '1', name: 'Charlie', age: 30 },
+          { id: '2', name: 'Alpha', age: 25 },
+          { id: '3', name: 'Bravo', age: 35 },
+        ],
+      },
+    })
+    await runContract(tableCellEditScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 
   it('satisfies the shared Tree keyboard contract', async () => {

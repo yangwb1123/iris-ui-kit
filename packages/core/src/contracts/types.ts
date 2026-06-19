@@ -29,7 +29,7 @@ export interface ContractAssertion {
 /** A single interaction plus the assertions that must hold afterwards. */
 export interface ContractStep {
   label: string
-  action: 'none' | 'click' | 'keydown' | 'pointer' | 'type'
+  action: 'none' | 'click' | 'dblclick' | 'keydown' | 'pointer' | 'type'
   /** Target selector for actions. */
   target?: string
   index?: number
@@ -75,6 +75,8 @@ export interface ContractDriver {
   pointer(selector: string, index: number, event: string): void | Promise<void>
   /** Set value and dispatch an input event on the `index`-th match. */
   type(selector: string, index: number, text: string): void | Promise<void>
+  /** Dispatch a double-click on the `index`-th match of `selector`. */
+  dblclick(selector: string, index: number): void | Promise<void>
   /** Settle pending reactivity so the following assertions see the final DOM. */
   flush(): void | Promise<void>
 }

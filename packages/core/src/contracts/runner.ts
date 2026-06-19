@@ -15,7 +15,13 @@ function check(
   }
   const el = els[a.index ?? 0]
   const actual =
-    el == null ? null : a.read === 'text' ? (el.textContent ?? '').trim() : el.getAttribute(a.read)
+    el == null
+      ? null
+      : a.read === 'text'
+        ? (el.textContent ?? '').trim()
+        : a.read === 'value'
+          ? ((el as unknown as { value: string }).value ?? '')
+          : el.getAttribute(a.read)
   expect(actual, `${where} [${a.index ?? 0}] ${a.read}`).toBe(
     a.equals === null ? null : String(a.equals),
   )
@@ -45,6 +51,7 @@ export async function runContract(
       else if (step.action === 'pointer')
         await driver.pointer(selector, index, step.pointerEvent ?? 'enter')
       else if (step.action === 'type') await driver.type(selector, index, step.typeText ?? '')
+      else if (step.action === 'dblclick') await driver.dblclick(selector, index)
     }
     await driver.flush()
     for (const a of step.expect) check(driver, scenario.name, step.label, a, expect)

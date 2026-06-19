@@ -18,6 +18,7 @@ import {
   tableSortScenario,
   tableSelectScenario,
   tableExpandScenario,
+  tableColumnResizeScenario,
   treeScenario,
   calendarScenario,
   rangeSliderScenario,
@@ -38,9 +39,10 @@ import {
   bannerScenario,
   splitButtonScenario,
   formScenario,
+  tableCellEditScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
 import { useDataSource } from './data/useDataSource'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -114,7 +116,7 @@ function driverFor(container: HTMLElement): ContractDriver {
     },
     keydown: (selector, index, key) => {
       const el = at(selector, index)
-      if (el) fireEvent.keyDown(el, { key })
+      if (el) fireEvent.keyDown(el, { key, bubbles: true })
     },
     pointer: (selector, index, event) => {
       const el = at(selector, index)
@@ -128,6 +130,10 @@ function driverFor(container: HTMLElement): ContractDriver {
       act(() => {
         fireEvent.change(el, { target: { value: text } })
       })
+    },
+    dblclick: (selector, index) => {
+      const el = at(selector, index)
+      if (el) fireEvent.doubleClick(el)
     },
     flush: async () => {
       // Allow pending requestAnimationFrame callbacks (e.g. DrawerContent
@@ -364,6 +370,52 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
     await runContract(tableExpandScenario, driverFor(container), expect)
   })
 
+  it('satisfies the shared Table cell-edit contract', async () => {
+    const { container } = render(
+      <IrisTable
+        columns={[
+          { key: 'name', title: 'Name', editable: true },
+          { key: 'age', title: 'Age' },
+        ]}
+        data={[
+          { id: '1', name: 'Charlie', age: 30 },
+          { id: '2', name: 'Alpha', age: 25 },
+          { id: '3', name: 'Bravo', age: 35 },
+        ]}
+      />,
+    )
+    await runContract(tableCellEditScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Table column-resize contract', async () => {
+    // Controlled first-column width (initial 200) so `measure()` returns the
+    // override, not jsdom's layout-less 0; the probe exposes it observably.
+    function ResizeHarness() {
+      const [widths, setWidths] = useState<Record<string, number>>({ name: 200 })
+      return (
+        <>
+          <IrisTable
+            resizableColumns
+            columnWidths={widths}
+            onColumnWidthsChange={setWidths}
+            columns={[
+              { key: 'name', title: 'Name' },
+              { key: 'age', title: 'Age' },
+            ]}
+            data={[
+              { id: '1', name: 'Charlie', age: 30 },
+              { id: '2', name: 'Alpha', age: 25 },
+              { id: '3', name: 'Bravo', age: 35 },
+            ]}
+          />
+          <div data-col-width={String(widths.name)} />
+        </>
+      )
+    }
+    const { container } = render(<ResizeHarness />)
+    await runContract(tableColumnResizeScenario, driverFor(container), expect)
+  })
+
   it('satisfies the shared Tree keyboard contract', async () => {
     const { container } = render(
       <IrisTree
@@ -522,6 +574,7 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       },
       type: () => undefined,
       pointer: (_sel, _idx, _event) => undefined,
+      dblclick: () => undefined,
       flush: async () => {
         await act(() => {})
       },
@@ -547,6 +600,7 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       },
       type: () => undefined,
       pointer: () => undefined,
+      dblclick: () => undefined,
       flush: async () => {
         await act(() => {})
       },
@@ -590,6 +644,7 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       },
       type: () => undefined,
       pointer: () => undefined,
+      dblclick: () => undefined,
       flush: async () => {
         await act(() => {})
       },

@@ -1,0 +1,169 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Windows-11 skin — CSS custom properties consumed by the shell. The window
+   manager is framework-agnostic; this is just the look. */
+.os-root {
+  --os-accent: #0a84ff;
+  --os-accent-strong: #0067c0;
+  --os-wallpaper: radial-gradient(140% 120% at 70% 10%, #4cc2ff 0%, #2b6cb0 42%, #11294f 100%);
+  --os-window-bg: rgba(243, 243, 243, 0.92);
+  --os-window-fg: #1b1b1b;
+  --os-window-radius: 8px;
+  --os-window-border: 1px solid rgba(255, 255, 255, 0.5);
+  --os-window-shadow: 0 16px 48px rgba(0, 0, 0, 0.36);
+  --os-titlebar-bg: rgba(255, 255, 255, 0.6);
+  --os-titlebar-h: 36px;
+  --os-bar-bg: rgba(243, 243, 243, 0.72);
+  --os-bar-fg: #1b1b1b;
+  --os-bar-h: 48px;
+  --os-blur: blur(28px) saturate(1.6);
+  --os-font: 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* Window control buttons (Windows glyph style) */
+.win-ctl {
+  width: 46px;
+  height: var(--os-titlebar-h);
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s ease;
+}
+.win-ctl:hover {
+  background: rgba(127, 127, 127, 0.2);
+}
+.win-ctl--close:hover {
+  background: #e81123;
+  color: #fff;
+}
+
+/* Taskbar buttons */
+.task-btn {
+  min-width: 44px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 10px;
+  position: relative;
+  transition:
+    background 0.12s ease,
+    transform 0.12s ease;
+}
+.task-btn:hover {
+  background: rgba(127, 127, 127, 0.18);
+}
+.task-btn--start:hover {
+  color: var(--os-accent);
+}
+.task-btn--active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--os-accent);
+}
+
+/* Desktop icons */
+.desktop-icon {
+  width: 84px;
+  height: 84px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.desktop-icon:hover,
+.desktop-icon:focus-visible {
+  background: rgba(255, 255, 255, 0.18);
+  outline: none;
+}
+
+/* Start-menu app tiles */
+.launch-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 88px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.launch-tile:hover {
+  background: rgba(127, 127, 127, 0.16);
+}
+
+/* Window open animation — plays once on first mount. */
+@keyframes win-open {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.win-open {
+  animation: win-open 140ms ease-out;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .win-open {
+    animation: none;
+  }
+}
+
+/* Slim scrollbars inside windows */
+.win-body::-webkit-scrollbar,
+.startmenu ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.win-body::-webkit-scrollbar-thumb,
+.startmenu ::-webkit-scrollbar-thumb {
+  background: rgba(127, 127, 127, 0.4);
+  border-radius: 6px;
+}

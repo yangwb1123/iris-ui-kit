@@ -245,6 +245,96 @@ importers:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(terser@5.48.0)
 
+  apps/desktop-os-solid:
+    dependencies:
+      '@iris-ui/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@iris-ui/solid':
+        specifier: workspace:*
+        version: link:../../packages/solid
+      '@iris-ui/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
+      solid-js:
+        specifier: ^1.9.3
+        version: 1.9.13
+    devDependencies:
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
+      vite:
+        specifier: ^5.4.11
+        version: 5.4.21(@types/node@24.13.2)(terser@5.48.0)
+      vite-plugin-solid:
+        specifier: ^2.11.0
+        version: 2.11.12(@testing-library/jest-dom@6.9.1)(solid-js@1.9.13)(vite@5.4.21(@types/node@24.13.2)(terser@5.48.0))
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(terser@5.48.0)
+
+  apps/desktop-os-svelte:
+    dependencies:
+      '@iris-ui/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@iris-ui/svelte':
+        specifier: workspace:*
+        version: link:../../packages/svelte
+      '@iris-ui/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
+      svelte:
+        specifier: ^5.16.0
+        version: 5.56.1(@typescript-eslint/types@8.59.4)
+    devDependencies:
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^4.0.4
+        version: 4.0.4(svelte@5.56.1(@typescript-eslint/types@8.59.4))(vite@5.4.21(@types/node@24.13.2)(terser@5.48.0))
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
+      svelte-check:
+        specifier: ^4.1.1
+        version: 4.5.0(picomatch@4.0.4)(svelte@5.56.1(@typescript-eslint/types@8.59.4))(typescript@5.9.3)
+      vite:
+        specifier: ^5.4.11
+        version: 5.4.21(@types/node@24.13.2)(terser@5.48.0)
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(terser@5.48.0)
+
+  apps/desktop-os-vue:
+    dependencies:
+      '@iris-ui/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@iris-ui/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
+      '@iris-ui/vue':
+        specifier: workspace:*
+        version: link:../../packages/vue
+      vue:
+        specifier: ^3.5.13
+        version: 3.5.34(typescript@5.9.3)
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: ^5.2.1
+        version: 5.2.4(vite@5.4.21(@types/node@24.13.2)(terser@5.48.0))(vue@3.5.34(typescript@5.9.3))
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
+      vite:
+        specifier: ^5.4.11
+        version: 5.4.21(@types/node@24.13.2)(terser@5.48.0)
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(terser@5.48.0)
+      vue-tsc:
+        specifier: ^2.1.10
+        version: 2.2.12(typescript@5.9.3)
+
   apps/desktop-tauri: {}
 
   apps/desktop-wails: {}

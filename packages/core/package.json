@@ -22,6 +22,11 @@
       "types": "./dist/window.d.ts",
       "import": "./dist/window.js",
       "require": "./dist/window.cjs"
+    },
+    "./profile": {
+      "types": "./dist/profile.d.ts",
+      "import": "./dist/profile.js",
+      "require": "./dist/profile.cjs"
     }
   },
   "files": [

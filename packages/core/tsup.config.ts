@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['src/index.ts', 'src/contracts/index.ts', 'src/window.ts'],
+  entry: ['src/index.ts', 'src/contracts/index.ts', 'src/window.ts', 'src/profile.ts'],
   format: ['esm', 'cjs'],
   dts: true,
   sourcemap: true,

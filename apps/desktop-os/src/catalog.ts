@@ -12,6 +12,7 @@ import { DataApp } from './appviews/Data'
 import { CalculatorApp } from './appviews/Calculator'
 import { PhotosApp } from './appviews/Photos'
 import { AppStoreView } from './appviews/AppStore'
+import { AssistantView } from './appviews/Assistant'
 
 /**
  * Capabilities an app may request. The desktop surfaces these as a transparent
@@ -74,6 +75,17 @@ export const CATALOG: AppManifest[] = [
     description: 'About this windowed desktop shell.',
     defaultSize: { width: 460, height: 360 },
     render: () => React.createElement(AboutView),
+  },
+  {
+    id: 'assistant',
+    name: 'Assistant',
+    icon: '🤖',
+    kind: 'component',
+    builtin: true,
+    description: 'Drive the desktop in natural language (command-registry agent).',
+    defaultSize: { width: 460, height: 460 },
+    permissions: ['agent'],
+    render: () => React.createElement(AssistantView),
   },
   {
     id: 'appstore',

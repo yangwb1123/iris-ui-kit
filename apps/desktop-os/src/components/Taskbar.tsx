@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { getApp } from '../apps'
+import { getManifest } from '../catalog'
 import { useWm, useWmState } from '../shell'
 
 function Clock() {
@@ -81,7 +81,7 @@ export function Taskbar({
                 onTask(w.id)
               }}
             >
-              <span style={{ fontSize: 18 }}>{getApp(w.appId)?.icon}</span>
+              <span style={{ fontSize: 18 }}>{getManifest(w.appId)?.icon}</span>
             </button>
           )
         })}

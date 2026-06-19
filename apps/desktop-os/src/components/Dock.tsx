@@ -1,8 +1,8 @@
 import * as React from 'react'
-import { getApp } from '../apps'
-import { useWm, useWmState } from '../shell'
+import { getManifest } from '../catalog'
+import { useApps, useLaunchApp, useWm, useWmState } from '../shell'
 
-const PINNED = ['about', 'files', 'notepad', 'showcase', 'settings']
+const PINNED = ['about', 'appstore', 'files', 'showcase', 'settings']
 
 const BASE = 46 // resting icon box
 const MAX_BOOST = 26 // extra px added to the icon under the cursor
@@ -12,8 +12,15 @@ const RADIUS = 110 // how far (px) the magnification reaches along the dock
 export function Dock({ onToggleLauncher }: { onToggleLauncher: () => void }) {
   const wm = useWm()
   const state = useWmState()
+  const apps = useApps()
+  const launch = useLaunchApp()
+  const available = new Set(apps.map((a) => a.id))
   const running = new Set(state.windows.map((w) => w.appId))
-  const ids = [...PINNED, ...state.windows.map((w) => w.appId).filter((id) => !PINNED.includes(id))]
+  // Pinned apps that are actually available + any running app not already pinned.
+  const ids = [
+    ...PINNED.filter((id) => available.has(id)),
+    ...state.windows.map((w) => w.appId).filter((id) => !PINNED.includes(id)),
+  ]
   const seen = new Set<string>()
   const items = ids.filter((id) => (seen.has(id) ? false : (seen.add(id), true)))
 
@@ -39,11 +46,11 @@ export function Dock({ onToggleLauncher }: { onToggleLauncher: () => void }) {
       if (win.focused && win.state !== 'minimized') wm.minimize(win.id)
       else wm.focus(win.id)
     } else {
-      const app = getApp(appId)
-      if (app) {
-        wm.open({ appId, title: app.name, rect: app.defaultSize })
-        bounce(appId)
-      }
+      const app = getManifest(appId)
+      if (!app) return
+      launch(appId)
+      // Only window-creating apps bounce; `link` apps open in a new tab.
+      if (app.kind !== 'link') bounce(appId)
     }
   }
 
@@ -102,7 +109,7 @@ export function Dock({ onToggleLauncher }: { onToggleLauncher: () => void }) {
         }}
       >
         {items.map((id, i) => {
-          const app = getApp(id)
+          const app = getManifest(id)
           if (!app) return null
           const scale = scaleFor(centers[i] ?? 0)
           const isBouncing = bouncing.has(id)

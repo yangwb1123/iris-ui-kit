@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { IrisMovable, IrisResizable } from '@iris-ui/react'
 import { type DesktopWindow, type SnapZone } from '@iris-ui/core/window'
-import { getApp } from '../apps'
+import { getManifest } from '../catalog'
 import { useOs, useWm, useWmState } from '../shell'
 import { snapHintFor } from '../depth'
 import { ContextMenu, type MenuItem } from './ContextMenu'
@@ -64,7 +64,7 @@ function Controls({ window: w }: { window: DesktopWindow }) {
 function Chrome({ window: w }: { window: DesktopWindow }) {
   const wm = useWm()
   const { chrome } = useOs()
-  const app = getApp(w.appId)
+  const app = getManifest(w.appId)
   // Titlebar right-click menu anchor (null = closed).
   const [menu, setMenu] = React.useState<{ x: number; y: number } | null>(null)
   const controls = <Controls window={w} />
@@ -150,11 +150,77 @@ function Chrome({ window: w }: { window: DesktopWindow }) {
   )
 }
 
-function Body({ window: w }: { window: DesktopWindow }) {
-  const app = getApp(w.appId)
+/**
+ * Embedded (`kind:'iframe'`) app body. Always overlays an "Open in new tab"
+ * affordance: we can't reliably detect when a site refuses embedding (it just
+ * renders blank under X-Frame-Options / CSP `frame-ancestors`), so we make the
+ * escape hatch always available.
+ */
+function IframeBody({ url }: { url: string }) {
   return (
-    <div className="win-body" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-      {app ? app.render() : <div style={{ padding: 16 }}>Unknown app: {w.appId}</div>}
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <iframe
+        src={url}
+        title={url}
+        sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
+        style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: 8,
+          right: 8,
+          bottom: 8,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '6px 10px',
+          borderRadius: 8,
+          fontSize: 11,
+          background: 'color-mix(in srgb, var(--os-window-bg) 88%, transparent)',
+          color: 'var(--os-window-fg)',
+          border: '1px solid rgba(127,127,127,0.3)',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
+          backdropFilter: 'var(--os-blur)',
+          WebkitBackdropFilter: 'var(--os-blur)',
+        }}
+      >
+        <span style={{ flex: 1, opacity: 0.75 }}>
+          If this stays blank, the site disallows embedding —
+        </span>
+        <button
+          type="button"
+          onClick={() => window.open(url, '_blank', 'noopener')}
+          style={{
+            border: '1px solid var(--os-accent)',
+            background: 'var(--os-accent)',
+            color: '#fff',
+            borderRadius: 6,
+            padding: '4px 10px',
+            fontSize: 11,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Open in new tab
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function Body({ window: w }: { window: DesktopWindow }) {
+  const app = getManifest(w.appId)
+  const scroll = app?.kind === 'iframe' ? 'hidden' : 'auto'
+  return (
+    <div className="win-body" style={{ flex: 1, minHeight: 0, overflow: scroll }}>
+      {!app ? (
+        <div style={{ padding: 16 }}>Unknown app: {w.appId}</div>
+      ) : app.kind === 'iframe' && app.url ? (
+        <IframeBody url={app.url} />
+      ) : (
+        app.render?.()
+      )}
     </div>
   )
 }

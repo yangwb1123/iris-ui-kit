@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { getApp } from '../apps'
+import { getManifest } from '../catalog'
 import { useWm, useWmState } from '../shell'
 
 /** A faux quick-toggle in the KDE system-tray popup (Wi-Fi / Sound / Night-Color). */
@@ -164,7 +164,7 @@ export function Panel({ onToggleLauncher }: { onToggleLauncher: () => void }) {
                 e.currentTarget.style.boxShadow = 'none'
               }}
             >
-              <span style={{ fontSize: 16 }}>{getApp(w.appId)?.icon}</span>
+              <span style={{ fontSize: 16 }}>{getManifest(w.appId)?.icon}</span>
               <span
                 style={{
                   fontSize: 12,

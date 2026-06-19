@@ -15,6 +15,7 @@ export default defineConfig(({ command }) => ({
       ? {
           alias: {
             '@iris-ui/core/window': src('core/src/window.ts'),
+            '@iris-ui/core/profile': src('core/src/profile.ts'),
             '@iris-ui/core': src('core/src/index.ts'),
             '@iris-ui/tokens': src('tokens/src/index.ts'),
             '@iris-ui/theme': src('theme/src/index.ts'),

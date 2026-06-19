@@ -1,30 +1,26 @@
 import * as React from 'react'
 import { type SnapZone } from '@iris-ui/core/window'
-import { APPS } from '../apps'
 import { OS_ORDER, CHROMES } from '../os'
-import { useOs, useWm, useWmState } from '../shell'
+import { useApps, useLaunchApp, useOs, useWm, useWmState } from '../shell'
 import { Window } from './Window'
 import { SnapPreview } from './SnapPreview'
 import { TopBar, BottomBar, Launcher } from './Bars'
 import { ContextMenu, type MenuItem } from './ContextMenu'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
-const SHORTCUTS = ['about', 'files', 'showcase', 'settings']
+const SHORTCUTS = ['about', 'appstore', 'showcase', 'settings']
 
 export function Desktop() {
   const wm = useWm()
   const state = useWmState()
   const { setOs } = useOs()
+  const apps = useApps()
+  const open = useLaunchApp()
   const [launcherOpen, setLauncherOpen] = React.useState(false)
   // Live drag-to-edge snap zone (lifted from Window) → drives the snap preview.
   const [snapHint, setSnapHint] = React.useState<SnapZone | null>(null)
   // Right-click desktop menu anchor (null = closed).
   const [menu, setMenu] = React.useState<{ x: number; y: number } | null>(null)
-
-  const open = (appId: string) => {
-    const app = APPS.find((a) => a.id === appId)
-    if (app) wm.open({ appId: app.id, title: app.name, rect: app.defaultSize })
-  }
 
   const desktopMenuItems: MenuItem[] = [
     ...OS_ORDER.map(
@@ -90,7 +86,7 @@ export function Desktop() {
         }}
       >
         {SHORTCUTS.map((id) => {
-          const app = APPS.find((a) => a.id === id)
+          const app = apps.find((a) => a.id === id)
           if (!app) return null
           return (
             <button

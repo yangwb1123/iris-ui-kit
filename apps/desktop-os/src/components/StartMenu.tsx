@@ -1,10 +1,10 @@
 import * as React from 'react'
-import { APPS } from '../apps'
-import { useOs, useWm } from '../shell'
+import { useApps, useLaunchApp, useOs } from '../shell'
 
 /** App launcher / Start menu — search filters the app grid; click opens a window. */
 export function StartMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const wm = useWm()
+  const apps = useApps()
+  const launchApp = useLaunchApp()
   const { chrome } = useOs()
   const [query, setQuery] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -19,12 +19,10 @@ export function StartMenu({ open, onClose }: { open: boolean; onClose: () => voi
   if (!open) return null
 
   const q = query.trim().toLowerCase()
-  const results = q ? APPS.filter((a) => a.name.toLowerCase().includes(q)) : APPS
+  const results = q ? apps.filter((a) => a.name.toLowerCase().includes(q)) : apps
 
   const launch = (appId: string) => {
-    const app = APPS.find((a) => a.id === appId)
-    if (!app) return
-    wm.open({ appId: app.id, title: app.name, rect: app.defaultSize })
+    launchApp(appId)
     onClose()
   }
 

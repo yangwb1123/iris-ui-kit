@@ -2,25 +2,20 @@ import * as React from 'react'
 import { IrisButton, IrisBadge, IrisInput } from '@iris-ui/react'
 import { OS_ORDER, CHROMES } from './os'
 import { useOs, useWm, useWmState } from './shell'
-import { DataApp } from './appviews/Data'
-import { CalculatorApp } from './appviews/Calculator'
 import { TerminalApp } from './appviews/Terminal'
-import { PhotosApp } from './appviews/Photos'
 
-export interface AppDef {
-  id: string
-  name: string
-  /** Emoji glyph used as the icon (keeps the demo dependency-free). */
-  icon: string
-  defaultSize?: { width: number; height: number }
-  render: () => React.ReactNode
-}
+/**
+ * The built-in COMPONENT app views. The app catalog (manifests, kinds, install
+ * state) lives in `./catalog`; this module only houses the React panes that the
+ * `kind:'component'` manifests render. Re-exports the app-view components so the
+ * catalog can wire them into manifests.
+ */
 
 function Pane({ children }: { children: React.ReactNode }) {
   return <div style={{ padding: 20, display: 'grid', gap: 14, lineHeight: 1.6 }}>{children}</div>
 }
 
-function AboutApp() {
+export function AboutView() {
   return (
     <Pane>
       <h2 style={{ margin: 0 }}>Iris Desktop OS</h2>
@@ -32,8 +27,9 @@ function AboutApp() {
         <code>IrisResizable</code>.
       </p>
       <p style={{ margin: 0 }}>
-        <strong>One logic, three looks:</strong> open <em>Settings</em> to switch the skin between
-        Windows 11, macOS and KDE Plasma — the same windows just re-style.
+        <strong>Aggregation shell:</strong> open the <em>App Store</em> to install link &amp; iframe
+        apps; your profile (skin + installed apps) persists in localStorage via{' '}
+        <code>@iris-ui/core/profile</code>.
       </p>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <IrisBadge tone="primary" variant="subtle">
@@ -50,7 +46,7 @@ function AboutApp() {
   )
 }
 
-function NotepadApp() {
+export function NotepadView() {
   const [text, setText] = React.useState('')
   return (
     <textarea
@@ -81,7 +77,7 @@ const FILES = [
   { name: 'wallpaper.png', kind: 'file', icon: '🖼️' },
 ]
 
-function FilesApp() {
+export function FilesView() {
   return (
     <div style={{ padding: 12, display: 'grid', gap: 4 }}>
       {FILES.map((f) => (
@@ -107,7 +103,7 @@ function FilesApp() {
   )
 }
 
-function ShowcaseApp() {
+export function ShowcaseView() {
   const [name, setName] = React.useState('')
   return (
     <Pane>
@@ -140,14 +136,14 @@ function ShowcaseApp() {
   )
 }
 
-function SettingsApp() {
+export function SettingsView() {
   const { chrome, setOs } = useOs()
   return (
     <Pane>
       <h3 style={{ margin: 0 }}>Appearance</h3>
       <p style={{ margin: 0, opacity: 0.7 }}>
         Switch the desktop skin. The window manager, taskbar, and every open window stay exactly the
-        same — only the look changes.
+        same — only the look changes. Your choice is saved to your profile and survives a reload.
       </p>
       <div style={{ display: 'grid', gap: 10 }}>
         {OS_ORDER.map((id) => {
@@ -204,7 +200,7 @@ function SettingsApp() {
   )
 }
 
-function TaskManagerApp() {
+export function TaskManagerView() {
   const wm = useWm()
   const state = useWmState()
   return (
@@ -228,79 +224,7 @@ function TaskManagerApp() {
   )
 }
 
-export const APPS: AppDef[] = [
-  {
-    id: 'about',
-    name: 'About',
-    icon: 'ℹ️',
-    defaultSize: { width: 460, height: 360 },
-    render: () => <AboutApp />,
-  },
-  {
-    id: 'files',
-    name: 'Files',
-    icon: '📁',
-    defaultSize: { width: 520, height: 400 },
-    render: () => <FilesApp />,
-  },
-  {
-    id: 'notepad',
-    name: 'Notepad',
-    icon: '📝',
-    defaultSize: { width: 480, height: 360 },
-    render: () => <NotepadApp />,
-  },
-  {
-    id: 'showcase',
-    name: 'Iris Showcase',
-    icon: '🎛️',
-    defaultSize: { width: 460, height: 380 },
-    render: () => <ShowcaseApp />,
-  },
-  {
-    id: 'settings',
-    name: 'Settings',
-    icon: '⚙️',
-    defaultSize: { width: 440, height: 420 },
-    render: () => <SettingsApp />,
-  },
-  {
-    id: 'taskmgr',
-    name: 'Task Manager',
-    icon: '📈',
-    defaultSize: { width: 420, height: 340 },
-    render: () => <TaskManagerApp />,
-  },
-  {
-    id: 'data',
-    name: 'Data',
-    icon: '📊',
-    defaultSize: { width: 560, height: 420 },
-    render: () => <DataApp />,
-  },
-  {
-    id: 'calculator',
-    name: 'Calculator',
-    icon: '🧮',
-    defaultSize: { width: 300, height: 440 },
-    render: () => <CalculatorApp />,
-  },
-  {
-    id: 'terminal',
-    name: 'Terminal',
-    icon: '⌨️',
-    defaultSize: { width: 520, height: 360 },
-    // `APPS` is fully initialized by the time any window renders, so reading it
-    // here (rather than at module top-level) is safe and keeps `apps` live.
-    render: () => <TerminalApp appNames={APPS.map((a) => a.name)} />,
-  },
-  {
-    id: 'photos',
-    name: 'Photos',
-    icon: '🖼️',
-    defaultSize: { width: 520, height: 420 },
-    render: () => <PhotosApp />,
-  },
-]
-
-export const getApp = (appId: string): AppDef | undefined => APPS.find((a) => a.id === appId)
+/** The terminal view, wrapped so the catalog can supply the live app-name list. */
+export function TerminalView({ appNames }: { appNames: string[] }) {
+  return <TerminalApp appNames={appNames} />
+}

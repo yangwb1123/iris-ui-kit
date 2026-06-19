@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { getApp } from '../apps'
+import { getManifest } from '../catalog'
 import { useWm, useWmState } from '../shell'
 
 interface MenuEntry {
@@ -15,7 +15,7 @@ export function MenuBar() {
   const wm = useWm()
   const state = useWmState()
   const focused = state.windows.find((w) => w.id === state.focusedId && w.state !== 'minimized')
-  const appName = focused ? (getApp(focused.appId)?.name ?? focused.title) : 'Finder'
+  const appName = focused ? (getManifest(focused.appId)?.name ?? focused.title) : 'Finder'
 
   const [now, setNow] = React.useState(() => new Date())
   React.useEffect(() => {
@@ -94,11 +94,11 @@ export function MenuBar() {
   }
 
   const openAbout = () => {
-    const app = getApp('about')
+    const app = getManifest('about')
     if (app) wm.open({ appId: 'about', title: app.name, rect: app.defaultSize })
   }
   const openSettings = () => {
-    const app = getApp('settings')
+    const app = getManifest('settings')
     if (app) wm.open({ appId: 'settings', title: app.name, rect: app.defaultSize })
   }
 

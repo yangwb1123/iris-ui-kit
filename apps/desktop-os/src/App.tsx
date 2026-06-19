@@ -1,14 +1,28 @@
 import * as React from 'react'
 import { createWindowManager } from '@iris-ui/core/window'
-import { CHROMES, barInsets, type OsId } from './os'
-import { WmProvider, OsProvider } from './shell'
+import { createUserProfile, localStorageProfileStorage } from '@iris-ui/core/profile'
+import { CHROMES, barInsets, OS_ORDER, type OsId } from './os'
+import { WmProvider, OsProvider, ProfileProvider, useProfileState } from './shell'
 import { Desktop } from './components/Desktop'
 
-export function App() {
+const isOsId = (v: unknown): v is OsId => OS_ORDER.includes(v as OsId)
+
+/**
+ * The desktop, parameterized by the user profile. Subscribes to profile state so
+ * the skin (a persisted pref) re-renders when hydrate resolves OR the user picks
+ * a new one. Renders synchronously — hydrate just updates prefs once it lands.
+ */
+function Shell({ profile }: { profile: ReturnType<typeof createUserProfile> }) {
   const wm = React.useRef(createWindowManager()).current
-  const [os, setOs] = React.useState<OsId>('win11')
+  // Subscribe to the profile store so a hydrated/updated `skin` pref re-renders.
+  const state = useProfileState()
+  const skin = state.prefs.skin
+  const os: OsId = isOsId(skin) ? skin : 'win11'
   const chrome = CHROMES[os]
   const rootRef = React.useRef<HTMLDivElement>(null)
+
+  // Persist the skin to the profile (→ localStorage) so it survives a reload.
+  const setOs = React.useCallback((id: OsId) => profile.setPref('skin', id), [profile])
 
   // Reserve the bottom bar and feed the remaining rectangle to the WM as its
   // work area (drives maximize + snap). Re-measured on resize and skin change.
@@ -51,5 +65,23 @@ export function App() {
         </div>
       </OsProvider>
     </WmProvider>
+  )
+}
+
+export function App() {
+  // One profile for the whole shell, persisted to localStorage. Hydration is
+  // async; the desktop renders immediately and prefs (skin) update when it lands.
+  const profile = React.useRef(
+    createUserProfile({ storage: localStorageProfileStorage('iris-desktop-os') }),
+  ).current
+
+  React.useEffect(() => {
+    void profile.hydrate()
+  }, [profile])
+
+  return (
+    <ProfileProvider value={profile}>
+      <Shell profile={profile} />
+    </ProfileProvider>
   )
 }

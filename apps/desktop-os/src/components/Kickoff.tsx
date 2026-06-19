@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { APPS } from '../apps'
-import { useWm } from '../shell'
+import { type AppManifest } from '../catalog'
+import { useApps, useLaunchApp } from '../shell'
 
 /** A left-rail category in the Kickoff launcher. */
 interface Category {
@@ -22,7 +22,8 @@ const CATEGORIES: Category[] = [
 
 /** KDE Kickoff: bottom-left application launcher — user header, search, category rail + app list. */
 export function Kickoff({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const wm = useWm()
+  const apps = useApps()
+  const launchApp = useLaunchApp()
   const [query, setQuery] = React.useState('')
   const [category, setCategory] = React.useState('favorites')
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -41,17 +42,16 @@ export function Kickoff({ open, onClose }: { open: boolean; onClose: () => void 
   const cat = CATEGORIES.find((c) => c.id === category) ?? CATEGORIES[1]
   // Searching spans every app; otherwise scope to the selected category.
   const scoped = q
-    ? APPS
+    ? apps
     : cat.apps
       ? cat.apps
-          .map((id) => APPS.find((a) => a.id === id))
-          .filter((a): a is (typeof APPS)[number] => Boolean(a))
-      : APPS
+          .map((id) => apps.find((a) => a.id === id))
+          .filter((a): a is AppManifest => Boolean(a))
+      : apps
   const results = q ? scoped.filter((a) => a.name.toLowerCase().includes(q)) : scoped
 
   const launch = (id: string) => {
-    const app = APPS.find((a) => a.id === id)
-    if (app) wm.open({ appId: app.id, title: app.name, rect: app.defaultSize })
+    launchApp(id)
     onClose()
   }
 

@@ -1,10 +1,10 @@
 import * as React from 'react'
-import { APPS } from '../apps'
-import { useWm } from '../shell'
+import { useApps, useLaunchApp } from '../shell'
 
 /** macOS Spotlight: centered search overlay; type to filter, Enter/click to open, with preview. */
 export function Spotlight({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const wm = useWm()
+  const apps = useApps()
+  const launchApp = useLaunchApp()
   const [query, setQuery] = React.useState('')
   const [active, setActive] = React.useState(0)
   // Drives the scale/opacity entrance; flipped on after mount so CSS transitions in.
@@ -26,12 +26,11 @@ export function Spotlight({ open, onClose }: { open: boolean; onClose: () => voi
   if (!open) return null
 
   const q = query.trim().toLowerCase()
-  const results = q ? APPS.filter((a) => a.name.toLowerCase().includes(q)) : APPS
+  const results = q ? apps.filter((a) => a.name.toLowerCase().includes(q)) : apps
   const selected = results[Math.min(active, results.length - 1)]
 
   const launch = (id: string) => {
-    const app = APPS.find((a) => a.id === id)
-    if (app) wm.open({ appId: app.id, title: app.name, rect: app.defaultSize })
+    launchApp(id)
     onClose()
   }
 

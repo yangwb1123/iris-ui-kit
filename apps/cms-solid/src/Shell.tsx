@@ -9,6 +9,7 @@ import {
   IrisDropdownMenu,
   IrisDropdownItem,
   IrisIcon,
+  IrisToastViewport,
   useSkin,
   useTabsNav,
   findNavNode,
@@ -107,39 +108,42 @@ export function Shell(): JSX.Element {
   )
 
   return (
-    <IrisAdminLayout
-      menus={visibleMenus()}
-      activeKey={activeKey()}
-      onActiveKeyChange={setActiveKey}
-      tabs={tabsNav}
-      appTitle="Iris CMS"
-      toolbar={toolbar}
-      footer={
-        <div class="cms-footer">
-          <span>Iris CMS — built with @iris-ui/solid</span>
-          <span>v0.1.x</span>
-        </div>
-      }
-    >
-      {(s) => (
-        // Keep-alive: render one page per open tab; only the active one shown
-        // (inactive stay mounted so their local state survives switching). The
-        // keyed <Show> re-creates a page when its reactive cacheKey changes, so
-        // the tab "Refresh" action remounts it.
-        <For each={t.tabs()}>
-          {(tab) => {
-            const cacheKey = (): string =>
-              t.cacheKeys().find((k) => k.slice(0, k.lastIndexOf(':')) === tab.key) ?? tab.key
-            return (
-              <div style={{ display: tab.key === s.activeKey ? 'block' : 'none' }}>
-                <Show when={cacheKey()} keyed>
-                  {(_ck: string) => <PageHost routeKey={tab.key} />}
-                </Show>
-              </div>
-            )
-          }}
-        </For>
-      )}
-    </IrisAdminLayout>
+    <>
+      <IrisAdminLayout
+        menus={visibleMenus()}
+        activeKey={activeKey()}
+        onActiveKeyChange={setActiveKey}
+        tabs={tabsNav}
+        appTitle="Iris CMS"
+        toolbar={toolbar}
+        footer={
+          <div class="cms-footer">
+            <span>Iris CMS — built with @iris-ui/solid</span>
+            <span>v0.1.x</span>
+          </div>
+        }
+      >
+        {(s) => (
+          // Keep-alive: render one page per open tab; only the active one shown
+          // (inactive stay mounted so their local state survives switching). The
+          // keyed <Show> re-creates a page when its reactive cacheKey changes, so
+          // the tab "Refresh" action remounts it.
+          <For each={t.tabs()}>
+            {(tab) => {
+              const cacheKey = (): string =>
+                t.cacheKeys().find((k) => k.slice(0, k.lastIndexOf(':')) === tab.key) ?? tab.key
+              return (
+                <div style={{ display: tab.key === s.activeKey ? 'block' : 'none' }}>
+                  <Show when={cacheKey()} keyed>
+                    {(_ck: string) => <PageHost routeKey={tab.key} />}
+                  </Show>
+                </div>
+              )
+            }}
+          </For>
+        )}
+      </IrisAdminLayout>
+      <IrisToastViewport position="bottom-right" />
+    </>
   )
 }

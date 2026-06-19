@@ -8,6 +8,7 @@
     IrisDropdownMenu,
     IrisDropdownItem,
     IrisIcon,
+    IrisToastViewport,
     useSkin,
     useTabsNav,
   } from '@iris-ui/svelte'
@@ -115,3 +116,6 @@
     {/each}
   {/snippet}
 </IrisAdminLayout>
+
+<!-- Global toast queue: one viewport for the whole app (UsersPage CRUD pushes here). -->
+<IrisToastViewport position="bottom-right" />

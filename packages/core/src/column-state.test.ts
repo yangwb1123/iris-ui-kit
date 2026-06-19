@@ -55,6 +55,20 @@ describe('createColumnState', () => {
     expect(cs.getWidth('a')).toBe(100)
   })
 
+  it('reset restores INITIALLY-hidden columns (not all-visible)', () => {
+    const cs = createColumnState([
+      { key: 'a', title: 'A' },
+      { key: 'b', title: 'B', hidden: true },
+    ])
+    expect(cs.isVisible('b')).toBe(false) // b starts hidden
+    cs.show('b')
+    expect(cs.isVisible('b')).toBe(true)
+    cs.reset()
+    // reset must restore the INITIAL hidden set, not blanket-show every column
+    expect(cs.isVisible('b')).toBe(false)
+    expect(cs.visibleColumns().map((c) => c.key)).toEqual(['a'])
+  })
+
   it('subscribe notifies on changes', () => {
     const cs = createColumnState(cols)
     const snapshots: string[][] = []

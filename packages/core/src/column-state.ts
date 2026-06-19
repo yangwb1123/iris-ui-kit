@@ -70,11 +70,12 @@ export function createColumnState(columns: ColumnDef[]): ColumnStateManager {
   for (const c of columns) {
     if (c.width !== undefined) initialWidths[c.key] = c.width
   }
+  const initialHidden = columns.filter((c) => c.hidden).map((c) => c.key)
 
   const store = createStore({
     order: [...initialOrder],
     widths: { ...initialWidths },
-    hidden: new Set(columns.filter((c) => c.hidden).map((c) => c.key)),
+    hidden: new Set(initialHidden),
   })
 
   const byKey = new Map(columns.map((c) => [c.key, c]))
@@ -131,7 +132,11 @@ export function createColumnState(columns: ColumnDef[]): ColumnStateManager {
         .filter(Boolean)
     },
     reset: () => {
-      store.setState({ order: [...initialOrder], widths: { ...initialWidths }, hidden: new Set() })
+      store.setState({
+        order: [...initialOrder],
+        widths: { ...initialWidths },
+        hidden: new Set(initialHidden),
+      })
     },
     subscribe: (fn) =>
       store.subscribe((s) => fn({ order: s.order, widths: s.widths, hidden: new Set(s.hidden) })),

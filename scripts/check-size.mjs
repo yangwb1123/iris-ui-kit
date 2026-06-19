@@ -50,7 +50,12 @@ const BUDGETS = {
   // helpers re-keying per-element state across insert/remove/move/swap. This is
   // the table-stakes capability that unblocks plugin-form-builder array/sub-form
   // field types; ~1.4KB for a genuinely new engine, not drift.
-  core: 24,
+  // Bumped 24→25: Direction-4 statechart-timing primitives sunk to core —
+  // createAutoDismiss (Toast auto-dismiss on the after-machine, replacing 4 hand-
+  // rolled setTimeout maps) + createLongPress (press-hold gesture) + machine
+  // Scheduler.now() + createColumnState pinned state. ~0.9KB of genuinely new
+  // framework-agnostic timing/column logic, not drift.
+  core: 25,
   tokens: 2,
   theme: 3.5,
   skins: 5,

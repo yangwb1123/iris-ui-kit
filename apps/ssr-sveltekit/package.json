@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev --port 5182",
     "build": "vite build",
-    "test": "echo \"(ssr-sveltekit) build IS the test — vite build server-renders every route\" && exit 0",
+    "test": "vitest run --config vitest.ssr.config.ts && vitest run --config vitest.hydrate.config.ts",
     "typecheck": "svelte-check",
     "clean": "rm -rf .svelte-kit build node_modules/.cache"
   },

@@ -7,7 +7,7 @@
     "dev": "next dev -p 5180",
     "build": "next build",
     "start": "next start -p 5180",
-    "test": "echo \"(ssr-next) build IS the test — next build server-renders every route\" && exit 0",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint app",
     "clean": "rm -rf .next .turbo"

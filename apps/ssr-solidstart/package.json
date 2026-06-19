@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vinxi dev --port 5183",
     "build": "vinxi build",
-    "test": "echo \"(ssr-solidstart) build IS the test — vinxi build server-renders every route\" && exit 0",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .output node_modules/.cache"
   },

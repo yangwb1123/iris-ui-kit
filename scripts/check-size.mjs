@@ -85,6 +85,7 @@ const ESBUILD_BIN = join(repoRoot, 'node_modules', '.bin', 'esbuild')
 const EXTERNALS = {
   react: ['react', 'react-dom', 'react/jsx-runtime', '@iris-ui/*'],
   vue: ['vue', '@iris-ui/*'],
+  icons: [],
 }
 
 /**
@@ -132,20 +133,43 @@ const EXPORT_PROBES = [
 ]
 
 const IMPORT_PROBES = [
-  // The original non-tree-shakeable marker: icons ship as one `defaultIcons`
-  // object literal (no per-icon exports), so importing ANY icon pulls the whole
-  // set. Read directly (no bundling) — deterministic and esbuild-free.
+  // The whole-set cost: importing `defaultIcons` (what the Icon components use)
+  // pulls every glyph. Bundled with esbuild tree-shaking + minify (icons has no
+  // peer deps → no externals) so it is directly comparable to the single-icon
+  // probe below. Falls back to a JSON gzip of the in-memory map if esbuild/dist
+  // is unavailable (advisory — never fails the gate).
   {
-    name: 'icons: import any → full defaultIcons map',
+    name: 'icons: import { defaultIcons } → whole set',
     budgetKb: 6,
     async measure() {
+      const bundled = bundleExportGzipKb('icons', 'defaultIcons')
+      if (bundled !== null) return { gzipKb: bundled, note: '24 icons (whole set)' }
       const entry = join(repoRoot, 'packages/icons/dist/index.js')
       if (!existsSync(entry)) return null
       const mod = await import(pathToFileURL(entry).href)
-      const map = mod.defaultIcons ?? {}
+      const map = mod.defaultIcons?.icons ?? {}
       const count = Object.keys(map).length
       const gzipKb = gzipSync(Buffer.from(JSON.stringify(map))).length / KB
-      return { gzipKb, note: `${count} icons, non-tree-shakeable` }
+      return { gzipKb, note: `${count} icons (whole set, JSON fallback)` }
+    },
+  },
+  // The WIN: icons are now per-icon tree-shakeable named exports, so importing a
+  // single glyph drops the `defaultIcons` aggregation + the default registry it
+  // feeds. Bundle `import { chevronDown }` the SAME way (esbuild tree-shaking +
+  // minify, no externals) and gzip it, then report its share of the whole-set
+  // cost. (esbuild keeps the sibling icon-data literals because it won't prove
+  // the readable node-constructor helper calls pure; bundlers that honor
+  // `sideEffects:false` with deeper purity analysis shake those too — the data
+  // is genuinely per-icon independent.) Advisory: skips if esbuild/dist missing.
+  {
+    name: 'icons: import { chevronDown } → tree-shaken',
+    budgetKb: 1,
+    async measure() {
+      const gzipKb = bundleExportGzipKb('icons', 'chevronDown')
+      if (gzipKb === null) return null
+      const whole = current['probe:icons: import { defaultIcons } → whole set']
+      const share = whole ? ` (${Math.round((gzipKb / whole) * 100)}% of the whole set)` : ''
+      return { gzipKb, note: `single icon${share}` }
     },
   },
   // Per-named-export tree-shake probes, generated from EXPORT_PROBES. Each one

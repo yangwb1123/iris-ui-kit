@@ -21,6 +21,16 @@ export interface IrisIconRegistry {
 export interface CreateIconRegistryOptions {
   /** Icon sets to register up front. */
   sets?: IrisIconSet[]
+  /**
+   * Lean tree-shaking path: a flat list of individually-imported per-icon consts
+   * (e.g. `[chevronDown, search]` from `@iris-ui/icons`). They are bundled into a
+   * single `'iris-lean'` set so a size-conscious consumer can build a minimal
+   * registry from just the icons they import — without pulling the whole default
+   * set. Registered AFTER `sets`, so when both are given `sets[0]` stays active.
+   */
+  icons?: IrisIcon[]
+  /** The name of the set synthesized from `icons`. Default `'iris-lean'`. */
+  iconsSetName?: string
   /** Active set name. Defaults to the first registered set. */
   active?: string
   /** Per-icon overrides — swap individual glyphs without registering a set. */
@@ -41,6 +51,15 @@ export function createIconRegistry(options: CreateIconRegistryOptions = {}): Iri
   for (const set of options.sets ?? []) {
     sets.set(set.name, set)
     if (activeName === undefined) activeName = set.name
+  }
+  // Synthesize a set from a flat list of per-icon consts (the lean import path).
+  if (options.icons && options.icons.length > 0) {
+    const leanSet: IrisIconSet = {
+      name: options.iconsSetName ?? 'iris-lean',
+      icons: Object.fromEntries(options.icons.map((icon) => [icon.name, icon])),
+    }
+    sets.set(leanSet.name, leanSet)
+    if (activeName === undefined) activeName = leanSet.name
   }
   if (options.active !== undefined) activeName = options.active
 
@@ -70,8 +89,15 @@ export function createIconRegistry(options: CreateIconRegistryOptions = {}): Iri
   }
 }
 
-/** Ready-to-use registry preloaded with {@link defaultIcons}. */
-export const defaultIconRegistry: IrisIconRegistry = createIconRegistry({ sets: [defaultIcons] })
+/**
+ * Ready-to-use registry preloaded with {@link defaultIcons}. The
+ * `/*@__PURE__*\/` annotation lets bundlers drop it (and its `defaultIcons`
+ * dependency) when a consumer imports per-icon consts from the barrel without
+ * touching the default registry — preserving the per-icon tree-shake win.
+ */
+export const defaultIconRegistry: IrisIconRegistry = /*@__PURE__*/ createIconRegistry({
+  sets: [defaultIcons],
+})
 
 /** Resolve a name against the default registry. */
 export const resolveIcon: IrisIconResolver = (name): IrisIcon | undefined =>

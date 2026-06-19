@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { defaultIcons } from './icons'
+import * as iconExports from './icons'
+import { chevronDown, defaultIcons, search } from './icons'
 import { createIconRegistry, defaultIconRegistry, resolveIcon } from './registry'
 import { renderIconSvg } from './render'
 import { resolveThemedIcon } from './theme'
@@ -24,6 +25,58 @@ describe('@iris-ui/icons defaultIcons', () => {
     for (const name of ['check', 'x', 'chevron-down', 'search', 'calendar', 'eye']) {
       expect(defaultIcons.icons[name]).toBeDefined()
     }
+  })
+})
+
+describe('@iris-ui/icons per-icon tree-shakeable exports', () => {
+  it('each icon is an individually importable const carrying its own data', () => {
+    expect(chevronDown).toEqual({
+      name: 'chevron-down',
+      nodes: [{ tag: 'polyline', attrs: { points: '6 9 12 15 18 9' } }],
+    })
+    expect(search.name).toBe('search')
+    expect(search.nodes[0]!.tag).toBe('circle')
+  })
+
+  it('defaultIcons is byte-equivalent to aggregating every per-icon const', () => {
+    // Collect every exported per-icon const (an object with name + nodes) and
+    // rebuild the map the way defaultIcons does — proving defaultIcons is purely
+    // an aggregation of the same consts, in the same order, with no drift.
+    const perIcon = Object.values(iconExports).filter(
+      (v): v is IrisIcon =>
+        typeof v === 'object' &&
+        v !== null &&
+        'name' in v &&
+        'nodes' in v &&
+        Array.isArray((v as IrisIcon).nodes),
+    )
+    const rebuilt = Object.fromEntries(perIcon.map((icon) => [icon.name, icon]))
+    expect(JSON.stringify(rebuilt)).toBe(JSON.stringify(defaultIcons.icons))
+    // Every per-icon const is the SAME object reference held by defaultIcons.
+    for (const icon of perIcon) {
+      expect(defaultIcons.icons[icon.name]).toBe(icon)
+    }
+  })
+})
+
+describe('@iris-ui/icons lean createIconRegistry({ icons })', () => {
+  it('builds a minimal registry from only the imported icons', () => {
+    const reg = createIconRegistry({ icons: [chevronDown, search] })
+    expect(reg.has('chevron-down')).toBe(true)
+    expect(reg.has('search')).toBe(true)
+    // The whole default set is NOT pulled in.
+    expect(reg.has('moon')).toBe(false)
+    expect(reg.resolve('chevron-down')).toBe(chevronDown)
+    expect(reg.list().sort()).toEqual(['chevron-down', 'search'])
+  })
+
+  it('honors a custom set name and lets sets[0] stay active', () => {
+    const reg = createIconRegistry({ icons: [chevronDown], iconsSetName: 'mine' })
+    expect(reg.getSet('mine')).toBeDefined()
+    const both = createIconRegistry({ sets: [defaultIcons], icons: [chevronDown] })
+    expect(both.list()).toEqual(defaultIconRegistry.list()) // default set still active
+    both.use('iris-lean')
+    expect(both.list()).toEqual(['chevron-down'])
   })
 })
 

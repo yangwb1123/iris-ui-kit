@@ -224,6 +224,30 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vue
     devDependencies:
+      '@iris-ui/react':
+        specifier: workspace:*
+        version: link:../../packages/react
+      '@iris-ui/solid':
+        specifier: workspace:*
+        version: link:../../packages/solid
+      '@iris-ui/svelte':
+        specifier: workspace:*
+        version: link:../../packages/svelte
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^4.0.4
+        version: 4.0.4(svelte@5.56.1(@typescript-eslint/types@8.59.4))(vite@5.4.21(@types/node@24.13.2)(terser@5.48.0))
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+      solid-js:
+        specifier: ^1.9.3
+        version: 1.9.13
+      svelte:
+        specifier: ^5.16.0
+        version: 5.56.1(@typescript-eslint/types@8.59.4)
       vitepress:
         specifier: ^1.5.0
         version: 1.6.4(@algolia/client-search@5.52.1)(@types/node@24.13.2)(@types/react@18.3.29)(fuse.js@7.4.2)(postcss@8.5.15)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(search-insights@2.17.3)(terser@5.48.0)(typescript@5.9.3)
@@ -497,7 +521,7 @@ importers:
         version: 2.4.10(@vue/compiler-dom@3.5.34)(@vue/server-renderer@3.5.34(vue@3.5.34(typescript@5.9.3)))(vue@3.5.34(typescript@5.9.3))
       esbuild-plugin-solid:
         specifier: ^0.6.0
-        version: 0.6.0(esbuild@0.28.1)(solid-js@1.9.13)
+        version: 0.6.0(esbuild@0.27.7)(solid-js@1.9.13)
       jsdom:
         specifier: ^25.0.1
         version: 25.0.1
@@ -865,7 +889,7 @@ importers:
         version: 2.4.10(@vue/compiler-dom@3.5.34)(@vue/server-renderer@3.5.34(vue@3.5.34(typescript@5.9.3)))(vue@3.5.34(typescript@5.9.3))
       esbuild-plugin-solid:
         specifier: ^0.6.0
-        version: 0.6.0(esbuild@0.27.7)(solid-js@1.9.13)
+        version: 0.6.0(esbuild@0.28.1)(solid-js@1.9.13)
       jsdom:
         specifier: ^25.0.1
         version: 25.0.1

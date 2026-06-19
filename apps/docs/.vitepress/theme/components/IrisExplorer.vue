@@ -15,12 +15,23 @@
 //
 // All three panels read from the SAME committed manifest (EXPLORER_MANIFEST, a
 // slim slice emitted by generate-components.mjs), so they can't drift from the
-// packages. SCOPING: live preview is Vue-only by design (island isolation for the
-// other runtimes is heavy); the 4-framework code tabs carry the parity story.
+// packages.
+//
+// LIVE PREVIEW is now 4-framework (ROADMAP v3 final item): the active framework tab
+// drives the preview. Vue renders inline (VitePress is Vue); React / Solid / Svelte
+// each render via a client-only ISLAND component (ReactIsland / SolidIsland /
+// SvelteIsland) that mounts the real `@iris-ui/<fw>` primitive into its own root via
+// that runtime's client API (createRoot / render / mount). Islands are gated behind
+// <ClientOnly> so the foreign runtimes never run during VitePress SSR; if an island
+// can't render a given component it emits `unrenderable` and we fall back to the
+// code view for that framework (never crashing the page).
 import { computed, ref, shallowRef } from 'vue'
 import * as Iris from '@iris-ui/vue'
 import { EXPLORER_MANIFEST } from '../explorer-data'
 import { PREVIEW_SPECS } from '../explorer-preview'
+import ReactIsland from './ReactIsland.vue'
+import SolidIsland from './SolidIsland.vue'
+import SvelteIsland from './SvelteIsland.vue'
 import {
   detectControlledPair,
   snippetFor,
@@ -115,12 +126,20 @@ function seed(p: ManifestProp): unknown {
 const values = ref<Record<string, unknown>>({})
 const childText = ref<string>('')
 const initFor = shallowRef<string | null>(null)
+// Islands that failed to mount a given (framework, component) — that tab falls back
+// to the code view. Reset by ensureInit() on component change. Declared here so
+// ensureInit (called at top level below) can reference it without a TDZ error.
+const unrenderable = ref<Record<string, boolean>>({})
+function markUnrenderable(fw: Framework) {
+  unrenderable.value = { ...unrenderable.value, [`${fw}:${props.name}`]: true }
+}
 function ensureInit() {
   if (initFor.value === props.name) return
   const next: Record<string, unknown> = {}
   for (const p of controlProps.value) next[p.name] = seed(p)
   values.value = next
   childText.value = spec.value?.childText ?? ''
+  unrenderable.value = {}
   initFor.value = props.name
 }
 ensureInit()
@@ -133,10 +152,13 @@ const hasChildText = computed(() => !!spec.value?.hasChildText)
 // any value the live preview can't bind.
 const PreviewComp = computed(() => (Iris as Record<string, unknown>)[props.name])
 
-const previewProps = computed<Record<string, unknown>>(() => {
+// Build the live-preview prop object for a given framework. The control `values`
+// use manifest (React-derived) names; `bind` remaps the few props an adapter
+// renamed (e.g. Vue's `modelValue`, Svelte checkbox's `value`). The controlled-pair
+// handler prop is dropped (not a renderable control), as are empty strings.
+function bindProps(bind: Record<string, string>): Record<string, unknown> {
   ensureInit()
   if (!component.value) return {}
-  const vueBind = spec.value?.vueBind ?? {}
   const pair = detectControlledPair(component.value)
   const out: Record<string, unknown> = {}
   for (const p of controlProps.value) {
@@ -144,14 +166,19 @@ const previewProps = computed<Record<string, unknown>>(() => {
     let v = values.value[p.name]
     if (kindOf(p) === 'number') v = v === '' || v === null ? undefined : Number(v)
     if (kindOf(p) === 'string' && v === '') continue
-    const vueName = vueBind[p.name] ?? p.name
-    out[vueName] = v
+    out[(bind[p.name] ?? p.name) as string] = v
   }
-  // Keep the live preview's controlled binding from being locked: components that
-  // expose `v-model:modelValue` still render from the prop; user toggling the
-  // control updates `values`, which flows back here.
   return out
-})
+}
+
+// Vue live binding (modelValue etc. via vueBind). The component still renders from
+// the prop; toggling a control updates `values`, which flows back here.
+const previewProps = computed<Record<string, unknown>>(() => bindProps(spec.value?.vueBind ?? {}))
+// Per-framework island bindings (React/Solid/Vue mostly share manifest names; the
+// *Bind maps only cover renamed controlled props).
+const reactProps = computed<Record<string, unknown>>(() => bindProps(spec.value?.reactBind ?? {}))
+const solidProps = computed<Record<string, unknown>>(() => bindProps(spec.value?.solidBind ?? {}))
+const svelteProps = computed<Record<string, unknown>>(() => bindProps(spec.value?.svelteBind ?? {}))
 
 // ---- Code tabs -------------------------------------------------------------
 const activeFw = ref<Framework>('react')
@@ -168,6 +195,25 @@ const code = computed(() => {
 const availableFws = computed<Framework[]>(() =>
   FRAMEWORKS.filter((f) => component.value?.frameworks.includes(f)),
 )
+
+// ---- Live preview per framework -------------------------------------------
+// An island that fails to mount a component emits `unrenderable` (recorded above);
+// that tab then falls back to the code view and never retries into a crash.
+function canIsland(fw: Framework): boolean {
+  return (
+    isLive.value &&
+    !!component.value?.frameworks.includes(fw) &&
+    !unrenderable.value[`${fw}:${props.name}`]
+  )
+}
+// What to show in the preview panel for the active tab:
+//  - 'vue'    → inline Vue <component :is>
+//  - 'react' | 'solid' | 'svelte' → the matching ClientOnly island
+//  - 'none'   → no live preview available; show the note (code tab still works)
+const previewKind = computed<'vue' | Framework | 'none'>(() => {
+  if (activeFw.value === 'vue') return isLive.value ? 'vue' : 'none'
+  return canIsland(activeFw.value) ? activeFw.value : 'none'
+})
 
 const copied = ref(false)
 async function copyCode() {
@@ -256,15 +302,43 @@ function resetControls() {
           </div>
         </div>
 
-        <!-- LIVE PREVIEW -->
+        <!-- LIVE PREVIEW — follows the active framework tab -->
         <div class="iris-explorer__preview">
-          <div class="iris-explorer__panel-title">Live preview <small>(Vue)</small></div>
+          <div class="iris-explorer__panel-title">
+            Live preview <small>({{ activeFw }})</small>
+          </div>
           <div class="iris-explorer__stage">
-            <component :is="PreviewComp" v-if="isLive" v-bind="previewProps">
+            <!-- Vue: inline (VitePress is Vue) -->
+            <component :is="PreviewComp" v-if="previewKind === 'vue'" v-bind="previewProps">
               <template v-if="hasChildText">{{ childText }}</template>
             </component>
+            <!-- React / Solid / Svelte: client-only foreign-runtime islands -->
+            <ClientOnly v-else-if="previewKind === 'react'">
+              <ReactIsland
+                :name="name"
+                :component-props="reactProps"
+                :child-text="hasChildText ? childText : undefined"
+                @unrenderable="markUnrenderable('react')"
+              />
+            </ClientOnly>
+            <ClientOnly v-else-if="previewKind === 'solid'">
+              <SolidIsland
+                :name="name"
+                :component-props="solidProps"
+                :child-text="hasChildText ? childText : undefined"
+                @unrenderable="markUnrenderable('solid')"
+              />
+            </ClientOnly>
+            <ClientOnly v-else-if="previewKind === 'svelte'">
+              <SvelteIsland
+                :name="name"
+                :component-props="svelteProps"
+                :child-text="hasChildText ? childText : undefined"
+                @unrenderable="markUnrenderable('svelte')"
+              />
+            </ClientOnly>
             <p v-else class="iris-explorer__note">
-              No live preview for this component — see the controls and the 4-framework code below.
+              No live <code>{{ activeFw }}</code> preview for this component — see the code below.
             </p>
           </div>
         </div>

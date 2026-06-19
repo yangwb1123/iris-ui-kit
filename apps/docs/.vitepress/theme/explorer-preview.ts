@@ -23,6 +23,16 @@ export interface PreviewSpec {
    * `checked` / `value`.
    */
   vueBind?: Record<string, string>
+  /**
+   * Per-framework prop-name overrides for the React / Solid / Svelte LIVE islands
+   * (ROADMAP v3 final item). The manifest is React-derived, so React/Solid/Vue
+   * largely share names; these maps only cover the few places an adapter renamed a
+   * controlled prop. Omitted maps / entries bind 1:1. E.g. the Svelte checkbox
+   * exposes `value` where the manifest (React) calls it `checked`.
+   */
+  reactBind?: Record<string, string>
+  solidBind?: Record<string, string>
+  svelteBind?: Record<string, string>
   /** Default child text rendered in the component's default slot, if it takes one. */
   childText?: string
   /** Whether the component accepts/needs default-slot child text (a control for it). */
@@ -54,6 +64,8 @@ export const PREVIEW_SPECS: Record<string, PreviewSpec> = {
   IrisCheckbox: {
     controls: ['checked', 'size', 'invalid'],
     vueBind: { checked: 'modelValue' },
+    // The Svelte checkbox names its controlled prop `value` (React/Solid use `checked`).
+    svelteBind: { checked: 'value' },
     childText: 'Accept terms',
     hasChildText: true,
   },

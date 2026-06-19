@@ -17,6 +17,11 @@
       "types": "./dist/contracts/index.d.ts",
       "import": "./dist/contracts/index.js",
       "require": "./dist/contracts/index.cjs"
+    },
+    "./window": {
+      "types": "./dist/window.d.ts",
+      "import": "./dist/window.js",
+      "require": "./dist/window.cjs"
     }
   },
   "files": [

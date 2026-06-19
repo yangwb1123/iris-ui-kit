@@ -354,6 +354,17 @@ const TESTING_LIBRARY: Record<Framework, string> = {
 }
 
 /**
+ * Whether the detected event/handler is click-like — i.e. firing a click on the
+ * rendered root is a faithful way to drive it (e.g. `onClick`, `onPress`,
+ * `onSelect`, `onToggle`). For these we emit a real interaction + a
+ * `toHaveBeenCalled()` assertion; everything else keeps the no-spurious-emit
+ * `not.toHaveBeenCalled()` mount-smoke.
+ */
+function isClickLike(event: string | undefined): boolean {
+  return !!event && /click|press|select|toggle/i.test(event)
+}
+
+/**
  * Emit a minimal render + interaction test skeleton for `component` in
  * `framework`, derived from the manifest: it imports the component + the
  * framework's testing-library, renders it (controlled prop seeded + required
@@ -374,11 +385,13 @@ export function generateTest(
   const event = component.events?.[0] ?? pair?.handler
 
   const required = otherRequiredProps(component, pair)
+  const clickLike = isClickLike(event)
   const lines: string[] = []
   lines.push("import { describe, it, expect, vi } from 'vitest'")
 
   if (framework === 'react') {
-    lines.push(`import { render } from '${TESTING_LIBRARY.react}'`)
+    // RTL re-exports `fireEvent`; pull it in only when we drive a click.
+    lines.push(`import { render${clickLike ? ', fireEvent' : ''} } from '${TESTING_LIBRARY.react}'`)
     lines.push(`import { ${name} } from '${importPath}'`)
     lines.push('')
     lines.push(`describe('${name}', () => {`)
@@ -387,11 +400,14 @@ export function generateTest(
     const props = renderProps(component, pair, event, required, 'jsx')
     lines.push(`    const { container } = render(<${name}${props} />)`)
     lines.push(`    expect(container.firstChild).toBeTruthy()`)
-    if (event) lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
+    if (event && clickLike) {
+      lines.push(`    fireEvent.click(container.firstChild as Element)`)
+      lines.push(`    expect(${event}).toHaveBeenCalled()`)
+    } else if (event) lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
     lines.push(`  })`)
     lines.push(`})`)
   } else if (framework === 'solid') {
-    lines.push(`import { render } from '${TESTING_LIBRARY.solid}'`)
+    lines.push(`import { render${clickLike ? ', fireEvent' : ''} } from '${TESTING_LIBRARY.solid}'`)
     lines.push(`import { ${name} } from '${importPath}'`)
     lines.push('')
     lines.push(`describe('${name}', () => {`)
@@ -400,11 +416,16 @@ export function generateTest(
     const props = renderProps(component, pair, event, required, 'jsx')
     lines.push(`    const { container } = render(() => <${name}${props} />)`)
     lines.push(`    expect(container.firstChild).toBeTruthy()`)
-    if (event) lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
+    if (event && clickLike) {
+      lines.push(`    fireEvent.click(container.firstChild as Element)`)
+      lines.push(`    expect(${event}).toHaveBeenCalled()`)
+    } else if (event) lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
     lines.push(`  })`)
     lines.push(`})`)
   } else if (framework === 'svelte') {
-    lines.push(`import { render } from '${TESTING_LIBRARY.svelte}'`)
+    lines.push(
+      `import { render${clickLike ? ', fireEvent' : ''} } from '${TESTING_LIBRARY.svelte}'`,
+    )
     lines.push(`import { ${name} } from '${importPath}'`)
     lines.push('')
     lines.push(`describe('${name}', () => {`)
@@ -413,7 +434,10 @@ export function generateTest(
     const props = renderProps(component, pair, event, required, 'object')
     lines.push(`    const { container } = render(${name}, { props: ${props} })`)
     lines.push(`    expect(container.firstChild).toBeTruthy()`)
-    if (event) lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
+    if (event && clickLike) {
+      lines.push(`    fireEvent.click(container.firstChild as Element)`)
+      lines.push(`    expect(${event}).toHaveBeenCalled()`)
+    } else if (event) lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
     lines.push(`  })`)
     lines.push(`})`)
   } else {
@@ -422,12 +446,15 @@ export function generateTest(
     lines.push(`import { ${name} } from '${importPath}'`)
     lines.push('')
     lines.push(`describe('${name}', () => {`)
-    lines.push(`  it('renders and wires its event', () => {`)
+    lines.push(`  it('renders and wires its event', ${clickLike ? 'async ' : ''}() => {`)
     if (event) lines.push(`    const ${event} = vi.fn()`)
     const props = renderProps(component, pair, event, required, 'object')
     lines.push(`    const wrapper = mount(${name}, { props: ${props} })`)
     lines.push(`    expect(wrapper.exists()).toBe(true)`)
-    if (event) lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
+    if (event && clickLike) {
+      lines.push(`    await wrapper.trigger('click')`)
+      lines.push(`    expect(${event}).toHaveBeenCalled()`)
+    } else if (event) lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
     lines.push(`  })`)
     lines.push(`})`)
   }

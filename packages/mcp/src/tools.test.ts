@@ -262,12 +262,14 @@ describe('generateView (wired composed view)', () => {
 
 describe('generateTest (test skeleton)', () => {
   for (const fw of ['react', 'solid', 'svelte', 'vue'] as Framework[]) {
-    it(`emits a ${fw} test referencing the component + an event`, () => {
+    it(`emits a ${fw} test referencing the component + a non-click event`, () => {
+      // IrisSwitch's event is `onChange` (NOT click-like) → keeps the
+      // no-spurious-emit mount-smoke (`not.toHaveBeenCalled()`).
       const test = generateTest(manifest, 'IrisSwitch', fw)!
       expect(test).toContain('IrisSwitch')
-      // The component's first event (onChange) is spied + asserted.
       expect(test).toContain('const onChange = vi.fn()')
       expect(test).toContain('expect(onChange).not.toHaveBeenCalled()')
+      expect(test).not.toContain('expect(onChange).toHaveBeenCalled()')
       // Uses the framework's testing-library.
       const tl = {
         react: '@testing-library/react',
@@ -276,6 +278,26 @@ describe('generateTest (test skeleton)', () => {
         vue: '@vue/test-utils',
       }[fw]
       expect(test).toContain(tl)
+    })
+  }
+
+  for (const fw of ['react', 'solid', 'svelte', 'vue'] as Framework[]) {
+    it(`drives a real click + asserts a call for a ${fw} click-like event`, () => {
+      // IrisButton's event is `onClick` (click-like) → fires a real interaction
+      // and asserts the spy WAS called.
+      const test = generateTest(manifest, 'IrisButton', fw)!
+      expect(test).toContain('const onClick = vi.fn()')
+      expect(test).toContain('expect(onClick).toHaveBeenCalled()')
+      expect(test).not.toContain('not.toHaveBeenCalled()')
+      if (fw === 'vue') {
+        // Vue drives the click through the mounted wrapper (async).
+        expect(test).toContain("await wrapper.trigger('click')")
+        expect(test).toContain('async () => {')
+      } else {
+        // React/Solid/Svelte fire a click on the rendered root via fireEvent.
+        expect(test).toContain('fireEvent')
+        expect(test).toContain('fireEvent.click(container.firstChild as Element)')
+      }
     })
   }
 

@@ -1,13 +1,35 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte'
   import { getDrawerContext } from './context'
 
+  /** Spreadable attributes/handlers for an `asChild` consumer's element. */
+  export interface DrawerTriggerChildAttrs {
+    onclick: (e: MouseEvent) => void
+    'aria-haspopup': 'dialog'
+    'aria-expanded': boolean
+    'aria-controls': string
+    'data-state': 'open' | 'closed'
+  }
+
+  /**
+   * Props forwarded to an `asChild` consumer's child snippet. Spread
+   * `{...props.attrs}` onto the element; for a raw element, attach
+   * `use:props.ref` to keep focus-restoration working.
+   */
+  export interface DrawerTriggerChildProps {
+    attrs: DrawerTriggerChildAttrs
+    ref: (node: HTMLElement) => { destroy: () => void }
+  }
+
   interface Props {
+    /** Render the single child as the trigger instead of a wrapper `<button>`. */
+    asChild?: boolean
     onclick?: (e: MouseEvent) => void
-    children?: import('svelte').Snippet
+    children?: Snippet<[DrawerTriggerChildProps]> | Snippet
     [key: string]: unknown
   }
 
-  let { onclick, children, ...rest }: Props = $props()
+  let { asChild = false, onclick, children, ...rest }: Props = $props()
   const ctx = getDrawerContext('IrisDrawerTrigger')
 
   function setTriggerRef(node: HTMLElement): { destroy: () => void } {
@@ -19,17 +41,32 @@
     onclick?.(e)
     ctx.setOpen(true)
   }
+
+  const childProps = $derived<DrawerTriggerChildProps>({
+    attrs: {
+      onclick: handleClick,
+      'aria-haspopup': 'dialog',
+      'aria-expanded': ctx.open,
+      'aria-controls': ctx.contentId,
+      'data-state': ctx.open ? 'open' : 'closed',
+    },
+    ref: setTriggerRef,
+  })
 </script>
 
-<button
-  type="button"
-  {...rest}
-  use:setTriggerRef
-  aria-haspopup="dialog"
-  aria-expanded={ctx.open}
-  aria-controls={ctx.contentId}
-  data-state={ctx.open ? 'open' : 'closed'}
-  onclick={handleClick}
->
-  {@render children?.()}
-</button>
+{#if asChild}
+  {@render (children as Snippet<[DrawerTriggerChildProps]>)?.(childProps)}
+{:else}
+  <button
+    type="button"
+    {...rest}
+    use:setTriggerRef
+    aria-haspopup="dialog"
+    aria-expanded={ctx.open}
+    aria-controls={ctx.contentId}
+    data-state={ctx.open ? 'open' : 'closed'}
+    onclick={handleClick}
+  >
+    {@render (children as Snippet)?.()}
+  </button>
+{/if}

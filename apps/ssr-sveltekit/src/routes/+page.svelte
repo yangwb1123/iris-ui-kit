@@ -65,7 +65,9 @@
       <div style="display:flex;gap:12px;flex-wrap:wrap">
         <IrisDialog open={dialogOpen} onOpenChange={(v) => (dialogOpen = v)}>
           <IrisDialogTrigger asChild>
-            <IrisButton variant="outline">Open dialog</IrisButton>
+            {#snippet children(props)}
+              <IrisButton variant="outline" {...props.attrs}>Open dialog</IrisButton>
+            {/snippet}
           </IrisDialogTrigger>
           <IrisDialogContent>
             <IrisDialogTitle>Hydrated overlay</IrisDialogTitle>
@@ -74,7 +76,9 @@
             </IrisDialogDescription>
             <div style="margin-top:16px;text-align:right">
               <IrisDialogClose asChild>
-                <IrisButton variant="solid">Close</IrisButton>
+                {#snippet children(props)}
+                  <IrisButton variant="solid" {...props}>Close</IrisButton>
+                {/snippet}
               </IrisDialogClose>
             </div>
           </IrisDialogContent>

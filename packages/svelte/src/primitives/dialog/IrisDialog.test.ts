@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, fireEvent, cleanup } from '@testing-library/svelte'
 import DialogHarness from './DialogHarness.svelte'
+import DialogAsChildHarness from './DialogAsChildHarness.svelte'
 
 afterEach(cleanup)
 
@@ -52,5 +53,48 @@ describe('IrisDialog', () => {
     expect(document.querySelector('[data-iris-dialog-content]')).not.toBeNull()
     await fireEvent.click(getByText('Close'))
     expect(document.querySelector('[data-iris-dialog-content]')).toBeNull()
+  })
+
+  describe('asChild', () => {
+    it('renders the child as the trigger with no wrapper button (single button)', () => {
+      const { container } = render(DialogAsChildHarness)
+      const buttons = container.querySelectorAll('button')
+      // No wrapper <button> around the IrisButton — exactly one button, and it
+      // is the IrisButton itself (the cause of the <button>-in-<button> SSR
+      // node_invalid_placement / hydration mismatch was the wrapper).
+      expect(buttons.length).toBe(1)
+      const trigger = buttons[0]
+      expect(trigger.classList.contains('iris-button')).toBe(true)
+    })
+
+    it('forwards trigger attrs (aria-*/data-state) onto the child element', () => {
+      const { container } = render(DialogAsChildHarness)
+      const trigger = container.querySelector('button')!
+      expect(trigger.getAttribute('aria-haspopup')).toBe('dialog')
+      expect(trigger.getAttribute('aria-expanded')).toBe('false')
+      expect(trigger.getAttribute('aria-controls')).toBeTruthy()
+      expect(trigger.getAttribute('data-state')).toBe('closed')
+    })
+
+    it('opens the dialog when the asChild trigger is clicked', async () => {
+      const { getByText } = render(DialogAsChildHarness)
+      expect(document.querySelector('[data-iris-dialog-content]')).toBeNull()
+      await fireEvent.click(getByText('Open Dialog'))
+      expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+      expect(document.querySelector('[data-iris-dialog-content]')).not.toBeNull()
+    })
+
+    it('closes the dialog when the asChild Close child is clicked', async () => {
+      const { getByText } = render(DialogAsChildHarness)
+      await fireEvent.click(getByText('Open Dialog'))
+      const closeBtn = getByText('Close')
+      // The Close child is the IrisButton itself (no wrapper) carrying the
+      // forwarded data-iris-dialog-close hook.
+      expect(closeBtn.tagName).toBe('BUTTON')
+      expect(closeBtn.classList.contains('iris-button')).toBe(true)
+      expect(closeBtn.getAttribute('data-iris-dialog-close')).not.toBeNull()
+      await fireEvent.click(closeBtn)
+      expect(document.querySelector('[data-iris-dialog-content]')).toBeNull()
+    })
   })
 })

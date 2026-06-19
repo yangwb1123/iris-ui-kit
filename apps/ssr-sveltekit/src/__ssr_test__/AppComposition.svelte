@@ -60,23 +60,30 @@
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
         <!--
-          NOTE: the live page (src/routes/+page.svelte) wraps an <IrisButton>
-          inside <IrisDialogTrigger asChild>. The Svelte IrisDialogTrigger does
-          NOT implement `asChild` — it always renders its own <button> — so that
-          markup nests a <button> inside a <button>, which Svelte flags as a
-          guaranteed `hydration_mismatch`. We therefore exercise the dialog the
-          Svelte-supported way (trigger/close render their own button from a text
-          child) so this composition is valid SSR/hydration input. See the report.
+          Mirrors the live page (src/routes/+page.svelte): an <IrisButton> is the
+          dialog trigger/close via `asChild`. The Svelte IrisDialogTrigger/Close
+          now implement `asChild` (the child snippet receives the trigger props
+          to spread onto its own element), so this renders a SINGLE <button> with
+          no wrapper — no <button>-in-<button>, no `node_invalid_placement_ssr`,
+          no hydration mismatch. This pass guards exactly that.
         -->
         <IrisDialog open={dialogOpen} onOpenChange={(v) => (dialogOpen = v)}>
-          <IrisDialogTrigger>Open dialog</IrisDialogTrigger>
+          <IrisDialogTrigger asChild>
+            {#snippet children(props)}
+              <IrisButton variant="outline" {...props.attrs}>Open dialog</IrisButton>
+            {/snippet}
+          </IrisDialogTrigger>
           <IrisDialogContent>
             <IrisDialogTitle>Hydrated overlay</IrisDialogTitle>
             <IrisDialogDescription>
               This dialog was server-rendered closed and became interactive on hydration.
             </IrisDialogDescription>
             <div style="margin-top:16px;text-align:right">
-              <IrisDialogClose>Close</IrisDialogClose>
+              <IrisDialogClose asChild>
+                {#snippet children(props)}
+                  <IrisButton variant="solid" {...props}>Close</IrisButton>
+                {/snippet}
+              </IrisDialogClose>
             </div>
           </IrisDialogContent>
         </IrisDialog>

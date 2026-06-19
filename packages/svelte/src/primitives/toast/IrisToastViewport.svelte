@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
+  import { createAutoDismiss, type AutoDismiss } from '@iris-ui/core'
   import { portal } from '../../internal/portal'
   import { useI18n } from '../../i18n'
   import {
@@ -49,7 +50,10 @@
 
   let toasts = $state<IrisToast[]>(getToasts())
   let hovered = $state(false)
-  const timers = new Map<string, ReturnType<typeof setTimeout>>()
+  // One core `createAutoDismiss` per live toast keyed by id — the after-machine
+  // primitive replaces the hand-rolled setTimeout Map. start() on add, pause()
+  // all on hover, resume() on un-hover, cancel() on remove/unmount.
+  const dismissers = new Map<string, AutoDismiss>()
 
   // Swipe-to-dismiss: one toast is dragged at a time; past the threshold on
   // release it dismisses, otherwise it snaps back. The decision logic reads the
@@ -108,64 +112,77 @@
     )
   }
 
-  function clearTimer(id: string): void {
-    const timer = timers.get(id)
-    if (timer) {
-      clearTimeout(timer)
-      timers.delete(id)
+  function cancelDismisser(id: string): void {
+    const d = dismissers.get(id)
+    if (d) {
+      d.cancel()
+      dismissers.delete(id)
     }
   }
 
-  function armTimer(toast: IrisToast): void {
+  // Create + arm an auto-dismiss for a toast. The remaining time accounts for
+  // any wall-clock already elapsed since `createdAt` (preserving the exact
+  // observable timing the setTimeout Map had). duration 0/Infinity = persistent
+  // (the early return means those toasts get no map entry).
+  function armDismisser(toast: IrisToast): void {
     if (!toast.duration || toast.duration === Infinity) return
-    clearTimer(toast.id)
     const remaining = Math.max(0, toast.createdAt + toast.duration - Date.now())
-    const timer = setTimeout(() => {
-      timers.delete(toast.id)
-      dismissToast(toast.id)
-    }, remaining)
-    timers.set(toast.id, timer)
-  }
-
-  function armAll(): void {
-    if (hovered) return
-    for (const toast of toasts) armTimer(toast)
-  }
-
-  function clearAll(): void {
-    for (const id of [...timers.keys()]) clearTimer(id)
+    const dismisser = createAutoDismiss({
+      duration: remaining,
+      onDismiss: () => {
+        dismissers.delete(toast.id)
+        dismissToast(toast.id)
+      },
+    })
+    dismissers.set(toast.id, dismisser)
+    dismisser.start()
   }
 
   onMount(() => {
-    armAll()
     const unsubscribe = subscribeToasts((next) => {
       // Evict oldest if exceeding `max`.
-      const trimmed = next.length > max ? next.slice(-max) : next
-      toasts = trimmed
-      // Arm timers for any new toasts.
-      for (const toast of trimmed) {
-        if (!timers.has(toast.id)) armTimer(toast)
-      }
-      // Clear timers for removed toasts.
-      const liveIds = new Set(trimmed.map((entry) => entry.id))
-      for (const id of [...timers.keys()]) {
-        if (!liveIds.has(id)) clearTimer(id)
-      }
+      toasts = next.length > max ? next.slice(-max) : next
     })
-    return () => {
-      clearAll()
-      unsubscribe()
+    return unsubscribe
+  })
+
+  // List-sync: cancel dismissers for removed toasts; arm one for each new toast.
+  // While hovered, a newly-armed dismisser is immediately paused (created-then-
+  // paused) so it doesn't tick until the pointer leaves.
+  $effect(() => {
+    const liveIds = new Set(toasts.map((entry) => entry.id))
+    for (const id of [...dismissers.keys()]) {
+      if (!liveIds.has(id)) cancelDismisser(id)
     }
+    for (const toast of toasts) {
+      if (!dismissers.has(toast.id)) {
+        armDismisser(toast)
+        if (hovered) dismissers.get(toast.id)?.pause()
+      }
+    }
+  })
+
+  // Hover-sync: when hover toggles, pause/resume every live dismisser wholesale.
+  $effect(() => {
+    if (hovered) {
+      for (const d of dismissers.values()) d.pause()
+    } else {
+      for (const d of dismissers.values()) d.resume()
+    }
+  })
+
+  // Tear down on unmount: detach every dismisser permanently.
+  onDestroy(() => {
+    for (const d of dismissers.values()) d.cancel()
+    dismissers.clear()
   })
 
   function onPointerEnter(): void {
     hovered = true
-    clearAll()
   }
 
   function onPointerLeave(): void {
     hovered = false
-    armAll()
   }
 
   function positionStyle(pos: IrisToastPosition): string {

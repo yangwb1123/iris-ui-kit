@@ -77,6 +77,13 @@ export type StateNode<TState extends string, TContext, TEvent extends MachineEve
 export interface Scheduler {
   setTimeout(fn: () => void, ms: number): unknown
   clearTimeout(handle: unknown): void
+  /**
+   * Optional monotonic clock in ms. Consumers that need elapsed-time math across
+   * pause/resume (e.g. `createAutoDismiss`) read this so timing stays
+   * deterministic under a fake scheduler. When absent, callers fall back to
+   * `Date.now()`. The `after`-transition machinery itself does not use it.
+   */
+  now?(): number
 }
 
 const defaultScheduler: Scheduler = {

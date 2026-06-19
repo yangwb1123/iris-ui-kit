@@ -21,6 +21,14 @@ export {
   type HoverIntentEvent,
 } from './hover-intent'
 export {
+  createAutoDismiss,
+  type AutoDismiss,
+  type AutoDismissOptions,
+  type AutoDismissMachine,
+  type AutoDismissState,
+  type AutoDismissEvent,
+} from './auto-dismiss'
+export {
   createFloatingMachine,
   type FloatingMachine,
   type FloatingState,

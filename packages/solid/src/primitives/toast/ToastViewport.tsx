@@ -1,5 +1,6 @@
 import { For, Show, createSignal, onCleanup, splitProps, type JSX } from 'solid-js'
 import { Portal } from 'solid-js/web'
+import { createAutoDismiss, type AutoDismiss } from '@iris-ui/core'
 import {
   dismissToast,
   getToasts,
@@ -60,7 +61,10 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
 
   const [toasts, setToasts] = createSignal<IrisToast[]>(getToasts())
   const [hovered, setHovered] = createSignal(false)
-  const timers = new Map<string, ReturnType<typeof setTimeout>>()
+  // One core `createAutoDismiss` per live toast keyed by id — the after-machine
+  // primitive replaces the hand-rolled setTimeout Map. start() on add, pause()
+  // all on hover, resume() on un-hover, cancel() on remove/unmount.
+  const dismissers = new Map<string, AutoDismiss>()
 
   // Swipe-to-dismiss: one toast is dragged at a time; past the threshold on
   // release it dismisses, otherwise it snaps back. The decision logic reads the
@@ -70,63 +74,72 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
   const [drag, setDrag] = createSignal<{ id: string; dx: number } | null>(null)
   let dragLogic: { id: string; startX: number; dx: number } | null = null
 
-  const clearTimer = (id: string): void => {
-    const timer = timers.get(id)
-    if (timer) {
-      clearTimeout(timer)
-      timers.delete(id)
+  const cancelDismisser = (id: string): void => {
+    const d = dismissers.get(id)
+    if (d) {
+      d.cancel()
+      dismissers.delete(id)
     }
   }
 
-  const armTimer = (toast: IrisToast): void => {
+  // Create + arm an auto-dismiss for a toast. The remaining time accounts for
+  // any wall-clock already elapsed since `createdAt` (preserving the exact
+  // observable timing the setTimeout Map had). duration 0/Infinity = persistent.
+  const armDismisser = (toast: IrisToast): void => {
     if (!toast.duration || toast.duration === Infinity) return
-    clearTimer(toast.id)
+    cancelDismisser(toast.id)
     const remaining = Math.max(0, toast.createdAt + toast.duration - Date.now())
-    const timer = setTimeout(() => {
-      timers.delete(toast.id)
-      dismissToast(toast.id)
-    }, remaining)
-    timers.set(toast.id, timer)
+    const dismisser = createAutoDismiss({
+      duration: remaining,
+      onDismiss: () => {
+        dismissers.delete(toast.id)
+        dismissToast(toast.id)
+      },
+    })
+    dismissers.set(toast.id, dismisser)
+    dismisser.start()
   }
 
-  const armAll = (): void => {
-    if (hovered()) return
-    for (const toast of toasts()) armTimer(toast)
+  const cancelAll = (): void => {
+    for (const id of [...dismissers.keys()]) cancelDismisser(id)
   }
 
-  const clearAll = (): void => {
-    for (const id of [...timers.keys()]) clearTimer(id)
-  }
-
-  armAll()
+  // Arm dismissers for the initial queue (none are armed while hovered, but on
+  // first mount the viewport is not hovered yet).
+  for (const toast of toasts()) armDismisser(toast)
 
   const unsubscribe = subscribeToasts((next) => {
     // Evict oldest if exceeding `max`.
     const trimmed = next.length > max() ? next.slice(-max()) : next
     setToasts(trimmed)
-    // Arm timers for any new toasts.
-    for (const toast of trimmed) {
-      if (!timers.has(toast.id)) armTimer(toast)
-    }
-    // Clear timers for removed toasts.
+    // Cancel dismissers for removed toasts.
     const liveIds = new Set(trimmed.map((entry) => entry.id))
-    for (const id of [...timers.keys()]) {
-      if (!liveIds.has(id)) clearTimer(id)
+    for (const id of [...dismissers.keys()]) {
+      if (!liveIds.has(id)) cancelDismisser(id)
+    }
+    // Arm a dismisser for each new toast. While hovered, newly-added toasts are
+    // created paused (started then paused) so they don't tick until the pointer
+    // leaves.
+    for (const toast of trimmed) {
+      if (!dismissers.has(toast.id)) {
+        armDismisser(toast)
+        if (hovered()) dismissers.get(toast.id)?.pause()
+      }
     }
   })
 
   onCleanup(() => {
-    clearAll()
+    cancelAll()
     unsubscribe()
   })
 
   const onPointerEnter = (): void => {
     setHovered(true)
-    clearAll()
+    for (const d of dismissers.values()) d.pause()
   }
   const onPointerLeave = (): void => {
     setHovered(false)
-    armAll()
+    for (const d of dismissers.values()) d.resume()
   }
 
   const positionStyle = (): JSX.CSSProperties => {

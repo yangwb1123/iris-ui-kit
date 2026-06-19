@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
+import { createAutoDismiss, type AutoDismiss } from '@iris-ui/core'
 import {
   dismissToast,
   getToasts,
@@ -100,7 +101,10 @@ export function IrisToastViewport({
   )
 
   const [hovered, setHovered] = React.useState(false)
-  const timersRef = React.useRef(new Map<string, ReturnType<typeof setTimeout>>())
+  // One core `createAutoDismiss` per live toast keyed by id — the after-machine
+  // primitive replaces the hand-rolled setTimeout Map. start() on add, pause()
+  // all on hover, resume() on un-hover, cancel() on remove/unmount.
+  const dismissersRef = React.useRef(new Map<string, AutoDismiss>())
 
   // Swipe-to-dismiss: one toast is dragged at a time; past the threshold on
   // release it dismisses, otherwise it snaps back. The decision logic reads the
@@ -109,59 +113,64 @@ export function IrisToastViewport({
   const [drag, setDrag] = React.useState<{ id: string; dx: number } | null>(null)
   const dragRef = React.useRef<{ id: string; startX: number; dx: number } | null>(null)
 
-  const clearTimer = React.useCallback((id: string) => {
-    const t = timersRef.current.get(id)
-    if (t) {
-      clearTimeout(t)
-      timersRef.current.delete(id)
+  const cancelDismisser = React.useCallback((id: string) => {
+    const d = dismissersRef.current.get(id)
+    if (d) {
+      d.cancel()
+      dismissersRef.current.delete(id)
     }
   }, [])
 
-  const armTimer = React.useCallback(
-    (toast: IrisToast) => {
-      if (!toast.duration || toast.duration === Infinity) return
-      clearTimer(toast.id)
-      const remaining = Math.max(0, toast.createdAt + toast.duration - Date.now())
-      const timer = setTimeout(() => {
-        timersRef.current.delete(toast.id)
+  // Create + arm an auto-dismiss for a toast. The remaining time accounts for
+  // any wall-clock already elapsed since `createdAt` (preserving the exact
+  // observable timing the setTimeout Map had). duration 0/Infinity = persistent.
+  const armDismisser = React.useCallback((toast: IrisToast) => {
+    if (!toast.duration || toast.duration === Infinity) return
+    const remaining = Math.max(0, toast.createdAt + toast.duration - Date.now())
+    const dismisser = createAutoDismiss({
+      duration: remaining,
+      onDismiss: () => {
+        dismissersRef.current.delete(toast.id)
         dismissToast(toast.id)
-      }, remaining)
-      timersRef.current.set(toast.id, timer)
-    },
-    [clearTimer],
-  )
+      },
+    })
+    dismissersRef.current.set(toast.id, dismisser)
+    dismisser.start()
+  }, [])
 
-  // Arm timers for new toasts, clear timers for removed ones; respect hover-pause.
+  // Add dismissers for new toasts, cancel them for removed ones. While hovered,
+  // newly-added toasts are created paused (started then paused) so they don't
+  // tick until the pointer leaves.
   React.useEffect(() => {
     const liveIds = new Set(toasts.map((t) => t.id))
-    // Clear timers for toasts that no longer exist.
-    for (const id of Array.from(timersRef.current.keys())) {
-      if (!liveIds.has(id)) clearTimer(id)
+    for (const id of Array.from(dismissersRef.current.keys())) {
+      if (!liveIds.has(id)) cancelDismisser(id)
     }
-    if (hovered) return
     for (const toast of toasts) {
-      if (!timersRef.current.has(toast.id)) armTimer(toast)
-    }
-  }, [toasts, hovered, armTimer, clearTimer])
-
-  // When hovered toggles, sync timers wholesale.
-  React.useEffect(() => {
-    if (hovered) {
-      for (const id of Array.from(timersRef.current.keys())) clearTimer(id)
-    } else {
-      for (const toast of toasts) {
-        if (!timersRef.current.has(toast.id)) armTimer(toast)
+      if (!dismissersRef.current.has(toast.id)) {
+        armDismisser(toast)
+        if (hovered) dismissersRef.current.get(toast.id)?.pause()
       }
     }
-  }, [hovered, toasts, armTimer, clearTimer])
+  }, [toasts, hovered, armDismisser, cancelDismisser])
+
+  // When hover toggles, pause/resume every live dismisser wholesale.
+  React.useEffect(() => {
+    if (hovered) {
+      for (const d of dismissersRef.current.values()) d.pause()
+    } else {
+      for (const d of dismissersRef.current.values()) d.resume()
+    }
+  }, [hovered])
 
   // Tear down on unmount.
-  React.useEffect(
-    () => () => {
-      for (const id of Array.from(timersRef.current.keys())) clearTimer(id)
-    },
-    [clearTimer],
-  )
+  React.useEffect(() => {
+    const dismissers = dismissersRef.current
+    return () => {
+      for (const d of dismissers.values()) d.cancel()
+      dismissers.clear()
+    }
+  }, [])
 
   const node = (
     <div

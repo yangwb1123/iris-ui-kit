@@ -5,9 +5,11 @@ import {
   onBeforeUnmount,
   onMounted,
   ref,
+  watch,
   type PropType,
   type VNode,
 } from 'vue'
+import { createAutoDismiss, type AutoDismiss } from '@iris-ui/core'
 import {
   dismissToast,
   getToasts,
@@ -50,8 +52,9 @@ const SWIPE_DISMISS_PX = 80
  * to the module-level toast store; toasts pushed via `useToast()` from any
  * component appear here.
  *
- * Auto-dismiss timers are managed per toast (paused while the pointer is
- * over the viewport). Manual dismiss is via the close button.
+ * Auto-dismiss is managed per toast via one core `createAutoDismiss` each
+ * (paused while the pointer is over the viewport). Manual dismiss is via the
+ * close button.
  */
 export const IrisToastViewport = defineComponent({
   name: 'IrisToastViewport',
@@ -74,7 +77,10 @@ export const IrisToastViewport = defineComponent({
     const { t } = useI18n()
     const toasts = ref<IrisToast[]>(getToasts())
     const hovered = ref(false)
-    const timers = new Map<string, ReturnType<typeof setTimeout>>()
+    // One core `createAutoDismiss` per live toast keyed by id — the after-machine
+    // primitive replaces the hand-rolled setTimeout Map. start() on add, pause()
+    // all on hover, resume() on un-hover, cancel() on remove/unmount.
+    const dismissers = new Map<string, AutoDismiss>()
 
     // Swipe-to-dismiss: one toast is dragged at a time; past the threshold on
     // release it dismisses, otherwise it snaps back. The decision logic reads a
@@ -109,38 +115,63 @@ export const IrisToastViewport = defineComponent({
       }
     }
 
-    const clearTimer = (id: string) => {
-      const t = timers.get(id)
-      if (t) {
-        clearTimeout(t)
-        timers.delete(id)
+    const cancelDismisser = (id: string) => {
+      const d = dismissers.get(id)
+      if (d) {
+        d.cancel()
+        dismissers.delete(id)
       }
     }
 
-    const armTimer = (toast: IrisToast) => {
+    // Create + arm an auto-dismiss for a toast. The remaining time accounts for
+    // any wall-clock already elapsed since `createdAt` (preserving the exact
+    // observable timing the setTimeout Map had). duration 0/Infinity = persistent.
+    const armDismisser = (toast: IrisToast) => {
       if (!toast.duration || toast.duration === Infinity) return
-      clearTimer(toast.id)
       const remaining = Math.max(0, toast.createdAt + toast.duration - Date.now())
-      const timer = setTimeout(() => {
-        timers.delete(toast.id)
-        dismissToast(toast.id)
-      }, remaining)
-      timers.set(toast.id, timer)
+      const dismisser = createAutoDismiss({
+        duration: remaining,
+        onDismiss: () => {
+          dismissers.delete(toast.id)
+          dismissToast(toast.id)
+        },
+      })
+      dismissers.set(toast.id, dismisser)
+      dismisser.start()
     }
 
-    const armAll = () => {
-      if (hovered.value) return
-      for (const toast of toasts.value) armTimer(toast)
+    // Add dismissers for new toasts, cancel them for removed ones. While hovered,
+    // newly-added toasts are created paused (started then paused) so they don't
+    // tick until the pointer leaves.
+    const syncDismissers = () => {
+      const liveIds = new Set(toasts.value.map((t) => t.id))
+      for (const id of [...dismissers.keys()]) {
+        if (!liveIds.has(id)) cancelDismisser(id)
+      }
+      for (const toast of toasts.value) {
+        if (!dismissers.has(toast.id)) {
+          armDismisser(toast)
+          if (hovered.value) dismissers.get(toast.id)?.pause()
+        }
+      }
     }
 
-    const clearAll = () => {
-      for (const id of timers.keys()) clearTimer(id)
-    }
+    // Keep dismissers in lock-step with the (max-trimmed) toast list.
+    watch(toasts, syncDismissers)
+
+    // When hover toggles, pause/resume every live dismisser wholesale.
+    watch(hovered, (isHovered) => {
+      if (isHovered) {
+        for (const d of dismissers.values()) d.pause()
+      } else {
+        for (const d of dismissers.values()) d.resume()
+      }
+    })
 
     let unsubscribe: (() => void) | null = null
 
     onMounted(() => {
-      armAll()
+      syncDismissers()
       unsubscribe = subscribeToasts((next) => {
         // Evict oldest if exceeding `max`.
         let trimmed = next
@@ -148,30 +179,20 @@ export const IrisToastViewport = defineComponent({
           trimmed = next.slice(-props.max)
         }
         toasts.value = trimmed
-        // Arm timers for any new toasts.
-        for (const toast of trimmed) {
-          if (!timers.has(toast.id)) armTimer(toast)
-        }
-        // Clear timers for removed toasts.
-        const liveIds = new Set(trimmed.map((t) => t.id))
-        for (const id of timers.keys()) {
-          if (!liveIds.has(id)) clearTimer(id)
-        }
       })
     })
 
     onBeforeUnmount(() => {
-      clearAll()
+      for (const d of dismissers.values()) d.cancel()
+      dismissers.clear()
       unsubscribe?.()
     })
 
     const onPointerEnter = () => {
       hovered.value = true
-      clearAll()
     }
     const onPointerLeave = () => {
       hovered.value = false
-      armAll()
     }
 
     const positionStyle = (): Record<string, string> => {

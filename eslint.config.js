@@ -29,6 +29,10 @@ export default tseslint.config(
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
+      // Cyclomatic complexity as a low-noise real-time signal (branching, not length).
+      // warn-only by design: component render functions are legitimately long but rarely
+      // branchy; file/function LENGTH stays governed by scripts/arch-check.mjs (baseline ratchet).
+      complexity: ['warn', 15],
     },
   },
   {

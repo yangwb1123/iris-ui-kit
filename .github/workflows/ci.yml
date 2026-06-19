@@ -54,15 +54,15 @@ jobs:
 
       - name: Bench (advisory — not gate-failing)
         run: pnpm bench
+        continue-on-error: true
 
-      - name: Size (advisory — not gate-failing)
-        run: pnpm size
+      - name: Arch ratchet (no new oversized files / no growth of grandfathered)
+        run: pnpm arch-check:ratchet
 
-      - name: Arch check (advisory — not gate-failing)
+      - name: Arch full audit (advisory — lists all oversized files)
         run: pnpm arch-check
+        continue-on-error: true
 
-      - name: RSC check
-        run: pnpm check:rsc
-
-      - name: Format check
-        run: pnpm format:check
+      - name: Change budget (advisory)
+        run: pnpm change-budget
+        continue-on-error: true

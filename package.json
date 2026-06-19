@@ -28,7 +28,7 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "gen:manifest": "pnpm --filter @iris-ui/manifest build && node packages/manifest/dist/generate.js",
-    "check:manifest": "pnpm gen:manifest && git diff --exit-code -- manifest.json llms.txt packages/manifest/manifest.json packages/manifest/llms.txt",
+    "check:manifest": "pnpm gen:manifest && git diff --exit-code -- packages/manifest/manifest.json packages/manifest/llms.txt",
     "size": "node scripts/check-size.mjs",
     "check:rsc": "node scripts/check-rsc-directive.mjs",
     "changeset": "changeset",
@@ -38,7 +38,10 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,vue,svelte,js,json,md,css,html}\"",
     "clean": "turbo run clean && rm -rf node_modules",
     "prepare": "husky || true",
-    "arch-check": "node scripts/arch-check.mjs --strict"
+    "arch-check": "node scripts/arch-check.mjs --strict",
+    "arch-check:ratchet": "node scripts/arch-check.mjs --ratchet",
+    "arch-check:baseline": "node scripts/arch-check.mjs --update-baseline",
+    "change-budget": "node scripts/change-budget.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.10",

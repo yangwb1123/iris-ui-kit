@@ -26,6 +26,7 @@ import {
   tagInputScenario,
   otpInputScenario,
   dataSourceScenario,
+  dataSourceAsyncScenario,
   dialogScenario,
   popoverScenario,
   drawerScenario,
@@ -61,9 +62,9 @@ import {
   CalendarHarness,
   TagInputHarness,
   OtpInputHarness,
-  DataSourceHarness,
   ColumnResizeHarness,
 } from './contracts-harnesses'
+import { DataSourceHarness, DataSourceAsyncHarness } from './contracts-harnesses-data'
 import { IrisTable } from './primitives/table/Table'
 import { IrisTree } from './primitives/tree/Tree'
 import { IrisDialog } from './primitives/dialog/Dialog'
@@ -448,6 +449,14 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     await nextTick()
     await nextTick()
     await runContract(dataSourceScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared async DataSource contract', async () => {
+    const el = makeHost()
+    const wrapper = mount(DataSourceAsyncHarness, { attachTo: el })
+    await nextTick()
+    await nextTick()
+    await runContract(dataSourceAsyncScenario, driverFor(wrapper.element as HTMLElement), expect)
   })
 
   it('satisfies the shared Form contract', async () => {

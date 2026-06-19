@@ -28,7 +28,8 @@ framework-free:
 - **Driver** (`ContractDriver`, implemented per adapter in each package's
   `contracts.test`) — the thin bridge that owns the real elements + event firing
   (testing-library specifics) and exposes `queryAll` / `click` / `keydown` /
-  `flush`.
+  `pointer` / `type` / `dblclick` / `flush`. `flush()` settles reactivity AND
+  drains pending microtasks so async operations resolve before assertions.
 - **Runner** (`runner.ts`) — `runContract(scenario, driver, expect)` walks the
   steps: perform the action on the resolved target, `flush()` reactivity, then
   check every assertion via the injected `expect`. A failed assertion throws.
@@ -107,38 +108,82 @@ How to drive a stateful component to a known starting state differs by adapter:
   `aria-expanded` + `tabindex`, so it passes regardless of `selectionMode`).
 - **`equals: null` means the attribute is absent** (`getAttribute` → `null`).
   Use it to assert e.g. `aria-current` is unset on non-active items.
-- **Observe state via a reflected ATTRIBUTE, never an input's `.value` property.**
-  The runner reads `getAttribute` only, so live `<input>.value` is invisible to it.
-  When a component's state lives in an input value, look for a reflected
-  data-attr instead — e.g. OTP cells expose `data-filled="true"`, so the
-  contract observes fill-state without ever reading `.value`. If a stateful
-  component reflects nothing, it isn't contractable until it does (or the driver
-  grows a value-reader — see below).
+- **Prefer a reflected ATTRIBUTE; an input `.value` reader exists for the rest.**
+  Most state is best observed via `getAttribute` (`aria-*`, roving `tabindex`, a
+  `data-*` reflection) — e.g. OTP cells expose `data-filled="true"`, so the
+  contract reads fill-state structurally. For state that genuinely lives in an
+  input value, the runner now also supports `read: 'value'` (it reads the live
+  `<input>.value` property), and the driver exposes a `type` action that sets a
+  value + fires `input`/`change` plus a `dblclick` action — so text-entry and
+  edit-in-place flows (e.g. the Table cell-edit contract: `dblclick` a cell,
+  `type` into the input, read the committed `value`) are now contractable.
 
-## Deferred by design
+## Once-deferred, now landed
 
-- **Portal-gated overlays** (Select / Combobox / Dropdown-menu / Dialog) — their
-  content renders in a portal on `document.body`, _outside_ the container-scoped
-  driver's `queryAll`. Disabling the portal per-test is blocked because the
-  portal-disable props are inconsistently named across adapters
-  (`portalTarget` / `inline` / `teleport` / none). A uniform contract would need
-  those props unified first — a public-API change. These components already have
-  per-framework unit tests + verified keyboard parity, so the gap is covered.
-- **Table column-resize** — needs a pointer-drag with real coordinates, which
-  jsdom handles awkwardly; low marginal value over the existing per-fw tests.
-- **Text ENTRY** (typing chars into inputs: textarea / password / mentions, and
-  OTP _entry_ as opposed to OTP _editing_) — the `ContractDriver` has only
-  `click` / `keydown`, no `type` action that sets an input value and fires the
-  `input`/`change` event. Adding one (plus a `ContractElement` value-reader for
-  asserting the result) would unblock this class; until then, drive these via
-  `keydown` on already-seeded state (e.g. the OTP contract pre-fills with
-  `defaultValue` and exercises Backspace, which IS a keydown).
+Several classes the original harness punted on are now covered — recorded here so
+the gotchas that unblocked them aren't relearned:
+
+- **Overlays** (Dialog / Popover / Drawer / Dropdown-menu / Tooltip / Combobox /
+  Select / Menu) — now have **open + dismiss** contracts. The portal-scoping
+  problem was solved by mounting each in a dedicated harness with the portal
+  disabled per-test (React/Solid `portalTarget={false}`, Vue host wrapper,
+  Svelte dedicated container), so the floating content lands _inside_ the
+  driver's container-scoped `queryAll`. Reads `role`/`aria-expanded`/presence,
+  not portal-specific internals, to stay adapter-agnostic.
+- **Table column-resize + cell-edit** — both landed. Column-resize drives a
+  pointer sequence (`pointerdown`→`pointermove`→`pointerup`) and reads the
+  reflected width; cell-edit uses the new `dblclick` action + `type` action +
+  `read: 'value'` to edit-in-place and assert the committed value.
+- **Text ENTRY** — the `ContractDriver` grew a `type` action (sets an input value
+  - fires `input`/`change`) and a `dblclick` action, and the runner grew a
+    `read: 'value'` reader. Edit/entry flows are now first-class (no more
+    keydown-on-seeded-state workaround).
+- **Async data-source timing** — the `DataSource` contract now has an **async**
+  sibling (`dataSourceAsyncScenario`): an infinite-mode harness driven by an
+  injectable-latency (microtask-resolving) fetcher exercises `loadMore` append,
+  optimistic `mutate` commit + rollback, and `reload` re-fetch. The unblocking
+  trick was making each adapter's `flush()` drain a few microtask rounds (and,
+  for Svelte, interleave `flushSync()` + `tick()`) so a resolved fetch settles
+  before assertions — the sync scenarios are unaffected (the extra awaits are
+  no-ops when nothing async is pending).
+
+## Genuinely still deferred
+
+- **True on-body portal mode** — the overlay contracts disable the portal so
+  content is container-scoped. The _portalled_-to-`document.body` rendering path
+  (the production default) is not asserted by the shared runner, whose `queryAll`
+  is container-scoped. Verified per-framework instead. Lifting this needs a
+  body-scoped driver variant.
+- **Focus lifecycle** — focus _trapping_, restore-on-close, and initial-focus
+  placement for overlays aren't asserted (jsdom's focus model is unreliable and
+  varies by test lib). Covered by per-framework unit tests.
 
 ## Coverage at a glance
 
-21 scenarios across 15 components: tabs, switch, checkbox, accordion, segmented,
-toggle-group (single + multiple), slider, range-slider, radio, number-input,
-rating, pagination, stepper, calendar, tag-input, otp-input, tree (keyboard), and
-the Table trio (sort / multi-select / row-expand). The `contract-coverage` guard
-(`packages/manifest/src/contract-coverage.test.ts`) enforces all of them run on
-all four adapters.
+**39 scenarios across 33 components/behaviors**, every one replayed on all four
+adapters (React / Vue / Solid / Svelte):
+
+- **Form controls** — tabs, switch, checkbox, accordion, segmented, toggle-group
+  (single + multiple), slider, range-slider, radio, number-input, rating,
+  stepper, calendar, tag-input, otp-input.
+- **Navigation / disclosure / overlays** — pagination, tree (keyboard), and the
+  overlay set with open + dismiss contracts: dialog, popover, drawer, dropdown,
+  tooltip, combobox, select, menu.
+- **Feedback / actions** — toast, alert, banner, copy-button, split-button, form.
+- **Table** — sort, multi-select, row-expand, cell-edit (dblclick + `type` +
+  `read: 'value'`), and column-resize (pointer-drag).
+- **Data engine** — the `useDataSource` bridge over `createDataSource`, both the
+  **sync** happy-path (`load` / `setSort` / `setFilter` / `clearFilters`) and the
+  **async** contract (`dataSourceAsyncScenario`: infinite `loadMore` append,
+  optimistic `mutate` commit + rollback, `reload` re-fetch, via an injectable-
+  latency fetcher).
+
+Two guards keep this honest:
+
+- **`contract-coverage`** (`packages/manifest/src/contract-coverage.test.ts`)
+  enforces the full N-scenarios × 4-adapters matrix — a scenario wired into only
+  three adapters fails CI.
+- **assertion-density** (`packages/core/src/contracts/assertion-density.test.ts`)
+  forbids a step with `expect: []` — every step must assert at least one
+  observable, so coverage can't be padded with no-op steps that pass green while
+  the behavior is broken.

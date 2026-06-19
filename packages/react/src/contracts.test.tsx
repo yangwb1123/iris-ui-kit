@@ -29,6 +29,7 @@ import {
   popoverScenario,
   drawerScenario,
   dataSourceScenario,
+  dataSourceAsyncScenario,
   tooltipScenario,
   comboboxScenario,
   toastScenario,
@@ -43,7 +44,11 @@ import {
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { useCallback, useState } from 'react'
-import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
+import {
+  createSyncClientDataSource,
+  createClientDataSource,
+  type DataViewColumn,
+} from '@iris-ui/core'
 import { useDataSource } from './data/useDataSource'
 import { IrisTabs } from './primitives/tabs/Tabs'
 import { IrisTabsList } from './primitives/tabs/TabsList'
@@ -178,6 +183,74 @@ function DataSourceHarness() {
       <button data-iris-ds-clear onClick={() => ds.clearFilters()}>
         clear
       </button>
+      {ds.state.rows.map((r) => (
+        <div key={r.id} data-iris-ds-row>
+          {r.name}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Async-contract dataset: 5 rows, infinite mode, pageSize 2 (page 1 = Ann/Ben). */
+const dsAsyncData: DsRow[] = [
+  { id: 1, name: 'Ann', age: 20 },
+  { id: 2, name: 'Ben', age: 21 },
+  { id: 3, name: 'Cara', age: 22 },
+  { id: 4, name: 'Dan', age: 23 },
+  { id: 5, name: 'Eve', age: 24 },
+]
+
+/**
+ * An injectable-latency fetcher for the async contract: wraps the async client
+ * data source but RESOLVES ON A MICROTASK (never synchronously), so every op
+ * round-trips through the engine's Promise path. `getFetches()` returns how many
+ * times it has resolved (proving a re-fetch fired). Identical ×4 harness.
+ */
+function makeLatencyFetcher() {
+  const base = createClientDataSource<DsRow>(dsAsyncData, dsColumns)
+  let fetches = 0
+  const fetcher = async (q: Parameters<typeof base>[0]) => {
+    await Promise.resolve()
+    const result = await base(q)
+    fetches += 1
+    return result
+  }
+  return { fetcher, getFetches: () => fetches }
+}
+
+/** Component exercising the async useDataSource bridge (infinite append, mutate, reload). */
+function DataSourceAsyncHarness() {
+  const [{ fetcher, getFetches }] = useState(makeLatencyFetcher)
+  const ds = useDataSource<DsRow>({ fetcher, mode: 'infinite', pageSize: 2 })
+  const rename = (suffix: string, fail: boolean) =>
+    void ds
+      .mutate(() => (fail ? Promise.reject(new Error('boom')) : Promise.resolve()), {
+        optimistic: (rows) =>
+          rows.map((r, i) => (i === 0 ? { ...r, name: `${r.name}${suffix}` } : r)),
+        skipReload: !fail,
+      })
+      .catch(() => {})
+  return (
+    <div>
+      <button data-iris-ds-loadmore onClick={() => void ds.loadMore()}>
+        loadMore
+      </button>
+      <button data-iris-ds-reload onClick={() => void ds.reload()}>
+        reload
+      </button>
+      <button data-iris-ds-rename onClick={() => rename('*', false)}>
+        rename
+      </button>
+      <button data-iris-ds-rename-fail onClick={() => rename('!', true)}>
+        renameFail
+      </button>
+      <div
+        data-iris-ds-meta
+        data-hasmore={String(ds.state.hasMore)}
+        data-loading={String(ds.state.loading)}
+        data-fetches={String(getFetches())}
+      />
       {ds.state.rows.map((r) => (
         <div key={r.id} data-iris-ds-row>
           {r.name}
@@ -489,6 +562,11 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
   it('satisfies the shared DataSource contract', async () => {
     const { container } = render(<DataSourceHarness />)
     await runContract(dataSourceScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared async DataSource contract', async () => {
+    const { container } = render(<DataSourceAsyncHarness />)
+    await runContract(dataSourceAsyncScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Tooltip contract', async () => {

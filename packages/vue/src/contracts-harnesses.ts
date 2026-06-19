@@ -1,7 +1,5 @@
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { ContractDriver } from '@iris-ui/core/contracts'
-import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
-import { useDataSource } from './data/useDataSource'
 import { IrisTabs } from './primitives/tabs/Tabs'
 import { IrisTabsList } from './primitives/tabs/TabsList'
 import { IrisTabsTrigger } from './primitives/tabs/TabsTrigger'
@@ -70,7 +68,14 @@ export function driverFor(container: HTMLElement): ContractDriver {
       const el = at(selector, index)
       if (el) el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }))
     },
-    flush: () => nextTick(),
+    flush: async () => {
+      // Drain a few microtask rounds so async ops settle (an injectable-latency
+      // fetcher resolves on a microtask; an optimistic-mutate ROLLBACK then chains
+      // a second `load()` fetch) — then let Vue's scheduler render. Sync scenarios
+      // are unaffected (extra microtask awaits are no-ops when nothing is pending).
+      for (let i = 0; i < 4; i++) await Promise.resolve()
+      await nextTick()
+    },
   }
 }
 
@@ -401,46 +406,6 @@ export const ColumnResizeHarness = defineComponent({
           ],
         }),
         h('div', { 'data-col-width': String(widths.value.name) }),
-      ])
-  },
-})
-
-interface DsRow extends Record<string, unknown> {
-  id: number
-  name: string
-  age: number
-}
-const dsData: DsRow[] = [
-  { id: 1, name: 'Charlie', age: 30 },
-  { id: 2, name: 'Alice', age: 25 },
-  { id: 3, name: 'Bob', age: 35 },
-]
-const dsColumns: DataViewColumn<DsRow>[] = [
-  { key: 'name', getValue: (r) => r.name, filterable: true },
-  { key: 'age', getValue: (r) => r.age },
-]
-
-export const DataSourceHarness = defineComponent({
-  name: 'DataSourceHarness',
-  setup() {
-    const ds = useDataSource<DsRow>({
-      fetcher: createSyncClientDataSource(dsData, dsColumns),
-      pageSize: 10,
-    })
-    return () =>
-      h('div', null, [
-        h(
-          'button',
-          { 'data-iris-ds-sort': '', onClick: () => ds.setSort({ key: 'age', direction: 'asc' }) },
-          'sort',
-        ),
-        h(
-          'button',
-          { 'data-iris-ds-filter': '', onClick: () => ds.setFilter('name', 'li') },
-          'filter',
-        ),
-        h('button', { 'data-iris-ds-clear': '', onClick: () => ds.clearFilters() }, 'clear'),
-        ...ds.state.value.rows.map((r) => h('div', { key: r.id, 'data-iris-ds-row': '' }, r.name)),
       ])
   },
 })

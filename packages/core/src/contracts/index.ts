@@ -37,6 +37,7 @@ export { rangeSliderScenario } from './scenarios/range-slider'
 export { tagInputScenario } from './scenarios/tag-input'
 export { otpInputScenario } from './scenarios/otp-input'
 export { dataSourceScenario } from './scenarios/data-source'
+export { dataSourceAsyncScenario } from './scenarios/data-source-async'
 export type {
   ContractScenario,
   ContractStep,

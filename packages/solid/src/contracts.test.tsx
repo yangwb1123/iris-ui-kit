@@ -25,6 +25,7 @@ import {
   tagInputScenario,
   otpInputScenario,
   dataSourceScenario,
+  dataSourceAsyncScenario,
   dialogScenario,
   popoverScenario,
   drawerScenario,
@@ -43,7 +44,11 @@ import {
   tableColumnResizeScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
-import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
+import {
+  createSyncClientDataSource,
+  createClientDataSource,
+  type DataViewColumn,
+} from '@iris-ui/core'
 import {
   IrisTabs,
   IrisTabsList,
@@ -136,6 +141,65 @@ function DataSourceHarness() {
   )
 }
 
+/** Async-contract dataset: 5 rows, infinite mode, pageSize 2 (page 1 = Ann/Ben). */
+const dsAsyncData: DsRow[] = [
+  { id: 1, name: 'Ann', age: 20 },
+  { id: 2, name: 'Ben', age: 21 },
+  { id: 3, name: 'Cara', age: 22 },
+  { id: 4, name: 'Dan', age: 23 },
+  { id: 5, name: 'Eve', age: 24 },
+]
+
+/**
+ * Mirrors the React async DataSource harness in Solid idioms (infinite append,
+ * mutate, reload). The injectable-latency fetcher wraps the async client data
+ * source but resolves ON A MICROTASK (never synchronously), so every op round-
+ * trips through the engine's Promise path; it bumps a Solid signal on each
+ * resolve so `data-fetches` re-renders reactively (proving a re-fetch fired).
+ */
+function DataSourceAsyncHarness() {
+  const [fetches, setFetches] = createSignal(0)
+  const base = createClientDataSource<DsRow>(dsAsyncData, dsColumns)
+  const fetcher = async (q: Parameters<typeof base>[0]) => {
+    await Promise.resolve()
+    const result = await base(q)
+    setFetches((n) => n + 1)
+    return result
+  }
+  const ds = useDataSource<DsRow>({ fetcher, mode: 'infinite', pageSize: 2 })
+  const rename = (suffix: string, fail: boolean) =>
+    void ds
+      .mutate(() => (fail ? Promise.reject(new Error('boom')) : Promise.resolve()), {
+        optimistic: (rows) =>
+          rows.map((r, i) => (i === 0 ? { ...r, name: `${r.name}${suffix}` } : r)),
+        skipReload: !fail,
+      })
+      .catch(() => {})
+  return (
+    <div>
+      <button data-iris-ds-loadmore onClick={() => void ds.loadMore()}>
+        loadMore
+      </button>
+      <button data-iris-ds-reload onClick={() => void ds.reload()}>
+        reload
+      </button>
+      <button data-iris-ds-rename onClick={() => rename('*', false)}>
+        rename
+      </button>
+      <button data-iris-ds-rename-fail onClick={() => rename('!', true)}>
+        renameFail
+      </button>
+      <div
+        data-iris-ds-meta
+        data-hasmore={String(ds.state().hasMore)}
+        data-loading={String(ds.state().loading)}
+        data-fetches={String(fetches())}
+      />
+      <For each={ds.state().rows}>{(r) => <div data-iris-ds-row>{r.name}</div>}</For>
+    </div>
+  )
+}
+
 /**
  * A ContractDriver over a Solid-testing-library container. Solid reactivity is
  * synchronous in tests, so `flush()` is a no-op; `fireEvent` settles updates.
@@ -171,7 +235,13 @@ function driverFor(container: HTMLElement): ContractDriver {
       const el = at(selector, index)
       if (el) fireEvent.doubleClick(el)
     },
-    flush: () => {},
+    // Solid reactivity is synchronous on signal writes, so sync scenarios need no
+    // settling. Async ops still resolve on the microtask queue (an injectable-
+    // latency fetcher; an optimistic-mutate ROLLBACK chains a second `load()`),
+    // so drain a few microtask rounds — a no-op when nothing is pending.
+    flush: async () => {
+      for (let i = 0; i < 4; i++) await Promise.resolve()
+    },
   }
 }
 
@@ -437,6 +507,11 @@ describe('@iris-ui/solid — cross-framework behavior contracts', () => {
   it('satisfies the shared DataSource contract', async () => {
     const { container } = render(() => <DataSourceHarness />)
     await runContract(dataSourceScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared async DataSource contract', async () => {
+    const { container } = render(() => <DataSourceAsyncHarness />)
+    await runContract(dataSourceAsyncScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Dialog contract', async () => {

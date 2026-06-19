@@ -31,6 +31,7 @@ import {
   dialogScenario,
   popoverScenario,
   dataSourceScenario,
+  dataSourceAsyncScenario,
   drawerScenario,
   dropdownScenario,
   tooltipScenario,
@@ -61,6 +62,7 @@ import IrisAlert from './primitives/alert/IrisAlert.svelte'
 import IrisBanner from './primitives/banner/IrisBanner.svelte'
 import IrisSplitButton from './primitives/split-button/IrisSplitButton.svelte'
 import DataSourceContractHarness from './DataSourceContractHarness.svelte'
+import DataSourceAsyncContractHarness from './DataSourceAsyncContractHarness.svelte'
 import DialogContractHarness from './DialogContractHarness.svelte'
 import PopoverContractHarness from './PopoverContractHarness.svelte'
 import DrawerContractHarness from './DrawerContractHarness.svelte'
@@ -96,7 +98,19 @@ function driverFor(container: HTMLElement): ContractDriver {
       Object.defineProperty(ev, 'pointerType', { value: 'mouse' })
       await fireEvent(el, ev)
     },
-    flush: () => {
+    flush: async () => {
+      // Sync scenarios settle with a single flushSync(). Async ops resolve on the
+      // microtask queue (an injectable-latency fetcher; an optimistic-mutate
+      // ROLLBACK chains a second `load()`), so interleave flushing with the
+      // Svelte scheduler (`tick`) over a few rounds: flushSync() runs the $effect
+      // that kicks `load()`, `await tick()` then yields to the resolving fetcher's
+      // microtasks and re-runs the store→$state rune effect. The extra rounds are
+      // no-ops when nothing async is pending, so sync scenarios are unaffected.
+      for (let i = 0; i < 6; i++) {
+        flushSync()
+        await tick()
+        await Promise.resolve()
+      }
       flushSync()
     },
     type: (selector, index, text) => {
@@ -349,6 +363,15 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     // bookkeeping. See DataSourceContractHarness.svelte for the full note.
     const { container } = render(DataSourceContractHarness)
     await runContract(dataSourceScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared async DataSource contract', async () => {
+    // Dedicated async harness over the infinite-mode engine driven by an
+    // injectable-latency (microtask-resolving) fetcher: loadMore append, optimistic
+    // mutate commit + rollback, reload re-fetch. The driver's `flush()` drains
+    // microtask rounds + re-flushes so each async write settles before assertions.
+    const { container } = render(DataSourceAsyncContractHarness)
+    await runContract(dataSourceAsyncScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Drawer contract', async () => {

@@ -1,0 +1,137 @@
+import { createStore, type Store } from './store'
+
+/**
+ * `@iris-ui/core/commands` — a framework-agnostic COMMAND / ACTION registry: the
+ * substrate behind a command palette (⌘K) AND an automation/agent layer. Apps,
+ * the window manager, and the shell `register` named actions; a palette searches
+ * + runs them, and an MCP/agent can enumerate the same registry as tools and
+ * invoke `run(id)` — so "an agent operates across the aggregated apps" reduces to
+ * "every capability is a registered Command." Off the core path (own subpath).
+ */
+
+export interface Command {
+  id: string
+  title: string
+  /** Extra search terms (synonyms, app name, …). */
+  keywords?: string
+  /** Group label for the palette ('Apps', 'Window', 'System', …). */
+  group?: string
+  icon?: string
+  /** Invoke the command. May be async. */
+  run: () => void | Promise<void>
+  /** When it returns false the command is hidden + run() is a no-op. */
+  enabled?: () => boolean
+}
+
+export interface CommandHit {
+  command: Command
+  score: number
+}
+
+export interface CommandRegistryState {
+  /** All registered commands, in registration order. */
+  commands: Command[]
+}
+
+export interface CommandRegistry {
+  store: Store<CommandRegistryState>
+  getState(): CommandRegistryState
+  subscribe(listener: (state: CommandRegistryState) => void): () => void
+  /** Register a command; returns an unregister fn. Re-registering an id replaces it. */
+  register(command: Command): () => void
+  /** Register several; returns one unregister fn for all of them. */
+  registerMany(commands: Command[]): () => void
+  unregister(id: string): void
+  /** Currently-enabled commands. */
+  list(): Command[]
+  /** Fuzzy-search enabled commands, best first. Empty query → all (by group/title). */
+  search(query: string, limit?: number): CommandHit[]
+  /** Run a command by id (no-op if missing/disabled). */
+  run(id: string): Promise<void>
+}
+
+/**
+ * Subsequence fuzzy score of `query` within `text` (case-insensitive). Returns
+ * null when `query` isn't a subsequence; higher is better. Rewards contiguous
+ * runs, word-boundary starts, and early matches. Empty query → 0 (everything
+ * matches equally).
+ */
+export function fuzzyScore(text: string, query: string): number | null {
+  const q = query.trim().toLowerCase()
+  if (!q) return 0
+  const t = text.toLowerCase()
+  let ti = 0
+  let score = 0
+  let streak = 0
+  for (let qi = 0; qi < q.length; qi += 1) {
+    const ch = q[qi]!
+    let found = -1
+    for (let i = ti; i < t.length; i += 1) {
+      if (t[i] === ch) {
+        found = i
+        break
+      }
+    }
+    if (found === -1) return null
+    streak = found === ti ? streak + 1 : 0
+    score += 10 + streak * 5 // contiguous matches compound
+    if (found === 0 || ' /-_.'.includes(t[found - 1] ?? '')) score += 8 // word-boundary
+    score -= Math.min(found - ti, 6) // penalize gaps a little
+    ti = found + 1
+  }
+  return score
+}
+
+const isEnabled = (c: Command): boolean => (c.enabled ? c.enabled() : true)
+
+export function createCommandRegistry(): CommandRegistry {
+  const store = createStore<CommandRegistryState>({ commands: [] })
+
+  const unregister = (id: string): void =>
+    store.setState((s) => ({ commands: s.commands.filter((c) => c.id !== id) }))
+
+  const register = (command: Command): (() => void) => {
+    store.setState((s) => ({
+      commands: [...s.commands.filter((c) => c.id !== command.id), command],
+    }))
+    return () => unregister(command.id)
+  }
+
+  return {
+    store,
+    getState: store.getState,
+    subscribe: store.subscribe,
+    register,
+    registerMany(commands) {
+      // Batch into one emit, return a single unregister.
+      store.setState((s) => {
+        const ids = new Set(commands.map((c) => c.id))
+        return { commands: [...s.commands.filter((c) => !ids.has(c.id)), ...commands] }
+      })
+      return () =>
+        store.setState((s) => {
+          const ids = new Set(commands.map((c) => c.id))
+          return { commands: s.commands.filter((c) => !ids.has(c.id)) }
+        })
+    },
+    unregister,
+    list: () => store.getState().commands.filter(isEnabled),
+
+    search(query, limit = 20) {
+      const enabled = store.getState().commands.filter(isEnabled)
+      const hits: CommandHit[] = []
+      for (const command of enabled) {
+        const haystack = `${command.title} ${command.keywords ?? ''} ${command.group ?? ''}`
+        const score = fuzzyScore(haystack, query)
+        if (score !== null) hits.push({ command, score })
+      }
+      hits.sort((a, b) => b.score - a.score || a.command.title.localeCompare(b.command.title))
+      return hits.slice(0, limit)
+    },
+
+    async run(id) {
+      const command = store.getState().commands.find((c) => c.id === id)
+      if (command && isEnabled(command)) await command.run()
+    },
+  }
+}

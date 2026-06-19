@@ -27,6 +27,11 @@
       "types": "./dist/profile.d.ts",
       "import": "./dist/profile.js",
       "require": "./dist/profile.cjs"
+    },
+    "./commands": {
+      "types": "./dist/commands.d.ts",
+      "import": "./dist/commands.js",
+      "require": "./dist/commands.cjs"
     }
   },
   "files": [

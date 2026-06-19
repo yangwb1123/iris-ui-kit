@@ -184,7 +184,7 @@ function SettingsApp() {
                 <strong>{c.label}</strong>
                 <br />
                 <span style={{ fontSize: 12, opacity: 0.65 }}>
-                  controls {c.controls} · {c.bar}
+                  controls {c.controls} · {c.bottomBar}
                 </span>
               </span>
               {active && (

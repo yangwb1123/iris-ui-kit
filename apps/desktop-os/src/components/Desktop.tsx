@@ -2,8 +2,7 @@ import * as React from 'react'
 import { APPS } from '../apps'
 import { useWm, useWmState } from '../shell'
 import { Window } from './Window'
-import { Taskbar } from './Taskbar'
-import { StartMenu } from './StartMenu'
+import { TopBar, BottomBar, Launcher } from './Bars'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
 const SHORTCUTS = ['about', 'files', 'showcase', 'settings']
@@ -11,7 +10,7 @@ const SHORTCUTS = ['about', 'files', 'showcase', 'settings']
 export function Desktop() {
   const wm = useWm()
   const state = useWmState()
-  const [startOpen, setStartOpen] = React.useState(false)
+  const [launcherOpen, setLauncherOpen] = React.useState(false)
 
   const open = (appId: string) => {
     const app = APPS.find((a) => a.id === appId)
@@ -20,10 +19,11 @@ export function Desktop() {
 
   return (
     <div
-      // Click on empty desktop dismisses the start menu.
-      onPointerDown={() => setStartOpen(false)}
+      // Click on empty desktop dismisses the launcher.
+      onPointerDown={() => setLauncherOpen(false)}
       style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}
     >
+      <TopBar />
       {/* Desktop icons */}
       <div
         style={{
@@ -82,8 +82,8 @@ export function Desktop() {
         </div>
       )}
 
-      <StartMenu open={startOpen} onClose={() => setStartOpen(false)} />
-      <Taskbar startOpen={startOpen} onToggleStart={() => setStartOpen((o) => !o)} />
+      <Launcher open={launcherOpen} onClose={() => setLauncherOpen(false)} />
+      <BottomBar launcherOpen={launcherOpen} onToggleLauncher={() => setLauncherOpen((o) => !o)} />
     </div>
   )
 }

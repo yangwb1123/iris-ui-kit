@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { createWindowManager } from '@iris-ui/core/window'
-import { CHROMES, type OsId } from './os'
+import { CHROMES, barInsets, type OsId } from './os'
 import { WmProvider, OsProvider } from './shell'
 import { Desktop } from './components/Desktop'
 
@@ -15,10 +15,15 @@ export function App() {
   React.useEffect(() => {
     const el = rootRef.current
     if (!el) return
-    const barH = parseInt(chrome.vars['--os-bar-h'] ?? '48', 10) + (chrome.bar === 'dock' ? 16 : 0)
+    const { top, bottom } = barInsets(chrome)
     const apply = () => {
       const r = el.getBoundingClientRect()
-      wm.setWorkArea({ x: 0, y: 0, width: r.width, height: Math.max(240, r.height - barH) })
+      wm.setWorkArea({
+        x: 0,
+        y: top,
+        width: r.width,
+        height: Math.max(240, r.height - top - bottom),
+      })
     }
     apply()
     const ro = new ResizeObserver(apply)

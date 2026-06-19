@@ -1,11 +1,10 @@
 /**
  * OS "chrome" config — the seam that lets ONE window manager + ONE shell render
  * as Windows / macOS / KDE. Each entry is a set of CSS custom properties (the
- * "skin") plus a few STRUCTURAL flags the components branch on (where the window
- * controls sit, whether the bottom bar is a taskbar / dock / panel, how task
- * items align). Win11 is the tuned default; macOS/KDE are token variants that
- * make the in-OS skin switcher meaningful — adding fidelity later = extend here,
- * not the components. Matches the project ethos: style via tokens, not hardcode.
+ * "skin") plus STRUCTURAL flags the shell branches on: where the window controls
+ * sit, whether there's a top menu bar, which bottom bar (taskbar / dock / panel)
+ * and which launcher (start / spotlight / kickoff). Adding fidelity = extend
+ * here + the per-OS component, never the window manager. Style via tokens.
  */
 
 export type OsId = 'win11' | 'macos' | 'kde'
@@ -16,8 +15,13 @@ export interface OsChrome {
   /** Window control buttons: right (Windows/KDE) or left (macOS traffic lights). */
   controls: 'left' | 'right'
   controlStyle: 'win' | 'mac' | 'kde'
-  /** Bottom bar kind + task-item alignment. */
-  bar: 'taskbar' | 'dock' | 'panel'
+  /** Optional global top menu bar (macOS). */
+  topBar: 'menubar' | 'none'
+  /** Bottom bar kind. */
+  bottomBar: 'taskbar' | 'dock' | 'panel'
+  /** App launcher style. */
+  launcher: 'start' | 'spotlight' | 'kickoff'
+  /** Task-item alignment in the bottom bar. */
   taskAlign: 'center' | 'left'
   /** Show app labels next to task buttons (KDE panel style). */
   taskLabels: boolean
@@ -30,13 +34,16 @@ const WIN11: OsChrome = {
   label: 'Windows 11',
   controls: 'right',
   controlStyle: 'win',
-  bar: 'taskbar',
+  topBar: 'none',
+  bottomBar: 'taskbar',
+  launcher: 'start',
   taskAlign: 'center',
   taskLabels: false,
   vars: {
     '--os-accent': '#0a84ff',
     '--os-accent-strong': '#0067c0',
-    '--os-wallpaper': 'linear-gradient(135deg, #1b3a6b 0%, #2b6cb0 45%, #4cc2ff 100%)',
+    '--os-wallpaper':
+      'radial-gradient(140% 120% at 70% 10%, #4cc2ff 0%, #2b6cb0 42%, #11294f 100%)',
     '--os-window-bg': 'rgba(243, 243, 243, 0.92)',
     '--os-window-fg': '#1b1b1b',
     '--os-window-radius': '8px',
@@ -44,6 +51,7 @@ const WIN11: OsChrome = {
     '--os-window-shadow': '0 16px 48px rgba(0, 0, 0, 0.36)',
     '--os-titlebar-bg': 'rgba(255, 255, 255, 0.6)',
     '--os-titlebar-h': '36px',
+    '--os-topbar-h': '0px',
     '--os-bar-bg': 'rgba(243, 243, 243, 0.72)',
     '--os-bar-fg': '#1b1b1b',
     '--os-bar-h': '48px',
@@ -58,25 +66,28 @@ const MACOS: OsChrome = {
   label: 'macOS',
   controls: 'left',
   controlStyle: 'mac',
-  bar: 'dock',
+  topBar: 'menubar',
+  bottomBar: 'dock',
+  launcher: 'spotlight',
   taskAlign: 'center',
   taskLabels: false,
   vars: {
     '--os-accent': '#1e8fff',
     '--os-accent-strong': '#0a6cff',
     '--os-wallpaper': 'linear-gradient(160deg, #3a1c71 0%, #d76d77 50%, #ffaf7b 100%)',
-    '--os-window-bg': 'rgba(246, 246, 248, 0.86)',
+    '--os-window-bg': 'rgba(246, 246, 248, 0.82)',
     '--os-window-fg': '#1d1d1f',
     '--os-window-radius': '12px',
-    '--os-window-border': '1px solid rgba(0, 0, 0, 0.12)',
+    '--os-window-border': '1px solid rgba(0, 0, 0, 0.14)',
     '--os-window-shadow': '0 24px 64px rgba(0, 0, 0, 0.42)',
-    '--os-titlebar-bg': 'rgba(255, 255, 255, 0.55)',
+    '--os-titlebar-bg': 'rgba(255, 255, 255, 0.5)',
     '--os-titlebar-h': '40px',
-    '--os-bar-bg': 'rgba(255, 255, 255, 0.42)',
+    '--os-topbar-h': '26px',
+    '--os-bar-bg': 'rgba(255, 255, 255, 0.4)',
     '--os-bar-fg': '#1d1d1f',
-    '--os-bar-h': '62px',
+    '--os-bar-h': '66px',
     '--os-bar-radius': '20px',
-    '--os-blur': 'blur(34px) saturate(1.8)',
+    '--os-blur': 'blur(34px) saturate(1.9)',
     '--os-font': "'SF Pro Display', system-ui, -apple-system, sans-serif",
   },
 }
@@ -86,7 +97,9 @@ const KDE: OsChrome = {
   label: 'KDE Plasma',
   controls: 'right',
   controlStyle: 'kde',
-  bar: 'panel',
+  topBar: 'none',
+  bottomBar: 'panel',
+  launcher: 'kickoff',
   taskAlign: 'left',
   taskLabels: true,
   vars: {
@@ -96,13 +109,14 @@ const KDE: OsChrome = {
     '--os-window-bg': 'rgba(252, 252, 252, 0.97)',
     '--os-window-fg': '#232629',
     '--os-window-radius': '4px',
-    '--os-window-border': '1px solid rgba(61, 174, 233, 0.4)',
+    '--os-window-border': '1px solid rgba(61, 174, 233, 0.45)',
     '--os-window-shadow': '0 12px 36px rgba(0, 0, 0, 0.45)',
-    '--os-titlebar-bg': 'rgba(238, 240, 241, 0.92)',
-    '--os-titlebar-h': '34px',
-    '--os-bar-bg': 'rgba(35, 38, 41, 0.86)',
+    '--os-titlebar-bg': 'rgba(238, 240, 241, 0.94)',
+    '--os-titlebar-h': '32px',
+    '--os-topbar-h': '0px',
+    '--os-bar-bg': 'rgba(35, 38, 41, 0.88)',
     '--os-bar-fg': '#eff0f1',
-    '--os-bar-h': '44px',
+    '--os-bar-h': '42px',
     '--os-bar-radius': '0px',
     '--os-blur': 'blur(12px)',
     '--os-font': "'Noto Sans', 'Oxygen', system-ui, sans-serif",
@@ -111,3 +125,12 @@ const KDE: OsChrome = {
 
 export const CHROMES: Record<OsId, OsChrome> = { win11: WIN11, macos: MACOS, kde: KDE }
 export const OS_ORDER: OsId[] = ['win11', 'macos', 'kde']
+
+/** Reserved px for top + bottom bars (drives the WM work area). */
+export function barInsets(chrome: OsChrome): { top: number; bottom: number } {
+  const px = (v: string | undefined, d: number) => (v ? parseInt(v, 10) || d : d)
+  const top = chrome.topBar === 'menubar' ? px(chrome.vars['--os-topbar-h'], 26) : 0
+  const barH = px(chrome.vars['--os-bar-h'], 48)
+  const bottom = chrome.bottomBar === 'dock' ? barH + 18 : barH
+  return { top, bottom }
+}

@@ -12,33 +12,25 @@ export interface UseFieldArrayReturn<T> {
   replace: (items: T[]) => void
 }
 
+/**
+ * Manage a dynamic array field (repeatable rows) inside an `<IrisForm>`. Mutators
+ * delegate to the core {@link FormStore} array helpers (`arrayPush`/`arrayInsert`/
+ * `arrayRemove`/`arrayMove`), which RE-KEY each element's error/touched/dirty/
+ * validating state across the mutation — so a row's per-element validation state
+ * FOLLOWS the row when rows are removed or reordered (removing `items[0]` shifts
+ * `items[2]`'s error down to `items[1]`). `replace` swaps the whole array.
+ */
 export function useFieldArray<T = unknown>(name: string): UseFieldArrayReturn<T> {
   const form = getFormContext()
   const state = readable<FormState<FormValues>>(form.getState(), (set) => form.subscribe(set))
 
-  const current = (): T[] => {
-    const value = form.getState().values[name]
-    return Array.isArray(value) ? (value as T[]) : []
-  }
-  const set = (next: T[]) => form.setFieldValue(name, next as never)
-
   return {
     name,
     fields: derived(state, ($s) => (Array.isArray($s.values[name]) ? $s.values[name] : []) as T[]),
-    push: (item) => set([...current(), item]),
-    remove: (index) => set(current().filter((_, i) => i !== index)),
-    insert: (index, item) => {
-      const arr = current()
-      set([...arr.slice(0, index), item, ...arr.slice(index)])
-    },
-    move: (from, to) => {
-      const arr = current()
-      if (from < 0 || from >= arr.length || to < 0 || to >= arr.length) return
-      const next = [...arr]
-      const [moved] = next.splice(from, 1)
-      next.splice(to, 0, moved as T)
-      set(next)
-    },
-    replace: (items) => set(items),
+    push: (item) => form.arrayPush(name as never, item as never),
+    remove: (index) => form.arrayRemove(name as never, index),
+    insert: (index, item) => form.arrayInsert(name as never, index, item as never),
+    move: (from, to) => form.arrayMove(name as never, from, to),
+    replace: (items) => form.setFieldValue(name, items as never),
   }
 }

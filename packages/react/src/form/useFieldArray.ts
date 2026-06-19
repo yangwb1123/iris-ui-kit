@@ -18,10 +18,12 @@ export interface UseFieldArrayReturn<T> {
 }
 
 /**
- * Manage a dynamic array field (repeatable rows) inside an `<IrisForm>`. The
- * field's value is a plain array; mutators write a new array via the form
- * store (so dirty tracking and validation run as usual). Handlers read the
- * latest value at call time, so consecutive ops in one tick compose correctly.
+ * Manage a dynamic array field (repeatable rows) inside an `<IrisForm>`. Mutators
+ * delegate to the core {@link FormStore} array helpers (`arrayPush`/`arrayInsert`/
+ * `arrayRemove`/`arrayMove`), which RE-KEY each element's error/touched/dirty/
+ * validating state across the mutation — so a row's per-element validation state
+ * FOLLOWS the row when rows are removed or reordered (removing `items[0]` shifts
+ * `items[2]`'s error down to `items[1]`). `replace` swaps the whole array.
  *
  * ```tsx
  * const items = useFieldArray<{ sku: string }>('items')
@@ -34,29 +36,13 @@ export function useFieldArray<T = unknown>(name: string): UseFieldArrayReturn<T>
   const state = useStore(form.store)
   const fields = (Array.isArray(state.values[name]) ? state.values[name] : []) as T[]
 
-  const current = (): T[] => {
-    const value = form.getState().values[name]
-    return Array.isArray(value) ? (value as T[]) : []
-  }
-  const set = (next: T[]) => form.setFieldValue(name, next as never)
-
   return {
     name,
     fields,
-    push: (item) => set([...current(), item]),
-    remove: (index) => set(current().filter((_, i) => i !== index)),
-    insert: (index, item) => {
-      const arr = current()
-      set([...arr.slice(0, index), item, ...arr.slice(index)])
-    },
-    move: (from, to) => {
-      const arr = current()
-      if (from < 0 || from >= arr.length || to < 0 || to >= arr.length) return
-      const next = [...arr]
-      const [moved] = next.splice(from, 1)
-      next.splice(to, 0, moved as T)
-      set(next)
-    },
-    replace: (items) => set(items),
+    push: (item) => form.arrayPush(name as never, item as never),
+    remove: (index) => form.arrayRemove(name as never, index),
+    insert: (index, item) => form.arrayInsert(name as never, index, item as never),
+    move: (from, to) => form.arrayMove(name as never, from, to),
+    replace: (items) => form.setFieldValue(name, items as never),
   }
 }

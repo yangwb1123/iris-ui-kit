@@ -1,6 +1,8 @@
-import { createSignal, createMemo, onCleanup, For, Show, type JSX } from 'solid-js'
+import { createSignal, onCleanup, createMemo, For, Show, type JSX } from 'solid-js'
+import { FormContext } from '@iris-ui/solid/form'
+import type { FormStore, FormValues } from '@iris-ui/core'
 import { createFormBuilder, type FormSchema, type FieldSpec, type FormBuilderConfig } from '../core'
-import type { FormValues } from '@iris-ui/core'
+import { FieldControl } from './fields'
 
 export type { FormSchema, FieldSpec } from '../core'
 
@@ -14,17 +16,24 @@ export interface IrisFormBuilderProps extends FormBuilderConfig {
  * Render a validated form from a declarative schema (SolidJS). Each field becomes
  * an accessible native control wired to the core form engine; required fields
  * validate inline; submit runs the schema's `onSubmit`. Themed via CSS vars.
+ *
+ * The form body is wrapped in `<FormContext.Provider>` so each control binds via
+ * `@iris-ui/solid/form`'s `useField` (canonical-path keyed). This is what lets an
+ * `array` (repeater) field use `useFieldArray` and bind its per-row sub-fields to
+ * nested paths (`items[2].sku`), with per-row state that re-keys on remove/move.
  */
 export function IrisFormBuilder(props: IrisFormBuilderProps) {
   // Create the builder ONCE (forms are per-instance; props are read once).
   const builder = createFormBuilder(props.schema, {
     onSubmit: props.onSubmit,
     validateOnChange: props.validateOnChange,
+    parse: props.parse,
+    transform: props.transform,
+    dependencies: props.dependencies,
   })
   const {
     form,
     submitLabel,
-    labelOf,
     stepCount,
     nextStepLabel,
     stepFields,
@@ -38,116 +47,37 @@ export function IrisFormBuilder(props: IrisFormBuilderProps) {
 
   const visibleFields = createMemo(() => stepFields(state()))
 
-  const setValue = (field: FieldSpec, value: unknown) =>
-    form.setFieldValue(field.name, value as FormValues[string])
-
   return (
-    <form
-      data-iris-form-builder=""
-      class={props.class}
-      style={{ display: 'grid', gap: 'var(--iris-form-gap, 16px)', ...props.style }}
-      onSubmit={(e) => {
-        e.preventDefault()
-        void form.handleSubmit()
-      }}
-      noValidate
-    >
-      <For each={visibleFields()}>
-        {(field) => {
-          const id = `iris-fb-${field.name}`
-          const type = field.type ?? 'text'
-          const value = () => state().values[field.name]
-          const error = () => state().errors[field.name]
-          const describedBy = () => (error() ? `${id}-error` : undefined)
-          return (
-            <div data-iris-form-field={field.name}>
-              <Show when={type !== 'checkbox'}>
-                <label for={id} style={{ display: 'block', color: 'var(--iris-form-label)' }}>
-                  {labelOf(field)}
-                  {field.required ? ' *' : ''}
-                </label>
-              </Show>
-              <Show when={type === 'textarea'}>
-                <textarea
-                  id={id}
-                  value={String(value() ?? '')}
-                  placeholder={field.placeholder}
-                  aria-required={field.required || undefined}
-                  aria-invalid={error() ? true : undefined}
-                  aria-describedby={describedBy()}
-                  onInput={(e) => setValue(field, e.currentTarget.value)}
-                  onBlur={() => form.setFieldTouched(field.name)}
-                />
-              </Show>
-              <Show when={type === 'select'}>
-                <select
-                  id={id}
-                  value={String(value() ?? '')}
-                  aria-required={field.required || undefined}
-                  aria-invalid={error() ? true : undefined}
-                  aria-describedby={describedBy()}
-                  onChange={(e) => setValue(field, e.currentTarget.value)}
-                  onBlur={() => form.setFieldTouched(field.name)}
-                >
-                  <option value="">{field.placeholder ?? 'Select…'}</option>
-                  <For each={field.options ?? []}>
-                    {(opt) => <option value={opt.value}>{opt.label}</option>}
-                  </For>
-                </select>
-              </Show>
-              <Show when={type === 'checkbox'}>
-                <label for={id} style={{ display: 'flex', gap: '8px', 'align-items': 'center' }}>
-                  <input
-                    id={id}
-                    type="checkbox"
-                    checked={Boolean(value())}
-                    aria-describedby={describedBy()}
-                    onChange={(e) => setValue(field, e.currentTarget.checked)}
-                    onBlur={() => form.setFieldTouched(field.name)}
-                  />
-                  {labelOf(field)}
-                  {field.required ? ' *' : ''}
-                </label>
-              </Show>
-              <Show when={type !== 'textarea' && type !== 'select' && type !== 'checkbox'}>
-                <input
-                  id={id}
-                  type={type}
-                  value={String(value() ?? '')}
-                  placeholder={field.placeholder}
-                  aria-required={field.required || undefined}
-                  aria-invalid={error() ? true : undefined}
-                  aria-describedby={describedBy()}
-                  onInput={(e) => setValue(field, e.currentTarget.value)}
-                  onBlur={() => form.setFieldTouched(field.name)}
-                />
-              </Show>
-              <Show when={error()}>
-                <div id={`${id}-error`} role="alert" style={{ color: 'var(--iris-form-error)' }}>
-                  {error()}
-                </div>
-              </Show>
-            </div>
-          )
+    <FormContext.Provider value={form as unknown as FormStore<FormValues>}>
+      <form
+        data-iris-form-builder=""
+        class={props.class}
+        style={{ display: 'grid', gap: 'var(--iris-form-gap, 16px)', ...props.style }}
+        onSubmit={(e) => {
+          e.preventDefault()
+          void form.handleSubmit()
         }}
-      </For>
-      <Show
-        when={isLastStep(state())}
-        fallback={
-          <button type="button" onClick={() => void nextStep()}>
-            {nextStepLabel}
-          </button>
-        }
+        noValidate
       >
-        <button type="submit" disabled={state().isSubmitting}>
-          {submitLabel}
-        </button>
-      </Show>
-      <Show when={stepCount > 1 && state().currentStep > 0}>
-        <button type="button" onClick={prevStep}>
-          Previous
-        </button>
-      </Show>
-    </form>
+        <For each={visibleFields()}>{(field: FieldSpec) => <FieldControl field={field} />}</For>
+        <Show
+          when={isLastStep(state())}
+          fallback={
+            <button type="button" onClick={() => void nextStep()}>
+              {nextStepLabel}
+            </button>
+          }
+        >
+          <button type="submit" disabled={state().isSubmitting}>
+            {submitLabel}
+          </button>
+        </Show>
+        <Show when={stepCount > 1 && state().currentStep > 0}>
+          <button type="button" onClick={prevStep}>
+            Previous
+          </button>
+        </Show>
+      </form>
+    </FormContext.Provider>
   )
 }

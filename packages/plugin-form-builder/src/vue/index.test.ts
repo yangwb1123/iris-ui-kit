@@ -84,4 +84,57 @@ describe('IrisFormBuilder (vue)', () => {
     expect(wrapper.find('[data-iris-form-field="username"]').exists()).toBe(true)
     wrapper.unmount()
   })
+
+  // Array (repeater) field: the visible payoff of the nested-path engine. Each
+  // row's sub-fields bind to `items[i].<name>`; mutations route through
+  // useFieldArray so per-row state re-keys when an earlier row is removed.
+  it('array field: add/remove rows and nested sub-fields re-key on remove', async () => {
+    const arraySchema: FormSchema = {
+      fields: [
+        {
+          name: 'items',
+          type: 'array',
+          fields: [
+            { name: 'sku', required: true },
+            { name: 'qty', type: 'number' },
+          ],
+        },
+      ],
+    }
+    const wrapper = mount(IrisFormBuilder, { props: { schema: arraySchema } })
+
+    expect(wrapper.find('[data-iris-fb-array="items"]').exists()).toBe(true)
+    // No auto-seeded row.
+    expect(wrapper.findAll('[data-iris-fb-row]')).toHaveLength(0)
+
+    // Add → 1 row with both sub-fields bound to nested paths.
+    await wrapper.find('[data-iris-fb-add="items"]').trigger('click')
+    expect(wrapper.findAll('[data-iris-fb-row]')).toHaveLength(1)
+    expect(wrapper.find('[data-iris-form-field="items[0].sku"] input').exists()).toBe(true)
+    expect(
+      wrapper.find('[data-iris-form-field="items[0].qty"] input[type="number"]').exists(),
+    ).toBe(true)
+
+    // Type into row 0's sku.
+    await wrapper.find('[data-iris-form-field="items[0].sku"] input').setValue('AAA')
+    expect(
+      (wrapper.find('[data-iris-form-field="items[0].sku"] input').element as HTMLInputElement)
+        .value,
+    ).toBe('AAA')
+
+    // Add a second row and give it a distinct value.
+    await wrapper.find('[data-iris-fb-add="items"]').trigger('click')
+    expect(wrapper.findAll('[data-iris-fb-row]')).toHaveLength(2)
+    await wrapper.find('[data-iris-form-field="items[1].sku"] input').setValue('BBB')
+
+    // Remove row 0 → the SECOND row's value (BBB) is now at index 0, proving the
+    // nested-path re-key flowed through useFieldArray (arrayRemove).
+    await wrapper.findAll('[data-iris-fb-remove]')[0]!.trigger('click')
+    expect(wrapper.findAll('[data-iris-fb-row]')).toHaveLength(1)
+    expect(
+      (wrapper.find('[data-iris-form-field="items[0].sku"] input').element as HTMLInputElement)
+        .value,
+    ).toBe('BBB')
+    wrapper.unmount()
+  })
 })

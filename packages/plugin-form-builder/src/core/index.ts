@@ -24,6 +24,7 @@ export type FieldType =
   | 'textarea'
   | 'select'
   | 'checkbox'
+  | 'array'
 
 export interface FieldOption {
   label: string
@@ -42,7 +43,7 @@ export interface FieldSpec {
   required?: boolean
   /** Options for `select`. */
   options?: FieldOption[]
-  /** Seed value (defaults to `false` for checkbox, `''` otherwise). */
+  /** Seed value (defaults to `false` for checkbox, `[]` for array, `''` otherwise). */
   defaultValue?: unknown
   /**
    * Conditional visibility: the field is shown only when this returns true for
@@ -51,6 +52,21 @@ export interface FieldSpec {
    * silently blocks submit. Omitted = always visible.
    */
   when?: (values: FormValues) => boolean
+  /**
+   * Per-row sub-fields for an `array` (repeater) field. Each rendered row draws
+   * one control per entry, bound to the nested path `${name}[${index}].${sub.name}`,
+   * so per-row error/touched/dirty state is keyed by canonical path and follows
+   * the row when rows are removed or reordered. Required when `type === 'array'`.
+   * Sub-field validators are NOT compiled in core (the rows + nested-path binding
+   * are the payoff; recursive sub-field validation is a follow-up).
+   */
+  fields?: FieldSpec[]
+  /** Label for an `array` field's "add a row" button. Default `'Add'`. */
+  addLabel?: string
+  /** Label for an `array` field's per-row "remove" button. Default `'Remove'`. */
+  removeLabel?: string
+  /** Optional heading shown above each `array` row (e.g. `'Item'` → "Item 1"). */
+  itemLabel?: string
 }
 
 export interface FormSchema {
@@ -128,6 +144,28 @@ function isEmpty(value: unknown): boolean {
   return value === '' || value === null || value === undefined || value === false
 }
 
+/** The seed value for a (non-array) field, per its type + explicit default. */
+function seedValue(field: FieldSpec): unknown {
+  if (field.type === 'array') return (field.defaultValue as unknown[]) ?? []
+  return field.defaultValue ?? (field.type === 'checkbox' ? false : '')
+}
+
+/**
+ * Build a fresh row object for an `array` field from its sub-field specs — the
+ * value used when the renderer's "Add" button appends a row. A checkbox sub-field
+ * seeds to `false`; every other type seeds to its `defaultValue ?? ''`. Shared by
+ * all four framework renderers so their "add a row" payload is identical.
+ */
+export function arrayRowDefaults(field: FieldSpec): FormValues {
+  const row: FormValues = {}
+  for (const sub of field.fields ?? []) {
+    row[sub.name] = (
+      sub.type === 'checkbox' ? false : (sub.defaultValue ?? '')
+    ) as FormValues[string]
+  }
+  return row
+}
+
 /** Compile a {@link FormSchema} into a live {@link FormBuilder}. */
 export function createFormBuilder(schema: FormSchema, config: FormBuilderConfig = {}): FormBuilder {
   const labelOf = (field: FieldSpec): string => field.label ?? humanize(field.name)
@@ -137,14 +175,20 @@ export function createFormBuilder(schema: FormSchema, config: FormBuilderConfig 
   const initialValues: FormValues = {}
   const validators: Record<string, (value: unknown, values: FormValues) => string | undefined> = {}
   for (const field of schema.fields) {
-    initialValues[field.name] =
-      field.defaultValue ?? (field.type === 'checkbox' ? false : field.type === 'number' ? '' : '')
+    // Array (repeater) fields seed to an EMPTY array — no auto-seeded first row;
+    // rows are added explicitly via the renderer's "Add" button.
+    initialValues[field.name] = seedValue(field) as FormValues[string]
     if (field.required) {
       const label = labelOf(field)
-      // A conditionally-hidden field skips its required check, so it can't
-      // silently block submit when the user can't even see it.
+      // `required` on an array field = the array must be non-empty; on a scalar
+      // field = a non-empty value. A conditionally-hidden field skips its check,
+      // so it can't silently block submit when the user can't even see it.
+      const isMissing =
+        field.type === 'array'
+          ? (value: unknown) => !Array.isArray(value) || value.length === 0
+          : (value: unknown) => isEmpty(value)
       validators[field.name] = (value: unknown, values: FormValues) =>
-        isVisible(field, values) && isEmpty(value) ? `${label} is required` : undefined
+        isVisible(field, values) && isMissing(value) ? `${label} is required` : undefined
     }
   }
 

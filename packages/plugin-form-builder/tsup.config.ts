@@ -17,7 +17,17 @@ const main: Options = {
   treeshake: true,
   target: 'es2022',
   tsconfig: 'tsconfig.json',
-  external: [...IRIS, 'react', 'react-dom', 'react/jsx-runtime', 'vue'],
+  external: [
+    ...IRIS,
+    '@iris-ui/react',
+    '@iris-ui/react/form',
+    '@iris-ui/vue',
+    '@iris-ui/vue/form',
+    'react',
+    'react-dom',
+    'react/jsx-runtime',
+    'vue',
+  ],
 }
 
 // Solid entry — needs esbuild-plugin-solid for real Solid reactivity.
@@ -31,7 +41,14 @@ const solid: Options = {
   target: 'es2022',
   tsconfig: 'tsconfig.solid.json',
   esbuildPlugins: [solidPlugin()],
-  external: [...IRIS, 'solid-js', 'solid-js/web', 'solid-js/store'],
+  external: [
+    ...IRIS,
+    '@iris-ui/solid',
+    '@iris-ui/solid/form',
+    'solid-js',
+    'solid-js/web',
+    'solid-js/store',
+  ],
 }
 
 export default defineConfig([main, solid])

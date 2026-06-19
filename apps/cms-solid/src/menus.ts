@@ -1,6 +1,13 @@
 import type { NavNode } from '@iris-ui/solid'
 
-/** One nav-tree config drives the sidebar menu, header breadcrumb, and tabs. */
+/**
+ * One nav-tree config drives the sidebar menu, header breadcrumb, and tabs.
+ *
+ * RBAC: nodes carry an optional `roles`. A node with no `roles` is visible to
+ * everyone; admin-only nodes ("Roles & access" and "Settings") are gated to
+ * `admin`, so a viewer session sees a smaller menu — the shell filters this
+ * tree through `filterNavByAccess(menus, [session.role])`.
+ */
 export const menus: NavNode[] = [
   { key: 'dashboard', title: 'Dashboard', icon: 'menu', order: 1 },
   {
@@ -21,7 +28,7 @@ export const menus: NavNode[] = [
     order: 3,
     children: [
       { key: 'all-users', title: 'All users', icon: 'eye' },
-      { key: 'roles', title: 'Roles & access', icon: 'check-circle' },
+      { key: 'roles', title: 'Roles & access', icon: 'check-circle', roles: ['admin'] },
     ],
   },
   {
@@ -35,5 +42,6 @@ export const menus: NavNode[] = [
     ],
   },
   { key: 'calendar', title: 'Calendar', icon: 'calendar', order: 5 },
-  { key: 'settings', title: 'Settings', icon: 'info', order: 6 },
+  // Admin-only: viewers won't see this at all.
+  { key: 'settings', title: 'Settings', icon: 'info', order: 6, roles: ['admin'] },
 ]

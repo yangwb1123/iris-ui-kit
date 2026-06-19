@@ -1,4 +1,4 @@
-import { createSignal, For, Show, type Component, type JSX } from 'solid-js'
+import { createMemo, createSignal, For, Show, type Component, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
   IrisAdminLayout,
@@ -13,8 +13,10 @@ import {
   useTabsNav,
   findNavNode,
 } from '@iris-ui/solid'
+import { filterNavByAccess } from '@iris-ui/core'
 import { menus } from './menus'
 import { tabsNav } from './tabs'
+import { useAuth, type Role } from './auth'
 import { DashboardPage } from './pages/DashboardPage'
 import { UsersPage } from './pages/UsersPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -36,9 +38,19 @@ function PageHost(props: { routeKey: string }): JSX.Element {
 }
 
 export function Shell(): JSX.Element {
+  // Keep the auth context object (not a destructured snapshot) so `.session`
+  // stays reactive through its getter.
+  const auth = useAuth()
+  const logout = auth.logout
   const { skin, setSkin, setMode, getActiveId, availableSkins } = useSkin()
   const t = useTabsNav(tabsNav)
   const [activeKey, setActiveKey] = createSignal('dashboard')
+
+  // RBAC: the sidebar is the nav tree filtered by the session's role. A viewer
+  // sees fewer nodes (no Settings, no Roles & access).
+  const username = (): string => auth.session?.username ?? 'User'
+  const role = (): Role => auth.session?.role ?? 'viewer'
+  const visibleMenus = createMemo(() => filterNavByAccess(menus, [role()]))
 
   // Skin switcher: 'auto' follows the system, anything else pins a fixed skin.
   const selectSkin = (id: string): void => {
@@ -77,12 +89,18 @@ export function Shell(): JSX.Element {
           aria-label="Account"
           style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0 }}
         >
-          <IrisAvatar name="Ada Lovelace" size={32} />
+          <IrisAvatar name={username()} size={32} />
         </IrisDropdownTrigger>
         <IrisDropdownMenu>
+          <div style={{ padding: '8px 12px', 'min-width': '200px' }}>
+            <div style={{ 'font-weight': 600, 'font-size': '14px' }}>{username()}</div>
+            <div style={{ 'margin-top': '4px', 'font-size': '12px', color: 'var(--iris-muted)' }}>
+              {role()}
+            </div>
+          </div>
           <IrisDropdownItem>Profile</IrisDropdownItem>
           <IrisDropdownItem>Account settings</IrisDropdownItem>
-          <IrisDropdownItem>Sign out</IrisDropdownItem>
+          <IrisDropdownItem onSelect={logout}>Sign out</IrisDropdownItem>
         </IrisDropdownMenu>
       </IrisDropdown>
     </>
@@ -90,7 +108,7 @@ export function Shell(): JSX.Element {
 
   return (
     <IrisAdminLayout
-      menus={menus}
+      menus={visibleMenus()}
       activeKey={activeKey()}
       onActiveKeyChange={setActiveKey}
       tabs={tabsNav}

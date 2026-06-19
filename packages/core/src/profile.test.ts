@@ -3,6 +3,8 @@ import {
   createUserProfile,
   memoryProfileStorage,
   httpProfileStorage,
+  mergeProfiles,
+  syncedProfileStorage,
   type ProfileData,
   type ProfileStorage,
 } from './profile'
@@ -123,6 +125,49 @@ describe('createUserProfile — pluggable persistence', () => {
     const p2 = createUserProfile({ storage: cloud })
     await p2.hydrate() // GET
     expect(p2.isInstalled('mail')).toBe(true)
+  })
+
+  it('mergeProfiles unions installs (latest wins) + merges prefs', () => {
+    const a: ProfileData = {
+      version: 1,
+      installed: [{ appId: 'mail', installedAt: 10, pinned: false, config: {} }],
+      prefs: { skin: 'win11', wallpaper: 'aurora' },
+    }
+    const b: ProfileData = {
+      version: 1,
+      installed: [
+        { appId: 'mail', installedAt: 20, pinned: true, config: {} }, // newer wins
+        { appId: 'chat', installedAt: 15, pinned: false, config: {} },
+      ],
+      prefs: { skin: 'macos' },
+    }
+    const m = mergeProfiles(a, b)
+    expect(m.installed.find((x) => x.appId === 'mail')!.pinned).toBe(true)
+    expect(m.installed.map((x) => x.appId).sort()).toEqual(['chat', 'mail'])
+    expect(m.prefs).toEqual({ skin: 'macos', wallpaper: 'aurora' })
+  })
+
+  it('syncedProfileStorage merges local+remote on load and writes both on save', async () => {
+    const local = memoryProfileStorage({
+      version: 1,
+      installed: [{ appId: 'local-only', installedAt: 1, pinned: false, config: {} }],
+      prefs: { skin: 'win11' },
+    })
+    const remote = memoryProfileStorage({
+      version: 1,
+      installed: [{ appId: 'remote-only', installedAt: 2, pinned: false, config: {} }],
+      prefs: { wallpaper: 'sunset' },
+    })
+    const synced = syncedProfileStorage({ local, remote })
+    const p = createUserProfile({ storage: synced })
+    await p.hydrate()
+    expect(p.isInstalled('local-only')).toBe(true)
+    expect(p.isInstalled('remote-only')).toBe(true)
+    p.install('new-here')
+    await p.flush()
+    // Written through to BOTH backends.
+    expect((await local.load())!.installed.some((a) => a.appId === 'new-here')).toBe(true)
+    expect((await remote.load())!.installed.some((a) => a.appId === 'new-here')).toBe(true)
   })
 
   it('debounced writes coalesce (one save for a burst)', async () => {

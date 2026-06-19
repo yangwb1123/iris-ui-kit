@@ -170,6 +170,51 @@ export function httpProfileStorage(config: HttpProfileStorageConfig): ProfileSto
   }
 }
 
+/**
+ * Conflict-free-ish merge of two profiles (for multi-device / distributed sync):
+ * installed apps are unioned by id keeping the later `installedAt`; prefs are
+ * shallow-merged with `b` (the "incoming" side) winning ties. Good enough for
+ * additive sync; for offline DELETE-merge plug a real CRDT (Yjs/Automerge) as a
+ * ProfileStorage — same seam. Pure.
+ */
+export function mergeProfiles(a: ProfileData, b: ProfileData): ProfileData {
+  const byId = new Map<string, InstalledApp>()
+  for (const app of a.installed) byId.set(app.appId, app)
+  for (const app of b.installed) {
+    const prev = byId.get(app.appId)
+    if (!prev || app.installedAt >= prev.installedAt) byId.set(app.appId, app)
+  }
+  return {
+    version: Math.max(a.version, b.version),
+    installed: [...byId.values()],
+    prefs: { ...a.prefs, ...b.prefs },
+  }
+}
+
+/**
+ * Distributed storage: read from BOTH a fast local backend and a shared remote,
+ * merge them ({@link mergeProfiles}) on load (so a device sees others' installs),
+ * and write through to both on save. The simplest "distributed profile" — point
+ * `remote` at a cloud/CRDT/POD {@link ProfileStorage}.
+ */
+export function syncedProfileStorage(opts: {
+  local: ProfileStorage
+  remote: ProfileStorage
+  merge?: (a: ProfileData, b: ProfileData) => ProfileData
+}): ProfileStorage {
+  const merge = opts.merge ?? mergeProfiles
+  return {
+    async load() {
+      const [local, remote] = await Promise.all([opts.local.load(), opts.remote.load()])
+      if (local && remote) return merge(local, remote)
+      return remote ?? local
+    },
+    async save(data) {
+      await Promise.all([opts.local.save(data), opts.remote.save(data)])
+    },
+  }
+}
+
 export function createUserProfile(config: UserProfileConfig = {}): UserProfile {
   const storage = config.storage ?? memoryProfileStorage()
   const now = config.now ?? Date.now

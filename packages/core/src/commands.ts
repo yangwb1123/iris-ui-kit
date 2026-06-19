@@ -135,3 +135,42 @@ export function createCommandRegistry(): CommandRegistry {
     },
   }
 }
+
+/**
+ * MCP / agent bridge — expose the registry's commands as model-callable TOOLS.
+ * This is the seam that turns the command registry into an agent surface: an MCP
+ * server (or an in-app LLM planner) enumerates {@link toMcpTools} and invokes
+ * {@link runMcpTool} by name. Commands are param-less today, so each tool takes
+ * no arguments; when commands gain params, extend the inputSchema here.
+ */
+export interface McpToolDef {
+  /** MCP-safe tool name (`^[a-zA-Z0-9_-]+$`), derived from the command id. */
+  name: string
+  description: string
+  inputSchema: { type: 'object'; properties: Record<string, never>; required: never[] }
+}
+
+/** Make a command id MCP-tool-name-safe (the spec restricts the charset). */
+export const toToolName = (id: string): string => id.replace(/[^a-zA-Z0-9_-]/g, '_')
+
+export function toMcpTools(registry: CommandRegistry): McpToolDef[] {
+  return registry.list().map((c) => ({
+    name: toToolName(c.id),
+    description: c.group ? `${c.group}: ${c.title}` : c.title,
+    inputSchema: { type: 'object', properties: {}, required: [] },
+  }))
+}
+
+export interface McpToolResult {
+  ok: boolean
+  ran?: string
+  error?: string
+}
+
+/** Invoke a command by its MCP tool name (what an agent calls). */
+export async function runMcpTool(registry: CommandRegistry, name: string): Promise<McpToolResult> {
+  const command = registry.list().find((c) => toToolName(c.id) === name)
+  if (!command) return { ok: false, error: `unknown tool: ${name}` }
+  await registry.run(command.id)
+  return { ok: true, ran: command.id }
+}

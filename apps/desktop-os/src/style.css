@@ -115,6 +115,68 @@ body {
   background: rgba(127, 127, 127, 0.16);
 }
 
+/* Window open animation — plays once on first mount (.win-open is applied only
+   on the initial render). Scale-up + fade so windows "pop" in. */
+@keyframes win-open {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.win-open {
+  animation: win-open 140ms ease-out;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .win-open {
+    animation: none;
+  }
+}
+
+/* Right-click context menu */
+.ctx-menu {
+  display: flex;
+  flex-direction: column;
+  animation: ctx-menu-in 90ms ease-out;
+}
+@keyframes ctx-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.ctx-menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 7px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+.ctx-menu-item:hover:not(:disabled),
+.ctx-menu-item:focus-visible:not(:disabled) {
+  background: rgba(127, 127, 127, 0.18);
+  outline: none;
+}
+.ctx-menu-item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 /* Slim scrollbars inside windows */
 .win-body::-webkit-scrollbar,
 .startmenu ::-webkit-scrollbar {

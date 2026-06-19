@@ -4,6 +4,7 @@ import { type DesktopWindow, type SnapZone } from '@iris-ui/core/window'
 import { getApp } from '../apps'
 import { useOs, useWm, useWmState } from '../shell'
 import { snapHintFor } from '../depth'
+import { ContextMenu, type MenuItem } from './ContextMenu'
 
 /** Window control buttons (minimize / maximize-restore / close), placement + style per OS. */
 function Controls({ window: w }: { window: DesktopWindow }) {
@@ -64,7 +65,22 @@ function Chrome({ window: w }: { window: DesktopWindow }) {
   const wm = useWm()
   const { chrome } = useOs()
   const app = getApp(w.appId)
+  // Titlebar right-click menu anchor (null = closed).
+  const [menu, setMenu] = React.useState<{ x: number; y: number } | null>(null)
   const controls = <Controls window={w} />
+
+  const menuItems: MenuItem[] = [
+    { label: 'Minimize', onClick: () => wm.minimize(w.id) },
+    {
+      label: w.state === 'maximized' ? 'Restore' : 'Maximize',
+      onClick: () => wm.toggleMaximize(w.id),
+    },
+    { separator: true },
+    { label: 'Snap left', onClick: () => wm.snap(w.id, 'left') },
+    { label: 'Snap right', onClick: () => wm.snap(w.id, 'right') },
+    { separator: true },
+    { label: 'Close', danger: true, onClick: () => wm.close(w.id) },
+  ]
   const title = (
     <div
       data-iris-movable-handle
@@ -100,6 +116,13 @@ function Chrome({ window: w }: { window: DesktopWindow }) {
   return (
     <div
       className="win-titlebar"
+      onContextMenu={(e) => {
+        e.preventDefault()
+        // Don't let the desktop's own context menu also fire for titlebar clicks.
+        e.stopPropagation()
+        wm.focus(w.id)
+        setMenu({ x: e.clientX, y: e.clientY })
+      }}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -119,6 +142,9 @@ function Chrome({ window: w }: { window: DesktopWindow }) {
           {title}
           {controls}
         </>
+      )}
+      {menu && (
+        <ContextMenu x={menu.x} y={menu.y} items={menuItems} onClose={() => setMenu(null)} />
       )}
     </div>
   )
@@ -150,11 +176,17 @@ export function Window({ window: w, onSnapHint }: WindowProps) {
   const focused = wm.isFocused(w.id)
   // The snap zone hinted by the IN-FLIGHT drag (mirrored to Desktop via onSnapHint).
   const dragZoneRef = React.useRef<SnapZone | null>(null)
+  // Play the open animation on the FIRST mount only (not on re-render / maximize).
+  const firstMount = React.useRef(true)
+  const openClass = firstMount.current ? ' win-open' : ''
+  React.useEffect(() => {
+    firstMount.current = false
+  }, [])
   if (w.state === 'minimized') return null
 
   const frame = (
     <div
-      className="win-frame"
+      className={`win-frame${openClass}`}
       onPointerDownCapture={() => wm.focus(w.id)}
       style={{
         display: 'flex',

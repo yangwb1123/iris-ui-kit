@@ -2,6 +2,7 @@ import {
   createStore,
   createPlugin,
   createCellEdit,
+  createColumnState,
   createDataSource,
   createSyncClientDataSource,
   createExpansion,
@@ -260,10 +261,14 @@ export function createProTableStore<Row extends Record<string, unknown>>(
       sorter: c.sorter,
     }))
 
+  // Column ORDER + VISIBILITY delegate to core `createColumnState` (dedup); WIDTH stays native.
+  const cs = createColumnState(
+    config.columns.map((c) => ({ key: c.key, title: c.title, hidden: c.hidden })),
+  )
   const store = createStore<ProTableState<Row>>({
     rows: [],
     columns: config.columns,
-    columnOrder: config.columns.map((c) => c.key),
+    columnOrder: [...cs.order()],
     columnSizes: Object.fromEntries(
       config.columns
         .filter((c) => typeof c.width === 'number')
@@ -393,14 +398,18 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     store.setState((st) => ({ ...st, editing: s.editing }))
   })
 
+  // Mirror the manager's order into ProTableState in ONE setState (one emit); `extra` folds in e.g. `columnSizes`.
+  const mirrorColumnState = (extra?: Partial<ProTableState<Row>>): void =>
+    store.setState((s) => ({ ...s, columnOrder: [...cs.order()], ...extra }))
+
   const visibleColumns = (): ProTableColumn<Row>[] => {
     const { columns: cols, columnOrder } = store.getState()
-    // Multi-level support: flatten the column tree to leaves.
+    // Flatten to leaves (multi-level); visibility delegated to `cs.isVisible`.
     const leaves = flattenLeafColumns(cols)
     const byKey = new Map(leaves.map((c) => [c.key, c]))
     return columnOrder.flatMap((k) => {
       const col = byKey.get(k)
-      return col && !col.hidden ? [col] : []
+      return col && cs.isVisible(k) ? [col] : []
     })
   }
 
@@ -505,16 +514,13 @@ export function createProTableStore<Row extends Record<string, unknown>>(
 
     reorderColumns(from, to) {
       if (from === to) return
-      const { columnOrder } = store.getState()
-      const fromIdx = columnOrder.indexOf(from)
-      const toIdx = columnOrder.indexOf(to)
+      const order = cs.order()
+      const fromIdx = order.indexOf(from)
+      const toIdx = order.indexOf(to)
       if (fromIdx === -1 || toIdx === -1) return
-      const next = [...columnOrder]
-      next.splice(fromIdx, 1)
-      next.splice(toIdx, 0, from)
-      store.setState((st) => ({ ...st, columnOrder: next }))
+      cs.reorder(fromIdx, toIdx)
+      mirrorColumnState()
     },
-
     setColumnWidth(key, width) {
       const col = config.columns.find((c) => c.key === key)
       const min = col?.minWidth ?? 60
@@ -524,18 +530,12 @@ export function createProTableStore<Row extends Record<string, unknown>>(
       }))
     },
     toggleColumn(key) {
-      store.setState((s) => ({
-        ...s,
-        columns: s.columns.map((c) => (c.key === key ? { ...c, hidden: !c.hidden } : c)),
-      }))
+      cs.toggleColumn(key)
+      mirrorColumnState()
     },
     resetColumns() {
-      store.setState((s) => ({
-        ...s,
-        columnOrder: [...s.columns.map((c) => c.key)],
-        columnSizes: {},
-        columns: s.columns.map((c) => ({ ...c, hidden: undefined })),
-      }))
+      cs.reset() // order + visibility; width cleared to `{}` below (native).
+      mirrorColumnState({ columnSizes: {} })
     },
 
     toggleExpand(key) {

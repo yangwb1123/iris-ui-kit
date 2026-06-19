@@ -108,6 +108,10 @@ if (isDiff) {
       .filter(Boolean)
       .map((f) => resolve(ROOT, f))
       .filter((f) => isSourceFile(f))
+      // Scope to packages/ like every other mode (strict/ratchet/normal scan only
+      // packages/, and the baseline contains no apps/ entries). The library is what
+      // the size governance protects; demo/docs apps are intentionally exempt.
+      .filter((f) => f.includes(`${ROOT.replace(/\/$/, '')}/packages/`) || f.includes('/packages/'))
     filesToCheck = changedFiles
   } catch {
     filesToCheck = listFiles(resolve(ROOT, 'packages'))

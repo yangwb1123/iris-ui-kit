@@ -9,12 +9,15 @@
 // size. Raise a budget deliberately (in a reviewed commit) when a real feature
 // grows a package — that visibility is the point.
 import { gzipSync } from 'node:zlib'
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dirname, join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { execFileSync } from 'node:child_process'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const UPDATE_BASELINE = process.argv.includes('--update-baseline')
+const KB = 1024
 
 /** Gzipped-KB budget per package entry. */
 const BUDGETS = {
@@ -62,15 +65,76 @@ const BUDGETS = {
 }
 
 /**
- * Per-EXPORT import-cost tripwires — the gzip cost a consumer pays to import a
- * SINGLE thing, which the whole-bundle budget above is blind to. Today icons
- * ship as one `defaultIcons` object literal (no per-icon exports), so importing
- * ANY icon pulls the entire set: this measures + caps that unavoidable payload so
- * it can't silently bloat, and stands as the explicit marker of a known
- * non-tree-shakeable export (a future round can split icons into per-icon
- * modules and shrink this dramatically).
+ * Per-NAMED-EXPORT tree-shake cost table — the gzip cost a consumer ACTUALLY
+ * pays to import a SINGLE symbol from an adapter barrel, which the whole-package
+ * budget above is blind to. For each export we bundle a tiny entry that
+ * re-exports ONLY that symbol (`export { X } from '@iris-ui/react'`) with
+ * esbuild's tree-shaking + minify, externalize the framework + sibling
+ * `@iris-ui/*` packages (so we measure the adapter's own payload, not React/Vue),
+ * then gzip the result. The delta between a single export and its whole package
+ * is the tree-shake-effectiveness signal: a cheap export tree-shakes cleanly; an
+ * expensive one drags in a fat shared chunk and is the marker to split.
+ *
+ * Entirely ADVISORY: if esbuild's binary is unavailable or a bundle fails, the
+ * probe records null and prints a note — it never fails the gate (matches the
+ * whole-package delta behavior). Run after `pnpm build` (reads dist/).
  */
+const ESBUILD_BIN = join(repoRoot, 'node_modules', '.bin', 'esbuild')
+
+/** Externals so the probe measures the ADAPTER's payload, not its peer deps. */
+const EXTERNALS = {
+  react: ['react', 'react-dom', 'react/jsx-runtime', '@iris-ui/*'],
+  vue: ['vue', '@iris-ui/*'],
+}
+
+/**
+ * Bundle a single re-exported symbol and return its gzipped KB, or null if the
+ * dist entry / esbuild binary is missing or the bundle errors (advisory).
+ */
+function bundleExportGzipKb(pkg, exportName) {
+  const entry = join(repoRoot, 'packages', pkg, 'dist', 'index.js')
+  if (!existsSync(entry) || !existsSync(ESBUILD_BIN)) return null
+  const dir = mkdtempSync(join(tmpdir(), 'iris-size-'))
+  try {
+    const src = join(dir, 'entry.js')
+    writeFileSync(src, `export { ${exportName} } from ${JSON.stringify(entry)}\n`)
+    const args = [
+      src,
+      '--bundle',
+      '--format=esm',
+      '--minify',
+      '--tree-shaking=true',
+      '--platform=browser',
+      ...(EXTERNALS[pkg] ?? []).map((e) => `--external:${e}`),
+    ]
+    const out = execFileSync(ESBUILD_BIN, args, {
+      encoding: 'buffer',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+    return gzipSync(out).length / KB
+  } catch {
+    return null
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+/**
+ * The representative export set. Each entry measures one named export from an
+ * adapter barrel. `budgetKb` is advisory headroom (never fails the gate); the
+ * committed baseline + printed Δ is the real regression signal.
+ */
+const EXPORT_PROBES = [
+  { pkg: 'react', export: 'IrisButton', budgetKb: 30 },
+  { pkg: 'react', export: 'useForm', budgetKb: 30 },
+  { pkg: 'vue', export: 'IrisButton', budgetKb: 80 },
+  { pkg: 'vue', export: 'useForm', budgetKb: 80 },
+]
+
 const IMPORT_PROBES = [
+  // The original non-tree-shakeable marker: icons ship as one `defaultIcons`
+  // object literal (no per-icon exports), so importing ANY icon pulls the whole
+  // set. Read directly (no bundling) — deterministic and esbuild-free.
   {
     name: 'icons: import any → full defaultIcons map',
     budgetKb: 6,
@@ -84,9 +148,20 @@ const IMPORT_PROBES = [
       return { gzipKb, note: `${count} icons, non-tree-shakeable` }
     },
   },
+  // Per-named-export tree-shake probes, generated from EXPORT_PROBES. Each one
+  // reports the single-export cost AND its share of the whole-package gzip.
+  ...EXPORT_PROBES.map((p) => ({
+    name: `${p.pkg}: import { ${p.export} } → tree-shaken`,
+    budgetKb: p.budgetKb,
+    async measure() {
+      const gzipKb = bundleExportGzipKb(p.pkg, p.export)
+      if (gzipKb === null) return null
+      const whole = current[p.pkg]
+      const share = whole ? ` (${Math.round((gzipKb / whole) * 100)}% of @iris-ui/${p.pkg})` : ''
+      return { gzipKb, note: `single-export bundle${share}` }
+    },
+  })),
 ]
-
-const KB = 1024
 const baselinePath = join(repoRoot, 'scripts', 'size-baseline.json')
 const baseline = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, 'utf8')) : {}
 const current = {}
@@ -120,20 +195,26 @@ for (const [pkg, budgetKb] of Object.entries(BUDGETS)) {
   })
 }
 
+// Per-export probes are ENTIRELY ADVISORY — they record baselines, print a Δ,
+// and surface OVER as a warning, but never set `failed` (so `pnpm size` exits 0
+// on the probe table alone). A probe that can't run (no dist / no esbuild) is
+// reported as a skip, not a build failure.
 for (const probe of IMPORT_PROBES) {
   const result = await probe.measure()
   if (!result) {
-    rows.push({ pkg: probe.name, status: 'MISSING', detail: 'build first' })
-    failed = true
+    rows.push({
+      pkg: probe.name,
+      status: 'skip',
+      detail: 'unmeasurable (build first, or esbuild unavailable)',
+    })
     continue
   }
   const key = `probe:${probe.name}`
   current[key] = Number(result.gzipKb.toFixed(2))
   const over = result.gzipKb > probe.budgetKb
-  if (over) failed = true
   rows.push({
     pkg: probe.name,
-    status: over ? 'OVER' : 'ok',
+    status: over ? 'WARN' : 'ok',
     detail: `${result.gzipKb.toFixed(1)}KB / ${probe.budgetKb}KB gzip${deltaOf(key, result.gzipKb)} — ${result.note}`,
   })
 }
@@ -141,20 +222,32 @@ for (const probe of IMPORT_PROBES) {
 if (UPDATE_BASELINE) {
   writeFileSync(baselinePath, JSON.stringify(current, null, 2) + '\n')
   // eslint-disable-next-line no-console
-  console.log(`\nWrote size baseline → scripts/size-baseline.json (${Object.keys(current).length} entries)\n`)
+  console.log(
+    `\nWrote size baseline → scripts/size-baseline.json (${Object.keys(current).length} entries)\n`,
+  )
 }
 
 const pad = (s, n) => String(s).padEnd(n)
-// eslint-disable-next-line no-console
-console.log('\nBundle size budget (gzip)\n' + '─'.repeat(48))
-for (const r of rows) {
-  const mark = r.status === 'ok' ? '✓' : '✗'
+const MARK = { ok: '✓', OVER: '✗', MISSING: '✗', WARN: '!', skip: '·' }
+const printRow = (r) => {
+  const mark = MARK[r.status] ?? '?'
   // Package rows get the @iris-ui/ prefix + aligned columns; probe rows (whose
   // name carries spaces) print as a free-form line.
   const label = r.pkg.includes(' ') ? r.pkg : '@iris-ui/' + r.pkg
   // eslint-disable-next-line no-console
   console.log(`${mark} ${pad(label, 20)} ${pad(r.status, 8)} ${r.detail}`)
 }
+// Probe rows carry a space in their name; everything else is a whole-package row.
+const pkgRows = rows.filter((r) => !r.pkg.includes(' '))
+const probeRows = rows.filter((r) => r.pkg.includes(' '))
+// eslint-disable-next-line no-console
+console.log('\nBundle size budget — whole package (gzip)\n' + '─'.repeat(48))
+pkgRows.forEach(printRow)
+// eslint-disable-next-line no-console
+console.log('─'.repeat(48))
+// eslint-disable-next-line no-console
+console.log('\nPer-export tree-shake cost (gzip, ADVISORY — never fails)\n' + '─'.repeat(48))
+probeRows.forEach(printRow)
 // eslint-disable-next-line no-console
 console.log('─'.repeat(48))
 

@@ -1,13 +1,17 @@
 {
-  "core": 23.8,
+  "core": 23.24,
   "tokens": 1.58,
   "theme": 2.05,
   "skins": 4.33,
   "icons": 2.09,
-  "react": 72.7,
-  "vue": 81.36,
+  "react": 72.65,
+  "vue": 81.62,
   "solid": 85.78,
   "svelte": 1.06,
   "manifest": 0.15,
-  "probe:icons: import any → full defaultIcons map": 1.03
+  "probe:icons: import any → full defaultIcons map": 1.03,
+  "probe:react: import { IrisButton } → tree-shaken": 22.77,
+  "probe:react: import { useForm } → tree-shaken": 20.43,
+  "probe:vue: import { IrisButton } → tree-shaken": 68.19,
+  "probe:vue: import { useForm } → tree-shaken": 68.71
 }

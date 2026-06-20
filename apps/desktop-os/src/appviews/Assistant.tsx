@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { IrisButton } from '@iris-ui/react'
-import type { Command } from '@iris-ui/core/commands'
+import type { Command, CommandRegistry } from '@iris-ui/core/commands'
 import { useCommands } from '../commands-context'
 
 interface Turn {
@@ -10,11 +10,36 @@ interface Turn {
   actions?: Command[]
 }
 
+/**
+ * The AGENT SEAM. A planner turns natural-language `input` into a chosen
+ * `commandId` (plus what to `say`), reading the live {@link CommandRegistry}. It
+ * returns `null` when nothing matches. The default is deterministic, but this
+ * signature is exactly what an LLM/MCP agent needs — the registry is exposed as
+ * MCP tools (see the Agent Tools app), so a model that picks a tool name IS a
+ * drop-in planner with zero shell changes.
+ */
+export type Planner = (
+  input: string,
+  registry: CommandRegistry,
+) => { commandId: string; say: string } | null
+
+/**
+ * The default planner: deterministic fuzzy-match → top command (the original
+ * Assistant behavior). Returns `null` when nothing matches.
+ */
+export const fuzzyPlanner: Planner = (input, registry) => {
+  const top = registry.search(input, 1)[0]?.command
+  if (!top) return null
+  return { commandId: top.id, say: `Running “${top.title}”.` }
+}
+
 const GREETING: Turn = {
   role: 'iris',
   text:
     'Tell me what to do — e.g. “open settings”, “switch to macOS”, “close window”, ' +
-    '“open app store”. I map your words to desktop actions via the command registry and run them.',
+    '“open app store”. I map your words to desktop actions via the command registry and run them. ' +
+    'Today’s planner is deterministic (fuzzy match); it’s a drop-in seam for an LLM/MCP agent — ' +
+    'the registry is exposed as MCP tools (see the Agent Tools app).',
 }
 
 /**
@@ -24,7 +49,7 @@ const GREETING: Turn = {
  * registered Command, so swapping this planner for a model that picks a command
  * id (and fills params) makes it a real cross-app agent with zero shell changes.
  */
-export function AssistantView() {
+export function AssistantView({ planner = fuzzyPlanner }: { planner?: Planner } = {}) {
   const registry = useCommands()
   const [input, setInput] = React.useState('')
   const [turns, setTurns] = React.useState<Turn[]>([GREETING])
@@ -43,8 +68,9 @@ export function AssistantView() {
     const text = input.trim()
     if (!text) return
     setInput('')
-    const hits = registry.search(text, 5).map((h) => h.command)
-    if (hits.length === 0) {
+    // The planner is the seam: it chooses a command id (default = fuzzy top hit).
+    const plan = planner(text, registry)
+    if (!plan) {
       setTurns((t) => [
         ...t,
         { role: 'you', text },
@@ -55,17 +81,23 @@ export function AssistantView() {
       ])
       return
     }
-    const top = hits[0]!
-    void top.run()
-    setTurns((t) => [
-      ...t,
-      { role: 'you', text },
-      {
-        role: 'iris',
-        text: `Running “${top.title}”.`,
-        actions: hits.slice(1, 4),
-      },
-    ])
+    const chosen = registry.list().find((c) => c.id === plan.commandId)
+    if (!chosen) {
+      setTurns((t) => [
+        ...t,
+        { role: 'you', text },
+        { role: 'iris', text: `The planner picked “${plan.commandId}”, but it isn’t available.` },
+      ])
+      return
+    }
+    void chosen.run()
+    // Offer up to 3 other near-matches as one-tap alternatives (same as before).
+    const alts = registry
+      .search(text, 5)
+      .map((h) => h.command)
+      .filter((c) => c.id !== chosen.id)
+      .slice(0, 3)
+    setTurns((t) => [...t, { role: 'you', text }, { role: 'iris', text: plan.say, actions: alts }])
   }
 
   const bubble = (t: Turn, i: number) => {

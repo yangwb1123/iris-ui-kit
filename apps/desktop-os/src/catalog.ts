@@ -13,6 +13,7 @@ import { CalculatorApp } from './appviews/Calculator'
 import { PhotosApp } from './appviews/Photos'
 import { AppStoreView } from './appviews/AppStore'
 import { AssistantView } from './appviews/Assistant'
+import { AgentToolsView } from './appviews/AgentTools'
 
 /**
  * Capabilities an app may request. The desktop surfaces these as a transparent
@@ -44,13 +45,15 @@ export interface AppManifest {
    * - `component` — an in-process React view in its own managed window.
    * - `link`      — opens an external URL in a NEW BROWSER TAB (no window).
    * - `iframe`    — embeds an external URL inside a managed window via <iframe>.
+   * - `remote`    — a micro-frontend ESM module fetched + mounted at RUNTIME from
+   *                 `url` (module-federation; see {@link loadRemoteApp}).
    */
-  kind: 'component' | 'link' | 'iframe'
+  kind: 'component' | 'link' | 'iframe' | 'remote'
   description?: string
   defaultSize?: { width: number; height: number }
   /** Built-in apps ship with the OS and can't be uninstalled. */
   builtin?: boolean
-  /** Target URL for `link` / `iframe` kinds. */
+  /** Target URL for `link` / `iframe` / `remote` kinds. */
   url?: string
   /** Renderer for `component` kind (the window body). */
   render?: () => React.ReactNode
@@ -86,6 +89,17 @@ export const CATALOG: AppManifest[] = [
     defaultSize: { width: 460, height: 460 },
     permissions: ['agent'],
     render: () => React.createElement(AssistantView),
+  },
+  {
+    id: 'agenttools',
+    name: 'Agent Tools',
+    icon: '🛠️',
+    kind: 'component',
+    builtin: true,
+    description: 'The MCP tools an external agent sees — invokable via runMcpTool.',
+    defaultSize: { width: 480, height: 460 },
+    permissions: ['agent'],
+    render: () => React.createElement(AgentToolsView),
   },
   {
     id: 'appstore',
@@ -246,6 +260,18 @@ export const CATALOG: AppManifest[] = [
     description: 'example.com, embedded.',
     defaultSize: { width: 560, height: 420 },
     url: 'https://example.com',
+    permissions: ['network'],
+  },
+
+  // ── Installable REMOTE apps (ESM modules mounted at runtime from a URL) ──────
+  {
+    id: 'remoteclock',
+    name: 'Remote Clock',
+    icon: '🛰️',
+    kind: 'remote',
+    description: 'A micro-frontend loaded at runtime from a URL.',
+    defaultSize: { width: 360, height: 320 },
+    url: '/remote-apps/clock.mjs',
     permissions: ['network'],
   },
 ]

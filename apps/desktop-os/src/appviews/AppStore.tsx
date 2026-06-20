@@ -8,12 +8,14 @@ const KIND_LABEL: Record<AppManifest['kind'], string> = {
   component: 'Built-in',
   link: 'Link',
   iframe: 'Embed',
+  remote: 'Remote',
 }
 
 const KIND_TONE: Record<AppManifest['kind'], 'primary' | 'success' | 'warning'> = {
   component: 'primary',
   link: 'success',
   iframe: 'warning',
+  remote: 'warning',
 }
 
 function KindBadge({ kind }: { kind: AppManifest['kind'] }) {

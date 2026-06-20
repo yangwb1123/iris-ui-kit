@@ -2,6 +2,7 @@ import * as React from 'react'
 import { IrisMovable, IrisResizable } from '@iris-ui/react'
 import { type DesktopWindow, type SnapZone } from '@iris-ui/core/window'
 import { getManifest } from '../catalog'
+import { loadRemoteApp } from '../remoteApp'
 import { useOs, useWm, useWmState } from '../shell'
 import { snapHintFor } from '../depth'
 import { ContextMenu, type MenuItem } from './ContextMenu'
@@ -209,6 +210,77 @@ function IframeBody({ url }: { url: string }) {
   )
 }
 
+/**
+ * Remote (`kind:'remote'`) app body. Dynamic-imports the module at `url` AT
+ * RUNTIME and hands its `mount` a host DOM node; the returned teardown runs on
+ * unmount (or url change). Shows a loading placeholder while importing and an
+ * error fallback if the import fails or the module has no `mount`.
+ */
+function RemoteBody({ url }: { url: string }) {
+  const hostRef = React.useRef<HTMLDivElement>(null)
+  const [status, setStatus] = React.useState<'loading' | 'ready' | 'error'>('loading')
+  const [error, setError] = React.useState('')
+
+  React.useEffect(() => {
+    let unmount: (() => void) | void
+    let cancelled = false
+    setStatus('loading')
+    setError('')
+    loadRemoteApp(url)
+      .then((mount) => {
+        if (cancelled || !hostRef.current) return
+        unmount = mount(hostRef.current)
+        setStatus('ready')
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return
+        setError(e instanceof Error ? e.message : String(e))
+        setStatus('error')
+      })
+    return () => {
+      cancelled = true
+      unmount?.()
+    }
+  }, [url])
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div ref={hostRef} style={{ width: '100%', height: '100%' }} />
+      {status === 'loading' && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: 13,
+            opacity: 0.7,
+          }}
+        >
+          Loading remote app…
+        </div>
+      )}
+      {status === 'error' && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'grid',
+            placeItems: 'center',
+            padding: 16,
+            textAlign: 'center',
+            fontSize: 13,
+            color: '#ff5f57',
+          }}
+        >
+          Couldn’t load remote app from {url}
+          {error ? ` — ${error}` : ''}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Body({ window: w }: { window: DesktopWindow }) {
   const app = getManifest(w.appId)
   const scroll = app?.kind === 'iframe' ? 'hidden' : 'auto'
@@ -218,6 +290,8 @@ function Body({ window: w }: { window: DesktopWindow }) {
         <div style={{ padding: 16 }}>Unknown app: {w.appId}</div>
       ) : app.kind === 'iframe' && app.url ? (
         <IframeBody url={app.url} />
+      ) : app.kind === 'remote' && app.url ? (
+        <RemoteBody url={app.url} />
       ) : (
         app.render?.()
       )}

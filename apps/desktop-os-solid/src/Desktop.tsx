@@ -1,4 +1,14 @@
-import { For, Show, createMemo, createSignal, onCleanup, onMount, type JSX } from 'solid-js'
+import {
+  For,
+  Match,
+  Show,
+  Switch,
+  createMemo,
+  createSignal,
+  onCleanup,
+  onMount,
+  type JSX,
+} from 'solid-js'
 import { useApps, useLaunchApp } from './profile'
 import { useOs } from './os-state'
 import { useWm, useWmState } from './wm'
@@ -7,8 +17,10 @@ import { Window } from './Window'
 import { Taskbar } from './Taskbar'
 import { StartMenu } from './StartMenu'
 import { Dock } from './Dock'
+import { Panel } from './Panel'
 import { MenuBar } from './MenuBar'
 import { Spotlight } from './Spotlight'
+import { Kickoff } from './Kickoff'
 import { CommandPalette } from './CommandPalette'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
@@ -29,31 +41,37 @@ function TopBar(): JSX.Element {
   return <Show when={chrome().topBar === 'menubar'}>{<MenuBar />}</Show>
 }
 
-/** The bottom bar — taskbar (Win) or dock (mac), per the live skin. */
+/** The bottom bar — taskbar (Win), dock (mac) or KDE panel, per the live skin. */
 function BottomBar(props: { launcherOpen: boolean; onToggleLauncher: () => void }): JSX.Element {
   const { chrome } = useOs()
   return (
-    <Show
-      when={chrome().bottomBar === 'dock'}
+    <Switch
       fallback={
         <Taskbar launcherOpen={props.launcherOpen} onToggleLauncher={props.onToggleLauncher} />
       }
     >
-      <Dock onToggleLauncher={props.onToggleLauncher} />
-    </Show>
+      <Match when={chrome().bottomBar === 'dock'}>
+        <Dock onToggleLauncher={props.onToggleLauncher} />
+      </Match>
+      <Match when={chrome().bottomBar === 'panel'}>
+        <Panel onToggleLauncher={props.onToggleLauncher} />
+      </Match>
+    </Switch>
   )
 }
 
-/** The app launcher — Start menu (Win) or Spotlight (mac), per the live skin. */
+/** The app launcher — Start menu (Win), Spotlight (mac) or KDE Kickoff, per the live skin. */
 function Launcher(props: { open: boolean; onClose: () => void }): JSX.Element {
   const { chrome } = useOs()
   return (
-    <Show
-      when={chrome().launcher === 'spotlight'}
-      fallback={<StartMenu open={props.open} onClose={props.onClose} />}
-    >
-      <Spotlight open={props.open} onClose={props.onClose} />
-    </Show>
+    <Switch fallback={<StartMenu open={props.open} onClose={props.onClose} />}>
+      <Match when={chrome().launcher === 'spotlight'}>
+        <Spotlight open={props.open} onClose={props.onClose} />
+      </Match>
+      <Match when={chrome().launcher === 'kickoff'}>
+        <Kickoff open={props.open} onClose={props.onClose} />
+      </Match>
+    </Switch>
   )
 }
 

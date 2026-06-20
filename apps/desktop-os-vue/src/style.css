@@ -44,6 +44,21 @@ body {
   color: #fff;
 }
 
+/* Window control buttons (KDE Plasma style) — square-ish, tighter, accent hover. */
+.win-ctl--kde {
+  width: 30px;
+  margin: 0 1px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.win-ctl--kde:hover {
+  background: color-mix(in srgb, var(--os-accent) 30%, transparent);
+}
+.win-ctl--kde.win-ctl--close:hover {
+  background: #da4453;
+  color: #fff;
+}
+
 /* Taskbar buttons */
 .task-btn {
   min-width: 44px;

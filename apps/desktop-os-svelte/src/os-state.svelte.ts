@@ -36,7 +36,7 @@ profile.subscribe(() => {
 })
 
 export interface OsContextValue {
-  /** The active OS id (`win11` | `macos`). */
+  /** The active OS id (`win11` | `macos` | `kde`). */
   readonly os: OsId
   /** The active chrome (skin vars + structural flags) for {@link os}. */
   readonly chrome: OsChrome

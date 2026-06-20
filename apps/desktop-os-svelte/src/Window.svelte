@@ -14,8 +14,9 @@
   let { window: w }: Props = $props()
 
   // The live OS skin drives where the window controls sit + their style: macOS
-  // traffic-lights on the LEFT (`controls === 'left'`) vs. Windows glyph buttons
-  // on the right. Mirrors React's `Window.tsx` Controls/Chrome split.
+  // traffic-lights on the LEFT (`controls === 'left'`), vs. Windows glyph buttons
+  // or KDE round controls on the right. Mirrors React's `Window.tsx` Controls/
+  // Chrome split.
   const osCtx = useOs()
   const chrome = $derived(osCtx.chrome)
 
@@ -71,6 +72,28 @@
         class="mac-dot mac-dot--max"
         onpointerdown={stop(() => wm.toggleMaximize(w.id))}
       ></button>
+    </div>
+  {:else if chrome.controlStyle === 'kde'}
+    <!-- KDE Plasma: round flat controls on the right; close hovers accent-red. -->
+    <div class="kde-ctls">
+      <button
+        type="button"
+        aria-label="Minimize"
+        class="kde-ctl"
+        onpointerdown={stop(() => wm.minimize(w.id))}>–</button
+      >
+      <button
+        type="button"
+        aria-label="Maximize"
+        class="kde-ctl"
+        onpointerdown={stop(() => wm.toggleMaximize(w.id))}>{maximized ? '❐' : '☐'}</button
+      >
+      <button
+        type="button"
+        aria-label="Close"
+        class="kde-ctl kde-ctl--close"
+        onpointerdown={stop(() => wm.close(w.id))}>✕</button
+      >
     </div>
   {:else}
     <!-- Windows glyph buttons on the right; close hovers red. -->
@@ -228,5 +251,38 @@
   }
   .mac-dot--max {
     background: #28c840;
+  }
+
+  /* KDE Plasma window controls (round flat buttons, right of the titlebar). */
+  .kde-ctls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 8px;
+  }
+  .kde-ctl {
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(127, 127, 127, 0.16);
+    color: inherit;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background 0.12s ease,
+      color 0.12s ease;
+  }
+  .kde-ctl:hover {
+    background: var(--os-accent);
+    color: #fff;
+  }
+  .kde-ctl--close:hover {
+    background: #da4453;
+    color: #fff;
   }
 </style>

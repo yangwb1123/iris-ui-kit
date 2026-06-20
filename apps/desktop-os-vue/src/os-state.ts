@@ -26,8 +26,8 @@ export interface OsContextValue {
 
 /**
  * Reactive access to the current OS skin + a setter. Reads the `os` pref from the
- * live profile state, falling back to 'win11' (and ignoring KDE / unknown values
- * that aren't in {@link OS_ORDER}). Shared singleton state via the profile.
+ * live profile state, falling back to 'win11' (and ignoring unknown values that
+ * aren't in {@link OS_ORDER}). Shared singleton state via the profile.
  */
 export function useOs(): OsContextValue {
   const state = useProfileState()

@@ -7,10 +7,9 @@
  * here + the per-OS component, never the window manager. Style via tokens.
  *
  * Copied VERBATIM from the React shell (`apps/desktop-os/src/os.ts`) — this is
- * pure framework-agnostic TS, the proof that the chrome seam is portable. The
- * ONLY difference: `OS_ORDER` lists just the skins this Vue build ships chrome
- * for (KDE's tokens are present so the seam is complete, but Kickoff/Panel
- * chrome isn't built yet, so KDE isn't offered).
+ * pure framework-agnostic TS, the proof that the chrome seam is portable. All
+ * three skins (Win11 / macOS / KDE) ship chrome in this Vue build, so `OS_ORDER`
+ * matches the React shell.
  */
 
 export type OsId = 'win11' | 'macos' | 'kde'
@@ -132,11 +131,10 @@ const KDE: OsChrome = {
 export const CHROMES: Record<OsId, OsChrome> = { win11: WIN11, macos: MACOS, kde: KDE }
 
 /**
- * The skins this Vue build offers in launchers / settings / commands. KDE's
- * tokens exist in {@link CHROMES} (the seam is complete) but its Kickoff/Panel
- * chrome isn't built yet, so it's deliberately excluded here for now.
+ * The skins this Vue build offers in launchers / settings / commands — all three
+ * are fully built (Win11 taskbar/start · macOS dock/spotlight · KDE panel/kickoff).
  */
-export const OS_ORDER: OsId[] = ['win11', 'macos']
+export const OS_ORDER: OsId[] = ['win11', 'macos', 'kde']
 
 /** Reserved px for top + bottom bars (drives the WM work area). */
 export function barInsets(chrome: OsChrome): { top: number; bottom: number } {

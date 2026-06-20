@@ -8,12 +8,15 @@
   import StartMenu from './StartMenu.svelte'
   import MenuBar from './MenuBar.svelte'
   import Dock from './Dock.svelte'
+  import Panel from './Panel.svelte'
   import Spotlight from './Spotlight.svelte'
+  import Kickoff from './Kickoff.svelte'
   import CommandPalette from './CommandPalette.svelte'
 
   // The live OS skin drives the bar dispatch (the Svelte counterpart of React's
-  // `Bars.tsx`): TopBar (MenuBar | none), BottomBar (Dock | Taskbar) and Launcher
-  // (Spotlight | StartMenu) are chosen from the active chrome's structural flags.
+  // `Bars.tsx`): TopBar (MenuBar | none), BottomBar (Taskbar | Dock | Panel) and
+  // Launcher (StartMenu | Spotlight | Kickoff) are chosen from the active
+  // chrome's structural flags.
   const osCtx = useOs()
   const chrome = $derived(osCtx.chrome)
 
@@ -109,21 +112,25 @@
     </div>
   {/if}
 
-  <!-- Launcher — Spotlight (mac) or Start menu (Win), per skin. -->
+  <!-- Launcher — Spotlight (mac), Kickoff (KDE) or Start menu (Win), per skin. -->
   {#if chrome.launcher === 'spotlight'}
     <Spotlight open={launcherOpen} onClose={() => (launcherOpen = false)} />
+  {:else if chrome.launcher === 'kickoff'}
+    <Kickoff open={launcherOpen} onClose={() => (launcherOpen = false)} />
   {:else}
     <StartMenu open={launcherOpen} onClose={() => (launcherOpen = false)} />
   {/if}
 
-  <!-- Top bar — macOS menu bar; nothing on Windows. -->
+  <!-- Top bar — macOS menu bar; nothing on Windows / KDE. -->
   {#if chrome.topBar === 'menubar'}
     <MenuBar />
   {/if}
 
-  <!-- Bottom bar — Dock (mac) or Taskbar (Win), per skin. -->
+  <!-- Bottom bar — Dock (mac), Panel (KDE) or Taskbar (Win), per skin. -->
   {#if chrome.bottomBar === 'dock'}
     <Dock onToggleLauncher={() => (launcherOpen = !launcherOpen)} />
+  {:else if chrome.bottomBar === 'panel'}
+    <Panel onToggleLauncher={() => (launcherOpen = !launcherOpen)} />
   {:else}
     <Taskbar {launcherOpen} onToggleLauncher={() => (launcherOpen = !launcherOpen)} />
   {/if}

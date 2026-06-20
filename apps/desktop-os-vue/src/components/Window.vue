@@ -29,6 +29,9 @@ const bodyOverflow = computed(() => (app.value?.kind === 'iframe' ? 'hidden' : '
 // Window-control placement + style per OS: macOS = traffic-lights on the LEFT,
 // Windows/KDE = glyph buttons on the RIGHT. Driven by the active chrome.
 const controlsLeft = computed(() => chrome.value.controls === 'left')
+// KDE shares the right-side glyph layout with Windows but uses a distinct button
+// style (square-ish, tighter, accent hover) — keyed off `controlStyle`.
+const kdeControls = computed(() => chrome.value.controlStyle === 'kde')
 // Win11 maximize glyph differs by state; mac uses traffic-light dots instead.
 const maxGlyph = computed(() => (maximized.value ? '❒' : '☐'))
 
@@ -157,6 +160,7 @@ const frameStyle = computed(() => ({
                 type="button"
                 aria-label="Minimize"
                 class="win-ctl"
+                :class="{ 'win-ctl--kde': kdeControls }"
                 @pointerdown.stop="wm.minimize(window.id)"
               >
                 –
@@ -165,6 +169,7 @@ const frameStyle = computed(() => ({
                 type="button"
                 aria-label="Maximize"
                 class="win-ctl"
+                :class="{ 'win-ctl--kde': kdeControls }"
                 @pointerdown.stop="wm.toggleMaximize(window.id)"
               >
                 {{ maxGlyph }}
@@ -173,6 +178,7 @@ const frameStyle = computed(() => ({
                 type="button"
                 aria-label="Close"
                 class="win-ctl win-ctl--close"
+                :class="{ 'win-ctl--kde': kdeControls }"
                 @pointerdown.stop="wm.close(window.id)"
               >
                 ✕

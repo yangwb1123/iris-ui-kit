@@ -7,9 +7,9 @@
  * here + the per-OS component, never the window manager. Style via tokens.
  *
  * Ported verbatim from the React shell (`apps/desktop-os/src/os.ts`) — it is
- * pure, framework-agnostic TS. KDE tokens are carried so the seam is complete,
- * but `OS_ORDER` ships `win11` + `macos` only for now (KDE chrome is a later
- * round); the KDE entry is therefore unreachable from the UI until it's added.
+ * pure, framework-agnostic TS. All three skins (Win11 / macOS / KDE) ship in
+ * `OS_ORDER`, so the picker + `system:os:*` commands offer each one and the
+ * shell branches on the active chrome's structural flags.
  */
 
 export type OsId = 'win11' | 'macos' | 'kde'
@@ -129,12 +129,8 @@ const KDE: OsChrome = {
 }
 
 export const CHROMES: Record<OsId, OsChrome> = { win11: WIN11, macos: MACOS, kde: KDE }
-/**
- * Skins offered in the UI. KDE chrome is a later round, so it's intentionally
- * absent here even though `CHROMES.kde` exists (the seam is complete; only the
- * picker / commands are gated).
- */
-export const OS_ORDER: OsId[] = ['win11', 'macos']
+/** Skins offered in the UI; the picker + `system:os:*` commands iterate this. */
+export const OS_ORDER: OsId[] = ['win11', 'macos', 'kde']
 
 /** Reserved px for top + bottom bars (drives the WM work area). */
 export function barInsets(chrome: OsChrome): { top: number; bottom: number } {

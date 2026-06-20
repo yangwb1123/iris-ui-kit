@@ -1,4 +1,13 @@
-import { Show, createMemo, createSignal, onCleanup, onMount, type JSX } from 'solid-js'
+import {
+  Match,
+  Show,
+  Switch,
+  createMemo,
+  createSignal,
+  onCleanup,
+  onMount,
+  type JSX,
+} from 'solid-js'
 import { IrisMovable, IrisResizable } from '@iris-ui/solid'
 import { type DesktopWindow } from '@iris-ui/core/window'
 import { getManifest } from './catalog'
@@ -11,8 +20,10 @@ type WinAccessor = () => DesktopWindow
 
 /**
  * Window control buttons (minimize / maximize-restore / close). Placement +
- * style follow the live OS skin: macOS traffic-light dots (left) when
- * `chrome.controlStyle === 'mac'`, otherwise Windows glyph buttons (right).
+ * style follow the live OS skin:
+ *  - `mac`: traffic-light dots (left), close (red) · minimize (yellow) · maximize (green);
+ *  - `kde`: round KDE-Breeze buttons (right), close tints with the accent;
+ *  - `win` (default): Windows glyph buttons (right), close hovers red.
  */
 function Controls(props: { window: WinAccessor }): JSX.Element {
   const wm = useWm()
@@ -40,9 +51,9 @@ function Controls(props: { window: WinAccessor }): JSX.Element {
   )
 
   return (
-    <Show
-      when={chrome().controlStyle === 'mac'}
+    <Switch
       fallback={
+        // Windows: glyph buttons on the right; close hovers red.
         <div style={{ display: 'flex', 'align-items': 'stretch' }}>
           <button
             type="button"
@@ -71,13 +82,44 @@ function Controls(props: { window: WinAccessor }): JSX.Element {
         </div>
       }
     >
-      {/* macOS traffic lights: close (red) · minimize (yellow) · maximize (green). */}
-      <div style={{ display: 'flex', gap: '8px', 'align-items': 'center' }}>
-        {dot('#ff5f57', 'Close', () => wm.close(props.window().id))}
-        {dot('#febc2e', 'Minimize', () => wm.minimize(props.window().id))}
-        {dot('#28c840', 'Maximize', () => wm.toggleMaximize(props.window().id))}
-      </div>
-    </Show>
+      <Match when={chrome().controlStyle === 'mac'}>
+        {/* macOS traffic lights: close (red) · minimize (yellow) · maximize (green). */}
+        <div style={{ display: 'flex', gap: '8px', 'align-items': 'center' }}>
+          {dot('#ff5f57', 'Close', () => wm.close(props.window().id))}
+          {dot('#febc2e', 'Minimize', () => wm.minimize(props.window().id))}
+          {dot('#28c840', 'Maximize', () => wm.toggleMaximize(props.window().id))}
+        </div>
+      </Match>
+      <Match when={chrome().controlStyle === 'kde'}>
+        {/* KDE Breeze: round flat buttons on the right; close tints with the accent. */}
+        <div style={{ display: 'flex', 'align-items': 'center', gap: '4px', padding: '0 6px' }}>
+          <button
+            type="button"
+            aria-label="Minimize"
+            onPointerDown={stop(() => wm.minimize(props.window().id))}
+            class="kde-ctl"
+          >
+            –
+          </button>
+          <button
+            type="button"
+            aria-label="Maximize"
+            onPointerDown={stop(() => wm.toggleMaximize(props.window().id))}
+            class="kde-ctl"
+          >
+            {props.window().state === 'maximized' ? '❒' : '☐'}
+          </button>
+          <button
+            type="button"
+            aria-label="Close"
+            onPointerDown={stop(() => wm.close(props.window().id))}
+            class="kde-ctl kde-ctl--close"
+          >
+            ✕
+          </button>
+        </div>
+      </Match>
+    </Switch>
   )
 }
 

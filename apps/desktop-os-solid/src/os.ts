@@ -7,8 +7,8 @@
  * here + the per-OS component, never the window manager. Style via tokens.
  *
  * Copied VERBATIM from the React desktop demo (`apps/desktop-os/src/os.ts`) —
- * the SAME framework-agnostic seam, here driving the Solid shell. (KDE tokens are
- * carried for parity but kept out of `OS_ORDER` until its chrome lands.)
+ * the SAME framework-agnostic seam, here driving the Solid shell. All three
+ * skins (Windows 11 / macOS / KDE Plasma) are live in `OS_ORDER`.
  */
 
 export type OsId = 'win11' | 'macos' | 'kde'
@@ -128,8 +128,8 @@ const KDE: OsChrome = {
 }
 
 export const CHROMES: Record<OsId, OsChrome> = { win11: WIN11, macos: MACOS, kde: KDE }
-/** Skins offered in this shell. KDE chrome is a later round — set up, not built yet. */
-export const OS_ORDER: OsId[] = ['win11', 'macos']
+/** Skins offered in this shell: Windows 11 ↔ macOS ↔ KDE Plasma. */
+export const OS_ORDER: OsId[] = ['win11', 'macos', 'kde']
 
 /** Reserved px for top + bottom bars (drives the WM work area). */
 export function barInsets(chrome: OsChrome): { top: number; bottom: number } {

@@ -37,9 +37,10 @@ function applyAccent(color: string): void {
 
 /**
  * The OS-skin picker. Switches the whole desktop chrome (titlebar controls, top
- * menu bar, dock/taskbar, launcher, palette) between Windows 11 and macOS LIVE —
- * the window manager + every open window stay exactly the same, only the look
- * changes. The choice persists to the profile (`os` pref) via {@link useOs}.
+ * menu bar, dock/taskbar/panel, launcher, palette) between Windows 11, macOS and
+ * KDE Plasma LIVE — the window manager + every open window stay exactly the same,
+ * only the look changes. The choice persists to the profile (`os` pref) via
+ * {@link useOs}.
  */
 function OsSkinSettings(): JSX.Element {
   const { os, setOs } = useOs()

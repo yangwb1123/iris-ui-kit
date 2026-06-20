@@ -5,7 +5,10 @@ import {
   toMcpTools,
   runMcpTool,
   toToolName,
+  fuzzyPlanner,
+  createLlmPlanner,
   type Command,
+  type ModelCall,
 } from './commands'
 
 const cmd = (id: string, title: string, run = () => {}, extra: Partial<Command> = {}): Command => ({
@@ -89,5 +92,61 @@ describe('createCommandRegistry', () => {
     await r.run('missing')
     expect(ran).toHaveBeenCalledTimes(1)
     expect(blocked).not.toHaveBeenCalled()
+  })
+})
+
+describe('agent planner', () => {
+  const reg = () => {
+    const r = createCommandRegistry()
+    r.registerMany([
+      cmd('app:settings', 'Open Settings', () => {}, { group: 'Apps' }),
+      cmd('win:close', 'Close Window', () => {}, { group: 'Window' }),
+      cmd('sys:macos', 'Switch to macOS', () => {}, { group: 'System' }),
+    ])
+    return r
+  }
+
+  it('fuzzyPlanner picks the top hit synchronously, null on no match', () => {
+    const r = reg()
+    expect(fuzzyPlanner('open settings', r)?.commandId).toBe('app:settings')
+    expect(fuzzyPlanner('zzzqqq nonsense', r)).toBeNull()
+  })
+
+  it('createLlmPlanner maps the chosen tool name back to a command id', async () => {
+    const r = reg()
+    let seen: string[] = []
+    const call: ModelCall = async ({ tools }) => {
+      seen = tools.map((t) => t.name)
+      return { toolName: toToolName('sys:macos') }
+    }
+    const plan = await createLlmPlanner(call)('make it look like a mac', r)
+    expect(seen.sort()).toEqual(['app:settings', 'win:close', 'sys:macos'].map(toToolName).sort())
+    expect(plan).toEqual({ commandId: 'sys:macos', say: 'Running “Switch to macOS”.' })
+  })
+
+  it('createLlmPlanner passes through the model’s `say`', async () => {
+    const call: ModelCall = async () => ({ toolName: toToolName('win:close'), say: 'Closing.' })
+    const plan = await createLlmPlanner(call)('shut it', reg())
+    expect(plan).toEqual({ commandId: 'win:close', say: 'Closing.' })
+  })
+
+  it('createLlmPlanner falls back to fuzzy on no-tool / throw / unknown tool', async () => {
+    const none: ModelCall = async () => ({ toolName: null })
+    const boom: ModelCall = async () => {
+      throw new Error('401')
+    }
+    const bogus: ModelCall = async () => ({ toolName: 'made_up' })
+    expect((await createLlmPlanner(none)('open settings', reg()))?.commandId).toBe('app:settings')
+    expect((await createLlmPlanner(boom)('close window', reg()))?.commandId).toBe('win:close')
+    expect((await createLlmPlanner(bogus)('open settings', reg()))?.commandId).toBe('app:settings')
+  })
+
+  it('createLlmPlanner uses a custom fallback', async () => {
+    const none: ModelCall = async () => ({ toolName: null })
+    const fallback = () => ({ commandId: 'win:close', say: 'fb' })
+    expect(await createLlmPlanner(none, fallback)('x', reg())).toEqual({
+      commandId: 'win:close',
+      say: 'fb',
+    })
   })
 })

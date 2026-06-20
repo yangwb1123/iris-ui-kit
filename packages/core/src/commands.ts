@@ -174,3 +174,90 @@ export async function runMcpTool(registry: CommandRegistry, name: string): Promi
   await registry.run(command.id)
   return { ok: true, ran: command.id }
 }
+
+/**
+ * AGENT PLANNER over the registry — turn natural-language input into a chosen
+ * command. The deterministic {@link fuzzyPlanner} is the default; {@link createLlmPlanner}
+ * is a drop-in that asks a model (via an injected {@link ModelCall}) to pick a
+ * command by tool name over {@link toMcpTools}. Framework-agnostic by design: every
+ * desktop shell (React/Vue/Solid/Svelte) consumes the SAME planner, supplying its
+ * own SDK-backed transport for the `ModelCall` — so "the assistant picks the
+ * command via a model" is one logic across all four frameworks.
+ */
+
+export interface PlanResult {
+  /** The chosen command id. */
+  commandId: string
+  /** A short line to show the user. */
+  say: string
+}
+
+/**
+ * Turn `input` into a chosen command (+ what to `say`), reading the live registry.
+ * Returns `null` when nothing matches. May be ASYNC — an LLM planner awaits a
+ * model call.
+ */
+export type Planner = (
+  input: string,
+  registry: CommandRegistry,
+) => PlanResult | null | Promise<PlanResult | null>
+
+/** Deterministic planner: fuzzy-match → top command. Synchronous; `null` on no match. */
+export const fuzzyPlanner = (input: string, registry: CommandRegistry): PlanResult | null => {
+  const top = registry.search(input, 1)[0]?.command
+  if (!top) return null
+  return { commandId: top.id, say: `Running “${top.title}”.` }
+}
+
+/** System prompt for an LLM planner: pick exactly one tool (= one command). */
+export const LLM_PLANNER_SYSTEM =
+  'You are the planner for a desktop "operating system" shell. The user types a ' +
+  'natural-language request; choose the SINGLE best-matching action by calling ' +
+  'exactly one of the provided tools. Each tool is one desktop command (open an ' +
+  'app, a window action, or a system action). Always call exactly one tool — pick ' +
+  'the closest match even if the wording is loose. Do not reply with text.'
+
+/** What an injected model call returns: the chosen tool name (or null), + optional prose. */
+export interface ToolChoice {
+  /** The MCP tool name the model picked, or `null` if it picked none. */
+  toolName: string | null
+  /** Optional natural-language line to show the user. */
+  say?: string
+}
+
+/**
+ * The injectable transport: given the user input and the registry projected as
+ * MCP tools, return the model's chosen tool. Injecting this keeps the planner
+ * network-free for tests and decoupled from any one SDK — each shell wires its own
+ * (e.g. an `@anthropic-ai/sdk`-backed call).
+ */
+export type ModelCall = (args: {
+  input: string
+  tools: McpToolDef[]
+  system: string
+}) => Promise<ToolChoice>
+
+/**
+ * Build an LLM-backed planner from a {@link ModelCall}. Projects the live registry
+ * as MCP tools ({@link toMcpTools}), asks the model to pick one, then maps the
+ * chosen tool name back to a command id ({@link toToolName}). Any miss — empty
+ * registry, transport error, no tool chosen, unknown tool — delegates to
+ * `fallback` (the deterministic {@link fuzzyPlanner} by default), so callers
+ * degrade gracefully instead of dead-ending.
+ */
+export function createLlmPlanner(call: ModelCall, fallback: Planner = fuzzyPlanner): Planner {
+  return async (input, registry) => {
+    const tools = toMcpTools(registry)
+    if (tools.length === 0) return fallback(input, registry)
+    let choice: ToolChoice
+    try {
+      choice = await call({ input, tools, system: LLM_PLANNER_SYSTEM })
+    } catch {
+      return fallback(input, registry)
+    }
+    if (!choice.toolName) return fallback(input, registry)
+    const command = registry.list().find((c) => toToolName(c.id) === choice.toolName)
+    if (!command) return fallback(input, registry)
+    return { commandId: command.id, say: choice.say ?? `Running “${command.title}”.` }
+  }
+}

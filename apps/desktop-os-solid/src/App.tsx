@@ -1,13 +1,51 @@
 import { createEffect, onCleanup, onMount, type JSX } from 'solid-js'
-import { createWindowManager } from '@iris-ui/core/window'
-import { createUserProfile, localStorageProfileStorage } from '@iris-ui/core/profile'
+import {
+  createWindowManager,
+  serializeSession,
+  restoreSession,
+  type WindowManager,
+  type WindowSession,
+} from '@iris-ui/core/window'
+import {
+  createUserProfile,
+  localStorageProfileStorage,
+  type UserProfile,
+} from '@iris-ui/core/profile'
 import { createCommandRegistry } from '@iris-ui/core/commands'
 import { barInsets } from './os'
 import { WmProvider, useWm } from './wm'
 import { ProfileProvider } from './profile'
 import { OsProvider, useOs } from './os-state'
 import { CommandsProvider } from './commands'
+import { getManifest, registerCustomApps, type AppManifest } from './catalog'
 import { Desktop } from './Desktop'
+
+/** The saved window session, filtered to apps that still resolve (removed apps skipped). */
+function knownSession(profile: UserProfile): WindowSession {
+  const raw = profile.getPref<WindowSession>('session')
+  if (!Array.isArray(raw)) return []
+  // Custom (URL-added) apps live in prefs — register them so getManifest resolves.
+  registerCustomApps((profile.getPref<AppManifest[]>('customApps') ?? []) as AppManifest[])
+  return raw.filter((e) => Boolean(getManifest(e.appId)))
+}
+
+/**
+ * Restore the saved window session ONCE (after hydrate populated prefs + the work
+ * area is set), then persist it debounced on every WM change — so open windows,
+ * geometry, stacking, and focus survive a reload. Mirrors the React shell.
+ */
+function attachSessionPersistence(wm: WindowManager, profile: UserProfile): () => void {
+  let saveTimer: ReturnType<typeof setTimeout> | undefined
+  if (wm.getState().windows.length === 0) restoreSession(wm, knownSession(profile))
+  const unsubscribe = wm.subscribe(() => {
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => profile.setPref('session', serializeSession(wm.getState())), 400)
+  })
+  return () => {
+    clearTimeout(saveTimer)
+    unsubscribe()
+  }
+}
 
 /**
  * The desktop surface. Lives INSIDE the providers so it can read the live OS skin
@@ -91,7 +129,14 @@ export function App(): JSX.Element {
   const commands = createCommandRegistry()
 
   onMount(() => {
-    void profile.hydrate()
+    // Hydrate the profile, then restore the window session + start persisting it.
+    // The Shell's work-area effects run synchronously on mount (before this async
+    // hydrate resolves), so geometry clamps against the real work area.
+    let detach: (() => void) | undefined
+    void profile.hydrate().then(() => {
+      detach = attachSessionPersistence(wm, profile)
+    })
+    onCleanup(() => detach?.())
   })
 
   return (

@@ -178,6 +178,76 @@ export function cascadeRect(
   return clampRect({ x: area.x + 32 + off, y: area.y + 24 + off, ...size }, area, size)
 }
 
+/**
+ * One window in a persisted session snapshot — the JSON-able subset needed to
+ * recreate it (runtime-only fields like `id`/`z` are regenerated on restore).
+ */
+export interface WindowSessionEntry<Meta = unknown> {
+  appId: string
+  title: string
+  /** The normal-state geometry (restore target). */
+  rect: WindowRect
+  state: WindowState
+  minSize: WindowSize
+  meta: Meta
+  /** Whether this was the focused window. */
+  focused: boolean
+}
+
+/** A serializable desktop session — windows in ascending z (paint/stack) order. */
+export type WindowSession<Meta = unknown> = WindowSessionEntry<Meta>[]
+
+/**
+ * Snapshot the manager state into a JSON-able {@link WindowSession} (persist it to
+ * a user profile, restore on reload). Windows are emitted in ascending z so
+ * {@link restoreSession} recreates the same stacking by re-opening in order.
+ */
+export function serializeSession<Meta = unknown>(
+  state: WindowManagerState<Meta>,
+): WindowSession<Meta> {
+  return [...state.windows]
+    .sort((a, b) => a.z - b.z)
+    .map((w) => ({
+      appId: w.appId,
+      title: w.title,
+      rect: w.rect,
+      state: w.state,
+      minSize: w.minSize,
+      meta: w.meta,
+      focused: w.focused,
+    }))
+}
+
+/**
+ * Re-open the windows from a {@link WindowSession} into `wm` (typically empty, at
+ * startup). Re-opening in array order reproduces the z-stacking; per-window
+ * maximize/minimize and the focused window are reapplied. Pass an already-filtered
+ * session (drop entries whose app no longer exists) — this opens whatever it's
+ * given. Returns the new window ids in the same order.
+ */
+export function restoreSession<Meta = unknown>(
+  wm: WindowManager<Meta>,
+  session: WindowSession<Meta>,
+): string[] {
+  const ids: string[] = []
+  let focusId: string | undefined
+  for (const e of session) {
+    const id = wm.open({
+      appId: e.appId,
+      title: e.title,
+      rect: e.rect,
+      minSize: e.minSize,
+      meta: e.meta,
+    })
+    ids.push(id)
+    if (e.state === 'maximized') wm.maximize(id)
+    else if (e.state === 'minimized') wm.minimize(id)
+    if (e.focused && e.state !== 'minimized') focusId = id
+  }
+  if (focusId) wm.focus(focusId)
+  return ids
+}
+
 export function createWindowManager<Meta = unknown>(
   config: WindowManagerConfig = {},
 ): WindowManager<Meta> {

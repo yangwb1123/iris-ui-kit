@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { createWindowManager, snapRect, clampRect, type WindowManager } from './window'
+import {
+  createWindowManager,
+  snapRect,
+  clampRect,
+  serializeSession,
+  restoreSession,
+  type WindowManager,
+} from './window'
 
 const AREA = { x: 0, y: 0, width: 1000, height: 600 }
 const make = (): WindowManager =>
@@ -163,5 +170,53 @@ describe('pure geometry helpers', () => {
       width: 50,
       height: 40,
     })
+  })
+})
+
+describe('session serialize / restore', () => {
+  it('serializes windows in ascending z with state + focus, and round-trips', () => {
+    const wm = make()
+    const a = wm.open({ appId: 'files', title: 'Files', rect: { x: 10, y: 10 } })
+    const b = wm.open({ appId: 'notes', title: 'Notes', rect: { x: 60, y: 60 } })
+    wm.maximize(a) // a now focused + maximized, raised above b
+    const session = serializeSession(wm.getState())
+
+    expect(session.map((e) => e.appId)).toEqual(['notes', 'files']) // ascending z: b then a
+    const filesEntry = session.find((e) => e.appId === 'files')!
+    expect(filesEntry.state).toBe('maximized')
+    expect(filesEntry.focused).toBe(true)
+    expect(session.find((e) => e.appId === 'notes')!.focused).toBe(false)
+    void b
+
+    // Restore into a fresh manager.
+    const wm2 = make()
+    const ids = restoreSession(wm2, session)
+    expect(ids).toHaveLength(2)
+    const s2 = wm2.getState()
+    expect(s2.windows.map((w) => w.appId).sort()).toEqual(['files', 'notes'])
+    const files2 = s2.windows.find((w) => w.appId === 'files')!
+    expect(files2.state).toBe('maximized')
+    expect(s2.focusedId).toBe(files2.id) // focus reapplied to the maximized window
+    // The non-maximized window kept its normal rect.
+    expect(s2.windows.find((w) => w.appId === 'notes')!.rect).toMatchObject({ x: 60, y: 60 })
+  })
+
+  it('restores a minimized window without focusing it', () => {
+    const wm = make()
+    wm.open({ appId: 'a', title: 'A' })
+    const b = wm.open({ appId: 'b', title: 'B' })
+    wm.minimize(b)
+    const restored = make()
+    restoreSession(restored, serializeSession(wm.getState()))
+    const s = restored.getState()
+    expect(s.windows.find((w) => w.appId === 'b')!.state).toBe('minimized')
+    // focus landed on the non-minimized 'a'
+    expect(s.windows.find((w) => w.id === s.focusedId)!.appId).toBe('a')
+  })
+
+  it('empty session restores nothing', () => {
+    const wm = make()
+    expect(restoreSession(wm, serializeSession(wm.getState()))).toEqual([])
+    expect(wm.getState().windows).toHaveLength(0)
   })
 })

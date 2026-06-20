@@ -2,6 +2,7 @@ import * as React from 'react'
 import { type WindowManager, type WindowManagerState } from '@iris-ui/core/window'
 import { type UserProfile, type ProfileData } from '@iris-ui/core/profile'
 import { type NotificationCenter, type NotificationCenterState } from '@iris-ui/core/notifications'
+import { type ClipboardHistory, type ClipboardHistoryState } from '@iris-ui/core/clipboard-history'
 import { type OsChrome, type OsId } from './os'
 import { type AppManifest, BUILTIN_APPS, getManifest, registerCustomApps } from './catalog'
 
@@ -71,6 +72,23 @@ export function useNotifications(): NotificationCenter {
 export function useNotificationState(): NotificationCenterState {
   const nc = useNotifications()
   return React.useSyncExternalStore(nc.store.subscribe, nc.store.getState, nc.store.getState)
+}
+
+// ── Clipboard history ──────────────────────────────────────────────────────────
+
+const ClipboardContext = React.createContext<ClipboardHistory | null>(null)
+export const ClipboardProvider = ClipboardContext.Provider
+
+export function useClipboard(): ClipboardHistory {
+  const c = React.useContext(ClipboardContext)
+  if (!c) throw new Error('useClipboard must be used within <ClipboardProvider>')
+  return c
+}
+
+/** Subscribe to the live clipboard history (newest first). */
+export function useClipboardState(): ClipboardHistoryState {
+  const c = useClipboard()
+  return React.useSyncExternalStore(c.store.subscribe, c.store.getState, c.store.getState)
 }
 
 /** Raw user-added web-app manifests from the profile (`customApps` pref). */

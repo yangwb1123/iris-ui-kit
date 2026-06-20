@@ -58,6 +58,7 @@ const FEATURES = [
   ['Remote app kind', /loadRemoteApp/],
   ['Session persistence', /serializeSession/],
   ['Notifications', /createNotificationCenter/],
+  ['Clipboard manager', /createClipboardHistory/],
   ['macOS chrome: MenuBar', /MenuBar\.(tsx|vue|svelte)/],
   ['macOS chrome: Dock', /Dock\.(tsx|vue|svelte)/],
   ['macOS chrome: Spotlight', /Spotlight\.(tsx|vue|svelte)/],
@@ -114,8 +115,8 @@ const MAPPED_REFERENCE_CAPABILITIES = new Set([
   'MenuBar', 'Dock', 'Spotlight', // macOS chrome
   'Panel', 'Kickoff', // KDE chrome
   'CommandPalette', 'ContextMenu', 'SnapPreview', 'Toasts',
-  // App views (R3, R4, R6, R9) — the per-app surface
-  'AgentTools', 'AppStore', 'Assistant', 'Calculator', 'Data', 'Photos', 'Terminal',
+  // App views (R3, R4, R6, R9, R15) — the per-app surface
+  'AgentTools', 'AppStore', 'Assistant', 'Calculator', 'Clipboard', 'Data', 'Photos', 'Terminal',
   'planner', // the Assistant's planner module (R6/R7), co-located with the views
 ])
 const refCapabilityFiles = [

@@ -9,6 +9,7 @@ import { DataApp } from './Data'
 import { CalculatorApp } from './Calculator'
 import { TerminalView } from './Terminal'
 import { PhotosApp } from './Photos'
+import { ClipboardApp } from './Clipboard'
 
 /**
  * Capabilities an app may request. The desktop surfaces these as a transparent
@@ -207,6 +208,17 @@ export const CATALOG: AppManifest[] = [
     defaultSize: { width: 520, height: 420 },
     permissions: ['storage'],
     render: () => PhotosApp(),
+  },
+  {
+    id: 'clipboard',
+    name: 'Clipboard',
+    icon: '📋',
+    kind: 'component',
+    builtin: true,
+    description: 'Clipboard history — re-copy, pin, clear.',
+    defaultSize: { width: 420, height: 460 },
+    permissions: ['clipboard'],
+    render: () => ClipboardApp(),
   },
 
   // ── Installable LINK apps (open in a new tab; no window) ────────────────────

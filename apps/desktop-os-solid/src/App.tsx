@@ -13,12 +13,14 @@ import {
 } from '@iris-ui/core/profile'
 import { createCommandRegistry } from '@iris-ui/core/commands'
 import { createNotificationCenter } from '@iris-ui/core/notifications'
+import { createClipboardHistory } from '@iris-ui/core/clipboard-history'
 import { barInsets } from './os'
 import { WmProvider, useWm } from './wm'
 import { ProfileProvider } from './profile'
 import { OsProvider, useOs } from './os-state'
 import { CommandsProvider } from './commands'
 import { NotificationsProvider } from './notifications'
+import { ClipboardProvider } from './clipboard-context'
 import { getManifest, registerCustomApps, type AppManifest } from './catalog'
 import { Desktop } from './Desktop'
 
@@ -133,6 +135,9 @@ export function App(): JSX.Element {
   // ONE notification center for the whole shell (toasts + history).
   const notifications = createNotificationCenter()
 
+  // ONE clipboard history (the clipboard-manager engine behind the Clipboard app).
+  const clipboard = createClipboardHistory()
+
   onMount(() => {
     // Hydrate the profile, then restore the window session + start persisting it.
     // The Shell's work-area effects run synchronously on mount (before this async
@@ -150,7 +155,9 @@ export function App(): JSX.Element {
         <OsProvider>
           <CommandsProvider registry={commands}>
             <NotificationsProvider notifications={notifications}>
-              <Shell />
+              <ClipboardProvider clipboard={clipboard}>
+                <Shell />
+              </ClipboardProvider>
             </NotificationsProvider>
           </CommandsProvider>
         </OsProvider>

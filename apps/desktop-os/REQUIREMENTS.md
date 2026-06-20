@@ -28,15 +28,16 @@ pre-commit hook).
 | R9  | **App permissions** model — apps request capabilities; user grants/revokes; surfaced                                                                     | ✅     | `Permission` tags + `useGrants` (profile `grants` pref) + App Store badges + Settings → Privacy                                                                                    | parity (`useGrants`/`PERMISSION_META`)                                                        |
 | R10 | **Module-federation `remote` app kind** (runtime ESM micro-frontend)                                                                                     | ✅     | `remoteApp.ts` `loadRemoteApp` + `public/remote-apps/clock.mjs` + remote window body                                                                                               | parity (`loadRemoteApp`)                                                                      |
 | R11 | **Window-session persistence** — open windows (geometry/state/stack/focus) survive reload                                                                | ✅     | `@iris-ui/core/window` `serializeSession`/`restoreSession` + per-shell wiring to the profile `session` pref                                                                        | `window.test.ts`; parity (`serializeSession`)                                                 |
-| R12 | **Cross-framework parity** — React + Vue + Solid + Svelte on the SAME core                                                                               | ✅     | the above realized in all four shells (one core, four thin shells)                                                                                                                 | `pnpm check:desktop-parity` (19 apps + 3 skins + 19 features × 4); full monorepo gate 161/161 |
+| R12 | **Cross-framework parity** — React + Vue + Solid + Svelte on the SAME core                                                                               | ✅     | the above realized in all four shells (one core, four thin shells)                                                                                                                 | `pnpm check:desktop-parity` (20 apps + 3 skins + 21 features × 4); full monorepo gate 161/161 |
 | R13 | **Desktop interactions** — keyboard shortcuts (⌘K, Alt+Tab, Meta+Space, Esc), drag-to-edge **Snap Assist** preview, desktop right-click **context menu** | ✅     | per-shell `Desktop` keyboard handling + `depth.ts`/`SnapPreview` + `ContextMenu`                                                                                                   | parity (keyboard, `SnapPreview`, `ContextMenu`)                                               |
 | R14 | **Notifications** — apps post toasts (the `notifications` permission, now honored); auto-dismiss + tone; App Store posts on install/uninstall            | ✅     | `@iris-ui/core/notifications` `createNotificationCenter` + per-shell Toasts + App Store posting                                                                                    | `packages/core/src/notifications.test.ts`; parity (`createNotificationCenter`)                |
+| R15 | **Clipboard manager** — clipboard history (the `clipboard` permission, now honored): re-copy (writes the system clipboard), pin, clear                   | ✅     | `@iris-ui/core/clipboard-history` `createClipboardHistory` + a Clipboard app in all 4 shells                                                                                       | `packages/core/src/clipboard-history.test.ts`; parity (`createClipboardHistory`)              |
 
 ## How to verify (all green)
 
 ```sh
 pnpm turbo run test typecheck lint build   # whole monorepo: 161/161
-pnpm check:desktop-parity                  # 4 shells: 19 apps + 3 skins + 20 features
+pnpm check:desktop-parity                  # 4 shells: 20 apps + 3 skins + 21 features
 pnpm --filter @iris-ui/core test           # core engines incl. window/commands/profile/notifications
 ```
 
@@ -62,7 +63,7 @@ The set was derived two ways, which agree:
    interaction component (`Bars`, `Window`, `Taskbar`, `StartMenu`, `MenuBar`,
    `Dock`, `Spotlight`, `Panel`, `Kickoff`, `CommandPalette`, `ContextMenu`,
    `SnapPreview`, `Toasts`, `Desktop`) and each app view (`Assistant`,
-   `AgentTools`, `AppStore`, `Calculator`, `Data`, `Photos`, `Terminal`, About,
+   `AgentTools`, `AppStore`, `Calculator`, `Clipboard`, `Data`, `Photos`, `Terminal`, About,
    Notepad, Files, Showcase, Settings, Task Manager) is accounted for by R1–R14.
    **There is no capability in the reference that lacks a requirement.**
 

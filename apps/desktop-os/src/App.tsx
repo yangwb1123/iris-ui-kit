@@ -7,12 +7,14 @@ import {
 } from '@iris-ui/core/window'
 import { createUserProfile, localStorageProfileStorage } from '@iris-ui/core/profile'
 import { createNotificationCenter } from '@iris-ui/core/notifications'
+import { createClipboardHistory } from '@iris-ui/core/clipboard-history'
 import { CHROMES, barInsets, OS_ORDER, type OsId } from './os'
 import {
   WmProvider,
   OsProvider,
   ProfileProvider,
   NotificationsProvider,
+  ClipboardProvider,
   useProfileState,
 } from './shell'
 import { getManifest, registerCustomApps, type AppManifest } from './catalog'
@@ -124,6 +126,8 @@ export function App() {
   ).current
   // One notification center for the whole shell (toasts + history).
   const notifications = React.useRef(createNotificationCenter()).current
+  // One clipboard history (the clipboard-manager engine).
+  const clipboard = React.useRef(createClipboardHistory()).current
   const [hydrated, setHydrated] = React.useState(false)
 
   React.useEffect(() => {
@@ -133,7 +137,9 @@ export function App() {
   return (
     <ProfileProvider value={profile}>
       <NotificationsProvider value={notifications}>
-        <Shell profile={profile} hydrated={hydrated} />
+        <ClipboardProvider value={clipboard}>
+          <Shell profile={profile} hydrated={hydrated} />
+        </ClipboardProvider>
       </NotificationsProvider>
     </ProfileProvider>
   )

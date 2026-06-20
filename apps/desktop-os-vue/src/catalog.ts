@@ -21,6 +21,7 @@ import Data from './appviews/Data.vue'
 import Calculator from './appviews/Calculator.vue'
 import Photos from './appviews/Photos.vue'
 import Terminal from './appviews/Terminal.vue'
+import Clipboard from './appviews/Clipboard.vue'
 
 /**
  * Capabilities an app may request. The desktop surfaces these as a transparent
@@ -223,6 +224,17 @@ export const CATALOG: AppManifest[] = [
     defaultSize: { width: 520, height: 420 },
     permissions: ['storage'],
     component: markRaw(Photos),
+  },
+  {
+    id: 'clipboard',
+    name: 'Clipboard',
+    icon: '📋',
+    kind: 'component',
+    builtin: true,
+    description: 'Clipboard history — re-copy, pin, clear.',
+    defaultSize: { width: 420, height: 460 },
+    permissions: ['clipboard'],
+    component: markRaw(Clipboard),
   },
 
   // ── Installable LINK apps (open in a new tab; no window) ────────────────────

@@ -22,6 +22,7 @@ import Data from './appviews/Data.svelte'
 import Calculator from './appviews/Calculator.svelte'
 import TerminalView from './appviews/TerminalView.svelte'
 import Photos from './appviews/Photos.svelte'
+import Clipboard from './appviews/Clipboard.svelte'
 
 /**
  * How an app runs:
@@ -213,6 +214,17 @@ export const CATALOG: AppManifest[] = [
     defaultSize: { width: 520, height: 420 },
     permissions: ['storage'],
     component: Photos,
+  },
+  {
+    id: 'clipboard',
+    name: 'Clipboard',
+    icon: '📋',
+    kind: 'component',
+    builtin: true,
+    description: 'Clipboard history — re-copy, pin, clear.',
+    defaultSize: { width: 420, height: 460 },
+    permissions: ['clipboard'],
+    component: Clipboard,
   },
 
   // ── Installable LINK apps (open in a new tab; no window) ────────────────────

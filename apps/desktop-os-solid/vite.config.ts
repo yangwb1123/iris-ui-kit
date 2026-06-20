@@ -34,6 +34,9 @@ export default defineConfig(({ command }) => ({
             '@iris-ui/core/notifications': fileURLToPath(
               new URL('../../packages/core/src/notifications.ts', import.meta.url),
             ),
+            '@iris-ui/core/clipboard-history': fileURLToPath(
+              new URL('../../packages/core/src/clipboard-history.ts', import.meta.url),
+            ),
             '@iris-ui/core': src('core'),
             '@iris-ui/tokens': src('tokens'),
             '@iris-ui/solid': src('solid'),

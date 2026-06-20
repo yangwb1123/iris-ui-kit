@@ -14,6 +14,7 @@ import { PhotosApp } from './appviews/Photos'
 import { AppStoreView } from './appviews/AppStore'
 import { AssistantView } from './appviews/Assistant'
 import { AgentToolsView } from './appviews/AgentTools'
+import { ClipboardApp } from './appviews/Clipboard'
 
 /**
  * Capabilities an app may request. The desktop surfaces these as a transparent
@@ -210,6 +211,17 @@ export const CATALOG: AppManifest[] = [
     defaultSize: { width: 520, height: 420 },
     permissions: ['storage'],
     render: () => React.createElement(PhotosApp),
+  },
+  {
+    id: 'clipboard',
+    name: 'Clipboard',
+    icon: '📋',
+    kind: 'component',
+    builtin: true,
+    description: 'Clipboard history — re-copy, pin, clear.',
+    defaultSize: { width: 420, height: 460 },
+    permissions: ['clipboard'],
+    render: () => React.createElement(ClipboardApp),
   },
 
   // ── Installable LINK apps (open in a new tab; no window) ────────────────────

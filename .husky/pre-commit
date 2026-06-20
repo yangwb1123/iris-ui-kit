@@ -1,3 +1,4 @@
 npx lint-staged
 node scripts/arch-check.mjs --diff
 node scripts/change-budget.mjs --staged || true
+node scripts/check-desktop-parity.mjs

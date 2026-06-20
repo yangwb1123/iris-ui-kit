@@ -31,6 +31,7 @@
     "check:manifest": "pnpm gen:manifest && git diff --exit-code -- packages/manifest/manifest.json packages/manifest/llms.txt",
     "size": "node scripts/check-size.mjs",
     "check:rsc": "node scripts/check-rsc-directive.mjs",
+    "check:desktop-parity": "node scripts/check-desktop-parity.mjs",
     "changeset": "changeset",
     "changeset:version": "changeset version",
     "release": "pnpm gen:manifest && turbo run build && changeset publish",

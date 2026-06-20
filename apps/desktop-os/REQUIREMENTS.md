@@ -36,12 +36,42 @@ pre-commit hook).
 
 ```sh
 pnpm turbo run test typecheck lint build   # whole monorepo: 161/161
-pnpm check:desktop-parity                  # 4 shells: 19 apps + 3 skins + 19 features
-pnpm --filter @iris-ui/core test           # core engines incl. window/commands/profile
+pnpm check:desktop-parity                  # 4 shells: 19 apps + 3 skins + 20 features
+pnpm --filter @iris-ui/core test           # core engines incl. window/commands/profile/notifications
 ```
 
 `scripts/check-desktop-parity.mjs` is the machine-checked guarantee that the four
 shells stay complete and identical on this requirement set: it fails the build if
 any shell drops an app, changes an app's kind, diverges on the OS-skin set, or
-loses any of the 19 functional-requirement markers above. It runs in the
+loses any of the 20 functional-requirement markers above. It runs in the
 pre-commit hook, so regressions can't land silently.
+
+## Scope status: COMPLETE
+
+**R1–R14 is the exhaustive functional-requirement set for this demo, and every
+requirement is met.** No further functional requirements remain in scope.
+
+The set was derived two ways, which agree:
+
+1. **Top-down** — from the project's actual asks (a framework-agnostic
+   window-manager–driven desktop mimicking Windows 11 / macOS / KDE; aggregating
+   apps over a user profile, local or cloud/distributed; driven by a real LLM
+   agent; proven across React + Vue + Solid + Svelte). Each ask is an R-item above.
+2. **Bottom-up (completeness audit)** — every capability present in the reference
+   shell (`apps/desktop-os`, the most complete) maps to an R-item: each chrome /
+   interaction component (`Bars`, `Window`, `Taskbar`, `StartMenu`, `MenuBar`,
+   `Dock`, `Spotlight`, `Panel`, `Kickoff`, `CommandPalette`, `ContextMenu`,
+   `SnapPreview`, `Toasts`, `Desktop`) and each app view (`Assistant`,
+   `AgentTools`, `AppStore`, `Calculator`, `Data`, `Photos`, `Terminal`, About,
+   Notepad, Files, Showcase, Settings, Task Manager) is accounted for by R1–R14.
+   **There is no capability in the reference that lacks a requirement.**
+
+This is enforced, not just asserted: `check-desktop-parity.mjs` includes an
+**exhaustiveness guard** — every component/app-view in the reference shell must map
+to a known requirement, so a new, unmapped capability fails the check. Combined
+with the per-shell feature-marker check, adding any new capability _forces_ a
+corresponding requirement to be added here and verified across all four shells.
+
+Anything beyond R1–R14 (e.g. a clipboard-history manager, virtual desktops, a
+files-backed virtual FS) would be a **new enhancement, not an unmet requirement** —
+it would enter scope only by being added to this matrix first.

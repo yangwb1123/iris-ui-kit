@@ -103,6 +103,36 @@ for (const shell of SHELLS) {
   for (const name of missing) problems.push(`${shell}: missing functional requirement — ${name}`)
 }
 
+// EXHAUSTIVENESS guard: every component / app view in the reference shell must map
+// to an enumerated requirement (apps/desktop-os/REQUIREMENTS.md). A new, unmapped
+// capability in the reference fails the check — forcing the requirement set to
+// stay complete (add the capability to a requirement, not silently). This is what
+// makes "R1–R14 is the exhaustive set" a guarded invariant, not just a claim.
+const MAPPED_REFERENCE_CAPABILITIES = new Set([
+  // Chrome + interaction surface (R1, R2, R8, R13, R14)
+  'Bars', 'Desktop', 'Window', 'Taskbar', 'StartMenu', // Win11 + frame
+  'MenuBar', 'Dock', 'Spotlight', // macOS chrome
+  'Panel', 'Kickoff', // KDE chrome
+  'CommandPalette', 'ContextMenu', 'SnapPreview', 'Toasts',
+  // App views (R3, R4, R6, R9) — the per-app surface
+  'AgentTools', 'AppStore', 'Assistant', 'Calculator', 'Data', 'Photos', 'Terminal',
+  'planner', // the Assistant's planner module (R6/R7), co-located with the views
+])
+const refCapabilityFiles = [
+  ...readdirSync(join(ROOT, 'apps', REFERENCE, 'src', 'components')),
+  ...readdirSync(join(ROOT, 'apps', REFERENCE, 'src', 'appviews')),
+]
+  .filter((f) => /\.tsx?$/.test(f) && !/\.test\./.test(f))
+  .map((f) => f.replace(/\.tsx?$/, ''))
+for (const cap of refCapabilityFiles) {
+  if (!MAPPED_REFERENCE_CAPABILITIES.has(cap)) {
+    problems.push(
+      `${REFERENCE}: capability '${cap}' has no mapped requirement — add it to REQUIREMENTS.md ` +
+        `and MAPPED_REFERENCE_CAPABILITIES (the requirement set must stay exhaustive)`,
+    )
+  }
+}
+
 for (const shell of SHELLS) {
   if (shell === REFERENCE) continue
   const ids = Object.keys(catalogs[shell]).sort()

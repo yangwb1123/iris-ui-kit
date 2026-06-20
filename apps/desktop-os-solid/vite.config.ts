@@ -9,8 +9,8 @@ const src = (name: string) =>
   )
 
 // `serve` (dev) aliases @iris-ui/* to source for instant HMR; `build`/`preview`
-// bundle the real published dist artifacts. The `@iris-ui/core/window` subpath
-// needs its own alias (listed BEFORE the bare `@iris-ui/core` alias) because the
+// bundle the real published dist artifacts. Each `@iris-ui/core/*` subpath needs
+// its OWN alias (listed BEFORE the bare `@iris-ui/core` alias) because the
 // bare-specifier alias maps to a file, not a directory.
 export default defineConfig(({ command }) => ({
   plugins: [solid()],
@@ -24,6 +24,12 @@ export default defineConfig(({ command }) => ({
           alias: {
             '@iris-ui/core/window': fileURLToPath(
               new URL('../../packages/core/src/window.ts', import.meta.url),
+            ),
+            '@iris-ui/core/profile': fileURLToPath(
+              new URL('../../packages/core/src/profile.ts', import.meta.url),
+            ),
+            '@iris-ui/core/commands': fileURLToPath(
+              new URL('../../packages/core/src/commands.ts', import.meta.url),
             ),
             '@iris-ui/core': src('core'),
             '@iris-ui/tokens': src('tokens'),

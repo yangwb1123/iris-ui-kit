@@ -1,21 +1,19 @@
 import { For, Show, createMemo, createSignal, type JSX } from 'solid-js'
-import { APPS } from './apps'
-import { useWm } from './wm'
+import { useApps, useLaunchApp } from './profile'
 
-/** App launcher / Start menu — search filters the app grid; click opens a window. */
+/** App launcher / Start menu — search filters the app grid; click launches an app. */
 export function StartMenu(props: { open: boolean; onClose: () => void }): JSX.Element {
-  const wm = useWm()
+  const apps = useApps()
+  const launchApp = useLaunchApp()
   const [query, setQuery] = createSignal('')
 
   const results = createMemo(() => {
     const q = query().trim().toLowerCase()
-    return q ? APPS.filter((a) => a.name.toLowerCase().includes(q)) : APPS
+    return q ? apps().filter((a) => a.name.toLowerCase().includes(q)) : apps()
   })
 
   const launch = (appId: string): void => {
-    const app = APPS.find((a) => a.id === appId)
-    if (!app) return
-    wm.open({ appId: app.id, title: app.name, rect: app.defaultSize })
+    launchApp(appId)
     props.onClose()
   }
 

@@ -1,12 +1,14 @@
 <script lang="ts">
-  import { APPS } from './apps'
   import { wm, useWmState } from './wm.svelte'
+  import { getManifest } from './catalog'
+  import { launchApp } from './profile.svelte'
   import Window from './Window.svelte'
   import Taskbar from './Taskbar.svelte'
   import StartMenu from './StartMenu.svelte'
+  import CommandPalette from './CommandPalette.svelte'
 
   /** Desktop shortcuts shown top-left; double-click opens the app. */
-  const SHORTCUTS = ['about', 'files', 'showcase', 'notepad']
+  const SHORTCUTS = ['about', 'appstore', 'files', 'showcase']
 
   const wmState = useWmState()
   const windows = $derived(wmState.value.windows)
@@ -14,16 +16,21 @@
   const ordered = $derived([...windows].sort((a, b) => a.z - b.z))
 
   let launcherOpen = $state(false)
+  let paletteOpen = $state(false)
 
   function open(appId: string) {
-    const app = APPS.find((a) => a.id === appId)
-    if (app) wm.open({ appId: app.id, title: app.name, rect: app.defaultSize })
+    launchApp(appId)
   }
 
-  // Keyboard shortcuts: Alt+Tab cycles focus, Meta+Space toggles the launcher,
-  // Escape closes it.
+  // Keyboard shortcuts: Alt+Tab cycles focus, (Meta|Ctrl)+K toggles the command
+  // palette, Meta+Space toggles the launcher, Escape closes the open overlay.
   $effect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        paletteOpen = !paletteOpen
+        return
+      }
       if (e.altKey && e.key === 'Tab') {
         e.preventDefault()
         const cyclable = wm.ordered().filter((w) => w.state !== 'minimized')
@@ -39,9 +46,14 @@
         launcherOpen = !launcherOpen
         return
       }
-      if (e.key === 'Escape' && launcherOpen) {
-        e.preventDefault()
-        launcherOpen = false
+      if (e.key === 'Escape') {
+        if (paletteOpen) {
+          e.preventDefault()
+          paletteOpen = false
+        } else if (launcherOpen) {
+          e.preventDefault()
+          launcherOpen = false
+        }
       }
     }
     window.addEventListener('keydown', onKeyDown)
@@ -54,7 +66,7 @@
   <!-- Desktop icons -->
   <div class="icons">
     {#each SHORTCUTS as id (id)}
-      {@const app = APPS.find((a) => a.id === id)}
+      {@const app = getManifest(id)}
       {#if app}
         <button
           type="button"
@@ -88,6 +100,7 @@
 
   <StartMenu open={launcherOpen} onClose={() => (launcherOpen = false)} />
   <Taskbar {launcherOpen} onToggleLauncher={() => (launcherOpen = !launcherOpen)} />
+  <CommandPalette open={paletteOpen} onClose={() => (paletteOpen = false)} />
 </div>
 
 <style>

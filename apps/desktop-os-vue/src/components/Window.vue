@@ -7,9 +7,10 @@ import {
   type IrisMovablePosition,
   type IrisResizableSize,
 } from './window-types'
-import { getApp } from '../apps'
+import { getManifest } from '../catalog'
 import { snapHintFor } from '../depth'
 import { wm, useWmState } from '../wm'
+import WindowBody from './WindowBody.vue'
 
 const props = defineProps<{ window: DesktopWindow }>()
 const emit = defineEmits<{ snapHint: [zone: SnapZone | null] }>()
@@ -19,7 +20,9 @@ const state = useWmState()
 const rect = computed(() => wm.displayRect(props.window))
 const focused = computed(() => wm.isFocused(props.window.id))
 const maximized = computed(() => props.window.state === 'maximized')
-const app = computed(() => getApp(props.window.appId))
+const app = computed(() => getManifest(props.window.appId))
+// iframe bodies own their own scrolling; component bodies scroll in the frame.
+const bodyOverflow = computed(() => (app.value?.kind === 'iframe' ? 'hidden' : 'auto'))
 
 // Play the open animation on the FIRST mount only.
 const firstMount = ref(true)
@@ -129,9 +132,8 @@ const frameStyle = computed(() => ({
             </button>
           </div>
         </div>
-        <div class="win-body" style="flex: 1; min-height: 0; overflow: auto">
-          <component :is="app.component" v-if="app" />
-          <div v-else style="padding: 16px">Unknown app: {{ window.appId }}</div>
+        <div class="win-body" :style="{ flex: 1, minHeight: 0, overflow: bodyOverflow }">
+          <WindowBody :app-id="window.appId" />
         </div>
       </div>
     </div>
@@ -203,9 +205,8 @@ const frameStyle = computed(() => ({
               </button>
             </div>
           </div>
-          <div class="win-body" style="flex: 1; min-height: 0; overflow: auto">
-            <component :is="app.component" v-if="app" />
-            <div v-else style="padding: 16px">Unknown app: {{ window.appId }}</div>
+          <div class="win-body" :style="{ flex: 1, minHeight: 0, overflow: bodyOverflow }">
+            <WindowBody :app-id="window.appId" />
           </div>
         </div>
       </IrisResizable>

@@ -1,9 +1,17 @@
 <script lang="ts">
   import { barInsets } from './os'
   import { wm } from './wm.svelte'
+  import { profile } from './profile.svelte'
   import Desktop from './Desktop.svelte'
 
   let rootEl: HTMLDivElement | undefined = $state()
+
+  // Load the user profile (installed apps + custom web apps + prefs) from storage
+  // once at startup. Hydration is async; the desktop renders immediately and the
+  // installed/custom apps appear in the launchers when it lands.
+  $effect(() => {
+    void profile.hydrate()
+  })
 
   // Reserve the taskbar and feed the remaining rectangle to the WM as its work
   // area (drives maximize + snap). Re-measured on resize via ResizeObserver.

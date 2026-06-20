@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onUnmounted, ref } from 'vue'
-import { getApp } from '../apps'
+import { getManifest } from '../catalog'
 import { wm, useWmState } from '../wm'
 
 defineProps<{ launcherOpen: boolean }>()
@@ -43,7 +43,7 @@ function onTask(id: string) {
         :class="{ 'task-btn--active': w.focused && w.state !== 'minimized' }"
         @pointerdown.stop="onTask(w.id)"
       >
-        <span style="font-size: 18px">{{ getApp(w.appId)?.icon }}</span>
+        <span style="font-size: 18px">{{ getManifest(w.appId)?.icon }}</span>
       </button>
     </div>
     <div class="taskbar-clock">

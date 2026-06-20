@@ -1,7 +1,7 @@
 import { Show, createMemo, type JSX } from 'solid-js'
 import { IrisMovable, IrisResizable } from '@iris-ui/solid'
 import { type DesktopWindow } from '@iris-ui/core/window'
-import { getApp } from './apps'
+import { getManifest } from './catalog'
 import { useWm, useWmState } from './wm'
 
 /** A reactive accessor to one live window. */
@@ -47,7 +47,7 @@ function Controls(props: { window: WinAccessor }): JSX.Element {
 /** Title bar — app icon + title (drag handle, double-click maximizes) + controls on the right. */
 function Chrome(props: { window: WinAccessor }): JSX.Element {
   const wm = useWm()
-  const app = createMemo(() => getApp(props.window().appId))
+  const app = createMemo(() => getManifest(props.window().appId))
   return (
     <div
       class="win-titlebar"
@@ -94,15 +94,80 @@ function Chrome(props: { window: WinAccessor }): JSX.Element {
   )
 }
 
-function Body(props: { window: WinAccessor }): JSX.Element {
-  const app = createMemo(() => getApp(props.window().appId))
+/**
+ * Embedded (`kind:'iframe'`) app body. Always overlays an "Open in new tab"
+ * affordance: we can't reliably detect when a site refuses embedding (it just
+ * renders blank under X-Frame-Options / CSP `frame-ancestors`), so the escape
+ * hatch is always available.
+ */
+function IframeBody(props: { url: string }): JSX.Element {
   return (
-    <div class="win-body" style={{ flex: 1, 'min-height': 0, overflow: 'auto' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <iframe
+        src={props.url}
+        title={props.url}
+        sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
+        style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: '8px',
+          right: '8px',
+          bottom: '8px',
+          display: 'flex',
+          'align-items': 'center',
+          gap: '8px',
+          padding: '6px 10px',
+          'border-radius': '8px',
+          'font-size': '11px',
+          background: 'color-mix(in srgb, var(--os-window-bg) 88%, transparent)',
+          color: 'var(--os-window-fg)',
+          border: '1px solid rgba(127,127,127,0.3)',
+          'box-shadow': '0 4px 14px rgba(0,0,0,0.25)',
+          'backdrop-filter': 'var(--os-blur)',
+          '-webkit-backdrop-filter': 'var(--os-blur)',
+        }}
+      >
+        <span style={{ flex: 1, opacity: 0.75 }}>
+          If this stays blank, the site disallows embedding —
+        </span>
+        <button
+          type="button"
+          onClick={() => window.open(props.url, '_blank', 'noopener')}
+          style={{
+            border: '1px solid var(--os-accent)',
+            background: 'var(--os-accent)',
+            color: '#fff',
+            'border-radius': '6px',
+            padding: '4px 10px',
+            'font-size': '11px',
+            cursor: 'pointer',
+            'white-space': 'nowrap',
+          }}
+        >
+          Open in new tab
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function Body(props: { window: WinAccessor }): JSX.Element {
+  const app = createMemo(() => getManifest(props.window().appId))
+  // iframe bodies own their scroll; component bodies scroll the win-body.
+  const scroll = createMemo(() => (app()?.kind === 'iframe' ? 'hidden' : 'auto'))
+  return (
+    <div class="win-body" style={{ flex: 1, 'min-height': 0, overflow: scroll() }}>
       <Show
         when={app()}
         fallback={<div style={{ padding: '16px' }}>Unknown app: {props.window().appId}</div>}
       >
-        {(a) => a().render()}
+        {(a) => (
+          <Show when={a().kind === 'iframe' && a().url} fallback={a().render?.()}>
+            <IframeBody url={a().url!} />
+          </Show>
+        )}
       </Show>
     </div>
   )

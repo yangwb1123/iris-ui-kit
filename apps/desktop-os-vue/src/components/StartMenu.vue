@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { APPS } from '../apps'
-import { wm } from '../wm'
+import { useApps, launchApp } from '../profile'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 
+const apps = useApps()
 const query = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
 
@@ -21,13 +21,11 @@ watch(
 
 const q = computed(() => query.value.trim().toLowerCase())
 const results = computed(() =>
-  q.value ? APPS.filter((a) => a.name.toLowerCase().includes(q.value)) : APPS,
+  q.value ? apps.value.filter((a) => a.name.toLowerCase().includes(q.value)) : apps.value,
 )
 
 function launch(appId: string) {
-  const app = APPS.find((a) => a.id === appId)
-  if (!app) return
-  wm.open({ appId: app.id, title: app.name, rect: app.defaultSize })
+  launchApp(appId)
   emit('close')
 }
 </script>

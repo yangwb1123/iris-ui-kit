@@ -2,7 +2,8 @@
   import { IrisMovable, IrisResizable } from '@iris-ui/svelte'
   import type { DesktopWindow } from '@iris-ui/core/window'
   import { wm } from './wm.svelte'
-  import { getApp } from './apps'
+  import { getManifest } from './catalog'
+  import IframeApp from './appviews/IframeApp.svelte'
 
   interface Props {
     window: DesktopWindow
@@ -10,7 +11,7 @@
 
   let { window: w }: Props = $props()
 
-  const app = $derived(getApp(w.appId))
+  const app = $derived(getManifest(w.appId))
   const rect = $derived(wm.displayRect(w))
   const focused = $derived(wm.isFocused(w.id))
   const maximized = $derived(w.state === 'maximized')
@@ -92,9 +93,11 @@
 
     <!-- Body -->
     <div class="win-body" style="flex:1;min-height:0;overflow:auto">
-      {#if app}
+      {#if app?.kind === 'component' && app.component}
         {@const Body = app.component}
         <Body />
+      {:else if app?.kind === 'iframe'}
+        <IframeApp appId={w.appId} />
       {:else}
         <div style="padding:16px">Unknown app: {w.appId}</div>
       {/if}

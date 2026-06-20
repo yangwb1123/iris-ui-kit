@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { APPS } from './apps'
-  import { wm } from './wm.svelte'
+  import { getApps, useProfileState, launchApp } from './profile.svelte'
 
   interface Props {
     open: boolean
@@ -8,6 +7,9 @@
   }
 
   let { open, onClose }: Props = $props()
+
+  const pstate = useProfileState()
+  const apps = $derived(getApps(pstate.value))
 
   let query = $state('')
   let inputEl: HTMLInputElement | undefined = $state()
@@ -21,12 +23,10 @@
   })
 
   const q = $derived(query.trim().toLowerCase())
-  const results = $derived(q ? APPS.filter((a) => a.name.toLowerCase().includes(q)) : APPS)
+  const results = $derived(q ? apps.filter((a) => a.name.toLowerCase().includes(q)) : apps)
 
   function launch(appId: string) {
-    const app = APPS.find((a) => a.id === appId)
-    if (!app) return
-    wm.open({ appId: app.id, title: app.name, rect: app.defaultSize })
+    launchApp(appId)
     onClose()
   }
 </script>

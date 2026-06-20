@@ -1,14 +1,11 @@
 import { For, createSignal, type JSX } from 'solid-js'
 import { IrisButton, IrisBadge } from '@iris-ui/solid'
 
-export interface AppDef {
-  id: string
-  name: string
-  /** Emoji glyph used as the icon (keeps the demo dependency-free). */
-  icon: string
-  defaultSize?: { width: number; height: number }
-  render: () => JSX.Element
-}
+/**
+ * The built-in app VIEWS (window bodies). These are pure Solid components; the
+ * {@link catalog} wraps each in an {@link AppManifest} (`kind: 'component'`) so
+ * the shell launches + renders them the same way it does link / iframe apps.
+ */
 
 function Pane(props: { children: JSX.Element }): JSX.Element {
   return (
@@ -18,7 +15,7 @@ function Pane(props: { children: JSX.Element }): JSX.Element {
   )
 }
 
-function AboutApp(): JSX.Element {
+export function AboutApp(): JSX.Element {
   return (
     <Pane>
       <h2 style={{ margin: 0 }}>Iris Desktop OS — Solid</h2>
@@ -26,26 +23,26 @@ function AboutApp(): JSX.Element {
         A windowed desktop shell whose entire window logic — open, focus &amp; z-order, minimize,
         maximize/restore, move/resize, edge-snap — lives in the framework-agnostic{' '}
         <code>@iris-ui/core/window</code> (<code>createWindowManager</code>). This is the very same
-        engine the React demo drives — here it runs on <strong>SolidJS</strong>. The chrome is a
-        thin Solid renderer; drag uses <code>IrisMovable</code>, resize uses{' '}
-        <code>IrisResizable</code>.
+        engine the React demo drives — here it runs on <strong>SolidJS</strong>. The app catalog,
+        installable apps and ⌘K command palette are likewise framework-agnostic:{' '}
+        <code>@iris-ui/core/profile</code> + <code>@iris-ui/core/commands</code>.
       </p>
       <div style={{ display: 'flex', gap: '8px', 'flex-wrap': 'wrap' }}>
         <IrisBadge tone="primary" variant="subtle">
           createWindowManager
         </IrisBadge>
         <IrisBadge tone="success" variant="subtle">
-          IrisMovable
+          createUserProfile
         </IrisBadge>
         <IrisBadge tone="success" variant="subtle">
-          IrisResizable
+          createCommandRegistry
         </IrisBadge>
       </div>
     </Pane>
   )
 }
 
-function NotepadApp(): JSX.Element {
+export function NotepadApp(): JSX.Element {
   const [text, setText] = createSignal('')
   return (
     <textarea
@@ -76,7 +73,7 @@ const FILES = [
   { name: 'wallpaper.png', kind: 'file', icon: '🖼️' },
 ]
 
-function FilesApp(): JSX.Element {
+export function FilesApp(): JSX.Element {
   return (
     <div style={{ padding: '12px', display: 'grid', gap: '4px' }}>
       <For each={FILES}>
@@ -103,7 +100,7 @@ function FilesApp(): JSX.Element {
   )
 }
 
-function ShowcaseApp(): JSX.Element {
+export function ShowcaseApp(): JSX.Element {
   return (
     <Pane>
       <p style={{ margin: 0 }}>
@@ -131,36 +128,3 @@ function ShowcaseApp(): JSX.Element {
     </Pane>
   )
 }
-
-export const APPS: AppDef[] = [
-  {
-    id: 'about',
-    name: 'About',
-    icon: 'ℹ️',
-    defaultSize: { width: 480, height: 380 },
-    render: () => <AboutApp />,
-  },
-  {
-    id: 'files',
-    name: 'Files',
-    icon: '📁',
-    defaultSize: { width: 520, height: 400 },
-    render: () => <FilesApp />,
-  },
-  {
-    id: 'notepad',
-    name: 'Notepad',
-    icon: '📝',
-    defaultSize: { width: 480, height: 360 },
-    render: () => <NotepadApp />,
-  },
-  {
-    id: 'showcase',
-    name: 'Iris Showcase',
-    icon: '🎛️',
-    defaultSize: { width: 460, height: 360 },
-    render: () => <ShowcaseApp />,
-  },
-]
-
-export const getApp = (appId: string): AppDef | undefined => APPS.find((a) => a.id === appId)

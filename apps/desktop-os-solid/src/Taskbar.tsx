@@ -1,5 +1,5 @@
 import { For, createSignal, onCleanup, type JSX } from 'solid-js'
-import { getApp } from './apps'
+import { getManifest } from './catalog'
 import { useWm, useWmState } from './wm'
 
 function Clock(): JSX.Element {
@@ -80,7 +80,7 @@ export function Taskbar(props: {
                   onTask(w.id)
                 }}
               >
-                <span style={{ 'font-size': '18px' }}>{getApp(w.appId)?.icon}</span>
+                <span style={{ 'font-size': '18px' }}>{getManifest(w.appId)?.icon}</span>
               </button>
             )
           }}

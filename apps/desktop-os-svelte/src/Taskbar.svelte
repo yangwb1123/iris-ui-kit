@@ -1,6 +1,6 @@
 <script lang="ts">
   import { wm, useWmState } from './wm.svelte'
-  import { getApp } from './apps'
+  import { getManifest } from './catalog'
 
   interface Props {
     launcherOpen: boolean
@@ -56,7 +56,7 @@
           onTask(w.id)
         }}
       >
-        <span style="font-size:18px">{getApp(w.appId)?.icon}</span>
+        <span style="font-size:18px">{getManifest(w.appId)?.icon}</span>
       </button>
     {/each}
   </div>

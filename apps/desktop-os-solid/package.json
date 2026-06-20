@@ -13,6 +13,7 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
     "@iris-ui/core": "workspace:*",
     "@iris-ui/solid": "workspace:*",
     "@iris-ui/tokens": "workspace:*",

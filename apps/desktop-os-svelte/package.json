@@ -13,6 +13,7 @@
     "clean": "rm -rf dist .turbo .svelte-kit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
     "@iris-ui/core": "workspace:*",
     "@iris-ui/svelte": "workspace:*",
     "@iris-ui/tokens": "workspace:*",

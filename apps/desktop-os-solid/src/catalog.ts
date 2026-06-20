@@ -1,6 +1,7 @@
 import { type JSX } from 'solid-js'
 import { AboutApp, FilesApp, NotepadApp, ShowcaseApp } from './apps'
 import { AppStoreApp } from './AppStore'
+import { AssistantApp } from './Assistant'
 
 /**
  * App-aggregation manifest. The desktop is no longer a fixed set of Solid panes:
@@ -58,6 +59,17 @@ export const CATALOG: AppManifest[] = [
     description: 'Browse and install apps into your profile.',
     defaultSize: { width: 640, height: 520 },
     render: () => AppStoreApp(),
+  },
+  {
+    id: 'assistant',
+    name: 'Assistant',
+    icon: '🤖',
+    kind: 'component',
+    builtin: true,
+    description:
+      'Drive the desktop in natural language (command-registry agent, optional Claude planner).',
+    defaultSize: { width: 460, height: 480 },
+    render: () => AssistantApp(),
   },
   {
     id: 'files',

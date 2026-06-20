@@ -22,6 +22,16 @@ import { getApps, launchApp } from './profile.svelte'
 export const registry: CommandRegistry = createCommandRegistry()
 
 /**
+ * The shared command registry — the Svelte counterpart of React's `useCommands()`
+ * (in `apps/desktop-os/src/commands-context.tsx`). The shell keeps ONE module
+ * singleton `registry`, so this is a thin accessor that lets app views (the
+ * Assistant) read the same live registry the ⌘K palette searches + runs.
+ */
+export function useCommands(): CommandRegistry {
+  return registry
+}
+
+/**
  * Build the live desktop `Command[]` from the current shell state — the set of
  * actions the ⌘K palette searches + runs. Three groups:
  *  - `Apps`   — "Open {name}" per currently-shown app (launch via the WM).

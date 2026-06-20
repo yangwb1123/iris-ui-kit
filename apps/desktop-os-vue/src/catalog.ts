@@ -9,6 +9,7 @@
  */
 import { markRaw, type Component } from 'vue'
 import About from './appviews/About.vue'
+import Assistant from './appviews/Assistant.vue'
 import Notepad from './appviews/Notepad.vue'
 import Files from './appviews/Files.vue'
 import Showcase from './appviews/Showcase.vue'
@@ -68,6 +69,17 @@ export const CATALOG: AppManifest[] = [
     description: 'Browse and install apps into your profile.',
     defaultSize: { width: 640, height: 500 },
     component: markRaw(AppStore),
+  },
+  {
+    id: 'assistant',
+    name: 'Assistant',
+    icon: '🤖',
+    kind: 'component',
+    builtin: true,
+    description:
+      'Drive the desktop in natural language (command-registry agent, optional Claude planner).',
+    defaultSize: { width: 460, height: 480 },
+    component: markRaw(Assistant),
   },
   {
     id: 'files',

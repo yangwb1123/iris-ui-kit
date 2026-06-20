@@ -12,8 +12,8 @@
     <code>IrisResizable</code>.
   </p>
   <p style="margin:0">
-    This is the <strong>same window manager</strong> the React demo drives — proving the core engine
-    runs unchanged on Svelte.
+    This is the <strong>same window manager</strong> the React demo drives — proving the core engine runs
+    unchanged on Svelte.
   </p>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <IrisBadge tone="primary" variant="subtle">createWindowManager</IrisBadge>

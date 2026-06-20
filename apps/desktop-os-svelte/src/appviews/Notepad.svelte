@@ -18,7 +18,9 @@
     outline: none;
     resize: none;
     padding: 16px;
-    font: 14px/1.6 ui-monospace, monospace;
+    font:
+      14px/1.6 ui-monospace,
+      monospace;
     background: transparent;
     color: var(--os-window-fg);
   }

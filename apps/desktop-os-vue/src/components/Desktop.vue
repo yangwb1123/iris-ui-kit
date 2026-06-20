@@ -15,6 +15,7 @@ import Launcher from './Launcher.vue'
 import CommandPalette from './CommandPalette.vue'
 import ContextMenu, { type MenuItem } from './ContextMenu.vue'
 import Toasts from './Toasts.vue'
+import Pager from './Pager.vue'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
 const SHORTCUTS = ['about', 'appstore', 'files', 'showcase', 'taskmgr']
@@ -47,11 +48,13 @@ function openMenu(e: MouseEvent) {
 useRegisterDesktopCommands()
 
 const shortcuts = computed(() => SHORTCUTS.map((id) => getManifest(id)).filter(Boolean))
-// Windows painted in ascending z-order. Depend on `state.windows` so this
-// recomputes on every manager mutation (open/focus/close/…).
+// Windows on the ACTIVE virtual desktop, painted in ascending z-order. Depends on
+// `state.windows` + `currentWorkspace` so it recomputes on every manager mutation
+// (open/focus/close/…) AND when switching desktops.
 const windows = computed(() => {
   void state.value.windows
-  return wm.ordered()
+  const cur = state.value.currentWorkspace
+  return wm.ordered().filter((w) => w.workspace === cur)
 })
 
 function open(appId: string) {
@@ -69,7 +72,9 @@ function onKeyDown(e: KeyboardEvent) {
   }
   if (e.altKey && e.key === 'Tab') {
     e.preventDefault()
-    const cyclable = wm.ordered().filter((w) => w.state !== 'minimized')
+    // Cycle focus among non-minimized windows on the active virtual desktop only.
+    const cur = wm.getState().currentWorkspace
+    const cyclable = wm.ordered().filter((w) => w.state !== 'minimized' && w.workspace === cur)
     if (cyclable.length === 0) return
     const focusedId = wm.getState().focusedId
     const idx = cyclable.findIndex((w) => w.id === focusedId)
@@ -124,6 +129,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
 
     <!-- Toast stack — newest notifications, above windows (top-right corner) -->
     <Toasts />
+
+    <!-- Virtual-desktop pager — top-center, above windows (hidden if 1 workspace) -->
+    <Pager />
 
     <!-- Empty-desktop hint when nothing is open -->
     <div v-if="state.windows.length === 0" class="desktop-hint">

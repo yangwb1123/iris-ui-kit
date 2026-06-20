@@ -120,64 +120,68 @@ export function Panel({ onToggleLauncher }: { onToggleLauncher: () => void }) {
       </button>
 
       <div style={{ display: 'flex', alignItems: 'stretch', gap: 4, flex: 1, overflow: 'hidden' }}>
-        {state.windows.map((w) => {
-          const active = w.focused && w.state !== 'minimized'
-          const minimized = w.state === 'minimized'
-          return (
-            <button
-              key={w.id}
-              type="button"
-              title={w.title}
-              onPointerDown={(e) => {
-                e.stopPropagation()
-                if (e.button === 2) return // handled by onContextMenu
-                setTaskMenu(null)
-                onTask(w.id)
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                setTrayOpen(false)
-                setTaskMenu({ id: w.id, x: e.currentTarget.offsetLeft })
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                maxWidth: 180,
-                padding: '0 12px',
-                border: 'none',
-                borderBottom: active ? '2px solid var(--os-accent)' : '2px solid transparent',
-                background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
-                color: 'inherit',
-                cursor: 'pointer',
-                opacity: minimized ? 0.6 : 1,
-                boxShadow: 'none',
-                transition: 'background 0.12s, box-shadow 0.12s',
-              }}
-              onMouseEnter={(e) => {
-                if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.07)'
-                e.currentTarget.style.boxShadow = hoverLine
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = active ? 'rgba(255,255,255,0.12)' : 'transparent'
-                e.currentTarget.style.boxShadow = 'none'
-              }}
-            >
-              <span style={{ fontSize: 16 }}>{getManifest(w.appId)?.icon}</span>
-              <span
+        {state.windows
+          .filter((w) => w.workspace === state.currentWorkspace)
+          .map((w) => {
+            const active = w.focused && w.state !== 'minimized'
+            const minimized = w.state === 'minimized'
+            return (
+              <button
+                key={w.id}
+                type="button"
+                title={w.title}
+                onPointerDown={(e) => {
+                  e.stopPropagation()
+                  if (e.button === 2) return // handled by onContextMenu
+                  setTaskMenu(null)
+                  onTask(w.id)
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setTrayOpen(false)
+                  setTaskMenu({ id: w.id, x: e.currentTarget.offsetLeft })
+                }}
                 style={{
-                  fontSize: 12,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  maxWidth: 180,
+                  padding: '0 12px',
+                  border: 'none',
+                  borderBottom: active ? '2px solid var(--os-accent)' : '2px solid transparent',
+                  background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  opacity: minimized ? 0.6 : 1,
+                  boxShadow: 'none',
+                  transition: 'background 0.12s, box-shadow 0.12s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.07)'
+                  e.currentTarget.style.boxShadow = hoverLine
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = active
+                    ? 'rgba(255,255,255,0.12)'
+                    : 'transparent'
+                  e.currentTarget.style.boxShadow = 'none'
                 }}
               >
-                {w.title}
-              </span>
-            </button>
-          )
-        })}
+                <span style={{ fontSize: 16 }}>{getManifest(w.appId)?.icon}</span>
+                <span
+                  style={{
+                    fontSize: 12,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {w.title}
+                </span>
+              </button>
+            )
+          })}
       </div>
 
       {/* System tray cluster — clicking toggles the quick-settings popup. */}

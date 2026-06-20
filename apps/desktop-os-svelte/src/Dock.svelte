@@ -28,15 +28,18 @@
   const pstate = useProfileState()
   const apps = $derived(getApps(pstate.value))
   const windows = $derived(wmState.value.windows)
+  const currentWorkspace = $derived(wmState.value.currentWorkspace)
+  // Only windows on the active virtual desktop count as "running" here.
+  const wsWindows = $derived(windows.filter((w) => w.workspace === currentWorkspace))
 
   const available = $derived(new Set(apps.map((a) => a.id)))
-  const running = $derived(new Set(windows.map((w) => w.appId)))
+  const running = $derived(new Set(wsWindows.map((w) => w.appId)))
 
   // Pinned apps that are actually available + any running app not already pinned.
   const items = $derived.by(() => {
     const ids = [
       ...PINNED.filter((id) => available.has(id)),
-      ...windows.map((w) => w.appId).filter((id) => !PINNED.includes(id)),
+      ...wsWindows.map((w) => w.appId).filter((id) => !PINNED.includes(id)),
     ]
     const seen = new Set<string>()
     return ids.filter((id) => (seen.has(id) ? false : (seen.add(id), true)))

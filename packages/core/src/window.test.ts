@@ -219,4 +219,55 @@ describe('session serialize / restore', () => {
     expect(restoreSession(wm, serializeSession(wm.getState()))).toEqual([])
     expect(wm.getState().windows).toHaveLength(0)
   })
+
+  it('round-trips the per-window workspace', () => {
+    const wm = createWindowManager({ workArea: AREA, workspaces: 3 })
+    wm.open({ appId: 'a', title: 'A' }) // ws 0
+    wm.setWorkspace(2)
+    wm.open({ appId: 'b', title: 'B' }) // ws 2
+    const session = serializeSession(wm.getState())
+    expect(session.find((e) => e.appId === 'b')!.workspace).toBe(2)
+    const wm2 = createWindowManager({ workArea: AREA, workspaces: 3 })
+    restoreSession(wm2, session)
+    expect(wm2.getState().windows.find((w) => w.appId === 'b')!.workspace).toBe(2)
+    expect(wm2.getState().windows.find((w) => w.appId === 'a')!.workspace).toBe(0)
+  })
+})
+
+describe('virtual desktops (workspaces)', () => {
+  const wsWm = () => createWindowManager({ workArea: AREA, workspaces: 3 })
+
+  it('defaults to 1 workspace; new windows land on the current desktop', () => {
+    const plain = make()
+    expect(plain.getState().workspaces).toBe(1)
+    expect(plain.getState().currentWorkspace).toBe(0)
+    const wm = wsWm()
+    const a = wm.open({ appId: 'a', title: 'A' })
+    expect(wm.getState().windows.find((w) => w.id === a)!.workspace).toBe(0)
+    wm.setWorkspace(1)
+    const b = wm.open({ appId: 'b', title: 'B' })
+    expect(wm.getState().windows.find((w) => w.id === b)!.workspace).toBe(1)
+    expect(wm.getState().currentWorkspace).toBe(1)
+  })
+
+  it('setWorkspace clamps and focuses the top window of the active desktop', () => {
+    const wm = wsWm()
+    const a = wm.open({ appId: 'a', title: 'A' }) // ws 0, focused
+    wm.setWorkspace(1) // empty desktop → no focus
+    expect(wm.getState().focusedId).toBeNull()
+    wm.setWorkspace(99) // clamps to 2 (max), still empty
+    expect(wm.getState().currentWorkspace).toBe(2)
+    wm.setWorkspace(0) // back to ws 0 → refocuses 'a'
+    expect(wm.getState().focusedId).toBe(a)
+  })
+
+  it('moveWindowToWorkspace moves a window and refocuses if it left the active desktop', () => {
+    const wm = wsWm()
+    const a = wm.open({ appId: 'a', title: 'A' })
+    const b = wm.open({ appId: 'b', title: 'B' }) // focused, ws 0
+    wm.moveWindowToWorkspace(b, 2)
+    expect(wm.getState().windows.find((w) => w.id === b)!.workspace).toBe(2)
+    // b was focused but moved off ws 0 → focus falls back to 'a'
+    expect(wm.getState().focusedId).toBe(a)
+  })
 })

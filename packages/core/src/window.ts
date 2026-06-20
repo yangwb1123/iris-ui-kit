@@ -56,6 +56,8 @@ export interface DesktopWindow<Meta = unknown> {
   minSize: WindowSize
   /** App-specific payload (icon id, component key, route, …). */
   meta: Meta
+  /** Virtual desktop (workspace) index this window lives on. */
+  workspace: number
   /** Internal: the state to return to when a minimized window is restored. */
   prevState: Exclude<WindowState, 'minimized'>
 }
@@ -67,6 +69,8 @@ export interface WindowManagerConfig {
   defaultSize?: WindowSize
   /** Cascade offset (px) applied per concurrently-open window. Default 28. */
   cascadeStep?: number
+  /** Number of virtual desktops (workspaces). Default 1 (workspaces disabled). */
+  workspaces?: number
 }
 
 export interface OpenWindowOptions<Meta = unknown> {
@@ -78,6 +82,8 @@ export interface OpenWindowOptions<Meta = unknown> {
   rect?: Partial<WindowRect>
   minSize?: Partial<WindowSize>
   meta?: Meta
+  /** Virtual desktop to place it on; defaults to the current workspace. */
+  workspace?: number
 }
 
 export interface WindowManagerState<Meta = unknown> {
@@ -85,6 +91,10 @@ export interface WindowManagerState<Meta = unknown> {
   windows: DesktopWindow<Meta>[]
   focusedId: string | null
   workArea: WindowRect
+  /** Number of virtual desktops. */
+  workspaces: number
+  /** The active virtual desktop; only its windows are shown. */
+  currentWorkspace: number
 }
 
 export interface WindowManager<Meta = unknown> {
@@ -109,6 +119,10 @@ export interface WindowManager<Meta = unknown> {
   /** Snap to an edge/quadrant/maximize/center, computed from the work area. */
   snap(id: string, zone: SnapZone): void
   setWorkArea(rect: WindowRect): void
+  /** Switch the active virtual desktop (clamped); focuses that desktop's top window. */
+  setWorkspace(index: number): void
+  /** Move a window to another virtual desktop (clamped). */
+  moveWindowToWorkspace(id: string, index: number): void
   /** Windows sorted by ascending z — the order to paint them. */
   ordered(): DesktopWindow<Meta>[]
   /** The geometry to actually render for a window (work area when maximized). */
@@ -190,6 +204,8 @@ export interface WindowSessionEntry<Meta = unknown> {
   state: WindowState
   minSize: WindowSize
   meta: Meta
+  /** Virtual desktop the window was on. */
+  workspace: number
   /** Whether this was the focused window. */
   focused: boolean
 }
@@ -214,6 +230,7 @@ export function serializeSession<Meta = unknown>(
       state: w.state,
       minSize: w.minSize,
       meta: w.meta,
+      workspace: w.workspace,
       focused: w.focused,
     }))
 }
@@ -238,6 +255,7 @@ export function restoreSession<Meta = unknown>(
       rect: e.rect,
       minSize: e.minSize,
       meta: e.meta,
+      workspace: e.workspace,
     })
     ids.push(id)
     if (e.state === 'maximized') wm.maximize(id)
@@ -253,6 +271,8 @@ export function createWindowManager<Meta = unknown>(
 ): WindowManager<Meta> {
   const cascadeStep = config.cascadeStep ?? 28
   const defaultSize = config.defaultSize ?? DEFAULT_SIZE
+  const workspaces = Math.max(1, config.workspaces ?? 1)
+  const clampWs = (n: number): number => Math.max(0, Math.min(Math.trunc(n), workspaces - 1))
   let zCounter = 0
   let openCount = 0
 
@@ -260,6 +280,8 @@ export function createWindowManager<Meta = unknown>(
     windows: [],
     focusedId: null,
     workArea: config.workArea ?? DEFAULT_AREA,
+    workspaces,
+    currentWorkspace: 0,
   })
 
   const find = (id: string): DesktopWindow<Meta> | undefined =>
@@ -284,15 +306,15 @@ export function createWindowManager<Meta = unknown>(
     }))
   }
 
-  /** Focus the top-most non-minimized window (after a close/minimize). */
+  /** Focus the top-most non-minimized window on the CURRENT workspace. */
   const focusTop = (): void => {
-    const candidates = store
-      .getState()
-      .windows.filter((w) => w.state !== 'minimized')
+    const s = store.getState()
+    const candidates = s.windows
+      .filter((w) => w.state !== 'minimized' && w.workspace === s.currentWorkspace)
       .sort((a, b) => b.z - a.z)
     const next = candidates[0]
     if (next) raise(next.id)
-    else store.setState((s) => ({ ...s, focusedId: null }))
+    else store.setState((st) => ({ ...st, focusedId: null }))
   }
 
   return {
@@ -336,6 +358,7 @@ export function createWindowManager<Meta = unknown>(
             focused: true,
             minSize,
             meta: (options.meta ?? undefined) as Meta,
+            workspace: clampWs(options.workspace ?? store.getState().currentWorkspace),
             prevState: 'normal',
           },
         ],
@@ -428,6 +451,23 @@ export function createWindowManager<Meta = unknown>(
         // Keep normal-state windows inside the new area.
         windows: s.windows.map((w) => ({ ...w, rect: clampRect(w.rect, rect, w.minSize) })),
       }))
+    },
+
+    setWorkspace(index) {
+      const next = clampWs(index)
+      if (next === store.getState().currentWorkspace) return
+      store.setState((s) => ({ ...s, currentWorkspace: next }))
+      focusTop() // focus the top window on the newly-active desktop (or clear focus)
+    },
+
+    moveWindowToWorkspace(id, index) {
+      const w = find(id)
+      if (!w) return
+      const ws = clampWs(index)
+      patch(id, (win) => ({ ...win, workspace: ws }))
+      // If we moved the focused window off the current desktop, refocus what's left.
+      const s = store.getState()
+      if (s.focusedId === id && ws !== s.currentWorkspace) focusTop()
     },
 
     ordered: () => [...store.getState().windows].sort((a, b) => a.z - b.z),

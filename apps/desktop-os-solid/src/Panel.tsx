@@ -130,7 +130,7 @@ export function Panel(props: { onToggleLauncher: () => void }): JSX.Element {
           overflow: 'hidden',
         }}
       >
-        <For each={state().windows}>
+        <For each={state().windows.filter((w) => w.workspace === state().currentWorkspace)}>
           {(w) => {
             const active = (): boolean => w.focused && w.state !== 'minimized'
             const minimized = (): boolean => w.state === 'minimized'

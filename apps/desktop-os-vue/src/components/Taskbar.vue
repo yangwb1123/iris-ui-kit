@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { getManifest } from '../catalog'
 import { wm, useWmState } from '../wm'
 
@@ -7,6 +7,11 @@ defineProps<{ launcherOpen: boolean }>()
 const emit = defineEmits<{ toggleLauncher: [] }>()
 
 const state = useWmState()
+
+// Only windows on the active virtual desktop appear as task buttons.
+const tasks = computed(() =>
+  state.value.windows.filter((w) => w.workspace === state.value.currentWorkspace),
+)
 
 // Clock — refreshed every 30s.
 const now = ref(new Date())
@@ -35,7 +40,7 @@ function onTask(id: string) {
         ⊞
       </button>
       <button
-        v-for="w in state.windows"
+        v-for="w in tasks"
         :key="w.id"
         type="button"
         :title="w.title"

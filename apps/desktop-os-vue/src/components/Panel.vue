@@ -28,6 +28,11 @@ const TOGGLES: Toggle[] = [
 
 const state = useWmState()
 
+// Only windows on the active virtual desktop appear as task buttons.
+const tasks = computed(() =>
+  state.value.windows.filter((w) => w.workspace === state.value.currentWorkspace),
+)
+
 // Clock — refreshed every 30s.
 const now = ref(new Date())
 const timer = setInterval(() => (now.value = new Date()), 1000 * 30)
@@ -114,7 +119,7 @@ function runTaskAction(run: () => void) {
     <!-- Left-aligned, labelled task buttons. -->
     <div class="kde-tasks">
       <button
-        v-for="w in state.windows"
+        v-for="w in tasks"
         :key="w.id"
         type="button"
         :title="w.title"

@@ -17,6 +17,7 @@
   import Kickoff from './Kickoff.svelte'
   import CommandPalette from './CommandPalette.svelte'
   import Toasts from './Toasts.svelte'
+  import Pager from './Pager.svelte'
 
   // The live OS skin drives the bar dispatch (the Svelte counterpart of React's
   // `Bars.tsx`): TopBar (MenuBar | none), BottomBar (Taskbar | Dock | Panel) and
@@ -30,8 +31,11 @@
 
   const wmState = useWmState()
   const windows = $derived(wmState.value.windows)
-  // Windows painted in ascending z-order.
-  const ordered = $derived([...windows].sort((a, b) => a.z - b.z))
+  const currentWorkspace = $derived(wmState.value.currentWorkspace)
+  // Windows on the active virtual desktop, painted in ascending z-order.
+  const ordered = $derived(
+    windows.filter((w) => w.workspace === currentWorkspace).sort((a, b) => a.z - b.z),
+  )
 
   let launcherOpen = $state(false)
   let paletteOpen = $state(false)
@@ -66,7 +70,9 @@
       }
       if (e.altKey && e.key === 'Tab') {
         e.preventDefault()
-        const cyclable = wm.ordered().filter((w) => w.state !== 'minimized')
+        // Next non-minimized window on the active desktop, by ascending z-order.
+        const cur = wm.getState().currentWorkspace
+        const cyclable = wm.ordered().filter((w) => w.state !== 'minimized' && w.workspace === cur)
         if (cyclable.length === 0) return
         const focusedId = wm.getState().focusedId
         const idx = cyclable.findIndex((w) => w.id === focusedId)
@@ -174,6 +180,9 @@
 
   <!-- Transient toast stack (above windows; full history lives in the center). -->
   <Toasts />
+
+  <!-- Virtual-desktop pager (top-center; hidden when there's a single workspace). -->
+  <Pager />
 </div>
 
 <style>

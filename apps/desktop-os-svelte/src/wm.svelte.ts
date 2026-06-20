@@ -10,7 +10,7 @@ import {
   type WindowManagerState,
 } from '@iris-ui/core/window'
 
-export const wm: WindowManager = createWindowManager()
+export const wm: WindowManager = createWindowManager({ workspaces: 4 })
 
 /**
  * Bridge the core store into Svelte runes: a reactive snapshot of the window

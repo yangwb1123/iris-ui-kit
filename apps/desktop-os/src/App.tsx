@@ -39,7 +39,7 @@ function knownSession(profile: Profile): WindowSession {
  * a new one. Renders synchronously — hydrate just updates prefs once it lands.
  */
 function Shell({ profile, hydrated }: { profile: Profile; hydrated: boolean }) {
-  const wm = React.useRef(createWindowManager()).current
+  const wm = React.useRef(createWindowManager({ workspaces: 4 })).current
   // Subscribe to the profile store so a hydrated/updated `skin` pref re-renders.
   const state = useProfileState()
   const skin = state.prefs.skin

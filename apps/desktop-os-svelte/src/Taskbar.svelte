@@ -11,6 +11,9 @@
 
   const wmState = useWmState()
   const windows = $derived(wmState.value.windows)
+  const currentWorkspace = $derived(wmState.value.currentWorkspace)
+  // Only windows on the active virtual desktop appear as task buttons.
+  const wsWindows = $derived(windows.filter((w) => w.workspace === currentWorkspace))
 
   // Live clock.
   let now = $state(new Date())
@@ -45,7 +48,7 @@
         onToggleLauncher()
       }}>⊞</button
     >
-    {#each windows as w (w.id)}
+    {#each wsWindows as w (w.id)}
       {@const active = w.focused && w.state !== 'minimized'}
       <button
         type="button"

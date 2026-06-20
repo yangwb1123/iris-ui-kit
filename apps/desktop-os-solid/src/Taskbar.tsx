@@ -67,7 +67,7 @@ export function Taskbar(props: {
         >
           ⊞
         </button>
-        <For each={state().windows}>
+        <For each={state().windows.filter((w) => w.workspace === state().currentWorkspace)}>
           {(w) => {
             const active = (): boolean => w.focused && w.state !== 'minimized'
             return (

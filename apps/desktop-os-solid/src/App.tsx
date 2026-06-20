@@ -119,8 +119,9 @@ function Shell(): JSX.Element {
 
 export function App(): JSX.Element {
   // ONE framework-agnostic window manager for the whole shell — the same engine
-  // the React desktop demo drives, proven here on Solid.
-  const wm = createWindowManager()
+  // the React desktop demo drives, proven here on Solid. Four virtual desktops
+  // (workspaces) so the Pager / next-prev commands have something to switch.
+  const wm = createWindowManager({ workspaces: 4 })
 
   // ONE user profile (installed apps + user-added web apps + the OS-skin pref),
   // persisted to localStorage. Hydration is async; the desktop renders

@@ -10,6 +10,7 @@ import { CommandPalette } from './CommandPalette'
 import { TopBar, BottomBar, Launcher } from './Bars'
 import { ContextMenu, type MenuItem } from './ContextMenu'
 import { Toasts } from './Toasts'
+import { Pager } from './Pager'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
 const SHORTCUTS = ['about', 'appstore', 'showcase', 'settings']
@@ -73,7 +74,8 @@ function DesktopInner() {
       if (e.altKey && e.key === 'Tab') {
         e.preventDefault()
         // Next non-minimized window by ascending z-order, wrapping around.
-        const cyclable = wm.ordered().filter((w) => w.state !== 'minimized')
+        const cur = wm.getState().currentWorkspace
+        const cyclable = wm.ordered().filter((w) => w.state !== 'minimized' && w.workspace === cur)
         if (cyclable.length === 0) return
         const focusedId = wm.getState().focusedId
         const idx = cyclable.findIndex((w) => w.id === focusedId)
@@ -145,10 +147,13 @@ function DesktopInner() {
       {/* Drag-to-edge snap preview — behind windows (z 0), above the wallpaper */}
       <SnapPreview zone={snapHint} />
 
-      {/* Windows (painted in z-order) */}
-      {wm.ordered().map((w) => (
-        <Window key={w.id} window={w} onSnapHint={setSnapHint} />
-      ))}
+      {/* Windows on the active virtual desktop (painted in z-order) */}
+      {wm
+        .ordered()
+        .filter((w) => w.workspace === state.currentWorkspace)
+        .map((w) => (
+          <Window key={w.id} window={w} onSnapHint={setSnapHint} />
+        ))}
 
       {/* Empty-desktop hint when nothing is open */}
       {state.windows.length === 0 && (
@@ -182,6 +187,7 @@ function DesktopInner() {
         <ContextMenu x={menu.x} y={menu.y} items={desktopMenuItems} onClose={() => setMenu(null)} />
       )}
       <Toasts />
+      <Pager />
     </div>
   )
 }

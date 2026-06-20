@@ -13,7 +13,7 @@ import {
 } from '@iris-ui/core/window'
 
 /** The single, app-wide window manager — the same engine the React demo uses. */
-export const wm: WindowManager = createWindowManager()
+export const wm: WindowManager = createWindowManager({ workspaces: 4 })
 
 // ONE module-level subscription bridges the core store into a Vue ref. Every
 // consumer shares it (no per-component subscribe), so there's nothing to dispose

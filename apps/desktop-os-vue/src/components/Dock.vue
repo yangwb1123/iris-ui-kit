@@ -23,14 +23,18 @@ const PAD = 10
 const state = useWmState()
 const apps = useApps()
 
-const running = computed(() => new Set(state.value.windows.map((w) => w.appId)))
+// Only windows on the active virtual desktop count as "running" here.
+const wsWindows = computed(() =>
+  state.value.windows.filter((w) => w.workspace === state.value.currentWorkspace),
+)
+const running = computed(() => new Set(wsWindows.value.map((w) => w.appId)))
 
 // Pinned apps that are actually available + any running app not already pinned.
 const items = computed(() => {
   const available = new Set(apps.value.map((a) => a.id))
   const ids = [
     ...PINNED.filter((id) => available.has(id)),
-    ...state.value.windows.map((w) => w.appId).filter((id) => !PINNED.includes(id)),
+    ...wsWindows.value.map((w) => w.appId).filter((id) => !PINNED.includes(id)),
   ]
   const seen = new Set<string>()
   return ids.filter((id) => (seen.has(id) ? false : (seen.add(id), true)))

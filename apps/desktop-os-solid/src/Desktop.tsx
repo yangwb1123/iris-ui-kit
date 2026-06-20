@@ -27,6 +27,7 @@ import { Spotlight } from './Spotlight'
 import { Kickoff } from './Kickoff'
 import { CommandPalette } from './CommandPalette'
 import { Toasts } from './Toasts'
+import { Pager } from './Pager'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
 const SHORTCUTS = ['about', 'appstore', 'files', 'notepad', 'showcase']
@@ -107,8 +108,13 @@ export function Desktop(): JSX.Element {
   // closing and raising windows re-renders the desktop. Keying the `<For>` by
   // stable id (not the immutable window object, which is replaced on every
   // store update) keeps each window's DOM + per-window state across reorders.
+  // Only windows on the active virtual desktop are painted; switching workspaces
+  // swaps the visible set.
   const orderedIds = createMemo(() =>
-    [...state().windows].sort((a, b) => a.z - b.z).map((w) => w.id),
+    [...state().windows]
+      .filter((w) => w.workspace === state().currentWorkspace)
+      .sort((a, b) => a.z - b.z)
+      .map((w) => w.id),
   )
 
   const shortcutApps = createMemo(() =>
@@ -135,7 +141,9 @@ export function Desktop(): JSX.Element {
       }
       if (e.altKey && e.key === 'Tab') {
         e.preventDefault()
-        const cyclable = wm.ordered().filter((w) => w.state !== 'minimized')
+        // Cycle focus only among non-minimized windows on the ACTIVE desktop.
+        const cur = wm.getState().currentWorkspace
+        const cyclable = wm.ordered().filter((w) => w.state !== 'minimized' && w.workspace === cur)
         if (cyclable.length === 0) return
         const focusedId = wm.getState().focusedId
         const idx = cyclable.findIndex((w) => w.id === focusedId)
@@ -252,6 +260,9 @@ export function Desktop(): JSX.Element {
           <ContextMenu x={m.x} y={m.y} items={desktopMenuItems()} onClose={() => setMenu(null)} />
         )}
       </Show>
+
+      {/* Virtual-desktop pager — top-center switcher (renders nothing at 1 ws). */}
+      <Pager />
     </div>
   )
 }

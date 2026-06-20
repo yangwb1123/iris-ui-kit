@@ -24,14 +24,18 @@ export function Dock(props: { onToggleLauncher: () => void }): JSX.Element {
   const apps = useApps()
   const launch = useLaunchApp()
 
-  const running = createMemo(() => new Set(state().windows.map((w) => w.appId)))
+  // Only windows on the ACTIVE virtual desktop count as "running" here.
+  const wsWindows = createMemo(() =>
+    state().windows.filter((w) => w.workspace === state().currentWorkspace),
+  )
+  const running = createMemo(() => new Set(wsWindows().map((w) => w.appId)))
   // Pinned apps that are actually available + any running app not already pinned.
   const items = createMemo<string[]>(() => {
     const available = new Set(apps().map((a) => a.id))
     const ids = [
       ...PINNED.filter((id) => available.has(id)),
-      ...state()
-        .windows.map((w) => w.appId)
+      ...wsWindows()
+        .map((w) => w.appId)
         .filter((id) => !PINNED.includes(id)),
     ]
     const seen = new Set<string>()

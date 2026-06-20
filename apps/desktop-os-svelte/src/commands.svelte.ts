@@ -138,6 +138,30 @@ export function buildDesktopCommands(
       run: () => launchApp('appstore'),
     },
     {
+      id: 'system:workspace:next',
+      title: 'Next desktop',
+      keywords: 'workspace virtual desktop next switch pager',
+      group: 'System',
+      icon: '🗗',
+      enabled: () => wm.getState().workspaces > 1,
+      run: () => {
+        const s = wm.getState()
+        wm.setWorkspace((s.currentWorkspace + 1) % s.workspaces)
+      },
+    },
+    {
+      id: 'system:workspace:prev',
+      title: 'Previous desktop',
+      keywords: 'workspace virtual desktop previous switch pager',
+      group: 'System',
+      icon: '🗗',
+      enabled: () => wm.getState().workspaces > 1,
+      run: () => {
+        const s = wm.getState()
+        wm.setWorkspace((s.currentWorkspace - 1 + s.workspaces) % s.workspaces)
+      },
+    },
+    {
       // A PARAMETERIZED command: the agent fills `query` from the request
       // (e.g. "search the web for otters"). Projected into the MCP tool schema
       // via Command.params; the ⌘K palette runs it arg-less (no-op).

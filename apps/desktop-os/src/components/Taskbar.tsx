@@ -68,23 +68,25 @@ export function Taskbar({
         >
           ⊞
         </button>
-        {state.windows.map((w) => {
-          const active = w.focused && w.state !== 'minimized'
-          return (
-            <button
-              key={w.id}
-              type="button"
-              title={w.title}
-              className={`task-btn${active ? ' task-btn--active' : ''}`}
-              onPointerDown={(e) => {
-                e.stopPropagation()
-                onTask(w.id)
-              }}
-            >
-              <span style={{ fontSize: 18 }}>{getManifest(w.appId)?.icon}</span>
-            </button>
-          )
-        })}
+        {state.windows
+          .filter((w) => w.workspace === state.currentWorkspace)
+          .map((w) => {
+            const active = w.focused && w.state !== 'minimized'
+            return (
+              <button
+                key={w.id}
+                type="button"
+                title={w.title}
+                className={`task-btn${active ? ' task-btn--active' : ''}`}
+                onPointerDown={(e) => {
+                  e.stopPropagation()
+                  onTask(w.id)
+                }}
+              >
+                <span style={{ fontSize: 18 }}>{getManifest(w.appId)?.icon}</span>
+              </button>
+            )
+          })}
       </div>
       <div
         style={{

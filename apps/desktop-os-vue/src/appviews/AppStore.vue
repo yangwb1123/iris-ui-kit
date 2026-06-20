@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { IrisButton, IrisBadge, IrisInput } from '@iris-ui/vue'
 import { CATALOG, INSTALLABLE_APPS, type AppManifest } from '../catalog'
+import { PERMISSION_META } from '../permissions'
 import {
   useProfile,
   useProfileState,
@@ -73,9 +74,11 @@ function submit() {
     <header class="store-head">
       <h2 style="margin: 0">App Store</h2>
       <p class="muted">
-        Install apps into your profile (persisted to this device). Link &amp; iframe apps aggregate
-        external services — most major sites block iframe embedding, so those open in a new tab
-        instead. Runs on the same <code>@iris-ui/core/profile</code> store as the React demo.
+        Install apps into your profile (persisted to this device). Each app declares the
+        <strong>permissions</strong> it requests — review them, then grant or revoke per app in
+        <em>Settings → Privacy &amp; permissions</em>. Link &amp; iframe apps aggregate external
+        services — most major sites block iframe embedding, so those open in a new tab instead. Runs
+        on the same <code>@iris-ui/core/profile</code> store as the React demo.
       </p>
     </header>
 
@@ -139,6 +142,22 @@ function submit() {
               <IrisBadge tone="primary" variant="subtle" size="sm">Yours</IrisBadge>
             </div>
             <p v-if="app.description" class="muted card-desc">{{ app.description }}</p>
+            <div
+              v-if="app.permissions?.length"
+              class="perm-badges"
+              aria-label="Requested permissions"
+            >
+              <span
+                v-for="perm in app.permissions"
+                :key="perm"
+                class="perm-badge"
+                :title="`${PERMISSION_META[perm].label} — ${PERMISSION_META[perm].description}`"
+              >
+                <IrisBadge tone="neutral" variant="outline" size="sm"
+                  >{{ PERMISSION_META[perm].icon }} {{ PERMISSION_META[perm].label }}</IrisBadge
+                >
+              </span>
+            </div>
             <div class="card-actions">
               <IrisButton variant="solid" @click="launchApp(app.id)">Open</IrisButton>
               <IrisButton variant="outline" @click="removeCustomApp(app.id)">Remove</IrisButton>
@@ -170,6 +189,22 @@ function submit() {
               }}</IrisBadge>
             </div>
             <p v-if="app.description" class="muted card-desc">{{ app.description }}</p>
+            <div
+              v-if="app.permissions?.length"
+              class="perm-badges"
+              aria-label="Requested permissions"
+            >
+              <span
+                v-for="perm in app.permissions"
+                :key="perm"
+                class="perm-badge"
+                :title="`${PERMISSION_META[perm].label} — ${PERMISSION_META[perm].description}`"
+              >
+                <IrisBadge tone="neutral" variant="outline" size="sm"
+                  >{{ PERMISSION_META[perm].icon }} {{ PERMISSION_META[perm].label }}</IrisBadge
+                >
+              </span>
+            </div>
             <div class="card-actions">
               <IrisBadge v-if="app.builtin" tone="neutral" variant="subtle" size="sm"
                 >Built-in</IrisBadge
@@ -287,6 +322,15 @@ function submit() {
 }
 .card-desc {
   margin: 0;
+}
+.perm-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.perm-badge {
+  cursor: help;
 }
 .card-actions {
   display: flex;

@@ -33,6 +33,20 @@ import Photos from './appviews/Photos.svelte'
  */
 export type AppKind = 'component' | 'link' | 'iframe' | 'remote'
 
+/**
+ * Capabilities an app may request. The desktop surfaces these as a transparent
+ * permission contract (App Store badges) the user grants/revokes per app
+ * (Settings → Privacy & permissions). Enforcement is advisory for this demo —
+ * the explicit, user-visible model is the point.
+ *
+ * - `storage`       — read/write data into the user profile.
+ * - `clipboard`     — read/write the system clipboard.
+ * - `notifications` — post desktop notifications.
+ * - `network`       — make external network requests / embed remote content.
+ * - `agent`         — drive the in-app AI agent on the user's behalf.
+ */
+export type Permission = 'storage' | 'clipboard' | 'notifications' | 'network' | 'agent'
+
 export interface AppManifest {
   id: string
   name: string
@@ -47,6 +61,8 @@ export interface AppManifest {
   url?: string
   /** Renderer component for `component` kind (the window body). */
   component?: Component
+  /** Capabilities the app requests; surfaced + granted per app. */
+  permissions?: Permission[]
   /** User-added web apps (aggregated by URL) carry this flag; they're removable. */
   custom?: boolean
 }
@@ -76,6 +92,7 @@ export const CATALOG: AppManifest[] = [
     description:
       'Drive the desktop in natural language (command-registry agent, optional Claude planner).',
     defaultSize: { width: 460, height: 480 },
+    permissions: ['agent'],
     component: Assistant,
   },
   {
@@ -86,6 +103,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'The MCP tools an external agent sees — invokable via runMcpTool.',
     defaultSize: { width: 480, height: 460 },
+    permissions: ['agent'],
     component: AgentTools,
   },
   {
@@ -96,6 +114,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'Browse and install apps into your profile.',
     defaultSize: { width: 640, height: 480 },
+    permissions: ['storage', 'network'],
     component: AppStore,
   },
   {
@@ -106,6 +125,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'A simple file browser.',
     defaultSize: { width: 520, height: 400 },
+    permissions: ['storage'],
     component: Files,
   },
   {
@@ -116,6 +136,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'Jot notes; state lives in the window.',
     defaultSize: { width: 480, height: 360 },
+    permissions: ['storage', 'clipboard'],
     component: Notepad,
   },
   {
@@ -126,6 +147,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'Real Iris components, OS-skinned.',
     defaultSize: { width: 460, height: 380 },
+    permissions: ['agent'],
     component: Showcase,
   },
   {
@@ -136,6 +158,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'Pick the desktop accent color (persisted).',
     defaultSize: { width: 440, height: 420 },
+    permissions: ['storage'],
     component: Settings,
   },
   {
@@ -156,6 +179,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'IrisTable in a managed window.',
     defaultSize: { width: 560, height: 420 },
+    permissions: ['storage', 'network'],
     component: Data,
   },
   {
@@ -176,6 +200,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'A faux in-window shell.',
     defaultSize: { width: 520, height: 360 },
+    permissions: ['agent', 'clipboard'],
     component: TerminalView,
   },
   {
@@ -186,6 +211,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'A small image gallery.',
     defaultSize: { width: 520, height: 420 },
+    permissions: ['storage'],
     component: Photos,
   },
 
@@ -197,6 +223,7 @@ export const CATALOG: AppManifest[] = [
     kind: 'link',
     description: 'Open github.com in a new tab.',
     url: 'https://github.com',
+    permissions: ['network'],
   },
   {
     id: 'wikipedia',
@@ -205,6 +232,7 @@ export const CATALOG: AppManifest[] = [
     kind: 'link',
     description: 'Open wikipedia.org in a new tab.',
     url: 'https://wikipedia.org',
+    permissions: ['network'],
   },
   {
     id: 'hackernews',
@@ -213,6 +241,7 @@ export const CATALOG: AppManifest[] = [
     kind: 'link',
     description: 'Open news.ycombinator.com in a new tab.',
     url: 'https://news.ycombinator.com',
+    permissions: ['network'],
   },
 
   // ── Installable IFRAME apps (embed in a window; may be blocked) ─────────────
@@ -224,6 +253,7 @@ export const CATALOG: AppManifest[] = [
     description: 'OpenStreetMap, embedded.',
     defaultSize: { width: 640, height: 480 },
     url: 'https://www.openstreetmap.org/export/embed.html?bbox=-0.2,51.4,0.0,51.6&layer=mapnik',
+    permissions: ['network'],
   },
   {
     id: 'example',
@@ -233,6 +263,7 @@ export const CATALOG: AppManifest[] = [
     description: 'example.com, embedded.',
     defaultSize: { width: 560, height: 420 },
     url: 'https://example.com',
+    permissions: ['network'],
   },
 
   // ── Installable REMOTE apps (ESM modules mounted at runtime from a URL) ──────
@@ -244,6 +275,7 @@ export const CATALOG: AppManifest[] = [
     description: 'A micro-frontend loaded at runtime from a URL.',
     defaultSize: { width: 360, height: 320 },
     url: '/remote-apps/clock.mjs',
+    permissions: ['network'],
   },
 ]
 

@@ -9,8 +9,9 @@
  * shared profile.
  */
 import { computed, onMounted } from 'vue'
-import { IrisBadge } from '@iris-ui/vue'
-import { useProfile, useProfileState } from '../profile'
+import { IrisBadge, IrisButton } from '@iris-ui/vue'
+import { useProfile, useProfileState, useApps } from '../profile'
+import { PERMISSION_META, useGrants } from '../permissions'
 
 const ACCENT_PREF = 'accent'
 
@@ -51,6 +52,12 @@ onMounted(() => {
   const saved = profileState.value.prefs[ACCENT_PREF] as string | undefined
   if (saved) applyAccent(saved)
 })
+
+// ── Privacy & permissions ───────────────────────────────────────────────────
+// Every surfaced app (built-in + installed + custom). Exposing them all keeps the
+// model honest and lets users tighten even built-ins. Mirrors React's Privacy UI.
+const apps = useApps()
+const { isGranted, grant, revoke } = useGrants()
 </script>
 
 <template>
@@ -76,6 +83,49 @@ onMounted(() => {
         <span class="swatch-label">{{ s.label }}</span>
         <IrisBadge v-if="accent === s.color" tone="primary" variant="solid">active</IrisBadge>
       </button>
+    </div>
+
+    <h3 style="margin: 0">Privacy &amp; permissions</h3>
+    <p style="margin: 0; opacity: 0.7">
+      Each app declares the capabilities it wants. Grant or revoke them per app — your choices
+      persist in your profile. (Enforcement is advisory in this demo; the transparent contract is
+      the point.)
+    </p>
+    <div class="perm-apps">
+      <div v-for="app in apps" :key="app.id" class="perm-app">
+        <div class="perm-app-head">
+          <span class="perm-app-icon">{{ app.icon }}</span>
+          <strong class="perm-app-name">{{ app.name }}</strong>
+          <IrisBadge v-if="app.custom" tone="primary" variant="subtle" size="sm">Yours</IrisBadge>
+        </div>
+        <span v-if="!app.permissions?.length" class="perm-none">No permissions requested.</span>
+        <div v-else class="perm-rows">
+          <div
+            v-for="perm in app.permissions"
+            :key="perm"
+            class="perm-row"
+            :title="PERMISSION_META[perm].description"
+          >
+            <span class="perm-row-icon" aria-hidden="true">{{ PERMISSION_META[perm].icon }}</span>
+            <span class="perm-row-text">
+              <strong>{{ PERMISSION_META[perm].label }}</strong>
+              <br />
+              <span class="perm-row-desc">{{ PERMISSION_META[perm].description }}</span>
+            </span>
+            <IrisBadge v-if="isGranted(app.id, perm)" tone="success" variant="subtle" size="sm"
+              >Granted</IrisBadge
+            >
+            <IrisBadge v-else tone="neutral" variant="subtle" size="sm">Blocked</IrisBadge>
+            <IrisButton
+              :variant="isGranted(app.id, perm) ? 'outline' : 'solid'"
+              size="sm"
+              @click="isGranted(app.id, perm) ? revoke(app.id, perm) : grant(app.id, perm)"
+            >
+              {{ isGranted(app.id, perm) ? 'Revoke' : 'Grant' }}
+            </IrisButton>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -118,5 +168,54 @@ onMounted(() => {
 .swatch-label {
   flex: 1;
   font-weight: 600;
+}
+.perm-apps {
+  display: grid;
+  gap: 10px;
+}
+.perm-app {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  background: color-mix(in srgb, var(--os-window-fg) 4%, transparent);
+}
+.perm-app-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.perm-app-icon {
+  font-size: 18px;
+}
+.perm-app-name {
+  font-size: 13px;
+  flex: 1;
+}
+.perm-none {
+  font-size: 12px;
+  opacity: 0.6;
+}
+.perm-rows {
+  display: grid;
+  gap: 6px;
+}
+.perm-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.perm-row-icon {
+  font-size: 15px;
+}
+.perm-row-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+}
+.perm-row-desc {
+  font-size: 11px;
+  opacity: 0.6;
 }
 </style>

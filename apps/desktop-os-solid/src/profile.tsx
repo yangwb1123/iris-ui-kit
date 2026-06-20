@@ -125,6 +125,7 @@ export function useCustomApps(): {
       url,
       description:
         input.kind === 'iframe' ? `Embeds ${url} in a window.` : `Opens ${url} in a new tab.`,
+      permissions: ['network'],
       custom: true,
       defaultSize: input.kind === 'iframe' ? { width: 640, height: 480 } : undefined,
     }

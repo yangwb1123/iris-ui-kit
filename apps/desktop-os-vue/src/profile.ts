@@ -15,7 +15,13 @@ import {
   type ProfileData,
   type UserProfile,
 } from '@iris-ui/core/profile'
-import { BUILTIN_APPS, getManifest, registerCustomApps, type AppManifest } from './catalog'
+import {
+  BUILTIN_APPS,
+  getManifest,
+  registerCustomApps,
+  type AppManifest,
+  type Permission,
+} from './catalog'
 import { wm } from './wm'
 
 /** The single, app-wide user profile — persisted to this device. */
@@ -118,6 +124,7 @@ export function addCustomApp(input: AddCustomAppInput): AppManifest {
     url,
     description:
       input.kind === 'iframe' ? `Embeds ${url} in a window.` : `Opens ${url} in a new tab.`,
+    permissions: ['network'],
     custom: true,
     defaultSize: input.kind === 'iframe' ? { width: 640, height: 480 } : undefined,
   }
@@ -126,12 +133,22 @@ export function addCustomApp(input: AddCustomAppInput): AppManifest {
   return manifest
 }
 
-/** Remove a user-added web app (also drops its install record). */
+const GRANTS_PREF = 'grants'
+
+/** Remove a user-added web app (also drops its install record + permission grants). */
 export function removeCustomApp(id: string): void {
   const current = readCustomApps(profile.getState())
   profile.setPref(
     CUSTOM_APPS_PREF,
     current.filter((m) => m.id !== id),
   )
+  // Drop any permission grants recorded for the removed app.
+  const grants = {
+    ...((profile.getState().prefs[GRANTS_PREF] as Record<string, Permission[]> | undefined) ?? {}),
+  }
+  if (grants[id]) {
+    delete grants[id]
+    profile.setPref(GRANTS_PREF, grants)
+  }
   if (profile.isInstalled(id)) profile.uninstall(id)
 }

@@ -9,7 +9,9 @@
    * it on mount so it survives a reload.
    */
   import { IrisButton, IrisBadge } from '@iris-ui/svelte'
-  import { profile } from '../profile.svelte'
+  import { profile, getApps, useProfileState } from '../profile.svelte'
+  import { PERMISSION_META, useGrants } from '../permissions.svelte'
+  import type { AppManifest } from '../catalog'
 
   const ACCENT_PREF = 'accent'
   /** Default mirrors `style.css`'s `--os-accent`. */
@@ -41,6 +43,13 @@
     accent = saved
     document.documentElement.style.setProperty('--os-accent', saved)
   })
+
+  // ── Privacy & permissions ───────────────────────────────────────────────────
+  // Surface every app the user can see (built-in + installed + custom). Exposing
+  // built-ins too keeps the model honest + lets users tighten even them.
+  const pstate = useProfileState()
+  const apps = $derived(getApps(pstate.value))
+  const grants = useGrants()
 </script>
 
 <div class="settings">
@@ -84,6 +93,61 @@
     <IrisButton variant="outline" size="sm" onclick={() => applyAccent(DEFAULT_ACCENT)}>
       Reset
     </IrisButton>
+  </div>
+
+  <!-- ── Privacy & permissions ─────────────────────────────────────────────── -->
+  <h3 class="heading">Privacy &amp; permissions</h3>
+  <p class="blurb">
+    Each app declares the capabilities it wants. Grant or revoke them per app — your choices persist
+    in your profile. (Enforcement is advisory in this demo; the transparent contract is the point.)
+  </p>
+
+  {#snippet appPermissions(app: AppManifest)}
+    <div class="perm-card">
+      <div class="perm-head">
+        <span style="font-size:18px">{app.icon}</span>
+        <strong style="font-size:13px;flex:1">{app.name}</strong>
+        {#if app.custom}
+          <IrisBadge tone="primary" variant="subtle" size="sm">Yours</IrisBadge>
+        {/if}
+      </div>
+      {#if (app.permissions ?? []).length === 0}
+        <span style="font-size:12px;opacity:.6">No permissions requested.</span>
+      {:else}
+        <div class="perm-list">
+          {#each app.permissions ?? [] as perm (perm)}
+            {@const meta = PERMISSION_META[perm]}
+            {@const granted = grants.isGranted(app.id, perm)}
+            <div class="perm-row" title={meta.description}>
+              <span style="font-size:15px" aria-hidden="true">{meta.icon}</span>
+              <span class="perm-text">
+                <strong style="font-size:12px">{meta.label}</strong>
+                <br />
+                <span style="font-size:11px;opacity:.6">{meta.description}</span>
+              </span>
+              {#if granted}
+                <IrisBadge tone="success" variant="subtle" size="sm">Granted</IrisBadge>
+              {:else}
+                <IrisBadge tone="neutral" variant="subtle" size="sm">Blocked</IrisBadge>
+              {/if}
+              <IrisButton
+                variant={granted ? 'outline' : 'solid'}
+                size="sm"
+                onclick={() => (granted ? grants.revoke(app.id, perm) : grants.grant(app.id, perm))}
+              >
+                {granted ? 'Revoke' : 'Grant'}
+              </IrisButton>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  {/snippet}
+
+  <div class="perm-apps">
+    {#each apps as app (app.id)}
+      {@render appPermissions(app)}
+    {/each}
   </div>
 </div>
 
@@ -158,5 +222,35 @@
     display: flex;
     align-items: center;
     gap: 10px;
+  }
+  .perm-apps {
+    display: grid;
+    gap: 10px;
+  }
+  .perm-card {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(127, 127, 127, 0.25);
+    background: color-mix(in srgb, var(--os-window-fg) 4%, transparent);
+  }
+  .perm-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .perm-list {
+    display: grid;
+    gap: 6px;
+  }
+  .perm-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .perm-text {
+    flex: 1;
+    min-width: 0;
   }
 </style>

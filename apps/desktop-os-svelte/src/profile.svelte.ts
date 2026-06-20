@@ -24,6 +24,8 @@ export const profile: UserProfile = createUserProfile({
 })
 
 const CUSTOM_APPS_PREF = 'customApps'
+/** Profile pref holding per-app permission grants (`Record<appId, Permission[]>`). */
+const GRANTS_PREF = 'grants'
 
 /**
  * Bridge the core profile store into Svelte runes: a reactive snapshot of the
@@ -108,6 +110,7 @@ export function addCustomApp(input: AddCustomAppInput): AppManifest {
     url,
     description:
       input.kind === 'iframe' ? `Embeds ${url} in a window.` : `Opens ${url} in a new tab.`,
+    permissions: ['network'],
     custom: true,
     defaultSize: input.kind === 'iframe' ? { width: 640, height: 480 } : undefined,
   }
@@ -116,12 +119,21 @@ export function addCustomApp(input: AddCustomAppInput): AppManifest {
   return manifest
 }
 
-/** Remove a user-added app (drops it from `customApps` + any install record). */
+/**
+ * Remove a user-added app (drops it from `customApps`, any per-app permission
+ * grants, and the install record).
+ */
 export function removeCustomApp(id: string): void {
   const current = profile.getPref<AppManifest[]>(CUSTOM_APPS_PREF) ?? []
   profile.setPref(
     CUSTOM_APPS_PREF,
     current.filter((m) => m.id !== id),
   )
+  // Drop any grants for the removed app so they don't linger in the profile.
+  const grants = { ...(profile.getPref<Record<string, unknown>>(GRANTS_PREF) ?? {}) }
+  if (grants[id]) {
+    delete grants[id]
+    profile.setPref(GRANTS_PREF, grants)
+  }
   if (profile.isInstalled(id)) profile.uninstall(id)
 }

@@ -15,6 +15,7 @@
     removeCustomApp,
     launchApp,
   } from '../profile.svelte'
+  import { PERMISSION_META } from '../permissions.svelte'
 
   const KIND_LABEL: Record<AppKind, string> = {
     component: 'Built-in',
@@ -66,8 +67,10 @@
   <header class="hdr">
     <h2 style="margin:0">App Store</h2>
     <p class="lede">
-      Install apps into your profile (persisted to this device). Link &amp; iframe apps aggregate
-      external services — most major sites block iframe embedding, so those open in a new tab.
+      Install apps into your profile (persisted to this device). Each app declares the
+      <strong>permissions</strong> it requests — review them, then grant or revoke per app in
+      <em>Settings → Privacy &amp; permissions</em>. Link &amp; iframe apps aggregate external
+      services — most major sites block iframe embedding, so those open in a new tab.
     </p>
   </header>
 
@@ -128,6 +131,23 @@
     </form>
   </section>
 
+  <!-- The capabilities an app requests, as small badges with hover tooltips. -->
+  {#snippet permissionBadges(app: AppManifest)}
+    {#if (app.permissions ?? []).length > 0}
+      <div class="perm-badges" aria-label="Requested permissions">
+        {#each app.permissions ?? [] as perm (perm)}
+          {@const meta = PERMISSION_META[perm]}
+          <span title={`${meta.label} — ${meta.description}`} style="cursor:help">
+            <IrisBadge tone="neutral" variant="outline" size="sm">
+              {meta.icon}
+              {meta.label}
+            </IrisBadge>
+          </span>
+        {/each}
+      </div>
+    {/if}
+  {/snippet}
+
   {#snippet appCard(app: AppManifest, onRemove?: (id: string) => void)}
     <div class="card">
       <div class="card-icon">{app.icon}</div>
@@ -144,6 +164,7 @@
         {#if app.description}
           <p style="margin:0;font-size:12px;opacity:.7">{app.description}</p>
         {/if}
+        {@render permissionBadges(app)}
         <div class="card-actions">
           {#if app.builtin}
             <IrisBadge tone="neutral" variant="subtle" size="sm">Built-in</IrisBadge>
@@ -260,6 +281,12 @@
   .card-actions {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+  }
+  .perm-badges {
+    display: flex;
+    gap: 6px;
     flex-wrap: wrap;
     margin-top: 2px;
   }

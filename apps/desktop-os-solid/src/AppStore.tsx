@@ -2,6 +2,7 @@ import { For, Show, createSignal, type JSX } from 'solid-js'
 import { IrisButton, IrisBadge, IrisInput } from '@iris-ui/solid'
 import { CATALOG, INSTALLABLE_APPS, type AppManifest } from './catalog'
 import { useProfile, useProfileState, useLaunchApp, useCustomApps } from './profile'
+import { PERMISSION_META } from './permissions'
 
 const KIND_LABEL: Record<AppManifest['kind'], string> = {
   component: 'Built-in',
@@ -22,6 +23,32 @@ function KindBadge(props: { kind: AppManifest['kind'] }): JSX.Element {
     <IrisBadge tone={KIND_TONE[props.kind]} variant="subtle" size="sm">
       {KIND_LABEL[props.kind]}
     </IrisBadge>
+  )
+}
+
+/** The capabilities an app requests, as small badges with hover tooltips. */
+function PermissionBadges(props: { app: AppManifest }): JSX.Element {
+  const perms = (): AppManifest['permissions'] => props.app.permissions ?? []
+  return (
+    <Show when={perms()!.length > 0}>
+      <div
+        style={{ display: 'flex', gap: '6px', 'flex-wrap': 'wrap', 'margin-top': '2px' }}
+        aria-label="Requested permissions"
+      >
+        <For each={perms()}>
+          {(perm) => {
+            const meta = PERMISSION_META[perm]
+            return (
+              <span title={`${meta.label} — ${meta.description}`} style={{ cursor: 'help' }}>
+                <IrisBadge tone="neutral" variant="outline" size="sm">
+                  {meta.icon} {meta.label}
+                </IrisBadge>
+              </span>
+            )
+          }}
+        </For>
+      </div>
+    </Show>
   )
 }
 
@@ -61,6 +88,7 @@ function AppCard(props: { app: AppManifest; onRemove?: (id: string) => void }): 
         <Show when={props.app.description}>
           <p style={{ margin: 0, 'font-size': '12px', opacity: 0.7 }}>{props.app.description}</p>
         </Show>
+        <PermissionBadges app={props.app} />
         <div
           style={{
             display: 'flex',

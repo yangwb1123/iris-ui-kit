@@ -23,8 +23,23 @@ import Photos from './appviews/Photos.vue'
 import Terminal from './appviews/Terminal.vue'
 
 /**
- * App-aggregation manifest. Mirrors the React `AppManifest` shape (minus the
- * permissions model the Vue shell doesn't carry).
+ * Capabilities an app may request. The desktop surfaces these as a transparent
+ * permission contract (App Store badges) the user grants/revokes per app
+ * (Settings → Privacy & permissions). Enforcement is advisory for this demo —
+ * the explicit, user-visible model is the point. The Vue twin of the React
+ * demo's `Permission`.
+ *
+ * - `storage`       — read/write data into the user profile.
+ * - `clipboard`     — read/write the system clipboard.
+ * - `notifications` — post desktop notifications.
+ * - `network`       — make external network requests / embed remote content.
+ * - `agent`         — drive the in-app AI agent on the user's behalf.
+ */
+export type Permission = 'storage' | 'clipboard' | 'notifications' | 'network' | 'agent'
+
+/**
+ * App-aggregation manifest. Mirrors the React `AppManifest` shape, including the
+ * permissions model.
  */
 export interface AppManifest {
   id: string
@@ -48,6 +63,8 @@ export interface AppManifest {
   url?: string
   /** Renderer component for `component` kind (the window body). */
   component?: Component
+  /** Capabilities the app requests; surfaced + granted per app. */
+  permissions?: Permission[]
   /** User-added web apps (aggregated by URL) carry this flag; they're removable. */
   custom?: boolean
 }
@@ -76,6 +93,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'Browse and install apps into your profile.',
     defaultSize: { width: 640, height: 500 },
+    permissions: ['storage', 'network'],
     component: markRaw(AppStore),
   },
   {
@@ -87,6 +105,7 @@ export const CATALOG: AppManifest[] = [
     description:
       'Drive the desktop in natural language (command-registry agent, optional Claude planner).',
     defaultSize: { width: 460, height: 480 },
+    permissions: ['agent'],
     component: markRaw(Assistant),
   },
   {
@@ -97,6 +116,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'The MCP tools an external agent sees — invokable via runMcpTool.',
     defaultSize: { width: 480, height: 460 },
+    permissions: ['agent'],
     component: markRaw(AgentTools),
   },
   {
@@ -107,6 +127,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'A simple file browser.',
     defaultSize: { width: 520, height: 400 },
+    permissions: ['storage'],
     component: markRaw(Files),
   },
   {
@@ -117,6 +138,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'Jot notes; state lives in the window.',
     defaultSize: { width: 480, height: 360 },
+    permissions: ['storage', 'clipboard'],
     component: markRaw(Notepad),
   },
   {
@@ -127,6 +149,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'Real Iris components, OS-skinned.',
     defaultSize: { width: 460, height: 400 },
+    permissions: ['agent'],
     component: markRaw(Showcase),
   },
   {
@@ -147,6 +170,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'Pick an accent color (persisted to your profile).',
     defaultSize: { width: 440, height: 420 },
+    permissions: ['storage'],
     component: markRaw(Settings),
   },
   {
@@ -157,6 +181,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'IrisTable in a managed window.',
     defaultSize: { width: 560, height: 420 },
+    permissions: ['storage', 'network'],
     component: markRaw(Data),
   },
   {
@@ -186,6 +211,7 @@ export const CATALOG: AppManifest[] = [
         render: () => h(Terminal, { appNames: CATALOG.map((m) => m.name) }),
       }),
     ),
+    permissions: ['agent', 'clipboard'],
   },
   {
     id: 'photos',
@@ -195,6 +221,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'A small image gallery.',
     defaultSize: { width: 520, height: 420 },
+    permissions: ['storage'],
     component: markRaw(Photos),
   },
 
@@ -206,6 +233,7 @@ export const CATALOG: AppManifest[] = [
     kind: 'link',
     description: 'Open github.com in a new tab.',
     url: 'https://github.com',
+    permissions: ['network'],
   },
   {
     id: 'wikipedia',
@@ -214,6 +242,7 @@ export const CATALOG: AppManifest[] = [
     kind: 'link',
     description: 'Open wikipedia.org in a new tab.',
     url: 'https://wikipedia.org',
+    permissions: ['network'],
   },
   {
     id: 'hackernews',
@@ -222,6 +251,7 @@ export const CATALOG: AppManifest[] = [
     kind: 'link',
     description: 'Open news.ycombinator.com in a new tab.',
     url: 'https://news.ycombinator.com',
+    permissions: ['network'],
   },
 
   // ── Installable IFRAME apps (embed in a window; may be blocked) ─────────────
@@ -233,6 +263,7 @@ export const CATALOG: AppManifest[] = [
     description: 'OpenStreetMap, embedded.',
     defaultSize: { width: 640, height: 480 },
     url: 'https://www.openstreetmap.org/export/embed.html?bbox=-0.2,51.4,0.0,51.6&layer=mapnik',
+    permissions: ['network'],
   },
   {
     id: 'example',
@@ -242,6 +273,7 @@ export const CATALOG: AppManifest[] = [
     description: 'example.com, embedded.',
     defaultSize: { width: 560, height: 420 },
     url: 'https://example.com',
+    permissions: ['network'],
   },
 
   // ── Installable REMOTE apps (micro-frontends loaded at runtime) ─────────────
@@ -253,6 +285,7 @@ export const CATALOG: AppManifest[] = [
     description: 'A micro-frontend loaded at runtime from a URL.',
     defaultSize: { width: 360, height: 320 },
     url: '/remote-apps/clock.mjs',
+    permissions: ['network'],
   },
 ]
 

@@ -4,6 +4,7 @@
   import { wm } from './wm.svelte'
   import { getManifest } from './catalog'
   import IframeApp from './appviews/IframeApp.svelte'
+  import RemoteApp from './appviews/RemoteApp.svelte'
 
   interface Props {
     window: DesktopWindow
@@ -98,6 +99,8 @@
         <Body />
       {:else if app?.kind === 'iframe'}
         <IframeApp appId={w.appId} />
+      {:else if app?.kind === 'remote'}
+        <RemoteApp appId={w.appId} />
       {:else}
         <div style="padding:16px">Unknown app: {w.appId}</div>
       {/if}

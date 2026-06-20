@@ -28,8 +28,10 @@ import Photos from './appviews/Photos.svelte'
  * - `component` — an in-process Svelte view in its own managed window.
  * - `link`      — opens an external URL in a NEW BROWSER TAB (no window).
  * - `iframe`    — embeds an external URL inside a managed window via <iframe>.
+ * - `remote`    — a micro-frontend ESM module fetched + mounted at RUNTIME from
+ *                 `url` (module-federation; see {@link loadRemoteApp}).
  */
-export type AppKind = 'component' | 'link' | 'iframe'
+export type AppKind = 'component' | 'link' | 'iframe' | 'remote'
 
 export interface AppManifest {
   id: string
@@ -41,7 +43,7 @@ export interface AppManifest {
   defaultSize?: { width: number; height: number }
   /** Built-in apps ship with the OS and can't be uninstalled. */
   builtin?: boolean
-  /** Target URL for `link` / `iframe` kinds. */
+  /** Target URL for `link` / `iframe` / `remote` kinds. */
   url?: string
   /** Renderer component for `component` kind (the window body). */
   component?: Component
@@ -231,6 +233,17 @@ export const CATALOG: AppManifest[] = [
     description: 'example.com, embedded.',
     defaultSize: { width: 560, height: 420 },
     url: 'https://example.com',
+  },
+
+  // ── Installable REMOTE apps (ESM modules mounted at runtime from a URL) ──────
+  {
+    id: 'remoteclock',
+    name: 'Remote Clock',
+    icon: '🛰️',
+    kind: 'remote',
+    description: 'A micro-frontend loaded at runtime from a URL.',
+    defaultSize: { width: 360, height: 320 },
+    url: '/remote-apps/clock.mjs',
   },
 ]
 

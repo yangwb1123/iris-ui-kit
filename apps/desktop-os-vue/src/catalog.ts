@@ -23,8 +23,8 @@ import Photos from './appviews/Photos.vue'
 import Terminal from './appviews/Terminal.vue'
 
 /**
- * App-aggregation manifest. Mirrors the React `AppManifest` shape, minus the
- * `remote` kind / permissions model the Vue shell doesn't carry.
+ * App-aggregation manifest. Mirrors the React `AppManifest` shape (minus the
+ * permissions model the Vue shell doesn't carry).
  */
 export interface AppManifest {
   id: string
@@ -36,13 +36,15 @@ export interface AppManifest {
    * - `component` — an in-process Vue view in its own managed window.
    * - `link`      — opens an external URL in a NEW BROWSER TAB (no window).
    * - `iframe`    — embeds an external URL inside a managed window via <iframe>.
+   * - `remote`    — a micro-frontend ESM module fetched + evaluated AT RUNTIME
+   *                 from `url`, mounted into a managed window (module federation).
    */
-  kind: 'component' | 'link' | 'iframe'
+  kind: 'component' | 'link' | 'iframe' | 'remote'
   description?: string
   defaultSize?: { width: number; height: number }
   /** Built-in apps ship with the OS and can't be uninstalled. */
   builtin?: boolean
-  /** Target URL for `link` / `iframe` kinds. */
+  /** Target URL for `link` / `iframe` / `remote` kinds. */
   url?: string
   /** Renderer component for `component` kind (the window body). */
   component?: Component
@@ -240,6 +242,17 @@ export const CATALOG: AppManifest[] = [
     description: 'example.com, embedded.',
     defaultSize: { width: 560, height: 420 },
     url: 'https://example.com',
+  },
+
+  // ── Installable REMOTE apps (micro-frontends loaded at runtime) ─────────────
+  {
+    id: 'remoteclock',
+    name: 'Remote Clock',
+    icon: '🛰️',
+    kind: 'remote',
+    description: 'A micro-frontend loaded at runtime from a URL.',
+    defaultSize: { width: 360, height: 320 },
+    url: '/remote-apps/clock.mjs',
   },
 ]
 

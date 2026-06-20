@@ -1,7 +1,8 @@
-import { Show, createMemo, type JSX } from 'solid-js'
+import { Show, createMemo, createSignal, onCleanup, onMount, type JSX } from 'solid-js'
 import { IrisMovable, IrisResizable } from '@iris-ui/solid'
 import { type DesktopWindow } from '@iris-ui/core/window'
 import { getManifest } from './catalog'
+import { loadRemoteApp } from './remoteApp'
 import { useWm, useWmState } from './wm'
 
 /** A reactive accessor to one live window. */
@@ -153,10 +154,76 @@ function IframeBody(props: { url: string }): JSX.Element {
   )
 }
 
+/**
+ * Remote (`kind:'remote'`) app body. Dynamic-imports the module at `url` AT
+ * RUNTIME and hands its `mount` a host DOM node; the returned teardown runs on
+ * unmount. Shows a loading placeholder while importing and an error fallback if
+ * the import fails or the module has no `mount`.
+ */
+function RemoteBody(props: { url: string }): JSX.Element {
+  let host: HTMLDivElement | undefined
+  const [status, setStatus] = createSignal<'loading' | 'ready' | 'error'>('loading')
+  const [error, setError] = createSignal('')
+  let unmount: (() => void) | void
+
+  onMount(() => {
+    loadRemoteApp(props.url)
+      .then((mount) => {
+        if (!host) return
+        unmount = mount(host)
+        setStatus('ready')
+      })
+      .catch((e: unknown) => {
+        setError(e instanceof Error ? e.message : String(e))
+        setStatus('error')
+      })
+  })
+  onCleanup(() => unmount?.())
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div ref={host} style={{ width: '100%', height: '100%' }} />
+      <Show when={status() === 'loading'}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'grid',
+            'place-items': 'center',
+            'font-size': '13px',
+            opacity: 0.7,
+          }}
+        >
+          Loading remote app…
+        </div>
+      </Show>
+      <Show when={status() === 'error'}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'grid',
+            'place-items': 'center',
+            padding: '16px',
+            'text-align': 'center',
+            'font-size': '13px',
+            color: '#ff5f57',
+          }}
+        >
+          Couldn’t load remote app from {props.url}
+          {error() ? ` — ${error()}` : ''}
+        </div>
+      </Show>
+    </div>
+  )
+}
+
 function Body(props: { window: WinAccessor }): JSX.Element {
   const app = createMemo(() => getManifest(props.window().appId))
-  // iframe bodies own their scroll; component bodies scroll the win-body.
-  const scroll = createMemo(() => (app()?.kind === 'iframe' ? 'hidden' : 'auto'))
+  // iframe / remote bodies own their scroll; component bodies scroll the win-body.
+  const scroll = createMemo(() =>
+    app()?.kind === 'iframe' || app()?.kind === 'remote' ? 'hidden' : 'auto',
+  )
   return (
     <div class="win-body" style={{ flex: 1, 'min-height': 0, overflow: scroll() }}>
       <Show
@@ -164,8 +231,15 @@ function Body(props: { window: WinAccessor }): JSX.Element {
         fallback={<div style={{ padding: '16px' }}>Unknown app: {props.window().appId}</div>}
       >
         {(a) => (
-          <Show when={a().kind === 'iframe' && a().url} fallback={a().render?.()}>
-            <IframeBody url={a().url!} />
+          <Show
+            when={a().kind === 'remote' && a().url}
+            fallback={
+              <Show when={a().kind === 'iframe' && a().url} fallback={a().render?.()}>
+                <IframeBody url={a().url!} />
+              </Show>
+            }
+          >
+            <RemoteBody url={a().url!} />
           </Show>
         )}
       </Show>

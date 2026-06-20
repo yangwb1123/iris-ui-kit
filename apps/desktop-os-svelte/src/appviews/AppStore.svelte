@@ -20,11 +20,13 @@
     component: 'Built-in',
     link: 'Link',
     iframe: 'Embed',
+    remote: 'Remote',
   }
   const KIND_TONE: Record<AppKind, 'primary' | 'success' | 'warning'> = {
     component: 'primary',
     link: 'success',
     iframe: 'warning',
+    remote: 'warning',
   }
 
   const pstate = useProfileState()
@@ -82,7 +84,11 @@
       <div class="fields">
         <label class="field">
           Name
-          <IrisInput value={name} oninput={(e) => (name = e.currentTarget.value)} placeholder="My Service" />
+          <IrisInput
+            value={name}
+            oninput={(e) => (name = e.currentTarget.value)}
+            placeholder="My Service"
+          />
         </label>
         <label class="field">
           URL

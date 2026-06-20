@@ -1,6 +1,18 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createCommandRegistry, toToolName, type McpToolDef } from '@iris-ui/core/commands'
-import { createLlmPlanner, fuzzyPlanner, type ModelCall } from './planner'
+import { createAnthropicCall, createLlmPlanner, fuzzyPlanner, type ModelCall } from './planner'
+
+// Mock the Anthropic SDK so the transport can be tested without a key or network.
+// The dynamic `import('@anthropic-ai/sdk')` inside createAnthropicCall resolves to this.
+const create = vi.fn()
+vi.mock('@anthropic-ai/sdk', () => ({
+  default: class {
+    messages = { create }
+    constructor(_opts: unknown) {
+      void _opts
+    }
+  },
+}))
 
 function makeRegistry() {
   const reg = createCommandRegistry()
@@ -96,5 +108,58 @@ describe('createLlmPlanner', () => {
     const fallback = () => ({ commandId: 'win.close', say: 'fallback' })
     const plan = await createLlmPlanner(call, fallback)('anything', reg)
     expect(plan).toEqual({ commandId: 'win.close', say: 'fallback' })
+  })
+})
+
+describe('createAnthropicCall (SDK transport, mocked)', () => {
+  const tools: McpToolDef[] = [
+    {
+      name: 'system_search',
+      description: 'System: Search the web',
+      inputSchema: {
+        type: 'object',
+        properties: { query: { type: 'string' } },
+        required: ['query'],
+      },
+    },
+  ]
+
+  it('forces a single tool call and reads the tool name + filled args', async () => {
+    create.mockResolvedValueOnce({
+      content: [{ type: 'tool_use', name: 'system_search', input: { query: 'otters' } }],
+    })
+    const call = createAnthropicCall({ apiKey: 'sk-test', model: 'claude-opus-4-8' })
+    const choice = await call({ input: 'search the web for otters', tools, system: 'sys' })
+
+    expect(choice).toEqual({ toolName: 'system_search', args: { query: 'otters' } })
+    // The request forces exactly one tool and forwards the projected schema.
+    const req = create.mock.calls.at(-1)![0]
+    expect(req.model).toBe('claude-opus-4-8')
+    expect(req.tool_choice).toEqual({ type: 'any', disable_parallel_tool_use: true })
+    expect(req.tools[0]).toEqual({
+      name: 'system_search',
+      description: 'System: Search the web',
+      input_schema: tools[0]!.inputSchema,
+    })
+  })
+
+  it('returns toolName null when the model emits no tool_use block', async () => {
+    create.mockResolvedValueOnce({ content: [{ type: 'text', text: 'no tool' }] })
+    const call = createAnthropicCall({ apiKey: 'sk-test' })
+    expect(await call({ input: 'hi', tools, system: 'sys' })).toEqual({ toolName: null })
+  })
+
+  it('drives createLlmPlanner end-to-end (mock network) to a real command + args', async () => {
+    create.mockResolvedValueOnce({
+      content: [{ type: 'tool_use', name: toToolName('app.open.settings'), input: { q: 1 } }],
+    })
+    const { reg } = makeRegistry()
+    const planner = createLlmPlanner(createAnthropicCall({ apiKey: 'sk-test' }))
+    const plan = await planner('open the settings app', reg)
+    expect(plan).toEqual({
+      commandId: 'app.open.settings',
+      say: 'Running “Open Settings”.',
+      args: { q: 1 },
+    })
   })
 })

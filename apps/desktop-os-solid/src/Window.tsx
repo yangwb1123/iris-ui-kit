@@ -3,52 +3,128 @@ import { IrisMovable, IrisResizable } from '@iris-ui/solid'
 import { type DesktopWindow } from '@iris-ui/core/window'
 import { getManifest } from './catalog'
 import { loadRemoteApp } from './remoteApp'
+import { useOs } from './os-state'
 import { useWm, useWmState } from './wm'
 
 /** A reactive accessor to one live window. */
 type WinAccessor = () => DesktopWindow
 
-/** Window control buttons (minimize / maximize-restore / close) — Windows style, right-aligned. */
+/**
+ * Window control buttons (minimize / maximize-restore / close). Placement +
+ * style follow the live OS skin: macOS traffic-light dots (left) when
+ * `chrome.controlStyle === 'mac'`, otherwise Windows glyph buttons (right).
+ */
 function Controls(props: { window: WinAccessor }): JSX.Element {
   const wm = useWm()
+  const { chrome } = useOs()
   const stop = (fn: () => void) => (e: PointerEvent) => {
     e.stopPropagation()
     fn()
   }
+
+  const dot = (color: string, label: string, fn: () => void): JSX.Element => (
+    <button
+      type="button"
+      aria-label={label}
+      onPointerDown={stop(fn)}
+      style={{
+        width: '13px',
+        height: '13px',
+        'border-radius': '50%',
+        border: 'none',
+        background: color,
+        cursor: 'pointer',
+        padding: 0,
+      }}
+    />
+  )
+
   return (
-    <div style={{ display: 'flex', 'align-items': 'stretch' }}>
-      <button
-        type="button"
-        aria-label="Minimize"
-        onPointerDown={stop(() => wm.minimize(props.window().id))}
-        class="win-ctl"
-      >
-        –
-      </button>
-      <button
-        type="button"
-        aria-label="Maximize"
-        onPointerDown={stop(() => wm.toggleMaximize(props.window().id))}
-        class="win-ctl"
-      >
-        {props.window().state === 'maximized' ? '❒' : '☐'}
-      </button>
-      <button
-        type="button"
-        aria-label="Close"
-        onPointerDown={stop(() => wm.close(props.window().id))}
-        class="win-ctl win-ctl--close"
-      >
-        ✕
-      </button>
-    </div>
+    <Show
+      when={chrome().controlStyle === 'mac'}
+      fallback={
+        <div style={{ display: 'flex', 'align-items': 'stretch' }}>
+          <button
+            type="button"
+            aria-label="Minimize"
+            onPointerDown={stop(() => wm.minimize(props.window().id))}
+            class="win-ctl"
+          >
+            –
+          </button>
+          <button
+            type="button"
+            aria-label="Maximize"
+            onPointerDown={stop(() => wm.toggleMaximize(props.window().id))}
+            class="win-ctl"
+          >
+            {props.window().state === 'maximized' ? '❒' : '☐'}
+          </button>
+          <button
+            type="button"
+            aria-label="Close"
+            onPointerDown={stop(() => wm.close(props.window().id))}
+            class="win-ctl win-ctl--close"
+          >
+            ✕
+          </button>
+        </div>
+      }
+    >
+      {/* macOS traffic lights: close (red) · minimize (yellow) · maximize (green). */}
+      <div style={{ display: 'flex', gap: '8px', 'align-items': 'center' }}>
+        {dot('#ff5f57', 'Close', () => wm.close(props.window().id))}
+        {dot('#febc2e', 'Minimize', () => wm.minimize(props.window().id))}
+        {dot('#28c840', 'Maximize', () => wm.toggleMaximize(props.window().id))}
+      </div>
+    </Show>
   )
 }
 
-/** Title bar — app icon + title (drag handle, double-click maximizes) + controls on the right. */
+/**
+ * Title bar — app icon + title (drag handle, double-click maximizes) + window
+ * controls. Controls sit on the LEFT (macOS traffic lights) when
+ * `chrome.controls === 'left'`, otherwise on the right (Windows). Driven by the
+ * live skin, so switching OS moves the controls instantly.
+ */
 function Chrome(props: { window: WinAccessor }): JSX.Element {
   const wm = useWm()
+  const { chrome } = useOs()
   const app = createMemo(() => getManifest(props.window().appId))
+
+  const title = (
+    <div
+      data-iris-movable-handle
+      onDblClick={() => wm.toggleMaximize(props.window().id)}
+      style={{
+        flex: 1,
+        display: 'flex',
+        'align-items': 'center',
+        gap: '8px',
+        height: 'var(--os-titlebar-h)',
+        padding: '0 10px',
+        cursor: 'default',
+        'user-select': 'none',
+        'min-width': 0,
+      }}
+    >
+      <span aria-hidden style={{ 'font-size': '14px' }}>
+        {app()?.icon}
+      </span>
+      <span
+        style={{
+          'font-size': '13px',
+          'font-weight': 600,
+          'white-space': 'nowrap',
+          overflow: 'hidden',
+          'text-overflow': 'ellipsis',
+        }}
+      >
+        {props.window().title}
+      </span>
+    </div>
+  )
+
   return (
     <div
       class="win-titlebar"
@@ -60,37 +136,20 @@ function Chrome(props: { window: WinAccessor }): JSX.Element {
         'border-top-right-radius': 'inherit',
       }}
     >
-      <div
-        data-iris-movable-handle
-        onDblClick={() => wm.toggleMaximize(props.window().id)}
-        style={{
-          flex: 1,
-          display: 'flex',
-          'align-items': 'center',
-          gap: '8px',
-          height: 'var(--os-titlebar-h)',
-          padding: '0 10px',
-          cursor: 'default',
-          'user-select': 'none',
-          'min-width': 0,
-        }}
+      <Show
+        when={chrome().controls === 'left'}
+        fallback={
+          <>
+            {title}
+            <Controls window={props.window} />
+          </>
+        }
       >
-        <span aria-hidden style={{ 'font-size': '14px' }}>
-          {app()?.icon}
-        </span>
-        <span
-          style={{
-            'font-size': '13px',
-            'font-weight': 600,
-            'white-space': 'nowrap',
-            overflow: 'hidden',
-            'text-overflow': 'ellipsis',
-          }}
-        >
-          {props.window().title}
-        </span>
-      </div>
-      <Controls window={props.window} />
+        <div style={{ padding: '0 10px' }}>
+          <Controls window={props.window} />
+        </div>
+        {title}
+      </Show>
     </div>
   )
 }

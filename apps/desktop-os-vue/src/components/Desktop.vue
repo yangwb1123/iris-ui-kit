@@ -7,8 +7,9 @@ import { useRegisterDesktopCommands } from '../commands'
 import { wm, useWmState } from '../wm'
 import Window from './Window.vue'
 import SnapPreview from './SnapPreview.vue'
-import Taskbar from './Taskbar.vue'
-import StartMenu from './StartMenu.vue'
+import TopBar from './TopBar.vue'
+import BottomBar from './BottomBar.vue'
+import Launcher from './Launcher.vue'
 import CommandPalette from './CommandPalette.vue'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
@@ -76,6 +77,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
 
 <template>
   <div class="desktop" @pointerdown="launcherOpen = false">
+    <!-- Top bar (macOS menu bar; nothing on Win11) -->
+    <TopBar />
+
     <!-- Desktop icons -->
     <div class="desktop-icons">
       <button
@@ -109,8 +113,10 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
       </div>
     </div>
 
-    <StartMenu :open="launcherOpen" @close="launcherOpen = false" />
-    <Taskbar :launcher-open="launcherOpen" @toggle-launcher="launcherOpen = !launcherOpen" />
+    <!-- Launcher (Start menu on Win11, Spotlight on macOS) -->
+    <Launcher :open="launcherOpen" @close="launcherOpen = false" />
+    <!-- Bottom bar (Taskbar on Win11, Dock on macOS) -->
+    <BottomBar :launcher-open="launcherOpen" @toggle-launcher="launcherOpen = !launcherOpen" />
     <CommandPalette :open="paletteOpen" @close="paletteOpen = false" />
   </div>
 </template>

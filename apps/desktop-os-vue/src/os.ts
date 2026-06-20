@@ -6,10 +6,11 @@
  * and which launcher (start / spotlight / kickoff). Adding fidelity = extend
  * here + the per-OS component, never the window manager. Style via tokens.
  *
- * Ported verbatim from the React shell (`apps/desktop-os/src/os.ts`) — it is
- * pure, framework-agnostic TS. KDE tokens are carried so the seam is complete,
- * but `OS_ORDER` ships `win11` + `macos` only for now (KDE chrome is a later
- * round); the KDE entry is therefore unreachable from the UI until it's added.
+ * Copied VERBATIM from the React shell (`apps/desktop-os/src/os.ts`) — this is
+ * pure framework-agnostic TS, the proof that the chrome seam is portable. The
+ * ONLY difference: `OS_ORDER` lists just the skins this Vue build ships chrome
+ * for (KDE's tokens are present so the seam is complete, but Kickoff/Panel
+ * chrome isn't built yet, so KDE isn't offered).
  */
 
 export type OsId = 'win11' | 'macos' | 'kde'
@@ -129,10 +130,11 @@ const KDE: OsChrome = {
 }
 
 export const CHROMES: Record<OsId, OsChrome> = { win11: WIN11, macos: MACOS, kde: KDE }
+
 /**
- * Skins offered in the UI. KDE chrome is a later round, so it's intentionally
- * absent here even though `CHROMES.kde` exists (the seam is complete; only the
- * picker / commands are gated).
+ * The skins this Vue build offers in launchers / settings / commands. KDE's
+ * tokens exist in {@link CHROMES} (the seam is complete) but its Kickoff/Panel
+ * chrome isn't built yet, so it's deliberately excluded here for now.
  */
 export const OS_ORDER: OsId[] = ['win11', 'macos']
 

@@ -1,7 +1,9 @@
 import { For, Show, createMemo, createSignal, onMount, type JSX } from 'solid-js'
 import { IrisBadge, IrisButton } from '@iris-ui/solid'
 import { type AppManifest } from './catalog'
+import { OS_ORDER, CHROMES } from './os'
 import { useApps, useProfile } from './profile'
+import { useOs } from './os-state'
 import { PERMISSION_META, useGrants } from './permissions'
 
 /** Profile pref key the chosen accent persists under. */
@@ -31,6 +33,81 @@ const SWATCHES: Swatch[] = [
 /** Push the chosen accent onto the document root so the whole skin recolors. */
 function applyAccent(color: string): void {
   document.documentElement.style.setProperty(ACCENT_VAR, color)
+}
+
+/**
+ * The OS-skin picker. Switches the whole desktop chrome (titlebar controls, top
+ * menu bar, dock/taskbar, launcher, palette) between Windows 11 and macOS LIVE —
+ * the window manager + every open window stay exactly the same, only the look
+ * changes. The choice persists to the profile (`os` pref) via {@link useOs}.
+ */
+function OsSkinSettings(): JSX.Element {
+  const { os, setOs } = useOs()
+  return (
+    <>
+      <h3 style={{ margin: 0 }}>Appearance</h3>
+      <p style={{ margin: 0, opacity: 0.7 }}>
+        Switch the desktop skin. The window manager, bottom bar, and every open window stay exactly
+        the same — only the look changes. Your choice is saved to your profile and survives a
+        reload.
+      </p>
+      <div style={{ display: 'grid', gap: '10px' }}>
+        <For each={OS_ORDER}>
+          {(id) => {
+            const c = CHROMES[id]
+            const active = (): boolean => os() === id
+            return (
+              <button
+                type="button"
+                onClick={() => setOs(id)}
+                aria-pressed={active()}
+                style={{
+                  display: 'flex',
+                  'align-items': 'center',
+                  gap: '12px',
+                  padding: '12px',
+                  'border-radius': '10px',
+                  cursor: 'pointer',
+                  'text-align': 'left',
+                  border: active()
+                    ? '2px solid var(--os-accent)'
+                    : '1px solid rgba(127,127,127,0.3)',
+                  background: active()
+                    ? 'color-mix(in srgb, var(--os-accent) 12%, transparent)'
+                    : 'transparent',
+                  color: 'inherit',
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    width: '44px',
+                    height: '30px',
+                    'border-radius': '6px',
+                    background: c.vars['--os-wallpaper'],
+                    'flex-shrink': 0,
+                    border: '1px solid rgba(255,255,255,0.4)',
+                  }}
+                />
+                <span style={{ flex: 1 }}>
+                  <strong>{c.label}</strong>
+                  <br />
+                  <span style={{ 'font-size': '12px', opacity: 0.65 }}>
+                    controls {c.controls} · {c.bottomBar}
+                  </span>
+                </span>
+                <Show when={active()}>
+                  <IrisBadge tone="primary" variant="solid">
+                    active
+                  </IrisBadge>
+                </Show>
+              </button>
+            )
+          }}
+        </For>
+      </div>
+    </>
+  )
 }
 
 /**
@@ -219,13 +296,14 @@ function PrivacySettings(): JSX.Element {
 }
 
 /**
- * A GENUINE, portable Settings app: an accent-color picker plus a Privacy &
- * permissions panel. Both persist to the user profile (`accent` / `grants`
- * prefs). Self-contained; no OS-skin switching (this shell is Win11-only).
+ * A GENUINE, portable Settings app: an OS-skin picker (Windows 11 / macOS) + an
+ * accent-color picker + a Privacy & permissions panel. All persist to the user
+ * profile (`os` / `accent` / `grants` prefs) and re-skin / recolor live.
  */
 export function SettingsApp(): JSX.Element {
   return (
     <div style={{ padding: '20px', display: 'grid', gap: '14px', 'line-height': 1.6 }}>
+      <OsSkinSettings />
       <AppearanceSettings />
       <PrivacySettings />
     </div>

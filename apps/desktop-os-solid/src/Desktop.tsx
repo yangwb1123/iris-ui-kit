@@ -1,10 +1,14 @@
 import { For, Show, createMemo, createSignal, onCleanup, onMount, type JSX } from 'solid-js'
 import { useApps, useLaunchApp } from './profile'
+import { useOs } from './os-state'
 import { useWm, useWmState } from './wm'
 import { registerCommands, useDesktopCommands } from './commands'
 import { Window } from './Window'
 import { Taskbar } from './Taskbar'
 import { StartMenu } from './StartMenu'
+import { Dock } from './Dock'
+import { MenuBar } from './MenuBar'
+import { Spotlight } from './Spotlight'
 import { CommandPalette } from './CommandPalette'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
@@ -19,11 +23,46 @@ function CommandRegistration(): JSX.Element {
   return null
 }
 
+/** Optional global top bar — macOS menu bar; nothing on Windows. Per the live skin. */
+function TopBar(): JSX.Element {
+  const { chrome } = useOs()
+  return <Show when={chrome().topBar === 'menubar'}>{<MenuBar />}</Show>
+}
+
+/** The bottom bar — taskbar (Win) or dock (mac), per the live skin. */
+function BottomBar(props: { launcherOpen: boolean; onToggleLauncher: () => void }): JSX.Element {
+  const { chrome } = useOs()
+  return (
+    <Show
+      when={chrome().bottomBar === 'dock'}
+      fallback={
+        <Taskbar launcherOpen={props.launcherOpen} onToggleLauncher={props.onToggleLauncher} />
+      }
+    >
+      <Dock onToggleLauncher={props.onToggleLauncher} />
+    </Show>
+  )
+}
+
+/** The app launcher — Start menu (Win) or Spotlight (mac), per the live skin. */
+function Launcher(props: { open: boolean; onClose: () => void }): JSX.Element {
+  const { chrome } = useOs()
+  return (
+    <Show
+      when={chrome().launcher === 'spotlight'}
+      fallback={<StartMenu open={props.open} onClose={props.onClose} />}
+    >
+      <Spotlight open={props.open} onClose={props.onClose} />
+    </Show>
+  )
+}
+
 export function Desktop(): JSX.Element {
   const wm = useWm()
   const state = useWmState()
   const apps = useApps()
   const launch = useLaunchApp()
+  const { chrome } = useOs()
   const [launcherOpen, setLauncherOpen] = createSignal(false)
   // ⌘K / Ctrl+K command palette visibility.
   const [paletteOpen, setPaletteOpen] = createSignal(false)
@@ -40,6 +79,11 @@ export function Desktop(): JSX.Element {
     SHORTCUTS.map((id) => apps().find((a) => a.id === id)).filter((a): a is NonNullable<typeof a> =>
       Boolean(a),
     ),
+  )
+
+  // Push desktop icons below the macOS menu bar (none reserved on Windows).
+  const iconTop = createMemo(() =>
+    chrome().topBar === 'menubar' ? 'calc(var(--os-topbar-h) + 16px)' : '16px',
   )
 
   // Desktop keyboard shortcuts: (Meta|Ctrl)+K toggles the command palette,
@@ -91,11 +135,14 @@ export function Desktop(): JSX.Element {
     >
       <CommandRegistration />
 
+      {/* Optional global top bar (macOS menu bar). */}
+      <TopBar />
+
       {/* Desktop icons */}
       <div
         style={{
           position: 'absolute',
-          top: '16px',
+          top: iconTop(),
           left: '16px',
           display: 'grid',
           gap: '6px',
@@ -138,15 +185,19 @@ export function Desktop(): JSX.Element {
           <div>
             <div style={{ 'font-size': '22px', 'font-weight': 600 }}>Iris Desktop OS</div>
             <div style={{ opacity: 0.85, 'margin-top': '6px' }}>
-              Double-click an icon, press Start, or hit ⌘K — all driven by @iris-ui/core.
+              Double-click an icon, press Start, or hit ⌘K — all driven by @iris-ui/core. Try
+              Settings to switch skins.
             </div>
           </div>
         </div>
       </Show>
 
-      <StartMenu open={launcherOpen()} onClose={() => setLauncherOpen(false)} />
+      <Launcher open={launcherOpen()} onClose={() => setLauncherOpen(false)} />
       <CommandPalette open={paletteOpen()} onClose={() => setPaletteOpen(false)} />
-      <Taskbar launcherOpen={launcherOpen()} onToggleLauncher={() => setLauncherOpen((o) => !o)} />
+      <BottomBar
+        launcherOpen={launcherOpen()}
+        onToggleLauncher={() => setLauncherOpen((o) => !o)}
+      />
     </div>
   )
 }

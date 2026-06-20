@@ -18,6 +18,8 @@ import type { WindowManagerState } from '@iris-ui/core/window'
 import type { ProfileData } from '@iris-ui/core/profile'
 import { wm } from './wm.svelte'
 import { getApps, launchApp } from './profile.svelte'
+import { OS_ORDER, CHROMES } from './os'
+import { useOs } from './os-state.svelte'
 
 export const registry: CommandRegistry = createCommandRegistry()
 
@@ -37,12 +39,16 @@ export function useCommands(): CommandRegistry {
  *  - `Apps`   — "Open {name}" per currently-shown app (launch via the WM).
  *  - `Window` — act on the focused window (close / minimize / (un)maximize /
  *               snap); all gated on there being a focused window.
- *  - `System` — open the App Store.
+ *  - `System` — switch OS skin (per {@link OS_ORDER}) + open the App Store.
  */
 export function buildDesktopCommands(
   profileState: ProfileData,
   wmState: WindowManagerState,
 ): Command[] {
+  // The OS-skin store is a module singleton (rune getters + `setOs`), so we can
+  // read/switch it from here — no component context needed (mirrors React's
+  // `useOs()` inside `useDesktopCommands`).
+  const { setOs } = useOs()
   const hasFocus = (): boolean => wm.getState().focusedId != null
   const withFocus =
     (fn: (id: string) => void): (() => void) =>
@@ -113,6 +119,16 @@ export function buildDesktopCommands(
   ]
 
   const systemCommands: Command[] = [
+    ...OS_ORDER.map(
+      (id): Command => ({
+        id: `system:os:${id}`,
+        title: `Switch to ${CHROMES[id].label}`,
+        keywords: `${CHROMES[id].label} skin theme os switch`,
+        group: 'System',
+        icon: '🖥️',
+        run: () => setOs(id),
+      }),
+    ),
     {
       id: 'system:appstore',
       title: 'Open App Store',

@@ -1,6 +1,9 @@
-/* Windows-11 skin for the Vue desktop shell. The window LOGIC is the
+/* Chrome (Windows 11 + macOS) for the Vue desktop shell. The window LOGIC is the
    framework-agnostic @iris-ui/core/window manager; this file is pure chrome.
-   Everything visual is driven by the --os-* custom properties set in App.vue. */
+   Everything visual is driven by the --os-* custom properties set per OS skin
+   (CHROMES in os.ts → applied on the desktop root in App.vue). Win11-specific
+   chrome (taskbar/start) lives here; the macOS chrome (menu bar / dock /
+   spotlight / traffic-lights) is scoped inside its SFCs. */
 
 * {
   box-sizing: border-box;

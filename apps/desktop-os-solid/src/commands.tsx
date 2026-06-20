@@ -8,8 +8,10 @@ import {
   type JSX,
 } from 'solid-js'
 import { type Command, type CommandHit, type CommandRegistry } from '@iris-ui/core/commands'
+import { OS_ORDER, CHROMES } from './os'
 import { useWm, useWmState } from './wm'
 import { useApps, useLaunchApp } from './profile'
+import { useOs } from './os-state'
 
 /**
  * Solid glue around ONE `@iris-ui/core/commands` registry — the substrate behind
@@ -71,7 +73,7 @@ export function useCommandSearch(query: () => string): () => CommandHit[] {
  *  - `Apps`   — "Open {name}" per currently-shown app (launch via the WM).
  *  - `Window` — act on the focused window (close / minimize / (un)maximize /
  *               snap); all gated on there being a focused window.
- *  - `System` — open the App Store.
+ *  - `System` — switch OS skin (per {@link OS_ORDER}) + open the App Store.
  *
  * Returns a Solid accessor so the registry re-registers when the relevant state
  * actually changes (apps installed, focus / maximize state).
@@ -81,6 +83,7 @@ export function useDesktopCommands(): () => Command[] {
   const state = useWmState()
   const apps = useApps()
   const launch = useLaunchApp()
+  const { setOs } = useOs()
 
   const focused = createMemo(() => {
     const s = state()
@@ -155,6 +158,16 @@ export function useDesktopCommands(): () => Command[] {
     ]
 
     const systemCommands: Command[] = [
+      ...OS_ORDER.map(
+        (id): Command => ({
+          id: `system:os:${id}`,
+          title: `Switch to ${CHROMES[id].label}`,
+          keywords: `${CHROMES[id].label} skin theme os switch appearance`,
+          group: 'System',
+          icon: '🖥️',
+          run: () => setOs(id),
+        }),
+      ),
       {
         id: 'system:appstore',
         title: 'Open App Store',

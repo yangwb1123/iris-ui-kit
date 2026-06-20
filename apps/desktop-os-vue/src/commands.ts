@@ -13,6 +13,8 @@ import {
 } from '@iris-ui/core/commands'
 import { wm, useWmState } from './wm'
 import { useApps, launchApp } from './profile'
+import { useOs } from './os-state'
+import { OS_ORDER, CHROMES } from './os'
 
 /** The single, app-wide command registry. */
 export const registry: CommandRegistry = createCommandRegistry()
@@ -28,11 +30,13 @@ export function useCommands(): CommandRegistry {
  *  - `Apps`   — "Open {name}" per currently-shown app (launch via the WM).
  *  - `Window` — act on the focused window (close / minimize / (un)maximize);
  *               all gated on there being a focused window.
- *  - `System` — open the App Store.
+ *  - `System` — switch OS skin (per {@link OS_ORDER}) + open the App Store +
+ *               search the web.
  */
 export function useDesktopCommands(): ComputedRef<Command[]> {
   const apps = useApps()
   const state = useWmState()
+  const { setOs } = useOs()
 
   return computed<Command[]>(() => {
     const wmState = state.value
@@ -87,6 +91,16 @@ export function useDesktopCommands(): ComputedRef<Command[]> {
     ]
 
     const systemCommands: Command[] = [
+      ...OS_ORDER.map(
+        (id): Command => ({
+          id: `system:os:${id}`,
+          title: `Switch to ${CHROMES[id].label}`,
+          keywords: `${CHROMES[id].label} skin theme os switch windows macos`,
+          group: 'System',
+          icon: '🖥️',
+          run: () => setOs(id),
+        }),
+      ),
       {
         id: 'system:appstore',
         title: 'Open App Store',

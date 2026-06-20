@@ -116,6 +116,11 @@ body {
   outline: none;
 }
 
+/* macOS dock items — subtle hover lift (magnification is inline-styled). */
+.dock-item:hover {
+  filter: brightness(1.08);
+}
+
 /* Start-menu app tiles */
 .launch-tile {
   display: flex;

@@ -1,17 +1,24 @@
 <script lang="ts">
   /**
    * Settings — a genuine, portable, self-contained preference pane for the Svelte
-   * shell. (React's `SettingsView` switches OS skins, but this shell is Win11-only,
-   * so there's nothing to switch.) Instead this picks the desktop ACCENT COLOR:
-   * it applies live by writing `--os-accent` on the document element (the token
-   * the taskbar, command palette, and accent text all read) and persists the
-   * choice to the user profile under the `accent` pref, re-reading + re-applying
-   * it on mount so it survives a reload.
+   * shell. It mirrors React's `SettingsView`: an OS-SKIN picker (Windows 11 /
+   * macOS — switching re-skins the desktop live + persists the choice) plus a
+   * desktop ACCENT COLOR picker (applies live by writing `--os-accent` on the
+   * document element — the token the taskbar, command palette, and accent text all
+   * read — and persists under the `accent` pref, re-applying on mount so both
+   * survive a reload).
    */
   import { IrisButton, IrisBadge } from '@iris-ui/svelte'
   import { profile, getApps, useProfileState } from '../profile.svelte'
   import { PERMISSION_META, useGrants } from '../permissions.svelte'
+  import { OS_ORDER, CHROMES } from '../os'
+  import { useOs } from '../os-state.svelte'
   import type { AppManifest } from '../catalog'
+
+  // ── OS skin ──────────────────────────────────────────────────────────────────
+  // Switching the skin keeps the window manager, taskbar/dock, and every open
+  // window exactly the same — only the look (chrome) changes. Persisted via setOs.
+  const osCtx = useOs()
 
   const ACCENT_PREF = 'accent'
   /** Default mirrors `style.css`'s `--os-accent`. */
@@ -53,6 +60,37 @@
 </script>
 
 <div class="settings">
+  <h3 class="heading">Appearance</h3>
+  <p class="blurb">
+    Switch the desktop skin. The window manager, taskbar, and every open window stay exactly the
+    same — only the look changes. Your choice is saved to your profile and survives a reload.
+  </p>
+
+  <div class="os-picker">
+    {#each OS_ORDER as id (id)}
+      {@const c = CHROMES[id]}
+      {@const active = osCtx.os === id}
+      <button
+        type="button"
+        class="os-card"
+        class:os-card--active={active}
+        aria-pressed={active}
+        onclick={() => osCtx.setOs(id)}
+      >
+        <span aria-hidden="true" class="os-thumb" style="background: {c.vars['--os-wallpaper']}"
+        ></span>
+        <span class="os-meta">
+          <strong>{c.label}</strong>
+          <br />
+          <span style="font-size:12px;opacity:.65">controls {c.controls} · {c.bottomBar}</span>
+        </span>
+        {#if active}
+          <IrisBadge tone="primary" variant="solid">active</IrisBadge>
+        {/if}
+      </button>
+    {/each}
+  </div>
+
   <h3 class="heading">Accent color</h3>
   <p class="blurb">
     Pick the desktop accent. It applies instantly to the taskbar, command palette, and accent text
@@ -166,6 +204,37 @@
     margin: 0;
     opacity: 0.7;
     font-size: 13px;
+  }
+  .os-picker {
+    display: grid;
+    gap: 10px;
+  }
+  .os-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    border: 1px solid rgba(127, 127, 127, 0.3);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+  }
+  .os-card--active {
+    border: 2px solid var(--os-accent);
+    background: color-mix(in srgb, var(--os-accent) 12%, transparent);
+  }
+  .os-thumb {
+    width: 44px;
+    height: 30px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+  .os-meta {
+    flex: 1;
   }
   .swatches {
     display: grid;

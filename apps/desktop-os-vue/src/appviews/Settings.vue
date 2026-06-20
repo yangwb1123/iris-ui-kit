@@ -1,17 +1,24 @@
 <script setup lang="ts">
 /**
- * A genuine, portable Settings pane for the Win11-only Vue shell. The React demo
- * switches between three OS skins (which this build doesn't carry), so instead
- * this offers an ACCENT-COLOR picker: it applies the chosen color to the live
- * `--os-accent` CSS variable and persists it to the user profile (the `accent`
- * pref via `@iris-ui/core/profile`), so the choice survives a reload. On mount it
- * reads + re-applies the saved value. Self-contained — no shell wiring beyond the
- * shared profile.
+ * A genuine, portable Settings pane. Two appearance controls plus privacy:
+ *  - an OS-SKIN picker (Win11 / macOS) — switches the whole desktop chrome (top
+ *    menu bar, bottom dock, spotlight, traffic-lights) AND its token palette live,
+ *    persisted to the profile (`os` pref) so it survives a reload. Mirrors the
+ *    React demo's Appearance pane.
+ *  - an ACCENT-COLOR picker: applies the chosen color to the live `--os-accent`
+ *    CSS variable and persists it (the `accent` pref).
+ * Both read + re-apply on mount. Self-contained — no shell wiring beyond the
+ * shared profile + the `useOs` skin state.
  */
 import { computed, onMounted } from 'vue'
 import { IrisBadge, IrisButton } from '@iris-ui/vue'
 import { useProfile, useProfileState, useApps } from '../profile'
+import { useOs } from '../os-state'
+import { OS_ORDER, CHROMES } from '../os'
 import { PERMISSION_META, useGrants } from '../permissions'
+
+// ── OS skin ───────────────────────────────────────────────────────────────────
+const { os, setOs } = useOs()
 
 const ACCENT_PREF = 'accent'
 
@@ -62,12 +69,45 @@ const { isGranted, grant, revoke } = useGrants()
 
 <template>
   <div class="pane">
-    <h3 style="margin: 0">Appearance</h3>
+    <h3 style="margin: 0">OS skin</h3>
+    <p style="margin: 0; opacity: 0.7">
+      Switch the desktop skin. The window manager and every open window stay exactly the same — only
+      the chrome changes: macOS gets a top menu bar, a bottom dock, Spotlight, and left
+      traffic-lights; Windows 11 gets the taskbar + Start menu. Your choice is saved to your profile
+      and survives a reload.
+    </p>
+    <div class="swatches">
+      <button
+        v-for="id in OS_ORDER"
+        :key="id"
+        type="button"
+        class="swatch"
+        :class="{ active: os === id }"
+        :aria-pressed="os === id"
+        @click="setOs(id)"
+      >
+        <span
+          class="os-preview"
+          aria-hidden="true"
+          :style="{ background: CHROMES[id].vars['--os-wallpaper'] }"
+        />
+        <span class="swatch-label">
+          {{ CHROMES[id].label }}
+          <br />
+          <span style="font-size: 12px; opacity: 0.65; font-weight: 400">
+            controls {{ CHROMES[id].controls }} · {{ CHROMES[id].bottomBar }} ·
+            {{ CHROMES[id].launcher }}
+          </span>
+        </span>
+        <IrisBadge v-if="os === id" tone="primary" variant="solid">active</IrisBadge>
+      </button>
+    </div>
+
+    <h3 style="margin: 0">Accent color</h3>
     <p style="margin: 0; opacity: 0.7">
       Pick an accent color. It applies instantly to the live <code>--os-accent</code> CSS variable —
       the taskbar, buttons, and window highlights follow — and is saved to your profile, so it
-      survives a reload. (This Vue build ships a single Win11 skin; the React demo also switches the
-      whole OS look.)
+      survives a reload.
     </p>
     <div class="swatches">
       <button
@@ -164,6 +204,13 @@ const { isGranted, grant, revoke } = useGrants()
   border-radius: 50%;
   flex-shrink: 0;
   border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.os-preview {
+  width: 44px;
+  height: 30px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 .swatch-label {
   flex: 1;

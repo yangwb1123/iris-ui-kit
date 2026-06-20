@@ -25,6 +25,3 @@ wm.subscribe((next) => (wmState.value = next))
 export function useWmState(): Ref<WindowManagerState> {
   return wmState
 }
-
-/** Px reserved for the Windows-11 taskbar — drives the WM work area. */
-export const TASKBAR_H = 48

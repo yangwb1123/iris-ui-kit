@@ -1,11 +1,21 @@
 <script lang="ts">
   import { wm, useWmState } from './wm.svelte'
+  import { useOs } from './os-state.svelte'
   import { getManifest } from './catalog'
   import { launchApp } from './profile.svelte'
   import Window from './Window.svelte'
   import Taskbar from './Taskbar.svelte'
   import StartMenu from './StartMenu.svelte'
+  import MenuBar from './MenuBar.svelte'
+  import Dock from './Dock.svelte'
+  import Spotlight from './Spotlight.svelte'
   import CommandPalette from './CommandPalette.svelte'
+
+  // The live OS skin drives the bar dispatch (the Svelte counterpart of React's
+  // `Bars.tsx`): TopBar (MenuBar | none), BottomBar (Dock | Taskbar) and Launcher
+  // (Spotlight | StartMenu) are chosen from the active chrome's structural flags.
+  const osCtx = useOs()
+  const chrome = $derived(osCtx.chrome)
 
   /** Desktop shortcuts shown top-left; double-click opens the app. */
   const SHORTCUTS = ['about', 'appstore', 'files', 'showcase']
@@ -92,14 +102,32 @@
       <div>
         <div style="font-size:22px;font-weight:600">Iris Desktop OS</div>
         <div style="opacity:.85;margin-top:6px">
-          Double-click an icon, or press Start. The same window manager as the React demo, on Svelte.
+          Double-click an icon, or press Start. The same window manager as the React demo, on
+          Svelte.
         </div>
       </div>
     </div>
   {/if}
 
-  <StartMenu open={launcherOpen} onClose={() => (launcherOpen = false)} />
-  <Taskbar {launcherOpen} onToggleLauncher={() => (launcherOpen = !launcherOpen)} />
+  <!-- Launcher — Spotlight (mac) or Start menu (Win), per skin. -->
+  {#if chrome.launcher === 'spotlight'}
+    <Spotlight open={launcherOpen} onClose={() => (launcherOpen = false)} />
+  {:else}
+    <StartMenu open={launcherOpen} onClose={() => (launcherOpen = false)} />
+  {/if}
+
+  <!-- Top bar — macOS menu bar; nothing on Windows. -->
+  {#if chrome.topBar === 'menubar'}
+    <MenuBar />
+  {/if}
+
+  <!-- Bottom bar — Dock (mac) or Taskbar (Win), per skin. -->
+  {#if chrome.bottomBar === 'dock'}
+    <Dock onToggleLauncher={() => (launcherOpen = !launcherOpen)} />
+  {:else}
+    <Taskbar {launcherOpen} onToggleLauncher={() => (launcherOpen = !launcherOpen)} />
+  {/if}
+
   <CommandPalette open={paletteOpen} onClose={() => (paletteOpen = false)} />
 </div>
 

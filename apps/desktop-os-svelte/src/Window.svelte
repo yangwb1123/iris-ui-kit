@@ -2,6 +2,7 @@
   import { IrisMovable, IrisResizable } from '@iris-ui/svelte'
   import type { DesktopWindow } from '@iris-ui/core/window'
   import { wm } from './wm.svelte'
+  import { useOs } from './os-state.svelte'
   import { getManifest } from './catalog'
   import IframeApp from './appviews/IframeApp.svelte'
   import RemoteApp from './appviews/RemoteApp.svelte'
@@ -11,6 +12,12 @@
   }
 
   let { window: w }: Props = $props()
+
+  // The live OS skin drives where the window controls sit + their style: macOS
+  // traffic-lights on the LEFT (`controls === 'left'`) vs. Windows glyph buttons
+  // on the right. Mirrors React's `Window.tsx` Controls/Chrome split.
+  const osCtx = useOs()
+  const chrome = $derived(osCtx.chrome)
 
   const app = $derived(getManifest(w.appId))
   const rect = $derived(wm.displayRect(w))
@@ -33,6 +40,62 @@
     }
   }
 </script>
+
+{#snippet title()}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div data-iris-movable-handle ondblclick={() => wm.toggleMaximize(w.id)} class="titlebar-grip">
+    <span aria-hidden="true" style="font-size:14px">{app?.icon}</span>
+    <span class="titlebar-text">{w.title}</span>
+  </div>
+{/snippet}
+
+{#snippet controls()}
+  {#if chrome.controlStyle === 'mac'}
+    <!-- macOS traffic-lights: close / minimize / maximize on the left. -->
+    <div class="mac-ctls">
+      <button
+        type="button"
+        aria-label="Close"
+        class="mac-dot mac-dot--close"
+        onpointerdown={stop(() => wm.close(w.id))}
+      ></button>
+      <button
+        type="button"
+        aria-label="Minimize"
+        class="mac-dot mac-dot--min"
+        onpointerdown={stop(() => wm.minimize(w.id))}
+      ></button>
+      <button
+        type="button"
+        aria-label="Maximize"
+        class="mac-dot mac-dot--max"
+        onpointerdown={stop(() => wm.toggleMaximize(w.id))}
+      ></button>
+    </div>
+  {:else}
+    <!-- Windows glyph buttons on the right; close hovers red. -->
+    <div style="display:flex;align-items:stretch">
+      <button
+        type="button"
+        aria-label="Minimize"
+        class="win-ctl"
+        onpointerdown={stop(() => wm.minimize(w.id))}>–</button
+      >
+      <button
+        type="button"
+        aria-label="Maximize"
+        class="win-ctl"
+        onpointerdown={stop(() => wm.toggleMaximize(w.id))}>{maximized ? '❒' : '☐'}</button
+      >
+      <button
+        type="button"
+        aria-label="Close"
+        class="win-ctl win-ctl--close"
+        onpointerdown={stop(() => wm.close(w.id))}>✕</button
+      >
+    </div>
+  {/if}
+{/snippet}
 
 {#snippet frame()}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -61,35 +124,13 @@
       style:border-top-left-radius="inherit"
       style:border-top-right-radius="inherit"
     >
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        data-iris-movable-handle
-        ondblclick={() => wm.toggleMaximize(w.id)}
-        class="titlebar-grip"
-      >
-        <span aria-hidden="true" style="font-size:14px">{app?.icon}</span>
-        <span class="titlebar-text">{w.title}</span>
-      </div>
-      <div style="display:flex;align-items:stretch">
-        <button
-          type="button"
-          aria-label="Minimize"
-          class="win-ctl"
-          onpointerdown={stop(() => wm.minimize(w.id))}>–</button
-        >
-        <button
-          type="button"
-          aria-label="Maximize"
-          class="win-ctl"
-          onpointerdown={stop(() => wm.toggleMaximize(w.id))}>{maximized ? '❒' : '☐'}</button
-        >
-        <button
-          type="button"
-          aria-label="Close"
-          class="win-ctl win-ctl--close"
-          onpointerdown={stop(() => wm.close(w.id))}>✕</button
-        >
-      </div>
+      {#if chrome.controls === 'left'}
+        <div class="mac-ctl-wrap">{@render controls()}</div>
+        {@render title()}
+      {:else}
+        {@render title()}
+        {@render controls()}
+      {/if}
     </div>
 
     <!-- Body -->
@@ -160,5 +201,32 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  /* macOS traffic-light window controls (left of the titlebar). */
+  .mac-ctl-wrap {
+    padding: 0 10px;
+  }
+  .mac-ctls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .mac-dot {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+  .mac-dot--close {
+    background: #ff5f57;
+  }
+  .mac-dot--min {
+    background: #febc2e;
+  }
+  .mac-dot--max {
+    background: #28c840;
   }
 </style>

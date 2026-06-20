@@ -6,10 +6,9 @@
  * and which launcher (start / spotlight / kickoff). Adding fidelity = extend
  * here + the per-OS component, never the window manager. Style via tokens.
  *
- * Ported verbatim from the React shell (`apps/desktop-os/src/os.ts`) — it is
- * pure, framework-agnostic TS. KDE tokens are carried so the seam is complete,
- * but `OS_ORDER` ships `win11` + `macos` only for now (KDE chrome is a later
- * round); the KDE entry is therefore unreachable from the UI until it's added.
+ * Copied VERBATIM from the React desktop demo (`apps/desktop-os/src/os.ts`) —
+ * the SAME framework-agnostic seam, here driving the Solid shell. (KDE tokens are
+ * carried for parity but kept out of `OS_ORDER` until its chrome lands.)
  */
 
 export type OsId = 'win11' | 'macos' | 'kde'
@@ -129,11 +128,7 @@ const KDE: OsChrome = {
 }
 
 export const CHROMES: Record<OsId, OsChrome> = { win11: WIN11, macos: MACOS, kde: KDE }
-/**
- * Skins offered in the UI. KDE chrome is a later round, so it's intentionally
- * absent here even though `CHROMES.kde` exists (the seam is complete; only the
- * picker / commands are gated).
- */
+/** Skins offered in this shell. KDE chrome is a later round — set up, not built yet. */
 export const OS_ORDER: OsId[] = ['win11', 'macos']
 
 /** Reserved px for top + bottom bars (drives the WM work area). */

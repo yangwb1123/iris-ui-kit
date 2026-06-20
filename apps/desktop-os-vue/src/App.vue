@@ -1,60 +1,65 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
-import { wm, TASKBAR_H } from './wm'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { wm } from './wm'
+import { profile } from './profile'
+import { useOs } from './os-state'
+import { barInsets } from './os'
 import Desktop from './components/Desktop.vue'
 
 /**
- * The Windows-11 skin — applied as CSS custom properties on the root so the
- * whole shell (and the @iris-ui/vue components inside windows) reads `var(--os-*)`.
- * One look here; the React demo carries all three (Win11 / macOS / KDE).
+ * The desktop, parameterized by the active OS skin. The skin is a set of CSS
+ * custom properties (`--os-*`) applied on the root so the whole shell — and the
+ * @iris-ui/vue components inside windows — reads `var(--os-*)`. Switching the OS
+ * swaps the variables AND the structural chrome (top menu bar, bottom dock,
+ * spotlight, traffic-lights) live; mirrors the React shell, which carries all
+ * three (Win11 / macOS / KDE). This Vue build ships Win11 + macOS chrome.
  */
-const WIN11_VARS: Record<string, string> = {
-  '--os-accent': '#0a84ff',
-  '--os-window-bg': 'rgba(243, 243, 243, 0.92)',
-  '--os-window-fg': '#1b1b1b',
-  '--os-window-radius': '8px',
-  '--os-window-border': '1px solid rgba(255, 255, 255, 0.5)',
-  '--os-window-shadow': '0 16px 48px rgba(0, 0, 0, 0.36)',
-  '--os-titlebar-bg': 'rgba(255, 255, 255, 0.6)',
-  '--os-titlebar-h': '36px',
-  '--os-bar-bg': 'rgba(243, 243, 243, 0.72)',
-  '--os-bar-fg': '#1b1b1b',
-  '--os-bar-h': `${TASKBAR_H}px`,
-  '--os-blur': 'blur(28px) saturate(1.6)',
-  '--os-wallpaper': 'radial-gradient(140% 120% at 70% 10%, #4cc2ff 0%, #2b6cb0 42%, #11294f 100%)',
-  '--os-font': "'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif",
-}
+const { chrome } = useOs()
 
-const rootStyle: Record<string, string> = {
+// The root style: position + font + wallpaper, plus the active skin's vars
+// spread in so they cascade into the whole shell. Reactive to the OS choice.
+const rootStyle = computed<Record<string, string>>(() => ({
   position: 'fixed',
   inset: '0',
   overflow: 'hidden',
   fontFamily: 'var(--os-font)',
   background: 'var(--os-wallpaper)',
-  ...WIN11_VARS,
-}
+  ...chrome.value.vars,
+}))
 
 const rootRef = ref<HTMLElement | null>(null)
 let ro: ResizeObserver | undefined
 
-// Reserve the taskbar and feed the remaining rectangle to the WM as its work
-// area (drives maximize + snap). Re-measured on resize.
-onMounted(() => {
+// Reserve the top + bottom bars (from the active chrome's insets) and feed the
+// remaining rectangle to the WM as its work area (drives maximize + snap).
+// Re-measured on resize AND whenever the OS skin changes (different bar heights).
+function applyWorkArea() {
   const el = rootRef.value
   if (!el) return
-  const apply = () => {
-    const r = el.getBoundingClientRect()
-    wm.setWorkArea({
-      x: 0,
-      y: 0,
-      width: r.width,
-      height: Math.max(240, r.height - TASKBAR_H),
-    })
+  const { top, bottom } = barInsets(chrome.value)
+  const r = el.getBoundingClientRect()
+  wm.setWorkArea({
+    x: 0,
+    y: top,
+    width: r.width,
+    height: Math.max(240, r.height - top - bottom),
+  })
+}
+
+onMounted(() => {
+  // Restore the persisted profile (incl. the saved OS skin) — the desktop renders
+  // immediately and re-skins when hydrate lands. Mirrors the React shell.
+  void profile.hydrate()
+  applyWorkArea()
+  const el = rootRef.value
+  if (el) {
+    ro = new ResizeObserver(applyWorkArea)
+    ro.observe(el)
   }
-  apply()
-  ro = new ResizeObserver(apply)
-  ro.observe(el)
 })
+
+// Recompute the work area when the OS changes (top-bar appears, bar height differs).
+watch(chrome, applyWorkArea)
 
 onUnmounted(() => ro?.disconnect())
 </script>

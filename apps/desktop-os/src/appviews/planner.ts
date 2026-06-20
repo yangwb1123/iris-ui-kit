@@ -59,7 +59,9 @@ export function createAnthropicCall(opts: AnthropicCallOptions): ModelCall {
       messages: [{ role: 'user', content: input }],
     })
     for (const block of response.content) {
-      if (block.type === 'tool_use') return { toolName: block.name }
+      if (block.type === 'tool_use') {
+        return { toolName: block.name, args: block.input as Record<string, unknown> }
+      }
     }
     return { toolName: null }
   }

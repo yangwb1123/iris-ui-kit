@@ -81,6 +81,35 @@ describe('createCommandRegistry', () => {
     expect((await runMcpTool(r, 'nope')).ok).toBe(false)
   })
 
+  it('projects typed params into the MCP tool inputSchema', () => {
+    const r = createCommandRegistry()
+    r.register(
+      cmd('web:search', 'Search the web', () => {}, {
+        group: 'System',
+        params: {
+          query: { type: 'string', description: 'what to search for', required: true },
+          engine: { type: 'string', enum: ['ddg', 'google'] },
+        },
+      }),
+    )
+    const [tool] = toMcpTools(r)
+    expect(tool!.inputSchema.properties.query).toEqual({
+      type: 'string',
+      description: 'what to search for',
+    })
+    expect(tool!.inputSchema.properties.engine).toEqual({ type: 'string', enum: ['ddg', 'google'] })
+    expect(tool!.inputSchema.required).toEqual(['query'])
+  })
+
+  it('runMcpTool forwards args to the command run', async () => {
+    const r = createCommandRegistry()
+    let received: Record<string, unknown> | undefined
+    r.register(cmd('web:search', 'Search', (args) => void (received = args)))
+    const ok = await runMcpTool(r, 'web_search', { query: 'cats' })
+    expect(ok).toEqual({ ok: true, ran: 'web:search' })
+    expect(received).toEqual({ query: 'cats' })
+  })
+
   it('run invokes the command; disabled/missing are no-ops', async () => {
     const r = createCommandRegistry()
     const ran = vi.fn()
@@ -127,7 +156,17 @@ describe('agent planner', () => {
   it('createLlmPlanner passes through the model’s `say`', async () => {
     const call: ModelCall = async () => ({ toolName: toToolName('win:close'), say: 'Closing.' })
     const plan = await createLlmPlanner(call)('shut it', reg())
-    expect(plan).toEqual({ commandId: 'win:close', say: 'Closing.' })
+    expect(plan).toEqual({ commandId: 'win:close', say: 'Closing.', args: undefined })
+  })
+
+  it('createLlmPlanner carries the model-filled args into the PlanResult', async () => {
+    const call: ModelCall = async () => ({ toolName: toToolName('sys:macos'), args: { q: 'hi' } })
+    const plan = await createLlmPlanner(call)('do it', reg())
+    expect(plan).toEqual({
+      commandId: 'sys:macos',
+      say: 'Running “Switch to macOS”.',
+      args: { q: 'hi' },
+    })
   })
 
   it('createLlmPlanner falls back to fuzzy on no-tool / throw / unknown tool', async () => {

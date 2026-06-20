@@ -9,6 +9,19 @@ import { createStore, type Store } from './store'
  * "every capability is a registered Command." Off the core path (own subpath).
  */
 
+/**
+ * A typed parameter a command accepts. Projected into the MCP tool `inputSchema`
+ * ({@link toMcpTools}) so an agent/model can fill it, then handed to `run(args)`.
+ */
+export interface CommandParam {
+  type: 'string' | 'number' | 'boolean'
+  description?: string
+  /** Required params land in the JSON-schema `required` list. */
+  required?: boolean
+  /** Restrict a string param to a fixed set of values. */
+  enum?: string[]
+}
+
 export interface Command {
   id: string
   title: string
@@ -17,8 +30,17 @@ export interface Command {
   /** Group label for the palette ('Apps', 'Window', 'System', …). */
   group?: string
   icon?: string
-  /** Invoke the command. May be async. */
-  run: () => void | Promise<void>
+  /**
+   * Typed parameters the command accepts, keyed by name. Param-less commands omit
+   * this. Projected into the MCP tool schema so an agent can fill arguments.
+   */
+  params?: Record<string, CommandParam>
+  /**
+   * Invoke the command. May be async. Receives the caller-supplied `args` (an
+   * agent/model fills them from {@link Command.params}; the palette runs with
+   * none — param-less commands ignore the argument).
+   */
+  run: (args?: Record<string, unknown>) => void | Promise<void>
   /** When it returns false the command is hidden + run() is a no-op. */
   enabled?: () => boolean
 }
@@ -46,8 +68,8 @@ export interface CommandRegistry {
   list(): Command[]
   /** Fuzzy-search enabled commands, best first. Empty query → all (by group/title). */
   search(query: string, limit?: number): CommandHit[]
-  /** Run a command by id (no-op if missing/disabled). */
-  run(id: string): Promise<void>
+  /** Run a command by id with optional args (no-op if missing/disabled). */
+  run(id: string, args?: Record<string, unknown>): Promise<void>
 }
 
 /**
@@ -129,9 +151,9 @@ export function createCommandRegistry(): CommandRegistry {
       return hits.slice(0, limit)
     },
 
-    async run(id) {
+    async run(id, args) {
       const command = store.getState().commands.find((c) => c.id === id)
-      if (command && isEnabled(command)) await command.run()
+      if (command && isEnabled(command)) await command.run(args)
     },
   }
 }
@@ -140,24 +162,51 @@ export function createCommandRegistry(): CommandRegistry {
  * MCP / agent bridge — expose the registry's commands as model-callable TOOLS.
  * This is the seam that turns the command registry into an agent surface: an MCP
  * server (or an in-app LLM planner) enumerates {@link toMcpTools} and invokes
- * {@link runMcpTool} by name. Commands are param-less today, so each tool takes
- * no arguments; when commands gain params, extend the inputSchema here.
+ * {@link runMcpTool} by name. A command's {@link Command.params} become the tool's
+ * JSON-schema `inputSchema`, so an agent can fill arguments that flow through to
+ * `run(args)`; param-less commands project an empty schema.
  */
+/** A JSON-schema property derived from a {@link CommandParam}. */
+export interface McpToolProperty {
+  type: string
+  description?: string
+  enum?: string[]
+}
+
 export interface McpToolDef {
   /** MCP-safe tool name (`^[a-zA-Z0-9_-]+$`), derived from the command id. */
   name: string
   description: string
-  inputSchema: { type: 'object'; properties: Record<string, never>; required: never[] }
+  /** JSON schema for the tool's arguments, projected from {@link Command.params}. */
+  inputSchema: {
+    type: 'object'
+    properties: Record<string, McpToolProperty>
+    required: string[]
+  }
 }
 
 /** Make a command id MCP-tool-name-safe (the spec restricts the charset). */
 export const toToolName = (id: string): string => id.replace(/[^a-zA-Z0-9_-]/g, '_')
 
+/** Project a command's {@link Command.params} into a JSON-schema object. */
+function paramsToSchema(params: Command['params']): McpToolDef['inputSchema'] {
+  const properties: Record<string, McpToolProperty> = {}
+  const required: string[] = []
+  for (const [name, p] of Object.entries(params ?? {})) {
+    const prop: McpToolProperty = { type: p.type }
+    if (p.description) prop.description = p.description
+    if (p.enum) prop.enum = p.enum
+    properties[name] = prop
+    if (p.required) required.push(name)
+  }
+  return { type: 'object', properties, required }
+}
+
 export function toMcpTools(registry: CommandRegistry): McpToolDef[] {
   return registry.list().map((c) => ({
     name: toToolName(c.id),
     description: c.group ? `${c.group}: ${c.title}` : c.title,
-    inputSchema: { type: 'object', properties: {}, required: [] },
+    inputSchema: paramsToSchema(c.params),
   }))
 }
 
@@ -167,11 +216,15 @@ export interface McpToolResult {
   error?: string
 }
 
-/** Invoke a command by its MCP tool name (what an agent calls). */
-export async function runMcpTool(registry: CommandRegistry, name: string): Promise<McpToolResult> {
+/** Invoke a command by its MCP tool name (what an agent calls), with optional args. */
+export async function runMcpTool(
+  registry: CommandRegistry,
+  name: string,
+  args?: Record<string, unknown>,
+): Promise<McpToolResult> {
   const command = registry.list().find((c) => toToolName(c.id) === name)
   if (!command) return { ok: false, error: `unknown tool: ${name}` }
-  await registry.run(command.id)
+  await registry.run(command.id, args)
   return { ok: true, ran: command.id }
 }
 
@@ -190,6 +243,9 @@ export interface PlanResult {
   commandId: string
   /** A short line to show the user. */
   say: string
+  /** Arguments to pass to the command's `run` (filled by an LLM planner from the
+   * command's params; `undefined` for the deterministic planner). */
+  args?: Record<string, unknown>
 }
 
 /**
@@ -215,14 +271,17 @@ export const LLM_PLANNER_SYSTEM =
   'natural-language request; choose the SINGLE best-matching action by calling ' +
   'exactly one of the provided tools. Each tool is one desktop command (open an ' +
   'app, a window action, or a system action). Always call exactly one tool — pick ' +
-  'the closest match even if the wording is loose. Do not reply with text.'
+  'the closest match even if the wording is loose. When the chosen tool declares ' +
+  'parameters, fill them from the request. Do not reply with text.'
 
-/** What an injected model call returns: the chosen tool name (or null), + optional prose. */
+/** What an injected model call returns: the chosen tool name (or null), + optional prose/args. */
 export interface ToolChoice {
   /** The MCP tool name the model picked, or `null` if it picked none. */
   toolName: string | null
   /** Optional natural-language line to show the user. */
   say?: string
+  /** Arguments the model filled for the chosen tool. */
+  args?: Record<string, unknown>
 }
 
 /**
@@ -258,6 +317,10 @@ export function createLlmPlanner(call: ModelCall, fallback: Planner = fuzzyPlann
     if (!choice.toolName) return fallback(input, registry)
     const command = registry.list().find((c) => toToolName(c.id) === choice.toolName)
     if (!command) return fallback(input, registry)
-    return { commandId: command.id, say: choice.say ?? `Running “${command.title}”.` }
+    return {
+      commandId: command.id,
+      say: choice.say ?? `Running “${command.title}”.`,
+      args: choice.args,
+    }
   }
 }

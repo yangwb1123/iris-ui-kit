@@ -93,7 +93,7 @@ export function AssistantView({ planner = fuzzyPlanner }: { planner?: Planner } 
         ])
         return
       }
-      void chosen.run()
+      void chosen.run(plan.args)
       // Offer up to 3 other near-matches as one-tap alternatives.
       const alts = registry
         .search(text, 5)

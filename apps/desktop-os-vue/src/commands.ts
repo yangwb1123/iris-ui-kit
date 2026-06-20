@@ -95,6 +95,28 @@ export function useDesktopCommands(): ComputedRef<Command[]> {
         icon: '🛍️',
         run: () => launchApp('appstore'),
       },
+      {
+        // A PARAMETERIZED command: the agent fills `query` from the request
+        // (e.g. "search the web for otters"). Projected into the MCP tool schema
+        // via Command.params; the ⌘K palette runs it arg-less (no-op).
+        id: 'system:search',
+        title: 'Search the web',
+        keywords: 'search web query find lookup google duckduckgo',
+        group: 'System',
+        icon: '🔎',
+        params: {
+          query: { type: 'string', description: 'The search terms', required: true },
+        },
+        run: (args) => {
+          const query = typeof args?.query === 'string' ? args.query.trim() : ''
+          if (!query) return
+          globalThis.open?.(
+            `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
+            '_blank',
+            'noopener',
+          )
+        },
+      },
     ]
 
     return [...appCommands, ...windowCommands, ...systemCommands]

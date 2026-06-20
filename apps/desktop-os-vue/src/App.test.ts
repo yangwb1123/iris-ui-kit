@@ -76,4 +76,45 @@ describe('Iris Desktop OS (Vue) — shell', () => {
     await nextTick()
     expect(container.querySelector('[aria-label="Command palette"]')).toBeFalsy()
   })
+
+  it('right-clicking the desktop opens the context menu with skin switchers', async () => {
+    mount()
+    expect(container.querySelector('[role="menu"]')).toBeFalsy()
+    const desktop = container.querySelector('.desktop')!
+    desktop.dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 40 }),
+    )
+    await nextTick()
+    const menu = container.querySelector('[role="menu"]')
+    expect(menu).toBeTruthy()
+    // One "Use {skin}" per OS, plus the Display settings / Refresh actions.
+    expect(menu!.textContent).toContain('Use Windows 11')
+    expect(menu!.textContent).toContain('Use macOS')
+    expect(menu!.textContent).toContain('Use KDE Plasma')
+    expect(menu!.textContent).toContain('Display settings')
+    expect(menu!.querySelector('[role="separator"]')).toBeTruthy()
+    // Escape dismisses it.
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await nextTick()
+    expect(container.querySelector('[role="menu"]')).toBeFalsy()
+  })
+
+  it('clicking a context-menu item switches the OS skin and closes the menu', async () => {
+    mount()
+    const desktop = container.querySelector('.desktop')!
+    desktop.dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 40 }),
+    )
+    await nextTick()
+    const macItem = Array.from(container.querySelectorAll('[role="menuitem"]')).find((el) =>
+      el.textContent?.includes('Use macOS'),
+    )
+    expect(macItem).toBeTruthy()
+    macItem!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
+    // Menu closes after a selection.
+    expect(container.querySelector('[role="menu"]')).toBeFalsy()
+    // The skin switched: the macOS dock is now the bottom bar.
+    expect(container.querySelector('.dock')).toBeTruthy()
+  })
 })

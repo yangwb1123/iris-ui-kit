@@ -1,17 +1,23 @@
 <script lang="ts">
   import { IrisMovable, IrisResizable } from '@iris-ui/svelte'
-  import type { DesktopWindow } from '@iris-ui/core/window'
-  import { wm } from './wm.svelte'
+  import type { DesktopWindow, SnapZone } from '@iris-ui/core/window'
+  import { wm, useWmState } from './wm.svelte'
   import { useOs } from './os-state.svelte'
   import { getManifest } from './catalog'
+  import { snapHintFor } from './depth'
   import IframeApp from './appviews/IframeApp.svelte'
   import RemoteApp from './appviews/RemoteApp.svelte'
 
   interface Props {
     window: DesktopWindow
+    /**
+     * Report the live drag-to-edge snap zone (or `null` to clear) so the Desktop
+     * can render the snap preview. Omitted in non-snapping contexts (e.g. tests).
+     */
+    onSnapHint?: (zone: SnapZone | null) => void
   }
 
-  let { window: w }: Props = $props()
+  let { window: w, onSnapHint }: Props = $props()
 
   // The live OS skin drives where the window controls sit + their style: macOS
   // traffic-lights on the LEFT (`controls === 'left'`), vs. Windows glyph buttons
@@ -24,6 +30,12 @@
   const rect = $derived(wm.displayRect(w))
   const focused = $derived(wm.isFocused(w.id))
   const maximized = $derived(w.state === 'maximized')
+
+  // Live work area drives the drag-to-edge snap detection.
+  const wmState = useWmState()
+  const workArea = $derived(wmState.value.workArea)
+  // The snap zone hinted by the IN-FLIGHT drag (mirrored to Desktop via onSnapHint).
+  let dragZone: SnapZone | null = null
 
   // Play the open animation on first mount only.
   let firstMount = $state(true)
@@ -189,7 +201,21 @@
     <div style:z-index={w.z} style:position="absolute" style:left="0" style:top="0">
       <IrisMovable
         position={{ x: rect.x, y: rect.y }}
-        onPositionChange={(p) => wm.move(w.id, p.x, p.y)}
+        onPositionChange={(p) => {
+          wm.move(w.id, p.x, p.y)
+          // Detect a snap zone from the top-left and surface it to Desktop.
+          const zone = snapHintFor(p, workArea)
+          if (zone !== dragZone) {
+            dragZone = zone
+            onSnapHint?.(zone)
+          }
+        }}
+        onDragEnd={() => {
+          const zone = dragZone
+          dragZone = null
+          onSnapHint?.(null)
+          if (zone) wm.snap(w.id, zone)
+        }}
         byHandle
       >
         <IrisResizable

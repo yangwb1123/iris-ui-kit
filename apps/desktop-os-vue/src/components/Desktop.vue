@@ -4,6 +4,8 @@ import { type SnapZone } from '@iris-ui/core/window'
 import { getManifest } from '../catalog'
 import { launchApp } from '../profile'
 import { useRegisterDesktopCommands } from '../commands'
+import { useOs } from '../os-state'
+import { CHROMES, OS_ORDER } from '../os'
 import { wm, useWmState } from '../wm'
 import Window from './Window.vue'
 import SnapPreview from './SnapPreview.vue'
@@ -11,15 +13,33 @@ import TopBar from './TopBar.vue'
 import BottomBar from './BottomBar.vue'
 import Launcher from './Launcher.vue'
 import CommandPalette from './CommandPalette.vue'
+import ContextMenu, { type MenuItem } from './ContextMenu.vue'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
 const SHORTCUTS = ['about', 'appstore', 'files', 'showcase', 'taskmgr']
 
 const state = useWmState()
+const { setOs } = useOs()
 const launcherOpen = ref(false)
 const paletteOpen = ref(false)
 // Live drag-to-edge snap zone (lifted from Window) → drives the snap preview.
 const snapHint = ref<SnapZone | null>(null)
+// Right-click desktop menu anchor (null = closed).
+const menu = ref<{ x: number; y: number } | null>(null)
+
+// Desktop menu: one "Use {label}" per OS skin, then Display settings + Refresh.
+const desktopMenuItems = computed<MenuItem[]>(() => [
+  ...OS_ORDER.map(
+    (id): MenuItem => ({ label: `Use ${CHROMES[id].label}`, onClick: () => setOs(id) }),
+  ),
+  { separator: true },
+  { label: 'Display settings', onClick: () => launchApp('settings') },
+  { label: 'Refresh', onClick: () => (menu.value = null) },
+])
+
+function openMenu(e: MouseEvent) {
+  menu.value = { x: e.clientX, y: e.clientY }
+}
 
 // Keep the shared command registry in sync with the live shell state (apps +
 // focused window) for the lifetime of the desktop.
@@ -76,7 +96,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
 </script>
 
 <template>
-  <div class="desktop" @pointerdown="launcherOpen = false">
+  <div class="desktop" @pointerdown="launcherOpen = false" @contextmenu.prevent="openMenu">
     <!-- Top bar (macOS menu bar; nothing on Win11) -->
     <TopBar />
 
@@ -118,6 +138,15 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
     <!-- Bottom bar (Taskbar on Win11, Dock on macOS) -->
     <BottomBar :launcher-open="launcherOpen" @toggle-launcher="launcherOpen = !launcherOpen" />
     <CommandPalette :open="paletteOpen" @close="paletteOpen = false" />
+
+    <!-- Right-click desktop context menu -->
+    <ContextMenu
+      v-if="menu"
+      :x="menu.x"
+      :y="menu.y"
+      :items="desktopMenuItems"
+      @close="menu = null"
+    />
   </div>
 </template>
 

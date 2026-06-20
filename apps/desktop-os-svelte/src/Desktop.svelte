@@ -1,9 +1,13 @@
 <script lang="ts">
+  import type { SnapZone } from '@iris-ui/core/window'
   import { wm, useWmState } from './wm.svelte'
   import { useOs } from './os-state.svelte'
+  import { OS_ORDER, CHROMES } from './os'
   import { getManifest } from './catalog'
   import { launchApp } from './profile.svelte'
   import Window from './Window.svelte'
+  import SnapPreview from './SnapPreview.svelte'
+  import ContextMenu, { type MenuItem } from './ContextMenu.svelte'
   import Taskbar from './Taskbar.svelte'
   import StartMenu from './StartMenu.svelte'
   import MenuBar from './MenuBar.svelte'
@@ -30,10 +34,25 @@
 
   let launcherOpen = $state(false)
   let paletteOpen = $state(false)
+  // Live drag-to-edge snap zone (lifted from Window) → drives the snap preview.
+  let snapHint = $state<SnapZone | null>(null)
+  // Right-click desktop menu anchor (null = closed).
+  let menu = $state<{ x: number; y: number } | null>(null)
 
   function open(appId: string) {
     launchApp(appId)
   }
+
+  // Desktop right-click menu: switch OS skin, open Display settings, or refresh
+  // (just dismiss). Mirrors React's `Desktop.tsx` `desktopMenuItems`.
+  const desktopMenuItems = $derived<MenuItem[]>([
+    ...OS_ORDER.map(
+      (id): MenuItem => ({ label: `Use ${CHROMES[id].label}`, onClick: () => osCtx.setOs(id) }),
+    ),
+    { separator: true },
+    { label: 'Display settings', onClick: () => open('settings') },
+    { label: 'Refresh', onClick: () => (menu = null) },
+  ])
 
   // Keyboard shortcuts: Alt+Tab cycles focus, (Meta|Ctrl)+K toggles the command
   // palette, Meta+Space toggles the launcher, Escape closes the open overlay.
@@ -75,7 +94,14 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="desktop" onpointerdown={() => (launcherOpen = false)}>
+<div
+  class="desktop"
+  onpointerdown={() => (launcherOpen = false)}
+  oncontextmenu={(e) => {
+    e.preventDefault()
+    menu = { x: e.clientX, y: e.clientY }
+  }}
+>
   <!-- Desktop icons -->
   <div class="icons">
     {#each SHORTCUTS as id (id)}
@@ -94,9 +120,12 @@
     {/each}
   </div>
 
+  <!-- Drag-to-edge snap preview — behind windows (z 0), above the wallpaper -->
+  <SnapPreview zone={snapHint} />
+
   <!-- Windows (painted in z-order) -->
   {#each ordered as w (w.id)}
-    <Window window={w} />
+    <Window window={w} onSnapHint={(z) => (snapHint = z)} />
   {/each}
 
   <!-- Empty-desktop hint when nothing is open -->
@@ -136,6 +165,11 @@
   {/if}
 
   <CommandPalette open={paletteOpen} onClose={() => (paletteOpen = false)} />
+
+  <!-- Desktop right-click context menu (anchored at the click). -->
+  {#if menu}
+    <ContextMenu x={menu.x} y={menu.y} items={desktopMenuItems} onClose={() => (menu = null)} />
+  {/if}
 </div>
 
 <style>

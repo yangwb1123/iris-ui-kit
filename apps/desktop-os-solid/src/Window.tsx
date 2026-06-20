@@ -9,11 +9,12 @@ import {
   type JSX,
 } from 'solid-js'
 import { IrisMovable, IrisResizable } from '@iris-ui/solid'
-import { type DesktopWindow } from '@iris-ui/core/window'
+import { type DesktopWindow, type SnapZone } from '@iris-ui/core/window'
 import { getManifest } from './catalog'
 import { loadRemoteApp } from './remoteApp'
 import { useOs } from './os-state'
 import { useWm, useWmState } from './wm'
+import { snapHintFor } from './depth'
 
 /** A reactive accessor to one live window. */
 type WinAccessor = () => DesktopWindow
@@ -354,9 +355,18 @@ function Body(props: { window: WinAccessor }): JSX.Element {
  * maximize all re-render from the SAME framework-agnostic engine the React demo
  * uses.
  */
-export function Window(props: { windowId: string }): JSX.Element {
+export function Window(props: {
+  windowId: string
+  /**
+   * Report the live drag-to-edge snap zone (or `null` to clear) so the Desktop
+   * can render the snap preview. Omitted in non-snapping contexts (e.g. tests).
+   */
+  onSnapHint?: (zone: SnapZone | null) => void
+}): JSX.Element {
   const wm = useWm()
   const state = useWmState()
+  // The snap zone hinted by the IN-FLIGHT drag (mirrored to Desktop via onSnapHint).
+  let dragZone: SnapZone | null = null
 
   const win = createMemo(() => state().windows.find((w) => w.id === props.windowId))
 
@@ -410,7 +420,21 @@ export function Window(props: { windowId: string }): JSX.Element {
                   <div style={{ position: 'absolute', 'pointer-events': 'auto' }}>
                     <IrisMovable
                       position={{ x: rect().x, y: rect().y }}
-                      onPositionChange={(p) => wm.move(w().id, p.x, p.y)}
+                      onPositionChange={(p) => {
+                        wm.move(w().id, p.x, p.y)
+                        // Detect a snap zone from the (clamped) top-left and surface it to Desktop.
+                        const zone = snapHintFor(p, state().workArea)
+                        if (zone !== dragZone) {
+                          dragZone = zone
+                          props.onSnapHint?.(zone)
+                        }
+                      }}
+                      onDragEnd={() => {
+                        const zone = dragZone
+                        dragZone = null
+                        props.onSnapHint?.(null)
+                        if (zone) wm.snap(w().id, zone)
+                      }}
                       byHandle
                     >
                       <IrisResizable

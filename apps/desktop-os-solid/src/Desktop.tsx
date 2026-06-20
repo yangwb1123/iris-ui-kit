@@ -9,11 +9,15 @@ import {
   onMount,
   type JSX,
 } from 'solid-js'
+import { type SnapZone } from '@iris-ui/core/window'
+import { CHROMES, OS_ORDER } from './os'
 import { useApps, useLaunchApp } from './profile'
 import { useOs } from './os-state'
 import { useWm, useWmState } from './wm'
 import { registerCommands, useDesktopCommands } from './commands'
 import { Window } from './Window'
+import { SnapPreview } from './SnapPreview'
+import { ContextMenu, type MenuItem } from './ContextMenu'
 import { Taskbar } from './Taskbar'
 import { StartMenu } from './StartMenu'
 import { Dock } from './Dock'
@@ -80,10 +84,23 @@ export function Desktop(): JSX.Element {
   const state = useWmState()
   const apps = useApps()
   const launch = useLaunchApp()
-  const { chrome } = useOs()
+  const { chrome, setOs } = useOs()
   const [launcherOpen, setLauncherOpen] = createSignal(false)
   // ⌘K / Ctrl+K command palette visibility.
   const [paletteOpen, setPaletteOpen] = createSignal(false)
+  // Live drag-to-edge snap zone (lifted from Window) → drives the snap preview.
+  const [snapHint, setSnapHint] = createSignal<SnapZone | null>(null)
+  // Right-click desktop menu anchor (null = closed).
+  const [menu, setMenu] = createSignal<{ x: number; y: number } | null>(null)
+
+  const desktopMenuItems = (): MenuItem[] => [
+    ...OS_ORDER.map(
+      (id): MenuItem => ({ label: `Use ${CHROMES[id].label}`, onClick: () => setOs(id) }),
+    ),
+    { separator: true },
+    { label: 'Display settings', onClick: () => launch('settings') },
+    { label: 'Refresh', onClick: () => setMenu(null) },
+  ]
 
   // Window IDs in z-order — derived from the live store signal so opening,
   // closing and raising windows re-renders the desktop. Keying the `<For>` by
@@ -149,6 +166,11 @@ export function Desktop(): JSX.Element {
     <div
       // Click on empty desktop dismisses the launcher.
       onPointerDown={() => setLauncherOpen(false)}
+      // Right-click anywhere on the desktop surface opens the desktop menu.
+      onContextMenu={(e) => {
+        e.preventDefault()
+        setMenu({ x: e.clientX, y: e.clientY })
+      }}
       style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}
     >
       <CommandRegistration />
@@ -182,8 +204,11 @@ export function Desktop(): JSX.Element {
         </For>
       </div>
 
+      {/* Drag-to-edge snap preview — behind windows (z 0), above the wallpaper */}
+      <SnapPreview zone={snapHint()} />
+
       {/* Windows (painted in z-order from the framework-agnostic manager) */}
-      <For each={orderedIds()}>{(id) => <Window windowId={id} />}</For>
+      <For each={orderedIds()}>{(id) => <Window windowId={id} onSnapHint={setSnapHint} />}</For>
 
       {/* Empty-desktop hint when nothing is open */}
       <Show when={state().windows.length === 0}>
@@ -216,6 +241,13 @@ export function Desktop(): JSX.Element {
         launcherOpen={launcherOpen()}
         onToggleLauncher={() => setLauncherOpen((o) => !o)}
       />
+
+      {/* Right-click desktop menu — switch skins, open settings, dismiss. */}
+      <Show when={menu()} keyed>
+        {(m) => (
+          <ContextMenu x={m.x} y={m.y} items={desktopMenuItems()} onClose={() => setMenu(null)} />
+        )}
+      </Show>
     </div>
   )
 }

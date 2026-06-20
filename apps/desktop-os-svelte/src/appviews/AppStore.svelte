@@ -15,6 +15,7 @@
     removeCustomApp,
     launchApp,
   } from '../profile.svelte'
+  import { notifications } from '../notifications.svelte'
   import { PERMISSION_META } from '../permissions.svelte'
 
   const KIND_LABEL: Record<AppKind, string> = {
@@ -60,6 +61,29 @@
     name = ''
     url = ''
     icon = ''
+  }
+
+  // Install / uninstall an app AND post a desktop notification (the App Store
+  // exercises the `notifications` permission) — mirrors the React reference
+  // (apps/desktop-os/src/appviews/AppStore.tsx).
+  function install(app: AppManifest) {
+    profile.install(app.id)
+    notifications.post({
+      title: `Installed ${app.name}`,
+      body: 'Added to your desktop.',
+      icon: app.icon,
+      tone: 'success',
+      appId: 'appstore',
+    })
+  }
+  function uninstall(app: AppManifest) {
+    profile.uninstall(app.id)
+    notifications.post({
+      title: `Uninstalled ${app.name}`,
+      icon: app.icon,
+      tone: 'info',
+      appId: 'appstore',
+    })
   }
 </script>
 
@@ -173,12 +197,10 @@
             {#if onRemove}
               <IrisButton variant="outline" onclick={() => onRemove(app.id)}>Remove</IrisButton>
             {:else}
-              <IrisButton variant="outline" onclick={() => profile.uninstall(app.id)}>
-                Uninstall
-              </IrisButton>
+              <IrisButton variant="outline" onclick={() => uninstall(app)}>Uninstall</IrisButton>
             {/if}
           {:else}
-            <IrisButton variant="solid" onclick={() => profile.install(app.id)}>Install</IrisButton>
+            <IrisButton variant="solid" onclick={() => install(app)}>Install</IrisButton>
           {/if}
         </div>
       </div>

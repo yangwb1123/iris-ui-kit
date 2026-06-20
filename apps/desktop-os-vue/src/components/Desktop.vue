@@ -14,6 +14,7 @@ import BottomBar from './BottomBar.vue'
 import Launcher from './Launcher.vue'
 import CommandPalette from './CommandPalette.vue'
 import ContextMenu, { type MenuItem } from './ContextMenu.vue'
+import Toasts from './Toasts.vue'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
 const SHORTCUTS = ['about', 'appstore', 'files', 'showcase', 'taskmgr']
@@ -120,6 +121,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
 
     <!-- Windows (painted in z-order) -->
     <Window v-for="w in windows" :key="w.id" :window="w" @snap-hint="(z) => (snapHint = z)" />
+
+    <!-- Toast stack — newest notifications, above windows (top-right corner) -->
+    <Toasts />
 
     <!-- Empty-desktop hint when nothing is open -->
     <div v-if="state.windows.length === 0" class="desktop-hint">

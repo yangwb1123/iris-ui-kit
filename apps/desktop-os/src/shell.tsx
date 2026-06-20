@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { type WindowManager, type WindowManagerState } from '@iris-ui/core/window'
 import { type UserProfile, type ProfileData } from '@iris-ui/core/profile'
+import { type NotificationCenter, type NotificationCenterState } from '@iris-ui/core/notifications'
 import { type OsChrome, type OsId } from './os'
 import { type AppManifest, BUILTIN_APPS, getManifest, registerCustomApps } from './catalog'
 
@@ -53,6 +54,23 @@ export function useProfileState(): ProfileData {
     profile.store.getState,
     profile.store.getState,
   )
+}
+
+// ── Notification center ────────────────────────────────────────────────────────
+
+const NotificationsContext = React.createContext<NotificationCenter | null>(null)
+export const NotificationsProvider = NotificationsContext.Provider
+
+export function useNotifications(): NotificationCenter {
+  const nc = React.useContext(NotificationsContext)
+  if (!nc) throw new Error('useNotifications must be used within <NotificationsProvider>')
+  return nc
+}
+
+/** Subscribe to the live notification list (newest first). */
+export function useNotificationState(): NotificationCenterState {
+  const nc = useNotifications()
+  return React.useSyncExternalStore(nc.store.subscribe, nc.store.getState, nc.store.getState)
 }
 
 /** Raw user-added web-app manifests from the profile (`customApps` pref). */

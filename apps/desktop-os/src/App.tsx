@@ -6,8 +6,15 @@ import {
   type WindowSession,
 } from '@iris-ui/core/window'
 import { createUserProfile, localStorageProfileStorage } from '@iris-ui/core/profile'
+import { createNotificationCenter } from '@iris-ui/core/notifications'
 import { CHROMES, barInsets, OS_ORDER, type OsId } from './os'
-import { WmProvider, OsProvider, ProfileProvider, useProfileState } from './shell'
+import {
+  WmProvider,
+  OsProvider,
+  ProfileProvider,
+  NotificationsProvider,
+  useProfileState,
+} from './shell'
 import { getManifest, registerCustomApps, type AppManifest } from './catalog'
 import { Desktop } from './components/Desktop'
 
@@ -115,6 +122,8 @@ export function App() {
   const profile = React.useRef(
     createUserProfile({ storage: localStorageProfileStorage('iris-desktop-os') }),
   ).current
+  // One notification center for the whole shell (toasts + history).
+  const notifications = React.useRef(createNotificationCenter()).current
   const [hydrated, setHydrated] = React.useState(false)
 
   React.useEffect(() => {
@@ -123,7 +132,9 @@ export function App() {
 
   return (
     <ProfileProvider value={profile}>
-      <Shell profile={profile} hydrated={hydrated} />
+      <NotificationsProvider value={notifications}>
+        <Shell profile={profile} hydrated={hydrated} />
+      </NotificationsProvider>
     </ProfileProvider>
   )
 }

@@ -31,6 +31,9 @@ export default defineConfig(({ command }) => ({
             '@iris-ui/core/commands': fileURLToPath(
               new URL('../../packages/core/src/commands.ts', import.meta.url),
             ),
+            '@iris-ui/core/notifications': fileURLToPath(
+              new URL('../../packages/core/src/notifications.ts', import.meta.url),
+            ),
             '@iris-ui/core': src('core'),
             '@iris-ui/tokens': src('tokens'),
             '@iris-ui/solid': src('solid'),

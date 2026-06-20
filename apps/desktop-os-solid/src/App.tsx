@@ -12,11 +12,13 @@ import {
   type UserProfile,
 } from '@iris-ui/core/profile'
 import { createCommandRegistry } from '@iris-ui/core/commands'
+import { createNotificationCenter } from '@iris-ui/core/notifications'
 import { barInsets } from './os'
 import { WmProvider, useWm } from './wm'
 import { ProfileProvider } from './profile'
 import { OsProvider, useOs } from './os-state'
 import { CommandsProvider } from './commands'
+import { NotificationsProvider } from './notifications'
 import { getManifest, registerCustomApps, type AppManifest } from './catalog'
 import { Desktop } from './Desktop'
 
@@ -128,6 +130,9 @@ export function App(): JSX.Element {
   // ONE command registry behind the ⌘K palette + agent surface.
   const commands = createCommandRegistry()
 
+  // ONE notification center for the whole shell (toasts + history).
+  const notifications = createNotificationCenter()
+
   onMount(() => {
     // Hydrate the profile, then restore the window session + start persisting it.
     // The Shell's work-area effects run synchronously on mount (before this async
@@ -144,7 +149,9 @@ export function App(): JSX.Element {
       <ProfileProvider profile={profile}>
         <OsProvider>
           <CommandsProvider registry={commands}>
-            <Shell />
+            <NotificationsProvider notifications={notifications}>
+              <Shell />
+            </NotificationsProvider>
           </CommandsProvider>
         </OsProvider>
       </ProfileProvider>

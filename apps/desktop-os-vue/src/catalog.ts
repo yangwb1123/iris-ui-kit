@@ -93,7 +93,7 @@ export const CATALOG: AppManifest[] = [
     builtin: true,
     description: 'Browse and install apps into your profile.',
     defaultSize: { width: 640, height: 500 },
-    permissions: ['storage', 'network'],
+    permissions: ['storage', 'network', 'notifications'],
     component: markRaw(AppStore),
   },
   {

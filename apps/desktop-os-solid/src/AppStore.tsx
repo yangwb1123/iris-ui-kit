@@ -2,6 +2,7 @@ import { For, Show, createSignal, type JSX } from 'solid-js'
 import { IrisButton, IrisBadge, IrisInput } from '@iris-ui/solid'
 import { CATALOG, INSTALLABLE_APPS, type AppManifest } from './catalog'
 import { useProfile, useProfileState, useLaunchApp, useCustomApps } from './profile'
+import { useNotifications } from './notifications'
 import { PERMISSION_META } from './permissions'
 
 const KIND_LABEL: Record<AppManifest['kind'], string> = {
@@ -57,8 +58,29 @@ function AppCard(props: { app: AppManifest; onRemove?: (id: string) => void }): 
   // Subscribe so install/uninstall re-renders the button state.
   const state = useProfileState()
   const launch = useLaunchApp()
+  const nc = useNotifications()
   const installed = (): boolean =>
     Boolean(props.app.builtin) || state().installed.some((a) => a.appId === props.app.id)
+
+  const install = (): void => {
+    profile.install(props.app.id)
+    nc.post({
+      title: `Installed ${props.app.name}`,
+      body: 'Added to your desktop.',
+      icon: props.app.icon,
+      tone: 'success',
+      appId: 'appstore',
+    })
+  }
+  const uninstall = (): void => {
+    profile.uninstall(props.app.id)
+    nc.post({
+      title: `Uninstalled ${props.app.name}`,
+      icon: props.app.icon,
+      tone: 'info',
+      appId: 'appstore',
+    })
+  }
 
   return (
     <div
@@ -109,7 +131,7 @@ function AppCard(props: { app: AppManifest; onRemove?: (id: string) => void }): 
             <Show
               when={installed()}
               fallback={
-                <IrisButton variant="solid" onClick={() => profile.install(props.app.id)}>
+                <IrisButton variant="solid" onClick={install}>
                   Install
                 </IrisButton>
               }
@@ -120,7 +142,7 @@ function AppCard(props: { app: AppManifest; onRemove?: (id: string) => void }): 
               <Show
                 when={props.onRemove}
                 fallback={
-                  <IrisButton variant="outline" onClick={() => profile.uninstall(props.app.id)}>
+                  <IrisButton variant="outline" onClick={uninstall}>
                     Uninstall
                   </IrisButton>
                 }

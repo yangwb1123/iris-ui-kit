@@ -57,6 +57,7 @@ const FEATURES = [
   ['Settings app', /Settings\.(tsx|vue|svelte)|SettingsView/],
   ['Remote app kind', /loadRemoteApp/],
   ['Session persistence', /serializeSession/],
+  ['Notifications', /createNotificationCenter/],
   ['macOS chrome: MenuBar', /MenuBar\.(tsx|vue|svelte)/],
   ['macOS chrome: Dock', /Dock\.(tsx|vue|svelte)/],
   ['macOS chrome: Spotlight', /Spotlight\.(tsx|vue|svelte)/],

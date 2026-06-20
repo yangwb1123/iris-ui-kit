@@ -11,6 +11,7 @@ import {
   removeCustomApp,
   launchApp,
 } from '../profile'
+import { useNotifications } from '../notifications'
 
 /**
  * App Store — browse the catalog and install link / iframe apps into the user
@@ -35,6 +36,7 @@ const KIND_TONE: Record<AppManifest['kind'], 'primary' | 'success' | 'warning'> 
 const profile = useProfile()
 // Subscribe so install/uninstall re-renders button + list state.
 const state = useProfileState()
+const nc = useNotifications()
 
 const customApps = useCustomApps()
 const links = INSTALLABLE_APPS.filter((a) => a.kind === 'link')
@@ -44,6 +46,24 @@ const builtins = CATALOG.filter((a) => a.builtin)
 function isInstalled(app: AppManifest): boolean {
   void state.value.installed // dependency: re-derive on install/uninstall
   return Boolean(app.builtin) || profile.isInstalled(app.id)
+}
+
+/** Install an app + post a success toast (the `notifications` permission in action). */
+function install(app: AppManifest): void {
+  profile.install(app.id)
+  nc.post({
+    title: `Installed ${app.name}`,
+    body: 'Added to your desktop.',
+    icon: app.icon,
+    tone: 'success',
+    appId: 'appstore',
+  })
+}
+
+/** Uninstall an app + post an info toast. */
+function uninstall(app: AppManifest): void {
+  profile.uninstall(app.id)
+  nc.post({ title: `Uninstalled ${app.name}`, icon: app.icon, tone: 'info', appId: 'appstore' })
 }
 
 // ── Add-a-web-app form ──────────────────────────────────────────────────────
@@ -211,13 +231,9 @@ function submit() {
               >
               <template v-else-if="isInstalled(app)">
                 <IrisButton variant="solid" @click="launchApp(app.id)">Open</IrisButton>
-                <IrisButton variant="outline" @click="profile.uninstall(app.id)"
-                  >Uninstall</IrisButton
-                >
+                <IrisButton variant="outline" @click="uninstall(app)">Uninstall</IrisButton>
               </template>
-              <IrisButton v-else variant="solid" @click="profile.install(app.id)"
-                >Install</IrisButton
-              >
+              <IrisButton v-else variant="solid" @click="install(app)">Install</IrisButton>
             </div>
           </div>
         </div>

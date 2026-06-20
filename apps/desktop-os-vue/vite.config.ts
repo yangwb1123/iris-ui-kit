@@ -18,6 +18,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui/core/window': src('core/src/window.ts'),
             '@iris-ui/core/profile': src('core/src/profile.ts'),
             '@iris-ui/core/commands': src('core/src/commands.ts'),
+            '@iris-ui/core/notifications': src('core/src/notifications.ts'),
             '@iris-ui/core': src('core/src/index.ts'),
             '@iris-ui/tokens': src('tokens/src/index.ts'),
             '@iris-ui/vue': src('vue/src/index.ts'),

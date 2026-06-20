@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { IrisButton, IrisBadge, IrisInput } from '@iris-ui/react'
 import { CATALOG, INSTALLABLE_APPS, type AppManifest } from '../catalog'
-import { useProfile, useProfileState, useLaunchApp } from '../shell'
+import { useProfile, useProfileState, useLaunchApp, useNotifications } from '../shell'
 import { PERMISSION_META, useCustomApps } from '../permissions'
 
 const KIND_LABEL: Record<AppManifest['kind'], string> = {
@@ -54,7 +54,23 @@ function AppCard({ app, onRemove }: { app: AppManifest; onRemove?: (id: string) 
   // Subscribe so install/uninstall re-renders the button state.
   useProfileState()
   const launch = useLaunchApp()
+  const nc = useNotifications()
   const installed = app.builtin || profile.isInstalled(app.id)
+
+  const install = () => {
+    profile.install(app.id)
+    nc.post({
+      title: `Installed ${app.name}`,
+      body: 'Added to your desktop.',
+      icon: app.icon,
+      tone: 'success',
+      appId: 'appstore',
+    })
+  }
+  const uninstall = () => {
+    profile.uninstall(app.id)
+    nc.post({ title: `Uninstalled ${app.name}`, icon: app.icon, tone: 'info', appId: 'appstore' })
+  }
 
   return (
     <div
@@ -98,13 +114,13 @@ function AppCard({ app, onRemove }: { app: AppManifest; onRemove?: (id: string) 
                   Remove
                 </IrisButton>
               ) : (
-                <IrisButton variant="outline" onClick={() => profile.uninstall(app.id)}>
+                <IrisButton variant="outline" onClick={uninstall}>
                   Uninstall
                 </IrisButton>
               )}
             </>
           ) : (
-            <IrisButton variant="solid" onClick={() => profile.install(app.id)}>
+            <IrisButton variant="solid" onClick={install}>
               Install
             </IrisButton>
           )}

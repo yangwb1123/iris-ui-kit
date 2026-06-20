@@ -9,6 +9,7 @@ import { SnapPreview } from './SnapPreview'
 import { CommandPalette } from './CommandPalette'
 import { TopBar, BottomBar, Launcher } from './Bars'
 import { ContextMenu, type MenuItem } from './ContextMenu'
+import { Toasts } from './Toasts'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
 const SHORTCUTS = ['about', 'appstore', 'showcase', 'settings']
@@ -180,6 +181,7 @@ function DesktopInner() {
       {menu && (
         <ContextMenu x={menu.x} y={menu.y} items={desktopMenuItems} onClose={() => setMenu(null)} />
       )}
+      <Toasts />
     </div>
   )
 }

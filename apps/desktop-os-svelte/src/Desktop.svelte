@@ -16,6 +16,7 @@
   import Spotlight from './Spotlight.svelte'
   import Kickoff from './Kickoff.svelte'
   import CommandPalette from './CommandPalette.svelte'
+  import Toasts from './Toasts.svelte'
 
   // The live OS skin drives the bar dispatch (the Svelte counterpart of React's
   // `Bars.tsx`): TopBar (MenuBar | none), BottomBar (Taskbar | Dock | Panel) and
@@ -170,6 +171,9 @@
   {#if menu}
     <ContextMenu x={menu.x} y={menu.y} items={desktopMenuItems} onClose={() => (menu = null)} />
   {/if}
+
+  <!-- Transient toast stack (above windows; full history lives in the center). -->
+  <Toasts />
 </div>
 
 <style>

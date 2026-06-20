@@ -7,6 +7,7 @@ export default defineConfig({
     'src/window.ts',
     'src/profile.ts',
     'src/commands.ts',
+    'src/notifications.ts',
   ],
   format: ['esm', 'cjs'],
   dts: true,

@@ -26,6 +26,7 @@ import { MenuBar } from './MenuBar'
 import { Spotlight } from './Spotlight'
 import { Kickoff } from './Kickoff'
 import { CommandPalette } from './CommandPalette'
+import { Toasts } from './Toasts'
 
 /** Desktop shortcuts shown top-left; double-click opens the app. */
 const SHORTCUTS = ['about', 'appstore', 'files', 'notepad', 'showcase']
@@ -209,6 +210,9 @@ export function Desktop(): JSX.Element {
 
       {/* Windows (painted in z-order from the framework-agnostic manager) */}
       <For each={orderedIds()}>{(id) => <Window windowId={id} onSnapHint={setSnapHint} />}</For>
+
+      {/* Transient toast stack — newest notifications, above windows. */}
+      <Toasts />
 
       {/* Empty-desktop hint when nothing is open */}
       <Show when={state().windows.length === 0}>

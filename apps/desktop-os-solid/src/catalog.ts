@@ -3,6 +3,12 @@ import { AboutApp, FilesApp, NotepadApp, ShowcaseApp } from './apps'
 import { AppStoreApp } from './AppStore'
 import { AssistantApp } from './Assistant'
 import { AgentToolsApp } from './AgentTools'
+import { SettingsApp } from './Settings'
+import { TaskManagerApp } from './TaskManager'
+import { DataApp } from './Data'
+import { CalculatorApp } from './Calculator'
+import { TerminalView } from './Terminal'
+import { PhotosApp } from './Photos'
 
 /**
  * App-aggregation manifest. The desktop is no longer a fixed set of Solid panes:
@@ -112,6 +118,68 @@ export const CATALOG: AppManifest[] = [
     defaultSize: { width: 460, height: 380 },
     render: () => ShowcaseApp(),
   },
+  {
+    id: 'settings',
+    name: 'Settings',
+    icon: '⚙️',
+    kind: 'component',
+    builtin: true,
+    description: 'Pick the desktop accent color (persisted).',
+    defaultSize: { width: 440, height: 420 },
+    render: () => SettingsApp(),
+  },
+  {
+    id: 'taskmgr',
+    name: 'Task Manager',
+    icon: '📈',
+    kind: 'component',
+    builtin: true,
+    description: 'Live window-manager state.',
+    defaultSize: { width: 420, height: 340 },
+    render: () => TaskManagerApp(),
+  },
+  {
+    id: 'data',
+    name: 'Data',
+    icon: '📊',
+    kind: 'component',
+    builtin: true,
+    description: 'IrisTable in a managed window.',
+    defaultSize: { width: 560, height: 420 },
+    render: () => DataApp(),
+  },
+  {
+    id: 'calculator',
+    name: 'Calculator',
+    icon: '🧮',
+    kind: 'component',
+    builtin: true,
+    description: 'A working calculator.',
+    defaultSize: { width: 300, height: 440 },
+    render: () => CalculatorApp(),
+  },
+  {
+    id: 'terminal',
+    name: 'Terminal',
+    icon: '⌨️',
+    kind: 'component',
+    builtin: true,
+    description: 'A faux in-window shell.',
+    defaultSize: { width: 520, height: 360 },
+    // `CATALOG` is fully initialized by the time any window renders, so reading
+    // app names here keeps the terminal's `apps` command live + avoids a cycle.
+    render: () => TerminalView({ appNames: CATALOG.map((m) => m.name) }),
+  },
+  {
+    id: 'photos',
+    name: 'Photos',
+    icon: '🖼️',
+    kind: 'component',
+    builtin: true,
+    description: 'A small image gallery.',
+    defaultSize: { width: 520, height: 420 },
+    render: () => PhotosApp(),
+  },
 
   // ── Installable LINK apps (open in a new tab; no window) ────────────────────
   {
@@ -130,6 +198,14 @@ export const CATALOG: AppManifest[] = [
     description: 'Open wikipedia.org in a new tab.',
     url: 'https://wikipedia.org',
   },
+  {
+    id: 'hackernews',
+    name: 'Hacker News',
+    icon: '📰',
+    kind: 'link',
+    description: 'Open news.ycombinator.com in a new tab.',
+    url: 'https://news.ycombinator.com',
+  },
 
   // ── Installable IFRAME apps (embed in a window; may be blocked) ─────────────
   {
@@ -140,6 +216,15 @@ export const CATALOG: AppManifest[] = [
     description: 'OpenStreetMap, embedded.',
     defaultSize: { width: 640, height: 480 },
     url: 'https://www.openstreetmap.org/export/embed.html?bbox=-0.2,51.4,0.0,51.6&layer=mapnik',
+  },
+  {
+    id: 'example',
+    name: 'Example',
+    icon: '🌐',
+    kind: 'iframe',
+    description: 'example.com, embedded.',
+    defaultSize: { width: 560, height: 420 },
+    url: 'https://example.com',
   },
 ]
 

@@ -7,7 +7,7 @@
  * Where React names a `render: () => <View/>`, Vue names a `component` (a
  * `markRaw`'d component object the managed window renders inside its body).
  */
-import { markRaw, type Component } from 'vue'
+import { defineComponent, h, markRaw, type Component } from 'vue'
 import About from './appviews/About.vue'
 import Assistant from './appviews/Assistant.vue'
 import AgentTools from './appviews/AgentTools.vue'
@@ -16,6 +16,11 @@ import Files from './appviews/Files.vue'
 import Showcase from './appviews/Showcase.vue'
 import TaskManager from './appviews/TaskManager.vue'
 import AppStore from './appviews/AppStore.vue'
+import Settings from './appviews/Settings.vue'
+import Data from './appviews/Data.vue'
+import Calculator from './appviews/Calculator.vue'
+import Photos from './appviews/Photos.vue'
+import Terminal from './appviews/Terminal.vue'
 
 /**
  * App-aggregation manifest. Mirrors the React `AppManifest` shape, minus the
@@ -132,6 +137,64 @@ export const CATALOG: AppManifest[] = [
     defaultSize: { width: 420, height: 340 },
     component: markRaw(TaskManager),
   },
+  {
+    id: 'settings',
+    name: 'Settings',
+    icon: '⚙️',
+    kind: 'component',
+    builtin: true,
+    description: 'Pick an accent color (persisted to your profile).',
+    defaultSize: { width: 440, height: 420 },
+    component: markRaw(Settings),
+  },
+  {
+    id: 'data',
+    name: 'Data',
+    icon: '📊',
+    kind: 'component',
+    builtin: true,
+    description: 'IrisTable in a managed window.',
+    defaultSize: { width: 560, height: 420 },
+    component: markRaw(Data),
+  },
+  {
+    id: 'calculator',
+    name: 'Calculator',
+    icon: '🧮',
+    kind: 'component',
+    builtin: true,
+    description: 'A working calculator.',
+    defaultSize: { width: 300, height: 440 },
+    component: markRaw(Calculator),
+  },
+  {
+    id: 'terminal',
+    name: 'Terminal',
+    icon: '⌨️',
+    kind: 'component',
+    builtin: true,
+    description: 'A faux in-window shell.',
+    defaultSize: { width: 520, height: 360 },
+    // The Terminal view takes a live `appNames` list. WindowBody renders
+    // `component` apps with no props, so wrap it to inject the names (read at
+    // render time — CATALOG is fully initialized by then, avoiding a cycle).
+    component: markRaw(
+      defineComponent({
+        name: 'TerminalApp',
+        render: () => h(Terminal, { appNames: CATALOG.map((m) => m.name) }),
+      }),
+    ),
+  },
+  {
+    id: 'photos',
+    name: 'Photos',
+    icon: '🖼️',
+    kind: 'component',
+    builtin: true,
+    description: 'A small image gallery.',
+    defaultSize: { width: 520, height: 420 },
+    component: markRaw(Photos),
+  },
 
   // ── Installable LINK apps (open in a new tab; no window) ────────────────────
   {
@@ -150,6 +213,14 @@ export const CATALOG: AppManifest[] = [
     description: 'Open wikipedia.org in a new tab.',
     url: 'https://wikipedia.org',
   },
+  {
+    id: 'hackernews',
+    name: 'Hacker News',
+    icon: '📰',
+    kind: 'link',
+    description: 'Open news.ycombinator.com in a new tab.',
+    url: 'https://news.ycombinator.com',
+  },
 
   // ── Installable IFRAME apps (embed in a window; may be blocked) ─────────────
   {
@@ -160,6 +231,15 @@ export const CATALOG: AppManifest[] = [
     description: 'OpenStreetMap, embedded.',
     defaultSize: { width: 640, height: 480 },
     url: 'https://www.openstreetmap.org/export/embed.html?bbox=-0.2,51.4,0.0,51.6&layer=mapnik',
+  },
+  {
+    id: 'example',
+    name: 'Example',
+    icon: '🌐',
+    kind: 'iframe',
+    description: 'example.com, embedded.',
+    defaultSize: { width: 560, height: 420 },
+    url: 'https://example.com',
   },
 ]
 

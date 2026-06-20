@@ -16,6 +16,12 @@ import Notepad from './appviews/Notepad.svelte'
 import Files from './appviews/Files.svelte'
 import Showcase from './appviews/Showcase.svelte'
 import AppStore from './appviews/AppStore.svelte'
+import Settings from './appviews/Settings.svelte'
+import TaskManager from './appviews/TaskManager.svelte'
+import Data from './appviews/Data.svelte'
+import Calculator from './appviews/Calculator.svelte'
+import TerminalView from './appviews/TerminalView.svelte'
+import Photos from './appviews/Photos.svelte'
 
 /**
  * How an app runs:
@@ -120,6 +126,66 @@ export const CATALOG: AppManifest[] = [
     defaultSize: { width: 460, height: 380 },
     component: Showcase,
   },
+  {
+    id: 'settings',
+    name: 'Settings',
+    icon: '⚙️',
+    kind: 'component',
+    builtin: true,
+    description: 'Pick the desktop accent color (persisted).',
+    defaultSize: { width: 440, height: 420 },
+    component: Settings,
+  },
+  {
+    id: 'taskmgr',
+    name: 'Task Manager',
+    icon: '📈',
+    kind: 'component',
+    builtin: true,
+    description: 'Live window-manager state.',
+    defaultSize: { width: 420, height: 340 },
+    component: TaskManager,
+  },
+  {
+    id: 'data',
+    name: 'Data',
+    icon: '📊',
+    kind: 'component',
+    builtin: true,
+    description: 'IrisTable in a managed window.',
+    defaultSize: { width: 560, height: 420 },
+    component: Data,
+  },
+  {
+    id: 'calculator',
+    name: 'Calculator',
+    icon: '🧮',
+    kind: 'component',
+    builtin: true,
+    description: 'A working calculator.',
+    defaultSize: { width: 300, height: 440 },
+    component: Calculator,
+  },
+  {
+    id: 'terminal',
+    name: 'Terminal',
+    icon: '⌨️',
+    kind: 'component',
+    builtin: true,
+    description: 'A faux in-window shell.',
+    defaultSize: { width: 520, height: 360 },
+    component: TerminalView,
+  },
+  {
+    id: 'photos',
+    name: 'Photos',
+    icon: '🖼️',
+    kind: 'component',
+    builtin: true,
+    description: 'A small image gallery.',
+    defaultSize: { width: 520, height: 420 },
+    component: Photos,
+  },
 
   // ── Installable LINK apps (open in a new tab; no window) ────────────────────
   {
@@ -138,6 +204,14 @@ export const CATALOG: AppManifest[] = [
     description: 'Open wikipedia.org in a new tab.',
     url: 'https://wikipedia.org',
   },
+  {
+    id: 'hackernews',
+    name: 'Hacker News',
+    icon: '📰',
+    kind: 'link',
+    description: 'Open news.ycombinator.com in a new tab.',
+    url: 'https://news.ycombinator.com',
+  },
 
   // ── Installable IFRAME apps (embed in a window; may be blocked) ─────────────
   {
@@ -148,6 +222,15 @@ export const CATALOG: AppManifest[] = [
     description: 'OpenStreetMap, embedded.',
     defaultSize: { width: 640, height: 480 },
     url: 'https://www.openstreetmap.org/export/embed.html?bbox=-0.2,51.4,0.0,51.6&layer=mapnik',
+  },
+  {
+    id: 'example',
+    name: 'Example',
+    icon: '🌐',
+    kind: 'iframe',
+    description: 'example.com, embedded.',
+    defaultSize: { width: 560, height: 420 },
+    url: 'https://example.com',
   },
 ]
 

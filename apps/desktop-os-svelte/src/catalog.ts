@@ -11,6 +11,7 @@
 import type { Component } from 'svelte'
 import About from './appviews/About.svelte'
 import Assistant from './appviews/Assistant.svelte'
+import AgentTools from './appviews/AgentTools.svelte'
 import Notepad from './appviews/Notepad.svelte'
 import Files from './appviews/Files.svelte'
 import Showcase from './appviews/Showcase.svelte'
@@ -68,6 +69,16 @@ export const CATALOG: AppManifest[] = [
       'Drive the desktop in natural language (command-registry agent, optional Claude planner).',
     defaultSize: { width: 460, height: 480 },
     component: Assistant,
+  },
+  {
+    id: 'agenttools',
+    name: 'Agent Tools',
+    icon: '🛠️',
+    kind: 'component',
+    builtin: true,
+    description: 'The MCP tools an external agent sees — invokable via runMcpTool.',
+    defaultSize: { width: 480, height: 460 },
+    component: AgentTools,
   },
   {
     id: 'appstore',

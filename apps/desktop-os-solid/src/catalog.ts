@@ -2,6 +2,7 @@ import { type JSX } from 'solid-js'
 import { AboutApp, FilesApp, NotepadApp, ShowcaseApp } from './apps'
 import { AppStoreApp } from './AppStore'
 import { AssistantApp } from './Assistant'
+import { AgentToolsApp } from './AgentTools'
 
 /**
  * App-aggregation manifest. The desktop is no longer a fixed set of Solid panes:
@@ -70,6 +71,16 @@ export const CATALOG: AppManifest[] = [
       'Drive the desktop in natural language (command-registry agent, optional Claude planner).',
     defaultSize: { width: 460, height: 480 },
     render: () => AssistantApp(),
+  },
+  {
+    id: 'agenttools',
+    name: 'Agent Tools',
+    icon: '🛠️',
+    kind: 'component',
+    builtin: true,
+    description: 'The MCP tools an external agent sees — invokable via runMcpTool.',
+    defaultSize: { width: 480, height: 460 },
+    render: () => AgentToolsApp(),
   },
   {
     id: 'files',

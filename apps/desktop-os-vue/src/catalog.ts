@@ -10,6 +10,7 @@
 import { markRaw, type Component } from 'vue'
 import About from './appviews/About.vue'
 import Assistant from './appviews/Assistant.vue'
+import AgentTools from './appviews/AgentTools.vue'
 import Notepad from './appviews/Notepad.vue'
 import Files from './appviews/Files.vue'
 import Showcase from './appviews/Showcase.vue'
@@ -80,6 +81,16 @@ export const CATALOG: AppManifest[] = [
       'Drive the desktop in natural language (command-registry agent, optional Claude planner).',
     defaultSize: { width: 460, height: 480 },
     component: markRaw(Assistant),
+  },
+  {
+    id: 'agenttools',
+    name: 'Agent Tools',
+    icon: '🛠️',
+    kind: 'component',
+    builtin: true,
+    description: 'The MCP tools an external agent sees — invokable via runMcpTool.',
+    defaultSize: { width: 480, height: 460 },
+    component: markRaw(AgentTools),
   },
   {
     id: 'files',

@@ -3,6 +3,7 @@ import { type WindowManager, type WindowManagerState } from '@iris-ui/core/windo
 import { type UserProfile, type ProfileData } from '@iris-ui/core/profile'
 import { type NotificationCenter, type NotificationCenterState } from '@iris-ui/core/notifications'
 import { type ClipboardHistory, type ClipboardHistoryState } from '@iris-ui/core/clipboard-history'
+import { type VirtualFs, type VfsState } from '@iris-ui/core/fs'
 import { type OsChrome, type OsId } from './os'
 import { type AppManifest, BUILTIN_APPS, getManifest, registerCustomApps } from './catalog'
 
@@ -89,6 +90,23 @@ export function useClipboard(): ClipboardHistory {
 export function useClipboardState(): ClipboardHistoryState {
   const c = useClipboard()
   return React.useSyncExternalStore(c.store.subscribe, c.store.getState, c.store.getState)
+}
+
+// ── Virtual file system ────────────────────────────────────────────────────────
+
+const FsContext = React.createContext<VirtualFs | null>(null)
+export const FsProvider = FsContext.Provider
+
+export function useFs(): VirtualFs {
+  const fs = React.useContext(FsContext)
+  if (!fs) throw new Error('useFs must be used within <FsProvider>')
+  return fs
+}
+
+/** Subscribe to the live virtual file system. */
+export function useFsState(): VfsState {
+  const fs = useFs()
+  return React.useSyncExternalStore(fs.store.subscribe, fs.store.getState, fs.store.getState)
 }
 
 /** Raw user-added web-app manifests from the profile (`customApps` pref). */

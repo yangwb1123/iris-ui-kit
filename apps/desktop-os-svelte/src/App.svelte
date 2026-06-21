@@ -1,9 +1,11 @@
 <script lang="ts">
   import { serializeSession, restoreSession, type WindowSession } from '@iris-ui/core/window'
+  import { type VfsState } from '@iris-ui/core/fs'
   import { barInsets } from './os'
   import { useOs } from './os-state.svelte'
   import { wm } from './wm.svelte'
   import { profile } from './profile.svelte'
+  import { fs } from './fs.svelte'
   import { getManifest, registerCustomApps, type AppManifest } from './catalog'
   import Desktop from './Desktop.svelte'
 
@@ -15,6 +17,32 @@
   // React shell (apps/desktop-os/src/App.tsx). `restored` is a plain (non-reactive)
   // guard so the debounced save can never overwrite the saved session before restore.
   let restored = false
+
+  // ── Virtual file-system persistence ────────────────────────────────────────
+  // User files survive a reload: hydrated ONCE from the profile `fs` pref (or
+  // seeded with a starter set), then re-saved (debounced) on every fs change.
+  // Mirrors the React shell (apps/desktop-os/src/App.tsx). `fsReady` is a plain
+  // (non-reactive) guard so the debounced save can't overwrite the saved state
+  // before hydrate runs.
+  let fsReady = false
+
+  /** Seed the fs from the saved `fs` pref, or a starter set of files. */
+  function hydrateFs(): void {
+    const saved = profile.getPref<VfsState>('fs')
+    if (saved && Array.isArray(saved.folders) && saved.files) {
+      fs.store.setState(() => saved)
+    } else if (Object.keys(fs.getState().files).length === 0) {
+      fs.write(
+        '/Documents/Welcome.txt',
+        'Welcome to Iris Desktop OS.\n\nThis Files app is a real virtual file system — create folders and text files, rename, delete. It persists to your profile and survives a reload.',
+      )
+      fs.write(
+        '/Documents/notes.md',
+        '# Notes\n\n- Backed by @iris-ui/core/fs\n- The same engine drives all four shells.',
+      )
+      fs.mkdir('/Pictures')
+    }
+  }
 
   /** The saved session, filtered to apps that still resolve (removed apps skipped). */
   function knownSession(): WindowSession {
@@ -45,6 +73,10 @@
   // synchronously on mount, so restored geometry clamps correctly).
   $effect(() => {
     void profile.hydrate().then(() => {
+      if (!fsReady) {
+        fsReady = true
+        hydrateFs()
+      }
       if (restored) return
       restored = true
       if (wm.getState().windows.length === 0) restoreSession(wm, knownSession())
@@ -58,6 +90,21 @@
       if (!restored) return
       clearTimeout(timer)
       timer = setTimeout(() => profile.setPref('session', serializeSession(wm.getState())), 400)
+    })
+    return () => {
+      clearTimeout(timer)
+      unsubscribe()
+    }
+  })
+
+  // Persist the virtual file system (debounced) on every fs change, once hydrate
+  // ran — so user files (and folder structure) survive a reload.
+  $effect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const unsubscribe = fs.subscribe(() => {
+      if (!fsReady) return
+      clearTimeout(timer)
+      timer = setTimeout(() => profile.setPref('fs', fs.getState()), 400)
     })
     return () => {
       clearTimeout(timer)

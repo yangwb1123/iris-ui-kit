@@ -126,7 +126,7 @@ export const CATALOG: AppManifest[] = [
     icon: '📁',
     kind: 'component',
     builtin: true,
-    description: 'A simple file browser.',
+    description: 'A real file manager over the virtual file system.',
     defaultSize: { width: 520, height: 400 },
     permissions: ['storage'],
     component: markRaw(Files),

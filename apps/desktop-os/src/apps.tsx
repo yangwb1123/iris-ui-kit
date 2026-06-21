@@ -71,40 +71,6 @@ export function NotepadView() {
   )
 }
 
-const FILES = [
-  { name: 'Documents', kind: 'folder', icon: '📁' },
-  { name: 'Pictures', kind: 'folder', icon: '📁' },
-  { name: 'roadmap-v4.md', kind: 'file', icon: '📄' },
-  { name: 'budget.xlsx', kind: 'file', icon: '📊' },
-  { name: 'wallpaper.png', kind: 'file', icon: '🖼️' },
-]
-
-export function FilesView() {
-  return (
-    <div style={{ padding: 12, display: 'grid', gap: 4 }}>
-      {FILES.map((f) => (
-        <div
-          key={f.name}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '8px 10px',
-            borderRadius: 6,
-            cursor: 'default',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(127,127,127,0.12)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-        >
-          <span style={{ fontSize: 20 }}>{f.icon}</span>
-          <span style={{ flex: 1 }}>{f.name}</span>
-          <span style={{ opacity: 0.5, fontSize: 12 }}>{f.kind}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 export function ShowcaseView() {
   const [name, setName] = React.useState('')
   return (

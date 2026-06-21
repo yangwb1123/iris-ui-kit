@@ -8,6 +8,7 @@ import {
 import { createUserProfile, localStorageProfileStorage } from '@iris-ui/core/profile'
 import { createNotificationCenter } from '@iris-ui/core/notifications'
 import { createClipboardHistory } from '@iris-ui/core/clipboard-history'
+import { createVirtualFs, type VfsState } from '@iris-ui/core/fs'
 import { CHROMES, barInsets, OS_ORDER, type OsId } from './os'
 import {
   WmProvider,
@@ -15,6 +16,8 @@ import {
   ProfileProvider,
   NotificationsProvider,
   ClipboardProvider,
+  FsProvider,
+  useFs,
   useProfileState,
 } from './shell'
 import { getManifest, registerCustomApps, type AppManifest } from './catalog'
@@ -47,6 +50,8 @@ function Shell({ profile, hydrated }: { profile: Profile; hydrated: boolean }) {
   const chrome = CHROMES[os]
   const rootRef = React.useRef<HTMLDivElement>(null)
   const restoredRef = React.useRef(false)
+  const fs = useFs()
+  const fsReadyRef = React.useRef(false)
 
   // Persist the skin to the profile (→ localStorage) so it survives a reload.
   const setOs = React.useCallback((id: OsId) => profile.setPref('skin', id), [profile])
@@ -95,6 +100,40 @@ function Shell({ profile, hydrated }: { profile: Profile; hydrated: boolean }) {
     }
   }, [wm, profile])
 
+  // Hydrate the virtual file system from the profile ONCE (or seed a starter set),
+  // then persist it (debounced) on every change — so user files survive reloads.
+  React.useEffect(() => {
+    if (!hydrated || fsReadyRef.current) return
+    fsReadyRef.current = true
+    const saved = profile.getPref<VfsState>('fs')
+    if (saved && Array.isArray(saved.folders) && saved.files) {
+      fs.store.setState(() => saved)
+    } else if (Object.keys(fs.getState().files).length === 0) {
+      fs.write(
+        '/Documents/Welcome.txt',
+        'Welcome to Iris Desktop OS.\n\nThis Files app is a real virtual file system — create folders and text files, rename, delete. It persists to your profile and survives a reload.',
+      )
+      fs.write(
+        '/Documents/notes.md',
+        '# Notes\n\n- Backed by @iris-ui/core/fs\n- The same engine drives all four shells.',
+      )
+      fs.mkdir('/Pictures')
+    }
+  }, [hydrated, profile, fs])
+
+  React.useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const unsubscribe = fs.subscribe(() => {
+      if (!fsReadyRef.current) return
+      clearTimeout(timer)
+      timer = setTimeout(() => profile.setPref('fs', fs.getState()), 400)
+    })
+    return () => {
+      clearTimeout(timer)
+      unsubscribe()
+    }
+  }, [fs, profile])
+
   return (
     <WmProvider value={wm}>
       <OsProvider value={{ chrome, setOs }}>
@@ -128,6 +167,8 @@ export function App() {
   const notifications = React.useRef(createNotificationCenter()).current
   // One clipboard history (the clipboard-manager engine).
   const clipboard = React.useRef(createClipboardHistory()).current
+  // One virtual file system (Files + document open/save).
+  const fs = React.useRef(createVirtualFs()).current
   const [hydrated, setHydrated] = React.useState(false)
 
   React.useEffect(() => {
@@ -138,7 +179,9 @@ export function App() {
     <ProfileProvider value={profile}>
       <NotificationsProvider value={notifications}>
         <ClipboardProvider value={clipboard}>
-          <Shell profile={profile} hydrated={hydrated} />
+          <FsProvider value={fs}>
+            <Shell profile={profile} hydrated={hydrated} />
+          </FsProvider>
         </ClipboardProvider>
       </NotificationsProvider>
     </ProfileProvider>

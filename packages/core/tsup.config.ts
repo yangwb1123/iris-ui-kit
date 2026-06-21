@@ -9,6 +9,7 @@ export default defineConfig({
     'src/commands.ts',
     'src/notifications.ts',
     'src/clipboard-history.ts',
+    'src/fs.ts',
   ],
   format: ['esm', 'cjs'],
   dts: true,

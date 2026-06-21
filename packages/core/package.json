@@ -42,6 +42,11 @@
       "types": "./dist/clipboard-history.d.ts",
       "import": "./dist/clipboard-history.js",
       "require": "./dist/clipboard-history.cjs"
+    },
+    "./fs": {
+      "types": "./dist/fs.d.ts",
+      "import": "./dist/fs.js",
+      "require": "./dist/fs.cjs"
     }
   },
   "files": [

@@ -1,13 +1,13 @@
 import * as React from 'react'
 import {
   AboutView,
-  FilesView,
   NotepadView,
   ShowcaseView,
   SettingsView,
   TaskManagerView,
   TerminalView,
 } from './apps'
+import { FilesApp } from './appviews/Files'
 import { DataApp } from './appviews/Data'
 import { CalculatorApp } from './appviews/Calculator'
 import { PhotosApp } from './appviews/Photos'
@@ -122,7 +122,7 @@ export const CATALOG: AppManifest[] = [
     description: 'A simple file browser.',
     defaultSize: { width: 520, height: 400 },
     permissions: ['storage'],
-    render: () => React.createElement(FilesView),
+    render: () => React.createElement(FilesApp),
   },
   {
     id: 'notepad',

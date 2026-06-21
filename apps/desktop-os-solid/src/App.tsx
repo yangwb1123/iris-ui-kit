@@ -14,6 +14,7 @@ import {
 import { createCommandRegistry } from '@iris-ui/core/commands'
 import { createNotificationCenter } from '@iris-ui/core/notifications'
 import { createClipboardHistory } from '@iris-ui/core/clipboard-history'
+import { createVirtualFs, type VirtualFs, type VfsState } from '@iris-ui/core/fs'
 import { barInsets } from './os'
 import { WmProvider, useWm } from './wm'
 import { ProfileProvider } from './profile'
@@ -21,6 +22,7 @@ import { OsProvider, useOs } from './os-state'
 import { CommandsProvider } from './commands'
 import { NotificationsProvider } from './notifications'
 import { ClipboardProvider } from './clipboard-context'
+import { FsProvider } from './fs-context'
 import { getManifest, registerCustomApps, type AppManifest } from './catalog'
 import { Desktop } from './Desktop'
 
@@ -44,6 +46,37 @@ function attachSessionPersistence(wm: WindowManager, profile: UserProfile): () =
   const unsubscribe = wm.subscribe(() => {
     clearTimeout(saveTimer)
     saveTimer = setTimeout(() => profile.setPref('session', serializeSession(wm.getState())), 400)
+  })
+  return () => {
+    clearTimeout(saveTimer)
+    unsubscribe()
+  }
+}
+
+/**
+ * Seed the virtual file system from the profile ONCE (the saved `fs` pref), or a
+ * starter set on a fresh profile, then persist it debounced on every change — so
+ * user files survive a reload. Mirrors the React shell's fs persistence.
+ */
+function attachFsPersistence(fs: VirtualFs, profile: UserProfile): () => void {
+  const saved = profile.getPref<VfsState>('fs')
+  if (saved && Array.isArray(saved.folders) && saved.files) {
+    fs.store.setState(() => saved)
+  } else if (Object.keys(fs.getState().files).length === 0) {
+    fs.write(
+      '/Documents/Welcome.txt',
+      'Welcome to Iris Desktop OS.\n\nThis Files app is a real virtual file system — create folders and text files, rename, delete. It persists to your profile and survives a reload.',
+    )
+    fs.write(
+      '/Documents/notes.md',
+      '# Notes\n\n- Backed by @iris-ui/core/fs\n- The same engine drives all four shells.',
+    )
+    fs.mkdir('/Pictures')
+  }
+  let saveTimer: ReturnType<typeof setTimeout> | undefined
+  const unsubscribe = fs.subscribe(() => {
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => profile.setPref('fs', fs.getState()), 400)
   })
   return () => {
     clearTimeout(saveTimer)
@@ -139,15 +172,24 @@ export function App(): JSX.Element {
   // ONE clipboard history (the clipboard-manager engine behind the Clipboard app).
   const clipboard = createClipboardHistory()
 
+  // ONE virtual file system (the engine behind the Files manager + document I/O).
+  const fs = createVirtualFs()
+
   onMount(() => {
-    // Hydrate the profile, then restore the window session + start persisting it.
-    // The Shell's work-area effects run synchronously on mount (before this async
-    // hydrate resolves), so geometry clamps against the real work area.
-    let detach: (() => void) | undefined
+    // Hydrate the profile, then restore the window session + seed/persist the fs,
+    // and start persisting both. The Shell's work-area effects run synchronously
+    // on mount (before this async hydrate resolves), so geometry clamps against
+    // the real work area.
+    let detachSession: (() => void) | undefined
+    let detachFs: (() => void) | undefined
     void profile.hydrate().then(() => {
-      detach = attachSessionPersistence(wm, profile)
+      detachSession = attachSessionPersistence(wm, profile)
+      detachFs = attachFsPersistence(fs, profile)
     })
-    onCleanup(() => detach?.())
+    onCleanup(() => {
+      detachSession?.()
+      detachFs?.()
+    })
   })
 
   return (
@@ -157,7 +199,9 @@ export function App(): JSX.Element {
           <CommandsProvider registry={commands}>
             <NotificationsProvider notifications={notifications}>
               <ClipboardProvider clipboard={clipboard}>
-                <Shell />
+                <FsProvider fs={fs}>
+                  <Shell />
+                </FsProvider>
               </ClipboardProvider>
             </NotificationsProvider>
           </CommandsProvider>

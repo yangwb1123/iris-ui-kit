@@ -1,5 +1,6 @@
 import { type JSX } from 'solid-js'
-import { AboutApp, FilesApp, NotepadApp, ShowcaseApp } from './apps'
+import { AboutApp, NotepadApp, ShowcaseApp } from './apps'
+import { FilesApp } from './Files'
 import { AppStoreApp } from './AppStore'
 import { AssistantApp } from './Assistant'
 import { AgentToolsApp } from './AgentTools'
@@ -116,7 +117,7 @@ export const CATALOG: AppManifest[] = [
     icon: '📁',
     kind: 'component',
     builtin: true,
-    description: 'A simple file browser.',
+    description: 'A real file manager over the virtual file system.',
     defaultSize: { width: 520, height: 400 },
     permissions: ['storage'],
     render: () => FilesApp(),

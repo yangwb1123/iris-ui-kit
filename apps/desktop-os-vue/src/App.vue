@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { serializeSession, restoreSession, type WindowSession } from '@iris-ui/core/window'
+import { type VfsState } from '@iris-ui/core/fs'
 import { wm } from './wm'
+import { fs } from './fs'
 import { profile } from './profile'
 import { getManifest, registerCustomApps, type AppManifest } from './catalog'
 import { useOs } from './os-state'
@@ -40,6 +42,14 @@ const restored = ref(false)
 let saveUnsubscribe: (() => void) | undefined
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 
+// ── Virtual file-system persistence ──────────────────────────────────────────
+// The Files app's contents survive a reload: hydrated ONCE from the profile (or
+// seeded with a starter set), then re-saved (debounced) on every change. Mirrors
+// the React shell (apps/desktop-os/src/App.tsx).
+const fsReady = ref(false)
+let fsSaveUnsubscribe: (() => void) | undefined
+let fsSaveTimer: ReturnType<typeof setTimeout> | undefined
+
 /** The saved session, filtered to apps that still resolve (removed apps skipped). */
 function knownSession(): WindowSession {
   const raw = profile.getPref<WindowSession>('session')
@@ -62,6 +72,36 @@ function restoreSessionOnce() {
   saveUnsubscribe = wm.subscribe(() => {
     clearTimeout(saveTimer)
     saveTimer = setTimeout(() => profile.setPref('session', serializeSession(wm.getState())), 400)
+  })
+}
+
+/**
+ * Hydrate the virtual file system from the profile ONCE (or seed a starter set),
+ * then persist it (debounced) on every change — so user files survive reloads.
+ * Runs after hydrate has populated prefs, so the saved `fs` pref is available.
+ */
+function hydrateFsOnce() {
+  if (fsReady.value) return
+  fsReady.value = true
+  const saved = profile.getPref<VfsState>('fs')
+  if (saved && Array.isArray(saved.folders) && saved.files) {
+    fs.store.setState(() => saved)
+  } else if (Object.keys(fs.getState().files).length === 0) {
+    fs.write(
+      '/Documents/Welcome.txt',
+      'Welcome to Iris Desktop OS.\n\nThis Files app is a real virtual file system — create folders and text files, rename, delete. It persists to your profile and survives a reload.',
+    )
+    fs.write(
+      '/Documents/notes.md',
+      '# Notes\n\n- Backed by @iris-ui/core/fs\n- The same engine drives all four shells.',
+    )
+    fs.mkdir('/Pictures')
+  }
+  // Persist (debounced) on every fs change, now that hydrate has run — so the
+  // debounced save can never overwrite the saved state before hydrate.
+  fsSaveUnsubscribe = fs.subscribe(() => {
+    clearTimeout(fsSaveTimer)
+    fsSaveTimer = setTimeout(() => profile.setPref('fs', fs.getState()), 400)
   })
 }
 
@@ -90,8 +130,12 @@ onMounted(() => {
     ro.observe(el)
   }
   // Restore the persisted profile (incl. the saved OS skin) — the desktop renders
-  // immediately and re-skins when hydrate lands — then restore the window session.
-  void profile.hydrate().then(restoreSessionOnce)
+  // immediately and re-skins when hydrate lands — then restore the window session
+  // and hydrate the virtual file system.
+  void profile.hydrate().then(() => {
+    restoreSessionOnce()
+    hydrateFsOnce()
+  })
 })
 
 // Recompute the work area when the OS changes (top-bar appears, bar height differs).
@@ -101,6 +145,8 @@ onUnmounted(() => {
   ro?.disconnect()
   clearTimeout(saveTimer)
   saveUnsubscribe?.()
+  clearTimeout(fsSaveTimer)
+  fsSaveUnsubscribe?.()
 })
 </script>
 

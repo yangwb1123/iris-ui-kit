@@ -19,9 +19,7 @@
   }
   let { name, componentProps, childText }: Props = $props()
 
-  const Comp = $derived(
-    (SvelteIris as Record<string, unknown>)[name] as AnyComponent | undefined,
-  )
+  const Comp = $derived((SvelteIris as Record<string, unknown>)[name] as AnyComponent | undefined)
 </script>
 
 {#if Comp}

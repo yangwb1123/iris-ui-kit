@@ -46,7 +46,7 @@ Behaviors:                (ClickOutside / Movable / Resizable / Hotkey)  ← ort
 
 On top of the component layers sits a Vben-style **admin layer** (the `admin` entry of every adapter, e.g. `@iris-ui/react/admin`): `AdminLayout` shell, `NavMenu`, `AdminTabs` tab navigation, and `AdminBreadcrumb`, all driven by the core nav/tabsNav engines. And for AI agents, **`@iris-ui/mcp`** serves the typed component manifest over the Model Context Protocol — list, search, fetch a component's full prop contract, or scaffold a ready-to-edit usage snippet in any of the four frameworks.
 
-Read [AGENTS.md](./AGENTS.md) for the full vision and [ROADMAP.md](./ROADMAP.md) for the expansion plan.
+Read [AGENTS.md](./AGENTS.md) for the full vision and [ROADMAP.md](./docs/ROADMAP.md) for the expansion plan.
 
 ## Usage
 

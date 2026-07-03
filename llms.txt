@@ -12,9 +12,9 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 - Layer 4 — System Skeletons: Page / section skeleton scaffolds.
 - Behaviors: Orthogonal interaction behaviors (hotkeys, click-outside, drag).
 
-## Components (149 total — 149 in all 4 frameworks; react 149, vue 149, solid 149, svelte 149)
+## Components (151 total — 151 in all 4 frameworks; react 151, vue 151, solid 151, svelte 151)
 
-### behaviors (4)
+### behaviors (6)
 - IrisClickOutside [react/solid/svelte/vue]
   Behavior wrapper: fires `onOutside` when a pointerdown happens outside the wrapped child tree. Renders a thin `<span style="display:contents">` to capture the child's bounding box without disrupting layout.
   props: onOutside, disabled?, ignore?, children?
@@ -24,6 +24,10 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   Behavior wrapper: binds a global keyboard shortcut while children are mounted. Renderless — returns children verbatim (no extra DOM).
   props: shortcut, onTrigger, disabled?, allowInInputs?, scope?, children?
   events: onTrigger
+  slots: default
+- IrisLongPress [react/solid/svelte/vue]
+  props: holdDelay?, onLongPress, disabled?, children?
+  events: onLongPress
   slots: default
 - IrisMovable [react/solid/svelte/vue]
   Behavior wrapper: makes its child draggable. Position is `transform`-based (no layout thrash). The whole wrapper drags by default; pass `byHandle` and put `data-iris-movable-handle=""` on a descendant (e.g. a title bar) to restrict the drag origin.
@@ -35,10 +39,14 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: size?, defaultSize?, onSizeChange?, onResizeStart?, onResizeEnd?, handles?, minWidth?, minHeight?, maxWidth?, maxHeight?, keepAspect?, disabled?, children?
   events: onSizeChange, onResizeStart, onResizeEnd
   slots: default
+- IrisSortable [react/solid/svelte/vue]
+  props: items, onReorder, getKey?, children?, className?, style?, disabled?
+  events: onReorder
+  slots: default
 
 ### form (1)
 - IrisForm [react/solid/svelte/vue]
-  Provides the form store to descendant `useField` calls and wires the native `<form>` submit to `handleSubmit` (with `preventDefault`). Composition:
+  Provides the form store to descendant `useField` calls and wires the native `<form>` submit to `handleSubmit` (with `preventDefault`).
   props: form, children?
   slots: default
 
@@ -481,11 +489,11 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: maxHeight?, maxWidth?, axis?, children?, style?, className?
   slots: default
 - IrisSegmented [react/solid/svelte/vue]
-  Segmented control: a connected row of single-select segments with the active one visually raised. Radiogroup semantics with roving tabindex and Arrow / Home / End keyboard navigation (skipping disabled segments).
+  Segmented control: a connected row of single-select segments with the active one visually raised. Radiogroup semantics with roving tabindex and Arrow / Home / End keyboard navigation — single-sourced in `createKeyboardNav`.
   props: options, value?, defaultValue?, onValueChange?, size?, disabled?, block?, ariaLabel?, style?, className?
   events: onValueChange
 - IrisSelect [react/solid/svelte/vue]
-  Single-select dropdown. Composes Popover (positioning + dismiss) with an inline listbox (keyboard nav + selection). Each option is `role="option"` inside a `role="listbox"` ul.
+  Single-select dropdown. Composes Popover (positioning + dismiss) with an inline listbox (keyboard nav + selection). Arrow-key, typeahead, Home/End, and Enter/Space navigation are single-sourced in `createKeyboardNav` (core).
   props: items, value?, defaultValue?, onValueChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, style?, className?
   events: onValueChange
   slots: renderTrigger
@@ -599,7 +607,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   props: options, value?, defaultValue?, onValueChange?, defaultExpanded?, placeholder?, disabled?, invalid?, size?, id?, ariaDescribedby?, style?, className?
   events: onValueChange
 - IrisVirtualScroll [react/solid/svelte/vue]
-  Virtual scroller. Renders only the visible window of items plus a configurable buffer above and below. Vertical-only. `itemHeight` may be a fixed number or a `(index) => px` function for variable-height rows.
+  Virtual scroller. Renders only the visible window of items plus a configurable buffer above and below. Vertical-only. `itemHeight` may be a fixed number, a `(index) => px` function for variable-height rows, or `'auto'` to measure rendered rows.
   props: items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, renderItem, onScroll?, onRangeChange?, style?, className?
   events: onScroll, onRangeChange
   slots: renderItem
@@ -622,7 +630,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
   events: onSubmit
   slots: header, forgot, footer
 
-## Design tokens (21)
-- colors: iris.background, iris.foreground, iris.surface, iris.surface.hover, iris.border, iris.muted, iris.primary, iris.primary.foreground, iris.accent, iris.danger, iris.success, iris.warning
-- spacing: iris.gap.sm, iris.gap.md, iris.gap.lg, iris.padding.sm, iris.padding.md, iris.padding.lg
+## Design tokens (33)
+- colors: iris.background, iris.foreground, iris.surface, iris.surface.hover, iris.border, iris.muted, iris.primary, iris.primary.foreground, iris.accent, iris.danger, iris.danger.subtle, iris.success, iris.warning, iris.info, iris.muted.subtle, iris.surface.selected, iris.primary.ghost, iris.font.family, iris.font.mono, iris.font.size.sm, iris.font.size.md, iris.font.size.lg
+- spacing: iris.gap.sm, iris.gap.md, iris.gap.lg, iris.padding.sm, iris.padding.md, iris.padding.lg, iris.masonry.gap, iris.breadcrumb.gap
 - radii: iris.radius.sm, iris.radius.md, iris.radius.lg

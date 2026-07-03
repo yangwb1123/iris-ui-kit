@@ -35,7 +35,9 @@ const SOURCE_EXT = /\.(ts|tsx|svelte)$/
 /** Files with a vetted, documented reason to be exempt (path suffix → why). */
 const ALLOWED: Record<string, string> = {
   // No current exceptions. Example shape if ever needed:
-  // 'packages/foo/src/bar.ts': 'legacy upstream typing — tracked in #123',
+  // Keep entries below sorted by relative path.
+  'packages/core/src/form.ts':
+    'createDirtyGuard: as any casts for beforeunload event (deprecated returnValue + globalThis addEventListener)',
   'packages/plugin-pro-table/src/solid/index.tsx':
     'SolidJS style prop exceeds TS complexity limit (TS2590); cast is scoped inline',
 }

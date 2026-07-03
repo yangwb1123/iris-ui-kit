@@ -37,12 +37,14 @@
   "groups": [
     {
       "group": "behaviors",
-      "count": 4,
+      "count": 6,
       "components": [
         "IrisClickOutside",
         "IrisHotkey",
+        "IrisLongPress",
         "IrisMovable",
-        "IrisResizable"
+        "IrisResizable",
+        "IrisSortable"
       ]
     },
     {
@@ -669,6 +671,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "React port of {@link import('@iris-ui/vue').IrisAlert}.",
+      "example": "  <IrisAlert tone=\"warning\" title=\"Heads up\" closable onClose={dismiss}>\n    Your session expires soon.\n  </IrisAlert>",
       "props": [
         {
           "name": "tone",
@@ -845,6 +848,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "React port of {@link import('@iris-ui/vue').IrisAvatar}.",
+      "example": "  <IrisAvatar src=\"/me.png\" name=\"Ada Lovelace\" size=\"md\" />",
       "props": [
         {
           "name": "src",
@@ -987,6 +991,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "React port of {@link import('@iris-ui/vue').IrisBadge}. Same visual model.",
+      "example": "  <IrisBadge tone=\"success\" variant=\"subtle\">Active</IrisBadge>",
       "props": [
         {
           "name": "variant",
@@ -1281,6 +1286,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "React port of `IrisButton`. Same prop contract as `@iris-ui/vue`'s version. **No business logic is duplicated** — the `composeEventHandlers` helper, variant token map, and singleton stylesheet are all from `@iris-ui/core` / a near-identical CSS file.",
+      "example": "  <IrisButton variant=\"solid\" onClick={() => save()}>\n    Save\n  </IrisButton>",
       "props": [
         {
           "name": "variant",
@@ -1467,6 +1473,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "React port of {@link import('@iris-ui/vue').IrisCard}.",
+      "example": "  <IrisCard variant=\"elevated\" header={<h3>Title</h3>}>\n    Card body content.\n  </IrisCard>",
       "props": [
         {
           "name": "variant",
@@ -1740,6 +1747,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "Tri-state checkbox supporting `true`, `false`, and `'indeterminate'`, in both controlled (`checked`) and uncontrolled (`defaultChecked`) modes.",
+      "example": "  <IrisCheckbox checked={agreed} onChange={(next) => setAgreed(next)}>\n    I agree to the terms\n  </IrisCheckbox>",
       "props": [
         {
           "name": "checked",
@@ -2939,6 +2947,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "Modal dialog root. Wraps a Trigger + Content (+ optional Title / Description / Close) and threads a state machine + DOM refs + IDs through React context. Supports controlled (`open` + `onOpenChange`) and uncontrolled (`defaultOpen`) modes.",
+      "example": "  <IrisDialog>\n    <IrisDialogTrigger>Open</IrisDialogTrigger>\n    <IrisDialogContent>\n      <IrisDialogTitle>Confirm</IrisDialogTitle>\n      <IrisDialogClose>Done</IrisDialogClose>\n    </IrisDialogContent>\n  </IrisDialog>",
       "props": [
         {
           "name": "open",
@@ -3291,6 +3300,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "Slide-in overlay. Mirrors `IrisDialog`'s composition but anchors to a screen edge with a transform-based open animation. Defaults to the right.",
+      "example": "  <IrisDrawer>\n    <IrisDrawerTrigger>Open</IrisDrawerTrigger>\n    <IrisDrawerContent>\n      <IrisDrawerTitle>Settings</IrisDrawerTitle>\n      <p>…</p>\n      <IrisDrawerClose>Close</IrisDrawerClose>\n    </IrisDrawerContent>\n  </IrisDrawer>",
       "props": [
         {
           "name": "open",
@@ -4063,7 +4073,8 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
-      "description": "Provides the form store to descendant `useField` calls and wires the native `<form>` submit to `handleSubmit` (with `preventDefault`). Composition:",
+      "description": "Provides the form store to descendant `useField` calls and wires the native `<form>` submit to `handleSubmit` (with `preventDefault`).",
+      "example": "  const f = useForm({ initialValues: { email: '' }, onSubmit })\n  <IrisForm form={f.form}>\n    <IrisFormField label=\"Email\"><EmailField /></IrisFormField>\n    <IrisButton type=\"submit\" disabled={f.isSubmitting}>Save</IrisButton>\n  </IrisForm>",
       "props": [
         {
           "name": "form",
@@ -4656,6 +4667,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "Single-line text input with size variants, an `invalid` state, and optional `prefix`/`suffix` adornments. Forwards its ref to the native `<input>`.",
+      "example": "  <IrisInput value={name} onChange={(e) => setName(e.target.value)} placeholder=\"Name\" />",
       "props": [
         {
           "name": "size",
@@ -5089,6 +5101,54 @@
         "header",
         "forgot",
         "footer"
+      ]
+    },
+    {
+      "name": "IrisLongPress",
+      "group": "behaviors",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
+        "vue": "@iris-ui/vue"
+      },
+      "props": [
+        {
+          "name": "holdDelay",
+          "type": "number",
+          "optional": true,
+          "description": "Time in ms the pointer must be held before `onLongPress` fires.",
+          "default": "500"
+        },
+        {
+          "name": "onLongPress",
+          "type": "() => void",
+          "optional": false,
+          "description": "Called once when the hold reaches `holdDelay`."
+        },
+        {
+          "name": "disabled",
+          "type": "boolean",
+          "optional": true,
+          "default": "false"
+        },
+        {
+          "name": "children",
+          "type": "React.ReactNode",
+          "optional": true
+        }
+      ],
+      "events": [
+        "onLongPress"
+      ],
+      "slots": [
+        "default"
       ]
     },
     {
@@ -6002,6 +6062,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "Numeric page selector with prev/next + optional first/last buttons and two-sided ellipsis. Stateless visual; the caller owns `value`.",
+      "example": "  <IrisPagination total={240} pageSize={20} value={page} onValueChange={setPage} />",
       "props": [
         {
           "name": "value",
@@ -6654,6 +6715,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "React port of {@link import('@iris-ui/vue').IrisRadioGroup}.",
+      "example": "  <IrisRadioGroup value={plan} onChange={setPlan}>\n    <IrisRadio value=\"free\">Free</IrisRadio>\n    <IrisRadio value=\"pro\">Pro</IrisRadio>\n  </IrisRadioGroup>",
       "props": [
         {
           "name": "name",
@@ -7293,7 +7355,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
-      "description": "Segmented control: a connected row of single-select segments with the active one visually raised. Radiogroup semantics with roving tabindex and Arrow / Home / End keyboard navigation (skipping disabled segments).",
+      "description": "Segmented control: a connected row of single-select segments with the active one visually raised. Radiogroup semantics with roving tabindex and Arrow / Home / End keyboard navigation — single-sourced in `createKeyboardNav`.",
       "props": [
         {
           "name": "options",
@@ -7375,7 +7437,8 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
-      "description": "Single-select dropdown. Composes Popover (positioning + dismiss) with an inline listbox (keyboard nav + selection). Each option is `role=\"option\"` inside a `role=\"listbox\"` ul.",
+      "description": "Single-select dropdown. Composes Popover (positioning + dismiss) with an inline listbox (keyboard nav + selection). Arrow-key, typeahead, Home/End, and Enter/Space navigation are single-sourced in `createKeyboardNav` (core).",
+      "example": "  <IrisSelect\n    items={[{ value: 'a', label: 'Apple' }, { value: 'b', label: 'Banana' }]}\n    value={fruit}\n    onValueChange={setFruit}\n    placeholder=\"Pick a fruit\"\n  />",
       "props": [
         {
           "name": "items",
@@ -7693,6 +7756,66 @@
           "type": "React.ReactNode",
           "optional": true
         }
+      ],
+      "slots": [
+        "default"
+      ]
+    },
+    {
+      "name": "IrisSortable",
+      "group": "behaviors",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui/react",
+        "solid": "@iris-ui/solid",
+        "svelte": "@iris-ui/svelte",
+        "vue": "@iris-ui/vue"
+      },
+      "props": [
+        {
+          "name": "items",
+          "type": "readonly T[]",
+          "optional": false
+        },
+        {
+          "name": "onReorder",
+          "type": "(next: T[]) => void",
+          "optional": false
+        },
+        {
+          "name": "getKey",
+          "type": "(item: T, index: number) => string",
+          "optional": true
+        },
+        {
+          "name": "children",
+          "type": "React.ReactNode",
+          "optional": true
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "style",
+          "type": "React.CSSProperties",
+          "optional": true
+        },
+        {
+          "name": "disabled",
+          "type": "boolean",
+          "optional": true,
+          "default": "false"
+        }
+      ],
+      "events": [
+        "onReorder"
       ],
       "slots": [
         "default"
@@ -8257,6 +8380,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "Toggle switch for an on/off boolean, in controlled (`checked`) or uncontrolled (`defaultChecked`) modes. Rendered with `role=\"switch\"`.",
+      "example": "  <IrisSwitch checked={enabled} onChange={(next) => setEnabled(next)} />",
       "props": [
         {
           "name": "checked",
@@ -8549,6 +8673,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "Tabs root. Provides context for value, orientation, lazy mounting, and the ordered set of registered triggers so arrow-key navigation can move focus deterministically (skipping disabled triggers).",
+      "example": "  <IrisTabs defaultValue=\"a\">\n    <IrisTabsList>\n      <IrisTabsTrigger value=\"a\">First</IrisTabsTrigger>\n      <IrisTabsTrigger value=\"b\">Second</IrisTabsTrigger>\n    </IrisTabsList>\n    <IrisTabsContent value=\"a\">Panel A</IrisTabsContent>\n    <IrisTabsContent value=\"b\">Panel B</IrisTabsContent>\n  </IrisTabs>",
       "props": [
         {
           "name": "value",
@@ -8810,6 +8935,7 @@
         "vue": "@iris-ui/vue"
       },
       "description": "Multi-line text input with size variants and an `invalid` state. Optionally grows to fit its content when `autosize` is set, capped at `maxRows`.",
+      "example": "  <IrisTextarea value={bio} onChange={(e) => setBio(e.target.value)} autosize maxRows={6} />",
       "props": [
         {
           "name": "size",
@@ -9593,7 +9719,7 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
-      "description": "Virtual scroller. Renders only the visible window of items plus a configurable buffer above and below. Vertical-only. `itemHeight` may be a fixed number or a `(index) => px` function for variable-height rows.",
+      "description": "Virtual scroller. Renders only the visible window of items plus a configurable buffer above and below. Vertical-only. `itemHeight` may be a fixed number, a `(index) => px` function for variable-height rows, or `'auto'` to measure rendered rows.",
       "props": [
         {
           "name": "items",
@@ -9777,8 +9903,18 @@
       "iris.primary.foreground",
       "iris.accent",
       "iris.danger",
+      "iris.danger.subtle",
       "iris.success",
-      "iris.warning"
+      "iris.warning",
+      "iris.info",
+      "iris.muted.subtle",
+      "iris.surface.selected",
+      "iris.primary.ghost",
+      "iris.font.family",
+      "iris.font.mono",
+      "iris.font.size.sm",
+      "iris.font.size.md",
+      "iris.font.size.lg"
     ],
     "spacing": [
       "iris.gap.sm",
@@ -9786,7 +9922,9 @@
       "iris.gap.lg",
       "iris.padding.sm",
       "iris.padding.md",
-      "iris.padding.lg"
+      "iris.padding.lg",
+      "iris.masonry.gap",
+      "iris.breadcrumb.gap"
     ],
     "radii": [
       "iris.radius.sm",
@@ -9804,27 +9942,39 @@
       "iris.primary.foreground",
       "iris.accent",
       "iris.danger",
+      "iris.danger.subtle",
       "iris.success",
       "iris.warning",
+      "iris.info",
+      "iris.muted.subtle",
+      "iris.surface.selected",
+      "iris.primary.ghost",
+      "iris.font.family",
+      "iris.font.mono",
+      "iris.font.size.sm",
+      "iris.font.size.md",
+      "iris.font.size.lg",
       "iris.gap.sm",
       "iris.gap.md",
       "iris.gap.lg",
       "iris.padding.sm",
       "iris.padding.md",
       "iris.padding.lg",
+      "iris.masonry.gap",
+      "iris.breadcrumb.gap",
       "iris.radius.sm",
       "iris.radius.md",
       "iris.radius.lg"
     ]
   },
   "stats": {
-    "total": 149,
-    "full": 149,
+    "total": 151,
+    "full": 151,
     "byFramework": {
-      "react": 149,
-      "vue": 149,
-      "solid": 149,
-      "svelte": 149
+      "react": 151,
+      "vue": 151,
+      "solid": 151,
+      "svelte": 151
     }
   }
 }

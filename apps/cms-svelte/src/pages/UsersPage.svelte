@@ -299,7 +299,11 @@
       <div style="padding: 16px">
         <IrisStack spacing={16}>
           <IrisFormField label="Name" required>
-            <IrisInput value={draft.name} oninput={(e) => (draft.name = e.currentTarget.value)} aria-label="Name" />
+            <IrisInput
+              value={draft.name}
+              oninput={(e) => (draft.name = e.currentTarget.value)}
+              aria-label="Name"
+            />
           </IrisFormField>
           <IrisFormField label="Email" required>
             <IrisInput
@@ -337,10 +341,7 @@
   </IrisDrawer>
 
   <!-- Delete confirmation. -->
-  <IrisDialog
-    open={confirmDelete !== null}
-    onOpenChange={(o) => !o && (confirmDelete = null)}
-  >
+  <IrisDialog open={confirmDelete !== null} onOpenChange={(o) => !o && (confirmDelete = null)}>
     <IrisDialogContent>
       <IrisDialogTitle>Delete user?</IrisDialogTitle>
       <IrisDialogDescription>

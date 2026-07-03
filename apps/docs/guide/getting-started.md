@@ -1,14 +1,21 @@
 # Getting started
 
-Iris UI ships the same components for **React 18** and **Vue 3** — identical names, identical semantics — over a shared framework-agnostic core.
+Iris UI ships the same components for **React 18**, **Vue 3**, **Solid** and **Svelte 5** — identical names, identical semantics — over a shared framework-agnostic core.
 
 ## Install
 
 ```bash
 # React
 pnpm add @iris-ui/react @iris-ui/theme @iris-ui/tokens
+
 # Vue
 pnpm add @iris-ui/vue @iris-ui/theme @iris-ui/tokens
+
+# Solid
+pnpm add @iris-ui/solid @iris-ui/theme @iris-ui/tokens
+
+# Svelte
+pnpm add @iris-ui/svelte @iris-ui/theme @iris-ui/tokens
 ```
 
 ## Wrap your app in a ThemeProvider
@@ -33,9 +40,17 @@ export function App() {
 }
 ```
 
-```ts
+````ts
 // Vue — same store, mirrored provider
 import { ThemeProvider } from '@iris-ui/vue'
+
+```solid
+// Solid — same store, mirrored provider
+import { ThemeProvider } from '@iris-ui/solid'
+````
+
+```svelte
+// Svelte — same store, mirrored provider import {ThemeProvider} from '@iris-ui/svelte'
 ```
 
 ## Deep imports

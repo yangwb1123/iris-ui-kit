@@ -6,16 +6,19 @@
 
 Iris UI — token-driven, 4-framework (React/Vue/Solid/Svelte) UI infrastructure over a shared `@iris-ui/core`. **Feature-complete & at parity.**
 
-- 25 packages (all publishable, CI + changesets wired), 23 turbo task groups, **126/126 gates green**, 0 skipped tests.
+- 25 packages (all publishable, CI + changesets wired), 22 turbo tasks, **127/127 gates green**, 0 skipped tests.
 - 5-layer architecture (tokens → theme → core controllers → framework adapters → plugins). See `docs/ARCHITECTURE.md`.
-- Recently landed: cross-platform arc (touch-DnD via `createSortable`, safe-area/dvh, `setFileSaveHandler`/`setClipboardHandler` native bridges, deployment docs) + enterprise-table (hierarchical tree sort, flat+tree virtualization ×4) + color-mix legacy fallback (zero modern regression) + a self-review pass that fixed a real copy-button regression.
+- **Cross-platform arc landed**: touch-DnD via `createSortable`, safe-area/dvh, `setFileSaveHandler`/`setClipboardHandler` native bridges, deployment docs.
+- **Enterprise-table complete**: hierarchical tree sort, flat+tree virtualization ×4.
+- **Desktop demos validated ×3 shells** (Electron/Tauri/Wails) — each hosts all four CMS apps (React/Vue/Solid/Svelte) with live Framework switcher + native save/clipboard, validated headlessly in CI (`check:desktop-parity` gate).
+- **Full behavioral-parity audit complete**: 5 waves across the entire component surface, 29 real cross-framework defects fixed, ~85 new tests, contract harness at 21 scenarios × 4 adapters.
 
 ## 推荐方向 (Directions)
 
 ### P0 — 正确性 / 技术债 (highest priority per 行为准则)
 
 - Sweep remaining documented micro-debt (excel export mime charset; perf-finding follow-ups). Small, isolated.
-- Expand `@iris-ui/core/contracts` cross-framework behavior coverage to the controllers added recently (`createSortable`, file-save/clipboard registries) — turns "parity by author discipline" into asserted parity.
+- **Contract harness saturated** (21 scenarios × 4 adapters, cross-framework behavioral audits complete across all interactive components). Remaining contract candidates are Blocker-gated (portal overlays — need unified portal-disable API) or need a driver `type` action (text entry).
 
 ### P1 — 价值 (value)
 

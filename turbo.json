@@ -50,6 +50,21 @@
       "cache": false,
       "outputs": []
     },
+    "audit:tokens": {
+      "dependsOn": [],
+      "cache": false,
+      "outputs": []
+    },
+    "test:coverage": {
+      "dependsOn": [],
+      "cache": false,
+      "outputs": []
+    },
+    "check:desktop-parity": {
+      "dependsOn": [],
+      "cache": false,
+      "outputs": []
+    },
     "clean": {
       "cache": false
     },

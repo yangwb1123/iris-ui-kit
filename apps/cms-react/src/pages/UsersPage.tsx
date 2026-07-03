@@ -3,7 +3,6 @@ import {
   IrisAvatar,
   IrisBadge,
   IrisButton,
-  IrisCheckbox,
   IrisDialog,
   IrisDialogContent,
   IrisDialogTitle,
@@ -17,9 +16,12 @@ import {
   IrisPagination,
   IrisSelect,
   IrisStack,
+  IrisTable,
   useResourceController,
   useToast,
   type IrisSelectItem,
+  type IrisTableColumn,
+  type IrisTableSortState,
 } from '@iris-ui/react'
 import {
   createUser,
@@ -43,14 +45,6 @@ const statusItems: IrisSelectItem<UserStatus>[] = USER_STATUSES.map((s) => ({ va
 const tone = (s: UserStatus): 'success' | 'warning' | 'danger' =>
   s === 'active' ? 'success' : s === 'invited' ? 'warning' : 'danger'
 
-/** Tri-state header sort cycle: none → asc → desc → none. */
-type Sort = { key: string; direction: 'asc' | 'desc' } | null
-function nextSort(current: Sort, key: string): Sort {
-  if (!current || current.key !== key) return { key, direction: 'asc' }
-  if (current.direction === 'asc') return { key, direction: 'desc' }
-  return null
-}
-
 const emptyDraft: UserDraft = { name: '', email: '', role: 'Viewer', status: 'invited' }
 
 /**
@@ -73,18 +67,63 @@ export function UsersPage() {
   const [confirmDelete, setConfirmDelete] = useState<User | null>(null)
   const [confirmBulk, setConfirmBulk] = useState(false)
 
-  const pageIds = users.state.rows.map((u) => String(u.id))
-  const allOnPage = pageIds.length > 0 && pageIds.every((id) => users.selection.isSelected(id))
+  // Bulk-delete uses the controller's selected keys.
   const selectedIds = users.state.selectedKeys.map(Number)
 
-  const ariaSort = (key: string): 'ascending' | 'descending' | 'none' =>
-    users.state.sort?.key === key
-      ? users.state.sort.direction === 'asc'
-        ? 'ascending'
-        : 'descending'
-      : 'none'
-  const sortGlyph = (key: string) =>
-    users.state.sort?.key === key ? (users.state.sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
+  const columns: IrisTableColumn[] = [
+    {
+      key: 'user',
+      title: 'User',
+      sortable: true,
+      render: (_value: unknown, row: Record<string, unknown>) => (
+        <span className="cms-user">
+          <IrisAvatar name={(row as unknown as User).name} size={32} />
+          <span>
+            <div style={{ fontWeight: 600 }}>{(row as unknown as User).name}</div>
+            <div style={{ color: 'var(--iris-muted)', fontSize: 12 }}>
+              {(row as unknown as User).email}
+            </div>
+          </span>
+        </span>
+      ),
+    },
+    { key: 'role', title: 'Role', sortable: true },
+    {
+      key: 'status',
+      title: 'Status',
+      render: (_value: unknown, row: Record<string, unknown>) => (
+        <IrisBadge tone={tone((row as unknown as User).status)} variant="subtle">
+          {(row as unknown as User).status}
+        </IrisBadge>
+      ),
+    },
+    ...(canWrite
+      ? [
+          {
+            key: 'actions',
+            title: 'Actions',
+            render: (_value: unknown, row: Record<string, unknown>) => (
+              <span style={{ display: 'inline-flex', gap: 6 }}>
+                <IrisButton
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => openEdit(row as unknown as User)}
+                >
+                  Edit
+                </IrisButton>
+                <IrisButton
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setConfirmDelete(row as unknown as User)}
+                >
+                  Delete
+                </IrisButton>
+              </span>
+            ),
+          } as IrisTableColumn,
+        ]
+      : []),
+  ]
 
   const openCreate = () => {
     setEditingId(null)
@@ -204,104 +243,21 @@ export function UsersPage() {
         />
       </div>
 
-      <table className="cms-table">
-        <thead>
-          <tr>
-            <th style={{ width: 36 }}>
-              <IrisCheckbox
-                checked={allOnPage}
-                onChange={() => users.selection.toggleAll(pageIds)}
-                aria-label="Select all on page"
-              />
-            </th>
-            <th
-              scope="col"
-              aria-sort={ariaSort('name')}
-              tabIndex={0}
-              style={{ cursor: 'pointer' }}
-              onClick={() => users.setSort(nextSort(users.state.sort, 'name'))}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  users.setSort(nextSort(users.state.sort, 'name'))
-                }
-              }}
-            >
-              User
-              <span aria-hidden="true">{sortGlyph('name')}</span>
-            </th>
-            <th
-              scope="col"
-              aria-sort={ariaSort('role')}
-              tabIndex={0}
-              style={{ cursor: 'pointer' }}
-              onClick={() => users.setSort(nextSort(users.state.sort, 'role'))}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  users.setSort(nextSort(users.state.sort, 'role'))
-                }
-              }}
-            >
-              Role
-              <span aria-hidden="true">{sortGlyph('role')}</span>
-            </th>
-            <th scope="col">Status</th>
-            {canWrite && (
-              <th scope="col" style={{ width: 120, textAlign: 'end' }}>
-                Actions
-              </th>
-            )}
-          </tr>
-        </thead>
-        <tbody>
-          {users.state.rows.map((u) => (
-            <tr key={u.id}>
-              <td>
-                <IrisCheckbox
-                  checked={users.selection.isSelected(String(u.id))}
-                  onChange={() => users.selection.toggle(String(u.id))}
-                  aria-label={`Select ${u.name}`}
-                />
-              </td>
-              <td>
-                <span className="cms-user">
-                  <IrisAvatar name={u.name} size={32} />
-                  <span>
-                    <div style={{ fontWeight: 600 }}>{u.name}</div>
-                    <div style={{ color: 'var(--iris-muted)', fontSize: 12 }}>{u.email}</div>
-                  </span>
-                </span>
-              </td>
-              <td>{u.role}</td>
-              <td>
-                <IrisBadge tone={tone(u.status)} variant="subtle">
-                  {u.status}
-                </IrisBadge>
-              </td>
-              {canWrite && (
-                <td style={{ textAlign: 'end' }}>
-                  <span style={{ display: 'inline-flex', gap: 6 }}>
-                    <IrisButton size="sm" variant="ghost" onClick={() => openEdit(u)}>
-                      Edit
-                    </IrisButton>
-                    <IrisButton size="sm" variant="ghost" onClick={() => setConfirmDelete(u)}>
-                      Delete
-                    </IrisButton>
-                  </span>
-                </td>
-              )}
-            </tr>
-          ))}
-          {users.state.rows.length === 0 && (
-            <tr>
-              <td colSpan={canWrite ? 5 : 4} style={{ color: 'var(--iris-muted)', padding: 24 }}>
-                No users match the current filter.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      <IrisTable
+        rowKey="id"
+        columns={columns}
+        data={users.state.rows as any}
+        selectable="multi"
+        selection={users.state.selectedKeys}
+        onSelectionChange={(next) => {
+          users.selection.clear()
+          for (const k of next) users.selection.select(String(k))
+        }}
+        sort={users.state.sort as IrisTableSortState | null}
+        onSortChange={(next) => users.setSort(next)}
+        striped
+        bordered
+      />
 
       <div style={{ marginTop: 16 }}>
         <IrisPagination

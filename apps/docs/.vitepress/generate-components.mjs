@@ -76,7 +76,7 @@ const EXPLORER_COMPONENTS = [
 
 const here = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(here, '..', '..', '..')
-const manifestPath = join(repoRoot, 'manifest.json')
+const manifestPath = join(repoRoot, 'packages', 'manifest', 'manifest.json')
 const outPath = join(here, '..', 'components.md')
 
 if (!existsSync(manifestPath)) {

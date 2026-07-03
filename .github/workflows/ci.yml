@@ -46,6 +46,15 @@ jobs:
       - name: Size budget
         run: pnpm size
 
+      - name: Token audit
+        run: pnpm audit:tokens
+
+      - name: Test coverage report
+        run: pnpm test:coverage
+
+      - name: Desktop OS parity
+        run: pnpm check:desktop-parity
+
       - name: RSC directive
         run: pnpm check:rsc
 

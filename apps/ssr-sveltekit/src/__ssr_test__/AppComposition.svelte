@@ -29,7 +29,12 @@
     default: 'light',
   })
 
-  interface Row { id: number; name: string; role: string; status: string }
+  interface Row {
+    id: number
+    name: string
+    role: string
+    status: string
+  }
   const rows: Row[] = [
     { id: 1, name: 'Ada Lovelace', role: 'Engineer', status: 'active' },
     { id: 2, name: 'Alan Turing', role: 'Researcher', status: 'active' },

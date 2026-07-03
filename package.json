@@ -42,7 +42,9 @@
     "arch-check": "node scripts/arch-check.mjs --strict",
     "arch-check:ratchet": "node scripts/arch-check.mjs --ratchet",
     "arch-check:baseline": "node scripts/arch-check.mjs --update-baseline",
-    "change-budget": "node scripts/change-budget.mjs"
+    "change-budget": "node scripts/change-budget.mjs",
+    "audit:tokens": "node scripts/audit-tokens.mjs",
+    "test:coverage": "node scripts/test-coverage-report.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.10",

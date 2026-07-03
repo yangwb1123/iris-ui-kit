@@ -64,6 +64,26 @@ describe('IrisRadioGroup + IrisRadio', () => {
     expect(inputs[1]!.attributes('name')).toBe('pet')
   })
 
+  it('uncontrolled (no modelValue): clicking a radio checks it', async () => {
+    const wrapper = mount(IrisRadioGroup, {
+      slots: { default: () => [h(IrisRadio, { value: 'a' }), h(IrisRadio, { value: 'b' })] },
+    })
+    const inputs = wrapper.findAll('input')
+    await inputs[1]!.trigger('change')
+    expect((inputs[0]!.element as HTMLInputElement).checked).toBe(false)
+    expect((inputs[1]!.element as HTMLInputElement).checked).toBe(true)
+  })
+
+  it('uncontrolled: defaultValue seeds the initial selection', () => {
+    const wrapper = mount(IrisRadioGroup, {
+      props: { defaultValue: 'b' },
+      slots: { default: () => [h(IrisRadio, { value: 'a' }), h(IrisRadio, { value: 'b' })] },
+    })
+    const inputs = wrapper.findAll('input')
+    expect((inputs[0]!.element as HTMLInputElement).checked).toBe(false)
+    expect((inputs[1]!.element as HTMLInputElement).checked).toBe(true)
+  })
+
   it('standalone IrisRadio (no group) works with v-model', async () => {
     const value = ref<string | null>(null)
     const Harness = defineComponent({

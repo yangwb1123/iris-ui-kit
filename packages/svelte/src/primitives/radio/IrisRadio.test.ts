@@ -18,4 +18,20 @@ describe('IrisRadio', () => {
     flushSync()
     expect(onchange).toHaveBeenCalledWith('a')
   })
+
+  it('uncontrolled (no value prop): clicking a radio checks it', async () => {
+    const { container } = render(RadioHarness)
+    const inputs = container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    await fireEvent.click(inputs[1])
+    flushSync()
+    expect(inputs[0].checked).toBe(false)
+    expect(inputs[1].checked).toBe(true)
+  })
+
+  it('uncontrolled: defaultValue seeds the initial selection', () => {
+    const { container } = render(RadioHarness, { props: { defaultValue: 'b' } })
+    const inputs = container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    expect(inputs[0].checked).toBe(false)
+    expect(inputs[1].checked).toBe(true)
+  })
 })

@@ -3,7 +3,8 @@
   import { setRadioGroupContext, type RadioSize } from './context'
 
   let {
-    value = null,
+    value: valueProp,
+    defaultValue = null,
     name,
     size = 'md',
     disabled = false,
@@ -12,6 +13,7 @@
     ...rest
   }: {
     value?: string | number | boolean | null
+    defaultValue?: string | number | boolean | null
     name?: string
     size?: RadioSize
     disabled?: boolean
@@ -23,8 +25,13 @@
   // svelte-ignore state_referenced_locally
   const fallbackName = generateId()
   const groupName = $derived(name ?? fallbackName)
+  const isControlled = $derived(valueProp !== undefined)
+  // svelte-ignore state_referenced_locally
+  let internal = $state(defaultValue)
+  const current = $derived(isControlled ? (valueProp ?? null) : internal)
 
   function setValue(v: string | number | boolean): void {
+    if (!isControlled) internal = v
     onchange?.(v)
   }
 
@@ -33,7 +40,7 @@
       return groupName
     },
     get value() {
-      return value
+      return current
     },
     get size() {
       return size

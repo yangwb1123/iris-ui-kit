@@ -4,6 +4,7 @@ import {
   h,
   inject,
   provide,
+  ref,
   useId,
   type ComputedRef,
   type InjectionKey,
@@ -32,6 +33,11 @@ export const IrisRadioGroup = defineComponent({
   props: {
     modelValue: {
       type: [String, Number, Boolean] as PropType<string | number | boolean | null>,
+      default: undefined,
+    },
+    /** Uncontrolled initial value, used when `modelValue` is omitted. */
+    defaultValue: {
+      type: [String, Number, Boolean] as PropType<string | number | boolean | null>,
       default: null,
     },
     name: { type: String, default: undefined },
@@ -44,10 +50,18 @@ export const IrisRadioGroup = defineComponent({
   setup(props, { slots, attrs, emit }) {
     const fallbackName = useId()
     const groupName = props.name ?? fallbackName
+    const isControlled = computed(() => props.modelValue !== undefined)
+    const internal = ref<string | number | boolean | null>(props.defaultValue)
+    const current = computed(() =>
+      isControlled.value ? (props.modelValue ?? null) : internal.value,
+    )
     provide(RadioGroupKey, {
       name: groupName,
-      value: computed(() => props.modelValue),
-      setValue: (v) => emit('update:modelValue', v),
+      value: current,
+      setValue: (v) => {
+        if (!isControlled.value) internal.value = v
+        emit('update:modelValue', v)
+      },
       size: computed(() => props.size),
       disabled: computed(() => props.disabled),
     })

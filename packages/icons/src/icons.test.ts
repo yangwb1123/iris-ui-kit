@@ -108,12 +108,12 @@ describe('@iris-ui/icons registry', () => {
   it('switches active set via use(); throws on unknown set', () => {
     const extra: IrisIconSet = {
       name: 'extra',
-      icons: { star: { name: 'star', nodes: [{ tag: 'path', attrs: { d: 'M1 1' } }] } },
+      icons: { laughing: { name: 'laughing', nodes: [{ tag: 'path', attrs: { d: 'M1 1' } }] } },
     }
     const reg = createIconRegistry({ sets: [defaultIcons, extra] })
-    expect(reg.has('star')).toBe(false) // default set active first
+    expect(reg.has('laughing')).toBe(false) // default set active first
     reg.use('extra')
-    expect(reg.has('star')).toBe(true)
+    expect(reg.has('laughing')).toBe(true)
     expect(reg.has('check')).toBe(false)
     expect(() => reg.use('ghost')).toThrow(/not registered/)
   })

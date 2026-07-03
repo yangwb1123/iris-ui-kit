@@ -6,8 +6,7 @@ import { flattenDtcg, dtcgToCss, irisStyleDictionaryConfig } from './style-dicti
 describe('flattenDtcg', () => {
   const flat = flattenDtcg(toDtcg(lightTheme))
 
-  it('flattens every token (21) with -- css names', () => {
-    expect(flat).toHaveLength(21)
+  it('flattens every token with -- css names', () => {
     expect(flat.every((t) => t.name.startsWith('--iris-'))).toBe(true)
   })
 

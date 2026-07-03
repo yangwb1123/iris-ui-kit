@@ -6,6 +6,13 @@ export interface SkinBootScriptConfig {
   fallbackId: string
   /** Map system light/dark → skin id when the stored value is `'system'`. */
   systemMap?: { light: string; dark: string }
+  /**
+   * CSP nonce value. When the page uses a Content-Security-Policy with
+   * `style-src: 'nonce-...'`, inline `<style>` elements must carry a matching
+   * `nonce` attribute. Pass the server-rendered nonce to prevent the boot
+   * stylesheet from being blocked by the browser.
+   */
+  nonce?: string
 }
 
 /**
@@ -14,6 +21,10 @@ export interface SkinBootScriptConfig {
  * it reads the persisted id (or system preference), looks up the pre-serialized
  * CSS, and appends a `<style>` via `textContent` (never innerHTML). Ships only
  * strings — no resolver logic — so it stays tiny.
+ *
+ * When `nonce` is provided, the injected `<style>` element carries a matching
+ * `nonce` attribute so Content-Security-Policy with `style-src: 'nonce-...'`
+ * does not block the boot stylesheet.
  */
 export function skinBootScript(config: SkinBootScriptConfig): string {
   const payload = JSON.stringify({
@@ -21,6 +32,7 @@ export function skinBootScript(config: SkinBootScriptConfig): string {
     styles: config.styles,
     fallbackId: config.fallbackId,
     systemMap: config.systemMap ?? null,
+    nonce: config.nonce ?? null,
   })
   return (
     `(function(){var c=${payload};try{` +
@@ -30,6 +42,7 @@ export function skinBootScript(config: SkinBootScriptConfig): string {
     `if(!id||!c.styles[id])id=c.fallbackId;` +
     `var css=c.styles[id];if(!css)return;` +
     `var s=document.createElement('style');s.setAttribute('data-iris-skin-boot','');` +
+    `if(c.nonce)s.setAttribute('nonce',c.nonce);` +
     `s.textContent=css;document.head.appendChild(s);` +
     `document.documentElement.setAttribute('data-iris-skin',id);}catch(e){}})();`
   )

@@ -13,4 +13,15 @@ describe('skinBootScript', () => {
     expect(script).toContain('localStorage')
     expect(script.trim().startsWith('(function')).toBe(true)
   })
+
+  it('includes the nonce attribute when configured', () => {
+    const script = skinBootScript({
+      storageKey: 'iris-skin',
+      styles: { light: ':root{--iris-primary:#000}' },
+      fallbackId: 'light',
+      nonce: 'abc123',
+    })
+    expect(script).toContain('nonce')
+    expect(script).toContain('abc123')
+  })
 })

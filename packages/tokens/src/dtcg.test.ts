@@ -2,18 +2,27 @@ import { describe, expect, it } from 'vitest'
 import { toDtcg, toDtcgJson, type DtcgGroup, type DtcgToken } from './dtcg'
 import { lightTheme } from './light'
 import { darkTheme } from './dark'
-import { COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS } from './tokens'
+import {
+  COLOR_TOKENS,
+  SPACING_TOKENS,
+  RADII_TOKENS,
+  SHADOW_TOKENS,
+  ZINDEX_TOKENS,
+  TRANSITION_TOKENS,
+} from './tokens'
 
 function isToken(n: DtcgGroup | DtcgToken): n is DtcgToken {
   return typeof (n as DtcgToken).$value === 'string'
 }
 
 /** Walk every leaf token, yielding its dotted path. */
-function leaves(group: DtcgGroup, prefix: string[] = []): Array<[string[], DtcgToken]> {
+function leaves(group: DtcgGroup, prefix: string[] = [], depth = 0): Array<[string[], DtcgToken]> {
+  if (depth > 50) return [] // safety guard against circular refs
   const out: Array<[string[], DtcgToken]> = []
   for (const [key, node] of Object.entries(group)) {
+    if (typeof node !== 'object' || node === null) continue // skip primitives (e.g. $type string values)
     if (isToken(node)) out.push([[...prefix, key], node])
-    else out.push(...leaves(node, [...prefix, key]))
+    else out.push(...leaves(node as DtcgGroup, [...prefix, key], depth + 1))
   }
   return out
 }
@@ -21,10 +30,18 @@ function leaves(group: DtcgGroup, prefix: string[] = []): Array<[string[], DtcgT
 describe('toDtcg', () => {
   it('emits a $type/$value for every token, none missing', () => {
     const doc = toDtcg(lightTheme)
-    const total = COLOR_TOKENS.length + SPACING_TOKENS.length + RADII_TOKENS.length
+    const total =
+      COLOR_TOKENS.length +
+      SPACING_TOKENS.length +
+      RADII_TOKENS.length +
+      SHADOW_TOKENS.length +
+      ZINDEX_TOKENS.length +
+      TRANSITION_TOKENS.length
     expect(leaves(doc).length).toBe(total)
     for (const [, token] of leaves(doc)) {
-      expect(token.$type === 'color' || token.$type === 'dimension').toBe(true)
+      expect(
+        token.$type === 'color' || token.$type === 'dimension' || token.$type === 'shadow',
+      ).toBe(true)
       expect(typeof token.$value).toBe('string')
     }
   })

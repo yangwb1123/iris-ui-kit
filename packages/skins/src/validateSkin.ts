@@ -1,10 +1,24 @@
-import { COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS } from '@iris-ui/tokens'
+import {
+  COLOR_TOKENS,
+  SPACING_TOKENS,
+  RADII_TOKENS,
+  SHADOW_TOKENS,
+  ZINDEX_TOKENS,
+  TRANSITION_TOKENS,
+} from '@iris-ui/tokens'
 import type { Skin } from './types'
 import { skinError, type SkinError } from './errors'
 
 const COLOR_SET = new Set<string>(COLOR_TOKENS)
-const DIMENSION_SET = new Set<string>([...SPACING_TOKENS, ...RADII_TOKENS])
-const CORE_SET = new Set<string>([...COLOR_TOKENS, ...SPACING_TOKENS, ...RADII_TOKENS])
+const DIMENSION_SET = new Set<string>([...SPACING_TOKENS, ...RADII_TOKENS, ...ZINDEX_TOKENS])
+const CORE_SET = new Set<string>([
+  ...COLOR_TOKENS,
+  ...SPACING_TOKENS,
+  ...RADII_TOKENS,
+  ...SHADOW_TOKENS,
+  ...ZINDEX_TOKENS,
+  ...TRANSITION_TOKENS,
+])
 const DOT_KEY = /^[a-zA-Z][\w-]*(\.[a-zA-Z][\w-]*)*$/
 
 /** Pure shape/type/key validation. Returns errors (empty = valid). Never throws. */

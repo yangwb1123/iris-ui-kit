@@ -22,17 +22,6 @@ function mixOver(colorHex: string, bgHex: string, weight: number): string | null
   return rgbToHex({ r: ch('r'), g: ch('g'), b: ch('b'), a: 1 })
 }
 
-/**
- * The CSS-custom-property `[name, value]` entries for a theme — colors as-is,
- * spacing/radii suffixed with `px`. The single source of truth shared by the
- * runtime {@link applyTheme} and the static {@link themeToCss} export, so both
- * always emit identical var names and values.
- *
- * Also emits a `--iris-{name}-subtle` per semantic color (the color composited
- * ~14% over the background). Components use it as the static fallback under
- * `color-mix()` so tonal surfaces still tint on engines without color-mix
- * (pre-2022 WebKitGTK / WKWebView) — modern engines keep the exact color-mix.
- */
 export function themeCssVarEntries(theme: IrisTheme): CssVarEntries {
   const out: CssVarEntries = []
   const colors = theme.colors as Record<string, string>
@@ -52,6 +41,21 @@ export function themeCssVarEntries(theme: IrisTheme): CssVarEntries {
   for (const [key, value] of Object.entries(theme.radii)) {
     out.push([toCssVarName(key), `${value}px`])
   }
+  if (theme.shadows) {
+    for (const [key, value] of Object.entries(theme.shadows)) {
+      out.push([toCssVarName(key), value])
+    }
+  }
+  if (theme.zIndex) {
+    for (const [key, value] of Object.entries(theme.zIndex)) {
+      out.push([toCssVarName(key), String(value)])
+    }
+  }
+  if (theme.transitions) {
+    for (const [key, value] of Object.entries(theme.transitions)) {
+      out.push([toCssVarName(key), value])
+    }
+  }
   return out
 }
 
@@ -60,32 +64,33 @@ export function themeCssVarEntries(theme: IrisTheme): CssVarEntries {
  * Returns a `revert()` function that restores prior values — useful for
  * nested themes or SSR re-mounting.
  *
+ * SSR-safe: no-ops when `target` is omitted and `document` is not defined.
+ *
  * Pure DOM. No framework dependency. Vue/React/Solid adapters call this.
  * Delegates the var write to `applyCssVars` (the path shared with `applySkin`).
  */
-export function applyTheme(
-  theme: IrisTheme,
-  target: HTMLElement = document.documentElement,
-): ApplyThemeResult {
-  const applied = applyCssVars(themeCssVarEntries(theme), target)
+export function applyTheme(theme: IrisTheme, target?: HTMLElement | null): ApplyThemeResult {
+  const el = target ?? (typeof document !== 'undefined' ? document.documentElement : null)
+  if (!el) return { revert: () => {} }
+  const applied = applyCssVars(themeCssVarEntries(theme), el)
 
-  const prevThemeName = target.getAttribute('data-iris-theme')
-  const prevThemeType = target.getAttribute('data-iris-theme-type')
-  target.setAttribute('data-iris-theme', theme.name)
-  target.setAttribute('data-iris-theme-type', theme.type)
+  const prevThemeName = el.getAttribute('data-iris-theme')
+  const prevThemeType = el.getAttribute('data-iris-theme-type')
+  el.setAttribute('data-iris-theme', theme.name)
+  el.setAttribute('data-iris-theme-type', theme.type)
 
   return {
     revert() {
       applied.revert()
       if (prevThemeName === null) {
-        target.removeAttribute('data-iris-theme')
+        el.removeAttribute('data-iris-theme')
       } else {
-        target.setAttribute('data-iris-theme', prevThemeName)
+        el.setAttribute('data-iris-theme', prevThemeName)
       }
       if (prevThemeType === null) {
-        target.removeAttribute('data-iris-theme-type')
+        el.removeAttribute('data-iris-theme-type')
       } else {
-        target.setAttribute('data-iris-theme-type', prevThemeType)
+        el.setAttribute('data-iris-theme-type', prevThemeType)
       }
     },
   }

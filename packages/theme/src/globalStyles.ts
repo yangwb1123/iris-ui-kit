@@ -57,8 +57,13 @@ let installed = false
  * Inject the global theme stylesheet into `<head>` exactly once. Idempotent
  * and SSR-safe (no-ops when there is no `document`). Called from each adapter's
  * `ThemeProvider` on mount.
+ *
+ * @param nonce - CSP nonce value. When the page has a CSP `style-src: 'nonce-xxx'`,
+ *   inline `<style>` elements must carry a matching `nonce` attribute or they are
+ *   blocked. Pass the server-rendered nonce through your framework adapter's
+ *   `IrisProvider` / `ThemeProvider` `cspNonce` prop.
  */
-export function injectGlobalStyles(): void {
+export function injectGlobalStyles(nonce?: string): void {
   if (installed) return
   if (typeof document === 'undefined') return
   if (document.getElementById(STYLE_ID)) {
@@ -67,6 +72,7 @@ export function injectGlobalStyles(): void {
   }
   const style = document.createElement('style')
   style.id = STYLE_ID
+  if (nonce) style.setAttribute('nonce', nonce)
   style.textContent = CSS
   document.head.appendChild(style)
   installed = true

@@ -1,10 +1,20 @@
-import { COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS } from '@iris-ui/tokens'
+import {
+  COLOR_TOKENS,
+  SPACING_TOKENS,
+  RADII_TOKENS,
+  SHADOW_TOKENS,
+  ZINDEX_TOKENS,
+  TRANSITION_TOKENS,
+} from '@iris-ui/tokens'
 import type {
   IrisTheme,
   IrisThemeType,
   ColorToken,
   SpacingToken,
   RadiusToken,
+  ShadowToken,
+  ZIndexToken,
+  TransitionToken,
 } from '@iris-ui/tokens'
 import type { Skin, ResolvedSkin } from './types'
 import { skinError, SkinResolutionError } from './errors'
@@ -79,6 +89,39 @@ export function resolveSkin(skin: Skin, registry: SkinLookup): ResolvedSkin {
     if (typeof v !== 'number') missing.push(key)
     else radii[key] = v
   }
+  // Optional sections — not required (no missing entry for these)
+  const shadows: Record<ShadowToken, string> | undefined = SHADOW_TOKENS.some((k) => k in tokens)
+    ? (() => {
+        const s = {} as Record<ShadowToken, string>
+        for (const key of SHADOW_TOKENS) {
+          const v = tokens[key]
+          if (typeof v === 'string') s[key] = v
+        }
+        return Object.keys(s).length > 0 ? s : undefined
+      })()
+    : undefined
+  const zIndex: Record<ZIndexToken, number> | undefined = ZINDEX_TOKENS.some((k) => k in tokens)
+    ? (() => {
+        const z = {} as Record<ZIndexToken, number>
+        for (const key of ZINDEX_TOKENS) {
+          const v = tokens[key]
+          if (typeof v === 'number') z[key] = v
+        }
+        return Object.keys(z).length > 0 ? z : undefined
+      })()
+    : undefined
+  const transitions: Record<TransitionToken, string> | undefined = TRANSITION_TOKENS.some(
+    (k) => k in tokens,
+  )
+    ? (() => {
+        const t = {} as Record<TransitionToken, string>
+        for (const key of TRANSITION_TOKENS) {
+          const v = tokens[key]
+          if (typeof v === 'string') t[key] = v
+        }
+        return Object.keys(t).length > 0 ? t : undefined
+      })()
+    : undefined
   if (missing.length > 0) {
     throw new SkinResolutionError(
       skinError('incomplete', `skin "${skin.id}" missing tokens: ${missing.join(', ')}`, {
@@ -95,6 +138,9 @@ export function resolveSkin(skin: Skin, registry: SkinLookup): ResolvedSkin {
     colors,
     spacing,
     radii,
+    ...(shadows !== undefined ? { shadows } : {}),
+    ...(zIndex !== undefined ? { zIndex } : {}),
+    ...(transitions !== undefined ? { transitions } : {}),
     ...(icons !== undefined ? { icons } : {}),
     ...(iconOverrides !== undefined ? { iconOverrides } : {}),
   }

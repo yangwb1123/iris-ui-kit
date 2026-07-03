@@ -9,7 +9,7 @@ describe('createSkinRegistry', () => {
     expect(reg.has('dark')).toBe(true)
     const dark = reg.resolve('dark')
     expect(dark.type).toBe('dark')
-    expect(Object.keys(dark.theme.colors).length).toBe(12)
+    expect(Object.keys(dark.theme.colors).length).toBe(22)
   })
 
   it('resolves a partial skin that extends a builtin', () => {

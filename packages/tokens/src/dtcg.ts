@@ -1,5 +1,12 @@
 import type { IrisTheme } from './types'
-import { COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS, type AnyToken } from './tokens'
+import {
+  COLOR_TOKENS,
+  SPACING_TOKENS,
+  RADII_TOKENS,
+  SHADOW_TOKENS,
+  ZINDEX_TOKENS,
+  TRANSITION_TOKENS,
+} from './tokens'
 
 /**
  * W3C Design Tokens Community Group (DTCG) export.
@@ -61,12 +68,24 @@ function insert(root: DtcgGroup, path: string[], token: DtcgToken): void {
   }
 }
 
-function colorToken(theme: IrisTheme, name: AnyToken): DtcgToken {
-  return { $type: 'color', $value: theme.colors[name as keyof typeof theme.colors] }
+function colorToken(theme: IrisTheme, name: keyof IrisTheme['colors']): DtcgToken {
+  return { $type: 'color', $value: theme.colors[name] }
 }
 
 function dimensionToken(value: number): DtcgToken {
   return { $type: 'dimension', $value: `${value}px` }
+}
+
+function shadowToken(value: string): DtcgToken {
+  return { $type: 'color', $value: value }
+}
+
+function transitionToken(value: string): DtcgToken {
+  return { $type: 'color', $value: value }
+}
+
+function zIndexToken(value: number): DtcgToken {
+  return { $type: 'dimension', $value: String(value) }
 }
 
 /**
@@ -84,13 +103,30 @@ function dimensionToken(value: number): DtcgToken {
 export function toDtcg(theme: IrisTheme): DtcgGroup {
   const root: DtcgGroup = {}
   for (const name of COLOR_TOKENS) {
-    insert(root, name.split('.'), colorToken(theme, name))
+    insert(root, name.split('.'), colorToken(theme, name as unknown as keyof IrisTheme['colors']))
   }
   for (const name of SPACING_TOKENS) {
     insert(root, name.split('.'), dimensionToken(theme.spacing[name]))
   }
   for (const name of RADII_TOKENS) {
     insert(root, name.split('.'), dimensionToken(theme.radii[name]))
+  }
+  if (theme.shadows) {
+    for (const name of SHADOW_TOKENS) {
+      if (theme.shadows[name]) insert(root, name.split('.'), shadowToken(theme.shadows[name]))
+    }
+  }
+  if (theme.zIndex) {
+    for (const name of ZINDEX_TOKENS) {
+      if (theme.zIndex[name] !== undefined)
+        insert(root, name.split('.'), zIndexToken(theme.zIndex[name]))
+    }
+  }
+  if (theme.transitions) {
+    for (const name of TRANSITION_TOKENS) {
+      if (theme.transitions[name])
+        insert(root, name.split('.'), transitionToken(theme.transitions[name]))
+    }
   }
   return root
 }

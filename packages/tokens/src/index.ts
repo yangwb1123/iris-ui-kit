@@ -2,10 +2,16 @@ export {
   COLOR_TOKENS,
   SPACING_TOKENS,
   RADII_TOKENS,
+  SHADOW_TOKENS,
+  ZINDEX_TOKENS,
+  TRANSITION_TOKENS,
   ALL_TOKEN_NAMES,
   type ColorToken,
   type SpacingToken,
   type RadiusToken,
+  type ShadowToken,
+  type ZIndexToken,
+  type TransitionToken,
   type AnyToken,
 } from './tokens'
 export type {
@@ -14,6 +20,9 @@ export type {
   IrisThemeColors,
   IrisThemeSpacing,
   IrisThemeRadii,
+  IrisThemeShadows,
+  IrisThemeZIndex,
+  IrisThemeTransitions,
 } from './types'
 export { lightTheme } from './light'
 export { darkTheme } from './dark'

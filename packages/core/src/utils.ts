@@ -40,3 +40,25 @@ export function normalizeKeys<K extends string | number>(
   if (mode === 'single' && deduped.length > 1) return [deduped[deduped.length - 1]!]
   return deduped
 }
+
+/**
+ * Defensive array wrapper: returns an empty array when `arr` is null or undefined.
+ * Use in component top-level prop reads to prevent `Cannot read properties of
+ * undefined` crashes when an async caller hasn't loaded data yet.
+ *
+ * ```ts
+ * const rows = safeArray(props.data)        // [] when null/undef
+ * const items = safeArray(props.options)     // []
+ * ```
+ */
+export function safeArray<T>(arr: readonly T[] | null | undefined): readonly T[] {
+  return arr ?? []
+}
+
+/**
+ * Defensive number clamp: returns the given number if finite, else `fallback`.
+ * Protects against NaN / Infinity from user-provided prop values.
+ */
+export function safeNumber(n: number, fallback = 0): number {
+  return Number.isFinite(n) ? n : fallback
+}

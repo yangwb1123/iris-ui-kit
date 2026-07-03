@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { createPlugin, runPlugins, type IrisPlugin } from './plugin'
+import { createPlugin, runPlugins, reloadPlugins, type IrisPlugin } from './plugin'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -229,5 +229,61 @@ describe('runPlugins dependency ordering', () => {
     ])
     r.teardown()
     expect(log).toEqual(['table', 'data']) // install was data→table; teardown LIFO
+  })
+})
+
+describe('IrisPlugin destroy() lifecycle', () => {
+  it('destroy is called when a plugin is removed via reloadPlugins', () => {
+    const destroy = vi.fn()
+    const prev = [createPlugin({ name: 'a', install() {}, destroy })]
+    const next: IrisPlugin[] = []
+    reloadPlugins(prev, next)
+    expect(destroy).toHaveBeenCalledTimes(1)
+  })
+
+  it('destroy is NOT called for plugins that remain in the set', () => {
+    const destroyA = vi.fn()
+    const destroyB = vi.fn()
+    const prev = [
+      createPlugin({ name: 'a', install() {}, destroy: destroyA }),
+      createPlugin({ name: 'b', install() {}, destroy: destroyB }),
+    ]
+    const next = [prev[0]!] // keep a, remove b
+    reloadPlugins(prev, next)
+    expect(destroyA).not.toHaveBeenCalled()
+    expect(destroyB).toHaveBeenCalledTimes(1)
+  })
+
+  it('destroy is isolated (a throwing destroy does not block others)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const ok = vi.fn()
+    const prev = [
+      createPlugin({
+        name: 'boom',
+        install() {},
+        destroy() {
+          throw new Error('fail')
+        },
+      }),
+      createPlugin({ name: 'ok', install() {}, destroy: ok }),
+    ]
+    reloadPlugins(prev, [])
+    expect(ok).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalled()
+  })
+
+  it('reloadPlugins calls runPlugins on the next set', () => {
+    const installB = vi.fn()
+    const prev = [createPlugin({ name: 'a', install: vi.fn() })]
+    const next = [createPlugin({ name: 'b', install: installB })]
+    reloadPlugins(prev, next)
+    expect(installB).toHaveBeenCalledTimes(1)
+  })
+
+  it('reloadPlugins returns the registrations from the next set', () => {
+    const prev: IrisPlugin[] = []
+    const next = [createPlugin({ name: 'x', install: (r) => r.registerStore('s', () => 42) })]
+    const r = reloadPlugins(prev, next)
+    expect(r.stores.get('s')).toBe(42)
   })
 })

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createFormStore } from './form'
+import { createFormStore, createDirtyGuard } from './form'
 
 describe('createFormStore', () => {
   it('seeds state from initialValues', () => {
@@ -83,6 +83,108 @@ describe('createFormStore', () => {
       expect(form.getState().touched.email).toBe(true)
       await Promise.resolve()
       expect(form.getState().errors.email).toBe('Required')
+    })
+
+    it('validates all fields on mount when validateOnMount is true', async () => {
+      const form = createFormStore({
+        initialValues: { email: '', name: '' },
+        validators: {
+          email: (v) => (v ? undefined : 'Required'),
+          name: (v) => (v ? undefined : 'Name required'),
+        },
+        validateOnMount: true,
+      })
+      // First tick: validators run and write errors
+      await Promise.resolve()
+      expect(form.getState().errors.email).toBe('Required')
+      expect(form.getState().errors.name).toBe('Name required')
+      // Extra ticks: the .then() callback touches the fields
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(form.getState().touched.email).toBe(true)
+      expect(form.getState().touched.name).toBe(true)
+    })
+
+    it('does not validate on mount when validateOnMount is false (default)', async () => {
+      const form = createFormStore({
+        initialValues: { email: '' },
+        validators: { email: (v) => (v ? undefined : 'Required') },
+        // validateOnMount defaults to false
+      })
+      await Promise.resolve()
+      expect(form.getState().errors.email).toBeUndefined()
+      expect(form.getState().touched.email).toBeUndefined()
+    })
+
+    it('validateOnMount skips fields without validators', async () => {
+      const form = createFormStore({
+        initialValues: { email: '', name: '' },
+        validators: {
+          email: (v) => (v ? undefined : 'Required'),
+        },
+        validateOnMount: true,
+      })
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(form.getState().errors.email).toBe('Required')
+      // name has no validator — should not be touched
+      expect(form.getState().errors.name).toBeUndefined()
+      expect(form.getState().touched.name).toBeUndefined()
+    })
+  })
+
+  describe('setFieldValueDebounceMs', () => {
+    it('debounces multiple setFieldValue calls into one store write', async () => {
+      const form = createFormStore({
+        initialValues: { email: '' },
+        setFieldValueDebounceMs: 50,
+      })
+      // Rapid calls should not update the store immediately
+      form.setFieldValue('email', 'a')
+      expect(form.getState().values.email).toBe('')
+      form.setFieldValue('email', 'ab')
+      expect(form.getState().values.email).toBe('')
+      form.setFieldValue('email', 'abc')
+      expect(form.getState().values.email).toBe('')
+      // getFieldValue reads from the buffer
+      expect(form.getFieldValue('email')).toBe('abc')
+      // After debounce timeout, the last value is flushed
+      await new Promise((r) => setTimeout(r, 80))
+      expect(form.getState().values.email).toBe('abc')
+    })
+
+    it('does not debounce when setFieldValueDebounceMs is 0 (default)', () => {
+      const form = createFormStore({
+        initialValues: { email: '' },
+      })
+      form.setFieldValue('email', 'hello')
+      expect(form.getState().values.email).toBe('hello')
+    })
+
+    it('still validates on change when debounced', async () => {
+      const form = createFormStore({
+        initialValues: { email: '' },
+        setFieldValueDebounceMs: 50,
+        validators: { email: (v) => (v ? undefined : 'Required') },
+      })
+      form.setFieldValue('email', '')
+      // Validation runs immediately (not debounced by setFieldValueDebounceMs)
+      await Promise.resolve()
+      expect(form.getState().errors.email).toBe('Required')
+      // Store is not yet updated
+      expect(form.getState().values.email).toBe('')
+    })
+
+    it('getFieldValue reads buffered value when debounced', () => {
+      const form = createFormStore({
+        initialValues: { field: 'initial' },
+        setFieldValueDebounceMs: 100,
+      })
+      expect(form.getFieldValue('field')).toBe('initial')
+      form.setFieldValue('field', 'buffered')
+      expect(form.getFieldValue('field')).toBe('buffered')
+      // Store still has the old value
+      expect(form.getState().values.field).toBe('initial')
     })
   })
 
@@ -544,6 +646,162 @@ describe('createFormStore', () => {
       vi.advanceTimersByTime(250)
       expect(validator).toHaveBeenCalledTimes(1)
       vi.useRealTimers()
+    })
+  })
+
+  describe('isDirty / getDirtyFields', () => {
+    it('returns false when no field has been changed', () => {
+      const form = createFormStore({ initialValues: { a: 1, b: 2 }, validateOnChange: false })
+      expect(form.isDirty()).toBe(false)
+      expect(form.getDirtyFields()).toEqual([])
+    })
+
+    it('returns true after a field is set to a different value', () => {
+      const form = createFormStore({ initialValues: { a: 1 }, validateOnChange: false })
+      form.setFieldValue('a', 2)
+      expect(form.isDirty()).toBe(true)
+      expect(form.getDirtyFields()).toEqual(['a'])
+    })
+
+    it('returns false after reverting to the initial value', () => {
+      const form = createFormStore({ initialValues: { a: 1 }, validateOnChange: false })
+      form.setFieldValue('a', 2)
+      form.setFieldValue('a', 1)
+      expect(form.isDirty()).toBe(false)
+    })
+
+    it('tracks multiple dirty fields independently', () => {
+      const form = createFormStore({ initialValues: { a: 1, b: 2 }, validateOnChange: false })
+      form.setFieldValue('a', 99)
+      form.setFieldValue('b', 88)
+      expect(form.getDirtyFields()).toEqual(['a', 'b'])
+    })
+  })
+
+  describe('serialize / hydrate (draft persistence)', () => {
+    it('serialize captures values + touched', () => {
+      const form = createFormStore({ initialValues: { n: 1 }, validateOnChange: false })
+      form.setFieldValue('n', 2)
+      form.setFieldTouched('n')
+      const draft = form.serialize()
+      expect(draft.values).toEqual({ n: 2 })
+      expect(draft.touched).toEqual({ n: true })
+    })
+
+    it('serialize excludes touched when includeTouched=false', () => {
+      const form = createFormStore({ initialValues: { n: 1 } })
+      expect(form.serialize({ includeTouched: false }).touched).toBeUndefined()
+    })
+
+    it('hydrate restores values and marks dirty', () => {
+      const form = createFormStore({ initialValues: { a: 1, b: 2 }, validateOnChange: false })
+      form.hydrate({ values: { a: 99, b: 2 } })
+      expect(form.getState().values.a).toBe(99)
+      expect(form.getState().values.b).toBe(2)
+      expect(form.getState().dirty.a).toBe(true)
+      // b matches initial, was not included in hydrate, but a is dirty
+      expect(form.getState().dirty.b).toBe(undefined) // not touched
+      expect(form.isDirty()).toBe(true)
+    })
+
+    it('hydrate restores touched state', () => {
+      const form = createFormStore({ initialValues: { x: '' } })
+      form.hydrate({ values: { x: 'v' }, touched: { x: true } })
+      expect(form.getState().touched.x).toBe(true)
+    })
+
+    it('round-trip serialize → hydrate reproduces values', () => {
+      const form = createFormStore({ initialValues: { email: '' }, validateOnChange: false })
+      form.setFieldValue('email', 'a@b.com')
+      const draft = form.serialize()
+      const form2 = createFormStore({ initialValues: { email: '' }, validateOnChange: false })
+      form2.hydrate(draft)
+      expect(form2.getFieldValue('email')).toBe('a@b.com')
+      expect(form2.isDirty()).toBe(true)
+    })
+  })
+
+  describe('createDirtyGuard', () => {
+    it('attach/detach are no-ops in non-browser env', () => {
+      const guard = createDirtyGuard(() => false)
+      expect(() => guard.attach()).not.toThrow()
+      expect(() => guard.detach()).not.toThrow()
+    })
+  })
+
+  describe('undo / redo', () => {
+    it('undo and redo a single field change', () => {
+      const form = createFormStore({ initialValues: { name: 'ann' }, validateOnChange: false })
+      expect(form.canUndo()).toBe(false)
+      expect(form.canRedo()).toBe(false)
+      form.setFieldValue('name', 'bob')
+      expect(form.canUndo()).toBe(true)
+      expect(form.getState().values.name).toBe('bob')
+      form.undo()
+      expect(form.getState().values.name).toBe('ann')
+      expect(form.canRedo()).toBe(true)
+      form.redo()
+      expect(form.getState().values.name).toBe('bob')
+    })
+
+    it('undo multiple steps and redo is truncated by a new mutation', () => {
+      const form = createFormStore({ initialValues: { x: 0 }, validateOnChange: false })
+      form.setFieldValue('x', 1)
+      form.setFieldValue('x', 2)
+      form.undo()
+      expect(form.getState().values.x).toBe(1)
+      form.undo()
+      expect(form.getState().values.x).toBe(0)
+      form.redo()
+      expect(form.getState().values.x).toBe(1)
+      form.setFieldValue('x', 99) // new mutation truncates redo
+      expect(form.canRedo()).toBe(false)
+      form.undo()
+      expect(form.getState().values.x).toBe(1)
+    })
+
+    it('undo is no-op when history is empty', () => {
+      const form = createFormStore({ initialValues: { x: 1 }, validateOnChange: false })
+      expect(() => form.undo()).not.toThrow()
+      expect(form.getState().values.x).toBe(1)
+    })
+
+    it('redo is no-op at the latest snapshot', () => {
+      const form = createFormStore({ initialValues: { x: 1 }, validateOnChange: false })
+      form.setFieldValue('x', 2)
+      expect(() => form.redo()).not.toThrow()
+      expect(form.getState().values.x).toBe(2)
+    })
+
+    it('reset clears undo history', () => {
+      const form = createFormStore({ initialValues: { n: 0 }, validateOnChange: false })
+      form.setFieldValue('n', 1)
+      expect(form.canUndo()).toBe(true)
+      form.reset()
+      expect(form.canUndo()).toBe(false)
+      expect(form.canRedo()).toBe(false)
+    })
+
+    it('undo works with setValues', () => {
+      const form = createFormStore({ initialValues: { a: 1, b: 2 }, validateOnChange: false })
+      form.setValues({ a: 99, b: 88 })
+      form.undo()
+      expect(form.getState().values).toEqual({ a: 1, b: 2 })
+    })
+
+    it('canUndo/canRedo reflect correct state', () => {
+      const form = createFormStore({ initialValues: { x: '' }, validateOnChange: false })
+      expect(form.canUndo()).toBe(false)
+      expect(form.canRedo()).toBe(false)
+      form.setFieldValue('x', 'a')
+      expect(form.canUndo()).toBe(true)
+      expect(form.canRedo()).toBe(false)
+      form.undo()
+      expect(form.canUndo()).toBe(false)
+      expect(form.canRedo()).toBe(true)
+      form.redo()
+      expect(form.canUndo()).toBe(true)
+      expect(form.canRedo()).toBe(false)
     })
   })
 })

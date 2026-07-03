@@ -159,6 +159,31 @@ describe('createDataSource — infinite mode', () => {
     await ds.loadMore()
     expect(ds.getState().rows).toHaveLength(5)
   })
+
+  it('maxRows caps accumulation and prevents further loadMore', async () => {
+    const ds = make({ mode: 'infinite', pageSize: 2, maxRows: 3 })
+    await ds.load()
+    expect(ds.getState().rows.map((r) => r.id)).toEqual([1, 2])
+    expect(ds.getState().hasMore).toBe(true)
+
+    // loadMore would fetch 3,4 but maxRows=3 caps at 3
+    await ds.loadMore()
+    expect(ds.getState().rows.map((r) => r.id)).toEqual([1, 2, 3])
+    expect(ds.getState().hasMore).toBe(true)
+
+    // row count >= maxRows → no-op
+    await ds.loadMore()
+    expect(ds.getState().rows).toHaveLength(3)
+  })
+
+  it('paged mode ignores maxRows', async () => {
+    const ds = make({ pageSize: 2, maxRows: 3 })
+    await ds.load()
+    expect(ds.getState().rows.map((r) => r.id)).toEqual([1, 2])
+    await ds.load()
+    // paged mode: rows are always replaced, not accumulated
+    expect(ds.getState().rows.map((r) => r.id)).toEqual([1, 2])
+  })
 })
 
 describe('createDataSource — selection', () => {
@@ -255,5 +280,108 @@ describe('createDataSource — race + destroy guards', () => {
     resolveLoad({ rows: [data[0]], total: 1 })
     await p
     expect(ds.getState().rows).toEqual([])
+  })
+
+  it('rapid page 1→2→3→2 with out-of-order resolution keeps the last page', async () => {
+    const resolves: Array<(v: { rows: User[]; total: number }) => void> = []
+    const fetcher = vi.fn(
+      () =>
+        new Promise<{ rows: User[]; total: number }>((res) => {
+          resolves.push(res)
+        }),
+    )
+    const ds = createDataSource<User>({ fetcher, pageSize: 1, immediate: false })
+
+    // Issue rapid page changes: 1 → 2 → 3 → 2
+    ds.setPage(1) // request A, epoch=1
+    ds.setPage(2) // aborts A, request B, epoch=2
+    ds.setPage(3) // aborts B, request C, epoch=3
+    ds.setPage(2) // aborts C, request D, epoch=4
+
+    // Resolve requests OUT OF ORDER: D (page 2, epoch 4) resolves first,
+    // then C (page 3, epoch 3) resolves second (stale, must be ignored)
+    await Promise.resolve()
+    await Promise.resolve()
+    resolves[3]?.({ rows: [data[1]], total: 5 }) // D resolves (page 2, newest)
+    await Promise.resolve()
+    await Promise.resolve()
+    resolves[2]?.({ rows: [data[2]], total: 5 }) // C resolves (page 3, stale)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // The stale C (page 3) must NOT overwrite D (page 2)
+    expect(ds.getState().page).toBe(2)
+    expect(ds.getState().rows.map((r) => r.id)).toEqual([2])
+  })
+
+  it('AbortController abort failure still respects epoch guard', async () => {
+    // Simulate an AbortController whose .abort() is a no-op (the network
+    // ignores the abort signal). The epoch mechanism must still discard stale
+    // responses even when the abort doesn't cancel the underlying request.
+    let resolveA: (v: { rows: User[]; total: number }) => void = () => {}
+    let resolveB: (v: { rows: User[]; total: number }) => void = () => {}
+    let callIdx = 0
+    const fetcher = vi.fn(
+      (_q: unknown, _signal?: AbortSignal) =>
+        new Promise<{ rows: User[]; total: number }>((res) => {
+          // Register the resolve — ignore the signal (simulates abort failure)
+          if (callIdx === 0) resolveA = res
+          else resolveB = res
+          callIdx++
+        }),
+    )
+    const ds = createDataSource<User>({ fetcher, pageSize: 10, immediate: false })
+
+    // Load A (slow, abort will be ignored)
+    ds.load()
+    await Promise.resolve()
+    // Load B supersedes A (triggers abort, but abort is a no-op)
+    ds.setSort({ key: 'age', direction: 'asc' })
+    await Promise.resolve()
+
+    // A resolves LAST — epoch guard must discard it
+    resolveA({ rows: [data[0]], total: 99 })
+    await Promise.resolve()
+    resolveB({ rows: [data[1], data[2]], total: 2 })
+    await Promise.resolve()
+
+    // A's stale data must NOT appear; B's data is correct
+    expect(ds.getState().total).toBe(2) // B's total, not A's 99
+    expect(ds.getState().rows.map((r) => r.id)).toEqual([2, 3])
+  })
+
+  it('concurrent setFilterRules + setPage ignores stale interleaved responses', async () => {
+    const resolves: Array<(v: { rows: User[]; total: number }) => void> = []
+    const fetcher = vi.fn(
+      () =>
+        new Promise<{ rows: User[]; total: number }>((res) => {
+          resolves.push(res)
+        }),
+    )
+    const ds = createDataSource<User>({ fetcher, pageSize: 1, immediate: false })
+
+    // Start initial load
+    ds.load()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // Simultaneously change filter AND page (simulates user typing + clicking pagination)
+    ds.setFilterRules([{ key: 'age', operator: 'gte', value: 30 }]) // triggers reload, epoch=2
+    ds.setPage(2) // supersedes filter load, epoch=3
+
+    // Resolve in wrong order: page 2 resolves first (resolves[1], epoch=2, stale),
+    // filter result resolves last (resolves[2], epoch=3, newest — wins)
+    await Promise.resolve()
+    await Promise.resolve()
+    resolves[1]?.({ rows: [data[3]], total: 2 }) // page 2 (epoch=2, stale) — discarded
+    await Promise.resolve()
+    await Promise.resolve()
+    resolves[2]?.({ rows: [data[0], data[2], data[4]], total: 3 }) // filter result (epoch=3, newest)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // The last epoch (3, setPage) must win
+    expect(ds.getState().page).toBe(2)
+    expect(ds.getState().rows.map((r) => r.id)).toEqual([1, 3, 5])
   })
 })

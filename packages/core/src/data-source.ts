@@ -45,6 +45,7 @@ function isThenable<T>(value: unknown): value is Promise<T> {
 
 export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceController<T> {
   const mode: DataSourceMode = config.mode ?? 'paged'
+  const maxRows = config.maxRows ?? 5000
   const store = createStore<DataSourceState<T>>({
     rows: [],
     total: 0,
@@ -89,7 +90,11 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
     overridePage?: number,
   ): void => {
     store.setState((s) => {
-      const nextRows = append ? [...s.rows, ...result.rows] : result.rows
+      let nextRows = append ? [...s.rows, ...result.rows] : result.rows
+      // Cap to maxRows in infinite mode to prevent unbounded accumulation
+      if (mode === 'infinite' && nextRows.length > maxRows) {
+        nextRows = nextRows.slice(0, maxRows)
+      }
       const page = overridePage ?? s.page
       const hasMore =
         mode === 'infinite'
@@ -150,6 +155,7 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
     loadMore() {
       const s = store.getState()
       if (mode !== 'infinite' || !s.hasMore || s.loadingMore || s.loading) return Promise.resolve()
+      if (s.rows.length >= maxRows) return Promise.resolve()
       return fetchPage({ append: true, page: s.page + 1 })
     },
     setPage(page) {

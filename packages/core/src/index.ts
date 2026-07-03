@@ -56,6 +56,7 @@ export {
   type ArrayElement,
   type FormStep,
   type FieldPath,
+  createDirtyGuard,
 } from './form'
 export {
   parsePath,
@@ -284,10 +285,11 @@ export {
   type TabItem,
 } from './tabsNav'
 export type { Side, Align, Placement, Size, Variant } from './types'
-export { composeEventHandlers, mergeProps, generateId } from './utils'
+export { composeEventHandlers, mergeProps, generateId, safeArray, safeNumber } from './utils'
 export {
   createPlugin,
   runPlugins,
+  reloadPlugins,
   type IrisPlugin,
   type PluginRegistry,
   type CollectedRegistrations,
@@ -307,3 +309,9 @@ export {
   type SortableState,
   type SortableController,
 } from './sortable'
+export {
+  createKeyboardNav,
+  type KeyboardNavController,
+  type KeyboardNavConfig,
+  type KeyboardNavAction,
+} from './keyboard-nav'

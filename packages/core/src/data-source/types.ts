@@ -25,6 +25,9 @@ export interface DataSourceConfig<T> {
   pageSize?: number
   mode?: DataSourceMode
   immediate?: boolean
+  /** Max rows to accumulate in infinite mode. Default: 5000. When exceeded,
+   * `loadMore` becomes a no-op. Prevents unbounded DOM/state growth. */
+  maxRows?: number
 }
 
 export interface DataSourceState<T> {

@@ -56,6 +56,15 @@ export interface IrisPlugin {
   readonly name: string
   install(registry: PluginRegistry): void | (() => void)
   /**
+   * Called when this plugin is REMOVED from the running set while the provider
+   * stays mounted (e.g. dynamic plugin toggling). Runs after the teardowns
+   * collected during `install`. Use it for cleanup that `teardown` cannot reach
+   * because the plugin's whole install context is gone by then — unregistering
+   * global event listeners, closing WebSocket connections, flushing caches.
+   * Default (absent) is a no-op.
+   */
+  destroy?(): void
+  /**
    * Names of plugins this one must install AFTER (e.g. it reads a store or
    * tokens they register). {@link runPlugins} topologically orders installs so
    * dependencies run first; teardown then runs LIFO (dependents unwind first).
@@ -256,4 +265,37 @@ export function runPlugins(plugins: readonly IrisPlugin[]): CollectedRegistratio
   }
 
   return { tokens, messages, stores, teardown }
+}
+
+/**
+ * Diff two plugin sets and efficiently re-install only the changed ones.
+ * Call this when the provider's `plugins` prop changes at runtime (e.g. HMR,
+ * dynamic feature toggling) without unmounting.
+ *
+ * 1. Calls `destroy()` on every plugin in `prev` but NOT in `next`.
+ * 2. Calls `runPlugins(next)` to install the current set fresh.
+ * 3. Returns the new {@link CollectedRegistrations}.
+ *
+ * Thrown errors from destroy are isolated (one failing does not block the
+ * rest) and reported via `devWarn`.
+ */
+export function reloadPlugins(
+  prev: readonly IrisPlugin[],
+  next: readonly IrisPlugin[],
+): CollectedRegistrations {
+  const nextSet = new Set(next.map((p) => p.name))
+
+  // Destroy removed plugins (reverse order for consistent LIFO behavior).
+  for (let i = prev.length - 1; i >= 0; i -= 1) {
+    const plugin = prev[i]!
+    if (!nextSet.has(plugin.name)) {
+      try {
+        plugin.destroy?.()
+      } catch (err) {
+        devWarn(`plugin "${plugin.name}" destroy() threw: ${String(err)}`)
+      }
+    }
+  }
+
+  return runPlugins(next)
 }

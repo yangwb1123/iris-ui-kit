@@ -94,12 +94,29 @@ export interface FormConfig<V extends FormValues> {
   /** Validate a field when it is blurred (marked touched). Default `true`. */
   validateOnBlur?: boolean
   /**
+   * Validate all fields on mount (initial render). Useful for edit forms where
+   * the initial values come from an API — the user sees validation feedback
+   * immediately without needing to interact with every field first.
+   * Default `false` (no validation on mount).
+   */
+  validateOnMount?: boolean
+  /**
    * Debounce the validate-on-change of each field by this many ms — so an async
    * validator (e.g. a username-availability check) isn't fired on every
    * keystroke. 0 / omitted validates immediately. Blur, submit, and explicit
    * `validateField` are never debounced.
    */
   validationDebounceMs?: number
+  /**
+   * Debounce individual `setFieldValue` calls by this many ms — useful when
+   * the user types quickly and you want to batch store updates to avoid
+   * excessive re-renders. 0 (default) writes every value immediately.
+   * Unlike `validationDebounceMs` (which debounces only validation), this
+   * debounces the actual value write to the store (subscribers only see the
+   * latest value after the debounce interval). `setValues`, `array*` helpers,
+   * and programmatic calls are NOT debounced.
+   */
+  setFieldValueDebounceMs?: number
   /**
    * Cross-field dependencies: when a key changes, the listed fields are also
    * re-validated. E.g. `{ password: ['confirmPassword'] }` re-checks the
@@ -126,6 +143,8 @@ export interface FormConfig<V extends FormValues> {
    * receives. Pure: return the transformed values.
    */
   transform?: (values: V) => V
+  /** Max undo history depth. Default 50. 0 disables undo. */
+  maxHistory?: number
   onSubmit?: (values: V) => void | Promise<void>
 }
 
@@ -172,6 +191,28 @@ export interface FormStore<V extends FormValues> {
   handleSubmit(): Promise<void>
   reset(nextInitialValues?: V): void
   isValid(): boolean
+  /** True when any field's value differs from its initial value. */
+  isDirty(): boolean
+  /** Names of fields whose value differs from initial. */
+  getDirtyFields(): Key<V>[]
+  /** Undo the last mutation. No-op when nothing to undo. */
+  undo(): void
+  /** Redo a previously undone mutation. No-op when nothing to redo. */
+  redo(): void
+  /** True when at least one undo snapshot exists. */
+  canUndo(): boolean
+  /** True when at least one redo snapshot exists. */
+  canRedo(): boolean
+  /**
+   * Serialize form values + touched for draft persistence (localStorage etc).
+   * Set `includeTouched: false` to skip touched in the snapshot.
+   */
+  serialize(opts?: { includeTouched?: boolean }): { values: Partial<V>; touched?: FieldFlags<V> }
+  /**
+   * Hydrate form state from a serialized draft. Marks all hydrated fields as
+   * dirty. Call after construction in the adapter's mount effect.
+   */
+  hydrate(draft: { values: Partial<V>; touched?: FieldFlags<V> }): void
 }
 
 export function createFormStore<V extends FormValues>(config: FormConfig<V>): FormStore<V> {
@@ -196,6 +237,24 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     submitCount: 0,
     currentStep: 0,
   })
+
+  // Undo/redo history stack of JSON-serialized value snapshots.
+  const maxHistory = config.maxHistory ?? 50
+  const history: string[] = []
+  let historyIdx = -1
+
+  const saveSnapshot = (): void => {
+    if (maxHistory <= 0) return
+    history.splice(historyIdx + 1)
+    const snapshot = JSON.stringify(store.getState().values)
+    if (history.length > 0 && history[history.length - 1] === snapshot) return
+    history.push(snapshot)
+    if (history.length > maxHistory) history.shift()
+    historyIdx = history.length - 1
+  }
+
+  // Save the initial snapshot so undo from the first edit has a valid baseline.
+  saveSnapshot()
 
   // Monotonic per-field token. A validation result is only applied if its
   // field's token is still the latest when it resolves — so a slow async
@@ -245,6 +304,24 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     setValidating(name, false)
     writeError(name, error)
     return error
+  }
+
+  // Validate on mount when configured — useful for edit forms where initial
+  // values come from an API. Validates every field with a validator, then
+  // touches them so errors are visible without user interaction.
+  const validateOnMount = config.validateOnMount ?? false
+  if (validateOnMount) {
+    const mountNames = Object.keys(validators) as Key<V>[]
+    if (mountNames.length > 0) {
+      // Fire validators but don't block construction; touch fields on resolve.
+      void Promise.all(mountNames.map((name) => validateField(name))).then(() => {
+        store.setState((s) => {
+          const touched: FieldFlags<V> = { ...s.touched }
+          for (const name of mountNames) touched[name] = true
+          return { ...s, touched }
+        })
+      })
+    }
   }
 
   // Debounced per-field validate-on-change (one debouncer per field), so an
@@ -323,12 +400,55 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
   }
 
   const dependencies: Partial<Record<Key<V>, Key<V>[]>> = config.dependencies ?? {}
+  const setFieldValueDebounceMs = config.setFieldValueDebounceMs ?? 0
+
+  // Debounce buffer for setFieldValue: when debounce is active, writes are
+  // buffered by field key and flushed asynchronously, so subscribers (UI
+  // components) only re-render after the debounce interval. getFieldValue
+  // reads from the buffer + falls through to the store.
+  const valueBuffer = new Map<string, unknown>()
+  const fieldFlushers = new Map<string, () => void>()
+  const scheduleFlush = (key: string): void => {
+    if (setFieldValueDebounceMs <= 0) return
+    let flush = fieldFlushers.get(key)
+    if (!flush) {
+      flush = debounce(() => {
+        const value = valueBuffer.get(key)
+        valueBuffer.delete(key)
+        if (value === undefined && !valueBuffer.has(key)) return
+        // Write buffered value to the store
+        store.setState((s) => ({
+          ...s,
+          values: setByPath(s.values, key, value),
+          dirty: { ...s.dirty, [key]: !Object.is(value, getByPath(initialValues, key)) },
+        }))
+        saveSnapshot()
+      }, setFieldValueDebounceMs)
+      fieldFlushers.set(key, flush)
+    }
+    flush()
+  }
 
   const setFieldValue: FormStore<V>['setFieldValue'] = (
     ref: FieldPath<V>,
     value: unknown,
   ): void => {
     const key = pathKey(ref)
+    if (setFieldValueDebounceMs > 0) {
+      // Debounced: buffer the value and schedule a store flush. getFieldValue
+      // reads from the buffer so the form is internally consistent.
+      valueBuffer.set(key, value)
+      scheduleFlush(key)
+      // Still validate on change, reading from the buffer for cross-field rules
+      if (validateOnChange) {
+        scheduleValidate(key)
+        for (const dep of dependencies[key as Key<V>] ?? []) {
+          if (validators[dep]) scheduleValidate(dep)
+        }
+      }
+      return
+    }
+    // Immediate: write to the store directly (original behavior)
     store.setState((s) => ({
       ...s,
       // Structural-sharing set along the touched path only (a flat key reduces
@@ -336,6 +456,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
       values: setByPath(s.values, key, value),
       dirty: { ...s.dirty, [key]: !Object.is(value, getByPath(initialValues, key)) },
     }))
+    saveSnapshot()
     if (validateOnChange) {
       scheduleValidate(key)
       // Re-validate dependent fields (one level deep) so a cross-field rule
@@ -347,8 +468,12 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     }
   }
 
-  const getFieldValue: FormStore<V>['getFieldValue'] = (ref) =>
-    getByPath(store.getState().values, ref as Path)
+  const getFieldValue: FormStore<V>['getFieldValue'] = (ref) => {
+    const key = pathKey(ref)
+    // Read from debounce buffer first (if a debounced write is pending)
+    if (valueBuffer.has(key)) return valueBuffer.get(key)
+    return getByPath(store.getState().values, ref as Path)
+  }
 
   const setValues: FormStore<V>['setValues'] = (values) => {
     const keys = Object.keys(values) as Key<V>[]
@@ -362,6 +487,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
       }
       return { ...s, values: nextValues, dirty: nextDirty }
     })
+    saveSnapshot()
     if (validateOnChange) for (const key of keys) void validateField(key)
   }
 
@@ -515,6 +641,9 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
   const reset: FormStore<V>['reset'] = (nextInitialValues) => {
     if (nextInitialValues) initialValues = parse({ ...nextInitialValues })
     tokens.clear()
+    // Also clear undo history on reset — new initial values, fresh timeline.
+    history.length = 0
+    historyIdx = -1
     store.setState({
       values: { ...initialValues },
       errors: {},
@@ -526,6 +655,8 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
       submitCount: 0,
       currentStep: 0,
     })
+    // Save the new initial snapshot.
+    saveSnapshot()
   }
 
   return {
@@ -553,5 +684,91 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     handleSubmit,
     reset,
     isValid: () => Object.keys(store.getState().errors).length === 0,
+    /** True when any field's value differs from its initial value. */
+    isDirty: () => {
+      const s = store.getState()
+      return Object.values(s.dirty).some(Boolean)
+    },
+    /** Names of fields whose value differs from initial. */
+    getDirtyFields: () => {
+      const s = store.getState()
+      return (Object.keys(s.dirty) as Key<V>[]).filter((k) => s.dirty[k])
+    },
+    undo: () => {
+      if (historyIdx <= 0) return
+      historyIdx -= 1
+      store.setState((s) => ({ ...s, values: JSON.parse(history[historyIdx]!) }))
+    },
+    redo: () => {
+      if (historyIdx >= history.length - 1) return
+      historyIdx += 1
+      store.setState((s) => ({ ...s, values: JSON.parse(history[historyIdx]!) }))
+    },
+    canUndo: () => historyIdx > 0,
+    canRedo: () => historyIdx < history.length - 1,
+    /**
+     * Serialize the form's values + touched set to a JSON-compatible object for
+     * draft persistence (e.g. localStorage). Excludes errors (they are
+     * re-derived on validation) and submission state. Omit `touched` to skip
+     * the touched set (only values matter for a restored draft).
+     */
+    serialize: (opts?: { includeTouched?: boolean }) => ({
+      values: { ...store.getState().values },
+      ...(opts?.includeTouched !== false ? { touched: { ...store.getState().touched } } : {}),
+    }),
+    /**
+     * Hydrate form state from a serialized draft (the output of `serialize()`).
+     * Sets values, touched, and marks all hydrated fields as dirty (since they
+     * differ from `initialValues`). The caller is responsible for calling this
+     * after construction (e.g. in the adapter's `useEffect`/`watch`).
+     */
+    hydrate: (draft: { values: Partial<V>; touched?: FieldFlags<V> }) => {
+      const s = store.getState()
+      const nextDirty: FieldFlags<V> = { ...s.dirty }
+      const nextValues = { ...s.values }
+      for (const key of Object.keys(draft.values) as Key<V>[]) {
+        const v = draft.values[key]
+        nextValues[key] = v as V[Key<V>]
+        // Only mark dirty if the hydrated value differs from the initial
+        if (!Object.is(v, initialValues[key])) nextDirty[key] = true
+      }
+      store.setState({
+        ...s,
+        values: nextValues,
+        dirty: nextDirty,
+        touched: draft.touched ? { ...s.touched, ...draft.touched } : s.touched,
+      })
+    },
+  }
+}
+/**
+ * Create a `beforeunload` guard that triggers when `isDirty` returns true.
+ * SSR-safe: no-ops when `window` is not defined (Node.js/SSR).
+ * Call `guard.attach()` to start listening and `guard.detach()` to clean up.
+ */
+export function createDirtyGuard(isDirty: () => boolean): {
+  attach: () => void
+  detach: () => void
+} {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- browser global
+  const g =
+    typeof globalThis !== 'undefined' ? (globalThis as unknown as Record<string, unknown>) : null
+  const canListen = g !== null && typeof g.addEventListener === 'function'
+  const handler = (event: Event): void => {
+    if (isDirty()) {
+      event.preventDefault()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(event as any).returnValue = ''
+    }
+  }
+  return {
+    attach: () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (canListen) (g as any).addEventListener('beforeunload', handler)
+    },
+    detach: () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (canListen) (g as any).removeEventListener('beforeunload', handler)
+    },
   }
 }

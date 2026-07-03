@@ -72,4 +72,94 @@ describe('IrisAccordion', () => {
     ))
     expect(container.querySelector('[data-iris-accordion-content]')).not.toBeNull()
   })
+
+  it('toggles item open on Enter key (unmodified existing keyboard behavior)', () => {
+    const { container } = render(() => (
+      <IrisAccordion>
+        <IrisAccordionItem value="a" title="Section A">
+          Content A
+        </IrisAccordionItem>
+      </IrisAccordion>
+    ))
+    const trigger = container.querySelector('[data-iris-accordion-trigger]') as HTMLButtonElement
+    fireEvent.keyDown(trigger, { key: 'Enter' })
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('toggles item open on Space key (unmodified existing keyboard behavior)', () => {
+    const { container } = render(() => (
+      <IrisAccordion>
+        <IrisAccordionItem value="a" title="Section A">
+          Content A
+        </IrisAccordionItem>
+      </IrisAccordion>
+    ))
+    const trigger = container.querySelector('[data-iris-accordion-trigger]') as HTMLButtonElement
+    fireEvent.keyDown(trigger, { key: ' ' })
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+  })
+
+  describe('roving-focus keyboard navigation (WAI-ARIA accordion pattern)', () => {
+    function renderThree() {
+      const utils = render(() => (
+        <IrisAccordion>
+          <IrisAccordionItem value="a" title="Section A">
+            Content A
+          </IrisAccordionItem>
+          <IrisAccordionItem value="b" title="Section B">
+            Content B
+          </IrisAccordionItem>
+          <IrisAccordionItem value="c" title="Section C">
+            Content C
+          </IrisAccordionItem>
+        </IrisAccordion>
+      ))
+      const triggers = Array.from(
+        utils.container.querySelectorAll('[data-iris-accordion-trigger]'),
+      ) as HTMLButtonElement[]
+      return { ...utils, triggers }
+    }
+
+    it('ArrowDown moves focus to the next header', () => {
+      const { triggers } = renderThree()
+      fireEvent.focus(triggers[0]!)
+      fireEvent.keyDown(triggers[0]!, { key: 'ArrowDown' })
+      expect(document.activeElement).toBe(triggers[1])
+    })
+
+    it('ArrowUp moves focus to the previous header', () => {
+      const { triggers } = renderThree()
+      fireEvent.focus(triggers[1]!)
+      fireEvent.keyDown(triggers[1]!, { key: 'ArrowUp' })
+      expect(document.activeElement).toBe(triggers[0])
+    })
+
+    it('ArrowDown wraps from the last header to the first (loop: true)', () => {
+      const { triggers } = renderThree()
+      fireEvent.focus(triggers[2]!)
+      fireEvent.keyDown(triggers[2]!, { key: 'ArrowDown' })
+      expect(document.activeElement).toBe(triggers[0])
+    })
+
+    it('ArrowUp wraps from the first header to the last (loop: true)', () => {
+      const { triggers } = renderThree()
+      fireEvent.focus(triggers[0]!)
+      fireEvent.keyDown(triggers[0]!, { key: 'ArrowUp' })
+      expect(document.activeElement).toBe(triggers[2])
+    })
+
+    it('Home jumps focus to the first header', () => {
+      const { triggers } = renderThree()
+      fireEvent.focus(triggers[2]!)
+      fireEvent.keyDown(triggers[2]!, { key: 'Home' })
+      expect(document.activeElement).toBe(triggers[0])
+    })
+
+    it('End jumps focus to the last header', () => {
+      const { triggers } = renderThree()
+      fireEvent.focus(triggers[0]!)
+      fireEvent.keyDown(triggers[0]!, { key: 'End' })
+      expect(document.activeElement).toBe(triggers[2])
+    })
+  })
 })

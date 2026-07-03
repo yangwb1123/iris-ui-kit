@@ -16,4 +16,5 @@
 <IrisAccordion {collapsible} {value} {onValueChange}>
   <IrisAccordionItem value="a" title="Item A">Content A</IrisAccordionItem>
   <IrisAccordionItem value="b" title="Item B">Content B</IrisAccordionItem>
+  <IrisAccordionItem value="c" title="Item C">Content C</IrisAccordionItem>
 </IrisAccordion>

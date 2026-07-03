@@ -23,6 +23,15 @@
   const headerId = $derived(`${ctx.rootId}-h-${value}`)
   const contentId = $derived(`${ctx.rootId}-c-${value}`)
 
+  // Register this item's trigger element for keyboard navigation
+  let triggerEl = $state<HTMLButtonElement | undefined>(undefined)
+  $effect(() => {
+    if (!triggerEl) return
+    const v = value
+    const el = triggerEl
+    return ctx.registerItem(v, el)
+  })
+
   function onTrigger(): void {
     if (disabled) return
     ctx.toggle(value)
@@ -34,6 +43,10 @@
       event.preventDefault()
       ctx.toggle(value)
     }
+  }
+
+  function onFocus(): void {
+    if (!disabled) ctx.focusItem(value)
   }
 </script>
 
@@ -51,8 +64,10 @@
     aria-expanded={open ? 'true' : 'false'}
     aria-controls={contentId}
     {disabled}
+    bind:this={triggerEl}
     onclick={onTrigger}
     onkeydown={onKeyDown}
+    onfocus={onFocus}
     style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:var(--iris-padding-md,12px); background:transparent; color:var(--iris-foreground); border:none; cursor:{disabled
       ? 'not-allowed'
       : 'pointer'}; opacity:{disabled ? '0.6' : '1'}; font:inherit; text-align:start;"

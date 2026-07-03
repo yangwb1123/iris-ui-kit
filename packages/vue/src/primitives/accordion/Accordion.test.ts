@@ -32,6 +32,25 @@ function tripleHarness(opts?: {
   })
 }
 
+function navHarness() {
+  return defineComponent({
+    setup() {
+      return () =>
+        h(
+          IrisAccordion,
+          {},
+          {
+            default: () => [
+              h(IrisAccordionItem, { value: 'a', title: 'A' }, () => 'body A'),
+              h(IrisAccordionItem, { value: 'b', title: 'B' }, () => 'body B'),
+              h(IrisAccordionItem, { value: 'c', title: 'C' }, () => 'body C'),
+            ],
+          },
+        )
+    },
+  })
+}
+
 describe('IrisAccordion', () => {
   it('renders three items, all closed by default', () => {
     const w = mount(tripleHarness())
@@ -138,6 +157,60 @@ describe('IrisAccordion', () => {
     await trig.trigger('keydown', { key: ' ' })
     // In single non-collapsible mode, Space on an open item is a no-op.
     expect(trig.attributes('aria-expanded')).toBe('true')
+  })
+
+  it('ArrowDown moves focus to the next header', async () => {
+    const w = mount(navHarness(), { attachTo: document.body })
+    const triggers = w.findAll('[data-iris-accordion-trigger]')
+    triggers[0]!.element.focus()
+    await triggers[0]!.trigger('keydown', { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(triggers[1]!.element)
+    w.unmount()
+  })
+
+  it('ArrowUp moves focus to the previous header', async () => {
+    const w = mount(navHarness(), { attachTo: document.body })
+    const triggers = w.findAll('[data-iris-accordion-trigger]')
+    triggers[1]!.element.focus()
+    await triggers[1]!.trigger('keydown', { key: 'ArrowUp' })
+    expect(document.activeElement).toBe(triggers[0]!.element)
+    w.unmount()
+  })
+
+  it('ArrowDown wraps from the last header to the first (loop: true)', async () => {
+    const w = mount(navHarness(), { attachTo: document.body })
+    const triggers = w.findAll('[data-iris-accordion-trigger]')
+    triggers[2]!.element.focus()
+    await triggers[2]!.trigger('keydown', { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(triggers[0]!.element)
+    w.unmount()
+  })
+
+  it('ArrowUp wraps from the first header to the last (loop: true)', async () => {
+    const w = mount(navHarness(), { attachTo: document.body })
+    const triggers = w.findAll('[data-iris-accordion-trigger]')
+    triggers[0]!.element.focus()
+    await triggers[0]!.trigger('keydown', { key: 'ArrowUp' })
+    expect(document.activeElement).toBe(triggers[2]!.element)
+    w.unmount()
+  })
+
+  it('End jumps focus to the last header', async () => {
+    const w = mount(navHarness(), { attachTo: document.body })
+    const triggers = w.findAll('[data-iris-accordion-trigger]')
+    triggers[0]!.element.focus()
+    await triggers[0]!.trigger('keydown', { key: 'End' })
+    expect(document.activeElement).toBe(triggers[2]!.element)
+    w.unmount()
+  })
+
+  it('Home jumps focus to the first header', async () => {
+    const w = mount(navHarness(), { attachTo: document.body })
+    const triggers = w.findAll('[data-iris-accordion-trigger]')
+    triggers[2]!.element.focus()
+    await triggers[2]!.trigger('keydown', { key: 'Home' })
+    expect(document.activeElement).toBe(triggers[0]!.element)
+    w.unmount()
   })
 
   it('title slot wins over title prop', () => {

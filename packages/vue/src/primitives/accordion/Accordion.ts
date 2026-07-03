@@ -1,4 +1,16 @@
-import { computed, defineComponent, h, provide, ref, useId, watch, type PropType } from 'vue'
+import {
+  computed,
+  defineComponent,
+  h,
+  provide,
+  ref,
+  useId,
+  watch,
+  type PropType,
+  type Ref,
+} from 'vue'
+import { createKeyboardNav, type KeyboardNavAction } from '@iris-ui/core'
+import { useStore } from '../../useStore'
 import { AccordionContextKey } from './context'
 
 export type IrisAccordionValue = string | string[] | null
@@ -82,12 +94,59 @@ export const IrisAccordion = defineComponent({
       }
     }
 
+    // ── Keyboard navigation (single-sourced in core controller) ──────────
+    interface RegisteredItem {
+      value: string
+      el: Ref<HTMLButtonElement | null>
+    }
+    const items: RegisteredItem[] = []
+
+    const nav = createKeyboardNav({
+      count: items.length,
+      loop: true,
+      orientation: 'vertical',
+    })
+
+    const activeIndex = useStore(nav.store)
+
+    const registerItem = (value: string, el: Ref<HTMLButtonElement | null>): (() => void) => {
+      if (!items.find((it) => it.value === value)) {
+        items.push({ value, el })
+        nav.reset(items.length)
+      }
+      return () => {
+        const idx = items.findIndex((it) => it.value === value)
+        if (idx >= 0) {
+          items.splice(idx, 1)
+          nav.reset(items.length)
+        }
+      }
+    }
+
+    const focusItem = (value: string) => {
+      const idx = items.findIndex((it) => it.value === value)
+      if (idx >= 0) nav.focus(idx)
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const action: KeyboardNavAction = nav.handleKeyDown({
+        key: event.key,
+        preventDefault: () => event.preventDefault(),
+      })
+      if (action.type === 'focus') {
+        items[action.target]?.el.value?.focus()
+      }
+    }
+
     provide(AccordionContextKey, {
       isOpen,
       toggle,
       rootId: useId(),
       collapsible: computed(() => props.collapsible),
       multiple: computed(() => props.multiple),
+      activeIndex,
+      registerItem,
+      focusItem,
     })
 
     return () =>
@@ -97,6 +156,7 @@ export const IrisAccordion = defineComponent({
           ...attrs,
           'data-iris-accordion': '',
           'data-iris-accordion-multiple': props.multiple ? 'true' : undefined,
+          onKeydown: handleKeyDown,
         },
         slots.default?.(),
       )

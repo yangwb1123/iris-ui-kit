@@ -1,4 +1,4 @@
-import { computed, defineComponent, h, inject } from 'vue'
+import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { AccordionContextKey } from './context'
 
 /**
@@ -27,6 +27,16 @@ export const IrisAccordionItem = defineComponent({
     const headerId = `${ctx.rootId}-h-${props.value}`
     const contentId = `${ctx.rootId}-c-${props.value}`
 
+    // Register this item's trigger element for keyboard navigation
+    const triggerRef = ref<HTMLButtonElement | null>(null)
+    let unregister: (() => void) | undefined
+    onMounted(() => {
+      unregister = ctx.registerItem(props.value, triggerRef)
+    })
+    onBeforeUnmount(() => {
+      unregister?.()
+    })
+
     const onTrigger = () => {
       if (props.disabled) return
       ctx.toggle(props.value)
@@ -38,6 +48,10 @@ export const IrisAccordionItem = defineComponent({
         event.preventDefault()
         ctx.toggle(props.value)
       }
+    }
+
+    const onFocus = () => {
+      if (!props.disabled) ctx.focusItem(props.value)
     }
 
     return () =>
@@ -63,8 +77,12 @@ export const IrisAccordionItem = defineComponent({
               'aria-expanded': open.value ? 'true' : 'false',
               'aria-controls': contentId,
               disabled: props.disabled || undefined,
+              ref: (el: unknown) => {
+                triggerRef.value = (el ?? null) as HTMLButtonElement | null
+              },
               onClick: onTrigger,
               onKeydown: onKeyDown,
+              onFocus,
               style: {
                 width: '100%',
                 display: 'flex',

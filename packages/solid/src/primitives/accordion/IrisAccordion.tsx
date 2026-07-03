@@ -2,11 +2,15 @@ import {
   createSignal,
   createUniqueId,
   mergeProps,
+  onCleanup,
+  onMount,
   Show,
   splitProps,
   useContext,
   type JSX,
 } from 'solid-js'
+import { createKeyboardNav, type KeyboardNavAction } from '@iris-ui/core'
+import { useStore } from '../../useStore'
 import { AccordionCtx } from './context'
 
 // ── Container ──────────────────────────────────────────────────────────────
@@ -74,6 +78,46 @@ export function IrisAccordion(props: IrisAccordionProps): JSX.Element {
 
   const rootId = createUniqueId()
 
+  // ── Keyboard navigation (single-sourced in core controller) ──────────
+  interface RegisteredItem {
+    value: string
+    el: HTMLButtonElement
+  }
+  let items: RegisteredItem[] = []
+
+  const nav = createKeyboardNav({
+    count: items.length,
+    loop: true,
+    orientation: 'vertical',
+  })
+  const activeIndex = useStore(nav.store)
+
+  const registerItem = (value: string, el: HTMLButtonElement): (() => void) => {
+    if (!items.find((it) => it.value === value)) {
+      items = [...items, { value, el }]
+      nav.reset(items.length)
+    }
+    return () => {
+      items = items.filter((it) => it.value !== value)
+      nav.reset(items.length)
+    }
+  }
+
+  const focusItem = (value: string): void => {
+    const idx = items.findIndex((it) => it.value === value)
+    if (idx >= 0) nav.focus(idx)
+  }
+
+  const handleKeyDown: JSX.EventHandlerUnion<HTMLDivElement, KeyboardEvent> = (e) => {
+    const action: KeyboardNavAction = nav.handleKeyDown({
+      key: e.key,
+      preventDefault: () => e.preventDefault(),
+    })
+    if (action.type === 'focus') {
+      items[action.target]?.el.focus()
+    }
+  }
+
   return (
     <AccordionCtx.Provider
       value={{
@@ -82,12 +126,16 @@ export function IrisAccordion(props: IrisAccordionProps): JSX.Element {
         rootId,
         collapsible: () => local.collapsible,
         multiple: () => local.multiple,
+        activeIndex,
+        registerItem,
+        focusItem,
       }}
     >
       <div
         {...rest}
         data-iris-accordion=""
         data-iris-accordion-multiple={local.multiple ? 'true' : undefined}
+        onKeyDown={handleKeyDown}
       >
         {local.children}
       </div>
@@ -115,9 +163,25 @@ export function IrisAccordionItem(props: IrisAccordionItemProps): JSX.Element {
   const headerId = `${ctx.rootId}-h-${local.value}`
   const contentId = `${ctx.rootId}-c-${local.value}`
 
+  // Register this item's trigger element for keyboard navigation
+  let triggerRef: HTMLButtonElement | undefined
+  onMount(() => {
+    if (triggerRef) onCleanup(ctx.registerItem(local.value, triggerRef))
+  })
+
   const onTrigger = (): void => {
     if (local.disabled) return
     ctx.toggle(local.value)
+  }
+  const onKeyDown = (e: KeyboardEvent): void => {
+    if (local.disabled) return
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      ctx.toggle(local.value)
+    }
+  }
+  const onFocus = (): void => {
+    if (!local.disabled) ctx.focusItem(local.value)
   }
 
   return (
@@ -129,6 +193,9 @@ export function IrisAccordionItem(props: IrisAccordionItemProps): JSX.Element {
       style={{ 'border-bottom': '1px solid var(--iris-border)' }}
     >
       <button
+        ref={(el) => {
+          triggerRef = el
+        }}
         type="button"
         id={headerId}
         data-iris-accordion-trigger=""
@@ -136,6 +203,8 @@ export function IrisAccordionItem(props: IrisAccordionItemProps): JSX.Element {
         aria-controls={contentId}
         disabled={local.disabled}
         onClick={onTrigger}
+        onKeyDown={onKeyDown}
+        onFocus={onFocus}
         style={{
           width: '100%',
           display: 'flex',

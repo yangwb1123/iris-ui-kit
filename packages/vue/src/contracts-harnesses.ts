@@ -39,6 +39,11 @@ export function driverFor(container: HTMLElement, unmount: () => void = () => {}
     click: (selector, index) => {
       const el = at(selector, index)
       if (el) {
+        // Raw `dispatchEvent` bypasses the browser's default click-focuses-
+        // the-target behavior (unlike a real click or `.click()`), so a
+        // scenario asserting `focused` after `click` would never see it —
+        // focus explicitly first, matching the other three drivers.
+        el.focus()
         el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
         el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
       }

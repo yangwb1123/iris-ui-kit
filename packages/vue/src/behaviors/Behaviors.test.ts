@@ -1,10 +1,12 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { IrisResizable } from './Resizable'
 import { IrisMovable } from './Movable'
 import { IrisHotkey } from './Hotkey'
 import { IrisClickOutside } from './ClickOutside'
+import { IrisSortable } from './Sortable'
+import { IrisLongPress } from './LongPress'
 
 function clearBody() {
   while (document.body.firstChild) document.body.removeChild(document.body.firstChild)
@@ -257,5 +259,73 @@ describe('@iris-ui/vue IrisClickOutside', () => {
     expect(wrap.emitted('outside')).toBeUndefined()
     wrap.unmount()
     document.body.removeChild(outside)
+  })
+})
+
+describe('@iris-ui/vue IrisSortable', () => {
+  it('renders items with data-iris-sortable-item attributes matching index-based keys', () => {
+    const wrap = mount(IrisSortable, {
+      props: { items: ['A', 'B', 'C'], onReorder: () => {} },
+      slots: { default: '<div>A</div><div>B</div><div>C</div>' },
+    })
+    const items = wrap.findAll('[data-iris-sortable-item]')
+    expect(items.length).toBe(3)
+    expect(items[0]?.attributes('data-iris-sortable-item')).toBe('0')
+    expect(items[1]?.attributes('data-iris-sortable-item')).toBe('1')
+    expect(items[2]?.attributes('data-iris-sortable-item')).toBe('2')
+  })
+
+  it('marks root data-iris-sortable and idle state', () => {
+    const wrap = mount(IrisSortable, {
+      props: { items: ['A'], onReorder: () => {} },
+      slots: { default: '<div>A</div>' },
+    })
+    const root = wrap.find('[data-iris-sortable]')
+    expect(root.exists()).toBe(true)
+    expect(root.attributes('data-state')).toBe('idle')
+  })
+
+  it('disabled state reflects on opacity', () => {
+    const wrap = mount(IrisSortable, {
+      props: { items: ['A'], onReorder: () => {}, disabled: true },
+      slots: { default: '<div>A</div>' },
+    })
+    const root = wrap.find('[data-iris-sortable]').element as HTMLElement
+    expect(root.style.opacity).toBe('0.6')
+  })
+})
+
+describe('@iris-ui/vue IrisLongPress', () => {
+  it('renders children inside a [data-iris-long-press] wrapper', () => {
+    const wrap = mount(IrisLongPress, {
+      props: { onLongPress: () => {} },
+      slots: { default: '<div data-testid="child">x</div>' },
+    })
+    expect(wrap.find('[data-iris-long-press]').exists()).toBe(true)
+    expect(wrap.find('[data-testid=child]').exists()).toBe(true)
+  })
+
+  it('fires onLongPress after holdDelay', async () => {
+    const onLongPress = vi.fn()
+    const wrap = mount(IrisLongPress, {
+      props: { holdDelay: 10, onLongPress },
+      slots: { default: '<div>x</div>' },
+    })
+    wrap.element.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    await new Promise((r) => setTimeout(r, 50))
+    expect(onLongPress).toHaveBeenCalledOnce()
+  })
+
+  it('does not fire on quick release before holdDelay', async () => {
+    const onLongPress = vi.fn()
+    const wrap = mount(IrisLongPress, {
+      props: { holdDelay: 50, onLongPress },
+      slots: { default: '<div>x</div>' },
+    })
+    wrap.element.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    await new Promise((r) => setTimeout(r, 10))
+    wrap.element.dispatchEvent(new Event('pointerup', { bubbles: true }))
+    await new Promise((r) => setTimeout(r, 60))
+    expect(onLongPress).not.toHaveBeenCalled()
   })
 })

@@ -2,3 +2,5 @@ export { IrisResizable, type IrisResizableHandle, type IrisResizableSize } from 
 export { IrisMovable, type IrisMovablePosition, type IrisMovableBounds } from './Movable'
 export { IrisHotkey } from './Hotkey'
 export { IrisClickOutside } from './ClickOutside'
+export { IrisSortable, SORTABLE_ITEM_ATTR } from './Sortable'
+export { IrisLongPress } from './LongPress'

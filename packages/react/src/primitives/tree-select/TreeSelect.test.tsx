@@ -77,4 +77,28 @@ describe('@iris-ui/react IrisTreeSelect', () => {
     fireEvent.click(container.querySelector('[data-value="banana"] [data-iris-tree-select-label]')!)
     expect(onValueChange).not.toHaveBeenCalled()
   })
+
+  it('disabled trigger has disabled attribute', () => {
+    const { container } = render(<IrisTreeSelect options={OPTIONS} disabled />)
+    expect(trigger(container).hasAttribute('disabled')).toBe(true)
+  })
+
+  it('invalid trigger has aria-invalid', () => {
+    const { container } = render(<IrisTreeSelect options={OPTIONS} invalid />)
+    expect(trigger(container).getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('Escape closes the tree', () => {
+    const { container } = render(<IrisTreeSelect options={OPTIONS} />)
+    fireEvent.click(trigger(container))
+    expect(container.querySelector('[role="tree"]')).not.toBeNull()
+    fireEvent.keyDown(trigger(container), { key: 'Escape' })
+    expect(container.querySelector('[role="tree"]')).toBeNull()
+  })
+
+  it('controlled value rerender updates the trigger label', () => {
+    const { container, rerender } = render(<IrisTreeSelect options={OPTIONS} value="" />)
+    rerender(<IrisTreeSelect options={OPTIONS} value="apple" defaultExpanded={['fruits']} />)
+    expect(container.querySelector('[data-iris-tree-select-value]')?.textContent).toBe('Apple')
+  })
 })

@@ -90,6 +90,7 @@ export function IrisTree({
   style,
   className,
 }: IrisTreeProps): React.ReactElement {
+  const safeNodes = nodes ?? []
   const expControlled = expandedProp !== undefined
   const selControlled = selectedProp !== undefined
   const [expInternal, setExpInternal] = React.useState<string[]>(defaultExpanded)
@@ -101,7 +102,7 @@ export function IrisTree({
   const { state, isContent, stateKey, stateProps } = useDataState({
     loading,
     error,
-    empty: nodes.length === 0,
+    empty: safeNodes.length === 0,
   })
 
   // Lazily-loaded children cache + per-node loading/error state (parity with
@@ -143,9 +144,9 @@ export function IrisTree({
         }
       }
     }
-    walk(nodes, 0, null)
+    walk(safeNodes, 0, null)
     return out
-  }, [nodes, expandedSet, childrenOf, hasChildrenFn])
+  }, [safeNodes, expandedSet, childrenOf, hasChildrenFn])
 
   // Checkable mode: flatten the FULL tree (every node, not just the visible
   // ones) into `{ key, parentKey, disabled }` so the cascade is correct even
@@ -159,9 +160,9 @@ export function IrisTree({
         if (kids && kids.length > 0) walk(kids, node.id)
       }
     }
-    walk(nodes, undefined)
+    walk(safeNodes, undefined)
     return out
-  }, [nodes, lazyCache])
+  }, [safeNodes, lazyCache])
 
   const onCheckedRef = React.useRef(onCheckedChange)
   onCheckedRef.current = onCheckedChange

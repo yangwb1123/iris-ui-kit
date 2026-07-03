@@ -5,7 +5,7 @@
   import { toStore } from '../useStore'
   import { SKIN_KEY, type IrisSkinContextValue, type SkinProviderProps } from './context'
 
-  let { engine, target = null, children }: SkinProviderProps = $props()
+  let { engine, target = null, cspNonce, children }: SkinProviderProps = $props()
 
   // Mirrors <ThemeProvider>: bridge the engine's store, apply the resolved skin's
   // CSS vars to the target, revert on change/unmount. All skin logic is in
@@ -18,7 +18,7 @@
   setContext<IrisSkinContextValue>(SKIN_KEY, { engine, current })
 
   $effect(() => {
-    injectGlobalStyles()
+    injectGlobalStyles(cspNonce)
     const el = target ?? document.documentElement
     const applied = applySkin(skin, el)
     return () => applied.revert()

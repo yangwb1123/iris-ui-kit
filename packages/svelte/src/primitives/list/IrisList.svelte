@@ -1,9 +1,8 @@
 <script lang="ts">
   import {
     createSelectionModel,
-    firstEnabledIndex,
-    lastEnabledIndex,
-    nextEnabledIndex,
+    createKeyboardNav,
+    type KeyboardNavAction,
     type SelectionKey,
   } from '@iris-ui/core'
   import { toStore } from '../../useStore'
@@ -102,14 +101,25 @@
 
   const isEnabled = (i: number): boolean => !items[i]?.disabled
 
-  // svelte-ignore state_referenced_locally
-  let activeIndex = $state(firstEnabledIndex(items.length, (i) => !items[i]?.disabled))
+  // Keyboard navigation (single-sourced in core controller)
+  const nav = createKeyboardNav({
+    count: items.length,
+    loop,
+    isEnabled,
+  })
 
-  // Keep the roving index valid as items change.
+  // svelte-ignore state_referenced_locally
+  let activeIndex = $state(nav.index)
   $effect(() => {
-    if (activeIndex < 0 || activeIndex >= items.length || items[activeIndex]?.disabled) {
-      activeIndex = firstEnabledIndex(items.length, isEnabled)
-    }
+    const unsub = nav.store.subscribe((next) => {
+      activeIndex = next
+    })
+    return unsub
+  })
+
+  // Reset nav when items change
+  $effect(() => {
+    nav.reset(items.length)
   })
 
   let listEl = $state<HTMLElement | undefined>(undefined)
@@ -128,15 +138,8 @@
     listEl?.querySelector<HTMLElement>(`[data-iris-list-index="${index}"]`)?.focus()
   }
 
-  function moveActive(delta: 1 | -1): void {
-    const next = nextEnabledIndex(activeIndex, delta, items.length, isEnabled, loop)
-    if (next >= 0) focusAt(next)
-  }
-
   function select(item: ListItem): void {
     if (item.disabled) return
-    // Re-base on the prop so the emitted value is computed against what the
-    // parent holds (controlled). Single mode never toggles off, so use `set`.
     if (isControlled) model.sync(toKeys(value))
     if (multi) model.toggle(asKey(item.value))
     else model.set([asKey(item.value)])
@@ -145,35 +148,15 @@
 
   function onKeyDown(e: KeyboardEvent): void {
     if (!isContent) return
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        moveActive(1)
-        break
-      case 'ArrowUp':
-        e.preventDefault()
-        moveActive(-1)
-        break
-      case 'Home': {
-        e.preventDefault()
-        const first = firstEnabledIndex(items.length, isEnabled)
-        if (first >= 0) focusAt(first)
-        break
-      }
-      case 'End': {
-        e.preventDefault()
-        const last = lastEnabledIndex(items.length, isEnabled)
-        if (last >= 0) focusAt(last)
-        break
-      }
-      case 'Enter':
-      case ' ':
-        if (activeIndex >= 0) {
-          e.preventDefault()
-          const it = items[activeIndex]
-          if (it) select(it)
-        }
-        break
+    const action: KeyboardNavAction = nav.handleKeyDown({
+      key: e.key,
+      preventDefault: () => e.preventDefault(),
+    })
+    if (action.type === 'focus' || action.type === 'typeahead') {
+      focusAt(action.target)
+    } else if (action.type === 'select') {
+      const it = items[action.target]
+      if (it) select(it)
     }
   }
 

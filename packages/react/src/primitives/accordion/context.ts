@@ -6,6 +6,15 @@ export interface AccordionContextValue {
   rootId: string
   collapsible: boolean
   multiple: boolean
+  /** Current keyboard‑navigation active index. */
+  activeIndex: number
+  /**
+   * Register a trigger element for keyboard navigation.
+   * Returns an unregister function for cleanup.
+   */
+  registerItem: (value: string, el: React.RefObject<HTMLButtonElement | null>) => () => void
+  /** Tell the nav controller to focus the item with the given value. */
+  focusItem: (value: string) => void
 }
 
 export const AccordionContext = React.createContext<AccordionContextValue | null>(null)

@@ -15,6 +15,7 @@ export interface ToggleGroupContextValue {
   toggle: (value: string) => void
   registerItem: (value: string, el: { current: HTMLElement | null }) => () => void
   moveFocus: (from: string, delta: 1 | -1 | 'home' | 'end') => void
+  focusItem: (value: string) => void
 }
 
 export const ToggleGroupContext = React.createContext<ToggleGroupContextValue | null>(null)

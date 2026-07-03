@@ -6,7 +6,7 @@
   import { toStore } from '../useStore'
   import { THEME_KEY, type IrisThemeContextValue, type ThemeProviderProps } from './context'
 
-  let { store, target = null, dir = 'ltr', children }: ThemeProviderProps = $props()
+  let { store, target = null, dir = 'ltr', cspNonce, children }: ThemeProviderProps = $props()
 
   // Bridge the framework-agnostic theme store into a Svelte readable, exactly
   // like the React `useSyncExternalStore` / Vue `ref + subscribe` / Solid
@@ -32,7 +32,7 @@
   // Apply CSS variables + writing direction to the target; revert on
   // change/unmount via the $effect teardown (mirrors Solid's onCleanup).
   $effect(() => {
-    injectGlobalStyles()
+    injectGlobalStyles(cspNonce)
     const el = target ?? document.documentElement
     const appliedTheme = applyTheme(theme, el)
     const appliedDir = applyDirection(dir, el)

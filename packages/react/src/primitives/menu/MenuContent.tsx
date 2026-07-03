@@ -1,5 +1,10 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
+import {
+  createKeyboardNav,
+  type KeyboardNavController,
+  type KeyboardNavAction,
+} from '@iris-ui/core'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useMenuContext } from './context'
@@ -16,6 +21,10 @@ export interface IrisMenuContentProps extends Omit<
  * Menu surface (`role="menu"`). Handles ArrowUp/Down/Home/End nav across all
  * `[role="menuitem"]` descendants (including those inside submenu triggers).
  * Closes on outside click, Escape, and Tab.
+ *
+ * Keyboard navigation is single-sourced in `@iris-ui/core`'s
+ * {@link createKeyboardNav} — this adapter only bridges the returned actions
+ * to DOM focus.
  */
 export const IrisMenuContent = React.forwardRef<HTMLDivElement, IrisMenuContentProps>(
   function IrisMenuContent({ portalTarget, style, onKeyDown, children, ...rest }, forwardedRef) {
@@ -62,6 +71,13 @@ export const IrisMenuContent = React.forwardRef<HTMLDivElement, IrisMenuContentP
       wasOpenRef.current = ctx.open
     }, [ctx.open, ctx.triggerRef])
 
+    // ── Keyboard navigation (single-sourced in core controller) ──────────
+    const navRef = React.useRef<KeyboardNavController | null>(null)
+    if (navRef.current === null) {
+      navRef.current = createKeyboardNav({ count: 0, loop: true })
+    }
+    const nav = navRef.current
+
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
       onKeyDown?.(e)
       if (!ctx.open) return
@@ -71,32 +87,26 @@ export const IrisMenuContent = React.forwardRef<HTMLDivElement, IrisMenuContentP
         ) ?? [],
       )
       if (items.length === 0) return
+
+      // Tab always closes the root menu.
+      if (e.key === 'Tab') {
+        ctx.closeRoot()
+        return
+      }
+
+      // Sync nav state to the currently focused element.
+      nav.reset(items.length)
       const current = document.activeElement as HTMLElement | null
-      const index = current ? items.indexOf(current) : -1
-      switch (e.key) {
-        case 'ArrowDown': {
-          e.preventDefault()
-          const next = index < 0 ? 0 : (index + 1) % items.length
-          items[next]?.focus()
-          break
-        }
-        case 'ArrowUp': {
-          e.preventDefault()
-          const next = index <= 0 ? items.length - 1 : index - 1
-          items[next]?.focus()
-          break
-        }
-        case 'Home':
-          e.preventDefault()
-          items[0]?.focus()
-          break
-        case 'End':
-          e.preventDefault()
-          items[items.length - 1]?.focus()
-          break
-        case 'Tab':
-          ctx.closeRoot()
-          break
+      const curIndex = current ? items.indexOf(current) : -1
+      if (curIndex >= 0) nav.focus(curIndex)
+
+      const action: KeyboardNavAction = nav.handleKeyDown({
+        key: e.key,
+        preventDefault: () => e.preventDefault(),
+      })
+
+      if (action.type === 'focus') {
+        items[action.target]?.focus()
       }
     }
 

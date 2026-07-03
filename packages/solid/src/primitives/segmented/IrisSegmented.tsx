@@ -1,9 +1,9 @@
 import { createEffect, For, mergeProps, splitProps, type JSX } from 'solid-js'
 import {
+  createKeyboardNav,
   createSelectionModel,
-  firstEnabledIndex,
-  lastEnabledIndex,
   nextEnabledIndex,
+  type KeyboardNavAction,
 } from '@iris-ui/core'
 import { useStore } from '../../useStore'
 
@@ -63,6 +63,21 @@ export function IrisSegmented(props: IrisSegmentedProps): JSX.Element {
     'onChange',
   ])
 
+  const norm = (): IrisSegmentedOption[] => normalize(local.options)
+
+  // Keyboard navigation (single-sourced in core controller).
+  const nav = createKeyboardNav({
+    count: norm().length,
+    loop: false,
+    isEnabled: (i) => !norm()[i]?.disabled && !local.disabled,
+    orientation: 'horizontal',
+  })
+
+  // Keep controller in sync when options change.
+  createEffect(() => {
+    nav.reset(norm().length)
+  })
+
   // Single-selection logic is single-sourced in the core model; this component
   // only maps its scalar string value to/from the model's flat key array.
   const toKeys = (v: string | undefined): string[] => (v ? [v] : [])
@@ -88,7 +103,12 @@ export function IrisSegmented(props: IrisSegmentedProps): JSX.Element {
     if (isControlled()) model.sync(toKeys(local.value))
   }
 
-  const norm = (): IrisSegmentedOption[] => normalize(local.options)
+  // Sync nav index with the current value (click or programmatic change).
+  createEffect(() => {
+    const n = norm()
+    const idx = n.findIndex((o) => o.value === currentValue())
+    if (idx >= 0) nav.focus(idx)
+  })
 
   const btns: (HTMLButtonElement | null)[] = []
 
@@ -102,13 +122,32 @@ export function IrisSegmented(props: IrisSegmentedProps): JSX.Element {
     btns[i]?.focus()
   }
 
-  const move = (options: IrisSegmentedOption[], from: number, dir: 1 | -1): void => {
-    if (local.disabled) return
-    const next = nextEnabledIndex(from, dir, options.length, (i) => !options[i]?.disabled)
-    if (next >= 0) select(options, next)
-  }
-
   const sz = (): { padding: string; fontSize: string; height: string } => SIZE_MAP[local.size]
+
+  const handleKeyDown: JSX.EventHandlerUnion<HTMLDivElement, KeyboardEvent> = (e) => {
+    if (local.disabled) return
+    const action: KeyboardNavAction = nav.handleKeyDown({
+      key: e.key,
+      preventDefault: () => e.preventDefault(),
+    })
+    if (action.type === 'focus' || action.type === 'select') {
+      select(norm(), action.target)
+    } else if (action.type === 'next') {
+      // ArrowDown in horizontal mode: move to next enabled item.
+      const n = norm()
+      const cur = nav.index
+      if (cur < 0) return
+      const next = nextEnabledIndex(cur, 1, n.length, (i) => !n[i]?.disabled)
+      if (next >= 0) select(n, next)
+    } else if (action.type === 'previous') {
+      // ArrowUp in horizontal mode: move to previous enabled item.
+      const n = norm()
+      const cur = nav.index
+      if (cur < 0) return
+      const prev = nextEnabledIndex(cur, -1, n.length, (i) => !n[i]?.disabled)
+      if (prev >= 0) select(n, prev)
+    }
+  }
 
   return (
     <div
@@ -118,6 +157,7 @@ export function IrisSegmented(props: IrisSegmentedProps): JSX.Element {
       data-iris-segmented=""
       data-iris-segmented-size={local.size}
       data-disabled={local.disabled ? 'true' : undefined}
+      onKeyDown={handleKeyDown}
       style={{
         display: local.block ? 'flex' : 'inline-flex',
         width: local.block ? '100%' : undefined,
@@ -154,24 +194,6 @@ export function IrisSegmented(props: IrisSegmentedProps): JSX.Element {
               data-value={opt.value}
               data-selected={selected() ? 'true' : undefined}
               onClick={() => select(norm(), i())}
-              onKeyDown={(e) => {
-                const n = norm()
-                if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                  e.preventDefault()
-                  move(n, i(), 1)
-                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                  e.preventDefault()
-                  move(n, i(), -1)
-                } else if (e.key === 'Home') {
-                  e.preventDefault()
-                  const fe = firstEnabledIndex(n.length, (idx) => !n[idx]?.disabled)
-                  if (fe >= 0) select(n, fe)
-                } else if (e.key === 'End') {
-                  e.preventDefault()
-                  const le = lastEnabledIndex(n.length, (idx) => !n[idx]?.disabled)
-                  if (le >= 0) select(n, le)
-                }
-              }}
               style={{
                 flex: local.block ? '1' : undefined,
                 padding: sz().padding,

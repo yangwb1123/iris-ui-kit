@@ -20,5 +20,7 @@ export interface ThemeProviderProps {
   target?: HTMLElement | null
   /** Writing direction; sets `dir` on the target for RTL. Default `'ltr'`. */
   dir?: Direction
+  /** CSP nonce for injected inline stylesheets. */
+  cspNonce?: string
   children?: Snippet
 }

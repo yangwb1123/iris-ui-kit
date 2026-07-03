@@ -3,14 +3,7 @@ import { Portal } from 'solid-js/web'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useI18n } from '../../i18n'
-import {
-  firstEnabledIndex,
-  lastEnabledIndex,
-  matchTypeahead,
-  nextEnabledIndex,
-  type Placement,
-  type Size,
-} from '@iris-ui/core'
+import { createKeyboardNav, type KeyboardNavAction, type Placement, type Size } from '@iris-ui/core'
 
 export type IrisSelectSize = Size
 
@@ -96,62 +89,50 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
 
   const isEnabled = (i: number): boolean => !merged.items[i]?.disabled
 
-  const typeahead = { buffer: '', timer: null as ReturnType<typeof setTimeout> | null }
+  // Keyboard navigation (single-sourced in core controller).
+  // We keep activeIndex as a local signal for reactive rendering; the controller
+  // manages the canonical index and we sync it on each keyboard interaction.
+  const labels = createMemo(() => merged.items.map((it) => it.label ?? String(it.value)))
+  let nav: ReturnType<typeof createKeyboardNav> | undefined
+  const getNav = () => {
+    if (!nav || nav.count !== merged.items.length) {
+      nav = createKeyboardNav({
+        count: merged.items.length,
+        loop: true,
+        isEnabled,
+        labels: labels(),
+      })
+    }
+    return nav
+  }
 
   const handleKeyDown = (e: KeyboardEvent): void => {
     if (merged.disabled) return
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      if (!open()) {
+    const n = getNav()
+    const openBefore = open()
+    const action: KeyboardNavAction = n.handleKeyDown({
+      key: e.key,
+      preventDefault: () => e.preventDefault(),
+    })
+
+    if (action.type === 'select') {
+      if (!openBefore && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === ' ')) {
         setOpen(true)
-        setActiveIndex(firstEnabledIndex(merged.items.length, isEnabled))
+        setActiveIndex(n.index)
         return
       }
-      setActiveIndex(nextEnabledIndex(activeIndex(), 1, merged.items.length, isEnabled))
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      if (!open()) return
-      setActiveIndex(nextEnabledIndex(activeIndex(), -1, merged.items.length, isEnabled))
-    } else if (e.key === 'Home') {
-      e.preventDefault()
-      if (!open()) return
-      setActiveIndex(firstEnabledIndex(merged.items.length, isEnabled))
-    } else if (e.key === 'End') {
-      e.preventDefault()
-      if (!open()) return
-      setActiveIndex(lastEnabledIndex(merged.items.length, isEnabled))
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      if (!open()) {
-        setOpen(true)
-        return
-      }
-      const ai = activeIndex()
-      if (ai >= 0) {
-        const item = merged.items[ai]
-        if (item && !item.disabled) {
-          selectItem(item)
-        }
-      }
-    } else if (e.key === 'Escape') {
-      if (open()) {
+      const item = merged.items[action.target]
+      if (item && !item.disabled) selectItem(item)
+    } else if (action.type === 'escape') {
+      if (openBefore) {
         e.preventDefault()
         setOpen(false)
       }
-    } else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
-      typeahead.buffer += e.key
-      if (typeahead.timer) clearTimeout(typeahead.timer)
-      typeahead.timer = setTimeout(() => {
-        typeahead.buffer = ''
-      }, 500)
-      const labels = merged.items.map((it) => it.label ?? String(it.value))
-      const match = matchTypeahead(
-        labels,
-        typeahead.buffer,
-        activeIndex(),
-        (i) => !!merged.items[i]?.disabled,
-      )
-      if (match >= 0) setActiveIndex(match)
+    } else if (action.type === 'focus' || action.type === 'typeahead') {
+      setActiveIndex(action.target)
+      if (!openBefore && e.key === 'ArrowDown') {
+        setOpen(true)
+      }
     }
   }
 

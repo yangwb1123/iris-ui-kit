@@ -34,4 +34,27 @@ describe('IrisTagInput', () => {
     fireEvent.click(removeBtn)
     expect(onChange).toHaveBeenCalledWith(['beta'])
   })
+
+  it('a comma also commits a tag', () => {
+    const onChange = vi.fn()
+    const { container } = render(() => <IrisTagInput onChange={onChange} />)
+    const input = container.querySelector('[data-iris-tag-input-field]') as HTMLInputElement
+    fireEvent.input(input, { target: { value: 'foo,' } })
+    expect(onChange).toHaveBeenCalledWith(['foo'])
+  })
+
+  it('prevents duplicates', () => {
+    const onChange = vi.fn()
+    const { container } = render(() => <IrisTagInput value={['foo']} onChange={onChange} />)
+    const input = container.querySelector('[data-iris-tag-input-field]') as HTMLInputElement
+    fireEvent.input(input, { target: { value: 'foo' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('disabled input has disabled attribute', () => {
+    const { container } = render(() => <IrisTagInput disabled />)
+    const input = container.querySelector('[data-iris-tag-input-field]') as HTMLInputElement
+    expect(input.hasAttribute('disabled')).toBe(true)
+  })
 })

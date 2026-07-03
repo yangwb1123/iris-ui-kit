@@ -45,6 +45,7 @@ export function IrisTransfer({
   style,
   className,
 }: IrisTransferProps): React.ReactElement {
+  const safeOptions = options ?? []
   const { t } = useI18n()
   const isControlled = valueProp !== undefined
   const [internal, setInternal] = React.useState<string[]>(defaultValue)
@@ -76,8 +77,8 @@ export function IrisTransfer({
     onValueChange?.(next)
   }
 
-  const sourceItems = options.filter((o) => !valueSet.has(o.value))
-  const targetItems = options.filter((o) => valueSet.has(o.value))
+  const sourceItems = safeOptions.filter((o) => !valueSet.has(o.value))
+  const targetItems = safeOptions.filter((o) => valueSet.has(o.value))
 
   const moveToTarget = () => {
     if (disabled) return

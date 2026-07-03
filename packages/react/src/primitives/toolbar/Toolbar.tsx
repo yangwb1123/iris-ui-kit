@@ -1,4 +1,9 @@
 import * as React from 'react'
+import {
+  createKeyboardNav,
+  type KeyboardNavAction,
+  type KeyboardNavController,
+} from '@iris-ui/core'
 
 export type IrisToolbarOrientation = 'horizontal' | 'vertical'
 
@@ -18,6 +23,10 @@ const SELECTOR = 'button, [href], input, select, textarea, [tabindex]'
  * plus Home/End move focus and the tab stop between the focusable children.
  *
  * React port of {@link import('@iris-ui/vue').IrisToolbar}.
+ *
+ * Keyboard navigation is single-sourced in `createKeyboardNav` from the core
+ * package — the controller handles orientation-aware Arrow keys, looping, and
+ * Home/End; this component only owns the bridge to the DOM (tabindex + focus).
  */
 export function IrisToolbar({
   children,
@@ -36,29 +45,68 @@ export function IrisToolbar({
     )
   }, [])
 
+  // ── Keyboard navigation (single-sourced in core controller) ────────────
+
+  const navRef = React.useRef<KeyboardNavController | null>(null)
+  if (navRef.current === null) {
+    navRef.current = createKeyboardNav({
+      count: 0,
+      loop: true,
+      orientation,
+      isEnabled: () => true,
+    })
+  }
+  const nav = navRef.current
+
+  // Keep the controller's item count in sync whenever children re-render.
+  React.useEffect(() => {
+    nav.reset(items().length)
+  })
+
+  // Initial roving tabindex: the first (enabled) item is reachable via Tab,
+  // the rest are only reachable via arrow keys.
   React.useEffect(() => {
     items().forEach((el, i) => {
       el.tabIndex = i === 0 ? 0 : -1
     })
   }, [items])
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    const nextKey = orientation === 'horizontal' ? 'ArrowRight' : 'ArrowDown'
-    const prevKey = orientation === 'horizontal' ? 'ArrowLeft' : 'ArrowUp'
-    const list = items()
-    if (list.length === 0) return
-    const cur = list.indexOf(document.activeElement as HTMLElement)
-    let target: number
-    if (e.key === nextKey) target = ((cur < 0 ? 0 : cur) + 1) % list.length
-    else if (e.key === prevKey) target = ((cur < 0 ? 0 : cur) - 1 + list.length) % list.length
-    else if (e.key === 'Home') target = 0
-    else if (e.key === 'End') target = list.length - 1
-    else return
-    e.preventDefault()
+  const updateTabIndexes = (target: number, list: HTMLElement[]): void => {
     list.forEach((el, i) => {
       el.tabIndex = i === target ? 0 : -1
     })
-    list[target]?.focus()
+  }
+
+  // Keep the nav index in sync when focus moves to a child by any means
+  // (click, Tab, programmatic focus) — the nav controller's internal index
+  // must match the actual focused element for correct wrapping behaviour.
+  const onFocusCapture = (e: React.FocusEvent<HTMLDivElement>): void => {
+    const list = items()
+    const idx = list.indexOf(e.target as HTMLElement)
+    if (idx >= 0) nav.focus(idx)
+  }
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    const list = items()
+    if (list.length === 0) return
+
+    // Only route navigation keys through the controller — let Enter / Space
+    // activate native button behaviour unhindered.
+    const navKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End']
+    if (!navKeys.includes(e.key)) return
+
+    const action: KeyboardNavAction = nav.handleKeyDown({
+      key: e.key,
+      preventDefault: () => e.preventDefault(),
+    })
+
+    if (action.type === 'focus') {
+      updateTabIndexes(action.target, list)
+      list[action.target]?.focus()
+    }
+    // 'previous' / 'next' are cross-orientation arrows (e.g. ArrowUp in
+    // horizontal mode) — the toolbar ignores them.
+    // 'noop' — the key had no effect, nothing to do.
   }
 
   return (
@@ -70,6 +118,7 @@ export function IrisToolbar({
       data-iris-toolbar=""
       data-orientation={orientation}
       className={className}
+      onFocusCapture={onFocusCapture}
       onKeyDown={onKeyDown}
       style={{
         display: 'inline-flex',

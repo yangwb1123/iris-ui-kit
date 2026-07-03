@@ -23,6 +23,9 @@ export interface ThemeProviderProps {
   target?: HTMLElement | null
   /** Writing direction; sets `dir` on the target for RTL. Default `'ltr'`. */
   dir?: Direction
+  /** CSP nonce for the injected global stylesheet. Pass the `nonce` from your
+   *  server-rendered CSP header when you use `style-src: 'nonce-...'`. */
+  cspNonce?: string
   children?: ReactNode
 }
 
@@ -34,12 +37,18 @@ export interface ThemeProviderProps {
  * **Zero business logic** — `applyTheme` / `createThemeStore` come straight
  * from `@iris-ui/theme`. This component is just a 30-line React adapter.
  */
-export function ThemeProvider({ store, target = null, dir = 'ltr', children }: ThemeProviderProps) {
+export function ThemeProvider({
+  store,
+  target = null,
+  dir = 'ltr',
+  cspNonce,
+  children,
+}: ThemeProviderProps) {
   const current = useStore(store.store)
   const appliedRef = useRef<ApplyThemeResult | null>(null)
 
   useEffect(() => {
-    injectGlobalStyles()
+    injectGlobalStyles(cspNonce)
     const el = target ?? document.documentElement
     appliedRef.current?.revert()
     appliedRef.current = applyTheme(current, el)

@@ -57,6 +57,19 @@ describe('IrisSelect', () => {
       expect(onValueChange).toHaveBeenCalledWith('banana')
     })
 
+    it('ArrowUp moves to previous option', async () => {
+      const { container } = render(IrisSelect, { props: { items } })
+      await fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+      await Promise.resolve()
+      const options = optionEls()
+      // Start at first option, ArrowUp wraps to last
+      await fireEvent.keyDown(listbox(), { key: 'ArrowUp' })
+      expect(document.activeElement).toBe(options[2])
+      // ArrowUp again wraps to second-to-last
+      await fireEvent.keyDown(listbox(), { key: 'ArrowUp' })
+      expect(document.activeElement).toBe(options[1])
+    })
+
     it('End focuses the last option, Home the first', async () => {
       const { container } = render(IrisSelect, { props: { items } })
       await fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
@@ -73,6 +86,24 @@ describe('IrisSelect', () => {
       await fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
       await Promise.resolve()
       expect(document.activeElement).toBe(optionEls()[2])
+    })
+
+    it('Space key selects the focused option', async () => {
+      const onValueChange = vi.fn()
+      const { container } = render(IrisSelect, { props: { items, onValueChange } })
+      await fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+      await Promise.resolve()
+      const options = optionEls()
+      await fireEvent.keyDown(options[1], { key: ' ' })
+      expect(onValueChange).toHaveBeenCalledWith('banana')
+    })
+
+    it('Escape closes the listbox', async () => {
+      const { container } = render(IrisSelect, { props: { items } })
+      await fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+      expect(document.querySelector('[role="listbox"]')).not.toBeNull()
+      await fireEvent.keyDown(listbox(), { key: 'Escape' })
+      expect(document.querySelector('[role="listbox"]')).toBeNull()
     })
   })
 })

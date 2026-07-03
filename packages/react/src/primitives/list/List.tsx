@@ -1,11 +1,11 @@
 import * as React from 'react'
 import {
   createSelectionModel,
-  firstEnabledIndex,
-  lastEnabledIndex,
-  nextEnabledIndex,
+  createKeyboardNav,
   type SelectionKey,
   type SelectionModel,
+  type KeyboardNavController,
+  type KeyboardNavAction,
 } from '@iris-ui/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
@@ -61,8 +61,11 @@ const LIST_STATE_STYLE: React.CSSProperties = {
  *
  *   - `role="listbox"` (with `aria-multiselectable` when `multi`)
  *   - Roving tabindex (one item has tabindex=0, others -1)
- *   - Arrow keys / Home / End move focus
+ *   - Arrow keys / Home / End move focus via `createKeyboardNav` (core)
  *   - Enter / Space (de)select
+ *
+ * Keyboard logic is single-sourced in `@iris-ui/core` — this adapter only
+ * bridges the returned actions to DOM focus and selection callbacks.
  *
  * Async lifecycle: pass `loading` / `error` (and an empty `items`) to render
  * the animated loading / error / empty state in place of options. State
@@ -86,6 +89,7 @@ export function IrisList<T = unknown>({
   style,
   className,
 }: IrisListProps<T>): React.ReactElement {
+  const safeItems = items ?? []
   // Item-selection logic (single set / multiple toggle, dedup,
   // controlled/uncontrolled) is single-sourced in the core model. List values
   // are generic `T`, while the model is keyed by string|number and only ever
@@ -128,7 +132,7 @@ export function IrisList<T = unknown>({
   const { state, isContent, stateKey, stateProps } = useDataState({
     loading,
     error,
-    empty: items.length === 0,
+    empty: safeItems.length === 0,
   })
 
   const isSelected = React.useCallback(
@@ -136,72 +140,79 @@ export function IrisList<T = unknown>({
     [displaySelectedKeys],
   )
 
-  // Roving-index math (next enabled with wrap, first/last enabled) is
-  // single-sourced in @iris-ui/core; this edge only supplies the `isEnabled`
-  // predicate and performs the actual DOM focus.
-  const isEnabled = React.useCallback((i: number) => !items[i]?.disabled, [items])
-  const [activeIndex, setActiveIndex] = React.useState<number>(() =>
-    firstEnabledIndex(items.length, isEnabled),
-  )
+  // ── Keyboard navigation (single-sourced in core controller) ────────────
+  const isEnabled = React.useCallback((i: number) => !safeItems[i]?.disabled, [safeItems])
 
+  // Stable ref to capture the latest items/select for the controller's action handler
+  const ctxRef = React.useRef({
+    items: safeItems,
+    multi,
+    loop,
+    isControlled,
+    valueProp,
+    model,
+    onSelect,
+    asKey,
+  })
+
+  const navRef = React.useRef<KeyboardNavController | null>(null)
+  if (navRef.current === null) {
+    navRef.current = createKeyboardNav({
+      count: safeItems.length,
+      loop,
+      isEnabled,
+    })
+  }
+  const nav = navRef.current
+
+  // Reset nav when item count or enabled state changes
   React.useEffect(() => {
-    if (activeIndex < 0 || activeIndex >= items.length || items[activeIndex]?.disabled) {
-      setActiveIndex(firstEnabledIndex(items.length, isEnabled))
-    }
-  }, [items, activeIndex, isEnabled])
+    nav.reset(safeItems.length)
+  })
 
-  const listRef = React.useRef<HTMLUListElement | null>(null)
-
-  const select = (item: IrisListItem<T>) => {
-    if (item.disabled) return
-    rebaseToProp()
-    if (multi) model.toggle(asKey(item.value))
-    else model.set([asKey(item.value)])
-    onSelect?.(item)
+  // Keep the context ref current for the action handler below
+  ctxRef.current = {
+    items: safeItems,
+    multi,
+    loop,
+    isControlled,
+    valueProp,
+    model,
+    onSelect,
+    asKey,
   }
 
+  const activeIndex = useStore(nav.store)
+  const listRef = React.useRef<HTMLUListElement | null>(null)
+
   const focusAt = (index: number) => {
-    setActiveIndex(index)
     const el = listRef.current?.querySelector<HTMLElement>(`[data-iris-list-index="${index}"]`)
     el?.focus()
   }
 
-  const moveActive = (delta: 1 | -1) => {
-    const next = nextEnabledIndex(activeIndex, delta, items.length, isEnabled, loop)
-    if (next >= 0) focusAt(next)
+  const select = (item: IrisListItem<T>) => {
+    if (item.disabled) return
+    rebaseToProp()
+    if (multi) model.toggle(ctxRef.current.asKey(item.value))
+    else model.set([ctxRef.current.asKey(item.value)])
+    onSelect?.(item)
   }
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLUListElement>) => {
     if (!isContent) return
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        moveActive(1)
+    const action: KeyboardNavAction = nav.handleKeyDown({
+      key: e.key,
+      preventDefault: () => e.preventDefault(),
+    })
+    switch (action.type) {
+      case 'focus':
+        focusAt(action.target)
         break
-      case 'ArrowUp':
-        e.preventDefault()
-        moveActive(-1)
-        break
-      case 'Home': {
-        e.preventDefault()
-        const first = firstEnabledIndex(items.length, isEnabled)
-        if (first >= 0) focusAt(first)
+      case 'select': {
+        const item = safeItems[action.target]
+        if (item) select(item)
         break
       }
-      case 'End': {
-        e.preventDefault()
-        const last = lastEnabledIndex(items.length, isEnabled)
-        if (last >= 0) focusAt(last)
-        break
-      }
-      case 'Enter':
-      case ' ':
-        if (activeIndex >= 0) {
-          e.preventDefault()
-          const it = items[activeIndex]
-          if (it) select(it)
-        }
-        break
     }
   }
 
@@ -234,7 +245,7 @@ export function IrisList<T = unknown>({
       }}
     >
       {isContent ? (
-        items.map((item, index) => {
+        safeItems.map((item, index) => {
           const selected = isSelected(item.value)
           const active = index === activeIndex
           const baseStyle: React.CSSProperties = {
@@ -265,7 +276,7 @@ export function IrisList<T = unknown>({
               data-iris-list-item=""
               data-state={selected ? 'selected' : active ? 'active' : 'idle'}
               onClick={item.disabled ? undefined : () => select(item)}
-              onFocus={() => setActiveIndex(index)}
+              onFocus={() => nav.focus(index)}
               style={baseStyle}
             >
               {renderItem

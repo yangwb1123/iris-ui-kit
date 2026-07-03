@@ -9,6 +9,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.ts'],
+    globals: false,
     // The SSR / hydration-safety test must run under the dedicated SSR config
     // (`vitest.ssr.config.ts`: node env, server-compiled `.svelte`). Under this
     // default (browser-condition, DOM-compiled) config `svelte/server`'s

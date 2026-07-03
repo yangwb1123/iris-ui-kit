@@ -83,7 +83,7 @@
   const panelStyle = $derived(() => {
     const s = ctx.side
     const sz = ctx.size
-    const base = `position: fixed; z-index: 1200; background: var(--iris-background); color: var(--iris-foreground); border: 1px solid var(--iris-border); box-shadow: 0 24px 48px -16px rgba(0,0,0,0.32); overflow: auto; outline: none; ${safeAreaPadding(s)}`
+    const base = `position: fixed; z-index: 1200; background: var(--iris-background); color: var(--iris-foreground); border: 1px solid var(--iris-border); box-shadow: var(--iris-shadow-md, 0 24px 48px -16px rgba(0,0,0,0.32)); overflow: auto; outline: none; ${safeAreaPadding(s)}`
     // `100vh` is the fallback; `max-height: 100dvh` clamps the full-height side
     // panels to the DYNAMIC viewport (dvh <= vh) so they don't overflow under
     // mobile browser chrome. Separate property, so it's simply ignored where dvh

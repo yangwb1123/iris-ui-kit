@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest'
 // Real SSR + hydration test (ROADMAP v3 R8, Vue side).
 //
 // The sibling `ssr.test.ts` only proves components render to a *string* in a

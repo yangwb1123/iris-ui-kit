@@ -85,4 +85,31 @@ describe('@iris-ui/react IrisTransfer', () => {
       container.querySelector('[data-iris-transfer-to-source]')?.getAttribute('aria-label'),
     ).toBe('Move to available')
   })
+
+  it('empty state when options is empty', () => {
+    const { container } = render(<IrisTransfer options={[]} value={[]} />)
+    const src = panes(container)[0]
+    expect(itemsIn(src).length).toBe(0)
+    expect(container.querySelector('[data-iris-transfer-empty]')).not.toBeNull()
+  })
+
+  it('filtered empty state shows no items', () => {
+    const { container } = render(<IrisTransfer options={OPTIONS} value={[]} searchable />)
+    fireEvent.change(panes(container)[0].querySelector('[data-iris-transfer-search]')!, {
+      target: { value: 'zzznotfound' },
+    })
+    expect(itemsIn(panes(container)[0]).length).toBe(0)
+  })
+
+  it('onValueChange emits full value array on move back', () => {
+    const onValueChange = vi.fn()
+    const { container } = render(
+      <IrisTransfer options={OPTIONS} value={['a']} onValueChange={onValueChange} />,
+    )
+    // Check the item in target pane and move it back to source
+    const targetPane = panes(container)[1]
+    fireEvent.click(targetPane.querySelector('input')!)
+    fireEvent.click(container.querySelector('[data-iris-transfer-to-source]')!)
+    expect(onValueChange).toHaveBeenCalledWith([])
+  })
 })

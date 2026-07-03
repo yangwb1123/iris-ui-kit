@@ -1,9 +1,9 @@
 import * as React from 'react'
 import {
   createSelectionModel,
-  firstEnabledIndex,
-  lastEnabledIndex,
-  nextEnabledIndex,
+  createKeyboardNav,
+  type KeyboardNavController,
+  type KeyboardNavAction,
   type SelectionModel,
 } from '@iris-ui/core'
 import { useStore } from '../../useStore'
@@ -42,9 +42,7 @@ const normalize = (options: Array<IrisSegmentedOption | string>): IrisSegmentedO
 /**
  * Segmented control: a connected row of single-select segments with the active
  * one visually raised. Radiogroup semantics with roving tabindex and Arrow /
- * Home / End keyboard navigation (skipping disabled segments).
- *
- * React port of {@link import('@iris-ui/vue').IrisSegmented}.
+ * Home / End keyboard navigation — single-sourced in `createKeyboardNav`.
  */
 export function IrisSegmented({
   options,
@@ -58,14 +56,12 @@ export function IrisSegmented({
   style,
   className,
 }: IrisSegmentedProps): React.ReactElement {
-  const norm = normalize(options)
+  const safeOptions = options ?? []
+  const norm = normalize(safeOptions)
   const isControlled = value !== undefined
   const refs = React.useRef<(HTMLButtonElement | null)[]>([])
 
   // Single-selection logic (controlled/uncontrolled) lives in the core model;
-  // this component only maps its scalar `string` value ⇄ the model's flat key
-  // array and renders. A segment never toggles off, so `select` uses
-  // `model.set` (always (re)select + emit), not `model.toggle`.
   const toKeys = (v: string | undefined): string[] => (v ? [v] : [])
   const modelRef = React.useRef<SelectionModel<string> | null>(null)
   if (modelRef.current === null) {
@@ -78,23 +74,36 @@ export function IrisSegmented({
   const model = modelRef.current
   const currentValue = useStore(model.store)[0] ?? ''
 
-  // Controlled: mirror the prop into the model without re-emitting onChange.
   React.useEffect(() => {
     if (isControlled) model.sync(toKeys(value))
   }, [value, isControlled, model])
 
-  // Controlled segmented RENDERS from the prop (true controlled semantics): a
-  // click emits onChange but the active segment only changes when the parent
-  // writes `value` back; uncontrolled renders from the model store.
   const displayValue = isControlled ? (toKeys(value)[0] ?? '') : currentValue
   const rebaseToProp = (): void => {
     if (isControlled) model.sync(toKeys(value))
   }
 
-  const enabledAt = (i: number) => !norm[i]?.disabled
+  const isOptionEnabled = React.useCallback((i: number) => !norm[i]?.disabled, [norm])
   const selectedIndex = norm.findIndex((o) => o.value === displayValue)
-  const firstEnabled = firstEnabledIndex(norm.length, enabledAt)
-  const rovingIndex = selectedIndex >= 0 ? selectedIndex : firstEnabled
+
+  // Keyboard navigation (single-sourced in core controller)
+  const navRef = React.useRef<KeyboardNavController | null>(null)
+  if (navRef.current === null) {
+    navRef.current = createKeyboardNav({
+      count: norm.length,
+      loop: true,
+      orientation: 'horizontal',
+      isEnabled: isOptionEnabled,
+      initialIndex: selectedIndex >= 0 ? selectedIndex : undefined,
+    })
+  }
+  const nav = navRef.current
+
+  React.useEffect(() => {
+    nav.reset(norm.length)
+  })
+
+  const rovingIndex = nav.index
 
   const select = (i: number) => {
     const opt = norm[i]
@@ -102,29 +111,6 @@ export function IrisSegmented({
     rebaseToProp()
     model.set([opt.value])
     refs.current[i]?.focus()
-  }
-
-  const move = (from: number, dir: 1 | -1) => {
-    if (disabled) return
-    // Pure index math (step, skip disabled, wrap) lives in @iris-ui/core;
-    // `select` performs the DOM focus and ignores out-of-range/disabled.
-    select(nextEnabledIndex(from, dir, norm.length, enabledAt, true))
-  }
-
-  const onKeyDown = (i: number, e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      e.preventDefault()
-      move(i, 1)
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      e.preventDefault()
-      move(i, -1)
-    } else if (e.key === 'Home') {
-      e.preventDefault()
-      if (firstEnabled >= 0) select(firstEnabled)
-    } else if (e.key === 'End') {
-      e.preventDefault()
-      select(lastEnabledIndex(norm.length, enabledAt))
-    }
   }
 
   const sz = SIZE_MAP[size]
@@ -137,6 +123,15 @@ export function IrisSegmented({
       data-iris-segmented-size={size}
       data-disabled={disabled ? 'true' : undefined}
       className={className}
+      onKeyDown={(e) => {
+        const action: KeyboardNavAction = nav.handleKeyDown({
+          key: e.key,
+          preventDefault: () => e.preventDefault(),
+        })
+        if (action.type === 'focus' || action.type === 'typeahead') {
+          select(action.target)
+        }
+      }}
       style={{
         display: block ? 'flex' : 'inline-flex',
         width: block ? '100%' : undefined,
@@ -165,7 +160,7 @@ export function IrisSegmented({
             data-value={opt.value}
             data-selected={selected ? 'true' : undefined}
             onClick={() => select(i)}
-            onKeyDown={(e) => onKeyDown(i, e)}
+            onFocus={() => nav.focus(i)}
             style={{
               flex: block ? 1 : undefined,
               padding: sz.padding,

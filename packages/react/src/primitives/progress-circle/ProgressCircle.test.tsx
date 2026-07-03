@@ -46,4 +46,11 @@ describe('@iris-ui/react IrisProgressCircle', () => {
       container.querySelector('[data-iris-progress-circle]')?.getAttribute('data-status'),
     ).toBe('success')
   })
+
+  it('size prop sets the SVG dimension', () => {
+    const { container } = render(<IrisProgressCircle value={50} size={200} />)
+    const svg = container.querySelector('svg')
+    expect(svg?.getAttribute('width')).toBe('200')
+    expect(svg?.getAttribute('height')).toBe('200')
+  })
 })

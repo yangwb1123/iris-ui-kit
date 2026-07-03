@@ -25,7 +25,7 @@ export interface IrisToggleGroupItemProps extends Omit<
  */
 export const IrisToggleGroupItem = React.forwardRef<HTMLButtonElement, IrisToggleGroupItemProps>(
   function IrisToggleGroupItem(
-    { value, disabled, onClick, onKeyDown, style, children, ...rest },
+    { value, disabled, onClick, onKeyDown, onFocus, style, children, ...rest },
     forwardedRef,
   ) {
     const ctx = useToggleGroupContext('IrisToggleGroupItem')
@@ -56,34 +56,15 @@ export const IrisToggleGroupItem = React.forwardRef<HTMLButtonElement, IrisToggl
       ctx.toggle(value)
     }
 
+    // Keyboard navigation (Arrow keys, Home, End, Space, Enter) is handled at
+    // the IrisToggleGroup container level via createKeyboardNav.
     const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
       onKeyDown?.(e)
-      if (isDisabled) return
-      switch (e.key) {
-        case ' ':
-        case 'Enter':
-          e.preventDefault()
-          ctx.toggle(value)
-          break
-        case 'ArrowRight':
-        case 'ArrowDown':
-          e.preventDefault()
-          ctx.moveFocus(value, 1)
-          break
-        case 'ArrowLeft':
-        case 'ArrowUp':
-          e.preventDefault()
-          ctx.moveFocus(value, -1)
-          break
-        case 'Home':
-          e.preventDefault()
-          ctx.moveFocus(value, 'home')
-          break
-        case 'End':
-          e.preventDefault()
-          ctx.moveFocus(value, 'end')
-          break
-      }
+    }
+
+    const handleFocus = (e: React.FocusEvent<HTMLButtonElement>) => {
+      onFocus?.(e)
+      ctx.focusItem(value)
     }
 
     return (
@@ -101,6 +82,7 @@ export const IrisToggleGroupItem = React.forwardRef<HTMLButtonElement, IrisToggl
         data-state={active ? 'on' : 'off'}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
         style={{
           display: 'inline-flex',
           alignItems: 'center',

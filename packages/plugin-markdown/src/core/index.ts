@@ -40,8 +40,34 @@ function stripJavascriptHrefs(html: string): string {
   return html.replace(/(href|src)\s*=\s*(['"])\s*javascript\s*:/gi, '$1=$2#')
 }
 
+/** Strip <iframe>…</iframe> blocks (prevents embedded third-party content). */
+function stripIframes(html: string): string {
+  return html.replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, '')
+}
+
+/** Strip <style>…</style> blocks (prevents CSS injection / theme hijack). */
+function stripStyles(html: string): string {
+  return html.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+}
+
+/**
+ * Strip HTML event-handler attributes (onerror, onload, onclick, etc.) which
+ * can execute JavaScript without a <script> tag. Matches `on<anyword>="..."`
+ * or `on<anyword>='...'` — case-insensitive.
+ */
+function stripEventHandlers(html: string): string {
+  return html.replace(/\s+on\w+\s*=\s*(['"])[\s\S]*?\1/gi, '')
+}
+
+/** Block `data:` URLs in href attributes (common XSS vector). */
+function stripDataUrls(html: string): string {
+  return html.replace(/href\s*=\s*(['"])data:\s*[^'"]*\1/gi, 'href=$1#')
+}
+
 function sanitize(html: string): string {
-  return stripJavascriptHrefs(stripScripts(html))
+  return stripDataUrls(
+    stripEventHandlers(stripStyles(stripIframes(stripJavascriptHrefs(stripScripts(html))))),
+  )
 }
 
 // ---------------------------------------------------------------------------

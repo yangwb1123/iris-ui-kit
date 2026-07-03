@@ -21,6 +21,12 @@ export const IrisAccordionItem = React.forwardRef<HTMLDivElement, IrisAccordionI
     const headerId = `${ctx.rootId}-h-${value}`
     const contentId = `${ctx.rootId}-c-${value}`
 
+    // Register this item's trigger element for keyboard navigation
+    const triggerRef = React.useRef<HTMLButtonElement | null>(null)
+    React.useEffect(() => {
+      return ctx.registerItem(value, triggerRef)
+    }, [ctx.registerItem, value])
+
     const onTrigger = () => {
       if (disabled) return
       ctx.toggle(value)
@@ -31,6 +37,9 @@ export const IrisAccordionItem = React.forwardRef<HTMLDivElement, IrisAccordionI
         e.preventDefault()
         ctx.toggle(value)
       }
+    }
+    const onFocus = () => {
+      if (!disabled) ctx.focusItem(value)
     }
 
     return (
@@ -54,6 +63,8 @@ export const IrisAccordionItem = React.forwardRef<HTMLDivElement, IrisAccordionI
           disabled={disabled || undefined}
           onClick={onTrigger}
           onKeyDown={onKeyDown}
+          onFocus={onFocus}
+          ref={triggerRef}
           style={{
             width: '100%',
             display: 'flex',

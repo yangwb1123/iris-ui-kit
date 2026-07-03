@@ -63,4 +63,36 @@ describe('@iris-ui/react IrisDatePicker', () => {
     expect(trig().id).toBe('my-date')
     expect(trig().getAttribute('aria-describedby')).toBe('hint-id')
   })
+
+  it('Escape closes the calendar panel', () => {
+    render(<IrisDatePicker />)
+    act(() => {
+      fireEvent.click(trig())
+    })
+    expect(document.querySelector('[data-iris-calendar]')).not.toBeNull()
+    act(() => {
+      fireEvent.keyDown(trig(), { key: 'Escape' })
+    })
+    expect(document.querySelector('[data-iris-calendar]')).toBeNull()
+  })
+
+  it('month navigation buttons render in open calendar', () => {
+    render(<IrisDatePicker />)
+    act(() => {
+      fireEvent.click(trig())
+    })
+    expect(document.querySelector('[data-iris-calendar-prev]')).not.toBeNull()
+    expect(document.querySelector('[data-iris-calendar-next]')).not.toBeNull()
+  })
+
+  it('prev month changes visible month', () => {
+    render(<IrisDatePicker defaultValue={new Date(2024, 5, 15)} locale="en-US" />)
+    act(() => {
+      fireEvent.click(trig())
+    })
+    act(() => {
+      fireEvent.click(document.querySelector('[data-iris-calendar-prev]')!)
+    })
+    expect(trig().getAttribute('data-iris-date-picker-iso')).toBe('2024-06-15')
+  })
 })

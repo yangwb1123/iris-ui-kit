@@ -1,4 +1,10 @@
 import * as React from 'react'
+import {
+  createKeyboardNav,
+  type KeyboardNavAction,
+  type KeyboardNavController,
+} from '@iris-ui/core'
+import { useStore } from '../../useStore'
 import { AccordionContext } from './context'
 
 export type IrisAccordionValue = string | string[] | null
@@ -80,9 +86,64 @@ export function IrisAccordion({
 
   const rootId = React.useId()
 
+  // ── Keyboard navigation (single-sourced in core controller) ──────────
+  interface RegisteredItem {
+    value: string
+    el: React.RefObject<HTMLButtonElement | null>
+  }
+  const itemsRef = React.useRef<RegisteredItem[]>([])
+
+  const navRef = React.useRef<KeyboardNavController | null>(null)
+  if (navRef.current === null) {
+    navRef.current = createKeyboardNav({
+      count: itemsRef.current.length,
+      loop: true,
+      orientation: 'vertical',
+    })
+  }
+  const nav = navRef.current
+
+  // Reset nav when item count changes (items register via effects)
+  React.useEffect(() => {
+    nav.reset(itemsRef.current.length)
+  })
+
+  const activeIndex = useStore(nav.store)
+
+  const registerItem = React.useCallback(
+    (value: string, el: React.RefObject<HTMLButtonElement | null>): (() => void) => {
+      if (!itemsRef.current.find((it) => it.value === value)) {
+        itemsRef.current = [...itemsRef.current, { value, el }]
+      }
+      return () => {
+        itemsRef.current = itemsRef.current.filter((it) => it.value !== value)
+      }
+    },
+    [],
+  )
+
+  const focusItem = React.useCallback(
+    (value: string) => {
+      const idx = itemsRef.current.findIndex((it) => it.value === value)
+      if (idx >= 0) nav.focus(idx)
+    },
+    [nav],
+  )
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const action: KeyboardNavAction = nav.handleKeyDown({
+      key: e.key,
+      preventDefault: () => e.preventDefault(),
+    })
+    if (action.type === 'focus') {
+      const items = itemsRef.current
+      items[action.target]?.el.current?.focus()
+    }
+  }
+
   const ctx = React.useMemo(
-    () => ({ isOpen, toggle, rootId, collapsible, multiple }),
-    [isOpen, toggle, rootId, collapsible, multiple],
+    () => ({ isOpen, toggle, rootId, collapsible, multiple, activeIndex, registerItem, focusItem }),
+    [isOpen, toggle, rootId, collapsible, multiple, activeIndex, registerItem, focusItem],
   )
 
   return (
@@ -91,6 +152,7 @@ export function IrisAccordion({
         {...rest}
         data-iris-accordion=""
         data-iris-accordion-multiple={multiple ? 'true' : undefined}
+        onKeyDown={handleKeyDown}
       >
         {children}
       </div>

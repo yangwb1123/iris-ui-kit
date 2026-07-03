@@ -29,6 +29,8 @@ export interface ThemeProviderProps {
   target?: HTMLElement | null
   /** Writing direction; sets `dir` on the target for RTL. Default `'ltr'`. */
   dir?: Direction
+  /** CSP nonce for injected inline stylesheets. */
+  cspNonce?: string
   children?: JSX.Element
 }
 
@@ -44,7 +46,7 @@ export function ThemeProvider(props: ThemeProviderProps): JSX.Element {
   const dir = (): Direction => props.dir ?? 'ltr'
 
   createEffect(() => {
-    injectGlobalStyles()
+    injectGlobalStyles(props.cspNonce)
     const el = props.target ?? document.documentElement
     const appliedTheme = applyTheme(current(), el)
     const appliedDir = applyDirection(dir(), el)

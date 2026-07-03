@@ -1,11 +1,5 @@
 <script lang="ts">
-  import {
-    generateId,
-    matchTypeahead,
-    nextEnabledIndex,
-    firstEnabledIndex,
-    lastEnabledIndex,
-  } from '@iris-ui/core'
+  import { generateId, createKeyboardNav, type KeyboardNavAction } from '@iris-ui/core'
   import { useFloating } from '../../floating/useFloating.svelte'
   import { useDismiss } from '../../floating/useDismiss.svelte'
   import { portal } from '../../internal/portal'
@@ -118,9 +112,22 @@
     open = false
   }
 
-  const _typeahead = { buffer: '', timer: null as ReturnType<typeof setTimeout> | null }
+  // ── Keyboard navigation (single-sourced in core controller) ─────────────
+  const isEnabled = (i: number): boolean => !items[i]?.disabled
+  const labels = $derived(items.map((it) => it.label ?? String(it.value)))
 
-  const isEnabledItem = (i: number): boolean => !items[i]?.disabled
+  const nav = createKeyboardNav({
+    count: items.length,
+    loop: true,
+    isEnabled,
+    labels,
+  })
+
+  // Reset nav when items change
+  $effect(() => {
+    nav.reset(items.length)
+  })
+
   const listOptions = (): HTMLElement[] =>
     Array.from(document.querySelectorAll<HTMLElement>(`#${listboxId} [role="option"]`))
   const focusOption = (idx: number): void => {
@@ -135,52 +142,28 @@
       const options = Array.from(node.querySelectorAll<HTMLElement>('[role="option"]'))
       if (options.length === 0) return
       const selIdx = items.findIndex((it) => it.value === value && !it.disabled)
-      const idx = selIdx >= 0 ? selIdx : firstEnabledIndex(items.length, isEnabledItem)
-      if (idx >= 0) options[idx]?.focus()
+      if (selIdx >= 0) {
+        nav.focus(selIdx)
+        options[selIdx]?.focus()
+      } else {
+        nav.goFirst()
+        const first = nav.index
+        if (first >= 0) options[first]?.focus()
+      }
     })
   }
 
   function handleListKeyDown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      e.preventDefault()
+    const action: KeyboardNavAction = nav.handleKeyDown({
+      key: e.key,
+      preventDefault: () => e.preventDefault(),
+    })
+    if (action.type === 'focus' || action.type === 'typeahead') {
+      focusOption(action.target)
+    } else if (action.type === 'escape') {
       open = false
-      return
     }
-    const options = listOptions()
-    const currentIdx = options.indexOf(document.activeElement as HTMLElement)
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        focusOption(nextEnabledIndex(currentIdx, 1, items.length, isEnabledItem))
-        return
-      case 'ArrowUp':
-        e.preventDefault()
-        focusOption(nextEnabledIndex(currentIdx, -1, items.length, isEnabledItem))
-        return
-      case 'Home':
-        e.preventDefault()
-        focusOption(firstEnabledIndex(items.length, isEnabledItem))
-        return
-      case 'End':
-        e.preventDefault()
-        focusOption(lastEnabledIndex(items.length, isEnabledItem))
-        return
-    }
-    if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
-      _typeahead.buffer += e.key
-      if (_typeahead.timer) clearTimeout(_typeahead.timer)
-      _typeahead.timer = setTimeout(() => {
-        _typeahead.buffer = ''
-      }, 500)
-      const labels = items.map((it) => (it.label ?? String(it.value)) as string)
-      const match = matchTypeahead(
-        labels,
-        _typeahead.buffer,
-        currentIdx,
-        (i) => !!items[i]?.disabled,
-      )
-      if (match >= 0) options[match]?.focus()
-    }
+    // 'select' is handled by each option's inline onkeydown handler (Enter/Space)
   }
 </script>
 

@@ -65,4 +65,21 @@ describe('@iris-ui/react IrisTagInput', () => {
     const { container } = render(<IrisTagInput value={['foo']} />)
     expect(removes(container)[0].getAttribute('aria-label')).toBe('Remove foo')
   })
+
+  it('disabled input has disabled attribute', () => {
+    const { container } = render(<IrisTagInput disabled />)
+    expect(field(container).disabled).toBe(true)
+  })
+
+  it('controlled value updates through rerender', () => {
+    const { container, rerender } = render(<IrisTagInput value={['a']} />)
+    expect(tags(container).length).toBe(1)
+    rerender(<IrisTagInput value={['a', 'b', 'c']} />)
+    expect(tags(container).length).toBe(3)
+  })
+
+  it('empty value shows no tags', () => {
+    const { container } = render(<IrisTagInput value={[]} />)
+    expect(tags(container).length).toBe(0)
+  })
 })

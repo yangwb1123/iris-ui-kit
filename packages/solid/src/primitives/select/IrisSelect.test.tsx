@@ -73,5 +73,53 @@ describe('IrisSelect', () => {
       fireEvent.keyDown(trigger, { key: 'Enter' })
       expect(onChange).toHaveBeenCalledWith('apple')
     })
+
+    it('ArrowDown opens the listbox when closed', () => {
+      const { container } = render(() => <IrisSelect items={items} portalTarget={false} />)
+      const trigger = container.querySelector('[data-iris-select-trigger]')!
+      expect(container.querySelector('[data-iris-select-listbox]')).toBeNull()
+      fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+      expect(container.querySelector('[data-iris-select-listbox]')).not.toBeNull()
+    })
+
+    it('ArrowDown moves to the next option (Enter selects it)', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisSelect items={items} onChange={onChange} portalTarget={false} />
+      ))
+      const trigger = open(container) // ArrowDown: 0→1, opens, active = banana
+      fireEvent.keyDown(trigger, { key: 'ArrowDown' }) // 1→2, active = cherry
+      fireEvent.keyDown(trigger, { key: 'Enter' })
+      expect(onChange).toHaveBeenCalledWith('cherry')
+    })
+
+    it('ArrowUp moves to the previous option (Enter selects it)', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisSelect items={items} onChange={onChange} portalTarget={false} />
+      ))
+      const trigger = open(container) // ArrowDown: 0→1, opens, active = banana
+      fireEvent.keyDown(trigger, { key: 'ArrowDown' }) // 1→2, active = cherry
+      fireEvent.keyDown(trigger, { key: 'ArrowUp' }) // 2→1, active = banana
+      fireEvent.keyDown(trigger, { key: 'Enter' })
+      expect(onChange).toHaveBeenCalledWith('banana')
+    })
+
+    it('Space opens the listbox', () => {
+      const { container } = render(() => <IrisSelect items={items} portalTarget={false} />)
+      const trigger = container.querySelector('[data-iris-select-trigger]')!
+      expect(container.querySelector('[data-iris-select-listbox]')).toBeNull()
+      fireEvent.keyDown(trigger, { key: ' ' })
+      expect(container.querySelector('[data-iris-select-listbox]')).not.toBeNull()
+    })
+
+    it('Escape closes the listbox', () => {
+      const { container } = render(() => <IrisSelect items={items} portalTarget={false} />)
+      const trigger = container.querySelector('[data-iris-select-trigger]') as HTMLElement
+      fireEvent.keyDown(trigger, { key: 'ArrowDown' }) // open
+      expect(container.querySelector('[data-iris-select-listbox]')).not.toBeNull()
+      fireEvent.keyDown(trigger, { key: 'Escape' })
+      expect(container.querySelector('[data-iris-select-listbox]')).toBeNull()
+    })
   })
 })

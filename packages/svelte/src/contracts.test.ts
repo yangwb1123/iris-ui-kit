@@ -42,6 +42,7 @@ import {
   bannerScenario,
   splitButtonScenario,
   formScenario,
+  listKeyboardScenario,
   tableCellEditScenario,
   tableColumnResizeScenario,
   type ContractDriver,
@@ -63,6 +64,7 @@ import IrisCopyButton from './primitives/copy-button/IrisCopyButton.svelte'
 import IrisAlert from './primitives/alert/IrisAlert.svelte'
 import IrisBanner from './primitives/banner/IrisBanner.svelte'
 import IrisSplitButton from './primitives/split-button/IrisSplitButton.svelte'
+import IrisList from './primitives/list/IrisList.svelte'
 import DataSourceContractHarness from './DataSourceContractHarness.svelte'
 import DataSourceAsyncContractHarness from './DataSourceAsyncContractHarness.svelte'
 import DialogContractHarness from './DialogContractHarness.svelte'
@@ -528,5 +530,18 @@ describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
     const { container } = render(FormContractHarness)
     await tick()
     await runContract(formScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared List keyboard contract', async () => {
+    const { container } = render(IrisList, {
+      props: {
+        items: [
+          { value: 'a', label: 'Alpha' },
+          { value: 'b', label: 'Bravo' },
+          { value: 'c', label: 'Charlie' },
+        ],
+      },
+    })
+    await runContract(listKeyboardScenario, driverFor(container), expect)
   })
 })

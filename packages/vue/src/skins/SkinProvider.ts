@@ -30,6 +30,7 @@ export const SkinProvider = defineComponent({
   props: {
     engine: { type: Object as PropType<SkinEngine>, required: true },
     target: { type: Object as PropType<HTMLElement | null>, default: null },
+    cspNonce: { type: String, default: undefined },
   },
   setup(props, { slots }) {
     const current = ref(props.engine.current()) as Ref<ResolvedSkin>
@@ -45,7 +46,7 @@ export const SkinProvider = defineComponent({
     }
 
     onMounted(() => {
-      injectGlobalStyles()
+      injectGlobalStyles(props.cspNonce)
       apply()
     })
     watch(current, () => {

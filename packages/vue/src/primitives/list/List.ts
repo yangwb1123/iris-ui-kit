@@ -1,5 +1,5 @@
 import { defineComponent, h, ref, watch, type PropType } from 'vue'
-import { firstEnabledIndex, lastEnabledIndex, nextEnabledIndex } from '@iris-ui/core'
+import { createKeyboardNav } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
 
@@ -66,21 +66,20 @@ export const IrisList = defineComponent({
 
     const isEnabled = (i: number) => !props.items[i]?.disabled
 
-    const activeIndex = ref<number>(firstEnabledIndex(props.items.length, isEnabled))
-
-    // Keep the active index in sync when items change.
+    // Keyboard navigation (single-sourced in core controller)
+    const nav = createKeyboardNav({
+      count: props.items.length,
+      loop: props.loop,
+      isEnabled,
+    })
+    const activeIndex = ref<number>(nav.index)
     watch(
       () => props.items,
       () => {
-        if (
-          activeIndex.value < 0 ||
-          activeIndex.value >= props.items.length ||
-          props.items[activeIndex.value]?.disabled
-        ) {
-          activeIndex.value = firstEnabledIndex(props.items.length, isEnabled)
-        }
+        nav.reset(props.items.length)
+        activeIndex.value = nav.index
       },
-      { flush: 'post' },
+      { immediate: true, flush: 'post' },
     )
 
     const isSelected = (value: unknown): boolean => {
@@ -106,17 +105,6 @@ export const IrisList = defineComponent({
       emit('select', item)
     }
 
-    const moveActive = (delta: 1 | -1) => {
-      const next = nextEnabledIndex(
-        activeIndex.value,
-        delta,
-        props.items.length,
-        isEnabled,
-        props.loop,
-      )
-      if (next >= 0) activeIndex.value = next
-    }
-
     const focusActive = () => {
       const root = listRef.value
       if (!root || activeIndex.value < 0) return
@@ -128,44 +116,18 @@ export const IrisList = defineComponent({
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (!isContent.value) return
-      switch (event.key) {
-        case 'ArrowDown':
-          event.preventDefault()
-          moveActive(1)
-          focusActive()
-          break
-        case 'ArrowUp':
-          event.preventDefault()
-          moveActive(-1)
-          focusActive()
-          break
-        case 'Home': {
-          event.preventDefault()
-          const first = firstEnabledIndex(props.items.length, isEnabled)
-          if (first >= 0) {
-            activeIndex.value = first
-            focusActive()
-          }
-          break
-        }
-        case 'End': {
-          event.preventDefault()
-          const last = lastEnabledIndex(props.items.length, isEnabled)
-          if (last >= 0) {
-            activeIndex.value = last
-            focusActive()
-          }
-          break
-        }
-        case 'Enter':
-        case ' ': {
-          if (activeIndex.value >= 0) {
-            event.preventDefault()
-            const item = props.items[activeIndex.value]
-            if (item) select(item)
-          }
-          break
-        }
+      const action = nav.handleKeyDown({
+        key: event.key,
+        preventDefault: () => event.preventDefault(),
+      })
+      if (action.type === 'focus') {
+        activeIndex.value = action.target
+        focusActive()
+      } else if (action.type === 'select') {
+        const item = props.items[action.target]
+        if (item) select(item)
+      } else if (action.type === 'escape') {
+        // allow popover/portal to handle
       }
     }
 

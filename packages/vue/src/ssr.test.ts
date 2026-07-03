@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest'
 // @vitest-environment node
 //
 // Server-side rendering smoke harness (ROADMAP #1, Vue side — mirrors

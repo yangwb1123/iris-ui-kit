@@ -42,6 +42,7 @@ import {
   alertScenario,
   bannerScenario,
   formScenario,
+  listKeyboardScenario,
   tableCellEditScenario,
   tableColumnResizeScenario,
 } from '@iris-ui/core/contracts'
@@ -67,6 +68,7 @@ import {
   ColumnResizeHarness,
 } from './contracts-harnesses'
 import { DataSourceHarness, DataSourceAsyncHarness } from './contracts-harnesses-data'
+import { IrisList } from './primitives/list/List'
 import { IrisTable } from './primitives/table/Table'
 import { IrisTree } from './primitives/tree/Tree'
 import { IrisDialog } from './primitives/dialog/Dialog'
@@ -511,6 +513,22 @@ describe('@iris-ui/vue — cross-framework behavior contracts', () => {
     await nextTick()
     await nextTick()
     await runContract(dataSourceAsyncScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared List keyboard contract', async () => {
+    const el = makeHost()
+    mount(IrisList, {
+      attachTo: el,
+      props: {
+        items: [
+          { value: 'a', label: 'Alpha' },
+          { value: 'b', label: 'Bravo' },
+          { value: 'c', label: 'Charlie' },
+        ],
+      },
+    })
+    await nextTick()
+    await runContract(listKeyboardScenario, driverFor(el), expect)
   })
 
   it('satisfies the shared Form contract', async () => {

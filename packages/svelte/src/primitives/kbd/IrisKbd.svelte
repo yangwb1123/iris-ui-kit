@@ -25,7 +25,8 @@
       display: 'inline-flex',
       'align-items': 'center',
       gap: '3px',
-      'font-family': 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+      'font-family':
+        'var(--iris-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace)',
       'font-size': sz.fontSize,
       'vertical-align': 'middle',
     }),

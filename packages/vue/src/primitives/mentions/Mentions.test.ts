@@ -62,4 +62,40 @@ describe('IrisMentions', () => {
     expect(ta.attributes('aria-controls')).toBe(listbox.attributes('id'))
     expect(ta.attributes('aria-expanded')).toBe('true')
   })
+
+  it('disabled textarea has disabled attribute', () => {
+    const w = mount(IrisMentions, { props: { options: OPTS, disabled: true } })
+    expect((w.find('textarea').element as HTMLTextAreaElement).disabled).toBe(true)
+  })
+
+  it('custom prefix opens suggestions', async () => {
+    const w = mount(IrisMentions, { props: { options: OPTS, modelValue: 'use #A', prefix: '#' } })
+    await typeAt(w, 6)
+    expect(w.find('[data-iris-mentions-listbox]').exists()).toBe(true)
+  })
+
+  it('no matching options shows no listbox', async () => {
+    const w = mount(IrisMentions, { props: { options: OPTS, modelValue: '@zzz' } })
+    await typeAt(w, 5)
+    expect(w.find('[data-iris-mentions-listbox]').exists()).toBe(false)
+  })
+
+  it('has aria-autocomplete on textarea', () => {
+    const w = mount(IrisMentions, { props: { options: OPTS } })
+    expect(w.find('textarea').attributes('aria-autocomplete')).toBe('list')
+  })
+
+  it('updates aria-activedescendant on navigation', async () => {
+    const w = mount(IrisMentions, { props: { options: OPTS, modelValue: '@' } })
+    await typeAt(w, 1)
+    const ta = w.find('textarea')
+    await ta.trigger('keydown', { key: 'ArrowDown' })
+    expect(ta.attributes('aria-activedescendant')).toBeTruthy()
+  })
+
+  it('handles empty options without crashing', async () => {
+    const w = mount(IrisMentions, { props: { options: [], modelValue: '@test' } })
+    await typeAt(w, 5)
+    expect(w.find('[data-iris-mentions]').exists()).toBe(true)
+  })
 })

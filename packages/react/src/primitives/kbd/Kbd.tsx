@@ -27,7 +27,7 @@ export function IrisKbd({
     display: 'inline-flex',
     alignItems: 'center',
     gap: 3,
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+    fontFamily: 'var(--iris-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace)',
     fontSize: SIZE_MAP[size].fontSize,
     verticalAlign: 'middle',
     ...style,

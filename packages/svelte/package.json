@@ -12,6 +12,10 @@
       "svelte": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./form": {
+      "types": "./dist/form/index.d.ts",
+      "default": "./dist/form/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

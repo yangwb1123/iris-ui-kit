@@ -62,4 +62,108 @@ describe('IrisTabs', () => {
     fireEvent.click(triggerB)
     expect(onChange).toHaveBeenCalledWith('b')
   })
+
+  describe('keyboard navigation', () => {
+    it('ArrowRight moves to the next tab (horizontal)', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisTabs defaultValue="a" onChange={onChange}>
+          <IrisTabsList>
+            <IrisTabsTrigger value="a">Tab A</IrisTabsTrigger>
+            <IrisTabsTrigger value="b">Tab B</IrisTabsTrigger>
+          </IrisTabsList>
+          <IrisTabsContent value="a">Content A</IrisTabsContent>
+          <IrisTabsContent value="b">Content B</IrisTabsContent>
+        </IrisTabs>
+      ))
+      const triggerA = container.querySelector('[data-value="a"]') as HTMLButtonElement
+      fireEvent.keyDown(triggerA, { key: 'ArrowRight' })
+      expect(onChange).toHaveBeenCalledWith('b')
+    })
+
+    it('ArrowLeft moves to the previous tab (horizontal)', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisTabs defaultValue="b" onChange={onChange}>
+          <IrisTabsList>
+            <IrisTabsTrigger value="a">Tab A</IrisTabsTrigger>
+            <IrisTabsTrigger value="b">Tab B</IrisTabsTrigger>
+          </IrisTabsList>
+          <IrisTabsContent value="a">Content A</IrisTabsContent>
+          <IrisTabsContent value="b">Content B</IrisTabsContent>
+        </IrisTabs>
+      ))
+      const triggerB = container.querySelector('[data-value="b"]') as HTMLButtonElement
+      fireEvent.keyDown(triggerB, { key: 'ArrowLeft' })
+      expect(onChange).toHaveBeenCalledWith('a')
+    })
+
+    it('Home moves to the first tab', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisTabs defaultValue="b" onChange={onChange}>
+          <IrisTabsList>
+            <IrisTabsTrigger value="a">Tab A</IrisTabsTrigger>
+            <IrisTabsTrigger value="b">Tab B</IrisTabsTrigger>
+          </IrisTabsList>
+          <IrisTabsContent value="a">Content A</IrisTabsContent>
+          <IrisTabsContent value="b">Content B</IrisTabsContent>
+        </IrisTabs>
+      ))
+      const triggerB = container.querySelector('[data-value="b"]') as HTMLButtonElement
+      fireEvent.keyDown(triggerB, { key: 'Home' })
+      expect(onChange).toHaveBeenCalledWith('a')
+    })
+
+    it('End moves to the last tab', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisTabs defaultValue="a" onChange={onChange}>
+          <IrisTabsList>
+            <IrisTabsTrigger value="a">Tab A</IrisTabsTrigger>
+            <IrisTabsTrigger value="b">Tab B</IrisTabsTrigger>
+          </IrisTabsList>
+          <IrisTabsContent value="a">Content A</IrisTabsContent>
+          <IrisTabsContent value="b">Content B</IrisTabsContent>
+        </IrisTabs>
+      ))
+      const triggerA = container.querySelector('[data-value="a"]') as HTMLButtonElement
+      fireEvent.keyDown(triggerA, { key: 'End' })
+      expect(onChange).toHaveBeenCalledWith('b')
+    })
+
+    it('ArrowDown moves to the next tab (vertical)', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisTabs defaultValue="a" orientation="vertical" onChange={onChange}>
+          <IrisTabsList>
+            <IrisTabsTrigger value="a">Tab A</IrisTabsTrigger>
+            <IrisTabsTrigger value="b">Tab B</IrisTabsTrigger>
+          </IrisTabsList>
+          <IrisTabsContent value="a">Content A</IrisTabsContent>
+          <IrisTabsContent value="b">Content B</IrisTabsContent>
+        </IrisTabs>
+      ))
+      const triggerA = container.querySelector('[data-value="a"]') as HTMLButtonElement
+      fireEvent.keyDown(triggerA, { key: 'ArrowDown' })
+      expect(onChange).toHaveBeenCalledWith('b')
+    })
+
+    it('ArrowUp moves to the previous tab (vertical)', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisTabs defaultValue="b" orientation="vertical" onChange={onChange}>
+          <IrisTabsList>
+            <IrisTabsTrigger value="a">Tab A</IrisTabsTrigger>
+            <IrisTabsTrigger value="b">Tab B</IrisTabsTrigger>
+          </IrisTabsList>
+          <IrisTabsContent value="a">Content A</IrisTabsContent>
+          <IrisTabsContent value="b">Content B</IrisTabsContent>
+        </IrisTabs>
+      ))
+      const triggerB = container.querySelector('[data-value="b"]') as HTMLButtonElement
+      fireEvent.keyDown(triggerB, { key: 'ArrowUp' })
+      expect(onChange).toHaveBeenCalledWith('a')
+    })
+  })
 })

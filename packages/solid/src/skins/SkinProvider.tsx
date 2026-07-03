@@ -20,6 +20,8 @@ const IrisSkinContext = createContext<IrisSkinContextValue>()
 export interface SkinProviderProps {
   engine: SkinEngine
   target?: HTMLElement | null
+  /** CSP nonce for the injected global stylesheet. */
+  cspNonce?: string
   children?: JSX.Element
 }
 
@@ -33,7 +35,7 @@ export function SkinProvider(props: SkinProviderProps): JSX.Element {
   const current = useStore(props.engine.store)
 
   createEffect(() => {
-    injectGlobalStyles()
+    injectGlobalStyles(props.cspNonce)
     const el = props.target ?? document.documentElement
     const applied = applySkin(current(), el)
     onCleanup(() => applied.revert())

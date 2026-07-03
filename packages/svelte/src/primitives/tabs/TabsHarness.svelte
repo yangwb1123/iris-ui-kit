@@ -4,10 +4,18 @@
   import IrisTabsTrigger from './IrisTabsTrigger.svelte'
   import IrisTabsContent from './IrisTabsContent.svelte'
 
-  let { defaultValue = 'a' }: { defaultValue?: string } = $props()
+  let {
+    defaultValue = 'a',
+    onchange,
+    orientation = 'horizontal',
+  }: {
+    defaultValue?: string
+    onchange?: (value: string) => void
+    orientation?: 'horizontal' | 'vertical'
+  } = $props()
 </script>
 
-<IrisTabs {defaultValue}>
+<IrisTabs {defaultValue} {onchange} {orientation}>
   <IrisTabsList>
     <IrisTabsTrigger value="a">Tab A</IrisTabsTrigger>
     <IrisTabsTrigger value="b">Tab B</IrisTabsTrigger>

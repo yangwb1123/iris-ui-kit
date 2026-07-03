@@ -98,4 +98,50 @@ describe('IrisSelect', () => {
     })
     expect(wrapper.find('[data-iris-select-trigger]').attributes('aria-invalid')).toBe('true')
   })
+
+  describe('keyboard navigation in listbox', () => {
+    it('ArrowDown moves tabindex to next option', async () => {
+      const wrapper = mount(IrisSelect, {
+        props: { items, modelValue: null, placeholder: 'Pick', teleport: false },
+        attachTo: host,
+      })
+      await wrapper.find('[data-iris-select-trigger]').trigger('click')
+      await nextTick()
+
+      const opts = wrapper.findAll('[role="option"]')
+      // ArrowDown native event
+      wrapper
+        .find('[role="listbox"]')
+        .element.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+      await nextTick()
+      expect(opts[1]!.attributes('tabindex')).toBe('0')
+    })
+
+    it('End + Enter selects last item via update:modelValue emit', async () => {
+      // Use uncontrolled mode (no modelValue) so emit updates internal state
+      const wrapper = mount(IrisSelect, {
+        props: { items, placeholder: 'Pick', teleport: false },
+        attachTo: host,
+      })
+      await wrapper.find('[data-iris-select-trigger]').trigger('click')
+      await nextTick()
+
+      const listbox = wrapper.find('[role="listbox"]')
+      // First navigate with native events
+      listbox.element.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
+      await nextTick()
+      // Verify End worked - last option should be active
+      const opts = wrapper.findAll('[role="option"]')
+      expect(opts[2]!.attributes('tabindex')).toBe('0')
+
+      // Now try Enter - emits update:modelValue in uncontrolled mode
+      listbox.element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      await nextTick()
+
+      // Verify the emit happened with the expected value ('c' = last item)
+      const emitted = wrapper.emitted('update:modelValue')
+      expect(emitted).toBeTruthy()
+      expect(emitted![emitted!.length - 1]).toEqual(['c'])
+    })
+  })
 })

@@ -15,5 +15,7 @@ export interface SkinProviderProps {
   engine: SkinEngine
   /** Apply target; defaults to `document.documentElement`. */
   target?: HTMLElement | null
+  /** CSP nonce for the injected global stylesheet. */
+  cspNonce?: string
   children?: Snippet
 }

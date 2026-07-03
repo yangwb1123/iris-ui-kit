@@ -67,4 +67,33 @@ describe('@iris-ui/react IrisMentions', () => {
     expect(ta.getAttribute('aria-controls')).toBe(listbox.id)
     expect(ta.getAttribute('aria-expanded')).toBe('true')
   })
+
+  it('disabled textarea has aria-disabled attribute', () => {
+    const { container } = render(<IrisMentions options={OPTS} disabled />)
+    const ta = container.querySelector('textarea')!
+    expect(ta.hasAttribute('disabled')).toBe(true)
+  })
+
+  it('custom prefix opens suggestions', () => {
+    const { container } = render(<IrisMentions options={OPTS} prefix="#" />)
+    fireEvent.change(container.querySelector('textarea')!, {
+      target: { value: 'use #A', selectionStart: 6 },
+    })
+    expect(container.querySelector('[data-iris-mentions-listbox]')).not.toBeNull()
+  })
+
+  it('empty state: no matching options shows no listbox', () => {
+    const { container } = render(<IrisMentions options={OPTS} />)
+    fireEvent.change(container.querySelector('textarea')!, {
+      target: { value: '@zzz', selectionStart: 5 },
+    })
+    expect(container.querySelector('[data-iris-mentions-listbox]')).toBeNull()
+  })
+
+  it('controlled value prop works', () => {
+    const { container, rerender } = render(<IrisMentions options={OPTS} value="hello" />)
+    expect((container.querySelector('textarea') as HTMLTextAreaElement).value).toBe('hello')
+    rerender(<IrisMentions options={OPTS} value="world" />)
+    expect((container.querySelector('textarea') as HTMLTextAreaElement).value).toBe('world')
+  })
 })

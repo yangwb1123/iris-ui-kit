@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    createSelectionModel,
-    nextEnabledIndex,
-    firstEnabledIndex,
-    lastEnabledIndex,
-  } from '@iris-ui/core'
+  import { createSelectionModel, createKeyboardNav, type KeyboardNavAction } from '@iris-ui/core'
   import { toStore } from '../../useStore'
   import type { IrisSegmentedOption } from './types'
 
@@ -78,11 +73,35 @@
   // Render the selection from the prop when controlled, the model store otherwise.
   const displaySelected = $derived(isControlled ? toKeys(value) : $selectedKeys)
   const selectedIndex = $derived(norm.findIndex((o) => displaySelected.includes(o.value)))
-  // Enabled-index roving math (skip-disabled + wrap, first/last-enabled) is
-  // single-sourced in @iris-ui/core; this component keeps only focus/selection.
   const isEnabled = (i: number): boolean => !norm[i]?.disabled
-  const firstEnabled = $derived(firstEnabledIndex(norm.length, isEnabled))
-  const rovingIndex = $derived(selectedIndex >= 0 ? selectedIndex : firstEnabled)
+
+  // Keyboard navigation (single-sourced in core controller)
+  const nav = createKeyboardNav({
+    count: norm.length,
+    loop: true,
+    orientation: 'horizontal',
+    isEnabled,
+  })
+
+  let activeIndex = $state(nav.index)
+  $effect(() => {
+    const unsub = nav.store.subscribe((next) => {
+      activeIndex = next
+    })
+    return unsub
+  })
+
+  // Keep nav index in sync when selection changes
+  $effect(() => {
+    if (selectedIndex >= 0) {
+      nav.focus(selectedIndex)
+    }
+  })
+
+  // Reset nav count when items change
+  $effect(() => {
+    nav.reset(norm.length)
+  })
 
   function select(i: number): void {
     const opt = norm[i]
@@ -94,24 +113,19 @@
     btnRefs[i]?.focus()
   }
 
-  function move(from: number, dir: 1 | -1): void {
-    if (disabled) return
-    select(nextEnabledIndex(from, dir, norm.length, isEnabled))
-  }
-
-  function onKeyDown(event: KeyboardEvent, i: number): void {
-    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-      event.preventDefault()
-      move(i, 1)
-    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-      event.preventDefault()
-      move(i, -1)
-    } else if (event.key === 'Home') {
-      event.preventDefault()
-      select(firstEnabled)
-    } else if (event.key === 'End') {
-      event.preventDefault()
-      select(lastEnabledIndex(norm.length, isEnabled))
+  function onKeyDown(e: KeyboardEvent): void {
+    const action: KeyboardNavAction = nav.handleKeyDown({
+      key: e.key,
+      preventDefault: () => e.preventDefault(),
+    })
+    if (action.type === 'focus' || action.type === 'typeahead') {
+      select(action.target)
+    } else if (action.type === 'next') {
+      nav.move(1)
+      select(nav.index)
+    } else if (action.type === 'previous') {
+      nav.move(-1)
+      select(nav.index)
     }
   }
 </script>
@@ -123,6 +137,7 @@
   data-iris-segmented
   data-iris-segmented-size={size}
   data-disabled={disabled ? 'true' : undefined}
+  onkeydown={onKeyDown}
   style="display:{block ? 'flex' : 'inline-flex'}; {block
     ? 'width:100%;'
     : ''} gap:2px; padding:2px; background:var(--iris-surface); border-radius:var(--iris-radius-md,6px); opacity:{disabled
@@ -137,12 +152,12 @@
       role="radio"
       aria-checked={selected ? 'true' : 'false'}
       disabled={disabled || opt.disabled || undefined}
-      tabindex={i === rovingIndex ? 0 : -1}
+      tabindex={i === activeIndex ? 0 : -1}
       data-iris-segmented-item
       data-value={opt.value}
       data-selected={selected ? 'true' : undefined}
       onclick={() => select(i)}
-      onkeydown={(e) => onKeyDown(e, i)}
+      onfocus={() => nav.focus(i)}
       style="flex:{block
         ? '1'
         : undefined}; padding:{sz.padding}; min-height:{sz.height}; font-size:{sz.fontSize}; font-family:inherit; border:none; border-radius:var(--iris-radius-sm,4px); cursor:{disabled ||

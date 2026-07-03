@@ -13,6 +13,7 @@ function Harness(
     defaultValue?: string
     controlled?: import('vue').Ref<string | undefined>
     triggers?: Array<{ value: string; label: string; disabled?: boolean }>
+    orientation?: 'horizontal' | 'vertical'
   } = {},
 ) {
   const triggers = opts.triggers ?? [
@@ -28,6 +29,7 @@ function Harness(
           {
             defaultValue: opts.defaultValue,
             value: opts.controlled?.value,
+            orientation: opts.orientation,
             ...(opts.controlled
               ? { 'onUpdate:value': (v: string) => (opts.controlled!.value = v) }
               : {}),
@@ -178,6 +180,63 @@ describe('IrisTabs', () => {
     expect(() =>
       mount(defineComponent({ setup: () => () => h(IrisTabsTrigger, { value: 'x' }) })),
     ).toThrow(/IrisTabsTrigger/)
+  })
+
+  it('ArrowRight wraps from last to first', async () => {
+    const wrapper = mount(Harness({ defaultValue: 'c' }), { attachTo: host })
+    await nextTick()
+    await wrapper.findAll('[role="tab"]')[2]!.trigger('keydown', { key: 'ArrowRight' })
+    await nextTick()
+    expect(wrapper.findAll('[role="tab"]')[0]!.attributes('aria-selected')).toBe('true')
+  })
+
+  it('ArrowDown in vertical orientation moves to next trigger', async () => {
+    const wrapper = mount(Harness({ defaultValue: 'a', orientation: 'vertical' }), {
+      attachTo: host,
+    })
+    await nextTick()
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('keydown', { key: 'ArrowDown' })
+    await nextTick()
+    expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-selected')).toBe('true')
+  })
+
+  it('ArrowUp in vertical orientation moves to previous trigger', async () => {
+    const wrapper = mount(Harness({ defaultValue: 'b', orientation: 'vertical' }), {
+      attachTo: host,
+    })
+    await nextTick()
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('keydown', { key: 'ArrowUp' })
+    await nextTick()
+    expect(wrapper.findAll('[role="tab"]')[0]!.attributes('aria-selected')).toBe('true')
+  })
+
+  it('ArrowDown skips disabled trigger in vertical orientation', async () => {
+    const wrapper = mount(
+      Harness({
+        defaultValue: 'a',
+        orientation: 'vertical',
+        triggers: [
+          { value: 'a', label: 'A' },
+          { value: 'b', label: 'B', disabled: true },
+          { value: 'c', label: 'C' },
+        ],
+      }),
+      { attachTo: host },
+    )
+    await nextTick()
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('keydown', { key: 'ArrowDown' })
+    await nextTick()
+    expect(wrapper.findAll('[role="tab"]')[2]!.attributes('aria-selected')).toBe('true')
+  })
+
+  it('ArrowUp wraps from first to last in vertical orientation', async () => {
+    const wrapper = mount(Harness({ defaultValue: 'a', orientation: 'vertical' }), {
+      attachTo: host,
+    })
+    await nextTick()
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('keydown', { key: 'ArrowUp' })
+    await nextTick()
+    expect(wrapper.findAll('[role="tab"]')[2]!.attributes('aria-selected')).toBe('true')
   })
 
   it('Content outside Tabs throws', () => {

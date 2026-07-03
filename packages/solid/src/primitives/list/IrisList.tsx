@@ -1,10 +1,5 @@
-import { createEffect, createSignal, For, mergeProps, Show, splitProps, type JSX } from 'solid-js'
-import {
-  createSelectionModel,
-  firstEnabledIndex,
-  lastEnabledIndex,
-  nextEnabledIndex,
-} from '@iris-ui/core'
+import { createEffect, For, mergeProps, Show, splitProps, type JSX } from 'solid-js'
+import { createSelectionModel, createKeyboardNav, type KeyboardNavAction } from '@iris-ui/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
@@ -20,34 +15,24 @@ export interface IrisListProps<T = unknown> extends Omit<
   'onSelect' | 'onChange'
 > {
   items: IrisListItem<T>[]
-  /** Selected value(s). For multi mode, pass an array. */
   value?: T | T[]
-  /** Default selected value(s) for uncontrolled mode. */
   defaultValue?: T | T[]
-  /** Allow multi-select. */
   multi?: boolean
-  /** Loop ArrowDown past the last item back to the first. */
   loop?: boolean
-  /** ARIA label. */
   ariaLabel?: string
-  /** Render prop for custom item content. */
   renderItem?: (item: IrisListItem<T>, selected: boolean) => JSX.Element
   onChange?: (value: T | T[]) => void
-  /** Show the loading state instead of items. */
   loading?: boolean
-  /** Show the error state instead of items (takes precedence over loading). */
   error?: boolean
-  /** Custom empty-state node (defaults to the localized `list.empty`). */
   emptyState?: JSX.Element
-  /** Custom loading-state node (defaults to the localized `list.loading`). */
   loadingState?: JSX.Element
-  /** Custom error-state node (defaults to the localized `list.error`). */
   errorState?: JSX.Element
 }
 
 /**
  * Generic selectable list. Implements the WAI-ARIA Listbox pattern:
  * role="listbox", roving tabindex, arrow-key navigation, Enter/Space to select.
+ * Keyboard logic is single-sourced in `createKeyboardNav` (core).
  */
 export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
   const merged = mergeProps(
@@ -80,14 +65,9 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
 
   const isEnabled = (i: number): boolean => !local.items[i]?.disabled
 
-  const [activeIndex, setActiveIndex] = createSignal<number>(
-    firstEnabledIndex(local.items.length, isEnabled),
-  )
+  // Keyboard navigation (single-sourced in core controller)
+  let listRef: HTMLUListElement | undefined
 
-  // Selection logic (single/multiple toggle, dedup) is single-sourced in the core
-  // model. List values are an opaque generic `T`, so they're used directly as
-  // model keys — the model compares by identity (`includes`/`Set`), matching the
-  // component's previous `===`/`indexOf` semantics for any value type.
   type Key = string | number
   const asKey = (v: T): Key => v as unknown as Key
   const toKeys = (v: T | T[] | undefined): Key[] =>
@@ -101,15 +81,11 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
   })
   const selected = useStore(model.store)
 
-  // Controlled: mirror the prop into the model without re-emitting onChange.
   const isControlled = (): boolean => local.value !== undefined
   createEffect(() => {
     if (isControlled()) model.sync(toKeys(local.value))
   })
 
-  // Controlled lists RENDER from the prop (true controlled semantics): a click
-  // emits onChange but the highlighted selection only changes when the parent
-  // writes `value` back; uncontrolled renders from the model store.
   const displaySelectedKeys = (): Key[] => (isControlled() ? toKeys(local.value) : selected())
   const rebaseToProp = (): void => {
     if (isControlled()) model.sync(toKeys(local.value))
@@ -119,57 +95,47 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
 
   const select = (item: IrisListItem<T>) => {
     if (item.disabled) return
-    // Re-base on the prop so the emitted next value is computed against what the
-    // parent holds (not a prior, possibly-rejected, optimistic value).
     rebaseToProp()
-    // multiple: toggle; single: always select (list never deselects on re-click).
     if (local.multi) model.toggle(asKey(item.value))
     else model.set([asKey(item.value)])
   }
 
-  const moveActive = (delta: 1 | -1) => {
-    const next = nextEnabledIndex(activeIndex(), delta, local.items.length, isEnabled, local.loop)
-    if (next >= 0) setActiveIndex(next)
+  // Create nav controller — it manages the active index via its own store.
+  const nav = createKeyboardNav({
+    count: local.items.length,
+    loop: local.loop,
+    isEnabled,
+  })
+  const activeIndex = useStore(nav.store)
+
+  // Keep controller in sync when items change
+  createEffect(() => {
+    nav.reset(local.items.length)
+  })
+
+  const focusAt = (index: number) => {
+    const el = listRef?.querySelector<HTMLElement>(`[data-iris-list-index="${index}"]`)
+    el?.focus()
   }
 
   const onKeyDown: JSX.EventHandlerUnion<HTMLUListElement, KeyboardEvent> = (e) => {
     if (!isContent()) return
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        moveActive(1)
-        break
-      case 'ArrowUp':
-        e.preventDefault()
-        moveActive(-1)
-        break
-      case 'Home': {
-        e.preventDefault()
-        const first = firstEnabledIndex(local.items.length, isEnabled)
-        if (first >= 0) setActiveIndex(first)
-        break
-      }
-      case 'End': {
-        e.preventDefault()
-        const last = lastEnabledIndex(local.items.length, isEnabled)
-        if (last >= 0) setActiveIndex(last)
-        break
-      }
-      case 'Enter':
-      case ' ': {
-        if (activeIndex() >= 0) {
-          e.preventDefault()
-          const item = local.items[activeIndex()]
-          if (item) select(item)
-        }
-        break
-      }
+    const action: KeyboardNavAction = nav.handleKeyDown({
+      key: e.key,
+      preventDefault: () => e.preventDefault(),
+    })
+    if (action.type === 'focus' || action.type === 'typeahead') {
+      focusAt(action.target)
+    } else if (action.type === 'select') {
+      const item = local.items[action.target]
+      if (item) select(item)
     }
   }
 
   return (
     <ul
       {...rest}
+      ref={listRef!}
       role="listbox"
       aria-label={local.ariaLabel}
       aria-multiselectable={local.multi ? 'true' : undefined}
@@ -228,11 +194,11 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
                 data-state={selected() ? 'selected' : active() ? 'active' : 'idle'}
                 onClick={() => {
                   if (!item.disabled) {
-                    setActiveIndex(i)
+                    nav.focus(i)
                     select(item)
                   }
                 }}
-                onFocus={() => setActiveIndex(i)}
+                onFocus={() => nav.focus(i)}
                 style={{
                   display: 'flex',
                   'align-items': 'center',

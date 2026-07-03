@@ -162,6 +162,132 @@ describe('@iris-ui/react IrisTabs', () => {
     expect(document.activeElement).toBe(b)
   })
 
+  it('ArrowUp in vertical orientation moves to previous trigger', () => {
+    render(harness({ defaultValue: 'b', orientation: 'vertical' }))
+    const [a, b] = triggers()
+    b!.focus()
+    act(() => {
+      fireEvent.keyDown(b!, { key: 'ArrowUp' })
+    })
+    expect(document.activeElement).toBe(a)
+  })
+
+  it('ArrowRight wraps from last back to first', () => {
+    render(harness({ defaultValue: 'c' }))
+    const [a, , c] = triggers()
+    c!.focus()
+    act(() => {
+      fireEvent.keyDown(c!, { key: 'ArrowRight' })
+    })
+    expect(document.activeElement).toBe(a)
+  })
+
+  it('ArrowLeft/ArrowRight in vertical orientation does nothing', () => {
+    render(harness({ defaultValue: 'a', orientation: 'vertical' }))
+    const [a] = triggers()
+    a!.focus()
+    act(() => {
+      fireEvent.keyDown(a!, { key: 'ArrowLeft' })
+    })
+    expect(document.activeElement).toBe(a)
+    act(() => {
+      fireEvent.keyDown(a!, { key: 'ArrowRight' })
+    })
+    expect(document.activeElement).toBe(a)
+  })
+
+  it('ArrowDown/ArrowUp in horizontal orientation does nothing', () => {
+    render(harness({ defaultValue: 'a', orientation: 'horizontal' }))
+    const [a] = triggers()
+    a!.focus()
+    act(() => {
+      fireEvent.keyDown(a!, { key: 'ArrowDown' })
+    })
+    expect(document.activeElement).toBe(a)
+    act(() => {
+      fireEvent.keyDown(a!, { key: 'ArrowUp' })
+    })
+    expect(document.activeElement).toBe(a)
+  })
+
+  it('Home skips disabled first trigger', () => {
+    render(
+      <IrisTabs defaultValue="c">
+        <IrisTabsList>
+          <IrisTabsTrigger value="a" disabled>
+            A
+          </IrisTabsTrigger>
+          <IrisTabsTrigger value="b">B</IrisTabsTrigger>
+          <IrisTabsTrigger value="c">C</IrisTabsTrigger>
+        </IrisTabsList>
+        <IrisTabsContent value="a">Panel A</IrisTabsContent>
+        <IrisTabsContent value="b">Panel B</IrisTabsContent>
+        <IrisTabsContent value="c">Panel C</IrisTabsContent>
+      </IrisTabs>,
+    )
+    const [, b, c] = triggers()
+    c!.focus()
+    act(() => {
+      fireEvent.keyDown(c!, { key: 'Home' })
+    })
+    // 'a' is disabled so Home should skip to 'b'
+    expect(document.activeElement).toBe(b)
+  })
+
+  it('End skips disabled last trigger', () => {
+    render(
+      <IrisTabs defaultValue="a">
+        <IrisTabsList>
+          <IrisTabsTrigger value="a">A</IrisTabsTrigger>
+          <IrisTabsTrigger value="b">B</IrisTabsTrigger>
+          <IrisTabsTrigger value="c" disabled>
+            C
+          </IrisTabsTrigger>
+        </IrisTabsList>
+        <IrisTabsContent value="a">Panel A</IrisTabsContent>
+        <IrisTabsContent value="b">Panel B</IrisTabsContent>
+        <IrisTabsContent value="c">Panel C</IrisTabsContent>
+      </IrisTabs>,
+    )
+    const [a, b] = triggers()
+    a!.focus()
+    act(() => {
+      fireEvent.keyDown(a!, { key: 'End' })
+    })
+    // 'c' is disabled so End should skip to 'b'
+    expect(document.activeElement).toBe(b)
+  })
+
+  it('all triggers disabled: keyboard navigation does nothing', () => {
+    render(
+      <IrisTabs defaultValue="a" disabled>
+        <IrisTabsList>
+          <IrisTabsTrigger value="a">A</IrisTabsTrigger>
+          <IrisTabsTrigger value="b">B</IrisTabsTrigger>
+          <IrisTabsTrigger value="c">C</IrisTabsTrigger>
+        </IrisTabsList>
+        <IrisTabsContent value="a">Panel A</IrisTabsContent>
+        <IrisTabsContent value="b">Panel B</IrisTabsContent>
+        <IrisTabsContent value="c">Panel C</IrisTabsContent>
+      </IrisTabs>,
+    )
+    const [a] = triggers()
+    a!.focus()
+    act(() => {
+      fireEvent.keyDown(a!, { key: 'ArrowRight' })
+    })
+    // Focus should not have moved because all triggers are disabled
+    expect(document.activeElement).toBe(a)
+    act(() => {
+      fireEvent.keyDown(a!, { key: 'Home' })
+    })
+    expect(document.activeElement).toBe(a)
+    act(() => {
+      fireEvent.keyDown(a!, { key: 'End' })
+    })
+    expect(document.activeElement).toBe(a)
+  })
+
   it('clicking disabled trigger does not activate', () => {
     const onChange = vi.fn()
     render(harness({ defaultValue: 'a', disableB: true, onValueChange: onChange }))

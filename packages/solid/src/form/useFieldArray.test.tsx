@@ -27,7 +27,6 @@ function FormBody() {
 
 function FieldRow(props: { index: number; onRemove: () => void }) {
   const field = useField<string>(`items.${props.index}.name`)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fp = field.fieldProps() as any
   return (
     <div>

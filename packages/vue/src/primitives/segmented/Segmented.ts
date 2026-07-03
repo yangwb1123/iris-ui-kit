@@ -1,5 +1,5 @@
 import { defineComponent, h, type PropType } from 'vue'
-import { firstEnabledIndex, lastEnabledIndex, nextEnabledIndex } from '@iris-ui/core'
+import { createKeyboardNav, firstEnabledIndex } from '@iris-ui/core'
 
 export type IrisSegmentedSize = 'sm' | 'md' | 'lg'
 
@@ -41,17 +41,23 @@ export const IrisSegmented = defineComponent({
   setup(props, { attrs, emit }) {
     const btns: (HTMLButtonElement | null)[] = []
 
+    const isEnabled = (i: number) => {
+      const norm = normalize(props.options)
+      return !norm[i]?.disabled && !props.disabled
+    }
+
+    const nav = createKeyboardNav({
+      count: normalize(props.options).length,
+      loop: true,
+      orientation: 'horizontal',
+      isEnabled,
+    })
+
     const select = (norm: IrisSegmentedOption[], i: number) => {
       const opt = norm[i]
       if (!opt || opt.disabled || props.disabled) return
       emit('update:modelValue', opt.value)
       btns[i]?.focus()
-    }
-
-    const move = (norm: IrisSegmentedOption[], from: number, dir: 1 | -1) => {
-      if (props.disabled) return
-      const next = nextEnabledIndex(from, dir, norm.length, (i) => !norm[i]?.disabled)
-      select(norm, next)
     }
 
     return () => {
@@ -60,6 +66,14 @@ export const IrisSegmented = defineComponent({
       const selectedIndex = norm.findIndex((o) => o.value === props.modelValue)
       const firstEnabled = firstEnabledIndex(norm.length, (i) => !norm[i]?.disabled)
       const rovingIndex = selectedIndex >= 0 ? selectedIndex : firstEnabled
+
+      // Keep nav in sync with the current options and selection
+      if (nav.count !== norm.length) {
+        nav.reset(norm.length)
+      }
+      if (nav.index !== rovingIndex) {
+        nav.focus(rovingIndex)
+      }
 
       return h(
         'div',
@@ -100,19 +114,21 @@ export const IrisSegmented = defineComponent({
               'data-selected': selected ? 'true' : undefined,
               onClick: () => select(norm, i),
               onKeydown: (e: KeyboardEvent) => {
-                if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                  e.preventDefault()
-                  move(norm, i, 1)
-                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                  e.preventDefault()
-                  move(norm, i, -1)
-                } else if (e.key === 'Home') {
-                  e.preventDefault()
-                  if (firstEnabled >= 0) select(norm, firstEnabled)
-                } else if (e.key === 'End') {
-                  e.preventDefault()
-                  const last = lastEnabledIndex(norm.length, (i) => !norm[i]?.disabled)
-                  if (last >= 0) select(norm, last)
+                if (props.disabled) {
+                  return
+                }
+                const action = nav.handleKeyDown({
+                  key: e.key,
+                  preventDefault: () => e.preventDefault(),
+                })
+                if (action.type === 'focus') {
+                  select(norm, action.target)
+                } else if (action.type === 'next') {
+                  nav.move(1)
+                  select(norm, nav.index)
+                } else if (action.type === 'previous') {
+                  nav.move(-1)
+                  select(norm, nav.index)
                 }
               },
               style: {

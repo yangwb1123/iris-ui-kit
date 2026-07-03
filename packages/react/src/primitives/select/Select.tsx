@@ -1,13 +1,13 @@
 import * as React from 'react'
 import {
-  firstEnabledIndex,
-  lastEnabledIndex,
-  matchTypeahead,
-  nextEnabledIndex,
+  createKeyboardNav,
+  type KeyboardNavController,
+  type KeyboardNavAction,
   type Placement,
   type Size,
 } from '@iris-ui/core'
 import { useI18n } from '../../i18n'
+import { useStore } from '../../useStore'
 import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'
@@ -46,8 +46,8 @@ export interface IrisSelectProps<T = unknown> {
 
 /**
  * Single-select dropdown. Composes Popover (positioning + dismiss) with an
- * inline listbox (keyboard nav + selection). Each option is `role="option"`
- * inside a `role="listbox"` ul.
+ * inline listbox (keyboard nav + selection). Arrow-key, typeahead, Home/End, and
+ * Enter/Space navigation are single-sourced in `createKeyboardNav` (core).
  *
  * @example
  *   <IrisSelect
@@ -74,13 +74,14 @@ export function IrisSelect<T = unknown>({
   className,
 }: IrisSelectProps<T>): React.ReactElement {
   const { t } = useI18n()
+  const safeItems = items ?? []
   const resolvedPlaceholder = placeholder ?? t('select.placeholder')
   const isControlled = valueProp !== undefined
   const [internal, setInternal] = React.useState<T | undefined>(defaultValue)
   const value = isControlled ? valueProp : internal
   const [open, setOpen] = React.useState(false)
 
-  const selectedItem = items.find((it) => it.value === value) ?? null
+  const selectedItem = safeItems.find((it) => it.value === value) ?? null
   const label = selectedItem
     ? (selectedItem.label ?? String(selectedItem.value))
     : resolvedPlaceholder
@@ -90,27 +91,48 @@ export function IrisSelect<T = unknown>({
     onValueChange?.(next)
   }
 
-  // Active (focused) option index for arrow-key navigation. The roving-index
-  // math (next enabled with wrap, first/last enabled) is single-sourced in
-  // @iris-ui/core; here we only supply the `isEnabled` predicate.
-  const isEnabled = React.useCallback((i: number) => !items[i]?.disabled, [items])
-  const initialActive = React.useMemo(() => {
-    const selIdx = items.findIndex((it) => it.value === value)
-    if (selIdx >= 0 && !items[selIdx]?.disabled) return selIdx
-    return firstEnabledIndex(items.length, isEnabled)
-  }, [items, value, isEnabled])
-  const [activeIndex, setActiveIndex] = React.useState(initialActive)
+  // ── Keyboard navigation (single-sourced in core controller) ────────────
+  const isEnabled = React.useCallback((i: number) => !safeItems[i]?.disabled, [safeItems])
+  const labels = React.useMemo(
+    () => safeItems.map((it) => it.label ?? String(it.value)),
+    [safeItems],
+  )
 
-  // Reset activeIndex when opening so focus starts at the selected (or first enabled) item.
+  const navRef = React.useRef<KeyboardNavController | null>(null)
+  if (navRef.current === null) {
+    // Initial active index: selected item, or first enabled
+    const selIdx = safeItems.findIndex((it) => it.value === value)
+    const initial = selIdx >= 0 && !safeItems[selIdx]?.disabled ? selIdx : undefined
+    navRef.current = createKeyboardNav({
+      count: safeItems.length,
+      loop: true,
+      isEnabled,
+      labels,
+      initialIndex: initial,
+    })
+  }
+  const nav = navRef.current
+
+  // Re-center on the selected item when items change
   React.useEffect(() => {
-    if (open) setActiveIndex(initialActive)
-  }, [open, initialActive])
+    nav.reset(safeItems.length)
+  })
+
+  // Reset active index when opening so focus starts at the selected (or first enabled) item.
+  React.useEffect(() => {
+    if (open) {
+      const selIdx = safeItems.findIndex((it) => it.value === value)
+      if (selIdx >= 0 && !safeItems[selIdx]?.disabled) {
+        nav.focus(selIdx)
+      } else {
+        nav.goFirst()
+      }
+    }
+  }, [open, safeItems, value, nav])
+
+  const activeIndex = useStore(nav.store)
 
   const listRef = React.useRef<HTMLUListElement | null>(null)
-  const typeaheadRef = React.useRef<{
-    buffer: string
-    timer: ReturnType<typeof setTimeout> | null
-  }>({ buffer: '', timer: null })
 
   // When activeIndex changes while open, focus that option.
   React.useEffect(() => {
@@ -121,11 +143,6 @@ export function IrisSelect<T = unknown>({
     el?.focus()
   }, [open, activeIndex])
 
-  const moveActive = (delta: 1 | -1) => {
-    const next = nextEnabledIndex(activeIndex, delta, items.length, isEnabled)
-    if (next >= 0) setActiveIndex(next)
-  }
-
   const selectItem = (item: IrisSelectItem<T>) => {
     if (item.disabled) return
     setValue(item.value)
@@ -133,50 +150,15 @@ export function IrisSelect<T = unknown>({
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLUListElement>) => {
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        moveActive(1)
-        break
-      case 'ArrowUp':
-        e.preventDefault()
-        moveActive(-1)
-        break
-      case 'Home': {
-        e.preventDefault()
-        const first = firstEnabledIndex(items.length, isEnabled)
-        if (first >= 0) setActiveIndex(first)
-        break
-      }
-      case 'End': {
-        e.preventDefault()
-        const last = lastEnabledIndex(items.length, isEnabled)
-        if (last >= 0) setActiveIndex(last)
-        break
-      }
-      case 'Enter':
-      case ' ': {
-        if (activeIndex >= 0) {
-          e.preventDefault()
-          const item = items[activeIndex]
-          if (item) selectItem(item)
-        }
-        break
-      }
-      default: {
-        if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
-          const ta = typeaheadRef.current
-          ta.buffer += e.key
-          if (ta.timer) clearTimeout(ta.timer)
-          ta.timer = setTimeout(() => {
-            ta.buffer = ''
-          }, 500)
-          const labels = items.map((it) => it.label ?? String(it.value))
-          const match = matchTypeahead(labels, ta.buffer, activeIndex, (i) => !!items[i]?.disabled)
-          if (match >= 0) setActiveIndex(match)
-        }
-      }
+    const action: KeyboardNavAction = nav.handleKeyDown({
+      key: e.key,
+      preventDefault: () => e.preventDefault(),
+    })
+    if (action.type === 'select') {
+      const item = safeItems[action.target]
+      if (item) selectItem(item)
     }
+    // Escape is implicitly handled by Popover's dismiss
   }
 
   const sizeStyles = SIZE_STYLES[size]
@@ -270,7 +252,7 @@ export function IrisSelect<T = unknown>({
             outline: 'none',
           }}
         >
-          {items.map((item, index) => {
+          {safeItems.map((item, index) => {
             const isSelected = item.value === value
             const isActive = index === activeIndex
             return (
@@ -284,7 +266,7 @@ export function IrisSelect<T = unknown>({
                 data-iris-select-option-index={index}
                 data-state={isSelected ? 'selected' : isActive ? 'active' : 'idle'}
                 onClick={item.disabled ? undefined : () => selectItem(item)}
-                onFocus={() => setActiveIndex(index)}
+                onFocus={() => nav.focus(index)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

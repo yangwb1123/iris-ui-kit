@@ -57,4 +57,67 @@ describe('IrisTreeSelect', () => {
     await w.find('[data-value="banana"] [data-iris-tree-select-label]').trigger('click')
     expect(w.emitted('update:modelValue')).toBeUndefined()
   })
+
+  describe('ARIA & data attributes', () => {
+    it('toggles aria-expanded on trigger', async () => {
+      const w = mount(IrisTreeSelect, { props: { options: OPTIONS } })
+      expect(trigger(w).attributes('aria-expanded')).toBe('false')
+      await trigger(w).trigger('click')
+      expect(trigger(w).attributes('aria-expanded')).toBe('true')
+      await trigger(w).trigger('click')
+      expect(trigger(w).attributes('aria-expanded')).toBe('false')
+    })
+
+    it('sets aria-invalid when invalid', () => {
+      const w = mount(IrisTreeSelect, { props: { options: OPTIONS, invalid: true } })
+      expect(trigger(w).attributes('aria-invalid')).toBe('true')
+    })
+
+    it('has data-state on container', async () => {
+      const w = mount(IrisTreeSelect, { props: { options: OPTIONS } })
+      const root = w.find('[data-iris-tree-select]')
+      expect(root.attributes('data-state')).toBe('closed')
+      await trigger(w).trigger('click')
+      expect(root.attributes('data-state')).toBe('open')
+    })
+  })
+
+  describe('keyboard', () => {
+    it('ArrowDown opens the panel when closed', async () => {
+      const w = mount(IrisTreeSelect, { props: { options: OPTIONS } })
+      expect(w.find('[role="tree"]').exists()).toBe(false)
+      await trigger(w).trigger('keydown', { key: 'ArrowDown' })
+      expect(w.find('[role="tree"]').exists()).toBe(true)
+    })
+
+    it('Escape closes the panel', async () => {
+      const w = mount(IrisTreeSelect, { props: { options: OPTIONS } })
+      await trigger(w).trigger('click')
+      expect(w.find('[role="tree"]').exists()).toBe(true)
+      await trigger(w).trigger('keydown', { key: 'Escape' })
+      expect(w.find('[role="tree"]').exists()).toBe(false)
+    })
+  })
+
+  describe('disabled state', () => {
+    it('disables the trigger when disabled', () => {
+      const w = mount(IrisTreeSelect, { props: { options: OPTIONS, disabled: true } })
+      expect(trigger(w).attributes('disabled')).toBe('')
+    })
+
+    it('does not open on click when disabled', async () => {
+      const w = mount(IrisTreeSelect, { props: { options: OPTIONS, disabled: true } })
+      await trigger(w).trigger('click')
+      expect(w.find('[role="tree"]').exists()).toBe(false)
+    })
+  })
+
+  describe('edge cases', () => {
+    it('handles empty options', async () => {
+      const w = mount(IrisTreeSelect, { props: { options: [] } })
+      await trigger(w).trigger('click')
+      // Should not crash; tree may be empty
+      expect(w.find('[data-iris-tree-select]').exists()).toBe(true)
+    })
+  })
 })

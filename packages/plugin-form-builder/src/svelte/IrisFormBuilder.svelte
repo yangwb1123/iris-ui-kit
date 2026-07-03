@@ -29,8 +29,16 @@
     transform,
     dependencies,
   })
-  const { form, submitLabel, stepCount, nextStepLabel, stepFields, isLastStep, nextStep, prevStep } =
-    builder
+  const {
+    form,
+    submitLabel,
+    stepCount,
+    nextStepLabel,
+    stepFields,
+    isLastStep,
+    nextStep,
+    prevStep,
+  } = builder
 
   // Expose the builder's store through Svelte's form context so each control
   // binds via `@iris-ui/svelte`'s `useField` (canonical-path keyed). This is what

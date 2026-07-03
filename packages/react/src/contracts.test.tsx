@@ -43,6 +43,7 @@ import {
   splitButtonScenario,
   formScenario,
   tableCellEditScenario,
+  listKeyboardScenario,
   type ContractDriver,
 } from '@iris-ui/core/contracts'
 import { useCallback, useState } from 'react'
@@ -97,6 +98,7 @@ import { IrisAlert } from './primitives/alert/Alert'
 import { IrisBanner } from './primitives/banner/Banner'
 import { IrisSplitButton } from './primitives/split-button/SplitButton'
 import { IrisToastViewport } from './primitives/toast/ToastViewport'
+import { IrisList } from './primitives/list/List'
 import { pushToast, clearToasts } from './primitives/toast/toastStore'
 
 import { SelectContractHarness } from './SelectContractHarness'
@@ -331,6 +333,19 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
       </IrisTabs>,
     )
     await runContract(tabsScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared List keyboard contract', async () => {
+    const { container } = render(
+      <IrisList
+        items={[
+          { value: 'a', label: 'Alpha' },
+          { value: 'b', label: 'Bravo' },
+          { value: 'c', label: 'Charlie' },
+        ]}
+      />,
+    )
+    await runContract(listKeyboardScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Switch contract', async () => {

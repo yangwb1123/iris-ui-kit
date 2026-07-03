@@ -56,6 +56,11 @@ export const ThemeProvider = defineComponent({
       type: String as PropType<Direction>,
       default: 'ltr',
     },
+    /** CSP nonce for injected inline stylesheets. */
+    cspNonce: {
+      type: String,
+      default: undefined,
+    },
   },
   setup(props, { slots }) {
     const current = ref(props.store.store.getState()) as Ref<IrisTheme>
@@ -79,7 +84,7 @@ export const ThemeProvider = defineComponent({
     }
 
     onMounted(() => {
-      injectGlobalStyles()
+      injectGlobalStyles(props.cspNonce)
       applyCurrent()
       applyDir()
     })

@@ -36,7 +36,7 @@ export const IrisKbd = defineComponent({
       display: 'inline-flex',
       alignItems: 'center',
       gap: '3px',
-      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+      fontFamily: 'var(--iris-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace)',
       fontSize: SIZE_MAP[props.size].fontSize,
       verticalAlign: 'middle',
     }

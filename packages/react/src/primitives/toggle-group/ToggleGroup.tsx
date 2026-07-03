@@ -1,5 +1,10 @@
 import * as React from 'react'
 import { createSelectionModel, type SelectionModel } from '@iris-ui/core'
+import {
+  createKeyboardNav,
+  type KeyboardNavAction,
+  type KeyboardNavController,
+} from '@iris-ui/core'
 import { useStore } from '../../useStore'
 import {
   ToggleGroupContext,
@@ -116,6 +121,23 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): React.ReactElement
 
   // Registry kept in a ref; reads happen at event time.
   const itemsRef = React.useRef<RegisteredItem[]>([])
+
+  // Keyboard navigation (single-sourced in core controller)
+  const navRef = React.useRef<KeyboardNavController | null>(null)
+  if (navRef.current === null) {
+    navRef.current = createKeyboardNav({
+      count: itemsRef.current.length,
+      loop: true,
+      orientation,
+    })
+  }
+  const nav = navRef.current
+
+  // Reset nav when item count changes
+  React.useEffect(() => {
+    nav.reset(itemsRef.current.length)
+  })
+
   const registerItem = React.useCallback((value: string, el: { current: HTMLElement | null }) => {
     if (!itemsRef.current.find((it) => it.value === value)) {
       itemsRef.current = [...itemsRef.current, { value, el }]
@@ -136,6 +158,31 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): React.ReactElement
     items[nextIdx]?.el.current?.focus()
   }, [])
 
+  const focusItem = React.useCallback(
+    (value: string) => {
+      const idx = itemsRef.current.findIndex((it) => it.value === value)
+      if (idx >= 0) nav.focus(idx)
+    },
+    [nav],
+  )
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const action: KeyboardNavAction = nav.handleKeyDown({
+      key: e.key,
+      preventDefault: () => e.preventDefault(),
+    })
+    if (action.type === 'focus') {
+      const items = itemsRef.current
+      items[action.target]?.el.current?.focus()
+    } else if (action.type === 'select') {
+      const items = itemsRef.current
+      const item = items[action.target]
+      if (item && !disabled) {
+        toggle(item.value)
+      }
+    }
+  }
+
   const ctx = React.useMemo(
     () => ({
       type: type as IrisToggleGroupType,
@@ -147,8 +194,20 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): React.ReactElement
       toggle,
       registerItem,
       moveFocus,
+      focusItem,
     }),
-    [type, orientation, size, variant, disabled, isActive, toggle, registerItem, moveFocus],
+    [
+      type,
+      orientation,
+      size,
+      variant,
+      disabled,
+      isActive,
+      toggle,
+      registerItem,
+      moveFocus,
+      focusItem,
+    ],
   )
 
   return (
@@ -162,6 +221,7 @@ export function IrisToggleGroup(props: IrisToggleGroupProps): React.ReactElement
         data-iris-toggle-group-type={type}
         data-iris-toggle-group-orientation={orientation}
         data-iris-toggle-group-size={size}
+        onKeyDown={handleKeyDown}
         style={{
           display: 'inline-flex',
           flexDirection: orientation === 'horizontal' ? 'row' : 'column',

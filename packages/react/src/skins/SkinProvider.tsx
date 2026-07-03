@@ -13,6 +13,8 @@ const IrisSkinContext = createContext<IrisSkinContextValue | null>(null)
 export interface SkinProviderProps {
   engine: SkinEngine
   target?: HTMLElement | null
+  /** CSP nonce for the injected global stylesheet. */
+  cspNonce?: string
   children?: ReactNode
 }
 
@@ -22,12 +24,12 @@ export interface SkinProviderProps {
  * `document.documentElement`), reverts on unmount. Zero skin logic — all of it
  * lives in `@iris-ui/skins`. Client boundary (tsup prepends `'use client'`).
  */
-export function SkinProvider({ engine, target = null, children }: SkinProviderProps) {
+export function SkinProvider({ engine, target = null, cspNonce, children }: SkinProviderProps) {
   const current = useStore(engine.store)
   const appliedRef = useRef<ApplySkinResult | null>(null)
 
   useEffect(() => {
-    injectGlobalStyles()
+    injectGlobalStyles(cspNonce)
     const el = target ?? document.documentElement
     appliedRef.current?.revert()
     appliedRef.current = applySkin(current, el)

@@ -50,4 +50,62 @@ describe('IrisSegmented', () => {
     const { container } = render(() => <IrisSegmented options={options} />)
     expect(container.querySelector('[role="radiogroup"]')).not.toBeNull()
   })
+
+  describe('keyboard navigation', () => {
+    it('ArrowRight moves to the next option', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => <IrisSegmented options={options} onChange={onChange} />)
+      const btns = container.querySelectorAll('[data-iris-segmented-item]')
+      fireEvent.keyDown(btns[0] as HTMLButtonElement, { key: 'ArrowRight' })
+      expect(onChange).toHaveBeenCalledWith('Week')
+    })
+
+    it('ArrowLeft moves to the previous option', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisSegmented options={options} value="Week" onChange={onChange} />
+      ))
+      const btns = container.querySelectorAll('[data-iris-segmented-item]')
+      fireEvent.keyDown(btns[1] as HTMLButtonElement, { key: 'ArrowLeft' })
+      expect(onChange).toHaveBeenCalledWith('Day')
+    })
+
+    it('ArrowDown moves to the next option', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => <IrisSegmented options={options} onChange={onChange} />)
+      const btns = container.querySelectorAll('[data-iris-segmented-item]')
+      fireEvent.keyDown(btns[0] as HTMLButtonElement, { key: 'ArrowDown' })
+      expect(onChange).toHaveBeenCalledWith('Week')
+    })
+
+    it('ArrowUp moves to the previous option', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisSegmented options={options} value="Week" onChange={onChange} />
+      ))
+      const btns = container.querySelectorAll('[data-iris-segmented-item]')
+      fireEvent.keyDown(btns[1] as HTMLButtonElement, { key: 'ArrowUp' })
+      expect(onChange).toHaveBeenCalledWith('Day')
+    })
+
+    it('Home moves to the first option', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisSegmented options={options} value="Month" onChange={onChange} />
+      ))
+      const btns = container.querySelectorAll('[data-iris-segmented-item]')
+      fireEvent.keyDown(btns[2] as HTMLButtonElement, { key: 'Home' })
+      expect(onChange).toHaveBeenCalledWith('Day')
+    })
+
+    it('End moves to the last option', () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisSegmented options={options} value="Day" onChange={onChange} />
+      ))
+      const btns = container.querySelectorAll('[data-iris-segmented-item]')
+      fireEvent.keyDown(btns[0] as HTMLButtonElement, { key: 'End' })
+      expect(onChange).toHaveBeenCalledWith('Month')
+    })
+  })
 })

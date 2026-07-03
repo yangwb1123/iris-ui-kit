@@ -68,4 +68,36 @@ describe('IrisTransfer', () => {
       'Move to available',
     )
   })
+
+  it('empty state renders no items', () => {
+    const w = mount(IrisTransfer, { props: { options: [], modelValue: [] } })
+    const p = panes(w)
+    expect(itemsIn(p[0]).length).toBe(0)
+    expect(itemsIn(p[1]).length).toBe(0)
+  })
+
+  it('onValueChange fires on move', async () => {
+    const w = mount(IrisTransfer, { props: { options: OPTIONS, modelValue: ['a'] } })
+    const targetPane = panes(w)[1]
+    await targetPane.find('input').setValue(true)
+    await w.find('[data-iris-transfer-to-source]').trigger('click')
+    expect(w.emitted('update:modelValue')?.at(-1)).toEqual([[]])
+  })
+
+  it('whole-component disabled blocks all item checkboxes and move buttons', () => {
+    const w = mount(IrisTransfer, {
+      props: { options: OPTIONS, modelValue: ['a'], disabled: true },
+    })
+    expect(w.find('[data-iris-transfer-to-target]').attributes('disabled')).toBeDefined()
+    expect(w.find('[data-iris-transfer-to-source]').attributes('disabled')).toBeDefined()
+    for (const li of itemsIn(panes(w)[0])) {
+      expect(li.find('input').attributes('disabled')).toBeDefined()
+    }
+  })
+
+  it('whole-component disabled ignores click attempts to move items', async () => {
+    const w = mount(IrisTransfer, { props: { options: OPTIONS, modelValue: [], disabled: true } })
+    await w.find('[data-iris-transfer-to-target]').trigger('click')
+    expect(w.emitted('update:modelValue')).toBeUndefined()
+  })
 })

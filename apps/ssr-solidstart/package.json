@@ -2,6 +2,7 @@
   "name": "ssr-solidstart",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "description": "SolidStart SSR smoke app — the SSR-compat proof for @iris-ui/solid (ROADMAP v3 R14, deferred)",
   "scripts": {
     "dev": "vinxi dev --port 5183",
@@ -21,6 +22,7 @@
     "vinxi": "^0.5.0"
   },
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vite-plugin-solid": "^2.11.0"
   }
 }

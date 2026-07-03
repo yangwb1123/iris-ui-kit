@@ -92,4 +92,24 @@ describe('IrisCombobox', () => {
     const listbox = w.find('[role="listbox"]')
     expect(listbox.attributes('id')).toBe(el.attributes('aria-controls'))
   })
+
+  it('keyboard: ArrowUp + Enter selects the previous option', async () => {
+    const w = mount(IrisCombobox, { props: { options: OPTIONS } })
+    const el = input(w)
+    await el.trigger('focus')
+    await el.trigger('keydown', { key: 'ArrowDown' })
+    await el.trigger('keydown', { key: 'ArrowDown' })
+    await el.trigger('keydown', { key: 'ArrowUp' })
+    await el.trigger('keydown', { key: 'Enter' })
+    expect(w.emitted('update:modelValue')?.[0]).toEqual(['apple'])
+  })
+
+  it('keyboard: ArrowUp from a closed/unset state moves to the first option', async () => {
+    const w = mount(IrisCombobox, { props: { options: OPTIONS } })
+    const el = input(w)
+    await el.trigger('focus')
+    await el.trigger('keydown', { key: 'ArrowUp' })
+    await el.trigger('keydown', { key: 'Enter' })
+    expect(w.emitted('update:modelValue')?.[0]).toEqual(['apple'])
+  })
 })

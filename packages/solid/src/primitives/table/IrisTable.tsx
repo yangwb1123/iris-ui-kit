@@ -289,8 +289,8 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
 
   const sortedRows = createMemo(() => {
     const compare = sortComparator()
-    if (!compare) return merged.data
-    return [...merged.data].sort(compare)
+    if (!compare) return merged.data ?? []
+    return [...(merged.data ?? [])].sort(compare)
   })
 
   const handleHeaderClick = (column: IrisTableColumn<Row>): void => {

@@ -14,7 +14,9 @@
   {...rest}
   data-iris-masonry
   data-columns={columns}
-  style="column-count: {columns}; column-gap: {gap}px;{style ? ' ' + style : ''}"
+  style="column-count: {columns}; column-gap: {gap}px; --iris-masonry-gap: {gap}px;{style
+    ? ' ' + style
+    : ''}"
 >
   <!-- Children are wrapped individually for break-inside avoid -->
   {#if children}

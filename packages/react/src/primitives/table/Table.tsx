@@ -246,22 +246,24 @@ export function IrisTable<Row extends Record<string, unknown>>({
   className,
 }: IrisTableProps<Row>): React.ReactElement {
   const { t } = useI18n()
+  // Defensive: null/undefined columns → empty array
+  const safeColumns = React.useMemo(() => columns ?? [], [columns])
 
-  // Multi-level (grouped) headers: a column with `children` forms a header group.
-  // The BODY always renders the leaf columns; only the header gains extra rows.
-  // When nothing is grouped, `leafColumns` is the original `columns` (same
+  // Multi-level (grouped) headers: a column with `children` forms a header group. The BODY always renders the leaf columns; only the header gains extra rows.
+
+  // When nothing is grouped, `leafColumns` is the original `safeColumns` (same
   // reference) so the flat path is byte-identical.
   const grouped = React.useMemo(
-    () => columns.some((c) => c.children && c.children.length > 0),
-    [columns],
+    () => safeColumns.some((c) => c.children && c.children.length > 0),
+    [safeColumns],
   )
   const leafColumns = React.useMemo(
-    () => (grouped ? flattenLeafColumns(columns) : columns),
-    [grouped, columns],
+    () => (grouped ? flattenLeafColumns(safeColumns) : safeColumns),
+    [grouped, safeColumns],
   )
   const headerMatrix = React.useMemo(
-    () => (grouped ? buildHeaderMatrix(columns) : null),
-    [grouped, columns],
+    () => (grouped ? buildHeaderMatrix(safeColumns) : null),
+    [grouped, safeColumns],
   )
 
   // Controlled / uncontrolled state.
@@ -406,8 +408,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }, [leafColumns, sort])
 
   const sortedData = React.useMemo(() => {
-    if (!sortComparator) return data
-    return [...data].sort(sortComparator)
+    if (!sortComparator) return data ?? []
+    return [...(data ?? [])].sort(sortComparator)
   }, [data, sortComparator])
 
   const setSort = (next: IrisTableSortState | null) => {
@@ -1109,7 +1111,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               }}
             />
           ) : null}
-          {columns.map((col, ci) => {
+          {safeColumns.map((col, ci) => {
             if (visibleColSet && !visibleColSet.has(ci)) return null
             const isSortKey = sort?.key === col.key
             const dir: IrisTableSortDirection | undefined = isSortKey ? sort?.direction : undefined

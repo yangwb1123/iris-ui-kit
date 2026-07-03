@@ -179,8 +179,8 @@
 
   const sortedRows = $derived((): Array<Record<string, unknown>> => {
     const compare = sortComparator()
-    if (!compare) return data
-    return [...data].sort(compare)
+    if (!compare) return data ?? []
+    return [...(data ?? [])].sort(compare)
   })
 
   function handleHeaderClick(column: IrisTableColumn): void {

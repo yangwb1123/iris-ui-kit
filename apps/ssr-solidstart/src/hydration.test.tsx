@@ -78,6 +78,10 @@ describe('ssr-solidstart — app iris composition: SSR render + real client hydr
     expect(serverHtml).toContain('Primary action')
     expect(serverHtml).toContain('live badge')
     expect(serverHtml).toContain('Ada Lovelace')
+    expect(serverHtml).toContain('Subscribe')
+    expect(serverHtml).toContain('Notifications')
+    expect(serverHtml).toContain('Accordion content A')
+    expect(serverHtml).toContain('First item')
   })
 
   it('hydrates the server markup with NO hydration-mismatch warning', () => {
@@ -132,13 +136,23 @@ describe('ssr-solidstart — app iris composition: SSR render + real client hydr
     ).toEqual([])
 
     // 3) Sanity: after hydration the DOM still holds the iris content.
+    // (Subscribe/Notifications are aria-label-only, so they're asserted
+    // against serverHtml above, not here — they never appear in textContent.)
     const text = container.textContent ?? ''
     expect(text).toContain('Primary action')
     expect(text).toContain('live badge')
     expect(text).toContain('Ada Lovelace')
+    expect(text).toContain('Accordion content A')
     expect(container.querySelector('button')).not.toBeNull()
     // IrisTable renders a role="table" element (not a native <table>).
     expect(container.querySelector('[data-iris-table]')).not.toBeNull()
+    // Form controls that survived SSR hydration.
+    expect(container.querySelector('[role="slider"]')).not.toBeNull()
+    expect(
+      container.querySelector('[role="radio"]') ?? container.querySelector('[data-iris-rating]'),
+    ).not.toBeNull()
+    expect(container.querySelector('[role="progressbar"]')).not.toBeNull()
+    expect(container.querySelector('[data-iris-accordion]')).not.toBeNull()
 
     dispose?.()
     container.remove()

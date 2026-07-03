@@ -17,7 +17,20 @@
  * and both targets share the same `data-hk` hydration-key scheme, which is what
  * lets hydrate() reconcile with the server markup with no mismatch.
  */
-import { ThemeProvider, IrisButton, IrisInput, IrisBadge, IrisTable } from '@iris-ui/solid'
+import {
+  ThemeProvider,
+  IrisButton,
+  IrisInput,
+  IrisBadge,
+  IrisTable,
+  IrisCheckbox,
+  IrisSwitch,
+  IrisSlider,
+  IrisRating,
+  IrisAccordion,
+  IrisAccordionItem,
+  IrisProgress,
+} from '@iris-ui/solid'
 import { createThemeStore } from '@iris-ui/theme'
 import { lightTheme, darkTheme } from '@iris-ui/tokens'
 import type { JSX } from 'solid-js'
@@ -66,6 +79,28 @@ export function IrisTree(): JSX.Element {
             <IrisBadge tone="primary" variant="solid">
               live badge
             </IrisBadge>
+            <IrisCheckbox defaultChecked ariaLabel="Subscribe" />
+            <IrisSwitch defaultChecked aria-label="Notifications" />
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', 'align-items': 'center' }}>
+            <IrisSlider value={30} style={{ 'max-width': '200px' }} />
+            <IrisRating value={3} />
+          </div>
+
+          <div>
+            <IrisProgress value={60} />
+          </div>
+
+          <div>
+            <IrisAccordion defaultValue="item-1">
+              <IrisAccordionItem value="item-1" title="First item">
+                Accordion content A
+              </IrisAccordionItem>
+              <IrisAccordionItem value="item-2" title="Second item">
+                Accordion content B
+              </IrisAccordionItem>
+            </IrisAccordion>
           </div>
 
           <div>

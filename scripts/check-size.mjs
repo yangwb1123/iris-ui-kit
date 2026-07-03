@@ -55,11 +55,16 @@ const BUDGETS = {
   // rolled setTimeout maps) + createLongPress (press-hold gesture) + machine
   // Scheduler.now() + createColumnState pinned state. ~0.9KB of genuinely new
   // framework-agnostic timing/column logic, not drift.
+  // Bumped tokens 2→3, icons 4→6 (2026-07-02): tokens gained new semantic
+  // slots (danger/muted/surface/primary variants, font family/mono/size scale,
+  // masonry/breadcrumb gap) and icons grew from a handful of seed glyphs to a
+  // 24-icon Feather-style set (navigation/actions/status/files coverage) —
+  // real surface growth the components now consume, not drift.
   core: 25,
-  tokens: 2,
+  tokens: 3,
   theme: 3.5,
   skins: 5,
-  icons: 4,
+  icons: 6,
   react: 80,
   vue: 88,
   // Bumped 85→87 (v3 R10): the adapters re-export core's new createVirtualizer

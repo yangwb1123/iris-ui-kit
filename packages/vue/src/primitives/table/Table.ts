@@ -236,8 +236,8 @@ export const IrisTable = defineComponent({
 
     const sortedRows = computed(() => {
       const compare = sortComparator.value
-      if (!compare) return props.data
-      return [...props.data].sort(compare)
+      if (!compare) return props.data ?? []
+      return [...(props.data ?? [])].sort(compare)
     })
 
     // -------- Selection (single-sourced via core createSelectionModel) --------

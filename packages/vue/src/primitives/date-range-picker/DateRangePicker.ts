@@ -4,7 +4,7 @@ import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'
 import { IrisCalendar } from '../calendar/Calendar'
-import { addMonths, startOfDay, startOfMonth } from '../calendar/dateUtils'
+import { addMonths, safeLocale, startOfDay, startOfMonth } from '../calendar/dateUtils'
 import { useI18n } from '../../i18n'
 
 export interface IrisDateRange {
@@ -14,7 +14,7 @@ export interface IrisDateRange {
 
 function formatDisplay(d: Date | null, locale?: string): string {
   if (!d) return ''
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(d)
+  return new Intl.DateTimeFormat(safeLocale(locale), { dateStyle: 'medium' }).format(d)
 }
 
 /**

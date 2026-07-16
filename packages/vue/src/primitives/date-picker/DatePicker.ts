@@ -4,6 +4,7 @@ import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'
 import { IrisCalendar } from '../calendar/Calendar'
+import { safeLocale } from '../calendar/dateUtils'
 import { useI18n } from '../../i18n'
 
 function formatISODate(date: Date): string {
@@ -15,7 +16,7 @@ function formatISODate(date: Date): string {
 
 function formatDisplay(date: Date | null, locale?: string): string {
   if (!date) return ''
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date)
+  return new Intl.DateTimeFormat(safeLocale(locale), { dateStyle: 'medium' }).format(date)
 }
 
 /**

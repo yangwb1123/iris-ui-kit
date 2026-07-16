@@ -11,6 +11,7 @@ import {
   isOutOfRange,
   isSameDay,
   isSameMonth,
+  safeLocale,
   startOfDay,
   startOfMonth,
 } from './dateUtils'
@@ -68,7 +69,7 @@ export const IrisCalendar = defineComponent({
     // 2026") so screen readers announce the whole date, not just the day number.
     const dayLabelFmt = computed(
       () =>
-        new Intl.DateTimeFormat(props.locale, {
+        new Intl.DateTimeFormat(safeLocale(props.locale), {
           weekday: 'long',
           year: 'numeric',
           month: 'long',

@@ -5,11 +5,11 @@ import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'
 import { IrisCalendar } from '../calendar/Calendar'
-import { formatLocalISO } from '../calendar/dateUtils'
+import { formatLocalISO, safeLocale } from '../calendar/dateUtils'
 
 function formatDisplay(date: Date | null, locale?: string): string {
   if (!date) return ''
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date)
+  return new Intl.DateTimeFormat(safeLocale(locale), { dateStyle: 'medium' }).format(date)
 }
 
 export interface IrisDatePickerProps {

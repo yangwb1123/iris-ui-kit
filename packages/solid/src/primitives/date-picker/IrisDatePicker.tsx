@@ -1,11 +1,11 @@
 import { createSignal, createMemo, mergeProps, splitProps, Show, type JSX } from 'solid-js'
 import { IrisCalendar } from '../calendar/IrisCalendar'
-import { formatLocalISO } from '../calendar/dateUtils'
+import { formatLocalISO, safeLocale } from '../calendar/dateUtils'
 import { useI18n } from '../../i18n'
 
 function formatDisplay(date: Date | null | undefined, locale?: string): string {
   if (!date) return ''
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date)
+  return new Intl.DateTimeFormat(safeLocale(locale), { dateStyle: 'medium' }).format(date)
 }
 
 export interface IrisDatePickerProps {

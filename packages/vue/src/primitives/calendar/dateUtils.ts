@@ -15,3 +15,18 @@ export {
   clampDate,
   isOutOfRange,
 } from '@iris-ui/core'
+
+/**
+ * A locale tag safe to hand to `Intl.DateTimeFormat`. A malformed BCP-47 tag
+ * (e.g. `'en_US'`, `'bad locale!'`) would otherwise throw a `RangeError` and
+ * crash the calendar. `undefined` passes through so the runtime default locale
+ * is used; a malformed tag also falls back to that default.
+ */
+export function safeLocale(locale: string | undefined): string | undefined {
+  if (locale === undefined) return undefined
+  try {
+    return Intl.getCanonicalLocales(locale)[0] ?? undefined
+  } catch {
+    return undefined
+  }
+}

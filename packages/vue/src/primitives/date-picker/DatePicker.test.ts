@@ -78,6 +78,15 @@ describe('@iris-ui/vue IrisDatePicker', () => {
     wrap.unmount()
   })
 
+  it('does not throw when given a malformed locale', () => {
+    expect(() =>
+      mount(IrisDatePicker, {
+        props: { modelValue: new Date(2024, 5, 15), locale: 'bad locale!' },
+        attachTo: document.body,
+      }).unmount(),
+    ).not.toThrow()
+  })
+
   it('id and ariaDescribedby propagate (form field integration)', () => {
     const wrap = mount(IrisDatePicker, {
       props: { modelValue: null, id: 'dp-1', ariaDescribedby: 'hint-1' },

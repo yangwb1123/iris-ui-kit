@@ -11,6 +11,7 @@
     isOutOfRange,
     isSameDay,
     isSameMonth,
+    safeLocale,
     startOfDay,
     startOfMonth,
   } from './dateUtils'
@@ -64,7 +65,7 @@
   // One memoized formatter for the full-date cell label (e.g. "Monday, June 9,
   // 2026") so screen readers announce the whole date, not just the day number.
   const dayLabelFmt = $derived(
-    new Intl.DateTimeFormat(locale, {
+    new Intl.DateTimeFormat(safeLocale(locale), {
       weekday: 'long',
       year: 'numeric',
       month: 'long',

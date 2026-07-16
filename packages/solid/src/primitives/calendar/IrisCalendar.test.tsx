@@ -72,6 +72,16 @@ describe('IrisCalendar', () => {
     expect(june10.getAttribute('aria-label')).toMatch(/June 10, 2024/)
   })
 
+  it('does not crash when given a malformed locale', () => {
+    // A structurally-invalid BCP-47 tag would make `new Intl.DateTimeFormat`
+    // throw a RangeError and crash the render; `safeLocale` guards it.
+    expect(() =>
+      render(() => <IrisCalendar defaultMonth={new Date(2024, 5, 15)} locale="en_US" />),
+    ).not.toThrow()
+    const { container } = render(() => <IrisCalendar locale="bad locale!" />)
+    expect(container.querySelector('[data-iris-calendar]')).not.toBeNull()
+  })
+
   it('nav button aria-labels default to English and follow an i18n provider override', () => {
     // No provider: English fallback from core defaultMessages.
     const { container } = render(() => <IrisCalendar />)

@@ -1,6 +1,6 @@
 <script lang="ts">
   import IrisCalendar from '../calendar/IrisCalendar.svelte'
-  import { startOfDay } from '../calendar/dateUtils'
+  import { startOfDay, safeLocale } from '../calendar/dateUtils'
   import { useI18n } from '../../i18n'
 
   const { t } = useI18n()
@@ -48,7 +48,7 @@
 
   function fmt(d: Date | null): string {
     if (!d) return ''
-    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(d)
+    return new Intl.DateTimeFormat(safeLocale(locale), { dateStyle: 'medium' }).format(d)
   }
 
   function openPicker(side: 'start' | 'end') {

@@ -12,6 +12,7 @@ import {
   isOutOfRange,
   isSameDay,
   isSameMonth,
+  safeLocale,
   startOfDay,
   startOfMonth,
 } from './dateUtils'
@@ -84,7 +85,7 @@ export function IrisCalendar({
   // 2026") so screen readers announce the whole date, not just the day number.
   const dayLabelFmt = React.useMemo(
     () =>
-      new Intl.DateTimeFormat(locale, {
+      new Intl.DateTimeFormat(safeLocale(locale), {
         weekday: 'long',
         year: 'numeric',
         month: 'long',

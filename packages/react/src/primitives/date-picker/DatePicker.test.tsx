@@ -85,6 +85,18 @@ describe('@iris-ui/react IrisDatePicker', () => {
     expect(document.querySelector('[data-iris-calendar-next]')).not.toBeNull()
   })
 
+  it('does not throw on a malformed locale', () => {
+    expect(() =>
+      render(
+        <IrisDatePicker
+          value={new Date(2026, 4, 29)}
+          locale="bad locale!"
+          onValueChange={() => {}}
+        />,
+      ),
+    ).not.toThrow()
+  })
+
   it('prev month changes visible month', () => {
     render(<IrisDatePicker defaultValue={new Date(2024, 5, 15)} locale="en-US" />)
     act(() => {

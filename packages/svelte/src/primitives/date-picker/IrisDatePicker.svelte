@@ -1,5 +1,6 @@
 <script lang="ts">
   import IrisCalendar from '../calendar/IrisCalendar.svelte'
+  import { safeLocale } from '../calendar/dateUtils'
   import { useI18n } from '../../i18n'
 
   const { t } = useI18n()
@@ -47,7 +48,7 @@
 
   function formatDisplay(date: Date | null): string {
     if (!date) return ''
-    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date)
+    return new Intl.DateTimeFormat(safeLocale(locale), { dateStyle: 'medium' }).format(date)
   }
 
   const display = $derived(formatDisplay(value))

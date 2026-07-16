@@ -109,6 +109,93 @@ describe('markdownToHtml — security', () => {
   })
 })
 
+describe('markdownToHtml — XSS sanitizer (allowlist)', () => {
+  it('strips UNQUOTED event handlers (the blacklist bypass)', () => {
+    const html = markdownToHtml('<img src=x onerror=alert(1)>')
+    expect(html).not.toMatch(/onerror/i)
+    expect(html).not.toContain('alert(1)')
+  })
+
+  it('strips quoted event handlers too', () => {
+    const html = markdownToHtml('<div onclick="alert(1)">hi</div>')
+    expect(html).not.toMatch(/onclick/i)
+    expect(html).not.toContain('alert(1)')
+  })
+
+  it('strips the formaction vector', () => {
+    const html = markdownToHtml('<button formaction="javascript:alert(1)">go</button>')
+    expect(html).not.toMatch(/formaction/i)
+    expect(html).not.toContain('javascript:alert(1)')
+    // <button> is not allowlisted, so its markup is dropped entirely.
+    expect(html).not.toContain('<button')
+  })
+
+  it('removes <object>, <embed>, <svg>, and <math> with their content', () => {
+    for (const vec of [
+      '<object data="javascript:alert(1)"></object>',
+      '<embed src="javascript:alert(1)">',
+      '<svg><script>alert(1)</script></svg>',
+      '<math><mtext><script>alert(1)</script></mtext></math>',
+    ]) {
+      const html = markdownToHtml(vec)
+      expect(html).not.toContain('alert(1)')
+      expect(html).not.toMatch(/<(object|embed|svg|math|script)/i)
+    }
+  })
+
+  it('strips <style> blocks and their content', () => {
+    const html = markdownToHtml('<style>body{background:url(javascript:alert(1))}</style>ok')
+    expect(html).not.toContain('<style')
+    expect(html).not.toContain('alert(1)')
+    expect(html).toContain('ok')
+  })
+
+  it('neutralizes entity-encoded javascript: URLs', () => {
+    const html = markdownToHtml('<a href="&#106;avascript:alert(1)">x</a>')
+    expect(html).not.toContain('avascript:alert')
+    expect(html).toContain('href="#"')
+  })
+
+  it('neutralizes javascript: URLs with embedded control characters', () => {
+    const html = markdownToHtml('<a href="java\tscript:alert(1)">x</a>')
+    expect(html).toContain('href="#"')
+  })
+
+  it('blocks data: URLs in links', () => {
+    const html = markdownToHtml('<a href="data:text/html,<script>alert(1)</script>">x</a>')
+    expect(html).toContain('href="#"')
+    expect(html).not.toContain('text/html')
+  })
+
+  it('drops disallowed tags but keeps their text content', () => {
+    const html = markdownToHtml('<marquee>hello</marquee>')
+    expect(html).not.toContain('<marquee')
+    expect(html).toContain('hello')
+  })
+
+  it('preserves the language class the generator emits on code fences', () => {
+    const html = markdownToHtml('```ts\nconst x = 1\n```')
+    expect(html).toContain('class="language-ts"')
+  })
+
+  it('drops a non-language class injected via raw HTML', () => {
+    const html = markdownToHtml('<code class="evil">x</code>')
+    expect(html).not.toContain('evil')
+    expect(html).toContain('<code>x</code>')
+  })
+
+  it('keeps safe anchors intact', () => {
+    const html = markdownToHtml('[Iris UI](https://iris-ui.dev)')
+    expect(html).toContain('<a href="https://iris-ui.dev">Iris UI</a>')
+  })
+
+  it('prevents attribute breakout via a quote in a raw href', () => {
+    const html = markdownToHtml('<a href="x" onmouseover="alert(1)">x</a>')
+    expect(html).not.toMatch(/onmouseover/i)
+    expect(html).not.toContain('alert(1)')
+  })
+})
+
 describe('markdownPlugin', () => {
   it('registers markdown tokens', () => {
     const { tokens } = runPlugins([markdownPlugin])

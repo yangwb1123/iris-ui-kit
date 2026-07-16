@@ -18,55 +18,197 @@ import { createPlugin } from '@iris-ui/core'
  *  - Links: [label](url)
  *  - Paragraphs: blank-line separated text
  *
- * Security: strips <script> tags and javascript: href/src values.
+ * Security: the generated HTML is passed through an allowlist sanitizer
+ * (see {@link sanitizeHtml}) before it is returned, so any raw HTML embedded
+ * in the source is reduced to a safe subset of tags and attributes.
  */
 
 // ---------------------------------------------------------------------------
-// Security helpers
+// Security: allowlist sanitizer
 // ---------------------------------------------------------------------------
+//
+// A blocklist (strip <script>, strip on*= handlers, …) is unsound: it is
+// trivially bypassed by unquoted handler values (`<img src=x onerror=alert(1)>`),
+// alternate vectors (formaction, xlink:href, srcset), embedded elements
+// (<object>/<embed>/<svg>/<math>), and entity-encoded protocols. We instead
+// allow only a known-safe set of tags and, per tag, a known-safe set of
+// attributes — everything else is dropped. This is the OWASP-recommended
+// approach and needs no third-party dependency.
 
-/** Strip <script>…</script> blocks (case-insensitive, greedy-safe). */
-function stripScripts(html: string): string {
-  return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+/** Tags kept during sanitization. Anything else has its markup removed. */
+const ALLOWED_TAGS = new Set([
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'p',
+  'br',
+  'hr',
+  'strong',
+  'b',
+  'em',
+  'i',
+  'u',
+  's',
+  'del',
+  'ins',
+  'mark',
+  'small',
+  'sub',
+  'sup',
+  'code',
+  'pre',
+  'kbd',
+  'samp',
+  'var',
+  'blockquote',
+  'q',
+  'cite',
+  'ul',
+  'ol',
+  'li',
+  'dl',
+  'dt',
+  'dd',
+  'a',
+  'abbr',
+  'span',
+  'table',
+  'thead',
+  'tbody',
+  'tfoot',
+  'tr',
+  'th',
+  'td',
+  'caption',
+  'img',
+])
+
+/** Per-tag attribute allowlist. Tags absent here keep no attributes. */
+const ALLOWED_ATTRS: Record<string, Set<string>> = {
+  a: new Set(['href', 'title']),
+  img: new Set(['src', 'alt', 'title', 'width', 'height']),
+  code: new Set(['class']),
+  pre: new Set(['class']),
+  th: new Set(['scope', 'colspan', 'rowspan']),
+  td: new Set(['colspan', 'rowspan']),
 }
 
 /**
- * Replace javascript: (and variants with whitespace/encoding) in href/src
- * attribute values with an empty string so they don't execute on click.
+ * Content-bearing elements whose *inner text* is dangerous or executable and
+ * so must be removed together with their contents (not merely un-tagged, which
+ * would leave e.g. script source as visible — and in some sinks executable —
+ * text). Void/unknown dangerous tags (base, link, meta, …) are handled by the
+ * generic tag filter, which drops any non-allowlisted tag.
  */
-function stripJavascriptHrefs(html: string): string {
-  // Matches href="javascript:..." or src='javascript:...' with optional
-  // surrounding whitespace. The \s* handles `java script:` obfuscation.
-  return html.replace(/(href|src)\s*=\s*(['"])\s*javascript\s*:/gi, '$1=$2#')
+const DANGEROUS_BLOCK_TAGS = [
+  'script',
+  'style',
+  'iframe',
+  'object',
+  'embed',
+  'svg',
+  'math',
+  'template',
+  'noscript',
+  'title',
+  'head',
+  'textarea',
+  'xmp',
+]
+
+/** Decode the HTML entities an attacker can use to hide a `javascript:` scheme. */
+function decodeEntities(input: string): string {
+  const named: Record<string, string> = {
+    tab: '\t',
+    newline: '\n',
+    colon: ':',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    amp: '&',
+    apos: "'",
+    sol: '/',
+    nbsp: ' ',
+  }
+  return input
+    .replace(/&#x([0-9a-f]+);?/gi, (_m, hex) => safeFromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);?/g, (_m, dec) => safeFromCodePoint(parseInt(dec, 10)))
+    .replace(/&(\w+);/g, (m, name) => named[String(name).toLowerCase()] ?? m)
 }
 
-/** Strip <iframe>…</iframe> blocks (prevents embedded third-party content). */
-function stripIframes(html: string): string {
-  return html.replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, '')
+function safeFromCodePoint(cp: number): string {
+  return Number.isFinite(cp) && cp >= 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : ''
 }
 
-/** Strip <style>…</style> blocks (prevents CSS injection / theme hijack). */
-function stripStyles(html: string): string {
-  return html.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+const SAFE_URL_SCHEMES = new Set(['http', 'https', 'mailto', 'tel', 'ftp'])
+
+/**
+ * Return `url` if its scheme is safe (or it is scheme-relative / a fragment),
+ * otherwise `'#'`. Entities and control/whitespace characters — which browsers
+ * ignore inside a URL — are decoded/stripped before the scheme is read, so
+ * `java&#115;cript:` and `java\tscript:` cannot smuggle a scheme past the check.
+ */
+function sanitizeUrl(url: string): string {
+  // Decode to a fixed point so double-encoded schemes (`&amp;#106;…`) are caught.
+  let decoded = url
+  for (let i = 0; i < 4; i++) {
+    const next = decodeEntities(decoded)
+    if (next === decoded) break
+    decoded = next
+  }
+  // eslint-disable-next-line no-control-regex
+  decoded = decoded.replace(/[\u0000-\u0020]+/g, '')
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(decoded)
+  if (scheme && !SAFE_URL_SCHEMES.has(scheme[1]!.toLowerCase())) return '#'
+  return url
+}
+
+/** Escape a value for safe emission inside a double-quoted attribute. */
+function escapeAttrValue(value: string): string {
+  return value.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+/** Reduce a start-tag's attributes to the per-tag allowlist, sanitizing URLs. */
+function filterAttributes(tag: string, attrText: string): string {
+  const allowed = ALLOWED_ATTRS[tag]
+  if (!allowed || !attrText.trim()) return ''
+  let out = ''
+  const attrRe = /([a-zA-Z_:][\w:.-]*)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g
+  let m: RegExpExecArray | null
+  while ((m = attrRe.exec(attrText)) !== null) {
+    const name = m[1]!.toLowerCase()
+    if (!allowed.has(name)) continue
+    let value = m[3] ?? m[4] ?? m[5] ?? ''
+    if (name === 'href' || name === 'src') value = sanitizeUrl(value)
+    // Only `language-*` classes (emitted for code fences) are meaningful.
+    if (name === 'class' && !/^(language-[\w-]+\s*)+$/.test(value.trim())) continue
+    out += ` ${name}="${escapeAttrValue(value)}"`
+  }
+  return out
 }
 
 /**
- * Strip HTML event-handler attributes (onerror, onload, onclick, etc.) which
- * can execute JavaScript without a <script> tag. Matches `on<anyword>="..."`
- * or `on<anyword>='...'` — case-insensitive.
+ * Allowlist-sanitize an HTML fragment: remove dangerous elements with their
+ * content, then keep only allowlisted tags (each stripped to its allowlisted,
+ * URL-sanitized attributes) and drop the markup of everything else.
  */
-function stripEventHandlers(html: string): string {
-  return html.replace(/\s+on\w+\s*=\s*(['"])[\s\S]*?\1/gi, '')
-}
-
-/** Block `data:` URLs in href attributes (common XSS vector). */
-function stripDataUrls(html: string): string {
-  return html.replace(/href\s*=\s*(['"])data:\s*[^'"]*\1/gi, 'href=$1#')
-}
-
-function sanitize(html: string): string {
-  return stripDataUrls(
-    stripEventHandlers(stripStyles(stripIframes(stripJavascriptHrefs(stripScripts(html))))),
+function sanitizeHtml(html: string): string {
+  let out = html
+  for (const tag of DANGEROUS_BLOCK_TAGS) {
+    out = out.replace(new RegExp(`<${tag}\\b[\\s\\S]*?</${tag}>`, 'gi'), '')
+    out = out.replace(new RegExp(`<${tag}\\b[^>]*?>`, 'gi'), '')
+  }
+  return out.replace(
+    /<(\/?)([a-zA-Z][\w:-]*)((?:"[^"]*"|'[^']*'|[^"'>])*?)(\/?)>/g,
+    (_full, closing: string, name: string, attrs: string, selfClose: string) => {
+      const tag = name.toLowerCase()
+      if (!ALLOWED_TAGS.has(tag)) return ''
+      if (closing) return `</${tag}>`
+      return `<${tag}${filterAttributes(tag, attrs)}${selfClose ? ' /' : ''}>`
+    },
   )
 }
 
@@ -122,7 +264,7 @@ function applyInline(text: string): string {
  * 2. The remainder is split into "block groups" separated by blank lines.
  * 3. Each group is classified as a heading, blockquote, list, or paragraph.
  * 4. Inline transforms are applied to non-code content.
- * 5. The result is sanitized (script tags and javascript: hrefs removed).
+ * 5. The result is passed through the allowlist sanitizer (see sanitizeHtml).
  */
 export function markdownToHtml(md: string): string {
   // Normalize line endings
@@ -201,7 +343,7 @@ export function markdownToHtml(md: string): string {
   }
 
   const html = parts.join('\n')
-  return sanitize(html)
+  return sanitizeHtml(html)
 }
 
 // ---------------------------------------------------------------------------

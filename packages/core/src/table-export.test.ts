@@ -96,6 +96,40 @@ describe('toCsv', () => {
   it('header only when there are no rows', () => {
     expect(toCsv([], columns)).toBe('Name,Age')
   })
+
+  describe('formula-injection neutralization (OWASP)', () => {
+    const cols: TableExportColumn[] = [{ key: 'v', title: 'V' }]
+
+    it('prefixes cells that begin with = + - @ with a single quote', () => {
+      expect(toCsv([{ v: '=HYPERLINK("http://evil","x")' }], cols)).toBe(
+        `V\n"'=HYPERLINK(""http://evil"",""x"")"`,
+      )
+      expect(toCsv([{ v: '+cmd' }], cols)).toBe("V\n'+cmd")
+      expect(toCsv([{ v: '-2+3' }], cols)).toBe("V\n'-2+3")
+      expect(toCsv([{ v: '@SUM(A1)' }], cols)).toBe("V\n'@SUM(A1)")
+    })
+
+    it('neutralizes tab-led cells that would shift the lead char', () => {
+      expect(toCsv([{ v: '\t=1+1' }], cols)).toBe("V\n'\t=1+1")
+    })
+
+    it('does NOT mangle real numbers (including negatives)', () => {
+      expect(toCsv([{ v: -5 }], cols)).toBe('V\n-5')
+      expect(toCsv([{ v: 42 }], cols)).toBe('V\n42')
+    })
+
+    it('leaves ordinary text untouched', () => {
+      expect(toCsv([{ v: 'Ann' }], cols)).toBe('V\nAnn')
+    })
+
+    it('neutralizes formula leads in SpreadsheetML String cells only', () => {
+      const xml = toSpreadsheetXml([{ v: '=1+1' }], cols)
+      // The prefix quote is XML-escaped; Excel decodes &apos; back to ' → literal text.
+      expect(xml).toContain(`<Data ss:Type="String">&apos;=1+1</Data>`)
+      const num = toSpreadsheetXml([{ v: -5 }], cols)
+      expect(num).toContain('<Data ss:Type="Number">-5</Data>')
+    })
+  })
 })
 
 describe('toJson', () => {

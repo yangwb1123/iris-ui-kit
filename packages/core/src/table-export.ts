@@ -15,10 +15,25 @@ export interface TableExportColumn {
   dataIndex?: string
 }
 
+/**
+ * OWASP CSV-injection mitigation. A cell whose text a spreadsheet could parse
+ * as a formula — one leading with `=`, `+`, `-`, `@`, or a tab/CR that shifts
+ * the first significant character — is prefixed with a single quote so the
+ * spreadsheet imports it as literal text instead of executing it (DDE,
+ * `HYPERLINK`, `=cmd|…`). Applied to string-ish values only; real numbers
+ * (typed `Number` on export) cannot carry a formula payload and must not be
+ * mangled (a numeric `-5` stays `-5`, not `'-5`).
+ */
+const FORMULA_LEAD = /^[=+\-@\t\r]/
+function neutralizeFormula(text: string): string {
+  return FORMULA_LEAD.test(text) ? `'${text}` : text
+}
+
 /** Quote a CSV field if it contains a comma, quote, CR, or LF (RFC 4180). */
 function csvField(value: unknown): string {
   if (value == null) return ''
-  const text = String(value)
+  const isNumber = typeof value === 'number' && Number.isFinite(value)
+  const text = isNumber ? String(value) : neutralizeFormula(String(value))
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
 
@@ -111,7 +126,7 @@ function cell(value: unknown): string {
   if (value == null) return '<Cell><Data ss:Type="String"></Data></Cell>'
   const isNumber = typeof value === 'number' && Number.isFinite(value)
   const type = isNumber ? 'Number' : 'String'
-  const text = isNumber ? String(value) : escapeXml(String(value))
+  const text = isNumber ? String(value) : escapeXml(neutralizeFormula(String(value)))
   return `<Cell><Data ss:Type="${type}">${text}</Data></Cell>`
 }
 

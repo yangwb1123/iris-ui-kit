@@ -69,14 +69,32 @@ export function buildMonthMatrix(date: Date, weekStartsOn: number): Date[][] {
   return rows
 }
 
+/**
+ * A locale tag safe to hand to `Intl.DateTimeFormat`. A malformed BCP-47 tag
+ * (e.g. `'en_US'`, `'bad locale!'`) would otherwise throw a `RangeError` and
+ * crash the calendar. `undefined` is passed through unchanged so the runtime
+ * default locale is used; a malformed tag also falls back to that default
+ * rather than to a hard-coded language.
+ */
+function safeLocale(locale: string | undefined): string | undefined {
+  if (locale === undefined) return undefined
+  try {
+    return Intl.getCanonicalLocales(locale)[0] ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
 export function formatMonthYear(date: Date, locale?: string): string {
-  return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(date)
+  return new Intl.DateTimeFormat(safeLocale(locale), { month: 'long', year: 'numeric' }).format(
+    date,
+  )
 }
 
 export function getWeekdayNames(weekStartsOn: number, locale?: string): string[] {
   // Reference week from a known Sunday (1970-01-04 was a Sunday).
   const sunday = new Date(1970, 0, 4)
-  const fmt = new Intl.DateTimeFormat(locale, { weekday: 'short' })
+  const fmt = new Intl.DateTimeFormat(safeLocale(locale), { weekday: 'short' })
   const names: string[] = []
   for (let i = 0; i < 7; i += 1) {
     const day = addDays(sunday, (weekStartsOn + i) % 7)

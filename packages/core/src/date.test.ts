@@ -12,6 +12,7 @@ import {
   clampDate,
   isOutOfRange,
   getWeekdayNames,
+  formatMonthYear,
 } from './date'
 
 describe('date helpers', () => {
@@ -68,5 +69,26 @@ describe('date helpers', () => {
     const mon = getWeekdayNames(1, 'en-US')
     expect(sun).toHaveLength(7)
     expect(mon[0]).toBe(sun[1]) // Monday-first shifts the start
+  })
+
+  describe('malformed-locale robustness', () => {
+    const date = new Date(2026, 4, 29)
+
+    it('formatMonthYear falls back instead of throwing on a malformed locale', () => {
+      expect(() => formatMonthYear(date, 'bad locale!')).not.toThrow()
+      expect(() => formatMonthYear(date, 'en_US')).not.toThrow()
+      expect(formatMonthYear(date, 'bad locale!')).toBeTruthy()
+    })
+
+    it('getWeekdayNames falls back instead of throwing on a malformed locale', () => {
+      expect(() => getWeekdayNames(0, '@@@')).not.toThrow()
+      expect(getWeekdayNames(0, 'not a locale')).toHaveLength(7)
+    })
+
+    it('still honors a valid locale and the no-locale (host default) path', () => {
+      expect(formatMonthYear(date, 'en-US')).toContain('May')
+      expect(() => formatMonthYear(date)).not.toThrow()
+      expect(getWeekdayNames(0, 'zz')).toHaveLength(7) // unknown but well-formed
+    })
   })
 })

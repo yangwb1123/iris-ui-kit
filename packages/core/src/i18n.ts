@@ -159,6 +159,23 @@ export const defaultMessages: I18nMessages = {
 
 const DEFAULT_LOCALE = 'en-US'
 
+/**
+ * Return a BCP-47 tag the `Intl.*` constructors will accept, falling back to
+ * {@link DEFAULT_LOCALE} when `locale` is structurally invalid. A malformed tag
+ * (e.g. `'bad locale!'`, `'en_US'`) makes `new Intl.DateTimeFormat`,
+ * `Intl.NumberFormat`, `Intl.RelativeTimeFormat`, and `Intl.PluralRules` throw
+ * a `RangeError` — which would otherwise crash a render mid-format. Unknown but
+ * well-formed tags (e.g. `'zz'`) pass through and Intl resolves them itself.
+ * The stored locale is left untouched; only Intl formatting degrades.
+ */
+function safeLocale(locale: string): string {
+  try {
+    return Intl.getCanonicalLocales(locale)[0] ?? DEFAULT_LOCALE
+  } catch {
+    return DEFAULT_LOCALE
+  }
+}
+
 /** Index of the `}` that closes the `{` at `open` (balanced), or -1. */
 function matchBrace(s: string, open: number): number {
   let depth = 0
@@ -224,7 +241,7 @@ function interpolate(
           const cases = parsePluralCases(body!)
           const text =
             cases[`=${value}`] ??
-            cases[new Intl.PluralRules(locale).select(value)] ??
+            cases[new Intl.PluralRules(safeLocale(locale)).select(value)] ??
             cases.other ??
             ''
           out += text.replace(/#/g, String(value))
@@ -284,7 +301,7 @@ export function createI18n(config: I18nConfig = {}): I18n {
     setMessages: (messages) =>
       store.setState((s) => ({ ...s, messages: { ...s.messages, ...messages } })),
     formatDate: (value, options) => {
-      const locale = store.getState().locale
+      const locale = safeLocale(store.getState().locale)
       return cached(
         dtfCache,
         locale,
@@ -293,13 +310,13 @@ export function createI18n(config: I18nConfig = {}): I18n {
       ).format(value)
     },
     formatNumber: (value, options) => {
-      const locale = store.getState().locale
+      const locale = safeLocale(store.getState().locale)
       return cached(nfCache, locale, options, () => new Intl.NumberFormat(locale, options)).format(
         value,
       )
     },
     formatRelativeTime: (value, unit, options) => {
-      const locale = store.getState().locale
+      const locale = safeLocale(store.getState().locale)
       return cached(
         rtfCache,
         locale,

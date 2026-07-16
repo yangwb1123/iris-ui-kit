@@ -127,4 +127,42 @@ describe('createI18n', () => {
       spy.mockRestore()
     })
   })
+
+  describe('invalid-locale robustness', () => {
+    it('formatDate falls back instead of throwing on a malformed locale', () => {
+      const i18n = createI18n({ locale: 'bad locale!' })
+      expect(() => i18n.formatDate(new Date(Date.UTC(2026, 4, 29)))).not.toThrow()
+    })
+
+    it('formatNumber falls back on a malformed locale', () => {
+      const i18n = createI18n({ locale: 'en_US_bad' })
+      expect(() => i18n.formatNumber(1234.5)).not.toThrow()
+    })
+
+    it('formatRelativeTime falls back on a malformed locale', () => {
+      const i18n = createI18n({ locale: '@@@' })
+      expect(() => i18n.formatRelativeTime(-1, 'day')).not.toThrow()
+    })
+
+    it('plural interpolation falls back on a malformed locale', () => {
+      const i18n = createI18n({
+        locale: 'not a locale',
+        messages: { items: '{count, plural, one {# item} other {# items}}' },
+      })
+      expect(() => i18n.t('items', { count: 2 })).not.toThrow()
+      expect(i18n.t('items', { count: 2 })).toBe('2 items')
+    })
+
+    it('setLocale to a malformed tag keeps the stored value but formats safely', () => {
+      const i18n = createI18n({ locale: 'en-US' })
+      i18n.setLocale('bad locale!')
+      expect(i18n.getState().locale).toBe('bad locale!')
+      expect(() => i18n.formatNumber(1)).not.toThrow()
+    })
+
+    it('unknown but well-formed tags still pass through', () => {
+      const i18n = createI18n({ locale: 'zz' })
+      expect(() => i18n.formatNumber(1)).not.toThrow()
+    })
+  })
 })

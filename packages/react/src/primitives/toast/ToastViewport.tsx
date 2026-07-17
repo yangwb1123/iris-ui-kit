@@ -21,7 +21,7 @@ export type IrisToastPosition =
 const VARIANT_BORDER: Record<IrisToastVariant, string> = {
   default: 'var(--iris-border)',
   success: 'var(--iris-success)',
-  error: 'var(--iris-danger)',
+  danger: 'var(--iris-danger)',
   warning: 'var(--iris-warning)',
   info: 'var(--iris-primary)',
 }
@@ -29,7 +29,7 @@ const VARIANT_BORDER: Record<IrisToastVariant, string> = {
 const VARIANT_ACCENT: Record<IrisToastVariant, string> = {
   default: 'var(--iris-muted)',
   success: 'var(--iris-success)',
-  error: 'var(--iris-danger)',
+  danger: 'var(--iris-danger)',
   warning: 'var(--iris-warning)',
   info: 'var(--iris-primary)',
 }
@@ -187,8 +187,8 @@ export function IrisToastViewport({
         return (
           <div
             key={toast.id}
-            role={toast.variant === 'error' ? 'alert' : 'status'}
-            aria-live={toast.variant === 'error' ? 'assertive' : 'polite'}
+            role={toast.variant === 'danger' ? 'alert' : 'status'}
+            aria-live={toast.variant === 'danger' ? 'assertive' : 'polite'}
             data-iris-toast=""
             data-variant={toast.variant}
             onPointerDown={(e) => {

@@ -90,15 +90,15 @@ describe('@iris-ui/react IrisToast', () => {
     expect(t.textContent).toContain('Your changes are live')
   })
 
-  it('variant=error sets role="alert" with aria-live="assertive"', () => {
+  it('variant=danger sets role="alert" with aria-live="assertive"', () => {
     render(<IrisToastViewport />)
     act(() => {
-      pushToast({ title: 'Boom', variant: 'error' })
+      pushToast({ title: 'Boom', variant: 'danger' })
     })
     const t = toasts()[0]!
     expect(t.getAttribute('role')).toBe('alert')
     expect(t.getAttribute('aria-live')).toBe('assertive')
-    expect(t.getAttribute('data-variant')).toBe('error')
+    expect(t.getAttribute('data-variant')).toBe('danger')
   })
 
   it('non-error variants use role="status" + polite', () => {

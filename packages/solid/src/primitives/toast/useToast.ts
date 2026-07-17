@@ -29,7 +29,7 @@ export function useToast(): UseToastReturn {
   return {
     push: pushToast,
     success: (input) => pushToast({ ...input, variant: 'success' }),
-    error: (input) => pushToast({ ...input, variant: 'error' }),
+    error: (input) => pushToast({ ...input, variant: 'danger' }),
     warning: (input) => pushToast({ ...input, variant: 'warning' }),
     info: (input) => pushToast({ ...input, variant: 'info' }),
     dismiss: dismissToast,

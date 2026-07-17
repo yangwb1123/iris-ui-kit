@@ -10,7 +10,7 @@ import { generateId } from './utils'
  * pure + testable — the shell owns the setTimeout). Off the core path (own subpath).
  */
 
-export type NotificationTone = 'info' | 'success' | 'warning' | 'error'
+export type NotificationTone = 'info' | 'success' | 'warning' | 'danger'
 
 export interface DesktopNotification {
   id: string

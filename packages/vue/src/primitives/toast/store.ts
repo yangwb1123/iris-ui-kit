@@ -1,6 +1,6 @@
 import { createStore, generateId } from '@iris-ui/core'
 
-export type IrisToastVariant = 'default' | 'success' | 'error' | 'warning' | 'info'
+export type IrisToastVariant = 'default' | 'success' | 'danger' | 'warning' | 'info'
 
 export interface IrisToastInput {
   /** Stable id; if reused, the existing toast is updated in place. */

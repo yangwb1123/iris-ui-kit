@@ -120,9 +120,9 @@ describe('IrisToastViewport', () => {
     expect(wrapper.find('[data-iris-toast]').exists()).toBe(true)
   })
 
-  it('error variant uses role=alert + aria-live=assertive', async () => {
+  it('danger variant uses role=alert + aria-live=assertive', async () => {
     const wrapper = mount(Harness(), { attachTo: host })
-    pushToast({ title: 'Boom', variant: 'error', duration: 0 })
+    pushToast({ title: 'Boom', variant: 'danger', duration: 0 })
     await nextTick()
     const t = wrapper.find('[data-iris-toast]')
     expect(t.attributes('role')).toBe('alert')

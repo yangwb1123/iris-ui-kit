@@ -57,6 +57,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
+    "test:coverage:v8": "vitest run --coverage",
     "bench": "vitest bench --run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",

@@ -64,6 +64,13 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: E2E smoke (cms-react, advisory — first run, not yet proven stable)
+        run: |
+          cd apps/cms-react
+          npx playwright install --with-deps chromium
+          npx playwright test
+        continue-on-error: true
+
       - name: Bench (advisory — not gate-failing)
         run: pnpm bench
         continue-on-error: true

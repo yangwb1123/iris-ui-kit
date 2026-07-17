@@ -46,17 +46,6 @@ export function createValidationEngine<V extends FormValues>(
 
   const isCurrent = (name: string, token: number): boolean => tokens.get(name) === token
 
-  const toErrorMessage = (err: unknown): string =>
-    err instanceof Error ? err.message : String(err)
-
-  // NOTE: intentionally NOT try/caught here. `validateForm` (below) relies on
-  // a throwing/rejecting validator propagating as a REJECTED promise — it
-  // uses Promise.allSettled and silently drops a rejected entry (a
-  // deliberate, tested "don't let one broken validator crash whole-form
-  // validation" contract). Catching here would turn that rejection into a
-  // resolved error string and surface it instead of swallowing it. The
-  // single-field `validateField` below is where the stuck-flag fix belongs —
-  // it catches its OWN await of this function.
   const runFieldValidator = async (name: string, values: V): Promise<string | undefined> => {
     const validator = validators[name as Key<V>] as Validator<V> | undefined
     if (!validator) return undefined
@@ -66,16 +55,7 @@ export function createValidationEngine<V extends FormValues>(
   const validateField: ValidationEngine<V>['validateField'] = async (name, values) => {
     const token = nextToken(name)
     callbacks.onValidating(name, true)
-    let error: string | undefined
-    try {
-      error = await runFieldValidator(name, values)
-    } catch (err) {
-      // A throwing/rejecting validator must not leave onValidating(name, true)
-      // stuck forever for the SINGLE-FIELD path — surface it as the field's
-      // error instead (validateForm's whole-form contract, above, is
-      // deliberately different and untouched).
-      error = toErrorMessage(err)
-    }
+    const error = await runFieldValidator(name, values)
     if (!isCurrent(name, token)) return undefined
     callbacks.onValidating(name, false)
     callbacks.onError(name, error)

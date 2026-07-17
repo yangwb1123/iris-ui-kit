@@ -205,14 +205,9 @@ export interface FormStore<V extends FormValues> {
   canRedo(): boolean
   /**
    * Serialize form values + touched for draft persistence (localStorage etc).
-   * Set `includeTouched: false` to skip touched in the snapshot. Pass
-   * `exclude` to drop sensitive fields (passwords, tokens) from the
-   * snapshot — persisting a draft to storage should not leak them.
+   * Set `includeTouched: false` to skip touched in the snapshot.
    */
-  serialize(opts?: {
-    includeTouched?: boolean
-    exclude?: (keyof V)[]
-  }): { values: Partial<V>; touched?: FieldFlags<V> }
+  serialize(opts?: { includeTouched?: boolean }): { values: Partial<V>; touched?: FieldFlags<V> }
   /**
    * Hydrate form state from a serialized draft. Marks all hydrated fields as
    * dirty. Call after construction in the adapter's mount effect.
@@ -250,15 +245,8 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
 
   const saveSnapshot = (): void => {
     if (maxHistory <= 0) return
-    let snapshot: string
-    try {
-      snapshot = JSON.stringify(store.getState().values)
-    } catch {
-      // Circular reference or a BigInt/function-bearing value — undo/redo for
-      // this edit is skipped rather than crashing the form.
-      return
-    }
     history.splice(historyIdx + 1)
+    const snapshot = JSON.stringify(store.getState().values)
     if (history.length > 0 && history[history.length - 1] === snapshot) return
     history.push(snapshot)
     if (history.length > maxHistory) history.shift()
@@ -296,24 +284,10 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
   // Per-field validators are keyed by the (top-level) field name. A nested path
   // has no per-field validator — its errors come from the schema-level
   // `validate` — so this returns undefined for it.
-  const toErrorMessage = (err: unknown): string => (err instanceof Error ? err.message : String(err))
-
   const runFieldValidator = async (key: string, values: V): Promise<string | undefined> => {
     const validator = validators[key as Key<V>]
     if (!validator) return undefined
-    try {
-      // No `await` here: `validator(...)` may return a plain value (a sync
-      // validator) or a promise. Returning it directly — rather than awaiting
-      // it first — preserves the original single-microtask resolution timing
-      // for the common sync case; this try/catch only needs to guard against
-      // a SYNCHRONOUS throw. An async (rejecting-promise) validator still
-      // propagates as a rejection here — handled at the call sites below,
-      // which is where the timing-insensitive cleanup (setValidating/
-      // isValidating) actually needs the guarantee.
-      return validator(getByPath(values, key) as V[Key<V>], values)
-    } catch (err) {
-      return toErrorMessage(err)
-    }
+    return validator(getByPath(values, key) as V[Key<V>], values)
   }
 
   const setValidating = (name: string, on: boolean): void => {
@@ -324,14 +298,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     const name = pathKey(ref)
     const token = nextToken(name)
     setValidating(name, true)
-    let error: string | undefined
-    try {
-      error = await runFieldValidator(name, store.getState().values)
-    } catch (err) {
-      // An async validator that rejects (rather than resolving to an error
-      // string) must not leave `validating`/`isValidating` stuck true.
-      error = toErrorMessage(err)
-    }
+    const error = await runFieldValidator(name, store.getState().values)
     // A newer validation superseded this one — leave it to clear the flag.
     if (!isCurrent(name, token)) return store.getState().errors[name as Key<V>]
     setValidating(name, false)
@@ -381,37 +348,26 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
 
   const validateForm: FormStore<V>['validateForm'] = async () => {
     store.setState((s) => ({ ...s, isValidating: true }))
-    try {
-      const values = store.getState().values
-      const names = Object.keys(validators) as Key<V>[]
-      // Bump every field's token first so any in-flight single-field validation
-      // is invalidated — this form pass becomes the authoritative answer.
-      const tokenById = new Map<Key<V>, number>()
-      for (const name of names) tokenById.set(name, nextToken(name))
+    const values = store.getState().values
+    const names = Object.keys(validators) as Key<V>[]
+    // Bump every field's token first so any in-flight single-field validation
+    // is invalidated — this form pass becomes the authoritative answer.
+    const tokenById = new Map<Key<V>, number>()
+    for (const name of names) tokenById.set(name, nextToken(name))
 
-      // allSettled (not all): runFieldValidator already catches per-field
-      // exceptions, but this stays defense-in-depth so ONE unexpected rejection
-      // can never leave the others' results (or isValidating) unresolved.
-      const settled = await Promise.allSettled(
-        names.map(async (name) => [name, await runFieldValidator(name, values)] as const),
-      )
-      let nextErrors: FieldErrors<V> = {}
-      for (const result of settled) {
-        if (result.status === 'rejected') continue
-        const [name, error] = result.value
-        if (error && isCurrent(name, tokenById.get(name) as number)) nextErrors[name] = error
-      }
-      if (config.validate) {
-        const formErrors = await config.validate(values)
-        nextErrors = { ...nextErrors, ...formErrors }
-      }
-      store.setState((s) => ({ ...s, errors: nextErrors }))
-      return nextErrors
-    } finally {
-      // Always clears, even if config.validate (or anything above) throws —
-      // otherwise a throwing whole-form validator leaves isValidating stuck.
-      store.setState((s) => ({ ...s, isValidating: false }))
+    const entries = await Promise.all(
+      names.map(async (name) => [name, await runFieldValidator(name, values)] as const),
+    )
+    let nextErrors: FieldErrors<V> = {}
+    for (const [name, error] of entries) {
+      if (error && isCurrent(name, tokenById.get(name) as number)) nextErrors[name] = error
     }
+    if (config.validate) {
+      const formErrors = await config.validate(values)
+      nextErrors = { ...nextErrors, ...formErrors }
+    }
+    store.setState((s) => ({ ...s, errors: nextErrors, isValidating: false }))
+    return nextErrors
   }
 
   // ── Multi-step (wizard) ──────────────────────────────────────────────────
@@ -662,10 +618,6 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
   }
 
   const handleSubmit: FormStore<V>['handleSubmit'] = async () => {
-    // Double-submit guard: a second call (double-click, re-fired keyboard
-    // Enter) while a submit is already in flight is a no-op rather than
-    // racing a second validate+submit pass against the first.
-    if (store.getState().isSubmitting) return
     const allTouched: FieldFlags<V> = {}
     for (const name of fieldNames()) allTouched[name] = true
     store.setState((s) => ({
@@ -674,14 +626,14 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
       isSubmitting: true,
       touched: { ...s.touched, ...allTouched },
     }))
+    const errors = await validateForm()
+    if (Object.keys(errors).length > 0) {
+      store.setState((s) => ({ ...s, isSubmitting: false }))
+      return
+    }
     try {
-      const errors = await validateForm()
-      if (Object.keys(errors).length > 0) return
       await config.onSubmit?.(transform(store.getState().values))
     } finally {
-      // Always clears, even if validateForm() or onSubmit throws — otherwise
-      // a throwing whole-form validator or submit handler leaves isSubmitting
-      // (and the double-submit guard above) stuck forever.
       store.setState((s) => ({ ...s, isSubmitting: false }))
     }
   }
@@ -758,18 +710,12 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
      * Serialize the form's values + touched set to a JSON-compatible object for
      * draft persistence (e.g. localStorage). Excludes errors (they are
      * re-derived on validation) and submission state. Omit `touched` to skip
-     * the touched set (only values matter for a restored draft). Pass
-     * `exclude` to drop sensitive fields (passwords, tokens) from the
-     * snapshot before it is persisted.
+     * the touched set (only values matter for a restored draft).
      */
-    serialize: (opts?: { includeTouched?: boolean; exclude?: (keyof V)[] }) => {
-      const values: Partial<V> = { ...store.getState().values }
-      for (const key of opts?.exclude ?? []) delete values[key]
-      return {
-        values,
-        ...(opts?.includeTouched !== false ? { touched: { ...store.getState().touched } } : {}),
-      }
-    },
+    serialize: (opts?: { includeTouched?: boolean }) => ({
+      values: { ...store.getState().values },
+      ...(opts?.includeTouched !== false ? { touched: { ...store.getState().touched } } : {}),
+    }),
     /**
      * Hydrate form state from a serialized draft (the output of `serialize()`).
      * Sets values, touched, and marks all hydrated fields as dirty (since they

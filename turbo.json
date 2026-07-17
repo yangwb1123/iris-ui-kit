@@ -60,6 +60,11 @@
       "cache": false,
       "outputs": []
     },
+    "test:coverage:v8": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "outputs": []
+    },
     "check:desktop-parity": {
       "dependsOn": [],
       "cache": false,

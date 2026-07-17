@@ -315,3 +315,13 @@ export {
   type KeyboardNavConfig,
   type KeyboardNavAction,
 } from './keyboard-nav'
+
+// --- Data & resilience foundation primitives (2026-07-16) ---
+export * from './disposable'
+export * from './query-cache'
+export * from './realtime'
+export * from './outbox'
+export * from './event-bus'
+export * from './circuit-breaker'
+export * from './rate-limiter'
+export * from './resilient-fetcher'

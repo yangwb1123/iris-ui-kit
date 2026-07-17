@@ -3,6 +3,8 @@ dist/
 .turbo/
 .svelte-kit/
 coverage/
+playwright-report/
+test-results/
 *.log
 .DS_Store
 .env

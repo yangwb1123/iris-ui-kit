@@ -10,42 +10,59 @@ const payload: SaveFilePayload = {
 }
 
 describe('file-save handler registry', () => {
-  it('saveFile returns false when no handler is registered', () => {
+  it('saveFile returns false when no handler is registered', async () => {
     expect(getFileSaveHandler()).toBeNull()
-    expect(saveFile(payload)).toBe(false)
+    await expect(saveFile(payload)).resolves.toBe(false)
   })
 
-  it('routes the payload to a registered handler and reports handled', () => {
+  it('routes the payload to a registered handler and reports handled', async () => {
     const h = vi.fn()
     setFileSaveHandler(h)
     expect(getFileSaveHandler()).toBe(h)
-    expect(saveFile(payload)).toBe(true)
+    await expect(saveFile(payload)).resolves.toBe(true)
     expect(h).toHaveBeenCalledWith(payload)
   })
 
-  it('treats a handler returning false as a decline (falls through)', () => {
+  it('treats a handler returning false as a decline (falls through)', async () => {
     setFileSaveHandler(() => false)
-    expect(saveFile(payload)).toBe(false)
+    await expect(saveFile(payload)).resolves.toBe(false)
   })
 
-  it('treats a handler returning a truthy/undefined value as handled', () => {
+  it('treats a handler returning a truthy/undefined value as handled', async () => {
     setFileSaveHandler(() => undefined)
-    expect(saveFile(payload)).toBe(true)
+    await expect(saveFile(payload)).resolves.toBe(true)
     setFileSaveHandler(() => true)
-    expect(saveFile(payload)).toBe(true)
+    await expect(saveFile(payload)).resolves.toBe(true)
   })
 
-  it('clears the handler with null', () => {
+  it('clears the handler with null', async () => {
     setFileSaveHandler(() => undefined)
     setFileSaveHandler(null)
     expect(getFileSaveHandler()).toBeNull()
-    expect(saveFile(payload)).toBe(false)
+    await expect(saveFile(payload)).resolves.toBe(false)
   })
 
-  it('lets a throwing handler propagate (host owns its errors)', () => {
+  it('supports an async handler that returns false (decline)', async () => {
+    setFileSaveHandler(async () => false)
+    await expect(saveFile(payload)).resolves.toBe(false)
+  })
+
+  it('supports an async handler that returns true (handled)', async () => {
+    setFileSaveHandler(async () => true)
+    await expect(saveFile(payload)).resolves.toBe(true)
+  })
+
+  it('lets a throwing handler propagate (host owns its errors)', async () => {
     setFileSaveHandler(() => {
       throw new Error('native save failed')
     })
-    expect(() => saveFile(payload)).toThrow('native save failed')
+    await expect(saveFile(payload)).rejects.toThrow('native save failed')
+  })
+
+  it('lets an async rejecting handler propagate', async () => {
+    setFileSaveHandler(async () => {
+      throw new Error('async save failed')
+    })
+    await expect(saveFile(payload)).rejects.toThrow('async save failed')
   })
 })

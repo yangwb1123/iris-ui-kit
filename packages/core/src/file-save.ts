@@ -10,9 +10,12 @@ export interface SaveFilePayload {
 /**
  * A host-supplied file-save handler. Return `false` to DECLINE and fall through
  * to the library's web default (Blob + `<a download>`); return anything else
- * (or nothing) to signal the save was handled natively.
+ * (or nothing) to signal the save was handled natively. Return a Promise if
+ * the handler is async — {@link saveFile} will await it. A rejecting Promise
+ * propagates as an unhandled rejection; hosts that expect async failures
+ * should catch and return `false` to fall back to the browser default.
  */
-export type FileSaveHandler = (file: SaveFilePayload) => void | boolean
+export type FileSaveHandler = (file: SaveFilePayload) => void | boolean | Promise<boolean>
 
 let handler: FileSaveHandler | null = null
 
@@ -48,8 +51,12 @@ export function getFileSaveHandler(): FileSaveHandler | null {
  * when there is no handler / it declined by returning `false`. A throwing
  * handler is allowed to propagate — saving is an explicit user action and the
  * host should surface its own errors.
+ *
+ * Supports async handlers: if the registered handler returns a Promise, it is
+ * awaited before interpreting the result.
  */
-export function saveFile(file: SaveFilePayload): boolean {
+export async function saveFile(file: SaveFilePayload): Promise<boolean> {
   if (!handler) return false
-  return handler(file) !== false
+  const result = await handler(file)
+  return result !== false
 }

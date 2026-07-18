@@ -1,9 +1,24 @@
 /**
+ * A read-only subscribable store — the public view of a {@link Store} that
+ * external consumers should use when they only need to observe state, not
+ * mutate it. Exposes {@link ReadonlyStore.getState} and
+ * {@link ReadonlyStore.subscribe} but no write methods.
+ *
+ * Controllers that internally own a full {@link Store} (with `setState`,
+ * `batch`) can expose their store as `ReadonlyStore<T>` to prevent external
+ * code from bypassing controlled mutation paths.
+ */
+export interface ReadonlyStore<T> {
+  getState(): T
+  subscribe(listener: (state: T) => void): () => void
+}
+
+/**
  * A subscribable store. The universal bridge between framework-agnostic
  * state and framework reactivity. Adapters wrap this with `ref`,
  * `useSyncExternalStore`, or `createSignal`.
  */
-export interface Store<T> {
+export interface Store<T> extends ReadonlyStore<T> {
   getState(): T
   setState(updater: T | ((prev: T) => T)): void
   subscribe(listener: (state: T) => void): () => void

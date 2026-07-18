@@ -1,9 +1,10 @@
 /**
  * A host-supplied clipboard-copy handler. Return `false` to DECLINE and fall
  * through to the library default (`navigator.clipboard.writeText`); return
- * anything else (or nothing) to signal the copy was handled natively.
+ * anything else (or nothing) to signal the copy was handled natively. Return
+ * a Promise if the handler is async — {@link copyText} will await it.
  */
-export type ClipboardHandler = (text: string) => void | boolean
+export type ClipboardHandler = (text: string) => void | boolean | Promise<boolean>
 
 let handler: ClipboardHandler | null = null
 
@@ -33,8 +34,12 @@ export function getClipboardHandler(): ClipboardHandler | null {
  * Route `text` through the registered handler. Returns `true` when a handler
  * took the copy (the caller must then SKIP `navigator.clipboard`), or `false`
  * when there is no handler / it declined by returning `false`.
+ *
+ * Supports async handlers: if the registered handler returns a Promise, it is
+ * awaited before interpreting the result.
  */
-export function copyText(text: string): boolean {
+export async function copyText(text: string): Promise<boolean> {
   if (!handler) return false
-  return handler(text) !== false
+  const result = await handler(text)
+  return result !== false
 }

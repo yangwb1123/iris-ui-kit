@@ -10,6 +10,7 @@ export default defineConfig({
     'src/notifications.ts',
     'src/clipboard-history.ts',
     'src/fs.ts',
+    'src/undo.ts',
   ],
   format: ['esm', 'cjs'],
   dts: true,

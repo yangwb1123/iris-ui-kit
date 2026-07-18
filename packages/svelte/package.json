@@ -16,6 +16,10 @@
       "types": "./dist/form/index.d.ts",
       "default": "./dist/form/index.js"
     },
+    "./undo": {
+      "types": "./dist/undo/index.d.ts",
+      "default": "./dist/undo/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

@@ -117,6 +117,7 @@ export * from './form'
 export * from './i18n'
 export * from './motion'
 export * from './skeletons'
+export * from './undo'
 
 // ── Plugin system: unified IrisProvider + consumer hooks ──────────────────────
 export * from './provider'

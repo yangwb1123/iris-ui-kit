@@ -121,6 +121,7 @@ export * from './form'
 export * from './i18n'
 export * from './motion'
 export * from './skeletons'
+export * from './undo'
 
 // ── Framework-agnostic theme + token re-exports (mirror the sibling adapters) ──
 export {

@@ -47,6 +47,11 @@
       "types": "./dist/fs.d.ts",
       "import": "./dist/fs.js",
       "require": "./dist/fs.cjs"
+    },
+    "./undo": {
+      "types": "./dist/undo.d.ts",
+      "import": "./dist/undo.js",
+      "require": "./dist/undo.cjs"
     }
   },
   "files": [

@@ -16,7 +16,7 @@ const TONE: Record<NotificationTone, { glyph: string; color: string }> = {
   info: { glyph: 'ℹ️', color: 'var(--os-accent)' },
   success: { glyph: '✅', color: '#28c840' },
   warning: { glyph: '⚠️', color: '#febc2e' },
-  error: { glyph: '⛔', color: '#ff5f57' },
+  danger: { glyph: '⛔', color: '#ff5f57' },
 }
 
 const MAX_TOASTS = 4

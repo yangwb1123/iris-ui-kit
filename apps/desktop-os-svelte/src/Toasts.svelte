@@ -6,7 +6,7 @@
     info: { glyph: 'ℹ️', color: 'var(--os-accent)' },
     success: { glyph: '✅', color: '#28c840' },
     warning: { glyph: '⚠️', color: '#febc2e' },
-    error: { glyph: '⛔', color: '#ff5f57' },
+    danger: { glyph: '⛔', color: '#ff5f57' },
   }
 
   /** Newest notifications shown as transient toasts; the rest live in the center. */

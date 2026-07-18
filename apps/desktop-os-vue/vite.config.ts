@@ -21,6 +21,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui/core/notifications': src('core/src/notifications.ts'),
             '@iris-ui/core/clipboard-history': src('core/src/clipboard-history.ts'),
             '@iris-ui/core/fs': src('core/src/fs.ts'),
+            '@iris-ui/core/undo': src('core/src/undo.ts'),
             '@iris-ui/core': src('core/src/index.ts'),
             '@iris-ui/tokens': src('tokens/src/index.ts'),
             '@iris-ui/vue': src('vue/src/index.ts'),

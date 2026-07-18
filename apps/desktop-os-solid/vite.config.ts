@@ -40,6 +40,9 @@ export default defineConfig(({ command }) => ({
             '@iris-ui/core/fs': fileURLToPath(
               new URL('../../packages/core/src/fs.ts', import.meta.url),
             ),
+            '@iris-ui/core/undo': fileURLToPath(
+              new URL('../../packages/core/src/undo.ts', import.meta.url),
+            ),
             '@iris-ui/core': src('core'),
             '@iris-ui/tokens': src('tokens'),
             '@iris-ui/solid': src('solid'),

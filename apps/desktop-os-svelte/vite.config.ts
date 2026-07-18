@@ -33,6 +33,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui/core/notifications': coreSubpath('notifications'),
             '@iris-ui/core/clipboard-history': coreSubpath('clipboard-history'),
             '@iris-ui/core/fs': coreSubpath('fs'),
+            '@iris-ui/core/undo': coreSubpath('undo'),
             '@iris-ui/core': src('core'),
             '@iris-ui/tokens': src('tokens'),
             '@iris-ui/svelte': src('svelte'),

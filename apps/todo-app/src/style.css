@@ -1,0 +1,96 @@
+/**
+ * Global styles for the Iris UI Todo App.
+ *
+ * Follows Iris UI conventions:
+ * - Only uses `var(--iris-*)` tokens for theming — no hard-coded colors.
+ * - CSS logical properties for i18n/RTL readiness.
+ * - Minimal global styles; component-level styles are co-located in TSX.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  background: var(--iris-background);
+  color: var(--iris-foreground);
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ── Remove default button/text input styling inside Iris components ── */
+button {
+  font-family: inherit;
+}
+
+/* ── Selection color ──────────────────────────────────────────────── */
+::selection {
+  background: var(--iris-primary);
+  color: var(--iris-primary-foreground, #fff);
+}
+
+/* ── Scrollbar styling (subtle, theme-aware) ──────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--iris-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--iris-muted);
+}
+
+/* ── Focus-visible ring for keyboard navigation ───────────────────── */
+:focus-visible {
+  outline: 2px solid var(--iris-primary);
+  outline-offset: 2px;
+}
+
+/* ── Utility: screen-reader only ──────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

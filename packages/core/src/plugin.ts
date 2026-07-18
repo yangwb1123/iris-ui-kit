@@ -9,6 +9,76 @@
  * tree-shaking, and the manifest) — they are *not* registered by name here.
  */
 
+/**
+ * Separator used between namespace and store key inside the stores map.
+ * `::` is not valid in JS identifiers, so it cannot collide with a real key.
+ */
+export const NAMESPACE_SEPARATOR = '::'
+
+/**
+ * Transform a token key to include the namespace prefix.
+ *
+ * Rules:
+ * 1. If key starts with `--iris-`: insert namespace after `--iris-`
+ *    e.g. `--iris-bg` + ns=`editor` → `--iris-editor-bg`
+ * 2. If key starts with `--` but NOT `--iris-`: insert namespace after `--`
+ *    e.g. `--custom-x` + ns=`editor` → `--editor-custom-x`
+ * 3. If key does NOT start with `--`: prefix with `--{ns}-`
+ *    (edge case: invalid CSS var, but handled gracefully)
+ *
+ * Idempotent: if key already contains the namespace, return as-is.
+ */
+export function namespaceTokenKey(key: string, namespace: string): string {
+  if (key.startsWith(`--iris-${namespace}-`)) return key // idempotent
+  if (key.startsWith('--iris-')) {
+    return key.replace(/^--iris-/, `--iris-${namespace}-`)
+  }
+  if (key.startsWith('--')) {
+    return `--${namespace}-${key.slice(2)}`
+  }
+  // Fallback: prefix with namespace
+  return `--${namespace}-${key}`
+}
+
+/**
+ * Transform a store key to include the namespace prefix.
+ * Idempotent: if key already contains `::`, return as-is.
+ */
+export function namespaceStoreKey(key: string, namespace: string): string {
+  return key.includes(NAMESPACE_SEPARATOR) ? key : `${namespace}${NAMESPACE_SEPARATOR}${key}`
+}
+
+const NAMESPACE_RE = /^[a-z0-9-]+$/
+
+/** Validate namespace string; throws TypeError if invalid. */
+export function validateNamespace(namespace: string, pluginName: string): void {
+  if (!NAMESPACE_RE.test(namespace)) {
+    throw new TypeError(
+      `[iris-ui] Plugin "${pluginName}" has invalid namespace "${namespace}". ` +
+        `Only lowercase alphanumeric and hyphens allowed.`,
+    )
+  }
+}
+
+/** Warn if multiple plugins share the same namespace. */
+export function detectNamespaceConflicts(plugins: readonly IrisPlugin[]): void {
+  const sharing = new Map<string, string[]>()
+  for (const p of plugins) {
+    const ns = p.namespace ?? p.name
+    const list = sharing.get(ns)
+    if (list) list.push(p.name)
+    else sharing.set(ns, [p.name])
+  }
+  for (const [ns, names] of sharing) {
+    if (names.length > 1) {
+      devWarn(
+        `Namespace "${ns}" is used by multiple plugins: [${names.join(', ')}]. ` +
+          `Each plugin should use a unique namespace.`,
+      )
+    }
+  }
+}
+
 /** A short, side-effecting collector handed to each plugin's `install`. */
 export interface PluginRegistry {
   /**
@@ -46,6 +116,17 @@ export interface PluginRegistry {
    * alternative to returning a teardown from `install`; both are collected.
    */
   onTeardown(fn: () => void): void
+  /**
+   * Read a store registered by another plugin using its fully-qualified key.
+   * Returns `undefined` if the key doesn't exist (does NOT throw).
+   * Can only be called during `install` (after dependency plugins have run).
+   *
+   * @example
+   * ```ts
+   * reg.readStore<EditorSettings>('editor::settings')
+   * ```
+   */
+  readStore<T = unknown>(fullyQualifiedKey: string): T | undefined
 }
 
 /**
@@ -54,6 +135,14 @@ export interface PluginRegistry {
  */
 export interface IrisPlugin {
   readonly name: string
+  /**
+   * Optional namespace for token and store key isolation.
+   * - Defaults to `name` if omitted.
+   * - Only lowercase alphanumeric and hyphens allowed: `[a-z0-9-]+`
+   * - Used as prefix: `--iris-{namespace}-{key}` for tokens,
+   *   `'{namespace}::{key}'` for store keys.
+   */
+  readonly namespace?: string
   install(registry: PluginRegistry): void | (() => void)
   /**
    * Called when this plugin is REMOVED from the running set while the provider
@@ -93,6 +182,42 @@ export interface CollectedRegistrations {
    * `IrisProvider` invokes this on unmount.
    */
   teardown(): void
+}
+
+/** Internal registry — same shape as PluginRegistry. */
+type InternalRegistry = PluginRegistry
+
+/**
+ * Wrap a registry so token / store keys auto-prefix with `namespace`.
+ * Plugin code calls the same methods unchanged.
+ */
+export function createNamespacedRegistry(
+  base: InternalRegistry,
+  namespace: string,
+): PluginRegistry {
+  const ns = namespace
+  return {
+    registerTokens(tokens) {
+      const out: Record<string, string> = {}
+      for (const [k, v] of Object.entries(tokens)) out[namespaceTokenKey(k, ns)] = v
+      base.registerTokens(out)
+    },
+    registerMessages(locale, messages) {
+      base.registerMessages(locale, messages)
+    },
+    registerStore(key, factory) {
+      base.registerStore(namespaceStoreKey(key, ns), factory)
+    },
+    registerLazyStore(key, factory) {
+      base.registerLazyStore(namespaceStoreKey(key, ns), factory)
+    },
+    onTeardown(fn) {
+      base.onTeardown(fn)
+    },
+    readStore<T>(k: string): T | undefined {
+      return base.readStore(k) as T | undefined
+    },
+  }
 }
 
 /**
@@ -207,7 +332,7 @@ export function runPlugins(plugins: readonly IrisPlugin[]): CollectedRegistratio
   const seenNames = new Set<string>()
   const teardowns: Array<() => void> = []
 
-  const registry: PluginRegistry = {
+  const internalRegistry: InternalRegistry = {
     registerTokens(next) {
       for (const [key, value] of Object.entries(next)) {
         if (key in tokens && tokens[key] !== value) {
@@ -234,16 +359,34 @@ export function runPlugins(plugins: readonly IrisPlugin[]): CollectedRegistratio
     onTeardown(fn) {
       teardowns.push(fn)
     },
+    readStore<T>(fullyQualifiedKey: string): T | undefined {
+      return stores.get(fullyQualifiedKey) as T | undefined
+    },
   }
 
   // Only reorder when a plugin actually declares a dependency — otherwise the
   // install order is the array order (zero behavior change for independent plugins).
   const ordered = plugins.some((p) => p.dependsOn?.length) ? orderPlugins(plugins) : plugins
+
+  // Namespace conflict detection + validation
+  detectNamespaceConflicts(ordered)
+  for (const plugin of ordered) {
+    const ns = plugin.namespace ?? plugin.name
+    validateNamespace(ns, plugin.name)
+  }
+
   for (const plugin of ordered) {
     if (seenNames.has(plugin.name)) {
       devWarn(`plugin "${plugin.name}" installed more than once.`)
     }
     seenNames.add(plugin.name)
+
+    // If the plugin explicitly declares a namespace, wrap the registry
+    // so all registrations are automatically prefixed.
+    const ns = plugin.namespace
+    const registry: PluginRegistry =
+      ns !== undefined ? createNamespacedRegistry(internalRegistry, ns) : internalRegistry // No namespace → zero overhead, full backward compat
+
     const cleanup = plugin.install(registry)
     if (typeof cleanup === 'function') teardowns.push(cleanup)
   }

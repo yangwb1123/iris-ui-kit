@@ -103,14 +103,64 @@ export function usePlugin(name: string): boolean {
   return useContext(PluginStoreContext)?.installed.has(name) ?? false
 }
 
+// Tracks ambiguous store key warnings to avoid spamming the console.
+// Hoisted BEFORE overload signatures (TS requires overloads immediately before implementation).
+const warnedKeys = new Map<string, boolean>()
+
 /**
- * Read a plugin-registered store by `key`. Throws a clear error when there is
- * no `<IrisProvider>` ancestor. Plugins export typed wrappers narrowing `T`.
+ * Read a plugin-registered store by `key` (backward-compatible single-arg form).
+ * Falls back to `{namespace}::{key}` lookup if bare key not found.
+ * Throws a clear error when there is no `<IrisProvider>` ancestor.
+ * Plugins export typed wrappers narrowing `T`.
  */
-export function usePluginStore<T>(key: string): T {
+export function usePluginStore<T>(key: string): T
+
+/**
+ * Read a plugin-registered store by `namespace` + `key`.
+ * Equivalent to `usePluginStore('{namespace}::{key}')`.
+ */
+export function usePluginStore<T>(namespace: string, key: string): T
+
+export function usePluginStore<T>(nsOrKey: string, key?: string): T {
   const ctx = useContext(PluginStoreContext)
   if (!ctx) {
-    throw new Error(`[iris-ui] usePluginStore("${key}"): no <IrisProvider> ancestor found`)
+    const displayKey = key !== undefined ? `${nsOrKey}::${key}` : nsOrKey
+    throw new Error(`[iris-ui] usePluginStore("${displayKey}"): no <IrisProvider> ancestor found`)
   }
-  return ctx.stores.get(key) as T
+
+  const fullKey = key !== undefined ? `${nsOrKey}::${key}` : nsOrKey
+
+  // 1. Direct lookup using the constructed key
+  let store = ctx.stores.get(fullKey) as T | undefined
+  if (store !== undefined) return store
+
+  // 2. Single-arg: try without namespace first (backward compat for unnamespaced plugins)
+  if (key === undefined) {
+    // Try the key as a bare key (for plugins without namespace)
+    store = ctx.stores.get(nsOrKey) as T | undefined
+    if (store !== undefined) return store
+
+    // Try as {namespace}::{key} where namespace may equal the key segment
+    // e.g. usePluginStore('settings') → try 'default::settings', 'editor::settings', etc.
+    // This handles plugins where namespace === name (the common case).
+    for (const k of ctx.stores.keys()) {
+      if (typeof k === 'string' && k.endsWith(`::${nsOrKey}`)) {
+        // Warn at most once per ambiguous key.
+        if (!warnedKeys.has(nsOrKey)) {
+          warnedKeys.set(nsOrKey, true)
+          console.warn(
+            `[iris-ui] Ambiguous plugin store key "${nsOrKey}". ` +
+              `Found "${k}". Use the namespaced form for clarity: ` +
+              `usePluginStore("${k}").`,
+          )
+        }
+        return ctx.stores.get(k) as T
+      }
+    }
+  }
+
+  throw new Error(
+    `[iris-ui] Plugin store "${fullKey}" not found. ` +
+      `Ensure the plugin is installed in IrisProvider and the key is correct.`,
+  )
 }

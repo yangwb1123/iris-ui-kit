@@ -76,3 +76,52 @@ export interface FlattenTreeOptions<Row> {
 
 /** A pagination control slot: a page number or a side-tagged ellipsis. */
 export type PageItem = number | 'ellipsis-left' | 'ellipsis-right'
+
+// ─── GroupedView types ───────────────────────────────────────────────────────
+
+/**
+ * Configuration for grouping rows by a key column.
+ * Supports single-level grouping (one dimension at a time).
+ */
+export interface GroupedViewConfig<Row, K = string> {
+  /** Function to derive the group key from a row. */
+  keyOf: (row: Row) => K
+  /** Columns to compute aggregate values for each group. */
+  aggregates?: AggregateSpec[]
+  /** Optional sort direction for groups (by group key). */
+  groupSort?: SortDirection
+  /** Initial set of expanded group keys (uncontrolled). */
+  defaultExpanded?: K[]
+  /** Controlled expanded keys. */
+  expanded?: K[]
+  /** Called when the expanded set changes. */
+  onExpandedChange?: (keys: K[]) => void
+}
+
+/** The stateful result of grouping rows. */
+export interface GroupedViewState<Row, K = string> {
+  /** Groups in first-seen key order. */
+  groups: Array<{ key: K; rows: Row[] }>
+  /** Aggregate values per group (key → specKey → value). */
+  aggregates: Map<K, Record<string, number>>
+  /** Set of currently-expanded group keys. */
+  expanded: Set<K>
+  /** Whether any grouping is active (keyOf was provided and rows exist). */
+  isGrouped: boolean
+}
+
+/** Sort direction for group-level ordering. */
+export type GroupSortDirection = 'asc' | 'desc'
+
+/**
+ * Aggregate specification keyed by output field name.
+ * Maps a result field to a column key + aggregate operation.
+ */
+export interface GroupAggregateSpec {
+  /** Output field name for the aggregated value. */
+  field: string
+  /** Source column key. */
+  columnKey: string
+  /** Aggregate operation. */
+  op: AggregateOp
+}

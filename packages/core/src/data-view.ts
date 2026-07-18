@@ -6,6 +6,10 @@
  * re-deriving them per framework.
  */
 
+import type { GroupedViewConfig, GroupedViewState } from './data-view/types'
+import { createGroupedView } from './data-view/grouped-view'
+import type { GroupedViewStore } from './data-view/grouped-view'
+
 export type SortDirection = 'asc' | 'desc'
 
 export interface SortState {
@@ -460,3 +464,8 @@ export function getPageRange(current: number, totalPages: number, siblingCount =
   items.push(totalPages)
   return items
 }
+
+// ─── GroupedView ───────────────────────────────────────────────────────────────
+
+export type { GroupedViewConfig, GroupedViewState, GroupedViewStore }
+export { createGroupedView }

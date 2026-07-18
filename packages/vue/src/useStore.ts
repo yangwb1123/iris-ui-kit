@@ -1,5 +1,5 @@
 import { shallowRef, onScopeDispose, type ShallowRef } from 'vue'
-import type { Store } from '@iris-ui/core'
+import type { ReadonlyStore, Store } from '@iris-ui/core'
 
 /**
  * Bridge a framework-agnostic `@iris-ui/core` store into a Vue ref — updates on
@@ -7,7 +7,7 @@ import type { Store } from '@iris-ui/core'
  * `createSignal`, and Svelte's `readable`. Seeds synchronously from
  * `store.getState()` (SSR-safe); detaches on scope dispose.
  */
-export function useStore<T>(store: Store<T>): Readonly<ShallowRef<T>> {
+export function useStore<T>(store: ReadonlyStore<T>): Readonly<ShallowRef<T>> {
   const state = shallowRef(store.getState()) as ShallowRef<T>
   onScopeDispose(store.subscribe((next) => (state.value = next)))
   return state

@@ -1,10 +1,23 @@
 import { saveFile } from '@iris-ui/core'
 import type { IrisTableColumn } from './types'
 
+/**
+ * OWASP CSV-injection mitigation: a cell whose text a spreadsheet could parse
+ * as a formula (leading `=`, `+`, `-`, `@`, or a tab/CR that shifts the first
+ * significant character) is prefixed with a single quote so it imports as
+ * literal text instead of executing (DDE, `=HYPERLINK`, `=cmd|…`). Numbers
+ * (typed at the call site, not string-ish) never carry a formula payload.
+ */
+const FORMULA_LEAD = /^[=+\-@\t\r]/
+function neutralizeFormula(text: string): string {
+  return FORMULA_LEAD.test(text) ? `'${text}` : text
+}
+
 /** Quote a single CSV field per RFC 4180. */
 function csvCell(value: unknown): string {
   if (value == null) return ''
-  const s = String(value)
+  const isNumber = typeof value === 'number' && Number.isFinite(value)
+  const s = isNumber ? String(value) : neutralizeFormula(String(value))
   // Quote if the value contains comma, quote, newline, carriage return.
   if (/[",\r\n]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`
@@ -43,11 +56,11 @@ export function exportCsv<Row extends Record<string, unknown>>(
  * otherwise falls back to the browser `<a download>`. SSR-safe (no-op without
  * `document`).
  */
-export function downloadCsv(filename: string, csv: string): void {
+export async function downloadCsv(filename: string, csv: string): Promise<void> {
   // Prepend U+FEFF BOM so Excel reads UTF-8 correctly.
   const BOM = String.fromCharCode(0xfeff)
   const content = BOM + csv
-  if (saveFile({ filename, content, mimeType: 'text/csv;charset=utf-8;' })) return
+  if (await saveFile({ filename, content, mimeType: 'text/csv;charset=utf-8;' })) return
   if (typeof document === 'undefined') return
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)

@@ -27,8 +27,8 @@ export function exportExcel<Row extends Record<string, unknown>>(
  * (set via `setFileSaveHandler`) intercepts it for native save in desktop/mobile
  * shells; otherwise falls back to the browser `<a download>`. SSR-safe.
  */
-export function downloadExcel(filename: string, xml: string): void {
-  if (saveFile({ filename, content: xml, mimeType: 'application/vnd.ms-excel' })) {
+export async function downloadExcel(filename: string, xml: string): Promise<void> {
+  if (await saveFile({ filename, content: xml, mimeType: 'application/vnd.ms-excel' })) {
     return
   }
   if (typeof document === 'undefined') return

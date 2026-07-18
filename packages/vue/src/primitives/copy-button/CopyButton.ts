@@ -35,12 +35,12 @@ export const IrisCopyButton = defineComponent({
     const copied = ref(false)
     let timer: ReturnType<typeof setTimeout> | undefined
 
-    const copy = () => {
+    const copy = async () => {
       if (props.disabled) return
       try {
         // A host clipboard handler (setClipboardHandler) wins — needed where
         // navigator.clipboard is unavailable (Cordova file://, custom protocols).
-        if (!copyText(props.text)) {
+        if (!(await copyText(props.text))) {
           // writeText returns a Promise; swallow async rejection (permission denied).
           void navigator.clipboard?.writeText?.(props.text)?.catch(() => {})
         }

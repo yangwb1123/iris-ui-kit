@@ -48,12 +48,12 @@ export function IrisCopyButton({
   const [copied, setCopied] = React.useState(false)
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-  const copy = () => {
+  const copy = async () => {
     if (disabled) return
     try {
       // A host clipboard handler (setClipboardHandler) wins — needed where
       // navigator.clipboard is unavailable (Cordova file://, custom protocols).
-      if (!copyText(text)) {
+      if (!(await copyText(text))) {
         // writeText returns a Promise; swallow async rejection (permission denied).
         void navigator.clipboard?.writeText?.(text)?.catch(() => {})
       }

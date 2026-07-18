@@ -39,12 +39,12 @@
 
   const sz = $derived(SIZE_MAP[size])
 
-  function copy(): void {
+  async function copy(): Promise<void> {
     if (disabled) return
     try {
       // A host clipboard handler (setClipboardHandler) wins — needed where
       // navigator.clipboard is unavailable (Cordova file://, custom protocols).
-      if (!copyText(text)) {
+      if (!(await copyText(text))) {
         // writeText returns a Promise; swallow async rejection (permission denied).
         void navigator.clipboard?.writeText?.(text)?.catch(() => {})
       }

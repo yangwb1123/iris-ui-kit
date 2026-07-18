@@ -16,12 +16,16 @@ export function registerDesktopBridges(): void {
   if (!native) return
   // Returning a truthy value tells the library the action was handled natively
   // (so it skips the browser <a download> / navigator.clipboard fallback).
-  setFileSaveHandler((file) => {
-    void native.saveFile(file)
-    return true
+  // Async handlers are supported — the Promise is awaited by the core.
+  setFileSaveHandler(async (file) => {
+    const ok = await native.saveFile(file)
+    // If the native save dialog was cancelled (ok === false), decline so the
+    // library falls through to the browser <a download> fallback.
+    return ok
   })
-  setClipboardHandler((text) => {
-    void native.writeClipboard(text)
+  setClipboardHandler(async (text) => {
+    await native.writeClipboard(text)
+    // Clipboard is best-effort; always report handled (skip fallback).
     return true
   })
 }

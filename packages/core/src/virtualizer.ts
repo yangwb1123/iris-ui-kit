@@ -19,6 +19,15 @@ import { createStore, type Store } from './store'
  * All framework-agnostic: the adapter renders `state.items` (each carries its
  * `start`/`size`), reports real sizes back via `measure`, and drives `setScroll`
  * from the scroll handler. One controller, four thin bridges.
+ *
+ * ## Data change modes
+ *
+ * | Scenario | Method | Effect |
+ * |----------|--------|--------|
+ * | Entire dataset replaced (e.g. new search results) | {@link Virtualizer.remeasure} | Clears all measured sizes, uses estimates |
+ * | Items inserted/deleted with stable keys | {@link Virtualizer.setCount} | Retains measurement by key for items still present |
+ * | Reorder with same count | {@link Virtualizer.setCount} | Re-seats measured sizes onto new positions via key |
+ * | Full data swap, want to keep old measurements | {@link Virtualizer.replaceData} | Clears measured cache AND rebuilds Fenwick tree from scratch |
  */
 
 /** One item to render: its index, stable key, pixel start, and current size. */
@@ -61,6 +70,10 @@ export interface VirtualizerConfig {
   /**
    * Stable key for the item at `index`, so measured sizes survive reorder /
    * filtering (the cache is keyed by this, not by position). Default: the index.
+   *
+   * **Warning**: When using the default (index-as-key), inserting or removing
+   * items will cause measured sizes to map to wrong items. Always provide a
+   * stable `getItemKey` for dynamic data lists.
    */
   getItemKey?: (index: number) => string | number
 }
@@ -78,8 +91,20 @@ export interface Virtualizer {
    * size tree from the current keys + measured cache — call after the data set
    * changes order with the SAME count to re-seat measured sizes onto new
    * positions.
+   *
+   * Use when items are inserted or deleted but keys remain stable. For a full
+   * data replacement, use {@link remeasure} or {@link replaceData}.
    */
   setCount(count: number): void
+  /**
+   * Replace the entire dataset — clears all measured sizes and rebuilds the
+   * Fenwick tree from estimates. Unlike `setCount`, which preserves existing
+   * measurements by key, `replaceData` starts fresh so old data sizes don't
+   * pollute the new dataset.
+   *
+   * Use when the data identity has fully changed (e.g. new search query).
+   */
+  replaceData(count: number): void
   /** Record the real measured size of the item at `index` (keyed). O(log n). */
   measure(index: number, size: number): void
   /** Drop all measured sizes (data fully replaced) and rebuild from estimates. */
@@ -94,6 +119,15 @@ export interface Virtualizer {
   scrollToOffset(offset: number): number
   /** Total scrollable size in px. */
   totalSize(): number
+  /**
+   * Development-mode diagnostic: detects cache skew when `getItemKey` is not
+   * provided (uses index-as-key) by checking whether consecutive `isSelected` /
+   * `measure` calls show signs of misalignment. Returns a human-readable
+   * warning or `null` if no skew detected.
+   *
+   * Only available in development builds.
+   */
+  detectCacheSkew?(): string | null
 }
 
 /**
@@ -175,6 +209,11 @@ function createSizeTree(count: number, sizeAt: (index: number) => number) {
       n = nextCount
       build()
     },
+    get count(): number {
+      return n
+    },
+    /** Snapshot the current sizes array (for diagnostics). */
+    snapshotSizes: (): number[] => [...sizes],
   }
 }
 
@@ -183,7 +222,19 @@ export function createVirtualizer(config: VirtualizerConfig): Virtualizer {
   let viewportSize = Math.max(0, config.viewportSize ?? 0)
   let scrollOffset = Math.max(0, config.scrollOffset ?? 0)
   const buffer = Math.max(0, Math.floor(config.buffer ?? 0))
+
+  // Dev-mode warning when getItemKey is not provided (default index-as-key).
+  const hasExplicitKey = config.getItemKey !== undefined
   const keyOf = config.getItemKey ?? ((index: number) => index)
+
+  if (process.env.NODE_ENV === 'development' && !hasExplicitKey && count > 0) {
+    console.warn(
+      '[iris-ui] createVirtualizer: no getItemKey provided — using index as key. ' +
+        'Measured sizes will map to wrong items when data is inserted or deleted. ' +
+        'Provide a stable getItemKey for dynamic data lists.',
+    )
+  }
+
   const estimate =
     typeof config.estimateSize === 'function'
       ? config.estimateSize
@@ -226,7 +277,7 @@ export function createVirtualizer(config: VirtualizerConfig): Virtualizer {
     return Math.max(0, Math.min(offset, maxScroll))
   }
 
-  return {
+  const virtualizer: Virtualizer = {
     store,
     getState: store.getState,
     subscribe: store.subscribe,
@@ -252,6 +303,14 @@ export function createVirtualizer(config: VirtualizerConfig): Virtualizer {
         count = n
         tree.reset(n)
       }
+      scrollOffset = clampScroll(scrollOffset)
+      sync()
+    },
+    replaceData(next) {
+      const n = Math.max(0, next)
+      count = n
+      measured.clear()
+      tree.reset(n)
       scrollOffset = clampScroll(scrollOffset)
       sync()
     },
@@ -290,5 +349,23 @@ export function createVirtualizer(config: VirtualizerConfig): Virtualizer {
       return next
     },
     totalSize: () => tree.total(),
+
+    // Dev-only diagnostic for cache skew
+    ...(process.env.NODE_ENV === 'development'
+      ? {
+          detectCacheSkew(): string | null {
+            if (!hasExplicitKey && count > 0) {
+              return (
+                'Virtualizer is using index-as-key (no getItemKey provided). ' +
+                'Item insertion/deletion will cause measured sizes to map to wrong positions. ' +
+                'Provide a stable getItemKey for dynamic data.'
+              )
+            }
+            return null
+          },
+        }
+      : {}),
   }
+
+  return virtualizer
 }

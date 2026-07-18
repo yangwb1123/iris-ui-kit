@@ -128,16 +128,33 @@ export function computeVirtualRange(options: VirtualRangeOptions): VirtualWindow
     : fixedRange(itemCount, scrollTop, viewportSize, itemSize, safeBuffer)
 }
 
+export interface GridFrozenConfig {
+  /** Number of fixed rows pinned to the top. */
+  rows?: number
+  /** Number of fixed columns pinned to the left. */
+  columns?: number
+}
+
 export interface GridVirtualRangeOptions {
   /** Vertical axis: which rows to render. `scrollTop` is the vertical scroll. */
   rows: VirtualRangeOptions
   /** Horizontal axis: which columns to render. Use `scrollTop` for `scrollLeft`. */
   columns: VirtualRangeOptions
+  /**
+   * Frozen rows/columns pinned in the viewport. Frozen rows are rendered as a
+   * separate segment at the top (not part of the virtual scrollable area);
+   * frozen columns at the left. The scrollable range excludes the frozen count.
+   */
+  frozen?: GridFrozenConfig
 }
 
 export interface GridVirtualWindow {
   rows: VirtualWindow
   columns: VirtualWindow
+  /** Frozen rows segment (indices 0..frozen.rows-1, or empty if none). */
+  frozenRows?: VirtualWindow
+  /** Frozen columns segment (indices 0..frozen.columns-1, or empty if none). */
+  frozenColumns?: VirtualWindow
 }
 
 /**
@@ -146,10 +163,70 @@ export interface GridVirtualWindow {
  * primitive behind a grid that virtualizes BOTH directions — a very wide *and*
  * very tall data table — rather than rows-only. Each axis independently supports
  * fixed/variable sizing and cached {@link VirtualRangeOptions.offsets}.
+ *
+ * When `frozen` is specified, the frozen rows/columns are extracted from the
+ * scrollable range and returned as separate {@link VirtualWindow} segments.
+ * The scrollable window in `rows`/`columns` excludes the frozen count, and the
+ * frozen segments cover indices 0..frozen.rows-1 / 0..frozen.columns-1.
  */
 export function computeGridVirtualRange(options: GridVirtualRangeOptions): GridVirtualWindow {
+  const { frozen } = options
+
+  // Compute frozen windows if configured.
+  const frozenRows = frozen?.rows ? computeFrozenWindow(frozen.rows, options.rows) : undefined
+  const frozenColumns = frozen?.columns
+    ? computeFrozenWindow(frozen.columns, options.columns)
+    : undefined
+
+  // Compute scrollable windows minus frozen count.
+  // When frozen count >= item count, the scrollable range is empty.
+  const frozenRowCount = frozen?.rows ?? 0
+  const frozenColCount = frozen?.columns ?? 0
+  const scrollableRows: VirtualRangeOptions =
+    frozenRows && options.rows.itemCount > frozenRowCount
+      ? { ...options.rows, itemCount: options.rows.itemCount - frozenRowCount }
+      : frozenRows
+        ? { ...options.rows, itemCount: 0 }
+        : options.rows
+  const scrollableColumns: VirtualRangeOptions =
+    frozenColumns && options.columns.itemCount > frozenColCount
+      ? { ...options.columns, itemCount: options.columns.itemCount - frozenColCount }
+      : frozenColumns
+        ? { ...options.columns, itemCount: 0 }
+        : options.columns
+
   return {
-    rows: computeVirtualRange(options.rows),
-    columns: computeVirtualRange(options.columns),
+    rows: computeVirtualRange(scrollableRows),
+    columns: computeVirtualRange(scrollableColumns),
+    frozenRows,
+    frozenColumns,
+  }
+}
+
+/**
+ * Compute a frozen window at the start of the range.
+ * Frozen items always appear at indices 0..count-1 with zero offset.
+ */
+function computeFrozenWindow(count: number, options: VirtualRangeOptions): VirtualWindow {
+  const safeCount = Math.min(count, options.itemCount)
+  if (safeCount <= 0) return { startIndex: 0, endIndex: -1, offsetBefore: 0, totalSize: 0 }
+
+  // Compute total size of frozen items.
+  let totalSize = 0
+  if (options.offsets) {
+    totalSize = options.offsets[safeCount]
+  } else if (typeof options.itemSize === 'function') {
+    for (let i = 0; i < safeCount; i++) {
+      totalSize += options.itemSize(i)
+    }
+  } else {
+    totalSize = safeCount * options.itemSize
+  }
+
+  return {
+    startIndex: 0,
+    endIndex: safeCount - 1,
+    offsetBefore: 0,
+    totalSize,
   }
 }

@@ -182,3 +182,81 @@ describe('computeGridVirtualRange (2D)', () => {
     expect(grid.columns.offsetBefore).toBe(60)
   })
 })
+
+describe('computeGridVirtualRange with frozen', () => {
+  it('returns frozen rows separate from scrollable rows', () => {
+    const grid = computeGridVirtualRange({
+      rows: { itemCount: 100, scrollTop: 200, viewportSize: 100, itemSize: 20 },
+      columns: { itemCount: 50, scrollTop: 0, viewportSize: 150, itemSize: 60 },
+      frozen: { rows: 2 },
+    })
+    // Frozen rows: first 2 rows, offset 0
+    expect(grid.frozenRows).toBeDefined()
+    expect(grid.frozenRows!.startIndex).toBe(0)
+    expect(grid.frozenRows!.endIndex).toBe(1)
+    expect(grid.frozenRows!.offsetBefore).toBe(0)
+    expect(grid.frozenRows!.totalSize).toBe(40) // 2 * 20
+    // Scrollable rows: items 2..99 (98 items), scrollTop adjusted
+    expect(grid.rows.startIndex).toBe(10) // scrollTop=200 on 98 items
+    expect(grid.rows.itemCount).toBeUndefined() // itemCount is not on the window
+  })
+
+  it('returns frozen columns separate from scrollable columns', () => {
+    const grid = computeGridVirtualRange({
+      rows: { itemCount: 100, scrollTop: 0, viewportSize: 100, itemSize: 20 },
+      columns: { itemCount: 50, scrollTop: 300, viewportSize: 150, itemSize: 60 },
+      frozen: { columns: 1 },
+    })
+    // Frozen columns: first column
+    expect(grid.frozenColumns).toBeDefined()
+    expect(grid.frozenColumns!.startIndex).toBe(0)
+    expect(grid.frozenColumns!.endIndex).toBe(0)
+    expect(grid.frozenColumns!.offsetBefore).toBe(0)
+    expect(grid.frozenColumns!.totalSize).toBe(60) // 1 * 60
+    // Scrollable columns: remaining 49 items
+    expect(grid.columns.startIndex).toBe(5) // scrollLeft=300 on 49 items of 60px
+  })
+
+  it('handles both frozen rows and columns simultaneously', () => {
+    const grid = computeGridVirtualRange({
+      rows: { itemCount: 100, scrollTop: 0, viewportSize: 100, itemSize: 20 },
+      columns: { itemCount: 50, scrollTop: 0, viewportSize: 150, itemSize: 60 },
+      frozen: { rows: 3, columns: 2 },
+    })
+    expect(grid.frozenRows!.endIndex).toBe(2)
+    expect(grid.frozenRows!.totalSize).toBe(60) // 3 * 20
+    expect(grid.frozenColumns!.endIndex).toBe(1)
+    expect(grid.frozenColumns!.totalSize).toBe(120) // 2 * 60
+  })
+
+  it('handles frozen count exceeding item count (clamp to available)', () => {
+    const grid = computeGridVirtualRange({
+      rows: { itemCount: 2, scrollTop: 0, viewportSize: 100, itemSize: 20 },
+      columns: { itemCount: 50, scrollTop: 0, viewportSize: 150, itemSize: 60 },
+      frozen: { rows: 5 }, // only 2 rows exist
+    })
+    expect(grid.frozenRows!.endIndex).toBe(1) // all rows frozen
+    expect(grid.rows.endIndex).toBe(-1) // no scrollable rows
+  })
+
+  it('handles zero frozen count', () => {
+    const grid = computeGridVirtualRange({
+      rows: { itemCount: 100, scrollTop: 0, viewportSize: 100, itemSize: 20 },
+      columns: { itemCount: 50, scrollTop: 0, viewportSize: 150, itemSize: 60 },
+      frozen: { rows: 0, columns: 0 },
+    })
+    expect(grid.frozenRows).toBeUndefined()
+    expect(grid.frozenColumns).toBeUndefined()
+    expect(grid.rows.startIndex).toBe(0)
+    expect(grid.columns.startIndex).toBe(0)
+  })
+
+  it('no frozen config returns no frozen windows (backward compatible)', () => {
+    const grid = computeGridVirtualRange({
+      rows: { itemCount: 100, scrollTop: 0, viewportSize: 100, itemSize: 20 },
+      columns: { itemCount: 50, scrollTop: 0, viewportSize: 150, itemSize: 60 },
+    })
+    expect(grid.frozenRows).toBeUndefined()
+    expect(grid.frozenColumns).toBeUndefined()
+  })
+})

@@ -128,6 +128,12 @@ export interface WindowManager<Meta = unknown> {
   /** The geometry to actually render for a window (work area when maximized). */
   displayRect(window: DesktopWindow<Meta>): WindowRect
   isFocused(id: string): boolean
+  /**
+   * Rebalance z-values so they are compact and contiguous [1..n] without gaps.
+   * Windows keep their relative stacking order. Safe to call at any time;
+   * automatically triggered when the internal z-counter exceeds 100,000.
+   */
+  rebalanceZ(): void
 }
 
 const DEFAULT_AREA: WindowRect = { x: 0, y: 0, width: 1280, height: 720 }
@@ -217,6 +223,10 @@ export type WindowSession<Meta = unknown> = WindowSessionEntry<Meta>[]
  * Snapshot the manager state into a JSON-able {@link WindowSession} (persist it to
  * a user profile, restore on reload). Windows are emitted in ascending z so
  * {@link restoreSession} recreates the same stacking by re-opening in order.
+ *
+ * **For compact z-values in the session**, call {@link WindowManager.rebalanceZ}
+ * before `serializeSession` — the session snapshot is taken as-is from the
+ * current state without mutating it.
  */
 export function serializeSession<Meta = unknown>(
   state: WindowManagerState<Meta>,
@@ -272,7 +282,61 @@ export function createWindowManager<Meta = unknown>(
   const cascadeStep = config.cascadeStep ?? 28
   const defaultSize = config.defaultSize ?? DEFAULT_SIZE
   const workspaces = Math.max(1, config.workspaces ?? 1)
+  /** Threshold above which a rebalanceZ() is triggered automatically. */
+  const Z_REBALANCE_THRESHOLD = 100_000
+
   const clampWs = (n: number): number => Math.max(0, Math.min(Math.trunc(n), workspaces - 1))
+
+  /**
+   * Rebalance z-values so they are compact and contiguous [1..n] without gaps.
+   * Windows keep their relative stacking order. Call this when {@link zCounter}
+   * exceeds a threshold (e.g. 100,000) to avoid unbounded growth of z-values,
+   * which can cause GPU compositing artifacts on some renderers and ensures
+   * serialized sessions have compact z-values.
+   *
+   * After rebalancing, the focused window (if any) is raised to the top (z = n).
+   * This is safe to call at any time — it is idempotent and non-destructive.
+   */
+  const rebalanceZ = (): void => {
+    const s = store.getState()
+    if (s.windows.length === 0) {
+      zCounter = 0
+      return
+    }
+    // Sort by current z to preserve stacking order
+    const sorted = [...s.windows].sort((a, b) => a.z - b.z)
+    // Assign new compact z values [1..n], keeping the focused window on top
+    const focusedId = s.focusedId
+    const focalIndex = sorted.findIndex((w) => w.id === focusedId)
+    const winMap = new Map<string, DesktopWindow<Meta>>()
+    let z = 1
+    for (let i = 0; i < sorted.length; i++) {
+      // Skip the focused window — place it last
+      if (i === focalIndex) continue
+      winMap.set(sorted[i]!.id, { ...sorted[i]!, z: z++ })
+    }
+    // Focused window gets the top z
+    if (focusedId && focalIndex >= 0) {
+      winMap.set(sorted[focalIndex]!.id, { ...sorted[focalIndex]!, z: z++ })
+    }
+    zCounter = sorted.length
+    store.setState((st) => ({
+      ...st,
+      windows: s.windows.map((w) => winMap.get(w.id) ?? w),
+    }))
+  }
+
+  /** Increment zCounter and check if rebalance is needed. */
+  const raiseZ = (): number => {
+    zCounter += 1
+    if (zCounter > Z_REBALANCE_THRESHOLD) {
+      rebalanceZ()
+      // rebalanceZ resets zCounter; if rebalance happened, return the new top z
+      return zCounter
+    }
+    return zCounter
+  }
+
   let zCounter = 0
   let openCount = 0
 
@@ -295,8 +359,7 @@ export function createWindowManager<Meta = unknown>(
     }))
 
   const raise = (id: string): void => {
-    zCounter += 1
-    const z = zCounter
+    const z = raiseZ()
     store.setState((s) => ({
       ...s,
       focusedId: id,
@@ -342,7 +405,7 @@ export function createWindowManager<Meta = unknown>(
         minSize,
       )
       openCount += 1
-      zCounter += 1
+      const z = raiseZ()
       store.setState((s) => ({
         ...s,
         focusedId: id,
@@ -353,7 +416,7 @@ export function createWindowManager<Meta = unknown>(
             appId: options.appId,
             title: options.title,
             rect,
-            z: zCounter,
+            z,
             state: 'normal',
             focused: true,
             minSize,
@@ -477,5 +540,7 @@ export function createWindowManager<Meta = unknown>(
     },
 
     isFocused: (id) => store.getState().focusedId === id,
+
+    rebalanceZ,
   }
 }

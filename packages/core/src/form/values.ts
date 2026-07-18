@@ -7,6 +7,14 @@ import { pathKey } from './types'
  *
  * Each operation is pure (returns new state slices) so the form store
  * can apply them with structural sharing.
+ *
+ * @remarks
+ * This is the same value-ops logic used internally by `createFormStore`.
+ * Use it directly when you need field-level value get/set and dirty
+ * tracking **without** a full form store — e.g., in a custom state
+ * manager, or when wiring form-like behavior into a non-form component.
+ *
+ * @see createFieldValueOps
  */
 
 export interface FieldValueOps<V extends FormValues> {
@@ -25,6 +33,35 @@ export interface FieldValueOps<V extends FormValues> {
   isDirty: (value: unknown, initialValue: unknown) => boolean
 }
 
+/**
+ * Create a set of pure value-manipulation helpers for forms.
+ *
+ * This is the **same ops** used internally by `createFormStore`. Use it
+ * directly when you need field-level get/set, dirty tracking, and
+ * structural sharing of form state **without** the full form store
+ * lifecycle (validation, submit, etc.).
+ *
+ * All returned operations are pure functions — they take state and return
+ * new state slices. The dirty check uses `Object.is` semantics:
+ * `Object.is(value, initialValue) ? not dirty : dirty`.
+ *
+ * @example
+ * ```ts
+ * const ops = createFieldValueOps<{ name: string; email: string }>()
+ *
+ * const result = ops.setFieldValue(
+ *   { values: { name: '', email: '' }, dirty: {} },
+ *   'name',
+ *   'Alice',
+ *   { name: '', email: '' },
+ * )
+ * // result.values.name === 'Alice'
+ * // result.dirty.name === true
+ *
+ * const val = ops.getFieldValue(result.values, 'name')
+ * // val === 'Alice'
+ * ```
+ */
 export function createFieldValueOps<V extends FormValues>(): FieldValueOps<V> {
   const isDirty = (value: unknown, initialValue: unknown): boolean =>
     !Object.is(value, initialValue)

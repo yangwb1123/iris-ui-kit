@@ -58,16 +58,51 @@ export function visibleNav(nodes: NavNode[]): NavNode[] {
     .sort(byOrder)
 }
 
-/** Depth-first flatten of every node (parents before their children). */
+/**
+ * Depth-first flatten of every node (parents before their children).
+ *
+ * Safe against cyclic references: tracks visited nodes via a `Set<string>` and
+ * aborts recursion when a cycle is detected (dev-mode console.warn). A hard
+ * depth limit of 1000 prevents stack overflow on deeply nested or corrupted trees.
+ *
+ * This mirrors the same cycle protection in {@link flattenTree} (data-view/tree.ts).
+ */
 export function flattenNav(nodes: NavNode[]): NavNode[] {
   const out: NavNode[] = []
-  const walk = (list: NavNode[]): void => {
+  const seen = new Set<string>()
+  const MAX_DEPTH = 1000
+
+  const walk = (list: NavNode[], depth: number): void => {
+    if (depth > MAX_DEPTH) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(
+          '[iris-ui] flattenNav: maximum depth (' +
+            MAX_DEPTH +
+            ') exceeded — ' +
+            'possible cyclic reference. Truncating navigation tree.',
+        )
+      }
+      return
+    }
     for (const n of list) {
+      if (seen.has(n.key)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(
+            '[iris-ui] flattenNav: cycle detected at node "' +
+              n.key +
+              '" — ' +
+              'skipping already-visited node. Check your NavNode children for circular references.',
+          )
+        }
+        continue
+      }
+      seen.add(n.key)
       out.push(n)
-      if (n.children) walk(n.children)
+      if (n.children) walk(n.children, depth + 1)
     }
   }
-  walk(nodes)
+
+  walk(nodes, 0)
   return out
 }
 

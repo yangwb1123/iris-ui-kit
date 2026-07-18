@@ -38,7 +38,7 @@ describe('standardSchemaValidator', () => {
     })
   })
 
-  it('keeps the first issue per field', async () => {
+  it('accumulates all issues per field', async () => {
     const schema = fakeSchema(() => ({
       issues: [
         { message: 'first', path: ['email'] },
@@ -46,7 +46,7 @@ describe('standardSchemaValidator', () => {
       ],
     }))
     expect(await standardSchemaValidator<Values>(schema)({ email: '', age: 0 })).toEqual({
-      email: 'first',
+      email: 'first; second',
     })
   })
 

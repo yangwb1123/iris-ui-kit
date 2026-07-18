@@ -1,4 +1,4 @@
-export { createStore, derived, type Store } from './store'
+export { createStore, derived, type ReadonlyStore, type Store } from './store'
 export {
   createMachine,
   type Machine,
@@ -57,6 +57,21 @@ export {
   type FormStep,
   type FieldPath,
   createDirtyGuard,
+  createValidationEngine,
+  type ValidationEngine,
+  createStepNavigation,
+  type StepNavigation,
+  createFieldValueOps,
+  type FieldValueOps,
+  insertItem,
+  removeItem,
+  swapItems,
+  moveItem,
+  insertRemap,
+  removeRemap,
+  swapRemap,
+  moveRemap,
+  rekeyMetadata,
 } from './form'
 export {
   parsePath,
@@ -65,6 +80,7 @@ export {
   setByPath,
   deleteByPath,
   rekeyByArrayMutation,
+  isKeyReserved,
   type Path,
   type PathSegment,
 } from './path'
@@ -83,6 +99,7 @@ export {
   buildOffsets,
   type VirtualWindow,
   type VirtualRangeOptions,
+  type GridFrozenConfig,
   type GridVirtualRangeOptions,
   type GridVirtualWindow,
 } from './virtual'
@@ -146,6 +163,7 @@ export {
   paginate,
   pageCount,
   getPageRange,
+  createGroupedView,
   type AggregateOp,
   type AggregateSpec,
   type TreeRow,
@@ -157,6 +175,9 @@ export {
   type FilterOperator,
   type FilterRule,
   type PageItem,
+  type GroupedViewConfig,
+  type GroupedViewState,
+  type GroupedViewStore,
 } from './data-view'
 export {
   createSelectionModel,
@@ -290,6 +311,12 @@ export {
   createPlugin,
   runPlugins,
   reloadPlugins,
+  namespaceTokenKey,
+  namespaceStoreKey,
+  validateNamespace,
+  detectNamespaceConflicts,
+  createNamespacedRegistry,
+  NAMESPACE_SEPARATOR,
   type IrisPlugin,
   type PluginRegistry,
   type CollectedRegistrations,
@@ -315,3 +342,13 @@ export {
   type KeyboardNavConfig,
   type KeyboardNavAction,
 } from './keyboard-nav'
+
+// --- Data & resilience foundation primitives (2026-07-16) ---
+export * from './disposable'
+export * from './query-cache'
+export * from './realtime'
+export * from './outbox'
+export * from './event-bus'
+export * from './circuit-breaker'
+export * from './rate-limiter'
+export * from './resilient-fetcher'

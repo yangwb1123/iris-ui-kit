@@ -54,8 +54,9 @@ function issueKey(issue: StandardIssue): string | undefined {
 /**
  * Adapt a Standard Schema into a form-level `validate` function: it runs the
  * schema over the values and maps each issue to its field's FULL-path key
- * (`items[2].sku`, not `items`); first issue per field wins. Returns `{}` when
- * valid. Works for sync or async schemas — always returns a Promise.
+ * (`items[2].sku`, not `items`); ALL issues per field are accumulated (joined
+ * with `'; '`). Returns `{}` when valid. Works for sync or async schemas —
+ * always returns a Promise.
  */
 export function standardSchemaValidator<V extends FormValues>(
   schema: StandardSchemaV1,
@@ -66,8 +67,13 @@ export function standardSchemaValidator<V extends FormValues>(
     const errors: FieldErrors<V> = {}
     for (const issue of result.issues) {
       const key = issueKey(issue)
-      if (key != null && !(key in errors)) {
-        errors[key as keyof FieldErrors<V>] = issue.message as FieldErrors<V>[keyof FieldErrors<V>]
+      if (key != null) {
+        // Accumulate ALL issues per field: join with '; ' separator.
+        const existing = errors[key as keyof FieldErrors<V>]
+        const msg = issue.message as FieldErrors<V>[keyof FieldErrors<V>]
+        errors[key as keyof FieldErrors<V>] = (
+          existing != null ? (existing as string) + '; ' + (msg as string) : msg
+        ) as FieldErrors<V>[keyof FieldErrors<V>]
       }
     }
     return errors

@@ -18,6 +18,13 @@ export interface IrisTreeNode {
   children?: IrisTreeNode[]
   isLeaf?: boolean
   disabled?: boolean
+  /**
+   * Lazy children loader. Called the first time the node is expanded.
+   * Resolves to the children array; the tree caches the result so subsequent
+   * expansions are instant. On rejection the node shows an error state and
+   * collapses. (Parity with the React/Vue/Svelte adapters.)
+   */
+  loadChildren?: () => Promise<IrisTreeNode[]>
 }
 
 export type IrisTreeSelectionMode = 'none' | 'single' | 'multi'
@@ -44,6 +51,16 @@ export interface IrisTreeProps {
   onExpand?: (ids: string[]) => void
   /** Accessible name for the tree container. Defaults to the localized "Tree". */
   ariaLabel?: string
+  /** Show the loading state instead of nodes. */
+  loading?: boolean
+  /** Show the error state instead of nodes (takes precedence over loading). */
+  error?: boolean
+  /** Custom empty-state node (defaults to the localized `tree.empty`). */
+  emptyState?: JSX.Element
+  /** Custom loading-state node (defaults to the localized `tree.loading`). */
+  loadingState?: JSX.Element
+  /** Custom error-state node (defaults to the localized `tree.error`). */
+  errorState?: JSX.Element
 }
 
 function IrisTreeNodeItem(nodeProps: {
@@ -60,9 +77,15 @@ function IrisTreeNodeItem(nodeProps: {
   onSelect: () => void
   onActivate: () => void
   onCheck: () => void
+  loading?: boolean
+  errored?: boolean
   children?: JSX.Element
 }): JSX.Element {
-  const hasChildren = () => (nodeProps.node.children?.length ?? 0) > 0
+  const hasChildren = () => {
+    if (nodeProps.node.isLeaf) return false
+    if (nodeProps.node.children && nodeProps.node.children.length > 0) return true
+    return Boolean(nodeProps.node.loadChildren)
+  }
   const isLeaf = () => nodeProps.node.isLeaf || (!hasChildren() && !nodeProps.node.children)
   const isDisabled = () => nodeProps.disabled || nodeProps.node.disabled
 
@@ -80,6 +103,8 @@ function IrisTreeNodeItem(nodeProps: {
       aria-expanded={!isLeaf() ? nodeProps.expanded() : undefined}
       aria-level={nodeProps.depth + 1}
       aria-disabled={isDisabled() ? 'true' : undefined}
+      aria-busy={nodeProps.loading ? 'true' : undefined}
+      data-error={nodeProps.errored ? '' : undefined}
       tabindex={nodeProps.active() ? 0 : -1}
       data-iris-tree-node={nodeProps.node.id}
       data-depth={nodeProps.depth}
@@ -108,17 +133,33 @@ function IrisTreeNodeItem(nodeProps: {
         }}
       >
         <Show when={!isLeaf()}>
-          <span
-            data-iris-tree-expand=""
-            style={{
-              'font-size': '10px',
-              transition: 'transform 150ms',
-              transform: nodeProps.expanded() ? 'rotate(90deg)' : 'none',
-              'user-select': 'none',
-            }}
+          <Show
+            when={!nodeProps.loading}
+            fallback={
+              <span
+                data-iris-tree-loading=""
+                style={{
+                  'font-size': '10px',
+                  'user-select': 'none',
+                  color: 'var(--iris-muted, #888)',
+                }}
+              >
+                ⟳
+              </span>
+            }
           >
-            ▶
-          </span>
+            <span
+              data-iris-tree-expand=""
+              style={{
+                'font-size': '10px',
+                transition: 'transform 150ms',
+                transform: nodeProps.expanded() ? 'rotate(90deg)' : 'none',
+                'user-select': 'none',
+              }}
+            >
+              ▶
+            </span>
+          </Show>
         </Show>
         <Show when={nodeProps.checkable}>
           <input
@@ -140,6 +181,18 @@ function IrisTreeNodeItem(nodeProps: {
         <span style={{ 'font-size': '14px', color: 'var(--iris-foreground)' }}>
           {nodeProps.node.label}
         </span>
+        <Show when={nodeProps.errored}>
+          <span
+            data-iris-tree-error=""
+            style={{
+              'font-size': '10px',
+              'margin-left': '4px',
+              color: 'var(--iris-danger, #e53e3e)',
+            }}
+          >
+            !
+          </span>
+        </Show>
       </div>
       <Show when={nodeProps.expanded() && !isLeaf()}>
         <ul
@@ -158,6 +211,11 @@ function IrisTreeNodeItem(nodeProps: {
  * Tree view: expandable nodes, checkable mode, single/multi-select.
  * Solid port of the Vue IrisTree.
  *
+ * Supports lazy-loaded children via `IrisTreeNode.loadChildren` — called
+ * on the first expansion, cached thereafter, and collapses on rejection
+ * with a visual error indicator. (Parity with the React/Vue/Svelte
+ * adapters.)
+ *
  * Checkable mode renders a checkbox per node with parent/child cascade and
  * indeterminate (tri-state) propagation, driven by the framework-agnostic
  * `createTreeSelection` from `@iris-ui/core` (no cascade logic lives here).
@@ -172,6 +230,8 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
       selectionMode: 'single' as IrisTreeSelectionMode,
       checkable: false,
       disabled: false,
+      loading: false,
+      error: false,
     },
     props,
   )
@@ -189,7 +249,14 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
     'onSelect',
     'onExpand',
     'ariaLabel',
+    'loading',
+    'error',
+    'emptyState',
+    'loadingState',
+    'errorState',
   ])
+
+  const noContent = local.nodes.length === 0 && !local.loading && !local.error
 
   const [internalSelected, setInternalSelected] = createSignal<string[]>(local.defaultSelectedIds)
   const [internalExpanded, setInternalExpanded] = createSignal<string[]>(local.defaultExpandedIds)
@@ -197,16 +264,38 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
   const selectedIds = () => local.selectedIds ?? internalSelected()
   const expandedIds = () => local.expandedIds ?? internalExpanded()
 
+  // Lazy-loaded children cache + per-node loading/error state (parity with
+  // the React/Vue/Svelte adapters).
+  const [lazyCache, setLazyCache] = createSignal<Map<string, IrisTreeNode[]>>(new Map())
+  const [loadingIds, setLoadingIds] = createSignal<Set<string>>(new Set())
+  const [errorIds, setErrorIds] = createSignal<Set<string>>(new Set())
+
+  // Resolve children for a node: eager children > lazy cache.
+  const childrenOf = (node: IrisTreeNode): IrisTreeNode[] | null => {
+    if (node.children && node.children.length > 0) return node.children
+    const cached = lazyCache().get(node.id)
+    return cached ?? null
+  }
+
+  // Whether a node can have children (eager, cached, or has a loader).
+  const hasChildrenFn = (node: IrisTreeNode): boolean => {
+    if (node.isLeaf) return false
+    if (node.children && node.children.length > 0) return true
+    if ((lazyCache().get(node.id)?.length ?? 0) > 0) return true
+    return Boolean(node.loadChildren)
+  }
+
   // Checkable mode: flatten the FULL tree (every node, including collapsed and
   // not-yet-rendered children) into `{ key, parentKey, disabled }` so the
   // cascade is correct even for collapsed branches, and drive it with the core
-  // `createTreeSelection`. No cascade logic lives in this adapter.
+  // `createTreeSelection`. Also includes lazy-cached children.
   const checkNodes = (): TreeSelectionNode[] => {
     const out: TreeSelectionNode[] = []
     const walk = (ns: IrisTreeNode[], parentKey: string | undefined) => {
       for (const node of ns) {
         out.push({ key: node.id, parentKey, disabled: node.disabled })
-        if (node.children && node.children.length > 0) walk(node.children, node.id)
+        const kids = node.children ?? lazyCache().get(node.id)
+        if (kids && kids.length > 0) walk(kids, node.id)
       }
     }
     walk(local.nodes, undefined)
@@ -230,11 +319,45 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
     return checkModel.isIndeterminate(id)
   }
 
-  const toggleExpand = (id: string) => {
-    const current = expandedIds()
-    const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
+  const setExpanded = (next: string[]) => {
     if (!local.expandedIds) setInternalExpanded(next)
     local.onExpand?.(next)
+  }
+
+  const expandNode = async (node: IrisTreeNode) => {
+    if (!hasChildrenFn(node)) return
+    if (!expandedIds().includes(node.id)) setExpanded([...expandedIds(), node.id])
+    // Trigger lazy load on first expansion of a loader-backed node.
+    if (
+      node.loadChildren &&
+      !lazyCache().has(node.id) &&
+      !(node.children && node.children.length > 0)
+    ) {
+      setLoadingIds((prev) => new Set(prev).add(node.id))
+      try {
+        const kids = await node.loadChildren()
+        setLazyCache((prev) => new Map(prev).set(node.id, kids))
+      } catch {
+        setErrorIds((prev) => new Set(prev).add(node.id))
+        // Collapse on failure.
+        setExpanded(expandedIds().filter((x) => x !== node.id))
+      } finally {
+        setLoadingIds((prev) => {
+          const n = new Set(prev)
+          n.delete(node.id)
+          return n
+        })
+      }
+    }
+  }
+
+  const collapseNode = (id: string) => {
+    setExpanded(expandedIds().filter((x) => x !== id))
+  }
+
+  const toggleExpand = (node: IrisTreeNode) => {
+    if (expandedIds().includes(node.id)) collapseNode(node.id)
+    else void expandNode(node)
   }
 
   const selectNode = (id: string) => {
@@ -264,10 +387,12 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
     const expandedNow = expandedIds()
     const walk = (ns: IrisTreeNode[], depth: number, parentId: string | null): void => {
       for (const node of ns) {
-        const kids = node.children ?? []
-        const hasChildren = !node.isLeaf && kids.length > 0
-        out.push({ node, depth, parentId, hasChildren })
-        if (hasChildren && expandedNow.includes(node.id)) walk(kids, depth + 1, node.id)
+        const hc = hasChildrenFn(node)
+        out.push({ node, depth, parentId, hasChildren: hc })
+        if (hc && expandedNow.includes(node.id)) {
+          const kids = childrenOf(node)
+          if (kids) walk(kids, depth + 1, node.id)
+        }
       }
     }
     walk(local.nodes, 0, null)
@@ -320,12 +445,12 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
         e.preventDefault()
         if (current.hasChildren) {
           if (expandedIds().includes(cur)) moveActive(1)
-          else toggleExpand(cur)
+          else toggleExpand(current.node)
         }
         break
       case 'ArrowLeft':
         e.preventDefault()
-        if (current.hasChildren && expandedIds().includes(cur)) toggleExpand(cur)
+        if (current.hasChildren && expandedIds().includes(cur)) collapseNode(cur)
         else if (current.parentId) setActiveId(current.parentId)
         break
       case 'Home':
@@ -344,6 +469,9 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
     }
   }
 
+  const isNodeLoading = (id: string): boolean => loadingIds().has(id)
+  const isNodeErrored = (id: string): boolean => errorIds().has(id)
+
   const renderNodes = (nodes: IrisTreeNode[], depth: number): JSX.Element => (
     <For each={nodes}>
       {(node) => (
@@ -357,24 +485,78 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
           indeterminate={() => isIndeterminate(node.id)}
           checkable={local.checkable}
           disabled={local.disabled}
-          onToggleExpand={() => toggleExpand(node.id)}
+          loading={isNodeLoading(node.id)}
+          errored={isNodeErrored(node.id)}
+          onToggleExpand={() => toggleExpand(node)}
           onSelect={() => selectNode(node.id)}
           onActivate={() => setActiveId(node.id)}
           onCheck={() => checkModel.toggle(node.id)}
         >
-          {node.children && node.children.length > 0
-            ? renderNodes(node.children, depth + 1)
-            : undefined}
+          {renderChildren(node, depth)}
         </IrisTreeNodeItem>
       )}
     </For>
   )
+
+  const renderChildren = (node: IrisTreeNode, depth: number): JSX.Element | undefined => {
+    const kids = childrenOf(node)
+    if (!kids || kids.length === 0) return undefined
+    return renderNodes(kids, depth + 1)
+  }
+
+  // Top-level state rendering: error > loading > empty > tree content.
+  if (local.error) {
+    return (
+      <div
+        data-iris-tree-state="error"
+        style={{
+          padding: '12px',
+          'text-align': 'center',
+          color: 'var(--iris-muted)',
+          'font-size': '14px',
+        }}
+      >
+        {local.errorState ?? t('tree.error')}
+      </div>
+    )
+  }
+  if (local.loading) {
+    return (
+      <div
+        data-iris-tree-state="loading"
+        style={{
+          padding: '12px',
+          'text-align': 'center',
+          color: 'var(--iris-muted)',
+          'font-size': '14px',
+        }}
+      >
+        {local.loadingState ?? t('tree.loading')}
+      </div>
+    )
+  }
+  if (noContent) {
+    return (
+      <div
+        data-iris-tree-state="empty"
+        style={{
+          padding: '12px',
+          'text-align': 'center',
+          color: 'var(--iris-muted)',
+          'font-size': '14px',
+        }}
+      >
+        {local.emptyState ?? t('tree.empty')}
+      </div>
+    )
+  }
 
   return (
     <ul
       data-iris-tree=""
       role="tree"
       aria-label={local.ariaLabel ?? t('tree.label')}
+      aria-busy={local.loading ? 'true' : undefined}
       data-disabled={local.disabled ? '' : undefined}
       tabindex={-1}
       onKeyDown={onKeyDown}

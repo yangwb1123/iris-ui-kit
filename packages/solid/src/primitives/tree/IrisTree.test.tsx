@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@solidjs/testing-library'
-import { IrisTree } from './IrisTree'
+import { IrisTree, type IrisTreeNode } from './IrisTree'
 
 afterEach(cleanup)
 
@@ -168,6 +168,69 @@ describe('IrisTree', () => {
       const { container } = render(() => <IrisTree nodes={nodes} defaultExpandedIds={['a']} />)
       expect(checkboxFor(container, 'a')).toBeNull()
       expect(checkboxFor(container, 'a1')).toBeNull()
+    })
+  })
+
+  describe('data states (loading / error / empty)', () => {
+    it('shows the empty state (localized) when nodes is empty', () => {
+      const { container } = render(() => <IrisTree nodes={[]} />)
+      const node = container.querySelector('[data-iris-tree-state]')!
+      expect(node.getAttribute('data-iris-tree-state')).toBe('empty')
+    })
+
+    it('shows loading with aria-busy', () => {
+      const { container } = render(() => <IrisTree nodes={[]} loading />)
+      const stateEl = container.querySelector('[data-iris-tree-state]')!
+      expect(stateEl.getAttribute('data-iris-tree-state')).toBe('loading')
+    })
+
+    it('renders a tree (no state node) when content is present', () => {
+      const { container } = render(() => <IrisTree nodes={nodes} />)
+      expect(container.querySelector('[data-iris-tree-state]')).toBeNull()
+    })
+  })
+
+  describe('async loadChildren', () => {
+    it('shows an expand affordance for a loader-backed node with no eager children', () => {
+      const lazy = [{ id: 'root', label: 'Root', loadChildren: vi.fn(async () => []) }]
+      const { container } = render(() => <IrisTree nodes={lazy} />)
+      const root = container.querySelector('[data-iris-tree-node=root]')!
+      expect(root.querySelector('[data-iris-tree-expand]')).not.toBeNull()
+      expect(root.getAttribute('aria-expanded')).toBe('false')
+    })
+
+    it('lazily loads and caches children on expand', async () => {
+      const loadChildren = vi.fn(async () => [{ id: 'c1', label: 'Child 1' }])
+      const lazy = [{ id: 'root', label: 'Root', loadChildren }]
+      const { container } = render(() => <IrisTree nodes={lazy} />)
+      // Click to expand
+      const toggle = container.querySelector('[data-iris-tree-expand]') as HTMLElement
+      fireEvent.click(toggle)
+      // Wait for the async loadChildren to resolve.
+      await vi.waitFor(() => {
+        expect(loadChildren).toHaveBeenCalledTimes(1)
+      })
+      expect(container.querySelector('[data-iris-tree-node=c1]')).not.toBeNull()
+      // Collapse, then re-expand → served from cache, loader not called again.
+      fireEvent.click(toggle)
+      fireEvent.click(toggle)
+      expect(loadChildren).toHaveBeenCalledTimes(1)
+      expect(container.querySelector('[data-iris-tree-node=c1]')).not.toBeNull()
+    })
+
+    it('marks the node errored and collapses when the loader rejects', async () => {
+      const loadChildren = vi.fn(async (): Promise<IrisTreeNode[]> => {
+        throw new Error('boom')
+      })
+      const lazy = [{ id: 'root', label: 'Root', loadChildren }]
+      const { container } = render(() => <IrisTree nodes={lazy} />)
+      const toggle = container.querySelector('[data-iris-tree-expand]') as HTMLElement
+      fireEvent.click(toggle)
+      await vi.waitFor(() => {
+        const root = container.querySelector('[data-iris-tree-node=root]')!
+        expect(root.getAttribute('data-error')).toBe('')
+        expect(root.getAttribute('aria-expanded')).toBe('false')
+      })
     })
   })
 })

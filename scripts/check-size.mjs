@@ -55,12 +55,22 @@ const BUDGETS = {
   // rolled setTimeout maps) + createLongPress (press-hold gesture) + machine
   // Scheduler.now() + createColumnState pinned state. ~0.9KB of genuinely new
   // framework-agnostic timing/column logic, not drift.
+  // Bumped 25→28 (2026-07-12): Plugin Token & Store Namespace Isolation —
+  // namespaceTokenKey, namespaceStoreKey, validateNamespace,
+  // detectNamespaceConflicts, createNamespacedRegistry helper functions,
+  // IrisPlugin.namespace field, PluginRegistry.readStore method, plus
+  // namespace-aware registry wrapping in runPlugins. ~3KB of genuinely new
+  // plugin isolation logic.
+  // Bumped 28→33 (2026-07-17): createGroupedView — a new independent
+  // data-view controller (group-by-key + expand/collapse + per-group
+  // aggregate sum/avg/min/max/count), sunk to core so all 4 adapters share
+  // one implementation. ~4KB of genuinely new engine, not drift.
   // Bumped tokens 2→3, icons 4→6 (2026-07-02): tokens gained new semantic
   // slots (danger/muted/surface/primary variants, font family/mono/size scale,
   // masonry/breadcrumb gap) and icons grew from a handful of seed glyphs to a
   // 24-icon Feather-style set (navigation/actions/status/files coverage) —
   // real surface growth the components now consume, not drift.
-  core: 25,
+  core: 33,
   tokens: 3,
   theme: 3.5,
   skins: 5,
@@ -69,7 +79,11 @@ const BUDGETS = {
   vue: 88,
   // Bumped 85→87 (v3 R10): the adapters re-export core's new createVirtualizer
   // through their barrel; react/vue had headroom, solid sat at the edge.
-  solid: 87,
+  // Bumped 87→90 (2026-07-17): IrisTree gained lazy-loaded children
+  // (`loadChildren`, matching React/Vue's existing feature — closes a real
+  // cross-framework parity gap) + the barrel now re-exports the new
+  // useUndoStack/useGroupedView bridges. Genuine new surface, not drift.
+  solid: 90,
   svelte: 6,
   manifest: 2,
 }

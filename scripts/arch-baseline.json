@@ -6,7 +6,8 @@
   },
   "files": {
     "packages/core/src/form.test.ts": 808,
-    "packages/core/src/form.ts": 775,
+    "packages/core/src/form.ts": 866,
+    "packages/core/src/window.ts": 547,
     "packages/icons/src/icons.ts": 670,
     "packages/plugin-pro-table/src/core/index.ts": 710,
     "packages/plugin-pro-table/src/react/index.tsx": 577,
@@ -19,6 +20,7 @@
     "packages/solid/src/contracts.test.tsx": 752,
     "packages/solid/src/primitives/table/IrisTable.test.tsx": 857,
     "packages/solid/src/primitives/table/IrisTable.tsx": 1343,
+    "packages/solid/src/primitives/tree/IrisTree.tsx": 569,
     "packages/svelte/src/contracts.test.ts": 548,
     "packages/svelte/src/primitives/table/IrisTable.svelte": 1108,
     "packages/svelte/src/primitives/table/IrisTable.test.ts": 848,

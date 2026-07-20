@@ -71,8 +71,17 @@ jobs:
       - name: E2E smoke (cms-react, advisory — first run, not yet proven stable)
         run: |
           cd apps/cms-react
-          npx playwright install --with-deps chromium
-          npx playwright test
+          # playwright.config.ts's project pins channel: 'chrome' (see that
+          # file for why) — install the matching browser, not bundled chromium.
+          npx playwright install --with-deps chrome
+          npx playwright test e2e/smoke.spec.ts
+        continue-on-error: true
+
+      - name: Visual regression (cms-react screenshots, advisory — first run, not yet proven stable at CI scale)
+        run: |
+          cd apps/cms-react
+          npx playwright install --with-deps chrome
+          npx playwright test e2e/visual.spec.ts
         continue-on-error: true
 
       - name: Bench (advisory — not gate-failing)

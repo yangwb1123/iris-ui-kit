@@ -17,7 +17,32 @@ export default defineConfig({
     baseURL: 'http://localhost:5176',
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  expect: {
+    toHaveScreenshot: {
+      // `threshold` (0-1, per-pixel YIQ color-distance tolerance) absorbs
+      // ordinary anti-aliasing/subpixel-rendering jitter; Playwright's own
+      // docs suggest ~0.2 as a sane non-strict default, so we keep it.
+      // `maxDiffPixelRatio` additionally caps how much of the WHOLE image
+      // may differ (2%) — generous enough to survive font-hinting/GPU-
+      // rasterization drift between the machine that generated a baseline
+      // and the one comparing against it, but far below what a real CSS/
+      // design-token regression would produce (that flips large, contiguous
+      // regions, not a scattered few percent of pixels).
+      threshold: 0.2,
+      maxDiffPixelRatio: 0.02,
+      // Freeze CSS animations/transitions (dialog fade-in, hover/focus
+      // transitions, the sort-indicator, etc.) so their in-flight state
+      // can't land differently between the baseline and a later run.
+      animations: 'disabled',
+    },
+  },
+  // channel: 'chrome' pins the system-installed Google Chrome stable rather than
+  // downloading Playwright's bundled Chromium build. This is load-bearing for the
+  // visual-regression spec (e2e/visual.spec.ts): pixel screenshots need a browser
+  // binary that's actually installable in every environment this suite runs in,
+  // and it also means local baseline generation and CI compare against the same
+  // browser family (GitHub's ubuntu-latest images ship Chrome stable preinstalled).
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], channel: 'chrome' } }],
   webServer: {
     command: 'pnpm dev',
     url: 'http://localhost:5176',

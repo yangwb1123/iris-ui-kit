@@ -29,7 +29,7 @@
     "**/*.css"
   ],
   "scripts": {
-    "build": "svelte-package -i src -o dist",
+    "build": "svelte-package -i src -o dist && node scripts/fix-esm-extensions.mjs",
     "dev": "svelte-package -i src -o dist --watch",
     "test": "vitest run && vitest run --config vitest.ssr.config.ts",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json",

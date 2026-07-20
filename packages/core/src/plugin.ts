@@ -1,3 +1,5 @@
+import { createEventBus, type EventBus } from './event-bus'
+
 /**
  * Framework-agnostic plugin contract. The four adapters (`@iris-ui/{react,vue,
  * solid,svelte}`) each ship an `IrisProvider` that calls {@link runPlugins} and
@@ -127,6 +129,20 @@ export interface PluginRegistry {
    * ```
    */
   readStore<T = unknown>(fullyQualifiedKey: string): T | undefined
+  /**
+   * A shared {@link EventBus} for cross-plugin pub/sub. One instance is
+   * created per {@link runPlugins} call and handed to every plugin's
+   * `install` — it is the SAME instance for all of them (not namespaced),
+   * because the entire point is letting plugins `emit`/`on` each other's
+   * events without a hard import. Event names are plugin-namespaced by
+   * CONVENTION only (e.g. `'pro-table:row-selected'`): `IrisPlugin` doesn't
+   * declare a shared `Events` shape, so this is intentionally loosely typed
+   * (`Record<string, unknown>`) at the registry boundary — a plugin author
+   * can locally cast to a more specific `EventBus<MyEvents>` if desired. A
+   * plugin that subscribes during `install` and wants automatic cleanup
+   * should register the returned unsubscribe function via {@link onTeardown}.
+   */
+  bus: EventBus<Record<string, unknown>>
 }
 
 /**
@@ -176,6 +192,13 @@ export interface CollectedRegistrations {
    */
   stores: Map<string, unknown>
   /**
+   * The same shared {@link EventBus} instance handed to every plugin as
+   * `registry.bus` (see there for the cross-plugin pub/sub rationale). Exposed
+   * here too so host application code — a framework adapter's `IrisProvider`,
+   * or the consuming app itself — can also `emit`/`on` alongside the plugins.
+   */
+  bus: EventBus<Record<string, unknown>>
+  /**
    * Run every registered teardown (from `install` return values and
    * `registry.onTeardown`) in LIFO order. Each is isolated (a throwing teardown
    * doesn't block the others) and the whole call is idempotent. The adapter
@@ -217,6 +240,10 @@ export function createNamespacedRegistry(
     readStore<T>(k: string): T | undefined {
       return base.readStore(k) as T | undefined
     },
+    // Not namespaced: the whole point of the bus is letting plugins reach
+    // each other without a hard import, so every plugin — namespaced or not —
+    // shares the exact same instance.
+    bus: base.bus,
   }
 }
 
@@ -331,6 +358,9 @@ export function runPlugins(plugins: readonly IrisPlugin[]): CollectedRegistratio
   const stores = new PluginStoreMap()
   const seenNames = new Set<string>()
   const teardowns: Array<() => void> = []
+  // One bus per runPlugins() call, shared (unwrapped) by every plugin — see
+  // PluginRegistry.bus for the cross-plugin pub/sub rationale.
+  const bus = createEventBus<Record<string, unknown>>()
 
   const internalRegistry: InternalRegistry = {
     registerTokens(next) {
@@ -362,6 +392,7 @@ export function runPlugins(plugins: readonly IrisPlugin[]): CollectedRegistratio
     readStore<T>(fullyQualifiedKey: string): T | undefined {
       return stores.get(fullyQualifiedKey) as T | undefined
     },
+    bus,
   }
 
   // Only reorder when a plugin actually declares a dependency — otherwise the
@@ -405,9 +436,12 @@ export function runPlugins(plugins: readonly IrisPlugin[]): CollectedRegistratio
         devWarn(`a plugin teardown threw: ${String(err)}`)
       }
     }
+    // Same "don't leak" rationale as onTeardown above: drop every remaining
+    // subscriber so stale plugin closures can't fire past the provider's life.
+    bus.clear()
   }
 
-  return { tokens, messages, stores, teardown }
+  return { tokens, messages, stores, bus, teardown }
 }
 
 /**

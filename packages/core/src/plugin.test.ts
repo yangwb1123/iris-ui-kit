@@ -171,6 +171,65 @@ describe('runPlugins', () => {
   })
 })
 
+describe('runPlugins event bus', () => {
+  it('lets one plugin emit and another (subscribed during its own install) receive it', () => {
+    const received: unknown[] = []
+    const emitter = createPlugin({
+      name: 'emitter',
+      install(reg) {
+        reg.bus.emit('ping', { from: 'emitter' })
+      },
+    })
+    const listener = createPlugin({
+      name: 'listener',
+      install(reg) {
+        reg.bus.on('ping', (payload) => received.push(payload))
+      },
+    })
+    // listener installs first so its subscription is live when emitter fires.
+    runPlugins([listener, emitter])
+    expect(received).toEqual([{ from: 'emitter' }])
+  })
+
+  it('CollectedRegistrations.bus is the identical instance plugins received via registry.bus', () => {
+    let capturedBusFromInstall: unknown
+    const p = createPlugin({
+      name: 'p',
+      install(reg) {
+        capturedBusFromInstall = reg.bus
+      },
+    })
+    const result = runPlugins([p])
+    expect(result.bus).toBe(capturedBusFromInstall)
+  })
+
+  it('teardown() clears the bus, even if a plugin subscribed without unsubscribing', () => {
+    const p = createPlugin({
+      name: 'p',
+      install(reg) {
+        reg.bus.on('leaky', () => {})
+      },
+    })
+    const result = runPlugins([p])
+    expect(result.bus.listenerCount('leaky')).toBe(1)
+    result.teardown()
+    expect(result.bus.listenerCount('leaky')).toBe(0)
+  })
+
+  it('a namespaced plugin still shares the same bus, not an isolated one', () => {
+    let capturedBusFromInstall: unknown
+    const p = createPlugin({
+      name: 'p',
+      namespace: 'p-ns',
+      install(reg) {
+        capturedBusFromInstall = reg.bus
+      },
+    })
+    const result = runPlugins([p])
+    expect(capturedBusFromInstall).toBe(result.bus)
+  })
+})
+
 describe('runPlugins dependency ordering', () => {
   function recordingPlugin(name: string, log: string[], dependsOn?: string[]) {
     return createPlugin({

@@ -21,8 +21,24 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const packagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'packages')
-// The packages with real external consumers — these get import-smoke-tested.
+// The packages with real external consumers — these get pack+install-smoke-tested.
 const CURATED = ['core', 'react', 'vue', 'solid', 'svelte']
+// core/react/vue/solid are fully precompiled to plain JS (tsup bundles them),
+// so a real external consumer's plain `import()` is a realistic, meaningful
+// proof. @iris-ui/svelte ships raw .svelte source files (via `svelte-package`,
+// the OFFICIAL tool for packaging Svelte component libraries) — this is
+// deliberate and idiomatic: Svelte's own packaging guidance says libraries
+// SHOULD ship uncompiled .svelte files so the *consumer's* Svelte compiler
+// (with their own preprocessors/options) processes them, not a pre-baked
+// version. No real external Svelte consumer ever does a plain Node `import()`
+// of a component library either — they always go through a Svelte-aware
+// bundler (Vite/SvelteKit), which is exactly what our own `apps/ssr-sveltekit`
+// does. So for svelte we verify the realistic thing instead: every path the
+// installed package's `exports` map promises actually exists on disk — still
+// catches the real risk class (files missing from the tarball, a stale/wrong
+// exports map) without asserting something no consumer relies on.
+const RAW_IMPORT_CHECK = ['core', 'react', 'vue', 'solid']
+const EXPORTS_RESOLVE_CHECK = ['svelte']
 
 const readPkg = (dir) => JSON.parse(readFileSync(join(packagesDir, dir, 'package.json'), 'utf8'))
 const irisDeps = (dir) =>
@@ -121,11 +137,12 @@ async function run() {
       console.error(`✗ npm install failed:\n${install.stderr}`)
     }
 
-    // 4. Smoke-test entry: a real `import` of each curated package from the
-    //    external node_modules, asserting a non-empty (≥1 named export)
-    //    module — proof the exports map / dist output resolves for real.
-    const targets = CURATED.map((dir) => readPkg(dir).name)
-    let results = targets.map((name) => ({
+    // 4a. Raw-import smoke test (RAW_IMPORT_CHECK): a real `import` of each
+    //    fully-precompiled package from the external node_modules, asserting
+    //    a non-empty (≥1 named export) module — proof the exports map / dist
+    //    output resolves for real.
+    const importTargets = RAW_IMPORT_CHECK.map((dir) => readPkg(dir).name)
+    let importResults = importTargets.map((name) => ({
       name,
       ok: false,
       error: 'not attempted (npm install failed)',
@@ -134,7 +151,7 @@ async function run() {
       const smokeFile = join(scratchDir, 'smoke.mjs')
       writeFileSync(
         smokeFile,
-        `const targets = ${JSON.stringify(targets)}
+        `const targets = ${JSON.stringify(importTargets)}
 const out = []
 for (const name of targets) {
   try {
@@ -151,11 +168,11 @@ process.exit(out.every((r) => r.ok) ? 0 : 1)
       )
       const smoke = spawnSync('node', [smokeFile], { cwd: scratchDir, encoding: 'utf8' })
       try {
-        results = JSON.parse(smoke.stdout.trim().split('\n').pop())
+        importResults = JSON.parse(smoke.stdout.trim().split('\n').pop())
       } catch {
         failed = true
         const detail = smoke.stderr || smoke.stdout
-        results = targets.map((name) => ({
+        importResults = importTargets.map((name) => ({
           name,
           ok: false,
           error: `smoke test crashed: ${detail}`,
@@ -163,16 +180,63 @@ process.exit(out.every((r) => r.ok) ? 0 : 1)
       }
     }
 
+    // 4b. Structural exports-resolve check (EXPORTS_RESOLVE_CHECK): a plain
+    //    `import()` isn't a realistic proof for a package that ships raw
+    //    .svelte source (see the comment above EXPORTS_RESOLVE_CHECK), so
+    //    instead verify every path the installed package.json's `exports`
+    //    map (plus legacy main/svelte/module fields) promises actually
+    //    exists on disk post-install — still catches "files missing from the
+    //    tarball" / "stale exports map", the real risk class here.
+    const collectExportPaths = (node, out = []) => {
+      if (typeof node === 'string') {
+        if (node.startsWith('./')) out.push(node)
+      } else if (node && typeof node === 'object') {
+        for (const v of Object.values(node)) collectExportPaths(v, out)
+      }
+      return out
+    }
+    const resolveResults = EXPORTS_RESOLVE_CHECK.map((dir) => {
+      const name = readPkg(dir).name
+      if (!installOk) return { name, ok: false, error: 'not attempted (npm install failed)' }
+      const installedDir = join(scratchDir, 'node_modules', name)
+      try {
+        const installedPkg = JSON.parse(readFileSync(join(installedDir, 'package.json'), 'utf8'))
+        const paths = collectExportPaths(installedPkg.exports)
+        for (const key of ['main', 'svelte', 'module']) {
+          if (typeof installedPkg[key] === 'string' && installedPkg[key].startsWith('./')) {
+            paths.push(installedPkg[key])
+          }
+        }
+        const unique = [...new Set(paths)]
+        const missing = unique.filter((p) => !existsSync(join(installedDir, p)))
+        return {
+          name,
+          ok: unique.length > 0 && missing.length === 0,
+          error:
+            unique.length === 0
+              ? 'package.json declares no resolvable exports/main/svelte paths'
+              : missing.length
+                ? `declared but missing on disk: ${missing.join(', ')}`
+                : null,
+        }
+      } catch (err) {
+        return { name, ok: false, error: String((err && err.message) || err) }
+      }
+    })
+
+    const results = [...importResults, ...resolveResults]
+
     // 5. Report.
     for (const dir of CURATED) {
       const name = readPkg(dir).name
       const r = results.find((x) => x.name === name)
       const ok = installOk && !!r?.ok
       if (!ok) failed = true
+      const mode = RAW_IMPORT_CHECK.includes(dir) ? 'import' : 'exports-resolve'
       // eslint-disable-next-line no-console
       console.log(
         `${ok ? '✓' : '✗'} ${name.padEnd(16)} pack ok  ${installOk ? 'install ok' : 'install FAILED'}  ` +
-          (r?.ok ? 'import ok' : `import FAILED: ${r?.error ?? 'unknown'}`),
+          (r?.ok ? `${mode} ok` : `${mode} FAILED: ${r?.error ?? 'unknown'}`),
       )
     }
     return !failed
@@ -197,5 +261,5 @@ if (!ok) {
 }
 // eslint-disable-next-line no-console
 console.log(
-  '✓ core/react/vue/solid/svelte pack, npm-install, and import cleanly outside the workspace\n',
+  '✓ core/react/vue/solid pack+npm-install+import cleanly, and svelte packs+installs with an intact exports map, all outside the workspace\n',
 )

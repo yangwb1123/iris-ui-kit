@@ -16,9 +16,10 @@
 // none of which is relevant to the hydration question — while rendering the
 // exact same iris-component tree the app ships: ThemeProvider wrapping a Button +
 // Input + Badge row, the Dialog and Popover overlays (closed, so server-rendered
-// as just their triggers), and the data Table. The overlays' panels are
-// portal/closed and intentionally produce no server HTML; their triggers do, and
-// those must still hydrate cleanly.
+// as just their triggers), the data Table, and the "Add team member" IrisForm
+// (validators wired, untouched/error-free initial state). The overlays' panels
+// are portal/closed and intentionally produce no server HTML; their triggers do,
+// and those must still hydrate cleanly.
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as React from 'react'
 import { act } from 'react'
@@ -41,6 +42,10 @@ import {
   IrisPopoverContent,
   IrisTable,
   type IrisTableColumn,
+  useForm,
+  useField,
+  IrisForm,
+  IrisFormField,
 } from '@iris-ui/react'
 import { createThemeStore } from '@iris-ui/theme'
 import { lightTheme, darkTheme } from '@iris-ui/tokens'
@@ -82,6 +87,60 @@ const themeStore = createThemeStore({
   themes: { light: lightTheme, dark: darkTheme },
   default: 'light',
 })
+
+// Mirrors app/Demo.tsx's AddMemberForm exactly: useForm owns the store,
+// useField reads it via context from a descendant of <IrisForm>, and both
+// fields are required — the untouched initial state must be error-free on
+// both the server render and the post-hydrate client render.
+type MemberValues = { name: string; role: string }
+
+function MemberNameField() {
+  const field = useField<string>('name')
+  return (
+    <IrisFormField label="Name" required error={field.error}>
+      <IrisInput placeholder="Jane Doe" {...field.inputProps} />
+    </IrisFormField>
+  )
+}
+
+function MemberRoleField() {
+  const field = useField<string>('role')
+  return (
+    <IrisFormField label="Role" required error={field.error}>
+      <IrisInput placeholder="Engineer" {...field.inputProps} />
+    </IrisFormField>
+  )
+}
+
+function AddMemberForm() {
+  const [submitted, setSubmitted] = React.useState<MemberValues | null>(null)
+  const form = useForm<MemberValues>({
+    initialValues: { name: '', role: '' },
+    validators: {
+      name: (v) => (v.trim() ? undefined : 'Name is required'),
+      role: (v) => (v.trim() ? undefined : 'Role is required'),
+    },
+    onSubmit: (values) => setSubmitted(values),
+  })
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 16, margin: '0 0 8px' }}>Add team member</h2>
+      <IrisForm form={form.form} style={{ display: 'grid', gap: 12, maxWidth: 320 }}>
+        <MemberNameField />
+        <MemberRoleField />
+        <IrisButton type="submit" variant="solid" disabled={form.isSubmitting}>
+          Add member
+        </IrisButton>
+      </IrisForm>
+      {submitted ? (
+        <p style={{ fontSize: 13, color: 'var(--iris-muted)', margin: '8px 0 0' }}>
+          Added {submitted.name} as {submitted.role}.
+        </p>
+      ) : null}
+    </div>
+  )
+}
 
 /**
  * A factory (not a shared element) so the server tree and the client tree are
@@ -145,6 +204,8 @@ function AppComposition() {
           <h2 style={{ fontSize: 16, margin: '0 0 8px' }}>Team</h2>
           <IrisTable<Row> columns={columns} data={rows} rowKey="id" />
         </div>
+
+        <AddMemberForm />
       </section>
     </ThemeProvider>
   )
@@ -191,6 +252,14 @@ describe('ssr-next app composition hydration', () => {
     expect(serverHtml).toContain('Primary action')
     expect(serverHtml).toContain('Ada Lovelace')
     expect(serverHtml).toContain('live badge')
+    expect(serverHtml).toContain('Add team member')
+    // The form is untouched on first render — its validators must NOT have
+    // fired yet, so no error text should appear in the server markup. A
+    // server-vs-client difference in *when* validation first runs (e.g. an
+    // eager validate-on-mount that behaves differently with/without a DOM)
+    // is exactly the class of SSR-only bug this section exists to catch.
+    expect(serverHtml).not.toContain('Name is required')
+    expect(serverHtml).not.toContain('Role is required')
 
     // 2. Plant that HTML into a real container, exactly as the browser receives
     //    the initial document.
@@ -227,6 +296,12 @@ describe('ssr-next app composition hydration', () => {
       // IrisTable renders a CSS-grid layout with WAI-ARIA roles (role="table"),
       // not a native <table> element — assert the data grid survived hydration.
       expect(container.querySelector('[role="table"]')).not.toBeNull()
+      // The form survived hydration, still untouched (no errors) — and its
+      // native <form> element (IrisForm's `data-iris-form` marker) is present,
+      // proving the validation-engine wiring reconciled cleanly.
+      expect(container.textContent).toContain('Add team member')
+      expect(container.querySelector('[data-iris-form]')).not.toBeNull()
+      expect(container.querySelector('[data-iris-form-field-error]')).toBeNull()
     } finally {
       errorSpy.mockRestore()
       warnSpy.mockRestore()

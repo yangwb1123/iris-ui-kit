@@ -46,6 +46,13 @@ A representative spread, on purpose:
   up on hydration.
 - **Data:** `IrisTable` with columns + in-memory rows (incl. a `render` cell
   returning an `IrisBadge`).
+- **Forms:** `IrisForm` + `useForm` + `useField` + `IrisFormField` — an "Add
+  team member" form with two required, validated fields. The most
+  stateful/validation-heavy component class in the library, and the kind most
+  likely to hit an SSR-only bug (validation engine touching the DOM at the
+  wrong time, or a server-vs-client mismatch in the initial validation state).
+  It server-renders untouched (no errors) and becomes interactive — typing,
+  blur-validation, submit — only after hydration.
 - **Basics:** `IrisButton`, `IrisInput` (controlled via `useState`), `IrisBadge`.
 - **Theming:** `ThemeProvider` + `createThemeStore` (client-only CSS-var
   injection).

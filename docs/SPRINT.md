@@ -4,6 +4,8 @@
 
 ## 当前状态 (Current state)
 
+**2026-07-19: architect gap-scan session done** — see CHANGELOG's top entry. `pnpm turbo run test typecheck lint build` (165/165 tasks) + `check:pack-install` + `check:desktop-parity` + `check:rsc` all verified green as a final integration pass. Highlight: this repo's first-ever external-consumer pack+install proof (`check:pack-install`) found and fixed 2 real pre-publish packaging bugs (Svelte ESM imports, Solid SSR crash) on its first run, and a new visual-regression scaffold found and fixed 2 more (React `IrisButton` dropping `aria-label`, a silently-broken smoke E2E test) — all 5 originally-planned directions plus these 4 bonus fixes landed same-session, 11 commits.
+
 Iris UI — token-driven, 4-framework (React/Vue/Solid/Svelte) UI infrastructure over a shared `@iris-ui/core`. **Feature-complete & at parity.**
 
 - 25 packages (all publishable, CI + changesets wired), 23 turbo task groups, **126/126 gates green**, 0 skipped tests.

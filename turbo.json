@@ -46,6 +46,11 @@
       "cache": false,
       "outputs": []
     },
+    "check:pack-install": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "outputs": []
+    },
     "format:check": {
       "cache": false,
       "outputs": []

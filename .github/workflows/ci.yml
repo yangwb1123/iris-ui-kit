@@ -40,6 +40,10 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Pack + external npm install smoke check (advisory — first run, not yet proven stable)
+        run: pnpm check:pack-install
+        continue-on-error: true
+
       - name: Manifest up-to-date
         run: pnpm check:manifest
 

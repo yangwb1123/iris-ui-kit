@@ -132,4 +132,49 @@ describe('@iris-ui/react IrisButton', () => {
     expect(onClick).not.toHaveBeenCalled()
     expect(childClick).not.toHaveBeenCalled()
   })
+
+  it('forwards unlisted native/ARIA props (e.g. aria-label) to the real DOM button', () => {
+    render(<IrisButton aria-label="Open command palette">🔍</IrisButton>)
+    const btn = screen.getByRole('button', { name: 'Open command palette' })
+    expect(btn.getAttribute('aria-label')).toBe('Open command palette')
+  })
+
+  it('forwards data-testid and other passthrough attributes', () => {
+    render(
+      <IrisButton data-testid="toolbar-btn" title="hover text" tabIndex={-1}>
+        X
+      </IrisButton>,
+    )
+    const btn = screen.getByTestId('toolbar-btn')
+    expect(btn.getAttribute('title')).toBe('hover text')
+    expect(btn.getAttribute('tabindex')).toBe('-1')
+  })
+
+  it('the component-computed aria-busy/aria-disabled always win over a spoofed value forwarded via rest', () => {
+    const spoofed = { 'aria-busy': 'false', 'aria-disabled': 'false' } as Record<string, string>
+    render(
+      <IrisButton loading disabled {...spoofed}>
+        X
+      </IrisButton>,
+    )
+    const btn = screen.getByRole('button')
+    // loading/disabled are IrisButton's own named props and drive the real
+    // computed state — anything of the same name accidentally present in
+    // `rest` must never be able to override them.
+    expect(btn.getAttribute('aria-busy')).toBe('true')
+    expect(btn.getAttribute('aria-disabled')).toBe('true')
+    expect(btn.disabled).toBe(true)
+  })
+
+  it('asChild also forwards an unlisted prop (aria-label) onto the cloned child', () => {
+    render(
+      <IrisButton asChild aria-label="Open command palette">
+        <a href="/x" data-testid="anchor">
+          go
+        </a>
+      </IrisButton>,
+    )
+    const link = screen.getByTestId('anchor')
+    expect(link.getAttribute('aria-label')).toBe('Open command palette')
+  })
 })

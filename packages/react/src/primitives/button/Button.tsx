@@ -3,6 +3,7 @@ import {
   cloneElement,
   isValidElement,
   useEffect,
+  type ButtonHTMLAttributes,
   type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type MouseEventHandler,
@@ -65,7 +66,10 @@ function Spinner() {
   )
 }
 
-export interface IrisButtonProps {
+export interface IrisButtonProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  'type' | 'disabled' | 'onClick' | 'className' | 'style' | 'children'
+> {
   variant?: IrisButtonVariant
   size?: IrisButtonSize
   disabled?: boolean
@@ -105,6 +109,7 @@ export function IrisButton({
   className,
   style,
   onClick,
+  ...rest
 }: IrisButtonProps) {
   useEffect(() => {
     installButtonStyles()
@@ -144,6 +149,7 @@ export function IrisButton({
       onClick?: MouseEventHandler<HTMLElement>
     }
     return cloneElement(only, {
+      ...rest,
       ...baseProps,
       className: [baseProps.className, childProps.className].filter(Boolean).join(' '),
       style: { ...baseProps.style, ...(childProps.style ?? {}) },
@@ -156,7 +162,7 @@ export function IrisButton({
   }
 
   return (
-    <button type={type} disabled={!isInteractive} onClick={handleClick} {...baseProps}>
+    <button {...rest} type={type} disabled={!isInteractive} onClick={handleClick} {...baseProps}>
       {(loading || leading) && (
         <span className="iris-button-leading">{loading ? <Spinner /> : leading}</span>
       )}

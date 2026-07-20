@@ -12,8 +12,10 @@ test('login → shell → Users table renders real data', async ({ page }) => {
   await page.goto('/')
 
   // Mock auth pre-fills 'ada' / 'secret' — just submit.
-  await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible()
-  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page.getByRole('heading', { name: /iris cms/i })).toBeVisible()
+  // Exact match: a substring match on "Sign in" also hits the "Sign in as"
+  // role-select trigger button above it.
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 
   // The shell mounted: the admin layout's nav + command palette trigger exist.
   await expect(page.getByRole('button', { name: 'Open command palette' })).toBeVisible()
@@ -31,7 +33,7 @@ test('login → shell → Users table renders real data', async ({ page }) => {
 
 test('theme toggle actually flips the skin and the applied CSS variable', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: 'Sign in' }).click()
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Open command palette' })).toBeVisible()
 
   // Themes are applied as CSS custom properties on the root element (no

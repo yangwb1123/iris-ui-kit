@@ -46,4 +46,33 @@ describe('getDirection', () => {
     el.setAttribute('dir', 'rtl')
     expect(getDirection(el)).toBe('rtl')
   })
+
+  it('revert with no prior dir restores to no attribute', () => {
+    const el = document.createElement('div')
+    const applied = applyDirection('rtl', el)
+    applied.revert()
+    expect(el.hasAttribute('dir')).toBe(false)
+  })
+
+  it('double revert is safe', () => {
+    const el = document.createElement('div')
+    const applied = applyDirection('rtl', el)
+    applied.revert()
+    applied.revert()
+    expect(el.getAttribute('dir')).toBeNull()
+  })
+
+  it('revert restores data-iris-dir correctly', () => {
+    const el = document.createElement('div')
+    applyDirection('rtl', el)
+    expect(el.getAttribute('data-iris-dir')).toBe('rtl')
+    applyDirection('ltr', el)
+    expect(el.getAttribute('data-iris-dir')).toBe('ltr')
+  })
+
+  it('handles auto direction', () => {
+    const el = document.createElement('div')
+    applyDirection('auto', el)
+    expect(el.getAttribute('dir')).toBe('auto')
+  })
 })

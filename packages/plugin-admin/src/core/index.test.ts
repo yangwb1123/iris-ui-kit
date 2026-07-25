@@ -61,4 +61,27 @@ describe('plugin-admin core', () => {
     const { tokens } = runPlugins([adminPlugin])
     expect(tokens['--iris-admin-page-gap']).toBe(adminTokens['--iris-admin-page-gap'])
   })
+
+  it('resolveAdminPage handles page with undefined key', () => {
+    expect(resolveAdminPage(schema, undefined)).toBeUndefined()
+  })
+
+  it('firstNavLeafKey returns undefined for empty nav array', () => {
+    expect(firstNavLeafKey([])).toBeUndefined()
+  })
+
+  it('adminDataViewColumns handles empty column list', () => {
+    expect(adminDataViewColumns([])).toEqual([])
+  })
+
+  it('resolveAdminPage finds custom page type', () => {
+    const page = resolveAdminPage(schema, 'dash')
+    expect(page?.type).toBe('custom')
+    expect(page?.key).toBe('dash')
+  })
+
+  it('adminDataViewColumns uses dataIndex when provided', () => {
+    const cols = adminDataViewColumns([{ key: 'x', title: 'X', dataIndex: 'y' }])
+    expect(cols[0]?.getValue({ y: 42 })).toBe(42)
+  })
 })

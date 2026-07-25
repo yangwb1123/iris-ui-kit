@@ -279,6 +279,14 @@ describe('createStore.batch', () => {
     expect(store.getState()).toEqual({ count: 1 })
     expect(listener).toHaveBeenCalledTimes(1)
   })
+
+  it('batch with no actual state change fires no notification', () => {
+    const store = createStore({ x: 1 })
+    const listener = vi.fn()
+    store.subscribe(listener)
+    store.setState({ x: 2 })
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('derived', () => {
@@ -347,5 +355,68 @@ describe('derived', () => {
     const a = createStore(1)
     const d = derived([a], (x) => x)
     expect(() => d.setState(2)).toThrow(/read-only/)
+  })
+
+  it('batch coalesces multiple writes into one notification', () => {
+    const store = createStore({ a: 1, b: 2 })
+    const listener = vi.fn()
+    store.subscribe(listener)
+    store.batch(() => {
+      store.setState({ a: 2, b: 2 })
+      store.setState({ a: 2, b: 3 })
+    })
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(store.getState()).toEqual({ a: 2, b: 3 })
+  })
+
+  it('nested batch joins the outermost flush', () => {
+    const store = createStore(0)
+    const listener = vi.fn()
+    store.subscribe(listener)
+    store.batch(() => {
+      store.setState(1)
+      store.batch(() => {
+        store.setState(2)
+      })
+      store.setState(3)
+    })
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(store.getState()).toBe(3)
+  })
+
+  it('subscribeWith fires only when the selected slice changes', () => {
+    const store = createStore({ a: 1, b: 1 })
+    const listener = vi.fn()
+    store.subscribeWith((s) => s.a, listener)
+    store.setState({ a: 1, b: 2 }) // b changes, a does not — no notification
+    expect(listener).not.toHaveBeenCalled()
+    store.setState({ a: 2, b: 2 }) // a changes — notification fires
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener).toHaveBeenCalledWith(2)
+  })
+
+  it('subscribeWith uses custom equals', () => {
+    const store = createStore({ tags: ['a', 'b'] })
+    const listener = vi.fn()
+    store.subscribeWith(
+      (s) => s.tags,
+      listener,
+      (a, b) => a.length === b.length,
+    )
+    store.setState({ tags: ['a', 'c'] }) // same length — equals says equal
+    expect(listener).not.toHaveBeenCalled()
+    store.setState({ tags: ['a'] }) // different length — fires
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
+  it('subscribeWith returns an unsubscribe that stops notifications', () => {
+    const store = createStore({ x: 1 })
+    const listener = vi.fn()
+    const unsub = store.subscribeWith((s) => s.x, listener)
+    store.setState({ x: 2 })
+    expect(listener).toHaveBeenCalledTimes(1)
+    unsub()
+    store.setState({ x: 3 })
+    expect(listener).toHaveBeenCalledTimes(1) // no additional call
   })
 })

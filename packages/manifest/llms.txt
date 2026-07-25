@@ -280,7 +280,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   slots: default
   quality: 3 props, 0 events
 - IrisButton [react/solid/svelte/vue]
-  React port of `IrisButton`. Same prop contract as `@iris-ui/vue`'s version. **No business logic is duplicated** — the `composeEventHandlers` helper, variant token map, and singleton stylesheet are all from `@iris-ui/core` / a near-identical CSS file.
+  Primary action button. Supports four variants (`solid`, `outline`, `ghost`, `link`) and three sizes (`sm`, `md`, `lg`). Each variant is styled via CSS custom properties (`var(--iris-primary)`, `var(--iris-border)` etc.) so the button automatically adapts to the active theme/skin.
   props: variant?, size?, disabled?, loading?, type?, asChild?, leading?, children?, className?, style?, onClick?
   events: onClick
   slots: leading, default

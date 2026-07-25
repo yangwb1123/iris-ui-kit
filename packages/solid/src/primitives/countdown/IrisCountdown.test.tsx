@@ -46,4 +46,30 @@ describe('IrisCountdown', () => {
     expect(getByText('Time Left')).toBeTruthy()
     expect(getByText('→')).toBeTruthy()
   })
+
+  it('renders suffix', () => {
+    const target = Date.now() + 60000
+    const { getByText } = render(() => <IrisCountdown value={target} suffix="remaining" />)
+    expect(getByText('remaining')).toBeTruthy()
+  })
+
+  it('forwards class', () => {
+    const target = Date.now() + 60000
+    const { container } = render(() => <IrisCountdown value={target} class="my-counter" />)
+    expect(container.querySelector('[data-iris-countdown]')?.className).toContain('my-counter')
+  })
+
+  it('handles custom format', () => {
+    const target = Date.now() + 90061000
+    const { container } = render(() => <IrisCountdown value={target} format="DD:HH:mm:ss" />)
+    const el = container.querySelector('[data-iris-countdown-value]')
+    expect(el?.textContent).toMatch(/\d{2}:\d{2}:\d{2}:\d{2}/)
+  })
+
+  it('displays formatted time in HH:mm:ss format', () => {
+    const target = Date.now() + 3661000
+    const { container } = render(() => <IrisCountdown value={target} format="HH:mm:ss" />)
+    const el = container.querySelector('[data-iris-countdown-value]')
+    expect(el?.textContent).toBe('01:01:01')
+  })
 })

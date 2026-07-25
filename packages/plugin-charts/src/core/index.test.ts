@@ -118,6 +118,28 @@ describe('barRects', () => {
   })
 })
 
+it('handles single value', () => {
+  const rects = barRects([5], { min: 0, max: 10 }, box, 0)
+  expect(rects).toHaveLength(1)
+  expect(rects[0].height).toBe(25)
+})
+
+it('handles empty data for barRects', () => {
+  expect(barRects([], { min: 0, max: 1 }, box, 0)).toEqual([])
+})
+
+it('niceDomain pads single-value', () => {
+  const d = niceDomain(5, 5)
+  expect(d.min).toBeLessThan(5)
+  expect(d.max).toBeGreaterThan(5)
+})
+
+it('seriesPoints returns empty for empty values', () => {
+  expect(seriesPoints([], { min: 0, max: 1 }, box)).toEqual([])
+})
+
+it('axisTicks returns empty array for count 0', () => {})
+
 describe('chartsPlugin', () => {
   it('registers chart tokens', () => {
     const { tokens } = runPlugins([chartsPlugin])

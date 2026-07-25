@@ -429,6 +429,9 @@ importers:
 
   apps/playground:
     dependencies:
+      '@iris-ui/core':
+        specifier: workspace:^
+        version: link:../../packages/core
       '@iris-ui/plugin-charts':
         specifier: workspace:^
         version: link:../../packages/plugin-charts

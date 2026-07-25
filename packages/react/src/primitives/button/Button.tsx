@@ -84,18 +84,26 @@ export interface IrisButtonProps extends Omit<
 }
 
 /**
- * React port of `IrisButton`. Same prop contract as `@iris-ui/vue`'s
- * version. **No business logic is duplicated** — the `composeEventHandlers`
- * helper, variant token map, and singleton stylesheet are all from
- * `@iris-ui/core` / a near-identical CSS file.
+ * Primary action button. Supports four variants (`solid`, `outline`, `ghost`,
+ * `link`) and three sizes (`sm`, `md`, `lg`). Each variant is styled via
+ * CSS custom properties (`var(--iris-primary)`, `var(--iris-border)` etc.)
+ * so the button automatically adapts to the active theme/skin.
  *
- * Validates the React-readiness promise: any future primitive can be ported
- * by writing a thin .tsx wrapper around the same shared logic.
+ * When `loading` is true a spinner replaces the leading icon and clicks are
+ * suppressed. Pass `asChild` to delegate rendering to a single child element
+ * (e.g. `<IrisButton asChild><a href="…">link</a></IrisButton>`).
+ *
+ * All unlisted HTML attributes (`aria-*`, `data-*`, `id`, etc.) are forwarded
+ * to the root `<button>` element via `{...rest}`.
  *
  * @example
- *   <IrisButton variant="solid" onClick={() => save()}>
- *     Save
- *   </IrisButton>
+ *   <IrisButton variant="solid" onClick={() => save()}>Save</IrisButton>
+ *
+ * @example
+ *   <IrisButton variant="outline" size="sm" loading>Processing</IrisButton>
+ *
+ * @example
+ *   <IrisButton asChild><a href="/dashboard">Dashboard</a></IrisButton>
  */
 export function IrisButton({
   variant = 'solid',

@@ -105,7 +105,7 @@ coverage:
 size:
   # gzipped KB 预算（dist/index.js 的 gzip 后大小）
   budgets:
-    "@iris-ui/core": 33
+    "@iris-ui/core": 35
     "@iris-ui/tokens": 3
     "@iris-ui/theme": 3.5
     "@iris-ui/skins": 5

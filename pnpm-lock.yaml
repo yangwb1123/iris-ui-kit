@@ -438,6 +438,9 @@ importers:
       '@iris-ui/plugin-charts':
         specifier: workspace:^
         version: link:../../packages/plugin-charts
+      '@iris-ui/plugin-markdown':
+        specifier: workspace:^
+        version: link:../../packages/plugin-markdown
       '@iris-ui/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens

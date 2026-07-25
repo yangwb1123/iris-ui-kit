@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { runPlugins } from '@iris-ui/core'
 import {
   createFilterBuilder,
@@ -72,5 +72,41 @@ describe('createFilterBuilder', () => {
   it('plugin registers its tokens', () => {
     const { tokens } = runPlugins([queryBuilderPlugin])
     expect(tokens['--iris-query-builder-gap']).toBe(queryBuilderTokens['--iris-query-builder-gap'])
+  })
+
+  it('subscribe fires on rule changes', () => {
+    const b = createFilterBuilder({ columns })
+    const listener = vi.fn()
+    b.subscribe(listener)
+    b.addRule()
+    expect(listener).toHaveBeenCalled()
+  })
+
+  it('updateRule with value updates the rule', () => {
+    const b = createFilterBuilder({ columns })
+    b.addRule()
+    const id = b.getState().rules[0]!.id
+    b.updateRule(id, { value: 'test' })
+    expect(b.getState().rules[0]?.value).toBe('test')
+  })
+
+  it('columnFor returns a column by key', () => {
+    const b = createFilterBuilder({ columns })
+    expect(b.columnFor('name')?.type).toBe('string')
+    expect(b.columnFor('nope')).toBeUndefined()
+  })
+
+  it('initialRules seeds the builder', () => {
+    const b = createFilterBuilder({
+      columns,
+      initialRules: [{ key: 'name', operator: 'contains', value: 'ada' }],
+    })
+    expect(b.getState().rules).toHaveLength(1)
+    expect(b.getState().rules[0]?.value).toBe('ada')
+  })
+
+  it('empty columns still creates a builder', () => {
+    const b = createFilterBuilder({ columns: [] })
+    expect(b.getState().rules).toEqual([])
   })
 })

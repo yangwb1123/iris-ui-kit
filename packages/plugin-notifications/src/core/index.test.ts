@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { runPlugins } from '@iris-ui/core'
 import { createNotificationCenter, notificationsPlugin, notificationTokens } from './index'
 
@@ -46,5 +46,26 @@ describe('createNotificationCenter', () => {
     expect(c.getState().items).toHaveLength(1)
     const { tokens } = runPlugins([notificationsPlugin])
     expect(tokens['--iris-notification-gap']).toBe(notificationTokens['--iris-notification-gap'])
+  })
+
+  it('subscribe notifies on state changes', () => {
+    const c = createNotificationCenter()
+    const listener = vi.fn()
+    c.subscribe(listener)
+    c.push({ title: 'X' })
+    expect(listener).toHaveBeenCalled()
+  })
+
+  it('handles empty initial state', () => {
+    const c = createNotificationCenter()
+    expect(c.getState().items).toEqual([])
+    expect(c.unreadCount()).toBe(0)
+  })
+
+  it('push with tone defaults to undefined', () => {
+    const c = createNotificationCenter()
+    const id = c.push({ title: 'Test' })
+    const item = c.getState().items.find((n) => n.id === id)
+    expect(item?.tone).toBeUndefined()
   })
 })

@@ -38,6 +38,31 @@ describe('compareValues', () => {
     expect(compareValues(null, 1)).toBeLessThan(0)
     expect(compareValues(null, null)).toBe(0)
   })
+
+  it('handles undefined', () => {
+    expect(compareValues(undefined, 1)).toBeLessThan(0)
+    expect(compareValues(1, undefined)).toBeGreaterThan(0)
+    expect(compareValues(undefined, undefined)).toBe(0)
+  })
+
+  it('handles booleans', () => {
+    expect(compareValues(true, false)).toBeGreaterThan(0)
+    expect(compareValues(true, true)).toBe(0)
+  })
+
+  it('handles dates as strings', () => {
+    // compareValues converts dates to locale strings, not timestamps
+    const a = new Date('2024-01-01')
+    const b = new Date('2024-01-01')
+    expect(compareValues(a, b)).toBe(0)
+    expect(compareValues(a, null)).toBeGreaterThan(0)
+  })
+
+  it('handles mixed types', () => {
+    expect(compareValues('2', 2)).not.toBeNaN()
+    expect(compareValues({}, 'a')).not.toBeNaN()
+    expect(compareValues([], null)).not.toBeNaN()
+  })
 })
 
 describe('cycleSort', () => {

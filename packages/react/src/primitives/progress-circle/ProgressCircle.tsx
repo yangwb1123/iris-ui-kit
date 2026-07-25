@@ -43,6 +43,7 @@ export function IrisProgressCircle({
   ariaLabel,
   style,
   className,
+  ...rest
 }: IrisProgressCircleProps): React.ReactElement {
   const ratio = Math.max(0, Math.min(1, max > 0 ? value / max : 0))
   const percent = Math.round(ratio * 100)
@@ -62,6 +63,7 @@ export function IrisProgressCircle({
       aria-valuetext={`${percent}%`}
       aria-label={ariaLabel}
       className={className}
+      {...rest}
       style={{ position: 'relative', display: 'inline-flex', width: size, height: size, ...style }}
     >
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">

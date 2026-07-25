@@ -1,5 +1,6 @@
 import { SkinProvider, IrisProvider } from '@iris-ui/react'
 import { notificationsPlugin } from '@iris-ui/plugin-notifications/react'
+import { localeZhPlugin } from '@iris-ui/plugin-locale-zh'
 import { skinEngine } from './skin'
 import { AuthProvider, useAuth } from './auth'
 import { Shell } from './Shell'
@@ -14,7 +15,7 @@ function Gate() {
 export function App() {
   return (
     <SkinProvider engine={skinEngine}>
-      <IrisProvider plugins={[notificationsPlugin]}>
+      <IrisProvider plugins={[notificationsPlugin, localeZhPlugin]} locale="zh-CN">
         <AuthProvider>
           <Gate />
         </AuthProvider>

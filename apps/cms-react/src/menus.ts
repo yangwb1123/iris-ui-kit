@@ -44,12 +44,16 @@ export const menus: NavNode[] = [
     ],
   },
   { key: 'calendar', title: 'Calendar', icon: 'calendar', order: 5 },
+  { key: 'form-builder', title: 'Form builder', icon: 'edit', order: 6 },
+  { key: 'realtime', title: 'Realtime', icon: 'clock', order: 7 },
+  { key: 'pro-table', title: 'Pro Table', icon: 'table', order: 8 },
+  { key: 'documentation', title: 'Documentation', icon: 'file', order: 9 },
   // Admin-only section: viewers won't see this at all.
   {
     key: 'admin',
     title: 'Admin',
     icon: 'info',
-    order: 6,
+    order: 10,
     roles: ['admin'],
     children: [
       { key: 'settings', title: 'Settings', icon: 'info' },

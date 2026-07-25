@@ -84,6 +84,14 @@ export function buildManifest(raw: RawDiscovery): IrisManifest {
       (n) => n.startsWith(c.name) && PART_SUFFIXES.has(n.slice(c.name.length)),
     )
     if (subs.length > 0) c.subComponents = subs
+
+    // Quality metadata: component-level badges derived from source analysis.
+    const props = c.props ?? []
+    const events = c.events ?? []
+    c.quality = {
+      propCount: props.length,
+      eventCount: events.length,
+    }
   }
 
   const byGroup = new Map<string, string[]>()

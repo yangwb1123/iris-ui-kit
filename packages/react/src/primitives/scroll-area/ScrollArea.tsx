@@ -31,6 +31,7 @@ export function IrisScrollArea({
   children,
   style,
   className,
+  ...rest
 }: IrisScrollAreaProps): React.ReactElement {
   return (
     <div
@@ -38,6 +39,7 @@ export function IrisScrollArea({
       data-axis={axis}
       tabIndex={0}
       className={className}
+      {...rest}
       style={{ ...OVERFLOW[axis], maxHeight, maxWidth, outline: 'none', ...style }}
     >
       {children}

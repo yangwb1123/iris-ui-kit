@@ -42,11 +42,7 @@ async function login(page: Page): Promise<void> {
   const submit = page.getByRole('button', { name: 'Sign in', exact: true })
   await expect(submit).toBeVisible()
   await submit.click()
-  // Wait for the shell to mount on its default route (not the command-palette
-  // trigger smoke.spec.ts waits on: that button passes an `aria-label` IrisButton
-  // doesn't currently forward to the DOM — a pre-existing a11y bug, out of scope
-  // here — so its accessible name is actually its visible "⌘K" text, not the
-  // label. The Dashboard heading is a reliable, unrelated mount signal.)
+  // Wait for the shell to mount on its default route.
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
 }
 
@@ -70,11 +66,8 @@ test.describe('visual regression', () => {
     await login(page)
     await gotoUsers(page)
 
-    // The theme toggle is icon-only, and IrisButton currently drops the
-    // `aria-label` prop Shell.tsx passes it (the same pre-existing bug
-    // login() routes around above), so its accessible name is empty rather
-    // than "Dark mode"/"Light mode" — target it by its rendered icon
-    // (`IrisIcon` does write a stable `data-iris-icon` attribute) instead.
+    // Find the theme toggle by its accessible name (IrisButton now forwards
+    // `aria-label` correctly), falling back to the rendered icon name.
     const toggle = page
       .getByRole('banner')
       .locator('button', { has: page.locator('[data-iris-icon="moon"], [data-iris-icon="sun"]') })

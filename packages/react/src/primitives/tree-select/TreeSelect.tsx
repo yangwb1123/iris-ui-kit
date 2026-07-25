@@ -69,6 +69,7 @@ export function IrisTreeSelect({
   ariaDescribedby,
   style,
   className,
+  ...rest
 }: IrisTreeSelectProps): React.ReactElement {
   const { t } = useI18n()
   const rootRef = React.useRef<HTMLDivElement | null>(null)
@@ -190,6 +191,7 @@ export function IrisTreeSelect({
       data-iris-tree-select=""
       data-state={open ? 'open' : 'closed'}
       className={className}
+      {...rest}
       style={{ position: 'relative', display: 'inline-block', minWidth: 220, ...style }}
     >
       <button

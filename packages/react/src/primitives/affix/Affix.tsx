@@ -32,6 +32,7 @@ export function IrisAffix({
   children,
   style,
   className,
+  ...rest
 }: IrisAffixProps): React.ReactElement {
   const placeholderRef = React.useRef<HTMLDivElement | null>(null)
   const contentRef = React.useRef<HTMLDivElement | null>(null)
@@ -90,6 +91,7 @@ export function IrisAffix({
       data-iris-affix=""
       data-affixed={affixed ? 'true' : undefined}
       className={className}
+      {...rest}
       style={{ ...(affixed && reserve ? { height: reserve } : null), ...style }}
     >
       <div ref={contentRef} data-iris-affix-content="" style={affixed ? fixedStyle : undefined}>

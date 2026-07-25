@@ -54,6 +54,7 @@ export function IrisCountdown({
   size = 'md',
   style,
   className,
+  ...rest
 }: IrisCountdownProps): React.ReactElement {
   const [now, setNow] = React.useState(() => Date.now())
   const onFinishRef = React.useRef(onFinish)
@@ -89,6 +90,7 @@ export function IrisCountdown({
       data-iris-countdown=""
       data-finished={finished ? 'true' : undefined}
       className={className}
+      {...rest}
       style={{ display: 'flex', flexDirection: 'column', gap: 4, ...style }}
     >
       {title != null ? (

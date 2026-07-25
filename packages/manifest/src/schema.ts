@@ -132,6 +132,14 @@ export interface ManifestComponent {
    * named render-slots (e.g. `'trigger'`, `'header'`). Absent when none found.
    */
   slots?: string[]
+  /** Quality badges: SSR safety, ...rest forwarding, contract coverage. */
+  quality?: {
+    restForwarding?: boolean
+    hasContract?: boolean
+    ssrSafe?: boolean
+    propCount?: number
+    eventCount?: number
+  }
 }
 
 export interface ManifestGroupSummary {

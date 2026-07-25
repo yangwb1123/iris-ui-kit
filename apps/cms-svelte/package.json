@@ -14,10 +14,11 @@
   },
   "dependencies": {
     "@iris-ui/core": "workspace:*",
+    "@iris-ui/plugin-form-builder": "workspace:^",
+    "@iris-ui/plugin-notifications": "workspace:*",
     "@iris-ui/svelte": "workspace:*",
     "@iris-ui/tokens": "workspace:*",
-    "svelte": "^5.16.0",
-    "@iris-ui/plugin-notifications": "workspace:*"
+    "svelte": "^5.16.0"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^4.0.4",

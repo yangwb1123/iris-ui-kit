@@ -44,6 +44,7 @@ export function IrisTransfer({
   disabled = false,
   style,
   className,
+  ...rest
 }: IrisTransferProps): React.ReactElement {
   const safeOptions = options ?? []
   const { t } = useI18n()
@@ -254,6 +255,7 @@ export function IrisTransfer({
       data-iris-transfer=""
       data-disabled={disabled ? 'true' : undefined}
       className={className}
+      {...rest}
       style={{ display: 'inline-flex', alignItems: 'stretch', gap: 12, ...style }}
     >
       {renderPane('source')}

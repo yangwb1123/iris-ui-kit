@@ -52,6 +52,7 @@ export function IrisCalendar({
   disabled = false,
   style,
   className,
+  ...rest
 }: IrisCalendarProps): React.ReactElement {
   const { t } = useI18n()
   const isControlled = valueProp !== undefined
@@ -184,6 +185,7 @@ export function IrisCalendar({
       className={className}
       data-iris-calendar=""
       data-disabled={disabled ? '' : undefined}
+      {...rest}
       style={{
         display: 'inline-flex',
         flexDirection: 'column',

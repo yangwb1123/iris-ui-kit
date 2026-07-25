@@ -22,11 +22,13 @@ import { DashboardPage } from './pages/DashboardPage'
 import { UsersPage } from './pages/UsersPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { GenericPage } from './pages/GenericPage'
+import { FormBuilderPage } from './pages/FormBuilderPage'
 
 const pages: Record<string, Component<{ title?: string }>> = {
   dashboard: DashboardPage,
   'all-users': UsersPage,
   settings: SettingsPage,
+  'form-builder': FormBuilderPage,
 }
 
 function PageHost(props: { routeKey: string }): JSX.Element {

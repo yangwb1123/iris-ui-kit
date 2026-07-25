@@ -57,6 +57,7 @@ export function IrisFloatButton({
   offset,
   style,
   className,
+  ...rest
 }: IrisFloatButtonProps): React.ReactElement {
   const { t } = useI18n()
   const rootRef = React.useRef<HTMLDivElement | null>(null)
@@ -86,6 +87,7 @@ export function IrisFloatButton({
       ref={rootRef}
       data-iris-float-button-root=""
       className={className}
+      {...rest}
       style={{
         position: 'fixed',
         insetBlockEnd: offset?.bottom ?? 24,

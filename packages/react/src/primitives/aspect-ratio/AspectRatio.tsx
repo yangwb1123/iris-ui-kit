@@ -20,12 +20,14 @@ export function IrisAspectRatio({
   children,
   style,
   className,
+  ...rest
 }: IrisAspectRatioProps): React.ReactElement {
   return (
     <div
       data-iris-aspect-ratio=""
       data-ratio={ratio}
       className={className}
+      {...rest}
       style={{ position: 'relative', width: '100%', aspectRatio: String(ratio), ...style }}
     >
       <div

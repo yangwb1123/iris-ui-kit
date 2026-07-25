@@ -39,6 +39,7 @@ export function IrisResult({
   children,
   style,
   className,
+  ...rest
 }: IrisResultProps): React.ReactElement {
   const s = STATUS[status]
   return (
@@ -46,6 +47,7 @@ export function IrisResult({
       data-iris-result=""
       data-status={status}
       className={className}
+      {...rest}
       style={{
         display: 'flex',
         flexDirection: 'column',

@@ -25,6 +25,7 @@ import CompositeShowcase from './sections/CompositeShowcase.vue'
 import DisplayShowcase from './sections/DisplayShowcase.vue'
 import SkeletonsShowcase from './sections/SkeletonsShowcase.vue'
 import BehaviorsShowcase from './sections/BehaviorsShowcase.vue'
+import ChartsShowcase from './sections/ChartsShowcase.vue'
 
 interface SectionEntry {
   id: string
@@ -53,6 +54,7 @@ const sections: SectionEntry[] = [
   { id: 'behaviors', label: 'Behaviors', group: 'Components', component: BehaviorsShowcase },
   { id: 'layout', label: 'Layouts', group: 'Layouts', component: LayoutShowcase },
   { id: 'skeletons', label: 'System Skeletons', group: 'Layer 4', component: SkeletonsShowcase },
+  { id: 'charts', label: 'Charts', group: 'Components', component: ChartsShowcase },
   { id: 'tokens', label: 'Theme Tokens', group: 'Foundation', component: null },
 ]
 

@@ -35,6 +35,7 @@ export function IrisDescriptions({
   bordered = false,
   style,
   className,
+  ...rest
 }: IrisDescriptionsProps): React.ReactElement {
   const horizontal = layout === 'horizontal'
   const pad = bordered ? '8px 12px' : undefined
@@ -59,6 +60,7 @@ export function IrisDescriptions({
       data-iris-descriptions=""
       data-layout={layout}
       className={className}
+      {...rest}
       style={{
         display: 'grid',
         gridTemplateColumns: horizontal

@@ -26,6 +26,7 @@ export function IrisRibbon({
   children,
   style,
   className,
+  ...rest
 }: IrisRibbonProps): React.ReactElement {
   const side: React.CSSProperties =
     placement === 'end'
@@ -45,6 +46,7 @@ export function IrisRibbon({
       data-iris-ribbon=""
       data-placement={placement}
       className={className}
+      {...rest}
       style={{ position: 'relative', display: 'inline-block', ...style }}
     >
       {children}

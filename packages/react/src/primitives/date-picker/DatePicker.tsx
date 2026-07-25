@@ -52,6 +52,7 @@ export function IrisDatePicker({
   ariaDescribedby,
   style,
   className,
+  ...rest
 }: IrisDatePickerProps): React.ReactElement {
   const { t } = useI18n()
   const isControlled = valueProp !== undefined
@@ -78,6 +79,7 @@ export function IrisDatePicker({
           aria-describedby={ariaDescribedby}
           data-iris-date-picker-trigger=""
           data-iris-date-picker-iso={value ? formatLocalISO(value) : undefined}
+          {...rest}
           data-state={open ? 'open' : 'closed'}
           style={{
             display: 'inline-flex',

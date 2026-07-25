@@ -36,6 +36,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Pre-release quality gates — ensure nothing broken before publishing
+      - name: Pre-release checks
+        run: |
+          node cli.mjs acceptance --all
+          node cli.mjs report check-size check-manifest
+
       # Opens/updates a "Version Packages" PR when changesets are pending, and
       # publishes to npm once that PR is merged (versions bumped, changelogs
       # written). `release` builds before `changeset publish`.

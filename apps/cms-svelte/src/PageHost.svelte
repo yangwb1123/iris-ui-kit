@@ -5,6 +5,7 @@
   import UsersPage from './pages/UsersPage.svelte'
   import SettingsPage from './pages/SettingsPage.svelte'
   import GenericPage from './pages/GenericPage.svelte'
+  import FormBuilderPage from './pages/FormBuilderPage.svelte'
 
   let { routeKey }: { routeKey: string } = $props()
 
@@ -17,6 +18,8 @@
   <UsersPage />
 {:else if routeKey === 'settings'}
   <SettingsPage />
+{:else if routeKey === 'form-builder'}
+  <FormBuilderPage />
 {:else}
   <GenericPage {title} />
 {/if}

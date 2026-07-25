@@ -88,6 +88,7 @@ export function IrisList<T = unknown>({
   renderItem,
   style,
   className,
+  ...rest
 }: IrisListProps<T>): React.ReactElement {
   const safeItems = items ?? []
   // Item-selection logic (single set / multiple toggle, dedup,
@@ -233,6 +234,7 @@ export function IrisList<T = unknown>({
       data-iris-list=""
       className={className}
       onKeyDown={onKeyDown}
+      {...rest}
       style={{
         listStyle: 'none',
         margin: 0,

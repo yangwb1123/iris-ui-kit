@@ -42,6 +42,7 @@ export const menus: NavNode[] = [
     ],
   },
   { key: 'calendar', title: 'Calendar', icon: 'calendar', order: 5 },
+  { key: 'form-builder', title: 'Form builder', icon: 'edit', order: 6 },
   // Admin-only: viewers won't see this at all.
-  { key: 'settings', title: 'Settings', icon: 'info', order: 6, roles: ['admin'] },
+  { key: 'settings', title: 'Settings', icon: 'info', order: 7, roles: ['admin'] },
 ]

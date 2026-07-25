@@ -49,6 +49,7 @@ export function IrisTimePicker({
   ariaDescribedby,
   style,
   className,
+  ...rest
 }: IrisTimePickerProps): React.ReactElement {
   const { t } = useI18n()
   const isControlled = valueProp !== undefined
@@ -154,6 +155,7 @@ export function IrisTimePicker({
       data-iris-time-picker=""
       data-disabled={disabled ? 'true' : undefined}
       className={className}
+      {...rest}
       style={{
         display: 'inline-flex',
         alignItems: 'center',

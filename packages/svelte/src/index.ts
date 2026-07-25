@@ -3,6 +3,8 @@
 
 export { toStore, toStoreSelector } from './useStore'
 export { toMachine } from './useMachine'
+export { toReconnectingSource } from './useReconnectingSource'
+export { toDisposableScope } from './useDisposableScope'
 
 // ── Layer 0: theme + skins ────────────────────────────────────────────────────
 export * from './theme'

@@ -38,6 +38,7 @@ export function IrisTagInput({
   ariaDescribedby,
   style,
   className,
+  ...rest
 }: IrisTagInputProps): React.ReactElement {
   const { t } = useI18n()
   const isControlled = value !== undefined
@@ -103,6 +104,7 @@ export function IrisTagInput({
       data-iris-tag-input=""
       data-state={invalid ? 'invalid' : focused ? 'focused' : 'idle'}
       className={className}
+      {...rest}
       style={{
         display: 'flex',
         flexWrap: 'wrap',

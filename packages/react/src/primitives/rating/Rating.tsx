@@ -65,6 +65,7 @@ export function IrisRating({
   ariaDescribedby,
   style,
   className,
+  ...rest
 }: IrisRatingProps): React.ReactElement {
   const { t } = useI18n()
   const step = allowHalf ? 0.5 : 1
@@ -145,6 +146,7 @@ export function IrisRating({
       className={className}
       onKeyDown={handleKeyDown}
       onMouseLeave={() => setHover(null)}
+      {...rest}
       style={{
         display: 'inline-flex',
         gap: Math.round(px * 0.18),

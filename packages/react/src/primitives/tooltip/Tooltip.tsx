@@ -43,6 +43,7 @@ export function IrisTooltip({
   portalTarget,
   disabled = false,
   children,
+  ...rest
 }: IrisTooltipProps): React.ReactElement | null {
   const triggerRef = React.useRef<HTMLElement | null>(null)
   const floatingRef = React.useRef<HTMLElement | null>(null)
@@ -114,6 +115,7 @@ export function IrisTooltip({
       ref={captureFloatingRef as React.Ref<HTMLDivElement>}
       id={tooltipId}
       role="tooltip"
+      {...rest}
       data-state="open"
       data-placement={placement}
       style={{

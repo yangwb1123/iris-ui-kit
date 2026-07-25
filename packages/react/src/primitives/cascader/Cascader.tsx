@@ -83,6 +83,7 @@ export function IrisCascader({
   ariaDescribedby,
   style,
   className,
+  ...rest
 }: IrisCascaderProps): React.ReactElement {
   const { t } = useI18n()
   const rootRef = React.useRef<HTMLDivElement | null>(null)
@@ -138,6 +139,7 @@ export function IrisCascader({
       data-iris-cascader=""
       data-state={open ? 'open' : 'closed'}
       className={className}
+      {...rest}
       style={{ position: 'relative', display: 'inline-block', minWidth: 240, ...style }}
     >
       <button

@@ -74,6 +74,7 @@ export function IrisCarousel({
   ariaLabel,
   style,
   className,
+  ...rest
 }: IrisCarouselProps): React.ReactElement {
   const { t } = useI18n()
   const slides = React.Children.toArray(children)
@@ -134,6 +135,7 @@ export function IrisCarousel({
       onMouseLeave={() => setHovered(false)}
       onFocus={() => setFocusedWithin(true)}
       onBlur={() => setFocusedWithin(false)}
+      {...rest}
       style={{ position: 'relative', outline: 'none', ...style }}
     >
       <div

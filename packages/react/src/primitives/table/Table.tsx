@@ -244,6 +244,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   errorState,
   style,
   className,
+  ...rest
 }: IrisTableProps<Row>): React.ReactElement {
   const { t } = useI18n()
   // Defensive: null/undefined columns → empty array
@@ -955,6 +956,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           ? (e) => setScrollLeft((e.currentTarget as HTMLDivElement).scrollLeft)
           : undefined
       }
+      {...rest}
       style={{
         background: 'var(--iris-background)',
         color: 'var(--iris-foreground)',

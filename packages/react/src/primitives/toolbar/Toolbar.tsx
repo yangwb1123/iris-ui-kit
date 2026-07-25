@@ -34,6 +34,7 @@ export function IrisToolbar({
   ariaLabel,
   style,
   className,
+  ...rest
 }: IrisToolbarProps): React.ReactElement {
   const ref = React.useRef<HTMLDivElement | null>(null)
 
@@ -120,6 +121,7 @@ export function IrisToolbar({
       className={className}
       onFocusCapture={onFocusCapture}
       onKeyDown={onKeyDown}
+      {...rest}
       style={{
         display: 'inline-flex',
         flexDirection: orientation === 'vertical' ? 'column' : 'row',

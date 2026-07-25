@@ -24,12 +24,14 @@ export function IrisFieldset({
   children,
   style,
   className,
+  ...rest
 }: IrisFieldsetProps): React.ReactElement {
   return (
     <fieldset
       data-iris-fieldset=""
       disabled={disabled}
       className={className}
+      {...rest}
       style={{
         minInlineSize: 0,
         margin: 0,

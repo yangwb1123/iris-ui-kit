@@ -666,7 +666,7 @@ describe('@iris-ui/react — cross-framework behavior contracts', () => {
     const { container } = render(
       <div>
         <IrisCombobox
-          data-iris-combobox-input="wrapper"
+          data-contract-harness="combobox"
           options={[
             { value: 'apple', label: 'Apple' },
             { value: 'banana', label: 'Banana' },

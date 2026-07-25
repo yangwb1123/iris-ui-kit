@@ -44,6 +44,7 @@ export function IrisAnchor({
   ariaLabel,
   style,
   className,
+  ...rest
 }: IrisAnchorProps): React.ReactElement {
   const [active, setActive] = React.useState('')
   const activeRef = React.useRef('')
@@ -88,7 +89,7 @@ export function IrisAnchor({
   }
 
   return (
-    <nav data-iris-anchor="" aria-label={ariaLabel} className={className} style={style}>
+    <nav data-iris-anchor="" aria-label={ariaLabel} className={className} {...rest} style={style}>
       <ul
         style={{
           listStyle: 'none',

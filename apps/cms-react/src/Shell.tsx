@@ -34,11 +34,19 @@ import { DashboardPage } from './pages/DashboardPage'
 import { UsersPage } from './pages/UsersPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { GenericPage } from './pages/GenericPage'
+import { FormBuilderPage } from './pages/FormBuilderPage'
+import { RealtimePage } from './pages/RealtimePage'
+import { ProTablePage } from './pages/ProTablePage'
+import { MarkdownPage } from './pages/MarkdownPage'
 
 const pages: Record<string, ComponentType<{ title?: string }>> = {
   dashboard: DashboardPage,
   'all-users': UsersPage,
   settings: SettingsPage,
+  'form-builder': FormBuilderPage,
+  realtime: RealtimePage,
+  'pro-table': ProTablePage,
+  documentation: MarkdownPage,
 }
 
 function PageHost({ routeKey }: { routeKey: string }) {

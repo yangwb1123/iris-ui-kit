@@ -38,9 +38,15 @@ export function IrisWatermark({
   gap = 24,
   style,
   className,
+  ...rest
 }: IrisWatermarkProps): React.ReactElement {
   return (
-    <div data-iris-watermark="" className={className} style={{ position: 'relative', ...style }}>
+    <div
+      data-iris-watermark=""
+      className={className}
+      {...rest}
+      style={{ position: 'relative', ...style }}
+    >
       {children}
       <div
         data-iris-watermark-overlay=""

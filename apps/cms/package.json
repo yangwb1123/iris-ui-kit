@@ -14,10 +14,11 @@
   },
   "dependencies": {
     "@iris-ui/core": "workspace:*",
+    "@iris-ui/plugin-form-builder": "workspace:^",
+    "@iris-ui/plugin-notifications": "workspace:*",
     "@iris-ui/tokens": "workspace:*",
     "@iris-ui/vue": "workspace:*",
-    "vue": "^3.5.13",
-    "@iris-ui/plugin-notifications": "workspace:*"
+    "vue": "^3.5.13"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",

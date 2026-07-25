@@ -75,6 +75,39 @@
       "cache": false,
       "outputs": []
     },
+
+    // ── CLI-based engineering gates ────────────────────────────────
+    "cli:check": {
+      "dependsOn": [],
+      "cache": false,
+      "outputs": []
+    },
+    "cli:harness": {
+      "dependsOn": [],
+      "cache": false,
+      "outputs": []
+    },
+    "cli:acceptance": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "outputs": []
+    },
+    "check:framework-parity": {
+      "dependsOn": [],
+      "cache": false,
+      "outputs": []
+    },
+    "check:tokens": {
+      "dependsOn": [],
+      "cache": false,
+      "outputs": []
+    },
+    "change-budget": {
+      "dependsOn": [],
+      "cache": false,
+      "outputs": []
+    },
+
     "clean": {
       "cache": false
     },

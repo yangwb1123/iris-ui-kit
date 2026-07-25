@@ -58,6 +58,7 @@ export function IrisDateRangePicker({
   ariaDescribedby,
   style,
   className,
+  ...rest
 }: IrisDateRangePickerProps): React.ReactElement {
   const { t } = useI18n()
   const isControlled = valueProp !== undefined
@@ -109,6 +110,7 @@ export function IrisDateRangePicker({
           disabled={disabled || undefined}
           aria-invalid={invalid ? 'true' : undefined}
           aria-describedby={ariaDescribedby}
+          {...rest}
           data-iris-date-range-picker-trigger=""
           data-state={open ? 'open' : 'closed'}
           style={{

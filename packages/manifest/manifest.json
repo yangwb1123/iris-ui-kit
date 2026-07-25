@@ -282,7 +282,11 @@
       ],
       "subComponents": [
         "IrisAccordionItem"
-      ]
+      ],
+      "quality": {
+        "propCount": 5,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisAccordionItem",
@@ -321,7 +325,11 @@
       ],
       "slots": [
         "title"
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisAdminApp",
@@ -355,7 +363,11 @@
       ],
       "slots": [
         "renderPage"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisAdminBreadcrumb",
@@ -408,7 +420,11 @@
       ],
       "events": [
         "onSelect"
-      ]
+      ],
+      "quality": {
+        "propCount": 5,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisAdminLayout",
@@ -543,7 +559,11 @@
       "slots": [
         "toolbar",
         "footer"
-      ]
+      ],
+      "quality": {
+        "propCount": 18,
+        "eventCount": 3
+      }
     },
     {
       "name": "IrisAdminTabs",
@@ -588,7 +608,11 @@
         "onChange",
         "onClose",
         "onRefresh"
-      ]
+      ],
+      "quality": {
+        "propCount": 4,
+        "eventCount": 3
+      }
     },
     {
       "name": "IrisAffix",
@@ -652,7 +676,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 7,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisAlert",
@@ -724,7 +752,11 @@
         "title",
         "icon",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 7,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisAnchor",
@@ -785,7 +817,11 @@
       ],
       "events": [
         "onChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 7,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisAspectRatio",
@@ -829,7 +865,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 4,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisAvatar",
@@ -901,7 +941,11 @@
       ],
       "slots": [
         "fallbackContent"
-      ]
+      ],
+      "quality": {
+        "propCount": 7,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisBackTop",
@@ -972,7 +1016,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisBadge",
@@ -1035,7 +1083,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 4,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisBanner",
@@ -1122,7 +1174,11 @@
         "icon",
         "actions",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 9,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisBarChart",
@@ -1188,7 +1244,11 @@
           "type": "React.CSSProperties",
           "optional": true
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisBreadcrumb",
@@ -1227,7 +1287,11 @@
       ],
       "subComponents": [
         "IrisBreadcrumbItem"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisBreadcrumbItem",
@@ -1267,7 +1331,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisButton",
@@ -1372,7 +1440,11 @@
       "slots": [
         "leading",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 11,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisCalendar",
@@ -1454,7 +1526,11 @@
       ],
       "events": [
         "onValueChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 11,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisCard",
@@ -1524,7 +1600,11 @@
         "header",
         "footer",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisCarousel",
@@ -1629,7 +1709,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 13,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisCascader",
@@ -1728,7 +1812,11 @@
       ],
       "events": [
         "onValueChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 13,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisCheckbox",
@@ -1800,7 +1888,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 7,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisChip",
@@ -1900,7 +1992,11 @@
       "slots": [
         "icon",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 10,
+        "eventCount": 2
+      }
     },
     {
       "name": "IrisClickOutside",
@@ -1949,7 +2045,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 4,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisCodeEditor",
@@ -2026,7 +2126,11 @@
       ],
       "events": [
         "onChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 9,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisColorPicker",
@@ -2078,7 +2182,11 @@
       ],
       "events": [
         "onChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 5,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisCombobox",
@@ -2179,7 +2287,11 @@
       ],
       "events": [
         "onValueChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 13,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisCommandPalette",
@@ -2241,7 +2353,11 @@
       "events": [
         "onOpenChange",
         "onSelect"
-      ]
+      ],
+      "quality": {
+        "propCount": 7,
+        "eventCount": 2
+      }
     },
     {
       "name": "IrisContainer",
@@ -2278,7 +2394,11 @@
           "optional": true,
           "default": "true"
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisCopyButton",
@@ -2362,7 +2482,11 @@
       "slots": [
         "default",
         "copiedLabel"
-      ]
+      ],
+      "quality": {
+        "propCount": 9,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisCountdown",
@@ -2445,7 +2569,11 @@
         "title",
         "prefix",
         "suffix"
-      ]
+      ],
+      "quality": {
+        "propCount": 9,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisDashboard",
@@ -2480,7 +2608,11 @@
           "type": "React.CSSProperties",
           "optional": true
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDashboardCard",
@@ -2518,7 +2650,11 @@
           "description": "Show the styled card surface (background + border). Default true.",
           "default": "true"
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDashboardGrid",
@@ -2555,7 +2691,11 @@
           "optional": true,
           "description": "Use `repeat(auto-fill, minmax(<minColWidth>, 1fr))` instead of fixed `columns`."
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDashboardTemplate",
@@ -2662,7 +2802,11 @@
         "sidebarHeader",
         "default",
         "cardSlots"
-      ]
+      ],
+      "quality": {
+        "propCount": 14,
+        "eventCount": 2
+      }
     },
     {
       "name": "IrisDatePicker",
@@ -2766,7 +2910,11 @@
       ],
       "events": [
         "onValueChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 15,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisDateRangePicker",
@@ -2868,7 +3016,11 @@
       ],
       "events": [
         "onValueChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 15,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisDescriptions",
@@ -2928,7 +3080,11 @@
           "type": "string",
           "optional": true
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDialog",
@@ -3000,7 +3156,11 @@
         "IrisDialogDescription",
         "IrisDialogTitle",
         "IrisDialogTrigger"
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisDialogClose",
@@ -3034,7 +3194,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDialogContent",
@@ -3068,7 +3232,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDialogDescription",
@@ -3094,7 +3262,11 @@
           "optional": true,
           "default": "p"
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 1,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDialogTitle",
@@ -3120,7 +3292,11 @@
           "optional": true,
           "default": "h2"
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 1,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDialogTrigger",
@@ -3155,7 +3331,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDivider",
@@ -3210,7 +3390,11 @@
       "slots": [
         "label",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 4,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDragger",
@@ -3281,7 +3465,11 @@
       ],
       "slots": [
         "handle"
-      ]
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 3
+      }
     },
     {
       "name": "IrisDrawer",
@@ -3366,7 +3554,11 @@
         "IrisDrawerContent",
         "IrisDrawerTitle",
         "IrisDrawerTrigger"
-      ]
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisDrawerClose",
@@ -3400,7 +3592,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDrawerContent",
@@ -3433,7 +3629,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDrawerTitle",
@@ -3451,7 +3651,11 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
-      "description": "The drawer's header title, rendered as an `<h2>`. Automatically wired to `aria-labelledby` on the content panel for accessible naming."
+      "description": "The drawer's header title, rendered as an `<h2>`. Automatically wired to `aria-labelledby` on the content panel for accessible naming.",
+      "quality": {
+        "propCount": 0,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDrawerTrigger",
@@ -3485,7 +3689,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDropdown",
@@ -3551,7 +3759,11 @@
         "IrisDropdownMenu",
         "IrisDropdownSeparator",
         "IrisDropdownTrigger"
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisDropdownItem",
@@ -3593,7 +3805,11 @@
       ],
       "events": [
         "onSelect"
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisDropdownMenu",
@@ -3626,7 +3842,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDropdownSeparator",
@@ -3644,7 +3864,11 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
-      "description": "A visual separator (horizontal rule) within a dropdown menu. Renders a `role=\"separator\"` `<div>` styled with the theme's border colour."
+      "description": "A visual separator (horizontal rule) within a dropdown menu. Renders a `role=\"separator\"` `<div>` styled with the theme's border colour.",
+      "quality": {
+        "propCount": 0,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisDropdownTrigger",
@@ -3678,7 +3902,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisEmptyState",
@@ -3730,7 +3958,11 @@
         "icon",
         "action",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 5,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisErrorBoundary",
@@ -3774,7 +4006,11 @@
       "slots": [
         "default",
         "fallback"
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisEventCalendar",
@@ -3809,7 +4045,11 @@
           "type": "React.CSSProperties",
           "optional": true
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisFieldset",
@@ -3866,7 +4106,11 @@
         "legend",
         "hint",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisFileUpload",
@@ -3977,7 +4221,11 @@
         "onValueChange",
         "onAccept",
         "onReject"
-      ]
+      ],
+      "quality": {
+        "propCount": 15,
+        "eventCount": 3
+      }
     },
     {
       "name": "IrisFloatButton",
@@ -4056,7 +4304,11 @@
       "slots": [
         "icon",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 9,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisForm",
@@ -4093,7 +4345,11 @@
       ],
       "subComponents": [
         "IrisFormField"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisFormBuilder",
@@ -4128,7 +4384,11 @@
           "type": "React.CSSProperties",
           "optional": true
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisFormField",
@@ -4194,7 +4454,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 7,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisGauge",
@@ -4286,7 +4550,11 @@
       ],
       "slots": [
         "format"
-      ]
+      ],
+      "quality": {
+        "propCount": 11,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisGrid",
@@ -4341,7 +4609,11 @@
           "optional": true,
           "default": "false"
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisHeaderLayout",
@@ -4401,7 +4673,11 @@
         "header",
         "footer",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisHotkey",
@@ -4468,7 +4744,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisI18nProvider",
@@ -4525,7 +4805,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisIcon",
@@ -4584,7 +4868,11 @@
           "optional": true,
           "description": "Registry to resolve `name` against. Defaults to the built-in set."
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisImage",
@@ -4648,7 +4936,11 @@
           "type": "string",
           "optional": true
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisInput",
@@ -4721,7 +5013,11 @@
       "slots": [
         "prefix",
         "suffix"
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisKanban",
@@ -4756,7 +5052,11 @@
           "type": "React.CSSProperties",
           "optional": true
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisKbd",
@@ -4805,7 +5105,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 4,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisLineChart",
@@ -4874,7 +5178,11 @@
           "type": "React.CSSProperties",
           "optional": true
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisList",
@@ -5005,7 +5313,11 @@
         "emptyState",
         "loadingState",
         "errorState"
-      ]
+      ],
+      "quality": {
+        "propCount": 18,
+        "eventCount": 2
+      }
     },
     {
       "name": "IrisLoginTemplate",
@@ -5101,7 +5413,11 @@
         "header",
         "forgot",
         "footer"
-      ]
+      ],
+      "quality": {
+        "propCount": 12,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisLongPress",
@@ -5149,7 +5465,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 4,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisMarkdown",
@@ -5180,7 +5500,11 @@
           "type": "string",
           "optional": true
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisMarquee",
@@ -5248,7 +5572,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 7,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisMasonry",
@@ -5300,7 +5628,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 5,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisMentions",
@@ -5395,7 +5727,11 @@
       ],
       "events": [
         "onValueChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 13,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisMenu",
@@ -5461,7 +5797,11 @@
         "IrisMenuSeparator",
         "IrisMenuSub",
         "IrisMenuTrigger"
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisMenuContent",
@@ -5494,7 +5834,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisMenuItem",
@@ -5536,7 +5880,11 @@
       ],
       "events": [
         "onSelect"
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisMenuSeparator",
@@ -5554,7 +5902,11 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
-      "description": "A visual separator within a menu — renders a `role=\"separator\"` `<div>`."
+      "description": "A visual separator within a menu — renders a `role=\"separator\"` `<div>`.",
+      "quality": {
+        "propCount": 0,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisMenuSub",
@@ -5593,7 +5945,11 @@
       "slots": [
         "label",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisMenuTrigger",
@@ -5627,7 +5983,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisMovable",
@@ -5703,7 +6063,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 9,
+        "eventCount": 3
+      }
     },
     {
       "name": "IrisNavMenu",
@@ -5772,7 +6136,11 @@
       "events": [
         "onSelect",
         "onExpandedKeysChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 2
+      }
     },
     {
       "name": "IrisNotificationCenter",
@@ -5830,7 +6198,11 @@
           "type": "string",
           "optional": true
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisNumberInput",
@@ -5912,7 +6284,11 @@
       ],
       "events": [
         "onChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 10,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisOtpInput",
@@ -6043,7 +6419,11 @@
       "events": [
         "onValueChange",
         "onComplete"
-      ]
+      ],
+      "quality": {
+        "propCount": 16,
+        "eventCount": 2
+      }
     },
     {
       "name": "IrisPagination",
@@ -6125,7 +6505,11 @@
       ],
       "events": [
         "onValueChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 9,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisPasswordInput",
@@ -6168,7 +6552,11 @@
       "slots": [
         "suffix",
         "prefix"
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisPopover",
@@ -6237,7 +6625,11 @@
       "subComponents": [
         "IrisPopoverContent",
         "IrisPopoverTrigger"
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisPopoverContent",
@@ -6285,7 +6677,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 4,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisPopoverTrigger",
@@ -6320,7 +6716,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 2,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisProgress",
@@ -6379,7 +6779,11 @@
           ],
           "default": "md"
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 5,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisProgressCircle",
@@ -6465,7 +6869,11 @@
       ],
       "slots": [
         "format"
-      ]
+      ],
+      "quality": {
+        "propCount": 10,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisProTable",
@@ -6536,7 +6944,11 @@
           "description": "Opt-in column virtualization. When `true` columns outside the horizontal viewport are not rendered, reducing DOM for very wide tables. The table container becomes horizontally scrollable. Default `false`.",
           "default": "false"
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisProvider",
@@ -6606,7 +7018,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisQueryBuilder",
@@ -6652,7 +7068,11 @@
       ],
       "events": [
         "onChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 4,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisRadio",
@@ -6696,7 +7116,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisRadioGroup",
@@ -6765,7 +7189,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 7,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisRangeSlider",
@@ -6837,7 +7265,11 @@
       ],
       "events": [
         "onChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 9,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisRating",
@@ -6957,7 +7389,11 @@
       ],
       "events": [
         "onValueChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 15,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisResizable",
@@ -7055,7 +7491,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 13,
+        "eventCount": 3
+      }
     },
     {
       "name": "IrisResizer",
@@ -7140,7 +7580,11 @@
         "onValueChange",
         "onResizeStart",
         "onResizeEnd"
-      ]
+      ],
+      "quality": {
+        "propCount": 11,
+        "eventCount": 3
+      }
     },
     {
       "name": "IrisResult",
@@ -7217,7 +7661,11 @@
         "icon",
         "extra",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisRibbon",
@@ -7278,7 +7726,11 @@
       "slots": [
         "text",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisScrollArea",
@@ -7337,7 +7789,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisSegmented",
@@ -7419,7 +7875,11 @@
       ],
       "events": [
         "onValueChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 10,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisSelect",
@@ -7528,7 +7988,11 @@
       ],
       "slots": [
         "renderTrigger"
-      ]
+      ],
+      "quality": {
+        "propCount": 14,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisSidebarLayout",
@@ -7605,7 +8069,11 @@
       "slots": [
         "sidebar",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisSkeleton",
@@ -7652,7 +8120,11 @@
           "optional": true,
           "default": "true"
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 4,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisSlider",
@@ -7731,7 +8203,11 @@
       ],
       "events": [
         "onChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 9,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisSlot",
@@ -7759,7 +8235,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 1,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisSortable",
@@ -7819,7 +8299,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 7,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisSparkline",
@@ -7872,7 +8356,11 @@
           "type": "React.CSSProperties",
           "optional": true
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisSpinner",
@@ -7915,7 +8403,11 @@
           "type": "string",
           "optional": true
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 4,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisSplitButton",
@@ -7998,7 +8490,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 9,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisSplitter",
@@ -8084,7 +8580,11 @@
       "slots": [
         "start",
         "end"
-      ]
+      ],
+      "quality": {
+        "propCount": 9,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisStack",
@@ -8157,7 +8657,11 @@
           "description": "When true, renders as `inline-flex`.",
           "default": "false"
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisStatistic",
@@ -8250,7 +8754,11 @@
         "suffix",
         "description",
         "trendValue"
-      ]
+      ],
+      "quality": {
+        "propCount": 10,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisStepper",
@@ -8309,7 +8817,11 @@
       ],
       "subComponents": [
         "IrisStepperStep"
-      ]
+      ],
+      "quality": {
+        "propCount": 5,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisStepperStep",
@@ -8361,7 +8873,11 @@
       "slots": [
         "title",
         "description"
-      ]
+      ],
+      "quality": {
+        "propCount": 4,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisSwitch",
@@ -8422,7 +8938,11 @@
       ],
       "events": [
         "onChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 6,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisTable",
@@ -8654,7 +9174,11 @@
         "emptyState",
         "loadingState",
         "errorState"
-      ]
+      ],
+      "quality": {
+        "propCount": 33,
+        "eventCount": 5
+      }
     },
     {
       "name": "IrisTabs",
@@ -8731,7 +9255,11 @@
         "IrisTabsContent",
         "IrisTabsList",
         "IrisTabsTrigger"
-      ]
+      ],
+      "quality": {
+        "propCount": 7,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisTabsContent",
@@ -8771,7 +9299,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisTabsList",
@@ -8789,7 +9321,11 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
-      "description": "Container for `IrisTabsTrigger`s. Renders `<div role=\"tablist\">`."
+      "description": "Container for `IrisTabsTrigger`s. Renders `<div role=\"tablist\">`.",
+      "quality": {
+        "propCount": 0,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisTabsTrigger",
@@ -8828,7 +9364,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisTagInput",
@@ -8916,7 +9456,11 @@
       ],
       "events": [
         "onValueChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 12,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisTextarea",
@@ -8971,7 +9515,11 @@
           "optional": true,
           "default": "8"
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 5,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisTimeline",
@@ -9015,7 +9563,11 @@
       ],
       "slots": [
         "renderItem"
-      ]
+      ],
+      "quality": {
+        "propCount": 4,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisTimePicker",
@@ -9104,7 +9656,11 @@
       ],
       "events": [
         "onValueChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 11,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisToastViewport",
@@ -9142,7 +9698,11 @@
           "description": "Maximum simultaneous toasts; older entries are evicted when exceeded.",
           "default": "5"
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 3,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisToggleGroup",
@@ -9163,7 +9723,11 @@
       "description": "Segmented control. Two modes: - `type=\"single\"` — radio-like; value is `string | null`. Root gets `role=\"radiogroup\"`, items get `role=\"radio\"` + `aria-checked`. - `type=\"multiple\"` — toggle-like; value is `string[]`. Root gets `role=\"group\"`, items get `aria-pressed`.",
       "subComponents": [
         "IrisToggleGroupItem"
-      ]
+      ],
+      "quality": {
+        "propCount": 0,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisToggleGroupItem",
@@ -9188,7 +9752,11 @@
           "type": "string",
           "optional": false
         }
-      ]
+      ],
+      "quality": {
+        "propCount": 1,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisToolbar",
@@ -9241,7 +9809,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 5,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisTooltip",
@@ -9318,7 +9890,11 @@
       "slots": [
         "content",
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisTour",
@@ -9384,7 +9960,11 @@
         "onChange",
         "onClose",
         "onFinish"
-      ]
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 3
+      }
     },
     {
       "name": "IrisTransfer",
@@ -9460,7 +10040,11 @@
       ],
       "slots": [
         "titles"
-      ]
+      ],
+      "quality": {
+        "propCount": 9,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisTree",
@@ -9602,7 +10186,11 @@
         "emptyState",
         "loadingState",
         "errorState"
-      ]
+      ],
+      "quality": {
+        "propCount": 19,
+        "eventCount": 3
+      }
     },
     {
       "name": "IrisTreeSelect",
@@ -9701,7 +10289,11 @@
       ],
       "events": [
         "onValueChange"
-      ]
+      ],
+      "quality": {
+        "propCount": 13,
+        "eventCount": 1
+      }
     },
     {
       "name": "IrisVirtualScroll",
@@ -9792,7 +10384,11 @@
       ],
       "slots": [
         "renderItem"
-      ]
+      ],
+      "quality": {
+        "propCount": 11,
+        "eventCount": 2
+      }
     },
     {
       "name": "IrisVisuallyHidden",
@@ -9810,7 +10406,11 @@
         "svelte": "@iris-ui/svelte",
         "vue": "@iris-ui/vue"
       },
-      "description": "Visually-hidden content: present in the accessibility tree (read by screen readers) but clipped from view — for labels, live-region announcements, and extra context. Forwards attributes like `aria-live` / `role`."
+      "description": "Visually-hidden content: present in the accessibility tree (read by screen readers) but clipped from view — for labels, live-region announcements, and extra context. Forwards attributes like `aria-live` / `role`.",
+      "quality": {
+        "propCount": 0,
+        "eventCount": 0
+      }
     },
     {
       "name": "IrisWatermark",
@@ -9888,7 +10488,11 @@
       ],
       "slots": [
         "default"
-      ]
+      ],
+      "quality": {
+        "propCount": 9,
+        "eventCount": 0
+      }
     }
   ],
   "tokens": {

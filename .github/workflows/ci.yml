@@ -28,42 +28,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Format check
-        run: pnpm format:check
-
       - name: Lint
         run: pnpm lint
 
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Build
-        run: pnpm build
+      - name: Build & size budget
+        run: pnpm build && node cli.mjs check-size
 
-      - name: Pack + external npm install smoke check (advisory — first run, not yet proven stable)
-        run: pnpm check:pack-install
+      - name: Acceptance suite (core gates)
+        run: node cli.mjs acceptance
+
+      - name: Full acceptance (advisory — includes tokens/manifest/parity/coverage/exports)
+        run: node cli.mjs acceptance --all
         continue-on-error: true
-
-      - name: Manifest up-to-date
-        run: pnpm check:manifest
-
-      - name: Size budget
-        run: pnpm size
-
-      - name: Token audit
-        run: pnpm audit:tokens
-
-      - name: Test coverage report
-        run: pnpm test:coverage
-
-      - name: Core instrumented coverage (v8, real thresholds)
-        run: pnpm turbo run test:coverage:v8 --filter=@iris-ui/core
-
-      - name: Desktop OS parity
-        run: pnpm check:desktop-parity
-
-      - name: RSC directive
-        run: pnpm check:rsc
 
       - name: Test
         run: pnpm test
@@ -71,29 +50,16 @@ jobs:
       - name: E2E smoke (cms-react)
         run: |
           cd apps/cms-react
-          # playwright.config.ts's project pins channel: 'chrome' (see that
-          # file for why) — install the matching browser, not bundled chromium.
           npx playwright install --with-deps chrome
           npx playwright test e2e/smoke.spec.ts
 
-      - name: Visual regression (cms-react screenshots, advisory — first run, not yet proven stable at CI scale)
+      - name: Visual regression (cms-react screenshots, advisory)
         run: |
           cd apps/cms-react
           npx playwright install --with-deps chrome
           npx playwright test e2e/visual.spec.ts
         continue-on-error: true
 
-      - name: Bench (advisory — not gate-failing)
+      - name: Bench (advisory)
         run: pnpm bench
-        continue-on-error: true
-
-      - name: Arch ratchet (no new oversized files / no growth of grandfathered)
-        run: pnpm arch-check:ratchet
-
-      - name: Arch full audit (advisory — lists all oversized files)
-        run: pnpm arch-check
-        continue-on-error: true
-
-      - name: Change budget (advisory)
-        run: pnpm change-budget
         continue-on-error: true

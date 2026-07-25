@@ -77,6 +77,7 @@ export function IrisOtpInput({
   ariaDescribedby,
   style,
   className,
+  ...rest
 }: IrisOtpInputProps): React.ReactElement {
   const { t } = useI18n()
   const isControlled = valueProp !== undefined
@@ -176,6 +177,7 @@ export function IrisOtpInput({
       role="group"
       aria-disabled={disabled ? 'true' : undefined}
       className={className}
+      {...rest}
       style={{ display: 'inline-flex', gap: 8, direction: 'inherit', ...style }}
     >
       {Array.from({ length }, (_, i) => {

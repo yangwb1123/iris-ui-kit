@@ -432,6 +432,9 @@ importers:
       '@iris-ui/core':
         specifier: workspace:^
         version: link:../../packages/core
+      '@iris-ui/plugin-calendar':
+        specifier: workspace:^
+        version: link:../../packages/plugin-calendar
       '@iris-ui/plugin-charts':
         specifier: workspace:^
         version: link:../../packages/plugin-charts

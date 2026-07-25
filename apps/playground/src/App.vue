@@ -27,6 +27,7 @@ import SkeletonsShowcase from './sections/SkeletonsShowcase.vue'
 import BehaviorsShowcase from './sections/BehaviorsShowcase.vue'
 import ChartsShowcase from './sections/ChartsShowcase.vue'
 import DataResilienceShowcase from './sections/DataResilienceShowcase.vue'
+import CalendarShowcase from './sections/CalendarShowcase.vue'
 
 interface SectionEntry {
   id: string
@@ -62,6 +63,7 @@ const sections: SectionEntry[] = [
     group: 'Core',
     component: DataResilienceShowcase,
   },
+  { id: 'calendar', label: 'Calendar', group: 'Components', component: CalendarShowcase },
   { id: 'tokens', label: 'Theme Tokens', group: 'Foundation', component: null },
 ]
 

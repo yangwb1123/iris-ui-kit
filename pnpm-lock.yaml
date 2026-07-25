@@ -87,7 +87,7 @@ importers:
         specifier: ^8.18.0
         version: 8.59.4(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)
       vitest:
-        specifier: ^2.1.8
+        specifier: ^2.1.9
         version: 2.1.9(@types/node@20.19.41)(jsdom@25.0.1)(terser@5.48.0)
       vue:
         specifier: ^3.5.13

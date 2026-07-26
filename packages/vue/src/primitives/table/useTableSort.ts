@@ -4,7 +4,7 @@ import { getCellValue } from './useTableState'
 import type { IrisTableColumn, IrisTableSortState } from './types'
 
 export interface UseTableSortOptions<Row> {
-  leafColumns: IrisTableColumn<Row>[]
+  leafColumns: IrisTableColumn<Row>[] | ComputedRef<IrisTableColumn<Row>[]>
   sort?: IrisTableSortState | null
   defaultSort?: IrisTableSortState | null
   onSortChange?: (next: IrisTableSortState | null) => void
@@ -26,7 +26,12 @@ export function useTableSort<Row extends Record<string, unknown>>(
   data: Ref<Row[]>,
   options: UseTableSortOptions<Row>,
 ): UseTableSortResult<Row> {
-  const { leafColumns, sort: sortProp, defaultSort, onSortChange } = options
+  const { sort: sortProp, defaultSort, onSortChange } = options
+
+  // Unwrap leafColumns (supports both plain array and ComputedRef)
+  const cols: IrisTableColumn<Row>[] = 'value' in (options.leafColumns as object) 
+    ? (options.leafColumns as ComputedRef<IrisTableColumn<Row>[]>).value
+    : options.leafColumns as IrisTableColumn<Row>[]
 
   const sortControlled = sortProp !== undefined
   const internalSortValue = ref<IrisTableSortState | null>(defaultSort ?? null)
@@ -42,7 +47,7 @@ export function useTableSort<Row extends Record<string, unknown>>(
   const sortComparator = computed<((a: Row, b: Row) => number) | null>(() => {
     const s = sortState.value
     if (!s) return null
-    const col = leafColumns.find((c) => c.key === s.key)
+    const col = cols.find((c) => c.key === s.key)
     if (!col) return null
     const dir = s.direction === 'asc' ? 1 : -1
     const sorter =

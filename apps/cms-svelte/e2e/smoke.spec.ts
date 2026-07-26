@@ -9,7 +9,9 @@ async function login(page: import('@playwright/test').Page) {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: /iris cms/i })).toBeVisible({ timeout: 5000 })
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Open command palette' })).toBeVisible({ timeout: 5000 })
+  await expect(page.getByRole('button', { name: 'Open command palette' })).toBeVisible({
+    timeout: 5000,
+  })
 }
 
 test('login → shell → Users table renders', async ({ page }) => {

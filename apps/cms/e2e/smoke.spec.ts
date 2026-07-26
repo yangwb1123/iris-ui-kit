@@ -10,7 +10,9 @@ async function login(page: import('@playwright/test').Page) {
   await expect(page.getByPlaceholder('Username')).toBeVisible()
   await page.getByPlaceholder('Username').fill('ada')
   await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page.getByRole('button', { name: 'Open command palette' })).toBeVisible({ timeout: 5000 })
+  await expect(page.getByRole('button', { name: 'Open command palette' })).toBeVisible({
+    timeout: 5000,
+  })
 }
 
 test('login → shell → Users table renders', async ({ page }) => {

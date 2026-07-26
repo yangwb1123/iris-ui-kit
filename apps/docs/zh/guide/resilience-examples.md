@@ -14,12 +14,14 @@ import { createResilientFetcher, createOutbox, createDisposableScope } from '@ir
 
 ```ts
 const api = createResilientFetcher<User[]>({
-  ttlMs: 30_000,              // 缓存 30 秒
-  breaker: {                   // 5 次失败后触发熔断
+  ttlMs: 30_000, // 缓存 30 秒
+  breaker: {
+    // 5 次失败后触发熔断
     failureThreshold: 5,
-    resetMs: 60_000,           // 1 分钟后尝试恢复
+    resetMs: 60_000, // 1 分钟后尝试恢复
   },
-  rateLimit: {                 // 每秒最多 10 个请求
+  rateLimit: {
+    // 每秒最多 10 个请求
     capacity: 10,
     refillTokens: 10,
     intervalMs: 1000,
@@ -27,10 +29,10 @@ const api = createResilientFetcher<User[]>({
 })
 
 // 首次调用：从网络获取
-const users = await api.fetch('users', () => fetch('/api/users').then(r => r.json()))
+const users = await api.fetch('users', () => fetch('/api/users').then((r) => r.json()))
 
 // 30 秒内的再次调用：立即返回缓存数据
-const cached = await api.fetch('users', () => fetch('/api/users').then(r => r.json()))
+const cached = await api.fetch('users', () => fetch('/api/users').then((r) => r.json()))
 
 // 5 次失败后：熔断器打开，后续调用立即抛出异常
 ```
@@ -90,7 +92,7 @@ scope.add(() => console.log('清理中...'))
 scope.addTimeout(setInterval(() => {}, 1000))
 
 // 自动清理所有注册的资源
-scope.destroy()  // 按注册顺序的逆序执行所有清理
+scope.destroy() // 按注册顺序的逆序执行所有清理
 ```
 
 ## 5. 事件总线 — 跨插件通信
@@ -119,10 +121,12 @@ function Dashboard() {
 
   // 弹性数据获取
   useEffect(() => {
-    api.fetch('dashboard-data', async () => {
-      const res = await fetch('/api/dashboard')
-      return res.json()
-    }).then(result => setData(result?.data ?? []))
+    api
+      .fetch('dashboard-data', async () => {
+        const res = await fetch('/api/dashboard')
+        return res.json()
+      })
+      .then((result) => setData(result?.data ?? []))
   }, [])
 
   // 实时连接
@@ -135,7 +139,7 @@ function Dashboard() {
       return () => ws.close()
     },
     {
-      onMessage: (msg) => setData(prev => [...prev, msg.update]),
+      onMessage: (msg) => setData((prev) => [...prev, msg.update]),
       onStatus: (s) => setStatus(s),
     },
   )
@@ -143,7 +147,11 @@ function Dashboard() {
   return (
     <div>
       <p>状态: {connectionStatus}</p>
-      <ul>{data.map((d, i) => <li key={i}>{d}</li>)}</ul>
+      <ul>
+        {data.map((d, i) => (
+          <li key={i}>{d}</li>
+        ))}
+      </ul>
     </div>
   )
 }
@@ -151,14 +159,14 @@ function Dashboard() {
 
 ## 原语参考表
 
-| 原语 | 用途 | 适用场景 |
-|---|---|---|
-| `createDisposableScope` | 生命周期清理 | 组件卸载时自动清理 |
-| `createEventBus` | 类型化发布/订阅 | 跨插件消息通信 |
-| `createQueryCache` | 去重 + TTL + SWR | 缓存 API 响应 |
-| `createCircuitBreaker` | 故障隔离 | 保护下游服务 |
-| `createRateLimiter` | 令牌桶限流 | 限制 API 调用频率 |
-| `createResilientFetcher` | 缓存 + 熔断 + 限流 | 强化 API 客户端 |
-| `createOutbox` | 离线变更队列 | 离线支持 |
-| `createReconnectingSource` | 实时 + 退避重连 | 实时数据流 |
-| `createDataSource` | 统一数据引擎 | 表格/列表分页 + 弹性 |
+| 原语                       | 用途               | 适用场景             |
+| -------------------------- | ------------------ | -------------------- |
+| `createDisposableScope`    | 生命周期清理       | 组件卸载时自动清理   |
+| `createEventBus`           | 类型化发布/订阅    | 跨插件消息通信       |
+| `createQueryCache`         | 去重 + TTL + SWR   | 缓存 API 响应        |
+| `createCircuitBreaker`     | 故障隔离           | 保护下游服务         |
+| `createRateLimiter`        | 令牌桶限流         | 限制 API 调用频率    |
+| `createResilientFetcher`   | 缓存 + 熔断 + 限流 | 强化 API 客户端      |
+| `createOutbox`             | 离线变更队列       | 离线支持             |
+| `createReconnectingSource` | 实时 + 退避重连    | 实时数据流           |
+| `createDataSource`         | 统一数据引擎       | 表格/列表分页 + 弹性 |

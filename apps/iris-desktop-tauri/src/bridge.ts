@@ -22,7 +22,7 @@ export function isNative(): boolean {
 /** Open a native file picker and return the selected path, or null if cancelled. */
 export async function pickFile(): Promise<string | null> {
   if (!isNative()) return null
-  return invoke< string | null>('pick_file')
+  return invoke<string | null>('pick_file')
 }
 
 /** Read a text file from disk by path. */
@@ -42,7 +42,11 @@ export async function getAppDataDir(): Promise<string> {
 
 // ── Notifications ──────────────────────────────────────────────────────────
 
-import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
+import {
+  isPermissionGranted,
+  requestPermission,
+  sendNotification,
+} from '@tauri-apps/plugin-notification'
 
 /** Send a native OS notification. No-op in browser mode. */
 export async function notify(title: string, body?: string): Promise<void> {

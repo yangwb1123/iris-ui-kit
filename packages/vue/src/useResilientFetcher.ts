@@ -30,9 +30,7 @@ import {
  * </script>
  * ```
  */
-export function useResilientFetcher<T>(
-  options?: ResilientFetcherOptions,
-): ResilientFetcher<T> {
+export function useResilientFetcher<T>(options?: ResilientFetcherOptions): ResilientFetcher<T> {
   const rf = createResilientFetcher<T>(options)
 
   onUnmounted(() => {

@@ -31,9 +31,7 @@ import {
  * <p>{user?.name}</p>
  * ```
  */
-export function toResilientFetcher<T>(
-  options?: ResilientFetcherOptions,
-): ResilientFetcher<T> {
+export function toResilientFetcher<T>(options?: ResilientFetcherOptions): ResilientFetcher<T> {
   const rf = createResilientFetcher<T>(options)
 
   onMount(() => {

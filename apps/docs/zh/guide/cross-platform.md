@@ -6,15 +6,15 @@ Iris UI 是纯 Web 技术，因此可以**在任何 WebView 包装器中运行**
 
 ## 快速总览
 
-| 事项 | 谁处理 | 操作 |
-|---|---|---|
-| 严格 CSP 阻止样式 | 宿主应用 | 添加 `style-src 'self' 'unsafe-inline'` |
-| `file://` 导致 404 / 路由错误 | 宿主构建 | `base: './'` + hash 路由 |
-| CSV/Excel 导出无法保存 | **库钩子** | `setFileSaveHandler(...)` |
-| 复制失败（无 `navigator.clipboard`） | **库钩子** | `setClipboardHandler(...)` |
-| 触摸拖拽（看板/仪表盘/表格重排） | **自动** | 内置 Pointer fallback |
-| 刘海/HomeBar 遮挡 Toast 和 Drawer | 宿主 meta | `viewport-fit=cover` |
-| 系统暗色模式未检测 | 宿主应用 | 启用 OS 主题信号 |
+| 事项                                 | 谁处理     | 操作                                    |
+| ------------------------------------ | ---------- | --------------------------------------- |
+| 严格 CSP 阻止样式                    | 宿主应用   | 添加 `style-src 'self' 'unsafe-inline'` |
+| `file://` 导致 404 / 路由错误        | 宿主构建   | `base: './'` + hash 路由                |
+| CSV/Excel 导出无法保存               | **库钩子** | `setFileSaveHandler(...)`               |
+| 复制失败（无 `navigator.clipboard`） | **库钩子** | `setClipboardHandler(...)`              |
+| 触摸拖拽（看板/仪表盘/表格重排）     | **自动**   | 内置 Pointer fallback                   |
+| 刘海/HomeBar 遮挡 Toast 和 Drawer    | 宿主 meta  | `viewport-fit=cover`                    |
+| 系统暗色模式未检测                   | 宿主应用   | 启用 OS 主题信号                        |
 
 ## 内容安全策略 (CSP)
 

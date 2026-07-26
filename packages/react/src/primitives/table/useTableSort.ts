@@ -69,8 +69,7 @@ export function useTableSort<Row extends Record<string, unknown>>(
     if (!col) return null
     const dir = sortState.direction === 'asc' ? 1 : -1
     const sorter =
-      col.sorter ??
-      ((a: Row, b: Row) => compareValues(getCellValue(a, col), getCellValue(b, col)))
+      col.sorter ?? ((a: Row, b: Row) => compareValues(getCellValue(a, col), getCellValue(b, col)))
     return (a, b) => sorter(a, b) * dir
   }, [leafColumns, sortState])
 

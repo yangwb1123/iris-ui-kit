@@ -23,9 +23,7 @@ const data: TestRow[] = [
 
 describe('useTableSort', () => {
   it('returns unsorted data when no sort is active', () => {
-    const { result } = renderHook(() =>
-      useTableSort(data, { leafColumns: columns }),
-    )
+    const { result } = renderHook(() => useTableSort(data, { leafColumns: columns }))
     expect(result.current.sortState).toBeNull()
     expect(result.current.sortComparator).toBeNull()
     expect(result.current.sortedData).toEqual(data)
@@ -55,49 +53,58 @@ describe('useTableSort', () => {
   })
 
   it('cycles sort: none → asc → desc → none', () => {
-    const { result } = renderHook(() =>
-      useTableSort(data, { leafColumns: columns }),
-    )
+    const { result } = renderHook(() => useTableSort(data, { leafColumns: columns }))
 
     // No sort initially
     expect(result.current.sortState).toBeNull()
 
     // First cycle sets asc
-    act(() => { result.current.cycleSort(columns[0]) })
+    act(() => {
+      result.current.cycleSort(columns[0])
+    })
     expect(result.current.sortState).toEqual({ key: 'name', direction: 'asc' })
 
     // Second cycle sets desc
-    act(() => { result.current.cycleSort(columns[0]) })
+    act(() => {
+      result.current.cycleSort(columns[0])
+    })
     expect(result.current.sortState).toEqual({ key: 'name', direction: 'desc' })
 
     // Third cycle clears sort
-    act(() => { result.current.cycleSort(columns[0]) })
+    act(() => {
+      result.current.cycleSort(columns[0])
+    })
     expect(result.current.sortState).toBeNull()
   })
 
   it('does not cycle sort on non-sortable column', () => {
-    const { result } = renderHook(() =>
-      useTableSort(data, { leafColumns: columns }),
-    )
-    act(() => { result.current.cycleSort(columns[2]) }) // id column, sortable=false
+    const { result } = renderHook(() => useTableSort(data, { leafColumns: columns }))
+    act(() => {
+      result.current.cycleSort(columns[2])
+    }) // id column, sortable=false
     expect(result.current.sortState).toBeNull()
   })
 
   it('switches sort column on second cycle call', () => {
-    const { result } = renderHook(() =>
-      useTableSort(data, { leafColumns: columns }),
-    )
-    act(() => { result.current.cycleSort(columns[0]) }) // name asc
+    const { result } = renderHook(() => useTableSort(data, { leafColumns: columns }))
+    act(() => {
+      result.current.cycleSort(columns[0])
+    }) // name asc
     expect(result.current.sortState).toEqual({ key: 'name', direction: 'asc' })
 
-    act(() => { result.current.cycleSort(columns[1]) }) // age asc (new column resets to asc)
+    act(() => {
+      result.current.cycleSort(columns[1])
+    }) // age asc (new column resets to asc)
     expect(result.current.sortState).toEqual({ key: 'age', direction: 'asc' })
   })
 
   it('respects controlled sort prop', () => {
     const { result, rerender } = renderHook(
       ({ sort }: { sort?: { key: string; direction: string } | null }) =>
-        useTableSort(data, { leafColumns: columns, sort: sort as { key: string; direction: 'asc' | 'desc' } | null | undefined }),
+        useTableSort(data, {
+          leafColumns: columns,
+          sort: sort as { key: string; direction: 'asc' | 'desc' } | null | undefined,
+        }),
       { initialProps: { sort: { key: 'name', direction: 'asc' } } },
     )
     expect(result.current.sortState).toEqual({ key: 'name', direction: 'asc' })
@@ -108,9 +115,7 @@ describe('useTableSort', () => {
   })
 
   it('handles empty data', () => {
-    const { result } = renderHook(() =>
-      useTableSort<TestRow>([], { leafColumns: [] }),
-    )
+    const { result } = renderHook(() => useTableSort<TestRow>([], { leafColumns: [] }))
     expect(result.current.sortedData).toEqual([])
     expect(result.current.sortState).toBeNull()
   })

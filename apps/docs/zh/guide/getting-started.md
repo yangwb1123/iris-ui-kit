@@ -67,9 +67,7 @@ function UserTable() {
     resilient: { ttlMs: 5000, breaker: { failureThreshold: 3, resetMs: 10000 } },
   })
 
-  return (
-    <IrisTable columns={COLUMNS} data={users.state.rows} rowKey="id" sortable />
-  )
+  return <IrisTable columns={COLUMNS} data={users.state.rows} rowKey="id" sortable />
 }
 ```
 
@@ -86,7 +84,10 @@ const schema = {
     { name: 'name', type: 'text', label: '姓名', required: true },
     { name: 'email', type: 'email', label: '邮箱', required: true },
     {
-      name: 'role', type: 'select', label: '角色', required: true,
+      name: 'role',
+      type: 'select',
+      label: '角色',
+      required: true,
       options: [
         { label: '工程师', value: 'engineer' },
         { label: '设计师', value: 'designer' },

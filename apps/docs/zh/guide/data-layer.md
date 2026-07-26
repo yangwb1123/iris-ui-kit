@@ -49,8 +49,8 @@ const cached = await cache.fetch('all-users', fetchUsers)
 
 ```ts
 const breaker = createCircuitBreaker({
-  failureThreshold: 3,  // 3 次失败后触发熔断
-  resetMs: 30_000,      // 30 秒后尝试恢复
+  failureThreshold: 3, // 3 次失败后触发熔断
+  resetMs: 30_000, // 30 秒后尝试恢复
 })
 
 // 包装任意异步操作
@@ -63,13 +63,13 @@ const result = await breaker.run(() => fetch('/api/data'))
 
 ```ts
 const limiter = createRateLimiter({
-  capacity: 10,          // 最多突发 10 个请求
-  refillTokens: 5,       // 每次补充 5 个令牌
-  intervalMs: 1000,      // 每秒补充一次
+  capacity: 10, // 最多突发 10 个请求
+  refillTokens: 5, // 每次补充 5 个令牌
+  intervalMs: 1000, // 每秒补充一次
 })
 
 if (limiter.tryRemove()) {
-  await fetch('/api/data')   // 允许请求
+  await fetch('/api/data') // 允许请求
 } else {
   // 被限流 —— 等待 `limiter.timeUntil()` 毫秒
 }

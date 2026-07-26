@@ -33,9 +33,7 @@ import {
  * }
  * ```
  */
-export function useResilientFetcher<T>(
-  options?: ResilientFetcherOptions,
-): ResilientFetcher<T> {
+export function useResilientFetcher<T>(options?: ResilientFetcherOptions): ResilientFetcher<T> {
   const rf = createResilientFetcher<T>(options)
 
   onCleanup(() => {

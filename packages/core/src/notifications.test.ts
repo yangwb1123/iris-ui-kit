@@ -48,4 +48,26 @@ describe('createNotificationCenter', () => {
     expect(nc.list()[0]).toMatchObject({ body: 'Added to your desktop', icon: '🧮' })
     expect(handler).toHaveBeenCalledTimes(1)
   })
+
+  it('post records appId if provided', () => {
+    const nc = createNotificationCenter()
+    nc.post({ title: 'A', appId: 'store' })
+    nc.post({ title: 'B' })
+    expect(nc.list().map((n) => n.title)).toEqual(['B', 'A'])
+  })
+
+  it('subscriber receives notifications on post', () => {
+    const nc = createNotificationCenter()
+    const seen: number[] = []
+    nc.subscribe((s) => seen.push(s.notifications.length))
+    nc.post({ title: 'X' })
+    expect(seen).toEqual([1])
+  })
+
+  it('list returns all notifications', () => {
+    const nc = createNotificationCenter()
+    nc.post({ title: 'A' })
+    nc.post({ title: 'B' })
+    expect(nc.list().map((n) => n.title)).toEqual(['B', 'A'])
+  })
 })

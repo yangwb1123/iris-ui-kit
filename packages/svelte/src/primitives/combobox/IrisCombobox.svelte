@@ -204,6 +204,12 @@
               activeIndex = i
             }}
             onclick={() => selectOption(opt)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                selectOption(opt)
+              }
+            }}
             style="padding: 6px 10px; font-size: {sz.fontSize}; border-radius: var(--iris-radius-sm, 4px); cursor: {opt.disabled
               ? 'not-allowed'
               : 'pointer'}; color: {opt.disabled

@@ -1,29 +1,29 @@
 {
-  "_comment": "Performance baselines. Values are ops/sec (higher is better).",
+  "_comment": "Performance baselines — auto-calibrated from measured ops/sec. Update with 'node scripts/check-bench-regression.mjs --update'.",
   "form": {
-    "10k sequential field updates (keystroke sim)": 10000,
-    "validate 10 fields × 1k iterations": 700,
-    "insert + remove 1k rows": 500,
-    "10k nested path field updates": 3000,
-    "500 swaps (reorder simulation)": 300
+    "10k sequential field updates (keystroke sim)": 99,
+    "validate 10 fields × 1k iterations": 881,
+    "insert + remove 1k rows": 33,
+    "10k nested path field updates": 16,
+    "500 swaps (reorder simulation)": 73
   },
   "resilience": {
-    "10k unique fetches (no cache hits)": 400,
-    "10k repeated fetches (all cache hits)": 1000,
-    "10k state checks (no-op while closed)": 5000,
-    "10k tryRemove (all succeed with large capacity)": 8000,
-    "10k cache hit (resilient path)": 1000,
-    "10k enqueue (all succeed immediately)": 2
+    "10k unique fetches (no cache hits)": 532,
+    "10k repeated fetches (all cache hits)": 1539,
+    "10k state checks (no-op while closed)": 1785,
+    "10k tryRemove (all succeed with large capacity)": 2990,
+    "10k cache hit (resilient path)": 1466,
+    "10k enqueue (all succeed immediately)": 0.87
   },
   "scale": {
-    "construct + initial sync load": 100000,
-    "setSort (full re-sort + page)": 600,
-    "setFilter (full scan + page)": 2500,
-    "100 scroll steps (O(log n) windowing each)": 600,
-    "1000 measures (O(log n) point updates)": 500,
+    "construct + initial sync load": 144190,
+    "setSort (full re-sort + page)": 683,
+    "setFilter (full scan + page)": 3036,
+    "100 scroll steps (O(log n) windowing each)": 764,
+    "1000 measures (O(log n) point updates)": 645,
     "bulk set 100k keys": 150,
-    "100k isSelected lookups (Set-backed O(1))": 100,
-    "toggleAll → partial toggle → toggleAll again": 400,
-    "post 1000 notifications": 400
+    "100k isSelected lookups (Set-backed O(1))": 130,
+    "toggleAll → partial toggle → toggleAll again": 455,
+    "post 1000 notifications": 259
   }
 }

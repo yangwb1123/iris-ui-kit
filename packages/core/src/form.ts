@@ -338,7 +338,9 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
 
   /** Try to resolve a validator for `key`, falling back to array pattern matching. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function resolveValidator(key: string): ((value: unknown, values: V) => string | undefined) | undefined {
+  function resolveValidator(
+    key: string,
+  ): ((value: unknown, values: V) => string | undefined) | undefined {
     // Direct lookup first
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let v = (validators as any)[key]

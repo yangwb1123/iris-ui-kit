@@ -176,13 +176,16 @@ describe('formBuilderPlugin', () => {
   describe('array sub-field validation', () => {
     it('compiles validators for nested sub-fields', async () => {
       const { form } = createFormBuilder({
-        fields: [{
-          name: 'tags', type: 'array',
-          fields: [
-            { name: 'name', type: 'text', required: true },
-            { name: 'level', type: 'select', required: true },
-          ],
-        }],
+        fields: [
+          {
+            name: 'tags',
+            type: 'array',
+            fields: [
+              { name: 'name', type: 'text', required: true },
+              { name: 'level', type: 'select', required: true },
+            ],
+          },
+        ],
       })
       form.arrayInsert('tags', 0, { name: '', level: '' })
       await form.validateForm()
@@ -193,10 +196,13 @@ describe('formBuilderPlugin', () => {
 
     it('passes when sub-fields are filled', async () => {
       const { form } = createFormBuilder({
-        fields: [{
-          name: 'tags', type: 'array',
-          fields: [{ name: 'name', type: 'text', required: true }],
-        }],
+        fields: [
+          {
+            name: 'tags',
+            type: 'array',
+            fields: [{ name: 'name', type: 'text', required: true }],
+          },
+        ],
       })
       form.arrayInsert('tags', 0, { name: 'hello' })
       await form.validateForm()
@@ -205,13 +211,16 @@ describe('formBuilderPlugin', () => {
 
     it('non-required sub-fields do not block', async () => {
       const { form } = createFormBuilder({
-        fields: [{
-          name: 'items', type: 'array',
-          fields: [
-            { name: 'label', type: 'text' },
-            { name: 'desc', type: 'text', required: true },
-          ],
-        }],
+        fields: [
+          {
+            name: 'items',
+            type: 'array',
+            fields: [
+              { name: 'label', type: 'text' },
+              { name: 'desc', type: 'text', required: true },
+            ],
+          },
+        ],
       })
       form.arrayInsert('items', 0, { label: 'x', desc: '' })
       await form.validateForm()
@@ -221,10 +230,13 @@ describe('formBuilderPlugin', () => {
 
     it('multiple rows validate independently', async () => {
       const { form } = createFormBuilder({
-        fields: [{
-          name: 'items', type: 'array',
-          fields: [{ name: 'val', type: 'text', required: true }],
-        }],
+        fields: [
+          {
+            name: 'items',
+            type: 'array',
+            fields: [{ name: 'val', type: 'text', required: true }],
+          },
+        ],
       })
       form.arrayInsert('items', 0, { val: 'ok' })
       form.arrayInsert('items', 1, { val: '' })
@@ -236,10 +248,14 @@ describe('formBuilderPlugin', () => {
 
     it('required array field itself is still validated', async () => {
       const { form } = createFormBuilder({
-        fields: [{
-          name: 'items', type: 'array', required: true,
-          fields: [{ name: 'val', type: 'text' }],
-        }],
+        fields: [
+          {
+            name: 'items',
+            type: 'array',
+            required: true,
+            fields: [{ name: 'val', type: 'text' }],
+          },
+        ],
       })
       await form.validateForm()
       expect(form.getState().errors['items']).toBeTruthy()

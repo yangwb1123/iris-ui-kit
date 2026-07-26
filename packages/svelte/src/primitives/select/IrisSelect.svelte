@@ -166,6 +166,7 @@
     // 'select' is handled by each option's inline onkeydown handler (Enter/Space)
   }
 </script>
+
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 <button

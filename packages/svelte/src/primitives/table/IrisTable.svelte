@@ -668,7 +668,7 @@
       {#each headerMatrix as rowCells}
         {#each rowCells as cell}
           {@const col = cell.column}
-<!-- svelte-ignore a11y_interactive_supports_focus a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_interactive_supports_focus a11y_click_events_have_key_events -->
           {@const isGroup = !!(col.children && col.children.length > 0)}
           {@const sortable = !isGroup && col.sortable}
           <div
@@ -756,7 +756,7 @@
       {/if}
       {#each columns as col, ci}
         {#if !visibleColSet || visibleColSet.has(ci)}
-<!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div
             role="columnheader"
             data-iris-table-header={col.key}
@@ -904,7 +904,7 @@
   )}
     {@const id = rowId(row, index)}
     {@const selected = isSelected(id)}
-<!-- svelte-ignore a11y_interactive_supports_focus -->
+    <!-- svelte-ignore a11y_interactive_supports_focus -->
     <div
       role="row"
       aria-selected={selectable !== 'none' ? selected : undefined}
@@ -966,7 +966,7 @@
       {#each leafColumns as col, ci}
         {#if !visibleColSet || visibleColSet.has(ci)}
           {@const isEditing = editingCellId === cellId(id, col.key)}
-<!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div
             role="cell"
             data-iris-table-cell={col.key}

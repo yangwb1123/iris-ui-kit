@@ -89,6 +89,7 @@
   const btnGhost = `${btnBase}; border: 1px solid var(--iris-border); background: transparent; color: var(--iris-foreground)`
   const btnPrimary = `${btnBase}; border: none; background: var(--iris-primary); color: #fff`
 </script>
+
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 
 {#if open && steps.length > 0}

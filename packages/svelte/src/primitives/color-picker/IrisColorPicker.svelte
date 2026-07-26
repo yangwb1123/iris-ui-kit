@@ -126,6 +126,7 @@
     onHuePointer(e as unknown as PointerEvent)
   }
 </script>
+
 <!-- svelte-ignore a11y_no_static_element_interactions a11y_role_supports_aria_props_implicit -->
 
 <div

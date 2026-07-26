@@ -53,6 +53,27 @@ jobs:
           npx playwright install --with-deps chrome
           npx playwright test e2e/ --reporter=list
 
+      - name: E2E smoke (cms-vue)
+        run: |
+          cd apps/cms
+          npx playwright install chromium
+          npx playwright test e2e/ --reporter=list
+        continue-on-error: true
+
+      - name: E2E smoke (cms-solid)
+        run: |
+          cd apps/cms-solid
+          npx playwright install chromium
+          npx playwright test e2e/ --reporter=list
+        continue-on-error: true
+
+      - name: E2E smoke (cms-svelte)
+        run: |
+          cd apps/cms-svelte
+          npx playwright install chromium
+          npx playwright test e2e/ --reporter=list
+        continue-on-error: true
+
       - name: Bench + regression check
         run: |
           pnpm bench

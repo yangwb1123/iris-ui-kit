@@ -1,16 +1,17 @@
 #!/usr/bin/env node
 /**
  * Check benchmark regression against baseline.
- * Runs benchmarks, parses hz values, compares to baseline.
+ * Runs benchmarks, parses hz values, compares to baseline, saves history.
  */
 
 import { spawnSync } from 'node:child_process'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const BASELINE_PATH = resolve(ROOT, 'scripts/bench-baseline.json')
+const HISTORY_PATH = resolve(ROOT, 'scripts/bench-history.json')
 const THRESHOLD = parseFloat(process.argv.find((a) => a.startsWith('--threshold='))?.split('=')[1] ?? '0.2')
 
 if (!existsSync(BASELINE_PATH)) {
@@ -22,7 +23,7 @@ const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
 
 console.log(`\nBenchmark regression check (threshold: ${THRESHOLD * 100}%)\n`)
 
-// Run benchmarks and capture all output as buffer
+// Run benchmarks
 const result = spawnSync('pnpm', ['--filter', '@iris-ui/core', 'bench'], {
   cwd: ROOT,
   encoding: 'buffer',
@@ -31,28 +32,27 @@ const result = spawnSync('pnpm', ['--filter', '@iris-ui/core', 'bench'], {
 
 const text = result.stdout.toString('utf8')
 
-// Parse lines with hz values
-// The format is: bullet + bench_name + number_with_commas + number + number + ...
-// where the first number after the name is the hz (ops/sec)
-let failed = 0, passed = 0
-
+// Parse all bench results: [name, ops]
+const benches = []
 for (const line of text.split('\n')) {
-  // Remove ANSI escape sequences
-  const ansiStrip = line.replace(/\u001b\[[0-9;]*m/g, '').trim()
-  if (!ansiStrip || ansiStrip.startsWith('name') || ansiStrip.startsWith('···')) continue
-
-  // Look for: bullet-like character + name + number
-  const m = ansiStrip.match(/^[·•\-\s]+(.+?)\s+([\d,]+(?:\.\d+)?)\s+[\d,]+/)
+  const clean = line.replace(/\u001b\[[0-9;]*m/g, '').trim()
+  if (!clean || clean.startsWith('name') || clean.startsWith('···')) continue
+  const m = clean.match(/^[·•\-\s]+(.+?)\s+([\d,]+(?:\.\d+)?)\s+[\d,]+/)
   if (!m) continue
-
   const name = m[1].trim()
   const ops = parseFloat(m[2].replace(/,/g, ''))
-  if (!name || isNaN(ops)) continue
+  if (name && !isNaN(ops)) benches.push({ name, ops })
+}
 
-  // Find in baseline
+// Compare against baseline
+let failed = 0, passed = 0
+for (const { name, ops } of benches) {
   let baselineOps = null
-  for (const [, benches] of Object.entries(baseline)) {
-    if (benches[name] !== undefined) { baselineOps = benches[name]; break }
+  for (const [, benchesObj] of Object.entries(baseline)) {
+    if (benchesObj[name] !== undefined) {
+      baselineOps = benchesObj[name]
+      break
+    }
   }
 
   if (baselineOps === null) {
@@ -72,6 +72,18 @@ for (const line of text.split('\n')) {
     passed++
   }
 }
+
+// Save history for trend tracking
+const history =
+  existsSync(HISTORY_PATH) ? JSON.parse(readFileSync(HISTORY_PATH, 'utf8')) : {}
+const today = new Date().toISOString().slice(0, 10)
+if (!history[today]) {
+  history[today] = { timestamp: today, results: {} }
+}
+for (const { name, ops } of benches) {
+  history[today].results[name] = ops
+}
+writeFileSync(HISTORY_PATH, JSON.stringify(history, null, 2) + '\n')
 
 console.log(`\n${passed} ok, ${failed} regressions out of ${passed + failed}\n`)
 process.exit(failed > 0 ? 1 : 0)

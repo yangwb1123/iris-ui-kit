@@ -1,0 +1,38 @@
+{
+  "2026-07-26": {
+    "timestamp": "2026-07-26",
+    "results": {
+      "construct + initial sync load": 144142.87,
+      "setSort (full re-sort + page)": 711.91,
+      "setFilter (full scan + page)": 3124.8,
+      "100 scroll steps (O(log n) windowing each)": 727.73,
+      "1000 measures (O(log n) point updates)": 586.81,
+      "buildOffsets O(n) full rebuild (what the virtualizer avoids per change)": 7371.77,
+      "bulk set 100k keys": 186.66,
+      "100k isSelected lookups (Set-backed O(1))": 138.97,
+      "toggleAll → partial toggle → toggleAll again": 447.87,
+      "interleaved measure(10) + setScroll ×": 100,
+      "post 1000 notifications": 249.22,
+      "rapid setPage loop (simulated concurrent toggles)": 1203.46,
+      "all-collapsed (only roots visible)": 3296493.01,
+      "fully expanded (every node visible)": 1434.45,
+      "one root expanded, rest collapsed (typical drill-down)": 1671859.95,
+      "toggle one node with many siblings already expanded": 1479403.42,
+      "construct": 13375.13,
+      "setFieldValue on every field (dirty-tracking under load)": 39.3451,
+      "validateForm (166 validators, allSettled)": 6822.74,
+      "serialize after editing every field": 38.9438,
+      "10k sequential field updates (keystroke sim)": 90.0952,
+      "validate 10 fields × 1k iterations": 843.08,
+      "insert + remove 1k rows": 33.2992,
+      "10k nested path field updates": 15.809,
+      "500 swaps (reorder simulation)": 72.9044,
+      "10k unique fetches (no cache hits)": 545.15,
+      "10k repeated fetches (all cache hits)": 1494.29,
+      "10k state checks (no-op while closed)": 1753.37,
+      "10k tryRemove (all succeed with large capacity)": 2898.24,
+      "10k cache hit (resilient path)": 1393.13,
+      "10k enqueue (all succeed immediately)": 0.8503
+    }
+  }
+}

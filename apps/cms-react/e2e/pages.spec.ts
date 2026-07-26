@@ -66,3 +66,32 @@ test('Realtime page — renders and starts receiving data', async ({ page }) => 
   // Event log should be present
   await expect(page.getByText('Event Log')).toBeVisible()
 })
+
+test('ProTable page — renders CRUD table', async ({ page }) => {
+  await login(page)
+  await page.goto('/#pro-table')
+
+  await expect(page.getByRole('heading', { name: 'Products' })).toBeVisible()
+  await expect(page.getByText('Ergonomic Keyboard')).toBeVisible()
+  await expect(page.getByText('USB-C Hub')).toBeVisible()
+  await expect(page.getByText('Standing Desk')).toBeVisible()
+})
+
+test('Documentation page — renders markdown content', async ({ page }) => {
+  await login(page)
+  await page.goto('/#documentation')
+
+  await expect(page.getByText('Iris UI CMS')).toBeVisible()
+  await expect(page.getByText('Getting Started')).toBeVisible()
+})
+
+test('Users page — navigates and shows table', async ({ page }) => {
+  await login(page)
+  await page.goto('/#users')
+
+  const table = page.getByRole('table')
+  await expect(table).toBeVisible()
+  // Should have header + at least one data row
+  const rows = table.getByRole('row')
+  await expect(rows).not.toHaveCount(0)
+})

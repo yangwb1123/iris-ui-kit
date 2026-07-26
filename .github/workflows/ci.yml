@@ -53,6 +53,8 @@ jobs:
           npx playwright install --with-deps chrome
           npx playwright test e2e/ --reporter=list
 
-      - name: Bench (advisory)
-        run: pnpm bench
+      - name: Bench + regression check
+        run: |
+          pnpm bench
+          node scripts/check-bench-regression.mjs
         continue-on-error: true

@@ -2,7 +2,6 @@ import * as React from 'react'
 import {
   aggregate,
   buildHeaderMatrix,
-  compareValues,
   computeVirtualRange,
   createCellRange,
   createExpansion,
@@ -22,6 +21,7 @@ import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
+import { useTableSort } from './useTableSort'
 import type {
   IrisTableCellEditEvent,
   IrisTableColumn,
@@ -267,12 +267,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
     [grouped, safeColumns],
   )
 
-  // Controlled / uncontrolled state.
-  const sortControlled = sortProp !== undefined
-  const [sortInternal, setSortInternal] = React.useState<IrisTableSortState | null>(
-    defaultSort ?? null,
-  )
-  const sort = sortControlled ? (sortProp as IrisTableSortState | null) : sortInternal
+  // Sort state managed by useTableSort hook (controlled/uncontrolled, comparator, sorted data).
+  const {
+    sortState: sort,
+    cycleSort,
+    sortComparator,
+    sortedData,
+  } = useTableSort<Row>(data ?? [], {
+    leafColumns,
+    sort: sortProp,
+    defaultSort,
+    onSortChange,
+  })
 
   // Row-selection logic (single/multiple toggle, dedup, select-all,
   // controlled/uncontrolled) is single-sourced in the core model; keys are the
@@ -393,42 +399,6 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (newValue !== oldValue) {
       onCellEdit?.({ row, column: col, oldValue, newValue, rowIndex })
     }
-  }
-
-  // Sorted data.
-  // The active sort comparator (or null). Shared by the root-row sort AND the
-  // tree-mode child sort so a sortable tree reorders siblings at every depth.
-  const sortComparator = React.useMemo<((a: Row, b: Row) => number) | null>(() => {
-    if (!sort) return null
-    const col = leafColumns.find((c) => c.key === sort.key)
-    if (!col) return null
-    const dir = sort.direction === 'asc' ? 1 : -1
-    const sorter =
-      col.sorter ?? ((a: Row, b: Row) => compareValues(getCellValue(a, col), getCellValue(b, col)))
-    return (a, b) => sorter(a, b) * dir
-  }, [leafColumns, sort])
-
-  const sortedData = React.useMemo(() => {
-    if (!sortComparator) return data ?? []
-    return [...(data ?? [])].sort(sortComparator)
-  }, [data, sortComparator])
-
-  const setSort = (next: IrisTableSortState | null) => {
-    if (!sortControlled) setSortInternal(next)
-    onSortChange?.(next)
-  }
-
-  const cycleSort = (col: IrisTableColumn<Row>) => {
-    if (!col.sortable) return
-    if (!sort || sort.key !== col.key) {
-      setSort({ key: col.key, direction: 'asc' })
-      return
-    }
-    if (sort.direction === 'asc') {
-      setSort({ key: col.key, direction: 'desc' })
-      return
-    }
-    setSort(null)
   }
 
   const onHeaderKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, col: IrisTableColumn<Row>) => {

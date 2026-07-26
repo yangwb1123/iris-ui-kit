@@ -9,6 +9,7 @@
     refresh: () => void
   }
 </script>
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 
 <script lang="ts">
   import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui/core'

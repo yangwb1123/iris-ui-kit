@@ -77,6 +77,7 @@
     return () => document.removeEventListener('mousedown', onDocDown)
   })
 </script>
+<!-- svelte-ignore a11y_interactive_supports_focus -->
 
 <div
   bind:this={containerEl}

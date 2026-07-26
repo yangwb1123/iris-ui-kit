@@ -20,6 +20,7 @@
   // svelte-ignore state_referenced_locally — fixture: hand the controller out once.
   onready?.(arr)
 </script>
+<!-- svelte-ignore a11y_role_supports_aria_props_implicit -->
 
 <ul>
   {#each $fields as item, i (i)}

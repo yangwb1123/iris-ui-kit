@@ -34,5 +34,6 @@
     }
   }
 </script>
+<!-- svelte-ignore a11y_role_supports_aria_props_implicit -->
 
 <div class="handle" use:setHandle style="width: 40px; height: 40px"></div>

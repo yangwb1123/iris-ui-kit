@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test'
+import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
@@ -10,6 +10,7 @@ export default defineConfig({
     baseURL: 'http://localhost:5178',
     trace: 'retain-on-failure',
   },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], channel: 'chrome' } }],
   webServer: {
     command: 'npx --yes pnpm@latest dev',
     port: 5178,

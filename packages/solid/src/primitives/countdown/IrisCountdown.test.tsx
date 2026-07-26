@@ -68,7 +68,7 @@ describe('IrisCountdown', () => {
 
   it('displays formatted time in HH:mm:ss format', () => {
     // The Solid render takes a few ms, so the remaining time may be slightly less
-    const target = Date.now() + 3600000 + 60000 + 1000  // 1h 1m 1s
+    const target = Date.now() + 3600000 + 60000 + 1000 // 1h 1m 1s
     const { container } = render(() => <IrisCountdown value={target} format="HH:mm:ss" />)
     const el = container.querySelector('[data-iris-countdown-value]')
     // Should show 01:01:01 or close to it (render delay may subtract 1 second)

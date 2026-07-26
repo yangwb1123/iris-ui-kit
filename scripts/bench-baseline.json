@@ -1,28 +1,29 @@
 {
-  "_comment": "Performance baselines for key benchmarks. Values are ops/sec (higher is better).",
+  "_comment": "Performance baselines. Values are ops/sec (higher is better).",
   "form": {
-    "setFieldValue @10k": 10000,
-    "validate @1k (10 fields)": 700,
-    "array insert/remove @1k": 500,
-    "nested path @10k": 3000,
-    "array item swap @1k": 300
+    "10k sequential field updates (keystroke sim)": 10000,
+    "validate 10 fields × 1k iterations": 700,
+    "insert + remove 1k rows": 500,
+    "10k nested path field updates": 3000,
+    "500 swaps (reorder simulation)": 300
   },
   "resilience": {
-    "queryCache @10k unique": 400,
-    "queryCache @10k cached": 1000,
-    "circuitBreaker @10k": 5000,
-    "rateLimiter @10k": 8000,
-    "resilientFetcher @10k cached": 1000,
-    "outbox @10k": 2
+    "10k unique fetches (no cache hits)": 400,
+    "10k repeated fetches (all cache hits)": 1000,
+    "10k state checks (no-op while closed)": 5000,
+    "10k tryRemove (all succeed with large capacity)": 8000,
+    "10k cache hit (resilient path)": 1000,
+    "10k enqueue (all succeed immediately)": 2
   },
   "scale": {
-    "dataSource construct @10k": 100000,
-    "dataSource setSort @10k": 600,
-    "dataSource setFilter @10k": 2500,
-    "virtualizer scroll @100k": 600,
-    "virtualizer measure @100k": 500,
-    "selection set @100k": 150,
-    "selection toggleAll mix @10k": 400,
-    "notificationCenter burst @1000": 400
+    "construct + initial sync load": 100000,
+    "setSort (full re-sort + page)": 600,
+    "setFilter (full scan + page)": 2500,
+    "100 scroll steps (O(log n) windowing each)": 600,
+    "1000 measures (O(log n) point updates)": 500,
+    "bulk set 100k keys": 150,
+    "100k isSelected lookups (Set-backed O(1))": 100,
+    "toggleAll → partial toggle → toggleAll again": 400,
+    "post 1000 notifications": 400
   }
 }

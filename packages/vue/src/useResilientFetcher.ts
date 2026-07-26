@@ -1,4 +1,4 @@
-import { onUnmounted, ref, type Ref } from 'vue'
+import { onUnmounted } from 'vue'
 import {
   createResilientFetcher,
   type ResilientFetcher,
@@ -32,11 +32,11 @@ import {
  */
 export function useResilientFetcher<T>(
   options?: ResilientFetcherOptions,
-): Ref<ResilientFetcher<T>> {
-  const rf = ref<ResilientFetcher<T>>(createResilientFetcher<T>(options))
+): ResilientFetcher<T> {
+  const rf = createResilientFetcher<T>(options)
 
   onUnmounted(() => {
-    rf.value.cache.clear()
+    rf.cache.clear()
   })
 
   return rf

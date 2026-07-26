@@ -1,20 +1,24 @@
 # 插件开发
 
-Iris UI 的插件系统让你可以通过 `IrisProvider` 扩展自定义**令牌**、**消息**和**存储**。
+Iris UI 的插件系统让你可以通过 `IrisProvider` 扩展自定义**令牌**、**消息**和**存储**——所有功能通过单一 `IrisProvider` 集成点注册。
 
 ## 架构
 
 ```
-┌─────────────────────────────────────────────┐
-│  <IrisProvider plugins={[myPlugin]}>          │
-│    runPlugins() ─── 收集令牌 + 消息 + 存储    │
-│      └─ applyCssVars(tokens)     ➜  CSS 变量 │
-│      └─ mergeMessages(locale)    ➜  i18n     │
-│      └─ exposeStores()           ➜  usePluginStore()
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  <IrisProvider plugins={[myPlugin, editorPlugin]}>          │
+│    runPlugins() ─── 收集令牌 + 消息 + 存储                  │
+│      └─ applyCssVars(tokens)      ➜  CSS 自定义属性         │
+│      └─ mergeMessages(locale)     ➜  i18n 覆盖              │
+│      └─ exposeStores()            ➜  usePluginStore()       │
+│                                                             │
+│    <IrisCodeEditor />  ─── 使用插件的令牌和存储              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## 第一个插件
+
+使用 `@iris-ui/core` 的 `createPlugin` 定义插件：
 
 ```ts
 import { createPlugin } from '@iris-ui/core'
@@ -22,9 +26,12 @@ import { createPlugin } from '@iris-ui/core'
 export const myPlugin = createPlugin({
   name: 'my-plugin',
   install(registry) {
+    // 注册 CSS 变量（令牌名 → 值）
     registry.registerTokens({
       '--iris-my-accent': '#6366f1',
+      '--iris-my-bg': '#f8fafc',
     })
+    // 注册国际化消息
     registry.registerMessages('zh-CN', {
       'myPlugin.greeting': '你好，世界！',
     })
@@ -87,14 +94,27 @@ function MyComponent() {
 
 ## 包结构
 
+每个插件遵循相同的多入口布局：
+
 ```
 plugin-name/
 ├── src/
 │   ├── core/        # 框架无关逻辑
+│   │   └── index.ts
 │   ├── react/       # React 适配器
+│   │   └── index.tsx
 │   ├── vue/         # Vue 适配器
 │   ├── solid/       # Solid 适配器
-│   └── svelte/      # Svelte 适配器
-├── tsup.config.ts
-└── package.json
+│   └── svelte/      # Svelte 适配器 (Iris*.svelte)
+├── tsup.config.ts   # 多入口构建配置
+├── vitest.main.config.ts
+├── vitest.solid.config.ts
+└── vitest.svelte.config.ts
+```
+
+消费者从子路径导出导入：
+
+```ts
+import { editorPlugin } from '@iris-ui/plugin-editor/core'
+import { IrisCodeEditor } from '@iris-ui/plugin-editor/react'
 ```

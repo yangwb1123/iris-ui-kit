@@ -21,9 +21,7 @@
   onready?.(arr)
 </script>
 
-<!-- svelte-ignore a11y_role_supports_aria_props_implicit -->
-
-<ul>
+<ul role="list">
   {#each $fields as item, i (i)}
     <li data-testid="row">{item}</li>
   {/each}

@@ -186,6 +186,7 @@
     >
       {#if filtered().length === 0}
         <li
+          role="presentation"
           data-iris-combobox-empty
           aria-disabled="true"
           style="padding: 6px 10px; color: var(--iris-muted); font-size: {sz.fontSize}"

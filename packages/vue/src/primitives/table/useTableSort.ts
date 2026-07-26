@@ -29,9 +29,10 @@ export function useTableSort<Row extends Record<string, unknown>>(
   const { sort: sortProp, defaultSort, onSortChange } = options
 
   // Unwrap leafColumns (supports both plain array and ComputedRef)
-  const cols: IrisTableColumn<Row>[] = 'value' in (options.leafColumns as object) 
-    ? (options.leafColumns as ComputedRef<IrisTableColumn<Row>[]>).value
-    : options.leafColumns as IrisTableColumn<Row>[]
+  const cols: IrisTableColumn<Row>[] =
+    'value' in (options.leafColumns as object)
+      ? (options.leafColumns as ComputedRef<IrisTableColumn<Row>[]>).value
+      : (options.leafColumns as IrisTableColumn<Row>[])
 
   const sortControlled = sortProp !== undefined
   const internalSortValue = ref<IrisTableSortState | null>(defaultSort ?? null)

@@ -274,14 +274,11 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     cycleSort,
     sortComparator,
     sortedData: sortedRows,
-  } = useTableSort<Row>(
-    () => merged.data ?? [],
-    {
-      leafColumns: leafColumns(),
-      sort: props.sort,
-      onSortChange: (next) => merged.onSortChange?.(next),
-    },
-  )
+  } = useTableSort<Row>(() => merged.data ?? [], {
+    leafColumns: leafColumns(),
+    sort: props.sort,
+    onSortChange: (next) => merged.onSortChange?.(next),
+  })
 
   const handleHeaderClick = (column: IrisTableColumn<Row>): void => {
     cycleSort(column)

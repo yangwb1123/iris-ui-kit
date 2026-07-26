@@ -336,8 +336,26 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
   const toErrorMessage = (err: unknown): string =>
     err instanceof Error ? err.message : String(err)
 
+  /** Try to resolve a validator for `key`, falling back to array pattern matching. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function resolveValidator(key: string): ((value: unknown, values: V) => string | undefined) | undefined {
+    // Direct lookup first
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let v = (validators as any)[key]
+    if (v) return v as (value: unknown, values: V) => string | undefined
+    // Array pattern fallback: 'tags[0].name' → look for 'tags[].name'
+    const arrRe = /^(\w+(?:\.\w+)*)\[(\d+)\]\.(.+)$/
+    const m = key.match(arrRe)
+    if (m) {
+      const patternKey = `${m[1]}[].${m[3]}`
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      v = (validators as any)[patternKey]
+    }
+    return v as ((value: unknown, values: V) => string | undefined) | undefined
+  }
+
   const runFieldValidator = async (key: string, values: V): Promise<string | undefined> => {
-    const validator = validators[key as Key<V>]
+    const validator = resolveValidator(key)
     if (!validator) return undefined
     try {
       // No `await` here: `validator(...)` may return a plain value (a sync
@@ -421,11 +439,45 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     store.setState((s) => ({ ...s, isValidating: true }))
     try {
       const values = store.getState().values
-      const names = Object.keys(validators) as Key<V>[]
+      const baseNames = Object.keys(validators) as Key<V>[]
+
+      // Expand array validator patterns: a key like 'tags[].name' is NOT
+      // validated directly — it's expanded to 'tags[0].name', 'tags[1].name'
+      // etc. based on current array lengths. Only the expanded indices are
+      // validated. The pattern key itself is skipped.
+      const expandedNames: Key<V>[] = []
+      const arrRe = /^(\w+(?:\.\w+)*)\[\]\.(.+)$/
+      for (const name of baseNames) {
+        const m = name.match(arrRe)
+        if (m) {
+          const [, arrayPath, subField] = m
+          const arr = getByPath(values, arrayPath)
+          const len = Array.isArray(arr) ? arr.length : 0
+          for (let i = 0; i < len; i++) {
+            expandedNames.push(`${arrayPath}[${i}].${subField}` as Key<V>)
+          }
+          // Pattern key itself gets no direct token; skip it
+          continue
+        }
+        expandedNames.push(name)
+      }
+
+      const names = expandedNames
       // Bump every field's token first so any in-flight single-field validation
       // is invalidated — this form pass becomes the authoritative answer.
       const tokenById = new Map<Key<V>, number>()
-      for (const name of names) tokenById.set(name, nextToken(name))
+      // Track tokens for both expanded keys and their base patterns
+      for (const name of baseNames) {
+        const t = nextToken(name)
+        // Skip pattern keys — they get no direct validation
+        if (!arrRe.test(name)) {
+          tokenById.set(name, t)
+        }
+      }
+      // Also tokenize each expanded key individually
+      for (const name of names) {
+        if (!tokenById.has(name)) tokenById.set(name, nextToken(name))
+      }
 
       // allSettled (not all): runFieldValidator already catches per-field
       // exceptions, but this stays defense-in-depth so ONE unexpected rejection

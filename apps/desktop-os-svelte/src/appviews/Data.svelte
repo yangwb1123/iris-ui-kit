@@ -29,13 +29,20 @@
     const source = createReconnectingSource<{ pid: number; delta: number }>(
       (sink) => {
         const timer = setTimeout(() => sink.open(), 200)
-        const interval = setInterval(() => {
-          const pid = Math.floor(Math.random() * 9) + 1
-          const delta = Math.random() > 0.5 ? 1 : -1
-          sink.message({ pid, delta })
-        }, 3000 + Math.random() * 2000)
+        const interval = setInterval(
+          () => {
+            const pid = Math.floor(Math.random() * 9) + 1
+            const delta = Math.random() > 0.5 ? 1 : -1
+            sink.message({ pid, delta })
+          },
+          3000 + Math.random() * 2000,
+        )
         const disconnecter = setInterval(() => sink.close(), 45_000)
-        return () => { clearTimeout(timer); clearInterval(interval); clearInterval(disconnecter) }
+        return () => {
+          clearTimeout(timer)
+          clearInterval(interval)
+          clearInterval(disconnecter)
+        }
       },
       {
         onMessage: ({ pid, delta }) => {
@@ -47,7 +54,9 @@
             return { ...p, windows, status }
           })
         },
-        onStatus: (s) => { connectionStatus = s },
+        onStatus: (s) => {
+          connectionStatus = s
+        },
       },
       { backoffMs: 2000, maxBackoffMs: 15000 },
     )
@@ -97,14 +106,16 @@
     <p class="hint">
       Process monitor — updates in real-time via <code>createReconnectingSource</code>.
     </p>
-    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; opacity: 0.6">
+    <span
+      style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; opacity: 0.6"
+    >
       <span
         style="width: 6px; height: 6px; border-radius: 50%; display: inline-block;
           background: {connectionStatus === 'open'
-            ? 'var(--iris-success)'
-            : connectionStatus === 'reconnecting'
-              ? 'var(--iris-warning)'
-              : 'var(--iris-muted)'}"
+          ? 'var(--iris-success)'
+          : connectionStatus === 'reconnecting'
+            ? 'var(--iris-warning)'
+            : 'var(--iris-muted)'}"
       ></span>
       {connectionStatus}
     </span>
@@ -145,17 +156,72 @@
 </div>
 
 <style>
-  .data-pane { padding: 16px; display: grid; gap: 12px; color: var(--os-window-fg); }
-  .hint { margin: 0; opacity: 0.7; font-size: 13px; }
-  .table { border: 1px solid var(--iris-border, rgba(127, 127, 127, 0.3)); border-radius: var(--iris-radius-md, 6px); overflow: hidden; background: var(--iris-background, transparent); }
-  .trow { display: grid; grid-template-columns: 1.4fr 1fr 0.8fr 1fr; }
-  .tbody:nth-child(even) { background: var(--iris-surface, rgba(127, 127, 127, 0.06)); }
-  .th { display: flex; align-items: center; gap: 4px; padding: 8px 12px; background: var(--iris-surface, rgba(127, 127, 127, 0.08)); border: none; border-bottom: 1px solid var(--iris-border, rgba(127, 127, 127, 0.3)); font: 600 13px/1 inherit; color: inherit; text-align: left; cursor: default; }
-  .th--sortable { cursor: pointer; user-select: none; }
-  .th--right { justify-content: flex-end; }
-  .caret { display: inline-flex; flex-direction: column; line-height: 0.6; font-size: 8px; opacity: 0.5; }
-  .caret--on { opacity: 1; color: var(--iris-primary, var(--os-accent)); }
-  .td { display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--iris-border, rgba(127, 127, 127, 0.18)); font-size: 14px; }
-  .td--right { justify-content: flex-end; }
-  .tbody:last-child .td { border-bottom: none; }
+  .data-pane {
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+    color: var(--os-window-fg);
+  }
+  .hint {
+    margin: 0;
+    opacity: 0.7;
+    font-size: 13px;
+  }
+  .table {
+    border: 1px solid var(--iris-border, rgba(127, 127, 127, 0.3));
+    border-radius: var(--iris-radius-md, 6px);
+    overflow: hidden;
+    background: var(--iris-background, transparent);
+  }
+  .trow {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 0.8fr 1fr;
+  }
+  .tbody:nth-child(even) {
+    background: var(--iris-surface, rgba(127, 127, 127, 0.06));
+  }
+  .th {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    background: var(--iris-surface, rgba(127, 127, 127, 0.08));
+    border: none;
+    border-bottom: 1px solid var(--iris-border, rgba(127, 127, 127, 0.3));
+    font: 600 13px/1 inherit;
+    color: inherit;
+    text-align: left;
+    cursor: default;
+  }
+  .th--sortable {
+    cursor: pointer;
+    user-select: none;
+  }
+  .th--right {
+    justify-content: flex-end;
+  }
+  .caret {
+    display: inline-flex;
+    flex-direction: column;
+    line-height: 0.6;
+    font-size: 8px;
+    opacity: 0.5;
+  }
+  .caret--on {
+    opacity: 1;
+    color: var(--iris-primary, var(--os-accent));
+  }
+  .td {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--iris-border, rgba(127, 127, 127, 0.18));
+    font-size: 14px;
+  }
+  .td--right {
+    justify-content: flex-end;
+  }
+  .tbody:last-child .td {
+    border-bottom: none;
+  }
 </style>

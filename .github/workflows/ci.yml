@@ -78,4 +78,3 @@ jobs:
         run: |
           pnpm bench
           node scripts/check-bench-regression.mjs
-        continue-on-error: true

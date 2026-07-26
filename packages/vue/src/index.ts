@@ -25,6 +25,7 @@
 // ── Layer 0 ──────────────────────────────────────────────────────────────────
 export { useStore, useStoreSelector } from './useStore'
 export { useReconnectingSource } from './useReconnectingSource'
+export { useResilientFetcher } from './useResilientFetcher'
 export { useDisposableScope } from './useDisposableScope'
 export * from './theme'
 export * from './skins'

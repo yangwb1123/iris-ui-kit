@@ -4,6 +4,7 @@
 export { useStore, useStoreSelector } from './useStore'
 export { useMachine } from './useMachine'
 export { useReconnectingSource } from './useReconnectingSource'
+export { useResilientFetcher } from './useResilientFetcher'
 export { useDisposableScope } from './useDisposableScope'
 
 // ── Layer 0: theme + skins ─────────────────────────────────────────────────

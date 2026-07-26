@@ -39,3 +39,78 @@ describe('createExpansion — single (accordion)', () => {
     expect(e.get()).toEqual([])
   })
 })
+
+describe('createExpansion — edge cases', () => {
+  it('starts empty with no defaults', () => {
+    expect(createExpansion().get()).toEqual([])
+  })
+
+  it('defaultExpanded seeds initial state', () => {
+    const e = createExpansion({ defaultExpanded: ['a', 'b'] })
+    expect(e.get()).toEqual(['a', 'b'])
+  })
+
+  it('collapse removes a single key', () => {
+    const e = createExpansion()
+    e.expand('a')
+    e.expand('b')
+    e.collapse('a')
+    expect(e.get()).toEqual(['b'])
+  })
+
+  it('expand is idempotent', () => {
+    const e = createExpansion()
+    e.expand('a')
+    e.expand('a')
+    expect(e.get()).toEqual(['a'])
+  })
+
+  it('toggle is idempotent', () => {
+    const e = createExpansion()
+    e.toggle('a')
+    e.toggle('a')
+    expect(e.get()).toEqual([])
+  })
+
+  it('set replaces all keys', () => {
+    const e = createExpansion()
+    e.expand('a')
+    e.expand('b')
+    e.set(['c'])
+    expect(e.get()).toEqual(['c'])
+  })
+
+  it('collapseAll removes all', () => {
+    const e = createExpansion()
+    e.expand('a')
+    e.expand('b')
+    e.collapseAll()
+    expect(e.get()).toEqual([])
+  })
+
+  it('expand on single mode replaces existing', () => {
+    const e = createExpansion({ mode: 'single' })
+    e.expand('a')
+    e.expand('b')
+    expect(e.get()).toEqual(['b'])
+  })
+
+  it('store subscribe fires on state changes', () => {
+    const e = createExpansion()
+    const listener = vi.fn()
+    e.store.subscribe(listener)
+    e.expand('x')
+    expect(listener).toHaveBeenCalled()
+  })
+
+  it('store unsubscribe stops notifications', () => {
+    const e = createExpansion()
+    const listener = vi.fn()
+    const unsub = e.store.subscribe(listener)
+    e.expand('x')
+    expect(listener).toHaveBeenCalledTimes(1)
+    unsub()
+    e.expand('y')
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+})

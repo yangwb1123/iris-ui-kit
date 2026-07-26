@@ -11,7 +11,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'pnpm dev',
+    command: 'npx --yes pnpm@latest dev',
     port: 5177,
     reuseExistingServer: !process.env.CI,
   },

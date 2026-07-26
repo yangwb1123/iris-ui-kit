@@ -27,12 +27,14 @@ export default defineConfig(({ command }) => ({
             // more specific entry first, a deep import like `@iris-ui/core/undo`
             // (used internally by `@iris-ui/react`'s undo module) would resolve
             // against that file instead of `src/undo.ts` and fail to load.
+            // Subpath aliases for deep imports from plugin dist bundles
             '@iris-ui/core/undo': srcSubpath('core', 'undo'),
             '@iris-ui/core': src('core'),
             '@iris-ui/tokens': src('tokens'),
             '@iris-ui/theme': src('theme'),
             '@iris-ui/skins': src('skins'),
             '@iris-ui/icons': src('icons'),
+            '@iris-ui/react/form': srcSubpath('react', 'form/index'),
             '@iris-ui/react': src('react'),
           },
         }

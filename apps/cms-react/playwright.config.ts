@@ -44,7 +44,7 @@ export default defineConfig({
   // browser family (GitHub's ubuntu-latest images ship Chrome stable preinstalled).
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], channel: 'chrome' } }],
   webServer: {
-    command: 'pnpm dev',
+    command: 'npx --yes pnpm@latest dev',
     url: 'http://localhost:5176',
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,

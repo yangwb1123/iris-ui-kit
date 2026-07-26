@@ -33,6 +33,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui/theme': src('theme'),
             '@iris-ui/skins': src('skins'),
             '@iris-ui/icons': src('icons'),
+            '@iris-ui/svelte/form': srcSubpath('svelte', 'form/index'),
             '@iris-ui/svelte': src('svelte'),
           },
         }

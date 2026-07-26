@@ -67,4 +67,11 @@ describe('watchColorScheme', () => {
     expect(typeof stop).toBe('function')
     expect(() => stop()).not.toThrow()
   })
+
+  it('double stop is safe', () => {
+    mockMatchMedia(false)
+    const stop = watchColorScheme(() => {})
+    stop()
+    expect(() => stop()).not.toThrow()
+  })
 })

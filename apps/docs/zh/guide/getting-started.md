@@ -67,7 +67,9 @@ function UserTable() {
     resilient: { ttlMs: 5000, breaker: { failureThreshold: 3, resetMs: 10000 } },
   })
 
-  return <IrisTable columns={COLUMNS} data={users.state.rows} rowKey="id" sortable />
+  return (
+    <IrisTable columns={COLUMNS} data={users.state.rows} rowKey="id" sortable />
+  )
 }
 ```
 
@@ -84,10 +86,7 @@ const schema = {
     { name: 'name', type: 'text', label: '姓名', required: true },
     { name: 'email', type: 'email', label: '邮箱', required: true },
     {
-      name: 'role',
-      type: 'select',
-      label: '角色',
-      required: true,
+      name: 'role', type: 'select', label: '角色', required: true,
       options: [
         { label: '工程师', value: 'engineer' },
         { label: '设计师', value: 'designer' },
@@ -101,12 +100,44 @@ function UserForm() {
 }
 ```
 
-## 4. 插件系统
+## 4. 实时数据
+
+订阅实时数据流，带自动指数退避重连：
+
+```tsx
+import { useEffect, useState } from 'react'
+import { createReconnectingSource } from '@iris-ui/core'
+
+function StockTicker() {
+  const [price, setPrice] = useState(0)
+
+  useEffect(() => {
+    const source = createReconnectingSource<{ price: number }>(
+      (sink) => {
+        const ws = new WebSocket('wss://api.example.com/stocks')
+        ws.onmessage = (e) => sink.message(JSON.parse(e.data))
+        ws.onopen = () => sink.open()
+        ws.onclose = () => sink.close()
+        return () => ws.close()
+      },
+      { onMessage: (t) => setPrice(t.price) },
+      { backoffMs: 1000, maxBackoffMs: 30000 },
+    )
+    source.open()
+    return () => source.close()
+  }, [])
+
+  return <div>当前价格: ${price.toFixed(2)}</div>
+}
+```
+
+## 5. 插件系统
 
 重型能力以插件按需安装：
 
 ```bash
-pnpm add @iris-ui/plugin-editor @iris-ui/plugin-charts @iris-ui/plugin-locale-zh
+pnpm add @iris-ui/plugin-editor @iris-ui/plugin-pro-table @iris-ui/plugin-charts \
+  @iris-ui/plugin-form-builder @iris-ui/plugin-notifications @iris-ui/plugin-locale-zh
 ```
 
 通过 `IrisProvider` 激活：
@@ -123,6 +154,16 @@ function App() {
     </IrisProvider>
   )
 }
+```
+
+## 深层导入
+
+按区域导入以保持包体积小巧：
+
+```ts
+import { useForm } from '@iris-ui/react/form'
+import { useColorScheme } from '@iris-ui/vue/theme'
+import { IrisProTable } from '@iris-ui/plugin-pro-table/react'
 ```
 
 ## 继续学习

@@ -67,6 +67,7 @@
 {#if ctx.open}
   <!-- backdrop -->
   <div
+    role="presentation"
     use:portal={portalTarget}
     data-iris-dialog-backdrop
     onpointerdown={handleBackdropPointerDown}

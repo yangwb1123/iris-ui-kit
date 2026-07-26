@@ -32,6 +32,7 @@
 
 <span
   data-iris-long-press
+  role="presentation"
   style:display="contents"
   onpointerdown={handlePointerDown}
   onpointerup={handlePointerUp}

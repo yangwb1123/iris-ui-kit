@@ -233,6 +233,12 @@
         data-iris-list-item
         data-state={selected ? 'selected' : active ? 'active' : 'idle'}
         onclick={() => select(item)}
+        onkeydown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            select(item)
+          }
+        }}
         onfocus={() => {
           activeIndex = index
         }}

@@ -81,6 +81,8 @@
 
 <div
   bind:this={containerEl}
+  role="application"
+  aria-roledescription="sortable"
   data-iris-sortable
   data-state={state.activeId ? 'dragging' : 'idle'}
   data-disabled={disabled ? '' : undefined}

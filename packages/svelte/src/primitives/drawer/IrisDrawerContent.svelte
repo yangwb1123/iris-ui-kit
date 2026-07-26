@@ -100,6 +100,7 @@
 {#if ctx.open}
   <!-- backdrop -->
   <div
+    role="presentation"
     use:portal={portalTarget}
     data-iris-drawer-backdrop
     onpointerdown={handleBackdropPointerDown}

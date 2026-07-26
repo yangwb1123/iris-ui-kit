@@ -112,6 +112,7 @@
 
 <!-- Trigger wrapper -->
 <span
+  role="presentation"
   use:setTrigger
   aria-describedby={open ? tooltipId : undefined}
   onpointerenter={() => {

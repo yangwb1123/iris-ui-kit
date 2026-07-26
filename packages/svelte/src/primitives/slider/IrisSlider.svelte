@@ -205,7 +205,7 @@
     style,
   )}
 >
-  <div bind:this={trackEl} data-iris-slider-track style={trackStyle} onclick={handleTrackClick}>
+  <div bind:this={trackEl} data-iris-slider-track role="presentation" onclick={handleTrackClick}>
     <div data-iris-slider-fill style={fillStyle}></div>
     <div
       bind:this={thumbEl}

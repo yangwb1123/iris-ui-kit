@@ -135,6 +135,7 @@
   {#each handles as handle (handle)}
     <div
       data-iris-resizable-handle={handle}
+      role="presentation"
       onmousedown={(e) => startResize(e, handle)}
       style={handleStyle(handle)}
     ></div>

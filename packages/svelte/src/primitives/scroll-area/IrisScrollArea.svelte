@@ -41,6 +41,7 @@
   {...rest}
   data-iris-scroll-area
   data-axis={axis}
+  role="region"
   tabindex={0}
   style={mergeStyle(baseStyle, style)}
 >

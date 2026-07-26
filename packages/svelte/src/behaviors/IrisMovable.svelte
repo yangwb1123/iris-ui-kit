@@ -89,6 +89,7 @@
 <div
   data-iris-movable
   data-dragging={dragging ? '' : undefined}
+  role="presentation"
   onmousedown={onMouseDown}
   style:position="absolute"
   style:transform={`translate(${pos.x}px, ${pos.y}px)`}

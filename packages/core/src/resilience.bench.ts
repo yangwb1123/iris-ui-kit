@@ -17,9 +17,9 @@ describe('createQueryCache @10k', () => {
 
   bench('10k unique fetches (no cache hits)', async () => {
     const cache = createQueryCache<{ id: number; value: string }>({ ttlMs: 60_000 })
-    let calls = 0
+    // let calls = 0
     const fetcher = async (k: string) => {
-      calls++
+      // calls++
       return data[Number(k)]!
     }
     for (let i = 0; i < 10_000; i++) {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { createDataSource } from './data-source'
 import { createSyncClientDataSource } from './data-source/client'
 import type { DataViewColumn } from './data-view'
@@ -43,7 +43,6 @@ describe('createDataSource with resilient option', () => {
   })
 
   it('resilient mode: second load hits cache (repeated query)', async () => {
-    let fetcherCalls = 0
     const ds = createDataSource<Row>({
       fetcher: createSyncClientDataSource(ROWS, COLUMNS),
       pageSize: 10,

@@ -2,21 +2,22 @@ import { test, expect } from '@playwright/test'
 
 /**
  * E2E smoke tests for the Svelte CMS app (port 5178).
- * Verifies login → shell → Users table → Form Builder.
+ * Uses sidebar menu click for navigation.
  */
 
-test('login → shell → Users table renders', async ({ page }) => {
+async function login(page: import('@playwright/test').Page) {
   await page.goto('/')
-
-  // Svelte login: pre-filled username/password, click Sign in
   await expect(page.getByRole('heading', { name: /iris cms/i })).toBeVisible({ timeout: 5000 })
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-
-  // Shell mounted
   await expect(page.getByRole('button', { name: 'Open command palette' })).toBeVisible({ timeout: 5000 })
+}
 
-  // Navigate to Users page
-  await page.goto('/#users')
+test('login → shell → Users table renders', async ({ page }) => {
+  await login(page)
+
+  // Navigate via sidebar nav item
+  await page.locator('[data-iris-nav-group]').filter({ hasText: 'Users' }).first().click()
+
   const table = page.getByRole('table')
   await expect(table).toBeVisible({ timeout: 5000 })
   const rows = table.getByRole('row')
@@ -25,11 +26,9 @@ test('login → shell → Users table renders', async ({ page }) => {
 })
 
 test('Form Builder page — renders form fields', async ({ page }) => {
-  await page.goto('/')
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Open command palette' })).toBeVisible({ timeout: 5000 })
+  await login(page)
 
-  await page.goto('/#form-builder')
+  await page.locator('[data-iris-nav-group]').filter({ hasText: 'Form Builder' }).first().click()
   await expect(page.getByRole('heading', { name: /Form Builder/i })).toBeVisible({ timeout: 5000 })
   await expect(page.getByText('Full Name')).toBeVisible()
 })

@@ -1,0 +1,28 @@
+{
+  "_comment": "Performance baselines for key benchmarks. Values are ops/sec (higher is better).",
+  "form": {
+    "setFieldValue @10k": 10000,
+    "validate @1k (10 fields)": 700,
+    "array insert/remove @1k": 500,
+    "nested path @10k": 3000,
+    "array item swap @1k": 300
+  },
+  "resilience": {
+    "queryCache @10k unique": 400,
+    "queryCache @10k cached": 1000,
+    "circuitBreaker @10k": 5000,
+    "rateLimiter @10k": 8000,
+    "resilientFetcher @10k cached": 1000,
+    "outbox @10k": 2
+  },
+  "scale": {
+    "dataSource construct @10k": 100000,
+    "dataSource setSort @10k": 600,
+    "dataSource setFilter @10k": 2500,
+    "virtualizer scroll @100k": 600,
+    "virtualizer measure @100k": 500,
+    "selection set @100k": 150,
+    "selection toggleAll mix @10k": 400,
+    "notificationCenter burst @1000": 400
+  }
+}

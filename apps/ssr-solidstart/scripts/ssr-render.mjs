@@ -15,9 +15,10 @@
  * from absolute paths the same way the parent's resolver does.
  */
 import { createRequire } from 'node:module'
-import { readdirSync } from 'node:fs'
+import { readdirSync, writeSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import process from 'node:process'
+import { pathToFileURL, URL } from 'node:url'
 
 const appRoot = resolve(dirname(new URL(import.meta.url).pathname), '..')
 const req = createRequire(join(appRoot, 'package.json'))
@@ -56,7 +57,15 @@ if (pnpmDir && viteMajor) {
     (name) => name.startsWith('vite-plugin-solid@') && name.includes(`_vite@${viteMajor}.`),
   )
   if (match) {
-    pluginEntry = join(pnpmDir, match, 'node_modules', 'vite-plugin-solid', 'dist', 'esm', 'index.mjs')
+    pluginEntry = join(
+      pnpmDir,
+      match,
+      'node_modules',
+      'vite-plugin-solid',
+      'dist',
+      'esm',
+      'index.mjs',
+    )
   }
 }
 if (!pluginEntry) throw new Error('could not resolve vite-plugin-solid')
@@ -81,8 +90,10 @@ try {
   const mod = await server.ssrLoadModule('/src/iris-tree.ssr.tsx')
   const html = mod.renderIrisTreeToString()
   // Emit the HTML between sentinels so the parent can extract it cleanly even
-  // if Vite logs anything to stdout.
-  process.stdout.write(`\n__IRIS_SSR_START__${html}__IRIS_SSR_END__\n`)
+  // if Vite logs anything to stdout. Await the write because stdout is a
+  // non-blocking pipe under execFileSync; writing the one-shot protocol payload
+  // directly to stdout's file descriptor guarantees it is flushed.
+  writeSync(process.stdout.fd, `\n__IRIS_SSR_START__${html}__IRIS_SSR_END__\n`)
 } finally {
   await server.close()
 }

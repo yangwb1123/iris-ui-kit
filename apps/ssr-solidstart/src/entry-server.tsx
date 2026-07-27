@@ -1,6 +1,19 @@
-import { renderToStream } from 'solid-js/web'
-import App from './app'
+import { createHandler, StartServer, type DocumentComponentProps } from '@solidjs/start/server'
 
-export default function render() {
-  return renderToStream(() => <App />)
+function Document(props: DocumentComponentProps) {
+  return (
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {props.assets}
+      </head>
+      <body style={{ margin: 0 }}>
+        <div id="app">{props.children}</div>
+        {props.scripts}
+      </body>
+    </html>
+  )
 }
+
+export default createHandler(() => <StartServer document={Document} />)

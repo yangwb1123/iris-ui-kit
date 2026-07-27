@@ -18,14 +18,13 @@
 //   4. assert Vue reported NO hydration mismatch AND the iris content survived.
 //
 // Why the composition is rebuilt here with render functions instead of importing
-// `components/Demo.client.vue`:
-//   • `Demo.client.vue` is a Nuxt *client island* (`.client` suffix) — it never
-//     server-renders in the real app, and importing it would drag in Nuxt's
-//     auto-import + SFC-compile machinery that this isolated vitest run does not
-//     wire up (no `@vitejs/plugin-vue` in this workspace, and we add no deps).
-//   • So we reproduce the SAME iris tree (ThemeProvider + Button + Input + Badge
-//     + Dialog (closed) + Table) directly from `@iris-ui-kit/vue`, mirroring the
-//     per-adapter reference test at `packages/vue/src/hydration.test.ts`.
+// `components/HydrationDemo.vue`:
+//   • The real component is a Nuxt SFC and depends on Nuxt's SFC compilation
+//     pipeline. This isolated Vitest config intentionally exercises the rendered
+//     Vue tree without duplicating Nuxt's build plugin setup.
+//   • We therefore reproduce the same Iris tree (ThemeProvider + Button + Input
+//     + Badge + closed Dialog + Table) directly from `@iris-ui-kit/vue`, mirroring
+//     the adapter reference test at `packages/vue/src/hydration.test.ts`.
 //
 // How Vue 3.5 signals a mismatch (per the bundled runtime): per-node
 // `console.warn(...)` reports ("Hydration text mismatch in", "Hydration node
@@ -52,7 +51,7 @@ import {
 import { createThemeStore } from '@iris-ui-kit/theme'
 import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 
-// Same data shape as components/Demo.client.vue.
+// Same data shape as components/HydrationDemo.vue.
 const rows: Record<string, unknown>[] = [
   { id: 1, name: 'Ada Lovelace', role: 'Engineer', status: 'active' },
   { id: 2, name: 'Alan Turing', role: 'Researcher', status: 'active' },
@@ -65,7 +64,7 @@ const columns = [
 ]
 
 /**
- * Reproduce the iris composition rendered by `app.vue` → `Demo.client.vue`,
+ * Reproduce the iris composition rendered by `app.vue` → `HydrationDemo.vue`,
  * in its default (server-render) state: name empty, dialog closed. A fresh
  * `themeStore` per app instance keeps SSR and hydrate passes independent, the
  * way two processes (server, then browser) would each build their own.

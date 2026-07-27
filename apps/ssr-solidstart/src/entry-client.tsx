@@ -1,4 +1,3 @@
-import { hydrate } from 'solid-js/web'
-import App from './app'
+import { mount, StartClient } from '@solidjs/start/client'
 
-hydrate(() => <App />, document)
+export default mount(() => <StartClient />, document.getElementById('app')!)

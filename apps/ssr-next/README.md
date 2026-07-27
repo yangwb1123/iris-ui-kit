@@ -83,23 +83,21 @@ pnpm --filter ssr-next build   # the SSR/RSC-compat proof
 `build` is wired into the monorepo's turbo graph, so
 `pnpm turbo run build` exercises it as part of the standard gate.
 
-## React version
+## Versions and four-framework SSR matrix
 
-Pinned to **React 18.3.1** + **react-dom 18.3.1** to match the repo's React
-adapter (`@iris-ui-kit/react` dev-deps React `^18.3.1`; its peer range is
-`^18 || ^19`). Next is pinned to **14.2.x** — the Next 14 line targets React
-18; Next 15 requires React 19, which would diverge from the rest of the repo.
+This reference uses **Next 15.5.21** with React/React DOM 18.3.1, which remains
+inside the adapter's `^18 || ^19` peer range. It now exposes `/`, `/data`,
+`/feedback`, and `/api/feedback`; tests start the optimized production server
+on an ephemeral port and verify RSC HTML, server data, JSON validation, and the
+no-JavaScript form redirect.
 
-## Scope — the other meta-frameworks are DEFERRED
+The same production proof exists for every adapter:
 
-This round (R14) is intentionally bounded to **one** app: Next.js App Router.
+| Adapter | Meta-framework     | Production proof                                                   |
+| ------- | ------------------ | ------------------------------------------------------------------ |
+| React   | Next.js App Router | RSC/client boundary, hydration, multi-route HTTP and route handler |
+| Vue     | Nuxt               | hydration, `useAsyncData`, server API and progressive form POST    |
+| Solid   | SolidStart         | hydration, server query/action and multi-route HTTP                |
+| Svelte  | SvelteKit          | SSR/hydration, server load/action and multi-route HTTP             |
 
-**Nuxt** (Vue), **SvelteKit** (Svelte), and **SolidStart** (Solid) are
-**explicitly deferred**. Each would follow the _identical thin-smoke pattern_:
-a server-rendered page that mounts a small island of `@iris-ui-kit/{vue,svelte,solid}`
-components (an overlay closed by default + a data component + a few basics),
-where a successful framework build is the SSR proof. They are deferred to avoid
-quadrupling heavy SSR toolchains in the monorepo in a single round; Next is the
-canonical/strictest proof (RSC client boundaries) and validates the shared
-architecture (injected `'use client'`, no server-side DOM, client-only theming)
-that the other three reuse.
+All four apps are part of the monorepo build/test graph; none is deferred.

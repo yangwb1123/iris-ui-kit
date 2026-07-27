@@ -2,12 +2,14 @@
   "name": "ssr-sveltekit",
   "version": "0.0.1",
   "private": true,
-  "description": "SvelteKit SSR smoke app — the SSR-compat proof for @iris-ui-kit/svelte (ROADMAP v3 R14, deferred)",
+  "description": "SvelteKit file-routed SSR reference app for @iris-ui-kit/svelte",
   "scripts": {
     "dev": "vite dev --port 5182",
     "build": "vite build",
-    "test": "vitest run --config vitest.ssr.config.ts && vitest run --config vitest.hydrate.config.ts",
-    "typecheck": "svelte-check",
+    "test": "vitest run --config vitest.ssr.config.ts && vitest run --config vitest.hydrate.config.ts && node --test test/production-routes.node.mjs",
+    "typecheck": "svelte-kit sync && svelte-check",
+    "lint": "eslint src test svelte.config.js vite.config.ts vitest.ssr.config.ts vitest.hydrate.config.ts",
+    "format:check": "prettier --check src test svelte.config.js vite.config.ts vitest.ssr.config.ts vitest.hydrate.config.ts tsconfig.json package.json",
     "clean": "rm -rf .svelte-kit build node_modules/.cache"
   },
   "dependencies": {
@@ -15,13 +17,13 @@
     "@iris-ui-kit/svelte": "workspace:*",
     "@iris-ui-kit/theme": "workspace:*",
     "@iris-ui-kit/tokens": "workspace:*",
-    "@sveltejs/kit": "^2.15.0",
+    "@sveltejs/kit": "^2.69.1",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "svelte": "^5.16.0",
     "vite": "^6.0.0"
   },
   "devDependencies": {
-    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/adapter-node": "^5.5.7",
     "svelte-check": "^4.1.0",
     "typescript": "^5.6.3"
   },

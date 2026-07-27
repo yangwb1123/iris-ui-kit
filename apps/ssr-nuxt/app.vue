@@ -1,23 +1,58 @@
 <template>
   <Html lang="en">
     <Body>
-      <main style="max-width: 880px; margin: 0 auto; padding: 40px 24px">
-        <header style="margin-bottom: 24px">
-          <h1 style="margin: 0 0 4px; font-size: 24px">Iris UI · Nuxt 3 SSR smoke</h1>
-          <p style="margin: 0; color: var(--iris-muted-foreground, #666)">
-            Server-rendered page (<code>app.vue</code>) containing a client island
-            (<code>Demo.client.vue</code>) built from <code>@iris-ui-kit/vue</code>. A successful
-            <code>nuxi build</code> is the SSR-compat proof.
-          </p>
-        </header>
-        <DemoClient />
-      </main>
+      <ThemeProvider :store="themeStore">
+        <div
+          style="
+            min-height: 100vh;
+            background: var(--iris-background);
+            color: var(--iris-foreground);
+          "
+        >
+          <header
+            style="border-block-end: 1px solid var(--iris-border); background: var(--iris-surface)"
+          >
+            <div
+              style="
+                max-width: 880px;
+                margin: 0 auto;
+                padding: 18px 24px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                flex-wrap: wrap;
+              "
+            >
+              <NuxtLink
+                to="/"
+                style="color: var(--iris-foreground); font-weight: 700; text-decoration: none"
+              >
+                Iris UI · Nuxt
+              </NuxtLink>
+              <nav aria-label="Primary navigation" style="display: flex; gap: 18px">
+                <NuxtLink to="/">Overview</NuxtLink>
+                <NuxtLink to="/data">Server data</NuxtLink>
+                <NuxtLink to="/feedback">Feedback</NuxtLink>
+              </nav>
+            </div>
+          </header>
+          <main style="max-width: 880px; margin: 0 auto; padding: 40px 24px">
+            <NuxtPage />
+          </main>
+        </div>
+      </ThemeProvider>
     </Body>
   </Html>
 </template>
 
 <script setup lang="ts">
-// Server component — no client reactivity. The import below auto-resolves
-// components/Demo.client.vue (the `.client` suffix marks it as a client island).
-// Nuxt renders it on the server and hydrates it in the browser.
+import { ThemeProvider } from '@iris-ui-kit/vue'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
+
+const themeStore = createThemeStore({
+  themes: { light: lightTheme, dark: darkTheme },
+  default: 'light',
+})
 </script>

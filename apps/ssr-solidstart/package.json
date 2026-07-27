@@ -3,12 +3,14 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "SolidStart SSR smoke app — the SSR-compat proof for @iris-ui-kit/solid (ROADMAP v3 R14, deferred)",
+  "description": "SolidStart file-routed SSR reference app for @iris-ui-kit/solid",
   "scripts": {
     "dev": "vinxi dev --port 5183",
     "build": "vinxi build",
-    "test": "vitest run",
+    "test": "vitest run && node --test test/production-routes.node.mjs",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint src scripts test app.config.ts vitest.config.ts",
+    "format:check": "prettier --check src scripts test app.config.ts vitest.config.ts package.json",
     "clean": "rm -rf .output node_modules/.cache"
   },
   "dependencies": {

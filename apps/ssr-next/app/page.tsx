@@ -15,6 +15,11 @@ export default function Page() {
           <code>app/Demo.tsx</code>) built from <code>@iris-ui-kit/react</code>. A successful{' '}
           <code>next build</code> is the SSR/RSC-compat proof.
         </p>
+        <nav aria-label="SSR reference routes" style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+          <a href="/">Interactive demo</a>
+          <a href="/data">Server data</a>
+          <a href="/feedback">Feedback</a>
+        </nav>
       </header>
       <Demo />
     </main>

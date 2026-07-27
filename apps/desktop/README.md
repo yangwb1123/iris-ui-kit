@@ -71,11 +71,10 @@ xvfb-run -a electron selftest.js           # real Electron: cycles ALL 4 in one 
 
 ## Tauri / Wails
 
-The library is equally ready for Tauri and Wails (same `setFileSaveHandler` /
-`setClipboardHandler` hooks — see the cross-platform deployment guide in
-`docs/`). They are **not** scaffolded here because building them on Linux needs
-the `libwebkit2gtk-4.1` system libraries, which require root to install and were
-unavailable in this environment. The Rust (cargo) and Go toolchains themselves
-are present, so a Tauri/Wails shell is a drop-in once the WebKit dev libs are
-installed; the renderer-side bridge registration (`desktopBridge.ts`) is
-identical.
+The repository also ships real Tauri (`apps/desktop-tauri`) and Wails
+(`apps/desktop-wails`) shells over the same four CMS renderers and the same
+`setFileSaveHandler` / `setClipboardHandler` contracts. Their Linux builds and
+tests use WebKitGTK 4.1, Rust, and Go. Local monorepo runs may report a clear
+`SKIP` when those native prerequisites are unavailable; the dedicated
+`native-linux` CI job installs them and sets `IRIS_REQUIRE_NATIVE_BUILD=1`, so
+Electron, Tauri, and Wails must all compile and test without skips.

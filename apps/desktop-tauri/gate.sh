@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
-# Toolchain-guarded turbo task for the Tauri shell (arg: build|test). Skips
-# cleanly (exit 0) when Rust / WebKitGTK / librsvg aren't present so the turbo
-# gate stays green on machines without the native toolchain.
+# Toolchain-guarded turbo task for the Tauri shell (arg: build|test). Local
+# monorepo runs may skip missing native prerequisites; the dedicated CI job sets
+# IRIS_REQUIRE_NATIVE_BUILD=1 so a missing prerequisite is gate-failing.
 set -euo pipefail
 mode="${1:-test}"
 here="$(cd "$(dirname "$0")" && pwd)"
-skip() { echo "[desktop-tauri] SKIP $mode — $1"; exit 0; }
+required="${IRIS_REQUIRE_NATIVE_BUILD:-0}"
+skip() {
+  if [ "$required" = "1" ]; then
+    echo "[desktop-tauri] ERROR $mode — $1" >&2
+    exit 1
+  fi
+  echo "[desktop-tauri] SKIP $mode — $1"
+  exit 0
+}
 command -v cargo >/dev/null 2>&1 || skip "cargo not installed"
 command -v pkg-config >/dev/null 2>&1 || skip "pkg-config not installed"
 export PKG_CONFIG_PATH="${HOME}/.local/iris-native-libs/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"

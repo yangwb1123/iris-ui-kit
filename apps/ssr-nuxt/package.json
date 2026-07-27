@@ -1,6 +1,6 @@
 {
   "name": "ssr-nuxt",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Nuxt 3 SSR smoke app — the SSR-compat proof for @iris-ui-kit/vue (ROADMAP v3 R14, deferred)",
   "scripts": {

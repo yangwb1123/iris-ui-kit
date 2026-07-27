@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/plugin-pro-table",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "vxe-table-style CRUD data table plugin for Iris UI: IrisProTable for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",

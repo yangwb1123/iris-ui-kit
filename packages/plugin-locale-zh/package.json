@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/plugin-locale-zh",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Simplified-Chinese (zh-CN) message pack for Iris UI, as an Iris plugin",
   "license": "MIT",
   "type": "module",

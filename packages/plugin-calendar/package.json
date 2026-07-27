@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/plugin-calendar",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Events calendar plugin for Iris UI: IrisEventCalendar renders a month-view calendar with event chips for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",

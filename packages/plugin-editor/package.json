@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/plugin-editor",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Code editor plugin for Iris UI (CodeMirror 6): IrisCodeEditor for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",

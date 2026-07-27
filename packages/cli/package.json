@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/cli",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Command-line scaffolding tool for Iris UI — list components and generate ready-to-paste usage snippets",
   "license": "MIT",
   "type": "module",

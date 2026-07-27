@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/plugin-markdown",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Markdown renderer plugin for Iris UI: IrisMarkdown renders Markdown as themed HTML across react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",

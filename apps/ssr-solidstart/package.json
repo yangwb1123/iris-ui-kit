@@ -1,6 +1,6 @@
 {
   "name": "ssr-solidstart",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "description": "SolidStart SSR smoke app — the SSR-compat proof for @iris-ui-kit/solid (ROADMAP v3 R14, deferred)",

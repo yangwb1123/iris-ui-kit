@@ -1,6 +1,6 @@
 {
   "name": "ssr-sveltekit",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "SvelteKit SSR smoke app — the SSR-compat proof for @iris-ui-kit/svelte (ROADMAP v3 R14, deferred)",
   "scripts": {

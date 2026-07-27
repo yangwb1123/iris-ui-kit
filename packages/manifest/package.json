@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/manifest",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Machine-readable component/token manifest generator for Iris UI (AI-native consumption)",
   "license": "MIT",
   "type": "module",

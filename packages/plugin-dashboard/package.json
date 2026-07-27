@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/plugin-dashboard",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Dashboard grid layout plugin for Iris UI: IrisDashboard renders a CSS Grid where widgets occupy configurable cells and can be repositioned via drag-and-drop for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",

@@ -3,6 +3,7 @@ node_modules/
 dist/
 .turbo/
 .svelte-kit/
+**/.vinxi/
 coverage/
 pnpm-lock.yaml
 *.tsbuildinfo

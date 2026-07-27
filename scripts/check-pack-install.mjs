@@ -1,46 +1,73 @@
 #!/usr/bin/env node
+/* global console */
 // External-consumer pack+install smoke check. Every demo app in this repo
 // consumes these packages via the pnpm workspace protocol ("workspace:*"),
 // which only ever resolves through pnpm's own path/symlink machinery — no
 // package has ever actually been installed the way a real external npm
 // consumer would (a plain tarball dependency, outside any workspace). This
-// packs the curated set of packages with real external consumers, installs
-// them via plain `npm install` into a scratch project OUTSIDE the pnpm
-// workspace, then does a real `import` from each and checks it resolves to a
-// non-empty module. Run after build:
+// auto-discovers EVERY non-private package, installs their real tarballs via
+// plain `npm install` into a scratch project OUTSIDE the pnpm workspace, then
+// validates all explicit exports and imports each precompiled JS subpath.
+// Raw Svelte entries are checked structurally; the CLI bin is executed. Run
+// after the complete build:
 //
-//   pnpm turbo run build --filter=@iris-ui-kit/core --filter=@iris-ui-kit/react \
-//     --filter=@iris-ui-kit/vue --filter=@iris-ui-kit/solid --filter=@iris-ui-kit/svelte
+//   pnpm turbo run build
 //   pnpm check:pack-install
 //
 // Zero deps: node:fs/os/path/url + child_process (pnpm/npm/node CLIs).
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import process from 'node:process'
 
 const packagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'packages')
-// The packages with real external consumers — these get pack+install-smoke-tested.
-const CURATED = ['core', 'react', 'vue', 'solid', 'svelte']
-// core/react/vue/solid are fully precompiled to plain JS (tsup bundles them),
-// so a real external consumer's plain `import()` is a realistic, meaningful
-// proof. @iris-ui-kit/svelte ships raw .svelte source files (via `svelte-package`,
-// the OFFICIAL tool for packaging Svelte component libraries) — this is
-// deliberate and idiomatic: Svelte's own packaging guidance says libraries
-// SHOULD ship uncompiled .svelte files so the *consumer's* Svelte compiler
-// (with their own preprocessors/options) processes them, not a pre-baked
-// version. No real external Svelte consumer ever does a plain Node `import()`
-// of a component library either — they always go through a Svelte-aware
-// bundler (Vite/SvelteKit), which is exactly what our own `apps/ssr-sveltekit`
-// does. So for svelte we verify the realistic thing instead: every path the
-// installed package's `exports` map promises actually exists on disk — still
-// catches the real risk class (files missing from the tarball, a stale/wrong
-// exports map) without asserting something no consumer relies on.
-const RAW_IMPORT_CHECK = ['core', 'react', 'vue', 'solid']
-const EXPORTS_RESOLVE_CHECK = ['svelte']
-
+const workspaceRoot = dirname(packagesDir)
+const canonicalLicense = readFileSync(join(workspaceRoot, 'LICENSE'), 'utf8')
 const readPkg = (dir) => JSON.parse(readFileSync(join(packagesDir, dir, 'package.json'), 'utf8'))
+const pinnedInstalledPackage = (...segments) => {
+  const pkg = JSON.parse(readFileSync(join(workspaceRoot, ...segments, 'package.json'), 'utf8'))
+  return [pkg.name, pkg.version]
+}
+
+// The scratch directory is a real consumer project, so its compiler, framework
+// peers, and ambient types must resolve from the same node_modules tree as the
+// packed Iris packages. Pin them to the exact versions already selected by the
+// workspace lockfile: npm can reuse its cache, while the gate cannot silently
+// drift to a newer consumer toolchain between runs.
+const CONSUMER_RUNTIME_DEPENDENCIES = Object.fromEntries([
+  pinnedInstalledPackage('packages', 'react', 'node_modules', 'react'),
+  pinnedInstalledPackage('packages', 'react', 'node_modules', 'react-dom'),
+  pinnedInstalledPackage('packages', 'solid', 'node_modules', 'solid-js'),
+  pinnedInstalledPackage('packages', 'svelte', 'node_modules', 'svelte'),
+  pinnedInstalledPackage('packages', 'vue', 'node_modules', 'vue'),
+])
+const CONSUMER_DEV_DEPENDENCIES = Object.fromEntries([
+  pinnedInstalledPackage('node_modules', 'typescript'),
+  pinnedInstalledPackage('node_modules', '@types', 'node'),
+  pinnedInstalledPackage('packages', 'react', 'node_modules', '@types', 'react'),
+  pinnedInstalledPackage('packages', 'react', 'node_modules', '@types', 'react-dom'),
+  pinnedInstalledPackage('packages', 'svelte', 'node_modules', 'svelte-check'),
+])
+
+// Discover instead of hand-maintaining: adding a publishable package without
+// adding it to this gate must be impossible. Private workspace-only packages
+// are intentionally excluded.
+const PUBLISHABLE = readdirSync(packagesDir)
+  .filter((dir) => existsSync(join(packagesDir, dir, 'package.json')))
+  .filter((dir) => readPkg(dir).private !== true)
+  .sort()
+
 const irisDeps = (dir) =>
   Object.keys(readPkg(dir).dependencies || {})
     .filter((d) => d.startsWith('@iris-ui-kit/'))
@@ -49,10 +76,10 @@ const irisDeps = (dir) =>
 // `pnpm pack` bakes "workspace:*" down to a literal version (e.g. "0.0.0"), so
 // react/vue/solid/svelte's un-published @iris-ui-kit/{icons,skins,theme,tokens}
 // deps become real, unresolvable registry requests unless we pack + file:
-// those too. BFS the whole @iris-ui-kit/* closure from CURATED so `npm install`
+// those too. BFS the whole @iris-ui-kit/* closure from PUBLISHABLE so `npm install`
 // never has to reach the registry for anything workspace-internal.
-const closure = new Set(CURATED)
-const queue = [...CURATED]
+const closure = new Set(PUBLISHABLE)
+const queue = [...PUBLISHABLE]
 while (queue.length) {
   const dir = queue.shift()
   for (const dep of irisDeps(dir)) {
@@ -66,16 +93,104 @@ const ALL = [...closure]
 
 for (const dir of ALL) {
   if (!existsSync(join(packagesDir, dir, 'dist'))) {
-    // eslint-disable-next-line no-console
     console.error(`✗ packages/${dir}/dist not found — run \`pnpm build\` first.`)
     process.exit(1)
   }
 }
 
-// eslint-disable-next-line no-console
 console.log(
-  '\nExternal pack + npm install smoke check (core/react/vue/solid/svelte)\n' + '─'.repeat(72),
+  `\nExternal pack + npm install smoke check (${PUBLISHABLE.length} publishable packages)\n` +
+    '─'.repeat(72),
 )
+
+const collectExportPaths = (node, out = []) => {
+  if (typeof node === 'string') {
+    if (node.startsWith('./') && !node.includes('*')) out.push(node)
+  } else if (node && typeof node === 'object') {
+    for (const value of Object.values(node)) collectExportPaths(value, out)
+  }
+  return out
+}
+
+const runtimePaths = (node, condition) => {
+  if (typeof node === 'string') {
+    if (!/\.(?:c?js|mjs)$/.test(node)) return []
+    if (condition === 'require' && !/\.cjs$/.test(node)) return []
+    return [node]
+  }
+  if (!node || typeof node !== 'object') return []
+  if (condition in node) return runtimePaths(node[condition], condition)
+  if ('default' in node) return runtimePaths(node.default, condition)
+  return []
+}
+
+/**
+ * Expand an export wildcard against the files produced by the package build.
+ * This turns contracts such as `./* -> ./dist/*.js` into concrete consumer
+ * specifiers, so a stale wildcard can no longer hide behind structural checks.
+ */
+const expandWildcard = (dir, key, target) => {
+  if (!key.includes('*') || !target.includes('*')) return []
+  const root = join(packagesDir, dir)
+  const files = []
+  const visit = (directory) => {
+    for (const name of readdirSync(directory)) {
+      const path = join(directory, name)
+      if (statSync(path).isDirectory()) visit(path)
+      else files.push(`./${relative(root, path).replaceAll('\\', '/')}`)
+    }
+  }
+  visit(root)
+  const escaped = target
+    .split('*')
+    .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('(.+)')
+  const pattern = new RegExp(`^${escaped}$`)
+  return files.flatMap((path) => {
+    const match = pattern.exec(path)
+    return match?.[1] ? [key.replace('*', match[1])] : []
+  })
+}
+
+const targetsForCondition = (dir, condition) => {
+  if (dir === 'svelte') return []
+  const pkg = readPkg(dir)
+  const exportsMap = pkg.exports
+  if (!exportsMap || typeof exportsMap !== 'object') return []
+  const entries = Object.entries(exportsMap)
+  const subpathMap = entries.some(([key]) => key.startsWith('.')) ? entries : [['.', exportsMap]]
+  const keys = subpathMap.flatMap(([key, target]) => {
+    if (key === './svelte' || key === './package.json') return []
+    const paths = runtimePaths(target, condition)
+    if (key.includes('*')) return paths.flatMap((path) => expandWildcard(dir, key, path))
+    return paths.length > 0 ? [key] : []
+  })
+  return [...new Set(keys)].map((key) => ({
+    dir,
+    packageName: pkg.name,
+    specifier: key === '.' ? pkg.name : `${pkg.name}/${key.slice(2)}`,
+  }))
+}
+
+const IMPORT_TARGETS = PUBLISHABLE.flatMap((dir) => targetsForCondition(dir, 'import'))
+const REQUIRE_TARGETS = PUBLISHABLE.flatMap((dir) => targetsForCondition(dir, 'require'))
+const FORBIDDEN_ARTIFACT_DIRECTORY = /^(?:__tests__|__ssr__|fixtures?|test)$/i
+const FORBIDDEN_ARTIFACT_FILE = /(?:\.test\.|(?:Harness|Probe|Demo|ThrowingChild)\.)/i
+
+const findForbiddenArtifacts = (dir, root = dir, out = []) => {
+  if (!existsSync(dir)) return out
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name)
+    const stat = statSync(path)
+    if (stat.isDirectory()) {
+      if (FORBIDDEN_ARTIFACT_DIRECTORY.test(name)) out.push(path.slice(root.length + 1))
+      else findForbiddenArtifacts(path, root, out)
+    } else if (FORBIDDEN_ARTIFACT_FILE.test(name)) {
+      out.push(path.slice(root.length + 1))
+    }
+  }
+  return out
+}
 
 async function run() {
   let scratchDir
@@ -94,7 +209,6 @@ async function run() {
       })
       if (res.status !== 0) {
         failed = true
-        // eslint-disable-next-line no-console
         console.error(`✗ pnpm pack failed for packages/${dir}\n${res.stderr}`)
         continue
       }
@@ -104,12 +218,19 @@ async function run() {
 
     // 2. A plain, non-workspace package.json — no "workspace:*", every
     //    @iris-ui-kit/* dep pinned to its packed tarball via file:.
-    const dependencies = {}
+    const dependencies = { ...CONSUMER_RUNTIME_DEPENDENCIES }
     for (const dir of ALL) dependencies[readPkg(dir).name] = `file:${tarballs[dir]}`
     writeFileSync(
       join(scratchDir, 'package.json'),
       JSON.stringify(
-        { name: 'iris-ui-pack-install-smoke', version: '0.0.0', private: true, dependencies },
+        {
+          name: 'iris-ui-pack-install-smoke',
+          version: '0.0.0',
+          private: true,
+          type: 'module',
+          dependencies,
+          devDependencies: CONSUMER_DEV_DEPENDENCIES,
+        },
         null,
         2,
       ),
@@ -125,25 +246,26 @@ async function run() {
     const npmEnv = Object.fromEntries(
       Object.entries(process.env).filter(([k]) => !/^npm_config_/i.test(k)),
     )
-    const install = spawnSync('npm', ['install'], {
-      cwd: scratchDir,
-      encoding: 'utf8',
-      env: npmEnv,
-    })
+    const install = spawnSync(
+      'npm',
+      ['install', '--include=dev', '--prefer-offline', '--no-audit', '--no-fund'],
+      {
+        cwd: scratchDir,
+        encoding: 'utf8',
+        env: npmEnv,
+      },
+    )
     const installOk = install.status === 0
     if (!installOk) {
       failed = true
-      // eslint-disable-next-line no-console
       console.error(`✗ npm install failed:\n${install.stderr}`)
     }
 
-    // 4a. Raw-import smoke test (RAW_IMPORT_CHECK): a real `import` of each
-    //    fully-precompiled package from the external node_modules, asserting
-    //    a non-empty (≥1 named export) module — proof the exports map / dist
-    //    output resolves for real.
-    const importTargets = RAW_IMPORT_CHECK.map((dir) => readPkg(dir).name)
-    let importResults = importTargets.map((name) => ({
-      name,
+    // 4a. Raw-import every explicit precompiled JS export — package roots plus
+    //     plugin /core, /react, /vue and /solid subpaths. This catches a broken
+    //     subpath even when the package root (or another adapter) works.
+    let importResults = IMPORT_TARGETS.map((target) => ({
+      ...target,
       ok: false,
       error: 'not attempted (npm install failed)',
     }))
@@ -151,15 +273,15 @@ async function run() {
       const smokeFile = join(scratchDir, 'smoke.mjs')
       writeFileSync(
         smokeFile,
-        `const targets = ${JSON.stringify(importTargets)}
+        `const targets = ${JSON.stringify(IMPORT_TARGETS)}
 const out = []
-for (const name of targets) {
+for (const target of targets) {
   try {
-    const mod = await import(name)
+    const mod = await import(target.specifier)
     const ok = !!mod && typeof mod === 'object' && Object.keys(mod).length > 0
-    out.push({ name, ok, error: ok ? null : 'module has no named exports' })
+    out.push({ ...target, ok, error: ok ? null : 'module has no named exports' })
   } catch (err) {
-    out.push({ name, ok: false, error: String((err && err.message) || err) })
+    out.push({ ...target, ok: false, error: String((err && err.message) || err) })
   }
 }
 console.log(JSON.stringify(out))
@@ -172,32 +294,62 @@ process.exit(out.every((r) => r.ok) ? 0 : 1)
       } catch {
         failed = true
         const detail = smoke.stderr || smoke.stdout
-        importResults = importTargets.map((name) => ({
-          name,
+        importResults = IMPORT_TARGETS.map((target) => ({
+          ...target,
           ok: false,
           error: `smoke test crashed: ${detail}`,
         }))
       }
     }
 
-    // 4b. Structural exports-resolve check (EXPORTS_RESOLVE_CHECK): a plain
-    //    `import()` isn't a realistic proof for a package that ships raw
-    //    .svelte source (see the comment above EXPORTS_RESOLVE_CHECK), so
-    //    instead verify every path the installed package.json's `exports`
-    //    map (plus legacy main/svelte/module fields) promises actually
-    //    exists on disk post-install — still catches "files missing from the
-    //    tarball" / "stale exports map", the real risk class here.
-    const collectExportPaths = (node, out = []) => {
-      if (typeof node === 'string') {
-        if (node.startsWith('./')) out.push(node)
-      } else if (node && typeof node === 'object') {
-        for (const v of Object.values(node)) collectExportPaths(v, out)
+    // 4b. Exercise every promised CommonJS entry through `require()`.
+    let requireResults = REQUIRE_TARGETS.map((target) => ({
+      ...target,
+      ok: false,
+      error: 'not attempted (npm install failed)',
+    }))
+    if (installOk) {
+      const smokeFile = join(scratchDir, 'smoke.cjs')
+      writeFileSync(
+        smokeFile,
+        `const targets = ${JSON.stringify(REQUIRE_TARGETS)}
+const out = []
+for (const target of targets) {
+  try {
+    const mod = require(target.specifier)
+    const ok = !!mod && (typeof mod === 'object' || typeof mod === 'function') && Object.keys(mod).length > 0
+    out.push({ ...target, ok, error: ok ? null : 'module has no exports' })
+  } catch (err) {
+    out.push({ ...target, ok: false, error: String((err && err.message) || err) })
+  }
+}
+console.log(JSON.stringify(out))
+process.exit(out.every((r) => r.ok) ? 0 : 1)
+`,
+      )
+      const smoke = spawnSync('node', [smokeFile], { cwd: scratchDir, encoding: 'utf8' })
+      try {
+        requireResults = JSON.parse(smoke.stdout.trim().split('\n').pop())
+      } catch {
+        failed = true
+        const detail = smoke.stderr || smoke.stdout
+        requireResults = REQUIRE_TARGETS.map((target) => ({
+          ...target,
+          ok: false,
+          error: `CommonJS smoke test crashed: ${detail}`,
+        }))
       }
-      return out
     }
-    const resolveResults = EXPORTS_RESOLVE_CHECK.map((dir) => {
+
+    // 4c. Independently verify every explicit path promised by exports,
+    //     main/module/svelte and bin survived the tarball. This is the primary
+    //     proof for raw .svelte entries, which require a Svelte-aware compiler
+    //     and therefore cannot be imported directly by plain Node.
+    const resolveResults = PUBLISHABLE.map((dir) => {
       const name = readPkg(dir).name
-      if (!installOk) return { name, ok: false, error: 'not attempted (npm install failed)' }
+      if (!installOk) {
+        return { dir, packageName: name, ok: false, error: 'not attempted (npm install failed)' }
+      }
       const installedDir = join(scratchDir, 'node_modules', name)
       try {
         const installedPkg = JSON.parse(readFileSync(join(installedDir, 'package.json'), 'utf8'))
@@ -207,38 +359,215 @@ process.exit(out.every((r) => r.ok) ? 0 : 1)
             paths.push(installedPkg[key])
           }
         }
+        const bins =
+          typeof installedPkg.bin === 'string'
+            ? [installedPkg.bin]
+            : Object.values(installedPkg.bin ?? {})
+        for (const bin of bins) {
+          if (typeof bin === 'string' && bin.startsWith('./')) paths.push(bin)
+        }
         const unique = [...new Set(paths)]
         const missing = unique.filter((p) => !existsSync(join(installedDir, p)))
+        const forbidden = findForbiddenArtifacts(installedDir)
+        const licensePath = join(installedDir, 'LICENSE')
+        const licenseOk =
+          existsSync(licensePath) && readFileSync(licensePath, 'utf8') === canonicalLicense
         return {
-          name,
-          ok: unique.length > 0 && missing.length === 0,
+          dir,
+          packageName: name,
+          ok: unique.length > 0 && missing.length === 0 && forbidden.length === 0 && licenseOk,
           error:
             unique.length === 0
               ? 'package.json declares no resolvable exports/main/svelte paths'
               : missing.length
                 ? `declared but missing on disk: ${missing.join(', ')}`
-                : null,
+                : forbidden.length
+                  ? `non-runtime artifact(s) shipped: ${forbidden.slice(0, 5).join(', ')}`
+                  : !licenseOk
+                    ? 'canonical MIT LICENSE is missing or stale'
+                    : null,
         }
       } catch (err) {
-        return { name, ok: false, error: String((err && err.message) || err) }
+        return {
+          dir,
+          packageName: name,
+          ok: false,
+          error: String((err && err.message) || err),
+        }
       }
     })
 
-    const results = [...importResults, ...resolveResults]
+    // 4d. Resolve the installed declaration surface with an external TypeScript
+    // consumer. This catches declarations that exist on disk but reference a
+    // missing file, dependency, or export.
+    let typesResult = { ok: false, error: 'not attempted (npm install failed)' }
+    if (installOk) {
+      const typeTargets = [...new Set(IMPORT_TARGETS.map((target) => target.specifier))]
+      writeFileSync(
+        join(scratchDir, 'types-smoke.ts'),
+        `${typeTargets.map((specifier, index) => `import type * as Module${index} from '${specifier}'`).join('\n')}
+export type ResolvedModules = [${typeTargets.map((_, index) => `keyof typeof Module${index}`).join(', ')}]
+`,
+      )
+      writeFileSync(
+        join(scratchDir, 'tsconfig.json'),
+        `${JSON.stringify(
+          {
+            compilerOptions: {
+              target: 'ES2022',
+              module: 'NodeNext',
+              moduleResolution: 'NodeNext',
+              lib: ['ES2022', 'DOM', 'DOM.Iterable'],
+              strict: true,
+              noEmit: true,
+              skipLibCheck: false,
+            },
+            include: ['types-smoke.ts'],
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      const types = spawnSync(join(scratchDir, 'node_modules', '.bin', 'tsc'), ['-p', '.'], {
+        cwd: scratchDir,
+        encoding: 'utf8',
+      })
+      typesResult = {
+        ok: types.status === 0,
+        error: types.status === 0 ? null : types.stderr || types.stdout || `exit ${types.status}`,
+      }
+    }
+
+    // 4e. Compile the installed raw Svelte adapter and every plugin `/svelte`
+    // entry from outside the workspace.
+    let svelteResult = { ok: false, error: 'not attempted (npm install failed)' }
+    if (installOk) {
+      const svelteTargets = [
+        '@iris-ui-kit/svelte',
+        ...PUBLISHABLE.map((dir) => readPkg(dir))
+          .filter((pkg) => pkg.exports?.['./svelte'])
+          .map((pkg) => `${pkg.name}/svelte`),
+      ]
+      const svelteRoot = join(scratchDir, 'svelte-consumer')
+      mkdirSync(join(svelteRoot, 'src'), { recursive: true })
+      writeFileSync(
+        join(svelteRoot, 'src', 'App.svelte'),
+        `<script lang="ts">
+${svelteTargets.map((specifier, index) => `  import * as Module${index} from '${specifier}'`).join('\n')}
+  import { IrisButton } from '@iris-ui-kit/svelte'
+  const loadedModules = [${svelteTargets.map((_, index) => `Module${index}`).join(', ')}]
+</script>
+
+<p data-installed-svelte-modules={loadedModules.length}>External Svelte consumer</p>
+<IrisButton asChild class="consumer-parent">
+  {#snippet children(slotProps)}
+    <a
+      {...slotProps.merge({
+        href: '/save',
+        class: 'consumer-child',
+        style: 'color: var(--iris-primary)',
+      })}
+    >
+      Save
+    </a>
+  {/snippet}
+</IrisButton>
+`,
+      )
+      writeFileSync(join(svelteRoot, 'svelte.config.js'), 'export default {}\n')
+      writeFileSync(
+        join(svelteRoot, 'tsconfig.json'),
+        `${JSON.stringify(
+          {
+            compilerOptions: {
+              target: 'ES2022',
+              module: 'ESNext',
+              moduleResolution: 'Bundler',
+              strict: true,
+              allowJs: true,
+              checkJs: true,
+              isolatedModules: true,
+            },
+            include: ['src/**/*.svelte'],
+          },
+          null,
+          2,
+        )}\n`,
+      )
+      const svelteCheck = spawnSync(
+        join(scratchDir, 'node_modules', '.bin', 'svelte-check'),
+        ['--workspace', svelteRoot, '--tsconfig', './tsconfig.json'],
+        { cwd: scratchDir, encoding: 'utf8' },
+      )
+      svelteResult = {
+        ok: svelteCheck.status === 0,
+        error:
+          svelteCheck.status === 0
+            ? null
+            : svelteCheck.stderr || svelteCheck.stdout || `exit ${svelteCheck.status}`,
+      }
+    }
+
+    // 4f. The CLI should not merely exist: execute its installed npm bin as an
+    //     external consumer would. The MCP bin is intentionally structural
+    //     only because it is a long-running stdio server.
+    let cliResult = { ok: false, error: 'not attempted (npm install failed)' }
+    if (installOk) {
+      const cli = spawnSync(join(scratchDir, 'node_modules', '.bin', 'iris-ui'), ['--help'], {
+        cwd: scratchDir,
+        encoding: 'utf8',
+        timeout: 10_000,
+      })
+      cliResult = {
+        ok: cli.status === 0 && /iris-ui/i.test(`${cli.stdout}\n${cli.stderr}`),
+        error:
+          cli.status === 0
+            ? 'help output did not identify iris-ui'
+            : cli.error?.message || cli.stderr || `exit ${cli.status}`,
+      }
+    }
 
     // 5. Report.
-    for (const dir of CURATED) {
+    for (const dir of PUBLISHABLE) {
       const name = readPkg(dir).name
-      const r = results.find((x) => x.name === name)
-      const ok = installOk && !!r?.ok
+      const structure = resolveResults.find((result) => result.dir === dir)
+      const imports = importResults.filter((result) => result.dir === dir)
+      const requires = requireResults.filter((result) => result.dir === dir)
+      const importsOk = imports.every((result) => result.ok)
+      const requiresOk = requires.every((result) => result.ok)
+      const cliOk = dir !== 'cli' || cliResult.ok
+      const ok = installOk && !!structure?.ok && importsOk && requiresOk && cliOk
       if (!ok) failed = true
-      const mode = RAW_IMPORT_CHECK.includes(dir) ? 'import' : 'exports-resolve'
-      // eslint-disable-next-line no-console
+      const failures = [
+        structure?.ok ? null : `exports: ${structure?.error ?? 'unknown failure'}`,
+        ...imports
+          .filter((result) => !result.ok)
+          .map((result) => `${result.specifier}: ${result.error}`),
+        ...requires
+          .filter((result) => !result.ok)
+          .map((result) => `require(${result.specifier}): ${result.error}`),
+        dir === 'cli' && !cliResult.ok ? `bin: ${cliResult.error}` : null,
+      ].filter(Boolean)
+      const checks = [
+        `${imports.length} import${imports.length === 1 ? '' : 's'}`,
+        `${requires.length} require${requires.length === 1 ? '' : 's'}`,
+        'exports+license+types+svelte',
+        ...(dir === 'cli' ? ['bin'] : []),
+      ].join('+')
       console.log(
-        `${ok ? '✓' : '✗'} ${name.padEnd(16)} pack ok  ${installOk ? 'install ok' : 'install FAILED'}  ` +
-          (r?.ok ? `${mode} ok` : `${mode} FAILED: ${r?.error ?? 'unknown'}`),
+        `${ok ? '✓' : '✗'} ${name.padEnd(36)} pack ${installOk ? 'ok' : 'FAILED'}  ` +
+          (ok ? `${checks} ok` : failures.join(' | ')),
       )
     }
+    console.log(
+      `${typesResult.ok ? '✓' : '✗'} external TypeScript consumer` +
+        (typesResult.ok ? '' : `: ${typesResult.error}`),
+    )
+    console.log(
+      `${svelteResult.ok ? '✓' : '✗'} external Svelte consumer` +
+        (svelteResult.ok ? '' : `: ${svelteResult.error}`),
+    )
+    if (!typesResult.ok || !svelteResult.ok) failed = true
     return !failed
   } finally {
     if (scratchDir) {
@@ -252,14 +581,11 @@ process.exit(out.every((r) => r.ok) ? 0 : 1)
 }
 
 const ok = await run()
-// eslint-disable-next-line no-console
 console.log('')
 if (!ok) {
-  // eslint-disable-next-line no-console
   console.error('✗ pack+install smoke check failed\n')
   process.exit(1)
 }
-// eslint-disable-next-line no-console
 console.log(
-  '✓ core/react/vue/solid pack+npm-install+import cleanly, and svelte packs+installs with an intact exports map, all outside the workspace\n',
+  `✓ all ${PUBLISHABLE.length} publishable packages pack + npm-install with MIT licenses, intact wildcard/explicit exports, ESM imports, CJS requires, external TypeScript/Svelte compilation, and runnable CLI\n`,
 )

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global console */
 // Bundle-size budget gate (ROADMAP #5). Gzips each library's built ESM entry
 // and fails if it exceeds its budget — a tripwire against the "components keep
 // getting fatter" regression. Zero dependencies (node:zlib); run after build:
@@ -9,11 +10,21 @@
 // size. Raise a budget deliberately (in a reviewed commit) when a real feature
 // grows a package — that visibility is the point.
 import { gzipSync } from 'node:zlib'
-import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs'
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdtempSync,
+  rmSync,
+  readdirSync,
+  statSync,
+} from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
+import { Buffer } from 'node:buffer'
+import process from 'node:process'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const UPDATE_BASELINE = process.argv.includes('--update-baseline')
@@ -65,16 +76,22 @@ const BUDGETS = {
   // data-view controller (group-by-key + expand/collapse + per-group
   // aggregate sum/avg/min/max/count), sunk to core so all 4 adapters share
   // one implementation. ~4KB of genuinely new engine, not drift.
+  // Bumped 33→35 (2026-07-27): shared admin preferences, flat-nav tree/path
+  // matching, and the host-aware browser download fallback now live in core
+  // instead of being reimplemented by each framework adapter.
   // Bumped tokens 2→3, icons 4→6 (2026-07-02): tokens gained new semantic
   // slots (danger/muted/surface/primary variants, font family/mono/size scale,
   // masonry/breadcrumb gap) and icons grew from a handful of seed glyphs to a
-  // 24-icon Feather-style set (navigation/actions/status/files coverage) —
+  // Feather-style set (navigation/actions/status/files coverage) —
   // real surface growth the components now consume, not drift.
-  core: 33,
+  // Bumped icons 6→7 (2026-07-27): the renderer now rejects unsafe SVG tags
+  // and attributes and escapes XML text/attribute values. This is deliberate
+  // security logic on the public SSR renderer, not accidental icon-data drift.
+  core: 35,
   tokens: 3,
   theme: 3.5,
   skins: 5,
-  icons: 6,
+  icons: 7,
   react: 80,
   vue: 88,
   // Bumped 85→87 (v3 R10): the adapters re-export core's new createVirtualizer
@@ -89,6 +106,83 @@ const BUDGETS = {
 }
 
 /**
+ * Published ESM/Svelte payload budget for every optional plugin. A plugin is a
+ * multi-entry package, so measuring only `dist/core/index.js` misses shared
+ * chunks and framework renderers. We sum each unique published `.js`/`.svelte`
+ * file once, excluding tests and source maps. This measures optional payload
+ * growth without charging consumers who do not install the plugin.
+ */
+const PLUGIN_BUDGETS = {
+  // Bumped 8→17 (2026-07-27): the former read-only schema table is now a
+  // complete schema-driven admin runtime (validated schemas, client/server
+  // query state, CRUD forms, permissions, custom actions and four adapters).
+  // Self-externalizing the shared core reduced the measured payload from
+  // 24.7KB to 16.1KB before this deliberate budget update.
+  'plugin-admin': 17,
+  'plugin-calendar': 11,
+  // Bumped 11→25 (2026-07-27): donut, multi-line, stacked-bar, and shared
+  // legend renderers expanded the public chart surface across four adapters.
+  'plugin-charts': 25,
+  'plugin-dashboard': 14,
+  'plugin-editor': 9,
+  'plugin-form-builder': 18,
+  'plugin-kanban': 15,
+  'plugin-locale-zh': 3,
+  'plugin-markdown': 12,
+  'plugin-notifications': 9,
+  'plugin-pro-table': 34,
+  'plugin-query-builder': 9,
+}
+
+/**
+ * A Svelte package is a directory of compiled modules/components rather than a
+ * single barrel bundle. Keep a second, honest budget for the complete
+ * publishable runtime surface; the tiny `dist/index.js` budget above still
+ * catches accidental root-barrel coupling.
+ */
+const DIRECTORY_PAYLOAD_BUDGETS = {
+  'svelte-published': {
+    directory: join(repoRoot, 'packages', 'svelte', 'dist'),
+    budgetKb: 240,
+  },
+}
+
+const FORBIDDEN_ARTIFACT_DIRECTORY = /^(?:__tests__|__ssr__|fixtures?|test)$/i
+const FORBIDDEN_ARTIFACT_FILE = /(?:\.test\.|(?:Harness|Probe|Demo|ThrowingChild)\.)/i
+
+function publishedPayloadFiles(dir, files = []) {
+  if (!existsSync(dir)) return files
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name)
+    const stat = statSync(path)
+    if (stat.isDirectory()) publishedPayloadFiles(path, files)
+    else if (
+      (name.endsWith('.js') || name.endsWith('.svelte')) &&
+      !name.endsWith('.test.js') &&
+      !name.endsWith('.config.js')
+    ) {
+      files.push(path)
+    }
+  }
+  return files
+}
+
+function forbiddenPublishedArtifacts(dir, violations = []) {
+  if (!existsSync(dir)) return violations
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name)
+    const stat = statSync(path)
+    if (stat.isDirectory()) {
+      if (FORBIDDEN_ARTIFACT_DIRECTORY.test(name)) violations.push(path)
+      else forbiddenPublishedArtifacts(path, violations)
+    } else if (FORBIDDEN_ARTIFACT_FILE.test(name)) {
+      violations.push(path)
+    }
+  }
+  return violations
+}
+
+/**
  * Per-NAMED-EXPORT tree-shake cost table — the gzip cost a consumer ACTUALLY
  * pays to import a SINGLE symbol from an adapter barrel, which the whole-package
  * budget above is blind to. For each export we bundle a tiny entry that
@@ -99,11 +193,14 @@ const BUDGETS = {
  * is the tree-shake-effectiveness signal: a cheap export tree-shakes cleanly; an
  * expensive one drags in a fat shared chunk and is the marker to split.
  *
- * Entirely ADVISORY: if esbuild's binary is unavailable or a bundle fails, the
- * probe records null and prints a note — it never fails the gate (matches the
- * whole-package delta behavior). Run after `pnpm build` (reads dist/).
+ * The probe table remains advisory, but a workspace install must expose
+ * esbuild from either pnpm's root shim or virtual-store shim. Missing tools are
+ * reported explicitly instead of being silently mistaken for absent support.
  */
-const ESBUILD_BIN = join(repoRoot, 'node_modules', '.bin', 'esbuild')
+const ESBUILD_BIN = [
+  join(repoRoot, 'node_modules', '.bin', 'esbuild'),
+  join(repoRoot, 'node_modules', '.pnpm', 'node_modules', '.bin', 'esbuild'),
+].find((candidate) => existsSync(candidate))
 
 /** Externals so the probe measures the ADAPTER's payload, not its peer deps. */
 const EXTERNALS = {
@@ -118,7 +215,7 @@ const EXTERNALS = {
  */
 function bundleExportGzipKb(pkg, exportName) {
   const entry = join(repoRoot, 'packages', pkg, 'dist', 'index.js')
-  if (!existsSync(entry) || !existsSync(ESBUILD_BIN)) return null
+  if (!existsSync(entry) || !ESBUILD_BIN) return null
   const dir = mkdtempSync(join(tmpdir(), 'iris-size-'))
   try {
     const src = join(dir, 'entry.js')
@@ -164,15 +261,15 @@ const IMPORT_PROBES = [
   // is unavailable (advisory — never fails the gate).
   {
     name: 'icons: import { defaultIcons } → whole set',
-    budgetKb: 6,
+    budgetKb: 7,
     async measure() {
-      const bundled = bundleExportGzipKb('icons', 'defaultIcons')
-      if (bundled !== null) return { gzipKb: bundled, note: '24 icons (whole set)' }
       const entry = join(repoRoot, 'packages/icons/dist/index.js')
       if (!existsSync(entry)) return null
       const mod = await import(pathToFileURL(entry).href)
       const map = mod.defaultIcons?.icons ?? {}
       const count = Object.keys(map).length
+      const bundled = bundleExportGzipKb('icons', 'defaultIcons')
+      if (bundled !== null) return { gzipKb: bundled, note: `${count} icons (whole set)` }
       const gzipKb = gzipSync(Buffer.from(JSON.stringify(map))).length / KB
       return { gzipKb, note: `${count} icons (whole set, JSON fallback)` }
     },
@@ -188,6 +285,7 @@ const IMPORT_PROBES = [
   {
     name: 'icons: import { chevronDown } → tree-shaken',
     budgetKb: 1,
+    enforce: true,
     async measure() {
       const gzipKb = bundleExportGzipKb('icons', 'chevronDown')
       if (gzipKb === null) return null
@@ -205,7 +303,9 @@ const IMPORT_PROBES = [
       const gzipKb = bundleExportGzipKb(p.pkg, p.export)
       if (gzipKb === null) return null
       const whole = current[p.pkg]
-      const share = whole ? ` (${Math.round((gzipKb / whole) * 100)}% of @iris-ui-kit/${p.pkg})` : ''
+      const share = whole
+        ? ` (${Math.round((gzipKb / whole) * 100)}% of @iris-ui-kit/${p.pkg})`
+        : ''
       return { gzipKb, note: `single-export bundle${share}` }
     },
   })),
@@ -243,66 +343,134 @@ for (const [pkg, budgetKb] of Object.entries(BUDGETS)) {
   })
 }
 
-// Per-export probes are ENTIRELY ADVISORY — they record baselines, print a Δ,
-// and surface OVER as a warning, but never set `failed` (so `pnpm size` exits 0
-// on the probe table alone). A probe that can't run (no dist / no esbuild) is
-// reported as a skip, not a build failure.
+const discoveredPlugins = readdirSync(join(repoRoot, 'packages')).filter(
+  (name) =>
+    name.startsWith('plugin-') && existsSync(join(repoRoot, 'packages', name, 'package.json')),
+)
+for (const pkg of discoveredPlugins) {
+  if (!(pkg in PLUGIN_BUDGETS)) {
+    rows.push({
+      pkg,
+      status: 'UNBUDGETED',
+      detail: 'plugin has no published-payload budget — add one deliberately',
+    })
+    failed = true
+  }
+}
+
+for (const [pkg, budgetKb] of Object.entries(PLUGIN_BUDGETS)) {
+  const dist = join(repoRoot, 'packages', pkg, 'dist')
+  const files = publishedPayloadFiles(dist)
+  if (files.length === 0) {
+    rows.push({
+      pkg,
+      status: 'MISSING',
+      detail: 'published ESM payload not found — run build first',
+    })
+    failed = true
+    continue
+  }
+  const gzipKb = files.reduce((total, file) => total + gzipSync(readFileSync(file)).length, 0) / KB
+  current[pkg] = Number(gzipKb.toFixed(2))
+  const over = gzipKb > budgetKb
+  if (over) failed = true
+  rows.push({
+    pkg,
+    status: over ? 'OVER' : 'ok',
+    detail: `${gzipKb.toFixed(1)}KB / ${budgetKb}KB gzip across ${files.length} ESM/Svelte files${deltaOf(pkg, gzipKb)}`,
+  })
+}
+
+for (const [name, config] of Object.entries(DIRECTORY_PAYLOAD_BUDGETS)) {
+  const files = publishedPayloadFiles(config.directory)
+  if (files.length === 0) {
+    rows.push({
+      pkg: name,
+      status: 'MISSING',
+      detail: 'published runtime payload not found — run build first',
+    })
+    failed = true
+    continue
+  }
+  const gzipKb = files.reduce((total, file) => total + gzipSync(readFileSync(file)).length, 0) / KB
+  current[name] = Number(gzipKb.toFixed(2))
+  const over = gzipKb > config.budgetKb
+  if (over) failed = true
+  rows.push({
+    pkg: name,
+    status: over ? 'OVER' : 'ok',
+    detail: `${gzipKb.toFixed(1)}KB / ${config.budgetKb}KB gzip across ${files.length} runtime files${deltaOf(name, gzipKb)}`,
+  })
+}
+
+const publishDirectories = [
+  join(repoRoot, 'packages', 'svelte', 'dist'),
+  ...Object.keys(PLUGIN_BUDGETS).map((pkg) => join(repoRoot, 'packages', pkg, 'dist')),
+]
+const artifactViolations = publishDirectories.flatMap((dir) => forbiddenPublishedArtifacts(dir))
+if (artifactViolations.length > 0) {
+  rows.push({
+    pkg: 'published-artifacts',
+    status: 'OVER',
+    detail: `${artifactViolations.length} test/harness artifact(s) found in dist; run package build/pruner`,
+  })
+  failed = true
+}
+
+// Per-export probes record baselines and print a Δ. Most remain advisory because
+// framework adapters can legitimately share setup code; probes marked
+// `enforce` are hard contracts (currently the advertised per-icon tree-shaking
+// path) and fail when over budget or unmeasurable.
 for (const probe of IMPORT_PROBES) {
   const result = await probe.measure()
   if (!result) {
     rows.push({
       pkg: probe.name,
-      status: 'skip',
+      status: probe.enforce ? 'MISSING' : 'skip',
       detail: 'unmeasurable (build first, or esbuild unavailable)',
     })
+    if (probe.enforce) failed = true
     continue
   }
   const key = `probe:${probe.name}`
   current[key] = Number(result.gzipKb.toFixed(2))
   const over = result.gzipKb > probe.budgetKb
+  if (over && probe.enforce) failed = true
   rows.push({
     pkg: probe.name,
-    status: over ? 'WARN' : 'ok',
+    status: over ? (probe.enforce ? 'OVER' : 'WARN') : 'ok',
     detail: `${result.gzipKb.toFixed(1)}KB / ${probe.budgetKb}KB gzip${deltaOf(key, result.gzipKb)} — ${result.note}`,
   })
 }
 
 if (UPDATE_BASELINE) {
   writeFileSync(baselinePath, JSON.stringify(current, null, 2) + '\n')
-  // eslint-disable-next-line no-console
   console.log(
     `\nWrote size baseline → scripts/size-baseline.json (${Object.keys(current).length} entries)\n`,
   )
 }
 
 const pad = (s, n) => String(s).padEnd(n)
-const MARK = { ok: '✓', OVER: '✗', MISSING: '✗', WARN: '!', skip: '·' }
+const MARK = { ok: '✓', OVER: '✗', MISSING: '✗', UNBUDGETED: '✗', WARN: '!', skip: '·' }
 const printRow = (r) => {
   const mark = MARK[r.status] ?? '?'
   // Package rows get the @iris-ui-kit/ prefix + aligned columns; probe rows (whose
   // name carries spaces) print as a free-form line.
   const label = r.pkg.includes(' ') ? r.pkg : '@iris-ui-kit/' + r.pkg
-  // eslint-disable-next-line no-console
   console.log(`${mark} ${pad(label, 20)} ${pad(r.status, 8)} ${r.detail}`)
 }
 // Probe rows carry a space in their name; everything else is a whole-package row.
 const pkgRows = rows.filter((r) => !r.pkg.includes(' '))
 const probeRows = rows.filter((r) => r.pkg.includes(' '))
-// eslint-disable-next-line no-console
 console.log('\nBundle size budget — whole package (gzip)\n' + '─'.repeat(48))
 pkgRows.forEach(printRow)
-// eslint-disable-next-line no-console
 console.log('─'.repeat(48))
-// eslint-disable-next-line no-console
-console.log('\nPer-export tree-shake cost (gzip, ADVISORY — never fails)\n' + '─'.repeat(48))
+console.log('\nPer-export tree-shake cost (gzip, enforced where marked)\n' + '─'.repeat(48))
 probeRows.forEach(printRow)
-// eslint-disable-next-line no-console
 console.log('─'.repeat(48))
 
 if (failed) {
-  // eslint-disable-next-line no-console
   console.error('\n✗ size budget exceeded — trim the change or raise the budget deliberately.\n')
   process.exit(1)
 }
-// eslint-disable-next-line no-console
 console.log('\n✓ all packages within budget\n')

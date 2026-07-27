@@ -83,6 +83,34 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**"]
     },
+    "ssr-next#test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "ssr-nuxt#build": {
+      "dependsOn": ["^build"],
+      "outputs": [".nuxt/**", ".output/**"]
+    },
+    "ssr-nuxt#test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "ssr-solidstart#build": {
+      "dependsOn": ["^build"],
+      "outputs": [".output/**", ".vinxi/build/**"]
+    },
+    "ssr-solidstart#test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "ssr-sveltekit#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["build/**", ".svelte-kit/**"]
+    },
+    "ssr-sveltekit#test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
 
     "iris-desktop#build": {
       "dependsOn": ["cms#build", "cms-react#build", "cms-solid#build", "cms-svelte#build"],

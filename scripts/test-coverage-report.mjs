@@ -20,22 +20,32 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
 
-const LOW_THRESHOLD = 50       // lines: flag as low-coverage risk
-const HIGH_COMPLEXITY_THRESHOLD = 100  // lines: flag for attention-needed
+const LOW_THRESHOLD = 50 // lines: flag as low-coverage risk
+const HIGH_COMPLEXITY_THRESHOLD = 100 // lines: flag for attention-needed
 const TOP_N = 20
 
 const FRAMEWORKS = {
-  react:  'packages/react/src/primitives',
-  vue:    'packages/vue/src/primitives',
-  solid:  'packages/solid/src/primitives',
+  react: 'packages/react/src/primitives',
+  vue: 'packages/vue/src/primitives',
+  solid: 'packages/solid/src/primitives',
   svelte: 'packages/svelte/src/primitives',
 }
 
 /** Components considered "high-complexity" — they need more test coverage. */
 const HIGH_COMPLEXITY = [
-  'cascader', 'date-picker', 'date-range-picker', 'color-picker',
-  'transfer', 'tree-select', 'mentions', 'tag-input', 'time-picker',
-  'combobox', 'pro-table', 'tree', 'table',
+  'cascader',
+  'date-picker',
+  'date-range-picker',
+  'color-picker',
+  'transfer',
+  'tree-select',
+  'mentions',
+  'tag-input',
+  'time-picker',
+  'combobox',
+  'pro-table',
+  'tree',
+  'table',
 ]
 
 function walkDir(dir) {
@@ -49,7 +59,9 @@ function walkDir(dir) {
         files.push(full)
       }
     }
-  } catch { /* not found */ }
+  } catch {
+    /* not found */
+  }
   return files
 }
 
@@ -72,9 +84,7 @@ function main() {
   console.log('')
 
   let exitCode = 0
-  const allTests = []       // { framework, file, lines, name, isComplex }
-  const lowCoverage = []    // < LOW_THRESHOLD
-  const complexLow = []     // high-complexity < HIGH_COMPLEXITY_THRESHOLD
+  const allTests = [] // individual files, used by the size ranking
 
   for (const [fw, relDir] of Object.entries(FRAMEWORKS)) {
     const dir = path.join(ROOT, relDir)
@@ -84,14 +94,43 @@ function main() {
       const content = fs.readFileSync(file, 'utf-8')
       const lines = content.split('\n').length
       const name = componentName(file)
-      const isComplex = isHighComplexity(name)
-      const entry = { framework: fw, name, file: path.relative(ROOT, file), lines, isComplex }
+      const relativeFile = path.relative(dir, file)
+      const segments = relativeFile.split(path.sep)
+      const component = segments.length > 1 ? segments[0] : name
+      const entry = {
+        framework: fw,
+        name,
+        component,
+        file: path.relative(ROOT, file),
+        lines,
+      }
       allTests.push(entry)
-
-      if (lines < LOW_THRESHOLD) lowCoverage.push(entry)
-      if (isComplex && lines < HIGH_COMPLEXITY_THRESHOLD) complexLow.push(entry)
     }
   }
+
+  // Coverage risk is a component-level signal. A complex primitive such as
+  // Table deliberately splits scenarios across Table.test, Table.defaults,
+  // Table.row-click, export, and contract files; judging each supplemental file
+  // independently produces false failures despite substantial aggregate tests.
+  const componentTotals = new Map()
+  for (const test of allTests) {
+    const key = `${test.framework}:${test.component}`
+    const current = componentTotals.get(key)
+    if (current) current.lines += test.lines
+    else {
+      componentTotals.set(key, {
+        framework: test.framework,
+        name: test.component,
+        lines: test.lines,
+        isComplex: isHighComplexity(test.component),
+      })
+    }
+  }
+  const components = [...componentTotals.values()]
+  const lowCoverage = components.filter((component) => component.lines < LOW_THRESHOLD)
+  const complexLow = components.filter(
+    (component) => component.isComplex && component.lines < HIGH_COMPLEXITY_THRESHOLD,
+  )
 
   // 1. Top N test files
   const sorted = [...allTests].sort((a, b) => b.lines - a.lines)
@@ -115,22 +154,26 @@ function main() {
     console.log('  None found.')
   } else {
     for (const t of lowCoverage.sort((a, b) => a.lines - b.lines)) {
-      console.log(`  ${t.lines.toString().padStart(4)} lines  ${t.framework.padEnd(7)} ${path.basename(t.file)}`)
+      console.log(`  ${t.lines.toString().padStart(4)} lines  ${t.framework.padEnd(7)} ${t.name}`)
     }
     console.log(`\n  ${lowCoverage.length} component(s) have < ${LOW_THRESHOLD} test lines.`)
   }
 
   // 3. High-complexity components needing more coverage
   console.log('')
-  console.log(`  -- High-complexity components needing attention (< ${HIGH_COMPLEXITY_THRESHOLD} lines) ----`)
+  console.log(
+    `  -- High-complexity components needing attention (< ${HIGH_COMPLEXITY_THRESHOLD} lines) ----`,
+  )
   console.log('')
   if (complexLow.length === 0) {
     console.log('  None found — all high-complexity components have adequate coverage.')
   } else {
     for (const t of complexLow.sort((a, b) => a.lines - b.lines)) {
-      console.log(`  ${t.lines.toString().padStart(4)} lines  ${t.framework.padEnd(7)} ${path.basename(t.file)}`)
+      console.log(`  ${t.lines.toString().padStart(4)} lines  ${t.framework.padEnd(7)} ${t.name}`)
     }
-    console.log(`\n  ${complexLow.length} high-complexity component(s) have < ${HIGH_COMPLEXITY_THRESHOLD} test lines.`)
+    console.log(
+      `\n  ${complexLow.length} high-complexity component(s) have < ${HIGH_COMPLEXITY_THRESHOLD} test lines.`,
+    )
     exitCode = 1
   }
 

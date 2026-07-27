@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      development-dependencies:
+        dependency-type: development
+      production-dependencies:
+        dependency-type: production
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: cargo
+    directory: /apps/desktop-tauri/src-tauri
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: gomod
+    directory: /apps/desktop-wails
+    schedule:
+      interval: weekly

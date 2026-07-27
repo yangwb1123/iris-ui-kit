@@ -36,3 +36,4 @@ build/
 app.config.timestamp_*.js
 .solid/
 *.timestamp-*.mjs
+*.bundled_*.mjs

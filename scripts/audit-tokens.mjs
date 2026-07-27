@@ -1,13 +1,15 @@
 #!/usr/bin/env node
+/* global console */
 
 /**
  * pnpm audit:tokens
  *
- * Scans all 4 framework adapter directories for `var(--iris-*)` usage,
- * compares against the canonical token set, and reports:
+ * Scans primitives, layouts, admin shells and optional plugins for
+ * `var(--iris-*)` usage, compares against the canonical token set, and reports:
  *   1. Tokens used but NOT defined in @iris-ui-kit/tokens
  *   2. Per-framework token coverage gaps
  *   3. Single-framework-only tokens (potential copy-paste drift)
+ *   4. Legacy token aliases that must be migrated to canonical names
  *
  * Exit code:
  *   0 — clean (no unknowns, no drift above threshold)
@@ -16,6 +18,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
+import { exit } from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -27,21 +30,32 @@ const TOKENS_DIR = path.join(ROOT, 'packages/tokens/src')
 function extractDotTokens(filePath) {
   try {
     const content = fs.readFileSync(filePath, 'utf-8')
-    const matches = content.matchAll(/iris\.[a-z0-9.]+/g)
-    return [...matches].map(function(m) { return m[0] })
+    const matches = content.matchAll(/iris\.[A-Za-z0-9.]+/g)
+    return [...matches].map(function (m) {
+      return m[0]
+    })
   } catch {
     return []
   }
 }
 
-const knownDot = new Set([
-  ...extractDotTokens(path.join(TOKENS_DIR, 'light.ts')),
-  ...extractDotTokens(path.join(TOKENS_DIR, 'dark.ts')),
-].sort())
+const knownDot = new Set(
+  [
+    ...extractDotTokens(path.join(TOKENS_DIR, 'tokens.ts')),
+    ...extractDotTokens(path.join(TOKENS_DIR, 'light.ts')),
+    ...extractDotTokens(path.join(TOKENS_DIR, 'dark.ts')),
+    // themeCssVarEntries derives these tonal values at runtime.
+    'iris.primary.subtle',
+    'iris.success.subtle',
+    'iris.warning.subtle',
+  ].sort(),
+)
 
 // iris.gap.sm -> --iris-gap-sm
 const knownCss = new Set(
-  [...knownDot].map(function(t) { return '--' + t.replace(/\./g, '-') })
+  [...knownDot].map(function (t) {
+    return '--' + t.replace(/\./g, '-')
+  }),
 )
 
 // ── Reviewed exceptions ─────────────────────────────────────────────────────
@@ -49,26 +63,54 @@ const knownCss = new Set(
 // unported design tokens. Reviewed 2026-07-02; re-audit if the underlying
 // component changes.
 const KNOWN_EXCEPTIONS = {
-  '--iris-breadcrumb-sep': 'Svelte-only implementation detail: a per-instance ' +
+  '--iris-breadcrumb-sep':
+    'Svelte-only implementation detail: a per-instance ' +
     'CSS custom property feeding a static ::before{content} rule. React/Vue/' +
     'Solid render the separator as a real DOM node instead — not a themeable token.',
-  '--iris-masonry-gap': 'Formally a token (iris.masonry.gap), but only Svelte ' +
+  '--iris-masonry-gap':
+    'Formally a token (iris.masonry.gap), but only Svelte ' +
     'needs the CSS-var indirection to pipe its `gap` prop into a scoped ' +
     '<style> block; React/Vue/Solid bind the prop directly via inline JS ' +
     'styles, so they never reference the var by name.',
-  '--iris-primary-ghost': 'Pre-existing Solid-only choice: IrisTree tints the ' +
+  '--iris-primary-ghost':
+    'Pre-existing Solid-only choice: IrisTree tints the ' +
     'selected row with a translucent primary wash, while React/Vue/Svelte ' +
     'fill it solid. A real cross-framework visual divergence, tracked here ' +
     'rather than silently flagged — unifying it is a deliberate design call, ' +
     'not a token-porting fix.',
 }
 
+const LEGACY_TOKEN_PREFIXES = ['--iris-color-', '--iris-space-']
+const LEGACY_TOKEN_NAMES = new Set([
+  '--iris-font-body',
+  '--iris-primary-muted',
+  '--iris-surface-alt',
+  '--iris-chip-bg',
+])
+
+function isLegacyToken(token) {
+  return (
+    LEGACY_TOKEN_NAMES.has(token) ||
+    LEGACY_TOKEN_PREFIXES.some(function (prefix) {
+      return token.startsWith(prefix)
+    })
+  )
+}
+
 // ── Framework adapter directories ──────────────────────────────────────────
 const FRAMEWORKS = {
-  react:  path.join(ROOT, 'packages/react/src/primitives'),
-  vue:    path.join(ROOT, 'packages/vue/src/primitives'),
-  solid:  path.join(ROOT, 'packages/solid/src/primitives'),
-  svelte: path.join(ROOT, 'packages/svelte/src/primitives'),
+  react: ['primitives', 'layouts', 'admin'].map(function (dir) {
+    return path.join(ROOT, 'packages/react/src', dir)
+  }),
+  vue: ['primitives', 'layouts', 'admin'].map(function (dir) {
+    return path.join(ROOT, 'packages/vue/src', dir)
+  }),
+  solid: ['primitives', 'layouts', 'admin'].map(function (dir) {
+    return path.join(ROOT, 'packages/solid/src', dir)
+  }),
+  svelte: ['primitives', 'layouts', 'admin'].map(function (dir) {
+    return path.join(ROOT, 'packages/svelte/src', dir)
+  }),
 }
 
 const FRAMEWORK_LABEL = { react: 'React', vue: 'Vue', solid: 'Solid', svelte: 'Svelte' }
@@ -76,27 +118,80 @@ const FRAMEWORK_LABEL = { react: 'React', vue: 'Vue', solid: 'Solid', svelte: 'S
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function walkDir(dir) {
-  var files = []
+  let files = []
   try {
-    for (var entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      var full = path.join(dir, entry.name)
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name)
       if (entry.isDirectory()) {
         files = files.concat(walkDir(full))
       } else if (/\.(ts|tsx|vue|svelte)$/.test(entry.name)) {
+        if (/\.(test|spec)\./.test(entry.name)) continue
         files.push(full)
       }
     }
-  } catch (e) {
+  } catch {
     // dir doesn't exist
   }
   return files
 }
 
 function extractCssVars(content) {
-  var tokens = new Set()
-  var matches = content.matchAll(/var\((--iris-[a-z0-9-]+)/g)
-  for (var m of matches) tokens.add(m[1])
+  const tokens = new Set()
+  const source = content.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+  // Requiring `,` or `)` after the name deliberately skips dynamic templates
+  // such as `var(--iris-chart-${kind})`; their concrete registered tokens are
+  // audited separately.
+  const matches = source.matchAll(/var\(\s*(--iris-[A-Za-z0-9_-]+)\s*(?=[,)])/g)
+  for (const match of matches) tokens.add(match[1])
   return tokens
+}
+
+function extractDeclaredCssVars(content) {
+  const tokens = new Set()
+  // Plugin tokens are statically registered from object literals. Treat those
+  // namespaced declarations as valid extension points without weakening the
+  // canonical check for arbitrary var() typos.
+  const source = content.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+  const matches = source.matchAll(/['"](--iris-[A-Za-z0-9_-]+)['"]\s*:/g)
+  for (const match of matches) tokens.add(match[1])
+  return tokens
+}
+
+function collectFiles(dirs) {
+  let files = []
+  for (const dir of dirs) files = files.concat(walkDir(dir))
+  return files
+}
+
+function collectTokens(files) {
+  const tokens = new Set()
+  for (const file of files) {
+    const content = fs.readFileSync(file, 'utf-8')
+    for (const token of extractCssVars(content)) tokens.add(token)
+  }
+  return tokens
+}
+
+function discoverPluginSourceDirs() {
+  const packagesDir = path.join(ROOT, 'packages')
+  try {
+    return fs
+      .readdirSync(packagesDir, { withFileTypes: true })
+      .filter(function (entry) {
+        return entry.isDirectory() && entry.name.startsWith('plugin-')
+      })
+      .map(function (entry) {
+        return {
+          name: entry.name,
+          dir: path.join(packagesDir, entry.name, 'src'),
+        }
+      })
+      .sort(function (a, b) {
+        return a.name.localeCompare(b.name)
+      })
+  } catch {
+    return []
+  }
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
@@ -106,79 +201,136 @@ function main() {
   console.log('')
 
   // Collect per-framework tokens
-  var perFramework = {}
-  var totalFiles = 0
-  for (var fw in FRAMEWORKS) {
-    var dir = FRAMEWORKS[fw]
-    var files = walkDir(dir)
-    var tokenSet = new Set()
-    for (var file of files) {
-      var content = fs.readFileSync(file, 'utf-8')
-      var tokens = extractCssVars(content)
-      for (var t of tokens) tokenSet.add(t)
-    }
-    perFramework[fw] = tokenSet
-    totalFiles += files.length
+  const perFramework = {}
+  for (const frameworkName in FRAMEWORKS) {
+    const files = collectFiles(FRAMEWORKS[frameworkName])
+    const tokenSet = collectTokens(files)
+    perFramework[frameworkName] = tokenSet
     console.log(
-      '  ' + FRAMEWORK_LABEL[fw].padEnd(8) +
-      String(tokenSet.size).padStart(3) + ' unique tokens across ' +
-      String(files.length).padStart(4) + ' files'
+      '  ' +
+        FRAMEWORK_LABEL[frameworkName].padEnd(8) +
+        String(tokenSet.size).padStart(3) +
+        ' unique tokens across ' +
+        String(files.length).padStart(4) +
+        ' files',
     )
   }
 
-  // Union of all framework tokens, minus reviewed exceptions (gated below).
-  var allTokens = new Set()
-  for (var fw in perFramework) {
-    for (var t of perFramework[fw]) allTokens.add(t)
+  // Union of framework tokens. Reviewed exceptions are removed only from the
+  // parity gate below; they remain visible in the informational section.
+  const frameworkTokens = new Set()
+  for (const frameworkName in perFramework) {
+    for (const token of perFramework[frameworkName]) frameworkTokens.add(token)
   }
-  var exceptionsSeen = [...allTokens].filter(function(t) { return t in KNOWN_EXCEPTIONS }).sort()
-  for (var ex of exceptionsSeen) allTokens.delete(ex)
 
-  var exitCode = 0
+  // Plugins are extension namespaces: a `--iris-foo-*` reference is valid only
+  // when a plugin statically declares it in a token object. This avoids both
+  // false positives for legitimate plugin tokens and blanket prefix exemptions
+  // that would hide spelling errors.
+  const perPlugin = {}
+  const pluginTokens = new Set()
+  const declaredPluginTokens = new Set()
+  let pluginFiles = 0
+  for (const plugin of discoverPluginSourceDirs()) {
+    const pluginSourceFiles = walkDir(plugin.dir)
+    const tokens = collectTokens(pluginSourceFiles)
+    for (const pluginSourceFile of pluginSourceFiles) {
+      const content = fs.readFileSync(pluginSourceFile, 'utf-8')
+      for (const declared of extractDeclaredCssVars(content)) {
+        declaredPluginTokens.add(declared)
+      }
+    }
+    perPlugin[plugin.name] = tokens
+    pluginFiles += pluginSourceFiles.length
+    for (const token of tokens) pluginTokens.add(token)
+  }
+  console.log(
+    '  Plugins  ' +
+      String(pluginTokens.size).padStart(3) +
+      ' unique tokens across ' +
+      String(pluginFiles).padStart(4) +
+      ' files (' +
+      String(Object.keys(perPlugin).length) +
+      ' packages, ' +
+      String(declaredPluginTokens.size) +
+      ' declared extension tokens)',
+  )
+
+  const auditedTokens = new Set([...frameworkTokens, ...pluginTokens])
+  const exceptionsSeen = [...auditedTokens]
+    .filter(function (t) {
+      return t in KNOWN_EXCEPTIONS
+    })
+    .sort()
+  const parityTokens = new Set(frameworkTokens)
+  for (const exception of exceptionsSeen) parityTokens.delete(exception)
+
+  let exitCode = 0
 
   // 1. Tokens used but NOT defined in @iris-ui-kit/tokens
-  var unknownTokens = [...allTokens].filter(function(t) { return !knownCss.has(t) })
+  const unknownTokens = [...auditedTokens].filter(function (t) {
+    if (t in KNOWN_EXCEPTIONS) return false
+    if (isLegacyToken(t)) return true
+    return !knownCss.has(t) && !declaredPluginTokens.has(t)
+  })
   unknownTokens.sort()
 
   if (unknownTokens.length > 0) {
     console.log('')
-    console.log('  WARNING: ' + unknownTokens.length + ' token(s) used in adapters but NOT defined in @iris-ui-kit/tokens:')
+    console.log(
+      '  WARNING: ' +
+        unknownTokens.length +
+        ' unknown or legacy token(s) used in adapters/plugins:',
+    )
     console.log('')
-    for (var t of unknownTokens) {
-      var frameworksUsing = []
-      for (var fw in perFramework) {
-        if (perFramework[fw].has(t)) frameworksUsing.push(FRAMEWORK_LABEL[fw])
+    for (const token of unknownTokens) {
+      const scopesUsing = []
+      for (const frameworkName in perFramework) {
+        if (perFramework[frameworkName].has(token)) {
+          scopesUsing.push(FRAMEWORK_LABEL[frameworkName])
+        }
       }
-      console.log('    ' + t.padEnd(32) + ' used by: ' + frameworksUsing.join(', '))
+      for (const pluginName in perPlugin) {
+        if (perPlugin[pluginName].has(token)) scopesUsing.push(pluginName)
+      }
+      console.log('    ' + token.padEnd(32) + ' used by: ' + scopesUsing.join(', '))
     }
     console.log('')
-    console.log('  These may be component-local custom properties. If they should be themeable,')
-    console.log('  add them to @iris-ui-kit/tokens.')
+    console.log('  Add canonical tokens to @iris-ui-kit/tokens, declare namespaced plugin')
+    console.log('  extension tokens, or migrate legacy aliases to canonical names.')
     exitCode = 1
   } else {
     console.log('')
-    console.log('  All ' + allTokens.size + ' tokens are defined in @iris-ui-kit/tokens.')
+    console.log(
+      '  All ' + auditedTokens.size + ' usages resolve to canonical or declared plugin tokens.',
+    )
   }
 
   // 2. Per-framework coverage
   console.log('')
   console.log('  -- Per-framework coverage ----------------------------------------')
   console.log('')
-  var hasDrift = false
-  for (var fw in perFramework) {
-    var set = perFramework[fw]
-    var missing = [...allTokens].filter(function(t) { return !set.has(t) })
+  let hasDrift = false
+  for (const frameworkName in perFramework) {
+    const set = perFramework[frameworkName]
+    const missing = [...parityTokens].filter(function (t) {
+      return !set.has(t)
+    })
     if (missing.length === 0) {
-      console.log('  ' + FRAMEWORK_LABEL[fw] + ': full coverage')
+      console.log('  ' + FRAMEWORK_LABEL[frameworkName] + ': full coverage')
     } else {
       hasDrift = true
-      console.log('  ' + FRAMEWORK_LABEL[fw] + ': missing ' + missing.length + ' token(s):')
-      for (var t of missing.sort()) {
-        var others = []
-        for (var ofw in perFramework) {
-          if (ofw !== fw && perFramework[ofw].has(t)) others.push(FRAMEWORK_LABEL[ofw])
+      console.log(
+        '  ' + FRAMEWORK_LABEL[frameworkName] + ': missing ' + missing.length + ' token(s):',
+      )
+      for (const missingToken of missing.sort()) {
+        const others = []
+        for (const otherFramework in perFramework) {
+          if (otherFramework !== frameworkName && perFramework[otherFramework].has(missingToken)) {
+            others.push(FRAMEWORK_LABEL[otherFramework])
+          }
         }
-        console.log('    ' + t.padEnd(32) + ' present in: ' + others.join(', '))
+        console.log('    ' + missingToken.padEnd(32) + ' present in: ' + others.join(', '))
       }
     }
   }
@@ -197,20 +349,22 @@ function main() {
   console.log('')
   console.log('  -- Single-framework-only tokens ----------------------------------')
   console.log('')
-  var singleCount = 0
-  for (var fw in perFramework) {
-    var fwSet = perFramework[fw]
-    var unique = [...fwSet].filter(function(t) {
+  let singleCount = 0
+  for (const frameworkName in perFramework) {
+    const frameworkSet = perFramework[frameworkName]
+    const unique = [...frameworkSet].filter(function (t) {
       if (t in KNOWN_EXCEPTIONS) return false
-      for (var ofw in perFramework) {
-        if (ofw !== fw && perFramework[ofw].has(t)) return false
+      for (const otherFramework in perFramework) {
+        if (otherFramework !== frameworkName && perFramework[otherFramework].has(t)) {
+          return false
+        }
       }
       return true
     })
     if (unique.length > 0) {
       singleCount += unique.length
-      for (var t of unique.sort()) {
-        console.log('    ' + t.padEnd(32) + ' only in ' + FRAMEWORK_LABEL[fw])
+      for (const token of unique.sort()) {
+        console.log('    ' + token.padEnd(32) + ' only in ' + FRAMEWORK_LABEL[frameworkName])
       }
     }
   }
@@ -226,15 +380,15 @@ function main() {
     console.log('')
     console.log('  -- Reviewed exceptions (informational, not gated) -----------------')
     console.log('')
-    for (var ex2 of exceptionsSeen) {
-      console.log('    ' + ex2.padEnd(32) + ' ' + KNOWN_EXCEPTIONS[ex2])
+    for (const exception of exceptionsSeen) {
+      console.log('    ' + exception.padEnd(32) + ' ' + KNOWN_EXCEPTIONS[exception])
     }
   }
 
   console.log('')
   console.log(exitCode === 0 ? '  Audit clean (exit 0)' : '  Audit warnings (exit 1)')
   console.log('')
-  process.exit(exitCode)
+  exit(exitCode)
 }
 
 main()

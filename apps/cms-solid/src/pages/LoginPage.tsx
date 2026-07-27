@@ -5,33 +5,22 @@ import {
   IrisIcon,
   IrisInput,
   IrisPasswordInput,
-  IrisSelect,
-  type IrisSelectItem,
 } from '@iris-ui-kit/solid'
-import { useAuth, type Role } from '../auth'
-
-const roleItems: IrisSelectItem<Role>[] = [
-  { value: 'admin', label: 'Administrator (full access)' },
-  { value: 'viewer', label: 'Viewer (read-only, fewer menus)' },
-]
+import { CMS_DEMO_ACCOUNTS } from '@iris-ui-kit/cms-shared'
+import { useAuth } from '../auth'
 
 /**
- * Mock login. Any non-empty username + password signs you in; the chosen role
- * (admin vs viewer) is what later drives the RBAC nav filtering — sign in as a
- * viewer to see the Admin/Settings section disappear from the sidebar.
+ * Demo credentials are `ada` / `secret` (admin) and `viewer` / `secret`
+ * (viewer). The authentication client owns role assignment.
  */
 export function LoginPage(): JSX.Element {
-  const { login } = useAuth()
-  const [username, setUsername] = createSignal('ada')
-  const [password, setPassword] = createSignal('secret')
-  const [role, setRole] = createSignal<Role>('admin')
-  const [error, setError] = createSignal<string | undefined>(undefined)
+  const auth = useAuth()
+  const [username, setUsername] = createSignal<string>(CMS_DEMO_ACCOUNTS.admin.username)
+  const [password, setPassword] = createSignal<string>(CMS_DEMO_ACCOUNTS.admin.password)
 
-  const submit = (e: Event) => {
+  const submit = async (e: Event) => {
     e.preventDefault()
-    const session = login(username(), password(), role())
-    if (!session) setError('Enter any non-empty username and password.')
-    else setError(undefined)
+    await auth.login(username(), password())
   }
 
   return (
@@ -84,33 +73,32 @@ export function LoginPage(): JSX.Element {
 
         <div style={{ 'margin-top': '20px' }}>
           <div style={{ display: 'flex', 'flex-direction': 'column', gap: '16px' }}>
-            <IrisFormField label="Username" error={error()}>
+            <IrisFormField label="Username" error={auth.error ?? undefined}>
               <IrisInput
                 value={username()}
                 onInput={(e) => setUsername((e.currentTarget as HTMLInputElement).value)}
-                placeholder="any non-empty value"
+                placeholder="ada or viewer"
                 aria-label="Username"
                 autofocus
+                disabled={auth.loading}
               />
             </IrisFormField>
             <IrisFormField label="Password">
               <IrisPasswordInput
                 value={password()}
                 onChange={(v: string) => setPassword(v)}
-                placeholder="any non-empty value"
+                placeholder="secret"
                 aria-label="Password"
+                disabled={auth.loading}
               />
             </IrisFormField>
-            <IrisFormField label="Sign in as" hint="Drives RBAC: viewers see fewer menu items.">
-              <IrisSelect<Role>
-                items={roleItems}
-                value={role()}
-                onChange={(v: Role) => setRole(v)}
-                style={{ width: '100%' }}
-              />
-            </IrisFormField>
-            <IrisButton type="submit" variant="solid" style={{ width: '100%' }}>
-              Sign in
+            <IrisButton
+              type="submit"
+              variant="solid"
+              style={{ width: '100%' }}
+              disabled={auth.loading}
+            >
+              {auth.loading ? 'Signing in…' : 'Sign in'}
             </IrisButton>
           </div>
         </div>

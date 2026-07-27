@@ -1,4 +1,4 @@
-import type { JSX } from 'solid-js'
+import { Show, type JSX } from 'solid-js'
 import { SkinProvider, IrisProvider } from '@iris-ui-kit/solid'
 import { notificationsPlugin } from '@iris-ui-kit/plugin-notifications/core'
 import { skinEngine } from './skin'
@@ -8,8 +8,12 @@ import { LoginPage } from './pages/LoginPage'
 
 /** Auth gate: unauthenticated → Login screen; authenticated → the CMS shell. */
 function Gate(): JSX.Element {
-  const { session } = useAuth()
-  return session ? <Shell /> : <LoginPage />
+  const auth = useAuth()
+  return (
+    <Show when={auth.session} fallback={<LoginPage />}>
+      <Shell />
+    </Show>
+  )
 }
 
 export function App(): JSX.Element {

@@ -1,14 +1,11 @@
 <script lang="ts">
-  import { findNavNode } from '@iris-ui-kit/svelte'
-  import { menus } from './menus'
+  import { isCmsWorkspaceRoute } from '@iris-ui-kit/cms-shared'
   import DashboardPage from './pages/DashboardPage.svelte'
   import UsersPage from './pages/UsersPage.svelte'
   import SettingsPage from './pages/SettingsPage.svelte'
-  import GenericPage from './pages/GenericPage.svelte'
+  import WorkspacePage from './pages/WorkspacePage.svelte'
 
   let { routeKey }: { routeKey: string } = $props()
-
-  const title = $derived(findNavNode(menus, routeKey)?.title ?? routeKey)
 </script>
 
 {#if routeKey === 'dashboard'}
@@ -17,6 +14,8 @@
   <UsersPage />
 {:else if routeKey === 'settings'}
   <SettingsPage />
+{:else if isCmsWorkspaceRoute(routeKey)}
+  <WorkspacePage {routeKey} />
 {:else}
-  <GenericPage {title} />
+  <DashboardPage />
 {/if}

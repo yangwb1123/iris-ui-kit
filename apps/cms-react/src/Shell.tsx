@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react'
+import { isCmsWorkspaceRoute } from '@iris-ui-kit/cms-shared'
 import {
   IrisAdminLayout,
   IrisAvatar,
@@ -33,18 +34,18 @@ import {
 import { DashboardPage } from './pages/DashboardPage'
 import { UsersPage } from './pages/UsersPage'
 import { SettingsPage } from './pages/SettingsPage'
-import { GenericPage } from './pages/GenericPage'
+import { WorkspacePage } from './pages/WorkspacePage'
 
-const pages: Record<string, ComponentType<{ title?: string }>> = {
+const pages: Record<string, ComponentType> = {
   dashboard: DashboardPage,
   'all-users': UsersPage,
   settings: SettingsPage,
 }
 
 function PageHost({ routeKey }: { routeKey: string }) {
-  const Comp = pages[routeKey] ?? GenericPage
-  const props = pages[routeKey] ? {} : { title: findNavNode(menus, routeKey)?.title ?? routeKey }
-  return <Comp {...props} />
+  if (isCmsWorkspaceRoute(routeKey)) return <WorkspacePage routeKey={routeKey} />
+  const Comp = pages[routeKey] ?? DashboardPage
+  return <Comp />
 }
 
 const toneColor: Record<Notification['tone'], string> = {

@@ -11,9 +11,9 @@ import {
   IrisIcon,
   useSkin,
   useTabsNav,
-  findNavNode,
 } from '@iris-ui-kit/vue'
 import { filterNavByAccess, type NavNode } from '@iris-ui-kit/core'
+import { isCmsWorkspaceRoute } from '@iris-ui-kit/cms-shared'
 import { authStore, logout } from './auth'
 import { menus as flatMenus } from './menus'
 import { tabsNav } from './tabs'
@@ -60,7 +60,7 @@ onUnmounted(() => typeof window !== 'undefined' && window.removeEventListener('k
 import DashboardPage from './pages/DashboardPage.vue'
 import UsersPage from './pages/UsersPage.vue'
 import SettingsPage from './pages/SettingsPage.vue'
-import GenericPage from './pages/GenericPage.vue'
+import WorkspacePage from './pages/WorkspacePage.vue'
 
 const { skin, setSkin, setMode, getActiveId, availableSkins } = useSkin()
 const t = useTabsNav(tabsNav)
@@ -80,15 +80,17 @@ function toggleDark() {
   setSkin(isDark.value ? 'light' : 'dark')
 }
 
-// Map a route key to its page component; everything else gets a placeholder.
+// Map every menu leaf to either a dedicated shell page or the shared,
+// schema-driven workspace renderer.
 const pages: Record<string, unknown> = {
   dashboard: DashboardPage,
   'all-users': UsersPage,
   settings: SettingsPage,
 }
-const pageComp = (key: string): unknown => pages[key] ?? GenericPage
+const pageComp = (key: string): unknown =>
+  isCmsWorkspaceRoute(key) ? WorkspacePage : (pages[key] ?? DashboardPage)
 const pageProps = (key: string): Record<string, unknown> =>
-  pages[key] ? {} : { title: findNavNode(menus.value, key)?.title ?? key }
+  isCmsWorkspaceRoute(key) ? { routeKey: key } : {}
 
 // Keep-alive cache key for the active tab (changes on refresh → remount).
 const activeCacheKey = computed(() => {

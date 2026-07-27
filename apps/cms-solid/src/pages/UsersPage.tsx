@@ -58,8 +58,8 @@ const emptyDraft: UserDraft = { name: '', email: '', role: 'Viewer', status: 'in
  * same framework-agnostic engine the React/Vue/Svelte demos use). Create / Edit
  * go through a Drawer form; Delete confirms in a Dialog; a bulk delete acts on
  * the selection — all routed through `controller.mutate` (optimistic for
- * deletes, with toasts on success / failure). The in-memory store persists for
- * the session. Mirrors cms-react/src/pages/UsersPage.tsx in Solid's idiom.
+ * deletes, with toasts on success / failure). The shared repository persists
+ * changes across reloads. Mirrors cms-react/src/pages/UsersPage.tsx in Solid's idiom.
  */
 export function UsersPage(): JSX.Element {
   const auth = useAuth()
@@ -172,7 +172,7 @@ export function UsersPage(): JSX.Element {
         <div>
           <h1 class="page-title">All users</h1>
           <p class="page-desc" style={{ 'margin-bottom': '12px' }}>
-            Real CRUD on a live in-memory store via <code>createResourceController</code> +{' '}
+            Real CRUD on a shared local-first repository via <code>createResourceController</code> +{' '}
             <code>createClientFetcher</code> — sort, filter, paginate, select, and{' '}
             <code>mutate</code> (optimistic deletes), all from @iris-ui-kit/core.
             {users.state().selectedKeys.length > 0

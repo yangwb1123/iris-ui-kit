@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { IrisButton, IrisInput, IrisSelect } from '@iris-ui-kit/vue'
-import { login, type Role } from '../auth'
+import { IrisButton, IrisFormField, IrisInput } from '@iris-ui-kit/vue'
+import { CMS_DEMO_ACCOUNTS } from '@iris-ui-kit/cms-shared'
+import { authState, login } from '../auth'
 
-const username = ref('')
-const role = ref<Role>('admin')
-const loading = ref(false)
+// Roles are assigned by auth: ada/secret is admin; viewer/secret is read-only.
+const username = ref<string>(CMS_DEMO_ACCOUNTS.admin.username)
+const password = ref<string>(CMS_DEMO_ACCOUNTS.admin.password)
 
-function handleLogin() {
-  if (!username.value.trim()) return
-  loading.value = true
-  login(username.value.trim(), role.value)
+async function handleLogin() {
+  await login(username.value, password.value)
 }
 </script>
 
@@ -39,19 +38,26 @@ function handleLogin() {
       "
     >
       <h1 style="margin: 0 0 8px; font-size: 20px; font-weight: 600">Sign in</h1>
-      <IrisInput v-model="username" placeholder="Username" :disabled="loading" />
-      <IrisSelect
-        :model-value="role"
-        @update:model-value="(v: unknown) => (role = v as Role)"
-        :items="[
-          { value: 'admin', label: 'Admin' },
-          { value: 'viewer', label: 'Viewer' },
-        ]"
-        placeholder="Role"
-        :disabled="loading"
-      />
-      <IrisButton variant="solid" type="submit" :disabled="loading || !username.trim()">
-        {{ loading ? 'Signing in…' : 'Sign in' }}
+      <IrisFormField label="Username" :error="authState.error ?? undefined">
+        <IrisInput
+          v-model="username"
+          aria-label="Username"
+          placeholder="ada or viewer"
+          :disabled="authState.loading"
+          autofocus
+        />
+      </IrisFormField>
+      <IrisFormField label="Password">
+        <IrisInput
+          v-model="password"
+          type="password"
+          aria-label="Password"
+          placeholder="secret"
+          :disabled="authState.loading"
+        />
+      </IrisFormField>
+      <IrisButton variant="solid" type="submit" :disabled="authState.loading">
+        {{ authState.loading ? 'Signing in…' : 'Sign in' }}
       </IrisButton>
     </form>
   </div>

@@ -1,52 +1,49 @@
-import { createStore, type Store } from '@iris-ui-kit/core'
+import { shallowRef, type ShallowRef } from 'vue'
+import {
+  createCmsAuthController,
+  type CmsAuthController,
+  type CmsAuthControllerOptions,
+  type CmsAuthState,
+  type CmsSession,
+} from '@iris-ui-kit/cms-shared'
 
-export type Role = 'admin' | 'viewer'
+export type { CmsAuthRole as Role, CmsSession as Session } from '@iris-ui-kit/cms-shared'
 
-export interface Session {
-  username: string
-  role: Role
+export interface VueAuthBridge {
+  state: ShallowRef<CmsAuthState>
+  controller: CmsAuthController
+  login(username: string, password: string): Promise<CmsSession | null>
+  logout(): Promise<void>
+  clearError(): void
+  dispose(): void
 }
 
-const STORAGE_KEY = 'iris-cms-session'
+/** Vue ref + subscription bridge; authentication logic remains in cms-shared. */
+export function createVueAuthBridge(options: CmsAuthControllerOptions = {}): VueAuthBridge {
+  const controller = createCmsAuthController(options)
+  const state = shallowRef(controller.store.getState())
+  const unsubscribe = controller.store.subscribe((next) => {
+    state.value = next
+  })
 
-function readStored(): Session | null {
-  if (typeof localStorage === 'undefined') return null
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<Session>
-    if (!parsed.username || (parsed.role !== 'admin' && parsed.role !== 'viewer')) return null
-    return { username: parsed.username, role: parsed.role }
-  } catch {
-    return null
+  return {
+    state,
+    controller,
+    login: controller.login,
+    logout: controller.logout,
+    clearError: controller.clearError,
+    dispose() {
+      unsubscribe()
+      controller.destroy()
+    },
   }
 }
 
-function writeStored(session: Session | null): void {
-  if (typeof localStorage === 'undefined') return
-  if (session) localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
-  else localStorage.removeItem(STORAGE_KEY)
-}
+const defaultAuth = createVueAuthBridge()
 
-export interface AuthStore {
-  session: Session | null
-  login(username: string, role: Role): void
-  logout(): void
-}
-
-const initial = readStored()
-
-export const authStore: Store<{ session: Session | null }> = createStore({
-  session: initial,
-})
-
-export function login(username: string, role: Role): void {
-  const session: Session = { username, role }
-  writeStored(session)
-  authStore.setState({ session })
-}
-
-export function logout(): void {
-  writeStored(null)
-  authStore.setState({ session: null })
-}
+/** App-wide demo bridge; all four CMS apps use the same persisted session key. */
+export const authState = defaultAuth.state
+export const authStore = defaultAuth.controller.store
+export const login = defaultAuth.login
+export const logout = defaultAuth.logout
+export const clearAuthError = defaultAuth.clearError

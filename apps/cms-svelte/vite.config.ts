@@ -18,8 +18,12 @@ export default defineConfig(({ command }) => ({
     port: 5178,
     strictPort: true,
   },
-  resolve:
-    command === 'serve'
+  resolve: {
+    // Svelte 5's package exports default to its server entry. Vite dev needs
+    // the browser condition explicitly or `mount()` resolves to the SSR stub
+    // and the application renders a blank page at runtime.
+    conditions: ['browser'],
+    ...(command === 'serve'
       ? {
           alias: {
             // Subpath aliases must precede the bare `@iris-ui-kit/core` alias below —
@@ -36,5 +40,6 @@ export default defineConfig(({ command }) => ({
             '@iris-ui-kit/svelte': src('svelte'),
           },
         }
-      : {},
+      : {}),
+  },
 }))

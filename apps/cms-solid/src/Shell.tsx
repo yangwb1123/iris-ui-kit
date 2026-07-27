@@ -1,5 +1,6 @@
 import { createMemo, createSignal, For, Show, type Component, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
+import { isCmsWorkspaceRoute } from '@iris-ui-kit/cms-shared'
 import {
   IrisAdminLayout,
   IrisAvatar,
@@ -12,7 +13,6 @@ import {
   IrisToastViewport,
   useSkin,
   useTabsNav,
-  findNavNode,
 } from '@iris-ui-kit/solid'
 import { filterNavByAccess } from '@iris-ui-kit/core'
 import { menus } from './menus'
@@ -21,21 +21,18 @@ import { useAuth, type Role } from './auth'
 import { DashboardPage } from './pages/DashboardPage'
 import { UsersPage } from './pages/UsersPage'
 import { SettingsPage } from './pages/SettingsPage'
-import { GenericPage } from './pages/GenericPage'
+import { WorkspacePage } from './pages/WorkspacePage'
 
-const pages: Record<string, Component<{ title?: string }>> = {
+const pages: Record<string, Component> = {
   dashboard: DashboardPage,
   'all-users': UsersPage,
   settings: SettingsPage,
 }
 
 function PageHost(props: { routeKey: string }): JSX.Element {
-  const comp = (): Component<{ title?: string }> => pages[props.routeKey] ?? GenericPage
-  const title = (): string | undefined =>
-    pages[props.routeKey]
-      ? undefined
-      : (findNavNode(menus, props.routeKey)?.title ?? props.routeKey)
-  return <Dynamic component={comp()} title={title()} />
+  if (isCmsWorkspaceRoute(props.routeKey)) return <WorkspacePage routeKey={props.routeKey} />
+  const comp = (): Component => pages[props.routeKey] ?? DashboardPage
+  return <Dynamic component={comp()} />
 }
 
 export function Shell(): JSX.Element {

@@ -13,6 +13,7 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
+    "@iris-ui-kit/cms-shared": "workspace:*",
     "@iris-ui-kit/core": "workspace:*",
     "@iris-ui-kit/plugin-notifications": "workspace:^",
     "@iris-ui-kit/react": "workspace:*",

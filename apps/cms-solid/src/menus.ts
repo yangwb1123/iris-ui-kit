@@ -1,47 +1,8 @@
+import { createCmsNavigation } from '@iris-ui-kit/cms-shared'
 import type { NavNode } from '@iris-ui-kit/solid'
 
 /**
- * One nav-tree config drives the sidebar menu, header breadcrumb, and tabs.
- *
- * RBAC: nodes carry an optional `roles`. A node with no `roles` is visible to
- * everyone; admin-only nodes ("Roles & access" and "Settings") are gated to
- * `admin`, so a viewer session sees a smaller menu — the shell filters this
- * tree through `filterNavByAccess(menus, [session.role])`.
+ * Shared nav contract using the compact Vue/Solid variant. The shell applies
+ * role filtering at runtime.
  */
-export const menus: NavNode[] = [
-  { key: 'dashboard', title: 'Dashboard', icon: 'menu', order: 1 },
-  {
-    key: 'content',
-    title: 'Content',
-    icon: 'folder',
-    order: 2,
-    children: [
-      { key: 'articles', title: 'Articles', icon: 'file', badge: 'new' },
-      { key: 'categories', title: 'Categories', icon: 'folder' },
-      { key: 'media', title: 'Media library', icon: 'upload' },
-    ],
-  },
-  {
-    key: 'users',
-    title: 'Users',
-    icon: 'more-horizontal',
-    order: 3,
-    children: [
-      { key: 'all-users', title: 'All users', icon: 'eye' },
-      { key: 'roles', title: 'Roles & access', icon: 'check-circle', roles: ['admin'] },
-    ],
-  },
-  {
-    key: 'analytics',
-    title: 'Analytics',
-    icon: 'search',
-    order: 4,
-    children: [
-      { key: 'overview', title: 'Overview', icon: 'clock' },
-      { key: 'reports', title: 'Reports', icon: 'file' },
-    ],
-  },
-  { key: 'calendar', title: 'Calendar', icon: 'calendar', order: 5 },
-  // Admin-only: viewers won't see this at all.
-  { key: 'settings', title: 'Settings', icon: 'info', order: 6, roles: ['admin'] },
-]
+export const menus: NavNode[] = createCmsNavigation()

@@ -1,32 +1,16 @@
 <script lang="ts">
-  import {
-    IrisButton,
-    IrisFormField,
-    IrisInput,
-    IrisSelect,
-    IrisIcon,
-    IrisStack,
-  } from '@iris-ui-kit/svelte'
-  import type { IrisSelectItem } from '@iris-ui-kit/svelte'
-  import { useAuth, type Role } from '../auth'
+  import { CMS_DEMO_ACCOUNTS } from '@iris-ui-kit/cms-shared'
+  import { IrisButton, IrisFormField, IrisInput, IrisIcon, IrisStack } from '@iris-ui-kit/svelte'
+  import { useAuth } from '../auth'
 
-  const roleItems: IrisSelectItem<Role>[] = [
-    { value: 'admin', label: 'Administrator (full access)' },
-    { value: 'viewer', label: 'Viewer (read-only, fewer menus)' },
-  ]
+  const { login, state: authState } = useAuth()
+  // Roles are assigned by auth: ada/secret is admin; viewer/secret is read-only.
+  let username = $state<string>(CMS_DEMO_ACCOUNTS.admin.username)
+  let password = $state<string>(CMS_DEMO_ACCOUNTS.admin.password)
 
-  const { login } = useAuth()
-
-  let username = $state('ada')
-  let password = $state('secret')
-  let role = $state<Role>('admin')
-  let error = $state<string | undefined>(undefined)
-
-  function submit(e: Event) {
+  async function submit(e: Event) {
     e.preventDefault()
-    const session = login(username, password, role)
-    if (!session) error = 'Enter any non-empty username and password.'
-    else error = undefined
+    await login(username, password)
   }
 </script>
 
@@ -51,12 +35,13 @@
 
     <div style="margin-top: 20px">
       <IrisStack spacing={16}>
-        <IrisFormField label="Username" {error}>
+        <IrisFormField label="Username" error={$authState.error ?? undefined}>
           <IrisInput
             value={username}
             oninput={(e) => (username = e.currentTarget.value)}
-            placeholder="any non-empty value"
+            placeholder="ada or viewer"
             aria-label="Username"
+            disabled={$authState.loading}
           />
         </IrisFormField>
         <IrisFormField label="Password">
@@ -64,19 +49,14 @@
             type="password"
             value={password}
             oninput={(e) => (password = e.currentTarget.value)}
-            placeholder="any non-empty value"
+            placeholder="secret"
             aria-label="Password"
+            disabled={$authState.loading}
           />
         </IrisFormField>
-        <IrisFormField label="Sign in as" hint="Drives RBAC: viewers see fewer menu items.">
-          <IrisSelect
-            items={roleItems}
-            value={role}
-            onValueChange={(v) => (role = v as Role)}
-            style="width: 100%"
-          />
-        </IrisFormField>
-        <IrisButton type="submit" variant="solid" style="width: 100%">Sign in</IrisButton>
+        <IrisButton type="submit" variant="solid" style="width: 100%" disabled={$authState.loading}>
+          {$authState.loading ? 'Signing in…' : 'Sign in'}
+        </IrisButton>
       </IrisStack>
     </div>
   </form>

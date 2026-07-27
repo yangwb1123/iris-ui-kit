@@ -1,0 +1,22 @@
+{
+  "name": "@iris-ui-kit/cms-shared",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf .turbo"
+  },
+  "dependencies": {
+    "@iris-ui-kit/core": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "3.2.6"
+  }
+}

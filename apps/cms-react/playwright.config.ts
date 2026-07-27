@@ -1,11 +1,10 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * E2E smoke coverage for the flagship React CMS demo — the first Playwright
- * suite in this repo (all ~1500+ other tests run in jsdom, which never
- * exercises a real browser, real layout, or the actual login→shell→data
- * journey end to end). Runs against the dev server on the app's own fixed
- * port (5176) so it doesn't collide with the other three CMS apps' ports.
+ * Real-browser coverage for all four CMS demos. The React project also owns
+ * the curated pixel baselines; `cross-framework.spec.ts` is replayed against
+ * Vue / React / Solid / Svelte so framework parity is exercised through each
+ * app's actual Vite bundle, browser storage and navigation UI.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -14,7 +13,6 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:5176',
     trace: 'retain-on-failure',
   },
   expect: {
@@ -42,11 +40,68 @@ export default defineConfig({
   // binary that's actually installable in every environment this suite runs in,
   // and it also means local baseline generation and CI compare against the same
   // browser family (GitHub's ubuntu-latest images ship Chrome stable preinstalled).
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], channel: 'chrome' } }],
-  webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:5176',
-    reuseExistingServer: !process.env.CI,
-    timeout: 30_000,
-  },
+  projects: [
+    {
+      // Keep this name stable: the committed visual snapshots include it.
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chrome',
+        baseURL: 'http://localhost:5176',
+      },
+    },
+    {
+      name: 'vue',
+      testMatch: /cross-framework\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chrome',
+        baseURL: 'http://localhost:5175',
+      },
+    },
+    {
+      name: 'solid',
+      testMatch: /cross-framework\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chrome',
+        baseURL: 'http://localhost:5177',
+      },
+    },
+    {
+      name: 'svelte',
+      testMatch: /cross-framework\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chrome',
+        baseURL: 'http://localhost:5178',
+      },
+    },
+  ],
+  webServer: [
+    {
+      command: 'pnpm --dir ../cms dev',
+      url: 'http://localhost:5175',
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
+    {
+      command: 'pnpm dev',
+      url: 'http://localhost:5176',
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
+    {
+      command: 'pnpm --dir ../cms-solid dev',
+      url: 'http://localhost:5177',
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
+    {
+      command: 'pnpm --dir ../cms-svelte dev',
+      url: 'http://localhost:5178',
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
+  ],
 })

@@ -53,7 +53,7 @@ const emptyDraft: UserDraft = { name: '', email: '', role: 'Viewer', status: 'in
  * agnostic engine the Vue/Solid/Svelte demos use). Create / Edit go through a
  * Drawer form; Delete confirms in a Dialog; a bulk delete acts on the selection
  * — all routed through `controller.mutate` (optimistic for deletes, with toasts
- * on success / failure). The in-memory store persists for the session.
+ * on success / failure). The shared repository persists changes across reloads.
  */
 export function UsersPage() {
   const { session } = useAuth()
@@ -72,7 +72,9 @@ export function UsersPage() {
 
   const columns: IrisTableColumn[] = [
     {
-      key: 'user',
+      // Keep the display column keyed to the controller's real `name`
+      // accessor so sorting changes both aria-sort and the rendered row order.
+      key: 'name',
       title: 'User',
       sortable: true,
       render: (_value: unknown, row: Record<string, unknown>) => (
@@ -213,7 +215,7 @@ export function UsersPage() {
         <div>
           <h1 className="page-title">All users</h1>
           <p className="page-desc" style={{ marginBottom: 12 }}>
-            Real CRUD on a live in-memory store via <code>createResourceController</code> +{' '}
+            Real CRUD on a shared local-first repository via <code>createResourceController</code> +{' '}
             <code>createClientFetcher</code> — sort, filter, paginate, select, and{' '}
             <code>mutate</code> (optimistic deletes), all from @iris-ui-kit/core.
             {users.state.selectedKeys.length > 0 &&

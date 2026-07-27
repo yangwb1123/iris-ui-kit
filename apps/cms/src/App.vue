@@ -4,13 +4,13 @@ import { notificationsPlugin } from '@iris-ui-kit/plugin-notifications/vue'
 import { skinEngine } from './skin'
 import Shell from './Shell.vue'
 import LoginPage from './pages/LoginPage.vue'
-import { authStore } from './auth'
+import { authState } from './auth'
 </script>
 
 <template>
   <SkinProvider :engine="skinEngine">
     <IrisProvider :plugins="[notificationsPlugin]">
-      <LoginPage v-if="!authStore.getState().session" />
+      <LoginPage v-if="!authState.session" />
       <Shell v-else />
       <IrisToastViewport position="bottom-right" />
     </IrisProvider>

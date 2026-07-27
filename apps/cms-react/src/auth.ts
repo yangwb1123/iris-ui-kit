@@ -1,78 +1,69 @@
 import * as React from 'react'
+import {
+  createCmsAuthController,
+  type CmsAuthClient,
+  type CmsAuthState,
+  type CmsSession,
+  type KeyValueStorage,
+} from '@iris-ui-kit/cms-shared'
 
-/**
- * In-memory mock auth for the flagship CMS demo. No backend, no new deps: any
- * non-empty username/password "authenticates", and the chosen role (`admin` vs
- * `viewer`) drives the RBAC nav filtering downstream. The session is persisted
- * in localStorage so a refresh / deep-link keeps you logged in.
- */
-export type Role = 'admin' | 'viewer'
+export type { CmsAuthRole as Role, CmsSession as Session } from '@iris-ui-kit/cms-shared'
 
-export interface Session {
-  username: string
-  role: Role
+export interface AuthContextValue extends CmsAuthState {
+  login(username: string, password: string): Promise<CmsSession | null>
+  logout(): Promise<void>
+  clearError(): void
 }
 
-const STORAGE_KEY = 'iris-cms-react-session'
-
-function readStored(): Session | null {
-  if (typeof localStorage === 'undefined') return null
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<Session>
-    if (!parsed.username || (parsed.role !== 'admin' && parsed.role !== 'viewer')) return null
-    return { username: parsed.username, role: parsed.role }
-  } catch {
-    return null
-  }
-}
-
-function writeStored(session: Session | null): void {
-  if (typeof localStorage === 'undefined') return
-  try {
-    if (session) localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
-    else localStorage.removeItem(STORAGE_KEY)
-  } catch {
-    /* storage may be unavailable (private mode / webview) — fail soft */
-  }
-}
-
-export interface AuthContextValue {
-  session: Session | null
-  /** Any non-empty creds succeed; returns the new session (or null on bad input). */
-  login: (username: string, password: string, role: Role) => Session | null
-  logout: () => void
+export interface AuthProviderProps {
+  children: React.ReactNode
+  /** Inject an HTTP-backed client in production; demos use the fixed local accounts. */
+  client?: CmsAuthClient
+  storage?: KeyValueStorage
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null)
 
-export function AuthProvider({ children }: { children: React.ReactNode }): React.ReactElement {
-  const [session, setSession] = React.useState<Session | null>(() => readStored())
-
-  const login = React.useCallback((username: string, password: string, role: Role) => {
-    if (!username.trim() || !password.trim()) return null
-    const next: Session = { username: username.trim(), role }
-    writeStored(next)
-    setSession(next)
-    return next
-  }, [])
-
-  const logout = React.useCallback(() => {
-    writeStored(null)
-    setSession(null)
-  }, [])
+/** React's thin reactivity bridge over the framework-neutral auth controller. */
+export function AuthProvider({ children, client, storage }: AuthProviderProps): React.ReactElement {
+  const controllerRef = React.useRef<ReturnType<typeof createCmsAuthController> | null>(null)
+  if (controllerRef.current === null) {
+    controllerRef.current = createCmsAuthController({ client, storage })
+  }
+  const controller = controllerRef.current
+  const state = React.useSyncExternalStore(
+    controller.store.subscribe,
+    controller.store.getState,
+    controller.store.getState,
+  )
+  const mountedRef = React.useRef(false)
+  React.useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      // React StrictMode immediately replays effects in development. Deferring
+      // teardown keeps that replay alive while still cancelling real unmounts.
+      queueMicrotask(() => {
+        if (!mountedRef.current) controller.destroy()
+      })
+    }
+  }, [controller])
 
   const value = React.useMemo<AuthContextValue>(
-    () => ({ session, login, logout }),
-    [session, login, logout],
+    () => ({
+      ...state,
+      login: controller.login,
+      logout: controller.logout,
+      clearError: controller.clearError,
+    }),
+    [controller, state],
   )
 
   return React.createElement(AuthContext.Provider, { value }, children)
 }
 
 export function useAuth(): AuthContextValue {
-  const ctx = React.useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within <AuthProvider>')
-  return ctx
+  const context = React.useContext(AuthContext)
+  if (!context) throw new Error('useAuth must be used within <AuthProvider>')
+  return context
 }

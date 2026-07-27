@@ -170,7 +170,7 @@ async function doBulkDelete() {
       <div>
         <h1 class="page-title">All users</h1>
         <p class="page-desc" style="margin-bottom: 12px">
-          Real CRUD on a live in-memory store via <code>createResourceController</code> +
+          Real CRUD on a shared local-first repository via <code>createResourceController</code> +
           <code>createClientFetcher</code> — sort, filter, paginate, select, and
           <code>mutate</code> (optimistic deletes), all from @iris-ui-kit/core.
           <template v-if="state.selectedKeys.length > 0">

@@ -1,10 +1,16 @@
-# cms-react E2E tests
+# CMS browser E2E tests
 
-Real-browser Playwright tests for the flagship CMS demo (everything else in
-the repo runs in jsdom). Config: `../playwright.config.ts`.
+Real-browser Playwright tests for all four CMS demos. The runner lives under
+`cms-react` only to keep one Playwright installation and one config; it starts
+the four fixed-port Vite servers itself. Config: `../playwright.config.ts`.
 
+- `cross-framework.spec.ts` — the same login → shell → users data → persisted
+  settings flow, viewer RBAC assertions, and real Articles / Categories / Media
+  / Roles / Analytics / Reports / Calendar workspace interactions replayed
+  against Vue, React, Solid and Svelte. React and Svelte additionally exercise
+  their extended Audit log navigation and export action.
 - `smoke.spec.ts` — functional: login → shell → data, RBAC, the theme
-  toggle's CSS-variable effect. No pixel assertions.
+  toggle's CSS-variable effect for the flagship React app. No pixel assertions.
 - `visual.spec.ts` — **visual regression** (`toHaveScreenshot`), added
   2026-07-19. This repo's other quality gates (contract tests, a11y audits,
   unit tests) all check behavior/ARIA, never actual rendering, so this is
@@ -40,11 +46,6 @@ environments, and it keeps local and CI (GitHub's `ubuntu-latest`, which
 ships Chrome preinstalled) on the same browser family.
 
 Screenshots were verified stable across repeated runs (same baseline, zero
-diff, including across a fresh dev-server restart) in the environment they
-were generated in. They have **not** yet been proven stable across different
-machines/OS font sets — that's exactly why this step is wired into CI as
-`continue-on-error: true`, matching the existing "E2E smoke" and "Bench"
-steps' convention for unproven-at-scale checks. If CI starts flagging diffs
-that are visually a no-op (font hinting, GPU rasterization differences
-rather than a real regression), widen `maxDiffPixelRatio` before assuming
-the mechanism itself is broken.
+diff, including across a fresh dev-server restart). Browser E2E, visual
+regression and benchmarks are hard CI gates; a real failure must be fixed or,
+for an intentional visual change, reviewed through an explicit baseline update.

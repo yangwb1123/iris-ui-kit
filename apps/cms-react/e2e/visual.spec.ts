@@ -36,17 +36,12 @@ test.use({ viewport: { width: 1280, height: 1000 } })
 
 async function login(page: Page): Promise<void> {
   await page.goto('/')
-  // The mock-auth form pre-fills 'ada' / 'secret' / admin — just submit.
-  // (`exact: true` avoids a strict-mode collision with the "Sign in as" role
-  // select's trigger button, whose accessible name contains "Sign in".)
+  // The demo auth form pre-fills the fixed admin account, `ada` / `secret`.
   const submit = page.getByRole('button', { name: 'Sign in', exact: true })
   await expect(submit).toBeVisible()
   await submit.click()
-  // Wait for the shell to mount on its default route (not the command-palette
-  // trigger smoke.spec.ts waits on: that button passes an `aria-label` IrisButton
-  // doesn't currently forward to the DOM — a pre-existing a11y bug, out of scope
-  // here — so its accessible name is actually its visible "⌘K" text, not the
-  // label. The Dashboard heading is a reliable, unrelated mount signal.)
+  // The heading is the stable signal that authentication completed and the
+  // default dashboard route mounted.
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
 }
 
@@ -70,15 +65,11 @@ test.describe('visual regression', () => {
     await login(page)
     await gotoUsers(page)
 
-    // The theme toggle is icon-only, and IrisButton currently drops the
-    // `aria-label` prop Shell.tsx passes it (the same pre-existing bug
-    // login() routes around above), so its accessible name is empty rather
-    // than "Dark mode"/"Light mode" — target it by its rendered icon
-    // (`IrisIcon` does write a stable `data-iris-icon` attribute) instead.
-    const toggle = page
-      .getByRole('banner')
-      .locator('button', { has: page.locator('[data-iris-icon="moon"], [data-iris-icon="sun"]') })
+    // IrisButton forwards the shell's accessible label, so the icon-only
+    // control is located the same way assistive technology identifies it.
+    const toggle = page.getByRole('banner').getByRole('button', { name: /^(Dark|Light) mode$/ })
     await expect(toggle).toBeVisible()
+    await expect(toggle).toHaveAccessibleName('Dark mode')
 
     // Confirm the skin actually flipped (icon swapped + the underlying CSS
     // variable actually changed — same assertion style as smoke.spec.ts's
@@ -89,7 +80,7 @@ test.describe('visual regression', () => {
       )
     const before = await bgVar()
     await toggle.click()
-    await expect(toggle.locator('[data-iris-icon="sun"]')).toBeVisible()
+    await expect(toggle).toHaveAccessibleName('Light mode')
     await expect.poll(bgVar).not.toBe(before)
 
     await expect(page).toHaveScreenshot('users-dark.png')
@@ -99,15 +90,16 @@ test.describe('visual regression', () => {
     await login(page)
     await gotoUsers(page)
 
-    // Sort by Role, not the 'User' column: that column's key ('user') doesn't
-    // match any accessor in data/users.ts's `userColumns` (only name/email/
-    // role/status do), so clicking it flips `aria-sort` without actually
-    // reordering rows — a pre-existing data/column-key mismatch in the demo,
-    // out of scope here. Role sorts for real, so the screenshot honestly
-    // shows a reordered table, not just an inert aria-sort attribute.
-    const roleHeader = page.getByRole('columnheader', { name: 'Role' })
-    await roleHeader.click()
-    await expect(roleHeader).toHaveAttribute('aria-sort', 'ascending')
+    // The composite "User" display column is backed by the controller's `name`
+    // accessor, so this verifies that its sort is behavioral, not aria-only.
+    const userHeader = page.getByRole('columnheader', { name: 'User' })
+    const firstRowBefore = await page.getByRole('table').getByRole('row').nth(1).textContent()
+    await userHeader.click()
+    await expect(userHeader).toHaveAttribute('aria-sort', 'ascending')
+    await userHeader.click()
+    await expect(userHeader).toHaveAttribute('aria-sort', 'descending')
+    const firstRowAfter = await page.getByRole('table').getByRole('row').nth(1).textContent()
+    expect(firstRowAfter).not.toBe(firstRowBefore)
 
     await page.getByRole('table').getByRole('button', { name: 'Delete' }).first().click()
     await expect(page.getByRole('dialog')).toBeVisible()

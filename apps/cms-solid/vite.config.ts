@@ -20,6 +20,11 @@ export default defineConfig(({ command }) => ({
     port: 5177,
     strictPort: true,
   },
+  test: {
+    // This app does not use jest-dom. The filename tells vite-plugin-solid not
+    // to auto-inject its optional peer as an unresolvable setup module.
+    setupFiles: ['./vitest.setup.no-jest-dom.ts'],
+  },
   resolve:
     command === 'serve'
       ? {

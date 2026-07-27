@@ -51,7 +51,7 @@ export interface DataStub {
  *  - `select`→ an `IrisSelectItem[]` literal bound to `items`,
  *  - `calendar` → seeds the controlled `value` with a concrete `Date`.
  */
-export type DataWiringKind = 'table' | 'form' | 'tree' | 'select' | 'calendar'
+export type DataWiringKind = 'pro-table' | 'table' | 'form' | 'tree' | 'select' | 'calendar'
 
 /**
  * Whether `component` is a data component we know how to wire to a deterministic
@@ -62,6 +62,7 @@ export type DataWiringKind = 'table' | 'form' | 'tree' | 'select' | 'calendar'
 export function dataWiringKind(component: ManifestComponent): DataWiringKind | null {
   switch (component.name) {
     case 'IrisProTable':
+      return 'pro-table'
     case 'IrisTable':
       return 'table'
     case 'IrisFormBuilder':
@@ -83,7 +84,7 @@ function exprBind(prop: string, local: string, framework: Framework): string {
 }
 
 /** A deterministic data stub + the prop binding for a table component (`store`). */
-function tableStub(framework: Framework): DataStub {
+function proTableStub(framework: Framework): DataStub {
   // A runnable-against-stub table: in-memory rows + columns fed through the real
   // engine. ProTable consumes a `store`; we build it with createProTableStore.
   const rows = `const rows = [\n  { id: 1, name: 'Ada', age: 36 },\n  { id: 2, name: 'Linus', age: 54 },\n]`
@@ -94,6 +95,20 @@ function tableStub(framework: Framework): DataStub {
     bind: exprBind('store', 'store', framework),
     extraImports: [`import { createProTableStore } from '@iris-ui-kit/plugin-pro-table/core'`],
     owns: ['store'],
+  }
+}
+
+/** Native IrisTable consumes `columns` + `data` directly (not a ProTable store). */
+function tableStub(framework: Framework): DataStub {
+  const rows = `const rows = [\n  { id: 1, name: 'Ada', age: 36 },\n  { id: 2, name: 'Linus', age: 54 },\n]`
+  const columns = `const columns = [\n  { key: 'name', title: 'Name', sortable: true },\n  { key: 'age', title: 'Age', sortable: true },\n]`
+  return {
+    setup: [rows, columns],
+    bind: [exprBind('columns', 'columns', framework), exprBind('data', 'rows', framework)].join(
+      ' ',
+    ),
+    extraImports: [],
+    owns: ['columns', 'data'],
   }
 }
 
@@ -146,6 +161,8 @@ function calendarStub(): DataStub {
 /** Resolve the {@link DataStub} for a known data-wiring `kind` in `framework`. */
 export function dataStub(kind: DataWiringKind, framework: Framework): DataStub {
   switch (kind) {
+    case 'pro-table':
+      return proTableStub(framework)
     case 'table':
       return tableStub(framework)
     case 'form':

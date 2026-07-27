@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "vue": ["packages/vue/node_modules/vue"],
+      "@iris-ui-kit/core": ["packages/core/src/index.ts"],
+      "@iris-ui-kit/vue": ["packages/vue/src/index.ts"],
+      "@iris-ui-kit/vue/admin": ["packages/vue/src/admin/index.ts"]
+    }
+  },
+  "include": ["templates/admin-layout/preferences.ts", "templates/admin-layout/vue/**/*.vue"]
+}

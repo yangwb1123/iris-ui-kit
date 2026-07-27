@@ -4,6 +4,7 @@ import {
   listComponents,
   searchComponents,
   getComponentApi,
+  getFrameworkComponentApi,
   scaffoldSnippet,
   scaffoldView,
   suggestComponents,
@@ -46,6 +47,15 @@ describe('getComponentApi', () => {
   it('returns null for an unknown component', () => {
     expect(getComponentApi(manifest, 'IrisNope')).toBeNull()
   })
+  it('selects the native contract for the requested adapter', () => {
+    const vue = getFrameworkComponentApi(manifest, 'IrisSelect', 'vue')
+    expect(vue?.contract.props.map((prop) => prop.name)).toContain('modelValue')
+    expect(vue?.contract.events).toContain('update:modelValue')
+    expect(vue?.contract.props.map((prop) => prop.name)).not.toContain('renderTrigger')
+
+    const solid = getFrameworkComponentApi(manifest, 'IrisSelect', 'solid')
+    expect(solid?.contract.props.map((prop) => prop.name)).toContain('onChange')
+  })
 })
 
 describe('scaffoldSnippet', () => {
@@ -58,6 +68,13 @@ describe('scaffoldSnippet', () => {
     const snippet = scaffoldSnippet(manifest, 'IrisProTable', 'react')
     expect(snippet).toContain('@iris-ui-kit/plugin-pro-table')
     expect(snippet).toContain('IrisProvider')
+  })
+  it.each([
+    ['IrisProTable', 'store'],
+    ['IrisFormBuilder', 'schema'],
+  ])('includes the required Svelte %s.%s prop', (component, prop) => {
+    const snippet = scaffoldSnippet(manifest, component, 'svelte')!
+    expect(snippet).toContain(`<${component} ${prop}={/*`)
   })
   it('uses Vue attribute syntax for vue', () => {
     const snippet = scaffoldSnippet(manifest, 'IrisButton', 'vue')
@@ -146,11 +163,36 @@ describe('validateUsage', () => {
       ),
     ).toBe(true)
   })
+
+  it('validates against the selected framework contract, not React props', () => {
+    const vue = validateUsage(manifest, {
+      name: 'IrisSelect',
+      framework: 'vue',
+      props: { items: 'items', modelValue: 'a', renderTrigger: 'trigger' },
+    })
+    expect(vue.some((issue) => /Unknown prop "renderTrigger"/.test(issue.message))).toBe(true)
+    expect(vue.some((issue) => /Unknown prop "modelValue"/.test(issue.message))).toBe(false)
+
+    const react = validateUsage(manifest, {
+      name: 'IrisSelect',
+      framework: 'react',
+      props: { items: 'items', value: 'a', modelValue: 'a' },
+    })
+    expect(react.some((issue) => /Unknown prop "modelValue"/.test(issue.message))).toBe(true)
+  })
 })
 
 describe('detectControlledPair', () => {
   it('finds value+onValueChange on IrisSelect', () => {
-    const pair = detectControlledPair(getComponentApi(manifest, 'IrisSelect')!)
+    const pair = detectControlledPair(getComponentApi(manifest, 'IrisSelect')!, 'react')
+    expect(pair).toMatchObject({ value: 'value', handler: 'onValueChange' })
+  })
+  it('finds Vue modelValue+update:modelValue on IrisSelect', () => {
+    const pair = detectControlledPair(getComponentApi(manifest, 'IrisSelect')!, 'vue')
+    expect(pair).toMatchObject({ value: 'modelValue', handler: 'update:modelValue' })
+  })
+  it('finds Solid value+onValueChange from its native compatibility contract', () => {
+    const pair = detectControlledPair(getComponentApi(manifest, 'IrisSelect')!, 'solid')
     expect(pair).toMatchObject({ value: 'value', handler: 'onValueChange' })
   })
   it('finds checked+onChange on IrisSwitch (generic handler)', () => {
@@ -180,7 +222,7 @@ describe('scaffoldSnippet wiring (controlled components)', () => {
     },
     svelte: {
       state: /let value = \$state\(/,
-      binding: /bind:value=\{value\}/,
+      binding: /value=\{value\} onValueChange=\{\(next\) => value = next\}/,
     },
     vue: {
       state: /const value = ref\(/,
@@ -245,8 +287,31 @@ describe('generateView (wired composed view)', () => {
     expect(view).toContain('const schema = {')
     expect(view).toContain(':schema="schema"')
     expect(view).toContain('<IrisCard>')
-    // Switch gets a vue v-model binding for its controlled `checked`.
-    expect(view).toContain('v-model:checked="checked"')
+    // Vue's native contract is modelValue/update:modelValue → plain v-model.
+    expect(view).toContain('v-model="value"')
+  })
+
+  it('wires both Svelte plugin data contracts with runnable store/schema stubs', () => {
+    const view = generateView(manifest, {
+      framework: 'svelte',
+      components: ['IrisProTable', 'IrisFormBuilder'],
+    })!
+    expect(view).toContain(
+      "import { createProTableStore } from '@iris-ui-kit/plugin-pro-table/core'",
+    )
+    expect(view).toContain('const store = createProTableStore(')
+    expect(view).toContain('<IrisProTable store={store}>')
+    expect(view).toContain('const schema = {')
+    expect(view).toContain('<IrisFormBuilder schema={schema}>')
+  })
+
+  it('wires native IrisTable with columns/data rather than a ProTable store', () => {
+    const view = generateView(manifest, { framework: 'vue', components: ['IrisTable'] })!
+    expect(view).toContain('const rows = [')
+    expect(view).toContain('const columns = [')
+    expect(view).toContain(':columns="columns" :data="rows"')
+    expect(view).not.toContain('createProTableStore')
+    expect(view).not.toContain('store=')
   })
 
   it('wires a Tree nodes stub bound to the manifest `nodes` prop', () => {
@@ -321,15 +386,22 @@ describe('generateView (wired composed view)', () => {
 })
 
 describe('generateTest (test skeleton)', () => {
+  const switchEvent: Record<Framework, string> = {
+    react: 'onChange',
+    solid: 'onChange',
+    svelte: 'onChange',
+    vue: 'eventSpy',
+  }
   for (const fw of ['react', 'solid', 'svelte', 'vue'] as Framework[]) {
     it(`emits a ${fw} test referencing the component + a non-click event`, () => {
-      // IrisSwitch's event is `onChange` (NOT click-like) → keeps the
-      // no-spurious-emit mount-smoke (`not.toHaveBeenCalled()`).
+      // Event names come from each adapter's native contract. Vue's
+      // update:modelValue uses a safe local identifier (`eventSpy`).
       const test = generateTest(manifest, 'IrisSwitch', fw)!
       expect(test).toContain('IrisSwitch')
-      expect(test).toContain('const onChange = vi.fn()')
-      expect(test).toContain('expect(onChange).not.toHaveBeenCalled()')
-      expect(test).not.toContain('expect(onChange).toHaveBeenCalled()')
+      expect(test).toContain(`const ${switchEvent[fw]} = vi.fn()`)
+      expect(test).toContain(`expect(${switchEvent[fw]}).not.toHaveBeenCalled()`)
+      expect(test).not.toContain(`expect(${switchEvent[fw]}).toHaveBeenCalled()`)
+      if (fw === 'vue') expect(test).toContain("'onUpdate:modelValue': eventSpy")
       // Uses the framework's testing-library.
       const tl = {
         react: '@testing-library/react',
@@ -341,14 +413,20 @@ describe('generateTest (test skeleton)', () => {
     })
   }
 
+  const buttonEvent: Record<Framework, string> = {
+    react: 'onClick',
+    solid: 'onClick',
+    svelte: 'onclick',
+    vue: 'click',
+  }
   for (const fw of ['react', 'solid', 'svelte', 'vue'] as Framework[]) {
     it(`drives a real click + asserts a call for a ${fw} click-like event`, () => {
-      // IrisButton's event is `onClick` (click-like) → fires a real interaction
-      // and asserts the spy WAS called.
+      // React/Solid, Svelte and Vue intentionally spell this listener
+      // differently; codegen must honor the selected adapter's contract.
       const test = generateTest(manifest, 'IrisButton', fw)!
-      expect(test).toContain('const onClick = vi.fn()')
-      expect(test).toContain('expect(onClick).toHaveBeenCalled()')
-      expect(test).not.toContain('not.toHaveBeenCalled()')
+      expect(test).toContain(`const ${buttonEvent[fw]} = vi.fn()`)
+      expect(test).toContain(`expect(${buttonEvent[fw]}).toHaveBeenCalled()`)
+      expect(test).not.toContain(`expect(${buttonEvent[fw]}).not.toHaveBeenCalled()`)
       if (fw === 'vue') {
         // Vue drives the click through the mounted wrapper (async).
         expect(test).toContain("await wrapper.trigger('click')")
@@ -360,6 +438,14 @@ describe('generateTest (test skeleton)', () => {
       }
     })
   }
+
+  it.each([
+    ['IrisProTable', 'store'],
+    ['IrisFormBuilder', 'schema'],
+  ])('includes required Svelte %s.%s setup in generated tests', (component, prop) => {
+    const test = generateTest(manifest, component, 'svelte')!
+    expect(test).toContain(`render(${component}, { props: { ${prop}: undefined /*`)
+  })
 
   it('returns null for an unknown/unsupported component', () => {
     expect(generateTest(manifest, 'IrisNope', 'react')).toBeNull()

@@ -5,13 +5,27 @@ Command-line scaffolding tool for Iris UI.
 ```
 iris-ui list [--group=<group>]
 iris-ui scaffold <ComponentName> [--framework=react|vue|solid|svelte]
+iris-ui init [--framework=react|vue|solid|svelte] [--force]
+iris-ui registry add <name> <catalog-url-or-path>
+iris-ui add <item...> [--registry=<name>] [--force] [--dry-run]
+iris-ui diff <item...> [--registry=<name>]
+iris-ui update [item...] [--registry=<name>]
 iris-ui codemod list
 iris-ui codemod run <name> <glob-or-path> [--dry-run]
 ```
 
 - `list` — print all components from the generated manifest (optionally filtered by group).
 - `scaffold` — print a ready-to-paste import + usage snippet for a component.
+- `init` — create the framework-aware `iris.json` config and `iris.lock.json`.
+- `registry add` — register an HTTPS catalog or local catalog path.
+- `add` — install integrity-verified, framework-specific source and merge package dependencies.
+- `diff` — preview registry changes without writing consumer files.
+- `update` — refresh named or all locked items while refusing unmanaged/local modifications.
 - `codemod` — list or run a registered source-text migration for a breaking public-API change.
+
+Remote catalog items and their source files must carry SHA-256 integrity values.
+Installed file hashes and source locations are recorded in `iris.lock.json`, so
+updates cannot silently overwrite local edits or traverse symlinks.
 
 ## Codemods
 

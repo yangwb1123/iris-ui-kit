@@ -1,9 +1,11 @@
 import type {
+  ComponentLayer,
   Framework,
   IrisManifest,
   ManifestComponent,
   ManifestProp,
 } from '@iris-ui-kit/manifest'
+import { getFrameworkContract } from '@iris-ui-kit/manifest'
 import { detectControlledPair, wiredTag } from './codegen'
 
 /**
@@ -12,12 +14,14 @@ import { detectControlledPair, wiredTag } from './codegen'
  * directly (the `server.ts` MCP wiring is a thin adapter over them).
  */
 
-export { generateTest, generateView, type GenerateViewRequest } from './codegen'
+export { generateView, type GenerateViewRequest } from './codegen'
+export { generateTest } from './codegen-test'
 
 /** A compact component summary for `list_components` / `search_components`. */
 export interface ComponentSummary {
   name: string
   group: string
+  layer: ComponentLayer
   frameworks: Framework[]
   plugin?: string
 }
@@ -26,6 +30,7 @@ function summarize(c: ManifestComponent): ComponentSummary {
   return {
     name: c.name,
     group: c.group,
+    layer: c.layer,
     frameworks: c.frameworks,
     ...(c.plugin ? { plugin: c.plugin } : {}),
   }
@@ -48,6 +53,22 @@ export function searchComponents(manifest: IrisManifest, query: string): Compone
 /** The full typed contract for one component, or null if unknown. */
 export function getComponentApi(manifest: IrisManifest, name: string): ManifestComponent | null {
   return manifest.components.find((c) => c.name === name) ?? null
+}
+
+/** A component plus the authoritative native contract for one target adapter. */
+export function getFrameworkComponentApi(
+  manifest: IrisManifest,
+  name: string,
+  framework: Framework,
+):
+  | (ManifestComponent & {
+      framework: Framework
+      contract: ReturnType<typeof getFrameworkContract>
+    })
+  | null {
+  const component = getComponentApi(manifest, name)
+  if (!component || !component.frameworks.includes(framework)) return null
+  return { ...component, framework, contract: getFrameworkContract(component, framework) }
 }
 
 /**
@@ -74,7 +95,7 @@ export function scaffoldSnippet(
     ? `\n// Requires <IrisProvider plugins={[…]}> — install ${component.plugin}`
     : ''
 
-  const pair = detectControlledPair(component)
+  const pair = detectControlledPair(component, framework)
   const tag = wiredTag(component, framework, pair)
 
   // No controlled state → keep the original import + bare-tag shape (stable).
@@ -105,7 +126,7 @@ export function scaffoldSnippet(
 /** The bare element/tag for `component` in `framework`, required props pre-filled (no import). */
 function componentTag(component: ManifestComponent, framework: Framework): string {
   const { name } = component
-  const required = (component.props ?? []).filter((p) => !p.optional)
+  const required = getFrameworkContract(component, framework).props.filter((p) => !p.optional)
   if (framework === 'vue') {
     const attrs = required.map((p) => `:${p.name}="/* ${p.type} */"`).join(' ')
     return `<${name}${attrs ? ' ' + attrs : ''} />`
@@ -160,7 +181,7 @@ export function scaffoldView(manifest: IrisManifest, req: ScaffoldViewRequest): 
     .join('\n')
 
   if (layout) return `${header}\n\n<${layout}>\n${children}\n</${layout}>`
-  const classAttr = framework === 'vue' ? 'class' : 'className'
+  const classAttr = framework === 'vue' || framework === 'svelte' ? 'class' : 'className'
   return `${header}\n\n<div ${classAttr}="iris-view">\n${children}\n</div>`
 }
 
@@ -195,7 +216,8 @@ export function suggestComponents(
   const scored = manifest.components
     .map((c) => {
       const nameGroup = `${c.name} ${c.group}`.toLowerCase()
-      const props = (c.props ?? [])
+      const props = Object.values(c.frameworkContracts ?? {})
+        .flatMap((contract) => contract?.props ?? [])
         .map((p) => `${p.name} ${p.description ?? ''}`)
         .join(' ')
         .toLowerCase()
@@ -333,8 +355,14 @@ export function validateUsage(manifest: IrisManifest, usage: UsageToValidate): U
         ' plugin via <IrisProvider plugins={[…]}>.',
     })
   }
-  const props = component.props ?? []
+  const contract = usage.framework ? getFrameworkContract(component, usage.framework) : undefined
+  const props = contract?.props ?? component.props ?? []
   const known = new Map(props.map((p) => [p.name, p]))
+  for (const event of contract?.events ?? []) {
+    if (!known.has(event)) {
+      known.set(event, { name: event, type: 'event', optional: true })
+    }
+  }
   const provided = usage.props ?? {}
   checkRequiredProps(props, provided, issues)
   checkEnumProps(known, provided, usage.name, issues)

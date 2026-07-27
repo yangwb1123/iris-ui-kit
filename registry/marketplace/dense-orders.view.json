@@ -1,0 +1,24 @@
+{
+  "name": "dense-orders",
+  "type": "iris:view",
+  "version": "1.0.0",
+  "data": {
+    "schema": "iris-ui/view-preset@1",
+    "id": "dense-orders",
+    "version": "1.0.0",
+    "title": "Dense orders",
+    "columns": ["orderNo", "customer", "status", "amount", "dueDate"],
+    "hiddenColumns": ["internalId"],
+    "filters": {
+      "archived": false
+    },
+    "sort": [
+      {
+        "key": "dueDate",
+        "direction": "asc"
+      }
+    ],
+    "pageSize": 50,
+    "density": "compact"
+  }
+}

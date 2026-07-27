@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "noEmit": true,
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": ["node"],
+    "paths": {
+      "solid-js": ["packages/solid/node_modules/solid-js"],
+      "solid-js/*": ["packages/solid/node_modules/solid-js/*"],
+      "@iris-ui-kit/core": ["packages/core/src/index.ts"],
+      "@iris-ui-kit/solid": ["packages/solid/src/index.tsx"],
+      "@iris-ui-kit/solid/admin": ["packages/solid/src/admin/index.ts"]
+    }
+  },
+  "include": ["templates/admin-layout/preferences.ts", "templates/admin-layout/solid/**/*.tsx"]
+}

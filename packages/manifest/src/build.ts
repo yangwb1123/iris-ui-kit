@@ -1,4 +1,5 @@
 import type {
+  ComponentLayer,
   Framework,
   IrisManifest,
   ManifestComponent,
@@ -16,18 +17,87 @@ const IMPORT_PATH: Record<Framework, string> = {
 
 const LAYER_MODEL: IrisManifest['layerModel'] = [
   {
+    id: 'layer-0',
     layer: 'Layer 0 — Theme System',
     description: 'Design tokens, applyTheme, theme store (CSS variables).',
   },
-  { layer: 'Layer 1 — Meta Primitives', description: 'Low-level, single-purpose building blocks.' },
-  { layer: 'Layer 2 — Composite Components', description: 'Higher-level interactive components.' },
-  { layer: 'Layer 3 — Layouts', description: 'Structural layout components.' },
-  { layer: 'Layer 4 — System Skeletons', description: 'Page / section skeleton scaffolds.' },
   {
+    id: 'layer-1',
+    layer: 'Layer 1 — Meta Primitives',
+    description: 'Low-level, single-purpose building blocks.',
+  },
+  {
+    id: 'layer-2',
+    layer: 'Layer 2 — Composite Components',
+    description: 'Higher-level interactive components.',
+  },
+  { id: 'layer-3', layer: 'Layer 3 — Layouts', description: 'Structural layout components.' },
+  {
+    id: 'layer-4',
+    layer: 'Layer 4 — System Skeletons',
+    description: 'Page / section skeleton scaffolds.',
+  },
+  {
+    id: 'behavior',
     layer: 'Behaviors',
     description: 'Orthogonal interaction behaviors (hotkeys, click-outside, drag).',
   },
+  {
+    id: 'plugin',
+    layer: 'Plugins',
+    description: 'Optional heavy capabilities activated through IrisProvider.',
+  },
 ]
+
+/** Composite primitive modules that belong to Layer 2 rather than Layer 1. */
+const LAYER_2_MODULES = new Set([
+  'accordion',
+  'calendar',
+  'carousel',
+  'cascader',
+  'color-picker',
+  'combobox',
+  'command-palette',
+  'date-picker',
+  'date-range-picker',
+  'dialog',
+  'drawer',
+  'dropdown-menu',
+  'file-upload',
+  'list',
+  'menu',
+  'pagination',
+  'popover',
+  'select',
+  'splitter',
+  'stepper',
+  'table',
+  'tabs',
+  'time-picker',
+  'toast',
+  'tour',
+  'transfer',
+  'tree',
+  'tree-select',
+  'virtual-scroll',
+])
+
+/** Central, deterministic component → architecture-layer mapping. */
+export function componentLayer(
+  group: ManifestComponent['group'],
+  module: string | undefined,
+  name: string,
+): ComponentLayer {
+  if (group === 'plugin') return 'plugin'
+  if (group === 'theme') return 'layer-0'
+  if (group === 'behaviors') return 'behavior'
+  if (group === 'layouts') return 'layer-3'
+  if (group === 'skeletons' || name.startsWith('IrisAdmin')) return 'layer-4'
+  if (group === 'form' || (group === 'primitives' && module && LAYER_2_MODULES.has(module))) {
+    return 'layer-2'
+  }
+  return 'layer-1'
+}
 
 /**
  * Assemble the public manifest from raw discovery data. Pure and
@@ -46,6 +116,7 @@ export function buildManifest(raw: RawDiscovery): IrisManifest {
       return {
         name: c.name,
         group: c.group,
+        layer: componentLayer(c.group, c.module, c.name),
         module: c.module,
         frameworks,
         importFrom,
@@ -53,6 +124,7 @@ export function buildManifest(raw: RawDiscovery): IrisManifest {
         ...(c.description ? { description: c.description } : {}),
         ...(c.example ? { example: c.example } : {}),
         props: c.props,
+        ...(c.frameworkContracts ? { frameworkContracts: c.frameworkContracts } : {}),
         ...(c.events && c.events.length > 0 ? { events: c.events } : {}),
         ...(c.slots && c.slots.length > 0 ? { slots: c.slots } : {}),
       }
@@ -116,7 +188,14 @@ export function buildManifest(raw: RawDiscovery): IrisManifest {
     components,
     tokens: {
       ...raw.tokens,
-      all: [...raw.tokens.color, ...raw.tokens.spacing, ...raw.tokens.radii],
+      all: [
+        ...raw.tokens.color,
+        ...raw.tokens.spacing,
+        ...raw.tokens.radii,
+        ...raw.tokens.shadows,
+        ...raw.tokens.zIndex,
+        ...raw.tokens.transitions,
+      ],
     },
     stats: { total: components.length, full, byFramework },
   }

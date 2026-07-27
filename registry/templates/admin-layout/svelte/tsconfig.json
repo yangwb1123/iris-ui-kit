@@ -1,0 +1,16 @@
+{
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "../../../..",
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "svelte": ["packages/svelte/node_modules/svelte"],
+      "svelte/*": ["packages/svelte/node_modules/svelte/*"],
+      "@iris-ui-kit/core": ["packages/core/src/index.ts"],
+      "@iris-ui-kit/svelte": ["packages/svelte/src/index.ts"],
+      "@iris-ui-kit/svelte/admin": ["packages/svelte/src/admin/index.ts"]
+    }
+  },
+  "include": ["*.svelte"]
+}

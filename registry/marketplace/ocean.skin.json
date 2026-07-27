@@ -1,0 +1,20 @@
+{
+  "name": "ocean",
+  "type": "iris:skin",
+  "version": "1.0.0",
+  "data": {
+    "id": "ocean",
+    "name": "Ocean",
+    "version": "1.0.0",
+    "type": "dark",
+    "extends": "dark",
+    "tokens": {
+      "iris.primary": "oklch(0.72 0.14 235)",
+      "iris.accent": "oklch(0.78 0.12 205)",
+      "iris.surface.selected": "oklch(0.34 0.08 235)"
+    },
+    "custom": {
+      "brand.gradient": "linear-gradient(135deg, oklch(0.72 0.14 235), oklch(0.78 0.12 205))"
+    }
+  }
+}

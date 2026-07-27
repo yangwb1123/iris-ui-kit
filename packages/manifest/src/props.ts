@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { ManifestProp } from './schema'
+import type { Framework, ManifestProp } from './schema'
 
 /**
  * Extract each component's typed prop contract from its `Iris<Name>Props`
@@ -10,14 +10,17 @@ import type { ManifestProp } from './schema'
  * value. Deterministic and dependency-free (regex over source text), matching
  * the rest of the manifest pipeline.
  *
- * Best-effort by design: it captures the EXPLICIT props in the interface body
- * (the ones a caller actually sets); inherited native props via `extends
- * Omit<HTMLAttributes…>` are intentionally not expanded. Components whose
- * interface isn't found simply get no props.
+ * Best-effort by design: it captures the EXPLICIT props in an interface or
+ * object-bearing type alias (the ones a caller actually sets); inherited native
+ * props via `extends Omit<HTMLAttributes…>` are intentionally not expanded.
+ * A public alias such as `type IrisXProps = HTMLAttributes<…>` is still a real
+ * native contract, with an empty explicit-prop list rather than "unavailable".
  */
 
 /** Match `export interface Iris<Name>Props<...> ... {` capturing the base name. */
 const PROPS_INTERFACE_RE = /export\s+interface\s+(Iris[A-Za-z0-9]+)Props\b[^{]*\{/g
+const PROPS_TYPE_ALIAS_RE = /export\s+type\s+(Iris[A-Za-z0-9]+)Props\b[^=]*=/g
+const NAMED_PROPS_INTERFACE_RE = /(?:export\s+)?interface\s+(Iris[A-Za-z0-9]+Props)\b[^{]*\{/g
 
 function walkTs(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -30,7 +33,7 @@ function walkTs(dir: string, acc: string[] = []): string[] {
 }
 
 /** From the index of the interface's opening `{`, return the body (brace-matched). */
-function interfaceBody(text: string, openBraceIndex: number): string {
+export function interfaceBody(text: string, openBraceIndex: number): string {
   let depth = 0
   for (let i = openBraceIndex; i < text.length; i += 1) {
     const ch = text[i]
@@ -64,7 +67,7 @@ function consumeDocComment(line: string): {
 }
 
 /** Parse an interface body into props, attaching preceding JSDoc summaries. */
-function parseBody(body: string): ManifestProp[] {
+export function parsePropsBody(body: string): ManifestProp[] {
   const props: ManifestProp[] = []
   const lines = body.split('\n')
   let pendingDoc: string | undefined
@@ -113,12 +116,105 @@ function parseBody(body: string): ManifestProp[] {
   return props
 }
 
+/**
+ * Read a possibly multi-line type-alias RHS. TypeScript permits aliases without
+ * semicolons, so a following declaration at top level is also a terminator.
+ */
+function aliasNestingDelta(ch: string): number {
+  if (ch === '{' || ch === '[' || ch === '(') return 1
+  if (ch === '}' || ch === ']' || ch === ')') return -1
+  return 0
+}
+
+function startsFollowingDeclaration(text: string, index: number): boolean {
+  const next = text.slice(index).trimStart()
+  return (
+    /^(?:(?:export|declare)\s+)?(?:interface|type|const|let|function|class|enum)\b/.test(next) ||
+    next.startsWith('import ') ||
+    next.startsWith('/**')
+  )
+}
+
+function typeAliasBody(text: string, start: number): string {
+  let depth = 0
+  let quote: "'" | '"' | '`' | undefined
+
+  for (let i = start; i < text.length; i += 1) {
+    const ch = text[i]
+    if (quote) {
+      if (ch === '\\') i += 1
+      else if (ch === quote) quote = undefined
+      continue
+    }
+    if (ch === "'" || ch === '"' || ch === '`') {
+      quote = ch
+      continue
+    }
+    depth += aliasNestingDelta(ch)
+    if (ch === ';' && depth === 0) {
+      return text.slice(start, i).trim()
+    }
+    if (ch === '\n' && depth === 0 && startsFollowingDeclaration(text, i + 1)) {
+      return text.slice(start, i).trim()
+    }
+  }
+  return text.slice(start).trim()
+}
+
+/** Every local Iris*Props interface, including helper union branches. */
+function namedPropsInterfaces(text: string): Map<string, ManifestProp[]> {
+  const result = new Map<string, ManifestProp[]>()
+  for (const match of text.matchAll(NAMED_PROPS_INTERFACE_RE)) {
+    const open = match.index! + match[0].length - 1
+    result.set(match[1], parsePropsBody(interfaceBody(text, open)))
+  }
+  return result
+}
+
+function mergeProp(target: Map<string, ManifestProp>, prop: ManifestProp): void {
+  const current = target.get(prop.name)
+  if (!current) {
+    target.set(prop.name, { ...prop })
+    return
+  }
+  current.optional ||= prop.optional
+  if (current.type !== prop.type) {
+    const unionMember = (type: string): string => (type.includes('=>') ? `(${type})` : type)
+    current.type = `${unionMember(current.type)} | ${unionMember(prop.type)}`
+  }
+  if (!current.description && prop.description) current.description = prop.description
+}
+
+/**
+ * Extract explicit fields from an alias. This covers both inline intersections
+ * and discriminated-union branches such as IrisToggleGroupProps, while aliases
+ * that merely expose native framework attributes correctly yield zero explicit
+ * fields.
+ */
+function propsFromTypeAlias(
+  alias: string,
+  localInterfaces: Map<string, ManifestProp[]>,
+): ManifestProp[] {
+  const merged = new Map<string, ManifestProp>()
+  for (const match of alias.matchAll(/\b(Iris[A-Za-z0-9]+Props)\b/g)) {
+    for (const prop of localInterfaces.get(match[1]) ?? []) mergeProp(merged, prop)
+  }
+  for (let i = 0; i < alias.length; i += 1) {
+    if (alias[i] !== '{') continue
+    const body = interfaceBody(alias, i)
+    if (!body) continue
+    for (const prop of parsePropsBody(body)) mergeProp(merged, prop)
+    i += body.length + 1
+  }
+  return [...merged.values()]
+}
+
 /** Match `(export) type X = <rhs>` — captures the alias name + its RHS,
  * terminated by a `;` OR end-of-line (TS allows omitting the semicolon). */
 const TYPE_ALIAS_RE = /(?:export\s+)?type\s+([A-Za-z0-9_]+)\s*=\s*([^;\n]+);?/g
 
 /** Scan source roots for string-literal-union type aliases (name → raw RHS). */
-function extractTypeAliases(srcRoots: string[]): Map<string, string> {
+export function extractTypeAliases(srcRoots: string[]): Map<string, string> {
   const aliases = new Map<string, string>()
   for (const root of srcRoots) {
     if (!existsSync(root)) continue
@@ -139,7 +235,7 @@ function extractTypeAliases(srcRoots: string[]): Map<string, string> {
  * Returns the values only when EVERY union member is a string literal;
  * otherwise undefined (a partial/non-enumerable type isn't enumerated).
  */
-function resolveEnumValues(
+export function resolveEnumValues(
   type: string,
   aliases: Map<string, string>,
   depth = 5,
@@ -161,7 +257,7 @@ function resolveEnumValues(
 }
 
 /** Split a destructuring body on top-level commas (respecting `{}`/`[]`/`()` nesting). */
-function splitTopLevel(body: string): string[] {
+export function splitTopLevel(body: string): string[] {
   const parts: string[] = []
   let depth = 0
   let start = 0
@@ -179,7 +275,7 @@ function splitTopLevel(body: string): string[] {
 }
 
 /** A literal default (`'x'` / `"x"` / number / boolean) → its serialized form, else undefined. */
-function literalDefault(expr: string): string | undefined {
+export function literalDefault(expr: string): string | undefined {
   const v = expr.trim()
   if (/^'[^']*'$/.test(v) || /^"[^"]*"$/.test(v)) return v.slice(1, -1)
   if (/^-?\d+(?:\.\d+)?$/.test(v)) return v
@@ -234,7 +330,7 @@ export function classifyProps(props: ManifestProp[]): {
   events: string[]
   slots: string[]
 } {
-  const events = props.filter((p) => /^on[A-Z]/.test(p.name)).map((p) => p.name)
+  const events = props.filter((p) => /^on[A-Za-z]/.test(p.name)).map((p) => p.name)
   const slots = props
     .filter((p) => SLOT_TYPE_RE.test(p.type))
     .map((p) => (p.name === 'children' ? 'default' : p.name))
@@ -251,13 +347,29 @@ function scanSrcRoot(
   if (!existsSync(srcRoot)) return
   for (const file of walkTs(srcRoot)) {
     const text = readFileSync(file, 'utf8')
+    const localInterfaces = namedPropsInterfaces(text)
     for (const match of text.matchAll(PROPS_INTERFACE_RE)) {
       const name = match[1]
       if (result.has(name)) continue // first declaration wins
       const open = match.index! + match[0].length - 1 // index of the `{`
       const body = interfaceBody(text, open)
-      const props = parseBody(body)
-      if (props.length === 0) continue
+      const props = parsePropsBody(body)
+      const defaults = extractDefaults(text, name)
+      for (const prop of props) {
+        const values = resolveEnumValues(prop.type, aliases)
+        if (values && values.length > 0) prop.enum = values
+        const def = defaults.get(prop.name)
+        if (def !== undefined) prop.default = def
+      }
+      result.set(name, props)
+    }
+    for (const match of text.matchAll(PROPS_TYPE_ALIAS_RE)) {
+      const name = match[1]
+      if (result.has(name)) continue
+      const props = propsFromTypeAlias(
+        typeAliasBody(text, match.index! + match[0].length),
+        localInterfaces,
+      )
       const defaults = extractDefaults(text, name)
       for (const prop of props) {
         const values = resolveEnumValues(prop.type, aliases)
@@ -270,25 +382,33 @@ function scanSrcRoot(
   }
 }
 
-export function extractComponentProps(repoRoot: string): Map<string, ManifestProp[]> {
+/**
+ * Extract explicit `Iris<Name>Props` interfaces/type aliases from one TS/TSX
+ * adapter and that adapter's plugin sub-entries. Vue and Svelte components are
+ * additionally handled by their native-source extractors in `contracts.ts`.
+ */
+export function extractInterfaceComponentProps(
+  repoRoot: string,
+  framework: Extract<Framework, 'react' | 'solid' | 'svelte'>,
+): Map<string, ManifestProp[]> {
   const result = new Map<string, ManifestProp[]>()
-  const srcRoot = join(repoRoot, 'packages', 'react', 'src')
+  const srcRoot = join(repoRoot, 'packages', framework, 'src')
   if (!existsSync(srcRoot)) return result
 
   // Type aliases come from the React adapter, framework-agnostic core, and each
   // plugin's React sub-entry (so plugin prop types resolve correctly).
   const pluginsDir = join(repoRoot, 'packages')
-  const pluginReactRoots: string[] = existsSync(pluginsDir)
+  const pluginRoots: string[] = existsSync(pluginsDir)
     ? readdirSync(pluginsDir, { withFileTypes: true })
         .filter((e) => e.isDirectory() && e.name.startsWith('plugin-'))
-        .map((e) => join(pluginsDir, e.name, 'src', 'react'))
+        .map((e) => join(pluginsDir, e.name, 'src', framework))
         .filter(existsSync)
     : []
 
   const aliases = extractTypeAliases([
     srcRoot,
     join(repoRoot, 'packages', 'core', 'src'),
-    ...pluginReactRoots,
+    ...pluginRoots,
   ])
 
   // Core React adapter — primary source for all core component props.
@@ -296,9 +416,14 @@ export function extractComponentProps(repoRoot: string): Map<string, ManifestPro
 
   // Plugin packages — each plugin's React sub-entry carries its own Props
   // interfaces (e.g. `IrisCodeEditorProps`, `IrisFormBuilderProps`).
-  for (const pluginRoot of pluginReactRoots) {
+  for (const pluginRoot of pluginRoots) {
     scanSrcRoot(pluginRoot, result, aliases)
   }
 
   return result
+}
+
+/** Backward-compatible React reference extraction used by schema-v1 fields. */
+export function extractComponentProps(repoRoot: string): Map<string, ManifestProp[]> {
+  return extractInterfaceComponentProps(repoRoot, 'react')
 }

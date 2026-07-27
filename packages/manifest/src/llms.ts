@@ -9,17 +9,21 @@ function renderComponentLines(
   const via = (component as { plugin?: string }).plugin
     ? ` — via ${(component as { plugin: string }).plugin} (IrisProvider plugins)`
     : ''
-  lines.push(`- ${component.name} [${fw}]${via}`)
+  lines.push(`- ${component.name} [${fw}] — ${component.layer}${via}`)
   if (component.description) lines.push(`  ${component.description}`)
-  if (component.props && component.props.length > 0) {
-    const names = component.props.map((p) => `${p.name}${p.optional ? '?' : ''}`).join(', ')
-    lines.push(`  props: ${names}`)
-  }
-  if (component.events && component.events.length > 0) {
-    lines.push(`  events: ${component.events.join(', ')}`)
-  }
-  if (component.slots && component.slots.length > 0) {
-    lines.push(`  slots: ${component.slots.join(', ')}`)
+  for (const framework of component.frameworks) {
+    const contract = component.frameworkContracts?.[framework]
+    if (!contract) continue
+    const details: string[] = []
+    if (contract.props.length) {
+      details.push(
+        `props ${contract.props.map((p) => `${p.name}${p.optional ? '?' : ''}`).join(', ')}`,
+      )
+    }
+    if (contract.events.length) details.push(`events ${contract.events.join(', ')}`)
+    if (contract.slots.length) details.push(`slots ${contract.slots.join(', ')}`)
+    if (contract.publicTypes.length) details.push(`types ${contract.publicTypes.join(', ')}`)
+    if (details.length) lines.push(`  ${framework}: ${details.join('; ')}`)
   }
 }
 
@@ -76,6 +80,9 @@ export function renderLlmsText(manifest: IrisManifest): string {
   lines.push('- colors: ' + manifest.tokens.color.join(', '))
   lines.push('- spacing: ' + manifest.tokens.spacing.join(', '))
   lines.push('- radii: ' + manifest.tokens.radii.join(', '))
+  lines.push('- shadows: ' + manifest.tokens.shadows.join(', '))
+  lines.push('- z-index: ' + manifest.tokens.zIndex.join(', '))
+  lines.push('- transitions: ' + manifest.tokens.transitions.join(', '))
   lines.push('')
 
   return lines.join('\n')

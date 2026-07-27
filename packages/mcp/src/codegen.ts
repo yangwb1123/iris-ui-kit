@@ -4,13 +4,14 @@ import type {
   ManifestComponent,
   ManifestProp,
 } from '@iris-ui-kit/manifest'
+import { getFrameworkContract } from '@iris-ui-kit/manifest'
 import { dataStub, dataWiringKind } from './codegen-stubs'
 
 /**
  * Deterministic, template-driven codegen over the typed {@link IrisManifest}.
  *
- * The manifest is the grounding asset: every component carries its React-derived
- * prop contract (name / type / optional / enum / default) plus its events. From
+ * The manifest is the grounding asset: every component carries its native
+ * per-framework prop/event/slot contract. From
  * that we can emit WIRED views — real state scaffolding for controlled
  * components and a runnable-against-stub data wiring for data components — per
  * framework, with NO LLM call. Pure functions of `(manifest, intent)`, so the
@@ -49,6 +50,7 @@ export interface ControlledPair {
  * library's controlled primitives (Select, Switch/Checkbox, Dialog/Popover, …).
  */
 const VALUE_PROP_PRIORITY = [
+  'modelValue',
   'value',
   'checked',
   'open',
@@ -61,6 +63,7 @@ const VALUE_PROP_PRIORITY = [
 
 /** The handler that controls `valueProp`, if it exists in `props`/`events`. */
 function handlerFor(valueProp: string, names: Set<string>): string | undefined {
+  if (valueProp === 'modelValue' && names.has('update:modelValue')) return 'update:modelValue'
   // `value` → `onValueChange`, `checked` → `onCheckedChange`, etc.
   const specific = `on${valueProp[0]!.toUpperCase()}${valueProp.slice(1)}Change`
   if (names.has(specific)) return specific
@@ -84,18 +87,22 @@ function seedFor(prop: ManifestProp): string {
  * Find the component's primary controlled value/handler pair from the manifest
  * prop names, or null if it has none (e.g. a purely uncontrolled / native input).
  */
-export function detectControlledPair(component: ManifestComponent): ControlledPair | null {
-  const props = component.props ?? []
+export function detectControlledPair(
+  component: ManifestComponent,
+  framework?: Framework,
+): ControlledPair | null {
+  const contract = framework ? getFrameworkContract(component, framework) : undefined
+  const props = contract?.props ?? component.props ?? []
   const propNames = new Set(props.map((p) => p.name))
   // Handlers may be surfaced on `events` even if also in `props`.
-  const names = new Set<string>([...propNames, ...(component.events ?? [])])
+  const names = new Set<string>([...propNames, ...(contract?.events ?? component.events ?? [])])
 
   for (const valueName of VALUE_PROP_PRIORITY) {
     if (!propNames.has(valueName)) continue
     const handler = handlerFor(valueName, names)
     if (!handler) continue
     const prop = props.find((p) => p.name === valueName)!
-    const local = valueName === 'value' ? 'value' : valueName
+    const local = valueName === 'modelValue' ? 'value' : valueName
     return {
       value: valueName,
       handler,
@@ -135,12 +142,13 @@ function uniqueLocal(pair: ControlledPair | null, used: Set<string>): Controlled
  * data stub already owns (e.g. a Select's `items`, a Tree's `nodes`) — those are
  * bound from the stub, so we must not also emit a placeholder fill for them.
  */
-function otherRequiredProps(
+export function otherRequiredProps(
   component: ManifestComponent,
+  framework: Framework,
   pair: ControlledPair | null,
   owned: ReadonlySet<string> = EMPTY_OWNED,
 ): ManifestProp[] {
-  return (component.props ?? []).filter(
+  return getFrameworkContract(component, framework).props.filter(
     (p) => !p.optional && p.name !== pair?.value && p.name !== pair?.handler && !owned.has(p.name),
   )
 }
@@ -149,7 +157,7 @@ function otherRequiredProps(
 const EMPTY_OWNED: ReadonlySet<string> = new Set()
 
 /** The literal to put for a required non-controlled prop: its default else a typed placeholder. */
-function fillValue(prop: ManifestProp): { literal: string; isPlaceholder: boolean } {
+export function fillValue(prop: ManifestProp): { literal: string; isPlaceholder: boolean } {
   if (prop.default !== undefined) return { literal: prop.default, isPlaceholder: false }
   if (prop.enum && prop.enum.length > 0)
     return { literal: `'${prop.enum[0]}'`, isPlaceholder: false }
@@ -211,10 +219,12 @@ function controlledBinding(pair: ControlledPair, framework: Framework): string {
     case 'solid':
       return `${value}={${local}()} ${handler}={${setter}}`
     case 'svelte':
-      return `bind:${value}={${local}}`
+      return `${value}={${local}} ${handler}={(next) => ${local} = next}`
     case 'vue':
       // Vue adapters expose v-model; bind the primary value through it.
-      return value === 'value' ? `v-model="${local}"` : `v-model:${value}="${local}"`
+      return value === 'modelValue' || value === 'value'
+        ? `v-model="${local}"`
+        : `v-model:${value}="${local}"`
   }
 }
 
@@ -252,7 +262,9 @@ export function wiredTag(
   if (dataBind) attrs.push(dataBind)
   // Skip the controlled binding when the stub already owns its value prop.
   if (pair && !owned.has(pair.value)) attrs.push(controlledBinding(pair, framework))
-  for (const p of otherRequiredProps(component, pair, owned)) attrs.push(fillAttr(p, framework))
+  for (const p of otherRequiredProps(component, framework, pair, owned)) {
+    attrs.push(fillAttr(p, framework))
+  }
   const attrStr = attrs.length ? ' ' + attrs.join(' ') : ''
   if (framework === 'vue') return `<${name}${attrStr} />`
   return `<${name}${attrStr}></${name}>`
@@ -301,7 +313,7 @@ function wireComponent(
     setup.push(...stub.setup)
     extraImports.push(...stub.extraImports)
   }
-  const detected = detectControlledPair(component)
+  const detected = detectControlledPair(component, framework)
   const emitState = !!detected && !owned.has(detected.value)
   const pair = emitState ? uniqueLocal(detected, usedLocals) : detected
   if (emitState) setup.push(stateDecl(pair!, framework, stub?.seedOverride))
@@ -354,133 +366,10 @@ export function generateView(manifest: IrisManifest, req: GenerateViewRequest): 
 
   const header = buildImportHeader(framework, byPath, extraImports, pluginNotes, setup.length > 0)
   const childTags = components.map((n) => '  ' + tagByName.get(n)!).join('\n')
-  const classAttr = framework === 'vue' ? 'class' : 'className'
+  const classAttr = framework === 'vue' || framework === 'svelte' ? 'class' : 'className'
   const markup = layout
     ? `<${layout}>\n${childTags}\n</${layout}>`
     : `<div ${classAttr}="iris-view">\n${childTags}\n</div>`
   const setupBlock = setup.length ? setup.join('\n') + '\n\n' : ''
   return `${header}\n\n${setupBlock}${markup}`
-}
-
-/* -------------------------------------------------------------------------- */
-/* Test skeleton                                                              */
-/* -------------------------------------------------------------------------- */
-
-/** The framework's testing-library import specifier. */
-const TESTING_LIBRARY: Record<Framework, string> = {
-  react: '@testing-library/react',
-  vue: '@vue/test-utils',
-  solid: '@solidjs/testing-library',
-  svelte: '@testing-library/svelte',
-}
-
-/**
- * Whether the detected event/handler is click-like — i.e. firing a click on the
- * rendered root is a faithful way to drive it (e.g. `onClick`, `onPress`,
- * `onSelect`, `onToggle`). For these we emit a real interaction + a
- * `toHaveBeenCalled()` assertion; everything else keeps the no-spurious-emit
- * `not.toHaveBeenCalled()` mount-smoke.
- */
-function isClickLike(event: string | undefined): boolean {
-  return !!event && /click|press|select|toggle/i.test(event)
-}
-
-/** Emit test body lines for a given framework template. */
-function emitTestBody(
-  lines: string[],
-  name: string,
-  importPath: string,
-  framework: Framework,
-  event: string | undefined,
-  clickLike: boolean,
-  props: string,
-): void {
-  const tl = TESTING_LIBRARY[framework]
-  const useFireEvent = clickLike ? ', fireEvent' : ''
-  const isVue = framework === 'vue'
-  lines.push("import { describe, it, expect, vi } from 'vitest'")
-  const libImport = isVue ? 'mount' : 'render'
-  const extra = isVue ? '' : `${useFireEvent}`
-  lines.push(`import { ${libImport}${extra} } from '${tl}'`)
-  lines.push(`import { ${name} } from '${importPath}'`)
-  lines.push('')
-  lines.push(`describe('${name}', () => {`)
-  const asyncMarker = isVue && clickLike ? 'async ' : ''
-  lines.push(`  it('renders and wires its event', ${asyncMarker}() => {`)
-  if (event) lines.push(`    const ${event} = vi.fn()`)
-  const renderLine = isVue
-    ? `    const wrapper = mount(${name}, { props: ${props} })`
-    : framework === 'svelte'
-      ? `    const { container } = render(${name}, { props: ${props} })`
-      : framework === 'solid'
-        ? `    const { container } = render(() => <${name}${props} />)`
-        : `    const { container } = render(<${name}${props} />)`
-  lines.push(renderLine)
-  if (isVue) {
-    lines.push('    expect(wrapper.exists()).toBe(true)')
-  } else {
-    lines.push('    expect(container.firstChild).toBeTruthy()')
-  }
-  if (event && clickLike) {
-    if (isVue) {
-      lines.push("    await wrapper.trigger('click')")
-    } else {
-      lines.push('    fireEvent.click(container.firstChild as Element)')
-    }
-    lines.push(`    expect(${event}).toHaveBeenCalled()`)
-  } else if (event) {
-    lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
-  }
-  lines.push('  })')
-  lines.push('})')
-}
-
-/**
- * Emit a minimal render + interaction test skeleton for `component` in
- * `framework`, derived from the manifest: it imports the component + the
- * framework's testing-library, renders it (controlled prop seeded + required
- * props filled), and asserts on one event handler (a spy) when the component
- * declares one. Deterministic; returns null for an unknown / unsupported
- * component.
- */
-export function generateTest(
-  manifest: IrisManifest,
-  name: string,
-  framework: Framework,
-): string | null {
-  const component = manifest.components.find((c) => c.name === name) ?? null
-  if (!component || !component.frameworks.includes(framework)) return null
-
-  const importPath = component.importFrom[framework] ?? `@iris-ui-kit/${framework}`
-  const pair = detectControlledPair(component)
-  const event = component.events?.[0] ?? pair?.handler
-  const required = otherRequiredProps(component, pair)
-  const clickLike = isClickLike(event)
-  const propStyle = framework === 'react' || framework === 'solid' ? 'jsx' : 'object'
-  const props = renderProps(component, pair, event, required, propStyle)
-
-  const lines: string[] = []
-  emitTestBody(lines, name, importPath, framework, event, clickLike, props)
-  return lines.join('\n')
-}
-
-/** Render the prop list for a test invocation, as JSX attrs or an object literal. */
-function renderProps(
-  _component: ManifestComponent,
-  pair: ControlledPair | null,
-  event: string | undefined,
-  required: ManifestProp[],
-  style: 'jsx' | 'object',
-): string {
-  const entries: Array<[string, string]> = []
-  if (pair) entries.push([pair.value, pair.default])
-  if (event) entries.push([event, event])
-  for (const p of required) {
-    const { literal } = fillValue(p)
-    entries.push([p.name, literal.startsWith('/*') ? `undefined /* ${p.type} */` : literal])
-  }
-  if (entries.length === 0) return style === 'object' ? '{}' : ''
-  if (style === 'jsx') return ' ' + entries.map(([k, v]) => `${k}={${v}}`).join(' ')
-  const body = entries.map(([k, v]) => `${k}: ${v}`).join(', ')
-  return `{ ${body} }`
 }

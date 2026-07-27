@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Model Context Protocol server for Iris UI — query the typed component manifest (list / search / get-api / scaffold) so agents call components correctly across 4 frameworks",
   "license": "MIT",
+  "engines": {
+    "node": "^20.9.0 || >=22.0.0"
+  },
   "type": "module",
   "bin": {
     "iris-ui-mcp": "./dist/server.js"

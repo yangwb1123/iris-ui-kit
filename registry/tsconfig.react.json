@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": [],
+    "paths": {
+      "react": ["packages/react/node_modules/@types/react/index.d.ts"],
+      "react/jsx-runtime": ["packages/react/node_modules/@types/react/jsx-runtime.d.ts"],
+      "react/jsx-dev-runtime": ["packages/react/node_modules/@types/react/jsx-dev-runtime.d.ts"],
+      "@iris-ui-kit/core": ["packages/core/dist/index.d.ts"],
+      "@iris-ui-kit/react": ["packages/react/dist/index.d.ts"],
+      "@iris-ui-kit/react/admin": ["packages/react/dist/admin.d.ts"]
+    }
+  },
+  "include": ["templates/admin-layout/preferences.ts", "templates/admin-layout/react/**/*.tsx"]
+}

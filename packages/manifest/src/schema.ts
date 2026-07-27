@@ -3,6 +3,15 @@ export type Framework = 'react' | 'vue' | 'solid' | 'svelte'
 /** Canonical framework order used across discovery, build, and reporting. */
 export const ALL_FRAMEWORKS: Framework[] = ['react', 'vue', 'solid', 'svelte']
 
+export type ComponentLayer =
+  | 'layer-0'
+  | 'layer-1'
+  | 'layer-2'
+  | 'layer-3'
+  | 'layer-4'
+  | 'behavior'
+  | 'plugin'
+
 export type ComponentGroup =
   | 'primitives'
   | 'layouts'
@@ -15,7 +24,7 @@ export type ComponentGroup =
   | 'plugin'
   | 'other'
 
-/** A single component prop extracted from its `Iris<Name>Props` interface. */
+/** A single component prop extracted from its native `Iris<Name>Props` declaration. */
 export interface ManifestProp {
   name: string
   /** The declared TypeScript type (as written in source). */
@@ -40,6 +49,23 @@ export interface ManifestProp {
   default?: string
 }
 
+/**
+ * The public calling contract as authored by one framework adapter.
+ *
+ * Contracts are intentionally per-framework: Vue's `modelValue` /
+ * `update:modelValue`, Solid's `onChange`, and Svelte callback props are not
+ * represented as if they were React props. `source: native` means the fields
+ * were extracted from that adapter's own source.
+ */
+export interface ManifestFrameworkContract {
+  source: 'native' | 'unavailable' | 'legacy-react-fallback'
+  props: ManifestProp[]
+  events: string[]
+  slots: string[]
+  /** Public `Iris<Name>*` type exports reachable from that adapter's barrels. */
+  publicTypes: string[]
+}
+
 /** Raw record produced by the filesystem discovery pass. */
 export interface RawComponent {
   name: string
@@ -52,7 +78,7 @@ export interface RawComponent {
   description?: string
   /** Usage snippet harvested from the component's JSDoc `@example`, if present. */
   example?: string
-  /** Props extracted from the component's `Iris<Name>Props` interface (React source). */
+  /** Props extracted from the component's `Iris<Name>Props` interface/type alias (React source). */
   props?: ManifestProp[]
   /**
    * Event-handler prop names (`on[A-Z]` pattern) classified from `props`.
@@ -65,12 +91,17 @@ export interface RawComponent {
    * Populated by the discovery pass when props are available.
    */
   slots?: string[]
+  /** Native public contract for every adapter in `frameworks`. */
+  frameworkContracts?: Partial<Record<Framework, ManifestFrameworkContract>>
 }
 
 export interface RawTokens {
   color: string[]
   spacing: string[]
   radii: string[]
+  shadows: string[]
+  zIndex: string[]
+  transitions: string[]
 }
 
 export interface RawDiscovery {
@@ -81,6 +112,8 @@ export interface RawDiscovery {
 export interface ManifestComponent {
   name: string
   group: ComponentGroup
+  /** Stable architecture layer assigned by the central layer classifier. */
+  layer: ComponentLayer
   /** For `primitives`, the owning sub-module directory (e.g. `button`). */
   module?: string
   frameworks: Framework[]
@@ -107,11 +140,17 @@ export interface ManifestComponent {
   plugin?: string
   /**
    * The component's typed prop contract (name / type / optional / JSDoc),
-   * extracted from its `Iris<Name>Props` interface in the React source — so an
+   * extracted from its `Iris<Name>Props` interface/type alias in the React source — so an
    * agent can call the component correctly without guessing. Absent when no
    * interface was found.
    */
   props?: ManifestProp[]
+  /**
+   * Native per-adapter contracts. This is the authoritative calling surface for
+   * framework-targeted tooling. The legacy top-level `props` / `events` /
+   * `slots` fields remain for schema-v1 consumers and describe React only.
+   */
+  frameworkContracts?: Partial<Record<Framework, ManifestFrameworkContract>>
   /**
    * Compound sub-components: the parts a composite expects as children — e.g.
    * `IrisDialog` → `['IrisDialogTrigger','IrisDialogContent','IrisDialogTitle',…]`.
@@ -141,6 +180,7 @@ export interface ManifestGroupSummary {
 }
 
 export interface ManifestLayer {
+  id: ComponentLayer
   layer: string
   description: string
 }
@@ -161,5 +201,27 @@ export interface IrisManifest {
     full: number
     /** Component count per framework. */
     byFramework: Record<Framework, number>
+  }
+}
+
+/**
+ * Resolve the contract tooling should use for a target framework.
+ *
+ * The fallback keeps old schema-v1 manifests consumable. New manifests always
+ * carry native contracts, so a React contract is never silently presented as
+ * another adapter's contract.
+ */
+export function getFrameworkContract(
+  component: ManifestComponent,
+  framework: Framework,
+): ManifestFrameworkContract {
+  const native = component.frameworkContracts?.[framework]
+  if (native) return native
+  return {
+    source: 'legacy-react-fallback',
+    props: component.props ?? [],
+    events: component.events ?? [],
+    slots: component.slots ?? [],
+    publicTypes: [],
   }
 }

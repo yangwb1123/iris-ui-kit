@@ -8,6 +8,7 @@ import {
   listComponents,
   searchComponents,
   getComponentApi,
+  getFrameworkComponentApi,
   scaffoldSnippet,
   scaffoldView,
   suggestComponents,
@@ -55,10 +56,18 @@ server.registerTool(
   {
     description:
       'Get the full typed contract for one component: props (name/type/optional/JSDoc), frameworks, import path, and plugin (if any). Use before writing code with a component.',
-    inputSchema: { name: z.string().describe('Exact component name, e.g. "IrisSelect"') },
+    inputSchema: {
+      name: z.string().describe('Exact component name, e.g. "IrisSelect"'),
+      framework: z
+        .enum(ALL_FRAMEWORKS as [string, ...string[]])
+        .optional()
+        .describe('Target framework; returns its native prop/event/slot/type contract'),
+    },
   },
-  async ({ name }) => {
-    const api = getComponentApi(manifest, name)
+  async ({ name, framework }) => {
+    const api = framework
+      ? getFrameworkComponentApi(manifest, name, framework as (typeof ALL_FRAMEWORKS)[number])
+      : getComponentApi(manifest, name)
     return api
       ? json(api)
       : { content: [{ type: 'text' as const, text: `Unknown component: ${name}` }] }

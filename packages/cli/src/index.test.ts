@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { IrisManifest } from '@iris-ui-kit/manifest'
+import { buildManifest, discover, type IrisManifest } from '@iris-ui-kit/manifest'
 import { runList } from './commands/list.js'
 import { runScaffold } from './commands/scaffold.js'
 
@@ -26,6 +26,25 @@ const STUB_MANIFEST: IrisManifest = {
         { name: 'variant', type: 'string', optional: true },
         { name: 'onClick', type: '() => void', optional: false },
       ],
+      frameworkContracts: {
+        react: {
+          source: 'native',
+          props: [
+            { name: 'variant', type: 'string', optional: true },
+            { name: 'onClick', type: '() => void', optional: false },
+          ],
+          events: ['onClick'],
+          slots: [],
+          publicTypes: ['IrisButtonProps'],
+        },
+        vue: {
+          source: 'native',
+          props: [{ name: 'vueOnlyRequired', type: 'string', optional: false }],
+          events: ['click'],
+          slots: ['default'],
+          publicTypes: [],
+        },
+      },
     },
     {
       name: 'IrisInput',
@@ -53,6 +72,7 @@ const STUB_MANIFEST: IrisManifest = {
     },
   ],
 } as unknown as IrisManifest
+const REAL_MANIFEST = buildManifest(discover())
 
 // ---------------------------------------------------------------------------
 // Capture stdout / stderr writes
@@ -159,6 +179,8 @@ describe('scaffold command', () => {
     expect(code).toBe(0)
     const out = io.stdout.join('')
     expect(out).toContain("import { IrisButton } from '@iris-ui-kit/vue'")
+    expect(out).toContain(':vueOnlyRequired="/* string */"')
+    expect(out).not.toContain(':onClick=')
   })
 
   it('required props appear in the snippet', () => {
@@ -166,6 +188,17 @@ describe('scaffold command', () => {
     expect(code).toBe(0)
     // onClick is required — should appear as a placeholder
     expect(io.stdout.join('')).toContain('onClick')
+  })
+
+  it.each([
+    ['IrisProTable', 'store'],
+    ['IrisFormBuilder', 'schema'],
+  ])('scaffolds required Svelte %s.%s from the generated manifest', (component, prop) => {
+    const code = runScaffold(REAL_MANIFEST, component, 'svelte')
+    expect(code).toBe(0)
+    const out = io.stdout.join('')
+    expect(out).toContain(`from '@iris-ui-kit/plugin-`)
+    expect(out).toContain(`<${component} ${prop}={/*`)
   })
 
   it('scaffold UnknownComponent exits 1 with error message', () => {

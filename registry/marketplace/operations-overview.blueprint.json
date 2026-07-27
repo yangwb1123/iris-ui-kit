@@ -1,0 +1,42 @@
+{
+  "name": "operations-overview",
+  "type": "iris:blueprint",
+  "version": "1.0.0",
+  "data": {
+    "schema": "iris-ui/page-blueprint@1",
+    "id": "operations-overview",
+    "version": "1.0.0",
+    "title": "Operations overview",
+    "layout": "dashboard",
+    "columns": 12,
+    "nodes": [
+      {
+        "id": "open-orders",
+        "widget": "stat",
+        "dataKey": "openOrders",
+        "props": {
+          "title": "Open orders",
+          "tone": "primary"
+        }
+      },
+      {
+        "id": "late-orders",
+        "widget": "stat",
+        "dataKey": "lateOrders",
+        "props": {
+          "title": "Late orders",
+          "tone": "danger"
+        }
+      },
+      {
+        "id": "order-table",
+        "widget": "table",
+        "dataKey": "orders",
+        "props": {
+          "title": "Recent orders",
+          "viewPreset": "dense-orders"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "schema": "iris-ui/registry-item@1",
+  "name": "admin-layout",
+  "type": "iris:template",
+  "title": "Admin Layout",
+  "description": "A source-installed application shell based on sverpweb's layout capabilities. The shell stays fixed at runtime while pages render application data and declarative layout preferences may change.",
+  "version": "1.0.0",
+  "frameworks": ["react", "vue", "solid", "svelte"],
+  "dependencies": {
+    "@iris-ui-kit/core": "^0.1.0"
+  },
+  "dependenciesByFramework": {
+    "react": {
+      "@iris-ui-kit/react": "^0.1.1"
+    },
+    "vue": {
+      "@iris-ui-kit/vue": "^0.1.0"
+    },
+    "solid": {
+      "@iris-ui-kit/solid": "^0.1.0"
+    },
+    "svelte": {
+      "@iris-ui-kit/svelte": "^0.1.0"
+    }
+  },
+  "files": [
+    {
+      "source": "../templates/admin-layout/preferences.ts",
+      "target": "templates/admin-layout/preferences.ts",
+      "type": "source",
+      "integrity": "sha256-af04d7a571736aa11263ff68cb2bca691cbc1622e4340a50d0f17be07e578dd0"
+    },
+    {
+      "source": "../templates/admin-layout/react/AdminLayout.tsx",
+      "target": "templates/admin-layout/AdminLayout.tsx",
+      "type": "source",
+      "integrity": "sha256-72acccda0e53f64e2c51bbb3380d42b282ceaeae58d7b29c96dcf700ba58d11f",
+      "frameworks": ["react"]
+    },
+    {
+      "source": "../templates/admin-layout/react/AdminLayoutSettings.tsx",
+      "target": "templates/admin-layout/AdminLayoutSettings.tsx",
+      "type": "source",
+      "integrity": "sha256-5ab0535f8d9497482676453a7d91af80317d6dd75b52dfcdf694b825d3872f6e",
+      "frameworks": ["react"]
+    },
+    {
+      "source": "../templates/admin-layout/vue/AdminLayout.vue",
+      "target": "templates/admin-layout/AdminLayout.vue",
+      "type": "source",
+      "integrity": "sha256-2f52295275adbf584c318e51dccaf1edccd9d198a4d44ff0cff769e01965bcf4",
+      "frameworks": ["vue"]
+    },
+    {
+      "source": "../templates/admin-layout/vue/AdminLayoutSettings.vue",
+      "target": "templates/admin-layout/AdminLayoutSettings.vue",
+      "type": "source",
+      "integrity": "sha256-6c28090da54d710524a5dcaf10091343fb6993de3ae93652c323cfcf9afb8449",
+      "frameworks": ["vue"]
+    },
+    {
+      "source": "../templates/admin-layout/solid/AdminLayout.tsx",
+      "target": "templates/admin-layout/AdminLayout.tsx",
+      "type": "source",
+      "integrity": "sha256-b6227c6ace1ffd6a88b2f9fea0afd67ee352ea32b21df6c92e39d2a11229f243",
+      "frameworks": ["solid"]
+    },
+    {
+      "source": "../templates/admin-layout/solid/AdminLayoutSettings.tsx",
+      "target": "templates/admin-layout/AdminLayoutSettings.tsx",
+      "type": "source",
+      "integrity": "sha256-f031426abe589fe9658d675bfb31bfba5cc35a960d18fb27f2c9d86fa3a47e54",
+      "frameworks": ["solid"]
+    },
+    {
+      "source": "../templates/admin-layout/svelte/AdminLayout.svelte",
+      "target": "templates/admin-layout/AdminLayout.svelte",
+      "type": "source",
+      "integrity": "sha256-10818fb6f484bd113c1e2787dfbd373ebd00ee35986c029917e8499a34b7a253",
+      "frameworks": ["svelte"]
+    },
+    {
+      "source": "../templates/admin-layout/svelte/AdminLayoutSettings.svelte",
+      "target": "templates/admin-layout/AdminLayoutSettings.svelte",
+      "type": "source",
+      "integrity": "sha256-51c34dbf284414a749b3ab51adaa1352958f330f675ccee22efe9a869dbe7fb6",
+      "frameworks": ["svelte"]
+    }
+  ],
+  "meta": {
+    "architecture": "static-source",
+    "runtimeTemplateSwitching": false,
+    "runtimeResources": ["skin", "font", "blueprint", "view"]
+  }
+}

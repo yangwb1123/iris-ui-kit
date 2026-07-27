@@ -2,6 +2,7 @@ export {
   listComponents,
   searchComponents,
   getComponentApi,
+  getFrameworkComponentApi,
   scaffoldSnippet,
   scaffoldView,
   suggestComponents,

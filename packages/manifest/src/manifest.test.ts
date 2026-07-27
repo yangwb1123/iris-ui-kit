@@ -11,7 +11,14 @@ const sample: RawDiscovery = {
     { name: 'IrisAlert', group: 'primitives', module: 'alert', frameworks: ['react'] },
     { name: 'IrisStack', group: 'layouts', frameworks: ['vue'] },
   ],
-  tokens: { color: ['iris.primary'], spacing: ['iris.gap.md'], radii: ['iris.radius.sm'] },
+  tokens: {
+    color: ['iris.primary'],
+    spacing: ['iris.gap.md'],
+    radii: ['iris.radius.sm'],
+    shadows: ['iris.shadow.sm'],
+    zIndex: ['iris.z.dropdown'],
+    transitions: ['iris.transition.fast'],
+  },
 }
 
 describe('buildManifest', () => {
@@ -36,7 +43,14 @@ describe('buildManifest', () => {
     const primitives = m.groups.find((g) => g.group === 'primitives')
     expect(primitives?.count).toBe(2)
     expect(primitives?.components).toEqual(['IrisAlert', 'IrisButton'])
-    expect(m.tokens.all).toEqual(['iris.primary', 'iris.gap.md', 'iris.radius.sm'])
+    expect(m.tokens.all).toEqual([
+      'iris.primary',
+      'iris.gap.md',
+      'iris.radius.sm',
+      'iris.shadow.sm',
+      'iris.z.dropdown',
+      'iris.transition.fast',
+    ])
   })
 
   it('is deterministic', () => {
@@ -76,6 +90,9 @@ describe('discover (real repo)', () => {
     expect(raw.tokens.color).toContain('iris.primary')
     expect(raw.tokens.spacing).toContain('iris.gap.md')
     expect(raw.tokens.radii).toContain('iris.radius.sm')
+    expect(raw.tokens.shadows).toContain('iris.shadow.sm')
+    expect(raw.tokens.zIndex).toContain('iris.z.dropdown')
+    expect(raw.tokens.transitions).toContain('iris.transition.fast')
   })
 
   it('builds a clean manifest from the real repo', () => {
@@ -132,12 +149,15 @@ describe('discover (real repo)', () => {
     expect(formBuilder?.importFrom.svelte).toBe('@iris-ui-kit/plugin-form-builder/svelte')
     expect(formBuilder?.frameworks.slice().sort()).toEqual(['react', 'solid', 'svelte', 'vue'])
 
-    // Charts package exports three components under one plugin.
+    // Charts package exports the complete chart family under one plugin.
     const charts = pluginComponents.filter((c) => c.plugin === '@iris-ui-kit/plugin-charts')
     expect(charts.map((c) => c.name).sort()).toEqual([
       'IrisBarChart',
+      'IrisDonutChart',
       'IrisLineChart',
+      'IrisMultiLineChart',
       'IrisSparkline',
+      'IrisStackedBarChart',
     ])
 
     // Every plugin component carries an activation hint in llms.txt.
@@ -152,8 +172,8 @@ describe('discover (real repo)', () => {
     const llms = renderLlmsText(m)
     // At least one component has events/slots rendered.
     // IrisButton has onClick; Dialog-family has slots.
-    expect(llms).toMatch(/events:/)
-    expect(llms).toMatch(/slots:/)
+    expect(llms).toMatch(/events /)
+    expect(llms).toMatch(/slots /)
   })
 
   it('extracts typed props from component interfaces (name/type/optional/JSDoc)', () => {
@@ -192,7 +212,7 @@ describe('discover (real repo)', () => {
     const mode = admin?.props?.find((p) => p.name === 'mode')
     // mode carries the full contract: type + enum + default.
     expect(mode?.default).toBe('sidebar')
-    expect(mode?.enum).toEqual(['sidebar', 'full-content'])
+    expect(mode?.enum).toEqual(['sidebar', 'horizontal', 'full-content'])
     // booleans are captured too.
     const collapsed = admin?.props?.find((p) => p.name === 'defaultCollapsed')
     expect(collapsed?.default).toBe('false')

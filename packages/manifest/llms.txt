@@ -11,626 +11,947 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui-kit/reac
 - Layer 3 — Layouts: Structural layout components.
 - Layer 4 — System Skeletons: Page / section skeleton scaffolds.
 - Behaviors: Orthogonal interaction behaviors (hotkeys, click-outside, drag).
+- Plugins: Optional heavy capabilities activated through IrisProvider.
 
-## Components (151 total — 151 in all 4 frameworks; react 151, vue 151, solid 151, svelte 151)
+## Components (154 total — 154 in all 4 frameworks; react 154, vue 154, solid 154, svelte 154)
 
 ### behaviors (6)
-- IrisClickOutside [react/solid/svelte/vue]
+- IrisClickOutside [react/solid/svelte/vue] — behavior
   Behavior wrapper: fires `onOutside` when a pointerdown happens outside the wrapped child tree. Renders a thin `<span style="display:contents">` to capture the child's bounding box without disrupting layout.
-  props: onOutside, disabled?, ignore?, children?
-  events: onOutside
-  slots: default
-- IrisHotkey [react/solid/svelte/vue]
+  react: props onOutside, disabled?, ignore?, children?; events onOutside; slots default; types IrisClickOutsideProps
+  solid: props onOutside?, disabled?, children?; events onOutside; slots default; types IrisClickOutsideProps
+  svelte: props disabled?, onOutside?, children?; events onOutside; slots default
+  vue: props disabled?, ignore?; events outside; slots default
+- IrisHotkey [react/solid/svelte/vue] — behavior
   Behavior wrapper: binds a global keyboard shortcut while children are mounted. Renderless — returns children verbatim (no extra DOM).
-  props: shortcut, onTrigger, disabled?, allowInInputs?, scope?, children?
-  events: onTrigger
-  slots: default
-- IrisLongPress [react/solid/svelte/vue]
-  props: holdDelay?, onLongPress, disabled?, children?
-  events: onLongPress
-  slots: default
-- IrisMovable [react/solid/svelte/vue]
+  react: props shortcut, onTrigger, disabled?, allowInInputs?, scope?, children?; events onTrigger; slots default; types IrisHotkeyProps
+  solid: props shortcut, disabled?, allowInInputs?, scope?, onTrigger?, children?; events onTrigger; slots default; types IrisHotkeyProps
+  svelte: props shortcut, disabled?, allowInInputs?, scope?, onTrigger?, children?; events onTrigger; slots default
+  vue: props shortcut, disabled?, allowInInputs?, scope?; events trigger; slots default
+- IrisLongPress [react/solid/svelte/vue] — behavior
+  react: props holdDelay?, onLongPress, disabled?, children?; events onLongPress; slots default; types IrisLongPressProps
+  solid: props holdDelay?, onLongPress, disabled?, children?; events onLongPress; slots default; types IrisLongPressProps
+  svelte: props holdDelay?, onLongPress, disabled?, children?; events onLongPress; slots default
+  vue: props onLongPress?, disabled?; events longpress, onLongPress; slots default
+- IrisMovable [react/solid/svelte/vue] — behavior
   Behavior wrapper: makes its child draggable. Position is `transform`-based (no layout thrash). The whole wrapper drags by default; pass `byHandle` and put `data-iris-movable-handle=""` on a descendant (e.g. a title bar) to restrict the drag origin.
-  props: position?, defaultPosition?, onPositionChange?, onDragStart?, onDragEnd?, bounds?, byHandle?, disabled?, children?
-  events: onPositionChange, onDragStart, onDragEnd
-  slots: default
-- IrisResizable [react/solid/svelte/vue]
+  react: props position?, defaultPosition?, onPositionChange?, onDragStart?, onDragEnd?, bounds?, byHandle?, disabled?, children?; events onDragEnd, onDragStart, onPositionChange; slots default; types IrisMovableBounds, IrisMovablePosition, IrisMovableProps
+  solid: props position?, defaultPosition?, bounds?, byHandle?, disabled?, onPositionChange?, onDragStart?, onDragEnd?, children?; events onDragEnd, onDragStart, onPositionChange; slots default; types IrisMovableBounds, IrisMovablePosition, IrisMovableProps
+  svelte: props position?, defaultPosition?, bounds?, byHandle?, disabled?, ariaLabel?, onPositionChange?, onDragStart?, onDragEnd?, children?; events onDragEnd, onDragStart, onPositionChange; slots default; types IrisMovableBounds, IrisMovablePosition
+  vue: props position?, defaultPosition?, bounds?, byHandle?, disabled?; events dragEnd, dragStart, update:position; slots default; types IrisMovableBounds, IrisMovablePosition
+- IrisResizable [react/solid/svelte/vue] — behavior
   Behavior wrapper: makes its child resizable via 8-direction handles. The wrapper itself is `display: inline-block; position: relative` so the child can be ANY element (no need for the child to know it's wrapped). Handles are absolutely positioned over the wrapper's edges.
-  props: size?, defaultSize?, onSizeChange?, onResizeStart?, onResizeEnd?, handles?, minWidth?, minHeight?, maxWidth?, maxHeight?, keepAspect?, disabled?, children?
-  events: onSizeChange, onResizeStart, onResizeEnd
-  slots: default
-- IrisSortable [react/solid/svelte/vue]
-  props: items, onReorder, getKey?, children?, className?, style?, disabled?
-  events: onReorder
-  slots: default
+  react: props size?, defaultSize?, onSizeChange?, onResizeStart?, onResizeEnd?, handles?, minWidth?, minHeight?, maxWidth?, maxHeight?, keepAspect?, disabled?, children?; events onResizeEnd, onResizeStart, onSizeChange; slots default; types IrisResizableHandle, IrisResizableProps, IrisResizableSize
+  solid: props size?, defaultSize?, minSize?, maxSize?, handles?, disabled?, onSizeChange?, onResizeEnd?, children?; events onResizeEnd, onSizeChange; slots default; types IrisResizableHandle, IrisResizableProps, IrisResizableSize
+  svelte: props size?, defaultSize?, handles?, minWidth?, maxWidth?, minHeight?, maxHeight?, disabled?, onSizeChange?, onResizeStart?, onResizeEnd?, children?; events onResizeEnd, onResizeStart, onSizeChange; slots default; types IrisResizableHandle, IrisResizableSize
+  vue: props size?, defaultSize?, handles?, minWidth?, minHeight?, maxWidth?, maxHeight?, keepAspect?, disabled?; events resizeEnd, resizeStart, update:size; slots default; types IrisResizableHandle, IrisResizableSize
+- IrisSortable [react/solid/svelte/vue] — behavior
+  react: props items, onReorder, getKey?, children?, className?, style?, disabled?, orientation?; events onReorder; slots default; types IrisSortableProps
+  solid: props items, onReorder, getKey?, children?, class?, style?, disabled?, orientation?; events onReorder; slots default; types IrisSortableProps
+  svelte: props items, onReorder?, getKey?, disabled?, orientation?, containerRole?, itemRole?, children?; events onReorder; slots default
+  vue: props items, onReorder?, getKey?, disabled?, orientation?, class?, style?; events onReorder, reorder; slots default
 
 ### form (1)
-- IrisForm [react/solid/svelte/vue]
+- IrisForm [react/solid/svelte/vue] — layer-2
   Provides the form store to descendant `useField` calls and wires the native `<form>` submit to `handleSubmit` (with `preventDefault`).
-  props: form, children?
-  slots: default
+  react: props form, children?; slots default; types IrisFormFieldProps, IrisFormProps
+  solid: props form, children?; slots default; types IrisFormFieldProps, IrisFormProps
+  svelte: props form, children?; slots default; types IrisFormFieldProps
+  vue: props form; slots default
 
 ### layouts (7)
-- IrisContainer [react/solid/svelte/vue]
+- IrisContainer [react/solid/svelte/vue] — layer-3
   Centered max-width wrapper. Use to bound content width on large screens without rewriting flex/grid plumbing.
-  props: maxWidth?, padding?, center?
-- IrisDashboardCard [react/solid/svelte/vue]
+  react: props maxWidth?, padding?, center?; types IrisContainerMaxWidth, IrisContainerProps
+  solid: props maxWidth?, padding?, center?, class?, style?, children?; slots default; types IrisContainerMaxWidth, IrisContainerProps
+  svelte: props maxWidth?, padding?, center?, style?, class?, children?; slots default; types IrisContainerMaxWidth
+  vue: props maxWidth?, padding?, center?; slots default; types IrisContainerMaxWidth
+- IrisDashboardCard [react/solid/svelte/vue] — layer-3
   A single dashboard grid cell. `colSpan='full'` makes it fill the row.
-  props: colSpan?, rowSpan?, surface?
-- IrisDashboardGrid [react/solid/svelte/vue]
+  react: props colSpan?, rowSpan?, surface?; types IrisDashboardCardProps, IrisDashboardCardSpec
+  solid: props colSpan?, rowSpan?, surface?; types IrisDashboardCardProps, IrisDashboardCardSpec
+  svelte: props colSpan?, rowSpan?, surface?; types IrisDashboardCardProps, IrisDashboardCardSpec
+  vue: props colSpan?, rowSpan?, surface?; slots default; types IrisDashboardCardSpec
+- IrisDashboardGrid [react/solid/svelte/vue] — layer-3
   12-column responsive grid for dashboard composition. Each child controls its span via `gridColumn` style or by wrapping with `IrisDashboardCard`.
-  props: columns?, gap?, minColWidth?
-- IrisGrid [react/solid/svelte/vue]
+  react: props columns?, gap?, minColWidth?; types IrisDashboardGridProps
+  solid: props columns?, gap?, minColWidth?; types IrisDashboardGridProps
+  svelte: props columns?, gap?, minColWidth?; types IrisDashboardGridProps
+  vue: props columns?, gap?, minColWidth?; slots default
+- IrisGrid [react/solid/svelte/vue] — layer-3
   Two-dimensional grid layout primitive. Three column modes: - Fixed integer (`columns={3}`) - Responsive auto-fit (`columns="auto-fit"` + `minColWidth`) - Raw CSS (`columns="100px 1fr 100px"`)
-  props: columns?, minColWidth?, rowGap?, columnGap?, gap?, inline?
-- IrisHeaderLayout [react/solid/svelte/vue]
+  react: props columns?, minColWidth?, rowGap?, columnGap?, gap?, inline?; types IrisGridColumns, IrisGridProps
+  solid: props columns?, minColWidth?, rowGap?, columnGap?, gap?, inline?, class?, style?, children?; slots default; types IrisGridColumns, IrisGridProps
+  svelte: props columns?, minColWidth?, rowGap?, columnGap?, gap?, inline?, style?, class?, children?; slots default; types IrisGridColumns
+  vue: props columns?, minColWidth?, rowGap?, columnGap?, gap?, inline?; slots default; types IrisGridColumns
+- IrisHeaderLayout [react/solid/svelte/vue] — layer-3
   Two- (or three-) region vertical layout: a sticky header on top, a scrollable main region, and an optional footer.
-  props: headerHeight?, footerHeight?, sticky?, header?, footer?, children?
-  slots: header, footer, default
-- IrisSidebarLayout [react/solid/svelte/vue]
+  react: props headerHeight?, footerHeight?, sticky?, header?, footer?, children?; slots default, footer, header; types IrisHeaderLayoutProps
+  solid: props headerHeight?, footerHeight?, sticky?, header?, footer?, class?, style?, children?; slots default, footer, header; types IrisHeaderLayoutProps
+  svelte: props headerHeight?, footerHeight?, sticky?, header?, footer?, class?, style?, children?; slots default, footer, header; types IrisHeaderLayoutProps
+  vue: props headerHeight?, footerHeight?; slots default, footer, header
+- IrisSidebarLayout [react/solid/svelte/vue] — layer-3
   Two-column layout with a collapsible sidebar. The sidebar is kept mounted across collapses (only its width animates) so component state survives.
-  props: collapsed?, defaultCollapsed?, onCollapsedChange?, width?, collapsedWidth?, side?, sidebar?, children?
-  events: onCollapsedChange
-  slots: sidebar, default
-- IrisStack [react/solid/svelte/vue]
+  react: props collapsed?, defaultCollapsed?, onCollapsedChange?, width?, collapsedWidth?, side?, sidebar?, children?; events onCollapsedChange; slots default, sidebar; types IrisSidebarLayoutProps, IrisSidebarLayoutSidebarState
+  solid: props collapsed?, defaultCollapsed?, onCollapsedChange?, width?, collapsedWidth?, side?, sidebar?, class?, style?, children?; events onCollapsedChange; slots default, sidebar; types IrisSidebarLayoutProps, IrisSidebarLayoutSidebarState
+  svelte: props collapsed?, defaultCollapsed?, onCollapsedChange?, width?, collapsedWidth?, side?, sidebar?; events onCollapsedChange; slots sidebar; types IrisSidebarLayoutProps, IrisSidebarLayoutSidebarState
+  vue: props collapsed?, defaultCollapsed?, width?, collapsedWidth?, side?; events update:collapsed; slots default, sidebar
+- IrisStack [react/solid/svelte/vue] — layer-3
   Flex container with token-driven spacing. The lightest possible layout primitive — saves hand-writing `display: flex` everywhere.
-  props: direction?, spacing?, align?, justify?, wrap?, inline?
+  react: props direction?, spacing?, align?, justify?, wrap?, inline?; types IrisStackAlign, IrisStackDirection, IrisStackJustify, IrisStackProps
+  solid: props direction?, spacing?, align?, justify?, wrap?, inline?; types IrisStackAlign, IrisStackDirection, IrisStackJustify, IrisStackProps
+  svelte: props direction?, spacing?, align?, justify?, wrap?, inline?; types IrisStackAlign, IrisStackDirection, IrisStackJustify, IrisStackProps
+  vue: props direction?, spacing?, align?, justify?, wrap?; slots default; types IrisStackAlign, IrisStackDirection, IrisStackJustify
 
 ### other (7)
-- IrisAdminBreadcrumb [react/solid/svelte/vue]
+- IrisAdminBreadcrumb [react/solid/svelte/vue] — layer-4
   Breadcrumb trail for the admin header, driven by a `NavNode[]` ancestor chain. The last crumb is the current page (auto-marked `aria-current` by IrisBreadcrumb); earlier crumbs are clickable and call `onSelect(key, node)`. React port of the Vue `IrisAdminBreadcrumb`.
-  props: trail, showIcon?, hideSingle?, separator?, onSelect?
-  events: onSelect
-- IrisAdminLayout [react/solid/svelte/vue]
+  react: props trail, showIcon?, hideSingle?, separator?, onSelect?; events onSelect; types IrisAdminBreadcrumbProps
+  solid: props trail, showIcon?, hideSingle?, separator?, onSelect?; events onSelect; types IrisAdminBreadcrumbProps
+  svelte: props trail, showIcon?, hideSingle?, separator?, onSelect?; events onSelect; types IrisAdminBreadcrumbProps
+  vue: props trail, showIcon?, hideSingle?, separator?; events select
+- IrisAdminLayout [react/solid/svelte/vue] — layer-4
   The CMS / admin shell — a Vben-style, router-agnostic, data-driven layout that composes IrisSidebarLayout + IrisHeaderLayout with the admin nav pieces. One `menus` tree drives the collapsible sidebar nav, the header breadcrumb, and (when a `tabs` store is passed) the multi-tab bar; `activeKey` is the current page. The host owns routing: react to `onSelect` / `onActiveKeyChange` and render the page via the children render-prop (wrap it in keep-alive keyed by `tabs.cacheKey` for Vben-style tab caching).
-  props: menus, activeKey?, defaultActiveKey?, onActiveKeyChange?, collapsed?, defaultCollapsed?, onCollapsedChange?, mode?, appTitle?, tabs?, showBreadcrumb?, sidebarWidth?, collapsedWidth?, logo?, toolbar?, footer?, onSelect?, children?
-  events: onActiveKeyChange, onCollapsedChange, onSelect
-  slots: toolbar, footer
-- IrisAdminTabs [react/solid/svelte/vue]
+  react: props menus, activeKey?, defaultActiveKey?, onActiveKeyChange?, collapsed?, defaultCollapsed?, onCollapsedChange?, mode?, appTitle?, tabs?, showTabs?, showBreadcrumb?, stickyHeader?, stickyTabs?, menuAlign?, contentWidth?, contentHeight?, sidebarWidth?, collapsedWidth?, logo?, toolbar?, footer?, onSelect?, children?; events onActiveKeyChange, onCollapsedChange, onSelect; slots footer, toolbar; types IrisAdminLayoutMode, IrisAdminLayoutProps
+  solid: props menus, activeKey?, defaultActiveKey?, onActiveKeyChange?, collapsed?, defaultCollapsed?, onCollapsedChange?, mode?, appTitle?, tabs?, showTabs?, showBreadcrumb?, stickyHeader?, stickyTabs?, menuAlign?, contentWidth?, contentHeight?, sidebarWidth?, collapsedWidth?, logo?, toolbar?, footer?, onSelect?, children?; events onActiveKeyChange, onCollapsedChange, onSelect; slots footer, toolbar; types IrisAdminLayoutMode, IrisAdminLayoutProps
+  svelte: props menus, activeKey?, defaultActiveKey?, onActiveKeyChange?, collapsed?, defaultCollapsed?, onCollapsedChange?, mode?, appTitle?, tabs?, showTabs?, showBreadcrumb?, stickyHeader?, stickyTabs?, menuAlign?, contentWidth?, contentHeight?, sidebarWidth?, collapsedWidth?, logo?, toolbar?, footer?, onSelect?, children?; events onActiveKeyChange, onCollapsedChange, onSelect; slots default, footer, logo, toolbar; types IrisAdminLayoutMode, IrisAdminLayoutProps
+  vue: props menus, activeKey?, defaultActiveKey?, collapsed?, defaultCollapsed?, mode?, appTitle?, tabs?, showTabs?, showBreadcrumb?, stickyHeader?, stickyTabs?, menuAlign?, contentWidth?, contentHeight?, sidebarWidth?, collapsedWidth?; events select, update:activeKey, update:collapsed; slots default, footer, logo, toolbar; types IrisAdminLayoutMode, IrisAdminLayoutProps
+- IrisAdminTabs [react/solid/svelte/vue] — layer-4
   Vben-style multi-tab bar over a shared {@link TabsNav} store. Each open page is a closable chip; clicking activates (`onChange`), the × closes, and a trailing actions dropdown runs Refresh / Close / Close-others / Close-all on the active tab. The store owns the tab list + active key; the host watches it to sync routing + keep-alive.
-  props: nav, onChange?, onClose?, onRefresh?
-  events: onChange, onClose, onRefresh
-- IrisErrorBoundary [react/solid/svelte/vue]
+  react: props nav, onChange?, onClose?, onRefresh?, reorderable?, onReorder?; events onChange, onClose, onRefresh, onReorder; types IrisAdminTabsProps
+  solid: props nav, onChange?, onClose?, onRefresh?, reorderable?, onReorder?; events onChange, onClose, onRefresh, onReorder; types IrisAdminTabsProps
+  svelte: props nav, onChange?, onClose?, onRefresh?, reorderable?, onReorder?; events onChange, onClose, onRefresh, onReorder; types IrisAdminTabsProps
+  vue: props nav, reorderable?; events change, close, refresh, reorder
+- IrisErrorBoundary [react/solid/svelte/vue] — layer-1
   Catches errors thrown while rendering its subtree and switches to a fallback UI instead of crashing the whole React tree. Exposes `reset()` (passed to the fallback) that clears the error and re-attempts rendering the children.
-  props: children?, fallback?, onError?
-  events: onError
-  slots: default, fallback
-- IrisI18nProvider [react/solid/svelte/vue]
+  react: props children?, fallback?, onError?; events onError; slots default, fallback; types IrisErrorBoundaryFallbackProps, IrisErrorBoundaryProps
+  solid: props children?, fallback?, onError?; events onError; slots default, fallback; types IrisErrorBoundaryFallbackProps, IrisErrorBoundaryProps
+  svelte: props children?, fallback?, onError?; events onError; slots default, fallback
+  vue: props fallback?, onError?; events onError; slots default, fallback; types IrisErrorBoundaryFallbackProps, IrisErrorBoundaryProps
+- IrisI18nProvider [react/solid/svelte/vue] — layer-1
   Makes a locale + message dictionary available to descendant components via `useI18n`. Either pass `locale` / `messages` (an instance is created and kept in sync) or a pre-built `i18n` instance you control externally.
-  props: locale?, messages?, i18n?, autoDirection?, directionTarget?, children?
-  slots: default
-- IrisNavMenu [react/solid/svelte/vue]
+  react: props locale?, messages?, i18n?, autoDirection?, directionTarget?, children?; slots default; types IrisI18nProviderProps
+  solid: props locale?, messages?, i18n?, autoDirection?, directionTarget?, children?; slots default; types IrisI18nProviderProps
+  svelte: props locale?, messages?, i18n?, autoDirection?, directionTarget?, children?; slots default
+  vue: props locale?, messages?, i18n?, directionTarget?; slots default
+- IrisNavMenu [react/solid/svelte/vue] — layer-1
   Data-driven nested navigation menu — the sidebar nav of the admin shell. Renders a normalized `NavNode[]` tree as an accordion of expandable branches and selectable leaves; the active leaf and its ancestor branches are highlighted, and the active branch trail auto-expands. Router-agnostic: takes `activeKey`, calls `onSelect(key, node)`; the host owns navigation.
-  props: items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, ariaLabel?, onSelect?, onExpandedKeysChange?
-  events: onSelect, onExpandedKeysChange
-- IrisProvider [react/solid/svelte/vue]
+  react: props items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, orientation?, ariaLabel?, onSelect?, onExpandedKeysChange?; events onExpandedKeysChange, onSelect; types IrisNavMenuProps
+  solid: props items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, orientation?, ariaLabel?, onSelect?, onExpandedKeysChange?; events onExpandedKeysChange, onSelect; types IrisNavMenuProps
+  svelte: props items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, orientation?, ariaLabel?, onSelect?, onExpandedKeysChange?; events onExpandedKeysChange, onSelect; types IrisNavMenuProps
+  vue: props items, activeKey?, expandedKeys?, defaultExpandedKeys?, collapsed?, orientation?, ariaLabel?; events select, update:expandedKeys
+- IrisProvider [react/solid/svelte/vue] — layer-1
   The single unified entry point. Runs the plugins, applies their additive token layer over the active theme, merges their messages under the user's, and exposes their stores via `PluginStoreContext`. The existing Theme / Skin / I18n providers are composed in around it.
-  props: theme?, skin?, dir?, locale?, messages?, plugins?, target?, children?
-  slots: default
+  react: props theme?, skin?, dir?, locale?, messages?, plugins?, target?, children?; slots default; types IrisProviderProps
+  solid: props theme?, skin?, dir?, locale?, messages?, plugins?, target?, children?; slots default; types IrisProviderProps
+  svelte: props theme?, skin?, dir?, locale?, messages?, plugins?, target?, children?; slots default; types IrisProviderProps
+  vue: props theme?, skin?, dir?, locale?, messages?, plugins?, target?; slots default; types IrisProviderProps
 
-### plugin (13)
-- IrisAdminApp [react/solid/svelte/vue] — via @iris-ui-kit/plugin-admin (IrisProvider plugins)
-  Schema-driven CMS for React. Renders `IrisAdminLayout` from a declarative {@link AdminAppSchema} (nav + pages); data pages are backed by the unified data engine (`createDataSource` via `useDataSource`), custom pages are rendered by the host via `renderPage`. The whole app is `<IrisAdminApp schema={...} />`.
-  props: schema, renderPage?
-  slots: renderPage
-- IrisBarChart [react/solid/svelte/vue] — via @iris-ui-kit/plugin-charts (IrisProvider plugins)
+### plugin (16)
+- IrisAdminApp [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-admin (IrisProvider plugins)
+  Schema-driven React CMS with shared query/CRUD logic in the plugin core.
+  react: props schema, permissions?, messages?, onAction?, renderPage?; events onAction; slots renderPage
+  solid: props schema, permissions?, messages?, onAction?, renderPage?; events onAction; slots renderPage
+  svelte: props schema, permissions?, messages?, onAction?, renderPage?; events onAction; slots renderPage
+  vue: props schema, permissions?, messages?, onAction?, renderPage?; events onAction
+- IrisBarChart [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-charts (IrisProvider plugins)
   Vertical bar chart rendered as themed SVG over the core geometry.
-  props: data, width?, height?, nice?, gap?, ariaLabel?, className?, style?
-- IrisCodeEditor [react/solid/svelte/vue] — via @iris-ui-kit/plugin-editor (IrisProvider plugins)
+  react: props data, width?, height?, nice?, gap?, ariaLabel?, className?, style?
+  solid: props data, width?, height?, nice?, gap?, ariaLabel?, class?, style?
+  svelte: props data, width?, height?, nice?, gap?, ariaLabel?, class?, style?
+  vue: props data, width?, height?, nice?, gap?, ariaLabel?
+- IrisCodeEditor [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-editor (IrisProvider plugins)
   CodeMirror 6 code editor for React. Mounts the framework-agnostic {@link createEditor} handle and reconciles `value` / `language` / `readOnly`.
-  props: value?, defaultValue?, language?, readOnly?, completions?, base?, onChange?, className?, style?
-  events: onChange
-- IrisDashboard [react/solid/svelte/vue] — via @iris-ui-kit/plugin-dashboard (IrisProvider plugins)
+  react: props value?, defaultValue?, language?, tabSize?, readOnly?, completions?, base?, onChange?, className?, style?; events onChange
+  solid: props value?, defaultValue?, language?, tabSize?, readOnly?, completions?, base?, onChange?, class?; events onChange
+  svelte: props value?, defaultValue?, language?, tabSize?, readOnly?, completions?, base?, onChange?, class?; events onChange
+  vue: props value?, defaultValue?, language?, tabSize?, readOnly?, completions?, base?; events change, update:value
+- IrisDashboard [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-dashboard (IrisProvider plugins)
   Render a CSS Grid dashboard from a declarative config (React). Each widget is positioned using `grid-column` and `grid-row`.
-  props: config, className?, style?
-- IrisEventCalendar [react/solid/svelte/vue] — via @iris-ui-kit/plugin-calendar (IrisProvider plugins)
+  react: props config, renderWidget?, className?, style?; slots renderWidget; types IrisDashboardCardProps, IrisDashboardCardSpec, IrisDashboardGridProps, IrisDashboardNavItem, IrisDashboardTemplateProps
+  solid: props config, renderWidget?, class?, style?; slots renderWidget; types IrisDashboardCardProps, IrisDashboardCardSpec, IrisDashboardGridProps, IrisDashboardNavItem, IrisDashboardTemplateProps
+  svelte: props config, renderWidget?, class?, style?; slots renderWidget; types IrisDashboardCardProps, IrisDashboardCardSpec, IrisDashboardGridProps, IrisDashboardNavItem
+  vue: props config, class?, style?; slots default; types IrisDashboardCardSpec, IrisDashboardNavItem
+- IrisDonutChart [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-charts (IrisProvider plugins)
+  Accessible donut (or pie at ratio 0) chart with focusable slice tooltips.
+  react: props data, innerRadiusRatio?, startAngle?
+  solid: props data, innerRadiusRatio?, startAngle?
+  svelte: props data, width?, height?, innerRadiusRatio?, startAngle?, ariaLabel?, ariaDescription?, legendLabel?, showLegend?, onDatumFocus?, class?, style?; events onDatumFocus
+  vue: props data, width?, height?, innerRadiusRatio?, startAngle?, ariaLabel?, ariaDescription?, legendLabel?, showLegend?; events datumFocus
+- IrisEventCalendar [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-calendar (IrisProvider plugins)
   Render a month-view events calendar from a declarative config (React). Displays a 7-column grid (Sun–Sat) with event chips per day cell. Clicking a day fires `config.onDateClick`; clicking an event chip fires `config.onEventClick`. Themed via CSS vars.
-  props: config, class?, style?
-- IrisFormBuilder [react/solid/svelte/vue] — via @iris-ui-kit/plugin-form-builder (IrisProvider plugins)
+  react: props config, class?, style?
+  solid: props config, class?, style?
+  svelte: props config, class?, style?
+  vue: props config, class?, style?
+- IrisFormBuilder [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-form-builder (IrisProvider plugins)
   Render a validated form from a declarative schema (React). Each field becomes an accessible native control wired to the core form engine; required fields validate inline; submit runs the schema's `onSubmit`. Themed via CSS vars.
-  props: schema, className?, style?
-- IrisKanban [react/solid/svelte/vue] — via @iris-ui-kit/plugin-kanban (IrisProvider plugins)
+  react: props schema, className?, style?
+  solid: props schema, class?, style?
+  svelte: props schema, class?, style?
+  vue: props schema, onSubmit?, validateOnChange?, parse?, transform?, dependencies?; events onSubmit
+- IrisKanban [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-kanban (IrisProvider plugins)
   Render a Kanban board from a declarative config (React). Columns are laid out horizontally; each card can be moved to any column. WIP-limit columns refuse drops when full. Themed via CSS vars.
-  props: config, className?, style?
-- IrisLineChart [react/solid/svelte/vue] — via @iris-ui-kit/plugin-charts (IrisProvider plugins)
+  react: props config, className?, style?
+  solid: props config, class?, style?
+  svelte: props config, class?, style?
+  vue: props config, class?, style?
+- IrisLineChart [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-charts (IrisProvider plugins)
   Line (or area) chart rendered as plain themed SVG over the core geometry.
-  props: data, width?, height?, area?, nice?, ariaLabel?, className?, style?
-- IrisMarkdown [react/solid/svelte/vue] — via @iris-ui-kit/plugin-markdown (IrisProvider plugins)
-  Render Markdown as themed HTML (React).
-  props: content, className?
-- IrisNotificationCenter [react/solid/svelte/vue] — via @iris-ui-kit/plugin-notifications (IrisProvider plugins)
+  react: props data, width?, height?, area?, nice?, ariaLabel?, className?, style?
+  solid: props data, width?, height?, area?, nice?, ariaLabel?, class?, style?
+  svelte: props data, width?, height?, area?, nice?, ariaLabel?, class?, style?
+  vue: props data, width?, height?, area?, nice?, ariaLabel?
+- IrisMarkdown [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-markdown (IrisProvider plugins)
+  Render Markdown as allowlisted React elements. No `innerHTML` sink is used: core emits structured nodes and this thin adapter maps them to React nodes.
+  react: props content, className?
+  solid: props content, class?, style?
+  svelte: props content, class?
+  vue: props content, class?
+- IrisMultiLineChart [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-charts (IrisProvider plugins)
+  Accessible, token-themed multi-series line chart over shared core geometry.
+  react: props series, nice?, pointRadius?
+  solid: props series, nice?, pointRadius?
+  svelte: props series, categories?, width?, height?, direction?, nice?, pointRadius?, ariaLabel?, ariaDescription?, legendLabel?, showLegend?, onDatumFocus?, class?, style?; events onDatumFocus
+  vue: props series, categories?, width?, height?, direction?, nice?, pointRadius?, ariaLabel?, ariaDescription?, legendLabel?, showLegend?; events datumFocus
+- IrisNotificationCenter [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-notifications (IrisProvider plugins)
   Notification-center panel for React: a header (title + unread badge + mark-all / clear) over a list of notifications (click to mark read, × to dismiss). All state lives in the {@link NotificationCenter}; the host wraps this in a popover / drawer behind a bell icon.
-  props: center, title?, emptyText?, dismissLabel?, unreadLabel?, className?
-- IrisProTable [react/solid/svelte/vue] — via @iris-ui-kit/plugin-pro-table (IrisProvider plugins)
+  react: props center, title?, emptyText?, dismissLabel?, unreadLabel?, markAllReadLabel?, clearLabel?, className?
+  solid: props center, title?, emptyText?, dismissLabel?, unreadLabel?, markAllReadLabel?, clearLabel?, class?
+  svelte: props center, title?, emptyText?, dismissLabel?, unreadLabel?, markAllReadLabel?, clearLabel?, class?
+  vue: props center, title?, emptyText?, dismissLabel?, unreadLabel?, markAllReadLabel?, clearLabel?, className?
+- IrisProTable [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-pro-table (IrisProvider plugins)
   vxe-table-style CRUD data table for React. All logic lives in the framework-agnostic {@link ProTableStore}; this component subscribes to it and renders header (sortable), selection, inline editors, rows, and a pager.
-  props: store, className?, labels?, columnReorder?, virtualized?, rowHeight?, maxHeight?, columnVirtualized?
-- IrisQueryBuilder [react/solid/svelte/vue] — via @iris-ui-kit/plugin-query-builder (IrisProvider plugins)
+  react: props store, className?
+  solid: props store, class?
+  svelte: props store, class?
+  vue: props store, labels?, columnReorder?, virtualized?, columnVirtualized?, rowHeight?, maxHeight?
+- IrisQueryBuilder [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-query-builder (IrisProvider plugins)
   Visual query builder for React: stacked rule rows (column → operator → value) over a {@link FilterBuilder}, emitting compiled `FilterRule[]` via `onChange` (wire it to `dataSource.setFilterRules`). All logic lives in the builder.
-  props: builder, onChange?, addLabel?, className?
-  events: onChange
-- IrisSparkline [react/solid/svelte/vue] — via @iris-ui-kit/plugin-charts (IrisProvider plugins)
+  react: props builder, onChange?, onQueryChange?, addLabel?, labels?, className?; events onChange, onQueryChange
+  solid: props builder, onChange?, onQueryChange?, addLabel?, labels?, class?; events onChange, onQueryChange
+  svelte: props builder, onChange?, onQueryChange?, addLabel?, labels?, class?; events onChange, onQueryChange
+  vue: props builder, onChange?, onQueryChange?, addLabel?, labels?, className?; events onChange, onQueryChange
+- IrisSparkline [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-charts (IrisProvider plugins)
   Compact, axis-less inline trend line (for tables / stat cards).
-  props: data, width?, height?, ariaLabel?, className?, style?
+  react: props data, width?, height?, ariaLabel?, className?, style?
+  solid: props data, width?, height?, ariaLabel?, class?, style?
+  svelte: props data, width?, height?, ariaLabel?, class?, style?
+  vue: props data, width?, height?, ariaLabel?
+- IrisStackedBarChart [react/solid/svelte/vue] — plugin — via @iris-ui-kit/plugin-charts (IrisProvider plugins)
+  Accessible stacked/grouped bar chart with signed stacking and shared domain.
+  react: props series, layout?, nice?, categoryGap?, seriesGap?
+  solid: props series, layout?, nice?, categoryGap?, seriesGap?
+  svelte: props series, categories?, width?, height?, direction?, layout?, nice?, categoryGap?, seriesGap?, ariaLabel?, ariaDescription?, legendLabel?, showLegend?, onDatumFocus?, class?, style?; events onDatumFocus
+  vue: props series, categories?, width?, height?, direction?, layout?, nice?, categoryGap?, seriesGap?, ariaLabel?, ariaDescription?, legendLabel?, showLegend?; events datumFocus
 
 ### primitives (115)
-- IrisAccordion [react/solid/svelte/vue]
+- IrisAccordion [react/solid/svelte/vue] — layer-2
   Container for collapsible sections.
-  props: value?, defaultValue?, onValueChange?, multiple?, collapsible?
-  events: onValueChange
-- IrisAccordionItem [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, multiple?, collapsible?; events onValueChange; types IrisAccordionItemProps, IrisAccordionProps, IrisAccordionValue
+  solid: props value?, defaultValue?, multiple?, collapsible?, onChange?, children?, style?, class?; events onChange; slots default; types IrisAccordionItemProps, IrisAccordionProps, IrisAccordionValue
+  svelte: props value?, defaultValue?, multiple?, collapsible?, onValueChange?, children?; events onValueChange; slots default
+  vue: props modelValue?, defaultValue?, multiple?; events update:modelValue; slots default; types IrisAccordionValue
+- IrisAccordionItem [react/solid/svelte/vue] — layer-2
   A single accordion section: a button-styled header + a collapsible body. Wires `aria-expanded`, `aria-controls`, `role="region"`, `aria-labelledby`.
-  props: value, title?, disabled?
-  slots: title
-- IrisAffix [react/solid/svelte/vue]
+  react: props value, title?, disabled?; slots title; types IrisAccordionItemProps
+  solid: props value, title?, disabled?, children?, style?, class?; slots default; types IrisAccordionItemProps
+  svelte: props value, title?, disabled?, titleSnippet?, children?; slots default, titleSnippet
+  vue: props value, title?, disabled?; slots default, title
+- IrisAffix [react/solid/svelte/vue] — layer-1
   Affix: pins its content to the viewport once the user scrolls past it. Top mode (`offsetTop`) or bottom mode (`offsetBottom`); the placeholder reserves the content's height so the page doesn't jump when it detaches. `onChange` fires only when the affixed state flips.
-  props: offsetTop?, offsetBottom?, target?, onChange?, children, style?, className?
-  events: onChange
-  slots: default
-- IrisAlert [react/solid/svelte/vue]
+  react: props offsetTop?, offsetBottom?, target?, onChange?, children, style?, className?; events onChange; slots default; types IrisAffixProps
+  solid: props offsetTop?, offsetBottom?, target?, onChange?, children?, style?, class?; events onChange; slots default; types IrisAffixProps
+  svelte: props offsetTop?, offsetBottom?, target?, style?, children?, onchange?; events onchange; slots default
+  vue: props offsetTop?, offsetBottom?, target?; events change; slots default
+- IrisAlert [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisAlert}.
-  props: tone?, title?, closable?, open?, onClose?, icon?, children?
-  events: onClose
-  slots: title, icon, default
-- IrisAnchor [react/solid/svelte/vue]
+  react: props tone?, title?, closable?, open?, onClose?, icon?, children?; events onClose; slots default, icon, title; types IrisAlertProps, IrisAlertTone
+  solid: props tone?, title?, closable?, open?, onClose?, icon?, children?; events onClose; slots default, icon; types IrisAlertProps, IrisAlertTone
+  svelte: props tone?, title?, closable?, open?, onclose?, style?, children?, icon?, titleSlot?; events onclose
+  vue: props tone?, title?, open?; events close, update:open; slots default, icon, title; types IrisAlertTone
+- IrisAnchor [react/solid/svelte/vue] — layer-1
   Anchor: in-page navigation that scroll-spies its `#id` sections — the active link is the last section whose top has passed `offset`. Clicking a link smooth-scrolls to its section (honoring reduced motion).
-  props: items, target?, offset?, onChange?, ariaLabel?, style?, className?
-  events: onChange
-- IrisAspectRatio [react/solid/svelte/vue]
+  react: props items, target?, offset?, onChange?, ariaLabel?, style?, className?; events onChange; types IrisAnchorItem, IrisAnchorProps
+  solid: props items?, target?, offset?, ariaLabel?, onChange?, style?, class?; events onChange; types IrisAnchorItem, IrisAnchorProps
+  svelte: props items?, target?, offset?, ariaLabel?, style?, onchange?; events onchange; types IrisAnchorItem
+  vue: props items?, target?, offset?, ariaLabel?; events change; types IrisAnchorItem
+- IrisAspectRatio [react/solid/svelte/vue] — layer-1
   Aspect-ratio box: constrains its content to a fixed width/height ratio (via the CSS `aspect-ratio` property), with an absolutely-filled content layer — handy for images, video, and iframe embeds.
-  props: ratio?, children?, style?, className?
-  slots: default
-- IrisAvatar [react/solid/svelte/vue]
+  react: props ratio?, children?, style?, className?; slots default; types IrisAspectRatioProps
+  solid: props ratio?, children?; slots default; types IrisAspectRatioProps
+  svelte: props ratio?, style?, children?
+  vue: props ratio?; slots default
+- IrisAvatar [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisAvatar}.
-  props: src?, alt?, name?, fallback?, fallbackContent?, size?, shape?
-  slots: fallbackContent
-- IrisBackTop [react/solid/svelte/vue]
+  react: props src?, alt?, name?, fallback?, fallbackContent?, size?, shape?; slots fallbackContent; types IrisAvatarProps, IrisAvatarShape, IrisAvatarSize
+  solid: props src?, alt?, name?, fallback?, fallbackContent?, size?, shape?; slots fallbackContent; types IrisAvatarProps, IrisAvatarShape, IrisAvatarSize
+  svelte: props src?, alt?, name?, fallback?, fallbackContent?, size?, shape?; slots fallbackContent; types IrisAvatarProps, IrisAvatarShape, IrisAvatarSize
+  vue: props src?, alt?, name?, fallback?, size?, shape?; slots fallback; types IrisAvatarShape, IrisAvatarSize
+- IrisBackTop [react/solid/svelte/vue] — layer-1
   Back-to-top button: appears once the scroll target passes `visibilityHeight` and scrolls it back to the top on click (honoring reduced motion). Defaults to the window; pass `target` for a scrollable container.
-  props: target?, visibilityHeight?, behavior?, onClick?, ariaLabel?, children?, style?, className?
-  events: onClick
-  slots: default
-- IrisBadge [react/solid/svelte/vue]
+  react: props target?, visibilityHeight?, behavior?, onClick?, ariaLabel?, children?, style?, className?; events onClick; slots default; types IrisBackTopProps
+  solid: props target?, visibilityHeight?, behavior?, ariaLabel?, children?, onClick?, style?, class?; events onClick; slots default; types IrisBackTopProps
+  svelte: props target?, visibilityHeight?, behavior?, ariaLabel?, style?, children?, onclick?; events onclick; slots default
+  vue: props target?, visibilityHeight?, behavior?, ariaLabel?; events click; slots default
+- IrisBadge [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisBadge}. Same visual model.
-  props: variant?, tone?, size?, children?
-  slots: default
-- IrisBanner [react/solid/svelte/vue]
+  react: props variant?, tone?, size?, children?; slots default; types IrisBadgeProps, IrisBadgeSize, IrisBadgeTone, IrisBadgeVariant
+  solid: props variant?, tone?, size?, children?; slots default; types IrisBadgeProps, IrisBadgeSize, IrisBadgeTone, IrisBadgeVariant
+  svelte: props variant?, tone?, size?, children?; slots default; types IrisBadgeProps, IrisBadgeSize, IrisBadgeTone, IrisBadgeVariant
+  vue: props variant?, tone?, size?; slots default; types IrisBadgeSize, IrisBadgeTone, IrisBadgeVariant
+- IrisBanner [react/solid/svelte/vue] — layer-1
   Edge-to-edge announcement bar — typically pinned to the top of the layout. Distinct from `IrisAlert`: 1. Edge-to-edge (full width) instead of a contained card 2. Optional `sticky` positioning 3. Tighter vertical padding
-  props: tone?, closable?, open?, defaultOpen?, onOpenChange?, sticky?, icon?, actions?, children?
-  events: onOpenChange
-  slots: icon, actions, default
-- IrisBreadcrumb [react/solid/svelte/vue]
+  react: props tone?, closable?, open?, defaultOpen?, onOpenChange?, sticky?, icon?, actions?, children?; events onOpenChange; slots actions, default, icon; types IrisBannerProps, IrisBannerTone
+  solid: props tone?, closable?, open?, sticky?, onClose?, children?, style?, class?; events onClose; slots default; types IrisBannerProps, IrisBannerTone
+  svelte: props tone?, closable?, open?, sticky?, onclose?, iconSnippet?, actionsSnippet?, children?, style?; events onclose; slots actionsSnippet, default, iconSnippet
+  vue: props tone?, closable?, open?, sticky?; events close, update:open; slots actions, default, icon; types IrisBannerTone
+- IrisBreadcrumb [react/solid/svelte/vue] — layer-1
   Container for breadcrumb navigation. Renders a `<nav>` with an `<ol>` per WAI-ARIA. Inserts `separator` between items and tags the last child with `isCurrent` so it renders as plain text + `aria-current="page"`.
-  props: separator?, children?
-  slots: separator, default
-- IrisBreadcrumbItem [react/solid/svelte/vue]
+  react: props separator?, children?; slots default, separator; types IrisBreadcrumbItemProps, IrisBreadcrumbProps
+  solid: props separator?, class?, style?, children?; slots default, separator; types IrisBreadcrumbItemProps, IrisBreadcrumbProps
+  svelte: props separator?, class?, style?, children?; slots default; types IrisBreadcrumbItemProps, IrisBreadcrumbProps
+  vue: props separator?; slots default, separator
+- IrisBreadcrumbItem [react/solid/svelte/vue] — layer-1
   A single breadcrumb crumb. Renders an `<a>` when `href` is given and the crumb is not the last one; otherwise a `<span>`. The `isCurrent` flag is set automatically by the parent `IrisBreadcrumb` based on position.
-  props: href?, isCurrent?, children?
-  slots: default
-- IrisButton [react/solid/svelte/vue]
+  react: props href?, isCurrent?, children?; slots default; types IrisBreadcrumbItemProps
+  solid: props href?, current?; types IrisBreadcrumbItemProps
+  svelte: props href?, current?; types IrisBreadcrumbItemProps
+  vue: props href?, isCurrent?; slots default
+- IrisButton [react/solid/svelte/vue] — layer-1
   React port of `IrisButton`. Same prop contract as `@iris-ui-kit/vue`'s version. **No business logic is duplicated** — the `composeEventHandlers` helper, variant token map, and singleton stylesheet are all from `@iris-ui-kit/core` / a near-identical CSS file.
-  props: variant?, size?, disabled?, loading?, type?, asChild?, leading?, children?, className?, style?, onClick?
-  events: onClick
-  slots: leading, default
-- IrisCalendar [react/solid/svelte/vue]
+  react: props variant?, size?, disabled?, loading?, type?, asChild?, leading?, children?, className?, style?, onClick?; events onClick; slots default, leading; types IrisButtonProps, IrisButtonSize, IrisButtonType, IrisButtonVariant
+  solid: props variant?, size?, disabled?, loading?, type?, asChild?, leading?, class?, style?, children?, onClick?; events onClick; slots default, leading; types IrisButtonProps, IrisButtonSize, IrisButtonType, IrisButtonVariant
+  svelte: props variant?, size?, disabled?, loading?, type?, asChild?, onclick?, leading?, children?; events onclick; slots default, leading; types IrisButtonSize, IrisButtonType, IrisButtonVariant
+  vue: props variant?, size?, disabled?, loading?, type?, asChild?; events click; slots default, leading; types IrisButtonProps, IrisButtonSize, IrisButtonType, IrisButtonVariant
+- IrisCalendar [react/solid/svelte/vue] — layer-2
   Month-view calendar. Single-date selection only. Keyboard: - Arrow keys move focus - Home / End jump to start/end of week - PageUp / PageDown move by month - Enter / Space select
-  props: value?, defaultValue?, onValueChange?, defaultMonth?, min?, max?, weekStartsOn?, locale?, disabled?, style?, className?
-  events: onValueChange
-- IrisCard [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, defaultMonth?, min?, max?, weekStartsOn?, locale?, disabled?, style?, className?; events onValueChange; types IrisCalendarProps
+  solid: props value?, defaultValue?, defaultMonth?, min?, max?, weekStartsOn?, locale?, disabled?, onChange?; events onChange; types IrisCalendarProps
+  svelte: props value?, defaultMonth?, min?, max?, weekStartsOn?, locale?, disabled?, onValueChange?, style?, class?; events onValueChange
+  vue: props modelValue?, defaultMonth?, min?, max?, locale?, disabled?; events update:modelValue
+- IrisCard [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisCard}.
-  props: variant?, padding?, hover?, header?, footer?, children?
-  slots: header, footer, default
-- IrisCarousel [react/solid/svelte/vue]
+  react: props variant?, padding?, hover?, header?, footer?, children?; slots default, footer, header; types IrisCardPadding, IrisCardProps, IrisCardVariant
+  solid: props variant?, padding?, hover?, header?, footer?, children?; slots default, footer, header; types IrisCardPadding, IrisCardProps, IrisCardVariant
+  svelte: props variant?, padding?, hover?, style?, children?, header?, footer?
+  vue: props variant?, padding?, hover?; slots default, footer, header; types IrisCardPadding, IrisCardVariant
+- IrisCarousel [react/solid/svelte/vue] — layer-2
   Slide carousel: shows one child slide at a time with prev/next controls, indicator dots, and keyboard (←/→) navigation. Controlled or uncontrolled. a11y: region with `aria-roledescription="carousel"`, per-slide labelling, and a polite live region announcing the active slide.
-  props: children, index?, defaultIndex?, onIndexChange?, loop?, autoplay?, interval?, pauseOnHover?, showArrows?, showIndicators?, ariaLabel?, style?, className?
-  events: onIndexChange
-  slots: default
-- IrisCascader [react/solid/svelte/vue]
+  react: props children, index?, defaultIndex?, onIndexChange?, loop?, autoplay?, interval?, pauseOnHover?, showArrows?, showIndicators?, ariaLabel?, style?, className?; events onIndexChange; slots default; types IrisCarouselProps
+  solid: props index?, defaultIndex?, loop?, autoplay?, interval?, pauseOnHover?, showArrows?, showIndicators?, ariaLabel?, onChange?, children?; events onChange; slots default; types IrisCarouselProps
+  svelte: props value?, loop?, autoplay?, interval?, pauseOnHover?, showArrows?, showIndicators?, ariaLabel?, onValueChange?, slides?, children?, style?, class?, slideCount?; events onValueChange; slots default, slides
+  vue: props modelValue?, loop?, autoplay?, interval?, pauseOnHover?, showArrows?, showIndicators?, ariaLabel?; events update:modelValue; slots default
+- IrisCascader [react/solid/svelte/vue] — layer-2
   Cascader: a hierarchical select that drills down through columns — choosing a branch reveals its children in the next column; choosing a leaf commits the full path. Controlled or uncontrolled; closes on leaf-select, Escape, or outside click.
-  props: options, value?, defaultValue?, onValueChange?, placeholder?, disabled?, invalid?, separator?, size?, id?, ariaDescribedby?, style?, className?
-  events: onValueChange
-- IrisCheckbox [react/solid/svelte/vue]
+  react: props options, value?, defaultValue?, onValueChange?, placeholder?, disabled?, invalid?, separator?, size?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisCascaderNode, IrisCascaderProps, IrisCascaderSize
+  solid: props options?, value?, defaultValue?, placeholder?, disabled?, invalid?, separator?, onChange?, id?; events onChange; types IrisCascaderNode, IrisCascaderProps
+  svelte: props options?, value?, placeholder?, disabled?, invalid?, separator?, size?, id?, onValueChange?, style?, class?; events onValueChange; types IrisCascaderNode, IrisCascaderSize
+  vue: props options?, modelValue?, placeholder?, disabled?, invalid?, separator?, size?, id?, ariaDescribedby?; events update:modelValue; types IrisCascaderNode, IrisCascaderSize
+- IrisCheckbox [react/solid/svelte/vue] — layer-1
   Tri-state checkbox supporting `true`, `false`, and `'indeterminate'`, in both controlled (`checked`) and uncontrolled (`defaultChecked`) modes.
-  props: checked?, defaultChecked?, onChange?, size?, invalid?, ariaDescribedby?, children?
-  events: onChange
-  slots: default
-- IrisChip [react/solid/svelte/vue]
+  react: props checked?, defaultChecked?, onChange?, size?, invalid?, ariaDescribedby?, children?; events onChange; slots default; types IrisCheckboxProps, IrisCheckboxSize, IrisCheckboxValue
+  solid: props checked?, defaultChecked?, onChange?, size?, disabled?, id?, name?, value?, ariaDescribedby?, ariaLabel?, invalid?, children?, style?, class?; events onChange; slots default; types IrisCheckboxProps, IrisCheckboxSize, IrisCheckboxValue
+  svelte: props value?, size?, disabled?, id?, name?, checkboxValue?, ariaDescribedby?, ariaLabel?, invalid?, onchange?, children?; events onchange; slots default
+  vue: props modelValue?, size?, disabled?, id?, name?, value?, ariaDescribedby?, invalid?; events change, update:modelValue; slots default; types IrisCheckboxSize, IrisCheckboxValue
+- IrisChip [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisChip}.
-  props: variant?, tone?, size?, closable?, clickable?, disabled?, onClose?, onClick?, icon?, children?
-  events: onClose, onClick
-  slots: icon, default
-- IrisColorPicker [react/solid/svelte/vue]
+  react: props variant?, tone?, size?, closable?, clickable?, disabled?, onClose?, onClick?, icon?, children?; events onClick, onClose; slots default, icon; types IrisChipProps, IrisChipSize, IrisChipTone, IrisChipVariant
+  solid: props variant?, tone?, size?, closable?, clickable?, disabled?, onClose?, onClick?, children?, style?, class?; events onClick, onClose; slots default; types IrisChipProps, IrisChipSize, IrisChipTone, IrisChipVariant
+  svelte: props variant?, tone?, size?, closable?, clickable?, disabled?, iconSnippet?, onclose?, onclick?, children?, style?; events onclick, onclose; slots default, iconSnippet
+  vue: props variant?, tone?, size?, closable?, clickable?, disabled?; events click, close; slots default, icon; types IrisChipSize, IrisChipTone, IrisChipVariant
+- IrisColorPicker [react/solid/svelte/vue] — layer-2
   Color picker: SV pad + hue strip (+ optional alpha) with HEX + R/G/B(/A) inputs. Binds a HEX string (`#rgb` / `#rrggbb` / `#rrggbbaa`) via `value` / `onChange`.
-  props: value?, defaultValue?, onChange?, showAlpha?, disabled?
-  events: onChange
-- IrisCombobox [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onChange?, showAlpha?, disabled?; events onChange; types IrisColorPickerProps
+  solid: props value?, defaultValue?, presets?, disabled?, onChange?; events onChange; types IrisColorPickerProps
+  svelte: props value?, presets?, disabled?, onValueChange?, style?, class?; events onValueChange
+  vue: props modelValue?, showAlpha?, disabled?; events update:modelValue
+- IrisCombobox [react/solid/svelte/vue] — layer-2
   Filterable single-select (searchable select): a text input that type-ahead filters a listbox of options. The displayed text is derived (`filtering ? query : selected label`) so controlled value changes stay in sync without an effect. Opens downward; follows the ARIA 1.2 combobox pattern.
-  props: value?, defaultValue?, onValueChange?, options, placeholder?, disabled?, invalid?, size?, emptyText?, id?, ariaDescribedby?, style?, className?
-  events: onValueChange
-- IrisCommandPalette [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, options, placeholder?, disabled?, invalid?, size?, emptyText?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisComboboxOption, IrisComboboxProps, IrisComboboxSize
+  solid: props value?, options?, placeholder?, disabled?, invalid?, size?, emptyText?, id?, onChange?, style?; events onChange; types IrisComboboxOption, IrisComboboxProps, IrisComboboxSize
+  svelte: props value?, options?, placeholder?, disabled?, invalid?, size?, emptyText?, id?, onValueChange?, style?; events onValueChange; types IrisComboboxOption, IrisComboboxSize
+  vue: props modelValue?, options?, placeholder?, disabled?, invalid?, size?, emptyText?, id?, ariaDescribedby?; events update:modelValue; types IrisComboboxOption, IrisComboboxSize
+- IrisCommandPalette [react/solid/svelte/vue] — layer-2
   Command palette: searchable, keyboard-driven action launcher. Built on the modal-utils suite (scroll lock + focus trap). Pattern: open via shortcut (consumer wires the listener), type to filter, ↑/↓ to navigate, Enter to execute the focused item, Escape to dismiss.
-  props: open?, onOpenChange?, items, placeholder?, emptyText?, filter?, onSelect?
-  events: onOpenChange, onSelect
-- IrisCopyButton [react/solid/svelte/vue]
+  react: props open?, onOpenChange?, items, placeholder?, emptyText?, filter?, onSelect?; events onOpenChange, onSelect; types IrisCommandPaletteProps
+  solid: props open?, defaultOpen?, items?, placeholder?, emptyText?, filter?, onOpenChange?, onSelect?; events onOpenChange, onSelect; types IrisCommandPaletteProps
+  svelte: props open?, items?, placeholder?, emptyText?, filter?, onOpenChange?, onSelect?; events onOpenChange, onSelect
+  vue: props open?, items, placeholder?, emptyText?, filter?; events select, update:open
+- IrisCopyButton [react/solid/svelte/vue] — layer-1
   Copy-to-clipboard button: writes `text` to the clipboard and flips to a "Copied" state for `timeout` ms. The clipboard write is best-effort (guarded for unsupported environments) and the copied state still reflects intent.
-  props: text, children?, copiedLabel?, timeout?, onCopy?, disabled?, size?, style?, className?
-  events: onCopy
-  slots: default, copiedLabel
-- IrisCountdown [react/solid/svelte/vue]
+  react: props text, children?, copiedLabel?, timeout?, onCopy?, disabled?, size?, style?, className?; events onCopy; slots copiedLabel, default; types IrisCopyButtonProps, IrisCopyButtonSize
+  solid: props text, copiedLabel?, timeout?, disabled?, size?, onCopy?, children?, style?, class?; events onCopy; slots default; types IrisCopyButtonProps, IrisCopyButtonSize
+  svelte: props text, copiedLabel?, timeout?, disabled?, size?, oncopy?, children?, style?; events oncopy; slots default
+  vue: props text, copiedLabel?, timeout?, disabled?, size?; events copy; slots default; types IrisCopyButtonSize
+- IrisCountdown [react/solid/svelte/vue] — layer-1
   Live countdown to a target timestamp. Ticks every second (or every 100ms when the format shows milliseconds), formats the remaining time via tokens, and fires `onFinish` once at zero.
-  props: value, format?, title?, prefix?, suffix?, onFinish?, size?, style?, className?
-  events: onFinish
-  slots: title, prefix, suffix
-- IrisDatePicker [react/solid/svelte/vue]
+  react: props value, format?, title?, prefix?, suffix?, onFinish?, size?, style?, className?; events onFinish; slots prefix, suffix, title; types IrisCountdownProps, IrisCountdownSize
+  solid: props value, format?, title?, prefix?, suffix?, size?, onFinish?, style?, class?; events onFinish; types IrisCountdownProps, IrisCountdownSize
+  svelte: props value, format?, title?, prefix?, suffix?, size?, onfinish?, style?; events onfinish
+  vue: props value, format?, title?, prefix?, suffix?, size?; events finish; types IrisCountdownSize
+- IrisDatePicker [react/solid/svelte/vue] — layer-2
   Date picker: button-styled trigger + Popover + Calendar. On selection the popover auto-closes. Use `IrisCalendar` directly when you want it inline.
-  props: value?, defaultValue?, onValueChange?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?, style?, className?
-  events: onValueChange
-- IrisDateRangePicker [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisDatePickerProps
+  solid: props value?, defaultValue?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, onChange?, id?; events onChange; types IrisDatePickerProps
+  svelte: props value?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, id?, onValueChange?, style?, class?; events onValueChange
+  vue: props modelValue?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?; events update:modelValue
+- IrisDateRangePicker [react/solid/svelte/vue] — layer-2
   Range date picker. Trigger displays `start → end`; popover contains two month calendars (current + next).
-  props: value?, defaultValue?, onValueChange?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?, style?, className?
-  events: onValueChange
-- IrisDescriptions [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisDateRangePickerProps
+  solid: props value?, defaultValue?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, onChange?; events onChange; types IrisDateRangePickerProps
+  svelte: props value?, min?, max?, weekStartsOn?, locale?, disabled?, invalid?, startPlaceholder?, endPlaceholder?, onValueChange?, style?, class?; events onValueChange
+  vue: props modelValue?, min?, max?, weekStartsOn?, locale?, placeholder?, disabled?, invalid?, placement?, id?, ariaDescribedby?; events update:modelValue
+- IrisDescriptions [react/solid/svelte/vue] — layer-1
   Description list: a semantic `<dl>` rendering label/value pairs in a grid. `columns` controls pairs-per-row, `layout` places the label beside or above the value, and `bordered` draws a boxed style with separators. RTL-safe via logical properties.
-  props: items, columns?, layout?, bordered?, style?, className?
-- IrisDialog [react/solid/svelte/vue]
+  react: props items, columns?, layout?, bordered?, style?, className?; types IrisDescriptionsItem, IrisDescriptionsLayout, IrisDescriptionsProps
+  solid: props items?, columns?, layout?, bordered?; types IrisDescriptionsItem, IrisDescriptionsLayout, IrisDescriptionsProps
+  svelte: props items?, columns?, layout?, bordered?, style?
+  vue: props items?, columns?, layout?, bordered?; types IrisDescriptionsItem, IrisDescriptionsLayout
+- IrisDialog [react/solid/svelte/vue] — layer-2
   Modal dialog root. Wraps a Trigger + Content (+ optional Title / Description / Close) and threads a state machine + DOM refs + IDs through React context. Supports controlled (`open` + `onOpenChange`) and uncontrolled (`defaultOpen`) modes.
-  props: open?, defaultOpen?, onOpenChange?, closeOnOutsideClick?, closeOnEscape?, children?
-  events: onOpenChange
-  slots: default
-- IrisDialogClose [react/solid/svelte/vue]
+  react: props open?, defaultOpen?, onOpenChange?, closeOnOutsideClick?, closeOnEscape?, children?; events onOpenChange; slots default; types IrisDialogCloseProps, IrisDialogContentProps, IrisDialogDescriptionProps, IrisDialogProps, IrisDialogTitleProps, IrisDialogTriggerProps
+  solid: props open?, defaultOpen?, onOpenChange?, closeOnOutsideClick?, closeOnEscape?, children?; events onOpenChange; slots default; types IrisDialogCloseProps, IrisDialogContentProps, IrisDialogDescriptionProps, IrisDialogProps, IrisDialogTitleProps, IrisDialogTriggerProps
+  svelte: props open?, defaultOpen?, onOpenChange?, closeOnOutsideClick?, closeOnEscape?, children?; events onOpenChange; slots default
+  vue: props open?, defaultOpen?, closeOnOutsideClick?, closeOnEscape?; events update:open; slots default
+- IrisDialogClose [react/solid/svelte/vue] — layer-2
   Close button. Renders a `<button type="button">` or, with `asChild`, wraps the provided child.
-  props: asChild?, children?
-  slots: default
-- IrisDialogContent [react/solid/svelte/vue]
+  react: props asChild?, children?; slots default; types IrisDialogCloseProps
+  solid: props children?; slots default; types IrisDialogCloseProps
+  svelte: props asChild?, onclick?, children?; events onclick; slots default
+  vue: props asChild?; slots default
+- IrisDialogContent [react/solid/svelte/vue] — layer-2
   The modal surface (and its backdrop). Renders only while the dialog is open. Behaviors enabled automatically:
-  props: portalTarget?, children?
-  slots: default
-- IrisDialogDescription [react/solid/svelte/vue]
+  react: props portalTarget?, children?; slots default; types IrisDialogContentProps
+  solid: props portalTarget?, children?; slots default; types IrisDialogContentProps
+  svelte: props style?, portalTarget?, children?; slots default
+  vue: props teleport?; slots default
+- IrisDialogDescription [react/solid/svelte/vue] — layer-2
   Sets `aria-describedby` on the dialog content automatically. Renders a `<p>` by default.
-  props: as?
-- IrisDialogTitle [react/solid/svelte/vue]
+  react: props as?; types IrisDialogDescriptionProps
+  solid: props as?; types IrisDialogDescriptionProps
+  svelte: props as?, children?; slots default
+  vue: props as?; slots default
+- IrisDialogTitle [react/solid/svelte/vue] — layer-2
   Sets `aria-labelledby` on the dialog content automatically. Renders an `<h2>` by default.
-  props: as?
-- IrisDialogTrigger [react/solid/svelte/vue]
+  react: props as?; types IrisDialogTitleProps
+  solid: props as?; types IrisDialogTitleProps
+  svelte: props as?, children?; slots default
+  vue: props as?; slots default
+- IrisDialogTrigger [react/solid/svelte/vue] — layer-2
   The element the user clicks to open the dialog. Renders a `<button type="button">` by default; pass `asChild` to attach behavior to any single element.
-  props: asChild?, children?
-  slots: default
-- IrisDivider [react/solid/svelte/vue]
+  react: props asChild?, children?; slots default; types IrisDialogTriggerProps
+  solid: props children?; slots default; types IrisDialogTriggerProps
+  svelte: props asChild?, onclick?, children?; events onclick; slots default
+  vue: props asChild?; slots default
+- IrisDivider [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisDivider}.
-  props: orientation?, label?, spacing?, children?
-  slots: label, default
-- IrisDragger [react/solid/svelte/vue]
+  react: props orientation?, label?, spacing?, children?; slots default, label; types IrisDividerOrientation, IrisDividerProps, IrisDividerSpacing
+  solid: props orientation?, label?, spacing?, style?, class?, children?; slots default; types IrisDividerOrientation, IrisDividerProps, IrisDividerSpacing
+  svelte: props orientation?, label?, spacing?, style?, children?
+  vue: props orientation?, label?, spacing?; slots default; types IrisDividerOrientation, IrisDividerSpacing
+- IrisDragger [react/solid/svelte/vue] — layer-1
   Make a child element positionable by drag. The wrapper is absolutely positioned at its parent's top-left; the position is driven by `value` / `defaultValue` (px). Drag uses pointer capture so the gesture survives the pointer leaving the element.
-  props: value?, defaultValue?, onValueChange?, onDragStart?, onDragEnd?, disabled?, bounds?, handle?
-  events: onValueChange, onDragStart, onDragEnd
-  slots: handle
-- IrisDrawer [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, onDragStart?, onDragEnd?, disabled?, bounds?, handle?; events onDragEnd, onDragStart, onValueChange; slots handle; types IrisDraggerBounds, IrisDraggerPosition, IrisDraggerProps
+  solid: props value?, defaultValue?, onChange?, onDragStart?, onDragEnd?, disabled?, bounds?, handle?, children?, style?; events onChange, onDragEnd, onDragStart; slots default, handle; types IrisDraggerPosition, IrisDraggerProps
+  svelte: props value?, defaultValue?, disabled?, bounds?, onValueChange?, onDragStart?, onDragEnd?, children?, handle?, style?; events onDragEnd, onDragStart, onValueChange; slots default, handle; types IrisDraggerPosition
+  vue: props modelValue?, disabled?, bounds?; events dragEnd, dragStart, update:modelValue; slots default, handle; types IrisDraggerPosition
+- IrisDrawer [react/solid/svelte/vue] — layer-2
   Slide-in overlay. Mirrors `IrisDialog`'s composition but anchors to a screen edge with a transform-based open animation. Defaults to the right.
-  props: open?, defaultOpen?, onOpenChange?, side?, size?, closeOnOutsideClick?, closeOnEscape?, children?
-  events: onOpenChange
-  slots: default
-- IrisDrawerClose [react/solid/svelte/vue]
+  react: props open?, defaultOpen?, onOpenChange?, side?, size?, closeOnOutsideClick?, closeOnEscape?, children?; events onOpenChange; slots default; types IrisDrawerCloseProps, IrisDrawerContentProps, IrisDrawerProps, IrisDrawerSide, IrisDrawerTitleProps, IrisDrawerTriggerProps
+  solid: props open?, defaultOpen?, onOpenChange?, side?, size?, closeOnOutsideClick?, closeOnEscape?, children?; events onOpenChange; slots default; types IrisDrawerCloseProps, IrisDrawerContentProps, IrisDrawerProps, IrisDrawerSide, IrisDrawerTitleProps, IrisDrawerTriggerProps
+  svelte: props open?, defaultOpen?, onOpenChange?, side?, size?, closeOnOutsideClick?, closeOnEscape?, children?; events onOpenChange; slots default; types IrisDrawerSide
+  vue: props open?, defaultOpen?, side?, size?, closeOnOutsideClick?, closeOnEscape?; events update:open; slots default; types IrisDrawerSide
+- IrisDrawerClose [react/solid/svelte/vue] — layer-2
   A button that closes the drawer when clicked. Supports `asChild` for custom trigger elements. Emits `onClick` then calls `setOpen(false)`.
-  props: asChild?, children?
-  slots: default
-- IrisDrawerContent [react/solid/svelte/vue]
+  react: props asChild?, children?; slots default; types IrisDrawerCloseProps
+  solid: props children?; slots default; types IrisDrawerCloseProps
+  svelte: props asChild?, onclick?, children?; events onclick; slots default
+  vue: props asChild?; slots default
+- IrisDrawerContent [react/solid/svelte/vue] — layer-2
   The slide-in surface. Mounts when `open` becomes true and unmounts `EXIT_DURATION_MS` after `open` becomes false so the slide-out transition runs before removal. Provides backdrop, body scroll lock, focus trap, and Escape / outside-click dismiss.
-  props: portalTarget?, children?
-  slots: default
-- IrisDrawerTitle [react/solid/svelte/vue]
+  react: props portalTarget?, children?; slots default; types IrisDrawerContentProps
+  solid: props portalTarget?, children?; slots default; types IrisDrawerContentProps
+  svelte: props style?, portalTarget?, children?; slots default
+  vue: props teleport?; slots default
+- IrisDrawerTitle [react/solid/svelte/vue] — layer-2
   The drawer's header title, rendered as an `<h2>`. Automatically wired to `aria-labelledby` on the content panel for accessible naming.
-- IrisDrawerTrigger [react/solid/svelte/vue]
+  react: types IrisDrawerTitleProps
+  solid: props children?; slots default; types IrisDrawerTitleProps
+  svelte: props as?, children?; slots default
+  vue: slots default
+- IrisDrawerTrigger [react/solid/svelte/vue] — layer-2
   The trigger that opens the drawer when clicked. Renders as a `<button>` (or as custom children when `asChild`). Injects `aria-haspopup="dialog"` and `aria-expanded` for screen-reader awareness.
-  props: asChild?, children?
-  slots: default
-- IrisDropdown [react/solid/svelte/vue]
+  react: props asChild?, children?; slots default; types IrisDrawerTriggerProps
+  solid: props children?; slots default; types IrisDrawerTriggerProps
+  svelte: props asChild?, onclick?, children?; events onclick; slots default
+  vue: props asChild?; slots default
+- IrisDropdown [react/solid/svelte/vue] — layer-1
   Dropdown menu root. Composes `createFloatingMachine` (state) with `useFloating` (positioning) used in `IrisDropdownMenu`. The dropdown panel's semantics differ from a popover: it uses `role="menu"`, supports arrow-key navigation, and items auto-close the menu on select.
-  props: open?, defaultOpen?, onOpenChange?, placement?, offset?, children?
-  events: onOpenChange
-  slots: default
-- IrisDropdownItem [react/solid/svelte/vue]
+  react: props open?, defaultOpen?, onOpenChange?, placement?, offset?, children?; events onOpenChange; slots default; types IrisDropdownItemProps, IrisDropdownMenuProps, IrisDropdownProps, IrisDropdownSeparatorProps, IrisDropdownTriggerProps
+  solid: props open?, defaultOpen?, onOpenChange?, placement?, offset?, children?; events onOpenChange; slots default; types IrisDropdownItemProps, IrisDropdownMenuProps, IrisDropdownProps, IrisDropdownSeparatorProps, IrisDropdownTriggerProps
+  svelte: props open?, defaultOpen?, onOpenChange?, placement?, offset?, children?; events onOpenChange; slots default; types IrisDropdownItemProps, IrisDropdownMenuProps, IrisDropdownProps, IrisDropdownSeparatorProps, IrisDropdownTriggerProps
+  vue: props open?, defaultOpen?, placement?, offset?; events update:open; slots default
+- IrisDropdownItem [react/solid/svelte/vue] — layer-1
   A single selectable menu item. Calls `onSelect` and auto-closes the parent dropdown after selection (unless `keepOpen`). Disabled items are skipped by arrow-key navigation in the parent menu.
-  props: disabled?, keepOpen?, onSelect?
-  events: onSelect
-- IrisDropdownMenu [react/solid/svelte/vue]
+  react: props disabled?, keepOpen?, onSelect?; events onSelect; types IrisDropdownItemProps
+  solid: props disabled?, keepOpen?, onSelect?; events onSelect; types IrisDropdownItemProps
+  svelte: props disabled?, keepOpen?, onSelect?; events onSelect; types IrisDropdownItemProps
+  vue: props disabled?; events select; slots default
+- IrisDropdownMenu [react/solid/svelte/vue] — layer-1
   The menu surface. Renders `role="menu"` and handles ArrowUp/Down/Home/End navigation across child `IrisDropdownItem`s. Closes on Escape, outside pointerdown, and Tab.
-  props: portalTarget?, children?
-  slots: default
-- IrisDropdownSeparator [react/solid/svelte/vue]
+  react: props portalTarget?, children?; slots default; types IrisDropdownMenuProps
+  solid: props portalTarget?, children?; slots default; types IrisDropdownMenuProps
+  svelte: props portalTarget?; types IrisDropdownMenuProps
+  vue: props teleport?; slots default
+- IrisDropdownSeparator [react/solid/svelte/vue] — layer-1
   A visual separator (horizontal rule) within a dropdown menu. Renders a `role="separator"` `<div>` styled with the theme's border colour.
-- IrisDropdownTrigger [react/solid/svelte/vue]
+  react: types IrisDropdownSeparatorProps
+  solid: types IrisDropdownSeparatorProps
+  svelte: types IrisDropdownSeparatorProps
+- IrisDropdownTrigger [react/solid/svelte/vue] — layer-1
   The trigger element that toggles the dropdown open/closed on click or ArrowDown/Enter/Space. Renders as a `<button>` (or custom element via `asChild`) with `aria-haspopup="menu"` and `aria-expanded`.
-  props: asChild?, children?
-  slots: default
-- IrisEmptyState [react/solid/svelte/vue]
+  react: props asChild?, children?; slots default; types IrisDropdownTriggerProps
+  solid: props asChild?, children?, ref?; slots default; types IrisDropdownTriggerProps
+  svelte: props asChild?, children?; slots default; types IrisDropdownTriggerProps
+  vue: props asChild?; slots default
+- IrisEmptyState [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisEmptyState}.
-  props: title?, description?, icon?, action?, children?
-  slots: title, description, icon, action, default
-- IrisFieldset [react/solid/svelte/vue]
+  react: props title?, description?, icon?, action?, children?; slots action, default, description, icon, title; types IrisEmptyStateProps
+  solid: props title?, description?, icon?, action?, children?; slots action, default, icon; types IrisEmptyStateProps
+  svelte: props title?, description?, style?, children?, icon?, titleSlot?, descriptionSlot?, action?
+  vue: props title?, description?; slots action, description, icon, title
+- IrisFieldset [react/solid/svelte/vue] — layer-1
   Fieldset: a semantic `<fieldset>` / `<legend>` form grouping. `disabled` uses the native fieldset behavior that cascades to every nested form control — accessible by construction.
-  props: legend?, disabled?, hint?, children?, style?, className?
-  slots: legend, hint, default
-- IrisFileUpload [react/solid/svelte/vue]
+  react: props legend?, disabled?, hint?, children?, style?, className?; slots default, hint, legend; types IrisFieldsetProps
+  solid: props legend?, disabled?, hint?, children?, legendChildren?, style?, class?; slots default, legendChildren; types IrisFieldsetProps
+  svelte: props legend?, disabled?, hint?, legendSnippet?, children?, style?; slots default, legendSnippet
+  vue: props legend?, disabled?, hint?; slots default, legend
+- IrisFileUpload [react/solid/svelte/vue] — layer-2
   File-upload dropzone. Wraps a hidden `<input type="file">` with a click-to-browse + drag-and-drop surface. Validates via `accept`, `maxSize`, `maxFiles`; rejected files surface via `onReject`.
-  props: value?, defaultValue?, onValueChange?, onAccept?, onReject?, accept?, multiple?, maxSize?, maxFiles?, disabled?, label?, id?, renderList?, style?, className?
-  events: onValueChange, onAccept, onReject
-- IrisFloatButton [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, onAccept?, onReject?, accept?, multiple?, maxSize?, maxFiles?, disabled?, label?, id?, renderList?, style?, className?; events onAccept, onReject, onValueChange; types IrisFileUploadFile, IrisFileUploadProps, IrisFileUploadRejectReason, IrisFileUploadRejection
+  solid: props value?, defaultValue?, accept?, multiple?, maxSize?, maxFiles?, disabled?, label?, id?, onChange?, onAccept?, onReject?, style?, class?; events onAccept, onChange, onReject; types IrisFileUploadFile, IrisFileUploadProps
+  svelte: props value?, defaultValue?, accept?, multiple?, maxSize?, maxFiles?, disabled?, label?, id?, style?, onchange?, onaccept?, onreject?, children?; events onaccept, onchange, onreject; slots default; types IrisFileUploadFile
+  vue: props modelValue?, accept?, multiple?, maxSize?, maxFiles?, disabled?, label?, id?; events accept, update:modelValue; slots list; types IrisFileUploadFile
+- IrisFloatButton [react/solid/svelte/vue] — layer-1
   Floating action button: a fixed-position FAB. With `actions` it becomes a speed-dial — click toggles a `role="menu"` stack of actions (dismissed by selection, Escape, or outside click). Otherwise click runs `onClick`.
-  props: icon?, children?, ariaLabel?, onClick?, shape?, actions?, offset?, style?, className?
-  events: onClick
-  slots: icon, default
-- IrisFormField [react/solid/svelte/vue]
+  react: props icon?, children?, ariaLabel?, onClick?, shape?, actions?, offset?, style?, className?; events onClick; slots default, icon; types IrisFloatButtonAction, IrisFloatButtonProps, IrisFloatButtonShape
+  solid: props icon?, ariaLabel?, shape?, actions?, offset?, onClick?, children?, style?, class?; events onClick; slots default; types IrisFloatButtonAction, IrisFloatButtonProps, IrisFloatButtonShape
+  svelte: props icon?, ariaLabel?, shape?, actions?, offset?, style?, children?, onclick?; events onclick; slots default; types IrisFloatButtonAction, IrisFloatButtonShape
+  vue: props icon?, ariaLabel?, shape?, actions?, offset?; events click; slots default; types IrisFloatButtonAction, IrisFloatButtonShape
+- IrisFormField [react/solid/svelte/vue] — layer-1
   Form-field wrapper that handles the label / hint / error trio with the right a11y plumbing. Non-invasive wrapper around any Iris input primitive (`IrisInput`, `IrisTextarea`, `IrisNumberInput`, `IrisSwitch`, `IrisCheckbox`, `IrisPasswordInput`, …): locates the first valid React element in `children` and clones it with the generated `id`, `aria-describedby`, and `invalid`.
-  props: label?, hint?, error?, required?, labelFor?, size?, children?
-  slots: default
-- IrisGauge [react/solid/svelte/vue]
+  react: props label?, hint?, error?, required?, labelFor?, size?, children?; slots default; types IrisFormFieldProps
+  solid: props label?, hint?, error?, required?, labelFor?, size?, children?; slots default; types IrisFormFieldProps
+  svelte: props label?, hint?, error?, required?, labelFor?, size?, children?; slots default; types IrisFormFieldProps
+  vue: props label?, hint?, error?, required?, labelFor?, size?; slots default
+- IrisGauge [react/solid/svelte/vue] — layer-1
   Semicircular arc gauge built from a structured SVG — a 180° track arc plus a value arc whose `stroke-dashoffset` encodes `(value − min) / (max − min)`. Distinct from the full-ring `IrisProgressCircle`.
-  props: value, min?, max?, size?, strokeWidth?, status?, showValue?, format?, ariaLabel?, style?, className?
-  slots: format
-- IrisIcon [react/solid/svelte/vue]
+  react: props value, min?, max?, size?, strokeWidth?, status?, showValue?, format?, ariaLabel?, style?, className?; slots format; types IrisGaugeProps, IrisGaugeStatus
+  solid: props value, min?, max?, size?, strokeWidth?, status?, showValue?, format?, ariaLabel?, style?, class?; types IrisGaugeProps, IrisGaugeStatus
+  svelte: props value, min?, max?, size?, strokeWidth?, status?, showValue?, format?, ariaLabel?, style?
+  vue: props value, min?, max?, size?, strokeWidth?, status?, showValue?, format?, ariaLabel?; types IrisGaugeStatus
+- IrisIcon [react/solid/svelte/vue] — layer-1
   Renders a registered icon as inline SVG. Resolves `name` through an `@iris-ui-kit/icons` registry and renders the icon's structured nodes as real SVG child elements (no raw-HTML injection). Colors follow `currentColor`, so the surrounding CSS `color` themes it. Renders nothing for an unresolved name.
-  props: name, size?, strokeWidth?, fill?, title?, registry?
-- IrisImage [react/solid/svelte/vue]
+  react: props name, size?, strokeWidth?, fill?, title?, registry?; types IrisIconNode, IrisIconProps, IrisIconRegistry, IrisIconResolver, IrisIconSet
+  solid: props name, size?, strokeWidth?, fill?, title?, registry?, class?, style?; types IrisIconProps
+  svelte: props name, size?, strokeWidth?, fill?, title?, registry?, class?, style?; types IrisIconProps
+  vue: props name, size?, strokeWidth?, fill?, title?, registry?; types IrisIconNode, IrisIconRegistry, IrisIconResolver, IrisIconSet
+- IrisImage [react/solid/svelte/vue] — layer-1
   Image with a graceful error `fallback` and an optional click-to-zoom preview overlay (a `role="dialog"` lightbox dismissed by backdrop, close button, or Escape). Lazy-loaded by default.
-  props: src, alt?, width?, height?, fallback?, preview?, style?, className?
-- IrisInput [react/solid/svelte/vue]
+  react: props src, alt?, width?, height?, fallback?, preview?, style?, className?; types IrisImageProps
+  solid: props src, alt?, width?, height?, fallback?, preview?; types IrisImageProps
+  svelte: props src?, alt?, width?, height?, fallback?, preview?, style?
+  vue: props src, alt?, width?, height?, fallback?, preview?
+- IrisInput [react/solid/svelte/vue] — layer-1
   Single-line text input with size variants, an `invalid` state, and optional `prefix`/`suffix` adornments. Forwards its ref to the native `<input>`.
-  props: size?, type?, invalid?, ariaDescribedby?, prefix?, suffix?
-  slots: prefix, suffix
-- IrisKbd [react/solid/svelte/vue]
+  react: props size?, type?, invalid?, ariaDescribedby?, prefix?, suffix?; slots prefix, suffix; types IrisInputProps, IrisInputSize, IrisInputType
+  solid: props size?, type?, invalid?, ariaDescribedby?, prefix?, suffix?; slots prefix, suffix; types IrisInputProps, IrisInputSize, IrisInputType
+  svelte: props size?, type?, invalid?, ariaDescribedby?, prefix?, suffix?; slots prefix, suffix; types IrisInputProps, IrisInputSize, IrisInputType
+  vue: props modelValue?, type?, size?, placeholder?, disabled?, readonly?, invalid?, id?, ariaDescribedby?; events blur, focus, update:modelValue; slots prefix, suffix; types IrisInputSize, IrisInputType
+- IrisKbd [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisKbd}.
-  props: keys?, separator?, size?, children?
-  slots: default
-- IrisList [react/solid/svelte/vue]
+  react: props keys?, separator?, size?, children?; slots default; types IrisKbdProps, IrisKbdSize
+  solid: props size?, children?; slots default; types IrisKbdProps, IrisKbdSize
+  svelte: props keys?, separator?, size?, style?, children?
+  vue: props keys?, separator?, size?; slots default; types IrisKbdSize
+- IrisList [react/solid/svelte/vue] — layer-2
   Generic selectable list — foundation for `IrisSelect` content, dropdowns, command palettes, etc. Implements the WAI-ARIA Listbox pattern:
-  props: items, value?, defaultValue?, onValueChange?, onSelect?, multi?, loop?, ariaLabel?, loading?, error?, emptyState?, loadingState?, errorState?, renderItem?, item, state, style?, className?
-  events: onValueChange, onSelect
-  slots: emptyState, loadingState, errorState
-- IrisMarquee [react/solid/svelte/vue]
+  react: props items, value?, defaultValue?, onValueChange?, onSelect?, multi?, loop?, ariaLabel?, loading?, error?, emptyState?, loadingState?, errorState?, renderItem?, item, state, style?, className?; events onSelect, onValueChange; slots emptyState, errorState, loadingState; types IrisListItem, IrisListProps
+  solid: props items, value?, defaultValue?, multi?, loop?, ariaLabel?, renderItem?, onChange?, loading?, error?, emptyState?, loadingState?, errorState?; events onChange; slots emptyState, errorState, loadingState, renderItem; types IrisListItem, IrisListProps
+  svelte: props items?, value?, defaultValue?, onValueChange?, onSelect?, multi?, loop?, ariaLabel?, loading?, error?, style?, emptyState?, loadingState?, errorState?, renderItem?, children?; events onSelect, onValueChange; slots default, emptyState, errorState, loadingState, renderItem
+  vue: props items, multi?, loop?, ariaLabel?, loading?, error?; events select, update:modelValue; slots empty, error, item, loading; types IrisListItem
+- IrisMarquee [react/solid/svelte/vue] — layer-1
   Marquee: an accessible auto-scrolling ticker. The content is rendered twice (the second copy `aria-hidden`) for a seamless loop and animated with the Web Animations API (no `@keyframes` injection). Pauses on hover and is disabled under `prefers-reduced-motion`.
-  props: children?, duration?, direction?, pauseOnHover?, gap?, style?, className?
-  slots: default
-- IrisMasonry [react/solid/svelte/vue]
+  react: props children?, duration?, direction?, pauseOnHover?, gap?, style?, className?; slots default; types IrisMarqueeDirection, IrisMarqueeProps
+  solid: props duration?, direction?, pauseOnHover?, gap?, children?, style?; slots default; types IrisMarqueeDirection, IrisMarqueeProps
+  svelte: props duration?, direction?, pauseOnHover?, gap?, children?, style?; slots default; types IrisMarqueeDirection
+  vue: props duration?, direction?, pauseOnHover?, gap?; slots default; types IrisMarqueeDirection
+- IrisMasonry [react/solid/svelte/vue] — layer-1
   Masonry layout: flows children into balanced columns via CSS multi-column, with each item kept from breaking across columns — for card grids and galleries of varying heights.
-  props: columns?, gap?, children?, style?, className?
-  slots: default
-- IrisMentions [react/solid/svelte/vue]
+  react: props columns?, gap?, children?, style?, className?; slots default; types IrisMasonryProps
+  solid: props columns?, gap?, children?, style?; slots default; types IrisMasonryProps
+  svelte: props columns?, gap?, children?, style?; slots default
+  vue: props columns?, gap?; slots default
+- IrisMentions [react/solid/svelte/vue] — layer-1
   Mentions: a textarea that opens an autocomplete listbox when the user types the trigger character (default `@`). Selecting a suggestion replaces the `@query` token with the chosen label. Keyboard: ↑/↓ to move, Enter to pick, Esc to dismiss.
-  props: value?, defaultValue?, onValueChange?, options, prefix?, placeholder?, disabled?, invalid?, rows?, id?, ariaDescribedby?, style?, className?
-  events: onValueChange
-- IrisMenu [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, options, prefix?, placeholder?, disabled?, invalid?, rows?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisMentionsProps
+  solid: props value?, defaultValue?, options?, prefix?, placeholder?, disabled?, invalid?, rows?, id?, onChange?; events onChange; types IrisMentionsProps
+  svelte: props value?, defaultValue?, options?, prefix?, placeholder?, disabled?, invalid?, rows?, id?, onValueChange?, style?, class?; events onValueChange
+  vue: props modelValue?, options?, prefix?, placeholder?, disabled?, invalid?, rows?, id?, ariaDescribedby?; events update:modelValue
+- IrisMenu [react/solid/svelte/vue] — layer-2
   Root of a (potentially nested) menu. Provides the "close everything" channel so picking a leaf in a deeply nested branch closes the whole tree.
-  props: open?, defaultOpen?, onOpenChange?, placement?, offset?, children?
-  events: onOpenChange
-  slots: default
-- IrisMenuContent [react/solid/svelte/vue]
+  react: props open?, defaultOpen?, onOpenChange?, placement?, offset?, children?; events onOpenChange; slots default; types IrisMenuContentProps, IrisMenuItemProps, IrisMenuProps, IrisMenuSeparatorProps, IrisMenuSubProps, IrisMenuTriggerProps
+  solid: props open?, defaultOpen?, onOpenChange?, placement?, offset?, children?; events onOpenChange; slots default; types IrisMenuContentProps, IrisMenuItemProps, IrisMenuProps, IrisMenuSeparatorProps, IrisMenuSubProps, IrisMenuTriggerProps
+  svelte: props open?, defaultOpen?, onOpenChange?, placement?, offset?, children?; events onOpenChange; slots default
+  vue: props open?, defaultOpen?, placement?, offset?; events update:open; slots default
+- IrisMenuContent [react/solid/svelte/vue] — layer-2
   Menu surface (`role="menu"`). Handles ArrowUp/Down/Home/End nav across all `[role="menuitem"]` descendants (including those inside submenu triggers). Closes on outside click, Escape, and Tab.
-  props: portalTarget?, children?
-  slots: default
-- IrisMenuItem [react/solid/svelte/vue]
+  react: props portalTarget?, children?; slots default; types IrisMenuContentProps
+  solid: props portalTarget?, children?; slots default; types IrisMenuContentProps
+  svelte: props style?, portalTarget?, onkeydown?, children?; events onkeydown; slots default
+  vue: props teleport?; slots default
+- IrisMenuItem [react/solid/svelte/vue] — layer-2
   An individual selectable item in a menu. Renders as a `role="menuitem"` `<div>`. Calls `onSelect`, then closes the root menu (unless `keepOpen`). Disabled items are skipped by keyboard navigation.
-  props: disabled?, keepOpen?, onSelect?
-  events: onSelect
-- IrisMenuSeparator [react/solid/svelte/vue]
+  react: props disabled?, keepOpen?, onSelect?; events onSelect; types IrisMenuItemProps
+  solid: props disabled?, closeOnSelect?, children?; slots default; types IrisMenuItemProps
+  svelte: props disabled?, onclick?, children?; events onclick; slots default
+  vue: props disabled?; events select; slots default
+- IrisMenuSeparator [react/solid/svelte/vue] — layer-2
   A visual separator within a menu — renders a `role="separator"` `<div>`.
-- IrisMenuSub [react/solid/svelte/vue]
+  react: types IrisMenuSeparatorProps
+  solid: types IrisMenuSeparatorProps
+- IrisMenuSub [react/solid/svelte/vue] — layer-2
   Nested submenu. Renders its own trigger (a `[role="menuitem"]` inside the parent menu) and floating content panel. Opens on hover (with a short delay) and on ArrowRight / Enter; closes on ArrowLeft.
-  props: label?, portalTarget?, children?
-  slots: label, default
-- IrisMenuTrigger [react/solid/svelte/vue]
+  react: props label?, portalTarget?, children?; slots default, label; types IrisMenuSubProps
+  solid: props label, disabled?, children?; slots default; types IrisMenuSubProps
+  svelte: props label, disabled?, children?; slots default
+  vue: props label?, teleport?; slots default, label
+- IrisMenuTrigger [react/solid/svelte/vue] — layer-2
   The trigger that toggles the menu open/closed. Renders as a `<button>` (or custom via `asChild`) with `aria-haspopup="menu"`. Opens on click, ArrowDown, Enter, or Space.
-  props: asChild?, children?
-  slots: default
-- IrisNumberInput [react/solid/svelte/vue]
+  react: props asChild?, children?; slots default; types IrisMenuTriggerProps
+  solid: props children?; slots default; types IrisMenuTriggerProps
+  svelte: props onclick?, onkeydown?, children?; events onclick, onkeydown; slots default
+  vue: props asChild?; slots default
+- IrisNumberInput [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisNumberInput}.
-  props: value?, defaultValue?, onChange?, size?, min?, max?, step?, invalid?, showControls?, ariaDescribedby?
-  events: onChange
-- IrisOtpInput [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onChange?, size?, min?, max?, step?, invalid?, showControls?, ariaDescribedby?; events onChange; types IrisNumberInputProps, IrisNumberInputSize
+  solid: props value?, defaultValue?, size?, min?, max?, step?, placeholder?, disabled?, readonly?, invalid?, showControls?, id?, ariaDescribedby?, onChange?, onFocus?, onBlur?, style?, class?; events onBlur, onChange, onFocus; types IrisNumberInputProps, IrisNumberInputSize
+  svelte: props value?, size?, min?, max?, step?, placeholder?, disabled?, readonly?, invalid?, showControls?, id?, ariaDescribedby?, style?, onchange?, oninput?, onfocus?, onblur?; events onblur, onchange, onfocus, oninput
+  vue: props modelValue?, size?, min?, max?, step?, placeholder?, disabled?, readonly?, invalid?, showControls?, id?, ariaDescribedby?; events blur, focus, update:modelValue; types IrisNumberInputSize
+- IrisOtpInput [react/solid/svelte/vue] — layer-1
   One-time-code / PIN entry: a row of single-character cells with smart focus movement, paste-to-fill, and keyboard editing. The value is kept contiguous (no interior gaps), masked optionally, and surfaced via `onValueChange`; `onComplete` fires when every cell is filled. Drop it inside `IrisFormField` — the injected `id` lands on the first cell so the label focuses it.
-  props: value?, defaultValue?, onValueChange?, onComplete?, length?, type?, mask?, size?, disabled?, invalid?, autoFocus?, placeholder?, id?, ariaDescribedby?, style?, className?
-  events: onValueChange, onComplete
-- IrisPagination [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, onComplete?, length?, type?, mask?, size?, disabled?, invalid?, autoFocus?, placeholder?, id?, ariaDescribedby?, style?, className?; events onComplete, onValueChange; types IrisOtpInputProps, IrisOtpInputSize, IrisOtpInputType
+  solid: props value?, defaultValue?, length?, type?, mask?, size?, disabled?, invalid?, autofocus?, placeholder?, id?, ariaDescribedby?, onChange?, onComplete?, style?, class?; events onChange, onComplete; types IrisOtpInputProps, IrisOtpInputSize, IrisOtpInputType
+  svelte: props value?, length?, type?, mask?, size?, disabled?, invalid?, autofocus?, placeholder?, id?, ariaDescribedby?, style?, onchange?, oncomplete?; events onchange, oncomplete
+  vue: props modelValue?, length?, mask?, size?, disabled?, invalid?, autofocus?, placeholder?, id?, ariaDescribedby?; events complete, update:modelValue; types IrisOtpInputSize, IrisOtpInputType
+- IrisPagination [react/solid/svelte/vue] — layer-2
   Numeric page selector with prev/next + optional first/last buttons and two-sided ellipsis. Stateless visual; the caller owns `value`.
-  props: value?, defaultValue?, onValueChange?, total, pageSize?, siblingCount?, showFirstLast?, size?, disabled?
-  events: onValueChange
-- IrisPasswordInput [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, total, pageSize?, siblingCount?, showFirstLast?, size?, disabled?; events onValueChange; types IrisPaginationProps, IrisPaginationSize
+  solid: props page?, defaultPage?, total, pageSize?, siblingCount?, showFirstLast?, size?, disabled?, onChange?, style?, class?; events onChange; types IrisPaginationProps, IrisPaginationSize
+  svelte: props value?, total, pageSize?, siblingCount?, showFirstLast?, size?, disabled?, onchange?, style?; events onchange
+  vue: props modelValue?, total, pageSize?, siblingCount?, showFirstLast?, size?, disabled?; events update:modelValue; types IrisPaginationSize
+- IrisPasswordInput [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisPasswordInput}.
-  props: showToggle?, suffix?, prefix?
-  slots: suffix, prefix
-- IrisPopover [react/solid/svelte/vue]
+  react: props showToggle?, suffix?, prefix?; slots prefix, suffix; types IrisPasswordInputProps
+  solid: props value?, defaultValue?, size?, placeholder?, disabled?, readonly?, invalid?, showToggle?, id?, ariaDescribedby?, onChange?, onFocus?, onBlur?, style?, class?; events onBlur, onChange, onFocus; types IrisPasswordInputProps, IrisPasswordInputSize
+  svelte: props value?, size?, placeholder?, disabled?, readonly?, invalid?, showToggle?, id?, ariaDescribedby?, style?, onchange?, oninput?, onfocus?, onblur?; events onblur, onchange, onfocus, oninput
+  vue: props modelValue?, size?, placeholder?, disabled?, readonly?, invalid?, id?, showToggle?; events blur, focus, update:modelValue; slots prefix, suffix; types IrisPasswordInputSize
+- IrisPopover [react/solid/svelte/vue] — layer-2
   Root provider for a Popover surface. Wraps the trigger and the content, threads a state machine + DOM refs + positioning options through context. Supports controlled (`open` + `onOpenChange`) and uncontrolled (`defaultOpen`) modes.
-  props: open?, defaultOpen?, onOpenChange?, placement?, offset?, children?
-  events: onOpenChange
-  slots: default
-- IrisPopoverContent [react/solid/svelte/vue]
+  react: props open?, defaultOpen?, onOpenChange?, placement?, offset?, children?; events onOpenChange; slots default; types IrisPopoverContentProps, IrisPopoverProps, IrisPopoverTriggerProps
+  solid: props open?, defaultOpen?, onOpenChange?, placement?, offset?, children?; events onOpenChange; slots default; types IrisPopoverContentProps, IrisPopoverProps, IrisPopoverTriggerProps
+  svelte: props open?, defaultOpen?, onOpenChange?, placement?, offset?, children?; events onOpenChange; slots default
+  vue: props open?, defaultOpen?, placement?, offset?; events update:open; slots default
+- IrisPopoverContent [react/solid/svelte/vue] — layer-2
   The floating panel rendered when the Popover is open. Position is computed by `useFloating` (Floating UI); dismissal is handled by document-level pointerdown + Escape listeners. Focus moves into the content on open and back to the trigger on close.
-  props: portalTarget?, autoFocus?, restoreFocus?, children?
-  slots: default
-- IrisPopoverTrigger [react/solid/svelte/vue]
+  react: props portalTarget?, autoFocus?, restoreFocus?, children?; slots default; types IrisPopoverContentProps
+  solid: props portalTarget?, autoFocus?, restoreFocus?, children?; slots default; types IrisPopoverContentProps
+  svelte: props style?, autoFocus?, restoreFocus?, portalTarget?, children?; slots default
+  vue: props teleport?; slots default
+- IrisPopoverTrigger [react/solid/svelte/vue] — layer-2
   The element the user interacts with to toggle the Popover. Renders a `<button type="button">` by default; pass `asChild` to attach behavior to any single element (e.g. `<IrisButton>` or `<a>`).
-  props: asChild?, children?
-  slots: default
-- IrisProgress [react/solid/svelte/vue]
+  react: props asChild?, children?; slots default; types IrisPopoverTriggerProps
+  solid: props children?; slots default; types IrisPopoverTriggerProps
+  svelte: props onclick?, children?; events onclick; slots default
+  vue: props asChild?; slots default
+- IrisProgress [react/solid/svelte/vue] — layer-1
   A horizontal progress bar. Supports determinate mode (controlled `value`) and indeterminate (indefinite animation) for ongoing operations. Customisable via `tone` and `size` props; renders `role="progressbar"`.
-  props: value?, max?, indeterminate?, tone?, size?
-- IrisProgressCircle [react/solid/svelte/vue]
+  react: props value?, max?, indeterminate?, tone?, size?; types IrisProgressCircleProps, IrisProgressCircleStatus, IrisProgressProps, IrisProgressSize, IrisProgressTone
+  solid: props value?, max?, indeterminate?, tone?, size?, style?, class?; types IrisProgressCircleProps, IrisProgressCircleStatus, IrisProgressProps, IrisProgressSize, IrisProgressTone
+  svelte: props value?, max?, indeterminate?, tone?, size?, style?
+  vue: props value?, max?, indeterminate?, tone?, size?; types IrisProgressCircleStatus, IrisProgressSize, IrisProgressTone
+- IrisProgressCircle [react/solid/svelte/vue] — layer-1
   Circular (ring) progress indicator built from a structured SVG — a track circle plus a value circle whose `stroke-dashoffset` encodes the ratio. An optional centered percent label sits on top. Distinct from the linear `IrisProgress`.
-  props: value, max?, size?, strokeWidth?, status?, showLabel?, format?, ariaLabel?, style?, className?
-  slots: format
-- IrisRadio [react/solid/svelte/vue]
+  react: props value, max?, size?, strokeWidth?, status?, showLabel?, format?, ariaLabel?, style?, className?; slots format; types IrisProgressCircleProps, IrisProgressCircleStatus
+  solid: props value, max?, size?, strokeWidth?, status?, showLabel?, format?, ariaLabel?, style?, class?; types IrisProgressCircleProps, IrisProgressCircleStatus
+  svelte: props value, max?, size?, strokeWidth?, status?, showLabel?, format?, ariaLabel?, style?
+  vue: props value, max?, size?, strokeWidth?, status?, showLabel?, format?, ariaLabel?; types IrisProgressCircleStatus
+- IrisRadio [react/solid/svelte/vue] — layer-1
   Single radio button. Must be used inside an `IrisRadioGroup`.
-  props: value, size?, children?
-  slots: default
-- IrisRadioGroup [react/solid/svelte/vue]
+  react: props value, size?, children?; slots default; types IrisRadioGroupProps, IrisRadioProps, IrisRadioSize
+  solid: props value, checked?, size?, disabled?, id?, onChange?, children?, style?, class?; events onChange; slots default; types IrisRadioGroupProps, IrisRadioProps, IrisRadioSize
+  svelte: props value, modelValue?, size?, disabled?, id?, onchange?, children?; events onchange; slots default
+  vue: props value, modelValue?, size?, disabled?, id?; events update:modelValue; slots default; types IrisRadioSize
+- IrisRadioGroup [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisRadioGroup}.
-  props: name?, value?, defaultValue?, onChange?, disabled?, orientation?, children?
-  events: onChange
-  slots: default
-- IrisRangeSlider [react/solid/svelte/vue]
+  react: props name?, value?, defaultValue?, onChange?, disabled?, orientation?, children?; events onChange; slots default; types IrisRadioGroupProps
+  solid: props value?, defaultValue?, name?, size?, disabled?, onChange?, children?, style?, class?; events onChange; slots default; types IrisRadioGroupProps
+  svelte: props value?, defaultValue?, name?, size?, disabled?, onchange?, children?; events onchange; slots default
+  vue: props modelValue?, name?, size?, disabled?; events update:modelValue; slots default
+- IrisRangeSlider [react/solid/svelte/vue] — layer-1
   Two-handle numeric range slider. Value is `[start, end]` with `start <= end`; the two handles never cross.
-  props: value?, defaultValue?, onChange?, min?, max?, step?, disabled?, labelStart?, labelEnd?
-  events: onChange
-- IrisRating [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onChange?, min?, max?, step?, disabled?, labelStart?, labelEnd?; events onChange; types IrisRangeSliderProps, IrisRangeSliderValue
+  solid: props value?, defaultValue?, min?, max?, step?, disabled?, labelStart?, labelEnd?, onChange?, onChangeEnd?, style?, class?; events onChange, onChangeEnd; types IrisRangeSliderProps, IrisRangeSliderValue
+  svelte: props value?, min?, max?, step?, disabled?, labelStart?, labelEnd?, style?, onchange?, oninput?; events onchange, oninput
+  vue: props modelValue?, min?, max?, step?, disabled?, labelStart?, labelEnd?; events change, update:modelValue; types IrisRangeSliderValue
+- IrisRating [react/solid/svelte/vue] — layer-1
   Star rating with optional half-star precision, hover preview, keyboard support, and a `readonly` display mode. Uses the `slider` ARIA pattern (`aria-valuemin/now/max` + arrow keys) so it reads correctly to assistive tech; stars are decorative. RTL-safe via logical fill clipping.
-  props: value?, defaultValue?, onValueChange?, max?, allowHalf?, readonly?, disabled?, clearable?, size?, invalid?, label?, id?, ariaDescribedby?, style?, className?
-  events: onValueChange
-- IrisResizer [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, max?, allowHalf?, readonly?, disabled?, clearable?, size?, invalid?, label?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisRatingProps, IrisRatingSize
+  solid: props value?, defaultValue?, max?, allowHalf?, readonly?, disabled?, clearable?, size?, invalid?, label?, onChange?, style?, class?; events onChange; types IrisRatingProps, IrisRatingSize
+  svelte: props value?, max?, allowHalf?, readonly?, disabled?, clearable?, size?, invalid?, label?, id?, ariaDescribedby?, onchange?, style?; events onchange
+  vue: props modelValue?, max?, allowHalf?, readonly?, disabled?, clearable?, size?, invalid?, label?, id?, ariaDescribedby?; events update:modelValue; types IrisRatingSize
+- IrisResizer [react/solid/svelte/vue] — layer-1
   8-direction resizer wrapping a single child element. The child is rendered inside a relatively positioned wrapper; handles overlay each side and corner. Drag updates `value` ({ width, height } in px) clamped by min/max.
-  props: value, onValueChange, onResizeStart?, onResizeEnd?, handles?, minWidth?, minHeight?, maxWidth?, maxHeight?, disabled?, keepAspect?
-  events: onValueChange, onResizeStart, onResizeEnd
-- IrisResult [react/solid/svelte/vue]
+  react: props value, onValueChange, onResizeStart?, onResizeEnd?, handles?, minWidth?, minHeight?, maxWidth?, maxHeight?, disabled?, keepAspect?; events onResizeEnd, onResizeStart, onValueChange; types IrisResizerHandle, IrisResizerProps, IrisResizerSize
+  solid: props value, onChange?, onResizeStart?, onResizeEnd?, handles?, minWidth?, minHeight?, maxWidth?, maxHeight?, disabled?, keepAspect?, children?, style?; events onChange, onResizeEnd, onResizeStart; slots default; types IrisResizerHandle, IrisResizerProps, IrisResizerSize
+  svelte: props value, handles?, minWidth?, minHeight?, maxWidth?, maxHeight?, disabled?, keepAspect?, onValueChange?, onResizeStart?, onResizeEnd?, children?, style?; events onResizeEnd, onResizeStart, onValueChange; slots default; types IrisResizerHandle, IrisResizerSize
+  vue: props modelValue, handles?, minWidth?, minHeight?, maxWidth?, maxHeight?, disabled?, keepAspect?; events resizeEnd, resizeStart, update:modelValue; slots default; types IrisResizerHandle, IrisResizerSize
+- IrisResult [react/solid/svelte/vue] — layer-1
   Result: a centered outcome page for an operation — a status icon, title, subtitle, action area, and optional content. Use for success / error / 404 / 403 / 500 screens. Pure presentation; the status glyph is decorative.
-  props: status?, title?, subtitle?, icon?, extra?, children?, style?, className?
-  slots: title, subtitle, icon, extra, default
-- IrisRibbon [react/solid/svelte/vue]
+  react: props status?, title?, subtitle?, icon?, extra?, children?, style?, className?; slots default, extra, icon, subtitle, title; types IrisResultProps, IrisResultStatus
+  solid: props status?, title?, subtitle?, icon?, extra?, children?; slots default, extra, icon; types IrisResultProps, IrisResultStatus
+  svelte: props status?, title?, subtitle?, style?, children?, icon?, extra?
+  vue: props status?, title?, subtitle?; slots default, extra, icon; types IrisResultStatus
+- IrisRibbon [react/solid/svelte/vue] — layer-1
   Ribbon: a corner badge ("New", "Sale", …) anchored to the top corner of its content. RTL-safe via logical insets/radii.
-  props: text, placement?, color?, children?, style?, className?
-  slots: text, default
-- IrisScrollArea [react/solid/svelte/vue]
+  react: props text, placement?, color?, children?, style?, className?; slots default, text; types IrisRibbonPlacement, IrisRibbonProps
+  solid: props text?, placement?, color?, children?; slots default; types IrisRibbonPlacement, IrisRibbonProps
+  svelte: props text?, placement?, color?, style?, children?
+  vue: props text?, placement?, color?; slots default; types IrisRibbonPlacement
+- IrisScrollArea [react/solid/svelte/vue] — layer-1
   Scroll area: a keyboard-focusable scroll container that constrains its content via `maxHeight` / `maxWidth` and scrolls on the chosen `axis`. A lightweight alternative to ad-hoc overflow styling.
-  props: maxHeight?, maxWidth?, axis?, children?, style?, className?
-  slots: default
-- IrisSegmented [react/solid/svelte/vue]
+  react: props maxHeight?, maxWidth?, axis?, children?, style?, className?; slots default; types IrisScrollAreaAxis, IrisScrollAreaProps
+  solid: props maxHeight?, maxWidth?, axis?, children?, style?, class?; slots default; types IrisScrollAreaAxis, IrisScrollAreaProps
+  svelte: props maxHeight?, maxWidth?, axis?, style?, children?; slots default
+  vue: props maxHeight?, maxWidth?, axis?; slots default; types IrisScrollAreaAxis
+- IrisSegmented [react/solid/svelte/vue] — layer-1
   Segmented control: a connected row of single-select segments with the active one visually raised. Radiogroup semantics with roving tabindex and Arrow / Home / End keyboard navigation — single-sourced in `createKeyboardNav`.
-  props: options, value?, defaultValue?, onValueChange?, size?, disabled?, block?, ariaLabel?, style?, className?
-  events: onValueChange
-- IrisSelect [react/solid/svelte/vue]
+  react: props options, value?, defaultValue?, onValueChange?, size?, disabled?, block?, ariaLabel?, style?, className?; events onValueChange; types IrisSegmentedOption, IrisSegmentedProps, IrisSegmentedSize
+  solid: props options, value?, defaultValue?, size?, disabled?, block?, ariaLabel?, onChange?, style?, class?; events onChange; types IrisSegmentedOption, IrisSegmentedProps, IrisSegmentedSize
+  svelte: props options?, value?, size?, disabled?, block?, ariaLabel?, onchange?, style?; events onchange; types IrisSegmentedOption
+  vue: props options?, modelValue?, size?, disabled?, block?, ariaLabel?; events update:modelValue; types IrisSegmentedOption, IrisSegmentedSize
+- IrisSelect [react/solid/svelte/vue] — layer-2
   Single-select dropdown. Composes Popover (positioning + dismiss) with an inline listbox (keyboard nav + selection). Arrow-key, typeahead, Home/End, and Enter/Space navigation are single-sourced in `createKeyboardNav` (core).
-  props: items, value?, defaultValue?, onValueChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, style?, className?
-  events: onValueChange
-  slots: renderTrigger
-- IrisSkeleton [react/solid/svelte/vue]
+  react: props items, value?, defaultValue?, onValueChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, style?, className?; events onValueChange; slots renderTrigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize
+  solid: props items, value?, defaultValue?, onValueChange?, onChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, portalTarget?, style?; events onChange, onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
+  svelte: props items, value?, defaultValue?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, portalTarget?, onValueChange?, style?; events onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
+  vue: props items, modelValue?, defaultValue?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, teleport?; events update:modelValue, valueChange; slots trigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize
+- IrisSkeleton [react/solid/svelte/vue] — layer-1
   A placeholder shape that pulses to indicate content is loading. Supports `rect`, `circle`, and `text` shapes with configurable dimensions. Its shimmer animation respects `prefers-reduced-motion`.
-  props: width?, height?, shape?, animated?
-- IrisSlider [react/solid/svelte/vue]
+  react: props width?, height?, shape?, animated?; types IrisSkeletonProps, IrisSkeletonShape
+  solid: props width?, height?, shape?, animated?; types IrisSkeletonProps, IrisSkeletonShape
+  svelte: props width?, height?, shape?, animated?, style?
+  vue: props width?, height?, shape?, animated?; types IrisSkeletonShape
+- IrisSlider [react/solid/svelte/vue] — layer-1
   Numeric slider with keyboard + pointer support.
-  props: value?, defaultValue?, onChange?, min?, max?, step?, disabled?, orientation?, label?
-  events: onChange
-- IrisSlot [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onChange?, min?, max?, step?, disabled?, orientation?, label?; events onChange; types IrisSliderOrientation, IrisSliderProps
+  solid: props value?, defaultValue?, min?, max?, step?, disabled?, orientation?, label?, onChange?, onChangeEnd?, style?, class?; events onChange, onChangeEnd; types IrisSliderOrientation, IrisSliderProps
+  svelte: props value?, min?, max?, step?, disabled?, orientation?, label?, style?, onchange?, oninput?; events onchange, oninput
+  vue: props modelValue?, min?, max?, step?, disabled?, orientation?, label?; events change, update:modelValue; types IrisSliderOrientation
+- IrisSlot [react/solid/svelte/vue] — layer-1
   asChild composition primitive: clones the single React element child and merges the Slot's own props into it. `style` shallow-merges, `className` concatenates, event handlers compose (Slot's first, then child's), and any other prop on the child wins over Slot's. Used as a building block for trigger primitives that want to render-as the consumer's chosen element.
-  props: children?
-  slots: default
-- IrisSpinner [react/solid/svelte/vue]
+  react: props children?; slots default; types IrisSlotProps
+  solid: props children?, ref?; slots default; types IrisSlotProps
+  svelte: props asChild?, ref?, children?; slots default; types IrisSlotChildProps, IrisSlotMergedProps, IrisSlotRef
+  vue: slots default
+- IrisSpinner [react/solid/svelte/vue] — layer-1
   React port of {@link import('@iris-ui-kit/vue').IrisSpinner}.
-  props: size?, color?, strokeWidth?, label?
-- IrisSplitButton [react/solid/svelte/vue]
+  react: props size?, color?, strokeWidth?, label?; types IrisSpinnerProps, IrisSpinnerSize
+  solid: props size?, color?, strokeWidth?, label?; types IrisSpinnerProps, IrisSpinnerSize
+  svelte: props size?, color?, strokeWidth?, label?, style?
+  vue: props size?, color?, strokeWidth?, label?; types IrisSpinnerSize
+- IrisSplitButton [react/solid/svelte/vue] — layer-1
   Split button: a primary action joined to a caret that opens a `role="menu"` of secondary actions (dismissed by selection, Escape, or outside click).
-  props: children?, onClick?, actions?, variant?, size?, disabled?, menuAriaLabel?, style?, className?
-  events: onClick
-  slots: default
-- IrisSplitter [react/solid/svelte/vue]
+  react: props children?, onClick?, actions?, variant?, size?, disabled?, menuAriaLabel?, style?, className?; events onClick; slots default; types IrisSplitButtonAction, IrisSplitButtonProps, IrisSplitButtonSize, IrisSplitButtonVariant
+  solid: props actions?, variant?, size?, disabled?, menuAriaLabel?, onClick?, children?, style?; events onClick; slots default; types IrisSplitButtonAction, IrisSplitButtonProps, IrisSplitButtonSize, IrisSplitButtonVariant
+  svelte: props actions?, variant?, size?, disabled?, menuAriaLabel?, onclick?, children?, style?; events onclick; slots default; types IrisSplitButtonAction, IrisSplitButtonSize, IrisSplitButtonVariant
+  vue: props actions?, variant?, size?, disabled?, menuAriaLabel?; events click; slots default; types IrisSplitButtonAction, IrisSplitButtonSize, IrisSplitButtonVariant
+- IrisSplitter [react/solid/svelte/vue] — layer-2
   Two-pane splitter with a draggable divider. The split position is a number in `[0, 1]`. Clamping respects `minStart` / `minEnd` (in px) so panes cannot collapse below a usable size.
-  props: orientation?, value?, defaultValue?, onValueChange?, minStart?, minEnd?, disabled?, start?, end?
-  events: onValueChange
-  slots: start, end
-- IrisStatistic [react/solid/svelte/vue]
+  react: props orientation?, value?, defaultValue?, onValueChange?, minStart?, minEnd?, disabled?, start?, end?; events onValueChange; slots end, start; types IrisSplitterOrientation, IrisSplitterProps
+  solid: props orientation?, value?, defaultValue?, onChange?, minStart?, minEnd?, disabled?, start?, end?, style?; events onChange; slots end, start; types IrisSplitterOrientation, IrisSplitterProps
+  svelte: props orientation?, value?, onValueChange?, minStart?, minEnd?, disabled?, start?, end?, style?; events onValueChange; slots end, start; types IrisSplitterOrientation
+  vue: props orientation?, modelValue?, minStart?, minEnd?, disabled?; events update:modelValue; slots end, start; types IrisSplitterOrientation
+- IrisStatistic [react/solid/svelte/vue] — layer-1
   Compact statistic / KPI display: a label, a prominent value (with optional prefix/suffix), an optional colored trend line, and a description. Pure presentation; the trend glyph is decorative (aria-hidden) — the magnitude text carries the meaning.
-  props: label?, value, prefix?, suffix?, description?, trend?, trendValue?, size?, style?, className?
-  slots: label, value, prefix, suffix, description, trendValue
-- IrisStepper [react/solid/svelte/vue]
+  react: props label?, value, prefix?, suffix?, description?, trend?, trendValue?, size?, style?, className?; slots description, label, prefix, suffix, trendValue, value; types IrisStatisticProps, IrisStatisticSize, IrisStatisticTrend
+  solid: props label?, value?, prefix?, suffix?, description?, trend?, trendValue?, size?; types IrisStatisticProps, IrisStatisticSize, IrisStatisticTrend
+  svelte: props label?, value?, prefix?, suffix?, description?, trend?, trendValue?, size?, style?
+  vue: props label?, value?, prefix?, suffix?, description?, trend?, trendValue?, size?; types IrisStatisticSize, IrisStatisticTrend
+- IrisStepper [react/solid/svelte/vue] — layer-2
   Multi-step flow container. Children should be `IrisStepperStep`s; each registers itself with the stepper's context and self-renders its indicator + title.
-  props: value?, defaultValue?, onValueChange?, orientation?, linear?
-  events: onValueChange
-- IrisStepperStep [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, orientation?, linear?; events onValueChange; types IrisStepperOrientation, IrisStepperProps, IrisStepperStepProps
+  solid: props value?, defaultValue?, orientation?, linear?, onChange?, children?, style?, class?; events onChange; slots default; types IrisStepperOrientation, IrisStepperProps, IrisStepperStepProps
+  svelte: props value?, defaultValue?, orientation?, linear?, onchange?, children?, style?; events onchange; slots default; types IrisStepperOrientation
+  vue: props modelValue?, orientation?, linear?; events change, update:modelValue; slots default; types IrisStepperOrientation
+- IrisStepperStep [react/solid/svelte/vue] — layer-2
   A single step in an {@link IrisStepper}. Auto-numbers based on its position in the document order (registers on mount). Click forwards through `goTo` which gates by `linear`.
-  props: title?, description?, status?, disabled?
-  slots: title, description
-- IrisSwitch [react/solid/svelte/vue]
+  react: props title?, description?, status?, disabled?; slots description, title; types IrisStepperStepProps
+  solid: props title?, description?, status?, disabled?, children?, style?, class?; slots default; types IrisStepperStepProps
+  svelte: props title?, description?, status?, disabled?, titleSnippet?, descriptionSnippet?, style?; slots descriptionSnippet, titleSnippet
+  vue: props title?, description?, status?, disabled?; slots description, title
+- IrisSwitch [react/solid/svelte/vue] — layer-1
   Toggle switch for an on/off boolean, in controlled (`checked`) or uncontrolled (`defaultChecked`) modes. Rendered with `role="switch"`.
-  props: checked?, defaultChecked?, onChange?, size?, invalid?, ariaDescribedby?
-  events: onChange
-- IrisTable [react/solid/svelte/vue]
+  react: props checked?, defaultChecked?, onChange?, size?, invalid?, ariaDescribedby?; events onChange; types IrisSwitchProps, IrisSwitchSize
+  solid: props checked?, defaultChecked?, onChange?, size?, invalid?, ariaDescribedby?; events onChange; types IrisSwitchProps, IrisSwitchSize
+  svelte: props checked?, defaultChecked?, onChange?, size?, invalid?, ariaDescribedby?; events onChange; types IrisSwitchProps, IrisSwitchSize
+  vue: props modelValue?, size?, disabled?, id?, name?, ariaDescribedby?, invalid?; events change, update:modelValue; types IrisSwitchSize
+- IrisTable [react/solid/svelte/vue] — layer-2
   Data-driven table. Renders as a CSS-grid layout (no native `<table>`) so it can support future virtual scroll / column resize uniformly. Wires ARIA roles (`table` / `row` / `columnheader` / `cell`) for screen readers.
-  props: columns, data, rowKey?, selectable?, selection?, defaultSelection?, onSelectionChange?, sort?, defaultSort?, onSortChange?, striped?, bordered?, resizableColumns?, columnWidths?, defaultColumnWidths?, onColumnWidthsChange?, onCellEdit?, renderDetail?, rowExpandable?, defaultExpandedRowKeys?, onExpandedRowsChange?, getSubRows?, keyboardNavigation?, virtualScroll?, columnVirtualization?, cellRange?, emptyState?, loading?, error?, loadingState?, errorState?, style?, className?
-  events: onSelectionChange, onSortChange, onColumnWidthsChange, onCellEdit, onExpandedRowsChange
-  slots: renderDetail, emptyState, loadingState, errorState
-- IrisTabs [react/solid/svelte/vue]
+  react: props columns, data, rowKey?, selectable?, selection?, defaultSelection?, onSelectionChange?, sort?, defaultSort?, onSortChange?, striped?, bordered?, resizableColumns?, columnWidths?, defaultColumnWidths?, onColumnWidthsChange?, onRowClick?, onCellEdit?, renderDetail?, rowExpandable?, defaultExpandedRowKeys?, onExpandedRowsChange?, getSubRows?, keyboardNavigation?, virtualScroll?, columnVirtualization?, cellRange?, emptyState?, loading?, error?, loadingState?, errorState?, style?, className?; events onCellEdit, onColumnWidthsChange, onExpandedRowsChange, onRowClick, onSelectionChange, onSortChange; slots emptyState, errorState, loadingState; types IrisTableAggregateOp, IrisTableCellEditEvent, IrisTableColumn, IrisTableColumnWidths, IrisTableEditor, IrisTableProps, IrisTableRenderDetail, IrisTableRowExpandable, IrisTableSortDirection, IrisTableSortState, IrisTableVirtualOptions
+  solid: props columns, data, rowKey?, selectable?, selection?, defaultSelection?, onSelectionChange?, sort?, defaultSort?, onSortChange?, striped?, bordered?, loading?, error?, emptyState?, loadingState?, errorState?, resizableColumns?, columnWidths?, defaultColumnWidths?, onColumnWidthsChange?, onRowClick?, onCellEdit?, renderDetail?, rowExpandable?, defaultExpandedRowKeys?, onExpandedRowsChange?, getSubRows?, keyboardNavigation?, cellRange?, virtualScroll?, columnVirtualization?, style?; events onCellEdit, onColumnWidthsChange, onExpandedRowsChange, onRowClick, onSelectionChange, onSortChange; slots emptyState, errorState, loadingState; types IrisTableAggregateOp, IrisTableCellEditEvent, IrisTableColumn, IrisTableColumnWidths, IrisTableEditor, IrisTableProps, IrisTableRenderDetail, IrisTableRowExpandable, IrisTableSortDirection, IrisTableSortState, IrisTableVirtualOptions
+  svelte: props columns, data, rowKey?, selectable?, selection?, defaultSelection?, sort?, defaultSort?, striped?, bordered?, loading?, error?, emptyState?, loadingState?, errorState?, virtualScroll?, columnVirtualization?, resizableColumns?, columnWidths?, defaultColumnWidths?, onColumnWidthsChange?, renderDetail?, rowExpandable?, defaultExpandedRowKeys?, onExpandedRowsChange?, getSubRows?, keyboardNavigation?, cellRange?, onUpdateSelection?, onUpdateSort?, onRowClick?, onCellEdit?, style?; events onCellEdit, onColumnWidthsChange, onExpandedRowsChange, onRowClick, onUpdateSelection, onUpdateSort; slots emptyState, errorState, loadingState; types IrisTableAggregateOp, IrisTableCellEditEvent, IrisTableColumn, IrisTableColumnWidths, IrisTableEditor, IrisTableProps, IrisTableRenderDetail, IrisTableRowExpandable, IrisTableSortDirection, IrisTableSortState, IrisTableVirtualOptions
+  vue: props columns, data, rowKey?, striped?, bordered?, resizableColumns?, columnWidths?, virtualScroll?, loading?, error?, columnVirtualization?, keyboardNavigation?, cellRange?, renderDetail?, rowExpandable?, defaultExpandedRowKeys?; events cellEdit, expandedRowsChange, rowClick, update:columnWidths, update:selection, update:sort; slots empty, error, loading; types IrisTableAggregateOp, IrisTableCellEditEvent, IrisTableColumn, IrisTableColumnWidths, IrisTableEditor, IrisTableProps, IrisTableRenderDetail, IrisTableRowExpandable, IrisTableSortDirection, IrisTableSortState, IrisTableVirtualOptions
+- IrisTabs [react/solid/svelte/vue] — layer-2
   Tabs root. Provides context for value, orientation, lazy mounting, and the ordered set of registered triggers so arrow-key navigation can move focus deterministically (skipping disabled triggers).
-  props: value?, defaultValue?, onValueChange?, orientation?, disabled?, lazy?, children?
-  events: onValueChange
-  slots: default
-- IrisTabsContent [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, orientation?, disabled?, lazy?, children?; events onValueChange; slots default; types IrisTabsContentProps, IrisTabsListProps, IrisTabsOrientation, IrisTabsProps, IrisTabsTriggerProps
+  solid: props value?, defaultValue?, orientation?, disabled?, lazy?, onChange?, children?, style?, class?; events onChange; slots default; types IrisTabsContentProps, IrisTabsListProps, IrisTabsOrientation, IrisTabsProps, IrisTabsTriggerProps
+  svelte: props value?, defaultValue?, orientation?, disabled?, lazy?, style?, children?, onchange?; events onchange; slots default
+  vue: props value?, defaultValue?, orientation?, disabled?; events update:value; slots default; types IrisTabsOrientation
+- IrisTabsContent [react/solid/svelte/vue] — layer-2
   Panel paired with a `IrisTabsTrigger` by matching `value`. When `lazy` is true on the parent (default), inactive panels are unmounted. Pass `forceMount` to always render (e.g. for SEO or pre-warming).
-  props: value, forceMount?, children?
-  slots: default
-- IrisTabsList [react/solid/svelte/vue]
+  react: props value, forceMount?, children?; slots default; types IrisTabsContentProps
+  solid: props value, children?, style?, class?; slots default; types IrisTabsContentProps
+  svelte: props value, forceMount?, style?, children?; slots default
+  vue: props value, forceMount?; slots default
+- IrisTabsList [react/solid/svelte/vue] — layer-2
   Container for `IrisTabsTrigger`s. Renders `<div role="tablist">`.
-- IrisTabsTrigger [react/solid/svelte/vue]
+  react: types IrisTabsListProps
+  solid: props children?, style?, class?; slots default; types IrisTabsListProps
+  svelte: props style?, children?; slots default
+  vue: slots default
+- IrisTabsTrigger [react/solid/svelte/vue] — layer-2
   A single tab button. Registers with the parent `IrisTabs` so arrow keys can navigate among triggers in registration order. Sets `aria-selected` and `aria-controls`; uses roving tabindex.
-  props: value, asChild?, children?
-  slots: default
-- IrisTagInput [react/solid/svelte/vue]
+  react: props value, asChild?, children?; slots default; types IrisTabsTriggerProps
+  solid: props value, disabled?, children?, style?, class?; slots default; types IrisTabsTriggerProps
+  svelte: props value, disabled?, style?, children?; slots default
+  vue: props value, disabled?, asChild?; slots default
+- IrisTagInput [react/solid/svelte/vue] — layer-1
   Tag / token input: a field where typed text becomes removable chips. Commit a tag with Enter or a comma (pasted comma lists split too); Backspace on an empty input removes the last tag; each chip has a remove button.
-  props: value?, defaultValue?, onValueChange?, placeholder?, disabled?, invalid?, max?, allowDuplicates?, id?, ariaDescribedby?, style?, className?
-  events: onValueChange
-- IrisTextarea [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, placeholder?, disabled?, invalid?, max?, allowDuplicates?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisTagInputProps
+  solid: props value?, defaultValue?, placeholder?, disabled?, invalid?, max?, allowDuplicates?, id?, ariaDescribedby?, onChange?, style?, class?; events onChange; types IrisTagInputProps
+  svelte: props value?, placeholder?, disabled?, invalid?, max?, allowDuplicates?, id?, ariaDescribedby?, style?, onchange?; events onchange
+  vue: props modelValue?, placeholder?, disabled?, invalid?, max?, allowDuplicates?, id?, ariaDescribedby?; events update:modelValue
+- IrisTextarea [react/solid/svelte/vue] — layer-1
   Multi-line text input with size variants and an `invalid` state. Optionally grows to fit its content when `autosize` is set, capped at `maxRows`.
-  props: size?, invalid?, ariaDescribedby?, autosize?, maxRows?
-- IrisTimeline [react/solid/svelte/vue]
+  react: props size?, invalid?, ariaDescribedby?, autosize?, maxRows?; types IrisTextareaProps, IrisTextareaSize
+  solid: props value?, defaultValue?, size?, placeholder?, disabled?, readonly?, invalid?, rows?, autoResize?, autosize?, maxRows?, maxLength?, id?, ariaDescribedby?, onChange?, onFocus?, onBlur?, style?, class?; events onBlur, onChange, onFocus; types IrisTextareaProps, IrisTextareaSize
+  svelte: props value?, size?, placeholder?, disabled?, readonly?, invalid?, rows?, autosize?, maxRows?, maxLength?, id?, ariaDescribedby?, style?, onchange?, oninput?, onfocus?, onblur?; events onblur, onchange, onfocus, oninput
+  vue: props modelValue?, size?, placeholder?, disabled?, readonly?, invalid?, rows?, maxRows?, maxLength?, id?, ariaDescribedby?; events blur, focus, update:modelValue; types IrisTextareaSize
+- IrisTimeline [react/solid/svelte/vue] — layer-1
   Vertical event timeline: an ordered list of items, each with a colored dot, a connector line (omitted on the last item), and time/title/description content (or a custom `renderItem`). Semantic `<ol>` for assistive tech; RTL-safe via logical properties.
-  props: items, renderItem?, style?, className?
-  slots: renderItem
-- IrisTimePicker [react/solid/svelte/vue]
+  react: props items, renderItem?, style?, className?; slots renderItem; types IrisTimelineItem, IrisTimelineProps, IrisTimelineVariant
+  solid: props items?, style?, class?; types IrisTimelineItem, IrisTimelineProps, IrisTimelineVariant
+  svelte: props items?, itemSnippet?, style?; slots itemSnippet; types IrisTimelineItem, IrisTimelineVariant
+  vue: props items?; slots item; types IrisTimelineItem, IrisTimelineVariant
+- IrisTimePicker [react/solid/svelte/vue] — layer-2
   Time picker rendered as two zero-padded number inputs (hours + minutes) plus an optional AM/PM toggle for 12h format. Internal value is always 24-hour `{ hours, minutes }`.
-  props: value?, defaultValue?, onValueChange?, format?, minuteStep?, disabled?, invalid?, id?, ariaDescribedby?, style?, className?
-  events: onValueChange
-- IrisToastViewport [react/solid/svelte/vue]
+  react: props value?, defaultValue?, onValueChange?, format?, minuteStep?, disabled?, invalid?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisTimePickerFormat, IrisTimePickerProps
+  solid: props value?, defaultValue?, format?, minuteStep?, disabled?, invalid?, onChange?, id?; events onChange; types IrisTimePickerFormat, IrisTimePickerProps
+  svelte: props value?, defaultValue?, onValueChange?, format?, minuteStep?, disabled?, invalid?, id?, ariaDescribedby?, style?, class?; events onValueChange
+  vue: props modelValue?, format?, minuteStep?, disabled?, invalid?, id?, ariaDescribedby?; events update:modelValue; types IrisTimePickerFormat
+- IrisToastViewport [react/solid/svelte/vue] — layer-2
   Renders the queued toasts. Mount exactly **one** of these per page. The viewport subscribes to the module-level toast store; toasts pushed via `useToast()` from any component appear here.
-  props: position?, portalTarget?, max?
-- IrisToggleGroup [react/solid/svelte/vue]
+  react: props position?, portalTarget?, max?; types IrisToastViewportProps
+  solid: props position?, portalTarget?, max?, style?; types IrisToastViewportProps
+  svelte: props position?, portalTarget?, max?
+  vue: props position?, teleport?, portalTarget?, max?
+- IrisToggleGroup [react/solid/svelte/vue] — layer-1
   Segmented control. Two modes: - `type="single"` — radio-like; value is `string | null`. Root gets `role="radiogroup"`, items get `role="radio"` + `aria-checked`. - `type="multiple"` — toggle-like; value is `string[]`. Root gets `role="group"`, items get `aria-pressed`.
-- IrisToggleGroupItem [react/solid/svelte/vue]
+  react: props type?, value?, defaultValue?, onValueChange?, orientation?, size?, variant?, disabled?; events onValueChange; types IrisToggleGroupItemProps, IrisToggleGroupMultipleProps, IrisToggleGroupOrientation, IrisToggleGroupProps, IrisToggleGroupSingleProps, IrisToggleGroupSize, IrisToggleGroupType, IrisToggleGroupValue, IrisToggleGroupVariant
+  solid: props type?, value?, defaultValue?, orientation?, size?, variant?, disabled?, onChange?, children?, style?, class?; events onChange; slots default; types IrisToggleGroupItemProps, IrisToggleGroupOrientation, IrisToggleGroupProps, IrisToggleGroupType, IrisToggleGroupVariant
+  svelte: props type?, value?, orientation?, size?, variant?, disabled?, style?, children?, onchange?; events onchange; slots default
+  vue: props type?, modelValue?, orientation?, size?, variant?, disabled?; events update:modelValue; slots default; types IrisToggleGroupOrientation, IrisToggleGroupType, IrisToggleGroupVariant
+- IrisToggleGroupItem [react/solid/svelte/vue] — layer-1
   One toggle in an `IrisToggleGroup`. Renders a `<button>` with the correct `role` / `aria-checked` / `aria-pressed` for the group's type.
-  props: value
-- IrisToolbar [react/solid/svelte/vue]
+  react: props value; types IrisToggleGroupItemProps
+  solid: props value, disabled?, children?, style?, class?; slots default; types IrisToggleGroupItemProps
+  svelte: props value, disabled?, style?, children?; slots default
+  vue: props value, disabled?; slots default
+- IrisToolbar [react/solid/svelte/vue] — layer-1
   Toolbar: a `role="toolbar"` grouping of actions with roving-tabindex keyboard navigation — one item is in the tab order, and Arrow keys (per orientation) plus Home/End move focus and the tab stop between the focusable children.
-  props: children?, orientation?, ariaLabel?, style?, className?
-  slots: default
-- IrisTooltip [react/solid/svelte/vue]
+  react: props children?, orientation?, ariaLabel?, style?, className?; slots default; types IrisToolbarOrientation, IrisToolbarProps
+  solid: props orientation?, ariaLabel?, children?, style?, class?; slots default; types IrisToolbarOrientation, IrisToolbarProps
+  svelte: props orientation?, ariaLabel?, style?, children?; slots default
+  vue: props orientation?, ariaLabel?; slots default; types IrisToolbarOrientation
+- IrisTooltip [react/solid/svelte/vue] — layer-1
   Hover / focus triggered tooltip. Powered by `createHoverIntent` state machine.
-  props: content?, placement?, offset?, openDelay?, closeDelay?, portalTarget?, disabled?, children?
-  slots: content, default
-- IrisTour [react/solid/svelte/vue]
+  react: props content?, placement?, offset?, openDelay?, closeDelay?, portalTarget?, disabled?, children?; slots content, default; types IrisTooltipProps
+  solid: props content?, placement?, offset?, openDelay?, closeDelay?, disabled?, portalTarget?, children?, style?; slots default; types IrisTooltipProps
+  svelte: props content?, placement?, offset?, openDelay?, closeDelay?, disabled?, portalTarget?, class?, style?, children?; slots default
+  vue: props content?, placement?, offset?, teleport?, portalTarget?, disabled?; slots content, default
+- IrisTour [react/solid/svelte/vue] — layer-2
   Guided tour: an overlay that walks the user through `steps`, spotlighting an optional target per step and showing a dialog card with prev/next/skip controls. Controlled (`open`) or uncontrolled (`defaultOpen`); the step index is managed internally and resets each time the tour opens.
-  props: steps, open?, defaultOpen?, onChange?, onClose?, onFinish?, style?, className?
-  events: onChange, onClose, onFinish
-- IrisTransfer [react/solid/svelte/vue]
+  react: props steps, open?, defaultOpen?, onChange?, onClose?, onFinish?, style?, className?; events onChange, onClose, onFinish; types IrisTourProps, IrisTourStep
+  solid: props steps?, open?, onOpenChange?, onChange?, onClose?, onFinish?; events onChange, onClose, onFinish, onOpenChange; types IrisTourProps, IrisTourStep
+  svelte: props steps?, open?, onUpdateOpen?, onChange?, onClose?, onFinish?, style?; events onChange, onClose, onFinish, onUpdateOpen; types IrisTourStep
+  vue: props steps?, open?; events change, close, finish, update:open; types IrisTourStep
+- IrisTransfer [react/solid/svelte/vue] — layer-2
   Dual-list transfer: move items between an "available" and a "selected" pane via per-item checkboxes and the ›/‹ buttons. Controlled or uncontrolled (`value` = the selected values), with optional per-pane search and a select-all header. Built on native checkboxes for accessibility.
-  props: options, value?, defaultValue?, onValueChange?, titles?, searchable?, disabled?, style?, className?
-  events: onValueChange
-  slots: titles
-- IrisTree [react/solid/svelte/vue]
+  react: props options, value?, defaultValue?, onValueChange?, titles?, searchable?, disabled?, style?, className?; events onValueChange; slots titles; types IrisTransferItem, IrisTransferProps
+  solid: props options?, value?, defaultValue?, titles?, searchable?, disabled?, onChange?; events onChange; types IrisTransferItem, IrisTransferProps
+  svelte: props options?, value?, titles?, searchable?, disabled?, onValueChange?, style?, class?; events onValueChange; types IrisTransferItem
+  vue: props options?, modelValue?, titles?, searchable?, disabled?; events update:modelValue; types IrisTransferItem
+- IrisTree [react/solid/svelte/vue] — layer-2
   Tree control. Renders a hierarchy of `IrisTreeNode`s with expand/collapse, single/multi selection, and optional lazy-loaded children. WAI-ARIA Tree pattern: root `role="tree"`, each node `role="treeitem"`, roving tabindex.
-  props: nodes, expanded?, defaultExpanded?, onExpandedChange?, selected?, defaultSelected?, onSelectedChange?, selectionMode?, checkable?, defaultChecked?, onCheckedChange?, ariaLabel?, loading?, error?, emptyState?, loadingState?, errorState?, style?, className?
-  events: onExpandedChange, onSelectedChange, onCheckedChange
-  slots: emptyState, loadingState, errorState
-- IrisTreeSelect [react/solid/svelte/vue]
+  react: props nodes, expanded?, defaultExpanded?, onExpandedChange?, selected?, defaultSelected?, onSelectedChange?, selectionMode?, checkable?, defaultChecked?, onCheckedChange?, ariaLabel?, loading?, error?, emptyState?, loadingState?, errorState?, style?, className?; events onCheckedChange, onExpandedChange, onSelectedChange; slots emptyState, errorState, loadingState; types IrisTreeNode, IrisTreeProps, IrisTreeSelectNode, IrisTreeSelectProps, IrisTreeSelectSize, IrisTreeSelectionMode
+  solid: props nodes?, selectedIds?, defaultSelectedIds?, expandedIds?, defaultExpandedIds?, selectionMode?, checkable?, defaultChecked?, onCheckedChange?, disabled?, onSelect?, onExpand?, ariaLabel?, loading?, error?, emptyState?, loadingState?, errorState?; events onCheckedChange, onExpand, onSelect; slots emptyState, errorState, loadingState; types IrisTreeNode, IrisTreeProps, IrisTreeSelectProps, IrisTreeSelectionMode
+  svelte: props nodes?, expanded?, defaultExpanded?, selected?, defaultSelected?, selectionMode?, checkable?, defaultChecked?, onCheckedChange?, ariaLabel?, loading?, error?, onExpandedChange?, onSelectedChange?, onExpand?, onCollapse?, onSelect?, style?, class?; events onCheckedChange, onCollapse, onExpand, onExpandedChange, onSelect, onSelectedChange; types IrisTreeNode, IrisTreeSelectionMode
+  vue: props nodes, expanded?, defaultExpanded?, selected?, defaultSelected?, selectionMode?, defaultChecked?, ariaLabel?, loading?, error?; events checkedChange, collapse, expand, select, update:expanded, update:selected; slots empty, error, loading; types IrisTreeNode, IrisTreeSelectNode, IrisTreeSelectSize, IrisTreeSelectionMode
+- IrisTreeSelect [react/solid/svelte/vue] — layer-2
   Hierarchical single-select: a trigger that opens a `role="tree"` dropdown with expand/collapse toggles. Selecting a node sets the value and closes. Controlled or uncontrolled; closes on select, Escape, or outside click.
-  props: options, value?, defaultValue?, onValueChange?, defaultExpanded?, placeholder?, disabled?, invalid?, size?, id?, ariaDescribedby?, style?, className?
-  events: onValueChange
-- IrisVirtualScroll [react/solid/svelte/vue]
+  react: props options, value?, defaultValue?, onValueChange?, defaultExpanded?, placeholder?, disabled?, invalid?, size?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisTreeSelectNode, IrisTreeSelectProps, IrisTreeSelectSize, IrisTreeSelectionMode
+  solid: props nodes?, value?, defaultValue?, selectionMode?, placeholder?, disabled?, invalid?, onChange?, id?; events onChange; types IrisTreeSelectProps, IrisTreeSelectionMode
+  svelte: props nodes?, value?, placeholder?, disabled?, invalid?, selectionMode?, onValueChange?, style?, class?; events onValueChange; types IrisTreeSelectionMode
+  vue: props options?, modelValue?, defaultExpanded?, placeholder?, disabled?, invalid?, size?, id?, ariaDescribedby?; events update:modelValue; types IrisTreeSelectNode, IrisTreeSelectSize, IrisTreeSelectionMode
+- IrisVirtualScroll [react/solid/svelte/vue] — layer-2
   Virtual scroller. Renders only the visible window of items plus a configurable buffer above and below. Vertical-only. `itemHeight` may be a fixed number, a `(index) => px` function for variable-height rows, or `'auto'` to measure rendered rows.
-  props: items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, renderItem, onScroll?, onRangeChange?, style?, className?
-  events: onScroll, onRangeChange
-  slots: renderItem
-- IrisVisuallyHidden [react/solid/svelte/vue]
+  react: props items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, renderItem, onScroll?, onRangeChange?, style?, className?; events onRangeChange, onScroll; slots renderItem; types IrisVirtualScrollAlign, IrisVirtualScrollHandle, IrisVirtualScrollProps
+  solid: props items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, renderItem, onScroll?, onRangeChange?, style?, ref?; events onRangeChange, onScroll; slots renderItem; types IrisVirtualScrollAlign, IrisVirtualScrollHandle, IrisVirtualScrollProps
+  svelte: props items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, onScroll?, onRangeChange?, item?, style?; events onRangeChange, onScroll; slots item; types IrisVirtualScrollAlign, IrisVirtualScrollHandle
+  vue: props items, height?, buffer?, keyOf?; events rangeChange, scroll; slots item; types IrisVirtualScrollAlign, IrisVirtualScrollExposed
+- IrisVisuallyHidden [react/solid/svelte/vue] — layer-1
   Visually-hidden content: present in the accessibility tree (read by screen readers) but clipped from view — for labels, live-region announcements, and extra context. Forwards attributes like `aria-live` / `role`.
-- IrisWatermark [react/solid/svelte/vue]
+  react: types IrisVisuallyHiddenProps
+  solid: props children?; slots default; types IrisVisuallyHiddenProps
+  svelte: props style?, children?
+  vue: slots default
+- IrisWatermark [react/solid/svelte/vue] — layer-1
   Watermark: overlays tiled, rotated text over its content — for confidential or branded surfaces. The overlay is `aria-hidden`, non-selectable, and `pointer-events: none`, so it never interferes with the underlying UI. Built from structured `<span>` nodes (no raw HTML / canvas / SVG-string injection).
-  props: content, children?, rotate?, fontSize?, color?, opacity?, gap?, style?, className?
-  slots: default
+  react: props content, children?, rotate?, fontSize?, color?, opacity?, gap?, style?, className?; slots default; types IrisWatermarkProps
+  solid: props content, rotate?, fontSize?, color?, opacity?, gap?, children?; slots default; types IrisWatermarkProps
+  svelte: props content?, rotate?, fontSize?, color?, opacity?, gap?, style?, children?
+  vue: props rotate?, fontSize?, color?, opacity?, gap?; slots default
 
 ### skeletons (2)
-- IrisDashboardTemplate [react/solid/svelte/vue]
+- IrisDashboardTemplate [react/solid/svelte/vue] — layer-4
   Layer 4 system skeleton: 3-region dashboard shell — sidebar + header + main grid. Built from `IrisSidebarLayout` + `IrisHeaderLayout` + `IrisDashboardGrid`.
-  props: title?, sidebarTitle?, nav?, activeId?, onActiveIdChange?, cards?, defaultCollapsed?, onCollapsedChange?, header?, sidebarHeader?, children?, cardSlots?, style?, className?
-  events: onActiveIdChange, onCollapsedChange
-  slots: header, sidebarHeader, default, cardSlots
-- IrisLoginTemplate [react/solid/svelte/vue]
+  react: props title?, sidebarTitle?, nav?, activeId?, onActiveIdChange?, cards?, defaultCollapsed?, onCollapsedChange?, header?, sidebarHeader?, children?, cardSlots?, style?, className?; events onActiveIdChange, onCollapsedChange; slots cardSlots, default, header, sidebarHeader; types IrisDashboardTemplateProps
+  solid: props title?, sidebarTitle?, nav?, activeId?, cards?, defaultCollapsed?, onActiveIdChange?, onCollapsedChange?, children?; events onActiveIdChange, onCollapsedChange; slots default; types IrisDashboardTemplateProps
+  svelte: props title?, sidebarTitle?, nav?, activeId?, cards?, defaultCollapsed?, onActiveIdChange?, onCollapsedChange?, children?, style?, class?; events onActiveIdChange, onCollapsedChange; slots default
+  vue: props title?, sidebarTitle?, nav?, activeId?, cards?, defaultCollapsed?; events update:activeId, update:collapsed; slots default, header, sidebar-header
+- IrisLoginTemplate [react/solid/svelte/vue] — layer-4
   Layer 4 system skeleton: centered login page composed from Iris primitives.
-  props: title?, description?, showRemember?, error?, submitLabel?, loading?, header?, forgot?, footer?, onSubmit?, style?, className?
-  events: onSubmit
-  slots: header, forgot, footer
+  react: props title?, description?, showRemember?, error?, submitLabel?, loading?, header?, forgot?, footer?, onSubmit?, style?, className?; events onSubmit; slots footer, forgot, header; types IrisLoginTemplateProps
+  solid: props title?, description?, showRemember?, error?, submitLabel?, loading?, onSubmit?; events onSubmit; types IrisLoginTemplateProps
+  svelte: props title?, description?, showRemember?, error?, submitLabel?, loading?, onSubmit?, children?, style?, class?; events onSubmit; slots default
+  vue: props title?, description?, showRemember?, error?, submitLabel?, loading?; events submit; slots footer, forgot, header
 
-## Design tokens (33)
+## Design tokens (49)
 - colors: iris.background, iris.foreground, iris.surface, iris.surface.hover, iris.border, iris.muted, iris.primary, iris.primary.foreground, iris.accent, iris.danger, iris.danger.subtle, iris.success, iris.warning, iris.info, iris.muted.subtle, iris.surface.selected, iris.primary.ghost, iris.font.family, iris.font.mono, iris.font.size.sm, iris.font.size.md, iris.font.size.lg
 - spacing: iris.gap.sm, iris.gap.md, iris.gap.lg, iris.padding.sm, iris.padding.md, iris.padding.lg, iris.masonry.gap, iris.breadcrumb.gap
 - radii: iris.radius.sm, iris.radius.md, iris.radius.lg
+- shadows: iris.shadow.sm, iris.shadow.md, iris.shadow.lg
+- z-index: iris.z.dropdown, iris.z.sticky, iris.z.fixed, iris.z.modalBackdrop, iris.z.modal, iris.z.popover, iris.z.tooltip, iris.z.toast
+- transitions: iris.transition.fast, iris.transition.normal, iris.transition.slow, iris.transition.ease, iris.transition.spring

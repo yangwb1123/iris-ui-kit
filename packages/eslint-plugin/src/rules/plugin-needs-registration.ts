@@ -136,6 +136,21 @@ const PLUGIN_ENTRIES: ComponentEntry[] = PLUGIN_PACKAGES.flatMap((p) =>
   })),
 )
 
+const FRAMEWORK_SUBPATH = /\/(?:react|vue|solid|svelte)$/
+
+/**
+ * Plugin UI is published from framework subpaths
+ * (`@iris-ui-kit/plugin-x/react`, `/vue`, `/solid`, `/svelte`). Keep accepting
+ * the historical bare package in case an older package exposed a root barrel,
+ * but do not treat arbitrary/private subpaths as component entry points.
+ */
+function isComponentImport(source: string, packageName: string): boolean {
+  return (
+    source === packageName ||
+    (source.startsWith(`${packageName}/`) && FRAMEWORK_SUBPATH.test(source))
+  )
+}
+
 /** Exposed for tests — the canonical factory name of every plugin package. */
 export const KNOWN_PLUGIN_FACTORIES = PLUGIN_PACKAGES.map((p) => p.plugin)
 
@@ -173,7 +188,7 @@ const rule: Rule.RuleModule = {
 
           // Check if this is a plugin component import
           for (const entry of PLUGIN_ENTRIES) {
-            if (name === entry.componentName && src === entry.componentPkg) {
+            if (name === entry.componentName && isComponentImport(src, entry.componentPkg)) {
               importedComponents.add(entry.componentName)
               componentNodes.set(entry.componentName, node as unknown as Rule.Node)
             }

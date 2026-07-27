@@ -179,9 +179,40 @@ describe('plugin-needs-registration', () => {
         {
           code: "import { IrisQueryBuilder, queryBuilderPlugin } from '@iris-ui-kit/plugin-query-builder'",
         },
+        // Real published shape: UI comes from a framework subpath and the
+        // framework-agnostic factory comes from /core.
+        {
+          code: `
+            import { IrisCodeEditor } from '@iris-ui-kit/plugin-editor/react'
+            import { editorPlugin } from '@iris-ui-kit/plugin-editor/core'
+          `,
+        },
+        {
+          code: `
+            import { IrisProTable } from '@iris-ui-kit/plugin-pro-table/vue'
+            import { proTablePlugin } from '@iris-ui-kit/plugin-pro-table/core'
+          `,
+        },
+        {
+          code: `
+            import { IrisFormBuilder } from '@iris-ui-kit/plugin-form-builder/solid'
+            import { formBuilderPlugin } from '@iris-ui-kit/plugin-form-builder/core'
+          `,
+        },
+        {
+          code: `
+            import { IrisNotificationCenter } from '@iris-ui-kit/plugin-notifications/svelte'
+            import { notificationsPlugin } from '@iris-ui-kit/plugin-notifications/core'
+          `,
+        },
         // Plugin component not imported — no warning
         {
           code: "import { IrisButton } from '@iris-ui-kit/react'",
+        },
+        // Private/unknown subpaths are deliberately not interpreted as a
+        // public component entry.
+        {
+          code: "import { IrisCodeEditor } from '@iris-ui-kit/plugin-editor/internal'",
         },
         // All three original plugin components with all three plugins registered
         {
@@ -244,6 +275,23 @@ describe('plugin-needs-registration', () => {
               data: { component: 'IrisBarChart', plugin: 'chartsPlugin' },
             },
           ],
+        },
+        // Every real framework UI subpath must be recognized.
+        {
+          code: "import { IrisCodeEditor } from '@iris-ui-kit/plugin-editor/react'",
+          errors: [{ messageId: 'missingPluginRegistration' }],
+        },
+        {
+          code: "import { IrisCodeEditor } from '@iris-ui-kit/plugin-editor/vue'",
+          errors: [{ messageId: 'missingPluginRegistration' }],
+        },
+        {
+          code: "import { IrisCodeEditor } from '@iris-ui-kit/plugin-editor/solid'",
+          errors: [{ messageId: 'missingPluginRegistration' }],
+        },
+        {
+          code: "import { IrisCodeEditor } from '@iris-ui-kit/plugin-editor/svelte'",
+          errors: [{ messageId: 'missingPluginRegistration' }],
         },
         // Two plugin components, both missing their plugins
         {

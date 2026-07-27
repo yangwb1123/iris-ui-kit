@@ -1,0 +1,41 @@
+{
+  "name": "@iris-ui-kit/marketplace",
+  "version": "0.1.0",
+  "description": "Safe runtime marketplace for Iris UI skins, fonts, page blueprints, and view presets",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@iris-ui-kit/core": "workspace:*",
+    "@iris-ui-kit/registry": "workspace:*",
+    "@iris-ui-kit/skins": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nousresearch/iris-ui.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

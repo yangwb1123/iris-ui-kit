@@ -1,0 +1,33 @@
+{
+  "schema": "iris-ui/marketplace@1",
+  "name": "Iris UI official declarative marketplace",
+  "resources": [
+    {
+      "name": "ocean",
+      "type": "iris:skin",
+      "version": "1.0.0",
+      "url": "./ocean.skin.json",
+      "integrity": "sha256-ff7b2eee7fbe820154f3e630711600f87e12e6a07b543f2de713ec7b042236dc",
+      "description": "A cool blue dark skin extending the built-in dark token set.",
+      "tags": ["dark", "blue", "skin"]
+    },
+    {
+      "name": "operations-overview",
+      "type": "iris:blueprint",
+      "version": "1.0.0",
+      "url": "./operations-overview.blueprint.json",
+      "integrity": "sha256-39d8f99042b09daf8121f8f2decd3857856a23c1572f1fdd6b3963eb2b4fc3f9",
+      "description": "Dashboard blueprint resolved through local stat and table widgets.",
+      "tags": ["dashboard", "operations"]
+    },
+    {
+      "name": "dense-orders",
+      "type": "iris:view",
+      "version": "1.0.0",
+      "url": "./dense-orders.view.json",
+      "integrity": "sha256-85b46708f0e2f27b605436964d56a20d991ffee9ec9daf142bd0bce68a5667cc",
+      "description": "Compact order table columns, sort, filter, and page-size preset.",
+      "tags": ["table", "orders", "compact"]
+    }
+  ]
+}

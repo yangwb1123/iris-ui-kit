@@ -12,6 +12,7 @@ import type {
 import { ALL_FRAMEWORKS } from './schema'
 import { extractComponentProps, classifyProps } from './props'
 import { extractComponentDocs } from './descriptions'
+import { extractFrameworkContracts } from './contracts'
 
 const KNOWN_GROUPS: ComponentGroup[] = [
   'primitives',
@@ -147,6 +148,9 @@ function discoverTokens(repoRoot: string): RawTokens {
     color: grab('COLOR_TOKENS'),
     spacing: grab('SPACING_TOKENS'),
     radii: grab('RADII_TOKENS'),
+    shadows: grab('SHADOW_TOKENS'),
+    zIndex: grab('ZINDEX_TOKENS'),
+    transitions: grab('TRANSITION_TOKENS'),
   }
 }
 
@@ -161,10 +165,24 @@ function buildComponentRecord(
   },
   propsByName: Map<string, ManifestProp[]>,
   docsByName: Map<string, { description?: string; example?: string }>,
+  contractsByName: ReturnType<typeof extractFrameworkContracts>,
 ): RawComponent {
   const props = propsByName.get(base.name)
   const doc = docsByName.get(base.name)
   const classified = props ? classifyProps(props) : { events: [], slots: [] }
+  const extractedContracts = contractsByName.get(base.name) ?? {}
+  const frameworkContracts = Object.fromEntries(
+    base.frameworks.map((framework) => [
+      framework,
+      extractedContracts[framework] ?? {
+        source: 'unavailable' as const,
+        props: [],
+        events: [],
+        slots: [],
+        publicTypes: [],
+      },
+    ]),
+  )
   return {
     name: base.name,
     group: base.group,
@@ -176,6 +194,7 @@ function buildComponentRecord(
     ...(props ? { props } : {}),
     ...(classified.events.length ? { events: classified.events } : {}),
     ...(classified.slots.length ? { slots: classified.slots } : {}),
+    frameworkContracts,
   }
 }
 
@@ -191,6 +210,7 @@ export function discover(repoRoot: string = findRepoRoot()): RawDiscovery {
 
   const propsByName = extractComponentProps(repoRoot)
   const docsByName = extractComponentDocs(repoRoot)
+  const contractsByName = extractFrameworkContracts(repoRoot)
 
   const components: RawComponent[] = []
   for (const name of names) {
@@ -209,13 +229,14 @@ export function discover(repoRoot: string = findRepoRoot()): RawDiscovery {
         },
         propsByName,
         docsByName,
+        contractsByName,
       ),
     )
   }
 
   // Plugin components are namespaced separately
   for (const record of discoverPlugins(repoRoot).values()) {
-    components.push(buildComponentRecord(record, propsByName, docsByName))
+    components.push(buildComponentRecord(record, propsByName, docsByName, contractsByName))
   }
 
   return { components, tokens: discoverTokens(repoRoot) }

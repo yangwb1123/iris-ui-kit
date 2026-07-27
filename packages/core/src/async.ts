@@ -1,4 +1,5 @@
 import { createStore, type Store } from './store'
+import { createDisposableScope, type Disposable } from './disposable'
 
 /**
  * Framework-agnostic async data orchestration. Owns the fetch lifecycle
@@ -21,7 +22,7 @@ export interface AsyncResourceConfig<T> {
   initialData?: T
 }
 
-export interface AsyncResource<T, P extends unknown[] = []> {
+export interface AsyncResource<T, P extends unknown[] = []> extends Disposable {
   store: Store<AsyncState<T>>
   getState(): AsyncState<T>
   subscribe(listener: (state: AsyncState<T>) => void): () => void
@@ -104,6 +105,13 @@ export function createAsyncResource<T, P extends unknown[] = []>(
     }
   }
 
+  const scope = createDisposableScope()
+  // Register abort inflight as a teardown so destroy() cancels any pending request.
+  scope.add(() => {
+    token += 1
+    abortInFlight()
+  })
+
   return {
     store,
     getState: store.getState,
@@ -129,6 +137,13 @@ export function createAsyncResource<T, P extends unknown[] = []>(
       abortInFlight()
       lastParams = null
       store.setState({ ...initial })
+    },
+    /** Release all held resources (abort in-flight, clear subscriptions). */
+    destroy: () => {
+      scope.destroy()
+    },
+    get disposed() {
+      return scope.disposed
     },
   }
 }

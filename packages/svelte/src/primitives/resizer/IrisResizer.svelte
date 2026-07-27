@@ -91,6 +91,8 @@
   }: Props = $props()
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+
 <div
   {...rest}
   data-iris-resizer

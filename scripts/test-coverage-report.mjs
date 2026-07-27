@@ -3,14 +3,14 @@
 /**
  * pnpm test:coverage-report
  *
- * Scans all 4 framework adapter packages for test file sizes and reports:
- *   1. Top 20 test files (by line count)
- *   2. Components with test_size < 50 lines (low-coverage risk)
- *   3. High-complexity components with test_size < 100 lines (attention needed)
+ * Scans all four framework adapter packages for test file sizes and reports:
+ *   1. Top 20 test files by line count
+ *   2. Components with test_size < 50 lines
+ *   3. High-complexity components with test_size < 100 lines
  *
  * Exit code:
- *   0 — clean (no high-complexity components below threshold)
- *   1 — warnings (low-coverage or attention-needed components)
+ *   0 — clean
+ *   1 — low-coverage or attention-needed components found
  */
 
 import fs from 'node:fs'

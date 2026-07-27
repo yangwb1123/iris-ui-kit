@@ -24,10 +24,10 @@
 
 {#if Comp}
   {#if childText}
-    <svelte:component this={Comp} {...componentProps}>
+    <Comp {...componentProps}>
       {childText}
-    </svelte:component>
+    </Comp>
   {:else}
-    <svelte:component this={Comp} {...componentProps} />
+    <Comp {...componentProps} />
   {/if}
 {/if}

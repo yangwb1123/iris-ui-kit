@@ -47,6 +47,7 @@ export function IrisStatistic({
   size = 'md',
   style,
   className,
+  ...rest
 }: IrisStatisticProps): React.ReactElement {
   const affix: React.CSSProperties = { fontSize: '0.6em', color: 'var(--iris-muted)' }
   return (
@@ -54,6 +55,7 @@ export function IrisStatistic({
       data-iris-statistic=""
       data-trend={trend}
       className={className}
+      {...rest}
       style={{ display: 'flex', flexDirection: 'column', gap: 4, ...style }}
     >
       {label != null ? (

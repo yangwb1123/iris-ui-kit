@@ -72,6 +72,7 @@ export function IrisSelect<T = unknown>({
   renderTrigger,
   style,
   className,
+  ...rest
 }: IrisSelectProps<T>): React.ReactElement {
   const { t } = useI18n()
   const safeItems = items ?? []
@@ -199,6 +200,7 @@ export function IrisSelect<T = unknown>({
       aria-haspopup="listbox"
       aria-invalid={invalid ? 'true' : undefined}
       aria-describedby={ariaDescribedby}
+      {...rest}
       style={triggerStyle}
     >
       <span style={{ flex: 1, minWidth: 0 }}>{label}</span>

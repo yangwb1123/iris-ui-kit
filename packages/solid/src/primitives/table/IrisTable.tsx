@@ -12,7 +12,6 @@ import {
 import {
   aggregate,
   buildHeaderMatrix,
-  compareValues,
   computeVirtualRange,
   createCellRange,
   createExpansion,
@@ -31,7 +30,8 @@ import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/IrisVirtualScroll'
 import type { IrisTableProps } from './props'
-import type { IrisTableColumn, IrisTableColumnWidths, IrisTableSortState } from './types'
+import type { IrisTableColumn, IrisTableColumnWidths } from './types'
+import { useTableSort } from './useTableSort'
 
 export type { IrisTableProps } from './props'
 
@@ -196,46 +196,21 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     merged.onColumnWidthsChange?.(next)
   }
 
-  // ---- Sort ----
-  const [internalSort, setInternalSort] = createSignal<IrisTableSortState | null>(
-    props.defaultSort ?? null,
-  )
-  const effectiveSort = (): IrisTableSortState | null =>
-    props.sort !== undefined ? (props.sort ?? null) : internalSort()
-
-  // The active sort comparator (or null). Shared by the root-row sort AND the
-  // tree-mode child sort so a sortable tree reorders siblings at every depth.
-  const sortComparator = createMemo<((a: Row, b: Row) => number) | null>(() => {
-    const state = effectiveSort()
-    if (!state) return null
-    const column = leafColumns().find((c) => c.key === state.key)
-    if (!column) return null
-    const dir = state.direction === 'asc' ? 1 : -1
-    const sorter =
-      column.sorter ??
-      ((a: Row, b: Row) => compareValues(getCellValue(a, column), getCellValue(b, column)))
-    return (a, b) => sorter(a, b) * dir
-  })
-
-  const sortedRows = createMemo(() => {
-    const compare = sortComparator()
-    if (!compare) return merged.data ?? []
-    return [...(merged.data ?? [])].sort(compare)
+  // ---- Sort (useTableSort) ----
+  const {
+    sortState: effectiveSort,
+    cycleSort,
+    sortComparator,
+    sortedData: sortedRows,
+  } = useTableSort<Row>(() => merged.data ?? [], {
+    leafColumns,
+    sort: () => props.sort,
+    defaultSort: props.defaultSort,
+    onSortChange: (next) => merged.onSortChange?.(next),
   })
 
   const handleHeaderClick = (column: IrisTableColumn<Row>): void => {
-    if (!column.sortable) return
-    const current = effectiveSort()
-    let next: IrisTableSortState | null
-    if (!current || current.key !== column.key) {
-      next = { key: column.key, direction: 'asc' }
-    } else if (current.direction === 'asc') {
-      next = { key: column.key, direction: 'desc' }
-    } else {
-      next = null
-    }
-    if (props.sort === undefined) setInternalSort(next)
-    merged.onSortChange?.(next)
+    cycleSort(column)
   }
 
   const rowId = (row: Row, index: number): string | number => {

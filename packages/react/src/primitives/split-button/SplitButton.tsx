@@ -46,6 +46,7 @@ export function IrisSplitButton({
   menuAriaLabel,
   style,
   className,
+  ...rest
 }: IrisSplitButtonProps): React.ReactElement {
   const { t } = useI18n()
   const rootRef = React.useRef<HTMLDivElement | null>(null)
@@ -95,6 +96,7 @@ export function IrisSplitButton({
       data-iris-split-button=""
       data-state={open ? 'open' : 'closed'}
       className={className}
+      {...rest}
       style={{ position: 'relative', display: 'inline-flex', ...style }}
     >
       <button

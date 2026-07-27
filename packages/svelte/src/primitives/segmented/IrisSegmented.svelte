@@ -139,6 +139,7 @@
   data-iris-segmented
   data-iris-segmented-size={size}
   data-disabled={disabled ? 'true' : undefined}
+  tabindex="-1"
   onkeydown={onKeyDown}
   style="display:{block ? 'flex' : 'inline-flex'}; {block
     ? 'width:100%;'

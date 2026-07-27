@@ -89,6 +89,7 @@ export function IrisTree({
   errorState,
   style,
   className,
+  ...rest
 }: IrisTreeProps): React.ReactElement {
   const safeNodes = nodes ?? []
   const expControlled = expandedProp !== undefined
@@ -322,6 +323,7 @@ export function IrisTree({
       onKeyDown={onKeyDown}
       className={className}
       data-iris-tree=""
+      {...rest}
       style={{
         display: 'flex',
         flexDirection: 'column',

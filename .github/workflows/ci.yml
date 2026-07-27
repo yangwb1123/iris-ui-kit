@@ -49,6 +49,9 @@ jobs:
       - name: Pack + external npm install smoke check
         run: pnpm check:pack-install
 
+      - name: Acceptance suite (core gates)
+        run: node cli.mjs acceptance
+
       - name: Manifest up-to-date
         run: pnpm check:manifest
 
@@ -76,26 +79,20 @@ jobs:
       - name: RSC directive
         run: pnpm check:rsc
 
+
       - name: Test
         run: pnpm test
 
       - name: Browser E2E (four CMS frameworks) + visual regression
         run: |
           cd apps/cms-react
-          # playwright.config.ts's project pins channel: 'chrome' (see that
-          # file for why) — install the matching browser, not bundled chromium.
           npx playwright install --with-deps chrome
           npx playwright test
 
-      - name: Bench
-        run: pnpm bench
-
-      - name: Arch ratchet (no new oversized files / no growth of grandfathered)
-        run: pnpm arch-check:ratchet
-
-      - name: Arch full audit (advisory — lists all oversized files)
-        run: pnpm arch-check
-        continue-on-error: true
+      - name: Bench + regression check
+        run: |
+          pnpm bench
+          node scripts/check-bench-regression.mjs
 
       - name: Change budget (advisory)
         run: pnpm change-budget

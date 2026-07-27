@@ -24,6 +24,9 @@ export default defineConfig(({ command }) => ({
     // This app does not use jest-dom. The filename tells vite-plugin-solid not
     // to auto-inject its optional peer as an unresolvable setup module.
     setupFiles: ['./vitest.setup.no-jest-dom.ts'],
+    // Playwright specs have their own runner and must not be collected by
+    // Vitest's default `*.spec.ts` discovery.
+    exclude: ['**/node_modules/**', 'e2e/**'],
   },
   resolve:
     command === 'serve'
@@ -40,6 +43,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui-kit/theme': src('theme'),
             '@iris-ui-kit/skins': src('skins'),
             '@iris-ui-kit/icons': src('icons'),
+            '@iris-ui-kit/solid/form': srcSubpath('solid', 'form/index'),
             '@iris-ui-kit/solid': src('solid'),
           },
         }

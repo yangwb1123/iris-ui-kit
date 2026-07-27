@@ -245,4 +245,93 @@ describe('formBuilderPlugin', () => {
     const { tokens } = runPlugins([formBuilderPlugin])
     expect(tokens['--iris-form-gap']).toBe(formBuilderTokens['--iris-form-gap'])
   })
+
+  describe('array sub-field validation', () => {
+    it('compiles validators for nested sub-fields', async () => {
+      const { form } = createFormBuilder({
+        fields: [
+          {
+            name: 'tags',
+            type: 'array',
+            fields: [
+              { name: 'name', type: 'text', required: true },
+              { name: 'level', type: 'select', required: true },
+            ],
+          },
+        ],
+      })
+      form.arrayInsert('tags', 0, { name: '', level: '' })
+      await form.validateForm()
+      const errors = form.getState().errors
+      expect(errors['tags[0].name']).toBeTruthy()
+      expect(errors['tags[0].level']).toBeTruthy()
+    })
+
+    it('passes when sub-fields are filled', async () => {
+      const { form } = createFormBuilder({
+        fields: [
+          {
+            name: 'tags',
+            type: 'array',
+            fields: [{ name: 'name', type: 'text', required: true }],
+          },
+        ],
+      })
+      form.arrayInsert('tags', 0, { name: 'hello' })
+      await form.validateForm()
+      expect(form.getState().errors['tags[0].name']).toBeUndefined()
+    })
+
+    it('non-required sub-fields do not block', async () => {
+      const { form } = createFormBuilder({
+        fields: [
+          {
+            name: 'items',
+            type: 'array',
+            fields: [
+              { name: 'label', type: 'text' },
+              { name: 'desc', type: 'text', required: true },
+            ],
+          },
+        ],
+      })
+      form.arrayInsert('items', 0, { label: 'x', desc: '' })
+      await form.validateForm()
+      expect(form.getState().errors['items[0].desc']).toBeTruthy()
+      expect(form.getState().errors['items[0].label']).toBeUndefined()
+    })
+
+    it('multiple rows validate independently', async () => {
+      const { form } = createFormBuilder({
+        fields: [
+          {
+            name: 'items',
+            type: 'array',
+            fields: [{ name: 'val', type: 'text', required: true }],
+          },
+        ],
+      })
+      form.arrayInsert('items', 0, { val: 'ok' })
+      form.arrayInsert('items', 1, { val: '' })
+      await form.validateForm()
+      const errors = form.getState().errors
+      expect(errors['items[0].val']).toBeUndefined()
+      expect(errors['items[1].val']).toBeTruthy()
+    })
+
+    it('required array field itself is still validated', async () => {
+      const { form } = createFormBuilder({
+        fields: [
+          {
+            name: 'items',
+            type: 'array',
+            required: true,
+            fields: [{ name: 'val', type: 'text' }],
+          },
+        ],
+      })
+      await form.validateForm()
+      expect(form.getState().errors['items']).toBeTruthy()
+    })
+  })
 })

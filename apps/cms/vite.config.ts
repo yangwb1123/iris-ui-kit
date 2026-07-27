@@ -18,6 +18,11 @@ export default defineConfig(({ command }) => ({
     port: 5175,
     strictPort: true,
   },
+  test: {
+    // Playwright specs have their own runner and must not be collected by
+    // Vitest's default `*.spec.ts` discovery.
+    exclude: ['**/node_modules/**', 'e2e/**'],
+  },
   resolve:
     command === 'serve'
       ? {
@@ -33,6 +38,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui-kit/theme': src('theme'),
             '@iris-ui-kit/skins': src('skins'),
             '@iris-ui-kit/icons': src('icons'),
+            '@iris-ui-kit/vue/form': srcSubpath('vue', 'form/index'),
             '@iris-ui-kit/vue': src('vue'),
           },
         }

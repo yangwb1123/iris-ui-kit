@@ -16,6 +16,8 @@
 import { createStore } from './store'
 import { createSelectionModel } from './selection'
 import { pageCount as computePageCount } from './data-view'
+import { createResilientFetcher } from './resilient-fetcher'
+import { createOutbox } from './outbox'
 import type {
   DataSourceQuery,
   DataSourceMode,
@@ -69,8 +71,29 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
     store.setState((s) => ({ ...s, selectedKeys: keys })),
   )
 
+  // Optional resilient fetcher wrapping the raw config.fetcher with
+  // cache (dedup/TTL/SWR) + circuit breaker + rate limiter.
+  const resilient = config.resilient
+    ? createResilientFetcher<{ rows: T[]; total: number }>(config.resilient)
+    : null
+
+  // Optional mutation outbox for offline-first, at-least-once delivery.
+  const outboxOpts = config.outbox
+  const outbox = outboxOpts
+    ? createOutbox<{ description: string; run: () => Promise<unknown> }>({
+        execute: async (m) => {
+          await m.run()
+        },
+        storage: typeof outboxOpts === 'object' ? (outboxOpts.storage as never) : undefined,
+        maxAttempts: typeof outboxOpts === 'object' ? outboxOpts.maxAttempts : undefined,
+      })
+    : null
+
   let epoch = 0
   let inFlight: AbortController | null = null
+
+  const cacheKey = (query: DataSourceQuery): string =>
+    JSON.stringify({ page: query.page, ps: query.pageSize, s: query.sort, f: query.filters })
 
   const buildQuery = (overridePage?: number): DataSourceQuery => {
     const s = store.getState()
@@ -122,13 +145,25 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
     const query = buildQuery(opts.page)
 
     try {
-      const result = ac ? config.fetcher(query, ac.signal) : config.fetcher(query)
-      if (isThenable(result)) {
+      let result: { rows: T[]; total: number }
+      if (resilient) {
         store.setState((s) => ({ ...s, loading: !append, loadingMore: append, error: undefined }))
-        const awaited = await result
+        const key = cacheKey(query)
+        const raw = await resilient.fetch(key, async () => {
+          return ac ? config.fetcher(query, ac.signal) : config.fetcher(query)
+        })
         if (token !== epoch) return
-        applyResult(awaited, append, opts.page)
-        return
+        result = raw
+      } else {
+        const raw = ac ? config.fetcher(query, ac.signal) : config.fetcher(query)
+        if (isThenable(raw)) {
+          store.setState((s) => ({ ...s, loading: !append, loadingMore: append, error: undefined }))
+          const awaited = await raw
+          if (token !== epoch) return
+          result = awaited
+        } else {
+          result = raw
+        }
       }
       applyResult(result, append, opts.page)
     } catch (error) {
@@ -207,12 +242,19 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
     async mutate(action, options) {
       const snapshot = store.getState().rows
       if (options?.optimistic) store.setState((s) => ({ ...s, rows: options.optimistic!(s.rows) }))
-      try {
-        await action()
-      } catch (error) {
-        if (options?.optimistic) store.setState((s) => ({ ...s, rows: snapshot }))
-        await controller.load()
-        throw error
+
+      if (outbox) {
+        // Offline-first: enqueue in the outbox for at-least-once delivery.
+        outbox.enqueue({ description: 'data-source mutate', run: action })
+        await outbox.flush()
+      } else {
+        try {
+          await action()
+        } catch (error) {
+          if (options?.optimistic) store.setState((s) => ({ ...s, rows: snapshot }))
+          await controller.load()
+          throw error
+        }
       }
       if (!options?.skipReload) await controller.load()
     },
@@ -224,20 +266,28 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
         pendingRows: [...s.pendingRows, rowKey],
       }))
       if (options?.optimistic) store.setState((s) => ({ ...s, rows: options.optimistic!(s.rows) }))
-      try {
-        await action()
-      } catch (error) {
-        if (options?.optimistic) store.setState((s) => ({ ...s, rows: snapshot }))
-        store.setState((s) => ({
-          ...s,
-          rowErrors: { ...s.rowErrors, [rowKey]: error },
-          pendingRows: s.pendingRows.filter((k) => k !== rowKey),
-        }))
-        throw error
+
+      if (outbox) {
+        // Offline-first: enqueue in the outbox for at-least-once delivery.
+        outbox.enqueue({ description: `mutate-row:${rowKey}`, run: action })
+        await outbox.flush()
+      } else {
+        try {
+          await action()
+        } catch (error) {
+          if (options?.optimistic) store.setState((s) => ({ ...s, rows: snapshot }))
+          store.setState((s) => ({
+            ...s,
+            rowErrors: { ...s.rowErrors, [rowKey]: error },
+            pendingRows: s.pendingRows.filter((k) => k !== rowKey),
+          }))
+          throw error
+        }
       }
       store.setState((s) => ({ ...s, pendingRows: s.pendingRows.filter((k) => k !== rowKey) }))
       if (!options?.skipReload) await controller.load()
     },
+    outbox: outbox ?? undefined,
     destroy() {
       unsubSelection()
       epoch += 1

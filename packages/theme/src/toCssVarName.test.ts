@@ -14,6 +14,31 @@ describe('toCssVarName', () => {
   it('handles keys with no dots', () => {
     expect(toCssVarName('iris')).toBe('--iris')
   })
+
+  it('handles multi-segment keys with hyphens', () => {
+    expect(toCssVarName('iris.surface.hover')).toBe('--iris-surface-hover')
+  })
+
+  it('handles keys with numbers', () => {
+    expect(toCssVarName('iris.z.modal')).toBe('--iris-z-modal')
+    expect(toCssVarName('iris.gap.2xl')).toBe('--iris-gap-2xl')
+  })
+
+  it('handles single segment without prefix', () => {
+    expect(toCssVarName('background')).toBe('--background')
+  })
+
+  it('preserves existing dashes', () => {
+    expect(toCssVarName('iris.ui-scale')).toBe('--iris-ui-scale')
+  })
+
+  it('handles empty string', () => {
+    expect(toCssVarName('')).toBe('--')
+  })
+
+  it('handles trailing dot', () => {
+    expect(toCssVarName('iris.')).toBe('--iris-')
+  })
 })
 
 describe('getCssVar', () => {

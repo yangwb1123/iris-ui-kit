@@ -3,7 +3,7 @@
 // builds are embedded under frontend/dist/<fw>; a custom asset handler serves
 // the currently-selected one from the root (so the CMS's absolute /assets/…
 // paths resolve) and injects a window.irisNative shim that wires the
-// @iris-ui/core save/clipboard bridges to Wails (native Save dialog + clipboard).
+// @iris-ui-kit/core save/clipboard bridges to Wails (native Save dialog + clipboard).
 package main
 
 import (
@@ -67,7 +67,7 @@ func (h *assetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // injectBridge inserts a window.irisNative definition before the app's module
-// script so @iris-ui/core's registerDesktopBridges() finds it. saveFile uses the
+// script so @iris-ui-kit/core's registerDesktopBridges() finds it. saveFile uses the
 // bound Go method; writeClipboard uses the Wails JS runtime.
 func injectBridge(html []byte, fw string) []byte {
 	shim := `<script>window.irisNative={platform:'wails',framework:'` + fw +

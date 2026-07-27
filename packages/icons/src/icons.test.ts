@@ -270,4 +270,13 @@ describe('@iris-ui-kit/icons resolveThemedIcon', () => {
   it('unknown alias target yields undefined', () => {
     expect(resolveThemedIcon(reg, 'check', { iconOverrides: { check: 'ghost' } })).toBeUndefined()
   })
+
+  it('overrides work with themed set selection', () => {
+    const icon = resolveThemedIcon(reg, 'check', {
+      icons: 'alt',
+      iconOverrides: { check: 'search' },
+    })
+    // Override redirects to 'search' which falls back to default set
+    expect(icon!.nodes.some((n) => n.tag === 'circle')).toBe(true)
+  })
 })

@@ -13,6 +13,16 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
+    "@iris-ui-kit/core": "workspace:^",
+    "@iris-ui-kit/plugin-admin": "workspace:^",
+    "@iris-ui-kit/plugin-calendar": "workspace:^",
+    "@iris-ui-kit/plugin-charts": "workspace:^",
+    "@iris-ui-kit/plugin-dashboard": "workspace:^",
+    "@iris-ui-kit/plugin-editor": "workspace:^",
+    "@iris-ui-kit/plugin-form-builder": "workspace:^",
+    "@iris-ui-kit/plugin-kanban": "workspace:^",
+    "@iris-ui-kit/plugin-markdown": "workspace:^",
+    "@iris-ui-kit/plugin-query-builder": "workspace:^",
     "@iris-ui-kit/react": "workspace:*",
     "@iris-ui-kit/tokens": "workspace:*",
     "react": "^18.3.1",

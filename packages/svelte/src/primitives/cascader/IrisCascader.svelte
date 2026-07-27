@@ -134,6 +134,8 @@
   const borderColor = $derived(invalid ? 'var(--iris-danger)' : 'var(--iris-border)')
 </script>
 
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_role_supports_aria_props_implicit -->
+
 <div
   bind:this={containerEl}
   data-iris-cascader

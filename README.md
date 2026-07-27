@@ -1,98 +1,52 @@
 # Iris UI
 
-AI-native cross-framework component infrastructure. From meta UI primitives to full system skeletons, every layer is themeable like VS Code.
+AI-native, cross-framework (React · Vue · Solid · Svelte), token-driven,
+plugin-extensible UI infrastructure. One framework-agnostic
+`@iris-ui-kit/core` defines shared behavior; each adapter is a thin reactive
+bridge; every layer is themed by tokens; heavy capabilities ship as plugins.
 
-> Not "yet another component library" — the native output format for AI-generated application UIs.
+> Not “yet another component library” — the native output format for
+> AI-generated application UIs.
 
 ## Status
 
 🔧 **Alpha** — the first npm publish has not been authorized. The generated
-manifest currently reports **154 components across four frameworks (154 each)**,
-all backed by the same framework-agnostic engines. Its **616 adapter contracts**
-are all extracted natively from their corresponding framework sources, with zero
-`unavailable` contracts. CI declares tests, typecheck, lint, build, coverage,
-package-install smoke tests, bundle budgets, RSC directives, browser E2E/visual
-regression, benchmarks, formatting, token audits, generated-reference checks,
-and the architecture ratchet.
+manifest reports **154 components in each of four frameworks**. All **616
+adapter contracts** are extracted from their corresponding framework sources,
+with zero `unavailable` placeholders.
 
-The current combined worktree has completed its full closeout: all declared
-quality gates are green, including 19/19 browser E2E and visual checks. See
-[SPRINT.md](./docs/SPRINT.md) for the verified results.
+CI covers tests, instrumented coverage, typechecking, lint, builds, external
+installation of 27 publishable packages, bundle budgets, RSC directives,
+four-framework browser E2E and visual regression, benchmarks, formatting,
+token audits, generated references, registry integrity, desktop parity, and
+the architecture ratchet. See [SPRINT.md](./docs/SPRINT.md) for the latest
+verified run.
 
 ## Packages
 
-| Package                             | Description                                                                                                                          |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `@iris-ui-kit/core`                 | Framework-agnostic engines: store, state machine, forms, i18n, virtualization, async, pagination                                     |
-| `@iris-ui-kit/tokens`               | `IrisTheme` types + Light/Dark default themes                                                                                        |
-| `@iris-ui-kit/theme`                | Theme engine: `applyTheme`, `getCssVar`, theme store, direction & color-scheme                                                       |
-| `@iris-ui-kit/icons`                | Built-in Feather-style icon set (structured nodes) + icon-set interface                                                              |
-| `@iris-ui-kit/react`                | React 18 / 19 adapter — all 154 manifest components                                                                                  |
-| `@iris-ui-kit/vue`                  | Vue 3.5 adapter — all 154 manifest components                                                                                        |
-| `@iris-ui-kit/solid`                | SolidJS adapter — all 154 manifest components, thin bridges over `@iris-ui-kit/core`                                                 |
-| `@iris-ui-kit/svelte`               | Svelte 5 adapter — all 154 manifest components, thin bridges over `@iris-ui-kit/core`                                                |
-| `@iris-ui-kit/skins`                | Loadable, token-built skin system: inheritance, custom tokens, marketplace catalog, runtime engine                                   |
-| `@iris-ui-kit/registry`             | Typed source registry contracts with SHA-256-verified remote item and file metadata                                                  |
-| `@iris-ui-kit/marketplace`          | Safe runtime store for integrity-checked skins, fonts, page blueprints, and view presets                                             |
-| `@iris-ui-kit/manifest`             | Machine-readable component/token manifest (`manifest.json` / `llms.txt`) for AI-native consumption                                   |
-| `@iris-ui-kit/cli`                  | Source registry workflow: `init`, `registry add`, `add`, `diff`, and `update`                                                        |
-| `@iris-ui-kit/mcp`                  | MCP server over the typed manifest — `list_components` / `search_components` / `get_component_api` / `scaffold_component` for agents |
-| `@iris-ui-kit/eslint-plugin`        | Architecture lint rules, including plugin registration and framework-boundary checks                                                 |
-| `@iris-ui-kit/plugin-locale-zh`     | Simplified-Chinese (zh-CN) message pack, packaged as an Iris plugin                                                                  |
-| `@iris-ui-kit/plugin-editor`        | Code editor plugin (CodeMirror 6): `IrisCodeEditor` for all four frameworks                                                          |
-| `@iris-ui-kit/plugin-pro-table`     | vxe-table-style CRUD data table plugin: `IrisProTable` for all four frameworks                                                       |
-| `@iris-ui-kit/plugin-charts`        | Zero-dependency SVG line, bar, sparkline, multi-line, stacked-bar, and donut charts                                                  |
-| `@iris-ui-kit/plugin-form-builder`  | Schema-driven form builder: `IrisFormBuilder` renders a form from a declarative schema                                               |
-| `@iris-ui-kit/plugin-admin`         | Schema-driven admin shell with validated schemas, client/server data pages, query, CRUD, permissions, and row actions                |
-| `@iris-ui-kit/plugin-calendar`      | Four-framework event calendar                                                                                                        |
-| `@iris-ui-kit/plugin-dashboard`     | Token-themed draggable dashboard grid                                                                                                |
-| `@iris-ui-kit/plugin-kanban`        | Declarative drag-and-drop kanban board                                                                                               |
-| `@iris-ui-kit/plugin-markdown`      | Safe structured-node Markdown renderer                                                                                               |
-| `@iris-ui-kit/plugin-notifications` | Persistent notification inbox and panel                                                                                              |
-| `@iris-ui-kit/plugin-query-builder` | Visual builder for typed data-engine filter rules                                                                                    |
+| Package                                 | Description                                                                                                                                         |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@iris-ui-kit/core`                     | Framework-agnostic engines, controllers, contract scenarios, and nine resilience primitives                                                         |
+| `@iris-ui-kit/tokens`                   | `IrisTheme` types, Light/Dark themes, and DTCG output                                                                                               |
+| `@iris-ui-kit/theme`                    | Theme store, CSS variables, RTL, reduced motion, and color-scheme handling                                                                          |
+| `@iris-ui-kit/skins`                    | Loadable/inheritable skins, persistence, FOUC prevention, live patching, and marketplace SDK                                                        |
+| `@iris-ui-kit/icons`                    | 90+ structured, individually tree-shakeable icons and registries                                                                                    |
+| `@iris-ui-kit/{react,vue,solid,svelte}` | The same 154-component surface, framework-native rendering, and thin core bridges                                                                   |
+| `@iris-ui-kit/plugin-*`                 | 12 optional plugins: editor, pro-table, charts, form-builder, notifications, admin, calendar, dashboard, kanban, markdown, query-builder, locale-zh |
+| `@iris-ui-kit/{registry,marketplace}`   | Typed source registry and integrity-checked runtime resources                                                                                       |
+| `@iris-ui-kit/manifest`                 | Generated `manifest.json` / `llms.txt` for AI-native consumption                                                                                    |
+| `@iris-ui-kit/mcp`                      | Manifest-backed MCP server with 11 component discovery, generation, and validation tools                                                            |
+| `@iris-ui-kit/cli`                      | Registry workflows and repository engineering checks                                                                                                |
+| `@iris-ui-kit/eslint-plugin`            | Architecture rules for imports, providers, plugin registration, and legacy tone usage                                                               |
 
-## Architecture
+## Quick start
 
-The same logic powers all four frameworks: **engines sink into `@iris-ui-kit/core`** (pure, framework-agnostic), and each adapter is a thin bridge — React via `useSyncExternalStore`, Vue via `ref` + `subscribe`, Solid via `createSignal` + `subscribe`, Svelte via `readable` stores. A new framework adapter therefore re-bridges engines, not logic.
+The repository currently consumes workspace packages directly. After the first
+authorized release:
 
-Five-layer model with a transversal theme layer and an orthogonal behaviors layer:
-
+```bash
+pnpm add @iris-ui-kit/react @iris-ui-kit/theme @iris-ui-kit/tokens
 ```
-Layer 4: System Skeletons (Login / Dashboard templates)
-Layer 3: Layouts          (Sidebar / Header / Dashboard Grid)
-Layer 2: Composite        (Table / Tree / Splitter / Calendar)
-Layer 1: Primitives       (Button / Dialog / Popover / Select / …)
-Layer 0: Theme System     (tokens / theme / icons)  ← transversal
-Behaviors:                (ClickOutside / Movable / Resizable / Hotkey)  ← orthogonal
-```
-
-On top of the component layers sits a Vben-style **admin layer** (the `admin` entry of every adapter, e.g. `@iris-ui-kit/react/admin`): `AdminLayout` shell, `NavMenu`, `AdminTabs` tab navigation, and `AdminBreadcrumb`, all driven by the core nav/tabsNav engines. And for AI agents, **`@iris-ui-kit/mcp`** serves the typed component manifest over the Model Context Protocol — list, search, fetch a component's full prop contract, or scaffold a ready-to-edit usage snippet in any of the four frameworks.
-
-Read [AGENTS.md](./AGENTS.md) for the full vision and [ROADMAP.md](./docs/ROADMAP.md) for the expansion plan.
-
-## Reference and delivery proof
-
-- The React, Vue, Solid, and Svelte CMS applications render real
-  `DashboardPage`, `LoginPage`, `UsersPage`, `SettingsPage`, and
-  `WorkspacePage` implementations. There is no `GenericPage` fallback.
-- Next App Router, Nuxt, SolidStart, and SvelteKit each exercise routed data and
-  feedback flows, hydration, and production HTTP route tests.
-- `pnpm check:pack-install` auto-discovers all **27 publishable packages**, packs
-  real tarballs, installs them with plain npm outside the workspace, and checks
-  ESM/CJS exports, TypeScript and Svelte consumers, licenses, and the CLI.
-- CI has a separate `native-linux` job with `IRIS_REQUIRE_NATIVE_BUILD=1`; it
-  installs the native toolchains and builds/tests Electron, Tauri, and Wails
-  without skip fallbacks.
-- The release workflow is default-deny: it requires the repository variable
-  `IRIS_NPM_RELEASE_ENABLED=true`, a successful push-triggered CI run on `main`,
-  and that run's exact `head_sha`. Enabling the variable and choosing the first
-  version remain explicit maintainer decisions.
-
-## Usage
-
-> Peer deps: React `^18 || ^19` (+ `react-dom`), Vue `^3.5`, Solid `^1.9`, or Svelte `^5`.
-
-**React** — wrap your tree in `ThemeProvider`, then use components:
 
 ```tsx
 import { ThemeProvider, IrisButton } from '@iris-ui-kit/react'
@@ -107,38 +61,71 @@ const theme = createThemeStore({
 export function App() {
   return (
     <ThemeProvider store={theme}>
-      <IrisButton variant="solid">Save</IrisButton>
+      <IrisButton variant="solid">Get started</IrisButton>
     </ThemeProvider>
   )
 }
 ```
 
-**Vue** — same surface, idiomatic bridge:
+The Vue, Solid, and Svelte adapters expose the same component names and
+semantics with idiomatic framework bridges. Deep-import by area to keep bundles
+lean:
 
-```vue
-<script setup lang="ts">
-import { ThemeProvider, IrisButton } from '@iris-ui-kit/vue'
-import { createThemeStore } from '@iris-ui-kit/theme'
-import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
-
-const theme = createThemeStore({
-  themes: { light: lightTheme, dark: darkTheme },
-  default: 'light',
-})
-</script>
-
-<template>
-  <ThemeProvider :store="theme">
-    <IrisButton variant="solid">Save</IrisButton>
-  </ThemeProvider>
-</template>
+```ts
+import { useForm } from '@iris-ui-kit/react/form'
 ```
 
-Deep-import by area to keep bundles lean: `import { useForm } from '@iris-ui-kit/react/form'`.
+## Architecture
 
-### React Server Components
+```text
+Plugins (12, opt-in)                    IrisProvider(plugins[])
+══════════════════════════════════════════════════════════════
+Layer 4  Systems       Login / Dashboard / Admin shell       ✅ four frameworks
+Layer 3  Layouts       Stack / Grid / Sidebar / Header        ✅ four frameworks
+Layer 2  Composites    Table / Tree / VirtualScroll / Menu    ✅ four frameworks
+Layer 1  Primitives    Display / form / overlay / feedback    ✅ four frameworks
+────────────────────────────────────────────────────────────────
+Layer 0  Core          engines / controllers / resilience     ✅ framework-agnostic
+         Theme         tokens / theme / skins / icons         ✅ transversal
+         Behaviors     resize / move / hotkey / outside click ✅ orthogonal
+```
 
-Every `@iris-ui-kit/react` module is interactive (hooks/state), so the package ships the `'use client'` directive on **every** entry — including deep imports like `@iris-ui-kit/react/form`. You can import Iris components straight into a Next.js App Router Server Component; the import is already a client boundary, so no manual wrapper is needed:
+Shared state and behavior sink into `@iris-ui-kit/core`. React bridges stores
+with `useSyncExternalStore`, Vue with refs and subscriptions, Solid with
+signals, and Svelte with stores. New adapters re-bridge the same engines instead
+of reimplementing product logic.
+
+### Resilience layer
+
+The data layer includes disposable scopes, an event bus, query cache, circuit
+breaker, rate limiter, resilient fetcher, offline outbox, and reconnecting
+sources. These are wired into real consumers such as `createDataSource`, async
+resources, plugins, CMS realtime pages, and desktop process monitors.
+
+## Delivery proof
+
+- React, Vue, Solid, and Svelte CMS apps render dedicated Dashboard, Login,
+  Users, Settings, Form Builder, and schema-driven Workspace pages. React also
+  demonstrates realtime, Pro Table, and Markdown pages; there is no
+  `GenericPage` fallback.
+- Next App Router, Nuxt, SolidStart, and SvelteKit exercise routed data,
+  feedback, hydration, and production HTTP behavior.
+- The playgrounds demonstrate all 12 plugins; VitePress provides English and
+  Simplified-Chinese guides plus the generated component explorer.
+- `pnpm check:pack-install` packs every publishable package and validates it
+  from plain npm projects outside the workspace.
+- CI’s strict `native-linux` job builds and tests Electron, Tauri, and Wails
+  with skip fallbacks disabled.
+- Releases are default-deny and require
+  `IRIS_NPM_RELEASE_ENABLED=true`, a successful push CI run on `main`, and that
+  run’s exact immutable `head_sha`.
+
+## React Server Components
+
+Every `@iris-ui-kit/react` entry is interactive and ships a build-time
+`'use client'` directive, including subpaths such as
+`@iris-ui-kit/react/form`. Next.js App Router consumers can therefore import
+Iris components without adding a manual client wrapper:
 
 ```tsx
 // app/page.tsx — a Server Component
@@ -149,35 +136,30 @@ export default function Page() {
 }
 ```
 
-The directive is injected at build time and verified in CI (`pnpm check:rsc`). Vue/Nuxt has no equivalent — its server/client boundary is handled by the framework — so the Vue adapter needs no counterpart.
+`pnpm check:rsc` verifies every built entry.
 
 ## Development
 
 ```bash
 pnpm install
-pnpm dev         # both playgrounds — Vue → http://localhost:5173, React → :5174
-pnpm dev:vue     # Vue playground only
-pnpm dev:react   # React playground only
-pnpm dev:docs    # VitePress docs site
-
-# Dev runs the libraries straight from source (instant start, HMR on any
-# @iris-ui-kit/* edit — no build step). Use dev:watch for the old tsup --watch graph.
-pnpm preview     # build, then serve the production bundles (preview:vue / :react too)
-
-pnpm build       # Build all packages
-pnpm test        # Run all tests
-pnpm typecheck   # Typecheck all packages
-pnpm lint        # Lint all packages
-pnpm format      # Format with Prettier
-pnpm size        # Bundle-size budget gate (gzip)
-pnpm check:rsc   # Assert React entries carry 'use client' (run after build)
-pnpm check:pack-install # Pack/install all 27 publishable packages as external consumers
-pnpm check:manifest     # Verify generated manifest/llms and 616 native adapter contracts
-pnpm check:docs-reference # Verify the generated component reference
-pnpm check:registry     # Validate official source-registry/marketplace templates
-pnpm test:coverage      # Workspace coverage report
-pnpm arch-check:ratchet # Reject new/growing oversized source files
+pnpm dev                    # Vue and React playgrounds
+pnpm dev:docs               # VitePress
+pnpm turbo run test typecheck lint build
+pnpm test:coverage
+pnpm size
+pnpm check:manifest
+pnpm check:docs-reference
+pnpm check:registry
+pnpm check:rsc
+pnpm check:desktop-parity
+pnpm check:pack-install
+pnpm bench
+pnpm format:check
+pnpm arch-check:ratchet
 ```
+
+Read [AGENTS.md](./AGENTS.md) for architecture and contribution constraints,
+and [ROADMAP.md](./docs/ROADMAP.md) for future directions.
 
 ## License
 

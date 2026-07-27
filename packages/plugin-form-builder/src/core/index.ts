@@ -218,22 +218,39 @@ export function createFormBuilder(schema: FormSchema, config: FormBuilderConfig 
 
   const initialValues: FormValues = {}
   const validators: Record<string, (value: unknown, values: FormValues) => string | undefined> = {}
-  for (const field of schema.fields) {
-    // Array (repeater) fields seed to an EMPTY array — no auto-seeded first row;
-    // rows are added explicitly via the renderer's "Add" button.
-    initialValues[field.name] = seedValue(field) as FormValues[string]
+
+  /** Recursively compile validators for a field and its sub-fields (arrays).
+   *  Uses "[]" pattern keys (e.g. "tags[].name") which the core form engine
+   *  expands to "tags[0].name", "tags[1].name", etc. at validation time. */
+  function compileValidators(field: FieldSpec, prefix: string): void {
+    const fullKey = prefix ? `${prefix}.${field.name}` : field.name
+    const label = field.label ?? humanize(field.name)
+
     if (field.required) {
-      const label = labelOf(field)
-      // `required` on an array field = the array must be non-empty; on a scalar
-      // field = a non-empty value. A conditionally-hidden field skips its check,
-      // so it can't silently block submit when the user can't even see it.
       const isMissing =
         field.type === 'array'
           ? (value: unknown) => !Array.isArray(value) || value.length === 0
           : (value: unknown) => isEmpty(value)
-      validators[field.name] = (value: unknown, values: FormValues) =>
+      validators[fullKey] = (value: unknown, values: FormValues) =>
         isVisible(field, values) && isMissing(value) ? `${label} is required` : undefined
     }
+
+    // Array sub-fields: compile validators with "[]" pattern so the core
+    // engine expands them for each row at validation time.
+    if (field.type === 'array' && field.fields) {
+      const arrayPrefix = prefix ? `${prefix}.${field.name}` : field.name
+      for (const sub of field.fields) {
+        // Use "tags[].name" pattern — core will expand to "tags[0].name" etc.
+        compileValidators(sub, `${arrayPrefix}[]`)
+      }
+    }
+  }
+
+  for (const field of schema.fields) {
+    // Array (repeater) fields seed to an EMPTY array — no auto-seeded first row;
+    // rows are added explicitly via the renderer's "Add" button.
+    initialValues[field.name] = seedValue(field) as FormValues[string]
+    compileValidators(field, '')
   }
 
   const form = createFormStore<FormValues>({

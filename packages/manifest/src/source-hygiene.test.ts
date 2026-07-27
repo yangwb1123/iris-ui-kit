@@ -37,7 +37,8 @@ const ALLOWED: Record<string, string> = {
   // No current exceptions. Example shape if ever needed:
   // Keep entries below sorted by relative path.
   'packages/core/src/form.ts':
-    'createDirtyGuard: as any casts for beforeunload event (deprecated returnValue + globalThis addEventListener)',
+    'createDirtyGuard: as any casts for beforeunload event (deprecated returnValue + globalThis addEventListener) + resolveValidator: as any casts for dynamic validator key lookup across Key<V> type bounds',
+  'packages/core/src/form.bench.ts': 'as any casts for form store type erasure in benchmark helper',
   'packages/plugin-pro-table/src/solid/index.tsx':
     'SolidJS style prop exceeds TS complexity limit (TS2590); cast is scoped inline',
 }

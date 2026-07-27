@@ -43,6 +43,7 @@ export function IrisCopyButton({
   size = 'md',
   style,
   className,
+  ...rest
 }: IrisCopyButtonProps): React.ReactElement {
   const { t } = useI18n()
   const [copied, setCopied] = React.useState(false)
@@ -83,6 +84,7 @@ export function IrisCopyButton({
       disabled={disabled}
       onClick={copy}
       className={className}
+      {...rest}
       style={{
         display: 'inline-flex',
         alignItems: 'center',

@@ -8,6 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
+    "e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "clean": "rm -rf dist .turbo"
@@ -15,12 +16,14 @@
   "dependencies": {
     "@iris-ui-kit/cms-shared": "workspace:*",
     "@iris-ui-kit/core": "workspace:*",
+    "@iris-ui-kit/plugin-form-builder": "workspace:^",
     "@iris-ui-kit/plugin-notifications": "workspace:*",
     "@iris-ui-kit/solid": "workspace:*",
     "@iris-ui-kit/tokens": "workspace:*",
     "solid-js": "^1.9.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
     "vite": "^5.4.11",
     "vite-plugin-solid": "^2.11.0"
   }

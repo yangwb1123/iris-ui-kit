@@ -1,5 +1,8 @@
 export { useStore, useStoreSelector } from './useStore'
 export { useMachine } from './useMachine'
+export { useReconnectingSource } from './useReconnectingSource'
+export { useDisposableScope } from './useDisposableScope'
+export { useResilientFetcher } from './useResilientFetcher'
 export * from './theme'
 export * from './skins'
 export * from './primitives/button'

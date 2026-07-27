@@ -64,6 +64,7 @@ export function IrisMentions({
   ariaDescribedby,
   style,
   className,
+  ...rest
 }: IrisMentionsProps): React.ReactElement {
   const reactId = React.useId()
   const listboxId = `${reactId}-listbox`
@@ -147,6 +148,7 @@ export function IrisMentions({
     <div
       data-iris-mentions=""
       className={className}
+      {...rest}
       style={{ position: 'relative', display: 'inline-block', minWidth: 240, ...style }}
     >
       <textarea

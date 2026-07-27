@@ -42,6 +42,7 @@ export function IrisBackTop({
   children,
   style,
   className,
+  ...rest
 }: IrisBackTopProps): React.ReactElement | null {
   const { t } = useI18n()
   const [visible, setVisible] = React.useState(false)
@@ -79,6 +80,7 @@ export function IrisBackTop({
       aria-label={ariaLabel ?? t('backTop.label')}
       onClick={scrollToTop}
       className={className}
+      {...rest}
       style={{
         position: 'fixed',
         insetInlineEnd: 24,

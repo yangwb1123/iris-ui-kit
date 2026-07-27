@@ -4,6 +4,7 @@
   import UsersPage from './pages/UsersPage.svelte'
   import SettingsPage from './pages/SettingsPage.svelte'
   import WorkspacePage from './pages/WorkspacePage.svelte'
+  import FormBuilderPage from './pages/FormBuilderPage.svelte'
 
   let { routeKey }: { routeKey: string } = $props()
 </script>
@@ -16,6 +17,8 @@
   <SettingsPage />
 {:else if isCmsWorkspaceRoute(routeKey)}
   <WorkspacePage {routeKey} />
+{:else if routeKey === 'form-builder'}
+  <FormBuilderPage />
 {:else}
   <DashboardPage />
 {/if}

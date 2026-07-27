@@ -22,27 +22,63 @@ export default defineConfig({
       noExternal: ['@iris-ui-kit/svelte', 'svelte'],
     },
   },
-  themeConfig: {
-    // Built-in, fully-offline full-text search over all pages — makes the
-    // 149-component generated reference actually navigable.
-    search: { provider: 'local' },
-    nav: [
-      { text: 'Guide', link: '/guide/getting-started' },
-      { text: 'Components', link: '/components' },
-    ],
-    sidebar: [
-      {
-        text: 'Guide',
-        items: [
-          { text: 'Getting started', link: '/guide/getting-started' },
-          { text: 'Theming', link: '/guide/theming' },
-          { text: 'AI-native usage', link: '/guide/ai-native' },
-          { text: 'Cross-platform', link: '/guide/cross-platform' },
-          { text: 'Registry & marketplace', link: '/guide/registry-marketplace' },
+  // i18n: English + Simplified Chinese
+  locales: {
+    root: {
+      label: 'English',
+      lang: 'en-US',
+      themeConfig: {
+        search: { provider: 'local' },
+        nav: [
+          { text: 'Guide', link: '/guide/getting-started' },
+          { text: 'Components', link: '/components' },
         ],
+        sidebar: [
+          {
+            text: 'Guide',
+            items: [
+              { text: 'Getting started', link: '/guide/getting-started' },
+              { text: 'Theming', link: '/guide/theming' },
+              { text: 'Data & Resilience', link: '/guide/data-layer' },
+              { text: 'Resilience Examples', link: '/guide/resilience-examples' },
+              { text: 'Plugin Development', link: '/guide/plugins' },
+              { text: 'AI-native usage', link: '/guide/ai-native' },
+              { text: 'Cross-platform', link: '/guide/cross-platform' },
+              { text: 'Registry & marketplace', link: '/guide/registry-marketplace' },
+            ],
+          },
+          { text: 'Reference', items: [{ text: 'Components', link: '/components' }] },
+        ],
+        socialLinks: [{ icon: 'github', link: 'https://github.com/iris-ui/iris-ui' }],
       },
-      { text: 'Reference', items: [{ text: 'Components', link: '/components' }] },
-    ],
-    socialLinks: [{ icon: 'github', link: 'https://github.com/iris-ui/iris-ui' }],
+    },
+    zh: {
+      label: '简体中文',
+      lang: 'zh-CN',
+      link: '/zh/',
+      themeConfig: {
+        search: { provider: 'local' },
+        nav: [
+          { text: '指南', link: '/zh/guide/getting-started' },
+          { text: '组件', link: '/zh/components' },
+        ],
+        sidebar: [
+          {
+            text: '指南',
+            items: [
+              { text: '快速开始', link: '/zh/guide/getting-started' },
+              { text: '主题系统', link: '/zh/guide/theming' },
+              { text: '数据与韧性', link: '/zh/guide/data-layer' },
+              { text: '韧性示例', link: '/zh/guide/resilience-examples' },
+              { text: '插件开发', link: '/zh/guide/plugins' },
+              { text: 'AI 原生用法', link: '/zh/guide/ai-native' },
+              { text: '跨平台', link: '/zh/guide/cross-platform' },
+            ],
+          },
+          { text: '参考', items: [{ text: '组件列表', link: '/zh/components' }] },
+        ],
+        socialLinks: [{ icon: 'github', link: 'https://github.com/iris-ui/iris-ui' }],
+      },
+    },
   },
 })

@@ -52,4 +52,42 @@ describe('@iris-ui-kit/react IrisTour', () => {
     const { container } = render(<IrisTour steps={STEPS} defaultOpen />)
     expect(card(container)?.getAttribute('role')).toBe('dialog')
   })
+
+  it('controlled mode: open prop controls visibility', () => {
+    const { container, rerender } = render(<IrisTour steps={STEPS} open={false} />)
+    expect(card(container)).toBeNull()
+    rerender(<IrisTour steps={STEPS} open={true} />)
+    expect(container.querySelector('[data-iris-tour-title]')).not.toBeNull()
+  })
+
+  it('Escape key closes the tour', () => {
+    const onClose = vi.fn()
+    const { container } = render(<IrisTour steps={STEPS} defaultOpen onClose={onClose} />)
+    fireEvent.keyDown(container.querySelector('[data-iris-tour-card]')!, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('renders nothing with empty steps', () => {
+    const { container } = render(<IrisTour steps={[]} defaultOpen />)
+    expect(card(container)).toBeNull()
+  })
+
+  it('custom className and style are forwarded', () => {
+    const { container } = render(
+      <IrisTour steps={STEPS} defaultOpen className="my-tour" style={{ margin: 10 }} />,
+    )
+    const root = container.querySelector('[data-iris-tour]')
+    expect(root?.className).toContain('my-tour')
+  })
+
+  it('multiple instances operate independently', () => {
+    const { container } = render(
+      <div>
+        <IrisTour steps={STEPS} defaultOpen />
+        <IrisTour steps={[{ title: 'X' }]} defaultOpen />
+      </div>,
+    )
+    const cards = container.querySelectorAll('[data-iris-tour-card]')
+    expect(cards.length).toBe(2)
+  })
 })

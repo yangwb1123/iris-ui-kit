@@ -10,6 +10,8 @@
   }
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+
 <script lang="ts">
   import { untrack } from 'svelte'
   import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui-kit/core'

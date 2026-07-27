@@ -23,7 +23,7 @@
   untrack(() => onready)?.(arr)
 </script>
 
-<ul>
+<ul role="list">
   {#each $fields as item, i (i)}
     <li data-testid="row">{item}</li>
   {/each}

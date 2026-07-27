@@ -213,4 +213,23 @@ describe('scaffold command', () => {
     expect(code).toBe(1)
     expect(io.stderr.join('')).toContain('solid')
   })
+
+  it('list with group filter shows only matching group', () => {
+    const io2 = captureOutput()
+    const code = runList(STUB_MANIFEST, 'primitives')
+    expect(code).toBe(0)
+    const out = io2.stdout.join('')
+    expect(out).toContain('IrisButton')
+    io2.restore()
+  })
+
+  it('list with no group filter shows all components', () => {
+    const io2 = captureOutput()
+    const code = runList(STUB_MANIFEST, undefined)
+    expect(code).toBe(0)
+    const out = io2.stdout.join('')
+    expect(out).toContain('IrisButton')
+    expect(out).toContain('IrisInput')
+    io2.restore()
+  })
 })

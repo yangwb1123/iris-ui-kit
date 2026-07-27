@@ -3,7 +3,7 @@
 // builds are embedded (rust-embed) and served by a custom `iris://` URI scheme
 // that returns the currently-selected framework's files (so absolute /assets/…
 // paths resolve) with a window.irisNative shim injected into index.html. That
-// shim wires @iris-ui/core's save/clipboard bridges to native Tauri commands.
+// shim wires @iris-ui-kit/core's save/clipboard bridges to native Tauri commands.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::sync::Mutex;

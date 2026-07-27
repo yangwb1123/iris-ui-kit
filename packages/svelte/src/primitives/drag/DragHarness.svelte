@@ -35,4 +35,4 @@
   }
 </script>
 
-<div class="handle" use:setHandle style="width: 40px; height: 40px"></div>
+<div role="presentation" class="handle" use:setHandle style="width: 40px; height: 40px"></div>

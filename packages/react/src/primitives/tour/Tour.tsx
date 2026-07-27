@@ -62,6 +62,7 @@ export function IrisTour({
   onFinish,
   style,
   className,
+  ...rest
 }: IrisTourProps): React.ReactElement | null {
   const { t } = useI18n()
   const isControlled = open !== undefined
@@ -134,7 +135,7 @@ export function IrisTour({
       : t('tour.step', { current: current + 1, total })
 
   return (
-    <div data-iris-tour="" className={className} style={style}>
+    <div data-iris-tour="" className={className} {...rest} style={style}>
       <div
         data-iris-tour-backdrop=""
         onClick={close}

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createClipboardHistory, DEFAULT_CLIPBOARD_MAX } from './clipboard-history'
 
 describe('createClipboardHistory', () => {
@@ -50,5 +50,36 @@ describe('createClipboardHistory', () => {
     expect(c.list().find((e) => e.id === b)!.pinned).toBe(false)
     c.remove(a)
     expect(c.list().map((e) => e.text)).toEqual(['b'])
+  })
+
+  it('subscribe fires on changes', () => {
+    const c = createClipboardHistory()
+    const listener = vi.fn()
+    c.subscribe(listener)
+    c.add('x')
+    expect(listener).toHaveBeenCalled()
+  })
+
+  it('unsubscribe stops notifications', () => {
+    const c = createClipboardHistory()
+    const listener = vi.fn()
+    const unsub = c.subscribe(listener)
+    c.add('x')
+    expect(listener).toHaveBeenCalledTimes(1)
+    unsub()
+    c.add('y')
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
+  it('add with whitespace-only is ignored', () => {
+    const c = createClipboardHistory()
+    expect(c.add('   ')).toBeNull()
+    expect(c.list()).toHaveLength(0)
+  })
+
+  it('subscribe returns unsub function', () => {
+    const c = createClipboardHistory()
+    const unsub = c.subscribe(() => {})
+    expect(typeof unsub).toBe('function')
   })
 })

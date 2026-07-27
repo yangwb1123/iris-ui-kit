@@ -61,6 +61,7 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
     onRangeChange,
     style,
     className,
+    ...rest
   }: IrisVirtualScrollProps<T>,
   forwardedRef: React.Ref<IrisVirtualScrollHandle>,
 ): React.ReactElement {
@@ -339,6 +340,7 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
       data-iris-virtual-scroll=""
       className={className}
       onScroll={handleScroll}
+      {...rest}
       style={containerStyle}
     >
       <div

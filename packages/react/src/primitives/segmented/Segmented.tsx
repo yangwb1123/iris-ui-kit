@@ -55,6 +55,7 @@ export function IrisSegmented({
   ariaLabel,
   style,
   className,
+  ...rest
 }: IrisSegmentedProps): React.ReactElement {
   const safeOptions = options ?? []
   const norm = normalize(safeOptions)
@@ -123,6 +124,7 @@ export function IrisSegmented({
       data-iris-segmented-size={size}
       data-disabled={disabled ? 'true' : undefined}
       className={className}
+      {...rest}
       onKeyDown={(e) => {
         const action: KeyboardNavAction = nav.handleKeyDown({
           key: e.key,

@@ -1,52 +1,28 @@
 #!/usr/bin/env node
-// RSC directive gate. Every emitted JS entry of @iris-ui-kit/react must begin with
-// the `'use client'` directive so the package (and every deep-import subpath)
-// can be consumed directly inside a React Server Component — i.e. imported from
-// a Next.js App Router Server Component without a manual client wrapper. The
-// directive is injected by esbuild's banner (packages/react/tsup.config.ts);
-// this is the tripwire that fails CI if that ever regresses. Run after build:
-//
-//   pnpm turbo run build && pnpm check:rsc
-//
-// Zero dependencies (node:fs). Scans every .js/.cjs file in the built dist
-// (entries + shared chunks); .d.ts/.map are intentionally excluded.
-import { readdirSync, readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
-const distDir = join(repoRoot, 'packages', 'react', 'dist')
+/**
+ * @deprecated Use `node cli.mjs COMMAND` instead.
+ * This stub delegates to the new checks/ module.
+ */
 
-// Matches a leading `'use client'` / `"use client"` directive (optional ;).
-const DIRECTIVE = /^['"]use client['"];?/
+const MAP = {
+  "audit-tokens.mjs": "check-tokens",
+  "change-budget.mjs": "change-budget",
+  "check-desktop-parity.mjs": "check-parity",
+  "check-pack-install.mjs": "check-pack-install",
+  "check-rsc-directive.mjs": "check-rsc",
+  "test-coverage-report.mjs": "check-coverage",
+}
 
-let files
+import { execSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
+import { dirname, resolve } from "node:path"
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..")
+const cmd = MAP["check-rsc-directive.mjs"] || "check-rsc-directive"
 try {
-  files = readdirSync(distDir).filter((f) => f.endsWith('.js') || f.endsWith('.cjs'))
-} catch {
-  // eslint-disable-next-line no-console
-  console.error(`✗ ${distDir} not found — run \`pnpm turbo run build\` first.`)
+  execSync("node " + resolve(ROOT, "cli.mjs") + " " + cmd, { stdio: "inherit", cwd: ROOT })
+  process.exit(0)
+} catch (e) {
   process.exit(1)
 }
-
-const offenders = []
-for (const f of files) {
-  const head = readFileSync(join(distDir, f), 'utf8').slice(0, 64).trimStart()
-  if (!DIRECTIVE.test(head)) offenders.push(f)
-}
-
-// eslint-disable-next-line no-console
-console.log("\nRSC 'use client' directive (@iris-ui-kit/react)\n" + '─'.repeat(48))
-// eslint-disable-next-line no-console
-console.log(`${files.length} JS entr${files.length === 1 ? 'y' : 'ies'} scanned, ${offenders.length} missing`)
-
-if (offenders.length) {
-  // eslint-disable-next-line no-console
-  console.error('\n✗ missing the directive:\n' + offenders.map((f) => '  - ' + f).join('\n'))
-  // eslint-disable-next-line no-console
-  console.error('\nEnsure tsup.config.ts sets `banner: { js: "\'use client\'" }`.\n')
-  process.exit(1)
-}
-
-// eslint-disable-next-line no-console
-console.log('\n✓ all React entries are client-boundary safe\n')

@@ -14,7 +14,6 @@ import {
 import {
   aggregate,
   buildHeaderMatrix,
-  compareValues,
   computeVirtualRange,
   createCellRange,
   createExpansion,
@@ -32,6 +31,7 @@ import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import { tableControlProps } from './controlProps'
+import { useTableSort } from './useTableSort'
 import type {
   IrisTableCellEditEvent,
   IrisTableColumn,
@@ -197,38 +197,21 @@ export const IrisTable = defineComponent({
     )
     const headerMatrix = computed(() => (grouped.value ? buildHeaderMatrix(props.columns) : null))
 
-    // -------- Sort --------
-    const internalSortValue = ref<IrisTableSortState | null>(props.defaultSort ?? null)
-    const internalSort = computed<IrisTableSortState | null>({
-      get: () => (props.sort === undefined ? internalSortValue.value : props.sort),
-      set: (value) => {
-        if (props.sort === undefined) internalSortValue.value = value
-        emit('update:sort', value)
+    // -------- Sort (useTableSort composable) --------
+    const {
+      sortState: internalSort,
+      cycleSort,
+      sortComparator,
+      sortedData: sortedRows,
+    } = useTableSort<Record<string, unknown>>(
+      computed(() => props.data ?? []),
+      {
+        leafColumns,
+        sort: computed(() => props.sort as IrisTableSortState | null | undefined),
+        defaultSort: props.defaultSort,
+        onSortChange: (next) => emit('update:sort', next),
       },
-    })
-
-    // The active sort comparator (or null). Shared by the root-row sort AND the
-    // tree-mode child sort so a sortable tree reorders siblings at every depth.
-    const sortComparator = computed<
-      ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
-    >(() => {
-      const state = internalSort.value
-      if (!state) return null
-      const column = leafColumns.value.find((c) => c.key === state.key)
-      if (!column) return null
-      const dir = state.direction === 'asc' ? 1 : -1
-      const sorter =
-        column.sorter ??
-        ((a: Record<string, unknown>, b: Record<string, unknown>) =>
-          compareValues(getCellValue(a, column), getCellValue(b, column)))
-      return (a, b) => sorter(a, b) * dir
-    })
-
-    const sortedRows = computed(() => {
-      const compare = sortComparator.value
-      if (!compare) return props.data ?? []
-      return [...(props.data ?? [])].sort(compare)
-    })
+    )
 
     // -------- Selection (single-sourced via core createSelectionModel) --------
     // The model owns the selected-key set plus the toggle / dedup / select-all
@@ -425,17 +408,7 @@ export const IrisTable = defineComponent({
     }
 
     const onHeaderClick = (column: IrisTableColumn) => {
-      if (!column.sortable) return
-      const current = internalSort.value
-      let next: IrisTableSortState | null
-      if (!current || current.key !== column.key) {
-        next = { key: column.key, direction: 'asc' }
-      } else if (current.direction === 'asc') {
-        next = { key: column.key, direction: 'desc' }
-      } else {
-        next = null
-      }
-      internalSort.value = next
+      cycleSort(column)
     }
 
     const sortIndicator = (col: IrisTableColumn): VNode | null => {

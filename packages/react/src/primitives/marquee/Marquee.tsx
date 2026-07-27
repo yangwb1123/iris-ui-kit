@@ -38,6 +38,7 @@ export function IrisMarquee({
   gap = 40,
   style,
   className,
+  ...rest
 }: IrisMarqueeProps): React.ReactElement {
   const trackRef = React.useRef<HTMLDivElement | null>(null)
   const animRef = React.useRef<Animation | null>(null)
@@ -80,6 +81,7 @@ export function IrisMarquee({
     <div
       data-iris-marquee=""
       className={className}
+      {...rest}
       onMouseEnter={() => {
         if (pauseOnHover) animRef.current?.pause()
       }}

@@ -55,7 +55,7 @@ async function openWorkspace(
   page: Page,
   { route, parent, heading }: WorkspaceNavigation,
 ): Promise<Locator> {
-  const navigation = page.getByRole('navigation', { name: 'Main navigation' })
+  const navigation = page.locator('[data-iris-nav-menu]')
   const destination = navigation.locator(`[data-iris-nav-item][data-key="${route}"]`)
 
   if (!(await destination.isVisible()) && parent) {
@@ -179,7 +179,7 @@ test('admin can navigate and operate every real CMS workspace', async ({ page },
   const hasExtendedAdmin =
     testInfo.project.name === 'chromium' || testInfo.project.name === 'svelte'
   const adminNavigation = page
-    .getByRole('navigation', { name: 'Main navigation' })
+    .locator('[data-iris-nav-menu]')
     .locator('[data-iris-nav-item][data-key="admin"]')
   await expect(adminNavigation).toHaveCount(hasExtendedAdmin ? 1 : 0)
 

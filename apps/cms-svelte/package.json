@@ -8,6 +8,7 @@
     "build": "svelte-check --tsconfig ./tsconfig.json && vite build",
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
+    "e2e": "playwright test",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json",
     "lint": "eslint src",
     "clean": "rm -rf dist .turbo .svelte-kit"
@@ -15,12 +16,14 @@
   "dependencies": {
     "@iris-ui-kit/cms-shared": "workspace:*",
     "@iris-ui-kit/core": "workspace:*",
+    "@iris-ui-kit/plugin-form-builder": "workspace:^",
+    "@iris-ui-kit/plugin-notifications": "workspace:*",
     "@iris-ui-kit/svelte": "workspace:*",
     "@iris-ui-kit/tokens": "workspace:*",
-    "svelte": "^5.16.0",
-    "@iris-ui-kit/plugin-notifications": "workspace:*"
+    "svelte": "^5.16.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
     "@sveltejs/vite-plugin-svelte": "^4.0.4",
     "svelte-check": "^4.1.1",
     "vite": "^5.4.11"

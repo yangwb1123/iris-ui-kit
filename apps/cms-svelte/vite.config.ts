@@ -18,6 +18,11 @@ export default defineConfig(({ command }) => ({
     port: 5178,
     strictPort: true,
   },
+  test: {
+    // Playwright specs have their own runner and must not be collected by
+    // Vitest's default `*.spec.ts` discovery.
+    exclude: ['**/node_modules/**', 'e2e/**'],
+  },
   resolve: {
     // Svelte 5's package exports default to its server entry. Vite dev needs
     // the browser condition explicitly or `mount()` resolves to the SSR stub
@@ -37,6 +42,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui-kit/theme': src('theme'),
             '@iris-ui-kit/skins': src('skins'),
             '@iris-ui-kit/icons': src('icons'),
+            '@iris-ui-kit/svelte/form': srcSubpath('svelte', 'form/index'),
             '@iris-ui-kit/svelte': src('svelte'),
           },
         }

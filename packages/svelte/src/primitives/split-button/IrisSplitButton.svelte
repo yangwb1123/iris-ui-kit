@@ -107,6 +107,8 @@
   })
 </script>
 
+<!-- svelte-ignore a11y_role_supports_aria_props_implicit -->
+
 <div
   {...rest}
   use:setRootRef

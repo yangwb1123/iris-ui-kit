@@ -44,6 +44,7 @@ export function IrisGauge({
   ariaLabel,
   style,
   className,
+  ...rest
 }: IrisGaugeProps): React.ReactElement {
   const span = max - min
   const ratio = Math.max(0, Math.min(1, span > 0 ? (value - min) / span : 0))
@@ -66,6 +67,7 @@ export function IrisGauge({
       aria-valuetext={`${percent}%`}
       aria-label={ariaLabel}
       className={className}
+      {...rest}
       style={{ position: 'relative', display: 'inline-block', width: size, ...style }}
     >
       <svg width={size} height={height} viewBox={`0 0 ${size} ${height}`} aria-hidden="true">

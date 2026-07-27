@@ -25,6 +25,10 @@ import CompositeShowcase from './sections/CompositeShowcase.vue'
 import DisplayShowcase from './sections/DisplayShowcase.vue'
 import SkeletonsShowcase from './sections/SkeletonsShowcase.vue'
 import BehaviorsShowcase from './sections/BehaviorsShowcase.vue'
+import ChartsShowcase from './sections/ChartsShowcase.vue'
+import DataResilienceShowcase from './sections/DataResilienceShowcase.vue'
+import CalendarShowcase from './sections/CalendarShowcase.vue'
+import MarkdownShowcase from './sections/MarkdownShowcase.vue'
 
 interface SectionEntry {
   id: string
@@ -53,10 +57,19 @@ const sections: SectionEntry[] = [
   { id: 'behaviors', label: 'Behaviors', group: 'Components', component: BehaviorsShowcase },
   { id: 'layout', label: 'Layouts', group: 'Layouts', component: LayoutShowcase },
   { id: 'skeletons', label: 'System Skeletons', group: 'Layer 4', component: SkeletonsShowcase },
+  { id: 'charts', label: 'Charts', group: 'Components', component: ChartsShowcase },
+  {
+    id: 'data-resilience',
+    label: 'Data & Resilience',
+    group: 'Core',
+    component: DataResilienceShowcase,
+  },
+  { id: 'calendar', label: 'Calendar', group: 'Components', component: CalendarShowcase },
+  { id: 'markdown', label: 'Markdown', group: 'Components', component: MarkdownShowcase },
   { id: 'tokens', label: 'Theme Tokens', group: 'Foundation', component: null },
 ]
 
-const groupOrder = ['Skins', 'Primitives', 'Components', 'Layouts', 'Layer 4', 'Foundation']
+const groupOrder = ['Skins', 'Core', 'Primitives', 'Components', 'Layouts', 'Layer 4', 'Foundation']
 const groupedSections = computed(() => {
   const out: Record<string, SectionEntry[]> = {}
   for (const s of sections) {

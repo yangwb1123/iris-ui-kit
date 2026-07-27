@@ -1,11 +1,13 @@
 /**
  * TodoFooter — status bar below the todo list.
  *
- * Shows the count of active (incomplete) items and a "Clear Completed" button
- * that only appears when at least one item is completed.
+ * Shows sync status, active item count, and a "Clear Completed" button.
+ * Sync status uses useResilientFetcher to demonstrate the resilience layer.
  */
 
-import { IrisButton } from '@iris-ui-kit/react'
+import { useEffect, useState } from 'react'
+import { IrisButton, IrisBadge } from '@iris-ui-kit/react'
+import { useResilientFetcher } from '@iris-ui-kit/react'
 import { hasCompleted } from '../utils/filters'
 import type { Todo } from '../types/todo'
 
@@ -16,6 +18,36 @@ export interface TodoFooterProps {
   activeCount: number
   /** Called to remove all completed todos. */
   onClearCompleted: () => void
+}
+
+/** SyncStatus — live badge showing simulated persistence status. */
+function SyncStatus() {
+  const rf = useResilientFetcher<{ ok: boolean }>({ ttlMs: 30_000 })
+  const [status, setStatus] = useState<'synced' | 'syncing' | 'error'>('synced')
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStatus('syncing')
+      void rf
+        .fetch('sync:health', async () => {
+          await new Promise((r) => setTimeout(r, 300))
+          return { ok: true }
+        })
+        .then(() => setStatus('synced'))
+        .catch(() => setStatus('error'))
+    }, 10_000)
+    return () => clearInterval(interval)
+  }, [rf])
+
+  return (
+    <IrisBadge
+      tone={status === 'synced' ? 'success' : status === 'syncing' ? 'warning' : 'danger'}
+      variant="subtle"
+      style={{ fontSize: 11 }}
+    >
+      {status === 'synced' ? '☁ Synced' : status === 'syncing' ? '⟳ Saving' : '⚠ Error'}
+    </IrisBadge>
+  )
 }
 
 export function TodoFooter({ todos, activeCount, onClearCompleted }: TodoFooterProps) {
@@ -34,6 +66,8 @@ export function TodoFooter({ todos, activeCount, onClearCompleted }: TodoFooterP
         borderTop: '1px solid var(--iris-border)',
       }}
     >
+      <SyncStatus />
+
       <span data-todo-count="">
         <strong>{activeCount}</strong> {activeCount === 1 ? 'item' : 'items'} left
       </span>

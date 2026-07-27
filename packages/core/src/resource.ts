@@ -2,6 +2,7 @@ import { derived, type Store } from './store'
 import { createDataSource } from './data-source'
 import { type SelectionModel } from './selection'
 import { filterSort, paginate, type SortState, type DataViewColumn } from './data-view'
+import type { ResilientFetcherOptions } from './resilient-fetcher'
 
 /**
  * Framework-agnostic CRUD resource controller (L4 composite) — the canonical
@@ -28,6 +29,11 @@ export interface ResourceControllerConfig<T> {
   pageSize?: number
   /** Auto-load the first page on creation. Default true. */
   immediate?: boolean
+  /**
+   * Enable resilient fetching with cache (dedup/TTL/SWR), circuit breaker,
+   * and optional rate limiting. Passed through to the underlying data source.
+   */
+  resilient?: ResilientFetcherOptions
 }
 
 export interface ResourceState<T> {
@@ -101,6 +107,7 @@ export function createResourceController<T>(
     fetcher: (query) => config.fetcher(query),
     pageSize: config.pageSize ?? 10,
     immediate: false,
+    resilient: config.resilient,
   })
 
   // Project the data-source state onto ResourceState with `derived` rather than a

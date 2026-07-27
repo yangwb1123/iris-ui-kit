@@ -74,6 +74,7 @@ export function IrisFileUpload({
   renderList,
   style,
   className,
+  ...rest
 }: IrisFileUploadProps): React.ReactElement {
   const { t } = useI18n()
   const resolvedLabel = label ?? t('fileUpload.label')
@@ -212,6 +213,7 @@ export function IrisFileUpload({
       data-drag-over={dragOver ? 'true' : undefined}
       data-disabled={disabled ? 'true' : undefined}
       className={className}
+      {...rest}
       style={style}
     >
       <input

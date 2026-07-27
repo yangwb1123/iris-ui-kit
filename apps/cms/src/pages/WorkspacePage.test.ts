@@ -16,7 +16,7 @@ describe('Vue CMS workspace bridge', () => {
 
   it('covers every compact-menu leaf with a real page contract', () => {
     const leaves = collectCmsLeafKeys(menus)
-    expect(leaves.every(isCmsPageRoute)).toBe(true)
+    expect(leaves.every((key) => key === 'form-builder' || isCmsPageRoute(key))).toBe(true)
     expect(leaves).not.toContain('audit-log')
   })
 

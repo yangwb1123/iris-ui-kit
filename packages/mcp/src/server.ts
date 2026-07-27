@@ -15,6 +15,7 @@ import {
   validateUsage,
   generateView,
   generateTest,
+  generateFormSchema,
 } from './tools'
 
 /**
@@ -191,6 +192,101 @@ server.registerTool(
 )
 
 server.registerTool(
+  'get_architecture',
+  {
+    description:
+      'Return the Iris UI architecture overview: layer model, data & resilience ' +
+      'primitives (9 primitives: DisposableScope, EventBus, QueryCache, CircuitBreaker, ' +
+      'RateLimiter, ResilientFetcher, Outbox, ReconnectingSource, DataSource), plugin ' +
+      'ecosystem (12 plugins with descriptions), and design tokens. Use this to understand ' +
+      'the system BEFORE generating code, so you choose the right architectural pattern.',
+    inputSchema: {},
+  },
+  async () =>
+    json({
+      layerModel: manifest.layerModel,
+      resilience: [
+        {
+          name: 'createDisposableScope',
+          description: 'Lifecycle teardown (destroy, child scopes, error isolation).',
+        },
+        { name: 'createEventBus', description: 'Typed pub/sub for cross-plugin communication.' },
+        {
+          name: 'createQueryCache',
+          description: 'Async fetch dedup with TTL + stale-while-revalidate (SWR).',
+        },
+        {
+          name: 'createCircuitBreaker',
+          description: 'Failure isolation: trips after N failures, resets after cooldown.',
+        },
+        {
+          name: 'createRateLimiter',
+          description: 'Token-bucket rate limiting with burst capacity.',
+        },
+        {
+          name: 'createResilientFetcher',
+          description:
+            'Composes cache + circuit breaker + rate limiter into one hardened async fetcher.',
+        },
+        {
+          name: 'createOutbox',
+          description: 'Offline-first, durable FIFO mutation queue with at-least-once delivery.',
+        },
+        {
+          name: 'createReconnectingSource',
+          description: 'Realtime push transport with exponential-backoff reconnection.',
+        },
+        {
+          name: 'createDataSource',
+          description: 'Unified data engine: fetch + paginate + sort + filter + select + mutate.',
+        },
+        {
+          name: 'createResourceController',
+          description: 'Higher-level CRUD list controller for Table/ProTable.',
+        },
+      ],
+      plugins: [
+        {
+          package: '@iris-ui-kit/plugin-locale-zh',
+          description: 'Simplified-Chinese (zh-CN) message pack.',
+        },
+        {
+          package: '@iris-ui-kit/plugin-editor',
+          description: 'CodeMirror 6 code editor (SQL/JSON/JS/plain) with inline diff.',
+        },
+        {
+          package: '@iris-ui-kit/plugin-pro-table',
+          description: 'CRUD data table with sorting, filtering, inline editing.',
+        },
+        {
+          package: '@iris-ui-kit/plugin-charts',
+          description: 'Zero-dependency, token-themed SVG charts.',
+        },
+        {
+          package: '@iris-ui-kit/plugin-form-builder',
+          description: 'Schema-driven validated form builder.',
+        },
+        {
+          package: '@iris-ui-kit/plugin-notifications',
+          description: 'Persistent notification center with inbox.',
+        },
+        { package: '@iris-ui-kit/plugin-admin', description: 'Admin panel extensions.' },
+        { package: '@iris-ui-kit/plugin-calendar', description: 'Calendar widget.' },
+        { package: '@iris-ui-kit/plugin-dashboard', description: 'Dashboard grid layouts.' },
+        { package: '@iris-ui-kit/plugin-kanban', description: 'Kanban board with drag-and-drop.' },
+        { package: '@iris-ui-kit/plugin-markdown', description: 'Markdown editor and preview.' },
+        {
+          package: '@iris-ui-kit/plugin-query-builder',
+          description: 'Visual query/filter builder.',
+        },
+      ],
+      tokensCount: manifest.tokens.all.length,
+      componentCount: manifest.stats.total,
+      frameworks: manifest.frameworks,
+    }),
+)
+
+server.registerTool(
   'validate_usage',
   {
     description:
@@ -215,6 +311,62 @@ server.registerTool(
         props,
       }),
     ),
+)
+
+server.registerTool(
+  'generate_form',
+  {
+    description:
+      'Generate a complete, ready-to-use form from simple field descriptors. ' +
+      'Pass an array of field definitions (name, type, label, required, options, ' +
+      'etc.) and get back a full IrisFormBuilder schema + React/Vue code snippets.',
+    inputSchema: {
+      fields: z
+        .array(
+          z.object({
+            name: z.string(),
+            type: z
+              .enum([
+                'text',
+                'number',
+                'email',
+                'password',
+                'textarea',
+                'select',
+                'checkbox',
+                'array',
+              ])
+              .optional(),
+            label: z.string().optional(),
+            placeholder: z.string().optional(),
+            required: z.boolean().optional(),
+            options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
+            defaultValue: z.unknown().optional(),
+            fields: z.array(z.any()).optional(),
+            addLabel: z.string().optional(),
+            removeLabel: z.string().optional(),
+          }),
+        )
+        .describe('Field definitions'),
+      submitLabel: z.string().optional(),
+      framework: z.enum(['react', 'vue']).optional().describe('Target framework'),
+    },
+  },
+  async (args: Record<string, unknown>) => {
+    const fields = (args.fields ?? []) as never[]
+    const result = generateFormSchema(fields, {
+      submitLabel: args.submitLabel as string | undefined,
+    })
+    const code = (args.framework as string) === 'vue' ? result.vue : result.react
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: code + '\n\n// Schema:\n' + JSON.stringify(result.schema, null, 2),
+        },
+      ],
+    }
+  },
 )
 
 async function main(): Promise<void> {

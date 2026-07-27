@@ -41,4 +41,30 @@ describe('IrisCountdown', () => {
     const w = mount(IrisCountdown, { props: { value: 90061000, format: 'DD HH:mm:ss' } })
     expect(time(w)).toBe('01 01:01:01')
   })
+
+  it('renders with title', () => {
+    vi.useFakeTimers()
+    const w = mount(IrisCountdown, { props: { value: 3661000, title: 'Time left' } })
+    expect(w.find('[data-iris-countdown-title]').text()).toBe('Time left')
+  })
+
+  it('renders with prefix and suffix', () => {
+    vi.useFakeTimers()
+    const w = mount(IrisCountdown, { props: { value: 3661000, prefix: '⏱', suffix: 'remaining' } })
+    expect(w.text()).toContain('⏱')
+    expect(w.text()).toContain('remaining')
+  })
+
+  it('forwards class', () => {
+    vi.useFakeTimers()
+    const w = mount(IrisCountdown, { props: { value: 3661000, class: 'my-counter' } })
+    expect(w.find('[data-iris-countdown]').classes()).toContain('my-counter')
+  })
+
+  it('shows finished state with past date', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1000000)
+    const w = mount(IrisCountdown, { props: { value: 500 } })
+    expect(w.find('[data-iris-countdown]').attributes('data-finished')).toBe('true')
+  })
 })

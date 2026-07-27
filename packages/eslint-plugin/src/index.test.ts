@@ -9,11 +9,21 @@ import pluginNeedsRegistration, {
   EXPECTED_PLUGIN_PACKAGE_COUNT,
   KNOWN_PLUGIN_FACTORIES,
 } from './rules/plugin-needs-registration.js'
+import noLegacyTone from './rules/no-legacy-tone.js'
 import plugin from './index.js'
 
 const tester = new RuleTester({
   languageOptions: { ecmaVersion: 2022, sourceType: 'module' },
-})
+}) as unknown as RuleTester
+
+// JSX-aware tester for component attribute rules
+const jsxTester = new RuleTester({
+  languageOptions: {
+    ecmaVersion: 2022,
+    sourceType: 'module',
+    parserOptions: { ecmaFeatures: { jsx: true } },
+  },
+} as never)
 
 // ──────────────────────────────────────────────────────────────────
 // no-internal-import
@@ -375,5 +385,31 @@ describe('plugin export', () => {
     expect(cfg.rules['@iris-ui-kit/no-internal-import']).toBe('error')
     expect(cfg.rules['@iris-ui-kit/use-iris-provider']).toBe('warn')
     expect(cfg.rules['@iris-ui-kit/plugin-needs-registration']).toBe('warn')
+    expect(cfg.rules['@iris-ui-kit/no-legacy-tone']).toBe('warn')
+  })
+})
+
+// ──────────────────────────────────────────────────────────────────
+// no-legacy-tone
+// ──────────────────────────────────────────────────────────────────
+describe('no-legacy-tone', () => {
+  it('passes valid cases and reports invalid cases', () => {
+    jsxTester.run('no-legacy-tone', noLegacyTone, {
+      valid: [
+        { code: '<IrisBadge tone="danger" />' },
+        { code: '<IrisBadge tone="success" />' },
+        { code: '<IrisBadge tone="warning" />' },
+      ],
+      invalid: [
+        {
+          code: '<IrisBadge tone="error" />',
+          errors: [{ messageId: 'legacyTone' }],
+        },
+        {
+          code: '<IrisAlert tone="error">Something went wrong</IrisAlert>',
+          errors: [{ messageId: 'legacyTone' }],
+        },
+      ],
+    })
   })
 })

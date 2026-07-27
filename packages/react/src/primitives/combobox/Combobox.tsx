@@ -58,6 +58,7 @@ export function IrisCombobox({
   ariaDescribedby,
   style,
   className,
+  ...rest
 }: IrisComboboxProps): React.ReactElement {
   const { t } = useI18n()
   const reactId = React.useId()
@@ -154,6 +155,7 @@ export function IrisCombobox({
       data-iris-combobox-size={size}
       data-state={open ? 'open' : 'closed'}
       className={className}
+      {...rest}
       style={{ position: 'relative', display: 'inline-block', minWidth: 200, ...style }}
     >
       <input

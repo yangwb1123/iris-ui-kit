@@ -1,0 +1,193 @@
+# iris.yaml — Iris UI 工程检查声明式配置
+#
+# 所有阈值、豁免路径、忽略模式集中管理，不硬编码在检查脚本中。
+# 这是整个 checks/ 系统和 cli.mjs 的单一真相源。
+# 参考 snaplink engineering.yaml 的模式设计。
+#
+# 新项目复用此框架时，编辑此文件即可适配全部门控。
+
+project:
+  name: iris-ui
+  language: typescript
+  module: "@iris-ui"
+
+# ── 文件行数门 ──────────────────────────────────────────────────────────────
+filesize:
+  max_lines: 500
+  ignore_patterns:
+    - "dist/"
+    - "node_modules/"
+    - ".turbo/"
+    - ".svelte-kit/"
+    - ".next/"
+    - "coverage/"
+    - ".git/"
+    - ".claude/"
+    - ".qwen/"
+  # 豁免文件列表（大而内聚的合法文件，已在 arch-baseline.json 中基线化）
+  # test 文件因大量用例行数偏高，Table/Tree 等高复杂度组件因天然内聚性偏高
+  exemptions:
+    - "packages/core/src/store.ts"
+    - "packages/core/src/data-view.ts"
+    - "packages/core/src/form.ts"
+    - "packages/core/src/index.ts"
+    - "packages/core/src/data-source.ts"
+    - "packages/core/src/virtualizer.ts"
+    - "packages/icons/src/icons.ts"
+    - "packages/core/src/form.test.ts"
+    - "packages/core/src/plugin.ts"
+    - "packages/core/src/window.ts"
+    - "packages/mcp/src/codegen.ts"
+    - "packages/plugin-pro-table/src/core/index.ts"
+    - "packages/plugin-pro-table/src/react/index.tsx"
+    - "packages/plugin-pro-table/src/solid/index.tsx"
+    - "packages/plugin-pro-table/src/svelte/IrisProTable.svelte"
+    - "packages/plugin-pro-table/src/vue/index.ts"
+    - "packages/react/src/contracts.test.tsx"
+    - "packages/react/src/primitives/table/Table.test.tsx"
+    - "packages/react/src/primitives/table/Table.tsx"
+    - "packages/react/src/primitives/tree/Tree.tsx"
+    - "packages/solid/src/contracts.test.tsx"
+    - "packages/solid/src/primitives/table/IrisTable.test.tsx"
+    - "packages/solid/src/primitives/table/IrisTable.tsx"
+    - "packages/solid/src/primitives/tree/IrisTree.tsx"
+    - "packages/svelte/src/contracts.test.ts"
+    - "packages/svelte/src/primitives/table/IrisTable.svelte"
+    - "packages/svelte/src/primitives/table/IrisTable.test.ts"
+    - "packages/vue/src/contracts.test.ts"
+    - "packages/vue/src/primitives/table/Table.test.ts"
+    - "packages/vue/src/primitives/table/Table.ts"
+    - "packages/vue/src/primitives/table/TableBody.ts"
+    - "packages/vue/src/primitives/table/useTableState.ts"
+    - "packages/vue/src/primitives/tree/Tree.ts"
+
+# ── 架构依赖方向门 ──────────────────────────────────────────────────────────
+architecture:
+  # core 包不得依赖框架
+  forbidden_imports:
+    - source: "packages/core"
+      forbidden: ["react", "vue", "solid-js", "svelte", "@iris-ui-kit/react", "@iris-ui-kit/vue", "@iris-ui-kit/solid", "@iris-ui-kit/svelte"]
+  # 插件 core 模块不得依赖框架
+  plugin_rules:
+    - pattern: "^packages/plugin-.*/src/core"
+      forbidden: ["react", "vue", "solid-js", "svelte", "@iris-ui-kit/react", "@iris-ui-kit/vue", "@iris-ui-kit/solid", "@iris-ui-kit/svelte"]
+
+# ── 复杂度门 ────────────────────────────────────────────────────────────────
+complexity:
+  max_function_lines: 50      # 函数最大行数（启发式警告）
+  max_cyclomatic: 15          # 圈复杂度上限
+  max_export_symbols: 30      # 单文件导出符号数上限（God Object 检测）
+  max_unused_exports: 30      # 未使用导出数上限（ts-prune 检测）
+  max_circular_deps: 5        # 循环依赖上限（madge 检测）
+  ignore_patterns:
+    - "**/__tests__/**"
+    - "**/*.test.ts"
+    - "**/*.test.tsx"
+    - "**/*.d.ts"
+    - "**/dist/**"
+
+# ── 覆盖率门 ────────────────────────────────────────────────────────────────
+coverage:
+  targets:
+    "@iris-ui-kit/core": 85
+    "@iris-ui-kit/react": 80
+    "@iris-ui-kit/vue": 75
+    "@iris-ui-kit/solid": 75
+    "@iris-ui-kit/svelte": 75
+  exclude_patterns:
+    - "**/*.test.*"
+    - "**/*.d.ts"
+    - "**/dist/**"
+  # 高复杂度组件的最小测试行数阈值
+  high_complexity_min_test_lines: 100
+
+# ── 包体积预算门 ────────────────────────────────────────────────────────────
+size:
+  # gzipped KB 预算（dist/index.js 的 gzip 后大小）
+  budgets:
+    "@iris-ui-kit/core": 35
+    "@iris-ui-kit/tokens": 3
+    "@iris-ui-kit/theme": 3.5
+    "@iris-ui-kit/skins": 5
+    # Unsafe SVG-node rejection and escaping added to the public SSR renderer.
+    "@iris-ui-kit/icons": 7
+    "@iris-ui-kit/react": 80
+    "@iris-ui-kit/vue": 88
+    # Native controlled/default table-sort bridge; measured at 90.37KB.
+    "@iris-ui-kit/solid": 93
+    "@iris-ui-kit/svelte": 6
+    "@iris-ui-kit/manifest": 2
+  budget_baseline_path: "scripts/size-baseline.json"
+
+# ── 变更预算门 ──────────────────────────────────────────────────────────────
+change_budget:
+  target_files: 5           # 软目标：每次迭代变更文件数
+  target_core_lines: 300    # 软目标：每次迭代新增 core 逻辑行数
+  hard_stop_files: 10       # 硬停止：超过此文件数必须拆分迭代
+
+# ── 四框架对齐门 ────────────────────────────────────────────────────────────
+framework_parity:
+  # 需要检查对齐的框架适配器目录
+  frameworks:
+    react: "packages/react/src/primitives"
+    vue: "packages/vue/src/primitives"
+    solid: "packages/solid/src/primitives"
+    svelte: "packages/svelte/src/primitives"
+  # 必须存在的子路径文档（非组件文件的对齐检查）
+  required_sub_paths:
+    - "/form"
+    - "/skins"
+    - "/admin"
+    - "/resource"
+    - "/behaviors"
+  # 已知框架特有的工具目录豁免（不是所有框架都需要）
+  # 这些是框架适配器独有的 hook/工具，不视为对齐漂移
+  directory_exemptions:
+    floating:
+      - "vue"
+    modal-utils:
+      - "vue"
+      - "svelte"
+
+# ── Manifest 清单门 ─────────────────────────────────────────────────────────
+manifest:
+  manifest_path: "packages/manifest/manifest.json"
+  llms_path: "packages/manifest/llms.txt"
+  # 必须存在且匹配 exports
+
+# ── RSC 指令门 ──────────────────────────────────────────────────────────────
+rsc:
+  check_dir: "packages/react/dist"
+  framework_name: "react"
+
+# ── Pack+Install 门 ────────────────────────────────────────────────────────
+pack_install:
+  curated_packages:
+    - "core"
+    - "react"
+    - "vue"
+    - "solid"
+    - "svelte"
+  raw_import_check:
+    - "core"
+    - "react"
+    - "vue"
+    - "solid"
+  exports_resolve_check:
+    - "svelte"
+
+# ── Token 审计门 ────────────────────────────────────────────────────────────
+tokens:
+  tokens_dir: "packages/tokens/src"
+  token_source_files:
+    - "light.ts"
+    - "dark.ts"
+
+# ── Desktop 一致性门 ────────────────────────────────────────────────────────
+desktop_parity:
+  reference: "desktop-os"
+  shells:
+    - "desktop-os"
+    - "desktop-os-vue"
+    - "desktop-os-solid"
+    - "desktop-os-svelte"

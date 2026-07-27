@@ -44,11 +44,13 @@ export function IrisTimeline({
   renderItem,
   style,
   className,
+  ...rest
 }: IrisTimelineProps): React.ReactElement {
   return (
     <ol
       data-iris-timeline=""
       className={className}
+      {...rest}
       style={{ listStyle: 'none', margin: 0, padding: 0, ...style }}
     >
       {items.map((item, i) => {

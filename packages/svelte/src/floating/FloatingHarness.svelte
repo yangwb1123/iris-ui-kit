@@ -24,5 +24,5 @@
   })
 </script>
 
-<div bind:this={anchor}></div>
-<div bind:this={floating}></div>
+<div role="presentation" bind:this={anchor}></div>
+<div role="presentation" bind:this={floating}></div>

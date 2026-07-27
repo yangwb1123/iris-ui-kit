@@ -23,12 +23,14 @@ export function IrisMasonry({
   children,
   style,
   className,
+  ...rest
 }: IrisMasonryProps): React.ReactElement {
   return (
     <div
       data-iris-masonry=""
       data-columns={columns}
       className={className}
+      {...rest}
       style={{ columnCount: columns, columnGap: gap, ...style }}
     >
       {React.Children.map(children, (child) => (

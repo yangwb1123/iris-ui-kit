@@ -30,6 +30,7 @@ export function IrisImage({
   preview = true,
   style,
   className,
+  ...rest
 }: IrisImageProps): React.ReactElement {
   const { t } = useI18n()
   const [errored, setErrored] = React.useState(false)
@@ -62,6 +63,7 @@ export function IrisImage({
         height={height}
         loading="lazy"
         className={className}
+        {...rest}
         onError={() => {
           if (!errored) setErrored(true)
         }}

@@ -89,4 +89,32 @@ describe('applyTheme', () => {
     expect(target.hasAttribute('data-iris-theme')).toBe(false)
     expect(target.hasAttribute('data-iris-theme-type')).toBe(false)
   })
+
+  it('sets CSS custom properties on the target', () => {
+    applyTheme(darkTheme, target)
+    expect(target.style.getPropertyValue('--iris-background')).toBe(
+      darkTheme.colors['iris.background'],
+    )
+    expect(target.style.getPropertyValue('--iris-foreground')).toBe(
+      darkTheme.colors['iris.foreground'],
+    )
+  })
+
+  it('revert removes the CSS custom properties', () => {
+    const { revert } = applyTheme(darkTheme, target)
+    expect(target.style.getPropertyValue('--iris-background')).toBeTruthy()
+    revert()
+    expect(target.style.getPropertyValue('--iris-background')).toBe('')
+  })
+
+  it('double revert is safe', () => {
+    const { revert } = applyTheme(darkTheme, target)
+    revert()
+    expect(() => revert()).not.toThrow()
+  })
+
+  it('light theme sets type to light', () => {
+    applyTheme({ ...darkTheme, type: 'light', name: 'test-light' }, target)
+    expect(target.getAttribute('data-iris-theme-type')).toBe('light')
+  })
 })

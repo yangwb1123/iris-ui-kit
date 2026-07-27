@@ -59,7 +59,14 @@ export function UsersPage() {
   const { session } = useAuth()
   const canWrite = session?.role === 'admin'
   const toast = useToast()
-  const users = useResourceController<User>({ fetcher: fetchUsers, pageSize: 6 })
+  const users = useResourceController<User>({
+    fetcher: fetchUsers,
+    pageSize: 6,
+    // Enable query cache with 10s TTL, circuit breaker, and rate limiting
+    // so repeated page/filter/sort requests hit cache, and transient failures
+    // are isolated instead of cascading.
+    resilient: { ttlMs: 10_000, breaker: { failureThreshold: 3, resetMs: 30_000 } },
+  })
 
   const [draft, setDraft] = useState<UserDraft>(emptyDraft)
   const [editingId, setEditingId] = useState<number | null>(null)

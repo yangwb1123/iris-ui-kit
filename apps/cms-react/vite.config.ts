@@ -33,6 +33,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui-kit/theme': src('theme'),
             '@iris-ui-kit/skins': src('skins'),
             '@iris-ui-kit/icons': src('icons'),
+            '@iris-ui-kit/react/form': srcSubpath('react', 'form/index'),
             '@iris-ui-kit/react': src('react'),
           },
         }

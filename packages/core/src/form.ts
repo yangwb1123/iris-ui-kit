@@ -8,6 +8,7 @@ import {
   type Path,
   type PathSegment,
 } from './path'
+import { createFormValidationPlan, runFormFieldValidator } from './form/array-validation'
 
 // Re-export standalone form sub-modules.
 // These are the same engines used internally by `createFormStore` —
@@ -348,24 +349,8 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
   // `validate` — so this returns undefined for it.
   const toErrorMessage = (err: unknown): string =>
     err instanceof Error ? err.message : String(err)
-
-  const runFieldValidator = async (key: string, values: V): Promise<string | undefined> => {
-    const validator = validators[key as Key<V>]
-    if (!validator) return undefined
-    try {
-      // No `await` here: `validator(...)` may return a plain value (a sync
-      // validator) or a promise. Returning it directly — rather than awaiting
-      // it first — preserves the original single-microtask resolution timing
-      // for the common sync case; this try/catch only needs to guard against
-      // a SYNCHRONOUS throw. An async (rejecting-promise) validator still
-      // propagates as a rejection here — handled at the call sites below,
-      // which is where the timing-insensitive cleanup (setValidating/
-      // isValidating) actually needs the guarantee.
-      return validator(getByPath(values, key) as V[Key<V>], values)
-    } catch (err) {
-      return toErrorMessage(err)
-    }
-  }
+  const runFieldValidator = (key: string, values: V): Promise<string | undefined> =>
+    runFormFieldValidator(validators, key, values)
 
   const setValidating = (name: string, on: boolean): void => {
     store.setState((s) => ({ ...s, validating: { ...s.validating, [name]: on } }))
@@ -425,11 +410,9 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     store.setState((s) => ({ ...s, isValidating: true }))
     try {
       const values = store.getState().values
-      const names = Object.keys(validators) as Key<V>[]
-      // Bump every field's token first so any in-flight single-field validation
-      // is invalidated — this form pass becomes the authoritative answer.
-      const tokenById = new Map<Key<V>, number>()
-      for (const name of names) tokenById.set(name, nextToken(name))
+      // Reserve every token before starting concurrent validation so this
+      // form-wide pass supersedes any older per-field run.
+      const { names, tokenById } = createFormValidationPlan(values, validators, nextToken)
 
       // allSettled (not all): runFieldValidator already catches per-field
       // exceptions, but this stays defense-in-depth so ONE unexpected rejection
@@ -441,7 +424,10 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
       for (const result of settled) {
         if (result.status === 'rejected') continue
         const [name, error] = result.value
-        if (error && isCurrent(name, tokenById.get(name) as number)) nextErrors[name] = error
+        if (error && isCurrent(name, tokenById.get(name) as number)) {
+          const fieldErrors = nextErrors as Record<string, string>
+          fieldErrors[name] = error
+        }
       }
       if (config.validate) {
         const formErrors = await config.validate(values)

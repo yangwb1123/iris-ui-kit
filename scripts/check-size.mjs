@@ -100,7 +100,10 @@ const BUDGETS = {
   // (`loadChildren`, matching React/Vue's existing feature — closes a real
   // cross-framework parity gap) + the barrel now re-exports the new
   // useUndoStack/useGroupedView bridges. Genuine new surface, not drift.
-  solid: 90,
+  // Bumped 90→93 (2026-07-27): the shared table sort controller now has a
+  // native Solid bridge, closing the final adapter gap for controlled/default
+  // sort state. The measured +2.4KB is the new bridge, not incidental drift.
+  solid: 93,
   svelte: 6,
   manifest: 2,
 }

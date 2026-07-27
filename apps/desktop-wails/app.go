@@ -30,7 +30,7 @@ func (a *App) currentFW() string {
 	return a.current
 }
 
-// SaveFile routes an @iris-ui/core file-save through the native Save dialog.
+// SaveFile routes an @iris-ui-kit/core file-save through the native Save dialog.
 // Bound to the frontend as window.go.main.App.SaveFile; returns true when saved.
 func (a *App) SaveFile(filename string, content string) bool {
 	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{

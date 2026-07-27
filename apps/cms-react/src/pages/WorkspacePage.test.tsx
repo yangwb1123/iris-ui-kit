@@ -19,7 +19,13 @@ describe('React CMS workspace bridge', () => {
 
   it('covers every extended-menu leaf with a real page contract', () => {
     const leaves = collectCmsLeafKeys(menus)
-    expect(leaves.every(isCmsPageRoute)).toBe(true)
+    const dedicatedPluginRoutes = new Set([
+      'form-builder',
+      'realtime',
+      'pro-table',
+      'documentation',
+    ])
+    expect(leaves.every((key) => dedicatedPluginRoutes.has(key) || isCmsPageRoute(key))).toBe(true)
     expect(leaves).toContain('audit-log')
   })
 

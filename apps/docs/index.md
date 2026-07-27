@@ -13,11 +13,15 @@ hero:
       link: /components
 features:
   - title: Cross-framework parity
-    details: 141 components exported identically from @iris-ui-kit/react and @iris-ui-kit/vue, with @iris-ui-kit/solid (140) and @iris-ui-kit/svelte (138) right behind. Business logic lives in a framework-agnostic core; adapters are thin reactive bridges.
+    details: 154 components are exported with the same names and semantics from React, Vue, Solid, and Svelte. All 616 framework contracts are extracted natively; business logic lives in a framework-agnostic core and adapters remain thin reactive bridges.
   - title: Logic that sinks to core
     details: Six engines — state machines, forms, i18n, virtualization, async resources, and pagination — are pure and framework-agnostic, each with a thin hook per framework.
   - title: Token-driven theming
     details: Every color, space, and radius is a CSS variable. Swap one theme.json to reskin the whole system, light/dark, with reduced-motion and color-scheme awareness.
-  - title: Production-ready
+  - title: Real reference applications
+    details: Four CMS bundles render real dashboard, login, users, settings, and workspace pages with no GenericPage fallback. Next, Nuxt, SolidStart, and SvelteKit all exercise routed data/feedback flows, hydration, and production HTTP tests.
+  - title: Guarded distribution
+    details: Remote registry and marketplace artifacts use SHA-256 integrity checks; the external-consumer gate auto-discovers all 27 publishable packages, and native CI builds Electron, Tauri, and Wails without skip fallbacks.
+  - title: Production safeguards
     details: SSR-safe IDs, an axe-core accessibility gate, i18n with overridable copy, an RTL foundation, a machine-readable manifest, and a bundle-size budget.
 ---

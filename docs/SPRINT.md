@@ -1,48 +1,59 @@
 # SPRINT
 
-> Current sprint backlog. Token-lean living doc. Detail lives in git history + `docs/CHANGELOG.md`. Updated each iteration (Phase 6). Strategic roadmap → root `ROADMAP.md`.
+> 2026-07-27 收口清单。产品方向见 `ROADMAP.md`。
 
-## 当前状态 (Current state)
+## Sprint goal
 
-**2026-07-19: architect gap-scan session done** — see CHANGELOG's top entry. `pnpm turbo run test typecheck lint build` (165/165 tasks) + `check:pack-install` + `check:desktop-parity` + `check:rsc` all verified green as a final integration pass. Highlight: this repo's first-ever external-consumer pack+install proof (`check:pack-install`) found and fixed 2 real pre-publish packaging bugs (Svelte ESM imports, Solid SSR crash) on its first run, and a new visual-regression scaffold found and fixed 2 more (React `IrisButton` dropping `aria-label`, a silently-broken smoke E2E test) — all 5 originally-planned directions plus these 4 bonus fixes landed same-session, 11 commits.
+把本轮已落盘的功能从“局部实现/局部验证”推进到整仓可交付状态；任何失败都回到
+源码修复，不以放宽门、跳过测试或虚报数字收尾。
 
-Iris UI — token-driven, 4-framework (React/Vue/Solid/Svelte) UI infrastructure over a shared `@iris-ui-kit/core`. **Feature-complete & at parity.**
+## 功能面
 
-- 25 packages (all publishable, CI + changesets wired), 23 turbo task groups, **126/126 gates green**, 0 skipped tests.
-- 5-layer architecture (tokens → theme → core controllers → framework adapters → plugins). See `docs/ARCHITECTURE.md`.
-- Recently landed: cross-platform arc (touch-DnD via `createSortable`, safe-area/dvh, `setFileSaveHandler`/`setClipboardHandler` native bridges, deployment docs) + enterprise-table (hierarchical tree sort, flat+tree virtualization ×4) + color-mix legacy fallback (zero modern regression) + a self-review pass that fixed a real copy-button regression.
+- [x] 安全、tokens/skins/icons、manifest/package 契约（616 native /
+      0 unavailable）。
+- [x] CMS auth/RBAC、真实 dashboard/login/users/settings/workspace、设置持久化
+      与 resilience 消费（无 `GenericPage`）。
+- [x] 四框架 plugin admin/charts/query-builder/notifications/markdown 等补齐。
+- [x] Table export、四框架浏览器旅程、视觉回归与 hard bench。
+- [x] registry/marketplace/CLI SHA-256/回滚路径与四套 SSR reference 的
+      data/feedback、hydration、production-route 对齐。
+- [x] 27 包外部 consumer 门、strict native Linux job，以及默认拒绝运行、需
+      维护者授权开关并仅跟随成功 push CI 的 release workflow。
 
-## 推荐方向 (Directions)
+## 最终验证
 
-### P0 — 正确性 / 技术债 (highest priority per 行为准则)
+- [x] `pnpm install --frozen-lockfile`
+- [x] `pnpm check:brace-expansion-compat` 与依赖审计（0 known vulnerabilities）
+- [x] `pnpm format:check`
+- [x] `pnpm lint`
+- [x] `pnpm typecheck`
+- [x] `pnpm build`
+- [x] `pnpm check:pack-install`（27 个可发布包 + 外部 TS/Svelte consumer）
+- [x] `pnpm check:manifest` 与 `pnpm check:docs-reference`（生成前后内容一致）
+- [x] `pnpm check:registry`（`admin-layout` 四框架 + 3 个 runtime resources）
+- [x] `pnpm size`
+- [x] `pnpm audit:tokens`
+- [x] `pnpm test:coverage`（388 files / 41,086 lines；high-complexity 缺口 0）
+- [x] `pnpm turbo run test:coverage:v8 --filter=@iris-ui-kit/core`
+- [x] `pnpm check:desktop-parity`
+- [x] `pnpm check:rsc`
+- [x] `pnpm test`
+- [x] 四框架 CMS Playwright E2E + React visual baselines（19/19）
+- [x] `pnpm bench`（14/14）
+- [x] `pnpm arch-check:ratchet`
+- [x] 四套 SSR 应用的 build/test/typecheck/lint 与 production-route 验证
 
-- Sweep remaining documented micro-debt (excel export mime charset; perf-finding follow-ups). Small, isolated.
-- Expand `@iris-ui-kit/core/contracts` cross-framework behavior coverage to the controllers added recently (`createSortable`, file-save/clipboard registries) — turns "parity by author discipline" into asserted parity.
+本次整仓主门为 180/180 Turbo tasks；core V8 coverage 为 statements/lines
+91.75%、branches 90.65%、functions 94.5%（70 files、1093 tests）。
+适配器复杂组件补测中，Solid 目标 80/80、全包 873/873 + SSR 34/34；
+Svelte 目标 83/83、全包 855/855 + SSR 31/31。
 
-### P1 — 价值 (value)
+## 完成定义
 
-- ~~Combobox/Autocomplete~~ — ALREADY EXISTS ×4 with the full WAI-ARIA combobox pattern (role=combobox + aria-expanded/controls/activedescendant/autocomplete). Verified — NOT a gap. (Recorded so it is not re-investigated; ditto a11y/2D-virt below, all DONE.)
-- ~~a11y of tree rows~~ DONE (iters 3-4, WAI-ARIA treegrid). ~~2D/horizontal virtualization~~ DONE (iters 5-6). ~~Select haspopup a11y~~ DONE (iters 7-8).
-- ~~Productize a real shell demo to validate the native bridges end-to-end~~ — **DONE (Electron): `apps/desktop`** hosts all four CMS demos (React/Vue/Solid/Svelte) and wires `setFileSaveHandler`/`setClipboardHandler` to native `dialog.showSaveDialog`/`clipboard`. Validated headlessly: a Node static-server smoke test (in the turbo pipeline → 127/127) AND a real Electron load under `xvfb` for all four frameworks (app mounted + Iris nodes + `window.irisNative` present). **Tauri + Wails: now DONE too** (`apps/desktop-tauri`, `apps/desktop-wails`) — the WebKitGTK 4.1 dev libs turned out to be present; Tauri's only missing piece (`librsvg2-dev`) was extracted into a user prefix without root. Both host the CMS ×4 with a live Framework switcher + native save/clipboard, validated headlessly (cargo/go tests + xvfb boot). All three shells share the identical `window.irisNative` renderer contract.
-- **No confirmed non-blocked feature gaps remain.** Library is feature-complete, parity-complete, accessible, 127/127 green, with a working Electron desktop demo. Next real progress = a user-chosen direction OR the blocked items (publish / Tauri-Wails-system-libs).
-
-### P2 — 战略 (strategic)
-
-- First npm publish (pipeline ready; maintainer-gated — a 发布 decision).
-- Plugin ecosystem expansion (data-viz depth, schema-admin).
-- AI-native: grow the manifest/MCP surface (codegen quality).
-
-## 技术债 (Technical debt)
-
-See `docs/TODO.md` (High/Medium/Low). Currently all Low/cosmetic after the self-review pass.
-
-## Edge Cases (watch)
-
-- Touch-DnD without `setPointerCapture` on ancient WebViews (self-heals next drag; documented).
-- Tree + `renderDetail` + virtualization intentionally non-virtual (variable height).
-
-## 性能优化机会 (Perf)
-
-- Rect caching + movement-threshold already shipped for touch-DnD.
-- Variable-height virtualization (tree+detail) — deferred (complexity vs niche value).
-- `createStore` selective subscription already available (`subscribeWith`).
+- 所有当前功能点有实现与对应层级的验证。
+- 四框架导出和行为契约仍保持对齐，manifest 保持 616 native /
+  0 unavailable。
+- 生成 manifest/llms、包 tarball、registry 模板与源码一致。
+- 四套 CMS 保持真实页面实现，四套 SSR reference 保持多路由生产证明。
+- 文档记录实际通过结果，不记录估算或旧会话数字。
+- 不执行首次 npm 发布；该动作留给维护者授权。

@@ -116,3 +116,16 @@ Without it, auto dark mode safely stays light; you can always drive the theme ex
 ## What you don't need to worry about
 
 `forced-colors` / reduced-motion compliance, portals, `position: sticky`, CSS custom properties, `ResizeObserver` / `IntersectionObserver`, and pointer-capture drags all work across WebView2 / WKWebView / WebKitGTK / Android System WebView. Iris UI also deliberately avoids the laggy webview-CSS traps (`:has()`, `@container`, `@layer`, `backdrop-filter`), and tonal surfaces that use `color-mix()` carry a precomputed `--iris-{semantic}-subtle` fallback, so even pre-2022 system WebViews render the right tint. The full visual surface renders correctly across current **and** legacy engines.
+
+## Repository native-shell proof
+
+The regular desktop wrapper scripts may skip when a contributor machine lacks a
+native toolchain. CI closes that gap with a separate
+`Native Linux shells (no skips)` job. It sets
+`IRIS_REQUIRE_NATIVE_BUILD=1`, installs Go, Rust, WebKitGTK and the other Linux
+development libraries, builds all four CMS renderers, then builds and tests
+Electron, Tauri, and Wails. A missing native dependency is a job failure rather
+than a successful skip.
+
+This describes the strict workflow contract. The current run status of the
+combined repository is tracked separately in `docs/SPRINT.md`.

@@ -38,6 +38,7 @@ export default defineConfig({
           { text: 'Theming', link: '/guide/theming' },
           { text: 'AI-native usage', link: '/guide/ai-native' },
           { text: 'Cross-platform', link: '/guide/cross-platform' },
+          { text: 'Registry & marketplace', link: '/guide/registry-marketplace' },
         ],
       },
       { text: 'Reference', items: [{ text: 'Components', link: '/components' }] },

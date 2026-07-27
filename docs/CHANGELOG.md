@@ -4,6 +4,27 @@
 
 ## Factory iterations
 
+- **2026-07-27 — registry default renamed and closeout gates hardened.**
+  `sverp-admin` 的公开安装名、目录、组件、偏好工厂、测试和文档统一为
+  `admin-layout`；来源说明仍保留对 sverpweb 布局能力的引用。Manifest 的四框架
+  package 契约改为验证显式 category exports 并禁止 `./*` 回退；Turbo 为
+  Next/Nuxt production tests 增加 build 顺序约束，消除 `.next/.output` 并发写入。
+  组件 API 现在由各适配器原生提取，154 × 4 = 616 份 contract 全部
+  `source: native`、零 `unavailable`；四套 CMS 均为真实页面、无
+  `GenericPage`，Next 也已与 Nuxt/SolidStart/SvelteKit 对齐多路由和 production
+  tests。Source registry 与 runtime marketplace 增加 SHA-256 守护，外部消费门
+  扩至全部 27 个可发布包；CI 增加不允许 Electron/Tauri/Wails 静默跳过的 strict
+  native job；release workflow 默认拒绝运行，需维护者设置
+  `IRIS_NPM_RELEASE_ENABLED=true` 后才接受 `main` 的成功 push CI 及其精确
+  `head_sha`。Svelte `asChild` 新增非枚举 `slotProps.merge(...)`，保证冲突
+  class/style/handler 在 SSR 与客户端按 parent-first/child-override 规则合并。
+  复杂组件覆盖门补至 388 files / 41,086 lines、high-complexity 缺口 0；新增
+  用例发现并修复 Solid DateRangePicker owner 泄漏，以及 Svelte TagInput
+  空白逗号段/尾逗号 DOM 同步缺陷。当前实际验证数字记录在 `STATE.md` /
+  `SPRINT.md`。
+
+- **2026-07-27 — full-product gap closure and final workspace verification completed.** The current tree moves the project beyond the 2026-07-19 snapshot: manifest parity is now 154 components × 4; the shared contract harness has 42 scenarios replayed by every adapter (including Table edit/resize, async data-source, overlay focus restore and real portal-destroy cleanup); CMS auth/RBAC/resources/settings and resilience primitives are exercised through all four browser bundles; plugins gained production-depth admin, charts, query-builder, notification, Markdown, ProTable, FormBuilder and editor behavior; Next/Nuxt/SolidStart/SvelteKit have routed data/feedback examples with hydration and production-route tests; registry/marketplace/CLI source distribution and supply-chain hardening landed. Coverage, 27-package external pack/install, manifest/docs currency, four-framework Playwright + React visual baselines, strict native desktop builds, hard bench, registry templates and architecture-ratchet gates all pass in the final integration run; authoritative verification details live in `SPRINT.md`.
+
 - **2026-07-19 session — architect-level gap scan (verified, not generic) → 5 directions implemented + 4 more real bugs found along the way, 11 commits, full gate green throughout.** Per-user request, did a fresh senior-architect/PM pass over the codebase, but instead of re-deriving the generic ~15 directions the old `pi-batch` pipeline used to spam (see the `ai-dev/`/`prompts/` note below — explicitly did NOT repeat that pattern), fanned out 8 parallel read-only agents to verify concrete hypotheses against actual source before touching anything. Two were FALSE (RTL/bidi is already a real, tested, 4-framework feature via `applyDirection`/`localeDirection`; all 4 frameworks' `IrisErrorBoundary` already expose an `onError` callback) — recorded so they aren't re-investigated. Then ran two rounds of parallel implementation agents (`e3a0357d…` session), each finding follow-on real bugs that got fixed the same session rather than deferred:
   - **`scripts/check-pack-install.mjs`** (new, zero-dep, advisory in CI, `0fcd7ca`) — packs `@iris-ui-kit/{core,react,vue,solid,svelte}` into real npm tarballs, installs via plain `npm install` into a scratch dir OUTSIDE the workspace, then genuinely `import()`s each — the first time this repo validated the _published-package_ experience instead of only the pnpm-workspace-symlink one. **It immediately found 2 real, previously-unknown pre-publish bugs on its first run:**
     - **Svelte dist ESM extensionless-import bug** (`ff2c7c5`) — root cause: `svelte-package` (unlike tsup for react/vue/solid) does no cross-file resolution, so it passes extensionless relative specifiers straight through to `dist/*.js`; native Node ESM rejects them (bundlers tolerate it). Fixed with a small post-build `scripts/fix-esm-extensions.mjs` pass, no source changes. This _also_ surfaced that `@iris-ui-kit/svelte` ships raw `.svelte` source (the correct, official way per Svelte's own packaging guidance — the consumer's bundler compiles it), so a raw-Node-import proof was never realistic for this one framework; adjusted the check itself (`d7bf8e3`) to verify svelte's `exports` map resolves on disk instead of importing it, rather than "fixing" something that wasn't broken.

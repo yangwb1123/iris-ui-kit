@@ -1,76 +1,50 @@
 # TODO
 
-> Current actionable backlog. Pulled from ROADMAP P0/P1 + review residue. One line each; promote to an iteration when picked.
+> 仅保留当前可行动项。完成历史见 `CHANGELOG.md`；不要把已关闭的历史 gap
+> 重新复制成新待办。日期：2026-07-27。
 
-## Now (next iterations)
+## 当前收口
 
-- **2026-07-19 session — architect gap scan → implementation — DONE, 11 commits, full gate green.** Full detail: the CHANGELOG entry above. All 5 originally-scoped directions landed (external-consumer pack+install check, plugin event-bus wiring, CLI codemod runner, ssr-next real Form, cms-react visual-regression scaffold) **plus 4 more real bugs the work itself surfaced and fixed same-session**: Svelte dist ESM extensionless-import, Solid dist eager-DOM-call-at-module-load, React `IrisButton` silently dropping unlisted props (incl. `aria-label` — a real a11y regression), and a pre-existing silently-broken `cms-react` smoke E2E test (now fixed and graduated off advisory in CI). **Still open / not yet picked** (lower urgency, no concrete signal forcing them yet):
-  - A real multi-page SSR demo for `apps/ssr-{nuxt,solidstart,sveltekit}` — still deliberately deferred single-page "thin-smoke" scaffolds per each app's own scope decision; `ssr-next` alone gained a real Form this session.
-  - The 7 resilience primitives are now genuinely used by only 4/8: `createQueryCache`/`createCircuitBreaker`/`createRateLimiter` (via `resilient-fetcher.ts`) and `createEventBus` (via `plugin.ts`, this session) have real consumers; `createDisposableScope`/`createReconnectingSource`/`createOutbox`/`createResilientFetcher` still have zero consumers anywhere. A future round could wire `createResilientFetcher`/`createOutbox` into one real demo app's data layer.
-  - Publish-readiness supply-chain hygiene found absent: no `SECURITY.md`, no Dependabot/Renovate, npm provenance permission staged in `release.yml` but no actual `--provenance`/`publishConfig`. Low urgency until publish is actually scheduled.
-  - Visual-regression coverage is currently 3 screenshots on one page (cms-react Users) — real but intentionally minimal; expand only if a concrete regression slips through undetected, per this repo's "no scope creep" convention.
-  - A broader audit of OTHER React primitives for the same closed-prop-list/no-rest-spread pattern `IrisButton` had — this session fixed only the one confirmed instance (deliberately scoped, per AUTONOMOUS.md's "smallest change" rule); worth a dedicated sweep later.
-    **Verified NOT gaps** (don't re-investigate): RTL/bidi support (real, tested, 4-framework — `applyDirection`/`localeDirection`/`useDirection`); error-boundary telemetry hooks (all 4 frameworks' `IrisErrorBoundary` already expose `onError`); `apps/cms-react/src/pages/UsersPage.tsx`'s `tone: 'error'` (its own unrelated local type, not the core `NotificationTone` — not a bug); Solid/Vue/Svelte's `Button` prop-forwarding (already correct — only React had the gap).
-- **2026-07-16 session — security/data-resilience hardening, 20 commits, DONE except the items below.** Landed alongside 5 concurrent autonomous sessions actively editing overlapping core files, using an isolated-base + compare-and-swap commit technique (per-file user sign-off) so nothing was clobbered. Fixed: markdown XSS, CSV formula injection ×2 (core + react/vue), skin CSS-injection, malformed-locale crashes (i18n/date/4 framework date components), form-store hardening ×5, standalone validation-engine stuck-flag. Shipped 7 new public core primitives (disposable/query-cache/realtime/outbox/event-bus/circuit-breaker/rate-limiter) + a composition (`createResilientFetcher`), unified `NotificationTone`→`'danger'`, added Tree/Form scale benches. `restoreSession` un-minimize claim investigated + REFUTED (already fine, don't re-raise). Full detail + the isolated-commit recipe: user memory `iris-ui-goal-loop-gate-repair-2026-07`.
-- **Follow-up, blocked on concurrent sessions settling**: wire the 7 new primitives into real consumers (currently public-but-unused); `plugin.ts` contribution-API wiring (diff too dense to isolate this session); re-audit files that had dense concurrent edits this session for the bugs originally flagged there (form/validation-adjacent bugs already closed; window.ts/store.ts/plugin.ts not yet re-checked).
-- **Follow-up, needs a retry**: E2E/coverage dep install got `@vitest/coverage-v8@^4.1.10` against pinned `vitest@^2.1.8` — a major-version mismatch (revert this before re-attempting; pin `@vitest/coverage-v8@^2.1.8` explicitly in the `pnpm add`). User already authorized touching the shared lockfile for this.
-- **Follow-up, in progress**: root + `docs/` accumulated ~1170 duplicate "gap scan"/"extension analysis" markdown files from a prior autonomous pipeline (`pi-batch`-generated, re-proposing the same ~15 directions under different titles every run — see the memory doc above for why this pattern recurs). User asked to delete them; ~900+/1171 removed as of this session (root scan docs, `docs/analysis/`, `docs/requirements/`, most of `docs/results/`) — kept only `README.md`/`AGENTS.md`/`CONTRIBUTING.md`, the 9 core living docs (this file, `ROADMAP`/`STATE`/`SPRINT`/`CHANGELOG`/`ARCHITECTURE`/`DECISIONS`/`AUTONOMOUS`/`IMPLEMENTATION_SUMMARY`), and `docs/superpowers/`. Remainder is straightforward — just repeat `rm -f $(ls docs/results/*.md | head -N)` in moderate batches (~50) until `docs/results/`, `docs/analysis/`, `docs/plugin-namespace-isolation/`, `docs/tech-lead/`, and the last ~17 root files are gone, then `git add -u -- '*.md' && git commit`. **Do NOT regenerate more of these docs** — this repo's own history shows the pattern is self-perpetuating (a new autonomous run reads the noise as "uncovered work" and writes 5 more).
+- 当前没有未关闭的可行动实现项。`pnpm test:coverage` 已在补强 12 个
+  React/Vue/Solid/Svelte 复杂组件后通过：388 个测试文件、41,086 行测试，
+  high-complexity 缺口为 0。
 
-- ~~Select keyboard-navigation parity~~ — **DONE (iters 20–21).** All four adapters' `IrisSelect` now have full WAI-ARIA listbox keyboard nav (Arrow/Home/End/Enter/Escape/typeahead). Net real gaps fixed: solid lacked Home/End (iter-20); svelte lacked arrows + open-focus (iter-21). **vue was a FALSE alarm** — it composes `IrisPopover` + `IrisList`, and `IrisList` already supplies full keyboard nav (the iter-20 audit grep was dir-scoped + missed the delegation; verified before touching vue, so no wasted edit). LESSON reinforced: when a component COMPOSES others, audit the composed primitives too, not just the wrapper's own file.
+## 已实现、不要再报为缺口
 
-- **P1 DONE: `@iris-ui-kit/core/contracts` expansion** — harness now **17 scenarios** across 14 components (form controls + single/multi-select + navigation + flagship Table's sort/multi-select/row-expand trio + **Tree keyboard, the last deferral, unblocked iter-33**), each asserted identical ×4, guarded by the iter-32 contract-coverage CI test. The harness paid for itself twice (pagination iter-24, table-select iter-30 — both real a11y bugs caught). **Only remaining contract = Table column-resize** (pointer-drag with coords, jsdom-awkward, low value — pick only on concrete need). Portal-gated overlays (select/combobox/dropdown-menu/dialog) stay deferred — Blocker-gated (need unified portal-disable props = public-API change). **The pagination contract paid for the whole harness** — caught a real Solid uncontrolled-`aria-current` bug (iter-24) per-fw unit tests missed. Thesis validated.
-- ~~Accordion keyboard nav~~ — **DONE (2026-07-02 session).** A real, confirmed gap: React's `IrisAccordion` used the shared `createKeyboardNav` controller for Up/Down-arrow + Home/End roving focus between headers (WAI-ARIA accordion pattern), but Vue/Solid/Svelte only supported Enter/Space on each header — zero arrow-key navigation between headers. Ported to all three (dynamic item registration via context, focus-sync on native Tab-focus), then locked with new `keydown`/`focused` steps on the shared `accordionScenario` contract (all 4 frameworks pass identically). Solid needed a companion fix: wiring the root keydown handler meant `preventDefault()` now suppressed the browser's native Enter/Space-on-button click, so added an explicit item-level toggle handler (matching React) to keep that working. Also independently re-checked: **menu typeahead is NOT a gap** — grepped React's own `MenuContent.tsx`, confirmed it doesn't pass `labels` to `createKeyboardNav` either, so all four frameworks are already at the same (no-typeahead) baseline; the earlier framing of this as "Vue/Solid/Svelte lack it" was comparing against a capability the reference itself doesn't use. Also independently re-checked: **ToggleGroup/Toolbar keyboard nav is NOT a gap** — both already have complete, correct hand-rolled roving-focus in all 4 frameworks; not using the shared controller is a DRY/refactor opportunity, not a functional gap. Also independently re-checked: **Vue Select composing IrisList already has full keyboard nav** (reconfirms the iter-20/21 note above — same delegation pattern, still holds). **Correction to this same entry**: initially claimed "driver.click already synthesizes focus" for all four contract-test drivers — false. Vue's `driverFor().click` (`packages/vue/src/contracts-harnesses.ts`) dispatched raw `mousedown`+`click` `MouseEvent`s via `el.dispatchEvent(...)` with NO focus call at all (React/Svelte fire an explicit focus event; Solid calls `el.focus()` directly) — `dispatchEvent` bypasses a browser's default click-focuses-target behavior, so this silently never mattered until a scenario needed `focused` after `click`. Fixed by adding `el.focus()`, matching the other three. Also found and fixed a real, unrelated bug while chasing this: **Vue's and Svelte's `IrisRadioGroup` never worked uncontrolled** — no internal state, no `defaultValue`, so a group mounted without `v-model`/`bind:value` (the common default-selection case) silently never showed any selection on click, even though the change callback fired correctly. Same bug class as the `List`/`Accordion`/`Stepper`/`Mentions`/`FileUpload` uncontrolled-state fixes from earlier sessions; React/Solid already had it right. Found via a batch cross-framework consumption check on OTHER core controllers beyond `createKeyboardNav` (`createSelectionModel`: react 7 files, vue 4, solid 5, svelte 5 — the file-count gap led to checking `RadioGroup` specifically).
-- ~~Systematic core-controller consumption sweep~~ — **DONE (2026-07-02 session, closes the sweep this entry's earlier finds started).** Checked cross-framework consumption for every `create*` export in `packages/core/src` (the complete list, not a sample: autoDismiss, keyboardNav, selectionModel, hoverIntent, treeSelection, expansion, virtualizer, cellRange, columnState, cellEdit, floatingMachine, memoizedFilterSort). Two real gaps (Accordion keyboard nav, RadioGroup uncontrolled mode — both above) were the only genuine finds; every other file-count discrepancy resolved as noise on inspection: `createExpansion`/`createCellRange`/`createVirtualizer` — file-organization differences only (Solid keeps Table in one file where React/Vue split into `Table.tsx`+`useTableState.ts`; component itself present in all 4); `createFloatingMachine` — React/Vue's own barrel `index.ts` matched the grep (re-export line, not a missing consumer); `createColumnState` — a grep bug (`grep -v "/core/"` meant to exclude `@iris-ui-kit/core` accidentally also excluded `plugin-pro-table/src/core/`, its own unrelated internal-logic directory) made it look unconsumed; it's actually consumed exactly as documented in `[[iris-ui-roadmap-v3]]`'s commit `f848558` convergence, still holding. `createMemoizedFilterSort` is the one genuinely-unconsumed export, and correctly so — it's a stateful memoization wrapper, and each framework's Table correctly uses its OWN native reactivity (`React.useMemo` etc.) for memoization while sharing the pure `compareValues` logic from the same file; wrapping that in a framework-agnostic memoization scheme wouldn't compose with native reactive dependency tracking. Not a gap — an architecturally-correct non-adoption.
-- Remaining a11y behavioral audit candidates (not yet audited): listbox/select `aria-activedescendant` vs roving-focus, toast/notification auto-dismiss timing + pause-on-hover, form-field↔control error wiring (`aria-invalid`/`aria-describedby`). Diff all 4 impls; fix gaps; lock with a test. **Harness gotcha discovered (iter-23):** a component whose accessible element is its ROOT (e.g. Rating's `role="slider"`) needs the Vue harness to wrap it in a host `<div>` (the driver's container-scoped `querySelectorAll` matches descendants only, not the container itself); and two components sharing a generic role (Rating + Slider both `role="slider"`) cannot co-exist in svelte's single shared `ContractsHarness.svelte` if any scenario asserts a global count for that role → give such a component its own dedicated harness (mirrors React's per-test isolated containers). Turns "parity by author discipline" (also guarded structurally by the manifest parity test) into asserted BEHAVIORAL parity. Next contract candidates (consistent ×4 selectors, deterministic uncontrolled/keyboard behavior): **tree** expand/select (`aria-expanded`/`aria-selected` — exercises the shared expansion + tree-selection controllers, renders inline = no portal), **select/combobox** open→option-select (CAVEAT: options may render in a portal outside the test container → the container-scoped driver `queryAll` won't see them; needs a document-scoped driver or `disablePortal`), **dropdown-menu** roving focus. Deeper goal: drive a controller-level scenario (selection/sort/expansion/data-source store migrations) through all 4 adapters — **tree** is the natural next step toward this. Multi-iteration; ≤6 files each (1 core scenario + index + ≤4 adapter test blocks). Needs no user input.
-- Verification sweeps + invariant guards mode continues (iters 9–15 found real bugs + built 7 guards; iter-18 a **source-level parity audit** found solid tree had zero keyboard nav → fixed). NEW high-yield sweep dimension proven: **per-component cross-framework BEHAVIORAL audit** (read all 4 impls of a stateful component side-by-side, diff the interaction surface — keyboard handlers, aria attrs, focus mgmt). The name-parity guard can't see these. Candidates to audit next: tabs/menu/listbox keyboard, dialog focus-trap, combobox.
-- ~~Residual tree-keyboard parity~~ — DONE (iter-19): svelte tree gained Home/End + `aria-level`. All 4 adapters' standalone Tree now implement the full WAI-ARIA keyboard pattern identically.
+- 154 个 manifest 组件在 React/Vue/Solid/Svelte 四端对齐；616 份框架契约
+  全部 native，`unavailable = 0`。
+- 42 个共享行为 scenario 均接入四端；包含 Table resize/edit、异步
+  DataSource、overlay open/dismiss、portal destroy 与 focus restore。
+- resilience 原语已进入真实 CMS 数据/事件消费路径。
+- 四框架 CMS 的 auth/RBAC、资源页、设置持久化与浏览器 E2E 已接线；四端均
+  直接实现 dashboard/login/users/settings/workspace，没有 `GenericPage`。
+- Next/Nuxt/SolidStart/SvelteKit 均有 data/feedback 多路由、hydration 与生产
+  路由测试。
+- 发布安全元数据已存在：`SECURITY.md`、Dependabot、npm provenance、依赖审计。
+- registry、marketplace 与 CLI add/diff/update 工作流已落盘；远程
+  item/file、runtime resource/font 的 SHA-256 以及更新冲突/回滚路径已覆盖。
+- 27 个可发布包均纳入外部 npm pack/install consumer 门；CI 另设
+  `IRIS_REQUIRE_NATIVE_BUILD=1` 的 Electron/Tauri/Wails strict job。
+- release workflow 默认拒绝运行；只有仓库变量
+  `IRIS_NPM_RELEASE_ENABLED=true` 且 `main` push CI 成功时，才跟随精确
+  `head_sha`，不会跟随 PR 或失败的 CI。
+- Svelte `asChild` 的 `slotProps.merge(...)` 已覆盖 SSR/客户端 class、style、
+  parent-first handler 合并；无冲突的直接 spread 保持兼容。
+- 复杂组件补测发现并修复 Solid DateRangePicker owner 泄漏，以及 Svelte
+  TagInput 空白逗号段与尾逗号 DOM 不清空。
+- admin、charts、query-builder、notifications、markdown、form-builder、
+  pro-table 等插件已具备四框架实现。
 
-## Parity-discovery (wf wumk73p7o) — FULLY TRIAGED & CLOSED
+## 决策门
 
-Of 13 Explore candidates, **only 2 were real+actionable** — column-virtualization (iter 5) + column-resizing (iter 6), both DONE (Table feature parity ×4 now complete). After reading actual source, the rest:
+- **首次 npm 发布**：必须由维护者明确授权；不要自行执行 `npm publish` 或触发
+  等价发布动作；不要代替维护者设置 `IRIS_NPM_RELEASE_ENABLED` 或选择版本。
+- **QRCode**：当前明确跳过；只有确定编码器与真实扫描验证方案后再立项。
+- **ROADMAP v3 架构投入**：新框架、可变高度虚拟化、状态机/代码生成扩展等，
+  需要维护者选择范围和优先级。
 
-- FALSE POSITIVES: Tour onOpenChange (react HAS it; vue=0); checkbox ariaLabel (react accepts native `aria-label` via `{...rest}` + `extends InputHTMLAttributes`; svelte HAS `ariaLabel` — grep misread); various callback "gaps" (naming-only / present).
-- FRAMEWORK IDIOM (not a gap): Select `renderTrigger` (render-prop = React/Solid fn vs Vue/Svelte slot/snippet, intentionally not 1:1); solid Table extra `renderCell` alias.
-- COSMETIC RENAME = public-interface Blocker (deferred unless asked): textarea `autoResize`(solid) vs `autosize`(others); otp `autoFocus` casing.
-- LESSON: Explore agents read excerpts → ALWAYS verify candidates against source (~85% were noise here).
+## Deferred by design
 
-## Wave-2 behavioral-audit residue (iters 7–15 of the 2026-06-13 session — deferred, lower-value)
-
-These came from the 2nd 4-agent cross-framework audit (selection-wrappers / overlays / nav-stepper / date-time). The clear defects were all FIXED (TreeSelect+Cascader trigger keyboard ×Solid/Svelte, Solid Cascader aria, Solid Tabs id-linkage, Svelte Stepper uncontrolled, Svelte MenuSub aria-controls, Solid Transfer select-all+aria-label, Mentions ×Solid/Svelte, Popover focus ×Solid/Svelte, Solid date-picker popover ARIA). Remaining (deliberately deferred):
-
-- ~~**Svelte MenuSub nested context**~~ — **DONE (iter 76).** Added `closeRoot` to the Svelte menu context + nested-context provision in `IrisMenuSub`; 3+-level submenus now work and a deep leaf collapses the whole tree (matches React/Vue/Solid). +test.
-- ~~**Svelte FileUpload / Dragger uncontrolled**~~ — **DONE (iters 74–75).** Both rendered their own state (file list / transform) but only emitted; added `defaultValue` + internal-state so uncontrolled usage works (same class as List/Accordion/Stepper/Mentions). The carousel stays controlled-by-architecture (snippet slides).
-- ~~**Submenu hover-open MODEL**~~ — **DONE (iter 79).** Resolved via the project's React-is-reference convention (the tie-breaker used all session): Solid + Svelte submenus now match React/Vue — 100ms debounced open + no close-on-pointer-leave (close via ArrowLeft/Escape/select/outside-dismiss). Svelte submenu gained its own `useDismiss` (escape:false). All four submenus behave identically. **No cross-framework parity gaps remain.**
-
-## ~~Blocked — TimePicker value-shape divergence~~ — RESOLVED (iters 77–78)
-
-- **DONE.** Rebuilt Svelte `IrisTimePicker` to the canonical `{ hours, minutes }` numeric-input + AM/PM design (a line-for-line port of the React reference: format 12h/24h, minuteStep, ArrowUp/Down stepping, controlled+uncontrolled), and added the missing ArrowUp/Down stepping to the Solid TimePicker. Resolved-as-parity-restoration rather than treated as a blocker, because nothing is published (no consumers to break) and 3/4 frameworks already defined this contract — the same call as the Svelte List rebuild. TimePicker now at full four-framework parity. Passed all manifest parity guards.
-
-## Low-priority sweep findings (recorded; weigh value before picking)
-
-- **plugin-notifications hardcoded aria-labels** (found iter-34 i18n sweep): `IrisNotificationCenter` hardcodes `aria-label="Dismiss"` + `aria-label="{n} unread"` in all 4 adapters — user-visible screen-reader strings not localizable. This plugin uses **prop-based** localization (`title`/`emptyText` props with English defaults), NOT the core `t()` system, so the consistent fix = add defaulted props (`dismissLabel`, `unreadLabel`) ×4 (additive/backward-compat, completes the existing prop pattern). Deferred: marginal value, expands 4 plugin APIs. Pick only if a localization need is raised. NOTE: the core primitives (Breadcrumb/Pagination/Table/etc.) correctly use `t()` — this gap is isolated to the notifications plugin's prop-based design.
-
-## Blocked / decision-gated (Blocker conditions — need user input or external resource)
-
-- ~~Desktop shell demo to validate native bridges~~ — **DONE for all three shells**: Electron (`apps/desktop`, iter 80–81, + electron-builder packaging), **Tauri** (`apps/desktop-tauri`, Rust) and **Wails** (`apps/desktop-wails`, Go) (iter 82). All host the CMS ×4 with a live Framework switcher + native save/clipboard via the shared `window.irisNative` contract; validated headlessly (Node/Go/cargo tests + xvfb boot). Tauri/Wails build against the system webkit2gtk-4.1 (Tauri's `librsvg2-dev` extracted into a user prefix — no root needed after all). **No desktop work remains.**
-- First npm publish — maintainer/release decision (pipeline + changesets ready).
-
-## Deferred-by-design (do NOT pick without explicit ask)
-
-- Variable-height (tree+detail) virtualization — complexity > value.
-- `createSortable` contract tests — single-impl core, already unit-tested 21×; marginal.
-
-## Low-priority / by-design (recorded; weigh value before picking)
-
-- `skeletons/DashboardTemplate` (react+solid) hardcode `aria-label="Primary"` instead of `t()`. Templates are scaffolding that uses NO i18n by design (users customize). Marginal; fix only if a "templates should localize" decision is made.
-
-## Resolved-as-non-issue (recorded so they aren't re-raised)
-
-- **Transfer items' a11y (iter-40/41 audit) — NOT a gap.** A grep for `aria-selected` found it only on solid, suggesting react/vue/svelte lacked it. Re-verification: ALL FOUR transfer adapters render each item with `<input type="checkbox">` (fully accessible — the checkbox announces selection). Solid ADDITIONALLY wraps them in `role="listbox"`/`role="option"`/`aria-selected` (redundant with the checkbox, harmless). So transfer is accessible ×4 — no fix. (Internal `data-iris-transfer-*` names diverge — `list`/`panel`/`source`-`target` — but those are cosmetic styling/test hooks.) LESSON (re-confirmed): a grep for ONE a11y attribute can't conclude "missing" — the component may use a different accessible mechanism (here: checkboxes). Verify the interaction MECHANISM, not one attribute.
-
-- vue plugin subscribe-in-onMounted / svelte compact `$effect` — false-positives (lifecycle-paired, negligible window).
-- solid/svelte tree `getKey` index-0 — degrades identically to react/vue on malformed data.
-
-## Done (factory iters 2–6)
-
-excel mime (2) · tree aria-level (3) · WAI-ARIA treegrid (4) · column-virtualization parity (5) · column-resizing parity (6).
+- Tree + `renderDetail` 使用可变行高时不启用现有定高虚拟化。
+- 真浏览器/真实设备难以稳定自动化的极端平台行为继续由宿主集成测试承担。
+- 纯重构、命名统一或无具体缺陷信号的“为了对齐而改”不进入功能 backlog。

@@ -1,4 +1,4 @@
-import { Show, For, type JSX } from 'solid-js'
+import { Show, For, createMemo, type JSX } from 'solid-js'
 import {
   plotBox,
   dataDomain,
@@ -7,7 +7,26 @@ import {
   linePath,
   areaPath,
   barRects,
+  multiLineGeometry,
+  multiBarGeometry,
+  donutGeometry,
+  chartTooltipLabel,
   type ChartDimensions,
+  type ChartDirection,
+  type ChartSeries,
+  type ChartSlice,
+  type ChartTooltipItem,
+  type ChartLegendItem,
+  type BarLayout,
+} from '../core'
+
+export type {
+  ChartDirection,
+  ChartSeries,
+  ChartSlice,
+  ChartTooltipItem,
+  ChartLegendItem,
+  BarLayout,
 } from '../core'
 
 export interface IrisLineChartProps {
@@ -153,5 +172,296 @@ export function IrisSparkline(props: IrisSparklineProps) {
         stroke-linecap="round"
       />
     </svg>
+  )
+}
+
+const chartFigureStyle: JSX.CSSProperties = {
+  display: 'inline-flex',
+  'flex-direction': 'column',
+  gap: 'var(--iris-gap-sm)',
+  margin: '0',
+}
+
+const chartLegendStyle: JSX.CSSProperties = {
+  display: 'flex',
+  'flex-wrap': 'wrap',
+  gap: 'var(--iris-gap-sm)',
+  margin: '0',
+  padding: '0',
+  color: 'var(--iris-chart-text)',
+  'font-size': 'var(--iris-font-size-sm)',
+  'list-style': 'none',
+}
+
+function ChartLegend(props: { items: readonly ChartLegendItem[]; label: string }) {
+  return (
+    <ul data-iris-chart-legend="" aria-label={props.label} style={chartLegendStyle}>
+      <For each={props.items as ChartLegendItem[]}>
+        {(item) => (
+          <li
+            style={{
+              display: 'inline-flex',
+              'align-items': 'center',
+              gap: 'var(--iris-gap-sm)',
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                'inline-size': '0.75em',
+                'block-size': '0.75em',
+                'border-radius': 'var(--iris-radius-sm)',
+                background: item.color,
+              }}
+            />
+            {item.label}
+          </li>
+        )}
+      </For>
+    </ul>
+  )
+}
+
+interface MultiChartBaseProps {
+  width?: number
+  height?: number
+  categories?: readonly string[]
+  direction?: ChartDirection
+  ariaLabel?: string
+  ariaDescription?: string
+  legendLabel?: string
+  showLegend?: boolean
+  class?: string
+  style?: JSX.CSSProperties
+  onDatumFocus?: (item: ChartTooltipItem) => void
+}
+
+export interface IrisMultiLineChartProps extends MultiChartBaseProps {
+  series: readonly ChartSeries[]
+  nice?: boolean
+  pointRadius?: number
+}
+
+/** Accessible, token-themed multi-series line chart over shared core geometry. */
+export function IrisMultiLineChart(props: IrisMultiLineChartProps) {
+  const width = () => props.width ?? 320
+  const height = () => props.height ?? 180
+  const direction = () => props.direction ?? 'ltr'
+  const geometry = createMemo(() =>
+    multiLineGeometry(
+      props.series,
+      { width: width(), height: height(), padding: 12 },
+      {
+        categories: props.categories ?? [],
+        direction: direction(),
+        nice: props.nice ?? true,
+      },
+    ),
+  )
+
+  return (
+    <figure
+      data-iris-chart-container="multi-line"
+      class={props.class}
+      dir={direction()}
+      style={{ ...chartFigureStyle, ...props.style }}
+    >
+      <svg
+        data-iris-chart="multi-line"
+        role="group"
+        aria-label={props.ariaLabel ?? 'Multi-series line chart'}
+        width={width()}
+        height={height()}
+        viewBox={`0 0 ${width()} ${height()}`}
+      >
+        <title>{props.ariaLabel ?? 'Multi-series line chart'}</title>
+        <desc>{props.ariaDescription ?? geometry().description}</desc>
+        <For each={geometry().series}>
+          {(item) => (
+            <g data-series-id={item.id}>
+              <Show when={item.path}>
+                <path
+                  data-iris-chart-series-line=""
+                  d={item.path}
+                  fill="none"
+                  stroke={item.color}
+                  stroke-width={2}
+                  stroke-linejoin="round"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                />
+              </Show>
+              <For each={item.points}>
+                {(point) => {
+                  const label = () => chartTooltipLabel(point.tooltip)
+                  return (
+                    <circle
+                      data-iris-chart-datum=""
+                      data-category-index={point.categoryIndex}
+                      cx={point.x}
+                      cy={point.y}
+                      r={Math.max(1, props.pointRadius ?? 3)}
+                      fill={point.color}
+                      stroke="var(--iris-chart-point-stroke)"
+                      stroke-width={1}
+                      role="img"
+                      tabIndex={0}
+                      aria-label={label()}
+                      onFocus={() => props.onDatumFocus?.(point.tooltip)}
+                    >
+                      <title>{label()}</title>
+                    </circle>
+                  )
+                }}
+              </For>
+            </g>
+          )}
+        </For>
+      </svg>
+      <Show when={props.showLegend ?? true}>
+        <ChartLegend items={geometry().legend} label={props.legendLabel ?? 'Chart legend'} />
+      </Show>
+    </figure>
+  )
+}
+
+export interface IrisStackedBarChartProps extends MultiChartBaseProps {
+  series: readonly ChartSeries[]
+  layout?: BarLayout
+  nice?: boolean
+  categoryGap?: number
+  seriesGap?: number
+}
+
+/** Accessible stacked/grouped bar chart with signed stacking and shared domain. */
+export function IrisStackedBarChart(props: IrisStackedBarChartProps) {
+  const width = () => props.width ?? 320
+  const height = () => props.height ?? 180
+  const direction = () => props.direction ?? 'ltr'
+  const geometry = createMemo(() =>
+    multiBarGeometry(
+      props.series,
+      { width: width(), height: height(), padding: 12 },
+      {
+        categories: props.categories ?? [],
+        direction: direction(),
+        layout: props.layout ?? 'stacked',
+        nice: props.nice ?? true,
+        categoryGap: props.categoryGap ?? 0.2,
+        seriesGap: props.seriesGap ?? 0.08,
+      },
+    ),
+  )
+
+  return (
+    <figure
+      data-iris-chart-container="stacked-bar"
+      class={props.class}
+      dir={direction()}
+      style={{ ...chartFigureStyle, ...props.style }}
+    >
+      <svg
+        data-iris-chart="stacked-bar"
+        data-layout={geometry().layout}
+        role="group"
+        aria-label={props.ariaLabel ?? 'Stacked bar chart'}
+        width={width()}
+        height={height()}
+        viewBox={`0 0 ${width()} ${height()}`}
+      >
+        <title>{props.ariaLabel ?? 'Stacked bar chart'}</title>
+        <desc>{props.ariaDescription ?? geometry().description}</desc>
+        <For each={geometry().rects}>
+          {(rect) => {
+            const label = () => chartTooltipLabel(rect.tooltip)
+            return (
+              <rect
+                data-iris-chart-datum=""
+                data-series-id={rect.seriesId}
+                data-category-index={rect.categoryIndex}
+                x={rect.x}
+                y={rect.y}
+                width={rect.width}
+                height={rect.height}
+                fill={rect.color}
+                role="img"
+                tabIndex={0}
+                aria-label={label()}
+                onFocus={() => props.onDatumFocus?.(rect.tooltip)}
+              >
+                <title>{label()}</title>
+              </rect>
+            )
+          }}
+        </For>
+      </svg>
+      <Show when={props.showLegend ?? true}>
+        <ChartLegend items={geometry().legend} label={props.legendLabel ?? 'Chart legend'} />
+      </Show>
+    </figure>
+  )
+}
+
+export interface IrisDonutChartProps extends Omit<MultiChartBaseProps, 'categories' | 'direction'> {
+  data: readonly ChartSlice[]
+  innerRadiusRatio?: number
+  startAngle?: number
+}
+
+/** Accessible donut (or pie at ratio 0) chart with focusable slice tooltips. */
+export function IrisDonutChart(props: IrisDonutChartProps) {
+  const width = () => props.width ?? 220
+  const height = () => props.height ?? 220
+  const geometry = createMemo(() =>
+    donutGeometry(
+      props.data,
+      { width: width(), height: height(), padding: 8 },
+      {
+        innerRadiusRatio: props.innerRadiusRatio ?? 0.6,
+        ...(props.startAngle == null ? {} : { startAngle: props.startAngle }),
+      },
+    ),
+  )
+
+  return (
+    <figure
+      data-iris-chart-container="donut"
+      class={props.class}
+      style={{ ...chartFigureStyle, ...props.style }}
+    >
+      <svg
+        data-iris-chart="donut"
+        role="group"
+        aria-label={props.ariaLabel ?? 'Donut chart'}
+        width={width()}
+        height={height()}
+        viewBox={`0 0 ${width()} ${height()}`}
+      >
+        <title>{props.ariaLabel ?? 'Donut chart'}</title>
+        <desc>{props.ariaDescription ?? geometry().description}</desc>
+        <For each={geometry().arcs}>
+          {(arc) => {
+            const label = () => chartTooltipLabel(arc.tooltip)
+            return (
+              <path
+                data-iris-chart-datum=""
+                data-slice-id={arc.id}
+                d={arc.path}
+                fill={arc.color}
+                role="img"
+                tabIndex={0}
+                aria-label={label()}
+                onFocus={() => props.onDatumFocus?.(arc.tooltip)}
+              >
+                <title>{label()}</title>
+              </path>
+            )
+          }}
+        </For>
+      </svg>
+      <Show when={props.showLegend ?? true}>
+        <ChartLegend items={geometry().legend} label={props.legendLabel ?? 'Chart legend'} />
+      </Show>
+    </figure>
   )
 }

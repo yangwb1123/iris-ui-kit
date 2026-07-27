@@ -1,5 +1,5 @@
 import { defineConfig, type Options } from 'tsup'
-import { solidPlugin } from 'esbuild-plugin-solid'
+import { solidSsrSafeBuild } from '../../scripts/solid-ssr-build.ts'
 
 // Everything in @iris-ui-kit/* + the host framework runtimes stay external — the
 // admin plugin composes the adapters' shell + data engine, it doesn't bundle them.
@@ -10,6 +10,7 @@ const IRIS = [
   '@iris-ui-kit/solid',
   '@iris-ui-kit/svelte',
 ]
+const SELF_CORE = '@iris-ui-kit/plugin-admin/core'
 
 // Main entries (core + react + vue) — plain esbuild handles TS + React JSX.
 const main: Options = {
@@ -21,11 +22,12 @@ const main: Options = {
   format: ['esm', 'cjs'],
   dts: true,
   sourcemap: true,
-  clean: true,
+  clean: false,
   treeshake: true,
+  minify: true,
   target: 'es2022',
   tsconfig: 'tsconfig.json',
-  external: [...IRIS, 'react', 'react-dom', 'react/jsx-runtime', 'vue'],
+  external: [...IRIS, SELF_CORE, 'react', 'react-dom', 'react/jsx-runtime', 'vue'],
 }
 
 // Solid entry — needs esbuild-plugin-solid for real Solid reactivity.
@@ -36,10 +38,11 @@ const solid: Options = {
   sourcemap: true,
   clean: false,
   treeshake: true,
+  minify: true,
   target: 'es2022',
   tsconfig: 'tsconfig.solid.json',
-  esbuildPlugins: [solidPlugin()],
-  external: [...IRIS, 'solid-js', 'solid-js/web', 'solid-js/store'],
+  ...solidSsrSafeBuild(),
+  external: [...IRIS, SELF_CORE, 'solid-js', 'solid-js/web', 'solid-js/store'],
 }
 
 export default defineConfig([main, solid])

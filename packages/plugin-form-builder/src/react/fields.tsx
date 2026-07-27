@@ -1,3 +1,4 @@
+import * as React from 'react'
 import { useField, useFieldArray } from '@iris-ui-kit/react/form'
 import { arrayRowDefaults, type FieldSpec } from '../core'
 
@@ -38,8 +39,8 @@ function renderScalarFieldInner(
   const onChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => f.setValue((e.target as HTMLInputElement).value)
-  const E = (tag: string, extra: Record<string, unknown>, children?: React.ReactNode) =>
-    React.createElement(tag, { ...shared, ...extra, onChange }, children)
+  const E = (tag: string, extra: Record<string, unknown>, ...children: React.ReactNode[]) =>
+    React.createElement(tag, { ...shared, ...extra, onChange }, ...children)
   if (type === 'textarea')
     return E('textarea', { placeholder: field.placeholder, value: String(f.value ?? '') })
   if (type === 'select')

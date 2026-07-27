@@ -6,7 +6,6 @@
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "moduleResolution": "Bundler",
-    "noEmit": true,
     "types": []
   },
   "include": ["src/solid/**/*.ts", "src/solid/**/*.tsx"],

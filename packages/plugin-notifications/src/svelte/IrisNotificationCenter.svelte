@@ -7,6 +7,8 @@
     emptyText = 'No notifications',
     dismissLabel = 'Dismiss',
     unreadLabel = '{n} unread',
+    markAllReadLabel = 'Mark all read',
+    clearLabel = 'Clear',
     class: klass = undefined,
   }: {
     center: NotificationCenter
@@ -18,13 +20,20 @@
     dismissLabel?: string
     /** Accessible label for the unread badge. `{n}` = count. Default `'{n} unread'`. */
     unreadLabel?: string
+    /** Label for the mark-all-read action. Default `'Mark all read'`. */
+    markAllReadLabel?: string
+    /** Label for the clear action. Default `'Clear'`. */
+    clearLabel?: string
     class?: string
   } = $props()
 
   // Bridge the core Store directly (no adapter useStore). NB: do not name this
   // `state` — a leading `$` would make Svelte read `$state` as a store
   // auto-subscription instead of the rune.
-  let centerState: NotificationCenterState = $state(center.getState())
+  // The effect below owns both the initial sync and subsequent center changes.
+  // Starting from the valid empty shape avoids capturing the initial prop in a
+  // rune initializer (which Svelte correctly warns would not itself be reactive).
+  let centerState: NotificationCenterState = $state({ items: [] })
 
   $effect(() => {
     // Re-sync (and re-subscribe) whenever the bound center changes.
@@ -44,10 +53,10 @@
       >
     {/if}
     <button type="button" data-iris-notifications-mark-all onclick={() => center.markAllRead()}>
-      Mark all read
+      {markAllReadLabel}
     </button>
     <button type="button" data-iris-notifications-clear onclick={() => center.clear()}>
-      Clear
+      {clearLabel}
     </button>
   </div>
   {#if centerState.items.length === 0}

@@ -69,6 +69,22 @@ describe('IrisDashboard (solid)', () => {
     expect(cells.length).toBeGreaterThanOrEqual(6)
   })
 
+  it('maps a safe content key to interactive Solid content', () => {
+    const onOpen = vi.fn()
+    const cfg = config()
+    cfg.widgets[0]!.contentKey = 'sales'
+    const { getByRole } = render(() => (
+      <IrisDashboard
+        config={cfg}
+        renderWidget={(key) =>
+          key === 'sales' ? <button onClick={onOpen}>Open sales</button> : <span />
+        }
+      />
+    ))
+    fireEvent.click(getByRole('button', { name: 'Open sales' }))
+    expect(onOpen).toHaveBeenCalledOnce()
+  })
+
   it('drag-and-drop calls moveWidget on drop', async () => {
     const onMove = vi.fn()
     const cfg = { ...config(), onMove }

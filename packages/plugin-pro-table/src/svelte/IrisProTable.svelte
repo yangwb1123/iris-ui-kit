@@ -1,28 +1,22 @@
 <script lang="ts">
-  import { createSortable, createVirtualizer, type SortableRect, type TreeRow } from '@iris-ui-kit/core'
+  import { createVirtualizer, type TreeRow } from '@iris-ui-kit/core'
   import {
     applyColumnWindow,
+    createProTableColumnReorder,
     proTableLabel,
-    type ProTableLabels,
+    proTableAriaSort,
+    proTableSortIndicator,
     type ProTableState,
     type ProTableStore,
+    type ProTableViewOptions,
   } from '../core'
+  import ProTableFooter from './ProTableFooter.svelte'
 
   type Row = Record<string, unknown>
 
-  /** Collect drop-target rects (id + client rect) for every `[attr]` under `root`. */
-  function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
-    if (!root) return []
-    return Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).map((el) => {
-      const r = el.getBoundingClientRect()
-      return {
-        id: el.getAttribute(attr)!,
-        left: r.left,
-        top: r.top,
-        width: r.width,
-        height: r.height,
-      }
-    })
+  interface IrisProTableProps extends ProTableViewOptions {
+    store: ProTableStore<Row>
+    class?: string
   }
 
   let {
@@ -34,45 +28,14 @@
     rowHeight = 40,
     maxHeight = 400,
     columnVirtualized = false,
-  }: {
-    store: ProTableStore<Row>
-    class?: string
-    /**
-     * Host-overridable UI strings (aria-labels + pager). Pass localized values
-     * (e.g. from the adapter's `useI18n().t`) — plugins can't reach adapter i18n
-     * directly. Defaults to English.
-     */
-    labels?: ProTableLabels
-    /**
-     * Enable drag-to-reorder column headers. When `true` every column `<th>`
-     * becomes draggable and drop onto another header calls `store.reorderColumns`.
-     * Default `false` — existing layouts are unchanged.
-     */
-    columnReorder?: boolean
-    /**
-     * Opt-in row virtualization. When `true` the body region becomes a scroll
-     * container and only the visible window of rows is rendered (via core's
-     * `createVirtualizer`), so a 100k-row table renders a handful of `<tr>` rather
-     * than every row. Default `false` — behavior is UNCHANGED (all rows render).
-     */
-    virtualized?: boolean
-    /** Estimated row height in px (drives the virtualizer). Default `40`. */
-    rowHeight?: number
-    /** Scroll viewport height in px when virtualized. Default `400`. */
-    maxHeight?: number
-    /**
-     * Opt-in column virtualization. When `true` columns outside the horizontal
-     * viewport are not rendered, reducing DOM for very wide tables. The table
-     * container becomes horizontally scrollable. Default `false`.
-     */
-    columnVirtualized?: boolean
-  } = $props()
+  }: IrisProTableProps = $props()
 
   // Drag-to-reorder: plain mutable — no $state needed (no re-render on drag events).
   let dragKey: string | null = null
 
   // NB: do not name this `state` — a leading `$` would make Svelte read `$state`
   // as a store auto-subscription instead of the rune.
+  // svelte-ignore state_referenced_locally
   let tableState: ProTableState<Row> = $state(store.getState())
   let draft = $state('')
   let scrollDiv: HTMLDivElement | undefined = $state()
@@ -89,12 +52,8 @@
     return unsub
   })
 
-  // Touch/pen column reorder via the shared core controller. Native HTML5 DnD
-  // (the `draggable` <th>) never fires on touch, so the pointer path drives the
-  // reorder there; it is gated on `pointerType !== 'mouse'` so the mouse flow is
-  // unchanged. A bare tap (down→up, no move) leaves overId null → no reorder,
-  // so header-tap sorting still works. NB: never name a variable `state`.
-  const sortable = createSortable()
+  const pointerReorder = createProTableColumnReorder()
+  const sortable = pointerReorder.sortable
   let sortableState = $state(sortable.getState())
   $effect(() => {
     const unsub = sortable.subscribe(() => {
@@ -102,38 +61,18 @@
     })
     return unsub
   })
-  // Header rects, measured ONCE when a drag actually starts (not per move).
-  // Plain mutable var — no $state needed (rects don't drive rendering).
-  let dragRects: SortableRect[] = []
-
   function onHeaderPointerDown(key: string, e: PointerEvent): void {
-    if (!columnReorder || e.pointerType === 'mouse') return
-    try {
-      ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
-    } catch {
-      /* ignore */
-    }
-    // Record a pending press — no store write, so a tap (header sort) never re-renders.
-    sortable.press(key, e.clientX, e.clientY)
+    pointerReorder.pointerDown(columnReorder, key, e)
   }
   function onHeaderPointerMove(key: string, e: PointerEvent): void {
-    if (sortable.tryStart(e.clientX, e.clientY)) {
-      const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-pro-table]')
-      dragRects = collectRects(root, 'data-iris-col-key')
-    }
-    if (!sortable.isActive(key)) return
-    sortable.moveOver({ x: e.clientX, y: e.clientY }, dragRects)
+    pointerReorder.pointerMove(key, e)
   }
   function onHeaderPointerUp(key: string): void {
-    if (!sortable.isActive(key)) {
-      sortable.cancel() // clear a pending tap (idle → no re-render); header-tap sort still works
-      return
-    }
-    const { activeId, overId } = sortable.end()
-    if (activeId && overId && activeId !== overId) store.reorderColumns(activeId, overId)
+    const move = pointerReorder.pointerUp(key)
+    if (move) store.reorderColumns(move.from, move.to)
   }
   function onHeaderPointerCancel(): void {
-    sortable.cancel()
+    pointerReorder.pointerCancel()
   }
 
   const columns = $derived(store.visibleColumns())
@@ -208,28 +147,10 @@
     return Math.max(0, vState.totalSize - vState.offsetBefore - windowSize)
   })
 
-  function sortIndicator(key: string): string {
-    return tableState.sort?.key === key ? (tableState.sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
-  }
-
-  // WAI-ARIA grid sort semantics: aria-sort on the header conveys state to
-  // screen readers (the visual ▲/▼ is decorative/aria-hidden), and sortable
-  // headers are keyboard-operable (Enter/Space) — mirrors the base IrisTable.
-  function ariaSort(c: {
-    key: string
-    sortable?: boolean
-  }): 'ascending' | 'descending' | 'none' | undefined {
-    return tableState.sort?.key === c.key
-      ? tableState.sort.direction === 'asc'
-        ? 'ascending'
-        : 'descending'
-      : c.sortable
-        ? 'none'
-        : undefined
-  }
-
   function pinnedStyle(c: { pinned?: 'left' | 'right' }): string {
-    return c.pinned ? `position:sticky;${c.pinned}:0;z-index:1;` : ''
+    if (!c.pinned) return ''
+    const inset = c.pinned === 'left' ? 'inset-inline-start' : 'inset-inline-end'
+    return `position:sticky;${inset}:0;z-index:1;`
   }
 </script>
 
@@ -261,7 +182,7 @@
   {/if}
 
   {#snippet tableEl()}
-    <table style={colOffset > 0 ? `margin-left:-${colOffset}px` : ''}>
+    <table style={colOffset > 0 ? `margin-inline-start:-${colOffset}px` : ''}>
       <thead>
         {#if grouped}
           {#each headerMatrix as rowCells, ri}
@@ -284,13 +205,13 @@
                   <th
                     scope="col"
                     data-iris-col-key={col.key}
-                    aria-sort={ariaSort(col)}
+                    aria-sort={proTableAriaSort(tableState.sort, col)}
                     tabindex={col.sortable ? 0 : undefined}
-                    style={`position:relative;text-align:${col.align ?? 'left'};width:${typeof colWidth === 'number' ? colWidth + 'px' : (colWidth ?? '')};${columnReorder ? 'cursor:grab;touch-action:none;' : ''}${
+                    style={`position:relative;text-align:${col.align ?? 'start'};width:${typeof colWidth === 'number' ? colWidth + 'px' : (colWidth ?? '')};${columnReorder ? 'cursor:grab;touch-action:none;' : ''}${
                       sortableState.activeId &&
                       sortableState.overId === col.key &&
                       sortableState.activeId !== col.key
-                        ? 'outline:2px solid var(--iris-color-primary, #2563eb);outline-offset:-2px;'
+                        ? 'outline:2px solid var(--iris-primary, #2563eb);outline-offset:-2px;'
                         : ''
                     }${pinnedStyle(col)}`}
                     colspan={cell.colSpan}
@@ -328,11 +249,15 @@
                         }
                       : undefined}
                   >
-                    {col.title}<span aria-hidden="true">{sortIndicator(col.key)}</span>
+                    {col.title}<span aria-hidden="true"
+                      >{proTableSortIndicator(tableState.sort, col.key)}</span
+                    >
                     {#if col.resizable ?? typeof col.width === 'number'}
                       <span
                         data-iris-col-resize-handle
-                        style="position:absolute;top:0;right:0;bottom:0;width:4px;cursor:col-resize;z-index:2;"
+                        role="separator"
+                        aria-orientation="vertical"
+                        style="position:absolute;top:0;inset-inline-end:0;bottom:0;width:4px;cursor:col-resize;z-index:2;"
                         onpointerdown={(e) => {
                           e.stopPropagation()
                           e.preventDefault()
@@ -349,7 +274,7 @@
                           document.addEventListener('pointermove', onMove)
                           document.addEventListener('pointerup', onUp)
                         }}
-                      />
+                      ></span>
                     {/if}
                   </th>
                 {:else}
@@ -381,13 +306,13 @@
               <th
                 scope="col"
                 data-iris-col-key={c.key}
-                aria-sort={ariaSort(c)}
+                aria-sort={proTableAriaSort(tableState.sort, c)}
                 tabindex={c.sortable ? 0 : undefined}
-                style={`position:relative;text-align:${c.align ?? 'left'};width:${typeof colWidth === 'number' ? colWidth + 'px' : (colWidth ?? '')};${columnReorder ? 'cursor:grab;touch-action:none;' : ''}${
+                style={`position:relative;text-align:${c.align ?? 'start'};width:${typeof colWidth === 'number' ? colWidth + 'px' : (colWidth ?? '')};${columnReorder ? 'cursor:grab;touch-action:none;' : ''}${
                   sortableState.activeId &&
                   sortableState.overId === c.key &&
                   sortableState.activeId !== c.key
-                    ? 'outline:2px solid var(--iris-color-primary, #2563eb);outline-offset:-2px;'
+                    ? 'outline:2px solid var(--iris-primary, #2563eb);outline-offset:-2px;'
                     : ''
                 }${pinnedStyle(c)}`}
                 data-sortable={c.sortable ? '' : undefined}
@@ -423,11 +348,15 @@
                     }
                   : undefined}
               >
-                {c.title}<span aria-hidden="true">{sortIndicator(c.key)}</span>
+                {c.title}<span aria-hidden="true"
+                  >{proTableSortIndicator(tableState.sort, c.key)}</span
+                >
                 {#if c.resizable ?? typeof c.width === 'number'}
                   <span
                     data-iris-col-resize-handle
-                    style="position:absolute;top:0;right:0;bottom:0;width:4px;cursor:col-resize;z-index:2;"
+                    role="separator"
+                    aria-orientation="vertical"
+                    style="position:absolute;top:0;inset-inline-end:0;bottom:0;width:4px;cursor:col-resize;z-index:2;"
                     onpointerdown={(e) => {
                       e.stopPropagation()
                       e.preventDefault()
@@ -444,7 +373,7 @@
                       document.addEventListener('pointermove', onMove)
                       document.addEventListener('pointerup', onUp)
                     }}
-                  />
+                  ></span>
                 {/if}
               </th>
             {/each}
@@ -498,7 +427,7 @@
           <tr>
             <th scope="row">{labels?.summaryLabel ?? ''}</th>
             {#each columns as c}
-              <td style="font-weight:600; text-align:{c.align ?? 'right'}">
+              <td style="font-weight:600; text-align:{c.align ?? 'end'}">
                 {c.key in tableState.summaryValues ? tableState.summaryValues[c.key] : ''}
               </td>
             {/each}
@@ -512,7 +441,7 @@
     {@const key = store.rowKeyOf(row)}
     {@const treeRow = treeRowMap.get(key) ?? null}
     <tr data-selected={store.isSelected(key) ? '' : undefined}>
-      <td style={treeRow ? `padding-left:${treeRow.depth * 24}px` : ''}>
+      <td style={treeRow ? `padding-inline-start:${treeRow.depth * 24}px` : ''}>
         {#if treeRow?.hasChildren}
           <span
             role="button"
@@ -539,7 +468,7 @@
       </td>
       {#each renderColumns as c (c.key)}
         <td
-          style={`text-align:${c.align ?? 'left'};${pinnedStyle(c)}`}
+          style={`text-align:${c.align ?? 'start'};${pinnedStyle(c)}`}
           ondblclick={c.editable ? () => store.startEdit(key, c.key) : undefined}
         >
           {#if tableState.editing?.rowKey === key && tableState.editing?.columnKey === c.key}
@@ -561,47 +490,5 @@
     </tr>
   {/snippet}
 
-  {#if Object.keys(tableState.filters).some((k) => tableState.filters[k])}
-    {@const activeFilters = Object.keys(tableState.filters).filter((k) => tableState.filters[k])}
-    {@const colByKey = new Map(tableState.columns.map((c) => [c.key, c]))}
-    <div data-iris-filter-chips style="display:flex;flex-wrap:wrap;gap:0.25rem;padding:0.25rem 0;">
-      {#each activeFilters as k (k)}
-        {@const col = colByKey.get(k)}
-        {@const title = col?.title ?? k}
-        <span
-          style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.125rem 0.5rem;background:var(--iris-chip-bg,var(--iris-surface-alt,#f3f4f6));border-radius:9999px;"
-        >
-          {title}: "{tableState.filters[k]}"
-          <button
-            type="button"
-            aria-label="Clear filter {title}"
-            onclick={() => store.setFilter(k, '')}
-            style="background:none;border:none;cursor:pointer;padding:0;">×</button
-          >
-        </span>
-      {/each}
-      <button
-        type="button"
-        onclick={() => store.clearFilters()}
-        style="background:none;border:none;cursor:pointer;">Clear all ×</button
-      >
-    </div>
-  {/if}
-  <div data-iris-pro-table-footer>
-    <button
-      type="button"
-      disabled={tableState.page <= 1}
-      onclick={() => store.setPage(tableState.page - 1)}
-    >
-      {proTableLabel(labels, 'prev')}
-    </button>
-    <span data-iris-pro-table-page>{tableState.page} / {store.pageCount()}</span>
-    <button
-      type="button"
-      disabled={tableState.page >= store.pageCount()}
-      onclick={() => store.setPage(tableState.page + 1)}
-    >
-      {proTableLabel(labels, 'next')}
-    </button>
-  </div>
+  <ProTableFooter state={tableState} {store} {labels} />
 </div>

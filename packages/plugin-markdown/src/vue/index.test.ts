@@ -45,6 +45,16 @@ describe('IrisMarkdown (vue)', () => {
     wrapper.unmount()
   })
 
+  it('renders allowlisted raw tags without interpreting encoded markup', () => {
+    const wrapper = mount(IrisMarkdown, {
+      props: { content: '<mark>safe</mark> &lt;script&gt;inert&lt;/script&gt;' },
+    })
+    expect(wrapper.find('mark').text()).toBe('safe')
+    expect(wrapper.find('script').exists()).toBe(false)
+    expect(wrapper.text()).toContain('<script>inert</script>')
+    wrapper.unmount()
+  })
+
   it('accepts a class prop', () => {
     const wrapper = mount(IrisMarkdown, { props: { content: 'Hi', class: 'prose' } })
     expect(wrapper.find('.prose').exists()).toBe(true)

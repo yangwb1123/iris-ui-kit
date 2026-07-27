@@ -7,8 +7,15 @@ export type {
   NotificationInput,
   IrisNotification,
   NotificationTone,
+  NotificationStorage,
+  NotificationStorageSnapshot,
 } from '../core'
-export { createNotificationCenter, notificationsPlugin } from '../core'
+export {
+  createMemoryNotificationStorage,
+  createNotificationCenter,
+  notificationsPlugin,
+  notificationMessages,
+} from '../core'
 
 export interface IrisNotificationCenterProps {
   center: NotificationCenter
@@ -20,6 +27,10 @@ export interface IrisNotificationCenterProps {
   dismissLabel?: string
   /** Accessible label for the unread badge. `{n}` is replaced with the count. Default `'{n} unread'`. */
   unreadLabel?: string
+  /** Label for the mark-all-read action. Default `'Mark all read'`. */
+  markAllReadLabel?: string
+  /** Label for the clear action. Default `'Clear'`. */
+  clearLabel?: string
   class?: string
 }
 
@@ -36,6 +47,8 @@ export function IrisNotificationCenter(props: IrisNotificationCenterProps): JSX.
     emptyText: props.emptyText ?? 'No notifications',
     dismissLabel: props.dismissLabel ?? 'Dismiss',
     unreadLabel: props.unreadLabel ?? '{n} unread',
+    markAllReadLabel: props.markAllReadLabel ?? 'Mark all read',
+    clearLabel: props.clearLabel ?? 'Clear',
   })
   const [state, setState] = createSignal(center.getState())
   onCleanup(center.subscribe(setState))
@@ -58,10 +71,10 @@ export function IrisNotificationCenter(props: IrisNotificationCenterProps): JSX.
           data-iris-notifications-mark-all=""
           onClick={() => center.markAllRead()}
         >
-          Mark all read
+          {p().markAllReadLabel}
         </button>
         <button type="button" data-iris-notifications-clear="" onClick={() => center.clear()}>
-          Clear
+          {p().clearLabel}
         </button>
       </div>
       <Show

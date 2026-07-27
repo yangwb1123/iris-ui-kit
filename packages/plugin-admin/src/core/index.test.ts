@@ -58,7 +58,8 @@ describe('plugin-admin core', () => {
   })
 
   it('adminPlugin registers its tokens', () => {
-    const { tokens } = runPlugins([adminPlugin])
+    const { tokens, messages } = runPlugins([adminPlugin])
     expect(tokens['--iris-admin-page-gap']).toBe(adminTokens['--iris-admin-page-gap'])
+    expect(messages['en-US']?.['admin.create']).toBe('Create')
   })
 })

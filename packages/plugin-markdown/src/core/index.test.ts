@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { runPlugins } from '@iris-ui-kit/core'
-import { markdownToHtml, markdownPlugin, markdownTokens } from './index'
+import {
+  markdownToHtml,
+  markdownToNodes,
+  markdownPlugin,
+  markdownTokens,
+  sanitizedHtmlToNodes,
+} from './index'
 
 describe('markdownToHtml — block features', () => {
   it('converts h1 through h6 headings', () => {
@@ -193,6 +199,75 @@ describe('markdownToHtml — XSS sanitizer (allowlist)', () => {
     const html = markdownToHtml('<a href="x" onmouseover="alert(1)">x</a>')
     expect(html).not.toMatch(/onmouseover/i)
     expect(html).not.toContain('alert(1)')
+  })
+})
+
+describe('markdownToNodes — structured rendering', () => {
+  it('preserves the supported structure without carrying an HTML string sink', () => {
+    expect(markdownToNodes('# Hello **Iris**')).toEqual([
+      {
+        type: 'element',
+        tag: 'h1',
+        attrs: {},
+        children: [
+          { type: 'text', value: 'Hello ' },
+          {
+            type: 'element',
+            tag: 'strong',
+            attrs: {},
+            children: [{ type: 'text', value: 'Iris' }],
+          },
+        ],
+      },
+    ])
+  })
+
+  it('decodes escaped markup as inert text nodes', () => {
+    const nodes = markdownToNodes('&lt;script&gt;alert(1)&lt;/script&gt;')
+    expect(nodes).toEqual([
+      {
+        type: 'element',
+        tag: 'p',
+        attrs: {},
+        children: [{ type: 'text', value: '<script>alert(1)</script>' }],
+      },
+    ])
+  })
+
+  it('keeps only allowlisted, URL-sanitized attributes', () => {
+    const nodes = markdownToNodes(
+      '<a href="javascript:alert(1)" onclick="alert(2)">safe</a><img src=x onerror=alert(3)>',
+    )
+    expect(JSON.stringify(nodes)).not.toMatch(/onclick|onerror|javascript:/i)
+    expect(nodes).toMatchObject([
+      {
+        type: 'element',
+        tag: 'p',
+        children: [
+          { type: 'element', tag: 'a', attrs: { href: '#' } },
+          { type: 'element', tag: 'img', attrs: { src: 'x' } },
+        ],
+      },
+    ])
+  })
+
+  it('recovers deterministically from mismatched closing tags', () => {
+    expect(sanitizedHtmlToNodes('<p><strong>safe</p>tail')).toEqual([
+      {
+        type: 'element',
+        tag: 'p',
+        attrs: {},
+        children: [
+          {
+            type: 'element',
+            tag: 'strong',
+            attrs: {},
+            children: [{ type: 'text', value: 'safe' }],
+          },
+        ],
+      },
+      { type: 'text', value: 'tail' },
+    ])
   })
 })
 

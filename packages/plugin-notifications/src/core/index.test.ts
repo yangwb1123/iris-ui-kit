@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { runPlugins } from '@iris-ui-kit/core'
-import { createNotificationCenter, notificationsPlugin, notificationTokens } from './index'
+import {
+  createMemoryNotificationStorage,
+  createNotificationCenter,
+  notificationsPlugin,
+  notificationMessages,
+  notificationTokens,
+} from './index'
 
 describe('createNotificationCenter', () => {
   it('push adds an unread notification newest-first and returns its id', () => {
@@ -44,7 +50,68 @@ describe('createNotificationCenter', () => {
   it('seeds from initial + plugin registers tokens', () => {
     const c = createNotificationCenter({ initial: [{ title: 'Welcome' }] })
     expect(c.getState().items).toHaveLength(1)
-    const { tokens } = runPlugins([notificationsPlugin])
+    const { tokens, messages } = runPlugins([notificationsPlugin])
     expect(tokens['--iris-notification-gap']).toBe(notificationTokens['--iris-notification-gap'])
+    expect(messages['en-US']).toEqual(notificationMessages)
+  })
+
+  it('persists and hydrates through an injected storage', () => {
+    const storage = createMemoryNotificationStorage()
+    const first = createNotificationCenter({ storage })
+    const id = first.push({ title: 'Saved', tone: 'success' })
+    first.markRead(id)
+
+    const second = createNotificationCenter({ storage })
+    expect(second.getState().items).toEqual([
+      expect.objectContaining({ id, title: 'Saved', tone: 'success', read: true }),
+    ])
+  })
+
+  it('hydrates on demand and applies max to stored history', () => {
+    const storage = createMemoryNotificationStorage()
+    const writer = createNotificationCenter({ storage })
+    writer.push({ title: 'A' })
+    writer.push({ title: 'B' })
+
+    const reader = createNotificationCenter({ storage, max: 1 })
+    expect(reader.getState().items.map((item) => item.title)).toEqual(['B'])
+    writer.push({ title: 'C' })
+    expect(reader.hydrate()).toBe(true)
+    expect(reader.getState().items.map((item) => item.title)).toEqual(['C'])
+  })
+
+  it('ignores corrupt and version-mismatched snapshots without throwing', () => {
+    const storage = createMemoryNotificationStorage({
+      broken: '{not json',
+      future: JSON.stringify({ version: 99, items: [] }),
+    })
+    expect(() =>
+      createNotificationCenter({
+        storage,
+        storageKey: 'broken',
+        initial: [{ title: 'Fallback' }],
+      }),
+    ).not.toThrow()
+    const center = createNotificationCenter({
+      storage,
+      storageKey: 'future',
+      initial: [{ title: 'Fallback' }],
+    })
+    expect(center.getState().items[0]?.title).toBe('Fallback')
+  })
+
+  it('tolerates unavailable storage and reports failed explicit persistence', () => {
+    const storage = {
+      getItem: () => {
+        throw new Error('blocked')
+      },
+      setItem: () => {
+        throw new Error('quota')
+      },
+    }
+    const center = createNotificationCenter({ storage, initial: [{ title: 'Memory fallback' }] })
+    expect(center.getState().items[0]?.title).toBe('Memory fallback')
+    expect(center.persist()).toBe(false)
+    expect(() => center.push({ title: 'Still works' })).not.toThrow()
   })
 })

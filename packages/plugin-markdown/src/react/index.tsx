@@ -1,6 +1,13 @@
-import { markdownToHtml } from '../core'
+import { createElement, type ReactNode } from 'react'
+import { markdownToNodes, type MarkdownNode } from '../core'
 
-export { markdownTokens, markdownPlugin } from '../core'
+export {
+  markdownToHtml,
+  markdownToNodes,
+  markdownTokens,
+  markdownPlugin,
+  type MarkdownNode,
+} from '../core'
 
 export interface IrisMarkdownProps {
   /** Markdown text to render. */
@@ -9,23 +16,23 @@ export interface IrisMarkdownProps {
 }
 
 /**
- * Render Markdown as themed HTML (React).
- *
- * The `content` prop is converted via `markdownToHtml` (zero dependencies,
- * script/javascript: sanitised) and injected into a `<div data-iris-markdown>`
- * using `dangerouslySetInnerHTML`. Themed via CSS custom properties:
- * `--iris-md-font` and `--iris-md-code-bg`.
+ * Render Markdown as allowlisted React elements. No `innerHTML` sink is used:
+ * core emits structured nodes and this thin adapter maps them to React nodes.
  */
 export function IrisMarkdown({ content, className }: IrisMarkdownProps) {
-  const html = markdownToHtml(content)
+  const renderNode = (node: MarkdownNode, key: string): ReactNode => {
+    if (node.type === 'text') return node.value
+    const attrs: Record<string, string> = {}
+    for (const [name, value] of Object.entries(node.attrs)) {
+      attrs[name === 'class' ? 'className' : name] = value
+    }
+    const children = node.children.map((child, index) => renderNode(child, `${key}.${index}`))
+    return createElement(node.tag, { ...attrs, key }, ...children)
+  }
+  const nodes = markdownToNodes(content)
   return (
-    <div
-      data-iris-markdown=""
-      className={className}
-      style={{
-        fontFamily: 'var(--iris-md-font)',
-      }}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <div data-iris-markdown="" className={className} style={{ fontFamily: 'var(--iris-md-font)' }}>
+      {nodes.map((node, index) => renderNode(node, String(index)))}
+    </div>
   )
 }

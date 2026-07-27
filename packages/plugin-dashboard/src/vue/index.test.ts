@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { h } from 'vue'
 import { IrisDashboard } from './index'
 import type { DashboardConfig } from '../core'
 
@@ -68,6 +69,22 @@ describe('IrisDashboard (vue)', () => {
     const wrapper = mount(IrisDashboard, { props: { config: config() } })
     expect(wrapper.find('[data-iris-dashboard-widget-content="w1"]').exists()).toBe(true)
     expect(wrapper.find('[data-iris-dashboard-widget-content="w2"]').exists()).toBe(true)
+  })
+
+  it('maps a safe content key to a named interactive Vue slot', async () => {
+    const onOpen = vi.fn()
+    const cfg = config()
+    cfg.widgets[0]!.contentKey = 'sales'
+    const wrapper = mount(IrisDashboard, {
+      props: { config: cfg },
+      slots: {
+        sales: ({ contentKey }: { contentKey: string }) =>
+          h('button', { 'data-sales': '', onClick: onOpen }, `Open ${contentKey}`),
+      },
+    })
+    expect(wrapper.find('[data-sales]').text()).toBe('Open sales')
+    await wrapper.find('[data-sales]').trigger('click')
+    expect(onOpen).toHaveBeenCalledOnce()
   })
 
   it('renders drop cells for the grid', () => {

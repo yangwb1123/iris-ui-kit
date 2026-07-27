@@ -6,5 +6,12 @@ export type {
   NotificationInput,
   IrisNotification,
   NotificationTone,
+  NotificationStorage,
+  NotificationStorageSnapshot,
 } from '../core'
-export { createNotificationCenter, notificationsPlugin } from '../core'
+export {
+  createMemoryNotificationStorage,
+  createNotificationCenter,
+  notificationsPlugin,
+  notificationMessages,
+} from '../core'

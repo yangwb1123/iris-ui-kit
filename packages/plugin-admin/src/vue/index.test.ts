@@ -65,4 +65,65 @@ describe('IrisAdminApp (vue)', () => {
     expect(wrapper.text()).toContain('Custom dash')
     wrapper.unmount()
   })
+
+  it('creates, validates, edits and deletes rows through the shared controller', async () => {
+    const editable: AdminAppSchema = {
+      nav: [{ key: 'users', title: 'Users' }],
+      pages: [
+        {
+          type: 'data',
+          key: 'users',
+          rowKey: 'id',
+          editable: true,
+          columns: [
+            { key: 'id', title: 'ID', type: 'number', required: true },
+            { key: 'name', title: 'Name', required: true },
+          ],
+          data: [{ id: 1, name: 'Ada' }],
+        },
+      ],
+    }
+    const wrapper = mount(IrisAdminApp, {
+      props: { schema: editable },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    const button = (label: string) =>
+      wrapper.findAll('button').find((item) => item.text() === label)!
+
+    await button('Create').trigger('click')
+    await wrapper.find('form').trigger('submit')
+    await nextTick()
+    expect(wrapper.text()).toContain('ID is required.')
+    await wrapper.find('#iris-admin-users-id').setValue('2')
+    await wrapper.find('#iris-admin-users-name').setValue('Grace')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Grace')
+
+    const graceRow = wrapper.findAll('tbody tr').find((row) => row.text().includes('Grace'))!
+    await graceRow
+      .findAll('button')
+      .find((item) => item.text() === 'Edit')!
+      .trigger('click')
+    await wrapper.find('#iris-admin-users-name').setValue('Grace Hopper')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Grace Hopper')
+
+    const hopperRow = wrapper
+      .findAll('tbody tr')
+      .find((row) => row.text().includes('Grace Hopper'))!
+    await hopperRow
+      .findAll('button')
+      .find((item) => item.text() === 'Delete')!
+      .trigger('click')
+    await hopperRow
+      .findAll('button')
+      .find((item) => item.text() === 'Confirm delete')!
+      .trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('Grace Hopper')
+    wrapper.unmount()
+  })
 })

@@ -32,4 +32,27 @@ describe('IrisNotificationCenter (solid)', () => {
     fireEvent.click(container.querySelector('[data-iris-notifications-clear]')!)
     expect(container.querySelector('[data-iris-notifications-empty]')).not.toBeNull()
   })
+
+  it('uses host-localized action and accessibility labels', () => {
+    const center = createNotificationCenter({ initial: [{ title: 'A' }] })
+    const { container } = render(() => (
+      <IrisNotificationCenter
+        center={center}
+        markAllReadLabel="Alles lesen"
+        clearLabel="Leeren"
+        dismissLabel="Schließen"
+        unreadLabel="{n} ungelesen"
+      />
+    ))
+    expect(container.querySelector('[data-iris-notifications-mark-all]')?.textContent).toBe(
+      'Alles lesen',
+    )
+    expect(container.querySelector('[data-iris-notifications-clear]')?.textContent).toBe('Leeren')
+    expect(
+      container.querySelector('[data-iris-notification-dismiss]')?.getAttribute('aria-label'),
+    ).toBe('Schließen')
+    expect(
+      container.querySelector('[data-iris-notifications-badge]')?.getAttribute('aria-label'),
+    ).toBe('1 ungelesen')
+  })
 })

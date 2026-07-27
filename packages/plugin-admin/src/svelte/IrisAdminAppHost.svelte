@@ -3,7 +3,7 @@
   // analogue of React's `renderPage` render-prop) so the custom page can be
   // exercised from a `.test.ts` (snippets can't be passed as plain props).
   import IrisAdminApp from './IrisAdminApp.svelte'
-  import type { AdminAppSchema } from '../core'
+  import type { AdminAppSchema } from '@iris-ui-kit/plugin-admin/core'
 
   let { schema }: { schema: AdminAppSchema } = $props()
 </script>

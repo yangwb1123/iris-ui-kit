@@ -127,7 +127,7 @@ export const IrisKanban = defineComponent({
             'span',
             {
               'data-iris-kanban-count': '',
-              style: { fontSize: '0.8em', color: 'var(--iris-color-muted, #6b7280)' },
+              style: { fontSize: '0.8em', color: 'var(--iris-muted, #6b7280)' },
             },
             col.limit !== undefined ? `${col.cards.length}/${col.limit}` : String(col.cards.length),
           ),
@@ -140,7 +140,7 @@ export const IrisKanban = defineComponent({
                 'data-iris-kanban-wip-badge': '',
                 style: {
                   fontSize: '0.7em',
-                  background: 'var(--iris-color-warning, #f59e0b)',
+                  background: 'var(--iris-warning, #f59e0b)',
                   color: '#fff',
                   borderRadius: '4px',
                   padding: '1px 5px',
@@ -165,7 +165,7 @@ export const IrisKanban = defineComponent({
                 'span',
                 {
                   'data-iris-kanban-card-desc': '',
-                  style: { fontSize: '0.85em', color: 'var(--iris-color-muted, #6b7280)' },
+                  style: { fontSize: '0.85em', color: 'var(--iris-muted, #6b7280)' },
                 },
                 card.description,
               ),
@@ -187,8 +187,8 @@ export const IrisKanban = defineComponent({
                       'data-iris-kanban-tag': '',
                       style: {
                         fontSize: '0.75em',
-                        background: 'var(--iris-color-primary-subtle, #eff6ff)',
-                        color: 'var(--iris-color-primary, #2563eb)',
+                        background: 'var(--iris-primary-subtle, #eff6ff)',
+                        color: 'var(--iris-primary, #2563eb)',
                         borderRadius: '4px',
                         padding: '1px 5px',
                       },
@@ -208,7 +208,7 @@ export const IrisKanban = defineComponent({
               draggable: true,
               style: {
                 background: 'var(--iris-kanban-card-bg, #fff)',
-                border: '1px solid var(--iris-color-border, #e5e7eb)',
+                border: '1px solid var(--iris-border, #e5e7eb)',
                 borderRadius: '6px',
                 padding: '8px 10px',
                 cursor: 'grab',
@@ -250,7 +250,7 @@ export const IrisKanban = defineComponent({
               // Live drop highlight for the touch/pen pointer path.
               outline:
                 sState.activeId && sState.overId === col.id && !atLimit
-                  ? '2px solid var(--iris-color-primary, #2563eb)'
+                  ? '2px solid var(--iris-primary, #2563eb)'
                   : undefined,
               outlineOffset: '2px',
             },

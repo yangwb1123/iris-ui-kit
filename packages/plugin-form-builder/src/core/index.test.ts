@@ -1,6 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { runPlugins } from '@iris-ui-kit/core'
-import { createFormBuilder, formBuilderPlugin, formBuilderTokens, type FormSchema } from './index'
+import {
+  arrayRowDefaults,
+  createFormBuilder,
+  formBuilderPlugin,
+  formBuilderTokens,
+  validateArrayFields,
+  type FormSchema,
+} from './index'
 
 const schema: FormSchema = {
   fields: [
@@ -117,6 +124,72 @@ describe('dependencies (cross-field re-validation)', () => {
     await vi.waitFor(() => {
       expect(form.getState().errors.confirm).toBe('Confirm is required')
     })
+  })
+})
+
+describe('recursive array validation', () => {
+  const nestedSchema: FormSchema = {
+    fields: [
+      {
+        name: 'groups',
+        type: 'array',
+        defaultValue: [
+          { title: 'Ready', items: [{ sku: 'A' }, { sku: '' }] },
+          { title: '', items: [{ sku: 'B' }] },
+        ],
+        fields: [
+          { name: 'title', required: true },
+          {
+            name: 'items',
+            type: 'array',
+            required: true,
+            fields: [{ name: 'sku', label: 'SKU', required: true }],
+          },
+        ],
+      },
+    ],
+  }
+
+  it('compiles required errors at recursively nested canonical paths', async () => {
+    const { form } = createFormBuilder(nestedSchema)
+    const direct = validateArrayFields(nestedSchema.fields, form.getState().values)
+    expect(direct).toEqual({
+      'groups[0].items[1].sku': 'SKU is required',
+      'groups[1].title': 'Title is required',
+    })
+
+    await form.validateForm()
+    expect(form.getState().errors['groups[0].items[1].sku']).toBe('SKU is required')
+    expect(form.getState().errors['groups[1].title']).toBe('Title is required')
+  })
+
+  it('nested errors follow their row across reorder and recompile correctly', async () => {
+    const { form } = createFormBuilder(nestedSchema)
+    await form.validateForm()
+
+    form.arrayMove('groups' as never, 1, 0)
+    expect(form.getState().errors['groups[0].title']).toBe('Title is required')
+    expect(form.getState().errors['groups[1].items[1].sku']).toBe('SKU is required')
+
+    await form.validateForm()
+    expect(form.getState().errors).toEqual({
+      'groups[0].title': 'Title is required',
+      'groups[1].items[1].sku': 'SKU is required',
+    })
+  })
+
+  it('seeds nested array defaults recursively for newly added rows', () => {
+    const groupField = nestedSchema.fields[0]!
+    expect(arrayRowDefaults(groupField)).toEqual({ title: '', items: [] })
+  })
+
+  it('merges custom nested validation over generated required errors', async () => {
+    const { form } = createFormBuilder(nestedSchema, {
+      validate: () => ({ 'groups[0].title': 'Domain rule' }),
+    })
+    await form.validateForm()
+    expect(form.getState().errors['groups[0].title']).toBe('Domain rule')
+    expect(form.getState().errors['groups[0].items[1].sku']).toBe('SKU is required')
   })
 })
 

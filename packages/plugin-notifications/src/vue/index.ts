@@ -15,8 +15,15 @@ export type {
   NotificationInput,
   IrisNotification,
   NotificationTone,
+  NotificationStorage,
+  NotificationStorageSnapshot,
 } from '../core'
-export { createNotificationCenter, notificationsPlugin } from '../core'
+export {
+  createMemoryNotificationStorage,
+  createNotificationCenter,
+  notificationsPlugin,
+  notificationMessages,
+} from '../core'
 
 /**
  * Notification-center panel for Vue (render-function authored to match the
@@ -35,6 +42,8 @@ export const IrisNotificationCenter = defineComponent({
     emptyText: { type: String, default: 'No notifications' },
     dismissLabel: { type: String, default: 'Dismiss' },
     unreadLabel: { type: String, default: '{n} unread' },
+    markAllReadLabel: { type: String, default: 'Mark all read' },
+    clearLabel: { type: String, default: 'Clear' },
     className: { type: String, default: undefined },
   },
   setup(props) {
@@ -74,7 +83,7 @@ export const IrisNotificationCenter = defineComponent({
             'data-iris-notifications-mark-all': '',
             onClick: () => center.markAllRead(),
           },
-          'Mark all read',
+          props.markAllReadLabel,
         ),
         h(
           'button',
@@ -83,7 +92,7 @@ export const IrisNotificationCenter = defineComponent({
             'data-iris-notifications-clear': '',
             onClick: () => center.clear(),
           },
-          'Clear',
+          props.clearLabel,
         ),
       )
 

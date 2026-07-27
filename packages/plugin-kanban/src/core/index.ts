@@ -129,8 +129,8 @@ export function createKanban(config: KanbanConfig): KanbanStore {
 
 /** CSS custom properties the kanban board reads; overridable by the host theme. */
 export const kanbanTokens: Record<string, string> = {
-  '--iris-kanban-gap': 'var(--iris-space-md, 16px)',
-  '--iris-kanban-card-bg': 'var(--iris-color-surface, #fff)',
+  '--iris-kanban-gap': 'var(--iris-gap-md)',
+  '--iris-kanban-card-bg': 'var(--iris-surface)',
   '--iris-kanban-col-width': '280px',
 }
 

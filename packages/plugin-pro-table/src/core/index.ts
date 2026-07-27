@@ -1,6 +1,5 @@
 import {
   createStore,
-  createPlugin,
   createCellEdit,
   createColumnState,
   createDataSource,
@@ -19,17 +18,13 @@ import {
   toSpreadsheetXml,
   toJson,
   toHtml,
-  type Store,
-  type DataViewColumn,
-  type TableHtmlOptions,
   type HeaderCell,
-  type AggregateSpec,
   type ExpansionModel,
   type TreeRow,
-  computeVirtualRange,
-  buildOffsets,
-  type VirtualWindow,
 } from '@iris-ui-kit/core'
+import { createProTableMutationTools } from './mutations'
+import { collectProTableRows, toDataViewColumns } from './rows'
+import { computeProTableColumnWindow } from './view'
 
 /**
  * `@iris-ui-kit/plugin-pro-table` — a vxe-table-style CRUD data table for Iris UI.
@@ -43,176 +38,33 @@ import {
  */
 
 export type { SortDirection, SortState, TreeRow } from '@iris-ui-kit/core'
-import type { SortState } from '@iris-ui-kit/core'
+import type {
+  ProTableColumn,
+  ProTableConfig,
+  ProTableMode,
+  ProTableState,
+  ProTableStore,
+} from './types'
 
-export type CellEditor = 'text' | 'number'
-
-export interface ProTableColumn<Row = Record<string, unknown>> {
-  /** Stable unique column id. */
-  key: string
-  /** Header label. */
-  title: string
-  /** Nested columns for multi-level (grouped) headers. Leaf columns drive body. */
-  children?: ProTableColumn<Row>[]
-  /** Field read from each row; defaults to `key`. */
-  dataIndex?: string
-  /** Allow sorting by this column. */
-  sortable?: boolean
-  /** Show a text filter for this column (client mode: substring match). */
-  filterable?: boolean
-  /** Column width (px or CSS length). */
-  width?: number | string
-  /** Allow interactive resize of this column. Default `true` when `width` is set. */
-  resizable?: boolean
-  /** Minimum width in px when resizable. Default `60`. */
-  minWidth?: number
-  /** Cell + header alignment. */
-  align?: 'left' | 'center' | 'right'
-  /** Freeze to an edge during horizontal scroll (`position: sticky`). */
-  pinned?: 'left' | 'right'
-  /** Allow inline editing of this cell. */
-  editable?: boolean
-  /** Inline editor kind. Default `'text'`. */
-  editor?: CellEditor
-  /** Hidden columns are kept in config but not rendered/exported. */
-  hidden?: boolean
-  /** Custom sort comparator; defaults to comparing the raw cell values. */
-  sorter?: (a: Row, b: Row) => number
-}
-
-export interface ProTableQuery {
-  page: number
-  pageSize: number
-  sort: SortState | null
-  filters: Record<string, string>
-}
-
-export interface CellEditEvent<Row = Record<string, unknown>> {
-  rowKey: string
-  columnKey: string
-  dataIndex: string
-  oldValue: unknown
-  newValue: unknown
-  row: Row
-}
-
-export type ProTableMode = 'client' | 'server'
-
-export interface ProTableTreeConfig<Row = Record<string, unknown>> {
-  /** Accessor returning child rows for each row. */
-  getChildren: (row: Row) => Row[] | undefined
-  /** Keys expanded by default. */
-  defaultExpandedKeys?: string[]
-}
-
-export interface ProTableConfig<Row = Record<string, unknown>> {
-  columns: ProTableColumn<Row>[]
-  /** Field name or function producing each row's stable key. */
-  rowKey: string | ((row: Row) => string)
-  /** Client-mode dataset (held in full; processed in the store). */
-  data?: Row[]
-  /** Per-column aggregation specs for the summary footer row. */
-  summary?: AggregateSpec[]
-  /** Tree/hierarchical mode: rows with children render expand/collapse toggles. */
-  tree?: ProTableTreeConfig<Row>
-  /** Rows per page. Default 10. */
-  pageSize?: number
-  /** `'client'` (default) processes `data` locally; `'server'` calls {@link ProTableConfig.onLoad}. */
-  mode?: ProTableMode
-  /** Server-mode fetcher. Required when `mode: 'server'`. */
-  onLoad?: (query: ProTableQuery) => Promise<{ rows: Row[]; total: number }>
-  /** Notified after a successful inline edit commit. */
-  onCellEdit?: (event: CellEditEvent<Row>) => void
-}
-
-export interface ProTableState<Row = Record<string, unknown>> {
-  /** Rows for the current page, already filtered + sorted (or server result). */
-  rows: Row[]
-  columns: ProTableColumn<Row>[]
-  /** Ordered column keys; reflects drag-reorder. Initialized from schema order. */
-  columnOrder: string[]
-  /** Current column widths in px (from `width` prop or resize interaction). */
-  columnSizes: Record<string, number>
-  sort: SortState | null
-  filters: Record<string, string>
-  selectedKeys: string[]
-  /** Aggregated values for the summary footer row (computed from processed rows). */
-  summaryValues: Record<string, number>
-  editing: { rowKey: string; columnKey: string } | null
-  /** Tree expansion state — keys of expanded nodes. Empty when not tree mode. */
-  expandedKeys: string[]
-  /** Flattened tree rows with depth/expand metadata, or null when not tree mode. */
-  treeRows: TreeRow<Row>[] | null
-  /** Horizontal scroll offset for column virtualization. */
-  horizontalScroll: number
-  /** Viewport width in px for column virtualization. 0 = not virtualized. */
-  columnViewportWidth: number
-  page: number
-  pageSize: number
-  total: number
-  loading: boolean
-}
-
-export interface ProTableStore<Row = Record<string, unknown>> {
-  store: Store<ProTableState<Row>>
-  getState(): ProTableState<Row>
-  subscribe(listener: (state: ProTableState<Row>) => void): () => void
-  rowKeyOf(row: Row): string
-  visibleColumns(): ProTableColumn<Row>[]
-  /** Header matrix: one row per nesting level, each cell with col/row spans. */
-  headerMatrix(): HeaderCell<ProTableColumn<Row>>[][]
-  cellValue(row: Row, column: ProTableColumn<Row>): unknown
-  toggleSort(key: string): void
-  setFilter(key: string, value: string): void
-  clearFilters(): void
-  isSelected(key: string): boolean
-  toggleRow(key: string): void
-  toggleAll(): void
-  isAllSelected(): boolean
-  clearSelection(): void
-  startEdit(rowKey: string, columnKey: string): void
-  cancelEdit(): void
-  commitEdit(value: unknown): void
-  setPage(page: number): void
-  setPageSize(size: number): void
-  pageCount(): number
-  reload(): void
-  exportCsv(): string
-  exportExcelXml(sheetName?: string): string
-  /** Export the visible columns + processed rows as a JSON array of objects. */
-  exportJson(): string
-  /** Export the visible columns + processed rows as an HTML `<table>` (print/email). */
-  exportHtml(options?: TableHtmlOptions): string
-  /**
-   * Move the column identified by `from` key to the position currently occupied
-   * by the column identified by `to` key. No-op if either key is absent or they
-   * are the same. Triggers a store update so all renderers re-render.
-   */
-  reorderColumns(from: string, to: string): void
-  /** Set a column's width in px (clamped to minWidth). Triggers re-render. */
-  setColumnWidth(key: string, width: number): void
-  /** Toggle a column's visibility. When hidden it is excluded from visibleColumns(). */
-  toggleColumn(key: string): void
-  /** Reset column state (order, width, hidden) to initial config values. */
-  resetColumns(): void
-  /** Toggle expansion of a tree node. No-op when not tree mode. */
-  toggleExpand(key: string): void
-  /** Expand all tree nodes. */
-  expandAll(): void
-  /** Collapse all tree nodes. */
-  collapseAll(): void
-  /** Check if a tree node is expanded. */
-  isExpanded(key: string): boolean
-  /** Set horizontal scroll offset (px) for column virtualization. */
-  setHorizontalScroll(scrollLeft: number): void
-  /** Set the horizontal viewport width (px). 0 disables column virtualization. */
-  setColumnViewportWidth(width: number): void
-  /**
-   * Compute which columns are within the visible horizontal viewport.
-   * Returns null when columnVirtualized is disabled (viewportWidth <= 0).
-   */
-  columnWindow(): VirtualWindow | null
-}
+export type {
+  CellEditEvent,
+  CellEditor,
+  ProTableColumn,
+  ProTableConfig,
+  ProTableMode,
+  ProTableMutateOptions,
+  ProTableMutationKind,
+  ProTableMutations,
+  ProTableMutationState,
+  ProTableQuery,
+  ProTableState,
+  ProTableStore,
+  ProTableTreeConfig,
+  ProTableLabels,
+  ProTableViewOptions,
+} from './types'
+export * from './view'
+export { proTablePlugin } from './plugin'
 
 export function createProTableStore<Row extends Record<string, unknown>>(
   config: ProTableConfig<Row>,
@@ -230,36 +82,14 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     })
   }
 
-  // Collect ALL tree nodes into a flat array for inline editing (tree mode).
-  // In flat mode, `allRows` is already the full dataset.
-  function collectAllRows(): Row[] {
-    if (!config.tree || !treeRoots) return allRows
-    const out: Row[] = []
-    const walk = (nodes: Row[]) => {
-      for (const n of nodes) {
-        out.push(n)
-        const kids = config.tree!.getChildren(n)
-        if (kids?.length) walk(kids)
-      }
-    }
-    walk(treeRoots)
-    return out
-  }
-  const allRowsForEdit = config.tree ? collectAllRows() : allRows
+  const allRowsForEdit = collectProTableRows(allRows, treeRoots, config.tree)
 
   const rowKeyOf = (row: Row): string =>
     typeof config.rowKey === 'function' ? config.rowKey(row) : String(row[config.rowKey])
 
   const cellValue = (row: Row, column: ProTableColumn<Row>): unknown => readCell(row, column)
 
-  /** Map our columns onto the core data-view column contract. */
-  const dataViewColumns = (): DataViewColumn<Row>[] =>
-    config.columns.map((c) => ({
-      key: c.key,
-      getValue: (row: Row) => readCell(row, c),
-      filterable: c.filterable,
-      sorter: c.sorter,
-    }))
+  const dataViewColumns = () => toDataViewColumns(config.columns)
 
   // Column ORDER + VISIBILITY delegate to core `createColumnState` (dedup); WIDTH stays native.
   const cs = createColumnState(
@@ -287,6 +117,12 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     pageSize: config.pageSize ?? 10,
     total: 0,
     loading: false,
+    mutation: {
+      kind: null,
+      pending: false,
+      rowKeys: [],
+      error: undefined,
+    },
   })
 
   // The unified data engine drives query + sort + filter + pagination + loading
@@ -447,6 +283,15 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     return { rows, cols }
   }
 
+  const { runMutation, resourceHandlerRequired, removeClientRows } = createProTableMutationTools({
+    store,
+    dataSource,
+    allRows,
+    treeRoots,
+    allRowsForEdit,
+    rowKeyOf,
+  })
+
   // Initial load — client mode applies synchronously (rows ready now), server
   // mode kicks the first fetch.
   void dataSource.load()
@@ -471,6 +316,69 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     toggleAll: () => dataSource.selection.toggleAll(store.getState().rows.map(rowKeyOf)),
     isAllSelected: () => dataSource.selection.isAllSelected(store.getState().rows.map(rowKeyOf)),
     clearSelection: () => dataSource.selection.clear(),
+
+    mutate: async (action, options) => {
+      await runMutation(options?.kind ?? 'custom', options?.rowKeys ?? [], action, options)
+    },
+
+    async createRow(row) {
+      let created = row
+      const inputKey = rowKeyOf(row)
+      await runMutation('create', [inputKey], async () => {
+        const handler = config.mutations?.create
+        if (mode === 'server' && !handler) throw resourceHandlerRequired('create')
+        const result = await handler?.(row)
+        if (result !== undefined) created = result
+        if (mode === 'client') {
+          allRows.push(created)
+          if (treeRoots) {
+            treeRoots.push(created)
+            allRowsForEdit.push(created)
+          }
+        }
+      })
+      return created
+    },
+
+    async deleteRow(key) {
+      const row =
+        allRowsForEdit.find((candidate) => rowKeyOf(candidate) === key) ??
+        store.getState().rows.find((candidate) => rowKeyOf(candidate) === key)
+      if (!row) return false
+      await runMutation('delete', [key], async () => {
+        const handler = config.mutations?.delete
+        if (mode === 'server' && !handler) throw resourceHandlerRequired('delete')
+        await handler?.(key, row)
+        if (mode === 'client') removeClientRows(new Set([key]))
+      })
+      dataSource.selection.deselect(key)
+      return true
+    },
+
+    async bulkDelete(keys = dataSource.selection.get()) {
+      const uniqueKeys = [...new Set(keys)]
+      if (uniqueKeys.length === 0) return 0
+      const keySet = new Set(uniqueKeys)
+      const sourceRows = mode === 'client' ? allRowsForEdit : store.getState().rows
+      const loadedRows = sourceRows.filter((row) => keySet.has(rowKeyOf(row)))
+
+      await runMutation('bulk-delete', uniqueKeys, async () => {
+        const handler = config.mutations?.bulkDelete
+        if (mode === 'server' && !handler && !config.mutations?.delete) {
+          throw resourceHandlerRequired('bulk-delete')
+        }
+        if (handler) {
+          await handler(uniqueKeys, loadedRows)
+        } else if (config.mutations?.delete) {
+          for (const row of loadedRows) {
+            await config.mutations.delete(rowKeyOf(row), row)
+          }
+        }
+        if (mode === 'client') removeClientRows(keySet)
+      })
+      dataSource.selection.set(dataSource.selection.get().filter((key) => !keySet.has(key)))
+      return mode === 'client' ? loadedRows.length : uniqueKeys.length
+    },
 
     startEdit: (rowKey, columnKey) => cellEdit.startEdit(rowKey, columnKey),
 
@@ -571,139 +479,9 @@ export function createProTableStore<Row extends Record<string, unknown>>(
     },
 
     columnWindow() {
-      const { columnViewportWidth, horizontalScroll, columns, columnSizes } = store.getState()
-      if (columnViewportWidth <= 0 || columns.length === 0) return null
-      // Resolve each column's width: explicit numeric width → columnSizes override → 150px fallback
-      const offsets = buildOffsets(columns.length, (i) => {
-        const c = columns[i]
-        if (!c) return 150
-        const size = columnSizes[c.key]
-        if (typeof size === 'number') return size
-        if (typeof c.width === 'number') return c.width
-        return 150
-      })
-      const totalWidth = offsets[columns.length]
-      const clampedLeft = Math.max(
-        0,
-        Math.min(horizontalScroll, Math.max(0, totalWidth - columnViewportWidth)),
-      )
-      return computeVirtualRange({
-        itemCount: columns.length,
-        scrollTop: clampedLeft,
-        viewportSize: columnViewportWidth,
-        itemSize: 150, // unused when offsets is provided
-        offsets,
-      })
+      return computeProTableColumnWindow(store.getState())
     },
   }
 
   return api
 }
-
-/**
- * Host-overridable UI strings for the ProTable renderers. Plugins are
- * framework-agnostic at the core and don't depend on the adapter packages, so
- * they can't reach the adapter `useI18n()` — instead the host localizes by
- * passing `labels` (e.g. `labels={{ selectAll: t('table.selectAll') }}`).
- * `filterColumn` interpolates `{title}`, `selectRow` interpolates `{key}`.
- */
-export interface ProTableLabels {
-  selectAll?: string
-  filterColumn?: string
-  selectRow?: string
-  prev?: string
-  next?: string
-  summaryLabel?: string
-}
-
-export const defaultProTableLabels: Required<ProTableLabels> = {
-  selectAll: 'Select all',
-  filterColumn: 'Filter {title}',
-  selectRow: 'Select row {key}',
-  prev: 'Prev',
-  next: 'Next',
-  summaryLabel: 'Summary',
-}
-
-/**
- * Resolve a ProTable label: the host override (if any) else the English default,
- * with `{name}` placeholders filled from `vars`. Shared by all four renderers so
- * the contract + interpolation live once.
- */
-export function proTableLabel(
-  labels: ProTableLabels | undefined,
-  key: keyof ProTableLabels,
-  vars?: Record<string, string>,
-): string {
-  let text = labels?.[key] ?? defaultProTableLabels[key]
-  if (vars) {
-    for (const [name, value] of Object.entries(vars)) {
-      text = text.replace(`{${name}}`, value)
-    }
-  }
-  return text
-}
-
-/**
- * Apply column windowing: filter columns to the visible range and return the
- * left offset. When `colWindow` is null, returns all columns unchanged.
- */
-export function applyColumnWindow<T>(
-  columns: T[],
-  colWindow: VirtualWindow | null,
-): { visible: T[]; offsetBefore: number } {
-  if (!colWindow) return { visible: columns, offsetBefore: 0 }
-  return {
-    visible: columns.slice(colWindow.startIndex, colWindow.endIndex + 1),
-    offsetBefore: colWindow.offsetBefore,
-  }
-}
-
-/** CSS custom properties the ProTable reads; overridable by the host theme. */
-export const proTableTokens: Record<string, string> = {
-  '--iris-pro-table-border': 'var(--iris-color-border, #e5e7eb)',
-  '--iris-pro-table-header-bg': 'var(--iris-color-bg-subtle, #f9fafb)',
-  '--iris-pro-table-row-hover': 'var(--iris-color-bg-subtle, #f3f4f6)',
-  '--iris-pro-table-selected-bg': 'var(--iris-color-primary-soft, #eff6ff)',
-}
-
-/**
- * Collect bounding rects for all elements matching `[attr]` under `root`.
- * Used by drag-to-reorder column headers across all framework adapters.
- */
-export function collectRects(
-  root: HTMLElement | null,
-  attr: string,
-): { id: string; left: number; top: number; width: number; height: number }[] {
-  if (!root) return []
-  return Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).map((el) => {
-    const r = el.getBoundingClientRect()
-    return {
-      id: el.getAttribute(attr)!,
-      left: r.left,
-      top: r.top,
-      width: r.width,
-      height: r.height,
-    }
-  })
-}
-
-/** Compute sticky positioning for a pinned column (framework-agnostic). */
-export function pinnedStyle(column: {
-  pinned?: 'left' | 'right'
-}): Record<string, string | number> | undefined {
-  if (!column.pinned) return undefined
-  return { position: 'sticky', [column.pinned]: 0, zIndex: 1 }
-}
-
-/**
- * The ProTable plugin. Pass to `<IrisProvider plugins={[proTablePlugin]}>`.
- * Registers the table theme tokens. (Table state is per-instance via
- * {@link createProTableStore}, so no shared store is registered.)
- */
-export const proTablePlugin = createPlugin({
-  name: 'pro-table',
-  install(registry) {
-    registry.registerTokens(proTableTokens)
-  },
-})

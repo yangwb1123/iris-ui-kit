@@ -1,13 +1,22 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte'
   import { createSortable, type SortableRect } from '@iris-ui-kit/core'
-  import { createDashboard, type DashboardConfig, type DashboardWidget } from '../core'
+  import {
+    createDashboard,
+    dashboardContentKey,
+    type DashboardConfig,
+    type DashboardWidget,
+  } from '../core'
 
   let {
     config,
+    renderWidget = undefined,
     class: klass = '',
     style = '',
   }: {
     config: DashboardConfig
+    /** Render a widget body from its safe content key at the framework edge. */
+    renderWidget?: Snippet<[{ contentKey: string; widget: DashboardWidget }]>
     class?: string
     style?: string
   } = $props()
@@ -86,7 +95,7 @@
 
   function cellOutline(cellId: string): string {
     return sortableState.activeId && sortableState.overId === cellId
-      ? ';outline:2px dashed var(--iris-color-primary,#2563eb);outline-offset:-2px'
+      ? ';outline:2px dashed var(--iris-primary,#2563eb);outline-offset:-2px'
       : ''
   }
 
@@ -135,9 +144,10 @@
   <!-- Widgets -->
   {#each dashboardState.widgets as widget (widget.id)}
     {@const w = widget as DashboardWidget}
+    {@const contentKey = dashboardContentKey(w)}
     <div
       data-iris-dashboard-widget={w.id}
-      style="grid-column:{w.col}/span {w.colSpan};grid-row:{w.row}/span {w.rowSpan};background:var(--iris-dashboard-widget-bg,#fff);border:1px solid var(--iris-color-border,#e5e7eb);border-radius:var(--iris-dashboard-widget-radius,8px);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1"
+      style="grid-column:{w.col}/span {w.colSpan};grid-row:{w.row}/span {w.rowSpan};background:var(--iris-dashboard-widget-bg,#fff);border:1px solid var(--iris-border,#e5e7eb);border-radius:var(--iris-dashboard-widget-radius,8px);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1"
     >
       <!-- Widget header with drag handle -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -146,7 +156,7 @@
         role="button"
         tabindex="0"
         draggable="true"
-        style="display:flex;align-items:center;gap:6px;padding:8px 12px;cursor:grab;border-bottom:1px solid var(--iris-color-border,#e5e7eb);font-weight:600;user-select:none;touch-action:none"
+        style="display:flex;align-items:center;gap:6px;padding:8px 12px;cursor:grab;border-bottom:1px solid var(--iris-border,#e5e7eb);font-weight:600;user-select:none;touch-action:none"
         ondragstart={(e) => {
           dragWidgetId = w.id
           if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
@@ -162,13 +172,21 @@
         <span
           data-iris-dashboard-drag-handle
           aria-hidden="true"
-          style="font-size:1rem;line-height:1;color:var(--iris-color-muted,#9ca3af)">⠿</span
+          style="font-size:1rem;line-height:1;color:var(--iris-muted,#9ca3af)">⠿</span
         >
         <span data-iris-dashboard-widget-title={w.id}>{w.title}</span>
       </div>
 
       <!-- Widget content area -->
-      <div data-iris-dashboard-widget-content={w.id} style="flex:1;padding:12px"></div>
+      <div
+        data-iris-dashboard-widget-content={w.id}
+        data-content-key={contentKey}
+        style="flex:1;padding:12px"
+      >
+        {#if contentKey}
+          {@render renderWidget?.({ contentKey, widget: w })}
+        {/if}
+      </div>
     </div>
   {/each}
 </div>

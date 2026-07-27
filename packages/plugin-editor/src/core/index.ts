@@ -77,6 +77,8 @@ export interface CreateEditorOptions {
   doc?: string
   /** Syntax-highlighting language. Default `'plain'`. */
   language?: EditorLanguage
+  /** Tab width in columns. Default `2`. */
+  tabSize?: number
   /** Render read-only (non-editable). Default `false`. */
   readOnly?: boolean
   /** Enable autocompletion popup. Default `true`. */
@@ -97,6 +99,8 @@ export interface EditorHandle {
   setValue(value: string): void
   /** Swap the language without recreating the editor (CM6 Compartment). */
   setLanguage(language: EditorLanguage): void
+  /** Change tab width without recreating the editor. */
+  setTabSize(tabSize: number): void
   /** Toggle read-only without recreating the editor. */
   setReadOnly(readOnly: boolean): void
   /** Tear down the CM6 view. */
@@ -110,6 +114,7 @@ export interface EditorHandle {
 export function createEditor(options: CreateEditorOptions): EditorHandle {
   const languageComp = new Compartment()
   const readOnlyComp = new Compartment()
+  const tabSizeComp = new Compartment()
 
   const onChange = options.onChange
   const updateListener = onChange
@@ -123,6 +128,7 @@ export function createEditor(options: CreateEditorOptions): EditorHandle {
     extensions: [
       ...baseExtensions(options.completions ?? true),
       languageComp.of(languageExtension(options.language ?? 'plain')),
+      tabSizeComp.of(EditorState.tabSize.of(normalizeTabSize(options.tabSize))),
       readOnlyComp.of(
         EditorState.readOnly.of(options.base !== undefined || (options.readOnly ?? false)),
       ),
@@ -144,6 +150,11 @@ export function createEditor(options: CreateEditorOptions): EditorHandle {
     setLanguage(language) {
       view.dispatch({ effects: languageComp.reconfigure(languageExtension(language)) })
     },
+    setTabSize(tabSize) {
+      view.dispatch({
+        effects: tabSizeComp.reconfigure(EditorState.tabSize.of(normalizeTabSize(tabSize))),
+      })
+    },
     setReadOnly(readOnly) {
       view.dispatch({ effects: readOnlyComp.reconfigure(EditorState.readOnly.of(readOnly)) })
     },
@@ -161,11 +172,20 @@ export interface EditorSettings {
 
 export type EditorSettingsStore = Store<EditorSettings>
 
+function normalizeTabSize(tabSize: number | undefined): number {
+  if (!Number.isFinite(tabSize)) return 2
+  return Math.max(1, Math.min(16, Math.round(tabSize!)))
+}
+
+export function resolveEditorSettings(settings?: Partial<EditorSettings>): EditorSettings {
+  return {
+    tabSize: normalizeTabSize(settings?.tabSize),
+    defaultLanguage: settings?.defaultLanguage ?? 'plain',
+  }
+}
+
 export function createEditorSettingsStore(initial?: Partial<EditorSettings>): EditorSettingsStore {
-  return createStore<EditorSettings>({
-    tabSize: initial?.tabSize ?? 2,
-    defaultLanguage: initial?.defaultLanguage ?? 'plain',
-  })
+  return createStore<EditorSettings>(resolveEditorSettings(initial))
 }
 
 /** CSS custom properties the editor reads; overridable by the host theme. */
@@ -187,10 +207,14 @@ export { diffViewPlugin, setDiffBase } from './diff-extension'
  * The editor plugin. Pass to `<IrisProvider plugins={[editorPlugin]}>`. Registers
  * the editor theme tokens and a shared settings store under the key `'editor'`.
  */
-export const editorPlugin = createPlugin({
-  name: 'editor',
-  install(registry) {
-    registry.registerTokens(editorTokens)
-    registry.registerStore('editor', () => createEditorSettingsStore())
-  },
-})
+export function createEditorPlugin(initial?: Partial<EditorSettings>) {
+  return createPlugin({
+    name: 'editor',
+    install(registry) {
+      registry.registerTokens(editorTokens)
+      registry.registerStore('editor', () => createEditorSettingsStore(initial))
+    },
+  })
+}
+
+export const editorPlugin = createEditorPlugin()

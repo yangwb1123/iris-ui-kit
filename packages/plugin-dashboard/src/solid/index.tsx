@@ -1,11 +1,27 @@
 import { createSignal, onCleanup, For, type JSX } from 'solid-js'
 import { createSortable, type SortableRect } from '@iris-ui-kit/core'
-import { createDashboard, type DashboardConfig, type DashboardWidget } from '../core'
+import {
+  createDashboard,
+  dashboardContentKey,
+  type DashboardConfig,
+  type DashboardWidget,
+} from '../core'
 
-export type { DashboardWidget, DashboardConfig, DashboardState, DashboardStore } from '../core'
+export {
+  dashboardContentKey,
+  type DashboardWidget,
+  type DashboardConfig,
+  type DashboardState,
+  type DashboardStore,
+} from '../core'
 
 export interface IrisDashboardProps {
   config: DashboardConfig
+  /**
+   * Render a widget body from its safe `contentKey` (or safe widget id).
+   * Framework content stays outside the serializable core schema.
+   */
+  renderWidget?: (contentKey: string, widget: DashboardWidget) => JSX.Element
   class?: string
   style?: JSX.CSSProperties
 }
@@ -121,7 +137,7 @@ export function IrisDashboard(props: IrisDashboardProps) {
               // Live drop highlight for the touch/pen pointer path.
               outline:
                 sortableState().activeId && sortableState().overId === `${c}-${r}`
-                  ? '2px dashed var(--iris-color-primary, #2563eb)'
+                  ? '2px dashed var(--iris-primary, #2563eb)'
                   : undefined,
               'outline-offset': '-2px',
             }}
@@ -142,71 +158,77 @@ export function IrisDashboard(props: IrisDashboardProps) {
 
       {/* Widgets */}
       <For each={dashboardState().widgets}>
-        {(widget: DashboardWidget) => (
-          <div
-            data-iris-dashboard-widget={widget.id}
-            style={{
-              'grid-column': `${widget.col} / span ${widget.colSpan}`,
-              'grid-row': `${widget.row} / span ${widget.rowSpan}`,
-              background: 'var(--iris-dashboard-widget-bg, #fff)',
-              border: '1px solid var(--iris-color-border, #e5e7eb)',
-              'border-radius': 'var(--iris-dashboard-widget-radius, 8px)',
-              display: 'flex',
-              'flex-direction': 'column',
-              overflow: 'hidden',
-              position: 'relative',
-              'z-index': '1',
-            }}
-          >
-            {/* Widget header with drag handle */}
+        {(widget: DashboardWidget) => {
+          const contentKey = dashboardContentKey(widget)
+          return (
             <div
-              data-iris-dashboard-widget-header={widget.id}
-              draggable={true}
+              data-iris-dashboard-widget={widget.id}
               style={{
+                'grid-column': `${widget.col} / span ${widget.colSpan}`,
+                'grid-row': `${widget.row} / span ${widget.rowSpan}`,
+                background: 'var(--iris-dashboard-widget-bg, #fff)',
+                border: '1px solid var(--iris-border, #e5e7eb)',
+                'border-radius': 'var(--iris-dashboard-widget-radius, 8px)',
                 display: 'flex',
-                'align-items': 'center',
-                gap: '6px',
-                padding: '8px 12px',
-                cursor: 'grab',
-                'border-bottom': '1px solid var(--iris-color-border, #e5e7eb)',
-                'font-weight': '600',
-                'user-select': 'none',
-                // Let the pointer path own touch gestures on the drag handle.
-                'touch-action': 'none',
+                'flex-direction': 'column',
+                overflow: 'hidden',
+                position: 'relative',
+                'z-index': '1',
               }}
-              onDragStart={(e) => {
-                dragWidgetId = widget.id
-                if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
-              }}
-              onDragEnd={() => {
-                dragWidgetId = null
-              }}
-              onPointerDown={(e) => onHeaderPointerDown(widget.id, e)}
-              onPointerMove={(e) => onHeaderPointerMove(widget.id, e)}
-              onPointerUp={() => onHeaderPointerUp(widget.id)}
-              onPointerCancel={() => onHeaderPointerCancel()}
             >
-              <span
-                data-iris-dashboard-drag-handle=""
-                aria-hidden="true"
+              {/* Widget header with drag handle */}
+              <div
+                data-iris-dashboard-widget-header={widget.id}
+                draggable={true}
                 style={{
-                  'font-size': '1rem',
-                  'line-height': '1',
-                  color: 'var(--iris-color-muted, #9ca3af)',
+                  display: 'flex',
+                  'align-items': 'center',
+                  gap: '6px',
+                  padding: '8px 12px',
+                  cursor: 'grab',
+                  'border-bottom': '1px solid var(--iris-border, #e5e7eb)',
+                  'font-weight': '600',
+                  'user-select': 'none',
+                  // Let the pointer path own touch gestures on the drag handle.
+                  'touch-action': 'none',
                 }}
+                onDragStart={(e) => {
+                  dragWidgetId = widget.id
+                  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+                }}
+                onDragEnd={() => {
+                  dragWidgetId = null
+                }}
+                onPointerDown={(e) => onHeaderPointerDown(widget.id, e)}
+                onPointerMove={(e) => onHeaderPointerMove(widget.id, e)}
+                onPointerUp={() => onHeaderPointerUp(widget.id)}
+                onPointerCancel={() => onHeaderPointerCancel()}
               >
-                ⠿
-              </span>
-              <span data-iris-dashboard-widget-title={widget.id}>{widget.title}</span>
-            </div>
+                <span
+                  data-iris-dashboard-drag-handle=""
+                  aria-hidden="true"
+                  style={{
+                    'font-size': '1rem',
+                    'line-height': '1',
+                    color: 'var(--iris-muted, #9ca3af)',
+                  }}
+                >
+                  ⠿
+                </span>
+                <span data-iris-dashboard-widget-title={widget.id}>{widget.title}</span>
+              </div>
 
-            {/* Widget content area */}
-            <div
-              data-iris-dashboard-widget-content={widget.id}
-              style={{ flex: '1', padding: '12px' }}
-            />
-          </div>
-        )}
+              {/* Widget content area */}
+              <div
+                data-iris-dashboard-widget-content={widget.id}
+                data-content-key={contentKey}
+                style={{ flex: '1', padding: '12px' }}
+              >
+                {contentKey ? props.renderWidget?.(contentKey, widget) : undefined}
+              </div>
+            </div>
+          )
+        }}
       </For>
     </div>
   )

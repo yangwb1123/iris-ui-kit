@@ -1,8 +1,36 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { render, cleanup } from '@solidjs/testing-library'
-import { IrisLineChart, IrisBarChart, IrisSparkline } from './index'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import { render, cleanup, fireEvent } from '@solidjs/testing-library'
+import {
+  IrisLineChart,
+  IrisBarChart,
+  IrisSparkline,
+  IrisMultiLineChart,
+  IrisStackedBarChart,
+  IrisDonutChart,
+  type ChartSeries,
+  type ChartSlice,
+} from './index'
 
 afterEach(cleanup)
+
+const series: ChartSeries[] = [
+  {
+    id: 'revenue',
+    label: 'Revenue',
+    colorToken: '--iris-chart-series-1',
+    values: [10, 20],
+  },
+  {
+    id: 'cost',
+    label: 'Cost',
+    colorToken: '--iris-chart-series-2',
+    values: [4, 8],
+  },
+]
+const slices: ChartSlice[] = [
+  { id: 'direct', label: 'Direct', colorToken: '--iris-chart-series-1', value: 60 },
+  { id: 'search', label: 'Search', colorToken: '--iris-chart-series-2', value: 40 },
+]
 
 describe('IrisLineChart (solid)', () => {
   it('renders an SVG with a line path', () => {
@@ -31,5 +59,69 @@ describe('IrisSparkline (solid)', () => {
     ))
     const svg = container.querySelector('[data-iris-chart="sparkline"]')
     expect(svg?.getAttribute('aria-label')).toBe('Sales trend')
+  })
+})
+
+describe('IrisMultiLineChart (solid)', () => {
+  it('renders shared series, accessible metadata and focus interaction', () => {
+    const onDatumFocus = vi.fn()
+    const { container } = render(() => (
+      <IrisMultiLineChart
+        series={series}
+        categories={['Jan', 'Feb']}
+        ariaLabel="Revenue and cost"
+        onDatumFocus={onDatumFocus}
+      />
+    ))
+    const svg = container.querySelector('[data-iris-chart="multi-line"]')!
+    expect(svg.querySelector('title')?.textContent).toBe('Revenue and cost')
+    expect(svg.querySelector('desc')?.textContent).toContain('2 series')
+    expect(svg.querySelectorAll('[data-iris-chart-series-line]')).toHaveLength(2)
+    expect(svg.querySelectorAll('[data-iris-chart-datum]')).toHaveLength(4)
+    expect(container.querySelector('[data-iris-chart-legend]')?.textContent).toContain('Revenue')
+
+    const point = svg.querySelector<SVGElement>('[data-iris-chart-datum]')!
+    fireEvent.focus(point)
+    expect(onDatumFocus).toHaveBeenCalledWith(
+      expect.objectContaining({ seriesId: 'revenue', categoryLabel: 'Jan', value: 10 }),
+    )
+  })
+})
+
+describe('IrisStackedBarChart (solid)', () => {
+  it('renders stacked bars and exposes focus tooltip data', () => {
+    const onDatumFocus = vi.fn()
+    const { container } = render(() => (
+      <IrisStackedBarChart
+        series={series}
+        categories={['Jan', 'Feb']}
+        onDatumFocus={onDatumFocus}
+      />
+    ))
+    const svg = container.querySelector('[data-iris-chart="stacked-bar"]')!
+    expect(svg.getAttribute('data-layout')).toBe('stacked')
+    expect(svg.querySelectorAll('[data-iris-chart-datum]')).toHaveLength(4)
+    fireEvent.focus(svg.querySelector<SVGElement>('[data-iris-chart-datum]')!)
+    expect(onDatumFocus).toHaveBeenCalledWith(
+      expect.objectContaining({ seriesId: 'revenue', categoryIndex: 0 }),
+    )
+  })
+})
+
+describe('IrisDonutChart (solid)', () => {
+  it('renders focusable arcs with native title tooltip data', () => {
+    const onDatumFocus = vi.fn()
+    const { container } = render(() => (
+      <IrisDonutChart data={slices} ariaDescription="Traffic sources" onDatumFocus={onDatumFocus} />
+    ))
+    const svg = container.querySelector('[data-iris-chart="donut"]')!
+    expect(svg.querySelector('desc')?.textContent).toBe('Traffic sources')
+    expect(svg.querySelectorAll('[data-iris-chart-datum]')).toHaveLength(2)
+    const arc = svg.querySelector<SVGElement>('[data-iris-chart-datum]')!
+    expect(arc.querySelector('title')?.textContent).toBe('Direct: 60 (60%)')
+    fireEvent.focus(arc)
+    expect(onDatumFocus).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'direct', percentage: 0.6 }),
+    )
   })
 })

@@ -76,6 +76,22 @@ describe('IrisDashboard (react)', () => {
     expect(container.querySelector('[data-iris-dashboard-widget-content="w2"]')).toBeTruthy()
   })
 
+  it('maps a safe content key to interactive React content', () => {
+    const onOpen = vi.fn()
+    const cfg = config()
+    cfg.widgets[0]!.contentKey = 'sales'
+    const { getByRole } = render(
+      <IrisDashboard
+        config={cfg}
+        renderWidget={(key) =>
+          key === 'sales' ? <button onClick={onOpen}>Open sales</button> : null
+        }
+      />,
+    )
+    fireEvent.click(getByRole('button', { name: 'Open sales' }))
+    expect(onOpen).toHaveBeenCalledOnce()
+  })
+
   it('renders drop cells for the grid', () => {
     const { container } = render(<IrisDashboard config={config()} />)
     // rows = ceil(2/3)+1 = 2; cols = 3 → 6 cells

@@ -55,6 +55,8 @@ export const zhCNMessages: Record<string, string> = {
   'clearable.clear': '清除',
   // admin shell
   'admin.close': '关闭',
+  'admin.closeLeft': '关闭左侧标签页',
+  'admin.closeRight': '关闭右侧标签页',
   'admin.closeAll': '关闭全部',
   'admin.closeOthers': '关闭其他',
   'admin.closeTab': '关闭 {title}',
@@ -91,6 +93,13 @@ export const zhCNMessages: Record<string, string> = {
   'carousel.goTo': '跳转到第 {index} 张',
   // color picker
   'colorPicker.hex': '十六进制',
+  'colorPicker.hue': '色相',
+  'colorPicker.saturationBrightness': '饱和度和亮度',
+  'colorPicker.saturationBrightnessValue': '饱和度 {saturation}%，亮度 {brightness}%',
+  'splitter.resize': '调整面板大小',
+  'resizer.handle': '调整 {handle} 大小',
+  'movable.roleDescription': '可移动',
+  'table.resizeColumn': '调整 {column} 列宽',
   'colorPicker.red': '红色',
   'colorPicker.green': '绿色',
   'colorPicker.blue': '蓝色',

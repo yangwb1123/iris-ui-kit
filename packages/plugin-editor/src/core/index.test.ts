@@ -1,6 +1,13 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { runPlugins } from '@iris-ui-kit/core'
-import { createEditor, editorPlugin, editorTokens, createEditorSettingsStore } from './index'
+import {
+  createEditor,
+  createEditorPlugin,
+  editorPlugin,
+  editorTokens,
+  createEditorSettingsStore,
+  type EditorSettingsStore,
+} from './index'
 
 let host: HTMLDivElement | null = null
 
@@ -63,6 +70,14 @@ describe('createEditor', () => {
     expect(() => handle.setReadOnly(true)).not.toThrow()
     handle.destroy()
   })
+
+  it('applies and live-reconfigures tabSize through the controller', () => {
+    const handle = createEditor({ parent: mount(), tabSize: 6 })
+    expect(handle.view.state.tabSize).toBe(6)
+    handle.setTabSize(3)
+    expect(handle.view.state.tabSize).toBe(3)
+    handle.destroy()
+  })
 })
 
 describe('editorPlugin', () => {
@@ -76,5 +91,13 @@ describe('editorPlugin', () => {
     const store = createEditorSettingsStore()
     expect(store.getState().tabSize).toBe(2)
     expect(store.getState().defaultLanguage).toBe('plain')
+  })
+
+  it('creates a configurable Provider plugin settings store', () => {
+    const { stores } = runPlugins([
+      createEditorPlugin({ tabSize: 4, defaultLanguage: 'javascript' }),
+    ])
+    const store = stores.get('editor') as EditorSettingsStore
+    expect(store.getState()).toEqual({ tabSize: 4, defaultLanguage: 'javascript' })
   })
 })

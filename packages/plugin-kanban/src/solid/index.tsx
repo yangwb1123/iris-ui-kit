@@ -124,7 +124,7 @@ export function IrisKanban(props: IrisKanbanProps) {
                 // Live drop highlight for the touch/pen pointer path.
                 outline:
                   sortableState().activeId && sortableState().overId === col.id && !atLimit()
-                    ? '2px solid var(--iris-color-primary, #2563eb)'
+                    ? '2px solid var(--iris-primary, #2563eb)'
                     : undefined,
                 'outline-offset': '2px',
               }}
@@ -153,7 +153,7 @@ export function IrisKanban(props: IrisKanbanProps) {
                 <span>{col.title}</span>
                 <span
                   data-iris-kanban-count=""
-                  style={{ 'font-size': '0.8em', color: 'var(--iris-color-muted, #6b7280)' }}
+                  style={{ 'font-size': '0.8em', color: 'var(--iris-muted, #6b7280)' }}
                 >
                   {col.limit !== undefined
                     ? `${kanbanState().columns.find((c) => c.id === col.id)!.cards.length}/${col.limit}`
@@ -164,7 +164,7 @@ export function IrisKanban(props: IrisKanbanProps) {
                     data-iris-kanban-wip-badge=""
                     style={{
                       'font-size': '0.7em',
-                      background: 'var(--iris-color-warning, #f59e0b)',
+                      background: 'var(--iris-warning, #f59e0b)',
                       color: '#fff',
                       'border-radius': '4px',
                       padding: '1px 5px',
@@ -183,7 +183,7 @@ export function IrisKanban(props: IrisKanbanProps) {
                     draggable={true}
                     style={{
                       background: 'var(--iris-kanban-card-bg, #fff)',
-                      border: '1px solid var(--iris-color-border, #e5e7eb)',
+                      border: '1px solid var(--iris-border, #e5e7eb)',
                       'border-radius': '6px',
                       padding: '8px 10px',
                       cursor: 'grab',
@@ -212,7 +212,7 @@ export function IrisKanban(props: IrisKanbanProps) {
                     <Show when={card.description}>
                       <span
                         data-iris-kanban-card-desc=""
-                        style={{ 'font-size': '0.85em', color: 'var(--iris-color-muted, #6b7280)' }}
+                        style={{ 'font-size': '0.85em', color: 'var(--iris-muted, #6b7280)' }}
                       >
                         {card.description}
                       </span>
@@ -228,8 +228,8 @@ export function IrisKanban(props: IrisKanbanProps) {
                               data-iris-kanban-tag=""
                               style={{
                                 'font-size': '0.75em',
-                                background: 'var(--iris-color-primary-subtle, #eff6ff)',
-                                color: 'var(--iris-color-primary, #2563eb)',
+                                background: 'var(--iris-primary-subtle, #eff6ff)',
+                                color: 'var(--iris-primary, #2563eb)',
                                 'border-radius': '4px',
                                 padding: '1px 5px',
                               }}

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import IrisDashboard from './IrisDashboard.svelte'
+import DashboardContentHarness from './DashboardContentHarness.svelte'
 import type { DashboardConfig } from '../core'
 
 // jsdom drops clientX/clientY/pointerType from synthetic PointerEvents, so we
@@ -67,6 +68,17 @@ describe('IrisDashboard (svelte)', () => {
     const { container } = render(IrisDashboard, { props: { config: config() } })
     const cells = container.querySelectorAll('[data-iris-dashboard-cell]')
     expect(cells.length).toBeGreaterThanOrEqual(6)
+  })
+
+  it('maps a safe content key to an interactive Svelte snippet', async () => {
+    const onOpen = vi.fn()
+    const cfg = config()
+    cfg.widgets[0]!.contentKey = 'sales'
+    const { container } = render(DashboardContentHarness, { props: { config: cfg, onOpen } })
+    const button = container.querySelector('[data-sales]')!
+    expect(button.textContent?.trim()).toBe('Open sales')
+    await fireEvent.click(button)
+    expect(onOpen).toHaveBeenCalledOnce()
   })
 
   it('drag-and-drop calls moveWidget on drop', async () => {

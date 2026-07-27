@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
 import { runPlugins } from '@iris-ui-kit/core'
-import { createProTableStore, proTablePlugin, proTableTokens, type ProTableColumn } from './index'
+import {
+  createProTableStore,
+  pinnedStyle,
+  proTablePlugin,
+  proTableTokens,
+  type ProTableColumn,
+} from './index'
 
 interface User extends Record<string, unknown> {
   id: number
@@ -73,6 +79,90 @@ describe('createProTableStore — selection', () => {
   })
 })
 
+describe('createProTableStore — resource mutations', () => {
+  it('creates a client row and exposes the pending mutation lifecycle', async () => {
+    let release!: (row: User) => void
+    const onCreate = vi.fn(
+      () =>
+        new Promise<User>((resolve) => {
+          release = resolve
+        }),
+    )
+    const table = make({ pageSize: 10, mutations: { create: onCreate } })
+
+    const pending = table.createRow({ id: 5, name: 'Eve', age: 22 })
+    expect(table.getState().mutation).toEqual({
+      kind: 'create',
+      pending: true,
+      rowKeys: ['5'],
+      error: undefined,
+    })
+
+    release({ id: 5, name: 'Eve saved', age: 22 })
+    await pending
+    expect(table.getState().rows.find((row) => row.id === 5)?.name).toBe('Eve saved')
+    expect(table.getState().total).toBe(5)
+    expect(table.getState().mutation).toEqual({
+      kind: 'create',
+      pending: false,
+      rowKeys: ['5'],
+      error: undefined,
+    })
+  })
+
+  it('deletes one row and bulk-deletes the current selection', async () => {
+    const onDelete = vi.fn(async () => undefined)
+    const onBulkDelete = vi.fn(async () => undefined)
+    const table = make({
+      pageSize: 10,
+      mutations: { delete: onDelete, bulkDelete: onBulkDelete },
+    })
+
+    await expect(table.deleteRow('2')).resolves.toBe(true)
+    expect(onDelete).toHaveBeenCalledWith('2', expect.objectContaining({ id: 2 }))
+    expect(table.getState().rows.map((row) => row.id)).toEqual([1, 3, 4])
+
+    table.toggleRow('1')
+    table.toggleRow('3')
+    await expect(table.bulkDelete()).resolves.toBe(2)
+    expect(onBulkDelete).toHaveBeenCalledWith(
+      ['1', '3'],
+      [expect.objectContaining({ id: 1 }), expect.objectContaining({ id: 3 })],
+    )
+    expect(table.getState().rows.map((row) => row.id)).toEqual([4])
+    expect(table.getState().selectedKeys).toEqual([])
+  })
+
+  it('keeps rows and exposes the error when a mutation fails', async () => {
+    const failure = new Error('delete rejected')
+    const table = make({
+      pageSize: 10,
+      mutations: { delete: async () => Promise.reject(failure) },
+    })
+    await expect(table.deleteRow('1')).rejects.toThrow('delete rejected')
+    expect(table.getState().rows.some((row) => row.id === 1)).toBe(true)
+    expect(table.getState().mutation).toEqual({
+      kind: 'delete',
+      pending: false,
+      rowKeys: ['1'],
+      error: failure,
+    })
+  })
+
+  it('exposes an opt-in generic resource mutation path', async () => {
+    const table = make({ pageSize: 10 })
+    const action = vi.fn(async () => undefined)
+    await table.mutate(action, { kind: 'custom', rowKeys: ['1'], skipReload: true })
+    expect(action).toHaveBeenCalledOnce()
+    expect(table.getState().mutation).toEqual({
+      kind: 'custom',
+      pending: false,
+      rowKeys: ['1'],
+      error: undefined,
+    })
+  })
+})
+
 describe('createProTableStore — inline edit', () => {
   it('commits an edit, writes back, and fires onCellEdit', () => {
     const onCellEdit = vi.fn()
@@ -105,6 +195,15 @@ describe('createProTableStore — server mode', () => {
     expect(t.getState().rows.map((r) => r.id)).toEqual([9])
     expect(t.getState().total).toBe(1)
     expect(t.getState().loading).toBe(false)
+  })
+
+  it('requires an injected create handler for server mutations', async () => {
+    const onLoad = vi.fn().mockResolvedValue({ rows: [], total: 0 })
+    const table = createProTableStore<User>({ columns, rowKey: 'id', mode: 'server', onLoad })
+    await expect(table.createRow({ id: 9, name: 'Z', age: 1 })).rejects.toThrow(
+      'config.mutations.create',
+    )
+    expect(table.getState().mutation.error).toBeInstanceOf(Error)
   })
 })
 
@@ -149,6 +248,22 @@ describe('proTablePlugin', () => {
   it('registers table tokens', () => {
     const { tokens } = runPlugins([proTablePlugin])
     expect(tokens['--iris-pro-table-border']).toBe(proTableTokens['--iris-pro-table-border'])
+    expect(tokens['--iris-pro-table-chip-bg']).toBe(proTableTokens['--iris-pro-table-chip-bg'])
+  })
+})
+
+describe('pinnedStyle', () => {
+  it('uses logical insets so pinned columns follow RTL direction', () => {
+    expect(pinnedStyle({ pinned: 'left' })).toEqual({
+      position: 'sticky',
+      insetInlineStart: 0,
+      zIndex: 1,
+    })
+    expect(pinnedStyle({ pinned: 'right' })).toEqual({
+      position: 'sticky',
+      insetInlineEnd: 0,
+      zIndex: 1,
+    })
   })
 })
 

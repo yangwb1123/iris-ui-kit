@@ -4,7 +4,11 @@
     "rootDir": "src",
     "outDir": "dist",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@iris-ui-kit/plugin-admin/core": ["src/core/index.ts"]
+    }
   },
   "include": ["src/core", "src/react", "src/vue"],
   "exclude": ["dist", "node_modules", "src/solid", "src/svelte", "**/*.test.ts", "**/*.test.tsx"]

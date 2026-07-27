@@ -1,6 +1,7 @@
 import {
   createFormStore,
   createPlugin,
+  type FieldErrors,
   type FormState,
   type FormStore,
   type FormValues,
@@ -57,8 +58,7 @@ export interface FieldSpec {
    * one control per entry, bound to the nested path `${name}[${index}].${sub.name}`,
    * so per-row error/touched/dirty state is keyed by canonical path and follows
    * the row when rows are removed or reordered. Required when `type === 'array'`.
-   * Sub-field validators are NOT compiled in core (the rows + nested-path binding
-   * are the payoff; recursive sub-field validation is a follow-up).
+   * Required validators are compiled recursively for every current row.
    */
   fields?: FieldSpec[]
   /** Label for an `array` field's "add a row" button. Default `'Add'`. */
@@ -101,6 +101,11 @@ export interface FormBuilderConfig {
    * re-validated inline. E.g. `{ password: ['confirmPassword'] }`.
    */
   dependencies?: Partial<Record<string, string[]>>
+  /**
+   * Additional whole-form validation. Its errors are merged over validators
+   * compiled from the schema, allowing domain-specific rules by nested path.
+   */
+  validate?: (values: FormValues) => FieldErrors<FormValues> | Promise<FieldErrors<FormValues>>
 }
 
 export interface FormBuilder {
@@ -159,11 +164,50 @@ function seedValue(field: FieldSpec): unknown {
 export function arrayRowDefaults(field: FieldSpec): FormValues {
   const row: FormValues = {}
   for (const sub of field.fields ?? []) {
-    row[sub.name] = (
-      sub.type === 'checkbox' ? false : (sub.defaultValue ?? '')
-    ) as FormValues[string]
+    row[sub.name] = seedValue(sub) as FormValues[string]
   }
   return row
+}
+
+/**
+ * Compile required errors for every current array row, recursively. This is a
+ * whole-form validator because row indices are dynamic: it discovers paths
+ * from the current values on every pass, while the core form engine continues
+ * to own metadata re-keying during remove/move operations.
+ */
+export function validateArrayFields(
+  fields: FieldSpec[],
+  values: FormValues,
+): FieldErrors<FormValues> {
+  const errors: FieldErrors<FormValues> = {}
+
+  const visit = (
+    specs: FieldSpec[],
+    container: FormValues,
+    prefix: string,
+    nested: boolean,
+  ): void => {
+    for (const field of specs) {
+      if (field.when && !field.when(values)) continue
+      const path = prefix ? `${prefix}.${field.name}` : field.name
+      const value = container[field.name]
+      if (nested && field.required) {
+        const missing =
+          field.type === 'array' ? !Array.isArray(value) || value.length === 0 : isEmpty(value)
+        if (missing) errors[path] = `${field.label ?? humanize(field.name)} is required`
+      }
+
+      if (field.type !== 'array' || !Array.isArray(value)) continue
+      value.forEach((row, index) => {
+        if (row && typeof row === 'object' && !Array.isArray(row)) {
+          visit(field.fields ?? [], row as FormValues, `${path}[${index}]`, true)
+        }
+      })
+    }
+  }
+
+  visit(fields, values, '', false)
+  return errors
 }
 
 /** Compile a {@link FormSchema} into a live {@link FormBuilder}. */
@@ -200,6 +244,10 @@ export function createFormBuilder(schema: FormSchema, config: FormBuilderConfig 
     parse: config.parse,
     transform: config.transform,
     dependencies: config.dependencies,
+    validate: async (values) => ({
+      ...validateArrayFields(schema.fields, values),
+      ...(config.validate ? await config.validate(values) : {}),
+    }),
     ...(schema.steps ? { steps: schema.steps } : {}),
   })
 
@@ -235,10 +283,10 @@ export function createFormBuilder(schema: FormSchema, config: FormBuilderConfig 
 
 /** CSS custom properties the form builder reads; overridable by the host theme. */
 export const formBuilderTokens: Record<string, string> = {
-  '--iris-form-gap': 'var(--iris-space-md, 16px)',
-  '--iris-form-label': 'var(--iris-color-fg, #111827)',
-  '--iris-form-error': 'var(--iris-color-danger, #dc2626)',
-  '--iris-form-border': 'var(--iris-color-border, #d1d5db)',
+  '--iris-form-gap': 'var(--iris-gap-md)',
+  '--iris-form-label': 'var(--iris-foreground)',
+  '--iris-form-error': 'var(--iris-danger)',
+  '--iris-form-border': 'var(--iris-border)',
 }
 
 /**

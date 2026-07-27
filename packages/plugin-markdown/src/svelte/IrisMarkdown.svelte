@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { markdownToHtml } from '../core'
+  import { markdownToNodes } from '../core'
+  import MarkdownNodeView from './MarkdownNode.svelte'
 
   let {
     content,
@@ -9,11 +10,11 @@
     class?: string
   } = $props()
 
-  // NB: do not name this `state` — a leading `$` would make Svelte read
-  // `$state` as a store auto-subscription instead of the rune.
-  let renderedHtml = $derived(markdownToHtml(content))
+  let nodes = $derived(markdownToNodes(content))
 </script>
 
 <div data-iris-markdown class={klass} style="font-family:var(--iris-md-font)">
-  {@html renderedHtml}
+  {#each nodes as node}
+    <MarkdownNodeView {node} />
+  {/each}
 </div>

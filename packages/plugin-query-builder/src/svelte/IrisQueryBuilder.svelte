@@ -1,82 +1,167 @@
 <script lang="ts">
   import {
+    defaultQueryBuilderLabels,
     operatorLabels,
+    type CompiledQueryGroup,
     type FilterBuilder,
     type FilterOperator,
     type FilterRule,
     type FilterBuilderState,
-  } from '../core'
+    type QueryBuilderLabels,
+    type QueryGroup,
+    type QueryRuleNode,
+    type QueryValidationIssue,
+  } from '@iris-ui-kit/plugin-query-builder/core'
 
   let {
     builder,
     onChange,
-    addLabel = 'Add rule',
+    onQueryChange,
+    addLabel,
+    labels,
     class: klass = '',
   }: {
     builder: FilterBuilder
-    /** Called with the compiled `FilterRule[]` whenever the rules change. */
     onChange?: (rules: FilterRule[]) => void
-    /** Label for the add-rule button. Default `'Add rule'`. */
+    onQueryChange?: (query: CompiledQueryGroup) => void
     addLabel?: string
+    labels?: Partial<QueryBuilderLabels>
     class?: string
   } = $props()
 
-  // Bridge the core Store directly into a rune (NB: do not name it `state` — a
-  // leading `$` would make Svelte read `$state` as a store auto-subscription).
   // svelte-ignore state_referenced_locally
   let qbState: FilterBuilderState = $state(builder.getState())
 
   $effect(() => builder.subscribe((s) => (qbState = s)))
 
-  // Emit the compiled FilterRule[] whenever the rules change.
+  const copy = $derived({
+    ...defaultQueryBuilderLabels,
+    ...labels,
+    ...(addLabel === undefined ? {} : { addRule: addLabel }),
+  })
+  const issues = $derived.by(() => {
+    void qbState
+    return builder.validate().issues
+  })
+  const issuesFor = (id: string): QueryValidationIssue[] =>
+    issues.filter((issue) => issue.nodeId === id)
+
   $effect(() => {
-    // read qbState so this effect re-runs on every store update
     void qbState
     onChange?.(builder.toFilterRules())
+    onQueryChange?.(builder.toQuery())
   })
 </script>
 
-<div data-iris-query-builder class={klass}>
-  {#each qbState.rules as rule (rule.id)}
-    <div data-iris-query-rule>
+{#snippet renderRule(rule: QueryRuleNode)}
+  {@const ruleIssues = issuesFor(rule.id)}
+  {@const invalid = ruleIssues.length > 0}
+  {@const errorId = `${rule.id}-error`}
+  <div data-iris-query-rule data-node-id={rule.id}>
+    <select
+      data-iris-query-column
+      value={rule.key}
+      aria-label={copy.column}
+      aria-invalid={invalid || undefined}
+      aria-describedby={invalid ? errorId : undefined}
+      onchange={(event) => builder.updateRule(rule.id, { key: event.currentTarget.value })}
+    >
+      {#each builder.columns as column (column.key)}
+        <option value={column.key}>{column.label}</option>
+      {/each}
+    </select>
+    <select
+      data-iris-query-operator
+      value={rule.operator}
+      aria-label={copy.operator}
+      aria-invalid={invalid || undefined}
+      aria-describedby={invalid ? errorId : undefined}
+      onchange={(event) =>
+        builder.updateRule(rule.id, {
+          operator: event.currentTarget.value as FilterOperator,
+        })}
+    >
+      {#each builder.operatorsFor(rule.key) as operator (operator)}
+        <option value={operator}>{operatorLabels[operator]}</option>
+      {/each}
+    </select>
+    <input
+      data-iris-query-value
+      value={rule.value}
+      aria-label={copy.value}
+      aria-invalid={invalid || undefined}
+      aria-describedby={invalid ? errorId : undefined}
+      oninput={(event) => builder.updateRule(rule.id, { value: event.currentTarget.value })}
+    />
+    <button
+      type="button"
+      data-iris-query-remove
+      aria-label={copy.removeRule}
+      onclick={() => builder.removeRule(rule.id)}
+    >
+      ×
+    </button>
+    {#if invalid}
+      <span id={errorId} data-iris-query-error role="alert">
+        {ruleIssues.map((issue) => issue.message).join('. ')}
+      </span>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet renderGroup(group: QueryGroup, depth: number, root = false)}
+  <fieldset data-iris-query-group data-group-id={group.id} data-depth={depth}>
+    <legend>{root ? copy.rootGroup : copy.nestedGroup}</legend>
+    <label>
+      <span>{copy.combinator}</span>
       <select
-        data-iris-query-column
-        value={rule.key}
-        aria-label="Column"
-        onchange={(e) => builder.updateRule(rule.id, { key: e.currentTarget.value })}
+        data-iris-query-combinator
+        value={group.combinator}
+        aria-label={`${copy.combinator}: ${root ? copy.rootGroup : copy.nestedGroup}`}
+        onchange={(event) =>
+          builder.updateGroup(group.id, {
+            combinator: event.currentTarget.value as QueryGroup['combinator'],
+          })}
       >
-        {#each builder.columns as c (c.key)}
-          <option value={c.key}>{c.label}</option>
-        {/each}
+        <option value="and">{copy.matchAll}</option>
+        <option value="or">{copy.matchAny}</option>
       </select>
-      <select
-        data-iris-query-operator
-        value={rule.operator}
-        aria-label="Operator"
-        onchange={(e) =>
-          builder.updateRule(rule.id, { operator: e.currentTarget.value as FilterOperator })}
-      >
-        {#each builder.operatorsFor(rule.key) as op (op)}
-          <option value={op}>{operatorLabels[op]}</option>
-        {/each}
-      </select>
-      <input
-        data-iris-query-value
-        value={rule.value}
-        aria-label="Value"
-        oninput={(e) => builder.updateRule(rule.id, { value: e.currentTarget.value })}
-      />
+    </label>
+    <div data-iris-query-children>
+      {#each group.children as node (node.id)}
+        {#if node.type === 'group'}
+          {@render renderGroup(node, depth + 1)}
+        {:else}
+          {@render renderRule(node)}
+        {/if}
+      {/each}
+    </div>
+    <div data-iris-query-group-actions>
       <button
         type="button"
-        data-iris-query-remove
-        aria-label="Remove rule"
-        onclick={() => builder.removeRule(rule.id)}
+        data-iris-query-add-rule
+        data-iris-query-add={root ? '' : undefined}
+        onclick={() => builder.addRule(group.id)}
       >
-        ×
+        {copy.addRule}
       </button>
+      <button type="button" data-iris-query-add-group onclick={() => builder.addGroup(group.id)}>
+        {copy.addGroup}
+      </button>
+      {#if !root}
+        <button
+          type="button"
+          data-iris-query-remove-group
+          aria-label={copy.removeGroup}
+          onclick={() => builder.removeGroup(group.id)}
+        >
+          {copy.removeGroup}
+        </button>
+      {/if}
     </div>
-  {/each}
-  <button type="button" data-iris-query-add onclick={() => builder.addRule()}>
-    {addLabel}
-  </button>
+  </fieldset>
+{/snippet}
+
+<div data-iris-query-builder class={klass}>
+  {@render renderGroup(qbState.root, 0, true)}
 </div>

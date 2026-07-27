@@ -95,7 +95,7 @@ export function IrisEventCalendar({ config, class: className, style }: IrisEvent
               fontWeight: 600,
               fontSize: '0.75em',
               padding: '4px 0',
-              color: 'var(--iris-color-muted, #6b7280)',
+              color: 'var(--iris-muted, #6b7280)',
             }}
           >
             {name}
@@ -117,7 +117,7 @@ export function IrisEventCalendar({ config, class: className, style }: IrisEvent
               style={{
                 minHeight: 64,
                 padding: 4,
-                border: '1px solid var(--iris-color-border, #e5e7eb)',
+                border: '1px solid var(--iris-border, #e5e7eb)',
                 borderRadius: 4,
                 cursor: isCurrentMonth ? 'pointer' : 'default',
                 opacity: isCurrentMonth ? 1 : 0.4,
@@ -162,7 +162,7 @@ export function IrisEventCalendar({ config, class: className, style }: IrisEvent
                     background: event.color
                       ? event.color
                       : 'var(--iris-cal-event-bg, rgba(99,102,241,0.15))',
-                    color: event.color ? '#fff' : 'var(--iris-color-primary, #6366f1)',
+                    color: event.color ? '#fff' : 'var(--iris-primary, #6366f1)',
                     borderRadius: 3,
                     padding: '1px 4px',
                     overflow: 'hidden',

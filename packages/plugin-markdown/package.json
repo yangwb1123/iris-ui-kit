@@ -1,7 +1,7 @@
 {
   "name": "@iris-ui-kit/plugin-markdown",
   "version": "0.0.1",
-  "description": "Markdown renderer plugin for Iris UI: IrisMarkdown renders Markdown as themed HTML across react/vue/solid/svelte",
+  "description": "Safe structured-node Markdown renderer for Iris UI across react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",
   "exports": {
@@ -37,7 +37,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsup && svelte-package -i src/svelte -o dist/svelte",
+    "build": "node ../../scripts/clean-plugin-dist.mjs && tsup && svelte-package -i src/svelte -o dist/svelte --tsconfig tsconfig.svelte.json && node ../../scripts/prune-package-dist.mjs dist/svelte",
     "test": "vitest run -c vitest.main.config.ts && vitest run -c vitest.solid.config.ts && vitest run -c vitest.svelte.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.solid.json --noEmit && svelte-check --tsconfig ./tsconfig.svelte.json",
     "lint": "eslint src",

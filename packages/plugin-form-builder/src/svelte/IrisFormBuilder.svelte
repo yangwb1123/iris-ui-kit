@@ -4,6 +4,12 @@
   import { createFormBuilder, type FormSchema, type FormBuilderConfig } from '../core'
   import FieldControl from './FieldControl.svelte'
 
+  interface IrisFormBuilderProps extends FormBuilderConfig {
+    schema: FormSchema
+    class?: string
+    style?: string
+  }
+
   let {
     schema,
     onSubmit,
@@ -13,11 +19,7 @@
     dependencies,
     class: klass = '',
     style = '',
-  }: FormBuilderConfig & {
-    schema: FormSchema
-    class?: string
-    style?: string
-  } = $props()
+  }: IrisFormBuilderProps = $props()
 
   // Build the schema→form engine ONCE; the schema/config are read-once props
   // (mirrors the React renderer's lazy-ref). No new form logic lives here.

@@ -6,8 +6,11 @@
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "moduleResolution": "Bundler",
-    "noEmit": true,
-    "types": []
+    "types": [],
+    "baseUrl": ".",
+    "paths": {
+      "@iris-ui-kit/plugin-query-builder/core": ["src/core/index.ts"]
+    }
   },
   "include": ["src/solid/**/*.ts", "src/solid/**/*.tsx"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"]

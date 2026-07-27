@@ -6,7 +6,11 @@
     "moduleResolution": "Bundler",
     "noEmit": true,
     "types": [],
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "baseUrl": ".",
+    "paths": {
+      "@iris-ui-kit/plugin-query-builder/core": ["src/core/index.ts"]
+    }
   },
   "include": ["src/svelte/**/*.ts", "src/svelte/**/*.svelte"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]

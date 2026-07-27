@@ -1,36 +1,19 @@
+import { defineComponent, h, type PropType, type VNode } from 'vue'
+import { type HeaderCell } from '@iris-ui-kit/core'
 import {
-  defineComponent,
-  h,
-  onMounted,
-  onUnmounted,
-  ref,
-  shallowRef,
-  watch,
-  type PropType,
-  type VNode,
-} from 'vue'
-import {
-  createSortable,
-  createVirtualizer,
-  type SortableRect,
-  type HeaderCell,
-} from '@iris-ui-kit/core'
-import {
-  collectRects,
   proTableLabel,
   applyColumnWindow,
+  pinnedStyle,
+  proTableAriaSort,
+  proTableSortIndicator,
   type ProTableColumn,
   type ProTableStore,
   type ProTableLabels,
   type TreeRow,
 } from '../core'
+import { useProTableRuntime } from './runtime'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
-
-function pinnedStyle(column: ProTableColumn): Record<string, string> | undefined {
-  if (!column.pinned) return undefined
-  return { position: 'sticky', [column.pinned]: '0', zIndex: '1' }
-}
 
 export const IrisProTable = defineComponent({
   name: 'IrisProTable',
@@ -44,116 +27,19 @@ export const IrisProTable = defineComponent({
     maxHeight: { type: Number, default: 400 },
   },
   setup(props) {
-    const state = shallowRef(props.store.getState())
-    const draft = ref('')
     let dragKey: string | null = null
-    let unsub = () => {}
-
-    const colScrollRef = ref<HTMLDivElement | null>(null)
-    let colObserver: ResizeObserver | null = null
-
-    const sortable = createSortable()
-    const sortableState = shallowRef(sortable.getState())
-    let unsubSortable = () => {}
-    let dragRects: SortableRect[] = []
-
-    const virtualizer = createVirtualizer({
-      count: state.value.rows.length,
-      estimateSize: props.rowHeight,
-      viewportSize: props.maxHeight,
-      getItemKey: (i) => String(props.store.rowKeyOf(state.value.rows[i]!)),
-    })
-    const vState = shallowRef(virtualizer.getState())
-    let unsubVirtual = () => {}
-
-    const onHeaderPointerDown = (key: string) => (e: PointerEvent) => {
-      if (!props.columnReorder || e.pointerType === 'mouse') return
-      try {
-        ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
-      } catch {
-        /* ignore */
-      }
-      sortable.press(key, e.clientX, e.clientY)
-    }
-    const onHeaderPointerMove = (key: string) => (e: PointerEvent) => {
-      if (sortable.tryStart(e.clientX, e.clientY)) {
-        const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-pro-table]')
-        dragRects = collectRects(root, 'data-iris-col-key')
-      }
-      if (!sortable.isActive(key)) return
-      sortable.moveOver({ x: e.clientX, y: e.clientY }, dragRects)
-    }
-    const onHeaderPointerUp = (key: string) => () => {
-      if (!sortable.isActive(key)) {
-        sortable.cancel()
-        return
-      }
-      const { activeId, overId } = sortable.end()
-      if (activeId && overId && activeId !== overId) props.store.reorderColumns(activeId, overId)
-    }
-    const onHeaderPointerCancel = () => () => {
-      sortable.cancel()
-    }
-
-    onMounted(() => {
-      unsub = props.store.subscribe((s) => {
-        state.value = s
-        if (s.editing) {
-          const row = s.rows.find((r) => props.store.rowKeyOf(r) === s.editing!.rowKey)
-          const col = props.store.visibleColumns().find((c) => c.key === s.editing!.columnKey)
-          if (row && col) draft.value = String(props.store.cellValue(row, col) ?? '')
-        }
-      })
-      unsubSortable = sortable.subscribe(() => {
-        sortableState.value = sortable.getState()
-      })
-      unsubVirtual = virtualizer.subscribe((s) => {
-        vState.value = s
-      })
-      if (props.columnVirtualized) {
-        const el = colScrollRef.value
-        if (el) {
-          props.store.setColumnViewportWidth(el.clientWidth)
-          colObserver = new ResizeObserver((entries) => {
-            for (const entry of entries) {
-              props.store.setColumnViewportWidth(entry.contentRect.width)
-            }
-          })
-          colObserver.observe(el)
-        }
-      }
-    })
-    onUnmounted(() => {
-      unsub()
-      unsubSortable()
-      unsubVirtual()
-      colObserver?.disconnect()
-      colObserver = null
-    })
-
-    watch(
-      () => state.value.rows.length,
-      (len) => virtualizer.setCount(len),
-    )
-    watch(
-      () => props.maxHeight,
-      (h) => virtualizer.setViewportSize(h),
-    )
-
-    const sortIndicator = (key: string): string => {
-      const sort = state.value.sort
-      return sort?.key === key ? (sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
-    }
-    const ariaSort = (c: ProTableColumn): 'ascending' | 'descending' | 'none' | undefined => {
-      const sort = state.value.sort
-      return sort?.key === c.key
-        ? sort.direction === 'asc'
-          ? 'ascending'
-          : 'descending'
-        : c.sortable
-          ? 'none'
-          : undefined
-    }
+    const {
+      state,
+      draft,
+      colScrollRef,
+      sortableState,
+      virtualizer,
+      vState,
+      onHeaderPointerDown,
+      onHeaderPointerMove,
+      onHeaderPointerUp,
+      onHeaderPointerCancel,
+    } = useProTableRuntime(props)
 
     return () => {
       const columns = props.store.visibleColumns()
@@ -192,7 +78,7 @@ export const IrisProTable = defineComponent({
                     key: c.key,
                     scope: 'col',
                     'data-iris-col-key': c.key,
-                    'aria-sort': ariaSort(c),
+                    'aria-sort': proTableAriaSort(state.value.sort, c),
                     tabindex: c.sortable ? 0 : undefined,
                     style: {
                       textAlign: c.align,
@@ -203,7 +89,7 @@ export const IrisProTable = defineComponent({
                         sortableState.value.activeId &&
                         sortableState.value.overId === c.key &&
                         sortableState.value.activeId !== c.key
-                          ? '2px solid var(--iris-color-primary, #2563eb)'
+                          ? '2px solid var(--iris-primary, #2563eb)'
                           : undefined,
                       outlineOffset: '-2px',
                       ...pinnedStyle(c),
@@ -255,7 +141,11 @@ export const IrisProTable = defineComponent({
               isLeaf
                 ? [
                     c.title,
-                    h('span', { 'aria-hidden': 'true' }, sortIndicator(c.key)),
+                    h(
+                      'span',
+                      { 'aria-hidden': 'true' },
+                      proTableSortIndicator(state.value.sort, c.key),
+                    ),
                     ...((c.resizable ?? typeof c.width === 'number')
                       ? [
                           h('span', {
@@ -263,7 +153,7 @@ export const IrisProTable = defineComponent({
                             style: {
                               position: 'absolute',
                               top: 0,
-                              right: 0,
+                              insetInlineEnd: 0,
                               bottom: 0,
                               width: '4px',
                               cursor: 'col-resize',
@@ -341,7 +231,7 @@ export const IrisProTable = defineComponent({
                 'aria-expanded': treeRow.expanded ? 'true' : 'false',
                 'aria-label': treeRow.expanded ? 'Collapse row' : 'Expand row',
                 style:
-                  'cursor:pointer;user-select:none;margin-right:4px;display:inline-block;width:16px;text-align:center;',
+                  'cursor:pointer;user-select:none;margin-inline-end:4px;display:inline-block;width:16px;text-align:center;',
                 onClick: () => props.store.toggleExpand(key),
                 onKeydown: (e: KeyboardEvent) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -365,7 +255,7 @@ export const IrisProTable = defineComponent({
           }),
         )
         return h('tr', { key, 'data-selected': props.store.isSelected(key) ? '' : undefined }, [
-          h('td', { style: { paddingLeft: `${depth * 24}px` } }, checkboxChildren),
+          h('td', { style: { paddingInlineStart: `${depth * 24}px` } }, checkboxChildren),
           ...renderColumns.map((c) => {
             const editing =
               state.value.editing?.rowKey === key && state.value.editing?.columnKey === c.key
@@ -444,7 +334,7 @@ export const IrisProTable = defineComponent({
                     {
                       key: k,
                       style:
-                        'display:inline-flex;align-items:center;gap:0.25rem;padding:0.125rem 0.5rem;background:var(--iris-chip-bg,var(--iris-surface-alt,#f3f4f6));border-radius:9999px;',
+                        'display:inline-flex;align-items:center;gap:0.25rem;padding:0.125rem 0.5rem;background:var(--iris-pro-table-chip-bg);border-radius:9999px;',
                     },
                     [
                       `${title}: "${state.value.filters[k]}"`,
@@ -476,7 +366,7 @@ export const IrisProTable = defineComponent({
 
       const tableEl = h(
         'table',
-        { style: colOffset > 0 ? { marginLeft: -colOffset } : undefined },
+        { style: colOffset > 0 ? { marginInlineStart: -colOffset } : undefined },
         [
           h('thead', [...headerRows, filterRow ? filterRow : null]),
           h('tbody', bodyRows),
@@ -488,7 +378,7 @@ export const IrisProTable = defineComponent({
                     ...renderColumns.map((c) =>
                       h(
                         'td',
-                        { key: c.key, style: { fontWeight: 600, textAlign: c.align ?? 'right' } },
+                        { key: c.key, style: { fontWeight: 600, textAlign: c.align ?? 'end' } },
                         c.key in state.value.summaryValues
                           ? String(state.value.summaryValues[c.key])
                           : '',

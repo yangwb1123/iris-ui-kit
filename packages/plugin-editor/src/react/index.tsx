@@ -1,7 +1,25 @@
 import * as React from 'react'
-import { createEditor, type EditorHandle, type EditorLanguage } from '../core'
+import { PluginStoreContext } from '@iris-ui-kit/react/provider'
+import {
+  createEditor,
+  resolveEditorSettings,
+  type EditorHandle,
+  type EditorLanguage,
+  type EditorSettingsStore,
+} from '../core'
 
-export type { EditorLanguage } from '../core'
+export {
+  createEditorPlugin,
+  createEditorSettingsStore,
+  editorPlugin,
+  type EditorLanguage,
+  type EditorSettings,
+  type EditorSettingsStore,
+} from '../core'
+
+const DEFAULT_SETTINGS = resolveEditorSettings()
+const subscribeToNothing = () => () => {}
+const getDefaultSettings = () => DEFAULT_SETTINGS
 
 export interface IrisCodeEditorProps {
   /** Controlled document text. */
@@ -10,6 +28,8 @@ export interface IrisCodeEditorProps {
   defaultValue?: string
   /** Syntax-highlighting language. Default `'plain'`. */
   language?: EditorLanguage
+  /** Tab width. Defaults to the editor Provider setting, then `2`. */
+  tabSize?: number
   /** Render read-only (non-editable). Default `false`. */
   readOnly?: boolean
   /** Enable autocompletion popup. Default `true`. */
@@ -29,7 +49,8 @@ export interface IrisCodeEditorProps {
 export function IrisCodeEditor({
   value,
   defaultValue,
-  language = 'plain',
+  language,
+  tabSize,
   readOnly = false,
   completions,
   base,
@@ -37,6 +58,16 @@ export function IrisCodeEditor({
   className,
   style,
 }: IrisCodeEditorProps) {
+  const pluginContext = React.useContext(PluginStoreContext)
+  const settingsStore = pluginContext?.stores.get('editor') as EditorSettingsStore | undefined
+  const settings = React.useSyncExternalStore(
+    settingsStore?.subscribe ?? subscribeToNothing,
+    settingsStore?.getState ?? getDefaultSettings,
+    settingsStore?.getState ?? getDefaultSettings,
+  )
+  const activeLanguage = language ?? settings.defaultLanguage
+  const activeTabSize = tabSize ?? settings.tabSize
+
   const hostRef = React.useRef<HTMLDivElement | null>(null)
   const handleRef = React.useRef<EditorHandle | null>(null)
   const onChangeRef = React.useRef(onChange)
@@ -47,7 +78,8 @@ export function IrisCodeEditor({
     const handle = createEditor({
       parent: hostRef.current,
       doc: value ?? defaultValue ?? '',
-      language,
+      language: activeLanguage,
+      tabSize: activeTabSize,
       readOnly,
       completions,
       base,
@@ -68,12 +100,25 @@ export function IrisCodeEditor({
   }, [value])
 
   React.useEffect(() => {
-    handleRef.current?.setLanguage(language)
-  }, [language])
+    handleRef.current?.setLanguage(activeLanguage)
+  }, [activeLanguage])
+
+  React.useEffect(() => {
+    handleRef.current?.setTabSize(activeTabSize)
+  }, [activeTabSize])
 
   React.useEffect(() => {
     handleRef.current?.setReadOnly(readOnly)
   }, [readOnly])
 
-  return <div ref={hostRef} data-iris-code-editor="" className={className} style={style} />
+  return (
+    <div
+      ref={hostRef}
+      data-iris-code-editor=""
+      data-language={activeLanguage}
+      data-tab-size={activeTabSize}
+      className={className}
+      style={style}
+    />
+  )
 }

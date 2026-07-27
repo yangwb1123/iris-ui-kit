@@ -72,6 +72,15 @@ describe('IrisMarkdown (react)', () => {
     expect(container.textContent).toContain('Safe text')
   })
 
+  it('renders allowlisted raw tags as elements and encoded tags as inert text', () => {
+    const { container } = render(
+      <IrisMarkdown content={'<mark>safe</mark> &lt;script&gt;not markup&lt;/script&gt;'} />,
+    )
+    expect(container.querySelector('mark')?.textContent).toBe('safe')
+    expect(container.querySelector('script')).toBeNull()
+    expect(container.textContent).toContain('<script>not markup</script>')
+  })
+
   it('accepts a className prop', () => {
     const { container } = render(<IrisMarkdown content="Hi" className="prose" />)
     expect(container.querySelector('.prose')).toBeTruthy()

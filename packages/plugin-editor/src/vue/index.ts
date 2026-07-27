@@ -1,7 +1,31 @@
-import { defineComponent, h, onBeforeUnmount, onMounted, ref, watch, type PropType } from 'vue'
-import { createEditor, type EditorHandle, type EditorLanguage } from '../core'
+import {
+  defineComponent,
+  h,
+  inject,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch,
+  type PropType,
+} from 'vue'
+import { PluginStoreContextKey } from '@iris-ui-kit/vue/provider'
+import {
+  createEditor,
+  resolveEditorSettings,
+  type EditorHandle,
+  type EditorLanguage,
+  type EditorSettingsStore,
+} from '../core'
 
-export type { EditorLanguage } from '../core'
+export {
+  createEditorPlugin,
+  createEditorSettingsStore,
+  editorPlugin,
+  type EditorLanguage,
+  type EditorSettings,
+  type EditorSettingsStore,
+} from '../core'
 
 /**
  * CodeMirror 6 code editor for Vue. Authored as a render function (matching the
@@ -12,7 +36,8 @@ export const IrisCodeEditor = defineComponent({
   props: {
     value: { type: String as PropType<string | undefined>, default: undefined },
     defaultValue: { type: String, default: '' },
-    language: { type: String as PropType<EditorLanguage>, default: 'plain' },
+    language: { type: String as PropType<EditorLanguage | undefined>, default: undefined },
+    tabSize: { type: Number, default: undefined },
     readOnly: { type: Boolean, default: false },
     completions: { type: Boolean, default: undefined },
     base: { type: String, default: undefined },
@@ -22,6 +47,15 @@ export const IrisCodeEditor = defineComponent({
     change: (_value: string) => true,
   },
   setup(props, { emit }) {
+    const pluginContext = inject(PluginStoreContextKey, null)
+    const settingsStore = pluginContext?.stores.get('editor') as EditorSettingsStore | undefined
+    const settings = shallowRef(settingsStore?.getState() ?? resolveEditorSettings())
+    const unsubscribeSettings = settingsStore?.subscribe((next) => {
+      settings.value = next
+    })
+    const activeLanguage = () => props.language ?? settings.value.defaultLanguage
+    const activeTabSize = () => props.tabSize ?? settings.value.tabSize
+
     const host = ref<HTMLDivElement | null>(null)
     let handle: EditorHandle | null = null
 
@@ -30,7 +64,8 @@ export const IrisCodeEditor = defineComponent({
       handle = createEditor({
         parent: host.value,
         doc: props.value ?? props.defaultValue,
-        language: props.language,
+        language: activeLanguage(),
+        tabSize: activeTabSize(),
         readOnly: props.readOnly,
         completions: props.completions,
         base: props.base,
@@ -44,6 +79,7 @@ export const IrisCodeEditor = defineComponent({
     onBeforeUnmount(() => {
       handle?.destroy()
       handle = null
+      unsubscribeSettings?.()
     })
 
     watch(
@@ -52,15 +88,19 @@ export const IrisCodeEditor = defineComponent({
         if (v !== undefined && handle && handle.getValue() !== v) handle.setValue(v)
       },
     )
-    watch(
-      () => props.language,
-      (l) => handle?.setLanguage(l),
-    )
+    watch(activeLanguage, (l) => handle?.setLanguage(l))
+    watch(activeTabSize, (size) => handle?.setTabSize(size))
     watch(
       () => props.readOnly,
       (r) => handle?.setReadOnly(r),
     )
 
-    return () => h('div', { ref: host, 'data-iris-code-editor': '' })
+    return () =>
+      h('div', {
+        ref: host,
+        'data-iris-code-editor': '',
+        'data-language': activeLanguage(),
+        'data-tab-size': activeTabSize(),
+      })
   },
 })

@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
 import { runPlugins } from '@iris-ui-kit/core'
-import { createDashboard, dashboardPlugin, dashboardTokens, type DashboardConfig } from './index'
+import {
+  createDashboard,
+  dashboardContentKey,
+  dashboardPlugin,
+  dashboardTokens,
+  type DashboardConfig,
+} from './index'
 
 const baseConfig = (): DashboardConfig => ({
   widgets: [
@@ -116,6 +122,27 @@ describe('createDashboard core', () => {
     // Original config still has w1 at col=1,row=1
     expect(cfg.widgets[0]!.col).toBe(1)
     expect(cfg.widgets[0]!.row).toBe(1)
+  })
+})
+
+describe('dashboardContentKey', () => {
+  const widget = {
+    id: 'sales',
+    title: 'Sales',
+    col: 1,
+    row: 1,
+    colSpan: 1,
+    rowSpan: 1,
+  }
+
+  it('uses an explicit safe content key, falling back to a safe widget id', () => {
+    expect(dashboardContentKey({ ...widget, contentKey: 'sales-chart' })).toBe('sales-chart')
+    expect(dashboardContentKey(widget)).toBe('sales')
+  })
+
+  it('rejects identifiers that are unsafe as framework mapping keys', () => {
+    expect(dashboardContentKey({ ...widget, contentKey: '<script>' })).toBeUndefined()
+    expect(dashboardContentKey({ ...widget, id: 'bad.key' })).toBeUndefined()
   })
 })
 

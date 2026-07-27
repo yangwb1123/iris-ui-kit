@@ -41,4 +41,26 @@ describe('IrisNotificationCenter (vue)', () => {
 
     wrapper.unmount()
   })
+
+  it('uses host-localized action and accessibility labels', () => {
+    const center = createNotificationCenter({ initial: [{ title: 'A' }] })
+    const wrapper = mount(IrisNotificationCenter, {
+      props: {
+        center,
+        markAllReadLabel: 'Alles lesen',
+        clearLabel: 'Leeren',
+        dismissLabel: 'Schließen',
+        unreadLabel: '{n} ungelesen',
+      },
+    })
+    expect(wrapper.find('[data-iris-notifications-mark-all]').text()).toBe('Alles lesen')
+    expect(wrapper.find('[data-iris-notifications-clear]').text()).toBe('Leeren')
+    expect(wrapper.find('[data-iris-notification-dismiss]').attributes('aria-label')).toBe(
+      'Schließen',
+    )
+    expect(wrapper.find('[data-iris-notifications-badge]').attributes('aria-label')).toBe(
+      '1 ungelesen',
+    )
+    wrapper.unmount()
+  })
 })

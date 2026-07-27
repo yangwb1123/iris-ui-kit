@@ -8,22 +8,47 @@ import {
   type VNode,
 } from 'vue'
 import {
+  defaultQueryBuilderLabels,
   operatorLabels,
+  type CompiledQueryGroup,
   type FilterBuilder,
   type FilterBuilderState,
   type FilterOperator,
   type FilterRule,
-} from '../core'
+  type QueryBuilderLabels,
+  type QueryGroup,
+  type QueryRuleNode,
+  type QueryValidationIssue,
+} from '@iris-ui-kit/plugin-query-builder/core'
 
 export type {
+  CompiledQueryGroup,
+  CompiledQueryNode,
+  CompiledQueryRule,
   FilterBuilder,
   FilterBuilderConfig,
   QueryColumn,
+  QueryCombinator,
+  QueryGroup,
+  QueryGroupInput,
+  QueryNode,
+  QueryNodeInput,
   QueryRule,
+  QueryRuleInput,
+  QueryRuleNode,
+  QueryBuilderLabels,
+  QueryValidationCode,
+  QueryValidationIssue,
+  QueryValidationResult,
   FilterRule,
   FilterOperator,
-} from '../core'
-export { createFilterBuilder, queryBuilderPlugin, operatorsByType, operatorLabels } from '../core'
+} from '@iris-ui-kit/plugin-query-builder/core'
+export {
+  createFilterBuilder,
+  queryBuilderPlugin,
+  operatorsByType,
+  operatorLabels,
+} from '@iris-ui-kit/plugin-query-builder/core'
 
 /**
  * Visual query builder for Vue (render-function authored to match the
@@ -43,8 +68,16 @@ export const IrisQueryBuilder = defineComponent({
       type: Function as PropType<(rules: FilterRule[]) => void>,
       default: undefined,
     },
+    onQueryChange: {
+      type: Function as PropType<(query: CompiledQueryGroup) => void>,
+      default: undefined,
+    },
     /** Label for the add-rule button. Default `'Add rule'`. */
-    addLabel: { type: String, default: 'Add rule' },
+    addLabel: { type: String, default: undefined },
+    labels: {
+      type: Object as PropType<Partial<QueryBuilderLabels>>,
+      default: undefined,
+    },
     className: { type: String as PropType<string | undefined>, default: undefined },
   },
   setup(props) {
@@ -56,70 +89,169 @@ export const IrisQueryBuilder = defineComponent({
       unsub = builder.subscribe((s) => {
         state.value = s
         props.onChange?.(builder.toFilterRules())
+        props.onQueryChange?.(builder.toQuery())
       })
     })
     onScopeDispose(() => unsub())
 
     return () => {
-      const ruleNodes: VNode[] = state.value.rules.map((rule) =>
-        h('div', { key: rule.id, 'data-iris-query-rule': '' }, [
+      const copy: QueryBuilderLabels = {
+        ...defaultQueryBuilderLabels,
+        ...props.labels,
+        ...(props.addLabel === undefined ? {} : { addRule: props.addLabel }),
+      }
+      const issues = builder.validate().issues
+      const issuesFor = (id: string): QueryValidationIssue[] =>
+        issues.filter((issue) => issue.nodeId === id)
+
+      const renderRule = (rule: QueryRuleNode): VNode => {
+        const ruleIssues = issuesFor(rule.id)
+        const invalid = ruleIssues.length > 0
+        const errorId = `${rule.id}-error`
+        return h('div', { key: rule.id, 'data-iris-query-rule': '', 'data-node-id': rule.id }, [
           h(
             'select',
             {
               'data-iris-query-column': '',
               value: rule.key,
-              'aria-label': 'Column',
-              onChange: (e: Event) =>
-                builder.updateRule(rule.id, { key: (e.target as HTMLSelectElement).value }),
+              'aria-label': copy.column,
+              'aria-invalid': invalid ? 'true' : undefined,
+              'aria-describedby': invalid ? errorId : undefined,
+              onChange: (event: Event) =>
+                builder.updateRule(rule.id, {
+                  key: (event.target as HTMLSelectElement).value,
+                }),
             },
-            builder.columns.map((c) => h('option', { key: c.key, value: c.key }, c.label)),
+            builder.columns.map((column) =>
+              h('option', { key: column.key, value: column.key }, column.label),
+            ),
           ),
           h(
             'select',
             {
               'data-iris-query-operator': '',
               value: rule.operator,
-              'aria-label': 'Operator',
-              onChange: (e: Event) =>
+              'aria-label': copy.operator,
+              'aria-invalid': invalid ? 'true' : undefined,
+              'aria-describedby': invalid ? errorId : undefined,
+              onChange: (event: Event) =>
                 builder.updateRule(rule.id, {
-                  operator: (e.target as HTMLSelectElement).value as FilterOperator,
+                  operator: (event.target as HTMLSelectElement).value as FilterOperator,
                 }),
             },
             builder
               .operatorsFor(rule.key)
-              .map((op) => h('option', { key: op, value: op }, operatorLabels[op])),
+              .map((operator) =>
+                h('option', { key: operator, value: operator }, operatorLabels[operator]),
+              ),
           ),
           h('input', {
             'data-iris-query-value': '',
             value: rule.value,
-            'aria-label': 'Value',
-            onInput: (e: Event) =>
-              builder.updateRule(rule.id, { value: (e.target as HTMLInputElement).value }),
+            'aria-label': copy.value,
+            'aria-invalid': invalid ? 'true' : undefined,
+            'aria-describedby': invalid ? errorId : undefined,
+            onInput: (event: Event) =>
+              builder.updateRule(rule.id, {
+                value: (event.target as HTMLInputElement).value,
+              }),
           }),
           h(
             'button',
             {
               type: 'button',
               'data-iris-query-remove': '',
-              'aria-label': 'Remove rule',
+              'aria-label': copy.removeRule,
               onClick: () => builder.removeRule(rule.id),
             },
             '×',
           ),
-        ]),
-      )
+          invalid
+            ? h(
+                'span',
+                { id: errorId, 'data-iris-query-error': '', role: 'alert' },
+                ruleIssues.map((issue) => issue.message).join('. '),
+              )
+            : null,
+        ])
+      }
+
+      const renderGroup = (group: QueryGroup, depth: number, root = false): VNode =>
+        h(
+          'fieldset',
+          {
+            key: group.id,
+            'data-iris-query-group': '',
+            'data-group-id': group.id,
+            'data-depth': depth,
+          },
+          [
+            h('legend', root ? copy.rootGroup : copy.nestedGroup),
+            h('label', [
+              h('span', copy.combinator),
+              h(
+                'select',
+                {
+                  'data-iris-query-combinator': '',
+                  value: group.combinator,
+                  'aria-label': `${copy.combinator}: ${root ? copy.rootGroup : copy.nestedGroup}`,
+                  onChange: (event: Event) =>
+                    builder.updateGroup(group.id, {
+                      combinator: (event.target as HTMLSelectElement)
+                        .value as QueryGroup['combinator'],
+                    }),
+                },
+                [
+                  h('option', { value: 'and' }, copy.matchAll),
+                  h('option', { value: 'or' }, copy.matchAny),
+                ],
+              ),
+            ]),
+            h(
+              'div',
+              { 'data-iris-query-children': '' },
+              group.children.map((node) =>
+                node.type === 'group' ? renderGroup(node, depth + 1) : renderRule(node),
+              ),
+            ),
+            h('div', { 'data-iris-query-group-actions': '' }, [
+              h(
+                'button',
+                {
+                  type: 'button',
+                  'data-iris-query-add-rule': '',
+                  ...(root ? { 'data-iris-query-add': '' } : {}),
+                  onClick: () => builder.addRule(group.id),
+                },
+                copy.addRule,
+              ),
+              h(
+                'button',
+                {
+                  type: 'button',
+                  'data-iris-query-add-group': '',
+                  onClick: () => builder.addGroup(group.id),
+                },
+                copy.addGroup,
+              ),
+              root
+                ? null
+                : h(
+                    'button',
+                    {
+                      type: 'button',
+                      'data-iris-query-remove-group': '',
+                      'aria-label': copy.removeGroup,
+                      onClick: () => builder.removeGroup(group.id),
+                    },
+                    copy.removeGroup,
+                  ),
+            ]),
+          ],
+        )
 
       return h('div', { 'data-iris-query-builder': '', class: props.className }, [
-        ...ruleNodes,
-        h(
-          'button',
-          {
-            type: 'button',
-            'data-iris-query-add': '',
-            onClick: () => builder.addRule(),
-          },
-          props.addLabel,
-        ),
+        renderGroup(state.value.root, 0, true),
       ])
     }
   },

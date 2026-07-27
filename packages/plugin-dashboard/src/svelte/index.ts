@@ -1,2 +1,8 @@
 export { default as IrisDashboard } from './IrisDashboard.svelte'
-export type { DashboardWidget, DashboardConfig, DashboardState, DashboardStore } from '../core'
+export {
+  dashboardContentKey,
+  type DashboardWidget,
+  type DashboardConfig,
+  type DashboardState,
+  type DashboardStore,
+} from '../core'

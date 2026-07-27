@@ -1,52 +1,24 @@
 import * as React from 'react'
-import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui-kit/core'
+import { createVirtualizer } from '@iris-ui-kit/core'
 import {
-  collectRects,
+  createProTableColumnReorder,
   proTableLabel,
   applyColumnWindow,
+  pinnedStyle,
+  proTableAriaSort,
+  proTableSortIndicator,
   type ProTableStore,
-  type ProTableLabels,
+  type ProTableViewOptions,
 } from '../core'
+import { useColumnViewport } from './useColumnViewport'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
 
-export interface IrisProTableProps<Row extends Record<string, unknown>> {
+export interface IrisProTableProps<
+  Row extends Record<string, unknown>,
+> extends ProTableViewOptions {
   store: ProTableStore<Row>
   className?: string
-  /**
-   * Host-overridable UI strings (aria-labels + pager). Pass localized values
-   * (e.g. from the adapter's `useI18n().t`) — plugins can't reach adapter i18n
-   * directly. Defaults to English.
-   */
-  labels?: ProTableLabels
-  /**
-   * Enable drag-to-reorder column headers. When `true` every column `<th>`
-   * becomes draggable and drop onto another header calls `store.reorderColumns`.
-   * Default `false` — existing layouts are unchanged.
-   */
-  columnReorder?: boolean
-  /**
-   * Opt-in row virtualization. When `true` the body region becomes a scroll
-   * container and only the visible window of rows is rendered (via core's
-   * `createVirtualizer`), so a 100k-row table renders a handful of `<tr>` rather
-   * than every row. Default `false` — behavior is UNCHANGED (all rows render).
-   */
-  virtualized?: boolean
-  /** Estimated row height in px (drives the virtualizer). Default `40`. */
-  rowHeight?: number
-  /** Scroll viewport height in px when virtualized. Default `400`. */
-  maxHeight?: number
-  /**
-   * Opt-in column virtualization. When `true` columns outside the horizontal
-   * viewport are not rendered, reducing DOM for very wide tables. The table
-   * container becomes horizontally scrollable. Default `false`.
-   */
-  columnVirtualized?: boolean
-}
-
-function pinnedStyle(column: { pinned?: 'left' | 'right' }): React.CSSProperties | undefined {
-  if (!column.pinned) return undefined
-  return { position: 'sticky', [column.pinned]: 0, zIndex: 1 }
 }
 
 /**
@@ -82,64 +54,29 @@ export function IrisProTable<Row extends Record<string, unknown>>({
   ])
   const { visible: displayColumns, offsetBefore: colOffset } = applyColumnWindow(columns, colWindow)
   const renderColumns = columnVirtualized && colWindow ? displayColumns : columns
-  const scrollRef = React.useRef<HTMLDivElement>(null)
-  React.useEffect(() => {
-    if (!columnVirtualized) return
-    const el = scrollRef.current
-    if (!el) return
-    // Set initial viewport width
-    store.setColumnViewportWidth(el.clientWidth)
-    const ro = new ResizeObserver(([entry]) => {
-      store.setColumnViewportWidth(entry.contentRect.width)
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [columnVirtualized, store])
+  const scrollRef = useColumnViewport(columnVirtualized, store)
 
   // Drag-to-reorder: track the key of the column being dragged in a ref so we
   // don't need React state (no re-render on dragstart/dragover).
   const dragKey = React.useRef<string | null>(null)
 
-  // Touch/pen column reorder via the shared core controller. Native HTML5 DnD
-  // (the `draggable` <th>) never fires on touch, so the pointer path drives the
-  // reorder there; it is gated on `pointerType !== 'mouse'` so the mouse flow is
-  // unchanged. A bare tap (down→up, no move) leaves overId null → no reorder,
-  // so header-tap sorting still works.
-  const sortable = React.useRef(createSortable()).current
+  const pointerReorder = React.useRef(createProTableColumnReorder()).current
+  const sortable = pointerReorder.sortable
   const sortableState = React.useSyncExternalStore(
     sortable.subscribe,
     sortable.getState,
     sortable.getState,
   )
 
-  // Header rects, measured ONCE when a drag actually starts (not per move).
-  const dragRects = React.useRef<SortableRect[]>([])
-
   const onHeaderPointerDown = (key: string) => (e: React.PointerEvent<HTMLElement>) => {
-    if (!columnReorder || e.pointerType === 'mouse') return
-    try {
-      e.currentTarget.setPointerCapture?.(e.pointerId)
-    } catch {
-      /* ignore */
-    }
-    // Record a pending press — no store write, so a tap (header sort) never re-renders.
-    sortable.press(key, e.clientX, e.clientY)
+    pointerReorder.pointerDown(columnReorder, key, e)
   }
   const onHeaderPointerMove = (key: string) => (e: React.PointerEvent<HTMLElement>) => {
-    if (sortable.tryStart(e.clientX, e.clientY)) {
-      const root = e.currentTarget.closest<HTMLElement>('[data-iris-pro-table]')
-      dragRects.current = collectRects(root, 'data-iris-col-key')
-    }
-    if (!sortable.isActive(key)) return
-    sortable.moveOver({ x: e.clientX, y: e.clientY }, dragRects.current)
+    pointerReorder.pointerMove(key, e)
   }
   const onHeaderPointerUp = (key: string) => () => {
-    if (!sortable.isActive(key)) {
-      sortable.cancel() // clear a pending tap (idle → no re-render); header-tap sort still works
-      return
-    }
-    const { activeId, overId } = sortable.end()
-    if (activeId && overId && activeId !== overId) store.reorderColumns(activeId, overId)
+    const move = pointerReorder.pointerUp(key)
+    if (move) store.reorderColumns(move.from, move.to)
   }
 
   const [draft, setDraft] = React.useState('')
@@ -203,7 +140,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
     const depth = treeRow?.depth ?? 0
     return (
       <tr key={key} data-selected={store.isSelected(key) ? '' : undefined}>
-        <td style={{ paddingLeft: `${depth * 24}px` }}>
+        <td style={{ paddingInlineStart: `${depth * 24}px` }}>
           {treeRow?.hasChildren ? (
             <span
               role="button"
@@ -213,7 +150,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
               style={{
                 cursor: 'pointer',
                 userSelect: 'none',
-                marginRight: 4,
+                marginInlineEnd: 4,
                 display: 'inline-block',
                 width: 16,
                 textAlign: 'center',
@@ -295,22 +232,8 @@ export function IrisProTable<Row extends Record<string, unknown>>({
     <tbody>{state.rows.map((row) => renderRow(row))}</tbody>
   )
 
-  const sortIndicator = (key: string) =>
-    state.sort?.key === key ? (state.sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
-  // WAI-ARIA grid sort semantics: aria-sort on the header conveys state to
-  // screen readers (the visual ▲/▼ is decorative/aria-hidden), and sortable
-  // headers are keyboard-operable (Enter/Space) — mirrors the base IrisTable.
-  const ariaSort = (c: (typeof columns)[number]): React.AriaAttributes['aria-sort'] =>
-    state.sort?.key === c.key
-      ? state.sort.direction === 'asc'
-        ? 'ascending'
-        : 'descending'
-      : c.sortable
-        ? 'none'
-        : undefined
-
   const tableEl = (
-    <table style={colOffset > 0 ? { marginLeft: -colOffset } : undefined}>
+    <table style={colOffset > 0 ? { marginInlineStart: -colOffset } : undefined}>
       <thead>
         {headerMat.map((row, ri) => (
           <tr key={ri}>
@@ -333,7 +256,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
                   key={col.key}
                   scope="col"
                   data-iris-col-key={col.key}
-                  aria-sort={ariaSort(col)}
+                  aria-sort={proTableAriaSort(state.sort, col)}
                   tabIndex={col.sortable ? 0 : undefined}
                   style={{
                     textAlign: col.align,
@@ -344,7 +267,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
                       sortableState.activeId &&
                       sortableState.overId === col.key &&
                       sortableState.activeId !== col.key
-                        ? '2px solid var(--iris-color-primary, #2563eb)'
+                        ? '2px solid var(--iris-primary, #2563eb)'
                         : undefined,
                     outlineOffset: -2,
                     ...pinnedStyle(col),
@@ -395,14 +318,14 @@ export function IrisProTable<Row extends Record<string, unknown>>({
                   }
                 >
                   {col.title}
-                  <span aria-hidden="true">{sortIndicator(col.key)}</span>
+                  <span aria-hidden="true">{proTableSortIndicator(state.sort, col.key)}</span>
                   {(col.resizable ?? typeof col.width === 'number') && (
                     <span
                       data-iris-col-resize-handle
                       style={{
                         position: 'absolute',
                         top: 0,
-                        right: 0,
+                        insetInlineEnd: 0,
                         bottom: 0,
                         width: 4,
                         cursor: 'col-resize',
@@ -467,7 +390,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
           <tr>
             <th scope="row">{labels?.summaryLabel ?? ''}</th>
             {columns.map((c) => (
-              <td key={c.key} style={{ fontWeight: 600, textAlign: c.align ?? 'right' }}>
+              <td key={c.key} style={{ fontWeight: 600, textAlign: c.align ?? 'end' }}>
                 {c.key in state.summaryValues ? state.summaryValues[c.key] : ''}
               </td>
             ))}
@@ -526,7 +449,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
                     alignItems: 'center',
                     gap: '0.25rem',
                     padding: '0.125rem 0.5rem',
-                    background: 'var(--iris-chip-bg, var(--iris-surface-alt, #f3f4f6))',
+                    background: 'var(--iris-pro-table-chip-bg)',
                     borderRadius: '9999px',
                   }}
                 >

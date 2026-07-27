@@ -118,8 +118,8 @@ export function createCalendar(config: CalendarConfig): CalendarStore {
 
 /** CSS custom properties the event calendar reads; overridable by the host theme. */
 export const calendarTokens: Record<string, string> = {
-  '--iris-cal-today-bg': 'var(--iris-primary, #6366f1)',
-  '--iris-cal-event-bg': 'var(--iris-primary-muted, rgba(99,102,241,0.15))',
+  '--iris-cal-today-bg': 'var(--iris-primary)',
+  '--iris-cal-event-bg': 'var(--iris-primary-subtle)',
   '--iris-cal-grid-gap': '1px',
 }
 

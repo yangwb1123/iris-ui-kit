@@ -1,7 +1,12 @@
 import { defineConfig, type Options } from 'tsup'
-import { solidPlugin } from 'esbuild-plugin-solid'
+import { solidSsrSafeBuild } from '../../scripts/solid-ssr-build.ts'
 
-const IRIS = ['@iris-ui-kit/core']
+const IRIS = [
+  '@iris-ui-kit/core',
+  '@iris-ui-kit/react/provider',
+  '@iris-ui-kit/vue/provider',
+  '@iris-ui-kit/solid/provider',
+]
 const CM = [
   '@codemirror/state',
   '@codemirror/view',
@@ -22,7 +27,7 @@ const main: Options = {
   format: ['esm', 'cjs'],
   dts: true,
   sourcemap: true,
-  clean: true,
+  clean: false,
   treeshake: true,
   target: 'es2022',
   tsconfig: 'tsconfig.json',
@@ -40,7 +45,7 @@ const solid: Options = {
   treeshake: true,
   target: 'es2022',
   tsconfig: 'tsconfig.solid.json',
-  esbuildPlugins: [solidPlugin()],
+  ...solidSsrSafeBuild(),
   external: [...IRIS, ...CM, 'solid-js', 'solid-js/web', 'solid-js/store'],
 }
 

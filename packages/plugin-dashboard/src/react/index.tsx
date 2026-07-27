@@ -1,11 +1,27 @@
 import * as React from 'react'
 import { createSortable, type SortableRect } from '@iris-ui-kit/core'
-import { createDashboard, type DashboardConfig, type DashboardWidget } from '../core'
+import {
+  createDashboard,
+  dashboardContentKey,
+  type DashboardConfig,
+  type DashboardWidget,
+} from '../core'
 
-export type { DashboardWidget, DashboardConfig, DashboardState, DashboardStore } from '../core'
+export {
+  dashboardContentKey,
+  type DashboardWidget,
+  type DashboardConfig,
+  type DashboardState,
+  type DashboardStore,
+} from '../core'
 
 export interface IrisDashboardProps {
   config: DashboardConfig
+  /**
+   * Render a widget body from its safe `contentKey` (or safe widget id).
+   * Framework content stays outside the serializable core schema.
+   */
+  renderWidget?: (contentKey: string, widget: DashboardWidget) => React.ReactNode
   className?: string
   style?: React.CSSProperties
 }
@@ -35,7 +51,7 @@ function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
  * DnD never fires on touch. The pointer path is gated on `pointerType !== 'mouse'`
  * so the mouse flow — and its tests — are unchanged.
  */
-export function IrisDashboard({ config, className, style }: IrisDashboardProps) {
+export function IrisDashboard({ config, renderWidget, className, style }: IrisDashboardProps) {
   // Create the store ONCE (it owns all state); reads config at construction only.
   const storeRef = React.useRef<ReturnType<typeof createDashboard> | null>(null)
   if (storeRef.current === null) {
@@ -112,7 +128,7 @@ export function IrisDashboard({ config, className, style }: IrisDashboardProps) 
             // Live drop highlight for the touch/pen pointer path.
             outline:
               sortableState.activeId && sortableState.overId === cellId
-                ? '2px dashed var(--iris-color-primary, #2563eb)'
+                ? '2px dashed var(--iris-primary, #2563eb)'
                 : undefined,
             outlineOffset: -2,
           }}
@@ -148,68 +164,74 @@ export function IrisDashboard({ config, className, style }: IrisDashboardProps) 
       {dropCells}
 
       {/* Widgets positioned by grid-column / grid-row */}
-      {widgets.map((widget: DashboardWidget) => (
-        <div
-          key={widget.id}
-          data-iris-dashboard-widget={widget.id}
-          style={{
-            gridColumn: `${widget.col} / span ${widget.colSpan}`,
-            gridRow: `${widget.row} / span ${widget.rowSpan}`,
-            background: 'var(--iris-dashboard-widget-bg, #fff)',
-            border: '1px solid var(--iris-color-border, #e5e7eb)',
-            borderRadius: 'var(--iris-dashboard-widget-radius, 8px)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            position: 'relative',
-            zIndex: 1,
-          }}
-        >
-          {/* Widget header with drag handle */}
+      {widgets.map((widget: DashboardWidget) => {
+        const contentKey = dashboardContentKey(widget)
+        return (
           <div
-            data-iris-dashboard-widget-header={widget.id}
-            draggable
+            key={widget.id}
+            data-iris-dashboard-widget={widget.id}
             style={{
+              gridColumn: `${widget.col} / span ${widget.colSpan}`,
+              gridRow: `${widget.row} / span ${widget.rowSpan}`,
+              background: 'var(--iris-dashboard-widget-bg, #fff)',
+              border: '1px solid var(--iris-border, #e5e7eb)',
+              borderRadius: 'var(--iris-dashboard-widget-radius, 8px)',
               display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '8px 12px',
-              cursor: 'grab',
-              borderBottom: '1px solid var(--iris-color-border, #e5e7eb)',
-              fontWeight: 600,
-              userSelect: 'none',
-              // Let the pointer path own touch gestures on the drag handle.
-              touchAction: 'none',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              position: 'relative',
+              zIndex: 1,
             }}
-            onDragStart={(e) => {
-              dragWidgetId.current = widget.id
-              if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
-            }}
-            onDragEnd={() => {
-              dragWidgetId.current = null
-            }}
-            onPointerDown={onHeaderPointerDown(widget.id)}
-            onPointerMove={onHeaderPointerMove(widget.id)}
-            onPointerUp={onHeaderPointerUp(widget.id)}
-            onPointerCancel={() => sortable.cancel()}
           >
-            <span
-              data-iris-dashboard-drag-handle=""
-              aria-hidden="true"
-              style={{ fontSize: '1rem', lineHeight: 1, color: 'var(--iris-color-muted, #9ca3af)' }}
+            {/* Widget header with drag handle */}
+            <div
+              data-iris-dashboard-widget-header={widget.id}
+              draggable
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 12px',
+                cursor: 'grab',
+                borderBottom: '1px solid var(--iris-border, #e5e7eb)',
+                fontWeight: 600,
+                userSelect: 'none',
+                // Let the pointer path own touch gestures on the drag handle.
+                touchAction: 'none',
+              }}
+              onDragStart={(e) => {
+                dragWidgetId.current = widget.id
+                if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+              }}
+              onDragEnd={() => {
+                dragWidgetId.current = null
+              }}
+              onPointerDown={onHeaderPointerDown(widget.id)}
+              onPointerMove={onHeaderPointerMove(widget.id)}
+              onPointerUp={onHeaderPointerUp(widget.id)}
+              onPointerCancel={() => sortable.cancel()}
             >
-              ⠿
-            </span>
-            <span data-iris-dashboard-widget-title={widget.id}>{widget.title}</span>
-          </div>
+              <span
+                data-iris-dashboard-drag-handle=""
+                aria-hidden="true"
+                style={{ fontSize: '1rem', lineHeight: 1, color: 'var(--iris-muted, #9ca3af)' }}
+              >
+                ⠿
+              </span>
+              <span data-iris-dashboard-widget-title={widget.id}>{widget.title}</span>
+            </div>
 
-          {/* Widget content area */}
-          <div
-            data-iris-dashboard-widget-content={widget.id}
-            style={{ flex: 1, padding: '12px' }}
-          />
-        </div>
-      ))}
+            {/* Widget content area */}
+            <div
+              data-iris-dashboard-widget-content={widget.id}
+              data-content-key={contentKey}
+              style={{ flex: 1, padding: '12px' }}
+            >
+              {contentKey ? renderWidget?.(contentKey, widget) : null}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

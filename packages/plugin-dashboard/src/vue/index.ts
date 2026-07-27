@@ -8,9 +8,20 @@ import {
   type VNode,
 } from 'vue'
 import { createSortable, type SortableRect } from '@iris-ui-kit/core'
-import { createDashboard, type DashboardConfig, type DashboardWidget } from '../core'
+import {
+  createDashboard,
+  dashboardContentKey,
+  type DashboardConfig,
+  type DashboardWidget,
+} from '../core'
 
-export type { DashboardWidget, DashboardConfig, DashboardState, DashboardStore } from '../core'
+export {
+  dashboardContentKey,
+  type DashboardWidget,
+  type DashboardConfig,
+  type DashboardState,
+  type DashboardStore,
+} from '../core'
 
 /** Collect drop-target rects (id + client rect) for every `[attr]` under `root`. */
 function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
@@ -40,7 +51,7 @@ export const IrisDashboard = defineComponent({
     class: { type: String, default: undefined },
     style: { type: Object as PropType<Record<string, string>>, default: undefined },
   },
-  setup(props) {
+  setup(props, { slots }) {
     const store = createDashboard(props.config)
     const dashboardState = shallowRef(store.getState())
 
@@ -128,7 +139,7 @@ export const IrisDashboard = defineComponent({
                 // Live drop highlight for the touch/pen pointer path.
                 outline:
                   ss.activeId && ss.overId === cellId
-                    ? '2px dashed var(--iris-color-primary, #2563eb)'
+                    ? '2px dashed var(--iris-primary, #2563eb)'
                     : undefined,
                 outlineOffset: '-2px',
               },
@@ -161,7 +172,7 @@ export const IrisDashboard = defineComponent({
               gap: '6px',
               padding: '8px 12px',
               cursor: 'grab',
-              borderBottom: '1px solid var(--iris-color-border, #e5e7eb)',
+              borderBottom: '1px solid var(--iris-border, #e5e7eb)',
               fontWeight: 600,
               userSelect: 'none',
               // Let the pointer path own touch gestures on the drag handle.
@@ -188,7 +199,7 @@ export const IrisDashboard = defineComponent({
                 style: {
                   fontSize: '1rem',
                   lineHeight: '1',
-                  color: 'var(--iris-color-muted, #9ca3af)',
+                  color: 'var(--iris-muted, #9ca3af)',
                 },
               },
               '⠿',
@@ -197,10 +208,17 @@ export const IrisDashboard = defineComponent({
           ],
         )
 
-        const content = h('div', {
-          'data-iris-dashboard-widget-content': widget.id,
-          style: { flex: '1', padding: '12px' },
-        })
+        const contentKey = dashboardContentKey(widget)
+        const renderContent = contentKey ? (slots[contentKey] ?? slots.default) : undefined
+        const content = h(
+          'div',
+          {
+            'data-iris-dashboard-widget-content': widget.id,
+            'data-content-key': contentKey,
+            style: { flex: '1', padding: '12px' },
+          },
+          renderContent?.({ widget, contentKey }),
+        )
 
         return h(
           'div',
@@ -211,7 +229,7 @@ export const IrisDashboard = defineComponent({
               gridColumn: `${widget.col} / span ${widget.colSpan}`,
               gridRow: `${widget.row} / span ${widget.rowSpan}`,
               background: 'var(--iris-dashboard-widget-bg, #fff)',
-              border: '1px solid var(--iris-color-border, #e5e7eb)',
+              border: '1px solid var(--iris-border, #e5e7eb)',
               borderRadius: 'var(--iris-dashboard-widget-radius, 8px)',
               display: 'flex',
               flexDirection: 'column',

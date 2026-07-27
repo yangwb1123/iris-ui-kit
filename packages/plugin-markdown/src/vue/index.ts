@@ -1,13 +1,22 @@
-import { defineComponent, h, type PropType } from 'vue'
-import { markdownToHtml } from '../core'
+import { defineComponent, h, type PropType, type VNodeChild } from 'vue'
+import { markdownToNodes, type MarkdownNode } from '../core'
 
-export { markdownTokens, markdownPlugin } from '../core'
+export {
+  markdownToHtml,
+  markdownToNodes,
+  markdownTokens,
+  markdownPlugin,
+  type MarkdownNode,
+} from '../core'
+
+function renderNode(node: MarkdownNode): VNodeChild {
+  if (node.type === 'text') return node.value
+  return h(node.tag, node.attrs, node.children.map(renderNode))
+}
 
 /**
- * Render Markdown as themed HTML (Vue, render-function authored to match the
- * `@iris-ui-kit/vue` convention). The `content` prop is converted via
- * `markdownToHtml` and bound with `innerHTML` via Vue's `v-html` equivalent
- * in the render function. Themed via CSS custom properties.
+ * Render Markdown as allowlisted Vue VNodes. Core emits structured nodes, so
+ * the renderer never binds an `innerHTML` sink.
  */
 export const IrisMarkdown = defineComponent({
   name: 'IrisMarkdown',
@@ -17,11 +26,14 @@ export const IrisMarkdown = defineComponent({
   },
   setup(props) {
     return () =>
-      h('div', {
-        'data-iris-markdown': '',
-        class: props.class,
-        style: { fontFamily: 'var(--iris-md-font)' },
-        innerHTML: markdownToHtml(props.content),
-      })
+      h(
+        'div',
+        {
+          'data-iris-markdown': '',
+          class: props.class,
+          style: { fontFamily: 'var(--iris-md-font)' },
+        },
+        markdownToNodes(props.content).map(renderNode),
+      )
   },
 })

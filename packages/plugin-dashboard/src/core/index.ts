@@ -11,6 +11,12 @@ import { createStore, createPlugin } from '@iris-ui-kit/core'
 export interface DashboardWidget {
   id: string
   title: string
+  /**
+   * Framework-neutral identifier for this widget's rendered body. It contains
+   * data only — React nodes, Vue slots, Solid render functions, and Svelte
+   * snippets stay in their adapter boundary. Omit to use a safe `id`.
+   */
+  contentKey?: string
   /** Grid column start (1-indexed) */
   col: number
   /** Grid row start (1-indexed) */
@@ -19,6 +25,17 @@ export interface DashboardWidget {
   colSpan: number
   /** Height in grid rows (default 1) */
   rowSpan: number
+}
+
+const SAFE_CONTENT_KEY = /^[A-Za-z][A-Za-z0-9_-]*$/
+
+/**
+ * Resolve the cross-framework content key for a widget. Unsafe identifiers are
+ * ignored so they can never become dynamic slot/snippet/property names.
+ */
+export function dashboardContentKey(widget: DashboardWidget): string | undefined {
+  const key = widget.contentKey ?? widget.id
+  return SAFE_CONTENT_KEY.test(key) ? key : undefined
 }
 
 export interface DashboardConfig {
@@ -94,9 +111,9 @@ export function createDashboard(config: DashboardConfig): DashboardStore {
 
 /** CSS custom properties the dashboard reads; overridable by the host theme. */
 export const dashboardTokens: Record<string, string> = {
-  '--iris-dashboard-gap': 'var(--iris-space-md, 16px)',
-  '--iris-dashboard-widget-bg': 'var(--iris-color-surface, #fff)',
-  '--iris-dashboard-widget-radius': 'var(--iris-radius-md, 8px)',
+  '--iris-dashboard-gap': 'var(--iris-gap-md)',
+  '--iris-dashboard-widget-bg': 'var(--iris-surface)',
+  '--iris-dashboard-widget-radius': 'var(--iris-radius-md)',
 }
 
 /**

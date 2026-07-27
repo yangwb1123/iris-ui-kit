@@ -1,58 +1,25 @@
 import { createSignal, createEffect, createMemo, onCleanup, For, Show, type JSX } from 'solid-js'
-import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui-kit/core'
+import { createVirtualizer } from '@iris-ui-kit/core'
 import {
-  collectRects,
+  createProTableColumnReorder,
   proTableLabel,
   applyColumnWindow,
+  proTableAriaSort,
+  proTableSortIndicator,
   type ProTableStore,
-  type ProTableLabels,
+  type ProTableViewOptions,
 } from '../core'
+import { pinnedStyle } from './style'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
 
-export interface IrisProTableProps<Row extends Record<string, unknown>> {
+export interface IrisProTableProps<
+  Row extends Record<string, unknown>,
+> extends ProTableViewOptions {
   store: ProTableStore<Row>
   class?: string
-  /**
-   * Host-overridable UI strings (aria-labels + pager). Pass localized values
-   * (e.g. from the adapter's `useI18n().t`) — plugins can't reach adapter i18n
-   * directly. Defaults to English.
-   */
-  labels?: ProTableLabels
-  /**
-   * Enable drag-to-reorder column headers. When `true` every column `<th>`
-   * becomes draggable and drop onto another header calls `store.reorderColumns`.
-   * Default `false` — existing layouts are unchanged.
-   */
-  columnReorder?: boolean
-  /**
-   * Opt-in row virtualization. When `true` the body region becomes a scroll
-   * container and only the visible window of rows is rendered (via core's
-   * `createVirtualizer`), so a 100k-row table renders a handful of `<tr>` rather
-   * than every row. Default `false` — behavior is UNCHANGED (all rows render).
-   */
-  virtualized?: boolean
-  /** Estimated row height in px (drives the virtualizer). Default `40`. */
-  rowHeight?: number
-  /** Scroll viewport height in px when virtualized. Default `400`. */
-  maxHeight?: number
-  /**
-   * Opt-in column virtualization. When `true` columns outside the horizontal
-   * viewport are not rendered, reducing DOM for very wide tables. The table
-   * container becomes horizontally scrollable. Default `false`.
-   */
-  columnVirtualized?: boolean
 }
 
-function pinnedStyle(column: { pinned?: 'left' | 'right' }): JSX.CSSProperties | undefined {
-  if (!column.pinned) return undefined
-  return { position: 'sticky', [column.pinned]: '0', 'z-index': 1 }
-}
-
-/**
- * vxe-table-style CRUD data table for SolidJS. Subscribes to the
- * framework-agnostic {@link ProTableStore} via a signal.
- */
 export function IrisProTable<Row extends Record<string, unknown>>(props: IrisProTableProps<Row>) {
   const [state, setState] = createSignal(props.store.getState())
   const [draft, setDraft] = createSignal('')
@@ -77,43 +44,20 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
     return map
   })
 
-  // Touch/pen column reorder via the shared core controller. Native HTML5 DnD
-  // (the `draggable` <th>) never fires on touch, so the pointer path drives the
-  // reorder there; it is gated on `pointerType !== 'mouse'` so the mouse flow is
-  // unchanged. A bare tap (down→up, no move) leaves overId null → no reorder,
-  // so header-tap sorting still works.
-  const sortable = createSortable()
+  const pointerReorder = createProTableColumnReorder()
+  const sortable = pointerReorder.sortable
   const [sortableState, setSortableState] = createSignal(sortable.getState())
   onCleanup(sortable.subscribe(() => setSortableState(sortable.getState())))
-  // Header rects, measured ONCE when a drag actually starts (not per move).
-  // Plain mutable var — no signal needed (rects don't drive rendering).
-  let dragRects: SortableRect[] = []
 
   const onHeaderPointerDown = (key: string) => (e: PointerEvent) => {
-    if (!props.columnReorder || e.pointerType === 'mouse') return
-    try {
-      ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
-    } catch {
-      /* ignore */
-    }
-    // Record a pending press — no store write, so a tap (header sort) never re-renders.
-    sortable.press(key, e.clientX, e.clientY)
+    pointerReorder.pointerDown(!!props.columnReorder, key, e)
   }
   const onHeaderPointerMove = (key: string) => (e: PointerEvent) => {
-    if (sortable.tryStart(e.clientX, e.clientY)) {
-      const root = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-iris-pro-table]')
-      dragRects = collectRects(root, 'data-iris-col-key')
-    }
-    if (!sortable.isActive(key)) return
-    sortable.moveOver({ x: e.clientX, y: e.clientY }, dragRects)
+    pointerReorder.pointerMove(key, e)
   }
   const onHeaderPointerUp = (key: string) => () => {
-    if (!sortable.isActive(key)) {
-      sortable.cancel() // clear a pending tap (idle → no re-render); header-tap sort still works
-      return
-    }
-    const { activeId, overId } = sortable.end()
-    if (activeId && overId && activeId !== overId) props.store.reorderColumns(activeId, overId)
+    const move = pointerReorder.pointerUp(key)
+    if (move) props.store.reorderColumns(move.from, move.to)
   }
 
   const columns = () => props.store.visibleColumns()
@@ -174,26 +118,6 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
   const renderColumns = () =>
     props.columnVirtualized && colWindow() ? displayColumns() : columns()
 
-  const sortIndicator = (key: string): string => {
-    const sort = state().sort
-    return sort?.key === key ? (sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
-  }
-  // WAI-ARIA grid sort semantics: aria-sort on the header conveys state to
-  // screen readers (the visual ▲/▼ is decorative/aria-hidden), and sortable
-  // headers are keyboard-operable (Enter/Space) — mirrors the base IrisTable.
-  const ariaSort = (
-    c: ReturnType<typeof columns>[number],
-  ): 'ascending' | 'descending' | 'none' | undefined => {
-    const sort = state().sort
-    return sort?.key === c.key
-      ? sort.direction === 'asc'
-        ? 'ascending'
-        : 'descending'
-      : c.sortable
-        ? 'none'
-        : undefined
-  }
-
   // +1 for the leading checkbox column.
   const totalColumnCount = () => columns().length + 1
 
@@ -208,7 +132,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
     const expanded = treeRow?.expanded ?? false
     return (
       <tr data-selected={props.store.isSelected(key) ? '' : undefined}>
-        <td style={depth > 0 ? { 'padding-left': `${depth * 24}px` } : undefined}>
+        <td style={depth > 0 ? { 'padding-inline-start': `${depth * 24}px` } : undefined}>
           <Show when={hasChildren}>
             <button
               type="button"
@@ -295,7 +219,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
   )
 
   const tableEl = () => (
-    <table style={colOffset() > 0 ? { 'margin-left': `${-colOffset()}px` } : undefined}>
+    <table style={colOffset() > 0 ? { 'margin-inline-start': `${-colOffset()}px` } : undefined}>
       <thead>
         <For each={matrix()}>
           {(row, rowIdx) => (
@@ -318,7 +242,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                     <th
                       scope="col"
                       data-iris-col-key={isLeaf ? cell.column.key : undefined}
-                      aria-sort={isLeaf ? ariaSort(cell.column) : undefined}
+                      aria-sort={isLeaf ? proTableAriaSort(state().sort, cell.column) : undefined}
                       tabindex={isLeaf && cell.column.sortable ? 0 : undefined}
                       colSpan={cell.colSpan > 1 ? cell.colSpan : undefined}
                       rowSpan={!isLeaf && cell.rowSpan > 0 ? cell.rowSpan : undefined}
@@ -338,7 +262,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                             sortableState().activeId &&
                             sortableState().overId === cell.column.key &&
                             sortableState().activeId !== cell.column.key
-                              ? '2px solid var(--iris-color-primary, #2563eb)'
+                              ? '2px solid var(--iris-primary, #2563eb)'
                               : undefined,
                           'outline-offset': '-2px',
                           ...pinnedStyle(cell.column),
@@ -348,6 +272,16 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                       onClick={
                         isLeaf && cell.column.sortable
                           ? () => props.store.toggleSort(cell.column.key)
+                          : undefined
+                      }
+                      onKeyDown={
+                        isLeaf && cell.column.sortable
+                          ? (e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                props.store.toggleSort(cell.column.key)
+                              }
+                            }
                           : undefined
                       }
                       onPointerDown={isLeaf ? onHeaderPointerDown(cell.column.key) : undefined}
@@ -385,7 +319,9 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                     >
                       {cell.column.title}
                       <Show when={isLeaf}>
-                        <span aria-hidden="true">{sortIndicator(cell.column.key)}</span>
+                        <span aria-hidden="true">
+                          {proTableSortIndicator(state().sort, cell.column.key)}
+                        </span>
                       </Show>
                       <Show
                         when={
@@ -397,7 +333,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                           style={{
                             position: 'absolute',
                             top: 0,
-                            right: 0,
+                            'inset-inline-end': 0,
                             bottom: 0,
                             width: '4px',
                             cursor: 'col-resize',
@@ -457,7 +393,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
             <th scope="row">{props.labels?.summaryLabel ?? ''}</th>
             <For each={columns()}>
               {(c) => (
-                <td style={{ 'font-weight': 600, 'text-align': c.align ?? 'right' }}>
+                <td style={{ 'font-weight': 600, 'text-align': c.align ?? 'end' }}>
                   {c.key in state().summaryValues ? state().summaryValues[c.key] : ''}
                 </td>
               )}
@@ -511,7 +447,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                     'align-items': 'center',
                     gap: '0.25rem',
                     padding: '0.125rem 0.5rem',
-                    background: 'var(--iris-chip-bg, var(--iris-surface-alt, #f3f4f6))',
+                    background: 'var(--iris-pro-table-chip-bg)',
                     'border-radius': '9999px',
                   }}
                 >

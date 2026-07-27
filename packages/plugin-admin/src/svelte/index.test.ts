@@ -49,4 +49,66 @@ describe('IrisAdminApp (svelte)', () => {
     await fireEvent.click(dash)
     await waitFor(() => expect(container.querySelector('[data-custom="dash"]')).toBeTruthy())
   })
+
+  it('creates, validates, edits and deletes rows through the shared controller', async () => {
+    const editable: AdminAppSchema = {
+      nav: [{ key: 'users', title: 'Users' }],
+      pages: [
+        {
+          type: 'data',
+          key: 'users',
+          rowKey: 'id',
+          editable: true,
+          columns: [
+            { key: 'id', title: 'ID', type: 'number', required: true },
+            { key: 'name', title: 'Name', required: true },
+          ],
+          data: [{ id: 1, name: 'Ada' }],
+        },
+      ],
+    }
+    const view = render(IrisAdminAppHost, { props: { schema: editable } })
+    await view.findByText('Ada')
+
+    await fireEvent.click(view.getByRole('button', { name: 'Create' }))
+    await fireEvent.submit(view.container.querySelector('form')!)
+    expect(await view.findByText('ID is required.')).toBeTruthy()
+    await fireEvent.input(view.container.querySelector('#iris-admin-users-id')!, {
+      target: { value: '2' },
+    })
+    await fireEvent.input(view.container.querySelector('#iris-admin-users-name')!, {
+      target: { value: 'Grace' },
+    })
+    await fireEvent.submit(view.container.querySelector('form')!)
+    await view.findByText('Grace')
+
+    let row = Array.from(view.container.querySelectorAll('tbody tr')).find((item) =>
+      item.textContent?.includes('Grace'),
+    )!
+    await fireEvent.click(
+      Array.from(row.querySelectorAll('button')).find(
+        (item) => item.textContent?.trim() === 'Edit',
+      )!,
+    )
+    await fireEvent.input(view.container.querySelector('#iris-admin-users-name')!, {
+      target: { value: 'Grace Hopper' },
+    })
+    await fireEvent.submit(view.container.querySelector('form')!)
+    await view.findByText('Grace Hopper')
+
+    row = Array.from(view.container.querySelectorAll('tbody tr')).find((item) =>
+      item.textContent?.includes('Grace Hopper'),
+    )!
+    await fireEvent.click(
+      Array.from(row.querySelectorAll('button')).find(
+        (item) => item.textContent?.trim() === 'Delete',
+      )!,
+    )
+    await fireEvent.click(
+      Array.from(row.querySelectorAll('button')).find(
+        (item) => item.textContent?.trim() === 'Confirm delete',
+      )!,
+    )
+    await waitFor(() => expect(view.queryByText('Grace Hopper')).toBeNull())
+  })
 })

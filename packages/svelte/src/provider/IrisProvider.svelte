@@ -1,7 +1,7 @@
 <script lang="ts">
   import { setContext } from 'svelte'
-  import { runPlugins } from '@iris-ui/core'
-  import { applyCssVars } from '@iris-ui/theme'
+  import { runPlugins } from '@iris-ui-kit/core'
+  import { applyCssVars } from '@iris-ui-kit/theme'
   import ThemeProvider from '../theme/ThemeProvider.svelte'
   import SkinProvider from '../skins/SkinProvider.svelte'
   import IrisI18nProvider from '../i18n/IrisI18nProvider.svelte'

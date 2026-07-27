@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
-import { matchTypeahead } from '@iris-ui/core'
+import { matchTypeahead } from '@iris-ui-kit/core'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useDropdownContext } from './context'

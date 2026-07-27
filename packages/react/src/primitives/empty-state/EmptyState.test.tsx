@@ -4,7 +4,7 @@ import { IrisEmptyState } from './EmptyState'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisEmptyState', () => {
+describe('@iris-ui-kit/react IrisEmptyState', () => {
   it('renders with role status', () => {
     const { container } = render(<IrisEmptyState title="None" />)
     expect(container.querySelector('[data-iris-empty-state]')!.getAttribute('role')).toBe('status')

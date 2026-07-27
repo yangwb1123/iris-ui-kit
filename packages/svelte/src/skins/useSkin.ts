@@ -1,6 +1,6 @@
 import { getContext } from 'svelte'
 import type { Readable } from 'svelte/store'
-import type { ResolvedSkin, Skin, SkinMode, SkinPatch, SkinError } from '@iris-ui/skins'
+import type { ResolvedSkin, Skin, SkinMode, SkinPatch, SkinError } from '@iris-ui-kit/skins'
 import { SKIN_KEY, type IrisSkinContextValue } from './context'
 
 export interface UseSkinReturn {

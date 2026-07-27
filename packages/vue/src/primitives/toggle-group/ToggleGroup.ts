@@ -9,7 +9,7 @@ import {
   type PropType,
   type Ref,
 } from 'vue'
-import { createSelectionModel } from '@iris-ui/core'
+import { createSelectionModel } from '@iris-ui-kit/core'
 import {
   ToggleGroupContextKey,
   type IrisToggleGroupType,

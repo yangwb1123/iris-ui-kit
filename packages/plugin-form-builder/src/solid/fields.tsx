@@ -1,11 +1,11 @@
 import { For, Index, Show, type JSX } from 'solid-js'
-import { useField, useFieldArray } from '@iris-ui/solid/form'
+import { useField, useFieldArray } from '@iris-ui-kit/solid/form'
 import { arrayRowDefaults, type FieldSpec } from '../core'
 
 /**
  * Field renderers for {@link IrisFormBuilder} (SolidJS). Split out of `index.tsx`
  * (ADR-008: no new oversized source files), mirroring the React reference. Every
- * control binds through `@iris-ui/solid/form`'s `useField`, which keys per-field
+ * control binds through `@iris-ui-kit/solid/form`'s `useField`, which keys per-field
  * state by CANONICAL PATH — so a sub-field nested under an array row
  * (`items[2].sku`) tracks its own error/touched/dirty independently of its
  * siblings, and that state RE-KEYS when rows are removed or reordered.
@@ -30,13 +30,79 @@ function pathOf(field: FieldSpec, prefix?: string): string {
   return prefix ? `${prefix}.${field.name}` : field.name
 }
 
+function scalarControl(
+  props: { field: FieldSpec; prefix?: string },
+  f: ReturnType<typeof useField<unknown>>,
+  id: string,
+  type: string,
+  describedBy: string | undefined,
+): JSX.Element {
+  const shared = {
+    'aria-describedby': describedBy,
+    'aria-required': props.field.required || undefined,
+    'aria-invalid': f.error() ? true : (undefined as boolean | undefined),
+    onBlur: () => f.setTouched(),
+  }
+  if (type === 'textarea') {
+    return (
+      <textarea
+        {...(shared as Record<string, unknown>)}
+        id={id}
+        value={String(f.value() ?? '')}
+        placeholder={props.field.placeholder}
+        onInput={(e) => f.setValue(e.currentTarget.value)}
+      />
+    )
+  }
+  if (type === 'select') {
+    return (
+      <select
+        {...(shared as Record<string, unknown>)}
+        id={id}
+        value={String(f.value() ?? '')}
+        onChange={(e) => f.setValue(e.currentTarget.value)}
+      >
+        <option value="">{props.field.placeholder ?? 'Select…'}</option>
+        <For each={props.field.options ?? []}>
+          {(opt) => <option value={opt.value}>{opt.label}</option>}
+        </For>
+      </select>
+    )
+  }
+  if (type === 'checkbox') {
+    return (
+      <label for={id} style={{ display: 'flex', gap: '8px', 'align-items': 'center' }}>
+        <input
+          {...(shared as Record<string, unknown>)}
+          id={id}
+          type="checkbox"
+          checked={Boolean(f.value())}
+          onChange={(e) => f.setValue(e.currentTarget.checked)}
+        />
+        {labelOf(props.field)}
+        {props.field.required ? ' *' : ''}
+      </label>
+    )
+  }
+  return (
+    <input
+      {...(shared as Record<string, unknown>)}
+      id={id}
+      type={type}
+      value={String(f.value() ?? '')}
+      placeholder={props.field.placeholder}
+      onInput={(e) => f.setValue(e.currentTarget.value)}
+    />
+  )
+}
+
 /** A single scalar control (text/number/email/password/textarea/select/checkbox). */
 function ScalarField(props: { field: FieldSpec; prefix?: string }): JSX.Element {
   const path = pathOf(props.field, props.prefix)
   const f = useField<unknown>(path)
   const id = `iris-fb-${path}`
   const type = () => props.field.type ?? 'text'
-  const describedBy = () => (f.error() ? `${id}-error` : undefined)
+  const describedBy = f.error() ? `${id}-error` : undefined
 
   return (
     <div data-iris-form-field={path}>
@@ -46,61 +112,7 @@ function ScalarField(props: { field: FieldSpec; prefix?: string }): JSX.Element 
           {props.field.required ? ' *' : ''}
         </label>
       </Show>
-      <Show when={type() === 'textarea'}>
-        <textarea
-          id={id}
-          value={String(f.value() ?? '')}
-          placeholder={props.field.placeholder}
-          aria-required={props.field.required || undefined}
-          aria-invalid={f.error() ? true : undefined}
-          aria-describedby={describedBy()}
-          onInput={(e) => f.setValue(e.currentTarget.value)}
-          onBlur={() => f.setTouched()}
-        />
-      </Show>
-      <Show when={type() === 'select'}>
-        <select
-          id={id}
-          value={String(f.value() ?? '')}
-          aria-required={props.field.required || undefined}
-          aria-invalid={f.error() ? true : undefined}
-          aria-describedby={describedBy()}
-          onChange={(e) => f.setValue(e.currentTarget.value)}
-          onBlur={() => f.setTouched()}
-        >
-          <option value="">{props.field.placeholder ?? 'Select…'}</option>
-          <For each={props.field.options ?? []}>
-            {(opt) => <option value={opt.value}>{opt.label}</option>}
-          </For>
-        </select>
-      </Show>
-      <Show when={type() === 'checkbox'}>
-        <label for={id} style={{ display: 'flex', gap: '8px', 'align-items': 'center' }}>
-          <input
-            id={id}
-            type="checkbox"
-            checked={Boolean(f.value())}
-            aria-describedby={describedBy()}
-            onChange={(e) => f.setValue(e.currentTarget.checked)}
-            onBlur={() => f.setTouched()}
-          />
-          {labelOf(props.field)}
-          {props.field.required ? ' *' : ''}
-        </label>
-      </Show>
-      <Show when={type() !== 'textarea' && type() !== 'select' && type() !== 'checkbox'}>
-        <input
-          id={id}
-          type={type()}
-          value={String(f.value() ?? '')}
-          placeholder={props.field.placeholder}
-          aria-required={props.field.required || undefined}
-          aria-invalid={f.error() ? true : undefined}
-          aria-describedby={describedBy()}
-          onInput={(e) => f.setValue(e.currentTarget.value)}
-          onBlur={() => f.setTouched()}
-        />
-      </Show>
+      {scalarControl(props, f, id, type(), describedBy)}
       <Show when={f.error()}>
         <div id={`${id}-error`} role="alert" style={{ color: 'var(--iris-form-error)' }}>
           {f.error()}

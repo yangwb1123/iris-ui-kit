@@ -1,5 +1,5 @@
 import { createEffect, createSignal, createUniqueId, onCleanup, Show, type JSX } from 'solid-js'
-import { nextEnabledIndex } from '@iris-ui/core'
+import { nextEnabledIndex } from '@iris-ui-kit/core'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useMenuContext } from './context'

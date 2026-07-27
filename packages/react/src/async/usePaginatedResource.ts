@@ -6,7 +6,7 @@ import {
   type PaginatedResource,
   type PaginatedState,
   type PaginationMode,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
 export interface UsePaginatedResourceOptions {

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@testing-library/svelte'
 import IrisAdminBreadcrumb from './AdminBreadcrumb.svelte'
 import { __resetBreadcrumbStyles } from '../primitives/breadcrumb/styles'
-import type { NavNode } from '@iris-ui/core'
+import type { NavNode } from '@iris-ui-kit/core'
 
 afterEach(() => {
   cleanup()
@@ -15,7 +15,7 @@ const trail: NavNode[] = [
   { key: 'profile', title: 'Profile' },
 ]
 
-describe('@iris-ui/svelte IrisAdminBreadcrumb', () => {
+describe('@iris-ui-kit/svelte IrisAdminBreadcrumb', () => {
   it('renders a crumb per trail node + marks the last current', () => {
     const { container } = render(IrisAdminBreadcrumb, { props: { trail } })
     // Svelte uses CSS ::before separators (no separator elements) — assert crumbs.

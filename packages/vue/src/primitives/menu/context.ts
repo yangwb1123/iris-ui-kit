@@ -1,5 +1,5 @@
 import type { ComputedRef, InjectionKey, Ref } from 'vue'
-import type { Placement } from '@iris-ui/core'
+import type { Placement } from '@iris-ui-kit/core'
 
 export interface MenuContext {
   open: ComputedRef<boolean>

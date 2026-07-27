@@ -7,7 +7,7 @@ afterEach(() => cleanup())
 const stars = (c: HTMLElement) => c.querySelectorAll('[data-iris-rating-star]')
 const root = (c: HTMLElement) => c.querySelector('[data-iris-rating]') as HTMLElement
 
-describe('@iris-ui/react IrisRating', () => {
+describe('@iris-ui-kit/react IrisRating', () => {
   it('renders `max` stars (default 5)', () => {
     const { container } = render(<IrisRating />)
     expect(stars(container).length).toBe(5)

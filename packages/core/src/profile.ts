@@ -2,7 +2,7 @@ import { createStore, type Store } from './store'
 import { debounce } from './data-view'
 
 /**
- * `@iris-ui/core/profile` — a framework-agnostic USER PROFILE: the portable,
+ * `@iris-ui-kit/core/profile` — a framework-agnostic USER PROFILE: the portable,
  * pluggable config store behind an app-aggregation desktop. It holds which apps
  * a user has installed, per-app config, and global prefs (skin/wallpaper/…), and
  * persists through a swappable {@link ProfileStorage} — so the SAME profile can

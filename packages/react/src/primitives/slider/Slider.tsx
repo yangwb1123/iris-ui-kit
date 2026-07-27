@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { getDirection } from '@iris-ui/theme'
+import { getDirection } from '@iris-ui-kit/theme'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 

@@ -5,16 +5,16 @@ import {
   restoreSession,
   type WindowManager,
   type WindowSession,
-} from '@iris-ui/core/window'
+} from '@iris-ui-kit/core/window'
 import {
   createUserProfile,
   localStorageProfileStorage,
   type UserProfile,
-} from '@iris-ui/core/profile'
-import { createCommandRegistry } from '@iris-ui/core/commands'
-import { createNotificationCenter } from '@iris-ui/core/notifications'
-import { createClipboardHistory } from '@iris-ui/core/clipboard-history'
-import { createVirtualFs, type VirtualFs, type VfsState } from '@iris-ui/core/fs'
+} from '@iris-ui-kit/core/profile'
+import { createCommandRegistry } from '@iris-ui-kit/core/commands'
+import { createNotificationCenter } from '@iris-ui-kit/core/notifications'
+import { createClipboardHistory } from '@iris-ui-kit/core/clipboard-history'
+import { createVirtualFs, type VirtualFs, type VfsState } from '@iris-ui-kit/core/fs'
 import { barInsets } from './os'
 import { WmProvider, useWm } from './wm'
 import { ProfileProvider } from './profile'
@@ -69,7 +69,7 @@ function attachFsPersistence(fs: VirtualFs, profile: UserProfile): () => void {
     )
     fs.write(
       '/Documents/notes.md',
-      '# Notes\n\n- Backed by @iris-ui/core/fs\n- The same engine drives all four shells.',
+      '# Notes\n\n- Backed by @iris-ui-kit/core/fs\n- The same engine drives all four shells.',
     )
     fs.mkdir('/Pictures')
   }

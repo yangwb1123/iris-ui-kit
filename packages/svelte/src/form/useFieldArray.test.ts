@@ -1,15 +1,15 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte'
 import { flushSync, tick } from 'svelte'
-import type { FormStore } from '@iris-ui/core'
-import { createFormStore } from '@iris-ui/core'
+import type { FormStore } from '@iris-ui-kit/core'
+import { createFormStore } from '@iris-ui-kit/core'
 import UseFieldArrayDemo from './UseFieldArrayDemo.svelte'
 import FieldArrayErrorCapture from './FieldArrayErrorCapture.svelte'
 import type { UseFieldArrayReturn } from './useFieldArray'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte useFieldArray', () => {
+describe('@iris-ui-kit/svelte useFieldArray', () => {
   it('renders initial fields', () => {
     render(UseFieldArrayDemo)
     expect(screen.getByTestId('count').textContent).toBe('2')

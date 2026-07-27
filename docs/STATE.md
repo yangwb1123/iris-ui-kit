@@ -2,7 +2,7 @@
 
 > Compression snapshot — refreshed every ~5 iterations. Continue from this to minimize context re-reads.
 
-**当前架构 (Architecture):** 5 layers (tokens → theme → core controllers → 4 adapters → plugins). Behavior in `@iris-ui/core`; adapters are thin reactivity bridges. See `ARCHITECTURE.md`. 149 components ×4 at full parity, 25 packages, CI + changesets, **126/126 gates green**, 0 skipped tests, packages at 0.0.0 (pre-first-publish).
+**当前架构 (Architecture):** 5 layers (tokens → theme → core controllers → 4 adapters → plugins). Behavior in `@iris-ui-kit/core`; adapters are thin reactivity bridges. See `ARCHITECTURE.md`. 149 components ×4 at full parity, 25 packages, CI + changesets, **126/126 gates green**, 0 skipped tests, packages at 0.0.0 (pre-first-publish).
 
 **已完成 (Done) — factory cycle, condensed:**
 

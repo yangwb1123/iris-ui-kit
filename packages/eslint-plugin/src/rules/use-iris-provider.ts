@@ -14,7 +14,7 @@ const rule: Rule.RuleModule = {
     },
     messages: {
       missingIrisProvider:
-        "Wrap your app with IrisProvider for theming and plugin support. Import IrisProvider from '@iris-ui/{{pkg}}'.",
+        "Wrap your app with IrisProvider for theming and plugin support. Import IrisProvider from '@iris-ui-kit/{{pkg}}'.",
     },
     schema: [],
   },

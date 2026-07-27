@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SnapZone } from '@iris-ui/core/window'
+  import type { SnapZone } from '@iris-ui-kit/core/window'
   import { useWmState } from './wm.svelte'
   import { previewRect } from './depth'
 

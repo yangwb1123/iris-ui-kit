@@ -44,7 +44,7 @@ function regions(): HTMLElement[] {
   return Array.from(document.querySelectorAll('[role=region]'))
 }
 
-describe('@iris-ui/react IrisAccordion', () => {
+describe('@iris-ui-kit/react IrisAccordion', () => {
   it('renders all triggers, no regions initially (single, no default)', () => {
     render(harness())
     expect(triggers().length).toBe(3)

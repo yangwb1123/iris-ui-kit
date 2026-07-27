@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
-import { createTabsNav } from '@iris-ui/core'
+import { createTabsNav } from '@iris-ui-kit/core'
 import { useTabsNav, type UseTabsNavReturn } from './useTabsNav'
 
 afterEach(cleanup)
@@ -26,7 +26,7 @@ function probe(nav: ReturnType<typeof createTabsNav>) {
   return { ...utils, api }
 }
 
-describe('@iris-ui/solid useTabsNav', () => {
+describe('@iris-ui-kit/solid useTabsNav', () => {
   it('reflects initial state', () => {
     const nav = createTabsNav({ tabs: [{ key: 'home', title: 'Home', pinned: true }] })
     const { container } = probe(nav)

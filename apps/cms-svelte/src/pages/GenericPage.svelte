@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { IrisButton } from '@iris-ui/svelte'
+  import { IrisButton } from '@iris-ui-kit/svelte'
 
   let { title, description }: { title?: string; description?: string } = $props()
 

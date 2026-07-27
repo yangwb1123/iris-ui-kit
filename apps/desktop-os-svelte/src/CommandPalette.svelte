@@ -8,7 +8,7 @@
    * whenever those change, so results always track the current apps + focused
    * window — the registry is the single source the palette searches.
    */
-  import type { Command, CommandHit } from '@iris-ui/core/commands'
+  import type { Command, CommandHit } from '@iris-ui-kit/core/commands'
   import { registry, buildDesktopCommands } from './commands.svelte'
   import { useWmState } from './wm.svelte'
   import { useProfileState } from './profile.svelte'

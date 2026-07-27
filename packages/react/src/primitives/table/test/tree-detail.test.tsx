@@ -22,7 +22,7 @@ const baseColumns: IrisTableColumn<Row>[] = [
   { key: 'age', title: 'Age', sortable: true, align: 'right' },
 ]
 
-describe('@iris-ui/react IrisTable expandable detail rows', () => {
+describe('@iris-ui-kit/react IrisTable expandable detail rows', () => {
   function toggle(rowId: string | number): HTMLElement {
     return document.querySelector(
       `[data-iris-table-row="${rowId}"] [data-iris-table-expand-toggle]`,
@@ -93,7 +93,7 @@ describe('@iris-ui/react IrisTable expandable detail rows', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable tree rows', () => {
+describe('@iris-ui-kit/react IrisTable tree rows', () => {
   interface TreeRowData extends Record<string, unknown> {
     id: number
     name: string

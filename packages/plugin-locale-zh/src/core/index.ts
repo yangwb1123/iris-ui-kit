@@ -1,8 +1,8 @@
-import { createPlugin } from '@iris-ui/core'
+import { createPlugin } from '@iris-ui-kit/core'
 
 /**
  * Simplified-Chinese (`zh-CN`) translations for every built-in component
- * string. Mirrors the keys of `defaultMessages` in `@iris-ui/core`. Used by the
+ * string. Mirrors the keys of `defaultMessages` in `@iris-ui-kit/core`. Used by the
  * {@link localeZhPlugin}; exported separately so consumers can spread it into
  * their own `messages` if they prefer the manual i18n path.
  */

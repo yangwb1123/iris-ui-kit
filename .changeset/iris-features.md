@@ -1,12 +1,12 @@
 ---
-'@iris-ui/core': minor
-'@iris-ui/react': minor
-'@iris-ui/vue': minor
-'@iris-ui/solid': minor
-'@iris-ui/svelte': minor
-'@iris-ui/plugin-editor': minor
-'@iris-ui/plugin-notifications': minor
-'@iris-ui/plugin-pro-table': minor
+'@iris-ui-kit/core': minor
+'@iris-ui-kit/react': minor
+'@iris-ui-kit/vue': minor
+'@iris-ui-kit/solid': minor
+'@iris-ui-kit/svelte': minor
+'@iris-ui-kit/plugin-editor': minor
+'@iris-ui-kit/plugin-notifications': minor
+'@iris-ui-kit/plugin-pro-table': minor
 ---
 
 ### Cross-framework behavior contracts

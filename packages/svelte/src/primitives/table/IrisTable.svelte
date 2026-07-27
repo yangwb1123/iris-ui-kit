@@ -13,7 +13,7 @@
     nextGridCell,
     type GridNavKey,
     type TreeRow,
-  } from '@iris-ui/core'
+  } from '@iris-ui-kit/core'
   import { toStore } from '../../useStore'
   import { useI18n } from '../../i18n'
   import { useDrag } from '../drag/useDrag.svelte'

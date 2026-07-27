@@ -1,4 +1,4 @@
-import type { ResolvedSkin, Skin, SkinMode, SkinPatch, SkinError } from '@iris-ui/skins'
+import type { ResolvedSkin, Skin, SkinMode, SkinPatch, SkinError } from '@iris-ui-kit/skins'
 import { useSkinContext } from './SkinProvider'
 
 export interface UseSkinReturn {

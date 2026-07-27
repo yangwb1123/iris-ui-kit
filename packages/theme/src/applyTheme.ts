@@ -1,5 +1,5 @@
-import type { IrisTheme } from '@iris-ui/tokens'
-import { hexToRgba, rgbToHex } from '@iris-ui/core'
+import type { IrisTheme } from '@iris-ui-kit/tokens'
+import { hexToRgba, rgbToHex } from '@iris-ui-kit/core'
 import { toCssVarName } from './toCssVarName'
 import { applyCssVars, type CssVarEntries } from './applyCssVars'
 

@@ -4,11 +4,11 @@ import {
   serializeSession,
   restoreSession,
   type WindowSession,
-} from '@iris-ui/core/window'
-import { createUserProfile, localStorageProfileStorage } from '@iris-ui/core/profile'
-import { createNotificationCenter } from '@iris-ui/core/notifications'
-import { createClipboardHistory } from '@iris-ui/core/clipboard-history'
-import { createVirtualFs, type VfsState } from '@iris-ui/core/fs'
+} from '@iris-ui-kit/core/window'
+import { createUserProfile, localStorageProfileStorage } from '@iris-ui-kit/core/profile'
+import { createNotificationCenter } from '@iris-ui-kit/core/notifications'
+import { createClipboardHistory } from '@iris-ui-kit/core/clipboard-history'
+import { createVirtualFs, type VfsState } from '@iris-ui-kit/core/fs'
 import { CHROMES, barInsets, OS_ORDER, type OsId } from './os'
 import {
   WmProvider,
@@ -115,7 +115,7 @@ function Shell({ profile, hydrated }: { profile: Profile; hydrated: boolean }) {
       )
       fs.write(
         '/Documents/notes.md',
-        '# Notes\n\n- Backed by @iris-ui/core/fs\n- The same engine drives all four shells.',
+        '# Notes\n\n- Backed by @iris-ui-kit/core/fs\n- The same engine drives all four shells.',
       )
       fs.mkdir('/Pictures')
     }

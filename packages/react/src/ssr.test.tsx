@@ -89,7 +89,7 @@ const cases: Array<{ name: string; element: React.ReactElement }> = [
   },
 ]
 
-describe('@iris-ui/react SSR', () => {
+describe('@iris-ui-kit/react SSR', () => {
   it('runs in a no-DOM (server) environment', () => {
     // If this fails, the harness silently regressed to jsdom and the rest of
     // the file no longer proves anything about server safety.

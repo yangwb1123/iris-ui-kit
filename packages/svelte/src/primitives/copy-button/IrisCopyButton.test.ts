@@ -1,7 +1,7 @@
 import { render, fireEvent } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
 import { afterEach, describe, it, expect, vi } from 'vitest'
-import { setClipboardHandler } from '@iris-ui/core'
+import { setClipboardHandler } from '@iris-ui-kit/core'
 import IrisCopyButton from './IrisCopyButton.svelte'
 
 afterEach(() => {

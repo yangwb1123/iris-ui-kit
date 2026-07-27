@@ -8,7 +8,7 @@ import {
   For,
   type JSX,
 } from 'solid-js'
-import { createTreeSelection, type TreeSelectionNode } from '@iris-ui/core'
+import { createTreeSelection, type TreeSelectionNode } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 
@@ -218,7 +218,7 @@ function IrisTreeNodeItem(nodeProps: {
  *
  * Checkable mode renders a checkbox per node with parent/child cascade and
  * indeterminate (tri-state) propagation, driven by the framework-agnostic
- * `createTreeSelection` from `@iris-ui/core` (no cascade logic lives here).
+ * `createTreeSelection` from `@iris-ui-kit/core` (no cascade logic lives here).
  */
 export function IrisTree(props: IrisTreeProps): JSX.Element {
   const { t } = useI18n()

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { runPlugins } from '@iris-ui/core'
+import { runPlugins } from '@iris-ui-kit/core'
 import { createProTableStore, proTablePlugin, proTableTokens, type ProTableColumn } from './index'
 
 interface User extends Record<string, unknown> {

@@ -11,7 +11,7 @@ export interface IrisEmptyStateProps extends Omit<
   children?: React.ReactNode
 }
 
-/** React port of {@link import('@iris-ui/vue').IrisEmptyState}. */
+/** React port of {@link import('@iris-ui-kit/vue').IrisEmptyState}. */
 export function IrisEmptyState({
   title,
   description,

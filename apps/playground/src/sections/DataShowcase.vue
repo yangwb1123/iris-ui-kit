@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { IrisSelect, IrisTable, type IrisListItem, type IrisTableColumn } from '@iris-ui/vue'
+import { IrisSelect, IrisTable, type IrisListItem, type IrisTableColumn } from '@iris-ui-kit/vue'
 
 const fruitOptions: IrisListItem<string>[] = [
   { value: 'apple', label: 'Apple' },

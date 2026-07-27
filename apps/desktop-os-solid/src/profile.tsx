@@ -1,10 +1,10 @@
 import { createContext, createMemo, createSignal, onCleanup, useContext, type JSX } from 'solid-js'
-import { type UserProfile, type ProfileData } from '@iris-ui/core/profile'
+import { type UserProfile, type ProfileData } from '@iris-ui-kit/core/profile'
 import { type AppManifest, BUILTIN_APPS, getManifest, registerCustomApps } from './catalog'
 import { useWm } from './wm'
 
 /**
- * Solid glue around ONE `@iris-ui/core/profile` instance — the framework-agnostic
+ * Solid glue around ONE `@iris-ui-kit/core/profile` instance — the framework-agnostic
  * USER PROFILE that holds which apps are installed plus user-added web apps. A
  * single profile lives in context (the SAME engine the React desktop drives,
  * here on Solid); the App Store mutates it and every launcher reads from it.

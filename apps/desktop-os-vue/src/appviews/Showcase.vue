@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { IrisButton, IrisBadge, IrisInput } from '@iris-ui/vue'
+import { IrisButton, IrisBadge, IrisInput } from '@iris-ui-kit/vue'
 
 const name = ref('')
 </script>
@@ -8,8 +8,8 @@ const name = ref('')
 <template>
   <div class="pane">
     <p style="margin: 0">
-      Real <code>@iris-ui/vue</code> components, rendered inside a managed window — they inherit the
-      OS skin via tokens.
+      Real <code>@iris-ui-kit/vue</code> components, rendered inside a managed window — they inherit
+      the OS skin via tokens.
     </p>
     <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center">
       <IrisButton variant="solid">Solid</IrisButton>

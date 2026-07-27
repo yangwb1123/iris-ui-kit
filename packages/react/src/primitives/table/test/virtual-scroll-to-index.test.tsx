@@ -29,7 +29,7 @@ function renderedIndices(): number[] {
 // exposes the createVirtualizer-backed imperative handle — scrollToIndex /
 // scrollToOffset — via its forwarded ref. Consumers needing programmatic scroll
 // ref the IrisVirtualScroll directly.
-describe('@iris-ui/react IrisVirtualScroll scrollToIndex handle', () => {
+describe('@iris-ui-kit/react IrisVirtualScroll scrollToIndex handle', () => {
   it('shifts the host scroll offset to the target row and moves the window', async () => {
     const ref = React.createRef<IrisVirtualScrollHandle>()
     render(

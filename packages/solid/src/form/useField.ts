@@ -1,5 +1,5 @@
 import { createSignal, onCleanup, createMemo, type Accessor } from 'solid-js'
-import { formatPath, getByPath, type FormState, type FormValues } from '@iris-ui/core'
+import { formatPath, getByPath, type FormState, type FormValues } from '@iris-ui-kit/core'
 import { useFormContext } from './context'
 
 export interface FieldBindProps {

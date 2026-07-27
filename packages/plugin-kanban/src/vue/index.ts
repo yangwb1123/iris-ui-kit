@@ -7,7 +7,7 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { createSortable, type SortableRect } from '@iris-ui/core'
+import { createSortable, type SortableRect } from '@iris-ui-kit/core'
 import { createKanban, type KanbanConfig, type KanbanColumn, type KanbanCard } from '../core'
 
 export type { KanbanCard, KanbanColumn, KanbanConfig, KanbanState, KanbanStore } from '../core'
@@ -29,7 +29,7 @@ function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
 
 /**
  * Render a Kanban board from a declarative config (Vue, render-function
- * authored to match the `@iris-ui/vue` convention). Cards are draggable via
+ * authored to match the `@iris-ui-kit/vue` convention). Cards are draggable via
  * native HTML5 DnD; dropping onto a column calls `store.moveCard`. WIP-limited
  * columns refuse drops when full. Themed via CSS vars.
  *

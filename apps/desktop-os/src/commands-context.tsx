@@ -1,8 +1,8 @@
 import * as React from 'react'
-import { createCommandRegistry, type Command, type CommandHit } from '@iris-ui/core/commands'
+import { createCommandRegistry, type Command, type CommandHit } from '@iris-ui-kit/core/commands'
 
 /**
- * React glue around ONE `@iris-ui/core/commands` registry — the substrate behind
+ * React glue around ONE `@iris-ui-kit/core/commands` registry — the substrate behind
  * the ⌘K command palette. A single registry instance lives in context; app /
  * window / system actions `register` into it, and the palette `search`es + `run`s
  * it. Apps register via {@link useRegisterCommands} (effect-scoped, auto-cleanup);

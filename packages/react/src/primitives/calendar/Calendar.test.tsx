@@ -17,7 +17,7 @@ function day(iso: string): HTMLButtonElement {
   return document.querySelector(`[data-iris-calendar-day-iso="${iso}"]`) as HTMLButtonElement
 }
 
-describe('@iris-ui/react IrisCalendar', () => {
+describe('@iris-ui-kit/react IrisCalendar', () => {
   it('renders header + weekday row + 42-cell grid', () => {
     render(<IrisCalendar defaultMonth={new Date(2024, 2, 15)} />)
     expect(document.querySelector('[data-iris-calendar-header]')).not.toBeNull()

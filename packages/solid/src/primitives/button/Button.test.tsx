@@ -8,7 +8,7 @@ afterEach(() => {
   __resetButtonStyles()
 })
 
-describe('@iris-ui/solid IrisButton', () => {
+describe('@iris-ui-kit/solid IrisButton', () => {
   it('renders a native button (render takes a FUNCTION in Solid)', () => {
     const { getByRole } = render(() => <IrisButton>Save</IrisButton>)
     const btn = getByRole('button')

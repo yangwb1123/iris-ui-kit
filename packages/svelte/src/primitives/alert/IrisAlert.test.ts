@@ -5,7 +5,7 @@ import IrisAlert from './IrisAlert.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisAlert', () => {
+describe('@iris-ui-kit/svelte IrisAlert', () => {
   it('renders with default info tone', () => {
     const { container } = render(IrisAlert)
     const el = container.querySelector('[data-iris-alert]')

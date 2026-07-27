@@ -1,5 +1,5 @@
 {
-  "name": "@iris-ui/icons",
+  "name": "@iris-ui-kit/icons",
   "version": "0.0.0",
   "description": "Built-in Feather-style icon set (structured nodes) + icon-set interface for Iris UI",
   "license": "MIT",
@@ -29,5 +29,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/nousresearch/iris-ui.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

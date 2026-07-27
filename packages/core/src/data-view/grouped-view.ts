@@ -21,7 +21,7 @@
  */
 
 import { createStore, type Store } from '../store'
-import { groupRows } from './aggregate'
+import { groupRows, aggregate as computeAggregate } from './aggregate'
 import type { GroupedViewConfig, GroupedViewState, AggregateSpec, DataViewColumn } from './types'
 
 /**
@@ -112,38 +112,8 @@ export function createGroupedView<Row, K = string>(
       for (const spec of aggregates) {
         const col = columns.find((c) => c.key === spec.key)
         if (col) {
-          const nums: number[] = []
-          for (const row of group.rows) {
-            const raw = col.getValue(row)
-            if (raw != null) {
-              const v = Number(raw)
-              if (Number.isFinite(v)) nums.push(v)
-            }
-          }
-          // Use `${key}_${op}` as output key to avoid collisions when multiple
-          // aggregate ops target the same column.
           const outKey = `${spec.key}_${spec.op}`
-          if (nums.length > 0) {
-            switch (spec.op) {
-              case 'sum':
-                vals[outKey] = nums.reduce((a, b) => a + b, 0)
-                break
-              case 'avg':
-                vals[outKey] = nums.reduce((a, b) => a + b, 0) / nums.length
-                break
-              case 'min':
-                vals[outKey] = Math.min(...nums)
-                break
-              case 'max':
-                vals[outKey] = Math.max(...nums)
-                break
-              case 'count':
-                vals[outKey] = nums.length
-                break
-            }
-          } else {
-            vals[outKey] = spec.op === 'count' ? 0 : NaN
-          }
+          vals[outKey] = computeAggregate(group.rows, col.getValue, spec.op)
         }
       }
       result.set(group.key, vals)

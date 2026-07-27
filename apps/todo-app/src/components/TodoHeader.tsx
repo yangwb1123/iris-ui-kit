@@ -6,8 +6,8 @@
  */
 
 import { useState, useCallback, type KeyboardEvent, type FormEvent } from 'react'
-import { IrisInput } from '@iris-ui/react'
-import { IrisButton } from '@iris-ui/react'
+import { IrisInput } from '@iris-ui-kit/react'
+import { IrisButton } from '@iris-ui-kit/react'
 
 export interface TodoHeaderProps {
   /** Called with the trimmed, non-empty text when the user adds a todo. */

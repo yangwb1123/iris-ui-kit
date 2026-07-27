@@ -1,9 +1,15 @@
 import * as React from 'react'
-import { type WindowManager, type WindowManagerState } from '@iris-ui/core/window'
-import { type UserProfile, type ProfileData } from '@iris-ui/core/profile'
-import { type NotificationCenter, type NotificationCenterState } from '@iris-ui/core/notifications'
-import { type ClipboardHistory, type ClipboardHistoryState } from '@iris-ui/core/clipboard-history'
-import { type VirtualFs, type VfsState } from '@iris-ui/core/fs'
+import { type WindowManager, type WindowManagerState } from '@iris-ui-kit/core/window'
+import { type UserProfile, type ProfileData } from '@iris-ui-kit/core/profile'
+import {
+  type NotificationCenter,
+  type NotificationCenterState,
+} from '@iris-ui-kit/core/notifications'
+import {
+  type ClipboardHistory,
+  type ClipboardHistoryState,
+} from '@iris-ui-kit/core/clipboard-history'
+import { type VirtualFs, type VfsState } from '@iris-ui-kit/core/fs'
 import { type OsChrome, type OsId } from './os'
 import { type AppManifest, BUILTIN_APPS, getManifest, registerCustomApps } from './catalog'
 

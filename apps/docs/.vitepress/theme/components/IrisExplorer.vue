@@ -6,12 +6,12 @@
 //     options = the manifest enum and default = the manifest default; a checkbox
 //     for boolean; a number/text input for number/string). Seeded from the
 //     manifest defaults.
-//  2. LIVE PREVIEW — the real `@iris-ui/vue` component bound to the current control
+//  2. LIVE PREVIEW — the real `@iris-ui-kit/vue` component bound to the current control
 //     values (VitePress is Vue). Updates reactively. Curated, live-preview-wired
 //     components only; others gracefully show controls + code tabs with a note.
 //  3. CODE TABS — per-framework (react/vue/solid/svelte) usage for the current
 //     control values, generated deterministically from the manifest (same wiring
-//     rules as @iris-ui/mcp — see explorer-codegen.ts), each with a copy button.
+//     rules as @iris-ui-kit/mcp — see explorer-codegen.ts), each with a copy button.
 //
 // All three panels read from the SAME committed manifest (EXPLORER_MANIFEST, a
 // slim slice emitted by generate-components.mjs), so they can't drift from the
@@ -20,13 +20,13 @@
 // LIVE PREVIEW is now 4-framework (ROADMAP v3 final item): the active framework tab
 // drives the preview. Vue renders inline (VitePress is Vue); React / Solid / Svelte
 // each render via a client-only ISLAND component (ReactIsland / SolidIsland /
-// SvelteIsland) that mounts the real `@iris-ui/<fw>` primitive into its own root via
+// SvelteIsland) that mounts the real `@iris-ui-kit/<fw>` primitive into its own root via
 // that runtime's client API (createRoot / render / mount). Islands are gated behind
 // <ClientOnly> so the foreign runtimes never run during VitePress SSR; if an island
 // can't render a given component it emits `unrenderable` and we fall back to the
 // code view for that framework (never crashing the page).
 import { computed, ref, shallowRef } from 'vue'
-import * as Iris from '@iris-ui/vue'
+import * as Iris from '@iris-ui-kit/vue'
 import { EXPLORER_MANIFEST } from '../explorer-data'
 import { PREVIEW_SPECS } from '../explorer-preview'
 import ReactIsland from './ReactIsland.vue'

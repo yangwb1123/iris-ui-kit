@@ -5,7 +5,7 @@ import { join } from 'node:path'
 /**
  * Build the full barrel (`index`) plus a flattened entry per top-level group
  * (`form`, `theme`, `async`, `behaviors`, `layouts`, …) so consumers can
- * deep-import an area: `@iris-ui/react/form`. Enumerated from the source tree
+ * deep-import an area: `@iris-ui-kit/react/form`. Enumerated from the source tree
  * so it never drifts. Granularity is per-group rather than per-primitive
  * because bundling .d.ts for all ~60 component entries exhausts the dts worker;
  * per-group keeps the build robust while still enabling area-scoped imports.
@@ -32,16 +32,16 @@ export default defineConfig({
   external: [
     'react',
     'react-dom',
-    '@iris-ui/core',
-    '@iris-ui/skins',
-    '@iris-ui/theme',
-    '@iris-ui/tokens',
-    '@iris-ui/icons',
+    '@iris-ui-kit/core',
+    '@iris-ui-kit/skins',
+    '@iris-ui-kit/theme',
+    '@iris-ui-kit/tokens',
+    '@iris-ui-kit/icons',
   ],
   // Every entry is interactive (hooks/state/effects), so each emitted module is
   // a React Server Components client boundary: prepend `'use client'` to every
-  // .js/.cjs entry & chunk, so any import path (`@iris-ui/react`,
-  // `@iris-ui/react/form`, …) can be used directly inside a Next.js App Router
+  // .js/.cjs entry & chunk, so any import path (`@iris-ui-kit/react`,
+  // `@iris-ui-kit/react/form`, …) can be used directly inside a Next.js App Router
   // Server Component without a manual client wrapper.
   //
   // We can't use esbuild's `banner` here: with `treeshake: true` tsup re-bundles

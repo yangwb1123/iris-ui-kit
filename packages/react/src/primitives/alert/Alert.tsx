@@ -21,7 +21,7 @@ export interface IrisAlertProps extends Omit<React.HTMLAttributes<HTMLDivElement
 }
 
 /**
- * React port of {@link import('@iris-ui/vue').IrisAlert}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisAlert}.
  *
  * @example
  *   <IrisAlert tone="warning" title="Heads up" closable onClose={dismiss}>

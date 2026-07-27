@@ -67,7 +67,7 @@ function buildColumns(options: IrisCascaderNode[], activePath: string[]): IrisCa
  * full path. Controlled or uncontrolled; closes on leaf-select, Escape, or
  * outside click.
  *
- * React port of {@link import('@iris-ui/vue').IrisCascader}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisCascader}.
  */
 export function IrisCascader({
   options,

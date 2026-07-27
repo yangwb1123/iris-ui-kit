@@ -9,7 +9,7 @@ import {
   useContext,
   type JSX,
 } from 'solid-js'
-import { createKeyboardNav, type KeyboardNavAction } from '@iris-ui/core'
+import { createKeyboardNav, type KeyboardNavAction } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { AccordionCtx } from './context'
 

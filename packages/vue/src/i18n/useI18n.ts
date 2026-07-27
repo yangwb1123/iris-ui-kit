@@ -1,5 +1,5 @@
 import { computed, inject, onBeforeUnmount, ref, type ComputedRef, type Ref } from 'vue'
-import { createI18n, type I18n, type I18nState } from '@iris-ui/core'
+import { createI18n, type I18n, type I18nState } from '@iris-ui-kit/core'
 import { I18nInjectionKey } from './context'
 
 export interface UseI18nReturn {

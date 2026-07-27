@@ -7,7 +7,7 @@
   // WITHOUT data-iris-rating). The shared *Slider* scenario asserts a globally
   // unique `[role="slider"]` (count === 1). Co-locating the rating in the same
   // container would make that count 2 and break the pre-existing slider contract,
-  // which lives in @iris-ui/core/contracts and must not be changed. The rating's
+  // which lives in @iris-ui-kit/core/contracts and must not be changed. The rating's
   // own scenario uses the specific `[role="slider"][data-iris-rating]` selector,
   // so it is unaffected — we just keep the two slider-role elements in separate
   // containers, exactly like the React harness renders each contract in isolation.

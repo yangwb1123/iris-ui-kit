@@ -4,7 +4,7 @@ import type {
   IrisThemeColors,
   IrisThemeSpacing,
   IrisThemeRadii,
-} from '@iris-ui/tokens'
+} from '@iris-ui-kit/tokens'
 
 /** Partial overrides of the 21 closed core tokens. Colors are strings; spacing/radii numbers. */
 export type SkinTokenOverrides = Partial<IrisThemeColors & IrisThemeSpacing & IrisThemeRadii>

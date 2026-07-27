@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useField, useFieldArray } from '@iris-ui/svelte/form'
+  import { useField, useFieldArray } from '@iris-ui-kit/svelte/form'
   import { arrayRowDefaults, type FieldSpec } from '../core'
   import { labelOf } from './helpers'
   import ScalarField from './ScalarField.svelte'

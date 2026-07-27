@@ -1,5 +1,5 @@
 import { createEffect, createSignal, mergeProps, Show, type JSX } from 'solid-js'
-import { type NavNode, type TabsNav } from '@iris-ui/core'
+import { type NavNode, type TabsNav } from '@iris-ui-kit/core'
 import { IrisSidebarLayout } from '../layouts/SidebarLayout'
 import { IrisHeaderLayout } from '../layouts/HeaderLayout'
 import { useStore } from '../useStore'

@@ -13,8 +13,8 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@iris-ui/tokens": "workspace:*",
-    "@iris-ui/vue": "workspace:*",
+    "@iris-ui-kit/tokens": "workspace:*",
+    "@iris-ui-kit/vue": "workspace:*",
     "vue": "^3.5.13"
   },
   "devDependencies": {

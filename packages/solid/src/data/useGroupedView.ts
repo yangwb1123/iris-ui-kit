@@ -1,6 +1,6 @@
 import { createMemo, type Accessor } from 'solid-js'
-import { createGroupedView, type GroupedViewConfig, type GroupedViewState } from '@iris-ui/core'
-import type { DataViewColumn } from '@iris-ui/core'
+import { createGroupedView, type GroupedViewConfig, type GroupedViewState } from '@iris-ui-kit/core'
+import type { DataViewColumn } from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
 export interface UseGroupedView<Row, K = string> {

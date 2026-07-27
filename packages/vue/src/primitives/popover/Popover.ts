@@ -1,5 +1,5 @@
 import { computed, defineComponent, provide, ref, useId, watch, type PropType } from 'vue'
-import { createFloatingMachine, type Placement } from '@iris-ui/core'
+import { createFloatingMachine, type Placement } from '@iris-ui-kit/core'
 import { useMachine } from '../../machine/useMachine'
 import { PopoverContextKey } from './context'
 

@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { IrisButton } from '@iris-ui/react'
-import type { Command } from '@iris-ui/core/commands'
+import { IrisButton } from '@iris-ui-kit/react'
+import type { Command } from '@iris-ui-kit/core/commands'
 import { useCommands } from '../commands-context'
 import { createAnthropicCall, createLlmPlanner, fuzzyPlanner, type Planner } from './planner'
 
@@ -27,7 +27,7 @@ const GREETING: Turn = {
 const DEFAULT_MODEL = 'claude-opus-4-8'
 
 /**
- * The agent layer: a natural-ish command runner over `@iris-ui/core/commands`.
+ * The agent layer: a natural-ish command runner over `@iris-ui-kit/core/commands`.
  * The `planner` prop is the deterministic fallback (fuzzy-match → top command).
  * When the user enables the AI planner and supplies a key, a Claude-backed
  * planner ({@link createLlmPlanner}) takes over — it asks the model to pick a

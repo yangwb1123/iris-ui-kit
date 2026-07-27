@@ -1,4 +1,4 @@
-import { IrisTable, IrisBadge, type IrisTableColumn } from '@iris-ui/react'
+import { IrisTable, IrisBadge, type IrisTableColumn } from '@iris-ui-kit/react'
 
 interface Row extends Record<string, unknown> {
   id: number

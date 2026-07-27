@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useDataSource, createClientDataSource } from '@iris-ui/svelte'
+  import { useDataSource, createClientDataSource } from '@iris-ui-kit/svelte'
   import { adminDataViewColumns, type AdminDataPage } from '../core'
 
   let { page }: { page: AdminDataPage } = $props()

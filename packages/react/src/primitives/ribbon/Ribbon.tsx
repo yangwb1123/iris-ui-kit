@@ -17,7 +17,7 @@ export interface IrisRibbonProps {
  * Ribbon: a corner badge ("New", "Sale", …) anchored to the top corner of its
  * content. RTL-safe via logical insets/radii.
  *
- * React port of {@link import('@iris-ui/vue').IrisRibbon}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisRibbon}.
  */
 export function IrisRibbon({
   text,

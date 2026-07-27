@@ -24,7 +24,7 @@
 
 ## ADR-002 — logic sinks into framework-agnostic core controllers
 
-日期: earlier · 决策: selection/roving/data-view/data-source/admin-shell/sortable live in `@iris-ui/core`; adapters are thin bindings. · 原因: de-duplicate 4 frameworks; single source of behavior. · 影响: new behavior = core controller + 4 bridges. · 替代方案: per-framework logic (rejected — drift).
+日期: earlier · 决策: selection/roving/data-view/data-source/admin-shell/sortable live in `@iris-ui-kit/core`; adapters are thin bindings. · 原因: de-duplicate 4 frameworks; single source of behavior. · 影响: new behavior = core controller + 4 bridges. · 替代方案: per-framework logic (rejected — drift).
 
 ## ADR-001 — 4-framework parity over a shared core
 

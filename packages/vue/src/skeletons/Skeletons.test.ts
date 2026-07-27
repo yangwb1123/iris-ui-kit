@@ -5,7 +5,7 @@ import { IrisDashboardTemplate } from './DashboardTemplate'
 
 afterEach(() => {})
 
-describe('@iris-ui/vue IrisLoginTemplate', () => {
+describe('@iris-ui-kit/vue IrisLoginTemplate', () => {
   it('renders title + email + password inputs + submit button', () => {
     const wrap = mount(IrisLoginTemplate, {
       props: { title: 'Welcome back' },
@@ -74,7 +74,7 @@ describe('@iris-ui/vue IrisLoginTemplate', () => {
   })
 })
 
-describe('@iris-ui/vue IrisDashboardTemplate', () => {
+describe('@iris-ui-kit/vue IrisDashboardTemplate', () => {
   it('renders header + sidebar + main grid', () => {
     const wrap = mount(IrisDashboardTemplate, {
       props: {

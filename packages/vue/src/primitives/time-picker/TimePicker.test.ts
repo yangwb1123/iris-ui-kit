@@ -4,7 +4,7 @@ import { IrisTimePicker } from './TimePicker'
 
 afterEach(() => {})
 
-describe('@iris-ui/vue IrisTimePicker', () => {
+describe('@iris-ui-kit/vue IrisTimePicker', () => {
   it('renders 2 number inputs in 24h mode (no AM/PM toggle)', () => {
     const wrap = mount(IrisTimePicker, {
       props: { modelValue: { hours: 10, minutes: 30 } },

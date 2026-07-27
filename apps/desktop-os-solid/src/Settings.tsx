@@ -1,5 +1,5 @@
 import { For, Show, createMemo, createSignal, onMount, type JSX } from 'solid-js'
-import { IrisBadge, IrisButton } from '@iris-ui/solid'
+import { IrisBadge, IrisButton } from '@iris-ui-kit/solid'
 import { type AppManifest } from './catalog'
 import { OS_ORDER, CHROMES } from './os'
 import { useApps, useProfile } from './profile'

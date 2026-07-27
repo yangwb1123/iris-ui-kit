@@ -4,7 +4,7 @@ import { IrisBanner } from './Banner'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisBanner', () => {
+describe('@iris-ui-kit/react IrisBanner', () => {
   it('renders edge-to-edge with role="status"', () => {
     const { container } = render(<IrisBanner>Hello</IrisBanner>)
     const el = container.querySelector('[data-iris-banner]') as HTMLElement

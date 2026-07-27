@@ -4,7 +4,7 @@ import IrisCard from './IrisCard.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisCard', () => {
+describe('@iris-ui-kit/svelte IrisCard', () => {
   it('renders the card container', () => {
     const { container } = render(IrisCard)
     expect(container.querySelector('[data-iris-card]')).not.toBeNull()

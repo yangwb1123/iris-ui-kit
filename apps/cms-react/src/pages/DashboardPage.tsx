@@ -1,4 +1,4 @@
-import { IrisDashboardGrid, IrisDashboardCard, IrisBadge } from '@iris-ui/react'
+import { IrisDashboardGrid, IrisDashboardCard, IrisBadge } from '@iris-ui-kit/react'
 
 type Tone = 'primary' | 'success' | 'warning' | 'danger' | 'neutral'
 const stats: { label: string; value: string; delta: string; tone: Tone }[] = [
@@ -29,10 +29,10 @@ export function DashboardPage() {
         <IrisDashboardCard colSpan="full">
           <div className="stat-label">Welcome back 👋</div>
           <p style={{ margin: '8px 0 0', maxWidth: '70ch', lineHeight: 1.6 }}>
-            This is a Vben-style CMS shell assembled from <code>@iris-ui/react/admin</code>: a
+            This is a Vben-style CMS shell assembled from <code>@iris-ui-kit/react/admin</code>: a
             data-driven collapsible sidebar nav, a header breadcrumb, and a keep-alive multi-tab bar
             — all driven by one nav-tree config and the framework-agnostic stores in{' '}
-            <code>@iris-ui/core</code> (shared with the Vue version).
+            <code>@iris-ui-kit/core</code> (shared with the Vue version).
           </p>
         </IrisDashboardCard>
       </IrisDashboardGrid>

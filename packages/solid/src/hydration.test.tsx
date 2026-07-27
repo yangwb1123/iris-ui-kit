@@ -172,7 +172,7 @@ function hasId(html: string, id: string): boolean {
   return new RegExp(`\\sid="${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`).test(html)
 }
 
-describe('@iris-ui/solid — SSR render + createUniqueId drift guard (non-overlay subset)', () => {
+describe('@iris-ui-kit/solid — SSR render + createUniqueId drift guard (non-overlay subset)', () => {
   it('the SSR build exposes a working renderToString (sanity)', () => {
     const { html } = ssr(() => <IrisButton>Hi</IrisButton>)
     expect(typeof html).toBe('string')

@@ -3,9 +3,9 @@
    * App Store — browse the catalog and install link / iframe apps into the user
    * profile. Add ANY external service via "Add a web app"; manage them under
    * "My apps". Built-in component apps are shown for reference but can't be
-   * removed. Drives the SAME `@iris-ui/core/profile` engine as the React demo.
+   * removed. Drives the SAME `@iris-ui-kit/core/profile` engine as the React demo.
    */
-  import { IrisButton, IrisBadge, IrisInput } from '@iris-ui/svelte'
+  import { IrisButton, IrisBadge, IrisInput } from '@iris-ui-kit/svelte'
   import { CATALOG, INSTALLABLE_APPS, type AppManifest, type AppKind } from '../catalog'
   import {
     profile,

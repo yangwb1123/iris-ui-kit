@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { IrisIcon } from './Icon'
-import { createIconRegistry } from '@iris-ui/icons'
+import { createIconRegistry } from '@iris-ui-kit/icons'
 import { ThemeProvider } from '../../theme'
-import { createThemeStore } from '@iris-ui/theme'
-import { lightTheme } from '@iris-ui/tokens'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { lightTheme } from '@iris-ui-kit/tokens'
 
-describe('@iris-ui/vue IrisIcon', () => {
+describe('@iris-ui-kit/vue IrisIcon', () => {
   it('renders an svg with structured children + currentColor stroke', () => {
     const wrap = mount(IrisIcon, { props: { name: 'check' } })
     const el = wrap.find('[data-iris-icon="check"]')

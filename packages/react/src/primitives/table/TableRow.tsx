@@ -1,5 +1,5 @@
 import * as React from 'react'
-import type { TreeRow } from '@iris-ui/core'
+import type { TreeRow } from '@iris-ui-kit/core'
 import type { IrisTableColumn, IrisTableColumnWidths } from './types'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { BASE_CELL_STYLE, borderStyle } from './styles'
@@ -65,7 +65,7 @@ export function TableRow<Row extends Record<string, unknown>>({
   expansion,
   expandedKeys,
   t,
-  leafColumns, // eslint-disable-line @typescript-eslint/no-unused-vars
+  leafColumns,
   columnWidths: _columnWidths,
   bordered,
   striped,

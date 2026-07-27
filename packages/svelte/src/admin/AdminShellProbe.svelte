@@ -1,7 +1,7 @@
 <script lang="ts">
   // Test fixture: drives useAdminShell and surfaces its reactive values into the
   // DOM, plus hands the (stable) navigate / syncFromTab api out via onready.
-  import type { NavNode, TabsNav } from '@iris-ui/core'
+  import type { NavNode, TabsNav } from '@iris-ui-kit/core'
   import { useAdminShell, type UseAdminShellReturn } from './useAdminShell.svelte'
 
   let {

@@ -6,7 +6,7 @@ import { findRepoRoot } from './discover'
 /**
  * Guards the cross-framework behavior-contract harness against silent drift.
  *
- * `@iris-ui/core/contracts` exports a set of framework-agnostic `*Scenario`s;
+ * `@iris-ui-kit/core/contracts` exports a set of framework-agnostic `*Scenario`s;
  * each adapter's `contracts.test` must replay EVERY one of them through its own
  * driver. Nothing else enforces that: a scenario added to core but wired into
  * only three adapters still passes CI (the fourth simply runs fewer tests), so

@@ -1,5 +1,5 @@
 import type { Snippet } from 'svelte'
-import type { NavNode, TabsNav } from '@iris-ui/core'
+import type { NavNode, TabsNav } from '@iris-ui-kit/core'
 
 // ── NavMenu ─────────────────────────────────────────────────────────────────────
 export interface IrisNavMenuProps {

@@ -1,8 +1,11 @@
 import { createContext, createSignal, onCleanup, useContext, type JSX } from 'solid-js'
-import { type NotificationCenter, type NotificationCenterState } from '@iris-ui/core/notifications'
+import {
+  type NotificationCenter,
+  type NotificationCenterState,
+} from '@iris-ui-kit/core/notifications'
 
 /**
- * Solid glue around ONE `@iris-ui/core/notifications` center — the
+ * Solid glue around ONE `@iris-ui-kit/core/notifications` center — the
  * framework-agnostic NOTIFICATION engine behind desktop toasts + history. A
  * single center lives in context (the SAME engine the React desktop drives, here
  * on Solid); apps `post` into it (the `notifications` permission gates this), the

@@ -1,5 +1,5 @@
 import { createSignal, createMemo, mergeProps, splitProps, Show, For, type JSX } from 'solid-js'
-import { createSelectionModel } from '@iris-ui/core'
+import { createSelectionModel } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 

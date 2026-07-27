@@ -1,5 +1,5 @@
 import { computed, onMounted, type ComputedRef } from 'vue'
-import { resolveDataState, type DataState, type DataStateInput } from '@iris-ui/core'
+import { resolveDataState, type DataState, type DataStateInput } from '@iris-ui-kit/core'
 import { DATA_STATE_CLASS, installDataStateStyles } from './styles'
 import { usePrefersReducedMotion } from './usePrefersReducedMotion'
 
@@ -26,7 +26,7 @@ export interface UseDataStateReturn {
  * transition so the cross-fade replays and (b) drop the animation class when
  * the user prefers reduced motion.
  *
- * The framework-agnostic precedence lives in `@iris-ui/core`'s
+ * The framework-agnostic precedence lives in `@iris-ui-kit/core`'s
  * {@link resolveDataState}; this composable is the thin Vue animation bridge.
  */
 export function useDataState(input: () => DataStateInput): UseDataStateReturn {

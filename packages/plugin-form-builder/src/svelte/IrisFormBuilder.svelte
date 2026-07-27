@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { setFormContext } from '@iris-ui/svelte/form'
-  import type { FormState, FormStore, FormValues } from '@iris-ui/core'
+  import { setFormContext } from '@iris-ui-kit/svelte/form'
+  import type { FormState, FormStore, FormValues } from '@iris-ui-kit/core'
   import { createFormBuilder, type FormSchema, type FormBuilderConfig } from '../core'
   import FieldControl from './FieldControl.svelte'
 
@@ -41,7 +41,7 @@
   } = builder
 
   // Expose the builder's store through Svelte's form context so each control
-  // binds via `@iris-ui/svelte`'s `useField` (canonical-path keyed). This is what
+  // binds via `@iris-ui-kit/svelte`'s `useField` (canonical-path keyed). This is what
   // lets an `array` field use `useFieldArray` and bind its per-row sub-fields to
   // nested paths (`items[2].sku`), with per-row state that re-keys on remove/move.
   // svelte-ignore state_referenced_locally — store ref is stable

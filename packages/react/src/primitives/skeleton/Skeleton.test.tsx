@@ -5,7 +5,7 @@ import { __SKELETON_STYLE_ID, __resetSkeletonStyles } from './styles'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisSkeleton', () => {
+describe('@iris-ui-kit/react IrisSkeleton', () => {
   beforeEach(() => __resetSkeletonStyles())
   afterEach(() => __resetSkeletonStyles())
 

@@ -3,7 +3,7 @@
 // SCOPING (intentional): full live preview in the React / Solid / Svelte runtimes
 // inside VitePress is OUT OF SCOPE — island isolation (mounting three other
 // framework runtimes in a Vue/VitePress page) is heavy and brittle. VitePress is
-// Vue, so the LIVE preview renders the real `@iris-ui/vue` component; the
+// Vue, so the LIVE preview renders the real `@iris-ui-kit/vue` component; the
 // 4-framework CODE TABS (see explorer-codegen.ts) carry the parity story.
 //
 // This file declares which components are live-preview-wired and, for each, which

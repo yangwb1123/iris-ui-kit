@@ -1,6 +1,6 @@
 import { readable, derived, type Readable } from 'svelte/store'
 import { onMount } from 'svelte'
-import { resolveDataState, type DataState, type DataStateInput } from '@iris-ui/core'
+import { resolveDataState, type DataState, type DataStateInput } from '@iris-ui-kit/core'
 import { installDataStateStyles, DATA_STATE_CLASS } from './styles'
 import { usePrefersReducedMotion } from './usePrefersReducedMotion'
 

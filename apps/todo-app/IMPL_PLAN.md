@@ -23,7 +23,7 @@ apps/todo-app/
 
 ### 1.2 配置项目
 
-- **package.json**: 依赖 `@iris-ui/react`, `react`, `react-dom`, 开发依赖 Vite React 插件
+- **package.json**: 依赖 `@iris-ui-kit/react`, `react`, `react-dom`, 开发依赖 Vite React 插件
 - **tsconfig.json**: 继承 `../../tsconfig.base.json`, 启用 `react-jsx`
 - **vite.config.ts**: dev 模式 source alias 到 packages 源码，实现 hot-reload
 - **index.html**: 标准 Vite HTML 模板

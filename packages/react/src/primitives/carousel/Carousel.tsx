@@ -58,7 +58,7 @@ function prefersReducedMotion(): boolean {
  * a11y: region with `aria-roledescription="carousel"`, per-slide labelling,
  * and a polite live region announcing the active slide.
  *
- * React port of {@link import('@iris-ui/vue').IrisCarousel}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisCarousel}.
  */
 export function IrisCarousel({
   children,

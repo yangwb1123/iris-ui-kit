@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 import { createThemeStore } from './createThemeStore'
 
 describe('createThemeStore', () => {

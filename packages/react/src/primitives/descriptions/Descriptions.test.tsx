@@ -9,7 +9,7 @@ const ITEMS: IrisDescriptionsItem[] = [
   { label: 'Role', value: 'Engineer' },
 ]
 
-describe('@iris-ui/react IrisDescriptions', () => {
+describe('@iris-ui-kit/react IrisDescriptions', () => {
   it('renders a <dl> with a dt/dd per item', () => {
     const { container } = render(<IrisDescriptions items={ITEMS} />)
     expect(container.querySelector('dl[data-iris-descriptions]')).not.toBeNull()

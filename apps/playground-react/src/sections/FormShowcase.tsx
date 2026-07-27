@@ -13,7 +13,7 @@ import {
   type IrisCheckboxValue,
   IrisFileUpload,
   type IrisFileUploadFile,
-} from '@iris-ui/react'
+} from '@iris-ui-kit/react'
 
 export function FormShowcase() {
   const [name, setName] = useState('Jane Doe')

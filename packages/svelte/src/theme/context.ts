@@ -1,7 +1,7 @@
 import type { Snippet } from 'svelte'
 import type { Readable } from 'svelte/store'
-import type { Direction, ThemeStore } from '@iris-ui/theme'
-import type { IrisTheme } from '@iris-ui/tokens'
+import type { Direction, ThemeStore } from '@iris-ui-kit/theme'
+import type { IrisTheme } from '@iris-ui-kit/tokens'
 
 /** Context key for the Iris theme — a module-singleton Symbol. */
 export const THEME_KEY = Symbol('iris-ui:theme')

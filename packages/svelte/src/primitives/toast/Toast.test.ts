@@ -36,7 +36,7 @@ async function swipePointer(
   await fireEvent(node, ev)
 }
 
-describe('@iris-ui/svelte IrisToast', () => {
+describe('@iris-ui-kit/svelte IrisToast', () => {
   it('renders viewport and shows nothing when queue is empty', () => {
     render(IrisToastViewport)
     flushSync()

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { createClientDataSource, type DataViewColumn } from '@iris-ui/core'
+import { createClientDataSource, type DataViewColumn } from '@iris-ui-kit/core'
 import { useDataSource, type UseDataSource } from './useDataSource'
 
 interface Row extends Record<string, unknown> {

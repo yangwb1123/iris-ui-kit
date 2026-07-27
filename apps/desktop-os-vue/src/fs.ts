@@ -1,5 +1,5 @@
 /**
- * The seam that proves `@iris-ui/core/fs` is framework-agnostic: ONE
+ * The seam that proves `@iris-ui-kit/core/fs` is framework-agnostic: ONE
  * `createVirtualFs()` instance, shared across the whole Vue shell via a module
  * singleton (mirrors React's `useRef(createVirtualFs()).current`), plus a
  * `useFs()` composable that returns the engine + a `ref`-backed live view of its
@@ -13,7 +13,7 @@
  * engine stays pure + persistable.
  */
 import { shallowRef, type Ref } from 'vue'
-import { createVirtualFs, type VirtualFs, type VfsState } from '@iris-ui/core/fs'
+import { createVirtualFs, type VirtualFs, type VfsState } from '@iris-ui-kit/core/fs'
 
 /** The single, app-wide virtual file system — the same engine the React demo uses. */
 export const fs: VirtualFs = createVirtualFs()

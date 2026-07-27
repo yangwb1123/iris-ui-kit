@@ -5,7 +5,7 @@ import { IrisAvatar } from './Avatar'
 
 afterEach(cleanup)
 
-describe('@iris-ui/solid IrisAvatar', () => {
+describe('@iris-ui-kit/solid IrisAvatar', () => {
   it('renders an <img> when src is provided', () => {
     const { container } = render(() => <IrisAvatar src="/u.png" alt="user" />)
     const img = container.querySelector('img')!

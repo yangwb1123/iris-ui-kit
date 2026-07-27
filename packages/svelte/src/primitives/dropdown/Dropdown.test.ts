@@ -4,7 +4,7 @@ import DropdownHarness from './DropdownHarness.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisDropdown', () => {
+describe('@iris-ui-kit/svelte IrisDropdown', () => {
   it('opens on trigger click and renders role=menu + menuitems', async () => {
     const { getByText, container } = render(DropdownHarness)
     expect(container.querySelector('[data-iris-dropdown-menu]')).toBeNull()

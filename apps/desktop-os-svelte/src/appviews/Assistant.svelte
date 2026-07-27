@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
    * The agent layer for the Svelte 5 shell: a natural-ish command runner over
-   * `@iris-ui/core/commands`. The deterministic `fuzzyPlanner` (fuzzy-match → top
+   * `@iris-ui-kit/core/commands`. The deterministic `fuzzyPlanner` (fuzzy-match → top
    * command) is the default. When the user enables the AI planner and supplies a
    * key, a Claude-backed planner (`createLlmPlanner`) takes over — it asks the
    * model to pick a command via tool-use over the SAME registry, falling back to
@@ -11,8 +11,8 @@
    * Mirrors `apps/desktop-os/src/appviews/Assistant.tsx` (React), in idiomatic
    * Svelte 5 runes.
    */
-  import { IrisButton } from '@iris-ui/svelte'
-  import type { Command } from '@iris-ui/core/commands'
+  import { IrisButton } from '@iris-ui-kit/svelte'
+  import type { Command } from '@iris-ui-kit/core/commands'
   import { useCommands } from '../commands.svelte'
   import { createAnthropicCall, createLlmPlanner, fuzzyPlanner, type Planner } from '../planner'
 

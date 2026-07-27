@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { IrisButton, IrisBadge, IrisInput } from '@iris-ui/react'
+import { IrisButton, IrisBadge, IrisInput } from '@iris-ui-kit/react'
 import { CATALOG, INSTALLABLE_APPS, type AppManifest } from '../catalog'
 import { useProfile, useProfileState, useLaunchApp, useNotifications } from '../shell'
 import { PERMISSION_META, useCustomApps } from '../permissions'

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
-import type { UndoStackOptions } from '@iris-ui/core/undo'
+import type { UndoStackOptions } from '@iris-ui-kit/core/undo'
 import { useUndoStack } from './useUndoStack'
 
 /** Mount a probe component that exposes the bridge's reactive state in the DOM. */

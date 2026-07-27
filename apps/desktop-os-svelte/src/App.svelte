@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { serializeSession, restoreSession, type WindowSession } from '@iris-ui/core/window'
-  import { type VfsState } from '@iris-ui/core/fs'
+  import { serializeSession, restoreSession, type WindowSession } from '@iris-ui-kit/core/window'
+  import { type VfsState } from '@iris-ui-kit/core/fs'
   import { barInsets } from './os'
   import { useOs } from './os-state.svelte'
   import { wm } from './wm.svelte'
@@ -38,7 +38,7 @@
       )
       fs.write(
         '/Documents/notes.md',
-        '# Notes\n\n- Backed by @iris-ui/core/fs\n- The same engine drives all four shells.',
+        '# Notes\n\n- Backed by @iris-ui-kit/core/fs\n- The same engine drives all four shells.',
       )
       fs.mkdir('/Pictures')
     }

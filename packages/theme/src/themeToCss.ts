@@ -1,4 +1,4 @@
-import type { IrisTheme } from '@iris-ui/tokens'
+import type { IrisTheme } from '@iris-ui-kit/tokens'
 import { themeCssVarEntries } from './applyTheme'
 
 export interface ThemeToCssOptions {

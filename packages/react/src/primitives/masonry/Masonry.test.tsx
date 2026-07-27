@@ -7,7 +7,7 @@ afterEach(() => cleanup())
 const root = (c: HTMLElement) => c.querySelector('[data-iris-masonry]') as HTMLElement
 const items = (c: HTMLElement) => c.querySelectorAll('[data-iris-masonry-item]')
 
-describe('@iris-ui/react IrisMasonry', () => {
+describe('@iris-ui-kit/react IrisMasonry', () => {
   it('wraps each child in an item', () => {
     const { container } = render(
       <IrisMasonry>

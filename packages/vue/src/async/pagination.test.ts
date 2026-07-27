@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { usePaginatedResource } from './usePaginatedResource'
-import type { PageQuery, PageResult } from '@iris-ui/core'
+import type { PageQuery, PageResult } from '@iris-ui-kit/core'
 
 function dataset(total: number) {
   const all = Array.from({ length: total }, (_, i) => i)
@@ -28,7 +28,7 @@ function probe(mode?: 'paged' | 'infinite') {
   })
 }
 
-describe('@iris-ui/vue usePaginatedResource', () => {
+describe('@iris-ui-kit/vue usePaginatedResource', () => {
   it('immediate loads page 1', async () => {
     const wrapper = mount(probe())
     await flushPromises()

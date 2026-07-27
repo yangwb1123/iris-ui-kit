@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { FormStore, FormValues } from '@iris-ui/core'
-  import { createFormStore } from '@iris-ui/core'
+  import type { FormStore, FormValues } from '@iris-ui-kit/core'
+  import { createFormStore } from '@iris-ui-kit/core'
   import type { UseFieldArrayReturn } from './useFieldArray'
   import IrisForm from './IrisForm.svelte'
   import UseFieldArrayBody from './UseFieldArrayBody.svelte'

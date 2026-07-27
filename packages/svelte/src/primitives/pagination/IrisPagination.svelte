@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getPageRange } from '@iris-ui/core'
+  import { getPageRange } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
 
   type PaginationSize = 'sm' | 'md'

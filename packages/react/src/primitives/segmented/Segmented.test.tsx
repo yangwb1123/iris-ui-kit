@@ -12,7 +12,7 @@ const OPTS: IrisSegmentedOption[] = [
 
 const items = (c: HTMLElement) => c.querySelectorAll('[data-iris-segmented-item]')
 
-describe('@iris-ui/react IrisSegmented', () => {
+describe('@iris-ui-kit/react IrisSegmented', () => {
   it('controlled value renders from the prop (reject → no flip; accept → flips)', () => {
     const onValueChange = vi.fn()
     function C({ value }: { value: string }) {

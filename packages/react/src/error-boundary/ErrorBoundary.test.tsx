@@ -17,7 +17,7 @@ function Boom({
   return <div data-ok="">fine</div>
 }
 
-describe('@iris-ui/react IrisErrorBoundary', () => {
+describe('@iris-ui-kit/react IrisErrorBoundary', () => {
   it('catches a thrown error and shows the default fallback (role=alert, message) without crashing', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { container } = render(

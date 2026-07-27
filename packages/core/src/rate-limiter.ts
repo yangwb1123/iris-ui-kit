@@ -1,5 +1,5 @@
 /**
- * `@iris-ui/core` rate limiter — a token-bucket limiter for throttling actions.
+ * `@iris-ui-kit/core` rate limiter — a token-bucket limiter for throttling actions.
  * The command registry (`createCommandRegistry.run`) and the LLM planner execute
  * with no rate limiting, so an agent/automation loop can fire commands without
  * bound. This is the missing throttle: a bucket refills at a steady rate up to a

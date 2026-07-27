@@ -43,7 +43,7 @@ function Harness(props: {
   return <div class="handle" ref={setHandle} style={{ width: '40px', height: '40px' }} />
 }
 
-describe('@iris-ui/solid useDrag', () => {
+describe('@iris-ui-kit/solid useDrag', () => {
   it('fires onStart, onDrag, onEnd with cumulative deltas', () => {
     const events: string[] = []
     let lastDx = 0

@@ -9,7 +9,7 @@ export interface ApplyCssVarsResult {
  * Write `[cssVarName, value]` pairs to a target element as inline custom
  * properties, returning a `revert()` that restores the prior values (removing
  * the ones that were previously unset). Pure DOM, no framework dependency —
- * the single write-path shared by `applyTheme` and `@iris-ui/skins`' `applySkin`.
+ * the single write-path shared by `applyTheme` and `@iris-ui-kit/skins`' `applySkin`.
  */
 export function applyCssVars(entries: CssVarEntries, target: HTMLElement): ApplyCssVarsResult {
   const previous: CssVarEntries = []

@@ -1,13 +1,13 @@
 <script lang="ts">
   /**
-   * Files — a real file MANAGER over `@iris-ui/core/fs` (the virtual file system).
+   * Files — a real file MANAGER over `@iris-ui-kit/core/fs` (the virtual file system).
    * Navigate folders, create folders + text files, edit/rename/delete, all
    * persisted to the user profile. This is what makes the `storage` permission the
    * app requests actually do something (the old Files view was a static mock).
    * Mirrors the React reference (apps/desktop-os/src/appviews/Files.tsx).
    */
-  import { IrisButton } from '@iris-ui/svelte'
-  import { normalizePath } from '@iris-ui/core/fs'
+  import { IrisButton } from '@iris-ui-kit/svelte'
+  import { normalizePath } from '@iris-ui-kit/core/fs'
   import { fs, useFsState } from '../fs.svelte'
 
   /** Join a directory + child name into a normalized absolute path. */

@@ -9,7 +9,7 @@ import {
   COLOR_TOKENS,
   SPACING_TOKENS,
   RADII_TOKENS,
-} from '@iris-ui/vue'
+} from '@iris-ui-kit/vue'
 import { skinEngine } from './demo-skins'
 import SkinsShowcase from './sections/SkinsShowcase.vue'
 import ButtonShowcase from './sections/ButtonShowcase.vue'

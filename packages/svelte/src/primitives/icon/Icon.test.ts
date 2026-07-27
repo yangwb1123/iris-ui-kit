@@ -6,7 +6,7 @@ afterEach(cleanup)
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
-describe('@iris-ui/svelte IrisIcon', () => {
+describe('@iris-ui-kit/svelte IrisIcon', () => {
   it('renders a registered icon as inline SVG with structured nodes', () => {
     const { container } = render(IrisIcon, { props: { name: 'chevron-down' } })
     const svg = container.querySelector('svg[data-iris-icon="chevron-down"]')

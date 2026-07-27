@@ -1,4 +1,4 @@
-import type { IrisIconRegistry } from '@iris-ui/icons'
+import type { IrisIconRegistry } from '@iris-ui-kit/icons'
 
 export interface IrisIconProps {
   /** Semantic icon name resolved via the registry (e.g. 'check', 'chevron-down'). */

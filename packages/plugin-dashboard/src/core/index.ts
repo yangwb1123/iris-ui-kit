@@ -1,7 +1,7 @@
-import { createStore, createPlugin } from '@iris-ui/core'
+import { createStore, createPlugin } from '@iris-ui-kit/core'
 
 /**
- * `@iris-ui/plugin-dashboard` — render a CSS Grid dashboard where widgets
+ * `@iris-ui-kit/plugin-dashboard` — render a CSS Grid dashboard where widgets
  * occupy configurable grid cells and can be repositioned via native HTML5
  * drag-and-drop. This `core` entry is framework-agnostic: it owns all state
  * and mutations (moveWidget, addWidget, removeWidget) via a subscribable store.

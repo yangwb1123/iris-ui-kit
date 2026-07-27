@@ -1,4 +1,4 @@
-import { createStore, generateId } from '@iris-ui/core'
+import { createStore, generateId } from '@iris-ui-kit/core'
 
 export type IrisToastVariant = 'default' | 'success' | 'danger' | 'warning' | 'info'
 

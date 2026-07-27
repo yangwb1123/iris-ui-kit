@@ -4,7 +4,7 @@ import { IrisCard } from './Card'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisCard', () => {
+describe('@iris-ui-kit/react IrisCard', () => {
   it('renders the default children in a body', () => {
     const { container } = render(<IrisCard>hello</IrisCard>)
     const body = container.querySelector('[data-iris-card-body]')!

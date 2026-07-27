@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { resolveDataState, type DataState, type DataStateInput } from '@iris-ui/core'
+import { resolveDataState, type DataState, type DataStateInput } from '@iris-ui-kit/core'
 import { DATA_STATE_CLASS, installDataStateStyles } from './styles'
 import { usePrefersReducedMotion } from './usePrefersReducedMotion'
 
@@ -25,7 +25,7 @@ export interface UseDataStateReturn {
  * for the state node that (a) re-key on every transition so the cross-fade
  * replays and (b) drop the animation class when the user prefers reduced motion.
  *
- * The framework-agnostic precedence lives in `@iris-ui/core`'s
+ * The framework-agnostic precedence lives in `@iris-ui-kit/core`'s
  * {@link resolveDataState}; this hook is the thin React animation bridge.
  */
 export function useDataState(input: DataStateInput): UseDataStateReturn {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isClosable } from '@iris-ui/core'
+  import { isClosable } from '@iris-ui-kit/core'
   import { useTabsNav } from './useTabsNav'
   import IrisIcon from '../primitives/icon/IrisIcon.svelte'
   import IrisDropdown from '../primitives/dropdown/Dropdown.svelte'

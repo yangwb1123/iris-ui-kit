@@ -100,7 +100,7 @@ const cases: Array<{ name: string; factory: () => VNode }> = [
   },
 ]
 
-describe('@iris-ui/vue SSR', () => {
+describe('@iris-ui-kit/vue SSR', () => {
   it('runs in a no-DOM (server) environment', () => {
     expect(typeof document).toBe('undefined')
     expect(typeof window).toBe('undefined')

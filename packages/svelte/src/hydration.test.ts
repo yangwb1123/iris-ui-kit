@@ -33,7 +33,7 @@
  * onto genuine SSR markup therefore requires dual module graphs (separate SSR +
  * client transform pipelines sharing one jsdom) — brittle machinery the task
  * explicitly says to scope down from, and it cannot be done without altering
- * the build. (Same conclusion, same scoping, as `@iris-ui/solid`'s
+ * the build. (Same conclusion, same scoping, as `@iris-ui-kit/solid`'s
  * `hydration.test.tsx`.)
  *
  * So this test instead PROVES the hydration-breaking failure modes directly and
@@ -50,7 +50,7 @@
  *       is exactly what a hydration drift surfaces as), and sibling fields get
  *       distinct, non-colliding ids.
  *
- * NOTE on `generateId()`: `@iris-ui/core`'s `generateId()` is a process-global
+ * NOTE on `generateId()`: `@iris-ui-kit/core`'s `generateId()` is a process-global
  * monotonic counter (`iris-1`, `iris-2`, …) that is NOT reset per render. That
  * is itself a real cross-render-drift consideration; the determinism check
  * below normalizes `iris-\d+` tokens so it asserts *structural* determinism
@@ -169,7 +169,7 @@ function normalizeIds(html: string): string {
   return html.replace(/iris-\d+/g, 'iris-N')
 }
 
-describe('@iris-ui/svelte — SSR render + hydration-safety guard (non-overlay subset)', () => {
+describe('@iris-ui-kit/svelte — SSR render + hydration-safety guard (non-overlay subset)', () => {
   it('the SSR build exposes a working svelte/server render (sanity)', () => {
     const { body } = ssr(ButtonHarness as Component<never>, {})
     expect(typeof body).toBe('string')

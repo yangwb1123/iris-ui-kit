@@ -1,6 +1,6 @@
 import { defineComponent, h } from 'vue'
 import { IrisForm, useForm, useField } from './form'
-import type { FormStore, FormValues } from '@iris-ui/core'
+import type { FormStore, FormValues } from '@iris-ui-kit/core'
 
 /**
  * A field that binds to the `'name'` key on the parent `<IrisForm>` store.

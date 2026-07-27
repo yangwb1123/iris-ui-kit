@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
-  import { createAutoDismiss, type AutoDismiss } from '@iris-ui/core'
+  import { createAutoDismiss, type AutoDismiss } from '@iris-ui-kit/core'
   import { portal } from '../../internal/portal'
   import { useI18n } from '../../i18n'
   import {

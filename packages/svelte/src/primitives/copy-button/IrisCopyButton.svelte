@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { copyText } from '@iris-ui/core'
+  import { copyText } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
 
   const { t } = useI18n()

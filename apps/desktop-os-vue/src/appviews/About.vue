@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IrisBadge } from '@iris-ui/vue'
+import { IrisBadge } from '@iris-ui-kit/vue'
 </script>
 
 <template>
@@ -8,7 +8,7 @@ import { IrisBadge } from '@iris-ui/vue'
     <p style="margin: 0">
       A windowed desktop shell whose entire window logic — open, focus &amp; z-order, minimize,
       maximize/restore, move/resize, edge-snap — lives in the framework-agnostic
-      <code>@iris-ui/core/window</code> (<code>createWindowManager</code>). This shell is a thin
+      <code>@iris-ui-kit/core/window</code> (<code>createWindowManager</code>). This shell is a thin
       <strong>Vue 3</strong> renderer over the <em>same</em> manager the React demo drives: drag
       uses <code>IrisMovable</code>, resize uses <code>IrisResizable</code>.
     </p>

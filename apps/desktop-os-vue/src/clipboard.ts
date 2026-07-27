@@ -1,5 +1,5 @@
 /**
- * The seam that proves `@iris-ui/core/clipboard-history` is framework-agnostic: ONE
+ * The seam that proves `@iris-ui-kit/core/clipboard-history` is framework-agnostic: ONE
  * `createClipboardHistory()` instance, shared across the whole Vue shell via a
  * module singleton (mirrors React's `useRef(createClipboardHistory()).current`),
  * plus a `useClipboard()` composable that returns the engine + a `ref`-backed live
@@ -16,7 +16,7 @@ import {
   createClipboardHistory,
   type ClipboardHistory,
   type ClipboardHistoryState,
-} from '@iris-ui/core/clipboard-history'
+} from '@iris-ui-kit/core/clipboard-history'
 
 /** The single, app-wide clipboard history — the same engine the React demo uses. */
 export const clipboard: ClipboardHistory = createClipboardHistory()

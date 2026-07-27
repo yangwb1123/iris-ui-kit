@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
-import { createSkinEngine } from '@iris-ui/skins'
+import { createSkinEngine } from '@iris-ui-kit/skins'
 import SkinProvider from './SkinProvider.svelte'
 import SkinHarness from './SkinHarness.svelte'
 import type { UseSkinReturn } from './useSkin'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte skins', () => {
+describe('@iris-ui-kit/svelte skins', () => {
   it('applies the resolved skin vars to documentElement and reverts on unmount', () => {
     // memorySkinStorage-free engine — jsdom here has no window.localStorage.
     const engine = createSkinEngine({ skins: [], default: 'light' })

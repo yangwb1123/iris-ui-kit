@@ -4,7 +4,7 @@ import IrisEmptyState from './IrisEmptyState.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisEmptyState', () => {
+describe('@iris-ui-kit/svelte IrisEmptyState', () => {
   it('renders with role=status', () => {
     const { container } = render(IrisEmptyState)
     const el = container.querySelector('[data-iris-empty-state]')

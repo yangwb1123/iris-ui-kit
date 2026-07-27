@@ -1,4 +1,4 @@
-import { createClientFetcher, type DataViewColumn } from '@iris-ui/solid'
+import { createClientFetcher, type DataViewColumn } from '@iris-ui-kit/solid'
 
 export type UserStatus = 'active' | 'invited' | 'suspended'
 export type UserRole = 'Owner' | 'Admin' | 'Editor' | 'Viewer'

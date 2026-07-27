@@ -92,16 +92,16 @@ importers:
 
   apps/cms:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/plugin-notifications':
+      '@iris-ui-kit/plugin-notifications':
         specifier: workspace:*
         version: link:../../packages/plugin-notifications
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../../packages/vue
       vue:
@@ -120,16 +120,16 @@ importers:
 
   apps/cms-react:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/plugin-notifications':
+      '@iris-ui-kit/plugin-notifications':
         specifier: workspace:^
         version: link:../../packages/plugin-notifications
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       react:
@@ -154,16 +154,16 @@ importers:
 
   apps/cms-solid:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/plugin-notifications':
+      '@iris-ui-kit/plugin-notifications':
         specifier: workspace:*
         version: link:../../packages/plugin-notifications
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../../packages/solid
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       solid-js:
@@ -179,16 +179,16 @@ importers:
 
   apps/cms-svelte:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/plugin-notifications':
+      '@iris-ui-kit/plugin-notifications':
         specifier: workspace:*
         version: link:../../packages/plugin-notifications
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../../packages/svelte
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       svelte:
@@ -219,13 +219,13 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.105.0
         version: 0.105.0(zod@4.4.3)
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       react:
@@ -259,13 +259,13 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.105.0
         version: 0.105.0(zod@4.4.3)
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../../packages/solid
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       solid-js:
@@ -290,13 +290,13 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.105.0
         version: 0.105.0(zod@4.4.3)
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../../packages/svelte
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       svelte:
@@ -324,13 +324,13 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.105.0
         version: 0.105.0(zod@4.4.3)
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../../packages/vue
       vue:
@@ -359,23 +359,23 @@ importers:
 
   apps/docs:
     dependencies:
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../../packages/theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../../packages/vue
     devDependencies:
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../../packages/solid
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../../packages/svelte
       '@sveltejs/vite-plugin-svelte':
@@ -402,10 +402,10 @@ importers:
 
   apps/playground:
     dependencies:
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../../packages/vue
       vue:
@@ -424,10 +424,10 @@ importers:
 
   apps/playground-react:
     dependencies:
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       react:
@@ -452,16 +452,16 @@ importers:
 
   apps/ssr-next:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../../packages/theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       next:
@@ -489,16 +489,16 @@ importers:
 
   apps/ssr-nuxt:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../../packages/theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../../packages/vue
       nuxt:
@@ -520,16 +520,16 @@ importers:
 
   apps/ssr-solidstart:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../../packages/solid
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../../packages/theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       '@solidjs/router':
@@ -554,16 +554,16 @@ importers:
 
   apps/ssr-sveltekit:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../../packages/svelte
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../../packages/theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       '@sveltejs/kit':
@@ -591,19 +591,19 @@ importers:
 
   apps/todo-app:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@iris-ui/skins':
+      '@iris-ui-kit/skins':
         specifier: workspace:*
         version: link:../../packages/skins
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../../packages/theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       react:
@@ -628,7 +628,7 @@ importers:
 
   packages/cli:
     dependencies:
-      '@iris-ui/manifest':
+      '@iris-ui-kit/manifest':
         specifier: workspace:*
         version: link:../manifest
 
@@ -649,7 +649,7 @@ importers:
 
   packages/mcp:
     dependencies:
-      '@iris-ui/manifest':
+      '@iris-ui-kit/manifest':
         specifier: workspace:*
         version: link:../manifest
       '@modelcontextprotocol/sdk':
@@ -661,20 +661,20 @@ importers:
 
   packages/plugin-admin:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../react
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../solid
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../svelte
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../vue
       '@solidjs/testing-library':
@@ -737,7 +737,7 @@ importers:
 
   packages/plugin-calendar:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -801,7 +801,7 @@ importers:
 
   packages/plugin-charts:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -865,7 +865,7 @@ importers:
 
   packages/plugin-dashboard:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -953,20 +953,20 @@ importers:
       '@codemirror/view':
         specifier: ^6.34.0
         version: 6.43.0
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../react
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../solid
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../svelte
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../vue
       '@solidjs/testing-library':
@@ -1029,20 +1029,20 @@ importers:
 
   packages/plugin-form-builder:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../react
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../solid
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../svelte
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../vue
       '@solidjs/testing-library':
@@ -1105,7 +1105,7 @@ importers:
 
   packages/plugin-kanban:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -1169,13 +1169,13 @@ importers:
 
   packages/plugin-locale-zh:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
 
   packages/plugin-markdown:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -1239,7 +1239,7 @@ importers:
 
   packages/plugin-notifications:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -1303,7 +1303,7 @@ importers:
 
   packages/plugin-pro-table:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -1367,7 +1367,7 @@ importers:
 
   packages/plugin-query-builder:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -1434,19 +1434,19 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.7.6
         version: 1.7.6
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
-      '@iris-ui/icons':
+      '@iris-ui-kit/icons':
         specifier: workspace:*
         version: link:../icons
-      '@iris-ui/skins':
+      '@iris-ui-kit/skins':
         specifier: workspace:*
         version: link:../skins
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../tokens
     devDependencies:
@@ -1468,13 +1468,13 @@ importers:
 
   packages/skins:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../tokens
 
@@ -1483,19 +1483,19 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.7.6
         version: 1.7.6
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
-      '@iris-ui/icons':
+      '@iris-ui-kit/icons':
         specifier: workspace:*
         version: link:../icons
-      '@iris-ui/skins':
+      '@iris-ui-kit/skins':
         specifier: workspace:*
         version: link:../skins
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../tokens
     devDependencies:
@@ -1526,19 +1526,19 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.7.6
         version: 1.7.6
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
-      '@iris-ui/icons':
+      '@iris-ui-kit/icons':
         specifier: workspace:*
         version: link:../icons
-      '@iris-ui/skins':
+      '@iris-ui-kit/skins':
         specifier: workspace:*
         version: link:../skins
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../tokens
     devDependencies:
@@ -1566,10 +1566,10 @@ importers:
 
   packages/theme:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../tokens
 
@@ -1580,19 +1580,19 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.7.6
         version: 1.7.6
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
-      '@iris-ui/icons':
+      '@iris-ui-kit/icons':
         specifier: workspace:*
         version: link:../icons
-      '@iris-ui/skins':
+      '@iris-ui-kit/skins':
         specifier: workspace:*
         version: link:../skins
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../tokens
     devDependencies:

@@ -1,6 +1,11 @@
 import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react'
-import { injectGlobalStyles } from '@iris-ui/theme'
-import { applySkin, type ApplySkinResult, type ResolvedSkin, type SkinEngine } from '@iris-ui/skins'
+import { injectGlobalStyles } from '@iris-ui-kit/theme'
+import {
+  applySkin,
+  type ApplySkinResult,
+  type ResolvedSkin,
+  type SkinEngine,
+} from '@iris-ui-kit/skins'
 import { useStore } from '../useStore'
 
 interface IrisSkinContextValue {
@@ -22,7 +27,7 @@ export interface SkinProviderProps {
  * Renderless provider mirroring `<ThemeProvider>`: subscribes to the skin
  * engine's store, applies the resolved skin's CSS vars to `target` (or
  * `document.documentElement`), reverts on unmount. Zero skin logic — all of it
- * lives in `@iris-ui/skins`. Client boundary (tsup prepends `'use client'`).
+ * lives in `@iris-ui-kit/skins`. Client boundary (tsup prepends `'use client'`).
  */
 export function SkinProvider({ engine, target = null, cspNonce, children }: SkinProviderProps) {
   const current = useStore(engine.store)

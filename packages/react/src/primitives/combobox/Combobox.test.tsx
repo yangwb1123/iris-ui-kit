@@ -13,7 +13,7 @@ const OPTIONS: IrisComboboxOption[] = [
 const input = (c: HTMLElement) => c.querySelector('[data-iris-combobox-input]') as HTMLInputElement
 const opts = (c: HTMLElement) => c.querySelectorAll('[data-iris-combobox-option]')
 
-describe('@iris-ui/react IrisCombobox', () => {
+describe('@iris-ui-kit/react IrisCombobox', () => {
   it('renders a combobox input, closed initially', () => {
     const { container } = render(<IrisCombobox options={OPTIONS} />)
     const el = input(container)

@@ -5,10 +5,10 @@ import {
   type Store,
   type FilterRule,
   type FilterOperator,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 /**
- * `@iris-ui/plugin-query-builder` — a visual composer over the data engine's
+ * `@iris-ui-kit/plugin-query-builder` — a visual composer over the data engine's
  * typed filter operators. core/data-view's {@link FilterRule} + the filterSort /
  * createDataSource pipeline already support operators (eq/gt/contains/in/between
  * …) but had NO UI to build them; this plugin's `createFilterBuilder` manages a
@@ -17,7 +17,7 @@ import {
  * the rows; all logic lives here.
  */
 
-export type { FilterRule, FilterOperator } from '@iris-ui/core'
+export type { FilterRule, FilterOperator } from '@iris-ui-kit/core'
 
 export type QueryColumnType = 'string' | 'number' | 'date' | 'enum' | 'boolean'
 

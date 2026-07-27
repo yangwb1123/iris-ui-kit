@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IrisFormField, IrisInput, IrisSwitch, IrisButton, IrisStack } from '@iris-ui/react'
+import { IrisFormField, IrisInput, IrisSwitch, IrisButton, IrisStack } from '@iris-ui-kit/react'
 
 export function SettingsPage() {
   // Local form state — survives tab switches because inactive tabs stay mounted.

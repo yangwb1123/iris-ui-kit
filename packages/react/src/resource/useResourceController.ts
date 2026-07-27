@@ -4,7 +4,7 @@ import {
   type ResourceController,
   type ResourceControllerConfig,
   type ResourceState,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
 export interface UseResourceController<T> extends ResourceController<T> {
@@ -16,7 +16,7 @@ export interface UseResourceController<T> extends ResourceController<T> {
  * React bridge over the framework-agnostic {@link createResourceController} (L4
  * CRUD list composite). Creates the controller once, subscribes to its store,
  * and returns the controller plus its live `state`. A thin bridge — all logic
- * lives in `@iris-ui/core`.
+ * lives in `@iris-ui-kit/core`.
  *
  * The controller is constructed with `immediate: false` so no fetch fires during
  * React's (side-effect-free) render phase; the initial load is kicked from an

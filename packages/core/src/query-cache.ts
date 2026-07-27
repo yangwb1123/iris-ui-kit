@@ -1,5 +1,5 @@
 /**
- * `@iris-ui/core` query cache — framework-agnostic request de-duplication,
+ * `@iris-ui-kit/core` query cache — framework-agnostic request de-duplication,
  * TTL caching, and stale-while-revalidate (SWR) over any async fetcher. The
  * data engines (`createDataSource`, `createResource`) are single-fetcher and
  * pull-based: every caller triggers its own request, nothing is shared or

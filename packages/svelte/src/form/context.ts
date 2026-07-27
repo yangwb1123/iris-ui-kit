@@ -1,5 +1,5 @@
 import { getContext, setContext } from 'svelte'
-import type { FormStore, FormValues } from '@iris-ui/core'
+import type { FormStore, FormValues } from '@iris-ui-kit/core'
 
 const FORM_KEY = Symbol('IrisForm')
 

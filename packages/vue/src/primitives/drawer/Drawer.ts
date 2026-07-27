@@ -1,5 +1,5 @@
 import { computed, defineComponent, provide, ref, useId, watch, type PropType } from 'vue'
-import { createFloatingMachine } from '@iris-ui/core'
+import { createFloatingMachine } from '@iris-ui-kit/core'
 import { useMachine } from '../../machine/useMachine'
 import { DrawerContextKey, type IrisDrawerSide } from './context'
 

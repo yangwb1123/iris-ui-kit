@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { createGroupedView, type GroupedViewConfig, type GroupedViewState } from '@iris-ui/core'
+import { createGroupedView, type GroupedViewConfig, type GroupedViewState } from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
 export interface UseGroupedView<Row, K = string> {
@@ -8,7 +8,7 @@ export interface UseGroupedView<Row, K = string> {
   /** Set the source rows (re-computes groups and aggregates). */
   setRows: (
     rows: readonly Row[],
-    columns?: readonly import('@iris-ui/core').DataViewColumn<Row>[],
+    columns?: readonly import('@iris-ui-kit/core').DataViewColumn<Row>[],
   ) => void
   /** Toggle a group's expanded state. */
   toggleGroup: (key: K) => void
@@ -42,7 +42,10 @@ export function useGroupedView<Row, K = string>(
   const state: GroupedViewState<Row, K> = storeState.state
 
   const setRows = React.useCallback(
-    (rows: readonly Row[], columns?: readonly import('@iris-ui/core').DataViewColumn<Row>[]) => {
+    (
+      rows: readonly Row[],
+      columns?: readonly import('@iris-ui-kit/core').DataViewColumn<Row>[],
+    ) => {
       controller.setRows(rows, columns)
     },
     [controller],

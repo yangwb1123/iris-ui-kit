@@ -1,7 +1,14 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { ComponentGroup, Framework, RawComponent, RawDiscovery, RawTokens } from './schema'
+import type {
+  ComponentGroup,
+  Framework,
+  ManifestProp,
+  RawComponent,
+  RawDiscovery,
+  RawTokens,
+} from './schema'
 import { ALL_FRAMEWORKS } from './schema'
 import { extractComponentProps, classifyProps } from './props'
 import { extractComponentDocs } from './descriptions'
@@ -94,7 +101,7 @@ function discoverFramework(repoRoot: string, framework: Framework): Map<string, 
 /**
  * Discover plugin-shipped components under each `packages/plugin-<name>/src/
  * <framework>/` directory. Plugins are single packages with a per-framework
- * sub-path (`@iris-ui/plugin-x/react`, …); their `Iris*` exports are tagged
+ * sub-path (`@iris-ui-kit/plugin-x/react`, …); their `Iris*` exports are tagged
  * `group: 'plugin'` plus the owning package so an agent reading the manifest can
  * find them AND knows they need `<IrisProvider plugins={[…]}>` activation.
  * Returns name → record.
@@ -106,7 +113,7 @@ function discoverPlugins(repoRoot: string): Map<string, RawComponent> {
 
   for (const entry of readdirSync(packagesDir, { withFileTypes: true })) {
     if (!entry.isDirectory() || !entry.name.startsWith('plugin-')) continue
-    const pluginPkg = `@iris-ui/${entry.name}`
+    const pluginPkg = `@iris-ui-kit/${entry.name}`
     for (const framework of ALL_FRAMEWORKS) {
       const fwDir = join(packagesDir, entry.name, 'src', framework)
       if (!existsSync(fwDir)) continue
@@ -143,6 +150,35 @@ function discoverTokens(repoRoot: string): RawTokens {
   }
 }
 
+/** Build a component record with optional props, docs, events, and slots. */
+function buildComponentRecord(
+  base: {
+    name: string
+    group: ComponentGroup
+    frameworks: Framework[]
+    plugin?: string
+    module?: string
+  },
+  propsByName: Map<string, ManifestProp[]>,
+  docsByName: Map<string, { description?: string; example?: string }>,
+): RawComponent {
+  const props = propsByName.get(base.name)
+  const doc = docsByName.get(base.name)
+  const classified = props ? classifyProps(props) : { events: [], slots: [] }
+  return {
+    name: base.name,
+    group: base.group,
+    frameworks: base.frameworks,
+    module: base.module,
+    ...(base.plugin ? { plugin: base.plugin } : {}),
+    ...(doc?.description ? { description: doc.description } : {}),
+    ...(doc?.example ? { example: doc.example } : {}),
+    ...(props ? { props } : {}),
+    ...(classified.events.length ? { events: classified.events } : {}),
+    ...(classified.slots.length ? { slots: classified.slots } : {}),
+  }
+}
+
 /**
  * Discover the component inventory + token catalog directly from the package
  * sources, so the manifest can never drift from what the barrels actually
@@ -163,36 +199,23 @@ export function discover(repoRoot: string = findRepoRoot()): RawDiscovery {
       .filter((r): r is RawComponent => Boolean(r))
     const frameworks = records.flatMap((r) => r.frameworks)
     const base = records[0]
-    const props = propsByName.get(name)
-    const doc = docsByName.get(name)
-    const classified = props ? classifyProps(props) : { events: [], slots: [] }
-    components.push({
-      name,
-      group: base.group,
-      module: records.find((r) => r.module)?.module,
-      frameworks,
-      ...(doc?.description ? { description: doc.description } : {}),
-      ...(doc?.example ? { example: doc.example } : {}),
-      ...(props ? { props } : {}),
-      ...(classified.events.length ? { events: classified.events } : {}),
-      ...(classified.slots.length ? { slots: classified.slots } : {}),
-    })
+    components.push(
+      buildComponentRecord(
+        {
+          name: base.name,
+          group: base.group,
+          frameworks,
+          module: records.find((r) => r.module)?.module,
+        },
+        propsByName,
+        docsByName,
+      ),
+    )
   }
 
-  // Plugin components are namespaced separately so a core-adapter name can't be
-  // shadowed by a plugin one; they carry their owning package + activation group.
+  // Plugin components are namespaced separately
   for (const record of discoverPlugins(repoRoot).values()) {
-    const props = propsByName.get(record.name)
-    const doc = docsByName.get(record.name)
-    const classified = props ? classifyProps(props) : { events: [], slots: [] }
-    components.push({
-      ...record,
-      ...(doc?.description ? { description: doc.description } : {}),
-      ...(doc?.example ? { example: doc.example } : {}),
-      ...(props ? { props } : {}),
-      ...(classified.events.length ? { events: classified.events } : {}),
-      ...(classified.slots.length ? { slots: classified.slots } : {}),
-    })
+    components.push(buildComponentRecord(record, propsByName, docsByName))
   }
 
   return { components, tokens: discoverTokens(repoRoot) }

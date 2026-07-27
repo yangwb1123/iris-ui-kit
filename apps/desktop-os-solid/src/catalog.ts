@@ -29,7 +29,7 @@ export type Permission = 'storage' | 'clipboard' | 'notifications' | 'network' |
 /**
  * App-aggregation manifest. The desktop is no longer a fixed set of Solid panes:
  * it's a CATALOG of "apps" of several KINDS, some built in, some installable into
- * the user profile (`@iris-ui/core/profile`). A manifest is the portable
+ * the user profile (`@iris-ui-kit/core/profile`). A manifest is the portable
  * description the shell renders + launches from — the same model the React demo
  * uses, here on Solid.
  */

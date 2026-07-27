@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { createFloatingMachine, generateId } from '@iris-ui/core'
+  import { createFloatingMachine, generateId } from '@iris-ui-kit/core'
   import { toMachine } from '../../useMachine'
   import { setPopoverContext } from './context'
-  import type { Placement } from '@iris-ui/core'
+  import type { Placement } from '@iris-ui-kit/core'
 
   interface Props {
     open?: boolean

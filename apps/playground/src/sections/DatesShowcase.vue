@@ -8,7 +8,7 @@ import {
   IrisFormField,
   type IrisDateRange,
   type IrisTimeValue,
-} from '@iris-ui/vue'
+} from '@iris-ui-kit/vue'
 
 const inlineDate = ref<Date | null>(new Date())
 const popoverDate = ref<Date | null>(null)

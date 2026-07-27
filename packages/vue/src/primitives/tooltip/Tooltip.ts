@@ -10,7 +10,7 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { createHoverIntent, type Placement } from '@iris-ui/core'
+import { createHoverIntent, type Placement } from '@iris-ui-kit/core'
 import { useFloating } from '../floating/useFloating'
 import { composeRefs, findFirstElement, mergeSlotProps } from '../slot/Slot'
 

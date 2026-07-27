@@ -21,7 +21,7 @@ function options(): HTMLElement[] {
   return Array.from(document.querySelectorAll('[role=option]'))
 }
 
-describe('@iris-ui/react IrisSelect', () => {
+describe('@iris-ui-kit/react IrisSelect', () => {
   it('renders trigger with placeholder when no value', () => {
     render(<IrisSelect items={items} placeholder="Pick…" />)
     expect(trigger()).not.toBeNull()

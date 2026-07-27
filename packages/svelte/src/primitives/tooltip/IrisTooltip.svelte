@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { generateId, createHoverIntent } from '@iris-ui/core'
+  import { generateId, createHoverIntent } from '@iris-ui-kit/core'
   import { useFloating } from '../../floating/useFloating.svelte'
   import { portal } from '../../internal/portal'
-  import type { Placement } from '@iris-ui/core'
+  import type { Placement } from '@iris-ui-kit/core'
 
   interface Props {
     content?: string

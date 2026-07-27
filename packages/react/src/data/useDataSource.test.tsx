@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
-import { createClientDataSource, type DataViewColumn } from '@iris-ui/core'
+import { createClientDataSource, type DataViewColumn } from '@iris-ui-kit/core'
 import { useDataSource } from './useDataSource'
 
 interface Row extends Record<string, unknown> {

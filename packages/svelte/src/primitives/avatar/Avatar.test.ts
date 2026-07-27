@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest'
 import IrisAvatar from './Avatar.svelte'
 import AvatarSnippetHarness from './AvatarSnippetHarness.svelte'
 
-describe('@iris-ui/svelte IrisAvatar', () => {
+describe('@iris-ui-kit/svelte IrisAvatar', () => {
   it('renders an <img> when src is provided', () => {
     const { container } = render(IrisAvatar, { props: { src: '/u.png', alt: 'user' } })
     const img = container.querySelector('img')!

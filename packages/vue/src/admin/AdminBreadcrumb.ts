@@ -1,5 +1,5 @@
 import { defineComponent, h, type PropType, type VNode } from 'vue'
-import type { NavNode } from '@iris-ui/core'
+import type { NavNode } from '@iris-ui-kit/core'
 import { IrisBreadcrumb } from '../primitives/breadcrumb/Breadcrumb'
 import { IrisBreadcrumbItem } from '../primitives/breadcrumb/BreadcrumbItem'
 import { IrisIcon } from '../primitives/icon/Icon'

@@ -6,16 +6,16 @@ Iris UI ships the same components for **React 18**, **Vue 3**, **Solid** and **S
 
 ```bash
 # React
-pnpm add @iris-ui/react @iris-ui/theme @iris-ui/tokens
+pnpm add @iris-ui-kit/react @iris-ui-kit/theme @iris-ui-kit/tokens
 
 # Vue
-pnpm add @iris-ui/vue @iris-ui/theme @iris-ui/tokens
+pnpm add @iris-ui-kit/vue @iris-ui-kit/theme @iris-ui-kit/tokens
 
 # Solid
-pnpm add @iris-ui/solid @iris-ui/theme @iris-ui/tokens
+pnpm add @iris-ui-kit/solid @iris-ui-kit/theme @iris-ui-kit/tokens
 
 # Svelte
-pnpm add @iris-ui/svelte @iris-ui/theme @iris-ui/tokens
+pnpm add @iris-ui-kit/svelte @iris-ui-kit/theme @iris-ui-kit/tokens
 ```
 
 ## Wrap your app in a ThemeProvider
@@ -25,9 +25,9 @@ The provider applies the theme's CSS variables, injects the global stylesheet
 
 ```tsx
 // React
-import { ThemeProvider, IrisButton } from '@iris-ui/react'
-import { createThemeStore } from '@iris-ui/theme'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+import { ThemeProvider, IrisButton } from '@iris-ui-kit/react'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 
 const store = createThemeStore({ themes: { light: lightTheme, dark: darkTheme }, default: 'light' })
 
@@ -42,15 +42,15 @@ export function App() {
 
 ````ts
 // Vue — same store, mirrored provider
-import { ThemeProvider } from '@iris-ui/vue'
+import { ThemeProvider } from '@iris-ui-kit/vue'
 
 ```solid
 // Solid — same store, mirrored provider
-import { ThemeProvider } from '@iris-ui/solid'
+import { ThemeProvider } from '@iris-ui-kit/solid'
 ````
 
 ```svelte
-// Svelte — same store, mirrored provider import {ThemeProvider} from '@iris-ui/svelte'
+// Svelte — same store, mirrored provider import {ThemeProvider} from '@iris-ui-kit/svelte'
 ```
 
 ## Deep imports
@@ -58,8 +58,8 @@ import { ThemeProvider } from '@iris-ui/solid'
 Import a single area to keep bundles lean:
 
 ```ts
-import { useForm } from '@iris-ui/react/form'
-import { useColorScheme } from '@iris-ui/vue/theme'
+import { useForm } from '@iris-ui-kit/react/form'
+import { useColorScheme } from '@iris-ui-kit/vue/theme'
 ```
 
 ## Next

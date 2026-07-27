@@ -1,4 +1,4 @@
-# @iris-ui/cli
+# @iris-ui-kit/cli
 
 Command-line scaffolding tool for Iris UI.
 

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import type { NavNode, TabsNav } from '@iris-ui/core'
+import type { NavNode, TabsNav } from '@iris-ui-kit/core'
 import { IrisSidebarLayout } from '../layouts/SidebarLayout'
 import { IrisHeaderLayout } from '../layouts/HeaderLayout'
 import { useStore } from '../useStore'

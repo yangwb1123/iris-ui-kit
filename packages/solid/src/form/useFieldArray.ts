@@ -1,5 +1,5 @@
 import { createSignal, onCleanup, createMemo, type Accessor } from 'solid-js'
-import type { FormState, FormValues } from '@iris-ui/core'
+import type { FormState, FormValues } from '@iris-ui-kit/core'
 import { useFormContext } from './context'
 
 export interface UseFieldArrayReturn<T> {

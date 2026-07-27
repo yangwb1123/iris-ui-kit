@@ -7,7 +7,7 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { createSortable, type SortableRect } from '@iris-ui/core'
+import { createSortable, type SortableRect } from '@iris-ui-kit/core'
 import { createDashboard, type DashboardConfig, type DashboardWidget } from '../core'
 
 export type { DashboardWidget, DashboardConfig, DashboardState, DashboardStore } from '../core'
@@ -29,7 +29,7 @@ function collectRects(root: HTMLElement | null, attr: string): SortableRect[] {
 
 /**
  * Render a CSS Grid dashboard from a declarative config (Vue, render-function
- * authored to match the `@iris-ui/vue` convention). Widgets are positioned via
+ * authored to match the `@iris-ui-kit/vue` convention). Widgets are positioned via
  * `grid-column` / `grid-row`; dragging the widget header calls `store.moveWidget`
  * on drop. Themed via CSS vars.
  */

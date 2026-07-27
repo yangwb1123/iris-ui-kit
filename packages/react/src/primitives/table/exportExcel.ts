@@ -1,4 +1,4 @@
-import { saveFile, toSpreadsheetXml, type SpreadsheetXmlOptions } from '@iris-ui/core'
+import { saveFile, toSpreadsheetXml, type SpreadsheetXmlOptions } from '@iris-ui-kit/core'
 import type { IrisTableColumn } from './types'
 
 /**

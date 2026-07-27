@@ -1,5 +1,5 @@
 import { createMemo, For, Show, type JSX } from 'solid-js'
-import { IrisAdminLayout, useDataSource, createClientDataSource } from '@iris-ui/solid'
+import { IrisAdminLayout, useDataSource, createClientDataSource } from '@iris-ui-kit/solid'
 import {
   resolveAdminPage,
   adminDataViewColumns,

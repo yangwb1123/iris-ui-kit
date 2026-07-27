@@ -1,8 +1,8 @@
 import { readable, type Readable } from 'svelte/store'
-import type { ReadonlyStore, Store } from '@iris-ui/core'
+import type { ReadonlyStore, Store } from '@iris-ui-kit/core'
 
 /**
- * Bridge a framework-agnostic `@iris-ui/core` store into a Svelte readable
+ * Bridge a framework-agnostic `@iris-ui-kit/core` store into a Svelte readable
  * store. The mirror of React's `useSyncExternalStore` and Vue's `ref + subscribe`
  * — the **same** core Store powers Button/Popover/Dialog on every framework.
  * Seeds the initial value from `store.getState()` (synchronous, SSR-safe, no

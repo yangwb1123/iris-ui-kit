@@ -21,7 +21,7 @@ function renderedIndices(): number[] {
 // exposes the createVirtualizer-backed imperative handle — scrollToIndex /
 // scrollToOffset — as exported functions on the component instance. Consumers
 // needing programmatic scroll ref the IrisVirtualScroll directly (bind:this).
-describe('@iris-ui/svelte IrisVirtualScroll scrollToIndex handle', () => {
+describe('@iris-ui-kit/svelte IrisVirtualScroll scrollToIndex handle', () => {
   it('shifts the host scroll offset to the target row and moves the window', async () => {
     const { component } = render(IrisVirtualScroll, {
       props: { items: many, itemHeight: 36, height: 200 },

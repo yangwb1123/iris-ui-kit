@@ -1,5 +1,5 @@
 import { defineComponent, h, ref, watch, type PropType } from 'vue'
-import { createKeyboardNav } from '@iris-ui/core'
+import { createKeyboardNav } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
 

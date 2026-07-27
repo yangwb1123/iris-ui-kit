@@ -45,13 +45,13 @@ import {
   tableCellEditScenario,
   listKeyboardScenario,
   type ContractDriver,
-} from '@iris-ui/core/contracts'
+} from '@iris-ui-kit/core/contracts'
 import { useCallback, useState } from 'react'
 import {
   createSyncClientDataSource,
   createClientDataSource,
   type DataViewColumn,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useDataSource } from './data/useDataSource'
 import { IrisTabs } from './primitives/tabs/Tabs'
 import { IrisTabsList } from './primitives/tabs/TabsList'
@@ -318,7 +318,7 @@ function OverlayDestroyContractHarness() {
   )
 }
 
-describe('@iris-ui/react — cross-framework behavior contracts', () => {
+describe('@iris-ui-kit/react — cross-framework behavior contracts', () => {
   it('satisfies the shared Tabs contract', async () => {
     const { container } = render(
       <IrisTabs defaultValue="a">

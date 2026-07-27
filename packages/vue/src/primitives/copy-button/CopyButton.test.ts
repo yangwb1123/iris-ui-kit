@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
-import { setClipboardHandler } from '@iris-ui/core'
+import { setClipboardHandler } from '@iris-ui-kit/core'
 import { IrisCopyButton } from './CopyButton'
 
 afterEach(() => {

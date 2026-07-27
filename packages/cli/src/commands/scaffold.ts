@@ -1,4 +1,4 @@
-import type { Framework, IrisManifest, ManifestComponent } from '@iris-ui/manifest'
+import type { Framework, IrisManifest, ManifestComponent } from '@iris-ui-kit/manifest'
 
 /**
  * Emit a ready-to-edit code snippet: import line + JSX/tag usage with required
@@ -13,7 +13,7 @@ function scaffoldSnippet(
   const component: ManifestComponent | undefined = manifest.components.find((c) => c.name === name)
   if (!component || !component.frameworks.includes(framework)) return null
 
-  const importPath = component.importFrom[framework] ?? `@iris-ui/${framework}`
+  const importPath = component.importFrom[framework] ?? `@iris-ui-kit/${framework}`
   const required = (component.props ?? []).filter((p) => !p.optional)
   const pluginNote = component.plugin
     ? `\n// Requires <IrisProvider plugins={[…]}> — install ${component.plugin}`

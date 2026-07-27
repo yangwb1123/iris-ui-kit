@@ -1,5 +1,5 @@
 import { createSignal, mergeProps, Show, splitProps, type JSX } from 'solid-js'
-import type { Size } from '@iris-ui/core'
+import type { Size } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 
 export type IrisPasswordInputSize = Size

@@ -4,7 +4,7 @@ import {
   localStorageSkinStorage,
   type Skin,
   type SkinManifest,
-} from '@iris-ui/react'
+} from '@iris-ui-kit/react'
 
 export const STORAGE_KEY = 'iris-playground-skin'
 

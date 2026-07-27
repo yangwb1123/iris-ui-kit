@@ -24,7 +24,7 @@ function tooltip(): HTMLElement | null {
   return document.querySelector('[role=tooltip]')
 }
 
-describe('@iris-ui/react IrisTooltip', () => {
+describe('@iris-ui-kit/react IrisTooltip', () => {
   it('renders only the trigger initially (no tooltip until hover)', () => {
     const { container } = render(harness())
     expect(container.querySelector('button')).not.toBeNull()

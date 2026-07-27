@@ -4,7 +4,7 @@ import { IrisChip } from './Chip'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisChip', () => {
+describe('@iris-ui-kit/react IrisChip', () => {
   it('renders a span by default', () => {
     const { container } = render(<IrisChip>tag</IrisChip>)
     expect(container.querySelector('[data-iris-chip]')!.tagName).toBe('SPAN')

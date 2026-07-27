@@ -1,5 +1,5 @@
 import { type JSX } from 'solid-js'
-import type { FormStore, FormValues } from '@iris-ui/core'
+import type { FormStore, FormValues } from '@iris-ui-kit/core'
 import { FormContext } from './context'
 
 export interface IrisFormProps<V extends FormValues = FormValues> {

@@ -42,7 +42,7 @@ export function formatRemaining(ms: number, format: string): string {
  * when the format shows milliseconds), formats the remaining time via tokens,
  * and fires `onFinish` once at zero.
  *
- * React port of {@link import('@iris-ui/vue').IrisCountdown}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisCountdown}.
  */
 export function IrisCountdown({
   value,

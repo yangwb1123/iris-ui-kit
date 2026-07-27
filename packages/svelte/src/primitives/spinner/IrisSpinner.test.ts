@@ -8,7 +8,7 @@ afterEach(() => {
   __resetSpinnerStyles()
 })
 
-describe('@iris-ui/svelte IrisSpinner', () => {
+describe('@iris-ui-kit/svelte IrisSpinner', () => {
   it('renders a span with role=status', () => {
     const { container } = render(IrisSpinner)
     const el = container.querySelector('[data-iris-spinner-wrap]')

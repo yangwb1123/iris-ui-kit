@@ -1,5 +1,5 @@
 import { Teleport, defineComponent, h, inject, nextTick, ref, watch, type PropType } from 'vue'
-import { nextEnabledIndex } from '@iris-ui/core'
+import { nextEnabledIndex } from '@iris-ui-kit/core'
 import { useFloating } from '../floating/useFloating'
 import { useDismiss } from '../floating/useDismiss'
 import { MenuContextKey } from './context'

@@ -1,4 +1,4 @@
-import { compareValues, computeVirtualRange, createCellRange } from '@iris-ui/core'
+import { compareValues, computeVirtualRange, createCellRange } from '@iris-ui-kit/core'
 import type {
   IrisTableColumn,
   IrisTableSortState,

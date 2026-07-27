@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createTreeSelection, type TreeSelectionNode } from '@iris-ui/core'
+  import { createTreeSelection, type TreeSelectionNode } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
   import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
 

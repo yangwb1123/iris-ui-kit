@@ -1,5 +1,5 @@
 import { createSignal, onCleanup, createMemo, type Accessor } from 'solid-js'
-import { type I18n, type I18nState } from '@iris-ui/core'
+import { type I18n, type I18nState } from '@iris-ui-kit/core'
 import { useI18nContext } from './context'
 
 export interface UseI18nReturn {

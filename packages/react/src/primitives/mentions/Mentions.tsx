@@ -48,7 +48,7 @@ function detect(text: string, caret: number, prefix: string): Active | null {
  * `@query` token with the chosen label. Keyboard: ↑/↓ to move, Enter to pick,
  * Esc to dismiss.
  *
- * React port of {@link import('@iris-ui/vue').IrisMentions}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisMentions}.
  */
 export function IrisMentions({
   value,

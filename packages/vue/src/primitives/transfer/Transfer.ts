@@ -1,5 +1,5 @@
 import { computed, defineComponent, h, onBeforeUnmount, ref, shallowRef, type PropType } from 'vue'
-import { createSelectionModel } from '@iris-ui/core'
+import { createSelectionModel } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 
 export interface IrisTransferItem {

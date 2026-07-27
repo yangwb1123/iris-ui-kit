@@ -1,6 +1,6 @@
 import { createMemo, For, Show } from 'solid-js'
 import type { JSX } from 'solid-js'
-import { aggregate, type TreeRow } from '@iris-ui/core'
+import { aggregate, type TreeRow } from '@iris-ui-kit/core'
 import { IrisVirtualScroll } from '../virtual-scroll/IrisVirtualScroll'
 import { TableRow } from './TableRow'
 import { BASE_CELL_STYLE, STATE_ROW_STYLE } from './styles'

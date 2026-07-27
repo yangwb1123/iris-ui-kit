@@ -9,7 +9,7 @@ import {
   mergeProps,
   type JSX,
 } from 'solid-js'
-import { createSortable, closestCenter } from '@iris-ui/core'
+import { createSortable, closestCenter } from '@iris-ui-kit/core'
 
 export const SORTABLE_ITEM_ATTR = 'data-iris-sortable-item'
 
@@ -30,7 +30,7 @@ export interface IrisSortableProps<T = string> {
 
 /**
  * IrisSortable (Solid) — Behavior wrapper for drag-to-reorder lists.
- * Uses the framework-agnostic `createSortable` from `@iris-ui/core`.
+ * Uses the framework-agnostic `createSortable` from `@iris-ui-kit/core`.
  */
 export function IrisSortable<T>(props: IrisSortableProps<T>): JSX.Element {
   const merged = mergeProps(

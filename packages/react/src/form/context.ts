@@ -1,5 +1,5 @@
 import * as React from 'react'
-import type { FormStore, FormValues } from '@iris-ui/core'
+import type { FormStore, FormValues } from '@iris-ui-kit/core'
 
 /**
  * Carries the active form's {@link FormStore} down to descendant fields so

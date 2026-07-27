@@ -7,7 +7,12 @@
  * adapted to Vue's native slot-based cell API (rather than React's `render`).
  */
 import { ref } from 'vue'
-import { IrisTable, IrisBadge, type IrisTableColumn, type IrisTableSortState } from '@iris-ui/vue'
+import {
+  IrisTable,
+  IrisBadge,
+  type IrisTableColumn,
+  type IrisTableSortState,
+} from '@iris-ui-kit/vue'
 
 interface Row extends Record<string, unknown> {
   id: number

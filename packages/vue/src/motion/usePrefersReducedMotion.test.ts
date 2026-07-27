@@ -23,7 +23,7 @@ function mockMatchMedia(matches: boolean) {
   }))
 }
 
-describe('@iris-ui/vue usePrefersReducedMotion', () => {
+describe('@iris-ui-kit/vue usePrefersReducedMotion', () => {
   it('is false when matchMedia is unavailable', () => {
     const original = window.matchMedia
     // @ts-expect-error simulate environments without matchMedia

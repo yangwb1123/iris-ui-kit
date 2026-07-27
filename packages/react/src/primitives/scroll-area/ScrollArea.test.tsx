@@ -6,7 +6,7 @@ afterEach(() => cleanup())
 
 const el = (c: HTMLElement) => c.querySelector('[data-iris-scroll-area]') as HTMLElement
 
-describe('@iris-ui/react IrisScrollArea', () => {
+describe('@iris-ui-kit/react IrisScrollArea', () => {
   it('renders children', () => {
     const { container } = render(
       <IrisScrollArea>

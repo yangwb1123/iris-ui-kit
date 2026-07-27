@@ -21,7 +21,7 @@ function Probe() {
   )
 }
 
-describe('@iris-ui/react i18n', () => {
+describe('@iris-ui-kit/react i18n', () => {
   it('falls back to English defaults without a provider', () => {
     render(<Probe />)
     expect(screen.getByTestId('locale').textContent).toBe('en-US')

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { copyText } from '@iris-ui/core'
+import { copyText } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 
 export type IrisCopyButtonSize = 'sm' | 'md' | 'lg'
@@ -31,7 +31,7 @@ const SIZE_MAP: Record<IrisCopyButtonSize, { padding: string; fontSize: number }
  * "Copied" state for `timeout` ms. The clipboard write is best-effort (guarded
  * for unsupported environments) and the copied state still reflects intent.
  *
- * React port of {@link import('@iris-ui/vue').IrisCopyButton}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisCopyButton}.
  */
 export function IrisCopyButton({
   text,

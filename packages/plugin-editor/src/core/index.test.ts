@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { runPlugins } from '@iris-ui/core'
+import { runPlugins } from '@iris-ui-kit/core'
 import { createEditor, editorPlugin, editorTokens, createEditorSettingsStore } from './index'
 
 let host: HTMLDivElement | null = null

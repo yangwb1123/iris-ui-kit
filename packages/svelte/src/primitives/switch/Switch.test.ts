@@ -3,7 +3,7 @@ import { flushSync } from 'svelte'
 import { describe, it, expect, vi } from 'vitest'
 import IrisSwitch from './Switch.svelte'
 
-describe('@iris-ui/svelte IrisSwitch', () => {
+describe('@iris-ui-kit/svelte IrisSwitch', () => {
   it('renders an input with role=switch', () => {
     const { container } = render(IrisSwitch)
     const input = container.querySelector('input')!

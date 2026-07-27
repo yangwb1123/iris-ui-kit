@@ -8,7 +8,7 @@ function thumb(): HTMLElement {
   return document.querySelector('[data-iris-slider-thumb]') as HTMLElement
 }
 
-describe('@iris-ui/react IrisSlider', () => {
+describe('@iris-ui-kit/react IrisSlider', () => {
   it('renders track + fill + thumb with role="slider"', () => {
     render(<IrisSlider value={40} />)
     expect(document.querySelector('[data-iris-slider]')).not.toBeNull()

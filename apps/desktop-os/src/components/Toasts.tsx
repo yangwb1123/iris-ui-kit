@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { type DesktopNotification, type NotificationTone } from '@iris-ui/core/notifications'
+import { type DesktopNotification, type NotificationTone } from '@iris-ui-kit/core/notifications'
 import { useNotifications, useNotificationState } from '../shell'
 
 /** Accent glyph + color per tone (color via token-friendly literals). */

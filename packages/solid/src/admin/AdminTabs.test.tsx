@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@solidjs/testing-library'
-import { createTabsNav } from '@iris-ui/core'
+import { createTabsNav } from '@iris-ui-kit/core'
 import { IrisAdminTabs } from './AdminTabs'
 
 afterEach(cleanup)
 
 const tabsEls = (c: HTMLElement) => Array.from(c.querySelectorAll<HTMLElement>('[data-iris-tab]'))
 
-describe('@iris-ui/solid IrisAdminTabs', () => {
+describe('@iris-ui-kit/solid IrisAdminTabs', () => {
   it('renders a chip per open tab and marks the active one', () => {
     const nav = createTabsNav({ tabs: [{ key: 'home', title: 'Home', pinned: true }] })
     nav.open({ key: 'a', title: 'A' })

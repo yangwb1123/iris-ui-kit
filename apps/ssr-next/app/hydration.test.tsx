@@ -46,9 +46,9 @@ import {
   useField,
   IrisForm,
   IrisFormField,
-} from '@iris-ui/react'
-import { createThemeStore } from '@iris-ui/theme'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+} from '@iris-ui-kit/react'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 
 // `act` (and `hydrateRoot`'s internal warnings) require this global flag set, or
 // React floods console.error with "not wrapped in act(...)" noise that could mask

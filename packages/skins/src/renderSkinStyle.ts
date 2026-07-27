@@ -1,4 +1,4 @@
-import { toCssVarName } from '@iris-ui/theme'
+import { toCssVarName } from '@iris-ui-kit/theme'
 import type { ResolvedSkin } from './types'
 
 // Skins can be loaded from a remote URL (see loadSkin), so a skin's custom

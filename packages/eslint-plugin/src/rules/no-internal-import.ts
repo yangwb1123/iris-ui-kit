@@ -13,7 +13,7 @@ const rule: Rule.RuleModule = {
     },
     messages: {
       noInternalImport:
-        "Do not import from '{{path}}'. Use the public package entry instead (e.g. import { ... } from '@iris-ui/{{pkg}}').",
+        "Do not import from '{{path}}'. Use the public package entry instead (e.g. import { ... } from '@iris-ui-kit/{{pkg}}').",
     },
     schema: [],
   },

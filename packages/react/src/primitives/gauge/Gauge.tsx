@@ -30,7 +30,7 @@ const COLOR: Record<IrisGaugeStatus, string> = {
  * value arc whose `stroke-dashoffset` encodes `(value − min) / (max − min)`.
  * Distinct from the full-ring `IrisProgressCircle`.
  *
- * React port of {@link import('@iris-ui/vue').IrisGauge}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisGauge}.
  */
 export function IrisGauge({
   value,

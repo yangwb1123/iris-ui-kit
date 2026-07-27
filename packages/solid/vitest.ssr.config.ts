@@ -33,6 +33,6 @@ export default defineConfig({
     isolate: true,
     // Inline solid + workspace deps so they are transformed by the SSR
     // pipeline (otherwise pre-bundled DOM copies leak in).
-    server: { deps: { inline: [/solid-js/, /@solidjs/, /@iris-ui/] } },
+    server: { deps: { inline: [/solid-js/, /@solidjs/, /@iris-ui-kit/] } },
   },
 })

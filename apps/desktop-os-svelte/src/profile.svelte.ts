@@ -1,6 +1,6 @@
 /**
  * The ONE user profile for this desktop shell — a module singleton over the
- * framework-agnostic `@iris-ui/core/profile` (`createUserProfile`). It holds
+ * framework-agnostic `@iris-ui-kit/core/profile` (`createUserProfile`). It holds
  * which apps the user has installed, their custom web apps, and global prefs;
  * persistence is `localStorageProfileStorage` (this device). The SAME engine the
  * React demo drives, proving it runs unchanged on Svelte 5.
@@ -14,7 +14,7 @@ import {
   localStorageProfileStorage,
   type UserProfile,
   type ProfileData,
-} from '@iris-ui/core/profile'
+} from '@iris-ui-kit/core/profile'
 import { type AppManifest, BUILTIN_APPS, getManifest, registerCustomApps } from './catalog'
 import { wm } from './wm.svelte'
 

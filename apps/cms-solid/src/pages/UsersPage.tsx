@@ -20,7 +20,7 @@ import {
   useResourceController,
   useToast,
   type IrisSelectItem,
-} from '@iris-ui/solid'
+} from '@iris-ui-kit/solid'
 import {
   createUser,
   fetchUsers,
@@ -174,7 +174,7 @@ export function UsersPage(): JSX.Element {
           <p class="page-desc" style={{ 'margin-bottom': '12px' }}>
             Real CRUD on a live in-memory store via <code>createResourceController</code> +{' '}
             <code>createClientFetcher</code> — sort, filter, paginate, select, and{' '}
-            <code>mutate</code> (optimistic deletes), all from @iris-ui/core.
+            <code>mutate</code> (optimistic deletes), all from @iris-ui-kit/core.
             {users.state().selectedKeys.length > 0
               ? ` · ${users.state().selectedKeys.length} selected`
               : ''}

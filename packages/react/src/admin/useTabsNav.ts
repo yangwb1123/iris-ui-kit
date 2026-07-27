@@ -1,5 +1,5 @@
 import { useStore } from '../useStore'
-import type { TabsNav, TabItem } from '@iris-ui/core'
+import type { TabsNav, TabItem } from '@iris-ui-kit/core'
 
 export interface UseTabsNavReturn {
   tabs: TabItem[]

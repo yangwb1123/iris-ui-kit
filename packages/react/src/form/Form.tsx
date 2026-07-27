@@ -1,5 +1,5 @@
 import * as React from 'react'
-import type { FormStore, FormValues } from '@iris-ui/core'
+import type { FormStore, FormValues } from '@iris-ui-kit/core'
 import { FormContext } from './context'
 
 /** Focus (and best-effort scroll to) the first errored named control in DOM order. */

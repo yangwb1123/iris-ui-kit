@@ -5,7 +5,7 @@ export { markdownTokens, markdownPlugin } from '../core'
 
 /**
  * Render Markdown as themed HTML (Vue, render-function authored to match the
- * `@iris-ui/vue` convention). The `content` prop is converted via
+ * `@iris-ui-kit/vue` convention). The `content` prop is converted via
  * `markdownToHtml` and bound with `innerHTML` via Vue's `v-html` equivalent
  * in the render function. Themed via CSS custom properties.
  */

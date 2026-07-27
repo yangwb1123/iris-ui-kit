@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@testing-library/svelte'
-import { createPlugin } from '@iris-ui/core'
+import { createPlugin } from '@iris-ui-kit/core'
 import IrisProviderHarness from './IrisProviderHarness.svelte'
 
 afterEach(cleanup)
@@ -15,7 +15,7 @@ const examplePlugin = createPlugin({
   },
 })
 
-describe('@iris-ui/svelte IrisProvider', () => {
+describe('@iris-ui-kit/svelte IrisProvider', () => {
   it('exposes a registered store to descendants via usePluginStore', () => {
     const { container } = render(IrisProviderHarness, { props: { plugins: [examplePlugin] } })
     expect(container.querySelector('[data-store-id]')?.textContent).toBe('example-store')

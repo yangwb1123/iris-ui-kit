@@ -13,14 +13,14 @@
     "clean": "rm -rf .vitepress/dist .vitepress/cache .turbo"
   },
   "dependencies": {
-    "@iris-ui/theme": "workspace:*",
-    "@iris-ui/tokens": "workspace:*",
-    "@iris-ui/vue": "workspace:*"
+    "@iris-ui-kit/theme": "workspace:*",
+    "@iris-ui-kit/tokens": "workspace:*",
+    "@iris-ui-kit/vue": "workspace:*"
   },
   "devDependencies": {
-    "@iris-ui/react": "workspace:*",
-    "@iris-ui/solid": "workspace:*",
-    "@iris-ui/svelte": "workspace:*",
+    "@iris-ui-kit/react": "workspace:*",
+    "@iris-ui-kit/solid": "workspace:*",
+    "@iris-ui-kit/svelte": "workspace:*",
     "@sveltejs/vite-plugin-svelte": "^4.0.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

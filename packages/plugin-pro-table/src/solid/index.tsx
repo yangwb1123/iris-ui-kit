@@ -1,5 +1,5 @@
 import { createSignal, createEffect, createMemo, onCleanup, For, Show, type JSX } from 'solid-js'
-import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
+import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui-kit/core'
 import {
   collectRects,
   proTableLabel,
@@ -342,22 +342,12 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                               : undefined,
                           'outline-offset': '-2px',
                           ...pinnedStyle(cell.column),
-                        } as any
+                        } as Record<string, string | number | undefined>
                       }
                       data-sortable={isLeaf && cell.column.sortable ? '' : undefined}
                       onClick={
                         isLeaf && cell.column.sortable
                           ? () => props.store.toggleSort(cell.column.key)
-                          : undefined
-                      }
-                      onKeyDown={
-                        isLeaf && cell.column.sortable
-                          ? (e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault()
-                                props.store.toggleSort(cell.column.key)
-                              }
-                            }
                           : undefined
                       }
                       onPointerDown={isLeaf ? onHeaderPointerDown(cell.column.key) : undefined}

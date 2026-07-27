@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { render, cleanup, waitFor } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
-import { createClientDataSource, type DataViewColumn } from '@iris-ui/core'
+import { createClientDataSource, type DataViewColumn } from '@iris-ui-kit/core'
 import type { UseDataSource } from './useDataSource.svelte'
 import DataSourceHarness from './DataSourceHarness.svelte'
 

@@ -13,7 +13,7 @@ import {
   IrisDivider,
   IrisEmptyState,
   IrisButton,
-} from '@iris-ui/react'
+} from '@iris-ui-kit/react'
 
 export function DisplayShowcase() {
   const [progress, setProgress] = useState(35)

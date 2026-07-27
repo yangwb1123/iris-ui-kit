@@ -8,10 +8,10 @@ import type {
 import { ALL_FRAMEWORKS } from './schema'
 
 const IMPORT_PATH: Record<Framework, string> = {
-  react: '@iris-ui/react',
-  vue: '@iris-ui/vue',
-  solid: '@iris-ui/solid',
-  svelte: '@iris-ui/svelte',
+  react: '@iris-ui-kit/react',
+  vue: '@iris-ui-kit/vue',
+  solid: '@iris-ui-kit/solid',
+  svelte: '@iris-ui-kit/svelte',
 }
 
 const LAYER_MODEL: IrisManifest['layerModel'] = [
@@ -41,7 +41,7 @@ export function buildManifest(raw: RawDiscovery): IrisManifest {
       const frameworks = [...c.frameworks].sort()
       const importFrom: ManifestComponent['importFrom'] = {}
       // Plugin components import from the plugin's per-framework sub-path
-      // (`@iris-ui/plugin-x/react`); core components from the adapter package.
+      // (`@iris-ui-kit/plugin-x/react`); core components from the adapter package.
       for (const fw of frameworks) importFrom[fw] = c.plugin ? `${c.plugin}/${fw}` : IMPORT_PATH[fw]
       return {
         name: c.name,

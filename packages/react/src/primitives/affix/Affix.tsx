@@ -22,7 +22,7 @@ const resolve = (target?: () => HTMLElement | Window | null): HTMLElement | Wind
  * reserves the content's height so the page doesn't jump when it detaches.
  * `onChange` fires only when the affixed state flips.
  *
- * React port of {@link import('@iris-ui/vue').IrisAffix}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisAffix}.
  */
 export function IrisAffix({
   offsetTop,

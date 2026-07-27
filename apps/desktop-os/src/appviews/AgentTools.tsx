@@ -1,6 +1,11 @@
 import * as React from 'react'
-import { IrisButton } from '@iris-ui/react'
-import { toMcpTools, runMcpTool, type McpToolDef, type McpToolResult } from '@iris-ui/core/commands'
+import { IrisButton } from '@iris-ui-kit/react'
+import {
+  toMcpTools,
+  runMcpTool,
+  type McpToolDef,
+  type McpToolResult,
+} from '@iris-ui-kit/core/commands'
 import { useCommands } from '../commands-context'
 
 /**

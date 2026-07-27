@@ -7,7 +7,7 @@
 
 ## 1. Problem & Intent
 
-The theme layer today (`@iris-ui/theme`) ships a **closed, static** model:
+The theme layer today (`@iris-ui-kit/theme`) ships a **closed, static** model:
 
 - `IrisTheme` is a fully-specified object over a fixed 21-token schema (12 colors + 6 spacing + 3 radii). Every theme must define **all** keys.
 - `createThemeStore({ themes, default })` registers a **static** map at construction. There is no register-after-construction, no validation, no async loading, no discovery, no inheritance, no extra token namespaces.
@@ -23,7 +23,7 @@ A **skin** is a superset of a theme: it resolves down to a valid `IrisTheme` (so
 
 ## 2. Design Principles (inherited from the codebase)
 
-- **Logic sinks to core.** All skin logic — validation, inheritance resolution, registry, engine orchestration, fetch/parse — is **framework-agnostic** and lives in a new `@iris-ui/skins` package built on `@iris-ui/core`'s `createStore`. React/Vue ship **thin** adapters (mirroring `ThemeProvider`/`useTheme`).
+- **Logic sinks to core.** All skin logic — validation, inheritance resolution, registry, engine orchestration, fetch/parse — is **framework-agnostic** and lives in a new `@iris-ui-kit/skins` package built on `@iris-ui-kit/core`'s `createStore`. React/Vue ship **thin** adapters (mirroring `ThemeProvider`/`useTheme`).
 - **Pure vs. effectful split.** `validateSkin`, `resolveSkin`, registry mutations, and style-string rendering are **pure** (no DOM, no network). DOM writes (`applySkin`) and network (`loadSkin`, catalog fetch) are isolated, injectable side-effects. This keeps SSR-safety and testability identical to the theme layer.
 - **Closed schema stays closed; custom tokens are additive.** The 21-token `IrisTheme` contract is unchanged — components still read `var(--iris-*)`. Custom tokens are an **explicit, separate** namespace that never silently mutates the core schema.
 - **No throwing into render.** All failure modes surface as typed `SkinError` values / rejected promises at the engine boundary — never thrown synchronously inside a component render. (Matches the async-resource three-state philosophy already in core.)
@@ -76,7 +76,7 @@ interface Skin {
 
 Notes:
 
-- `tokens` is a **partial** of the three core token records keyed by the canonical dot names already exported from `@iris-ui/tokens` (`ColorToken | SpacingToken | RadiusToken`). Validation rejects unknown core-token keys (a typo'd `iris.primaryy` is an error, not a silent custom token).
+- `tokens` is a **partial** of the three core token records keyed by the canonical dot names already exported from `@iris-ui-kit/tokens` (`ColorToken | SpacingToken | RadiusToken`). Validation rejects unknown core-token keys (a typo'd `iris.primaryy` is an error, not a silent custom token).
 - `custom` is the escape hatch for **extra namespaces**. It is deliberately separate from `tokens` so the closed schema can never be accidentally widened, and so a typo in a core token can be caught.
 
 ### 3.2 `ResolvedSkin` (runtime shape — fully specified)
@@ -98,7 +98,7 @@ interface ResolvedSkin {
 }
 ```
 
-`resolveSkin` produces a `ResolvedSkin` whose `.theme` is a **complete** `IrisTheme`. Because the base skins (`light`/`dark`, registered from `@iris-ui/tokens`) are complete, any chain rooted at a base is guaranteed complete; a chain **not** rooted at a base that leaves a core token undefined is a validation error (reported, never a half-applied DOM).
+`resolveSkin` produces a `ResolvedSkin` whose `.theme` is a **complete** `IrisTheme`. Because the base skins (`light`/`dark`, registered from `@iris-ui-kit/tokens`) are complete, any chain rooted at a base is guaranteed complete; a chain **not** rooted at a base that leaves a core token undefined is a validation error (reported, never a half-applied DOM).
 
 ### 3.3 `SkinManifest` (marketplace contract)
 
@@ -125,10 +125,10 @@ The "marketplace" is exactly this: a `manifest.json` listing entries + a `url` p
 
 ## 4. Package & Module Layout
 
-New package **`@iris-ui/skins`** (deps: `@iris-ui/core`, `@iris-ui/tokens`, `@iris-ui/theme`), plus thin adapter modules added under the existing `@iris-ui/react` and `@iris-ui/vue` packages.
+New package **`@iris-ui-kit/skins`** (deps: `@iris-ui-kit/core`, `@iris-ui-kit/tokens`, `@iris-ui-kit/theme`), plus thin adapter modules added under the existing `@iris-ui-kit/react` and `@iris-ui-kit/vue` packages.
 
 ```
-packages/skins/                         ← @iris-ui/skins (framework-agnostic)
+packages/skins/                         ← @iris-ui-kit/skins (framework-agnostic)
   package.json  tsup.config.ts  tsconfig.json  vitest.config.ts
   src/
     index.ts                 barrel
@@ -194,9 +194,9 @@ interface SkinRegistry {
 }
 ```
 
-Built-in `light`/`dark` base skins (derived from `@iris-ui/tokens` themes in `builtins.ts`) are registered by default so partial skins can `extends: 'dark'` out of the box.
+Built-in `light`/`dark` base skins (derived from `@iris-ui-kit/tokens` themes in `builtins.ts`) are registered by default so partial skins can `extends: 'dark'` out of the box.
 
-### 5.4 `applyCssVars(entries, target) → { revert() }` (effectful, in `@iris-ui/theme`)
+### 5.4 `applyCssVars(entries, target) → { revert() }` (effectful, in `@iris-ui-kit/theme`)
 
 Extracted from the current `applyTheme` so both theme and skin layers share one DOM-write path. `applyTheme` is refactored to call it (identical observable behavior; its tests stay green). `applySkin` reuses it for core + custom tokens and sets `data-iris-skin` / `data-iris-skin-type` (alongside the existing `data-iris-theme*`).
 
@@ -275,7 +275,7 @@ interface SkinEngine {
 ```
 
 - **Persist:** `setSkin`/`loadSkin` call `storage.set(id)`; engine init reads `storage.get()` and falls back to `default`.
-- **Follow-system:** in `'system'` mode the engine subscribes to `watchColorScheme` (reused from `@iris-ui/theme`) and switches between `current.variants.{light,dark}` (or the base `light`/`dark` ids when the active skin declares no variants).
+- **Follow-system:** in `'system'` mode the engine subscribes to `watchColorScheme` (reused from `@iris-ui-kit/theme`) and switches between `current.variants.{light,dark}` (or the base `light`/`dark` ids when the active skin declares no variants).
 - **Live edit:** `patch` keeps a **non-destructive overlay** — it re-resolves `current.source` merged with the overlay and pushes the result to the store **without mutating the registered skin**. `resetPatch` drops the overlay and re-resolves clean. This powers a theming/editor UI (live token tweaking) without corrupting saved skins.
 - **Errors:** load/validate failures accumulate into `errors()` (and reject the relevant promise) — never thrown into a subscriber.
 
@@ -292,7 +292,7 @@ interface SkinEngine {
 - `SkinProvider` (renderless `defineComponent`): `ref(engine.current())` synced via `engine.store.subscribe`; `onMounted` → `injectGlobalStyles()` + `applySkin`; `watch` re-applies; `onBeforeUnmount` reverts + unsubscribes. `provide(IrisSkinKey, …)`.
 - `useSkin()`: same surface as React, with `ComputedRef` for `skin`.
 
-Both adapters contain **zero** skin logic — pure bridges, exactly like the theme adapters. Both packages re-export the `skins` subpath (`@iris-ui/react/skins`, `@iris-ui/vue/skins`) via the existing `./*` exports wildcard, and the new `@iris-ui/skins` is added to each adapter package's deps.
+Both adapters contain **zero** skin logic — pure bridges, exactly like the theme adapters. Both packages re-export the `skins` subpath (`@iris-ui-kit/react/skins`, `@iris-ui-kit/vue/skins`) via the existing `./*` exports wildcard, and the new `@iris-ui-kit/skins` is added to each adapter package's deps.
 
 ## 7. Error Model
 
@@ -321,9 +321,9 @@ interface SkinError {
 
 ## 9. Build / Packaging
 
-- `packages/skins/`: tsup (ESM+CJS+dts+sourcemaps, `target es2022`, `treeshake`, `clean`), `external: ['@iris-ui/core','@iris-ui/tokens','@iris-ui/theme']`, `sideEffects: false`, `exports` with `.` + `./*` wildcard (consistent with the size-budget subpath story).
+- `packages/skins/`: tsup (ESM+CJS+dts+sourcemaps, `target es2022`, `treeshake`, `clean`), `external: ['@iris-ui-kit/core','@iris-ui-kit/tokens','@iris-ui-kit/theme']`, `sideEffects: false`, `exports` with `.` + `./*` wildcard (consistent with the size-budget subpath story).
 - Add to `pnpm size` budget (gzip) like the other packages.
-- `@iris-ui/manifest`: extend the generator to emit skin-system surface if it enumerates package exports (verify during implementation; do not fabricate).
+- `@iris-ui-kit/manifest`: extend the generator to emit skin-system surface if it enumerates package exports (verify during implementation; do not fabricate).
 - New package wired into `turbo` topological build via workspace deps (no turbo.json change needed — pipelines already glob packages).
 
 ## 10. Out of Scope (YAGNI)
@@ -337,13 +337,13 @@ interface SkinError {
 ## 11. Verification (done = all green)
 
 1. `pnpm install` clean.
-2. `pnpm turbo run build` — `@iris-ui/skins` emits `dist/{index.js,index.cjs,index.d.ts}`, no warnings; adapters build.
+2. `pnpm turbo run build` — `@iris-ui-kit/skins` emits `dist/{index.js,index.cjs,index.d.ts}`, no warnings; adapters build.
 3. `pnpm turbo run typecheck` — whole workspace.
 4. `pnpm turbo run test` — all new pure/jsdom/mocked-fetch/adapter suites + unchanged theme suite pass.
 5. `pnpm turbo run lint` + `pnpm format:check` clean.
 6. `pnpm size` within budget (skins package added).
 7. `pnpm check:rsc` — React skins adapter respects the `'use client'` boundary.
-8. Manual API review: `@iris-ui/skins` core units have **zero** `react`/`vue` imports and pure units have **zero** DOM/network references.
+8. Manual API review: `@iris-ui-kit/skins` core units have **zero** `react`/`vue` imports and pure units have **zero** DOM/network references.
 9. React ⇄ Vue adapter parity: mirrored test files, equivalent public surface.
 10. No `dangerouslySetInnerHTML` / `innerHTML` / `v-html` anywhere (the boot script is a string the **host** injects; the library never injects raw HTML into a framework tree).
 

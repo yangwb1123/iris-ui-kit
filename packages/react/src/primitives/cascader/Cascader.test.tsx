@@ -18,7 +18,7 @@ const columns = (c: HTMLElement) => c.querySelectorAll('[data-iris-cascader-colu
 const panel = (c: HTMLElement) => c.querySelector('[data-iris-cascader-panel]')
 const valueEl = (c: HTMLElement) => c.querySelector('[data-iris-cascader-value]')
 
-describe('@iris-ui/react IrisCascader', () => {
+describe('@iris-ui-kit/react IrisCascader', () => {
   it('shows the placeholder, closed initially', () => {
     const { container } = render(<IrisCascader options={OPTIONS} placeholder="Pick" />)
     expect(container.querySelector('[data-iris-cascader-panel]')).toBeNull()

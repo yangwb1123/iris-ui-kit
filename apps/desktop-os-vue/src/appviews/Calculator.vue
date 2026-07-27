@@ -5,7 +5,7 @@
  * (i.e. per window) via reactive refs.
  */
 import { reactive } from 'vue'
-import { IrisButton } from '@iris-ui/vue'
+import { IrisButton } from '@iris-ui-kit/vue'
 
 type Op = '+' | '−' | '×' | '÷'
 

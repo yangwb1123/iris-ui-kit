@@ -1,7 +1,7 @@
 import { getContext } from 'svelte'
 import { readable, type Readable } from 'svelte/store'
-import type { Direction } from '@iris-ui/theme'
-import type { IrisTheme } from '@iris-ui/tokens'
+import type { Direction } from '@iris-ui-kit/theme'
+import type { IrisTheme } from '@iris-ui-kit/tokens'
 import { THEME_KEY, type IrisThemeContextValue } from './context'
 
 export interface UseThemeReturn {

@@ -1,5 +1,5 @@
 import { readable, derived, type Readable } from 'svelte/store'
-import { createI18n, type I18n, type I18nState } from '@iris-ui/core'
+import { createI18n, type I18n, type I18nState } from '@iris-ui-kit/core'
 import { getI18nContext } from './context'
 
 export interface UseI18nReturn {

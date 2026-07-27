@@ -4,7 +4,7 @@ import {
   localStorageSkinStorage,
   type Skin,
   type SkinManifest,
-} from '@iris-ui/vue'
+} from '@iris-ui-kit/vue'
 
 export const STORAGE_KEY = 'iris-playground-skin'
 

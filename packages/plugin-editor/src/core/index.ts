@@ -23,11 +23,11 @@ import {
 import { sql } from '@codemirror/lang-sql'
 import { json } from '@codemirror/lang-json'
 import { javascript } from '@codemirror/lang-javascript'
-import { createStore, createPlugin, type Store } from '@iris-ui/core'
+import { createStore, createPlugin, type Store } from '@iris-ui-kit/core'
 import { diffViewPlugin } from './diff-extension'
 
 /**
- * `@iris-ui/plugin-editor` — a dbgate-style code editor for Iris UI, built on
+ * `@iris-ui-kit/plugin-editor` — a dbgate-style code editor for Iris UI, built on
  * CodeMirror 6. This `core` entry is framework-agnostic: it owns the CM6
  * `EditorView` lifecycle behind a small imperative {@link EditorHandle}, plus
  * the {@link editorPlugin} (registers theme tokens + a shared settings store).

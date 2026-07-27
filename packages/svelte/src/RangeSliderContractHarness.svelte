@@ -7,7 +7,7 @@
   // thumb is also role="slider", and the shared *Slider* scenario asserts a
   // globally-unique `[role="slider"]` (count === 1). Co-locating the range slider
   // there would make that count 3 and break the pre-existing Slider contract,
-  // which lives in @iris-ui/core/contracts and must not be changed. Keeping the
+  // which lives in @iris-ui-kit/core/contracts and must not be changed. Keeping the
   // range slider in its own container mirrors the React harness, which renders
   // each contract in isolation. (RatingContractHarness.svelte exists for the same
   // role="slider" collision reason.)

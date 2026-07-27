@@ -1,11 +1,11 @@
 // =============================================================================
-// @iris-ui/vue — public barrel
+// @iris-ui-kit/vue — public barrel
 // =============================================================================
 //
 // Re-exports follow the 5-layer architecture in AGENTS.md:
 //
 //   Layer 0  Theme System            — theme provider + composables
-//            Machine bridge          — useMachine adapter for @iris-ui/core
+//            Machine bridge          — useMachine adapter for @iris-ui-kit/core
 //
 //   Layer 1  Meta Primitives         — Slot, Button, Floating hooks,
 //                                      Popover / Tooltip / Dialog,
@@ -19,7 +19,7 @@
 //   Layer 3  Layouts                 — Sidebar / Header / DashboardGrid
 //
 // Re-exports from peer packages live at the bottom for convenience so
-// consumers can `import { lightTheme, applyTheme } from '@iris-ui/vue'`
+// consumers can `import { lightTheme, applyTheme } from '@iris-ui-kit/vue'`
 // without juggling every sub-package.
 
 // ── Layer 0 ──────────────────────────────────────────────────────────────────
@@ -164,7 +164,7 @@ export {
   type Placement,
   type Size,
   type Variant,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 export {
   applyTheme,
@@ -174,7 +174,7 @@ export {
   type ApplyThemeResult,
   type ThemeStore,
   type ThemeStoreConfig,
-} from '@iris-ui/theme'
+} from '@iris-ui-kit/theme'
 
 export {
   lightTheme,
@@ -192,10 +192,10 @@ export {
   type SpacingToken,
   type RadiusToken,
   type AnyToken,
-} from '@iris-ui/tokens'
+} from '@iris-ui-kit/tokens'
 
 // Icon system runtime + types. The `IrisIcon` *component* (Layer 1) owns that
-// name; the data interface is available from '@iris-ui/icons' directly.
+// name; the data interface is available from '@iris-ui-kit/icons' directly.
 export {
   defaultIcons,
   defaultIconRegistry,
@@ -210,4 +210,4 @@ export {
   type CreateIconRegistryOptions,
   type RenderIconOptions,
   type ThemeIconConfig,
-} from '@iris-ui/icons'
+} from '@iris-ui-kit/icons'

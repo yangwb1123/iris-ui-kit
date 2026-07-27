@@ -4,7 +4,7 @@ import { IrisStatistic } from './Statistic'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisStatistic', () => {
+describe('@iris-ui-kit/react IrisStatistic', () => {
   it('renders the value and label', () => {
     const { container } = render(<IrisStatistic label="Revenue" value="1,234" />)
     expect(container.querySelector('[data-iris-statistic-number]')?.textContent).toBe('1,234')

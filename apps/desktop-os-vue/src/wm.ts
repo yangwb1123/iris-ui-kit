@@ -1,16 +1,16 @@
 /**
- * The seam that proves `@iris-ui/core/window` is framework-agnostic: ONE
+ * The seam that proves `@iris-ui-kit/core/window` is framework-agnostic: ONE
  * `createWindowManager()` instance, shared across the whole Vue shell via a
  * module singleton (mirrors React's `useRef(createWindowManager()).current`),
  * plus a `useWmState()` composable that bridges its core store into a Vue ref
- * with `@iris-ui/vue`'s `useStore`.
+ * with `@iris-ui-kit/vue`'s `useStore`.
  */
 import { shallowRef, type Ref } from 'vue'
 import {
   createWindowManager,
   type WindowManager,
   type WindowManagerState,
-} from '@iris-ui/core/window'
+} from '@iris-ui-kit/core/window'
 
 /** The single, app-wide window manager — the same engine the React demo uses. */
 export const wm: WindowManager = createWindowManager({ workspaces: 4 })

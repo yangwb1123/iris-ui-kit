@@ -22,7 +22,7 @@ function mockMatchMedia(matches: boolean) {
   }))
 }
 
-describe('@iris-ui/react usePrefersReducedMotion', () => {
+describe('@iris-ui-kit/react usePrefersReducedMotion', () => {
   it('is false when matchMedia is unavailable', () => {
     const original = window.matchMedia
     // @ts-expect-error simulate environments without matchMedia

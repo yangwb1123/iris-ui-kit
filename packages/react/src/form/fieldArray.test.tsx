@@ -49,7 +49,7 @@ function Items() {
 
 const texts = () => screen.getAllByTestId('row').map((el) => el.textContent)
 
-describe('@iris-ui/react useFieldArray', () => {
+describe('@iris-ui-kit/react useFieldArray', () => {
   it('renders the initial array', () => {
     render(<Demo />)
     expect(texts()).toEqual(['a', 'b'])

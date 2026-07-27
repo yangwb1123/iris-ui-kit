@@ -16,7 +16,7 @@ import { defineConfig } from 'vitest/config'
 //     is compiled `generate:'ssr'` against the server `solid-js/web`
 //     (the only build with a working `renderToString`). See the test header.
 //
-// `@iris-ui/solid` is aliased to its SOURCE so the iris primitives are compiled
+// `@iris-ui-kit/solid` is aliased to its SOURCE so the iris primitives are compiled
 // fresh in each target (dom-hydratable / ssr-hydratable). The published dist is
 // compiled `hydratable:false`, which cannot reconcile with SSR markers — hence
 // the source alias, the same way the package-level SSR test imports source.
@@ -25,7 +25,7 @@ const irisSolidSrc = fileURLToPath(new URL('../../packages/solid/src/index.tsx',
 export default defineConfig({
   plugins: [solid({ ssr: true })],
   resolve: {
-    alias: { '@iris-ui/solid': irisSolidSrc },
+    alias: { '@iris-ui-kit/solid': irisSolidSrc },
     // Client (browser) build of solid-js/web so the test's own `hydrate`
     // import is the real DOM hydrator. The in-test SSR server overrides this
     // with the node condition for its own (server) module graph.
@@ -41,6 +41,6 @@ export default defineConfig({
     isolate: true,
     // Inline solid + workspace deps so the solid-js singleton + iris source are
     // transformed by this pipeline (no pre-bundled DOM copies leaking in).
-    server: { deps: { inline: [/solid-js/, /@solidjs/, /@iris-ui/] } },
+    server: { deps: { inline: [/solid-js/, /@solidjs/, /@iris-ui-kit/] } },
   },
 })

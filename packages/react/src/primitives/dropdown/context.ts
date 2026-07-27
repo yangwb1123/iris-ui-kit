@@ -1,5 +1,5 @@
 import * as React from 'react'
-import type { Placement } from '@iris-ui/core'
+import type { Placement } from '@iris-ui-kit/core'
 
 export interface DropdownContextValue {
   open: boolean

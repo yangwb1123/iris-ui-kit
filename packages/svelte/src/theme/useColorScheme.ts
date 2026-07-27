@@ -1,5 +1,5 @@
 import { readable, type Readable } from 'svelte/store'
-import { getColorScheme, watchColorScheme, type ColorScheme } from '@iris-ui/theme'
+import { getColorScheme, watchColorScheme, type ColorScheme } from '@iris-ui-kit/theme'
 
 /**
  * Reactive system color scheme (`'light'` / `'dark'`) store from

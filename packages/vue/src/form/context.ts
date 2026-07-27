@@ -1,5 +1,5 @@
 import { inject, type InjectionKey } from 'vue'
-import type { FormStore, FormValues } from '@iris-ui/core'
+import type { FormStore, FormValues } from '@iris-ui-kit/core'
 
 /**
  * Provides the active form's {@link FormStore} to descendant fields so

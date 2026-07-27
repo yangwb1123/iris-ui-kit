@@ -8,5 +8,5 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   target: 'es2022',
-  external: ['@iris-ui/core', '@iris-ui/tokens', '@iris-ui/theme'],
+  external: ['@iris-ui-kit/core', '@iris-ui-kit/tokens', '@iris-ui-kit/theme'],
 })

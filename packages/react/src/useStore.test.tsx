@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import * as React from 'react'
 import { act, cleanup, render } from '@testing-library/react'
-import { createStore } from '@iris-ui/core'
+import { createStore } from '@iris-ui-kit/core'
 import { useStoreSelector } from './useStore'
 
 afterEach(() => cleanup())

@@ -8,7 +8,7 @@ import IrisDashboardCard from './DashboardCard.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte layouts', () => {
+describe('@iris-ui-kit/svelte layouts', () => {
   it('IrisSidebarLayout renders sidebar (snippet) + main, controlled collapse', async () => {
     const onCollapsedChange = vi.fn()
     const { container } = render(SidebarHarness, { props: { collapsed: false, onCollapsedChange } })

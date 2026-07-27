@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
-import { createAutoDismiss, type AutoDismiss } from '@iris-ui/core'
+import { createAutoDismiss, type AutoDismiss } from '@iris-ui-kit/core'
 import {
   dismissToast,
   getToasts,

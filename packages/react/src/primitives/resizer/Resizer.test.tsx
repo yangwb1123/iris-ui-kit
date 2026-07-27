@@ -4,7 +4,7 @@ import { IrisResizer } from './Resizer'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisResizer', () => {
+describe('@iris-ui-kit/react IrisResizer', () => {
   it('renders all 8 handles by default', () => {
     const { container } = render(
       <IrisResizer value={{ width: 200, height: 100 }} onValueChange={vi.fn()}>

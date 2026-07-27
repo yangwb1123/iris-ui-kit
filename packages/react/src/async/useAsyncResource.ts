@@ -4,7 +4,7 @@ import {
   type AsyncResource,
   type AsyncResourceConfig,
   type AsyncState,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
 export interface UseAsyncResourceOptions<T> extends AsyncResourceConfig<T> {

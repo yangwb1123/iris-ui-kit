@@ -1,10 +1,10 @@
 import * as React from 'react'
-import { createSelectionModel, type SelectionModel } from '@iris-ui/core'
+import { createSelectionModel, type SelectionModel } from '@iris-ui-kit/core'
 import {
   createKeyboardNav,
   type KeyboardNavAction,
   type KeyboardNavController,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import {
   ToggleGroupContext,

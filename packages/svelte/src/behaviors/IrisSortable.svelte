@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createSortable, type SortableState } from '@iris-ui/core'
+  import { createSortable, type SortableState } from '@iris-ui-kit/core'
 
   export const SORTABLE_ITEM_ATTR = 'data-iris-sortable-item'
 

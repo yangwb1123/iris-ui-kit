@@ -4,12 +4,12 @@ import {
   type FormState,
   type FormStore,
   type FormValues,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
-export type { FormValues } from '@iris-ui/core'
+export type { FormValues } from '@iris-ui-kit/core'
 
 /**
- * `@iris-ui/plugin-form-builder` — render a working, validated form from a
+ * `@iris-ui-kit/plugin-form-builder` — render a working, validated form from a
  * declarative schema. This `core` entry is framework-agnostic: it COMPILES a
  * {@link FormSchema} into a `createFormStore` (initial values from field
  * defaults, validators from `required`) and exposes the field list for the four

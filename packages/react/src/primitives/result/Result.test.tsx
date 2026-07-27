@@ -4,7 +4,7 @@ import { IrisResult } from './Result'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisResult', () => {
+describe('@iris-ui-kit/react IrisResult', () => {
   it('renders title and subtitle', () => {
     const { container } = render(<IrisResult title="Done" subtitle="All good" />)
     expect(container.querySelector('[data-iris-result-title]')?.textContent).toBe('Done')

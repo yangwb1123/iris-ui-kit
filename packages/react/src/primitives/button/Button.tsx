@@ -10,7 +10,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react'
-import { composeEventHandlers } from '@iris-ui/core'
+import { composeEventHandlers } from '@iris-ui-kit/core'
 import type { IrisButtonSize, IrisButtonType, IrisButtonVariant } from './types'
 import { installButtonStyles } from './styles'
 
@@ -84,10 +84,10 @@ export interface IrisButtonProps extends Omit<
 }
 
 /**
- * React port of `IrisButton`. Same prop contract as `@iris-ui/vue`'s
+ * React port of `IrisButton`. Same prop contract as `@iris-ui-kit/vue`'s
  * version. **No business logic is duplicated** — the `composeEventHandlers`
  * helper, variant token map, and singleton stylesheet are all from
- * `@iris-ui/core` / a near-identical CSS file.
+ * `@iris-ui-kit/core` / a near-identical CSS file.
  *
  * Validates the React-readiness promise: any future primitive can be ported
  * by writing a thin .tsx wrapper around the same shared logic.

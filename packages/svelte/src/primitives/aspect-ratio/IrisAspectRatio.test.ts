@@ -4,7 +4,7 @@ import IrisAspectRatio from './IrisAspectRatio.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisAspectRatio', () => {
+describe('@iris-ui-kit/svelte IrisAspectRatio', () => {
   it('renders outer div with data-iris-aspect-ratio', () => {
     const { container } = render(IrisAspectRatio)
     expect(container.querySelector('[data-iris-aspect-ratio]')).not.toBeNull()

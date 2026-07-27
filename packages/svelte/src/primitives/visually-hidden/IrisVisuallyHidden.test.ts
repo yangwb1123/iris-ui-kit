@@ -4,7 +4,7 @@ import IrisVisuallyHidden from './IrisVisuallyHidden.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisVisuallyHidden', () => {
+describe('@iris-ui-kit/svelte IrisVisuallyHidden', () => {
   it('renders a span with sr-only styles', () => {
     const { container } = render(IrisVisuallyHidden)
     const el = container.querySelector('[data-iris-visually-hidden]')

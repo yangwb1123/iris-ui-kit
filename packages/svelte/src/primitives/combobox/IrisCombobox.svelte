@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { generateId } from '@iris-ui/core'
+  import { generateId } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
 
   export type IrisComboboxSize = 'sm' | 'md' | 'lg'

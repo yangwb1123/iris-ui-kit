@@ -1,5 +1,5 @@
-// @iris-ui/svelte — Svelte 5 adapter. Thin bridges over @iris-ui/core; same
-// component names + semantics as @iris-ui/react, @iris-ui/vue, @iris-ui/solid.
+// @iris-ui-kit/svelte — Svelte 5 adapter. Thin bridges over @iris-ui-kit/core; same
+// component names + semantics as @iris-ui-kit/react, @iris-ui-kit/vue, @iris-ui-kit/solid.
 
 export { toStore, toStoreSelector } from './useStore'
 export { toMachine } from './useMachine'
@@ -132,7 +132,7 @@ export {
   type ApplyThemeResult,
   type ThemeStore,
   type ThemeStoreConfig,
-} from '@iris-ui/theme'
+} from '@iris-ui-kit/theme'
 
 export {
   lightTheme,
@@ -140,4 +140,4 @@ export {
   type IrisTheme,
   type IrisThemeType,
   type IrisThemeColors,
-} from '@iris-ui/tokens'
+} from '@iris-ui-kit/tokens'

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { Machine, MachineEvent, MachineState } from '@iris-ui/core'
+import type { Machine, MachineEvent, MachineState } from '@iris-ui-kit/core'
 import { useStore } from './useStore'
 
 /**

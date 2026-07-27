@@ -8,7 +8,7 @@ import {
   IrisSelect,
   IrisStack,
   type IrisSelectItem,
-} from '@iris-ui/react'
+} from '@iris-ui-kit/react'
 import { useAuth, type Role } from '../auth'
 
 const roleItems: IrisSelectItem<Role>[] = [

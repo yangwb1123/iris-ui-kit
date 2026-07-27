@@ -1,4 +1,4 @@
-import type { NavNode } from '@iris-ui/solid'
+import type { NavNode } from '@iris-ui-kit/solid'
 
 /**
  * One nav-tree config drives the sidebar menu, header breadcrumb, and tabs.

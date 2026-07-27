@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@solidjs/testing-library'
 import { IrisNavMenu } from './NavMenu'
-import type { NavNode } from '@iris-ui/core'
+import type { NavNode } from '@iris-ui-kit/core'
 
 afterEach(cleanup)
 
@@ -21,7 +21,7 @@ const items: NavNode[] = [
 const navItems = (c: HTMLElement) =>
   Array.from(c.querySelectorAll<HTMLElement>('[data-iris-nav-item]'))
 
-describe('@iris-ui/solid IrisNavMenu', () => {
+describe('@iris-ui-kit/solid IrisNavMenu', () => {
   it('renders top-level items; branches collapsed by default', () => {
     const { container } = render(() => <IrisNavMenu items={items} />)
     expect(navItems(container)).toHaveLength(2)

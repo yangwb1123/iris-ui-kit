@@ -8,7 +8,7 @@ const field = (c: HTMLElement) => c.querySelector('input') as HTMLInputElement
 const tags = (c: HTMLElement) => c.querySelectorAll('[data-iris-tag-input-tag]')
 const removes = (c: HTMLElement) => c.querySelectorAll('[data-iris-tag-input-remove]')
 
-describe('@iris-ui/react IrisTagInput', () => {
+describe('@iris-ui-kit/react IrisTagInput', () => {
   it('renders existing tags', () => {
     const { container } = render(<IrisTagInput value={['a', 'b']} />)
     expect(tags(container).length).toBe(2)

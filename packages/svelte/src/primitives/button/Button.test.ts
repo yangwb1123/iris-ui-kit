@@ -8,7 +8,7 @@ afterEach(() => {
   __resetButtonStyles()
 })
 
-describe('@iris-ui/svelte IrisButton', () => {
+describe('@iris-ui-kit/svelte IrisButton', () => {
   it('renders a native button with default type', () => {
     render(IrisButton)
     const btn = screen.getByRole('button')

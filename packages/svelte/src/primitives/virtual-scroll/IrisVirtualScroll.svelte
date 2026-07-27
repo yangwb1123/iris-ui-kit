@@ -11,7 +11,7 @@
 </script>
 
 <script lang="ts">
-  import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui/core'
+  import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui-kit/core'
 
   interface Props {
     items: readonly unknown[]

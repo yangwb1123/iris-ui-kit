@@ -15,7 +15,7 @@ export interface IrisMasonryProps {
  * with each item kept from breaking across columns — for card grids and
  * galleries of varying heights.
  *
- * React port of {@link import('@iris-ui/vue').IrisMasonry}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisMasonry}.
  */
 export function IrisMasonry({
   columns = 3,

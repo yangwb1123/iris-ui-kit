@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
-import { createHoverIntent, type Placement } from '@iris-ui/core'
+import { createHoverIntent, type Placement } from '@iris-ui-kit/core'
 import { useFloating } from '../../floating/useFloating'
 import { IrisSlot } from '../slot/Slot'
 

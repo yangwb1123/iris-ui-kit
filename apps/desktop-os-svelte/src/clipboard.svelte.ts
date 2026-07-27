@@ -1,6 +1,6 @@
 /**
  * The ONE clipboard history for this desktop shell — a module singleton over the
- * framework-agnostic `@iris-ui/core/clipboard-history` (`createClipboardHistory`).
+ * framework-agnostic `@iris-ui-kit/core/clipboard-history` (`createClipboardHistory`).
  * It holds the live clip list (newest first) that drives the Clipboard manager
  * app (Win+V / macOS clipboard-manager feel); the SAME engine the React demo
  * drives, proving it runs unchanged on Svelte 5. Apps record copied text here
@@ -15,7 +15,7 @@ import {
   createClipboardHistory,
   type ClipboardHistory,
   type ClipboardHistoryState,
-} from '@iris-ui/core/clipboard-history'
+} from '@iris-ui-kit/core/clipboard-history'
 
 /** One clipboard history for the whole shell (re-copy / pin / clear). */
 export const clipboard: ClipboardHistory = createClipboardHistory()

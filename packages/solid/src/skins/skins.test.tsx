@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
-import { createSkinEngine } from '@iris-ui/skins'
+import { createSkinEngine } from '@iris-ui-kit/skins'
 import { SkinProvider, useSkin } from './index'
 
 afterEach(cleanup)
 
-describe('@iris-ui/solid skins', () => {
+describe('@iris-ui-kit/solid skins', () => {
   it('provides the resolved skin, applies it, and switches via setSkin', () => {
     // memorySkinStorage-free engine — jsdom here has no window.localStorage.
     const engine = createSkinEngine({ skins: [], default: 'light' })

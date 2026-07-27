@@ -1,5 +1,10 @@
 import { createSignal, type JSX } from 'solid-js'
-import { IrisTable, IrisBadge, type IrisTableColumn, type IrisTableSortState } from '@iris-ui/solid'
+import {
+  IrisTable,
+  IrisBadge,
+  type IrisTableColumn,
+  type IrisTableSortState,
+} from '@iris-ui-kit/solid'
 
 interface Row extends Record<string, unknown> {
   id: number

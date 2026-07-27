@@ -53,9 +53,9 @@ import {
   IrisDialogDescription,
   IrisDialogClose,
   IrisTable,
-} from '@iris-ui/vue'
-import { createThemeStore } from '@iris-ui/theme'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+} from '@iris-ui-kit/vue'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 
 const name = ref('')
 const dialogOpen = ref(false)

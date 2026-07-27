@@ -1,5 +1,5 @@
 import { type Accessor } from 'solid-js'
-import type { TabsNav, TabItem } from '@iris-ui/core'
+import type { TabsNav, TabItem } from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
 export interface UseTabsNavReturn {

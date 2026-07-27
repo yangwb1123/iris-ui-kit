@@ -4,7 +4,7 @@ import {
   type AdminShell,
   type NavNode,
   type TabsNav,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 export interface UseAdminShellConfig {
   /** Normalized nav tree driving menu + breadcrumb. */

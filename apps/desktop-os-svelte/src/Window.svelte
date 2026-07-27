@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { IrisMovable, IrisResizable } from '@iris-ui/svelte'
-  import type { DesktopWindow, SnapZone } from '@iris-ui/core/window'
+  import { IrisMovable, IrisResizable } from '@iris-ui-kit/svelte'
+  import type { DesktopWindow, SnapZone } from '@iris-ui-kit/core/window'
   import { wm, useWmState } from './wm.svelte'
   import { useOs } from './os-state.svelte'
   import { getManifest } from './catalog'

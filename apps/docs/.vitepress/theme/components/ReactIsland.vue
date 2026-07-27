@@ -1,9 +1,9 @@
 <script setup lang="ts">
-// ReactIsland — mounts a single @iris-ui/react primitive into its own root via the
+// ReactIsland — mounts a single @iris-ui-kit/react primitive into its own root via the
 // React client API (createRoot().render). Used INSIDE the Explorer's live preview
 // for the `react` framework tab.
 //
-// The foreign runtime (@iris-ui/react + react / react-dom/client) is loaded with a
+// The foreign runtime (@iris-ui-kit/react + react / react-dom/client) is loaded with a
 // DYNAMIC import inside onMounted — never at module top — so it stays out of
 // VitePress's SSR build graph. Combined with the caller's <ClientOnly>, React only
 // ever runs in the browser.
@@ -49,7 +49,7 @@ function render() {
 onMounted(async () => {
   try {
     const [iris, react, client] = await Promise.all([
-      import('@iris-ui/react'),
+      import('@iris-ui-kit/react'),
       import('react'),
       import('react-dom/client'),
     ])

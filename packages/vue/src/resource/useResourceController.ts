@@ -4,7 +4,7 @@ import {
   type ResourceController,
   type ResourceControllerConfig,
   type ResourceState,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 export interface UseResourceController<T> extends ResourceController<T> {
   /** The live resource state as a reactive ref (rows, total, page, loading, selectedKeys). */
@@ -15,7 +15,7 @@ export interface UseResourceController<T> extends ResourceController<T> {
  * Vue bridge over the framework-agnostic {@link createResourceController} (L4
  * CRUD list composite). Creates the controller once in `setup()`, mirrors its
  * store into a `shallowRef`, and returns the controller plus that live `state`.
- * A ~15-line thin bridge — all logic lives in `@iris-ui/core`.
+ * A ~15-line thin bridge — all logic lives in `@iris-ui-kit/core`.
  */
 export function useResourceController<T>(
   config: ResourceControllerConfig<T>,

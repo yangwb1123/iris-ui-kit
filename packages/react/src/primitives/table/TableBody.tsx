@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { aggregate, type TreeRow } from '@iris-ui/core'
+import { aggregate, type TreeRow } from '@iris-ui-kit/core'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import { TableRow } from './TableRow'
 import { BASE_CELL_STYLE, borderStyle, STATE_ROW_STYLE } from './styles'

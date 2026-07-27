@@ -1,7 +1,7 @@
 import { parseArgs } from 'node:util'
 import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
-import type { Framework, IrisManifest } from '@iris-ui/manifest'
+import type { Framework, IrisManifest } from '@iris-ui-kit/manifest'
 import { runList } from './commands/list.js'
 import { runScaffold } from './commands/scaffold.js'
 import { runCodemodList, runCodemodRun } from './commands/codemod.js'
@@ -12,7 +12,7 @@ import { runCodemodList, runCodemodRun } from './commands/codemod.js'
 
 export function loadManifest(): IrisManifest {
   const require = createRequire(import.meta.url)
-  const path = require.resolve('@iris-ui/manifest/manifest.json')
+  const path = require.resolve('@iris-ui-kit/manifest/manifest.json')
   return JSON.parse(readFileSync(path, 'utf8')) as IrisManifest
 }
 

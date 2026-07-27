@@ -22,7 +22,7 @@ import {
   IrisTooltip,
   useToast,
   IrisKbd,
-} from '@iris-ui/react'
+} from '@iris-ui-kit/react'
 
 const SIDES = ['left', 'right', 'top', 'bottom'] as const
 type Side = (typeof SIDES)[number]

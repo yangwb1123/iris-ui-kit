@@ -5,7 +5,7 @@ import { IrisInput } from './Input'
 
 afterEach(cleanup)
 
-describe('@iris-ui/solid IrisInput', () => {
+describe('@iris-ui-kit/solid IrisInput', () => {
   it('renders a native <input>', () => {
     const { container } = render(() => <IrisInput placeholder="x" />)
     expect(container.querySelector('input')).not.toBeNull()

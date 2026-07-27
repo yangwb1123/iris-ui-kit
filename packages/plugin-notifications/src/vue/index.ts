@@ -20,12 +20,12 @@ export { createNotificationCenter, notificationsPlugin } from '../core'
 
 /**
  * Notification-center panel for Vue (render-function authored to match the
- * `@iris-ui/vue` convention): a header (title + unread badge + mark-all /
+ * `@iris-ui-kit/vue` convention): a header (title + unread badge + mark-all /
  * clear) over a list of notifications (click to mark read, × to dismiss). All
  * state lives in the {@link NotificationCenter}; the host wraps this in a
  * popover / drawer behind a bell icon. The core Store is bridged directly via a
  * `shallowRef` — no adapter `useStore` — so the plugin only depends on
- * `@iris-ui/core`.
+ * `@iris-ui-kit/core`.
  */
 export const IrisNotificationCenter = defineComponent({
   name: 'IrisNotificationCenter',

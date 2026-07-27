@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { IrisButton, useSkin, type Skin, type SkinManifestEntry } from '@iris-ui/vue'
+import { IrisButton, useSkin, type Skin, type SkinManifestEntry } from '@iris-ui-kit/vue'
 import { demoCatalog, sampleSkinJson, STORAGE_KEY } from '../demo-skins'
 
 const {

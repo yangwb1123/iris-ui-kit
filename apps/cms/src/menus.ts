@@ -1,4 +1,4 @@
-import type { NavNode } from '@iris-ui/vue'
+import type { NavNode } from '@iris-ui-kit/vue'
 
 /**
  * The single nav-tree config that drives the whole shell: the sidebar menu, the

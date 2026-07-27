@@ -4,7 +4,7 @@ import { IrisDragger } from './Dragger'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisDragger', () => {
+describe('@iris-ui-kit/react IrisDragger', () => {
   it('renders wrapper with data-iris-dragger', () => {
     const { container } = render(
       <IrisDragger>

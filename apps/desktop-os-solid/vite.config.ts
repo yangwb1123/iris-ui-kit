@@ -8,9 +8,9 @@ const src = (name: string) =>
     new URL(`../../packages/${name}/src/index.${name === 'solid' ? 'tsx' : 'ts'}`, import.meta.url),
   )
 
-// `serve` (dev) aliases @iris-ui/* to source for instant HMR; `build`/`preview`
-// bundle the real published dist artifacts. Each `@iris-ui/core/*` subpath needs
-// its OWN alias (listed BEFORE the bare `@iris-ui/core` alias) because the
+// `serve` (dev) aliases @iris-ui-kit/* to source for instant HMR; `build`/`preview`
+// bundle the real published dist artifacts. Each `@iris-ui-kit/core/*` subpath needs
+// its OWN alias (listed BEFORE the bare `@iris-ui-kit/core` alias) because the
 // bare-specifier alias maps to a file, not a directory.
 export default defineConfig(({ command }) => ({
   plugins: [solid()],
@@ -22,30 +22,30 @@ export default defineConfig(({ command }) => ({
     command === 'serve'
       ? {
           alias: {
-            '@iris-ui/core/window': fileURLToPath(
+            '@iris-ui-kit/core/window': fileURLToPath(
               new URL('../../packages/core/src/window.ts', import.meta.url),
             ),
-            '@iris-ui/core/profile': fileURLToPath(
+            '@iris-ui-kit/core/profile': fileURLToPath(
               new URL('../../packages/core/src/profile.ts', import.meta.url),
             ),
-            '@iris-ui/core/commands': fileURLToPath(
+            '@iris-ui-kit/core/commands': fileURLToPath(
               new URL('../../packages/core/src/commands.ts', import.meta.url),
             ),
-            '@iris-ui/core/notifications': fileURLToPath(
+            '@iris-ui-kit/core/notifications': fileURLToPath(
               new URL('../../packages/core/src/notifications.ts', import.meta.url),
             ),
-            '@iris-ui/core/clipboard-history': fileURLToPath(
+            '@iris-ui-kit/core/clipboard-history': fileURLToPath(
               new URL('../../packages/core/src/clipboard-history.ts', import.meta.url),
             ),
-            '@iris-ui/core/fs': fileURLToPath(
+            '@iris-ui-kit/core/fs': fileURLToPath(
               new URL('../../packages/core/src/fs.ts', import.meta.url),
             ),
-            '@iris-ui/core/undo': fileURLToPath(
+            '@iris-ui-kit/core/undo': fileURLToPath(
               new URL('../../packages/core/src/undo.ts', import.meta.url),
             ),
-            '@iris-ui/core': src('core'),
-            '@iris-ui/tokens': src('tokens'),
-            '@iris-ui/solid': src('solid'),
+            '@iris-ui-kit/core': src('core'),
+            '@iris-ui-kit/tokens': src('tokens'),
+            '@iris-ui-kit/solid': src('solid'),
           },
         }
       : {},

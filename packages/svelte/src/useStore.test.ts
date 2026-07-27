@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { get } from 'svelte/store'
-import { createStore } from '@iris-ui/core'
+import { createStore } from '@iris-ui-kit/core'
 import { toStoreSelector } from './useStore'
 
 describe('toStoreSelector (svelte)', () => {

@@ -6,7 +6,7 @@ import {
   type PaginatedResource,
   type PaginatedState,
   type PaginationMode,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 export interface UsePaginatedResourceOptions {
   pageSize?: number

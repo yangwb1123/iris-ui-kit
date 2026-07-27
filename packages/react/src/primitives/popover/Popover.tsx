@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { createFloatingMachine, type Placement } from '@iris-ui/core'
+import { createFloatingMachine, type Placement } from '@iris-ui-kit/core'
 import { useMachine } from '../../useMachine'
 import { PopoverContext } from './context'
 

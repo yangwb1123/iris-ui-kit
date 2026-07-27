@@ -1,5 +1,5 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
-import type { Placement } from '@iris-ui/core'
+import type { Placement } from '@iris-ui-kit/core'
 import { IrisPopover } from '../popover/Popover'
 import { IrisPopoverTrigger } from '../popover/PopoverTrigger'
 import { IrisPopoverContent } from '../popover/PopoverContent'

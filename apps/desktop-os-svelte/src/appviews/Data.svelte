@@ -5,16 +5,16 @@
    * through `var(--os-*)` tokens. The Svelte twin of the React `DataApp`: same
    * sample rows, the same `IrisTableColumn` model + `IrisTableSortState`.
    *
-   * Adaptation note — unlike `@iris-ui/react`'s `IrisTable` (column `render`) and
-   * `@iris-ui/vue`'s (a `cell.<key>` slot), `@iris-ui/svelte`'s `<IrisTable>`
+   * Adaptation note — unlike `@iris-ui-kit/react`'s `IrisTable` (column `render`) and
+   * `@iris-ui-kit/vue`'s (a `cell.<key>` slot), `@iris-ui-kit/svelte`'s `<IrisTable>`
    * stringifies every cell and exposes no per-cell render/snippet hook. To honor
    * the goal (a real sortable table WITH an `IrisBadge` status cell), this view
    * renders the grid directly while reusing the very engine `IrisTable` itself
-   * uses internally — `compareValues` from `@iris-ui/core` — so sorting matches
+   * uses internally — `compareValues` from `@iris-ui-kit/core` — so sorting matches
    * the component byte-for-byte, and the status column renders an `IrisBadge`.
    */
-  import { compareValues } from '@iris-ui/core'
-  import { IrisBadge, type IrisTableColumn, type IrisTableSortState } from '@iris-ui/svelte'
+  import { compareValues } from '@iris-ui-kit/core'
+  import { IrisBadge, type IrisTableColumn, type IrisTableSortState } from '@iris-ui-kit/svelte'
 
   interface Row extends Record<string, unknown> {
     id: number

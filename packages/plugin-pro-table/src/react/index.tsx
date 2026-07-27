@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui/core'
+import { createSortable, createVirtualizer, type SortableRect } from '@iris-ui-kit/core'
 import {
   collectRects,
   proTableLabel,

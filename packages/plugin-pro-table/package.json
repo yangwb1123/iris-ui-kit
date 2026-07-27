@@ -1,5 +1,5 @@
 {
-  "name": "@iris-ui/plugin-pro-table",
+  "name": "@iris-ui-kit/plugin-pro-table",
   "version": "0.0.0",
   "description": "vxe-table-style CRUD data table plugin for Iris UI: IrisProTable for react/vue/solid/svelte",
   "license": "MIT",
@@ -44,7 +44,7 @@
     "clean": "rm -rf dist .turbo .svelte-kit"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*"
+    "@iris-ui-kit/core": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
@@ -94,5 +94,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/nousresearch/iris-ui.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

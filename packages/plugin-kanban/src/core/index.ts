@@ -1,7 +1,7 @@
-import { createStore, createPlugin } from '@iris-ui/core'
+import { createStore, createPlugin } from '@iris-ui-kit/core'
 
 /**
- * `@iris-ui/plugin-kanban` — render a drag-and-drop Kanban board from a
+ * `@iris-ui-kit/plugin-kanban` — render a drag-and-drop Kanban board from a
  * declarative column/card config. This `core` entry is framework-agnostic:
  * it owns all state and mutations (moveCard, addCard, removeCard, WIP limits)
  * via a subscribable store. The four thin renderers draw from it.

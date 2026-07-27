@@ -19,7 +19,7 @@
  */
 // @ts-nocheck
 import figma from '@figma/code-connect'
-import { IrisButton } from '@iris-ui/react'
+import { IrisButton } from '@iris-ui-kit/react'
 
 figma.connect(IrisButton, '<FIGMA_BUTTON_NODE_URL>', {
   props: {

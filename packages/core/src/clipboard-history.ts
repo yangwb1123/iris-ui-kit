@@ -2,7 +2,7 @@ import { createStore, type Store } from './store'
 import { generateId } from './utils'
 
 /**
- * `@iris-ui/core/clipboard-history` — a framework-agnostic CLIPBOARD MANAGER: the
+ * `@iris-ui-kit/core/clipboard-history` — a framework-agnostic CLIPBOARD MANAGER: the
  * state engine behind a desktop "clipboard history" (Win+V / macOS clipboard
  * managers). Apps record copied text here (the desktop's `clipboard` permission
  * gates this); the shell lists recent clips, lets the user re-copy / pin / clear,

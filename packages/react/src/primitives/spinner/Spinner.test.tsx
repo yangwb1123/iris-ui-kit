@@ -5,7 +5,7 @@ import { __SPINNER_STYLE_ID, __resetSpinnerStyles } from './styles'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisSpinner', () => {
+describe('@iris-ui-kit/react IrisSpinner', () => {
   beforeEach(() => __resetSpinnerStyles())
   afterEach(() => __resetSpinnerStyles())
 

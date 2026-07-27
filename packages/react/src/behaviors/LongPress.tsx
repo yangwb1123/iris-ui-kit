@@ -12,7 +12,7 @@
  *   </IrisLongPress>
  */
 import * as React from 'react'
-import { createLongPress } from '@iris-ui/core'
+import { createLongPress } from '@iris-ui-kit/core'
 
 export interface IrisLongPressProps {
   /** Time in ms the pointer must be held before `onLongPress` fires. */

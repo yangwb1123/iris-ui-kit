@@ -1,6 +1,6 @@
 <script lang="ts">
   // Test fixture: drives IrisAdminLayout with a content render-prop Snippet.
-  import type { NavNode, TabsNav } from '@iris-ui/core'
+  import type { NavNode, TabsNav } from '@iris-ui-kit/core'
   import IrisAdminLayout from './AdminLayout.svelte'
   import type { IrisAdminLayoutMode } from './types'
 

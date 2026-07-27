@@ -1,5 +1,5 @@
 {
-  "name": "@iris-ui/theme",
+  "name": "@iris-ui-kit/theme",
   "version": "0.0.0",
   "description": "Theme engine for Iris UI: applyTheme, getCssVar, theme store",
   "license": "MIT",
@@ -27,11 +27,14 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*",
-    "@iris-ui/tokens": "workspace:*"
+    "@iris-ui-kit/core": "workspace:*",
+    "@iris-ui-kit/tokens": "workspace:*"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/nousresearch/iris-ui.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

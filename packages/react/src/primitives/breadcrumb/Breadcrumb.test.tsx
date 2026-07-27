@@ -5,7 +5,7 @@ import { IrisBreadcrumbItem } from './BreadcrumbItem'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisBreadcrumb', () => {
+describe('@iris-ui-kit/react IrisBreadcrumb', () => {
   it('renders <nav aria-label="Breadcrumb"> + <ol>', () => {
     const { container } = render(
       <IrisBreadcrumb>

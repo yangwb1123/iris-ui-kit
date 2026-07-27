@@ -22,7 +22,7 @@ import {
   type IrisSelectItem,
   type IrisTableColumn,
   type IrisTableSortState,
-} from '@iris-ui/react'
+} from '@iris-ui-kit/react'
 import {
   createUser,
   fetchUsers,
@@ -215,7 +215,7 @@ export function UsersPage() {
           <p className="page-desc" style={{ marginBottom: 12 }}>
             Real CRUD on a live in-memory store via <code>createResourceController</code> +{' '}
             <code>createClientFetcher</code> — sort, filter, paginate, select, and{' '}
-            <code>mutate</code> (optimistic deletes), all from @iris-ui/core.
+            <code>mutate</code> (optimistic deletes), all from @iris-ui-kit/core.
             {users.state.selectedKeys.length > 0 &&
               ` · ${users.state.selectedKeys.length} selected`}
           </p>
@@ -246,7 +246,7 @@ export function UsersPage() {
       <IrisTable
         rowKey="id"
         columns={columns}
-        data={users.state.rows as any}
+        data={users.state.rows as unknown as Record<string, unknown>[]}
         selectable="multi"
         selection={users.state.selectedKeys}
         onSelectionChange={(next) => {

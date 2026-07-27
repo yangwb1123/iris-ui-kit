@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
-import { createTabsNav } from '@iris-ui/core'
+import { createTabsNav } from '@iris-ui-kit/core'
 import IrisAdminTabs from './AdminTabs.svelte'
 
 afterEach(cleanup)
 
 const tabsEls = (c: HTMLElement) => Array.from(c.querySelectorAll<HTMLElement>('[data-iris-tab]'))
 
-describe('@iris-ui/svelte IrisAdminTabs', () => {
+describe('@iris-ui-kit/svelte IrisAdminTabs', () => {
   it('renders a chip per open tab and marks the active one', () => {
     const nav = createTabsNav({ tabs: [{ key: 'home', title: 'Home', pinned: true }] })
     nav.open({ key: 'a', title: 'A' })

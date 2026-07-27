@@ -26,7 +26,7 @@ function withProvider(props: { locale?: string; messages?: Record<string, string
   })
 }
 
-describe('@iris-ui/vue i18n', () => {
+describe('@iris-ui-kit/vue i18n', () => {
   it('falls back to English defaults without a provider', () => {
     const wrapper = mount(Probe)
     expect(wrapper.find('.locale').text()).toBe('en-US')

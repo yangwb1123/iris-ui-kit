@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { IrisButton } from '@iris-ui/vue'
+import { IrisButton } from '@iris-ui-kit/vue'
 
 const props = defineProps<{ title: string; description?: string }>()
 

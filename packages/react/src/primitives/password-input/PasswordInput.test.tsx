@@ -4,7 +4,7 @@ import { IrisPasswordInput } from './PasswordInput'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisPasswordInput', () => {
+describe('@iris-ui-kit/react IrisPasswordInput', () => {
   it('renders type=password by default', () => {
     const { container } = render(<IrisPasswordInput />)
     expect(container.querySelector('input')!.getAttribute('type')).toBe('password')

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IrisButton } from '@iris-ui/vue'
+import { IrisButton } from '@iris-ui-kit/vue'
 import { wm, useWmState } from '../wm'
 
 // Live list of windows, straight from the framework-agnostic manager store.

@@ -1,5 +1,5 @@
 import { computed, defineComponent, h, type PropType } from 'vue'
-import type { Size } from '@iris-ui/core'
+import type { Size } from '@iris-ui-kit/core'
 
 export type IrisCheckboxSize = Size
 export type IrisCheckboxValue = boolean | 'indeterminate'

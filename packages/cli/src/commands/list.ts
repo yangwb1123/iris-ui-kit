@@ -1,4 +1,4 @@
-import type { IrisManifest } from '@iris-ui/manifest'
+import type { IrisManifest } from '@iris-ui-kit/manifest'
 
 /**
  * Print each component as a single line:

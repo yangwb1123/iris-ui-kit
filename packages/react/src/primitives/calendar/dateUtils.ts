@@ -1,4 +1,4 @@
-// Date helpers now live in @iris-ui/core (single source across all four
+// Date helpers now live in @iris-ui-kit/core (single source across all four
 // frameworks). Re-exported so existing `./dateUtils` imports keep working.
 export {
   startOfDay,
@@ -14,7 +14,7 @@ export {
   formatLocalISO,
   clampDate,
   isOutOfRange,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 /**
  * A locale tag safe to hand to `Intl.DateTimeFormat`. A malformed BCP-47 tag

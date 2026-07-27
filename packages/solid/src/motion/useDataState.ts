@@ -1,5 +1,5 @@
 import { createMemo, onMount, type Accessor } from 'solid-js'
-import { resolveDataState, type DataState, type DataStateInput } from '@iris-ui/core'
+import { resolveDataState, type DataState, type DataStateInput } from '@iris-ui-kit/core'
 import { DATA_STATE_CLASS, installDataStateStyles } from './styles'
 import { usePrefersReducedMotion } from './usePrefersReducedMotion'
 

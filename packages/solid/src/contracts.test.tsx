@@ -46,12 +46,12 @@ import {
   formScenario,
   listKeyboardScenario,
   type ContractDriver,
-} from '@iris-ui/core/contracts'
+} from '@iris-ui-kit/core/contracts'
 import {
   createSyncClientDataSource,
   createClientDataSource,
   type DataViewColumn,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import {
   IrisTabs,
   IrisTabsList,
@@ -294,7 +294,7 @@ function driverFor(container: HTMLElement, unmount: () => void = () => {}): Cont
   }
 }
 
-describe('@iris-ui/solid — cross-framework behavior contracts', () => {
+describe('@iris-ui-kit/solid — cross-framework behavior contracts', () => {
   it('satisfies the shared Tabs contract', async () => {
     const { container } = render(() => (
       <IrisTabs defaultValue="a">

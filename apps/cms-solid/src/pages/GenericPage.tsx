@@ -1,5 +1,5 @@
 import { createSignal, type JSX } from 'solid-js'
-import { IrisButton } from '@iris-ui/solid'
+import { IrisButton } from '@iris-ui-kit/solid'
 
 const FALLBACK =
   'A placeholder page rendered inside IrisAdminLayout. Increment the counter, switch to another tab, then come back — the value survives because inactive tabs stay mounted (keep-alive), keyed by the tab cache key.'

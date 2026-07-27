@@ -1,6 +1,6 @@
 import { h, type Component, type VNode } from 'vue'
-import { aggregate } from '@iris-ui/core'
-import type { TreeRow } from '@iris-ui/core'
+import { aggregate } from '@iris-ui-kit/core'
+import type { TreeRow } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import type { IrisTableColumn } from './types'

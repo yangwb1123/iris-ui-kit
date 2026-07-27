@@ -1,4 +1,4 @@
-import { createTabsNav } from '@iris-ui/svelte'
+import { createTabsNav } from '@iris-ui-kit/svelte'
 
 /** Shared multi-tab store; Dashboard is a pinned (non-closable) affix tab. */
 export const tabsNav = createTabsNav({

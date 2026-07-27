@@ -2,13 +2,13 @@
  * The ONE window manager instance for this desktop shell — a module singleton.
  * Every component (Desktop, Window, Taskbar, StartMenu, the in-window apps)
  * drives the SAME framework-agnostic `createWindowManager` from
- * `@iris-ui/core/window`, proving the core engine runs unchanged on Svelte 5.
+ * `@iris-ui-kit/core/window`, proving the core engine runs unchanged on Svelte 5.
  */
 import {
   createWindowManager,
   type WindowManager,
   type WindowManagerState,
-} from '@iris-ui/core/window'
+} from '@iris-ui-kit/core/window'
 
 export const wm: WindowManager = createWindowManager({ workspaces: 4 })
 

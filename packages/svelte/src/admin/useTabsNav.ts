@@ -1,5 +1,5 @@
 import { derived, type Readable } from 'svelte/store'
-import type { TabsNav, TabItem } from '@iris-ui/core'
+import type { TabsNav, TabItem } from '@iris-ui-kit/core'
 import { toStore } from '../useStore'
 
 export interface UseTabsNavReturn {

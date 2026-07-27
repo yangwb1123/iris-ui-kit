@@ -1,5 +1,5 @@
 import type { Readable } from 'svelte/store'
-import type { Machine, MachineEvent, MachineState } from '@iris-ui/core'
+import type { Machine, MachineEvent, MachineState } from '@iris-ui-kit/core'
 import { toStore } from './useStore'
 
 export interface ToMachineReturn<TState extends string, TContext, TEvent extends MachineEvent> {

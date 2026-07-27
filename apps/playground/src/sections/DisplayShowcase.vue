@@ -14,7 +14,7 @@ import {
   IrisDivider,
   IrisEmptyState,
   IrisButton,
-} from '@iris-ui/vue'
+} from '@iris-ui-kit/vue'
 
 const progress = ref(35)
 const bannerOpen = ref(true)

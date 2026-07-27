@@ -4,7 +4,7 @@ import {
   type DataSourceController,
   type DataSourceConfig,
   type DataSourceState,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
 export interface UseDataSource<T> extends DataSourceController<T> {
@@ -23,7 +23,7 @@ export interface UseDataSource<T> extends DataSourceController<T> {
  * per-row + optimistic mutate). Creates the controller once (a Solid component
  * body runs once), subscribes to its store via {@link useStore}, and returns the
  * controller plus its live `state` accessor. A thin bridge — all logic lives in
- * `@iris-ui/core`.
+ * `@iris-ui-kit/core`.
  *
  * Constructed with `immediate: false` so no fetch fires synchronously during
  * setup; the initial load is kicked from an effect (when `immediate`), and the

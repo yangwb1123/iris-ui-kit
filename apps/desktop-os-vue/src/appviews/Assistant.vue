@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch, type Ref } from 'vue'
-import { IrisButton } from '@iris-ui/vue'
-import type { Command } from '@iris-ui/core/commands'
+import { IrisButton } from '@iris-ui-kit/vue'
+import type { Command } from '@iris-ui-kit/core/commands'
 import { useCommands } from '../commands'
 import { createAnthropicCall, createLlmPlanner, fuzzyPlanner, type Planner } from '../planner'
 
 /**
- * The agent layer (Vue): a natural-ish command runner over `@iris-ui/core/commands`.
+ * The agent layer (Vue): a natural-ish command runner over `@iris-ui-kit/core/commands`.
  * The default planner is deterministic (fuzzy-match → top command). When the user
  * enables the AI planner and supplies a key, a Claude-backed planner
  * ({@link createLlmPlanner}) takes over — it asks the model to pick a command via

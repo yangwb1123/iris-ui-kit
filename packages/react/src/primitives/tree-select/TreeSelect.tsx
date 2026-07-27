@@ -53,7 +53,7 @@ function findNode(nodes: IrisTreeSelectNode[], value: string): IrisTreeSelectNod
  * with expand/collapse toggles. Selecting a node sets the value and closes.
  * Controlled or uncontrolled; closes on select, Escape, or outside click.
  *
- * React port of {@link import('@iris-ui/vue').IrisTreeSelect}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisTreeSelect}.
  */
 export function IrisTreeSelect({
   options,

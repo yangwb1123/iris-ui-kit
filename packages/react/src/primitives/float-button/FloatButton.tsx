@@ -45,7 +45,7 @@ const fab = (size: number, primary: boolean): React.CSSProperties => ({
  * speed-dial — click toggles a `role="menu"` stack of actions (dismissed by
  * selection, Escape, or outside click). Otherwise click runs `onClick`.
  *
- * React port of {@link import('@iris-ui/vue').IrisFloatButton}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisFloatButton}.
  */
 export function IrisFloatButton({
   icon,

@@ -3,7 +3,7 @@
    * IrisMenuSub — nested submenu within a Menu. Renders a trigger item that
    * opens a sub-panel on hover/focus (right side by default).
    */
-  import { generateId } from '@iris-ui/core'
+  import { generateId } from '@iris-ui-kit/core'
   import { useFloating } from '../../floating/useFloating.svelte'
   import { useDismiss } from '../../floating/useDismiss.svelte'
   import { portal } from '../../internal/portal'

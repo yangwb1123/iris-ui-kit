@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { composeEventHandlers } from '@iris-ui/core'
+import { composeEventHandlers } from '@iris-ui-kit/core'
 import { useMenuContext } from './context'
 
 export interface IrisMenuItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {

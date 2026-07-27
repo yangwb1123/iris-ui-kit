@@ -57,7 +57,7 @@ jobs:
         run: pnpm test:coverage
 
       - name: Core instrumented coverage (v8, real thresholds)
-        run: pnpm turbo run test:coverage:v8 --filter=@iris-ui/core
+        run: pnpm turbo run test:coverage:v8 --filter=@iris-ui-kit/core
 
       - name: Desktop OS parity
         run: pnpm check:desktop-parity

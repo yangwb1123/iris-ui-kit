@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { generateId, createKeyboardNav, type KeyboardNavAction } from '@iris-ui/core'
+  import { generateId, createKeyboardNav, type KeyboardNavAction } from '@iris-ui-kit/core'
   import { useFloating } from '../../floating/useFloating.svelte'
   import { useDismiss } from '../../floating/useDismiss.svelte'
   import { portal } from '../../internal/portal'
   import { useI18n } from '../../i18n'
-  import type { Placement } from '@iris-ui/core'
+  import type { Placement } from '@iris-ui-kit/core'
 
   export interface IrisSelectItem<T = unknown> {
     label?: string

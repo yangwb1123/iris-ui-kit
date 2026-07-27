@@ -9,7 +9,7 @@ import {
   IrisFormField,
   type IrisFileUploadFile,
   type IrisRangeSliderValue,
-} from '@iris-ui/vue'
+} from '@iris-ui-kit/vue'
 
 const volume = ref(40)
 const range = ref<IrisRangeSliderValue>([20, 80])

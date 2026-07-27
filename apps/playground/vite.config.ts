@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 /**
  * Resolve a workspace package to its TypeScript source entry.
  * Used in dev so the playground runs the libraries straight from source —
- * no build step, and edits to any `@iris-ui/*` package hot-reload instantly.
+ * no build step, and edits to any `@iris-ui-kit/*` package hot-reload instantly.
  */
 const src = (name: string) =>
   fileURLToPath(new URL(`../../packages/${name}/src/index.ts`, import.meta.url))
@@ -27,18 +27,18 @@ export default defineConfig(({ command }) => ({
     command === 'serve'
       ? {
           alias: {
-            // Subpath aliases must precede the bare `@iris-ui/core` alias below —
+            // Subpath aliases must precede the bare `@iris-ui-kit/core` alias below —
             // the bare alias maps to a single file (`src/index.ts`), so without a
-            // more specific entry first, a deep import like `@iris-ui/core/undo`
-            // (used internally by `@iris-ui/vue`'s undo module) would resolve
+            // more specific entry first, a deep import like `@iris-ui-kit/core/undo`
+            // (used internally by `@iris-ui-kit/vue`'s undo module) would resolve
             // against that file instead of `src/undo.ts` and fail to load.
-            '@iris-ui/core/undo': srcSubpath('core', 'undo'),
-            '@iris-ui/core': src('core'),
-            '@iris-ui/tokens': src('tokens'),
-            '@iris-ui/theme': src('theme'),
-            '@iris-ui/skins': src('skins'),
-            '@iris-ui/icons': src('icons'),
-            '@iris-ui/vue': src('vue'),
+            '@iris-ui-kit/core/undo': srcSubpath('core', 'undo'),
+            '@iris-ui-kit/core': src('core'),
+            '@iris-ui-kit/tokens': src('tokens'),
+            '@iris-ui-kit/theme': src('theme'),
+            '@iris-ui-kit/skins': src('skins'),
+            '@iris-ui-kit/icons': src('icons'),
+            '@iris-ui-kit/vue': src('vue'),
           },
         }
       : {},

@@ -60,7 +60,7 @@ export interface IrisBadgeProps extends Omit<React.HTMLAttributes<HTMLSpanElemen
 }
 
 /**
- * React port of {@link import('@iris-ui/vue').IrisBadge}. Same visual model.
+ * React port of {@link import('@iris-ui-kit/vue').IrisBadge}. Same visual model.
  *
  * @example
  *   <IrisBadge tone="success" variant="subtle">Active</IrisBadge>

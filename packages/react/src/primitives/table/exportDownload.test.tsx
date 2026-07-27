@@ -1,11 +1,11 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
-import { setFileSaveHandler } from '@iris-ui/core'
+import { setFileSaveHandler } from '@iris-ui-kit/core'
 import { downloadCsv } from './exportCsv'
 import { downloadExcel } from './exportExcel'
 
 const BOM = String.fromCharCode(0xfeff)
 
-describe('@iris-ui/react table download → file-save handler', () => {
+describe('@iris-ui-kit/react table download → file-save handler', () => {
   beforeEach(() => {
     // jsdom doesn't implement these; stub so the browser-download path is observable.
     URL.createObjectURL = vi.fn(() => 'blob:x')

@@ -18,7 +18,7 @@ import {
   visibleNav,
   firstLeaf,
   type NavNode,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { IrisIcon } from '../primitives/icon/Icon'
 import { useI18n } from '../i18n'
 

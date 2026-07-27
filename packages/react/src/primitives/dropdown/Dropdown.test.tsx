@@ -38,7 +38,7 @@ function items(): HTMLElement[] {
   return Array.from(document.querySelectorAll('[role=menuitem]'))
 }
 
-describe('@iris-ui/react IrisDropdown', () => {
+describe('@iris-ui-kit/react IrisDropdown', () => {
   it('renders only the trigger when closed', () => {
     const { container } = render(harness())
     expect(container.querySelector('button')).not.toBeNull()

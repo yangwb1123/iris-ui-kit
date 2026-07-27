@@ -1,4 +1,9 @@
-import type { Framework, IrisManifest, ManifestComponent } from '@iris-ui/manifest'
+import type {
+  Framework,
+  IrisManifest,
+  ManifestComponent,
+  ManifestProp,
+} from '@iris-ui-kit/manifest'
 import { detectControlledPair, wiredTag } from './codegen'
 
 /**
@@ -64,7 +69,7 @@ export function scaffoldSnippet(
   const component = getComponentApi(manifest, name)
   if (!component || !component.frameworks.includes(framework)) return null
 
-  const importPath = component.importFrom[framework] ?? `@iris-ui/${framework}`
+  const importPath = component.importFrom[framework] ?? `@iris-ui-kit/${framework}`
   const pluginNote = component.plugin
     ? `\n// Requires <IrisProvider plugins={[…]}> — install ${component.plugin}`
     : ''
@@ -138,7 +143,7 @@ export function scaffoldView(manifest: IrisManifest, req: ScaffoldViewRequest): 
   const byPath = new Map<string, Set<string>>()
   const pluginNotes: string[] = []
   for (const c of all) {
-    const path = c.importFrom[framework] ?? `@iris-ui/${framework}`
+    const path = c.importFrom[framework] ?? `@iris-ui-kit/${framework}`
     if (!byPath.has(path)) byPath.set(path, new Set())
     byPath.get(path)!.add(c.name)
     if (c.plugin) pluginNotes.push(`// Requires <IrisProvider plugins={[…]}> — install ${c.plugin}`)
@@ -232,6 +237,76 @@ export interface UsageIssue {
 
 const stripQuotes = (v: string): string => v.trim().replace(/^['"]|['"]$/g, '')
 
+/** Check framework availability; return an error issue or undefined. */
+function checkFramework(
+  framework: string | undefined,
+  component: ComponentSummary,
+  name: string,
+): UsageIssue | undefined {
+  if (!framework || component.frameworks.includes(framework as Framework)) return undefined
+  return {
+    severity: 'error',
+    message:
+      name +
+      ' is not available in ' +
+      framework +
+      ' (available: ' +
+      component.frameworks.join(', ') +
+      ').',
+  }
+}
+
+/** Check required props are all provided. */
+function checkRequiredProps(
+  props: ManifestProp[],
+  provided: Record<string, unknown>,
+  issues: UsageIssue[],
+): void {
+  for (const p of props) {
+    if (!p.optional && !(p.name in provided)) {
+      issues.push({
+        severity: 'error',
+        message: 'Missing required prop "' + p.name + '" (' + p.type + ').',
+      })
+    }
+  }
+}
+
+/** Validate provided prop values against enum constraints. */
+function checkEnumProps(
+  known: Map<string, ManifestProp>,
+  provided: Record<string, unknown>,
+  usageName: string,
+  issues: UsageIssue[],
+): void {
+  for (const [name, value] of Object.entries(provided)) {
+    const p = known.get(name)
+    if (!p) {
+      issues.push({
+        severity: 'warning',
+        message: 'Unknown prop "' + name + '" on ' + usageName + '.',
+      })
+      continue
+    }
+    if (p.enum && p.enum.length > 0) {
+      const v = stripQuotes(String(value))
+      if (v && !p.enum.includes(v)) {
+        issues.push({
+          severity: 'error',
+          message:
+            'Invalid value "' +
+            String(value) +
+            '" for "' +
+            name +
+            '". One of: ' +
+            p.enum.map((e: string) => "'" + e + "'").join(', ') +
+            '.',
+        })
+      }
+    }
+  }
+}
+
 /**
  * Validate a component usage against the typed manifest — the "verify your
  * guess" counterpart to the typed contracts: unknown component / unsupported
@@ -243,44 +318,25 @@ export function validateUsage(manifest: IrisManifest, usage: UsageToValidate): U
   const issues: UsageIssue[] = []
   const component = getComponentApi(manifest, usage.name)
   if (!component) {
-    issues.push({ severity: 'error', message: `Unknown component "${usage.name}".` })
+    issues.push({ severity: 'error', message: 'Unknown component "' + usage.name + '".' })
     return issues
   }
-  if (usage.framework && !component.frameworks.includes(usage.framework)) {
-    issues.push({
-      severity: 'error',
-      message: `${usage.name} is not available in ${usage.framework} (available: ${component.frameworks.join(', ')}).`,
-    })
-  }
+  const frameworkIssue = checkFramework(usage.framework, component, usage.name)
+  if (frameworkIssue) issues.push(frameworkIssue)
   if (component.plugin) {
     issues.push({
       severity: 'warning',
-      message: `${usage.name} requires the ${component.plugin} plugin via <IrisProvider plugins={[…]}>.`,
+      message:
+        usage.name +
+        ' requires the ' +
+        component.plugin +
+        ' plugin via <IrisProvider plugins={[…]}>.',
     })
   }
   const props = component.props ?? []
   const known = new Map(props.map((p) => [p.name, p]))
   const provided = usage.props ?? {}
-  for (const p of props) {
-    if (!p.optional && !(p.name in provided)) {
-      issues.push({ severity: 'error', message: `Missing required prop "${p.name}" (${p.type}).` })
-    }
-  }
-  for (const [name, value] of Object.entries(provided)) {
-    const p = known.get(name)
-    if (!p) {
-      issues.push({ severity: 'warning', message: `Unknown prop "${name}" on ${usage.name}.` })
-      continue
-    }
-    if (p.enum && p.enum.length > 0) {
-      const v = stripQuotes(value)
-      if (v && !p.enum.includes(v)) {
-        issues.push({
-          severity: 'error',
-          message: `Invalid value "${value}" for "${name}". One of: ${p.enum.map((e) => `'${e}'`).join(', ')}.`,
-        })
-      }
-    }
-  }
+  checkRequiredProps(props, provided, issues)
+  checkEnumProps(known, provided, usage.name, issues)
   return issues
 }

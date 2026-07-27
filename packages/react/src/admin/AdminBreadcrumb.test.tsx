@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { IrisAdminBreadcrumb } from './AdminBreadcrumb'
-import type { NavNode } from '@iris-ui/core'
+import type { NavNode } from '@iris-ui-kit/core'
 
 afterEach(cleanup)
 

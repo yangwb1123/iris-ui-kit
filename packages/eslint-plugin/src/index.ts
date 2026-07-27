@@ -3,7 +3,7 @@ import useIrisProviderRule from './rules/use-iris-provider.js'
 import pluginNeedsRegistrationRule from './rules/plugin-needs-registration.js'
 
 export const plugin = {
-  meta: { name: '@iris-ui/eslint-plugin', version: '0.1.0' },
+  meta: { name: '@iris-ui-kit/eslint-plugin', version: '0.1.0' },
   rules: {
     'no-internal-import': noInternalImportRule,
     'use-iris-provider': useIrisProviderRule,
@@ -14,9 +14,9 @@ export const plugin = {
       recommended: {
         plugins: { '@iris-ui': plugin },
         rules: {
-          '@iris-ui/no-internal-import': 'error' as const,
-          '@iris-ui/use-iris-provider': 'warn' as const,
-          '@iris-ui/plugin-needs-registration': 'warn' as const,
+          '@iris-ui-kit/no-internal-import': 'error' as const,
+          '@iris-ui-kit/use-iris-provider': 'warn' as const,
+          '@iris-ui-kit/plugin-needs-registration': 'warn' as const,
         },
       },
     }

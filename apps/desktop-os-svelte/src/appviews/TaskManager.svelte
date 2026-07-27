@@ -6,7 +6,7 @@
    * task" stay in lock-step with the real desktop. The Svelte 5 twin of the
    * React `TaskManagerView`.
    */
-  import { IrisButton } from '@iris-ui/svelte'
+  import { IrisButton } from '@iris-ui-kit/svelte'
   import { wm, useWmState } from '../wm.svelte'
 
   const wmState = useWmState()

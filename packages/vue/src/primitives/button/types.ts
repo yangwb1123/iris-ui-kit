@@ -1,4 +1,4 @@
-import type { Size, Variant } from '@iris-ui/core'
+import type { Size, Variant } from '@iris-ui-kit/core'
 
 export type IrisButtonVariant = Variant
 export type IrisButtonSize = Size

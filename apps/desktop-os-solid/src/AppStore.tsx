@@ -1,5 +1,5 @@
 import { For, Show, createSignal, type JSX } from 'solid-js'
-import { IrisButton, IrisBadge, IrisInput } from '@iris-ui/solid'
+import { IrisButton, IrisBadge, IrisInput } from '@iris-ui-kit/solid'
 import { CATALOG, INSTALLABLE_APPS, type AppManifest } from './catalog'
 import { useProfile, useProfileState, useLaunchApp, useCustomApps } from './profile'
 import { useNotifications } from './notifications'
@@ -313,7 +313,7 @@ function AddWebAppForm(): JSX.Element {
 
 /**
  * App Store — browse the catalog and install link / iframe apps into the user
- * profile (persisted via `@iris-ui/core/profile`). Add ANY external service via
+ * profile (persisted via `@iris-ui-kit/core/profile`). Add ANY external service via
  * "Add a web app"; manage them under "My apps". Built-in component apps are
  * shown for reference but can't be removed.
  */
@@ -329,7 +329,8 @@ export function AppStoreApp(): JSX.Element {
         <h2 style={{ margin: 0 }}>App Store</h2>
         <p style={{ margin: 0, 'font-size': '12px', opacity: 0.7, 'line-height': 1.5 }}>
           Install apps into your profile (persisted to this device via{' '}
-          <code>@iris-ui/core/profile</code>). Link &amp; iframe apps aggregate external services.
+          <code>@iris-ui-kit/core/profile</code>). Link &amp; iframe apps aggregate external
+          services.
         </p>
       </header>
       <AddWebAppForm />

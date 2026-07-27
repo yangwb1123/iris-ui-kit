@@ -13,8 +13,8 @@ import {
   useSkin,
   useTabsNav,
   findNavNode,
-} from '@iris-ui/solid'
-import { filterNavByAccess } from '@iris-ui/core'
+} from '@iris-ui-kit/solid'
+import { filterNavByAccess } from '@iris-ui-kit/core'
 import { menus } from './menus'
 import { tabsNav } from './tabs'
 import { useAuth, type Role } from './auth'
@@ -118,7 +118,7 @@ export function Shell(): JSX.Element {
         toolbar={toolbar}
         footer={
           <div class="cms-footer">
-            <span>Iris CMS — built with @iris-ui/solid</span>
+            <span>Iris CMS — built with @iris-ui-kit/solid</span>
             <span>v0.1.x</span>
           </div>
         }

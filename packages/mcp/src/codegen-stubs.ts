@@ -1,4 +1,4 @@
-import type { Framework, ManifestComponent } from '@iris-ui/manifest'
+import type { Framework, ManifestComponent } from '@iris-ui-kit/manifest'
 
 /**
  * Deterministic data-wiring stubs for the data-bearing component families.
@@ -92,7 +92,7 @@ function tableStub(framework: Framework): DataStub {
   return {
     setup: [rows, columns, store],
     bind: exprBind('store', 'store', framework),
-    extraImports: [`import { createProTableStore } from '@iris-ui/plugin-pro-table/core'`],
+    extraImports: [`import { createProTableStore } from '@iris-ui-kit/plugin-pro-table/core'`],
     owns: ['store'],
   }
 }

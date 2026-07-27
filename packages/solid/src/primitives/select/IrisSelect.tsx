@@ -3,7 +3,12 @@ import { Portal } from 'solid-js/web'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useI18n } from '../../i18n'
-import { createKeyboardNav, type KeyboardNavAction, type Placement, type Size } from '@iris-ui/core'
+import {
+  createKeyboardNav,
+  type KeyboardNavAction,
+  type Placement,
+  type Size,
+} from '@iris-ui-kit/core'
 
 export type IrisSelectSize = Size
 

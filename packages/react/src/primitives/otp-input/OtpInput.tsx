@@ -58,7 +58,7 @@ function sanitize(str: string, type: IrisOtpInputType): string {
  * `onComplete` fires when every cell is filled. Drop it inside `IrisFormField`
  * — the injected `id` lands on the first cell so the label focuses it.
  *
- * React port of {@link import('@iris-ui/vue').IrisOtpInput}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisOtpInput}.
  */
 export function IrisOtpInput({
   value: valueProp,

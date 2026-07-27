@@ -1,5 +1,5 @@
 /**
- * `@iris-ui/core` realtime source — framework-agnostic reconnection with
+ * `@iris-ui-kit/core` realtime source — framework-agnostic reconnection with
  * exponential backoff over any push transport. All of Iris's data engines are
  * pull-based Promise fetchers; there is no primitive for a live stream. This is
  * that primitive: it owns connection state and the reconnect/backoff loop while

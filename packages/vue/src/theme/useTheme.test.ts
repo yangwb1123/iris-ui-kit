@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, beforeEach } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
-import { createThemeStore } from '@iris-ui/theme'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
+import { createThemeStore } from '@iris-ui-kit/theme'
 import { ThemeProvider } from './ThemeProvider'
 import { useTheme } from './useTheme'
 

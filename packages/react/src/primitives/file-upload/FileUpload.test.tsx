@@ -8,7 +8,7 @@ function fileOf(name: string, size: number, type = 'text/plain'): File {
   return new File([new Blob([new ArrayBuffer(size)], { type })], name, { type })
 }
 
-describe('@iris-ui/react formatBytes', () => {
+describe('@iris-ui-kit/react formatBytes', () => {
   it('B/KB/MB/GB', () => {
     expect(formatBytes(0)).toBe('0 B')
     expect(formatBytes(512)).toBe('512 B')
@@ -17,7 +17,7 @@ describe('@iris-ui/react formatBytes', () => {
   })
 })
 
-describe('@iris-ui/react IrisFileUpload', () => {
+describe('@iris-ui-kit/react IrisFileUpload', () => {
   it('renders zone + hidden input', () => {
     render(<IrisFileUpload />)
     expect(document.querySelector('[data-iris-file-upload-zone]')).not.toBeNull()
@@ -156,7 +156,7 @@ describe('@iris-ui/react IrisFileUpload', () => {
   })
 })
 
-describe('@iris-ui/react IrisFileUpload i18n', () => {
+describe('@iris-ui-kit/react IrisFileUpload i18n', () => {
   it('renders the default localized label', () => {
     const { container } = render(<IrisFileUpload />)
     expect(container.querySelector('[data-iris-file-upload-label]')?.textContent).toBe(

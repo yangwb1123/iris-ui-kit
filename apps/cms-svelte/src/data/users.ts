@@ -1,4 +1,4 @@
-import { createClientFetcher, type DataViewColumn } from '@iris-ui/svelte'
+import { createClientFetcher, type DataViewColumn } from '@iris-ui-kit/svelte'
 
 export type UserStatus = 'active' | 'invited' | 'suspended'
 export type UserRole = 'Owner' | 'Admin' | 'Editor' | 'Viewer'

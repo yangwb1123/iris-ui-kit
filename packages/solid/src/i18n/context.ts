@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'solid-js'
-import type { I18n } from '@iris-ui/core'
-import { createI18n } from '@iris-ui/core'
+import type { I18n } from '@iris-ui-kit/core'
+import { createI18n } from '@iris-ui-kit/core'
 
 export const I18nContext = createContext<I18n | null>(null)
 

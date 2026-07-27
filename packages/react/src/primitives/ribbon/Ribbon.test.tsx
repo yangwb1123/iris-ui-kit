@@ -7,7 +7,7 @@ afterEach(() => cleanup())
 const badge = (c: HTMLElement) => c.querySelector('[data-iris-ribbon-badge]') as HTMLElement
 const root = (c: HTMLElement) => c.querySelector('[data-iris-ribbon]')
 
-describe('@iris-ui/react IrisRibbon', () => {
+describe('@iris-ui-kit/react IrisRibbon', () => {
   it('renders the badge text and children', () => {
     const { container } = render(
       <IrisRibbon text="New">

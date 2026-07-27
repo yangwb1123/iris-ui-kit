@@ -13,7 +13,7 @@ custom `iris://` URI-scheme protocol.
   framework from the root (so the CMS's absolute `/assets/…` paths resolve) and
   injects a `window.irisNative` shim into `index.html` (before the app's module
   script). The window loads `iris://localhost/`.
-- The shim wires the framework-agnostic `@iris-ui/core` bridges to Tauri
+- The shim wires the framework-agnostic `@iris-ui-kit/core` bridges to Tauri
   commands: `setFileSaveHandler` → `save_file` (native Save dialog via
   `tauri-plugin-dialog` + `std::fs::write`), `setClipboardHandler` →
   `write_clipboard` (`tauri-plugin-clipboard-manager`). The CMS apps call

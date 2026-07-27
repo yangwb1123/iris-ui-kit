@@ -10,13 +10,13 @@
    * Mirrors `apps/desktop-os/src/appviews/AgentTools.tsx` (React), in idiomatic
    * Svelte 5 runes.
    */
-  import { IrisButton } from '@iris-ui/svelte'
+  import { IrisButton } from '@iris-ui-kit/svelte'
   import {
     toMcpTools,
     runMcpTool,
     type McpToolDef,
     type McpToolResult,
-  } from '@iris-ui/core/commands'
+  } from '@iris-ui-kit/core/commands'
   import { useCommands } from '../commands.svelte'
 
   const registry = useCommands()

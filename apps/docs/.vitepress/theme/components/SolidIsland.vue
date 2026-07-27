@@ -1,9 +1,9 @@
 <script setup lang="ts">
-// SolidIsland — mounts a single @iris-ui/solid primitive into its own root via the
+// SolidIsland — mounts a single @iris-ui-kit/solid primitive into its own root via the
 // Solid client API (`render(() => <Comp/>, el)` from solid-js/web). Same role as
 // ReactIsland for the `solid` framework tab.
 //
-// The foreign runtime (@iris-ui/solid + solid-js/web) is loaded with a DYNAMIC
+// The foreign runtime (@iris-ui-kit/solid + solid-js/web) is loaded with a DYNAMIC
 // import inside onMounted — never at module top — so it stays out of VitePress's
 // SSR build graph entirely (solid-js/web's server build throws if a client-only API
 // is reached during SSR). Combined with the caller's <ClientOnly>, the Solid runtime
@@ -55,7 +55,7 @@ function draw() {
 
 onMounted(async () => {
   try {
-    const [iris, web] = await Promise.all([import('@iris-ui/solid'), import('solid-js/web')])
+    const [iris, web] = await Promise.all([import('@iris-ui-kit/solid'), import('solid-js/web')])
     SolidIris = iris as Record<string, unknown>
     solidRender = web.render as never
     ready = true

@@ -1,4 +1,4 @@
-import { createSkinEngine, localStorageSkinStorage, type Skin } from '@iris-ui/svelte'
+import { createSkinEngine, localStorageSkinStorage, type Skin } from '@iris-ui-kit/svelte'
 
 export const STORAGE_KEY = 'iris-cms-svelte-skin'
 

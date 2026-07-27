@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed, reactive, ref, type Ref } from 'vue'
-import { IrisButton } from '@iris-ui/vue'
-import { toMcpTools, runMcpTool, type McpToolDef, type McpToolResult } from '@iris-ui/core/commands'
+import { IrisButton } from '@iris-ui-kit/vue'
+import {
+  toMcpTools,
+  runMcpTool,
+  type McpToolDef,
+  type McpToolResult,
+} from '@iris-ui-kit/core/commands'
 import { useCommands } from '../commands'
 import { useWmState } from '../wm'
 

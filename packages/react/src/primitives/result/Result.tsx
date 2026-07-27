@@ -28,7 +28,7 @@ const STATUS: Record<IrisResultStatus, { color: string; glyph: string }> = {
  * subtitle, action area, and optional content. Use for success / error / 404 /
  * 403 / 500 screens. Pure presentation; the status glyph is decorative.
  *
- * React port of {@link import('@iris-ui/vue').IrisResult}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisResult}.
  */
 export function IrisResult({
   status = 'info',

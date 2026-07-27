@@ -10,7 +10,7 @@ import { IrisLongPress } from './LongPress'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisResizable', () => {
+describe('@iris-ui-kit/react IrisResizable', () => {
   it('wraps child in a relative inline-block container with width/height', () => {
     const { container } = render(
       <IrisResizable defaultSize={{ width: 300, height: 200 }}>
@@ -88,7 +88,7 @@ describe('@iris-ui/react IrisResizable', () => {
   })
 })
 
-describe('@iris-ui/react IrisMovable', () => {
+describe('@iris-ui-kit/react IrisMovable', () => {
   it('wraps child in an absolutely-positioned container at defaultPosition', () => {
     const { container } = render(
       <IrisMovable defaultPosition={{ x: 42, y: -7 }}>
@@ -135,7 +135,7 @@ describe('@iris-ui/react IrisMovable', () => {
   })
 })
 
-describe('@iris-ui/react IrisHotkey', () => {
+describe('@iris-ui-kit/react IrisHotkey', () => {
   it('renders children as-is (no extra DOM)', () => {
     const { container } = render(
       <IrisHotkey shortcut="Escape" onTrigger={() => {}}>
@@ -262,7 +262,7 @@ describe('@iris-ui/react IrisHotkey', () => {
   })
 })
 
-describe('@iris-ui/react IrisClickOutside', () => {
+describe('@iris-ui-kit/react IrisClickOutside', () => {
   it('fires onOutside when pointerdown is outside the wrapped tree', () => {
     const onOutside = vi.fn()
     const { container } = render(
@@ -331,7 +331,7 @@ describe('@iris-ui/react IrisClickOutside', () => {
   })
 })
 
-describe('@iris-ui/react behaviors composition (stacking)', () => {
+describe('@iris-ui-kit/react behaviors composition (stacking)', () => {
   it('Resizable + Movable + Hotkey + ClickOutside stack around a single child', () => {
     const onOutside = vi.fn()
     const onEscape = vi.fn()
@@ -360,7 +360,7 @@ describe('@iris-ui/react behaviors composition (stacking)', () => {
   })
 })
 
-describe('@iris-ui/react IrisSortable', () => {
+describe('@iris-ui-kit/react IrisSortable', () => {
   it('renders items with data-iris-sortable-item attributes', () => {
     const { container } = render(
       <IrisSortable items={['A', 'B', 'C']} onReorder={() => {}}>
@@ -398,7 +398,7 @@ describe('@iris-ui/react IrisSortable', () => {
   })
 })
 
-describe('@iris-ui/react IrisLongPress', () => {
+describe('@iris-ui-kit/react IrisLongPress', () => {
   it('renders children inside a display:contents span', () => {
     const { container } = render(
       <IrisLongPress onLongPress={() => {}}>

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import type { FormStore } from '@iris-ui/core'
+import type { FormStore } from '@iris-ui-kit/core'
 import { IrisForm } from './Form'
 import { useForm } from './useForm'
 import { useFieldArray } from './useFieldArray'

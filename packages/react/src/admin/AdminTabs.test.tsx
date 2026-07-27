@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
-import { createTabsNav } from '@iris-ui/core'
+import { createTabsNav } from '@iris-ui-kit/core'
 import { IrisAdminTabs } from './AdminTabs'
 
 afterEach(cleanup)

@@ -8,8 +8,8 @@ import {
   onMount,
   type JSX,
 } from 'solid-js'
-import { IrisMovable, IrisResizable } from '@iris-ui/solid'
-import { type DesktopWindow, type SnapZone } from '@iris-ui/core/window'
+import { IrisMovable, IrisResizable } from '@iris-ui-kit/solid'
+import { type DesktopWindow, type SnapZone } from '@iris-ui-kit/core/window'
 import { getManifest } from './catalog'
 import { loadRemoteApp } from './remoteApp'
 import { useOs } from './os-state'

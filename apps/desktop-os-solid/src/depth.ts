@@ -2,10 +2,10 @@
  * Desktop "depth" interaction helpers — pure geometry for drag-to-edge SNAP
  * (Windows / KDE style) and the matching snap-preview overlay. Kept framework-
  * free + side-effect-free so it's trivially testable and so the window manager
- * (`@iris-ui/core/window`) stays the single source of truth for snap geometry
+ * (`@iris-ui-kit/core/window`) stays the single source of truth for snap geometry
  * (we only reuse its zones + `snapRect`-equivalent halves here for the preview).
  */
-import { type SnapZone, type WindowRect } from '@iris-ui/core/window'
+import { type SnapZone, type WindowRect } from '@iris-ui-kit/core/window'
 
 /** Px from a work-area edge within which a dragged window snaps to it. */
 export const SNAP_THRESHOLD = 18

@@ -2,7 +2,7 @@
   "name": "iris-desktop",
   "private": true,
   "version": "0.1.0",
-  "description": "Electron desktop shell demo — hosts all four Iris UI CMS demos (React/Vue/Solid/Svelte) in one window and wires the @iris-ui/core native save + clipboard bridges to real OS APIs.",
+  "description": "Electron desktop shell demo — hosts all four Iris UI CMS demos (React/Vue/Solid/Svelte) in one window and wires the @iris-ui-kit/core native save + clipboard bridges to real OS APIs.",
   "author": "Iris UI",
   "main": "main.js",
   "scripts": {

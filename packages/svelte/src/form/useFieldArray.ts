@@ -1,5 +1,5 @@
 import { readable, derived, type Readable } from 'svelte/store'
-import type { FormState, FormValues } from '@iris-ui/core'
+import type { FormState, FormValues } from '@iris-ui-kit/core'
 import { getFormContext } from './context'
 
 export interface UseFieldArrayReturn<T> {

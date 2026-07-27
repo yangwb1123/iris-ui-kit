@@ -1,5 +1,5 @@
 import { defineComponent, h, onBeforeUnmount, ref, type PropType, type VNode } from 'vue'
-import { createSortable, type SortableRect } from '@iris-ui/core'
+import { createSortable, type SortableRect } from '@iris-ui-kit/core'
 
 /** The data attribute on each sortable item for the collision system. */
 export const SORTABLE_ITEM_ATTR = 'data-iris-sortable-item'

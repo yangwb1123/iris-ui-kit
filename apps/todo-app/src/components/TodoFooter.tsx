@@ -5,7 +5,7 @@
  * that only appears when at least one item is completed.
  */
 
-import { IrisButton } from '@iris-ui/react'
+import { IrisButton } from '@iris-ui-kit/react'
 import { hasCompleted } from '../utils/filters'
 import type { Todo } from '../types/todo'
 

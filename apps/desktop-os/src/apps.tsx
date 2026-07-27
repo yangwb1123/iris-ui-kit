@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { IrisButton, IrisBadge, IrisInput } from '@iris-ui/react'
+import { IrisButton, IrisBadge, IrisInput } from '@iris-ui-kit/react'
 import { OS_ORDER, CHROMES } from './os'
 import { useOs, useWm, useWmState, useApps } from './shell'
 import { type AppManifest } from './catalog'
@@ -24,14 +24,14 @@ export function AboutView() {
       <p style={{ margin: 0 }}>
         A windowed desktop shell whose entire window logic — open, focus &amp; z-order, minimize,
         maximize/restore, move/resize, edge-snap — lives in the framework-agnostic{' '}
-        <code>@iris-ui/core/window</code> (<code>createWindowManager</code>). The chrome you see is
-        a thin React renderer; drag uses <code>IrisMovable</code>, resize uses{' '}
+        <code>@iris-ui-kit/core/window</code> (<code>createWindowManager</code>). The chrome you see
+        is a thin React renderer; drag uses <code>IrisMovable</code>, resize uses{' '}
         <code>IrisResizable</code>.
       </p>
       <p style={{ margin: 0 }}>
         <strong>Aggregation shell:</strong> open the <em>App Store</em> to install link &amp; iframe
         apps; your profile (skin + installed apps) persists in localStorage via{' '}
-        <code>@iris-ui/core/profile</code>.
+        <code>@iris-ui-kit/core/profile</code>.
       </p>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <IrisBadge tone="primary" variant="subtle">

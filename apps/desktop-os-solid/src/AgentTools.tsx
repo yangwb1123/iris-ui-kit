@@ -1,13 +1,13 @@
 import { For, Show, createMemo, createSignal, onCleanup, type JSX } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import { IrisButton } from '@iris-ui/solid'
+import { IrisButton } from '@iris-ui-kit/solid'
 import {
   toMcpTools,
   runMcpTool,
   type McpToolDef,
   type McpToolProperty,
   type McpToolResult,
-} from '@iris-ui/core/commands'
+} from '@iris-ui-kit/core/commands'
 import { useCommands } from './commands'
 
 /**

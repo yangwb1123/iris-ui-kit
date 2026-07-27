@@ -13,11 +13,11 @@
     "clean": "rm -rf dist .turbo .svelte-kit"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*",
-    "@iris-ui/svelte": "workspace:*",
-    "@iris-ui/tokens": "workspace:*",
+    "@iris-ui-kit/core": "workspace:*",
+    "@iris-ui-kit/svelte": "workspace:*",
+    "@iris-ui-kit/tokens": "workspace:*",
     "svelte": "^5.16.0",
-    "@iris-ui/plugin-notifications": "workspace:*"
+    "@iris-ui-kit/plugin-notifications": "workspace:*"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^4.0.4",

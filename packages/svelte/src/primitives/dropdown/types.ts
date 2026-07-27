@@ -1,6 +1,6 @@
 import type { Snippet } from 'svelte'
 import type { HTMLAttributes, HTMLButtonAttributes } from 'svelte/elements'
-import type { Placement } from '@iris-ui/core'
+import type { Placement } from '@iris-ui-kit/core'
 
 export interface IrisDropdownProps {
   open?: boolean

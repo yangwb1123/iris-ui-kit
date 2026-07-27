@@ -12,8 +12,8 @@ import {
   useSkin,
   useTabsNav,
   findNavNode,
-} from '@iris-ui/vue'
-import { filterNavByAccess, type NavNode } from '@iris-ui/core'
+} from '@iris-ui-kit/vue'
+import { filterNavByAccess, type NavNode } from '@iris-ui-kit/core'
 import { authStore, logout } from './auth'
 import { menus as flatMenus } from './menus'
 import { tabsNav } from './tabs'
@@ -152,7 +152,7 @@ const activeCacheKey = computed(() => {
 
     <template #footer>
       <div class="cms-footer">
-        <span>Iris CMS — built with @iris-ui/vue/admin</span>
+        <span>Iris CMS — built with @iris-ui-kit/vue/admin</span>
         <span>v0.1.x</span>
       </div>
     </template>

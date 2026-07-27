@@ -1,7 +1,7 @@
 import { defineConfig, type Options } from 'tsup'
 import { solidPlugin } from 'esbuild-plugin-solid'
 
-const IRIS = ['@iris-ui/core']
+const IRIS = ['@iris-ui-kit/core']
 const CM = [
   '@codemirror/state',
   '@codemirror/view',

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { NavNode } from '@iris-ui/core'
+  import type { NavNode } from '@iris-ui-kit/core'
   import IrisSidebarLayout from '../layouts/SidebarLayout.svelte'
   import IrisHeaderLayout from '../layouts/HeaderLayout.svelte'
   import type { IrisSidebarLayoutSidebarState } from '../layouts/types'

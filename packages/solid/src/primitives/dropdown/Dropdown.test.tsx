@@ -19,7 +19,7 @@ function harness(onSelect?: () => void) {
   )
 }
 
-describe('@iris-ui/solid IrisDropdown', () => {
+describe('@iris-ui-kit/solid IrisDropdown', () => {
   it('opens on trigger click and renders role=menu + menuitems', () => {
     const { getByText, container } = render(() => harness())
     expect(container.querySelector('[data-iris-dropdown-menu]')).toBeNull()

@@ -13,7 +13,7 @@ export interface IrisAspectRatioProps {
  * the CSS `aspect-ratio` property), with an absolutely-filled content layer —
  * handy for images, video, and iframe embeds.
  *
- * React port of {@link import('@iris-ui/vue').IrisAspectRatio}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisAspectRatio}.
  */
 export function IrisAspectRatio({
   ratio = 16 / 9,

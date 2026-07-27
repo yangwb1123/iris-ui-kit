@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { IrisNavMenu } from './NavMenu'
-import type { NavNode } from '@iris-ui/core'
+import type { NavNode } from '@iris-ui-kit/core'
 
 const items: NavNode[] = [
   { key: 'dash', title: 'Dashboard', icon: 'menu' },

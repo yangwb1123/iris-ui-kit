@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { createVirtualizer, type Virtualizer } from '@iris-ui/core'
+import { createVirtualizer, type Virtualizer } from '@iris-ui-kit/core'
 
 export type IrisVirtualScrollAlign = 'start' | 'center' | 'end'
 

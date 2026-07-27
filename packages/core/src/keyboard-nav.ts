@@ -151,6 +151,114 @@ export function createKeyboardNav(config: KeyboardNavConfig): KeyboardNavControl
   // Current active index (clamped)
   const safeIndex = (): number => clamp(rawIndex, _count)
 
+  // ── Extracted key handlers ─────────────────────────────────────────────
+
+  /** Handle typeahead (printable character) input. */
+  const handleTypeahead = (key: string, cur: number): KeyboardNavAction => {
+    const lastChar = typeaheadBuffer[typeaheadBuffer.length - 1]
+    if (lastChar === key.toLowerCase()) {
+      typeaheadBuffer = key.toLowerCase()
+    } else {
+      typeaheadBuffer += key.toLowerCase()
+    }
+    if (typeaheadTimer) clearTimeout(typeaheadTimer)
+    typeaheadTimer = setTimeout(clearTypeahead, typeaheadTimeout)
+    const match = matchTypeahead(labels!, typeaheadBuffer, cur, (i) => !_isEnabled(i))
+    if (match >= 0) {
+      emit(match)
+      return { type: 'typeahead', target: match }
+    }
+    return { type: 'noop' }
+  }
+
+  /** ArrowDown: next item in vertical orientation, otherwise 'next' action. */
+  const handleArrowDown = (cur: number): KeyboardNavAction => {
+    if (cur < 0) return { type: 'noop' }
+    if (orientation === 'vertical') {
+      controller.move(1)
+      const next = controller.index
+      return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
+    }
+    return { type: 'next' }
+  }
+
+  /** ArrowUp: previous item in vertical orientation, otherwise 'previous' action. */
+  const handleArrowUp = (cur: number): KeyboardNavAction => {
+    if (cur < 0) return { type: 'noop' }
+    if (orientation === 'vertical') {
+      controller.move(-1)
+      const next = controller.index
+      return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
+    }
+    return { type: 'previous' }
+  }
+
+  /** ArrowLeft: collapse (tree) / navigate previous (horizontal) / 'previous' action. */
+  const handleArrowLeft = (cur: number): KeyboardNavAction => {
+    if (tree) {
+      if (cur >= 0 && hasChildren?.(cur) && isExpanded?.(cur)) {
+        return { type: 'collapse', target: cur }
+      }
+      return { type: 'go-to-parent' }
+    }
+    if (cur < 0) return { type: 'noop' }
+    if (orientation === 'horizontal') {
+      controller.move(-1)
+      const next = controller.index
+      return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
+    }
+    return { type: 'previous' }
+  }
+
+  /** ArrowRight: expand (tree) / navigate next (horizontal) / 'next' action. */
+  const handleArrowRight = (cur: number): KeyboardNavAction => {
+    if (tree) {
+      if (cur >= 0 && hasChildren?.(cur) && !isExpanded?.(cur)) {
+        return { type: 'expand', target: cur }
+      }
+      if (cur >= 0 && !hasChildren?.(cur)) {
+        return { type: 'go-to-parent' }
+      }
+      return { type: 'focus', target: cur }
+    }
+    if (cur < 0) return { type: 'noop' }
+    if (orientation === 'horizontal') {
+      controller.move(1)
+      const next = controller.index
+      return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
+    }
+    return { type: 'next' }
+  }
+
+  /** Enter: select the current item. */
+  const handleEnter = (cur: number): KeyboardNavAction => {
+    if (cur >= 0) return { type: 'select', target: cur }
+    return { type: 'noop' }
+  }
+
+  /** Home: jump to the first enabled item. */
+  const handleHome = (cur: number): KeyboardNavAction => {
+    if (_count <= 0) return { type: 'noop' }
+    controller.goFirst()
+    const next = controller.index
+    return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
+  }
+
+  /** End: jump to the last enabled item. */
+  const handleEnd = (cur: number): KeyboardNavAction => {
+    if (_count <= 0) return { type: 'noop' }
+    controller.goLast()
+    const next = controller.index
+    return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
+  }
+
+  /** Escape: close / dismiss. */
+  const handleEscape = (): KeyboardNavAction => ({ type: 'escape' })
+
+  /** True when typeahead is active (labels provided and key is a printable char). */
+  const isTypeaheadActive = (key: string): boolean =>
+    !!(labels && labels.length > 0 && key.length === 1 && key !== ' ')
+
   // ── Public API ──────────────────────────────────────────────────────────
 
   const controller: KeyboardNavController = {
@@ -165,7 +273,6 @@ export function createKeyboardNav(config: KeyboardNavConfig): KeyboardNavControl
     },
 
     focus(index: number) {
-      // Allow out-of-bounds; emit clamps to [0, count-1] or -1
       emit(index)
     },
 
@@ -200,125 +307,44 @@ export function createKeyboardNav(config: KeyboardNavConfig): KeyboardNavControl
       const cur = safeIndex()
       const { key } = event
 
-      // ── Typeahead ───────────────────────────────────────────────────────
-      if (labels && labels.length > 0 && key.length === 1 && key !== ' ') {
-        // Pressing the same character repeatedly → cycle (don't accumulate).
-        // A different character in quick succession → accumulate multi-char search.
-        const lastChar = typeaheadBuffer[typeaheadBuffer.length - 1]
-        if (lastChar === key.toLowerCase()) {
-          typeaheadBuffer = key.toLowerCase()
-        } else {
-          typeaheadBuffer += key.toLowerCase()
-        }
-        if (typeaheadTimer) clearTimeout(typeaheadTimer)
-        typeaheadTimer = setTimeout(clearTypeahead, typeaheadTimeout)
-
-        const match = matchTypeahead(labels, typeaheadBuffer, cur, (i) => !_isEnabled(i))
-        if (match >= 0) {
-          emit(match)
-          return { type: 'typeahead', target: match }
-        }
-        return { type: 'noop' }
+      // ── Typeahead: printable character when labels are configured ───────
+      if (isTypeaheadActive(key)) {
+        event.preventDefault()
+        return handleTypeahead(key, cur)
       }
 
-      // ── Space (select, not typeahead) ───────────────────────────────────
+      // ── Space → select ─────────────────────────────────────────────────
       if (key === ' ') {
         event.preventDefault()
-        if (cur >= 0) return { type: 'select', target: cur }
-        return { type: 'noop' }
+        return cur >= 0 ? { type: 'select', target: cur } : { type: 'noop' }
       }
 
       // ── Navigation keys ─────────────────────────────────────────────────
       switch (key) {
-        case 'ArrowDown': {
+        case 'ArrowDown':
           event.preventDefault()
-          if (cur < 0) return { type: 'noop' }
-          if (orientation === 'vertical') {
-            controller.move(1)
-            const next = controller.index
-            return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
-          }
-          return { type: 'next' }
-        }
-
-        case 'ArrowUp': {
+          return handleArrowDown(cur)
+        case 'ArrowUp':
           event.preventDefault()
-          if (cur < 0) return { type: 'noop' }
-          if (orientation === 'vertical') {
-            controller.move(-1)
-            const next = controller.index
-            return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
-          }
-          return { type: 'previous' }
-        }
-
-        case 'ArrowLeft': {
+          return handleArrowUp(cur)
+        case 'ArrowLeft':
           event.preventDefault()
-          if (tree) {
-            // Tree: collapse if expanded, go to parent if collapsed/leaf
-            if (cur >= 0 && hasChildren?.(cur) && isExpanded?.(cur)) {
-              return { type: 'collapse', target: cur }
-            }
-            return { type: 'go-to-parent' }
-          }
-          if (cur < 0) return { type: 'noop' }
-          if (orientation === 'horizontal') {
-            controller.move(-1)
-            const next = controller.index
-            return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
-          }
-          return { type: 'previous' }
-        }
-
-        case 'ArrowRight': {
+          return handleArrowLeft(cur)
+        case 'ArrowRight':
           event.preventDefault()
-          if (tree) {
-            // Tree: expand if collapsed + has children; go-to-parent if leaf
-            if (cur >= 0 && hasChildren?.(cur) && !isExpanded?.(cur)) {
-              return { type: 'expand', target: cur }
-            }
-            if (cur >= 0 && !hasChildren?.(cur)) {
-              return { type: 'go-to-parent' }
-            }
-            // Expanded node with children → stay
-            return { type: 'focus', target: cur }
-          }
-          if (cur < 0) return { type: 'noop' }
-          if (orientation === 'horizontal') {
-            controller.move(1)
-            const next = controller.index
-            return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
-          }
-          return { type: 'next' }
-        }
-
-        case 'Enter': {
+          return handleArrowRight(cur)
+        case 'Enter':
           event.preventDefault()
-          if (cur >= 0) return { type: 'select', target: cur }
-          return { type: 'noop' }
-        }
-
-        case 'Home': {
+          return handleEnter(cur)
+        case 'Home':
           event.preventDefault()
-          if (_count <= 0) return { type: 'noop' }
-          controller.goFirst()
-          const next = controller.index
-          return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
-        }
-
-        case 'End': {
+          return handleHome(cur)
+        case 'End':
           event.preventDefault()
-          if (_count <= 0) return { type: 'noop' }
-          controller.goLast()
-          const next = controller.index
-          return next !== cur ? { type: 'focus', target: next } : { type: 'noop' }
-        }
-
-        case 'Escape': {
+          return handleEnd(cur)
+        case 'Escape':
           event.preventDefault()
-          return { type: 'escape' }
-        }
-
+          return handleEscape()
         default:
           return { type: 'noop' }
       }

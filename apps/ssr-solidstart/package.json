@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "SolidStart SSR smoke app — the SSR-compat proof for @iris-ui/solid (ROADMAP v3 R14, deferred)",
+  "description": "SolidStart SSR smoke app — the SSR-compat proof for @iris-ui-kit/solid (ROADMAP v3 R14, deferred)",
   "scripts": {
     "dev": "vinxi dev --port 5183",
     "build": "vinxi build",
@@ -12,10 +12,10 @@
     "clean": "rm -rf .output node_modules/.cache"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*",
-    "@iris-ui/solid": "workspace:*",
-    "@iris-ui/theme": "workspace:*",
-    "@iris-ui/tokens": "workspace:*",
+    "@iris-ui-kit/core": "workspace:*",
+    "@iris-ui-kit/solid": "workspace:*",
+    "@iris-ui-kit/theme": "workspace:*",
+    "@iris-ui-kit/tokens": "workspace:*",
     "@solidjs/router": "^0.16.1",
     "@solidjs/start": "^1.1.0",
     "solid-js": "^1.9.0",

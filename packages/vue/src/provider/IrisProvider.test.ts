@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
-import { createPlugin } from '@iris-ui/core'
+import { createPlugin } from '@iris-ui-kit/core'
 import { IrisProvider } from './IrisProvider'
 import { usePlugin, usePluginStore } from './hooks'
 
@@ -39,7 +39,7 @@ function withProvider() {
   })
 }
 
-describe('@iris-ui/vue IrisProvider', () => {
+describe('@iris-ui-kit/vue IrisProvider', () => {
   it('exposes plugin stores via usePluginStore', () => {
     const wrapper = mount(withProvider())
     expect(wrapper.find('.store').text()).toBe('hi')

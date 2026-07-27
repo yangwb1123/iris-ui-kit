@@ -4,7 +4,7 @@ import IrisResult from './IrisResult.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisResult', () => {
+describe('@iris-ui-kit/svelte IrisResult', () => {
   it('renders the root element with data-iris-result', () => {
     const { container } = render(IrisResult)
     expect(container.querySelector('[data-iris-result]')).not.toBeNull()

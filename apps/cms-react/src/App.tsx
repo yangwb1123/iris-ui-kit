@@ -1,5 +1,5 @@
-import { SkinProvider, IrisProvider } from '@iris-ui/react'
-import { notificationsPlugin } from '@iris-ui/plugin-notifications/react'
+import { SkinProvider, IrisProvider } from '@iris-ui-kit/react'
+import { notificationsPlugin } from '@iris-ui-kit/plugin-notifications/react'
 import { skinEngine } from './skin'
 import { AuthProvider, useAuth } from './auth'
 import { Shell } from './Shell'

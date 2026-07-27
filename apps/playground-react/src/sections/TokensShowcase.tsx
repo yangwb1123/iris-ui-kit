@@ -1,4 +1,4 @@
-import { useSkin, COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS } from '@iris-ui/react'
+import { useSkin, COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS } from '@iris-ui-kit/react'
 
 export function TokensShowcase() {
   const { skin } = useSkin()

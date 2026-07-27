@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
-import { createThemeStore } from '@iris-ui/theme'
-import { darkTheme, lightTheme } from '@iris-ui/tokens'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { darkTheme, lightTheme } from '@iris-ui-kit/tokens'
 import { ThemeProvider, useDirection } from './ThemeProvider'
 
 afterEach(() => {
@@ -30,7 +30,7 @@ function harness(dir?: 'ltr' | 'rtl', target?: HTMLElement) {
   })
 }
 
-describe('@iris-ui/vue ThemeProvider dir / useDirection', () => {
+describe('@iris-ui-kit/vue ThemeProvider dir / useDirection', () => {
   it('defaults to ltr', () => {
     const target = document.createElement('div')
     const wrapper = mount(harness(undefined, target), { attachTo: document.body })

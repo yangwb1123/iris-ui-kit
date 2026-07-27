@@ -1,6 +1,6 @@
 # Iris UI
 
-> AI 原生、**四框架**、token-driven、**插件可扩展**的 UI 基础设施。一套框架无关的 `@iris-ui/core` 定义全部逻辑与组件行为；每个框架适配器是薄桥，每层产物由 token 换肤；重型能力以插件按需 `use`。
+> AI 原生、**四框架**、token-driven、**插件可扩展**的 UI 基础设施。一套框架无关的 `@iris-ui-kit/core` 定义全部逻辑与组件行为；每个框架适配器是薄桥，每层产物由 token 换肤；重型能力以插件按需 `use`。
 
 ## 状态（2026-06）
 
@@ -11,11 +11,11 @@
 
 | 包                                                                           | 内容                                                                                                                                                                                                                                                                                         |
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@iris-ui/core`                                                              | 零框架依赖：store · 引擎（machine/form/i18n/virtual/async/pagination/tabsNav）· **控制器**（selection/expansion/data-view/roving/admin-shell/resource）· **纯材料**（color/date/nav/compareValues/getPageRange…）· **插件契约**（createPlugin/runPlugins）· export（toCsv/toSpreadsheetXml） |
-| `@iris-ui/tokens` · `theme` · `skins` · `icons`                              | 主题系统：`IrisTheme` + light/dark · `applyTheme`/`applyCssVars`/`createThemeStore`/RTL/减动效/跟随系统 · 可加载皮肤（`extends` 继承 + 自定义命名空间 + 持久化 + FOUC 防闪 + 实时 `patch` + 市场 SDK）· 结构化节点图标                                                                       |
-| `@iris-ui/{react,vue,solid,svelte}`                                          | Layer 1–4 + Behaviors + 引擎/皮肤桥 + `IrisProvider` + `usePlugin`/`usePluginStore`；子路径 `exports`（`@iris-ui/react/form` …）                                                                                                                                                             |
-| `@iris-ui/plugin-{locale-zh,editor,pro-table}`                               | 单包多子路径（`/core` 框架无关 + `/{react,vue,solid,svelte}` UI）；按需 `use`                                                                                                                                                                                                                |
-| `@iris-ui/manifest`                                                          | 扫描四 barrel + tokens → `manifest.json` / `llms.txt`（`pnpm gen:manifest`）；AI 原生消费层                                                                                                                                                                                                  |
+| `@iris-ui-kit/core`                                                          | 零框架依赖：store · 引擎（machine/form/i18n/virtual/async/pagination/tabsNav）· **控制器**（selection/expansion/data-view/roving/admin-shell/resource）· **纯材料**（color/date/nav/compareValues/getPageRange…）· **插件契约**（createPlugin/runPlugins）· export（toCsv/toSpreadsheetXml） |
+| `@iris-ui-kit/tokens` · `theme` · `skins` · `icons`                          | 主题系统：`IrisTheme` + light/dark · `applyTheme`/`applyCssVars`/`createThemeStore`/RTL/减动效/跟随系统 · 可加载皮肤（`extends` 继承 + 自定义命名空间 + 持久化 + FOUC 防闪 + 实时 `patch` + 市场 SDK）· 结构化节点图标                                                                       |
+| `@iris-ui-kit/{react,vue,solid,svelte}`                                      | Layer 1–4 + Behaviors + 引擎/皮肤桥 + `IrisProvider` + `usePlugin`/`usePluginStore`；子路径 `exports`（`@iris-ui-kit/react/form` …）                                                                                                                                                         |
+| `@iris-ui-kit/plugin-{locale-zh,editor,pro-table}`                           | 单包多子路径（`/core` 框架无关 + `/{react,vue,solid,svelte}` UI）；按需 `use`                                                                                                                                                                                                                |
+| `@iris-ui-kit/manifest`                                                      | 扫描四 barrel + tokens → `manifest.json` / `llms.txt`（`pnpm gen:manifest`）；AI 原生消费层                                                                                                                                                                                                  |
 | `apps/{playground,playground-react,docs,cms,cms-react,cms-solid,cms-svelte}` | 四框架演示台 + VitePress 文档站 + 四框架 Vben 式 CMS demo                                                                                                                                                                                                                                    |
 
 > **真相源**：各包 barrel（人读）+ `manifest.json`/`llms.txt`（机读，源码生成）。**不手维护组件清单**；新框架适配器须导出同名同语义组件。
@@ -30,7 +30,7 @@ Layer 3  布局      Stack · Container · Grid · Sidebar/Header/DashboardGrid 
 Layer 2  复合      Table · Tree · VirtualScroll · Menu · Toast · 各类 Picker         ✅ 四框架
 Layer 1  元原语    展示 / 表单 / 浮层 / 反馈（~88 primitive 目录，跨 L1–L2）         ✅ 四框架
 ──────────────────────────────────────────────────────────────────────────────────
-Layer 0  逻辑+主题 @iris-ui/core（引擎+控制器+纯材料）· tokens/theme/skins/icons     ✅ 框架无关
+Layer 0  逻辑+主题 @iris-ui-kit/core（引擎+控制器+纯材料）· tokens/theme/skins/icons     ✅ 框架无关
         正交 Behaviors  Resizable · Movable · Hotkey · ClickOutside —— 包裹任意组件
 ```
 
@@ -62,7 +62,7 @@ Layer 0  逻辑+主题 @iris-ui/core（引擎+控制器+纯材料）· tokens/th
 `IrisProvider(plugins=[…])` 在内部 `runPlugins()` 收集注册，注入 theme/i18n/context；与现有 Theme/Skin/I18n Provider 组合，**向后兼容**。
 
 ```ts
-// 契约（@iris-ui/core）—— 插件是加法，不是 monkey-patch
+// 契约（@iris-ui-kit/core）—— 插件是加法，不是 monkey-patch
 createPlugin({ name, install(reg) {
   reg.registerTokens({ '--iris-x': '…' })   // CSS 变量
   reg.registerMessages('zh-CN', { … })       // i18n
@@ -118,7 +118,7 @@ const store = usePluginStore<T>('key')       // 缺失则 throw
 
 | 类别               | 规则                                                                                                                                                                                               |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 命名               | 包 `@iris-ui/<kebab>` · 组件 `Iris<Pascal>` · 子组件 `Iris<Parent><Child>` · CSS `--iris-<dash>` · token `iris.<dot>` · 机器事件 `SCREAMING_SNAKE` · hook `use<Camel>`                             |
+| 命名               | 包 `@iris-ui-kit/<kebab>` · 组件 `Iris<Pascal>` · 子组件 `Iris<Parent><Child>` · CSS `--iris-<dash>` · token `iris.<dot>` · 机器事件 `SCREAMING_SNAKE` · hook `use<Camel>`                         |
 | 技术栈             | pnpm 9 · Turborepo 2 · TS strict · tsup（库，多入口）+ svelte-package · Vite（应用）· Vitest+jsdom · ESLint 9 flat + Prettier 3 · Changesets                                                       |
 | 提交               | Conventional：`feat(react): add IrisCombobox` / `refactor(selection): …`                                                                                                                           |
 | 质量门（合并前置） | `pnpm turbo run test typecheck lint build` 四道全绿（test 内含 SSR/axe/i18n）+ `pnpm size`（core/各 adapter/skins 预算）+ `pnpm check:rsc` + `pnpm format:check`；改组件清单后 `pnpm gen:manifest` |

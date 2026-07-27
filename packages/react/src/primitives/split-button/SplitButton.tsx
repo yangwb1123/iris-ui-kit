@@ -34,7 +34,7 @@ const SIZE_MAP: Record<IrisSplitButtonSize, { padding: string; fontSize: number;
  * Split button: a primary action joined to a caret that opens a `role="menu"`
  * of secondary actions (dismissed by selection, Escape, or outside click).
  *
- * React port of {@link import('@iris-ui/vue').IrisSplitButton}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisSplitButton}.
  */
 export function IrisSplitButton({
   children,

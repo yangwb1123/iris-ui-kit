@@ -1,5 +1,5 @@
 import { Show, createMemo, type JSX } from 'solid-js'
-import { type SnapZone } from '@iris-ui/core/window'
+import { type SnapZone } from '@iris-ui-kit/core/window'
 import { useWmState } from './wm'
 import { previewRect } from './depth'
 

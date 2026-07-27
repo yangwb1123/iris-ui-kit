@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { IrisButton } from '@iris-ui/react'
-import { normalizePath } from '@iris-ui/core/fs'
+import { IrisButton } from '@iris-ui-kit/react'
+import { normalizePath } from '@iris-ui-kit/core/fs'
 import { useFs, useFsState } from '../shell'
 
 /** Join a directory + child name into a normalized absolute path. */
@@ -15,7 +15,7 @@ function uniqueName(base: string, ext: string, taken: Set<string>): string {
 }
 
 /**
- * Files — a real file MANAGER over `@iris-ui/core/fs` (the virtual file system).
+ * Files — a real file MANAGER over `@iris-ui-kit/core/fs` (the virtual file system).
  * Navigate folders, create folders + text files, edit/rename/delete, all persisted
  * to the user profile. This is what makes the `storage` permission it requests
  * actually do something (the old Files view was a static mock).

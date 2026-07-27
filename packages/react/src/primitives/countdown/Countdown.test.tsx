@@ -9,7 +9,7 @@ afterEach(() => {
 
 const time = (c: HTMLElement) => c.querySelector('[data-iris-countdown-time]')?.textContent
 
-describe('@iris-ui/react IrisCountdown', () => {
+describe('@iris-ui-kit/react IrisCountdown', () => {
   it('renders the remaining time', () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)

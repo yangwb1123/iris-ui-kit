@@ -8,7 +8,7 @@ afterEach(() => {
   __resetBreadcrumbStyles()
 })
 
-describe('@iris-ui/svelte IrisBreadcrumb', () => {
+describe('@iris-ui-kit/svelte IrisBreadcrumb', () => {
   it('renders nav > ol with one li per crumb; href crumbs are links', () => {
     const { container, getByText } = render(BreadcrumbHarness)
     expect(

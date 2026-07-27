@@ -1,4 +1,4 @@
-import { createTabsNav } from '@iris-ui/solid'
+import { createTabsNav } from '@iris-ui-kit/solid'
 
 /** Shared multi-tab store; Dashboard is a pinned (non-closable) affix tab. */
 export const tabsNav = createTabsNav({

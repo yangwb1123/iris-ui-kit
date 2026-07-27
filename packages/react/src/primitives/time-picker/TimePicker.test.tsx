@@ -11,7 +11,7 @@ function minutesInput(): HTMLInputElement {
   return document.querySelector('[data-iris-time-picker-minutes]') as HTMLInputElement
 }
 
-describe('@iris-ui/react IrisTimePicker', () => {
+describe('@iris-ui-kit/react IrisTimePicker', () => {
   it('renders 2 inputs in 24h mode (no AM/PM)', () => {
     render(<IrisTimePicker value={{ hours: 10, minutes: 30 }} />)
     expect(hoursInput()).not.toBeNull()

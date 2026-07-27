@@ -9,7 +9,7 @@ const ITEMS = [
   { label: 'Role', value: 'Admin' },
 ]
 
-describe('@iris-ui/svelte IrisDescriptions', () => {
+describe('@iris-ui-kit/svelte IrisDescriptions', () => {
   it('renders a dl element', () => {
     const { container } = render(IrisDescriptions, { props: { items: ITEMS } })
     expect(container.querySelector('dl[data-iris-descriptions]')).not.toBeNull()

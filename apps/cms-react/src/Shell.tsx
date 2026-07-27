@@ -19,7 +19,7 @@ import {
   useTabsNav,
   type IrisCommandItem,
   type NavNode,
-} from '@iris-ui/react'
+} from '@iris-ui-kit/react'
 import { menus } from './menus'
 import { tabsNav } from './tabs'
 import { useHashRoute } from './router'
@@ -333,7 +333,7 @@ export function Shell() {
         toolbar={toolbar}
         footer={
           <div className="cms-footer">
-            <span>Iris CMS — built with @iris-ui/react/admin</span>
+            <span>Iris CMS — built with @iris-ui-kit/react/admin</span>
             <span>
               signed in as {session?.username} ({role}) · v0.1.x
             </span>

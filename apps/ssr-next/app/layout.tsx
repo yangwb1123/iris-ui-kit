@@ -7,7 +7,7 @@ import './globals.css'
 // build. That it doesn't is part of the proof.
 export const metadata = {
   title: 'Iris UI — Next.js App Router SSR/RSC smoke',
-  description: '@iris-ui/react rendered through a real meta-framework SSR pipeline',
+  description: '@iris-ui-kit/react rendered through a real meta-framework SSR pipeline',
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {

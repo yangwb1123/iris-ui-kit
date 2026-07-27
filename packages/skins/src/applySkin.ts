@@ -1,4 +1,4 @@
-import { applyCssVars, type ApplyCssVarsResult } from '@iris-ui/theme'
+import { applyCssVars, type ApplyCssVarsResult } from '@iris-ui-kit/theme'
 import type { ResolvedSkin } from './types'
 import { skinToCssEntries } from './renderSkinStyle'
 

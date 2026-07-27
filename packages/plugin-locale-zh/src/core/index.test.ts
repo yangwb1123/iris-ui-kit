@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { runPlugins, defaultMessages } from '@iris-ui/core'
+import { runPlugins, defaultMessages } from '@iris-ui-kit/core'
 import { localeZhPlugin, zhCNMessages } from './index'
 
 describe('localeZhPlugin', () => {

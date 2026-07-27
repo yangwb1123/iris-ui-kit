@@ -1,5 +1,5 @@
 import { computed, defineComponent, provide, ref, type PropType } from 'vue'
-import { nextEnabledIndex } from '@iris-ui/core'
+import { nextEnabledIndex } from '@iris-ui-kit/core'
 import { TabsContextKey, type IrisTabsOrientation } from './context'
 
 interface TriggerRegistration {

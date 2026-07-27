@@ -20,8 +20,8 @@ import {
   type ApplyThemeResult,
   type Direction,
   type ThemeStore,
-} from '@iris-ui/theme'
-import type { IrisTheme } from '@iris-ui/tokens'
+} from '@iris-ui-kit/theme'
+import type { IrisTheme } from '@iris-ui-kit/tokens'
 
 export interface IrisThemeContext {
   store: ThemeStore

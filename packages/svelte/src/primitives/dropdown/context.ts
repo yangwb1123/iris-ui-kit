@@ -1,5 +1,5 @@
 import { getContext, setContext } from 'svelte'
-import type { Placement } from '@iris-ui/core'
+import type { Placement } from '@iris-ui-kit/core'
 
 /** Context key for the dropdown — a module-singleton Symbol. */
 export const DROPDOWN_KEY = Symbol('iris-ui:dropdown')

@@ -44,7 +44,7 @@ export interface IrisNumberInputProps extends Omit<
   ariaDescribedby?: string
 }
 
-/** React port of {@link import('@iris-ui/vue').IrisNumberInput}. */
+/** React port of {@link import('@iris-ui-kit/vue').IrisNumberInput}. */
 export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInputProps>(
   function IrisNumberInput(
     {

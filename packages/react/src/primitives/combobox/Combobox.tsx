@@ -42,7 +42,7 @@ const SIZE_MAP: Record<IrisComboboxSize, { padding: string; fontSize: string; mi
  * (`filtering ? query : selected label`) so controlled value changes stay in
  * sync without an effect. Opens downward; follows the ARIA 1.2 combobox pattern.
  *
- * React port of {@link import('@iris-ui/vue').IrisCombobox}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisCombobox}.
  */
 export function IrisCombobox({
   value: valueProp,

@@ -15,7 +15,7 @@ import {
   IrisBreadcrumb,
   IrisBreadcrumbItem,
   IrisButton,
-} from '@iris-ui/vue'
+} from '@iris-ui-kit/vue'
 
 const activeTab = ref('overview')
 const openSections = ref<string[]>(['intro'])

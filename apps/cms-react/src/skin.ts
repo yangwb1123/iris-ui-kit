@@ -1,4 +1,4 @@
-import { createSkinEngine, localStorageSkinStorage, type Skin } from '@iris-ui/react'
+import { createSkinEngine, localStorageSkinStorage, type Skin } from '@iris-ui-kit/react'
 
 export const STORAGE_KEY = 'iris-cms-react-skin'
 

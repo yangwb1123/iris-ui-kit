@@ -8,5 +8,5 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   target: 'es2022',
-  external: ['@iris-ui/core'],
+  external: ['@iris-ui-kit/core'],
 })

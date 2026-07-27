@@ -1,7 +1,7 @@
 import { generateId } from './utils'
 
 /**
- * `@iris-ui/core` mutation outbox — an offline-first, durable FIFO queue that
+ * `@iris-ui-kit/core` mutation outbox — an offline-first, durable FIFO queue that
  * guarantees at-least-once, in-order delivery of mutations. Iris's data engines
  * have no offline-mutation story: an optimistic write that fails (offline, flaky
  * network) is simply lost. The outbox is the missing piece — enqueue a mutation,

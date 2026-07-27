@@ -7,7 +7,7 @@ import {
   IrisPasswordInput,
   IrisSelect,
   type IrisSelectItem,
-} from '@iris-ui/solid'
+} from '@iris-ui-kit/solid'
 import { useAuth, type Role } from '../auth'
 
 const roleItems: IrisSelectItem<Role>[] = [

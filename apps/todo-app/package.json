@@ -13,11 +13,11 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@iris-ui/react": "workspace:*",
-    "@iris-ui/tokens": "workspace:*",
-    "@iris-ui/theme": "workspace:*",
-    "@iris-ui/skins": "workspace:*",
-    "@iris-ui/core": "workspace:*",
+    "@iris-ui-kit/react": "workspace:*",
+    "@iris-ui-kit/tokens": "workspace:*",
+    "@iris-ui-kit/theme": "workspace:*",
+    "@iris-ui-kit/skins": "workspace:*",
+    "@iris-ui-kit/core": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

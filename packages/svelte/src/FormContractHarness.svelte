@@ -1,6 +1,6 @@
 <script lang="ts">
   import { IrisForm, useForm } from './form'
-  import type { FormStore, FormValues } from '@iris-ui/core'
+  import type { FormStore, FormValues } from '@iris-ui-kit/core'
 
   const form = useForm({
     initialValues: { name: '' },

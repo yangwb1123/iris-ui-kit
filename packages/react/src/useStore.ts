@@ -1,9 +1,9 @@
 import * as React from 'react'
 import { useSyncExternalStore } from 'react'
-import type { ReadonlyStore, Store } from '@iris-ui/core'
+import type { ReadonlyStore, Store } from '@iris-ui-kit/core'
 
 /**
- * Bridge a framework-agnostic `@iris-ui/core` store into React reactivity.
+ * Bridge a framework-agnostic `@iris-ui-kit/core` store into React reactivity.
  * Uses React 18's `useSyncExternalStore` — the contract is identical to the
  * one Vue uses via `ref + onMounted` and Solid uses via `createSignal`. The
  * **same** store can power Button, Popover, Dialog, etc. on any framework.

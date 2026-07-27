@@ -1,6 +1,6 @@
 import DefaultTheme from 'vitepress/theme'
 import type { App } from 'vue'
-import * as Iris from '@iris-ui/vue'
+import * as Iris from '@iris-ui-kit/vue'
 import IrisDemo from './IrisDemo.vue'
 import IrisExplorer from './components/IrisExplorer.vue'
 import './iris-tokens.css'

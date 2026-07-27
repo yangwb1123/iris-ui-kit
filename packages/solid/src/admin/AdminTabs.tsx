@@ -1,5 +1,5 @@
 import { For, Show, type JSX } from 'solid-js'
-import { isClosable, type TabsNav, type TabItem } from '@iris-ui/core'
+import { isClosable, type TabsNav, type TabItem } from '@iris-ui-kit/core'
 import { useTabsNav } from './useTabsNav'
 import { IrisIcon } from '../primitives/icon/Icon'
 import { IrisDropdown } from '../primitives/dropdown/Dropdown'

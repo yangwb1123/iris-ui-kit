@@ -26,7 +26,7 @@ export interface IrisDescriptionsProps {
  * the value, and `bordered` draws a boxed style with separators. RTL-safe via
  * logical properties.
  *
- * React port of {@link import('@iris-ui/vue').IrisDescriptions}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisDescriptions}.
  */
 export function IrisDescriptions({
   items,

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
-import { createThemeStore } from '@iris-ui/theme'
-import { darkTheme, lightTheme } from '@iris-ui/tokens'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { darkTheme, lightTheme } from '@iris-ui-kit/tokens'
 import { ThemeProvider, useDirection } from './ThemeProvider'
 
 afterEach(() => {
@@ -18,7 +18,7 @@ function DirProbe() {
   return <span data-testid="dir">{useDirection()}</span>
 }
 
-describe('@iris-ui/react ThemeProvider dir / useDirection', () => {
+describe('@iris-ui-kit/react ThemeProvider dir / useDirection', () => {
   it('defaults to ltr without an explicit dir', () => {
     const target = document.createElement('div')
     render(

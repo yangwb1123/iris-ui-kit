@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { defaultIconRegistry, resolveThemedIcon, type IrisIconRegistry } from '@iris-ui/icons'
+import { defaultIconRegistry, resolveThemedIcon, type IrisIconRegistry } from '@iris-ui-kit/icons'
 import { useThemeOptional } from '../../theme'
 
 export interface IrisIconProps extends Omit<
@@ -22,7 +22,7 @@ export interface IrisIconProps extends Omit<
 
 /**
  * Renders a registered icon as inline SVG. Resolves `name` through an
- * `@iris-ui/icons` registry and renders the icon's structured nodes as real
+ * `@iris-ui-kit/icons` registry and renders the icon's structured nodes as real
  * SVG child elements (no raw-HTML injection). Colors follow `currentColor`, so
  * the surrounding CSS `color` themes it. Renders nothing for an unresolved name.
  */

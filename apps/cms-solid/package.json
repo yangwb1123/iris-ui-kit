@@ -13,10 +13,10 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*",
-    "@iris-ui/plugin-notifications": "workspace:*",
-    "@iris-ui/solid": "workspace:*",
-    "@iris-ui/tokens": "workspace:*",
+    "@iris-ui-kit/core": "workspace:*",
+    "@iris-ui-kit/plugin-notifications": "workspace:*",
+    "@iris-ui-kit/solid": "workspace:*",
+    "@iris-ui-kit/tokens": "workspace:*",
     "solid-js": "^1.9.3"
   },
   "devDependencies": {

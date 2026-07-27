@@ -9,7 +9,7 @@ import {
   type IrisLoginSubmitPayload,
   type IrisDashboardNavItem,
   type IrisDashboardCardSpec,
-} from '@iris-ui/vue'
+} from '@iris-ui-kit/vue'
 
 const toast = useToast()
 

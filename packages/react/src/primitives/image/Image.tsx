@@ -19,7 +19,7 @@ export interface IrisImageProps {
  * overlay (a `role="dialog"` lightbox dismissed by backdrop, close button, or
  * Escape). Lazy-loaded by default.
  *
- * React port of {@link import('@iris-ui/vue').IrisImage}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisImage}.
  */
 export function IrisImage({
   src,

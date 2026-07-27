@@ -1,5 +1,5 @@
 import { defineComponent, h, type PropType } from 'vue'
-import { createKeyboardNav, firstEnabledIndex } from '@iris-ui/core'
+import { createKeyboardNav, firstEnabledIndex } from '@iris-ui-kit/core'
 
 export type IrisSegmentedSize = 'sm' | 'md' | 'lg'
 

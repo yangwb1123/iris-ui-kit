@@ -11,7 +11,7 @@ the Electron shell (`../desktop`), but native-Go + WebKitGTK instead of Chromium
 - A custom `assetHandler` (main.go) serves the **currently selected** framework
   from the root — so the CMS's absolute `/assets/…` paths resolve — and injects a
   `window.irisNative` shim into `index.html` (before the app's module script).
-- That shim wires the framework-agnostic `@iris-ui/core` bridges to Wails:
+- That shim wires the framework-agnostic `@iris-ui-kit/core` bridges to Wails:
   `setFileSaveHandler` → `App.SaveFile` (bound Go → native Save dialog +
   `os.WriteFile`), `setClipboardHandler` → `window.runtime.ClipboardSetText`.
   The CMS apps call `registerDesktopBridges()` unchanged — same `window.irisNative`

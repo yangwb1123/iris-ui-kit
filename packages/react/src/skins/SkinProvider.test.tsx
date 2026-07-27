@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect } from 'vitest'
 import { render, screen, act, cleanup } from '@testing-library/react'
-import { createSkinEngine, type Skin } from '@iris-ui/skins'
+import { createSkinEngine, type Skin } from '@iris-ui-kit/skins'
 import { SkinProvider } from './SkinProvider'
 import { useSkin } from './useSkin'
 

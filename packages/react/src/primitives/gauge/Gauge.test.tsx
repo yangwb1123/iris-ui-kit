@@ -8,7 +8,7 @@ const meter = (c: HTMLElement) => c.querySelector('[role="meter"]')
 const arc = (c: HTMLElement) => c.querySelector('[data-iris-gauge-value]')
 const label = (c: HTMLElement) => c.querySelector('[data-iris-gauge-label]')
 
-describe('@iris-ui/react IrisGauge', () => {
+describe('@iris-ui-kit/react IrisGauge', () => {
   it('exposes meter aria values', () => {
     const { container } = render(<IrisGauge value={50} />)
     expect(meter(container)?.getAttribute('aria-valuenow')).toBe('50')

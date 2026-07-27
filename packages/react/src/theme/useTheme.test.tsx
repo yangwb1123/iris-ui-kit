@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
-import { createThemeStore } from '@iris-ui/theme'
-import { darkTheme, lightTheme } from '@iris-ui/tokens'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { darkTheme, lightTheme } from '@iris-ui-kit/tokens'
 import { ThemeProvider } from './ThemeProvider'
 import { useTheme } from './useTheme'
 
@@ -37,7 +37,7 @@ function HookHarness() {
   )
 }
 
-describe('@iris-ui/react useTheme + ThemeProvider', () => {
+describe('@iris-ui-kit/react useTheme + ThemeProvider', () => {
   it('useTheme without a provider throws', () => {
     const e = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => render(<HookHarness />)).toThrow(/no <ThemeProvider> ancestor/)

@@ -1,8 +1,8 @@
 import { createSignal, onCleanup, type Accessor } from 'solid-js'
-import type { ReadonlyStore, Store } from '@iris-ui/core'
+import type { ReadonlyStore, Store } from '@iris-ui-kit/core'
 
 /**
- * Bridge a framework-agnostic `@iris-ui/core` store into Solid reactivity.
+ * Bridge a framework-agnostic `@iris-ui-kit/core` store into Solid reactivity.
  * Returns an accessor `() => T` that updates on every store emission — the
  * same contract React covers via `useSyncExternalStore` and Vue via
  * `ref + subscribe`. The **same** store powers Button/Popover/Dialog etc. on

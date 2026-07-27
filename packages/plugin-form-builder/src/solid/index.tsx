@@ -1,6 +1,6 @@
 import { createSignal, onCleanup, createMemo, For, Show, type JSX } from 'solid-js'
-import { FormContext } from '@iris-ui/solid/form'
-import type { FormStore, FormValues } from '@iris-ui/core'
+import { FormContext } from '@iris-ui-kit/solid/form'
+import type { FormStore, FormValues } from '@iris-ui-kit/core'
 import { createFormBuilder, type FormSchema, type FieldSpec, type FormBuilderConfig } from '../core'
 import { FieldControl } from './fields'
 
@@ -18,7 +18,7 @@ export interface IrisFormBuilderProps extends FormBuilderConfig {
  * validate inline; submit runs the schema's `onSubmit`. Themed via CSS vars.
  *
  * The form body is wrapped in `<FormContext.Provider>` so each control binds via
- * `@iris-ui/solid/form`'s `useField` (canonical-path keyed). This is what lets an
+ * `@iris-ui-kit/solid/form`'s `useField` (canonical-path keyed). This is what lets an
  * `array` (repeater) field use `useFieldArray` and bind its per-row sub-fields to
  * nested paths (`items[2].sku`), with per-row state that re-keys on remove/move.
  */

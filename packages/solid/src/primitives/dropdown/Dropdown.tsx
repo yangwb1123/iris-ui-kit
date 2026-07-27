@@ -1,5 +1,5 @@
 import { createEffect, createSignal, createUniqueId, mergeProps, type JSX } from 'solid-js'
-import { createFloatingMachine, type Placement } from '@iris-ui/core'
+import { createFloatingMachine, type Placement } from '@iris-ui-kit/core'
 import { useMachine } from '../../useMachine'
 import { DropdownContext } from './context'
 

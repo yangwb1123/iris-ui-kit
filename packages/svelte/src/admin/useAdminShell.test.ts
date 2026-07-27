@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, cleanup } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
-import { createTabsNav, type NavNode } from '@iris-ui/core'
+import { createTabsNav, type NavNode } from '@iris-ui-kit/core'
 import AdminShellProbe from './AdminShellProbe.svelte'
 import type { UseAdminShellReturn } from './useAdminShell.svelte'
 

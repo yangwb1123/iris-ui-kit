@@ -15,7 +15,7 @@ const ThreeSlides = (props: Record<string, unknown>) => (
 const slidesEls = (c: HTMLElement) => c.querySelectorAll('[data-iris-carousel-slide]')
 const root = (c: HTMLElement) => c.querySelector('[data-iris-carousel]') as HTMLElement
 
-describe('@iris-ui/react IrisCarousel', () => {
+describe('@iris-ui-kit/react IrisCarousel', () => {
   it('renders one slide element per child', () => {
     const { container } = render(<ThreeSlides />)
     expect(slidesEls(container).length).toBe(3)

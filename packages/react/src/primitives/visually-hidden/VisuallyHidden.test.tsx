@@ -6,7 +6,7 @@ afterEach(() => cleanup())
 
 const el = (c: HTMLElement) => c.querySelector('[data-iris-visually-hidden]') as HTMLElement
 
-describe('@iris-ui/react IrisVisuallyHidden', () => {
+describe('@iris-ui-kit/react IrisVisuallyHidden', () => {
   it('renders its children', () => {
     const { container } = render(<IrisVisuallyHidden>Loading</IrisVisuallyHidden>)
     expect(el(container).textContent).toBe('Loading')

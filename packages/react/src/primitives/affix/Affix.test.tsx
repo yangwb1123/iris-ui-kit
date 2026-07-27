@@ -17,7 +17,7 @@ const rect = (top: number): DOMRect =>
     toJSON: () => ({}),
   }) as DOMRect
 
-describe('@iris-ui/react IrisAffix', () => {
+describe('@iris-ui-kit/react IrisAffix', () => {
   it('renders its children', () => {
     const { container } = render(
       <IrisAffix>

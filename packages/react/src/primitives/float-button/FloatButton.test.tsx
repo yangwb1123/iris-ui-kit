@@ -7,7 +7,7 @@ afterEach(() => cleanup())
 const main = (c: HTMLElement) => c.querySelector('[data-iris-float-button]') as HTMLElement
 const actionsEl = (c: HTMLElement) => c.querySelector('[data-iris-float-button-actions]')
 
-describe('@iris-ui/react IrisFloatButton', () => {
+describe('@iris-ui-kit/react IrisFloatButton', () => {
   it('renders a FAB with content and label', () => {
     const { container } = render(<IrisFloatButton ariaLabel="Add">+</IrisFloatButton>)
     expect(main(container).getAttribute('aria-label')).toBe('Add')

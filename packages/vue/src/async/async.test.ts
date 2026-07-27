@@ -27,7 +27,7 @@ function probe(fetcher: () => Promise<string>, immediate?: boolean) {
   })
 }
 
-describe('@iris-ui/vue useAsyncResource', () => {
+describe('@iris-ui-kit/vue useAsyncResource', () => {
   it('starts idle and loads on demand', async () => {
     const wrapper = mount(probe(async () => 'hello'))
     expect(wrapper.find('.status').text()).toBe('idle')

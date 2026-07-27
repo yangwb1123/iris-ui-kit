@@ -1,5 +1,5 @@
 import { defineComponent, h, onBeforeUnmount, type PropType } from 'vue'
-import { createLongPress } from '@iris-ui/core'
+import { createLongPress } from '@iris-ui-kit/core'
 
 /**
  * Behavior wrapper: fires `onLongPress` once the pointer has been held down

@@ -1,4 +1,4 @@
-import { lightTheme, darkTheme, type IrisTheme } from '@iris-ui/tokens'
+import { lightTheme, darkTheme, type IrisTheme } from '@iris-ui-kit/tokens'
 import type { Skin } from './types'
 
 function themeToSkin(id: string, theme: IrisTheme): Skin {

@@ -4,7 +4,7 @@ import {
   type ResourceController,
   type ResourceControllerConfig,
   type ResourceState,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
 export interface UseResourceController<T> extends ResourceController<T> {
@@ -17,7 +17,7 @@ export interface UseResourceController<T> extends ResourceController<T> {
  * CRUD list composite). Creates the controller once (a Solid component body runs
  * once), bridges its store into a signal via {@link useStore}, and returns the
  * controller plus its live `state` accessor. A ~15-line thin bridge — all logic
- * lives in `@iris-ui/core`.
+ * lives in `@iris-ui-kit/core`.
  */
 export function useResourceController<T>(
   config: ResourceControllerConfig<T>,

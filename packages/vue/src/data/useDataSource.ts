@@ -4,7 +4,7 @@ import {
   type DataSourceController,
   type DataSourceConfig,
   type DataSourceState,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
 export interface UseDataSource<T> extends DataSourceController<T> {
@@ -21,7 +21,7 @@ export interface UseDataSource<T> extends DataSourceController<T> {
  * data engine (paged/infinite + multi-sort + typed filters + selection +
  * per-row + optimistic mutate). Creates the controller once in `setup()`,
  * mirrors its store into a reactive ref, and returns the controller plus its
- * live `state`. A thin bridge — all logic lives in `@iris-ui/core`.
+ * live `state`. A thin bridge — all logic lives in `@iris-ui-kit/core`.
  *
  * Constructed with `immediate: false` so no fetch fires during `setup()`; the
  * initial load is kicked from `onMounted` and the controller is torn down on

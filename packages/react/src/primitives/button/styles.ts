@@ -1,6 +1,6 @@
 /**
  * Singleton stylesheet for the React `IrisButton`. Functionally identical to
- * the one in `@iris-ui/vue` — both adapters end up writing the same DOM with
+ * the one in `@iris-ui-kit/vue` — both adapters end up writing the same DOM with
  * the same selectors, so the same CSS works. (Were we to ship both adapters
  * on the same page, the second installation would no-op because the
  * `<style id>` is shared.)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { runPlugins } from '@iris-ui/core'
+import { runPlugins } from '@iris-ui-kit/core'
 import { createNotificationCenter, notificationsPlugin, notificationTokens } from './index'
 
 describe('createNotificationCenter', () => {

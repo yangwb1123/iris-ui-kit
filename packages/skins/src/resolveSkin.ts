@@ -5,7 +5,7 @@ import {
   SHADOW_TOKENS,
   ZINDEX_TOKENS,
   TRANSITION_TOKENS,
-} from '@iris-ui/tokens'
+} from '@iris-ui-kit/tokens'
 import type {
   IrisTheme,
   IrisThemeType,
@@ -15,12 +15,43 @@ import type {
   ShadowToken,
   ZIndexToken,
   TransitionToken,
-} from '@iris-ui/tokens'
+} from '@iris-ui-kit/tokens'
 import type { Skin, ResolvedSkin } from './types'
 import { skinError, SkinResolutionError } from './errors'
 
 export interface SkinLookup {
   get(id: string): Skin | undefined
+}
+
+/** Extract required tokens; push missing keys onto `missing`. */
+function collectRequiredTokens(
+  tokens: Record<string, string | number>,
+  keys: readonly string[],
+  type: 'string' | 'number',
+  missing: string[],
+): Record<string, string | number> {
+  const out: Record<string, string | number> = {}
+  for (const key of keys) {
+    const v = tokens[key]
+    if (typeof v !== type) missing.push(key)
+    else out[key] = v
+  }
+  return out
+}
+
+/** Extract optional tokens; return undefined if none are present. */
+function collectOptionalTokens(
+  tokens: Record<string, string | number>,
+  keys: readonly string[],
+  type: 'string' | 'number',
+): Record<string, string | number> | undefined {
+  if (!keys.some((k) => k in tokens)) return undefined
+  const out: Record<string, string | number> = {}
+  for (const key of keys) {
+    const v = tokens[key]
+    if (typeof v === type) out[key] = v
+  }
+  return Object.keys(out).length > 0 ? out : undefined
 }
 
 /**
@@ -71,57 +102,30 @@ export function resolveSkin(skin: Skin, registry: SkinLookup): ResolvedSkin {
   walk(skin)
 
   const missing: string[] = []
-  const colors = {} as Record<ColorToken, string>
-  const spacing = {} as Record<SpacingToken, number>
-  const radii = {} as Record<RadiusToken, number>
-  for (const key of COLOR_TOKENS) {
-    const v = tokens[key]
-    if (typeof v !== 'string') missing.push(key)
-    else colors[key] = v
-  }
-  for (const key of SPACING_TOKENS) {
-    const v = tokens[key]
-    if (typeof v !== 'number') missing.push(key)
-    else spacing[key] = v
-  }
-  for (const key of RADII_TOKENS) {
-    const v = tokens[key]
-    if (typeof v !== 'number') missing.push(key)
-    else radii[key] = v
-  }
+  const colors = collectRequiredTokens(tokens, COLOR_TOKENS, 'string', missing) as Record<
+    ColorToken,
+    string
+  >
+  const spacing = collectRequiredTokens(tokens, SPACING_TOKENS, 'number', missing) as Record<
+    SpacingToken,
+    number
+  >
+  const radii = collectRequiredTokens(
+    tokens,
+    RADII_TOKENS as unknown as string[],
+    'number',
+    missing,
+  ) as Record<RadiusToken, number>
   // Optional sections — not required (no missing entry for these)
-  const shadows: Record<ShadowToken, string> | undefined = SHADOW_TOKENS.some((k) => k in tokens)
-    ? (() => {
-        const s = {} as Record<ShadowToken, string>
-        for (const key of SHADOW_TOKENS) {
-          const v = tokens[key]
-          if (typeof v === 'string') s[key] = v
-        }
-        return Object.keys(s).length > 0 ? s : undefined
-      })()
-    : undefined
-  const zIndex: Record<ZIndexToken, number> | undefined = ZINDEX_TOKENS.some((k) => k in tokens)
-    ? (() => {
-        const z = {} as Record<ZIndexToken, number>
-        for (const key of ZINDEX_TOKENS) {
-          const v = tokens[key]
-          if (typeof v === 'number') z[key] = v
-        }
-        return Object.keys(z).length > 0 ? z : undefined
-      })()
-    : undefined
-  const transitions: Record<TransitionToken, string> | undefined = TRANSITION_TOKENS.some(
-    (k) => k in tokens,
-  )
-    ? (() => {
-        const t = {} as Record<TransitionToken, string>
-        for (const key of TRANSITION_TOKENS) {
-          const v = tokens[key]
-          if (typeof v === 'string') t[key] = v
-        }
-        return Object.keys(t).length > 0 ? t : undefined
-      })()
-    : undefined
+  const shadows = collectOptionalTokens(tokens, SHADOW_TOKENS, 'string') as
+    | Record<ShadowToken, string>
+    | undefined
+  const zIndex = collectOptionalTokens(tokens, ZINDEX_TOKENS, 'number') as
+    | Record<ZIndexToken, number>
+    | undefined
+  const transitions = collectOptionalTokens(tokens, TRANSITION_TOKENS, 'string') as
+    | Record<TransitionToken, string>
+    | undefined
   if (missing.length > 0) {
     throw new SkinResolutionError(
       skinError('incomplete', `skin "${skin.id}" missing tokens: ${missing.join(', ')}`, {

@@ -15,7 +15,7 @@ function visibleItems(): HTMLElement[] {
   return Array.from(document.querySelectorAll('[data-iris-virtual-item]'))
 }
 
-describe('@iris-ui/react IrisVirtualScroll', () => {
+describe('@iris-ui-kit/react IrisVirtualScroll', () => {
   it('renders root with scrollable container + spacer', () => {
     const { container } = render(
       <IrisVirtualScroll items={items} itemHeight={40} height={400} renderItem={renderItem} />,
@@ -194,7 +194,7 @@ describe('@iris-ui/react IrisVirtualScroll', () => {
   })
 })
 
-describe('@iris-ui/react IrisVirtualScroll auto-measure', () => {
+describe('@iris-ui-kit/react IrisVirtualScroll auto-measure', () => {
   it('measures rendered rows via ResizeObserver and applies their heights', () => {
     // Mock ResizeObserver to capture observed rows + trigger the callback.
     const ros: Array<{ cb: ResizeObserverCallback; els: Element[]; flush: () => void }> = []

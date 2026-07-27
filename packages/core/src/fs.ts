@@ -1,7 +1,7 @@
 import { createStore, type Store } from './store'
 
 /**
- * `@iris-ui/core/fs` — a framework-agnostic VIRTUAL FILE SYSTEM: the state engine
+ * `@iris-ui-kit/core/fs` — a framework-agnostic VIRTUAL FILE SYSTEM: the state engine
  * behind a desktop "Files" manager and any app that opens/saves documents. A flat
  * map of absolute paths → text content, plus a set of explicit (possibly empty)
  * folders; directory structure is derived from path prefixes. Pure + persistable

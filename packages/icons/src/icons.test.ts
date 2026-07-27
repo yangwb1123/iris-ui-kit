@@ -6,7 +6,7 @@ import { renderIconSvg } from './render'
 import { resolveThemedIcon } from './theme'
 import type { IrisIcon, IrisIconSet } from './types'
 
-describe('@iris-ui/icons defaultIcons', () => {
+describe('@iris-ui-kit/icons defaultIcons', () => {
   it('ships a non-trivial set with well-formed structured entries', () => {
     const names = Object.keys(defaultIcons.icons)
     expect(names.length).toBeGreaterThanOrEqual(20)
@@ -28,7 +28,7 @@ describe('@iris-ui/icons defaultIcons', () => {
   })
 })
 
-describe('@iris-ui/icons per-icon tree-shakeable exports', () => {
+describe('@iris-ui-kit/icons per-icon tree-shakeable exports', () => {
   it('each icon is an individually importable const carrying its own data', () => {
     expect(chevronDown).toEqual({
       name: 'chevron-down',
@@ -59,7 +59,7 @@ describe('@iris-ui/icons per-icon tree-shakeable exports', () => {
   })
 })
 
-describe('@iris-ui/icons lean createIconRegistry({ icons })', () => {
+describe('@iris-ui-kit/icons lean createIconRegistry({ icons })', () => {
   it('builds a minimal registry from only the imported icons', () => {
     const reg = createIconRegistry({ icons: [chevronDown, search] })
     expect(reg.has('chevron-down')).toBe(true)
@@ -80,7 +80,7 @@ describe('@iris-ui/icons lean createIconRegistry({ icons })', () => {
   })
 })
 
-describe('@iris-ui/icons registry', () => {
+describe('@iris-ui-kit/icons registry', () => {
   it('default registry resolves an icon by name', () => {
     const icon = defaultIconRegistry.resolve('check')
     expect(icon).toBeDefined()
@@ -135,7 +135,7 @@ describe('@iris-ui/icons registry', () => {
   })
 })
 
-describe('@iris-ui/icons renderIconSvg', () => {
+describe('@iris-ui-kit/icons renderIconSvg', () => {
   it('wraps nodes in an svg with viewBox + currentColor stroke', () => {
     const out = renderIconSvg(defaultIcons.icons.check!)
     expect(out.startsWith('<svg ')).toBe(true)
@@ -178,14 +178,14 @@ describe('@iris-ui/icons renderIconSvg', () => {
   })
 })
 
-describe('@iris-ui/icons getSet', () => {
+describe('@iris-ui-kit/icons getSet', () => {
   it('returns a registered set, undefined otherwise', () => {
     expect(defaultIconRegistry.getSet('iris-default')).toBe(defaultIcons)
     expect(defaultIconRegistry.getSet('nope')).toBeUndefined()
   })
 })
 
-describe('@iris-ui/icons resolveThemedIcon', () => {
+describe('@iris-ui-kit/icons resolveThemedIcon', () => {
   const alt: IrisIconSet = {
     name: 'alt',
     icons: { check: { name: 'check', nodes: [{ tag: 'path', attrs: { d: 'M0 0' } }] } },

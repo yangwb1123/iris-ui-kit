@@ -11,9 +11,9 @@
     IrisDialogDescription,
     IrisDialogClose,
     IrisTable,
-  } from '@iris-ui/svelte'
-  import { createThemeStore } from '@iris-ui/theme'
-  import { lightTheme, darkTheme } from '@iris-ui/tokens'
+  } from '@iris-ui-kit/svelte'
+  import { createThemeStore } from '@iris-ui-kit/theme'
+  import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 
   let name = $state('')
   let dialogOpen = $state(false)
@@ -45,7 +45,7 @@
     <header style="margin-bottom:24px">
       <h1 style="margin:0 0 4px;font-size:24px">Iris UI · SvelteKit SSR smoke</h1>
       <p style="margin:0;color:var(--iris-muted-foreground,#666)">
-        Server-rendered page (<code>+page.svelte</code>) built from <code>@iris-ui/svelte</code>. A
+        Server-rendered page (<code>+page.svelte</code>) built from <code>@iris-ui-kit/svelte</code>. A
         successful <code>vite build</code> is the SSR-compat proof.
       </p>
     </header>

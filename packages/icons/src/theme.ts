@@ -3,7 +3,7 @@ import type { IrisIconRegistry } from './registry'
 
 /**
  * Minimal theme shape consumed for icon resolution — structurally a subset of
- * `IrisTheme`, so passing a full theme works without importing `@iris-ui/tokens`.
+ * `IrisTheme`, so passing a full theme works without importing `@iris-ui-kit/tokens`.
  */
 export interface ThemeIconConfig {
   /** Active icon set name (takes effect only when registered). */

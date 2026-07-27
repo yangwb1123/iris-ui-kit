@@ -51,7 +51,7 @@ const btnPrimary: React.CSSProperties = {
  * controls. Controlled (`open`) or uncontrolled (`defaultOpen`); the step index
  * is managed internally and resets each time the tour opens.
  *
- * React port of {@link import('@iris-ui/vue').IrisTour}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisTour}.
  */
 export function IrisTour({
   steps,

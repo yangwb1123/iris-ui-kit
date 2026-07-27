@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
-import { createTabsNav } from '@iris-ui/core'
+import { createTabsNav } from '@iris-ui-kit/core'
 import TabsNavProbe from './TabsNavProbe.svelte'
 import type { UseTabsNavReturn } from './useTabsNav'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte useTabsNav', () => {
+describe('@iris-ui-kit/svelte useTabsNav', () => {
   it('reflects initial state', () => {
     const nav = createTabsNav({ tabs: [{ key: 'home', title: 'Home', pinned: true }] })
     const { container } = render(TabsNavProbe, { props: { nav } })

@@ -6,7 +6,7 @@ import { IrisDashboardGrid, IrisDashboardCard } from './DashboardGrid'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisSidebarLayout', () => {
+describe('@iris-ui-kit/react IrisSidebarLayout', () => {
   it('renders root + sidebar (complementary) + main', () => {
     const { container } = render(
       <IrisSidebarLayout sidebar={<nav>nav</nav>}>
@@ -65,7 +65,7 @@ describe('@iris-ui/react IrisSidebarLayout', () => {
   })
 })
 
-describe('@iris-ui/react IrisHeaderLayout', () => {
+describe('@iris-ui-kit/react IrisHeaderLayout', () => {
   it('renders main region; header and footer only when provided', () => {
     const { container } = render(
       <IrisHeaderLayout>
@@ -115,7 +115,7 @@ describe('@iris-ui/react IrisHeaderLayout', () => {
   })
 })
 
-describe('@iris-ui/react IrisDashboardGrid', () => {
+describe('@iris-ui-kit/react IrisDashboardGrid', () => {
   it('renders with fixed columns by default', () => {
     const { container } = render(
       <IrisDashboardGrid>

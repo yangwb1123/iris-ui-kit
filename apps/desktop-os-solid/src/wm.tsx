@@ -1,11 +1,11 @@
 import { createContext, createSignal, onCleanup, useContext, type JSX } from 'solid-js'
-import { type WindowManager, type WindowManagerState } from '@iris-ui/core/window'
+import { type WindowManager, type WindowManagerState } from '@iris-ui-kit/core/window'
 
 export type Wm = WindowManager
 
 /**
  * ONE framework-agnostic window manager for the whole shell — the SAME engine
- * (`@iris-ui/core/window`) the React desktop demo drives, here proven on Solid.
+ * (`@iris-ui-kit/core/window`) the React desktop demo drives, here proven on Solid.
  * Provided via context so any component reaches it through {@link useWm}.
  */
 const WmContext = createContext<Wm>()

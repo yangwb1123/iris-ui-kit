@@ -11,8 +11,8 @@
     IrisToastViewport,
     useSkin,
     useTabsNav,
-  } from '@iris-ui/svelte'
-  import { filterNavByAccess } from '@iris-ui/core'
+  } from '@iris-ui-kit/svelte'
+  import { filterNavByAccess } from '@iris-ui-kit/core'
   import { menus } from './menus'
   import { tabsNav } from './tabs'
   import { useAuth } from './auth'
@@ -97,7 +97,7 @@
 
   {#snippet footer()}
     <div class="cms-footer">
-      <span>Iris CMS — built with @iris-ui/svelte</span>
+      <span>Iris CMS — built with @iris-ui-kit/svelte</span>
       <span>v0.1.x</span>
     </div>
   {/snippet}

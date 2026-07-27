@@ -1,10 +1,10 @@
-import { useField, useFieldArray } from '@iris-ui/react/form'
+import { useField, useFieldArray } from '@iris-ui-kit/react/form'
 import { arrayRowDefaults, type FieldSpec } from '../core'
 
 /**
  * Field renderers for {@link IrisFormBuilder} (React). Split out of `index.tsx`
  * (ADR-008: no new oversized source files). Every control binds through
- * `@iris-ui/react/form`'s `useField`, which keys per-field state by CANONICAL
+ * `@iris-ui-kit/react/form`'s `useField`, which keys per-field state by CANONICAL
  * PATH — so a sub-field nested under an array row (`items[2].sku`) tracks its own
  * error/touched/dirty independently of its siblings.
  */
@@ -29,13 +29,67 @@ function pathOf(field: FieldSpec, prefix?: string): string {
 }
 
 /** A single scalar control (text/number/email/password/textarea/select/checkbox). */
+function renderScalarFieldInner(
+  type: string,
+  shared: Record<string, unknown>,
+  f: ReturnType<typeof useField<unknown>>,
+  field: FieldSpec,
+): React.ReactNode {
+  const onChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => f.setValue((e.target as HTMLInputElement).value)
+  const E = (tag: string, extra: Record<string, unknown>, children?: React.ReactNode) =>
+    React.createElement(tag, { ...shared, ...extra, onChange }, children)
+  if (type === 'textarea')
+    return E('textarea', { placeholder: field.placeholder, value: String(f.value ?? '') })
+  if (type === 'select')
+    return E(
+      'select',
+      { value: String(f.value ?? '') },
+      React.createElement('option', { value: '' }, field.placeholder ?? 'Select…'),
+      ...(field.options ?? []).map((opt) =>
+        React.createElement('option', { key: opt.value, value: opt.value }, opt.label),
+      ),
+    )
+  if (type === 'checkbox')
+    return React.createElement(
+      'label',
+      { htmlFor: String(shared.id), style: { display: 'flex', gap: 8, alignItems: 'center' } },
+      React.createElement('input', {
+        ...shared,
+        type: 'checkbox',
+        checked: Boolean(f.value),
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => f.setValue(e.target.checked),
+      }),
+      labelOf(field),
+      field.required ? ' *' : '',
+    )
+  return E('input', { type, placeholder: field.placeholder, value: String(f.value ?? '') })
+}
+
+function renderScalarInput(
+  type: string,
+  id: string,
+  f: ReturnType<typeof useField<unknown>>,
+  field: FieldSpec,
+  describedBy: string | undefined,
+): React.ReactNode {
+  const shared = {
+    id,
+    'aria-describedby': describedBy,
+    'aria-required': field.required || undefined,
+    'aria-invalid': f.error ? true : undefined,
+    onBlur: () => f.setTouched(),
+  }
+  return renderScalarFieldInner(type, shared, f, field)
+}
+
 function ScalarField({ field, prefix }: { field: FieldSpec; prefix?: string }) {
   const path = pathOf(field, prefix)
   const f = useField<unknown>(path)
   const id = `iris-fb-${path}`
   const type = field.type ?? 'text'
-  const error = f.error
-  const describedBy = error ? `${id}-error` : undefined
+  const describedBy = f.error ? `${id}-error` : undefined
 
   return (
     <div data-iris-form-field={path}>
@@ -45,63 +99,11 @@ function ScalarField({ field, prefix }: { field: FieldSpec; prefix?: string }) {
           {field.required ? ' *' : ''}
         </label>
       )}
-      {type === 'textarea' ? (
-        <textarea
-          id={id}
-          value={String(f.value ?? '')}
-          placeholder={field.placeholder}
-          aria-required={field.required || undefined}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy}
-          onChange={(e) => f.setValue(e.target.value)}
-          onBlur={() => f.setTouched()}
-        />
-      ) : type === 'select' ? (
-        <select
-          id={id}
-          value={String(f.value ?? '')}
-          aria-required={field.required || undefined}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy}
-          onChange={(e) => f.setValue(e.target.value)}
-          onBlur={() => f.setTouched()}
-        >
-          <option value="">{field.placeholder ?? 'Select…'}</option>
-          {(field.options ?? []).map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      ) : type === 'checkbox' ? (
-        <label htmlFor={id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input
-            id={id}
-            type="checkbox"
-            checked={Boolean(f.value)}
-            aria-describedby={describedBy}
-            onChange={(e) => f.setValue(e.target.checked)}
-            onBlur={() => f.setTouched()}
-          />
-          {labelOf(field)}
-          {field.required ? ' *' : ''}
-        </label>
-      ) : (
-        <input
-          id={id}
-          type={type}
-          value={String(f.value ?? '')}
-          placeholder={field.placeholder}
-          aria-required={field.required || undefined}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy}
-          onChange={(e) => f.setValue(e.target.value)}
-          onBlur={() => f.setTouched()}
-        />
-      )}
-      {error && (
+      {renderScalarInput(type, id, f, field, describedBy)}
+
+      {f.error && (
         <div id={`${id}-error`} role="alert" style={{ color: 'var(--iris-form-error)' }}>
-          {error}
+          {f.error}
         </div>
       )}
     </div>

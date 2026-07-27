@@ -1,5 +1,5 @@
-import { createStore, type Store } from '@iris-ui/core'
-import type { IrisTheme } from '@iris-ui/tokens'
+import { createStore, type Store } from '@iris-ui-kit/core'
+import type { IrisTheme } from '@iris-ui-kit/tokens'
 
 export interface ThemeStoreConfig {
   themes: Record<string, IrisTheme>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { IrisButton, IrisInput, IrisSelect } from '@iris-ui/vue'
+import { IrisButton, IrisInput, IrisSelect } from '@iris-ui-kit/vue'
 import { login, type Role } from '../auth'
 
 const username = ref('')

@@ -14,4 +14,4 @@ export {
   type GroupedViewConfig,
   type GroupedViewState,
   type GroupedViewStore,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'

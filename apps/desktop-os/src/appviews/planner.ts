@@ -1,9 +1,9 @@
-import type { ModelCall } from '@iris-ui/core/commands'
+import type { ModelCall } from '@iris-ui-kit/core/commands'
 
 /**
  * The Assistant's planner. The framework-agnostic brain — `fuzzyPlanner`,
  * `createLlmPlanner`, and the `Planner`/`ModelCall`/`ToolChoice` contracts — now
- * lives in `@iris-ui/core/commands` and is shared by all four desktop shells
+ * lives in `@iris-ui-kit/core/commands` and is shared by all four desktop shells
  * (React/Vue/Solid/Svelte). This module re-exports it and adds the one piece that
  * can't sink to core: a concrete `ModelCall` transport backed by the Anthropic SDK
  * (an app-level dependency).
@@ -15,7 +15,7 @@ export {
   type PlanResult,
   type ModelCall,
   type ToolChoice,
-} from '@iris-ui/core/commands'
+} from '@iris-ui-kit/core/commands'
 
 export interface AnthropicCallOptions {
   /**

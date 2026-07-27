@@ -38,7 +38,7 @@ function triggers(): HTMLButtonElement[] {
   ) as HTMLButtonElement[]
 }
 
-describe('@iris-ui/react IrisStepper', () => {
+describe('@iris-ui-kit/react IrisStepper', () => {
   it('renders 3 steps', async () => {
     render(harness())
     // Steps register via useEffect — wait one tick for total to settle.

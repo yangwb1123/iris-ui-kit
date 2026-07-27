@@ -9,7 +9,7 @@ import {
   type PropType,
   type Ref,
 } from 'vue'
-import { createKeyboardNav, type KeyboardNavAction } from '@iris-ui/core'
+import { createKeyboardNav, type KeyboardNavAction } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { AccordionContextKey } from './context'
 

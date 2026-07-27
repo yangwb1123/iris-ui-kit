@@ -4,7 +4,7 @@ import IrisRibbon from './IrisRibbon.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisRibbon', () => {
+describe('@iris-ui-kit/svelte IrisRibbon', () => {
   it('renders the ribbon container', () => {
     const { container } = render(IrisRibbon, { props: { text: 'New' } })
     expect(container.querySelector('[data-iris-ribbon]')).not.toBeNull()

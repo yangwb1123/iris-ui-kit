@@ -8,7 +8,7 @@ const pb = (c: HTMLElement) => c.querySelector('[role="progressbar"]')
 const ring = (c: HTMLElement) => c.querySelector('[data-iris-progress-circle-value]')
 const label = (c: HTMLElement) => c.querySelector('[data-iris-progress-circle-label]')
 
-describe('@iris-ui/react IrisProgressCircle', () => {
+describe('@iris-ui-kit/react IrisProgressCircle', () => {
   it('exposes progressbar aria values', () => {
     const { container } = render(<IrisProgressCircle value={50} />)
     expect(pb(container)?.getAttribute('aria-valuenow')).toBe('50')

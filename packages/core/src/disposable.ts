@@ -1,5 +1,5 @@
 /**
- * `@iris-ui/core` disposable lifecycle — a framework-agnostic teardown
+ * `@iris-ui-kit/core` disposable lifecycle — a framework-agnostic teardown
  * primitive. Controllers, stores, and effect-bridges accumulate resources that
  * must be released (debounce timers, `beforeunload`/`resize` listeners, store
  * subscriptions, module singletons). Today only a few controllers expose a

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { FormStore, FormValues } from '@iris-ui/core'
+  import type { FormStore, FormValues } from '@iris-ui-kit/core'
   import type { UseFieldArrayReturn } from './useFieldArray'
   import { setFormContext } from './context'
   import { useFieldArray } from './useFieldArray'

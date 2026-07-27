@@ -11,9 +11,9 @@ import {
   IrisDialogDescription,
   IrisDialogClose,
   IrisTable,
-} from '@iris-ui/solid'
-import { createThemeStore } from '@iris-ui/theme'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+} from '@iris-ui-kit/solid'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 import { createSignal, type JSX } from 'solid-js'
 
 interface Row {
@@ -48,7 +48,7 @@ export default function Page() {
           <h1 style={{ margin: '0 0 4px', fontSize: '24px' }}>Iris UI · SolidStart SSR smoke</h1>
           <p style={{ margin: 0, color: 'var(--iris-muted-foreground, #666)' }}>
             Server-rendered page (<code>src/routes/index.tsx</code>) built from{' '}
-            <code>@iris-ui/solid</code>. A successful <code>vinxi build</code> is the SSR-compat
+            <code>@iris-ui-kit/solid</code>. A successful <code>vinxi build</code> is the SSR-compat
             proof.
           </p>
         </header>

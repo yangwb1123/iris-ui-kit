@@ -1,14 +1,14 @@
 import { defineConfig, type Options } from 'tsup'
 import { solidPlugin } from 'esbuild-plugin-solid'
 
-// Everything in @iris-ui/* + the host framework runtimes stay external — the
+// Everything in @iris-ui-kit/* + the host framework runtimes stay external — the
 // admin plugin composes the adapters' shell + data engine, it doesn't bundle them.
 const IRIS = [
-  '@iris-ui/core',
-  '@iris-ui/react',
-  '@iris-ui/vue',
-  '@iris-ui/solid',
-  '@iris-ui/svelte',
+  '@iris-ui-kit/core',
+  '@iris-ui-kit/react',
+  '@iris-ui-kit/vue',
+  '@iris-ui-kit/solid',
+  '@iris-ui-kit/svelte',
 ]
 
 // Main entries (core + react + vue) — plain esbuild handles TS + React JSX.

@@ -1,5 +1,5 @@
 import { For, createSignal, type JSX } from 'solid-js'
-import { IrisButton } from '@iris-ui/solid'
+import { IrisButton } from '@iris-ui-kit/solid'
 
 type Op = '+' | '−' | '×' | '÷'
 

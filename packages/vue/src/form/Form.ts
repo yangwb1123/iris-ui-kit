@@ -1,5 +1,5 @@
 import { defineComponent, h, provide, ref, type PropType } from 'vue'
-import type { FormStore, FormValues } from '@iris-ui/core'
+import type { FormStore, FormValues } from '@iris-ui-kit/core'
 import { FormInjectionKey } from './context'
 
 /** Focus (and best-effort scroll to) the first errored named control in DOM order. */

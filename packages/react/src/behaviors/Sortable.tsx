@@ -1,6 +1,6 @@
 /**
  * Behavior wrapper: makes a list of items sortable via drag-and-drop.
- * Uses `createSortable` from `@iris-ui/core` for the drag-and-drop controller.
+ * Uses `createSortable` from `@iris-ui-kit/core` for the drag-and-drop controller.
  *
  * @example
  *   const [items, setItems] = React.useState(['A', 'B', 'C'])
@@ -9,7 +9,7 @@
  *   </IrisSortable>
  */
 import * as React from 'react'
-import { createSortable, type SortableState } from '@iris-ui/core'
+import { createSortable, type SortableState } from '@iris-ui-kit/core'
 
 export interface IrisSortableProps<T = string> {
   items: readonly T[]

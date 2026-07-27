@@ -34,7 +34,7 @@ const rect = (
  * glyphs they use:
  *
  * ```ts
- * import { chevronDown, search, createIconRegistry } from '@iris-ui/icons'
+ * import { chevronDown, search, createIconRegistry } from '@iris-ui-kit/icons'
  * // A minimal registry built from ONLY the imported icons — the whole default
  * // set is never pulled in:
  * const lean = createIconRegistry({ icons: [chevronDown, search] })

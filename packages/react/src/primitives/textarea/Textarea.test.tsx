@@ -4,7 +4,7 @@ import { IrisTextarea } from './Textarea'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisTextarea', () => {
+describe('@iris-ui-kit/react IrisTextarea', () => {
   it('renders a <textarea>', () => {
     const { container } = render(<IrisTextarea />)
     expect(container.querySelector('textarea')).not.toBeNull()

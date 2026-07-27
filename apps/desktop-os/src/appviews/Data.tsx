@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { createReconnectingSource, createDisposableScope } from '@iris-ui/core'
-import { IrisTable, IrisBadge, type IrisTableColumn } from '@iris-ui/react'
+import { createReconnectingSource, createDisposableScope } from '@iris-ui-kit/core'
+import { IrisTable, IrisBadge, type IrisTableColumn } from '@iris-ui-kit/react'
 
 interface Process extends Record<string, unknown> {
   id: number

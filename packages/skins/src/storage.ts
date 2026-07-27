@@ -7,8 +7,8 @@ import type { SkinStorage } from './types'
 export function localStorageSkinStorage(key = 'iris-skin'): SkinStorage {
   function store(): Storage | null {
     try {
-      if (typeof window === 'undefined' || !window.localStorage) return null
-      return window.localStorage
+      if (typeof localStorage === 'undefined') return null
+      return localStorage
     } catch {
       return null
     }

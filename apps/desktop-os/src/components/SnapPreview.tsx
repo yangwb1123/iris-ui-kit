@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { type SnapZone } from '@iris-ui/core/window'
+import { type SnapZone } from '@iris-ui-kit/core/window'
 import { useWmState } from '../shell'
 import { previewRect } from '../depth'
 

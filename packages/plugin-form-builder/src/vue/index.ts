@@ -8,8 +8,8 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { FormInjectionKey, useField, useFieldArray } from '@iris-ui/vue/form'
-import type { FormStore, FormValues } from '@iris-ui/core'
+import { FormInjectionKey, useField, useFieldArray } from '@iris-ui-kit/vue/form'
+import type { FormStore, FormValues } from '@iris-ui-kit/core'
 import {
   arrayRowDefaults,
   createFormBuilder,
@@ -40,7 +40,7 @@ const pathOf = (field: FieldSpec, prefix?: string): string =>
 
 /**
  * A single scalar control (text/number/email/password/textarea/select/checkbox).
- * Binds through `@iris-ui/vue/form`'s `useField`, keyed by CANONICAL PATH — so a
+ * Binds through `@iris-ui-kit/vue/form`'s `useField`, keyed by CANONICAL PATH — so a
  * sub-field nested under an array row (`items[2].sku`) tracks its own
  * error/touched/dirty independently of its siblings, and re-keys on remove/move.
  */
@@ -50,10 +50,81 @@ const ScalarField = defineComponent({
     field: { type: Object as PropType<FieldSpec>, required: true },
     prefix: { type: String as PropType<string | undefined>, default: undefined },
   },
+  /** Build the control VNode for a given field type. */
+  methods: {},
   setup(props) {
     const path = pathOf(props.field, props.prefix)
     const f = useField<unknown>(path)
     const id = `iris-fb-${path}`
+    const buildAttrs = (
+      error: string | undefined,
+      describedBy: string | undefined,
+    ): Record<string, unknown> => ({
+      id,
+      'aria-describedby': describedBy,
+      'aria-required': props.field.required || undefined,
+      'aria-invalid': error ? true : undefined,
+      onBlur: () => f.setTouched(),
+    })
+
+    const buildControl = (
+      type: string,
+      value: unknown,
+      error: string | undefined,
+      describedBy: string | undefined,
+    ): VNode => {
+      const attrs = buildAttrs(error, describedBy)
+      // textarea
+      if (type === 'textarea') {
+        return h('textarea', {
+          ...attrs,
+          value: String(value ?? ''),
+          placeholder: props.field.placeholder,
+          onInput: (e: Event) => f.setValue((e.target as HTMLTextAreaElement).value),
+        })
+      }
+      // select
+      if (type === 'select') {
+        return h(
+          'select',
+          {
+            ...attrs,
+            value: String(value ?? ''),
+            onChange: (e: Event) => f.setValue((e.target as HTMLSelectElement).value),
+          },
+          [
+            h('option', { value: '' }, props.field.placeholder ?? 'Select…'),
+            ...(props.field.options ?? []).map((opt) =>
+              h('option', { key: opt.value, value: opt.value }, opt.label),
+            ),
+          ],
+        )
+      }
+      // checkbox
+      if (type === 'checkbox') {
+        return h(
+          'label',
+          { for: id, style: { display: 'flex', gap: '8px', alignItems: 'center' } },
+          [
+            h('input', {
+              ...attrs,
+              type: 'checkbox',
+              checked: Boolean(value),
+              onChange: (e: Event) => f.setValue((e.target as HTMLInputElement).checked),
+            }),
+            `${labelOf(props.field)}${props.field.required ? ' *' : ''}`,
+          ],
+        )
+      }
+      // default: standard input
+      return h('input', {
+        ...attrs,
+        type,
+        value: String(value ?? ''),
+        placeholder: props.field.placeholder,
+        onInput: (e: Event) => f.setValue((e.target as HTMLInputElement).value),
+      })
+    }
 
     return () => {
       const field = props.field
@@ -61,67 +132,7 @@ const ScalarField = defineComponent({
       const value = f.value.value
       const error = f.error.value
       const describedBy = error ? `${id}-error` : undefined
-
-      let control: VNode
-      if (type === 'textarea') {
-        control = h('textarea', {
-          id,
-          value: String(value ?? ''),
-          placeholder: field.placeholder,
-          'aria-required': field.required || undefined,
-          'aria-invalid': error ? true : undefined,
-          'aria-describedby': describedBy,
-          onInput: (e: Event) => f.setValue((e.target as HTMLTextAreaElement).value),
-          onBlur: () => f.setTouched(),
-        })
-      } else if (type === 'select') {
-        control = h(
-          'select',
-          {
-            id,
-            value: String(value ?? ''),
-            'aria-required': field.required || undefined,
-            'aria-invalid': error ? true : undefined,
-            'aria-describedby': describedBy,
-            onChange: (e: Event) => f.setValue((e.target as HTMLSelectElement).value),
-            onBlur: () => f.setTouched(),
-          },
-          [
-            h('option', { value: '' }, field.placeholder ?? 'Select…'),
-            ...(field.options ?? []).map((opt) =>
-              h('option', { key: opt.value, value: opt.value }, opt.label),
-            ),
-          ],
-        )
-      } else if (type === 'checkbox') {
-        control = h(
-          'label',
-          { for: id, style: { display: 'flex', gap: '8px', alignItems: 'center' } },
-          [
-            h('input', {
-              id,
-              type: 'checkbox',
-              checked: Boolean(value),
-              'aria-describedby': describedBy,
-              onChange: (e: Event) => f.setValue((e.target as HTMLInputElement).checked),
-              onBlur: () => f.setTouched(),
-            }),
-            `${labelOf(field)}${field.required ? ' *' : ''}`,
-          ],
-        )
-      } else {
-        control = h('input', {
-          id,
-          type,
-          value: String(value ?? ''),
-          placeholder: field.placeholder,
-          'aria-required': field.required || undefined,
-          'aria-invalid': error ? true : undefined,
-          'aria-describedby': describedBy,
-          onInput: (e: Event) => f.setValue((e.target as HTMLInputElement).value),
-          onBlur: () => f.setTouched(),
-        })
-      }
+      const control = buildControl(type, value, error, describedBy)
 
       const children: VNode[] = []
       if (type !== 'checkbox') {
@@ -235,13 +246,13 @@ function renderField(field: FieldSpec): VNode {
 
 /**
  * Render a validated form from a declarative schema (Vue, render-function
- * authored to match the `@iris-ui/vue` convention). Each field becomes an
+ * authored to match the `@iris-ui-kit/vue` convention). Each field becomes an
  * accessible native control wired to the framework-agnostic core form engine;
  * required fields validate inline; submit runs the schema's `onSubmit`. Themed
  * via CSS vars. No new form logic — it draws the compiled {@link createFormBuilder}.
  *
  * The builder's `createFormStore` is `provide`d through `FormInjectionKey` so each
- * field's `useField` / `useFieldArray` (from `@iris-ui/vue/form`) resolves it.
+ * field's `useField` / `useFieldArray` (from `@iris-ui-kit/vue/form`) resolves it.
  * This is what lets an `array` (repeater) field bind its per-row sub-fields to
  * nested paths (`items[2].sku`), with per-row state that re-keys on remove/move.
  */
@@ -289,7 +300,7 @@ export const IrisFormBuilder = defineComponent({
     } = builder
 
     // Expose the builder's store so descendant fields' `useField` /
-    // `useFieldArray` (from `@iris-ui/vue/form`) bind to it without prop drilling.
+    // `useFieldArray` (from `@iris-ui-kit/vue/form`) bind to it without prop drilling.
     provide(FormInjectionKey, form as unknown as FormStore<FormValues>)
 
     const state = shallowRef(form.getState())

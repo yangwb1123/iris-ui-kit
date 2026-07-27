@@ -12,7 +12,7 @@ const src = (name: string) =>
 const srcSubpath = (name: string, subpath: string) =>
   fileURLToPath(new URL(`../../packages/${name}/src/${subpath}.ts`, import.meta.url))
 
-// `serve` (dev) aliases @iris-ui/* to source for instant HMR; `build`/`preview`
+// `serve` (dev) aliases @iris-ui-kit/* to source for instant HMR; `build`/`preview`
 // bundle the real published dist artifacts.
 export default defineConfig(({ command }) => ({
   plugins: [solid()],
@@ -24,20 +24,19 @@ export default defineConfig(({ command }) => ({
     command === 'serve'
       ? {
           alias: {
-            // Subpath aliases must precede the bare `@iris-ui/core` alias below —
+            // Subpath aliases must precede the bare `@iris-ui-kit/core` alias below —
             // the bare alias maps to a single file (`src/index.tsx`), so without a
-            // more specific entry first, a deep import like `@iris-ui/core/undo`
-            // (used internally by `@iris-ui/solid`'s undo module) would resolve
+            // more specific entry first, a deep import like `@iris-ui-kit/core/undo`
+            // (used internally by `@iris-ui-kit/solid`'s undo module) would resolve
             // against that file instead of `src/undo.ts` and fail to load.
-            // Subpath aliases for deep imports from plugin dist bundles
-            '@iris-ui/core/undo': srcSubpath('core', 'undo'),
-            '@iris-ui/core': src('core'),
-            '@iris-ui/tokens': src('tokens'),
-            '@iris-ui/theme': src('theme'),
-            '@iris-ui/skins': src('skins'),
-            '@iris-ui/icons': src('icons'),
-            '@iris-ui/solid/form': srcSubpath('solid', 'form/index'),
-            '@iris-ui/solid': src('solid'),
+            '@iris-ui-kit/core/undo': srcSubpath('core', 'undo'),
+            '@iris-ui-kit/core': src('core'),
+            '@iris-ui-kit/tokens': src('tokens'),
+            '@iris-ui-kit/theme': src('theme'),
+            '@iris-ui-kit/skins': src('skins'),
+            '@iris-ui-kit/icons': src('icons'),
+            '@iris-ui-kit/solid/form': srcSubpath('solid', 'form/index'),
+            '@iris-ui-kit/solid': src('solid'),
           },
         }
       : {},

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { findNavNode } from '@iris-ui/svelte'
+  import { findNavNode } from '@iris-ui-kit/svelte'
   import { menus } from './menus'
   import DashboardPage from './pages/DashboardPage.svelte'
   import UsersPage from './pages/UsersPage.svelte'

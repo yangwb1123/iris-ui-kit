@@ -1,6 +1,6 @@
 import { For, Show } from 'solid-js'
 import type { JSX } from 'solid-js'
-import type { HeaderCell } from '@iris-ui/core'
+import type { HeaderCell } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox'
 import { ColumnResizeHandle } from './ColumnResizeHandle'
 import { BASE_CELL_STYLE } from './styles'

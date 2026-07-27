@@ -1,5 +1,5 @@
 import { computed, type ComputedRef } from 'vue'
-import type { IrisTheme } from '@iris-ui/tokens'
+import type { IrisTheme } from '@iris-ui-kit/tokens'
 import { useThemeContext } from './ThemeProvider'
 
 export interface UseThemeReturn {

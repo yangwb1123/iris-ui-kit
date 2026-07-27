@@ -6,7 +6,7 @@ import {
   useToast,
   type IrisDashboardNavItem,
   type IrisDashboardCardSpec,
-} from '@iris-ui/react'
+} from '@iris-ui-kit/react'
 
 const dashNav: IrisDashboardNavItem[] = [
   { id: 'home', label: 'Home', icon: '🏠' },

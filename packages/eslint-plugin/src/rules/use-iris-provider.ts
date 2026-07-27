@@ -1,7 +1,7 @@
 import type { Rule } from 'eslint'
 
-/** Any @iris-ui framework adapter (not plugins) */
-const IRIS_FRAMEWORK_RE = /^@iris-ui\/(react|vue|solid|svelte)(\/|$)/
+/** Any @iris-ui-kit framework adapter (not plugins) */
+const IRIS_FRAMEWORK_RE = /^@iris-ui-kit\/(react|vue|solid|svelte)(\/|$)/
 
 const rule: Rule.RuleModule = {
   meta: {
@@ -14,7 +14,7 @@ const rule: Rule.RuleModule = {
     },
     messages: {
       missingIrisProvider:
-        "Wrap your app with IrisProvider for theming and plugin support. Import IrisProvider from '@iris-ui/{{pkg}}'.",
+        "Wrap your app with IrisProvider for theming and plugin support. Import IrisProvider from '@iris-ui-kit/{{pkg}}'.",
     },
     schema: [],
   },

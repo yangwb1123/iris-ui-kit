@@ -2,7 +2,7 @@
 
 A single Electron shell that hosts **any** of the four Iris UI CMS demos
 (React / Vue / Solid / Svelte) and wires the framework-agnostic
-[`@iris-ui/core`](../../packages/core) native bridges to real OS APIs:
+[`@iris-ui-kit/core`](../../packages/core) native bridges to real OS APIs:
 
 - `setFileSaveHandler` → Electron `dialog.showSaveDialog` + `fs.writeFile`
   (the Table CSV/Excel export saves through a native dialog instead of the

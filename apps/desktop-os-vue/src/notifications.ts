@@ -1,5 +1,5 @@
 /**
- * The seam that proves `@iris-ui/core/notifications` is framework-agnostic: ONE
+ * The seam that proves `@iris-ui-kit/core/notifications` is framework-agnostic: ONE
  * `createNotificationCenter()` instance, shared across the whole Vue shell via a
  * module singleton (mirrors React's `useRef(createNotificationCenter()).current`),
  * plus a `useNotifications()` composable that returns the center + a `ref`-backed
@@ -15,7 +15,7 @@ import {
   createNotificationCenter,
   type NotificationCenter,
   type NotificationCenterState,
-} from '@iris-ui/core/notifications'
+} from '@iris-ui-kit/core/notifications'
 
 /** The single, app-wide notification center — the same engine the React demo uses. */
 export const notifications: NotificationCenter = createNotificationCenter()

@@ -15,7 +15,7 @@ export interface IrisFieldsetProps {
  * the native fieldset behavior that cascades to every nested form control —
  * accessible by construction.
  *
- * React port of {@link import('@iris-ui/vue').IrisFieldset}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisFieldset}.
  */
 export function IrisFieldset({
   legend,

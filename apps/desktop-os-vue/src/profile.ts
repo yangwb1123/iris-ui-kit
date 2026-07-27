@@ -1,5 +1,5 @@
 /**
- * The seam that proves `@iris-ui/core/profile` is framework-agnostic: ONE
+ * The seam that proves `@iris-ui-kit/core/profile` is framework-agnostic: ONE
  * `createUserProfile()` instance, shared across the whole Vue shell via a module
  * singleton (mirrors React's `useRef(createUserProfile()).current`), plus Vue
  * composables that bridge its core store into a `ref`.
@@ -14,7 +14,7 @@ import {
   localStorageProfileStorage,
   type ProfileData,
   type UserProfile,
-} from '@iris-ui/core/profile'
+} from '@iris-ui-kit/core/profile'
 import {
   BUILTIN_APPS,
   getManifest,

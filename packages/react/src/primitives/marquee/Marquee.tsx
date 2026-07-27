@@ -28,7 +28,7 @@ function prefersReducedMotion(): boolean {
  * Animations API (no `@keyframes` injection). Pauses on hover and is disabled
  * under `prefers-reduced-motion`.
  *
- * React port of {@link import('@iris-ui/vue').IrisMarquee}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisMarquee}.
  */
 export function IrisMarquee({
   children,

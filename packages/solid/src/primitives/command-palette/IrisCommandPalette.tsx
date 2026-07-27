@@ -9,7 +9,7 @@ import {
   onCleanup,
   type JSX,
 } from 'solid-js'
-import { firstEnabledIndex, nextEnabledIndex } from '@iris-ui/core'
+import { firstEnabledIndex, nextEnabledIndex } from '@iris-ui-kit/core'
 import { type IrisCommandItem, defaultFilter } from './types'
 import { useI18n } from '../../i18n'
 import { useFocusTrap } from '../../modal-utils'

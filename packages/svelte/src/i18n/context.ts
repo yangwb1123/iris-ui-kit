@@ -1,5 +1,5 @@
 import { getContext, setContext } from 'svelte'
-import type { I18n } from '@iris-ui/core'
+import type { I18n } from '@iris-ui-kit/core'
 
 const I18N_KEY = Symbol('IrisI18n')
 

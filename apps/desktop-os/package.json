@@ -1,6 +1,6 @@
 {
   "name": "desktop-os",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,9 +14,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
-    "@iris-ui/core": "workspace:*",
-    "@iris-ui/react": "workspace:*",
-    "@iris-ui/tokens": "workspace:*",
+    "@iris-ui-kit/core": "workspace:*",
+    "@iris-ui-kit/react": "workspace:*",
+    "@iris-ui-kit/tokens": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

@@ -1,5 +1,5 @@
 import { createContext, useContext, type Accessor } from 'solid-js'
-import type { Placement } from '@iris-ui/core'
+import type { Placement } from '@iris-ui-kit/core'
 
 export interface DropdownContextValue {
   open: Accessor<boolean>

@@ -12,7 +12,7 @@ import {
   IrisDialogTitle,
   IrisDialogDescription,
   IrisDialogClose,
-} from '@iris-ui/react'
+} from '@iris-ui-kit/react'
 import { skinEngine } from './demo-skins'
 import { SkinsShowcase } from './sections/SkinsShowcase'
 import { DisplayShowcase } from './sections/DisplayShowcase'

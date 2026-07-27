@@ -1,6 +1,6 @@
 {
-  "name": "@iris-ui/skins",
-  "version": "0.0.0",
+  "name": "@iris-ui-kit/skins",
+  "version": "0.0.1",
   "description": "Loadable, token-built skin system for Iris UI: inheritance, custom tokens, marketplace catalog, runtime engine",
   "license": "MIT",
   "type": "module",
@@ -33,12 +33,15 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*",
-    "@iris-ui/tokens": "workspace:*",
-    "@iris-ui/theme": "workspace:*"
+    "@iris-ui-kit/core": "workspace:*",
+    "@iris-ui-kit/tokens": "workspace:*",
+    "@iris-ui-kit/theme": "workspace:*"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/nousresearch/iris-ui.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

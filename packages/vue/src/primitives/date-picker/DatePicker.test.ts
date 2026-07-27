@@ -5,7 +5,7 @@ import { IrisDatePicker } from './DatePicker'
 
 afterEach(() => vi.useRealTimers())
 
-describe('@iris-ui/vue IrisDatePicker', () => {
+describe('@iris-ui-kit/vue IrisDatePicker', () => {
   it('renders trigger with placeholder when no value', () => {
     const wrap = mount(IrisDatePicker, {
       props: { placeholder: 'Pick…', modelValue: null },

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { getColorScheme, watchColorScheme, type ColorScheme } from '@iris-ui/theme'
+import { getColorScheme, watchColorScheme, type ColorScheme } from '@iris-ui-kit/theme'
 
 /**
  * Reactive system color scheme (`'light'` / `'dark'`) from

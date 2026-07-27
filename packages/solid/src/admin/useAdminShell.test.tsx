@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createSignal } from 'solid-js'
 import { render, cleanup } from '@solidjs/testing-library'
-import { createTabsNav, type NavNode } from '@iris-ui/core'
+import { createTabsNav, type NavNode } from '@iris-ui-kit/core'
 import { useAdminShell, type UseAdminShellConfig, type UseAdminShellReturn } from './useAdminShell'
 
 afterEach(cleanup)

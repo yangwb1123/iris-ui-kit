@@ -1,7 +1,7 @@
 import type { Snippet } from 'svelte'
-import type { I18nMessages, IrisPlugin } from '@iris-ui/core'
-import type { Direction, ThemeStore } from '@iris-ui/theme'
-import type { SkinEngine } from '@iris-ui/skins'
+import type { I18nMessages, IrisPlugin } from '@iris-ui-kit/core'
+import type { Direction, ThemeStore } from '@iris-ui-kit/theme'
+import type { SkinEngine } from '@iris-ui-kit/skins'
 
 /**
  * Context key for the collected plugin layer — a module-singleton Symbol. Named

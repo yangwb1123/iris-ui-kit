@@ -4,8 +4,8 @@ import {
   type GroupedViewConfig,
   type GroupedViewState,
   type GroupedViewStore,
-} from '@iris-ui/core'
-import type { DataViewColumn } from '@iris-ui/core'
+} from '@iris-ui-kit/core'
+import type { DataViewColumn } from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
 export interface UseGroupedView<Row, K = string> {

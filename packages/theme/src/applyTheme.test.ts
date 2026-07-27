@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 import { applyTheme } from './applyTheme'
 
 describe('applyTheme', () => {

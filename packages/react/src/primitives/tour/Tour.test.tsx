@@ -7,7 +7,7 @@ afterEach(() => cleanup())
 const STEPS = [{ title: 'A', description: 'da' }, { title: 'B' }, { title: 'C' }]
 const card = (c: HTMLElement) => c.querySelector('[data-iris-tour-card]')
 
-describe('@iris-ui/react IrisTour', () => {
+describe('@iris-ui-kit/react IrisTour', () => {
   it('is hidden by default', () => {
     const { container } = render(<IrisTour steps={STEPS} />)
     expect(card(container)).toBeNull()

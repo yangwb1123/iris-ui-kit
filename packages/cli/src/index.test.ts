@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { IrisManifest } from '@iris-ui/manifest'
+import type { IrisManifest } from '@iris-ui-kit/manifest'
 import { runList } from './commands/list.js'
 import { runScaffold } from './commands/scaffold.js'
 
@@ -17,10 +17,10 @@ const STUB_MANIFEST: IrisManifest = {
       module: 'button',
       frameworks: ['react', 'vue', 'solid', 'svelte'],
       importFrom: {
-        react: '@iris-ui/react',
-        vue: '@iris-ui/vue',
-        solid: '@iris-ui/solid',
-        svelte: '@iris-ui/svelte',
+        react: '@iris-ui-kit/react',
+        vue: '@iris-ui-kit/vue',
+        solid: '@iris-ui-kit/solid',
+        svelte: '@iris-ui-kit/svelte',
       },
       props: [
         { name: 'variant', type: 'string', optional: true },
@@ -33,8 +33,8 @@ const STUB_MANIFEST: IrisManifest = {
       module: 'input',
       frameworks: ['react', 'vue'],
       importFrom: {
-        react: '@iris-ui/react',
-        vue: '@iris-ui/vue',
+        react: '@iris-ui-kit/react',
+        vue: '@iris-ui-kit/vue',
       },
       props: [{ name: 'value', type: 'string', optional: false }],
     },
@@ -44,10 +44,10 @@ const STUB_MANIFEST: IrisManifest = {
       module: 'card',
       frameworks: ['react', 'vue', 'solid', 'svelte'],
       importFrom: {
-        react: '@iris-ui/react',
-        vue: '@iris-ui/vue',
-        solid: '@iris-ui/solid',
-        svelte: '@iris-ui/svelte',
+        react: '@iris-ui-kit/react',
+        vue: '@iris-ui-kit/vue',
+        solid: '@iris-ui-kit/solid',
+        svelte: '@iris-ui-kit/svelte',
       },
       props: [],
     },
@@ -150,7 +150,7 @@ describe('scaffold command', () => {
     const code = runScaffold(STUB_MANIFEST, 'IrisButton', 'react')
     expect(code).toBe(0)
     const out = io.stdout.join('')
-    expect(out).toContain("import { IrisButton } from '@iris-ui/react'")
+    expect(out).toContain("import { IrisButton } from '@iris-ui-kit/react'")
     expect(out).toContain('<IrisButton')
   })
 
@@ -158,7 +158,7 @@ describe('scaffold command', () => {
     const code = runScaffold(STUB_MANIFEST, 'IrisButton', 'vue')
     expect(code).toBe(0)
     const out = io.stdout.join('')
-    expect(out).toContain("import { IrisButton } from '@iris-ui/vue'")
+    expect(out).toContain("import { IrisButton } from '@iris-ui-kit/vue'")
   })
 
   it('required props appear in the snippet', () => {

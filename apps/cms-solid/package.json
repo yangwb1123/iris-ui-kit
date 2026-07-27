@@ -1,6 +1,6 @@
 {
   "name": "cms-solid",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,11 +14,11 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*",
-    "@iris-ui/plugin-form-builder": "workspace:^",
-    "@iris-ui/plugin-notifications": "workspace:*",
-    "@iris-ui/solid": "workspace:*",
-    "@iris-ui/tokens": "workspace:*",
+    "@iris-ui-kit/core": "workspace:*",
+    "@iris-ui-kit/plugin-form-builder": "workspace:^",
+    "@iris-ui-kit/plugin-notifications": "workspace:*",
+    "@iris-ui-kit/solid": "workspace:*",
+    "@iris-ui-kit/tokens": "workspace:*",
     "solid-js": "^1.9.3"
   },
   "devDependencies": {

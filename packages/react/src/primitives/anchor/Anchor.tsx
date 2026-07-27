@@ -34,7 +34,7 @@ const resolve = (target?: () => HTMLElement | Window | null): HTMLElement | Wind
  * link is the last section whose top has passed `offset`. Clicking a link
  * smooth-scrolls to its section (honoring reduced motion).
  *
- * React port of {@link import('@iris-ui/vue').IrisAnchor}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisAnchor}.
  */
 export function IrisAnchor({
   items,

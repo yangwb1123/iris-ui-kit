@@ -32,7 +32,7 @@ const Demo = defineComponent({
 
 const texts = (w: ReturnType<typeof mount>) => w.findAll('.row').map((el) => el.text())
 
-describe('@iris-ui/vue useFieldArray', () => {
+describe('@iris-ui-kit/vue useFieldArray', () => {
   it('renders the initial array', () => {
     expect(texts(mount(Demo))).toEqual(['a', 'b'])
   })

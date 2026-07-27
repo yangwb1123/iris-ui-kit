@@ -7,7 +7,7 @@ import {
   IrisCard,
   IrisButton,
   useToast,
-} from '@iris-ui/react'
+} from '@iris-ui-kit/react'
 
 export function BehaviorsShowcase() {
   const [showFloating, setShowFloating] = useState(true)

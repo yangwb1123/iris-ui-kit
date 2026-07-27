@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { createSortable, type SortableRect } from '@iris-ui/core'
+import { createSortable, type SortableRect } from '@iris-ui-kit/core'
 import { createDashboard, type DashboardConfig, type DashboardWidget } from '../core'
 
 export type { DashboardWidget, DashboardConfig, DashboardState, DashboardStore } from '../core'

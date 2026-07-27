@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
-import { createThemeStore } from '@iris-ui/theme'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 import { ThemeProvider, useTheme } from './index'
 
 afterEach(cleanup)
 
-describe('@iris-ui/solid theme', () => {
+describe('@iris-ui-kit/solid theme', () => {
   it('provides the active theme, applies CSS vars, and switches via setTheme', () => {
     const store = createThemeStore({
       themes: { light: lightTheme, dark: darkTheme },

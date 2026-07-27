@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { IrisMovable, IrisResizable } from '@iris-ui/react'
-import { type DesktopWindow, type SnapZone } from '@iris-ui/core/window'
+import { IrisMovable, IrisResizable } from '@iris-ui-kit/react'
+import { type DesktopWindow, type SnapZone } from '@iris-ui-kit/core/window'
 import { getManifest } from '../catalog'
 import { loadRemoteApp } from '../remoteApp'
 import { useOs, useWm, useWmState } from '../shell'

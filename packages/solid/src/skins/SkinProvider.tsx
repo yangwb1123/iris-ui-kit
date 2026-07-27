@@ -6,8 +6,8 @@ import {
   type Accessor,
   type JSX,
 } from 'solid-js'
-import { injectGlobalStyles } from '@iris-ui/theme'
-import { applySkin, type ResolvedSkin, type SkinEngine } from '@iris-ui/skins'
+import { injectGlobalStyles } from '@iris-ui-kit/theme'
+import { applySkin, type ResolvedSkin, type SkinEngine } from '@iris-ui-kit/skins'
 import { useStore } from '../useStore'
 
 interface IrisSkinContextValue {
@@ -29,7 +29,7 @@ export interface SkinProviderProps {
  * Renderless provider mirroring `<ThemeProvider>`: subscribes to the skin
  * engine's store, applies the resolved skin's CSS vars to `target` (or
  * `document.documentElement`), reverts on change/unmount. Zero skin logic — all
- * of it lives in `@iris-ui/skins`.
+ * of it lives in `@iris-ui-kit/skins`.
  */
 export function SkinProvider(props: SkinProviderProps): JSX.Element {
   const current = useStore(props.engine.store)

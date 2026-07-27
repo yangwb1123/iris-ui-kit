@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte'
-  import { nextEnabledIndex } from '@iris-ui/core'
+  import { nextEnabledIndex } from '@iris-ui-kit/core'
   import { setTabsContext } from './context'
 
   type Orientation = 'horizontal' | 'vertical'

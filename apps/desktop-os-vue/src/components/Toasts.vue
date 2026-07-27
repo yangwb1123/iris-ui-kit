@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { type NotificationTone } from '@iris-ui/core/notifications'
+import { type NotificationTone } from '@iris-ui-kit/core/notifications'
 import { useNotifications, useNotificationState } from '../notifications'
 import ToastItem from './ToastItem.vue'
 

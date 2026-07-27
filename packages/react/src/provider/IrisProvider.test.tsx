@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
-import { createPlugin } from '@iris-ui/core'
+import { createPlugin } from '@iris-ui-kit/core'
 import { IrisProvider, usePlugin, usePluginStore } from './index'
 
 afterEach(cleanup)

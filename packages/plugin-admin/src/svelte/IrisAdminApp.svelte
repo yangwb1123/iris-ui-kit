@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  import { IrisAdminLayout } from '@iris-ui/svelte'
+  import { IrisAdminLayout } from '@iris-ui-kit/svelte'
   import { resolveAdminPage, firstNavLeafKey, type AdminAppSchema } from '../core'
   import DataPage from './DataPage.svelte'
 

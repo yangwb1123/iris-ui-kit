@@ -1,6 +1,6 @@
 /**
  * The ONE notification center for this desktop shell — a module singleton over
- * the framework-agnostic `@iris-ui/core/notifications` (`createNotificationCenter`).
+ * the framework-agnostic `@iris-ui-kit/core/notifications` (`createNotificationCenter`).
  * It holds the live notification list (newest first) that drives transient toasts
  * + a notification history; the SAME engine the React demo drives, proving it runs
  * unchanged on Svelte 5. Apps `post` a notification (the desktop's `notifications`
@@ -15,7 +15,7 @@ import {
   createNotificationCenter,
   type NotificationCenter,
   type NotificationCenterState,
-} from '@iris-ui/core/notifications'
+} from '@iris-ui-kit/core/notifications'
 
 /** One notification center for the whole shell (toasts + history). */
 export const notifications: NotificationCenter = createNotificationCenter()

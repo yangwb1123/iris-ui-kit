@@ -4,7 +4,7 @@ import { IrisOtpInput } from './OtpInput'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisOtpInput', () => {
+describe('@iris-ui-kit/react IrisOtpInput', () => {
   it('renders `length` cells (default 6)', () => {
     const { container } = render(<IrisOtpInput />)
     expect(container.querySelectorAll('[data-iris-otp-input-cell]').length).toBe(6)

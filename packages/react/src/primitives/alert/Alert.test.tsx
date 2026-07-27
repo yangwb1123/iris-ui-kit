@@ -5,7 +5,7 @@ import { IrisI18nProvider } from '../../i18n'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisAlert', () => {
+describe('@iris-ui-kit/react IrisAlert', () => {
   it('renders children', () => {
     const { container } = render(<IrisAlert>msg</IrisAlert>)
     expect(container.textContent).toContain('msg')

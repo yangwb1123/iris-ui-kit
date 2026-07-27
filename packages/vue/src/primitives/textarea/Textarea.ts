@@ -1,5 +1,5 @@
 import { computed, defineComponent, h, nextTick, onMounted, ref, watch, type PropType } from 'vue'
-import type { Size } from '@iris-ui/core'
+import type { Size } from '@iris-ui-kit/core'
 
 export type IrisTextareaSize = Size
 

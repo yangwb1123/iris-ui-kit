@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { IrisFormField, IrisInput, IrisSwitch, IrisButton, IrisStack } from '@iris-ui/vue'
+import { IrisFormField, IrisInput, IrisSwitch, IrisButton, IrisStack } from '@iris-ui-kit/vue'
 
 // Local form state — survives tab switches thanks to <KeepAlive>.
 const siteName = ref('Iris CMS')

@@ -1,5 +1,5 @@
 import { createEffect, createSignal, mergeProps, onMount, splitProps, type JSX } from 'solid-js'
-import type { Size } from '@iris-ui/core'
+import type { Size } from '@iris-ui-kit/core'
 
 export type IrisTextareaSize = Size
 

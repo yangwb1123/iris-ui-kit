@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { nextEnabledIndex } from '@iris-ui/core'
+import { nextEnabledIndex } from '@iris-ui-kit/core'
 import { TabsContext, type IrisTabsOrientation } from './context'
 
 export interface IrisTabsProps {

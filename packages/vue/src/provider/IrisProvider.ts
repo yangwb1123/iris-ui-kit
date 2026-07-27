@@ -7,9 +7,9 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { runPlugins, type IrisPlugin } from '@iris-ui/core'
-import { applyCssVars, type ApplyCssVarsResult, type ThemeStore } from '@iris-ui/theme'
-import type { SkinEngine } from '@iris-ui/skins'
+import { runPlugins, type IrisPlugin } from '@iris-ui-kit/core'
+import { applyCssVars, type ApplyCssVarsResult, type ThemeStore } from '@iris-ui-kit/theme'
+import type { SkinEngine } from '@iris-ui-kit/skins'
 import { ThemeProvider } from '../theme'
 import { SkinProvider } from '../skins'
 import { IrisI18nProvider } from '../i18n'
@@ -39,7 +39,7 @@ export interface IrisProviderProps {
  * The single unified Iris entry point. Runs `plugins` through the core
  * `runPlugins` collector and wires the result into the theme (tokens), i18n
  * (messages) and a plugin-store context, composing the existing per-framework
- * providers. A thin bridge — the real logic lives in `@iris-ui/core`.
+ * providers. A thin bridge — the real logic lives in `@iris-ui-kit/core`.
  *
  * Render order when present: Theme → Skin → I18n → PluginContext → children.
  */

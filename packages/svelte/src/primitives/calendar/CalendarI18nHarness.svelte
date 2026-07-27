@@ -4,7 +4,7 @@
   through the component tree, so the provider must wrap the calendar here).
 -->
 <script lang="ts">
-  import type { I18nMessages } from '@iris-ui/core'
+  import type { I18nMessages } from '@iris-ui-kit/core'
   import { IrisI18nProvider } from '../../i18n'
   import IrisCalendar from './IrisCalendar.svelte'
 

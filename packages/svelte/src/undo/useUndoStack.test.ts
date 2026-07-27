@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
-import type { UndoStackOptions } from '@iris-ui/core/undo'
+import type { UndoStackOptions } from '@iris-ui-kit/core/undo'
 import type { useUndoStack } from './useUndoStack.svelte'
 import UndoStackHarness from './UndoStackHarness.svelte'
 
@@ -20,7 +20,7 @@ function probe<T>(options?: UndoStackOptions<T>) {
   return { ...utils, api }
 }
 
-describe('@iris-ui/svelte useUndoStack', () => {
+describe('@iris-ui-kit/svelte useUndoStack', () => {
   it('starts empty with no initial snapshot', () => {
     const { container } = probe<number>()
     expect(container.querySelector('[data-can-undo]')!.textContent).toBe('false')

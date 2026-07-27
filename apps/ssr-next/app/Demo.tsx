@@ -21,13 +21,13 @@ import {
   useField,
   IrisForm,
   IrisFormField,
-} from '@iris-ui/react'
-import { createThemeStore } from '@iris-ui/theme'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+} from '@iris-ui-kit/react'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 
 // ── Client island ──────────────────────────────────────────────────────────
 // Everything below runs in the browser after hydration. The `'use client'`
-// directive at the top of THIS file is the boundary; @iris-ui/react entries
+// directive at the top of THIS file is the boundary; @iris-ui-kit/react entries
 // also carry their own injected directive, so importing them from a Server
 // Component (app/page.tsx) is legal either way. This component is what proves
 // hydration: it mounts interactive state (useState), an overlay that opens on

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
-import { createPlugin } from '@iris-ui/core'
+import { createPlugin } from '@iris-ui-kit/core'
 import { IrisProvider, usePlugin, usePluginStore } from './index'
 
 afterEach(cleanup)
@@ -19,7 +19,7 @@ const examplePlugin = createPlugin({
   },
 })
 
-describe('@iris-ui/solid IrisProvider', () => {
+describe('@iris-ui-kit/solid IrisProvider', () => {
   it('exposes the plugin store, installed flags, and applies tokens', () => {
     let store!: ExampleStore
     let hasExample = false

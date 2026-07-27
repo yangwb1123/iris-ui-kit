@@ -6,7 +6,7 @@ import { IrisInput } from '../input/Input'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisFormField', () => {
+describe('@iris-ui-kit/react IrisFormField', () => {
   it('renders a wrapper with data-iris-form-field', () => {
     const { container } = render(
       <IrisFormField label="Name">

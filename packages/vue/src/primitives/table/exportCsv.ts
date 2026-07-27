@@ -1,4 +1,4 @@
-import { saveFile } from '@iris-ui/core'
+import { saveFile } from '@iris-ui-kit/core'
 import type { IrisTableColumn } from './types'
 
 /**

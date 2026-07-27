@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest'
 import IrisInput from './Input.svelte'
 import InputAffixHarness from './InputAffixHarness.svelte'
 
-describe('@iris-ui/svelte IrisInput', () => {
+describe('@iris-ui-kit/svelte IrisInput', () => {
   it('renders a native <input>', () => {
     const { container } = render(IrisInput, { props: { placeholder: 'x' } })
     expect(container.querySelector('input')).not.toBeNull()

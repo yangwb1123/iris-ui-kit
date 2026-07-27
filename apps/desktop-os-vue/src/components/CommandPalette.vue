@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { type Command, type CommandHit } from '@iris-ui/core/commands'
+import { type Command, type CommandHit } from '@iris-ui-kit/core/commands'
 import { useCommands } from '../commands'
 import { useWmState } from '../wm'
 

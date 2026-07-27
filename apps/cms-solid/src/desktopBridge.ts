@@ -1,8 +1,8 @@
-// Wire the @iris-ui/core native bridges to the Electron desktop shell when the
+// Wire the @iris-ui-kit/core native bridges to the Electron desktop shell when the
 // app is running inside it (window.irisNative is injected by the shell's
 // preload — see apps/desktop). In a plain browser `irisNative` is undefined and
 // this is a no-op, so the web demo behaves exactly as before.
-import { setFileSaveHandler, setClipboardHandler } from '@iris-ui/core'
+import { setFileSaveHandler, setClipboardHandler } from '@iris-ui-kit/core'
 
 interface IrisNative {
   platform: string

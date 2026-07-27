@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { serializeSession, restoreSession, type WindowSession } from '@iris-ui/core/window'
-import { type VfsState } from '@iris-ui/core/fs'
+import { serializeSession, restoreSession, type WindowSession } from '@iris-ui-kit/core/window'
+import { type VfsState } from '@iris-ui-kit/core/fs'
 import { wm } from './wm'
 import { fs } from './fs'
 import { profile } from './profile'
@@ -13,7 +13,7 @@ import Desktop from './components/Desktop.vue'
 /**
  * The desktop, parameterized by the active OS skin. The skin is a set of CSS
  * custom properties (`--os-*`) applied on the root so the whole shell — and the
- * @iris-ui/vue components inside windows — reads `var(--os-*)`. Switching the OS
+ * @iris-ui-kit/vue components inside windows — reads `var(--os-*)`. Switching the OS
  * swaps the variables AND the structural chrome (top menu bar, bottom dock,
  * spotlight, traffic-lights) live; mirrors the React shell, which carries all
  * three (Win11 / macOS / KDE). This Vue build ships Win11 + macOS chrome.
@@ -93,7 +93,7 @@ function hydrateFsOnce() {
     )
     fs.write(
       '/Documents/notes.md',
-      '# Notes\n\n- Backed by @iris-ui/core/fs\n- The same engine drives all four shells.',
+      '# Notes\n\n- Backed by @iris-ui-kit/core/fs\n- The same engine drives all four shells.',
     )
     fs.mkdir('/Pictures')
   }

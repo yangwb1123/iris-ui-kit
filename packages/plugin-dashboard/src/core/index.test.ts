@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { runPlugins } from '@iris-ui/core'
+import { runPlugins } from '@iris-ui-kit/core'
 import { createDashboard, dashboardPlugin, dashboardTokens, type DashboardConfig } from './index'
 
 const baseConfig = (): DashboardConfig => ({

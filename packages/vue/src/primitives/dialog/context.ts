@@ -1,5 +1,5 @@
 import type { ComputedRef, InjectionKey, Ref } from 'vue'
-import type { FloatingMachine } from '@iris-ui/core'
+import type { FloatingMachine } from '@iris-ui-kit/core'
 
 export interface DialogContext {
   machine: FloatingMachine

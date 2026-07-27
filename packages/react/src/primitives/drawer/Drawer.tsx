@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { createFloatingMachine } from '@iris-ui/core'
+import { createFloatingMachine } from '@iris-ui-kit/core'
 import { useMachine } from '../../useMachine'
 import { DrawerContext, type IrisDrawerSide } from './context'
 

@@ -1,13 +1,13 @@
 <script lang="ts">
   /**
    * Clipboard — a desktop CLIPBOARD MANAGER (Win+V / macOS clipboard-manager
-   * feel) over `@iris-ui/core/clipboard-history`. Records copied text, lets you
+   * feel) over `@iris-ui-kit/core/clipboard-history`. Records copied text, lets you
    * re-copy a past clip (writes the real system clipboard), pin clips so they
    * survive Clear, and remove individual entries. This is what makes the
    * `clipboard` permission the app requests actually do something. Mirrors the
    * React reference (apps/desktop-os/src/appviews/Clipboard.tsx).
    */
-  import { IrisButton } from '@iris-ui/svelte'
+  import { IrisButton } from '@iris-ui-kit/svelte'
   import { clipboard, useClipboardState } from '../clipboard.svelte'
 
   const cstate = useClipboardState()

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { lightTheme } from '@iris-ui/tokens'
+import { lightTheme } from '@iris-ui-kit/tokens'
 import { resolveSkin, type SkinLookup } from './resolveSkin'
 import { SkinResolutionError } from './errors'
 import type { Skin } from './types'

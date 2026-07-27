@@ -7,7 +7,7 @@ afterEach(() => cleanup())
 const img = (c: HTMLElement) => c.querySelector('[data-iris-image]') as HTMLElement
 const preview = (c: HTMLElement) => c.querySelector('[data-iris-image-preview]')
 
-describe('@iris-ui/react IrisImage', () => {
+describe('@iris-ui-kit/react IrisImage', () => {
   it('renders an img with src and alt', () => {
     const { container } = render(<IrisImage src="/a.png" alt="Avatar" />)
     expect(img(container).getAttribute('src')).toBe('/a.png')

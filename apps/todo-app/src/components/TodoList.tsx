@@ -5,7 +5,7 @@
  * otherwise it maps over items and renders a TodoItem for each.
  */
 
-import { IrisEmptyState } from '@iris-ui/react'
+import { IrisEmptyState } from '@iris-ui-kit/react'
 import { TodoItem } from './TodoItem'
 import type { Todo } from '../types/todo'
 

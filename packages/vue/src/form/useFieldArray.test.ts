@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
-import type { FormStore } from '@iris-ui/core'
+import type { FormStore } from '@iris-ui-kit/core'
 import { IrisForm } from './Form'
 import { useForm } from './useForm'
 import { useFieldArray } from './useFieldArray'

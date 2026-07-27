@@ -239,10 +239,10 @@ if (!isDiff || filesToCheck.some((f) => f.includes('packages/core'))) {
     const deps = { ...(corePkg.dependencies || {}), ...(corePkg.devDependencies || {}) }
     const frameworkDeps = Object.keys(deps).filter(
       (d) =>
-        d.startsWith('@iris-ui/react') ||
-        d.startsWith('@iris-ui/vue') ||
-        d.startsWith('@iris-ui/solid') ||
-        d.startsWith('@iris-ui/svelte') ||
+        d.startsWith('@iris-ui-kit/react') ||
+        d.startsWith('@iris-ui-kit/vue') ||
+        d.startsWith('@iris-ui-kit/solid') ||
+        d.startsWith('@iris-ui-kit/svelte') ||
         d === 'react' ||
         d === 'vue' ||
         d === 'solid-js' ||

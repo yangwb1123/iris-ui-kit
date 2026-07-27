@@ -5,7 +5,7 @@ import { __PROGRESS_STYLE_ID, __resetProgressStyles } from './styles'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisProgress', () => {
+describe('@iris-ui-kit/react IrisProgress', () => {
   beforeEach(() => __resetProgressStyles())
   afterEach(() => __resetProgressStyles())
 

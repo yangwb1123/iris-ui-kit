@@ -10,7 +10,7 @@ const ITEMS = [
   { value: 'c', label: 'Cherry', disabled: true },
 ]
 
-describe('@iris-ui/svelte IrisList', () => {
+describe('@iris-ui-kit/svelte IrisList', () => {
   it('renders a ul with role=listbox', () => {
     const { container } = render(IrisList, { props: { items: ITEMS } })
     expect(container.querySelector('ul[role="listbox"][data-iris-list]')).not.toBeNull()

@@ -1,7 +1,7 @@
 import { createStore, type Store } from './store'
 
 /**
- * `@iris-ui/core/commands` — a framework-agnostic COMMAND / ACTION registry: the
+ * `@iris-ui-kit/core/commands` — a framework-agnostic COMMAND / ACTION registry: the
  * substrate behind a command palette (⌘K) AND an automation/agent layer. Apps,
  * the window manager, and the shell `register` named actions; a palette searches
  * + runs them, and an MCP/agent can enumerate the same registry as tools and

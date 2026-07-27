@@ -4,7 +4,7 @@ import { IrisBadge, badgeStyle } from './Badge'
 
 afterEach(cleanup)
 
-describe('@iris-ui/solid IrisBadge', () => {
+describe('@iris-ui-kit/solid IrisBadge', () => {
   it('emits a precomputed subtle fallback BEFORE the color-mix background', () => {
     // Solid applies the style object declaration-by-declaration, so the live DOM
     // CSSOM folds the `background-color` longhand away once the `background`

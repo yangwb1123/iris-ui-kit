@@ -4,7 +4,7 @@ import { IrisWatermark } from './Watermark'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisWatermark', () => {
+describe('@iris-ui-kit/react IrisWatermark', () => {
   it('renders its children', () => {
     const { container } = render(
       <IrisWatermark content="DRAFT">

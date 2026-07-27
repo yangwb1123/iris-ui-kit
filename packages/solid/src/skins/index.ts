@@ -1,7 +1,7 @@
 // Re-export the framework-agnostic skin engine, catalog, storage, builtins, and
-// types so consumers get the whole skin system from `@iris-ui/solid`. Explicit
+// types so consumers get the whole skin system from `@iris-ui-kit/solid`. Explicit
 // named re-exports (not `export *`) so they survive tree-shaking of the external
-// `@iris-ui/skins` package.
+// `@iris-ui-kit/skins` package.
 export {
   createSkinEngine,
   createSkinRegistry,
@@ -20,7 +20,7 @@ export {
   builtinSkins,
   skinError,
   SkinResolutionError,
-} from '@iris-ui/skins'
+} from '@iris-ui-kit/skins'
 export type {
   Skin,
   ResolvedSkin,
@@ -41,7 +41,7 @@ export type {
   LoadSkinOptions,
   ApplySkinResult,
   SkinBootScriptConfig,
-} from '@iris-ui/skins'
+} from '@iris-ui-kit/skins'
 
 export {
   SkinProvider,

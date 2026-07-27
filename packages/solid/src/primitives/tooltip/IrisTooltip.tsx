@@ -10,9 +10,9 @@ import {
   type JSX,
 } from 'solid-js'
 import { Portal } from 'solid-js/web'
-import { createHoverIntent } from '@iris-ui/core'
+import { createHoverIntent } from '@iris-ui-kit/core'
 import { useFloating } from '../../floating/useFloating'
-import type { Placement } from '@iris-ui/core'
+import type { Placement } from '@iris-ui-kit/core'
 
 export interface IrisTooltipProps {
   /** Plain-text tooltip content. */

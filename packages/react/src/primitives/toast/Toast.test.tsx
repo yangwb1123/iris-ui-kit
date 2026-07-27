@@ -36,7 +36,7 @@ function swipePointer(
   fireEvent(node, ev)
 }
 
-describe('@iris-ui/react IrisToast', () => {
+describe('@iris-ui-kit/react IrisToast', () => {
   it('renders viewport and shows nothing when queue is empty', () => {
     render(<IrisToastViewport />)
     expect(toasts().length).toBe(0)

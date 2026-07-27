@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import * as React from 'react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { usePaginatedResource } from './usePaginatedResource'
-import type { PageQuery, PageResult } from '@iris-ui/core'
+import type { PageQuery, PageResult } from '@iris-ui-kit/core'
 
 afterEach(cleanup)
 
@@ -31,7 +31,7 @@ function Probe({ mode }: { mode?: 'paged' | 'infinite' }) {
   )
 }
 
-describe('@iris-ui/react usePaginatedResource', () => {
+describe('@iris-ui-kit/react usePaginatedResource', () => {
   it('immediate loads page 1', async () => {
     render(<Probe />)
     await waitFor(() => expect(screen.getByTestId('count').textContent).toBe('10'))

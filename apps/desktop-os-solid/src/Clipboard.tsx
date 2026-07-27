@@ -1,5 +1,5 @@
 import { For, Show, createSignal, type JSX } from 'solid-js'
-import { IrisButton } from '@iris-ui/solid'
+import { IrisButton } from '@iris-ui-kit/solid'
 import { useClipboard, useClipboardState } from './clipboard-context'
 
 /** Write to the real system clipboard (best-effort; demo tolerates failure). */
@@ -13,7 +13,7 @@ async function writeSystemClipboard(text: string): Promise<void> {
 
 /**
  * Clipboard — a desktop CLIPBOARD MANAGER (Win+V / macOS clipboard-manager feel)
- * over `@iris-ui/core/clipboard-history`. Records copied text, lets you re-copy a
+ * over `@iris-ui-kit/core/clipboard-history`. Records copied text, lets you re-copy a
  * past clip (writes the real system clipboard), pin clips so they survive Clear,
  * and remove individual entries. This is what makes the `clipboard` permission the
  * app requests actually do something. Mirrors the React desktop, here on Solid.

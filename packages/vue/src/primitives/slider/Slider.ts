@@ -1,5 +1,5 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
-import { getDirection } from '@iris-ui/theme'
+import { getDirection } from '@iris-ui-kit/theme'
 import { useDrag } from '../drag/useDrag'
 import { useI18n } from '../../i18n'
 

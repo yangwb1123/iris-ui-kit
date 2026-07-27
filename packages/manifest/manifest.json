@@ -241,10 +241,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Container for collapsible sections.",
       "props": [
@@ -299,10 +299,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "A single accordion section: a button-styled header + a collapsible body. Wires `aria-expanded`, `aria-controls`, `role=\"region\"`, `aria-labelledby`.",
       "props": [
@@ -341,12 +341,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/plugin-admin/react",
-        "solid": "@iris-ui/plugin-admin/solid",
-        "svelte": "@iris-ui/plugin-admin/svelte",
-        "vue": "@iris-ui/plugin-admin/vue"
+        "react": "@iris-ui-kit/plugin-admin/react",
+        "solid": "@iris-ui-kit/plugin-admin/solid",
+        "svelte": "@iris-ui-kit/plugin-admin/svelte",
+        "vue": "@iris-ui-kit/plugin-admin/vue"
       },
-      "plugin": "@iris-ui/plugin-admin",
+      "plugin": "@iris-ui-kit/plugin-admin",
       "description": "Schema-driven CMS for React. Renders `IrisAdminLayout` from a declarative {@link AdminAppSchema} (nav + pages); data pages are backed by the unified data engine (`createDataSource` via `useDataSource`), custom pages are rendered by the host via `renderPage`. The whole app is `<IrisAdminApp schema={...} />`.",
       "props": [
         {
@@ -379,10 +379,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Breadcrumb trail for the admin header, driven by a `NavNode[]` ancestor chain. The last crumb is the current page (auto-marked `aria-current` by IrisBreadcrumb); earlier crumbs are clickable and call `onSelect(key, node)`. React port of the Vue `IrisAdminBreadcrumb`.",
       "props": [
@@ -436,10 +436,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "The CMS / admin shell — a Vben-style, router-agnostic, data-driven layout that composes IrisSidebarLayout + IrisHeaderLayout with the admin nav pieces. One `menus` tree drives the collapsible sidebar nav, the header breadcrumb, and (when a `tabs` store is passed) the multi-tab bar; `activeKey` is the current page. The host owns routing: react to `onSelect` / `onActiveKeyChange` and render the page via the children render-prop (wrap it in keep-alive keyed by `tabs.cacheKey` for Vben-style tab caching).",
       "props": [
@@ -575,10 +575,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Vben-style multi-tab bar over a shared {@link TabsNav} store. Each open page is a closable chip; clicking activates (`onChange`), the × closes, and a trailing actions dropdown runs Refresh / Close / Close-others / Close-all on the active tab. The store owns the tab list + active key; the host watches it to sync routing + keep-alive.",
       "props": [
@@ -625,10 +625,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Affix: pins its content to the viewport once the user scrolls past it. Top mode (`offsetTop`) or bottom mode (`offsetBottom`); the placeholder reserves the content's height so the page doesn't jump when it detaches. `onChange` fires only when the affixed state flips.",
       "props": [
@@ -693,12 +693,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
-      "description": "React port of {@link import('@iris-ui/vue').IrisAlert}.",
+      "description": "React port of {@link import('@iris-ui-kit/vue').IrisAlert}.",
       "example": "  <IrisAlert tone=\"warning\" title=\"Heads up\" closable onClose={dismiss}>\n    Your session expires soon.\n  </IrisAlert>",
       "props": [
         {
@@ -769,10 +769,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Anchor: in-page navigation that scroll-spies its `#id` sections — the active link is the last section whose top has passed `offset`. Clicking a link smooth-scrolls to its section (honoring reduced motion).",
       "props": [
@@ -834,10 +834,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Aspect-ratio box: constrains its content to a fixed width/height ratio (via the CSS `aspect-ratio` property), with an absolutely-filled content layer — handy for images, video, and iframe embeds.",
       "props": [
@@ -882,12 +882,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
-      "description": "React port of {@link import('@iris-ui/vue').IrisAvatar}.",
+      "description": "React port of {@link import('@iris-ui-kit/vue').IrisAvatar}.",
       "example": "  <IrisAvatar src=\"/me.png\" name=\"Ada Lovelace\" size=\"md\" />",
       "props": [
         {
@@ -958,10 +958,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Back-to-top button: appears once the scroll target passes `visibilityHeight` and scrolls it back to the top on click (honoring reduced motion). Defaults to the window; pass `target` for a scrollable container.",
       "props": [
@@ -1033,12 +1033,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
-      "description": "React port of {@link import('@iris-ui/vue').IrisBadge}. Same visual model.",
+      "description": "React port of {@link import('@iris-ui-kit/vue').IrisBadge}. Same visual model.",
       "example": "  <IrisBadge tone=\"success\" variant=\"subtle\">Active</IrisBadge>",
       "props": [
         {
@@ -1100,10 +1100,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Edge-to-edge announcement bar — typically pinned to the top of the layout. Distinct from `IrisAlert`: 1. Edge-to-edge (full width) instead of a contained card 2. Optional `sticky` positioning 3. Tighter vertical padding",
       "props": [
@@ -1190,12 +1190,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/plugin-charts/react",
-        "solid": "@iris-ui/plugin-charts/solid",
-        "svelte": "@iris-ui/plugin-charts/svelte",
-        "vue": "@iris-ui/plugin-charts/vue"
+        "react": "@iris-ui-kit/plugin-charts/react",
+        "solid": "@iris-ui-kit/plugin-charts/solid",
+        "svelte": "@iris-ui-kit/plugin-charts/svelte",
+        "vue": "@iris-ui-kit/plugin-charts/vue"
       },
-      "plugin": "@iris-ui/plugin-charts",
+      "plugin": "@iris-ui-kit/plugin-charts",
       "description": "Vertical bar chart rendered as themed SVG over the core geometry.",
       "props": [
         {
@@ -1261,10 +1261,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Container for breadcrumb navigation. Renders a `<nav>` with an `<ol>` per WAI-ARIA. Inserts `separator` between items and tags the last child with `isCurrent` so it renders as plain text + `aria-current=\"page\"`.",
       "props": [
@@ -1304,10 +1304,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "A single breadcrumb crumb. Renders an `<a>` when `href` is given and the crumb is not the last one; otherwise a `<span>`. The `isCurrent` flag is set automatically by the parent `IrisBreadcrumb` based on position.",
       "props": [
@@ -1348,10 +1348,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Primary action button. Supports four variants (`solid`, `outline`, `ghost`, `link`) and three sizes (`sm`, `md`, `lg`). Each variant is styled via CSS custom properties (`var(--iris-primary)`, `var(--iris-border)` etc.) so the button automatically adapts to the active theme/skin.",
       "example": "  <IrisButton variant=\"solid\" onClick={() => save()}>Save</IrisButton>",
@@ -1457,10 +1457,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Month-view calendar. Single-date selection only. Keyboard: - Arrow keys move focus - Home / End jump to start/end of week - PageUp / PageDown move by month - Enter / Space select",
       "props": [
@@ -1543,12 +1543,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
-      "description": "React port of {@link import('@iris-ui/vue').IrisCard}.",
+      "description": "React port of {@link import('@iris-ui-kit/vue').IrisCard}.",
       "example": "  <IrisCard variant=\"elevated\" header={<h3>Title</h3>}>\n    Card body content.\n  </IrisCard>",
       "props": [
         {
@@ -1617,10 +1617,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Slide carousel: shows one child slide at a time with prev/next controls, indicator dots, and keyboard (←/→) navigation. Controlled or uncontrolled. a11y: region with `aria-roledescription=\"carousel\"`, per-slide labelling, and a polite live region announcing the active slide.",
       "props": [
@@ -1726,10 +1726,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Cascader: a hierarchical select that drills down through columns — choosing a branch reveals its children in the next column; choosing a leaf commits the full path. Controlled or uncontrolled; closes on leaf-select, Escape, or outside click.",
       "props": [
@@ -1829,10 +1829,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Tri-state checkbox supporting `true`, `false`, and `'indeterminate'`, in both controlled (`checked`) and uncontrolled (`defaultChecked`) modes.",
       "example": "  <IrisCheckbox checked={agreed} onChange={(next) => setAgreed(next)}>\n    I agree to the terms\n  </IrisCheckbox>",
@@ -1905,12 +1905,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
-      "description": "React port of {@link import('@iris-ui/vue').IrisChip}.",
+      "description": "React port of {@link import('@iris-ui-kit/vue').IrisChip}.",
       "props": [
         {
           "name": "variant",
@@ -2008,10 +2008,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Behavior wrapper: fires `onOutside` when a pointerdown happens outside the wrapped child tree. Renders a thin `<span style=\"display:contents\">` to capture the child's bounding box without disrupting layout.",
       "example": "  <IrisClickOutside onOutside={() => setOpen(false)}>\n    <IrisPopoverContent>…</IrisPopoverContent>\n  </IrisClickOutside>",
@@ -2061,12 +2061,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/plugin-editor/react",
-        "solid": "@iris-ui/plugin-editor/solid",
-        "svelte": "@iris-ui/plugin-editor/svelte",
-        "vue": "@iris-ui/plugin-editor/vue"
+        "react": "@iris-ui-kit/plugin-editor/react",
+        "solid": "@iris-ui-kit/plugin-editor/solid",
+        "svelte": "@iris-ui-kit/plugin-editor/svelte",
+        "vue": "@iris-ui-kit/plugin-editor/vue"
       },
-      "plugin": "@iris-ui/plugin-editor",
+      "plugin": "@iris-ui-kit/plugin-editor",
       "description": "CodeMirror 6 code editor for React. Mounts the framework-agnostic {@link createEditor} handle and reconciles `value` / `language` / `readOnly`.",
       "props": [
         {
@@ -2143,10 +2143,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Color picker: SV pad + hue strip (+ optional alpha) with HEX + R/G/B(/A) inputs. Binds a HEX string (`#rgb` / `#rrggbb` / `#rrggbbaa`) via `value` / `onChange`.",
       "props": [
@@ -2199,10 +2199,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Filterable single-select (searchable select): a text input that type-ahead filters a listbox of options. The displayed text is derived (`filtering ? query : selected label`) so controlled value changes stay in sync without an effect. Opens downward; follows the ARIA 1.2 combobox pattern.",
       "props": [
@@ -2304,10 +2304,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Command palette: searchable, keyboard-driven action launcher. Built on the modal-utils suite (scroll lock + focus trap). Pattern: open via shortcut (consumer wires the listener), type to filter, ↑/↓ to navigate, Enter to execute the focused item, Escape to dismiss.",
       "props": [
@@ -2369,10 +2369,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Centered max-width wrapper. Use to bound content width on large screens without rewriting flex/grid plumbing.",
       "props": [
@@ -2411,10 +2411,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Copy-to-clipboard button: writes `text` to the clipboard and flips to a \"Copied\" state for `timeout` ms. The clipboard write is best-effort (guarded for unsupported environments) and the copied state still reflects intent.",
       "props": [
@@ -2499,10 +2499,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Live countdown to a target timestamp. Ticks every second (or every 100ms when the format shows milliseconds), formats the remaining time via tokens, and fires `onFinish` once at zero.",
       "props": [
@@ -2585,12 +2585,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/plugin-dashboard/react",
-        "solid": "@iris-ui/plugin-dashboard/solid",
-        "svelte": "@iris-ui/plugin-dashboard/svelte",
-        "vue": "@iris-ui/plugin-dashboard/vue"
+        "react": "@iris-ui-kit/plugin-dashboard/react",
+        "solid": "@iris-ui-kit/plugin-dashboard/solid",
+        "svelte": "@iris-ui-kit/plugin-dashboard/svelte",
+        "vue": "@iris-ui-kit/plugin-dashboard/vue"
       },
-      "plugin": "@iris-ui/plugin-dashboard",
+      "plugin": "@iris-ui-kit/plugin-dashboard",
       "description": "Render a CSS Grid dashboard from a declarative config (React). Each widget is positioned using `grid-column` and `grid-row`.",
       "props": [
         {
@@ -2624,10 +2624,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "A single dashboard grid cell. `colSpan='full'` makes it fill the row.",
       "props": [
@@ -2666,10 +2666,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "12-column responsive grid for dashboard composition. Each child controls its span via `gridColumn` style or by wrapping with `IrisDashboardCard`.",
       "props": [
@@ -2707,10 +2707,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Layer 4 system skeleton: 3-region dashboard shell — sidebar + header + main grid. Built from `IrisSidebarLayout` + `IrisHeaderLayout` + `IrisDashboardGrid`.",
       "props": [
@@ -2819,10 +2819,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Date picker: button-styled trigger + Popover + Calendar. On selection the popover auto-closes. Use `IrisCalendar` directly when you want it inline.",
       "props": [
@@ -2927,10 +2927,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Range date picker. Trigger displays `start → end`; popover contains two month calendars (current + next).",
       "props": [
@@ -3033,10 +3033,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Description list: a semantic `<dl>` rendering label/value pairs in a grid. `columns` controls pairs-per-row, `layout` places the label beside or above the value, and `bordered` draws a boxed style with separators. RTL-safe via logical properties.",
       "props": [
@@ -3097,10 +3097,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Modal dialog root. Wraps a Trigger + Content (+ optional Title / Description / Close) and threads a state machine + DOM refs + IDs through React context. Supports controlled (`open` + `onOpenChange`) and uncontrolled (`defaultOpen`) modes.",
       "example": "  <IrisDialog>\n    <IrisDialogTrigger>Open</IrisDialogTrigger>\n    <IrisDialogContent>\n      <IrisDialogTitle>Confirm</IrisDialogTitle>\n      <IrisDialogClose>Done</IrisDialogClose>\n    </IrisDialogContent>\n  </IrisDialog>",
@@ -3173,10 +3173,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Close button. Renders a `<button type=\"button\">` or, with `asChild`, wraps the provided child.",
       "props": [
@@ -3211,10 +3211,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "The modal surface (and its backdrop). Renders only while the dialog is open. Behaviors enabled automatically:",
       "props": [
@@ -3249,10 +3249,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Sets `aria-describedby` on the dialog content automatically. Renders a `<p>` by default.",
       "props": [
@@ -3279,10 +3279,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Sets `aria-labelledby` on the dialog content automatically. Renders an `<h2>` by default.",
       "props": [
@@ -3309,10 +3309,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "The element the user clicks to open the dialog. Renders a `<button type=\"button\">` by default; pass `asChild` to attach behavior to any single element.",
       "props": [
@@ -3348,12 +3348,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
-      "description": "React port of {@link import('@iris-ui/vue').IrisDivider}.",
+      "description": "React port of {@link import('@iris-ui-kit/vue').IrisDivider}.",
       "props": [
         {
           "name": "orientation",
@@ -3407,10 +3407,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Make a child element positionable by drag. The wrapper is absolutely positioned at its parent's top-left; the position is driven by `value` / `defaultValue` (px). Drag uses pointer capture so the gesture survives the pointer leaving the element.",
       "props": [
@@ -3482,10 +3482,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Slide-in overlay. Mirrors `IrisDialog`'s composition but anchors to a screen edge with a transform-based open animation. Defaults to the right.",
       "example": "  <IrisDrawer>\n    <IrisDrawerTrigger>Open</IrisDrawerTrigger>\n    <IrisDrawerContent>\n      <IrisDrawerTitle>Settings</IrisDrawerTitle>\n      <p>…</p>\n      <IrisDrawerClose>Close</IrisDrawerClose>\n    </IrisDrawerContent>\n  </IrisDrawer>",
@@ -3571,10 +3571,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "A button that closes the drawer when clicked. Supports `asChild` for custom trigger elements. Emits `onClick` then calls `setOpen(false)`.",
       "props": [
@@ -3609,10 +3609,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "The slide-in surface. Mounts when `open` becomes true and unmounts `EXIT_DURATION_MS` after `open` becomes false so the slide-out transition runs before removal. Provides backdrop, body scroll lock, focus trap, and Escape / outside-click dismiss.",
       "props": [
@@ -3646,10 +3646,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "The drawer's header title, rendered as an `<h2>`. Automatically wired to `aria-labelledby` on the content panel for accessible naming.",
       "quality": {
@@ -3668,10 +3668,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "The trigger that opens the drawer when clicked. Renders as a `<button>` (or as custom children when `asChild`). Injects `aria-haspopup=\"dialog\"` and `aria-expanded` for screen-reader awareness.",
       "props": [
@@ -3706,10 +3706,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Dropdown menu root. Composes `createFloatingMachine` (state) with `useFloating` (positioning) used in `IrisDropdownMenu`. The dropdown panel's semantics differ from a popover: it uses `role=\"menu\"`, supports arrow-key navigation, and items auto-close the menu on select.",
       "example": "  <IrisDropdown placement=\"bottom-end\">\n    <IrisDropdownTrigger>Actions</IrisDropdownTrigger>\n    <IrisDropdownMenu>\n      <IrisDropdownItem onSelect={onCopy}>Copy</IrisDropdownItem>\n      <IrisDropdownItem onSelect={onDelete}>Delete</IrisDropdownItem>\n    </IrisDropdownMenu>\n  </IrisDropdown>",
@@ -3776,10 +3776,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "A single selectable menu item. Calls `onSelect` and auto-closes the parent dropdown after selection (unless `keepOpen`). Disabled items are skipped by arrow-key navigation in the parent menu.",
       "props": [
@@ -3822,10 +3822,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "The menu surface. Renders `role=\"menu\"` and handles ArrowUp/Down/Home/End navigation across child `IrisDropdownItem`s. Closes on Escape, outside pointerdown, and Tab.",
       "props": [
@@ -3859,10 +3859,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "A visual separator (horizontal rule) within a dropdown menu. Renders a `role=\"separator\"` `<div>` styled with the theme's border colour.",
       "quality": {
@@ -3881,10 +3881,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "The trigger element that toggles the dropdown open/closed on click or ArrowDown/Enter/Space. Renders as a `<button>` (or custom element via `asChild`) with `aria-haspopup=\"menu\"` and `aria-expanded`.",
       "props": [
@@ -3919,12 +3919,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
-      "description": "React port of {@link import('@iris-ui/vue').IrisEmptyState}.",
+      "description": "React port of {@link import('@iris-ui-kit/vue').IrisEmptyState}.",
       "props": [
         {
           "name": "title",
@@ -3974,10 +3974,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Catches errors thrown while rendering its subtree and switches to a fallback UI instead of crashing the whole React tree. Exposes `reset()` (passed to the fallback) that clears the error and re-attempts rendering the children.",
       "props": [
@@ -4022,12 +4022,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/plugin-calendar/react",
-        "solid": "@iris-ui/plugin-calendar/solid",
-        "svelte": "@iris-ui/plugin-calendar/svelte",
-        "vue": "@iris-ui/plugin-calendar/vue"
+        "react": "@iris-ui-kit/plugin-calendar/react",
+        "solid": "@iris-ui-kit/plugin-calendar/solid",
+        "svelte": "@iris-ui-kit/plugin-calendar/svelte",
+        "vue": "@iris-ui-kit/plugin-calendar/vue"
       },
-      "plugin": "@iris-ui/plugin-calendar",
+      "plugin": "@iris-ui-kit/plugin-calendar",
       "description": "Render a month-view events calendar from a declarative config (React). Displays a 7-column grid (Sun–Sat) with event chips per day cell. Clicking a day fires `config.onDateClick`; clicking an event chip fires `config.onEventClick`. Themed via CSS vars.",
       "props": [
         {
@@ -4062,10 +4062,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Fieldset: a semantic `<fieldset>` / `<legend>` form grouping. `disabled` uses the native fieldset behavior that cascades to every nested form control — accessible by construction.",
       "props": [
@@ -4123,10 +4123,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "File-upload dropzone. Wraps a hidden `<input type=\"file\">` with a click-to-browse + drag-and-drop surface. Validates via `accept`, `maxSize`, `maxFiles`; rejected files surface via `onReject`.",
       "props": [
@@ -4238,10 +4238,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Floating action button: a fixed-position FAB. With `actions` it becomes a speed-dial — click toggles a `role=\"menu\"` stack of actions (dismissed by selection, Escape, or outside click). Otherwise click runs `onClick`.",
       "props": [
@@ -4320,10 +4320,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Provides the form store to descendant `useField` calls and wires the native `<form>` submit to `handleSubmit` (with `preventDefault`).",
       "example": "  const f = useForm({ initialValues: { email: '' }, onSubmit })\n  <IrisForm form={f.form}>\n    <IrisFormField label=\"Email\"><EmailField /></IrisFormField>\n    <IrisButton type=\"submit\" disabled={f.isSubmitting}>Save</IrisButton>\n  </IrisForm>",
@@ -4361,12 +4361,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/plugin-form-builder/react",
-        "solid": "@iris-ui/plugin-form-builder/solid",
-        "svelte": "@iris-ui/plugin-form-builder/svelte",
-        "vue": "@iris-ui/plugin-form-builder/vue"
+        "react": "@iris-ui-kit/plugin-form-builder/react",
+        "solid": "@iris-ui-kit/plugin-form-builder/solid",
+        "svelte": "@iris-ui-kit/plugin-form-builder/svelte",
+        "vue": "@iris-ui-kit/plugin-form-builder/vue"
       },
-      "plugin": "@iris-ui/plugin-form-builder",
+      "plugin": "@iris-ui-kit/plugin-form-builder",
       "description": "Render a validated form from a declarative schema (React). Each field becomes an accessible native control wired to the core form engine; required fields validate inline; submit runs the schema's `onSubmit`. Themed via CSS vars.",
       "props": [
         {
@@ -4401,10 +4401,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Form-field wrapper that handles the label / hint / error trio with the right a11y plumbing. Non-invasive wrapper around any Iris input primitive (`IrisInput`, `IrisTextarea`, `IrisNumberInput`, `IrisSwitch`, `IrisCheckbox`, `IrisPasswordInput`, …): locates the first valid React element in `children` and clones it with the generated `id`, `aria-describedby`, and `invalid`.",
       "props": [
@@ -4471,10 +4471,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Semicircular arc gauge built from a structured SVG — a 180° track arc plus a value arc whose `stroke-dashoffset` encodes `(value − min) / (max − min)`. Distinct from the full-ring `IrisProgressCircle`.",
       "props": [
@@ -4566,10 +4566,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Two-dimensional grid layout primitive. Three column modes: - Fixed integer (`columns={3}`) - Responsive auto-fit (`columns=\"auto-fit\"` + `minColWidth`) - Raw CSS (`columns=\"100px 1fr 100px\"`)",
       "props": [
@@ -4625,10 +4625,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Two- (or three-) region vertical layout: a sticky header on top, a scrollable main region, and an optional footer.",
       "props": [
@@ -4689,10 +4689,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Behavior wrapper: binds a global keyboard shortcut while children are mounted. Renderless — returns children verbatim (no extra DOM).",
       "example": "  <IrisHotkey shortcut=\"Escape\" onTrigger={close}>\n    <IrisDialog>…</IrisDialog>\n  </IrisHotkey>\n\n  <IrisHotkey shortcut={['Mod+s', 'Mod+Shift+s']} onTrigger={save}>\n    <IrisForm>…</IrisForm>\n  </IrisHotkey>",
@@ -4760,10 +4760,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Makes a locale + message dictionary available to descendant components via `useI18n`. Either pass `locale` / `messages` (an instance is created and kept in sync) or a pre-built `i18n` instance you control externally.",
       "props": [
@@ -4822,12 +4822,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
-      "description": "Renders a registered icon as inline SVG. Resolves `name` through an `@iris-ui/icons` registry and renders the icon's structured nodes as real SVG child elements (no raw-HTML injection). Colors follow `currentColor`, so the surrounding CSS `color` themes it. Renders nothing for an unresolved name.",
+      "description": "Renders a registered icon as inline SVG. Resolves `name` through an `@iris-ui-kit/icons` registry and renders the icon's structured nodes as real SVG child elements (no raw-HTML injection). Colors follow `currentColor`, so the surrounding CSS `color` themes it. Renders nothing for an unresolved name.",
       "props": [
         {
           "name": "name",
@@ -4885,10 +4885,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Image with a graceful error `fallback` and an optional click-to-zoom preview overlay (a `role=\"dialog\"` lightbox dismissed by backdrop, close button, or Escape). Lazy-loaded by default.",
       "props": [
@@ -4953,10 +4953,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Single-line text input with size variants, an `invalid` state, and optional `prefix`/`suffix` adornments. Forwards its ref to the native `<input>`.",
       "example": "  <IrisInput value={name} onChange={(e) => setName(e.target.value)} placeholder=\"Name\" />",
@@ -5029,12 +5029,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/plugin-kanban/react",
-        "solid": "@iris-ui/plugin-kanban/solid",
-        "svelte": "@iris-ui/plugin-kanban/svelte",
-        "vue": "@iris-ui/plugin-kanban/vue"
+        "react": "@iris-ui-kit/plugin-kanban/react",
+        "solid": "@iris-ui-kit/plugin-kanban/solid",
+        "svelte": "@iris-ui-kit/plugin-kanban/svelte",
+        "vue": "@iris-ui-kit/plugin-kanban/vue"
       },
-      "plugin": "@iris-ui/plugin-kanban",
+      "plugin": "@iris-ui-kit/plugin-kanban",
       "description": "Render a Kanban board from a declarative config (React). Columns are laid out horizontally; each card can be moved to any column. WIP-limit columns refuse drops when full. Themed via CSS vars.",
       "props": [
         {
@@ -5069,12 +5069,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
-      "description": "React port of {@link import('@iris-ui/vue').IrisKbd}.",
+      "description": "React port of {@link import('@iris-ui-kit/vue').IrisKbd}.",
       "props": [
         {
           "name": "keys",
@@ -5121,12 +5121,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/plugin-charts/react",
-        "solid": "@iris-ui/plugin-charts/solid",
-        "svelte": "@iris-ui/plugin-charts/svelte",
-        "vue": "@iris-ui/plugin-charts/vue"
+        "react": "@iris-ui-kit/plugin-charts/react",
+        "solid": "@iris-ui-kit/plugin-charts/solid",
+        "svelte": "@iris-ui-kit/plugin-charts/svelte",
+        "vue": "@iris-ui-kit/plugin-charts/vue"
       },
-      "plugin": "@iris-ui/plugin-charts",
+      "plugin": "@iris-ui-kit/plugin-charts",
       "description": "Line (or area) chart rendered as plain themed SVG over the core geometry.",
       "props": [
         {
@@ -5195,10 +5195,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Generic selectable list — foundation for `IrisSelect` content, dropdowns, command palettes, etc. Implements the WAI-ARIA Listbox pattern:",
       "props": [
@@ -5329,10 +5329,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Layer 4 system skeleton: centered login page composed from Iris primitives.",
       "props": [
@@ -5429,10 +5429,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "props": [
         {
@@ -5481,12 +5481,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/plugin-markdown/react",
-        "solid": "@iris-ui/plugin-markdown/solid",
-        "svelte": "@iris-ui/plugin-markdown/svelte",
-        "vue": "@iris-ui/plugin-markdown/vue"
+        "react": "@iris-ui-kit/plugin-markdown/react",
+        "solid": "@iris-ui-kit/plugin-markdown/solid",
+        "svelte": "@iris-ui-kit/plugin-markdown/svelte",
+        "vue": "@iris-ui-kit/plugin-markdown/vue"
       },
-      "plugin": "@iris-ui/plugin-markdown",
+      "plugin": "@iris-ui-kit/plugin-markdown",
       "description": "Render Markdown as themed HTML (React).",
       "props": [
         {
@@ -5517,10 +5517,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Marquee: an accessible auto-scrolling ticker. The content is rendered twice (the second copy `aria-hidden`) for a seamless loop and animated with the Web Animations API (no `@keyframes` injection). Pauses on hover and is disabled under `prefers-reduced-motion`.",
       "props": [
@@ -5589,10 +5589,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Masonry layout: flows children into balanced columns via CSS multi-column, with each item kept from breaking across columns — for card grids and galleries of varying heights.",
       "props": [
@@ -5645,10 +5645,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Mentions: a textarea that opens an autocomplete listbox when the user types the trigger character (default `@`). Selecting a suggestion replaces the `@query` token with the chosen label. Keyboard: ↑/↓ to move, Enter to pick, Esc to dismiss.",
       "props": [
@@ -5744,10 +5744,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Root of a (potentially nested) menu. Provides the \"close everything\" channel so picking a leaf in a deeply nested branch closes the whole tree.",
       "props": [
@@ -5814,10 +5814,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Menu surface (`role=\"menu\"`). Handles ArrowUp/Down/Home/End nav across all `[role=\"menuitem\"]` descendants (including those inside submenu triggers). Closes on outside click, Escape, and Tab.",
       "props": [
@@ -5851,10 +5851,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "An individual selectable item in a menu. Renders as a `role=\"menuitem\"` `<div>`. Calls `onSelect`, then closes the root menu (unless `keepOpen`). Disabled items are skipped by keyboard navigation.",
       "props": [
@@ -5897,10 +5897,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "A visual separator within a menu — renders a `role=\"separator\"` `<div>`.",
       "quality": {
@@ -5919,10 +5919,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Nested submenu. Renders its own trigger (a `[role=\"menuitem\"]` inside the parent menu) and floating content panel. Opens on hover (with a short delay) and on ArrowRight / Enter; closes on ArrowLeft.",
       "props": [
@@ -5962,10 +5962,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "The trigger that toggles the menu open/closed. Renders as a `<button>` (or custom via `asChild`) with `aria-haspopup=\"menu\"`. Opens on click, ArrowDown, Enter, or Space.",
       "props": [
@@ -5999,10 +5999,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Behavior wrapper: makes its child draggable. Position is `transform`-based (no layout thrash). The whole wrapper drags by default; pass `byHandle` and put `data-iris-movable-handle=\"\"` on a descendant (e.g. a title bar) to restrict the drag origin.",
       "example": "  <div style={{ position: 'relative', height: 500 }}>\n    <IrisMovable defaultPosition={{ x: 20, y: 20 }} byHandle>\n      <div>\n        <div data-iris-movable-handle>Drag me by this title bar</div>\n        <IrisList items={items} />\n      </div>\n    </IrisMovable>\n  </div>",
@@ -6079,10 +6079,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Data-driven nested navigation menu — the sidebar nav of the admin shell. Renders a normalized `NavNode[]` tree as an accordion of expandable branches and selectable leaves; the active leaf and its ancestor branches are highlighted, and the active branch trail auto-expands. Router-agnostic: takes `activeKey`, calls `onSelect(key, node)`; the host owns navigation.",
       "props": [
@@ -6152,12 +6152,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/plugin-notifications/react",
-        "solid": "@iris-ui/plugin-notifications/solid",
-        "svelte": "@iris-ui/plugin-notifications/svelte",
-        "vue": "@iris-ui/plugin-notifications/vue"
+        "react": "@iris-ui-kit/plugin-notifications/react",
+        "solid": "@iris-ui-kit/plugin-notifications/solid",
+        "svelte": "@iris-ui-kit/plugin-notifications/svelte",
+        "vue": "@iris-ui-kit/plugin-notifications/vue"
       },
-      "plugin": "@iris-ui/plugin-notifications",
+      "plugin": "@iris-ui-kit/plugin-notifications",
       "description": "Notification-center panel for React: a header (title + unread badge + mark-all / clear) over a list of notifications (click to mark read, × to dismiss). All state lives in the {@link NotificationCenter}; the host wraps this in a popover / drawer behind a bell icon.",
       "props": [
         {
@@ -6215,12 +6215,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
-      "description": "React port of {@link import('@iris-ui/vue').IrisNumberInput}.",
+      "description": "React port of {@link import('@iris-ui-kit/vue').IrisNumberInput}.",
       "props": [
         {
           "name": "value",
@@ -6301,10 +6301,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "One-time-code / PIN entry: a row of single-character cells with smart focus movement, paste-to-fill, and keyboard editing. The value is kept contiguous (no interior gaps), masked optionally, and surfaced via `onValueChange`; `onComplete` fires when every cell is filled. Drop it inside `IrisFormField` — the injected `id` lands on the first cell so the label focuses it.",
       "props": [
@@ -6436,10 +6436,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Numeric page selector with prev/next + optional first/last buttons and two-sided ellipsis. Stateless visual; the caller owns `value`.",
       "example": "  <IrisPagination total={240} pageSize={20} value={page} onValueChange={setPage} />",
@@ -6522,12 +6522,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
-      "description": "React port of {@link import('@iris-ui/vue').IrisPasswordInput}.",
+      "description": "React port of {@link import('@iris-ui-kit/vue').IrisPasswordInput}.",
       "props": [
         {
           "name": "showToggle",
@@ -6569,10 +6569,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Root provider for a Popover surface. Wraps the trigger and the content, threads a state machine + DOM refs + positioning options through context. Supports controlled (`open` + `onOpenChange`) and uncontrolled (`defaultOpen`) modes.",
       "example": "  <IrisPopover defaultOpen={false} placement=\"bottom-start\">\n    <IrisPopoverTrigger>Click me</IrisPopoverTrigger>\n    <IrisPopoverContent>Hello</IrisPopoverContent>\n  </IrisPopover>",
@@ -6642,10 +6642,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "The floating panel rendered when the Popover is open. Position is computed by `useFloating` (Floating UI); dismissal is handled by document-level pointerdown + Escape listeners. Focus moves into the content on open and back to the trigger on close.",
       "props": [
@@ -6694,10 +6694,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "The element the user interacts with to toggle the Popover. Renders a `<button type=\"button\">` by default; pass `asChild` to attach behavior to any single element (e.g. `<IrisButton>` or `<a>`).",
       "props": [
@@ -6733,10 +6733,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "A horizontal progress bar. Supports determinate mode (controlled `value`) and indeterminate (indefinite animation) for ongoing operations. Customisable via `tone` and `size` props; renders `role=\"progressbar\"`.",
       "props": [
@@ -6796,10 +6796,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Circular (ring) progress indicator built from a structured SVG — a track circle plus a value circle whose `stroke-dashoffset` encodes the ratio. An optional centered percent label sits on top. Distinct from the linear `IrisProgress`.",
       "props": [
@@ -6885,12 +6885,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/plugin-pro-table/react",
-        "solid": "@iris-ui/plugin-pro-table/solid",
-        "svelte": "@iris-ui/plugin-pro-table/svelte",
-        "vue": "@iris-ui/plugin-pro-table/vue"
+        "react": "@iris-ui-kit/plugin-pro-table/react",
+        "solid": "@iris-ui-kit/plugin-pro-table/solid",
+        "svelte": "@iris-ui-kit/plugin-pro-table/svelte",
+        "vue": "@iris-ui-kit/plugin-pro-table/vue"
       },
-      "plugin": "@iris-ui/plugin-pro-table",
+      "plugin": "@iris-ui-kit/plugin-pro-table",
       "description": "vxe-table-style CRUD data table for React. All logic lives in the framework-agnostic {@link ProTableStore}; this component subscribes to it and renders header (sortable), selection, inline editors, rows, and a pager.",
       "props": [
         {
@@ -6960,10 +6960,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "The single unified entry point. Runs the plugins, applies their additive token layer over the active theme, merges their messages under the user's, and exposes their stores via `PluginStoreContext`. The existing Theme / Skin / I18n providers are composed in around it.",
       "props": [
@@ -7034,12 +7034,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/plugin-query-builder/react",
-        "solid": "@iris-ui/plugin-query-builder/solid",
-        "svelte": "@iris-ui/plugin-query-builder/svelte",
-        "vue": "@iris-ui/plugin-query-builder/vue"
+        "react": "@iris-ui-kit/plugin-query-builder/react",
+        "solid": "@iris-ui-kit/plugin-query-builder/solid",
+        "svelte": "@iris-ui-kit/plugin-query-builder/svelte",
+        "vue": "@iris-ui-kit/plugin-query-builder/vue"
       },
-      "plugin": "@iris-ui/plugin-query-builder",
+      "plugin": "@iris-ui-kit/plugin-query-builder",
       "description": "Visual query builder for React: stacked rule rows (column → operator → value) over a {@link FilterBuilder}, emitting compiled `FilterRule[]` via `onChange` (wire it to `dataSource.setFilterRules`). All logic lives in the builder.",
       "props": [
         {
@@ -7085,10 +7085,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Single radio button. Must be used inside an `IrisRadioGroup`.",
       "props": [
@@ -7133,12 +7133,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
-      "description": "React port of {@link import('@iris-ui/vue').IrisRadioGroup}.",
+      "description": "React port of {@link import('@iris-ui-kit/vue').IrisRadioGroup}.",
       "example": "  <IrisRadioGroup value={plan} onChange={setPlan}>\n    <IrisRadio value=\"free\">Free</IrisRadio>\n    <IrisRadio value=\"pro\">Pro</IrisRadio>\n  </IrisRadioGroup>",
       "props": [
         {
@@ -7206,10 +7206,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Two-handle numeric range slider. Value is `[start, end]` with `start <= end`; the two handles never cross.",
       "props": [
@@ -7282,10 +7282,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Star rating with optional half-star precision, hover preview, keyboard support, and a `readonly` display mode. Uses the `slider` ARIA pattern (`aria-valuemin/now/max` + arrow keys) so it reads correctly to assistive tech; stars are decorative. RTL-safe via logical fill clipping.",
       "props": [
@@ -7405,10 +7405,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Behavior wrapper: makes its child resizable via 8-direction handles. The wrapper itself is `display: inline-block; position: relative` so the child can be ANY element (no need for the child to know it's wrapped). Handles are absolutely positioned over the wrapper's edges.",
       "example": "  <IrisResizable defaultSize={{ width: 400, height: 300 }}>\n    <IrisList items={items} />\n  </IrisResizable>",
@@ -7508,10 +7508,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "8-direction resizer wrapping a single child element. The child is rendered inside a relatively positioned wrapper; handles overlay each side and corner. Drag updates `value` ({ width, height } in px) clamped by min/max.",
       "props": [
@@ -7597,10 +7597,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Result: a centered outcome page for an operation — a status icon, title, subtitle, action area, and optional content. Use for success / error / 404 / 403 / 500 screens. Pure presentation; the status glyph is decorative.",
       "props": [
@@ -7678,10 +7678,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Ribbon: a corner badge (\"New\", \"Sale\", …) anchored to the top corner of its content. RTL-safe via logical insets/radii.",
       "props": [
@@ -7743,10 +7743,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Scroll area: a keyboard-focusable scroll container that constrains its content via `maxHeight` / `maxWidth` and scrolls on the chosen `axis`. A lightweight alternative to ad-hoc overflow styling.",
       "props": [
@@ -7806,10 +7806,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Segmented control: a connected row of single-select segments with the active one visually raised. Radiogroup semantics with roving tabindex and Arrow / Home / End keyboard navigation — single-sourced in `createKeyboardNav`.",
       "props": [
@@ -7892,10 +7892,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Single-select dropdown. Composes Popover (positioning + dismiss) with an inline listbox (keyboard nav + selection). Arrow-key, typeahead, Home/End, and Enter/Space navigation are single-sourced in `createKeyboardNav` (core).",
       "example": "  <IrisSelect\n    items={[{ value: 'a', label: 'Apple' }, { value: 'b', label: 'Banana' }]}\n    value={fruit}\n    onValueChange={setFruit}\n    placeholder=\"Pick a fruit\"\n  />",
@@ -8004,10 +8004,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Two-column layout with a collapsible sidebar. The sidebar is kept mounted across collapses (only its width animates) so component state survives.",
       "props": [
@@ -8086,10 +8086,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "A placeholder shape that pulses to indicate content is loading. Supports `rect`, `circle`, and `text` shapes with configurable dimensions. Its shimmer animation respects `prefers-reduced-motion`.",
       "props": [
@@ -8137,10 +8137,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Numeric slider with keyboard + pointer support.",
       "props": [
@@ -8220,10 +8220,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "asChild composition primitive: clones the single React element child and merges the Slot's own props into it. `style` shallow-merges, `className` concatenates, event handlers compose (Slot's first, then child's), and any other prop on the child wins over Slot's. Used as a building block for trigger primitives that want to render-as the consumer's chosen element.",
       "props": [
@@ -8251,10 +8251,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "props": [
         {
@@ -8315,12 +8315,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/plugin-charts/react",
-        "solid": "@iris-ui/plugin-charts/solid",
-        "svelte": "@iris-ui/plugin-charts/svelte",
-        "vue": "@iris-ui/plugin-charts/vue"
+        "react": "@iris-ui-kit/plugin-charts/react",
+        "solid": "@iris-ui-kit/plugin-charts/solid",
+        "svelte": "@iris-ui-kit/plugin-charts/svelte",
+        "vue": "@iris-ui-kit/plugin-charts/vue"
       },
-      "plugin": "@iris-ui/plugin-charts",
+      "plugin": "@iris-ui-kit/plugin-charts",
       "description": "Compact, axis-less inline trend line (for tables / stat cards).",
       "props": [
         {
@@ -8373,12 +8373,12 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
-      "description": "React port of {@link import('@iris-ui/vue').IrisSpinner}.",
+      "description": "React port of {@link import('@iris-ui-kit/vue').IrisSpinner}.",
       "props": [
         {
           "name": "size",
@@ -8420,10 +8420,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Split button: a primary action joined to a caret that opens a `role=\"menu\"` of secondary actions (dismissed by selection, Escape, or outside click).",
       "props": [
@@ -8507,10 +8507,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Two-pane splitter with a draggable divider. The split position is a number in `[0, 1]`. Clamping respects `minStart` / `minEnd` (in px) so panes cannot collapse below a usable size.",
       "props": [
@@ -8596,10 +8596,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Flex container with token-driven spacing. The lightest possible layout primitive — saves hand-writing `display: flex` everywhere.",
       "props": [
@@ -8674,10 +8674,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Compact statistic / KPI display: a label, a prominent value (with optional prefix/suffix), an optional colored trend line, and a description. Pure presentation; the trend glyph is decorative (aria-hidden) — the magnitude text carries the meaning.",
       "props": [
@@ -8771,10 +8771,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Multi-step flow container. Children should be `IrisStepperStep`s; each registers itself with the stepper's context and self-renders its indicator + title.",
       "props": [
@@ -8834,10 +8834,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "A single step in an {@link IrisStepper}. Auto-numbers based on its position in the document order (registers on mount). Click forwards through `goTo` which gates by `linear`.",
       "props": [
@@ -8890,10 +8890,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Toggle switch for an on/off boolean, in controlled (`checked`) or uncontrolled (`defaultChecked`) modes. Rendered with `role=\"switch\"`.",
       "example": "  <IrisSwitch checked={enabled} onChange={(next) => setEnabled(next)} />",
@@ -8955,10 +8955,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Data-driven table. Renders as a CSS-grid layout (no native `<table>`) so it can support future virtual scroll / column resize uniformly. Wires ARIA roles (`table` / `row` / `columnheader` / `cell`) for screen readers.",
       "props": [
@@ -9191,10 +9191,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Tabs root. Provides context for value, orientation, lazy mounting, and the ordered set of registered triggers so arrow-key navigation can move focus deterministically (skipping disabled triggers).",
       "example": "  <IrisTabs defaultValue=\"a\">\n    <IrisTabsList>\n      <IrisTabsTrigger value=\"a\">First</IrisTabsTrigger>\n      <IrisTabsTrigger value=\"b\">Second</IrisTabsTrigger>\n    </IrisTabsList>\n    <IrisTabsContent value=\"a\">Panel A</IrisTabsContent>\n    <IrisTabsContent value=\"b\">Panel B</IrisTabsContent>\n  </IrisTabs>",
@@ -9272,10 +9272,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Panel paired with a `IrisTabsTrigger` by matching `value`. When `lazy` is true on the parent (default), inactive panels are unmounted. Pass `forceMount` to always render (e.g. for SEO or pre-warming).",
       "props": [
@@ -9316,10 +9316,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Container for `IrisTabsTrigger`s. Renders `<div role=\"tablist\">`.",
       "quality": {
@@ -9338,10 +9338,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "A single tab button. Registers with the parent `IrisTabs` so arrow keys can navigate among triggers in registration order. Sets `aria-selected` and `aria-controls`; uses roving tabindex.",
       "props": [
@@ -9381,10 +9381,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Tag / token input: a field where typed text becomes removable chips. Commit a tag with Enter or a comma (pasted comma lists split too); Backspace on an empty input removes the last tag; each chip has a remove button.",
       "props": [
@@ -9473,10 +9473,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Multi-line text input with size variants and an `invalid` state. Optionally grows to fit its content when `autosize` is set, capped at `maxRows`.",
       "example": "  <IrisTextarea value={bio} onChange={(e) => setBio(e.target.value)} autosize maxRows={6} />",
@@ -9532,10 +9532,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Vertical event timeline: an ordered list of items, each with a colored dot, a connector line (omitted on the last item), and time/title/description content (or a custom `renderItem`). Semantic `<ol>` for assistive tech; RTL-safe via logical properties.",
       "props": [
@@ -9580,10 +9580,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Time picker rendered as two zero-padded number inputs (hours + minutes) plus an optional AM/PM toggle for 12h format. Internal value is always 24-hour `{ hours, minutes }`.",
       "props": [
@@ -9673,10 +9673,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Renders the queued toasts. Mount exactly **one** of these per page. The viewport subscribes to the module-level toast store; toasts pushed via `useToast()` from any component appear here.",
       "props": [
@@ -9715,10 +9715,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Segmented control. Two modes: - `type=\"single\"` — radio-like; value is `string | null`. Root gets `role=\"radiogroup\"`, items get `role=\"radio\"` + `aria-checked`. - `type=\"multiple\"` — toggle-like; value is `string[]`. Root gets `role=\"group\"`, items get `aria-pressed`.",
       "subComponents": [
@@ -9740,10 +9740,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "One toggle in an `IrisToggleGroup`. Renders a `<button>` with the correct `role` / `aria-checked` / `aria-pressed` for the group's type.",
       "props": [
@@ -9769,10 +9769,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Toolbar: a `role=\"toolbar\"` grouping of actions with roving-tabindex keyboard navigation — one item is in the tab order, and Arrow keys (per orientation) plus Home/End move focus and the tab stop between the focusable children.",
       "props": [
@@ -9826,10 +9826,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Hover / focus triggered tooltip. Powered by `createHoverIntent` state machine.",
       "example": "  <IrisTooltip content=\"Save changes\">\n    <button>Save</button>\n  </IrisTooltip>",
@@ -9907,10 +9907,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Guided tour: an overlay that walks the user through `steps`, spotlighting an optional target per step and showing a dialog card with prev/next/skip controls. Controlled (`open`) or uncontrolled (`defaultOpen`); the step index is managed internally and resets each time the tour opens.",
       "props": [
@@ -9977,10 +9977,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Dual-list transfer: move items between an \"available\" and a \"selected\" pane via per-item checkboxes and the ›/‹ buttons. Controlled or uncontrolled (`value` = the selected values), with optional per-pane search and a select-all header. Built on native checkboxes for accessibility.",
       "props": [
@@ -10057,10 +10057,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Tree control. Renders a hierarchy of `IrisTreeNode`s with expand/collapse, single/multi selection, and optional lazy-loaded children. WAI-ARIA Tree pattern: root `role=\"tree\"`, each node `role=\"treeitem\"`, roving tabindex.",
       "props": [
@@ -10203,10 +10203,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Hierarchical single-select: a trigger that opens a `role=\"tree\"` dropdown with expand/collapse toggles. Selecting a node sets the value and closes. Controlled or uncontrolled; closes on select, Escape, or outside click.",
       "props": [
@@ -10306,10 +10306,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Virtual scroller. Renders only the visible window of items plus a configurable buffer above and below. Vertical-only. `itemHeight` may be a fixed number, a `(index) => px` function for variable-height rows, or `'auto'` to measure rendered rows.",
       "props": [
@@ -10401,10 +10401,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Visually-hidden content: present in the accessibility tree (read by screen readers) but clipped from view — for labels, live-region announcements, and extra context. Forwards attributes like `aria-live` / `role`.",
       "quality": {
@@ -10423,10 +10423,10 @@
         "vue"
       ],
       "importFrom": {
-        "react": "@iris-ui/react",
-        "solid": "@iris-ui/solid",
-        "svelte": "@iris-ui/svelte",
-        "vue": "@iris-ui/vue"
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
       },
       "description": "Watermark: overlays tiled, rotated text over its content — for confidential or branded surfaces. The overlay is `aria-hidden`, non-selectable, and `pointer-events: none`, so it never interferes with the underlying UI. Built from structured `<span>` nodes (no raw HTML / canvas / SVG-string injection).",
       "props": [

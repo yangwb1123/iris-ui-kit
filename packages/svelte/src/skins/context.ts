@@ -1,6 +1,6 @@
 import type { Snippet } from 'svelte'
 import type { Readable } from 'svelte/store'
-import type { ResolvedSkin, SkinEngine } from '@iris-ui/skins'
+import type { ResolvedSkin, SkinEngine } from '@iris-ui-kit/skins'
 
 /** Context key for the Iris skin engine — a module-singleton Symbol. */
 export const SKIN_KEY = Symbol('iris-ui:skin')

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildManifest, discover, type Framework } from '@iris-ui/manifest'
+import { buildManifest, discover, type Framework } from '@iris-ui-kit/manifest'
 import {
   listComponents,
   searchComponents,
@@ -42,7 +42,7 @@ describe('getComponentApi', () => {
   it('returns the typed contract with props', () => {
     const api = getComponentApi(manifest, 'IrisButton')
     expect(api?.props?.some((p) => p.name === 'variant')).toBe(true)
-    expect(api?.importFrom.react).toBe('@iris-ui/react')
+    expect(api?.importFrom.react).toBe('@iris-ui-kit/react')
   })
   it('returns null for an unknown component', () => {
     expect(getComponentApi(manifest, 'IrisNope')).toBeNull()
@@ -52,17 +52,17 @@ describe('getComponentApi', () => {
 describe('scaffoldSnippet', () => {
   it('emits an import + usage for a supported framework', () => {
     const snippet = scaffoldSnippet(manifest, 'IrisButton', 'react')
-    expect(snippet).toContain("import { IrisButton } from '@iris-ui/react'")
+    expect(snippet).toContain("import { IrisButton } from '@iris-ui-kit/react'")
     expect(snippet).toContain('<IrisButton')
   })
   it('notes plugin activation for plugin components', () => {
     const snippet = scaffoldSnippet(manifest, 'IrisProTable', 'react')
-    expect(snippet).toContain('@iris-ui/plugin-pro-table')
+    expect(snippet).toContain('@iris-ui-kit/plugin-pro-table')
     expect(snippet).toContain('IrisProvider')
   })
   it('uses Vue attribute syntax for vue', () => {
     const snippet = scaffoldSnippet(manifest, 'IrisButton', 'vue')
-    expect(snippet).toContain("from '@iris-ui/vue'")
+    expect(snippet).toContain("from '@iris-ui-kit/vue'")
   })
   it('returns null for an unknown component or unsupported framework', () => {
     expect(scaffoldSnippet(manifest, 'IrisNope', 'react')).toBeNull()
@@ -76,8 +76,8 @@ describe('scaffoldView', () => {
       components: ['IrisButton', 'IrisInput'],
     })
     expect(view).not.toBeNull()
-    // Both come from @iris-ui/react → a single import statement listing both.
-    expect(view).toContain("import { IrisButton, IrisInput } from '@iris-ui/react'")
+    // Both come from @iris-ui-kit/react → a single import statement listing both.
+    expect(view).toContain("import { IrisButton, IrisInput } from '@iris-ui-kit/react'")
     expect(view).toContain('<div className="iris-view">')
     expect(view).toContain('<IrisButton')
     expect(view).toContain('<IrisInput')
@@ -206,7 +206,7 @@ describe('scaffoldSnippet wiring (controlled components)', () => {
 
   it('keeps the import + bare tag shape for a non-controlled component (stable)', () => {
     const code = scaffoldSnippet(manifest, 'IrisButton', 'react')!
-    expect(code).toContain("import { IrisButton } from '@iris-ui/react'")
+    expect(code).toContain("import { IrisButton } from '@iris-ui-kit/react'")
     expect(code).not.toContain('useState')
   })
 
@@ -229,7 +229,9 @@ describe('generateView (wired composed view)', () => {
     expect(view).toContain('<IrisSelect')
     // A real data-wiring stub for the table.
     expect(view).toContain('createProTableStore({ data: rows, columns, rowKey:')
-    expect(view).toContain("import { createProTableStore } from '@iris-ui/plugin-pro-table/core'")
+    expect(view).toContain(
+      "import { createProTableStore } from '@iris-ui-kit/plugin-pro-table/core'",
+    )
     expect(view).toContain('store={store}')
     // The controlled component is wired with real state.
     expect(view).toMatch(/const \[value, setValue\] = React\.useState\(/)

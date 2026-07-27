@@ -8,7 +8,7 @@ const main = (c: HTMLElement) => c.querySelector('[data-iris-split-button-main]'
 const trigger = (c: HTMLElement) => c.querySelector('[data-iris-split-button-trigger]')
 const menu = (c: HTMLElement) => c.querySelector('[data-iris-split-button-menu]')
 
-describe('@iris-ui/react IrisSplitButton', () => {
+describe('@iris-ui-kit/react IrisSplitButton', () => {
   it('renders the primary action; click fires onClick', () => {
     const onClick = vi.fn()
     const { container } = render(<IrisSplitButton onClick={onClick}>Save</IrisSplitButton>)

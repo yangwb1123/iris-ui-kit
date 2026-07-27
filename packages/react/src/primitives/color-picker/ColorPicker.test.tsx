@@ -9,7 +9,7 @@ function q<T extends HTMLElement = HTMLElement>(sel: string): T {
   return document.querySelector(sel) as T
 }
 
-describe('@iris-ui/react colorUtils', () => {
+describe('@iris-ui-kit/react colorUtils', () => {
   it('hexToRgba parses #rgb / #rrggbb / #rrggbbaa', () => {
     expect(hexToRgba('#f00')).toEqual({ r: 255, g: 0, b: 0, a: 1 })
     expect(hexToRgba('#00ff00')).toEqual({ r: 0, g: 255, b: 0, a: 1 })
@@ -45,7 +45,7 @@ describe('@iris-ui/react colorUtils', () => {
   })
 })
 
-describe('@iris-ui/react IrisColorPicker', () => {
+describe('@iris-ui-kit/react IrisColorPicker', () => {
   it('renders pad + hue strip + hex/RGB inputs', () => {
     render(<IrisColorPicker value="#ff0000" />)
     expect(q('[data-iris-color-picker-pad]')).not.toBeNull()

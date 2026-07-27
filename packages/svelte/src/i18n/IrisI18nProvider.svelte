@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  import { createI18n, localeDirection, type I18n, type I18nMessages } from '@iris-ui/core'
-  import { applyDirection } from '@iris-ui/theme'
+  import { createI18n, localeDirection, type I18n, type I18nMessages } from '@iris-ui-kit/core'
+  import { applyDirection } from '@iris-ui-kit/theme'
   import { setI18nContext } from './context'
 
   interface Props {

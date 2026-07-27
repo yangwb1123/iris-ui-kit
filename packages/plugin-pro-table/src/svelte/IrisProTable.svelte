@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createSortable, createVirtualizer, type SortableRect, type TreeRow } from '@iris-ui/core'
+  import { createSortable, createVirtualizer, type SortableRect, type TreeRow } from '@iris-ui-kit/core'
   import {
     applyColumnWindow,
     proTableLabel,

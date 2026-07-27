@@ -2,7 +2,7 @@ import { createStore, type Store } from './store'
 import { generateId } from './utils'
 
 /**
- * `@iris-ui/core/notifications` — a framework-agnostic NOTIFICATION CENTER: the
+ * `@iris-ui-kit/core/notifications` — a framework-agnostic NOTIFICATION CENTER: the
  * state engine behind desktop toasts + a notification history. Apps `post` a
  * notification (the desktop's `notifications` permission gates this); the shell
  * renders the newest ones as transient toasts and the full list in a center, and

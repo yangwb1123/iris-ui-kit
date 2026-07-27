@@ -5,7 +5,7 @@ import IrisImage from './IrisImage.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisImage', () => {
+describe('@iris-ui-kit/svelte IrisImage', () => {
   it('renders an img element with data-iris-image', () => {
     const { container } = render(IrisImage, { props: { src: '/test.jpg', alt: 'Test' } })
     const img = container.querySelector('img[data-iris-image]')

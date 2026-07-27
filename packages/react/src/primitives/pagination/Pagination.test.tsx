@@ -16,7 +16,7 @@ function btn(kind: string): HTMLButtonElement {
   return document.querySelector(`[data-iris-pagination-item="${kind}"]`) as HTMLButtonElement
 }
 
-describe('@iris-ui/react getPageRange', () => {
+describe('@iris-ui-kit/react getPageRange', () => {
   it('returns single page when total=1', () => {
     expect(getPageRange(1, 1)).toEqual([1])
   })
@@ -38,7 +38,7 @@ describe('@iris-ui/react getPageRange', () => {
   })
 })
 
-describe('@iris-ui/react IrisPagination', () => {
+describe('@iris-ui-kit/react IrisPagination', () => {
   it('renders prev/next + page buttons + aria-label="Pagination"', () => {
     const { container } = render(<IrisPagination total={50} value={1} />)
     expect(container.querySelector('nav')?.getAttribute('aria-label')).toBe('Pagination')

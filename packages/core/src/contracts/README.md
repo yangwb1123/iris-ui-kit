@@ -10,7 +10,7 @@ shipped with no keyboard navigation while the other three had it, or that three
 adapters' selected table rows lacked `aria-selected`. Behavior contracts close
 that gap: the same event-script runs against each adapter and the same DOM
 assertions must hold. Because the behavior lives in framework-agnostic
-controllers in `@iris-ui/core`, identical interactions _must_ yield identical
+controllers in `@iris-ui-kit/core`, identical interactions _must_ yield identical
 observable state — a divergence is a bug.
 
 > This harness has already paid for itself: the Pagination and Table-select
@@ -50,7 +50,7 @@ The proven recipe (≈6 files):
    `index.ts`. Keep assertions to attributes every adapter shares; prefer
    reading `aria-*` / roving `tabindex` over framework-specific `data-*`.
 3. **Wire the React reference** in `packages/react/src/contracts.test.tsx` and
-   gate `--filter=@iris-ui/core --filter=@iris-ui/react` green. React is the
+   gate `--filter=@iris-ui-kit/core --filter=@iris-ui-kit/react` green. React is the
    reference implementation; get it passing before fanning out.
 4. **Mirror into vue / solid / svelte** `contracts.test` files (one `it()` block
    each: render the component, `await runContract(scenario, driverFor(...),

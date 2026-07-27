@@ -22,13 +22,13 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 // `hydrate()` onto this SSR markup is not achievable in this harness without
 // changing the production build (it needs the mutually-exclusive client build
 // + DOM compilation in the same module graph) and what this test asserts
-// instead. The `@iris-ui/*` workspace deps are inlined so they are transformed
+// instead. The `@iris-ui-kit/*` workspace deps are inlined so they are transformed
 // by the SSR pipeline rather than leaking a pre-bundled copy.
 export default defineConfig({
   plugins: [svelte()],
   test: {
     environment: 'node',
     include: ['src/hydration.test.ts'],
-    server: { deps: { inline: [/@iris-ui/] } },
+    server: { deps: { inline: [/@iris-ui-kit/] } },
   },
 })

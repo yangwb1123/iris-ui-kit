@@ -6,7 +6,7 @@ import {
   type SelectionModel,
   type KeyboardNavController,
   type KeyboardNavAction,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
@@ -64,7 +64,7 @@ const LIST_STATE_STYLE: React.CSSProperties = {
  *   - Arrow keys / Home / End move focus via `createKeyboardNav` (core)
  *   - Enter / Space (de)select
  *
- * Keyboard logic is single-sourced in `@iris-ui/core` — this adapter only
+ * Keyboard logic is single-sourced in `@iris-ui-kit/core` — this adapter only
  * bridges the returned actions to DOM focus and selection callbacks.
  *
  * Async lifecycle: pass `loading` / `error` (and an empty `items`) to render

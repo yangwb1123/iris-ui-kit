@@ -7,14 +7,14 @@ import {
   useContext,
   type JSX,
 } from 'solid-js'
-import { type Command, type CommandHit, type CommandRegistry } from '@iris-ui/core/commands'
+import { type Command, type CommandHit, type CommandRegistry } from '@iris-ui-kit/core/commands'
 import { OS_ORDER, CHROMES } from './os'
 import { useWm, useWmState } from './wm'
 import { useApps, useLaunchApp } from './profile'
 import { useOs } from './os-state'
 
 /**
- * Solid glue around ONE `@iris-ui/core/commands` registry — the substrate behind
+ * Solid glue around ONE `@iris-ui-kit/core/commands` registry — the substrate behind
  * the ⌘K command palette AND an agent/automation layer. A single registry lives
  * in context; app / window / system actions `register` into it (via
  * {@link registerCommands}), and the palette `search`es + `run`s it

@@ -1,8 +1,11 @@
 import { createContext, createSignal, onCleanup, useContext, type JSX } from 'solid-js'
-import { type ClipboardHistory, type ClipboardHistoryState } from '@iris-ui/core/clipboard-history'
+import {
+  type ClipboardHistory,
+  type ClipboardHistoryState,
+} from '@iris-ui-kit/core/clipboard-history'
 
 /**
- * Solid glue around ONE `@iris-ui/core/clipboard-history` — the framework-agnostic
+ * Solid glue around ONE `@iris-ui-kit/core/clipboard-history` — the framework-agnostic
  * CLIPBOARD MANAGER engine behind the desktop's Win+V / macOS clipboard-manager
  * feel. A single history lives in context (the SAME engine the React desktop
  * drives, here on Solid); apps record copied text into it (the `clipboard`

@@ -1,4 +1,9 @@
-import type { Framework, IrisManifest, ManifestComponent, ManifestProp } from '@iris-ui/manifest'
+import type {
+  Framework,
+  IrisManifest,
+  ManifestComponent,
+  ManifestProp,
+} from '@iris-ui-kit/manifest'
 import { dataStub, dataWiringKind } from './codegen-stubs'
 
 /**
@@ -278,6 +283,50 @@ export interface GenerateViewRequest {
  * Deterministic from `(manifest, request)`. Returns null when `components` is
  * empty or any named component is unknown / unsupported in `framework`.
  */
+/** Wire a single component's wiring into the view. */
+function wireComponent(
+  name: string,
+  manifest: IrisManifest,
+  framework: Framework,
+  usedLocals: Set<string>,
+  setup: string[],
+  extraImports: string[],
+  tagByName: Map<string, string>,
+): void {
+  const component = manifest.components.find((c) => c.name === name)!
+  const kind = dataWiringKind(component)
+  const stub = kind ? dataStub(kind, framework) : null
+  const owned: ReadonlySet<string> = stub ? new Set(stub.owns) : EMPTY_OWNED
+  if (stub) {
+    setup.push(...stub.setup)
+    extraImports.push(...stub.extraImports)
+  }
+  const detected = detectControlledPair(component)
+  const emitState = !!detected && !owned.has(detected.value)
+  const pair = emitState ? uniqueLocal(detected, usedLocals) : detected
+  if (emitState) setup.push(stateDecl(pair!, framework, stub?.seedOverride))
+  tagByName.set(name, wiredTag(component, framework, pair, stub?.bind ?? '', owned))
+}
+
+/** Build header import block from collected data. */
+function buildImportHeader(
+  framework: Framework,
+  byPath: Map<string, Set<string>>,
+  extraImports: string[],
+  pluginNotes: string[],
+  needsState: boolean,
+): string {
+  const lines: string[] = []
+  const fwImport = stateImport(framework)
+  if (needsState && fwImport) lines.push(fwImport)
+  for (const imp of [...new Set(extraImports)]) lines.push(imp)
+  for (const [path, names] of byPath) {
+    lines.push(`import { ${Array.from(names).sort().join(', ')} } from '${path}'`)
+  }
+  const notes = [...new Set(pluginNotes)]
+  return notes.length ? lines.join('\n') + '\n' + notes.join('\n') : lines.join('\n')
+}
+
 export function generateView(manifest: IrisManifest, req: GenerateViewRequest): string | null {
   const { framework, components, layout } = req
   if (components.length === 0) return null
@@ -285,11 +334,10 @@ export function generateView(manifest: IrisManifest, req: GenerateViewRequest): 
   const resolved = names.map((n) => manifest.components.find((c) => c.name === n) ?? null)
   if (resolved.some((c) => !c || !c.frameworks.includes(framework))) return null
 
-  // Component imports, deduped + grouped by source module.
   const byPath = new Map<string, Set<string>>()
   const pluginNotes: string[] = []
   for (const c of resolved as ManifestComponent[]) {
-    const path = c.importFrom[framework] ?? `@iris-ui/${framework}`
+    const path = c.importFrom[framework] ?? `@iris-ui-kit/${framework}`
     if (!byPath.has(path)) byPath.set(path, new Set())
     byPath.get(path)!.add(c.name)
     if (c.plugin) pluginNotes.push(`// Requires <IrisProvider plugins={[…]}> — install ${c.plugin}`)
@@ -298,53 +346,18 @@ export function generateView(manifest: IrisManifest, req: GenerateViewRequest): 
   const setup: string[] = []
   const extraImports: string[] = []
   const tagByName = new Map<string, string>()
-  // Local state names already emitted — composing two `value`-controlled
-  // components (e.g. Select + Calendar) must not declare `value` twice.
   const usedLocals = new Set<string>()
 
   for (const name of components) {
-    const component = manifest.components.find((c) => c.name === name)!
-    const kind = dataWiringKind(component)
-    // A data stub (table/form/tree/select/calendar) supplies the data prop(s) it
-    // owns; a controlled pair the stub does NOT own still gets real state. The
-    // two are merged into one wired tag so e.g. a Select shows both its `items`
-    // stub AND `value`/`onValueChange` state.
-    const stub = kind ? dataStub(kind, framework) : null
-    const owned: ReadonlySet<string> = stub ? new Set(stub.owns) : EMPTY_OWNED
-    if (stub) {
-      setup.push(...stub.setup)
-      extraImports.push(...stub.extraImports)
-    }
-    // A controlled pair gets real state only when the stub doesn't own its value
-    // prop; uniquify the local name just for the pairs we actually emit.
-    const detected = detectControlledPair(component)
-    const emitState = !!detected && !owned.has(detected.value)
-    const pair = emitState ? uniqueLocal(detected, usedLocals) : detected
-    if (emitState) setup.push(stateDecl(pair!, framework, stub?.seedOverride))
-    tagByName.set(name, wiredTag(component, framework, pair, stub?.bind ?? '', owned))
+    wireComponent(name, manifest, framework, usedLocals, setup, extraImports, tagByName)
   }
 
-  // Assemble imports: framework state import (if any state was generated) +
-  // data-stub imports + component imports.
-  const importLines: string[] = []
-  const needsState = setup.length > 0
-  const fwImport = stateImport(framework)
-  if (needsState && fwImport) importLines.push(fwImport)
-  for (const imp of [...new Set(extraImports)]) importLines.push(imp)
-  for (const [path, set] of byPath) {
-    importLines.push(`import { ${Array.from(set).sort().join(', ')} } from '${path}'`)
-  }
-  const notes = [...new Set(pluginNotes)]
-  const header = notes.length
-    ? importLines.join('\n') + '\n' + notes.join('\n')
-    : importLines.join('\n')
-
+  const header = buildImportHeader(framework, byPath, extraImports, pluginNotes, setup.length > 0)
   const childTags = components.map((n) => '  ' + tagByName.get(n)!).join('\n')
   const classAttr = framework === 'vue' ? 'class' : 'className'
   const markup = layout
     ? `<${layout}>\n${childTags}\n</${layout}>`
     : `<div ${classAttr}="iris-view">\n${childTags}\n</div>`
-
   const setupBlock = setup.length ? setup.join('\n') + '\n\n' : ''
   return `${header}\n\n${setupBlock}${markup}`
 }
@@ -372,6 +385,56 @@ function isClickLike(event: string | undefined): boolean {
   return !!event && /click|press|select|toggle/i.test(event)
 }
 
+/** Emit test body lines for a given framework template. */
+function emitTestBody(
+  lines: string[],
+  name: string,
+  importPath: string,
+  framework: Framework,
+  event: string | undefined,
+  clickLike: boolean,
+  props: string,
+): void {
+  const tl = TESTING_LIBRARY[framework]
+  const useFireEvent = clickLike ? ', fireEvent' : ''
+  const isVue = framework === 'vue'
+  lines.push("import { describe, it, expect, vi } from 'vitest'")
+  const libImport = isVue ? 'mount' : 'render'
+  const extra = isVue ? '' : `${useFireEvent}`
+  lines.push(`import { ${libImport}${extra} } from '${tl}'`)
+  lines.push(`import { ${name} } from '${importPath}'`)
+  lines.push('')
+  lines.push(`describe('${name}', () => {`)
+  const asyncMarker = isVue && clickLike ? 'async ' : ''
+  lines.push(`  it('renders and wires its event', ${asyncMarker}() => {`)
+  if (event) lines.push(`    const ${event} = vi.fn()`)
+  const renderLine = isVue
+    ? `    const wrapper = mount(${name}, { props: ${props} })`
+    : framework === 'svelte'
+      ? `    const { container } = render(${name}, { props: ${props} })`
+      : framework === 'solid'
+        ? `    const { container } = render(() => <${name}${props} />)`
+        : `    const { container } = render(<${name}${props} />)`
+  lines.push(renderLine)
+  if (isVue) {
+    lines.push('    expect(wrapper.exists()).toBe(true)')
+  } else {
+    lines.push('    expect(container.firstChild).toBeTruthy()')
+  }
+  if (event && clickLike) {
+    if (isVue) {
+      lines.push("    await wrapper.trigger('click')")
+    } else {
+      lines.push('    fireEvent.click(container.firstChild as Element)')
+    }
+    lines.push(`    expect(${event}).toHaveBeenCalled()`)
+  } else if (event) {
+    lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
+  }
+  lines.push('  })')
+  lines.push('})')
+}
+
 /**
  * Emit a minimal render + interaction test skeleton for `component` in
  * `framework`, derived from the manifest: it imports the component + the
@@ -388,84 +451,16 @@ export function generateTest(
   const component = manifest.components.find((c) => c.name === name) ?? null
   if (!component || !component.frameworks.includes(framework)) return null
 
-  const importPath = component.importFrom[framework] ?? `@iris-ui/${framework}`
+  const importPath = component.importFrom[framework] ?? `@iris-ui-kit/${framework}`
   const pair = detectControlledPair(component)
   const event = component.events?.[0] ?? pair?.handler
-
   const required = otherRequiredProps(component, pair)
   const clickLike = isClickLike(event)
-  const lines: string[] = []
-  lines.push("import { describe, it, expect, vi } from 'vitest'")
+  const propStyle = framework === 'react' || framework === 'solid' ? 'jsx' : 'object'
+  const props = renderProps(component, pair, event, required, propStyle)
 
-  if (framework === 'react') {
-    // RTL re-exports `fireEvent`; pull it in only when we drive a click.
-    lines.push(`import { render${clickLike ? ', fireEvent' : ''} } from '${TESTING_LIBRARY.react}'`)
-    lines.push(`import { ${name} } from '${importPath}'`)
-    lines.push('')
-    lines.push(`describe('${name}', () => {`)
-    lines.push(`  it('renders and wires its event', () => {`)
-    if (event) lines.push(`    const ${event} = vi.fn()`)
-    const props = renderProps(component, pair, event, required, 'jsx')
-    lines.push(`    const { container } = render(<${name}${props} />)`)
-    lines.push(`    expect(container.firstChild).toBeTruthy()`)
-    if (event && clickLike) {
-      lines.push(`    fireEvent.click(container.firstChild as Element)`)
-      lines.push(`    expect(${event}).toHaveBeenCalled()`)
-    } else if (event) lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
-    lines.push(`  })`)
-    lines.push(`})`)
-  } else if (framework === 'solid') {
-    lines.push(`import { render${clickLike ? ', fireEvent' : ''} } from '${TESTING_LIBRARY.solid}'`)
-    lines.push(`import { ${name} } from '${importPath}'`)
-    lines.push('')
-    lines.push(`describe('${name}', () => {`)
-    lines.push(`  it('renders and wires its event', () => {`)
-    if (event) lines.push(`    const ${event} = vi.fn()`)
-    const props = renderProps(component, pair, event, required, 'jsx')
-    lines.push(`    const { container } = render(() => <${name}${props} />)`)
-    lines.push(`    expect(container.firstChild).toBeTruthy()`)
-    if (event && clickLike) {
-      lines.push(`    fireEvent.click(container.firstChild as Element)`)
-      lines.push(`    expect(${event}).toHaveBeenCalled()`)
-    } else if (event) lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
-    lines.push(`  })`)
-    lines.push(`})`)
-  } else if (framework === 'svelte') {
-    lines.push(
-      `import { render${clickLike ? ', fireEvent' : ''} } from '${TESTING_LIBRARY.svelte}'`,
-    )
-    lines.push(`import { ${name} } from '${importPath}'`)
-    lines.push('')
-    lines.push(`describe('${name}', () => {`)
-    lines.push(`  it('renders and wires its event', () => {`)
-    if (event) lines.push(`    const ${event} = vi.fn()`)
-    const props = renderProps(component, pair, event, required, 'object')
-    lines.push(`    const { container } = render(${name}, { props: ${props} })`)
-    lines.push(`    expect(container.firstChild).toBeTruthy()`)
-    if (event && clickLike) {
-      lines.push(`    fireEvent.click(container.firstChild as Element)`)
-      lines.push(`    expect(${event}).toHaveBeenCalled()`)
-    } else if (event) lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
-    lines.push(`  })`)
-    lines.push(`})`)
-  } else {
-    // vue
-    lines.push(`import { mount } from '${TESTING_LIBRARY.vue}'`)
-    lines.push(`import { ${name} } from '${importPath}'`)
-    lines.push('')
-    lines.push(`describe('${name}', () => {`)
-    lines.push(`  it('renders and wires its event', ${clickLike ? 'async ' : ''}() => {`)
-    if (event) lines.push(`    const ${event} = vi.fn()`)
-    const props = renderProps(component, pair, event, required, 'object')
-    lines.push(`    const wrapper = mount(${name}, { props: ${props} })`)
-    lines.push(`    expect(wrapper.exists()).toBe(true)`)
-    if (event && clickLike) {
-      lines.push(`    await wrapper.trigger('click')`)
-      lines.push(`    expect(${event}).toHaveBeenCalled()`)
-    } else if (event) lines.push(`    expect(${event}).not.toHaveBeenCalled()`)
-    lines.push(`  })`)
-    lines.push(`})`)
-  }
+  const lines: string[] = []
+  emitTestBody(lines, name, importPath, framework, event, clickLike, props)
   return lines.join('\n')
 }
 

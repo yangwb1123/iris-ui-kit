@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { runPlugins, type NavNode } from '@iris-ui/core'
+import { runPlugins, type NavNode } from '@iris-ui-kit/core'
 import {
   resolveAdminPage,
   adminDataViewColumns,

@@ -1,5 +1,5 @@
 import { onBeforeUnmount, ref, type Ref } from 'vue'
-import type { Machine, MachineEvent, MachineState } from '@iris-ui/core'
+import type { Machine, MachineEvent, MachineState } from '@iris-ui-kit/core'
 
 /**
  * Bridge a framework-agnostic `Machine` into Vue reactivity.

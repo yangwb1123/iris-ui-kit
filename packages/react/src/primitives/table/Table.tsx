@@ -15,7 +15,7 @@ import {
   type GridNavKey,
   type SelectionModel,
   type TreeRow,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'

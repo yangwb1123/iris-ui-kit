@@ -1,4 +1,4 @@
-import type { NavNode } from '@iris-ui/react'
+import type { NavNode } from '@iris-ui-kit/react'
 
 /**
  * The single nav-tree config that drives the whole shell: the sidebar menu, the

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { type Command } from '@iris-ui/core/commands'
+import { type Command } from '@iris-ui-kit/core/commands'
 import { OS_ORDER, CHROMES } from './os'
 import { useApps, useLaunchApp, useOs, useWm, useWmState } from './shell'
 

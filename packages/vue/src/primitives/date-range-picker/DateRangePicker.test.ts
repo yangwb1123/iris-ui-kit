@@ -9,7 +9,7 @@ function clearBody() {
 
 afterEach(() => clearBody())
 
-describe('@iris-ui/vue IrisDateRangePicker', () => {
+describe('@iris-ui-kit/vue IrisDateRangePicker', () => {
   it('renders trigger with placeholder when empty', () => {
     const wrap = mount(IrisDateRangePicker, {
       props: { modelValue: { start: null, end: null }, placeholder: 'Pick range…' },

@@ -19,7 +19,7 @@ function listEl(): HTMLElement {
   return document.querySelector('[role=listbox]')!
 }
 
-describe('@iris-ui/react IrisList', () => {
+describe('@iris-ui-kit/react IrisList', () => {
   it('controlled value renders from the prop (reject → no flip; accept → flips)', () => {
     const onValueChange = vi.fn()
     function C({ value }: { value: string[] }) {
@@ -176,7 +176,7 @@ describe('@iris-ui/react IrisList', () => {
   })
 })
 
-describe('@iris-ui/react IrisList data states', () => {
+describe('@iris-ui-kit/react IrisList data states', () => {
   it('shows the empty state (localized) when items is empty', () => {
     render(<IrisList items={[]} />)
     const node = document.querySelector('[data-iris-list-state]')!

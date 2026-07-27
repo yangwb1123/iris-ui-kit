@@ -48,7 +48,7 @@ function tablist(): HTMLElement {
   return document.querySelector('[role=tablist]')!
 }
 
-describe('@iris-ui/react IrisTabs', () => {
+describe('@iris-ui-kit/react IrisTabs', () => {
   it('renders tablist + tabs + visible panel', () => {
     const { container } = render(harness({ defaultValue: 'a' }))
     expect(container.querySelector('[role=tablist]')).not.toBeNull()

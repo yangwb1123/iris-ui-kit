@@ -1,6 +1,6 @@
 # Design token interop
 
-Iris design tokens are authored once (`@iris-ui/tokens`) and exported in the
+Iris design tokens are authored once (`@iris-ui-kit/tokens`) and exported in the
 interoperable formats every design-tooling pipeline reads — so the same source
 of truth drives runtime CSS, Style Dictionary builds, and Figma.
 
@@ -12,7 +12,7 @@ common denominator consumed by Style Dictionary, Tokens Studio, and Figma
 Variables.
 
 ```ts
-import { toDtcgJson, lightTheme } from '@iris-ui/tokens'
+import { toDtcgJson, lightTheme } from '@iris-ui-kit/tokens'
 writeFileSync('iris-light.tokens.json', toDtcgJson(lightTheme))
 ```
 
@@ -23,7 +23,7 @@ iOS, Android…), `irisStyleDictionaryConfig()` returns a ready-to-run Style
 Dictionary v4 config that consumes the DTCG files above.
 
 ```bash
-pnpm --filter @iris-ui/tokens tokens:build
+pnpm --filter @iris-ui-kit/tokens tokens:build
 #  → dist/tokens/iris-light.tokens.json
 #  → dist/tokens/iris-dark.tokens.json
 #  → dist/tokens/style-dictionary.config.json
@@ -35,11 +35,11 @@ No Style Dictionary install? `dtcgToCss(toDtcg(theme))` emits the same
 `css/variables` output dependency-free:
 
 ```ts
-import { dtcgToCss, toDtcg, darkTheme } from '@iris-ui/tokens'
+import { dtcgToCss, toDtcg, darkTheme } from '@iris-ui-kit/tokens'
 const css = dtcgToCss(toDtcg(darkTheme), { selector: '[data-iris-theme="dark"]' })
 ```
 
-(`@iris-ui/theme`'s `themeToCss` is the runtime equivalent that works straight
+(`@iris-ui-kit/theme`'s `themeToCss` is the runtime equivalent that works straight
 from an `IrisTheme`; `dtcgToCss` is the DTCG-pipeline equivalent.)
 
 ## 3. Figma round-trip

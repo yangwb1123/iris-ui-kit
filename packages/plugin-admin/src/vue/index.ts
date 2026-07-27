@@ -1,5 +1,5 @@
 import { computed, defineComponent, h, ref, type PropType, type VNode } from 'vue'
-import { IrisAdminLayout, useDataSource, createClientDataSource } from '@iris-ui/vue'
+import { IrisAdminLayout, useDataSource, createClientDataSource } from '@iris-ui-kit/vue'
 import {
   resolveAdminPage,
   adminDataViewColumns,

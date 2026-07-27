@@ -1,4 +1,4 @@
-import { createSkinEngine, localStorageSkinStorage, type Skin } from '@iris-ui/solid'
+import { createSkinEngine, localStorageSkinStorage, type Skin } from '@iris-ui-kit/solid'
 
 export const STORAGE_KEY = 'iris-cms-solid-skin'
 

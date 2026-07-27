@@ -3,7 +3,7 @@ import {
   createKeyboardNav,
   type KeyboardNavAction,
   type KeyboardNavController,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { AccordionContext } from './context'
 

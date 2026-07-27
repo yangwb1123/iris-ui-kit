@@ -8,7 +8,7 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   target: 'node18',
-  external: ['@modelcontextprotocol/sdk', '@iris-ui/manifest'],
+  external: ['@modelcontextprotocol/sdk', '@iris-ui-kit/manifest'],
   // Shebang for the bin entry.
   banner: { js: '' },
 })

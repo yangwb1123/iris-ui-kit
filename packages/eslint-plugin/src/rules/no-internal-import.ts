@@ -1,6 +1,6 @@
 import type { Rule } from 'eslint'
 
-const INTERNAL_PATH_RE = /^@iris-ui\/(react|vue|solid|svelte)\/src\//
+const INTERNAL_PATH_RE = /^@iris-ui-kit\/(react|vue|solid|svelte)\/src\//
 
 const rule: Rule.RuleModule = {
   meta: {
@@ -13,7 +13,7 @@ const rule: Rule.RuleModule = {
     },
     messages: {
       noInternalImport:
-        "Do not import from '{{path}}'. Use the public package entry instead (e.g. import { ... } from '@iris-ui/{{pkg}}').",
+        "Do not import from '{{path}}'. Use the public package entry instead (e.g. import { ... } from '@iris-ui-kit/{{pkg}}').",
     },
     schema: [],
   },

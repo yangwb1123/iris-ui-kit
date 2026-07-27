@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
-import { createTabsNav, type NavNode } from '@iris-ui/core'
+import { createTabsNav, type NavNode } from '@iris-ui-kit/core'
 import { __resetBreadcrumbStyles } from '../primitives/breadcrumb/styles'
 import AdminLayoutHarness from './AdminLayoutHarness.svelte'
 
@@ -28,7 +28,7 @@ const navItems = (c: HTMLElement) =>
 const findByText = (c: HTMLElement, text: string) =>
   navItems(c).find((b) => b.textContent!.includes(text))!
 
-describe('@iris-ui/svelte IrisAdminLayout', () => {
+describe('@iris-ui-kit/svelte IrisAdminLayout', () => {
   it('renders the sidebar shell: logo, nav, header bar, content', () => {
     const { container } = render(AdminLayoutHarness, { props: { menus, activeKey: 'dash' } })
     expect(container.querySelector('[data-iris-admin-layout][data-mode="sidebar"]')).not.toBeNull()

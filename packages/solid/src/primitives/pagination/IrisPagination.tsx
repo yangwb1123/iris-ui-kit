@@ -1,10 +1,10 @@
 import { createMemo, createSignal, For, mergeProps, splitProps, type JSX } from 'solid-js'
-import { getPageRange, type PageItem } from '@iris-ui/core'
+import { getPageRange, type PageItem } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 
 export type IrisPaginationSize = 'sm' | 'md'
 
-/** The page-range algorithm now lives in @iris-ui/core; this preserves the name. */
+/** The page-range algorithm now lives in @iris-ui-kit/core; this preserves the name. */
 export type IrisPageItem = PageItem
 
 export interface IrisPaginationProps {

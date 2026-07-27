@@ -1,6 +1,6 @@
 import { createEffect, splitProps, Show, type JSX } from 'solid-js'
 import { Portal } from 'solid-js/web'
-import { nextEnabledIndex } from '@iris-ui/core'
+import { nextEnabledIndex } from '@iris-ui-kit/core'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useMenuContext } from './context'

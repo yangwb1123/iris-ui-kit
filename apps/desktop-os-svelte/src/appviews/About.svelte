@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { IrisBadge } from '@iris-ui/svelte'
+  import { IrisBadge } from '@iris-ui-kit/svelte'
 </script>
 
 <div class="pane">
@@ -7,7 +7,7 @@
   <p style="margin:0">
     A windowed desktop shell whose entire window logic — open, focus &amp; z-order, minimize,
     maximize/restore, move/resize, edge-snap — lives in the framework-agnostic
-    <code>@iris-ui/core/window</code> (<code>createWindowManager</code>). The chrome you see is a
+    <code>@iris-ui-kit/core/window</code> (<code>createWindowManager</code>). The chrome you see is a
     thin Svelte 5 renderer; drag uses <code>IrisMovable</code>, resize uses
     <code>IrisResizable</code>.
   </p>

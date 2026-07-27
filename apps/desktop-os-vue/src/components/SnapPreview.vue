@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { type SnapZone } from '@iris-ui/core/window'
+import { type SnapZone } from '@iris-ui-kit/core/window'
 import { previewRect } from '../depth'
 import { useWmState } from '../wm'
 

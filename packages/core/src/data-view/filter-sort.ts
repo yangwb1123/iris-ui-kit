@@ -29,8 +29,25 @@ export function cycleSort(current: SortState | null, key: string): SortState | n
   return null
 }
 
-function matchesRule(value: unknown, rule: FilterRule): boolean {
+function matchString(
+  value: unknown,
+  filter: unknown,
+  method: 'includes' | 'startsWith' | 'endsWith',
+): boolean {
   const lower = (v: unknown): string => String(v ?? '').toLowerCase()
+  return lower(value)[method](lower(filter))
+}
+
+function matchIn(value: unknown, candidates: unknown): boolean {
+  return Array.isArray(candidates) && candidates.some((v) => compareValues(value, v) === 0)
+}
+
+function matchBetween(value: unknown, range: unknown): boolean {
+  if (!Array.isArray(range) || range.length < 2) return true
+  return compareValues(value, range[0]) >= 0 && compareValues(value, range[1]) <= 0
+}
+
+function matchesRule(value: unknown, rule: FilterRule): boolean {
   switch (rule.operator) {
     case 'eq':
       return compareValues(value, rule.value) === 0
@@ -45,18 +62,15 @@ function matchesRule(value: unknown, rule: FilterRule): boolean {
     case 'lte':
       return compareValues(value, rule.value) <= 0
     case 'contains':
-      return lower(value).includes(lower(rule.value))
+      return matchString(value, rule.value, 'includes')
     case 'startsWith':
-      return lower(value).startsWith(lower(rule.value))
+      return matchString(value, rule.value, 'startsWith')
     case 'endsWith':
-      return lower(value).endsWith(lower(rule.value))
+      return matchString(value, rule.value, 'endsWith')
     case 'in':
-      return Array.isArray(rule.value) && rule.value.some((v) => compareValues(value, v) === 0)
-    case 'between': {
-      if (!Array.isArray(rule.value) || rule.value.length < 2) return true
-      const [min, max] = rule.value
-      return compareValues(value, min) >= 0 && compareValues(value, max) <= 0
-    }
+      return matchIn(value, rule.value)
+    case 'between':
+      return matchBetween(value, rule.value)
     default:
       return true
   }

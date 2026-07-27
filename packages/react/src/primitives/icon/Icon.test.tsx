@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
 import { IrisIcon } from './Icon'
-import { createIconRegistry } from '@iris-ui/icons'
+import { createIconRegistry } from '@iris-ui-kit/icons'
 import { ThemeProvider } from '../../theme'
-import { createThemeStore } from '@iris-ui/theme'
-import { lightTheme } from '@iris-ui/tokens'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { lightTheme } from '@iris-ui-kit/tokens'
 
 afterEach(() => cleanup())
 
@@ -12,7 +12,7 @@ function svg(): SVGSVGElement | null {
   return document.querySelector('[data-iris-icon]')
 }
 
-describe('@iris-ui/react IrisIcon', () => {
+describe('@iris-ui-kit/react IrisIcon', () => {
   it('renders an svg with structured children + currentColor stroke', () => {
     render(<IrisIcon name="check" />)
     const el = svg()!

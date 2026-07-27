@@ -47,7 +47,7 @@ function snap(value: number, step: number): number {
  * (`aria-valuemin/now/max` + arrow keys) so it reads correctly to assistive
  * tech; stars are decorative. RTL-safe via logical fill clipping.
  *
- * React port of {@link import('@iris-ui/vue').IrisRating}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisRating}.
  */
 export function IrisRating({
   value: valueProp,

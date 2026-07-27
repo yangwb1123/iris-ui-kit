@@ -93,7 +93,7 @@ function zIndexToken(value: number): DtcgToken {
  *
  * @example
  * ```ts
- * import { toDtcg, lightTheme } from '@iris-ui/tokens'
+ * import { toDtcg, lightTheme } from '@iris-ui-kit/tokens'
  * const dtcg = toDtcg(lightTheme)
  * // dtcg.iris.surface.DEFAULT -> { $type: 'color', $value: '#f8fafc' }
  * // dtcg.iris.surface.hover   -> { $type: 'color', $value: '#f1f5f9' }

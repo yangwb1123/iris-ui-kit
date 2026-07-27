@@ -1,5 +1,5 @@
-import { createStore, type Store } from '@iris-ui/core'
-import { watchColorScheme, getColorScheme } from '@iris-ui/theme'
+import { createStore, type Store } from '@iris-ui-kit/core'
+import { watchColorScheme, getColorScheme } from '@iris-ui-kit/theme'
 import type { Skin, ResolvedSkin, SkinMode, SkinStorage, SkinTokenOverrides } from './types'
 import { createSkinRegistry, type SkinRegistry } from './registry'
 import { builtinSkins } from './builtins'

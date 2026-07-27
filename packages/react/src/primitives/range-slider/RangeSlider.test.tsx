@@ -8,7 +8,7 @@ function thumbs(): HTMLElement[] {
   return Array.from(document.querySelectorAll('[role="slider"]')) as HTMLElement[]
 }
 
-describe('@iris-ui/react IrisRangeSlider', () => {
+describe('@iris-ui-kit/react IrisRangeSlider', () => {
   it('renders track + range + two thumbs', () => {
     render(<IrisRangeSlider value={[20, 80]} />)
     expect(document.querySelector('[data-iris-range-slider-track]')).not.toBeNull()

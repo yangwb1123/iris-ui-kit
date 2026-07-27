@@ -51,7 +51,7 @@ function items(): HTMLButtonElement[] {
   ) as HTMLButtonElement[]
 }
 
-describe('@iris-ui/react IrisToggleGroup (single)', () => {
+describe('@iris-ui-kit/react IrisToggleGroup (single)', () => {
   it('controlled value renders from the prop (reject → no flip; accept → flips)', () => {
     const onValueChange = vi.fn()
     function C({ value }: { value: string | null }) {
@@ -163,7 +163,7 @@ describe('@iris-ui/react IrisToggleGroup (single)', () => {
   })
 })
 
-describe('@iris-ui/react IrisToggleGroup (multiple)', () => {
+describe('@iris-ui-kit/react IrisToggleGroup (multiple)', () => {
   it('renders group role with aria-pressed items', () => {
     render(multi())
     expect(document.querySelector('[role=group]')).not.toBeNull()

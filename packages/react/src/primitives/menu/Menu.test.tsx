@@ -44,7 +44,7 @@ function menuEl(): HTMLElement | null {
   return document.querySelector('[data-iris-menu]')
 }
 
-describe('@iris-ui/react IrisMenu', () => {
+describe('@iris-ui-kit/react IrisMenu', () => {
   it('renders only the trigger when closed', () => {
     render(flat())
     expect(document.querySelector('button')).not.toBeNull()
@@ -176,7 +176,7 @@ describe('@iris-ui/react IrisMenu', () => {
   })
 })
 
-describe('@iris-ui/react IrisMenuSub', () => {
+describe('@iris-ui-kit/react IrisMenuSub', () => {
   it('sub trigger renders with aria-haspopup=menu', () => {
     render(nested())
     const subTrig = document.querySelector('[data-iris-menu-sub-trigger]')!

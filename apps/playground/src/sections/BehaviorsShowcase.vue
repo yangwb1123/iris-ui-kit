@@ -8,7 +8,7 @@ import {
   IrisCard,
   IrisButton,
   useToast,
-} from '@iris-ui/vue'
+} from '@iris-ui-kit/vue'
 
 const toast = useToast()
 const showFloating = ref(true)

@@ -8,4 +8,3 @@
 import { run } from "../checks/size.mjs"
 const ec = await run({})
 process.exit(ec)
-

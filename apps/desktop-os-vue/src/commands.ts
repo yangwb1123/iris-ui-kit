@@ -1,5 +1,5 @@
 /**
- * Vue glue around ONE `@iris-ui/core/commands` registry — the substrate behind
+ * Vue glue around ONE `@iris-ui-kit/core/commands` registry — the substrate behind
  * the ⌘K / Ctrl+K command palette. A single registry instance lives as a module
  * singleton (mirrors the wm.ts / profile.ts pattern); app / window / system
  * actions register into it, and the palette searches + runs it.
@@ -10,7 +10,7 @@ import {
   type Command,
   type CommandHit,
   type CommandRegistry,
-} from '@iris-ui/core/commands'
+} from '@iris-ui-kit/core/commands'
 import { wm, useWmState } from './wm'
 import { useApps, launchApp } from './profile'
 import { useOs } from './os-state'

@@ -46,29 +46,42 @@ function interfaceBody(text: string, openBraceIndex: number): string {
 /** A top-level member: `name?: type` (methods / index signatures excluded). */
 const MEMBER_RE = /^(?:readonly\s+)?([A-Za-z_]\w*)(\?)?\s*:\s*(.+?)\s*;?$/
 
+/** Accumulate a multi-line block-comment line into the pending doc string. */
+function accumulateDoc(line: string, pendingDoc: string | undefined): string | undefined {
+  const cleaned = line.replace(/^\*\s?/, '').trim()
+  if (!cleaned) return pendingDoc
+  return pendingDoc ? pendingDoc + ' ' + cleaned : cleaned
+}
+
+/** Try to match a single-line JSDoc or start a multi-line block comment. */
+function consumeDocComment(line: string): {
+  doc: string | undefined
+  inBlock: boolean
+} {
+  const oneLine = line.match(/^\/\*\*\s*(.*?)\s*\*\/$/)
+  if (oneLine) return { doc: oneLine[1] || undefined, inBlock: false }
+  return { doc: undefined, inBlock: true }
+}
+
 /** Parse an interface body into props, attaching preceding JSDoc summaries. */
 function parseBody(body: string): ManifestProp[] {
   const props: ManifestProp[] = []
   const lines = body.split('\n')
   let pendingDoc: string | undefined
   let inBlockComment = false
-  let depth = 0 // brace depth WITHIN the body, so nested object types are skipped
+  let depth = 0
 
   for (const rawLine of lines) {
     const line = rawLine.trim()
 
-    // JSDoc / block comment accumulation.
     if (inBlockComment) {
       if (line.includes('*/')) inBlockComment = false
-      else {
-        const cleaned = line.replace(/^\*\s?/, '').trim()
-        if (cleaned) pendingDoc = pendingDoc ? `${pendingDoc} ${cleaned}` : cleaned
-      }
+      else pendingDoc = accumulateDoc(line, pendingDoc)
       continue
     }
     if (line.startsWith('/**')) {
-      const oneLine = line.match(/^\/\*\*\s*(.*?)\s*\*\/$/)
-      if (oneLine) pendingDoc = oneLine[1] || undefined
+      const result = consumeDocComment(line)
+      if (result.doc !== undefined) pendingDoc = result.doc
       else {
         inBlockComment = true
         pendingDoc = undefined
@@ -77,9 +90,6 @@ function parseBody(body: string): ManifestProp[] {
     }
     if (line.startsWith('//') || line === '') continue
 
-    // Only parse members at the body's top level (skip nested object-type lines).
-    // The regex requires `name?:` directly, so method signatures (`foo(): T`)
-    // and index signatures (`[key: string]: T`) are naturally excluded.
     if (depth === 0) {
       const m = MEMBER_RE.exec(line)
       if (m) {

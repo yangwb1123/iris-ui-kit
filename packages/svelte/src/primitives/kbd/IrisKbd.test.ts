@@ -4,7 +4,7 @@ import IrisKbd from './IrisKbd.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisKbd', () => {
+describe('@iris-ui-kit/svelte IrisKbd', () => {
   it('renders nothing when no keys and no children', () => {
     const { container } = render(IrisKbd)
     expect(container.querySelector('[data-iris-kbd]')).toBeNull()

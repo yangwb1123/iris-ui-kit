@@ -14,7 +14,7 @@ const OPTIONS: IrisTransferItem[] = [
 const panes = (c: HTMLElement) => c.querySelectorAll('[data-iris-transfer-pane]')
 const itemsIn = (pane: Element) => pane.querySelectorAll('[data-iris-transfer-item]')
 
-describe('@iris-ui/react IrisTransfer', () => {
+describe('@iris-ui-kit/react IrisTransfer', () => {
   it('splits options into available and selected panes', () => {
     const { container } = render(<IrisTransfer options={OPTIONS} value={['b']} />)
     const [src, tgt] = panes(container)

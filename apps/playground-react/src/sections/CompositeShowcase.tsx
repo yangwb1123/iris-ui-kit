@@ -14,7 +14,7 @@ import {
   IrisBreadcrumb,
   IrisBreadcrumbItem,
   IrisButton,
-} from '@iris-ui/react'
+} from '@iris-ui-kit/react'
 
 export function CompositeShowcase() {
   const [tab, setTab] = useState('overview')

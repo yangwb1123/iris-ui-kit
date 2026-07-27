@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import { IrisButton, useSkin, type Skin, type SkinManifestEntry } from '@iris-ui/react'
+import { IrisButton, useSkin, type Skin, type SkinManifestEntry } from '@iris-ui-kit/react'
 import { demoCatalog, sampleSkinJson, STORAGE_KEY } from '../demo-skins'
 
 const mono: CSSProperties = { fontFamily: 'ui-monospace, monospace', fontSize: 12 }

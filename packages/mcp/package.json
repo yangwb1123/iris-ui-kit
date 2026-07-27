@@ -1,6 +1,6 @@
 {
-  "name": "@iris-ui/mcp",
-  "version": "0.0.0",
+  "name": "@iris-ui-kit/mcp",
+  "version": "0.0.1",
   "description": "Model Context Protocol server for Iris UI — query the typed component manifest (list / search / get-api / scaffold) so agents call components correctly across 4 frameworks",
   "license": "MIT",
   "type": "module",
@@ -27,12 +27,15 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@iris-ui/manifest": "workspace:*",
+    "@iris-ui-kit/manifest": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.23.0"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/nousresearch/iris-ui.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

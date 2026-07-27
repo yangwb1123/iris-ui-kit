@@ -35,7 +35,7 @@ function headers(): HTMLElement[] {
   return Array.from(document.querySelectorAll('[data-iris-table-header]'))
 }
 
-describe('@iris-ui/react exportCsv', () => {
+describe('@iris-ui-kit/react exportCsv', () => {
   it('serializes header + rows with comma separator', () => {
     const csv = exportCsv(rows, baseColumns)
     expect(csv.split('\n')[0]).toBe('Name,Age')
@@ -53,7 +53,7 @@ describe('@iris-ui/react exportCsv', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable', () => {
+describe('@iris-ui-kit/react IrisTable', () => {
   it('renders role="table" + header + row cells', () => {
     render(<IrisTable columns={baseColumns} data={rows} />)
     expect(document.querySelector('[role=table]')).not.toBeNull()
@@ -331,7 +331,7 @@ describe('@iris-ui/react IrisTable', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable column resize', () => {
+describe('@iris-ui-kit/react IrisTable column resize', () => {
   function handle(key: string): HTMLElement | null {
     return document.querySelector(`[data-iris-table-resize-handle][data-column-key="${key}"]`)
   }
@@ -437,7 +437,7 @@ describe('@iris-ui/react IrisTable column resize', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable inline editing', () => {
+describe('@iris-ui-kit/react IrisTable inline editing', () => {
   const editableCols: IrisTableColumn<Row>[] = [
     { key: 'name', title: 'Name', editable: true },
     { key: 'age', title: 'Age', editable: true, editor: 'number' },
@@ -589,7 +589,7 @@ describe('@iris-ui/react IrisTable inline editing', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable summary row', () => {
+describe('@iris-ui-kit/react IrisTable summary row', () => {
   const sumCols: IrisTableColumn<Row>[] = [
     { key: 'name', title: 'Name' },
     { key: 'age', title: 'Age', summary: 'sum' },
@@ -632,7 +632,7 @@ describe('@iris-ui/react IrisTable summary row', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable expandable detail rows', () => {
+describe('@iris-ui-kit/react IrisTable expandable detail rows', () => {
   function toggle(rowId: string | number): HTMLElement {
     return document.querySelector(
       `[data-iris-table-row="${rowId}"] [data-iris-table-expand-toggle]`,
@@ -703,7 +703,7 @@ describe('@iris-ui/react IrisTable expandable detail rows', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable tree rows', () => {
+describe('@iris-ui-kit/react IrisTable tree rows', () => {
   interface TreeRowData extends Record<string, unknown> {
     id: number
     name: string
@@ -858,7 +858,7 @@ describe('@iris-ui/react IrisTable tree rows', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable grid keyboard navigation', () => {
+describe('@iris-ui-kit/react IrisTable grid keyboard navigation', () => {
   function cellAt(r: number, c: number): HTMLElement | null {
     return document.querySelector(`[data-grid-row="${r}"][data-grid-col="${c}"]`)
   }
@@ -903,7 +903,7 @@ describe('@iris-ui/react IrisTable grid keyboard navigation', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable multi-level headers', () => {
+describe('@iris-ui-kit/react IrisTable multi-level headers', () => {
   const groupedCols: IrisTableColumn<Row>[] = [
     { key: 'name', title: 'Name' },
     {
@@ -952,7 +952,7 @@ describe('@iris-ui/react IrisTable multi-level headers', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable virtual scroll', () => {
+describe('@iris-ui-kit/react IrisTable virtual scroll', () => {
   const many: Row[] = Array.from({ length: 50 }, (_, i) => ({ id: i + 1, name: `N${i}`, age: i }))
 
   it('renders the body inside a virtual scroller', () => {
@@ -1031,7 +1031,7 @@ describe('@iris-ui/react IrisTable virtual scroll', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable pinned columns', () => {
+describe('@iris-ui-kit/react IrisTable pinned columns', () => {
   const cols: IrisTableColumn<Row>[] = [
     { key: 'name', title: 'Name', width: 100, pinned: 'left' },
     { key: 'age', title: 'Age', width: 80 },
@@ -1063,7 +1063,7 @@ describe('@iris-ui/react IrisTable pinned columns', () => {
   })
 })
 
-describe('@iris-ui/react exportExcel', () => {
+describe('@iris-ui-kit/react exportExcel', () => {
   it('serializes rows to SpreadsheetML, typing numbers and ignoring render fns', () => {
     const cols: IrisTableColumn<Row>[] = [
       { key: 'name', title: 'Name', render: (v) => `<<${v}>>` },
@@ -1077,7 +1077,7 @@ describe('@iris-ui/react exportExcel', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable column virtualization', () => {
+describe('@iris-ui-kit/react IrisTable column virtualization', () => {
   const wideCols: IrisTableColumn<Record<string, unknown>>[] = Array.from(
     { length: 8 },
     (_, i) => ({
@@ -1114,7 +1114,7 @@ describe('@iris-ui/react IrisTable column virtualization', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable cellRange', () => {
+describe('@iris-ui-kit/react IrisTable cellRange', () => {
   function cell(rowIdx: number, colIdx: number): HTMLElement {
     return document.querySelector(
       `[data-iris-cell-row="${rowIdx}"][data-iris-cell-col="${colIdx}"]`,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { type SnapZone } from '@iris-ui/core/window'
+import { type SnapZone } from '@iris-ui-kit/core/window'
 import { getManifest } from '../catalog'
 import { launchApp } from '../profile'
 import { useRegisterDesktopCommands } from '../commands'
@@ -139,8 +139,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
         <div style="font-size: 22px; font-weight: 600">Iris Desktop OS</div>
         <div style="opacity: 0.85; margin-top: 6px">
           Double-click an icon, press Start, or hit <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd>. Runs
-          on the same <code>@iris-ui/core/window</code> manager — plus
-          <code>@iris-ui/core/{profile,commands}</code> — as the React demo.
+          on the same <code>@iris-ui-kit/core/window</code> manager — plus
+          <code>@iris-ui-kit/core/{profile,commands}</code> — as the React demo.
         </div>
       </div>
     </div>

@@ -1,5 +1,35 @@
 import type { IrisManifest } from './schema'
 
+/** Render a single component entry in the llms.txt listing. */
+function renderComponentLines(
+  component: IrisManifest['components'][number],
+  lines: string[],
+): void {
+  const fw = (component as { frameworks?: string[] }).frameworks?.join('/') ?? ''
+  const via = (component as { plugin?: string }).plugin
+    ? ` — via ${(component as { plugin: string }).plugin} (IrisProvider plugins)`
+    : ''
+  lines.push(`- ${component.name} [${fw}]${via}`)
+  if (component.description) lines.push(`  ${component.description}`)
+  if (component.props && component.props.length > 0) {
+    const names = component.props.map((p) => `${p.name}${p.optional ? '?' : ''}`).join(', ')
+    lines.push(`  props: ${names}`)
+  }
+  if (component.events && component.events.length > 0) {
+    lines.push(`  events: ${component.events.join(', ')}`)
+  }
+  if (component.slots && component.slots.length > 0) {
+    lines.push(`  slots: ${component.slots.join(', ')}`)
+  }
+  if ((component as { quality?: { propCount?: number; eventCount?: number } }).quality) {
+    const q = (component as { quality: { propCount?: number; eventCount?: number } }).quality
+    const badges: string[] = []
+    if (q.propCount != null) badges.push(`${q.propCount} props`)
+    if (q.eventCount != null) badges.push(`${q.eventCount} events`)
+    if (badges.length > 0) lines.push(`  quality: ${badges.join(', ')}`)
+  }
+}
+
 /**
  * Render the manifest as `llms.txt` — a compact, human- and LLM-readable
  * inventory a downstream project can drop into its own AGENTS.md so an agent
@@ -34,18 +64,18 @@ export function renderLlmsText(manifest: IrisManifest): string {
   lines.push('')
   lines.push(
     `Frameworks: ${manifest.frameworks.join(', ')}. Import components from ` +
-      manifest.frameworks.map((f) => `\`@iris-ui/${f}\``).join(' or ') +
+      manifest.frameworks.map((f) => '`@iris-ui-kit/' + f + '`').join(' or ') +
       '.',
   )
   lines.push('')
 
   lines.push('## Architecture')
   for (const layer of manifest.layerModel) {
-    lines.push(`- ${layer.layer}: ${layer.description}`)
+    lines.push('- ' + layer.layer + ': ' + layer.description)
   }
   lines.push('')
 
-  lines.push('## Data & Resilience Primitives (framework-agnostic, from @iris-ui/core)')
+  lines.push('## Data & Resilience Primitives (framework-agnostic, from @iris-ui-kit/core)')
   lines.push(
     '- `createDisposableScope` — Lifecycle teardown (destroy, child scopes, error isolation).',
   )
@@ -73,62 +103,42 @@ export function renderLlmsText(manifest: IrisManifest): string {
   lines.push('')
   lines.push('## Plugin Ecosystem (12 plugins)')
   lines.push('Install plugins as separate packages; activate via <IrisProvider plugins={[…]}>.')
-  lines.push('Import components from `@iris-ui/plugin-{name}/{framework}`.')
+  lines.push('Import components from `@iris-ui-kit/plugin-{name}/{framework}`.')
   for (const [pkg, desc] of Object.entries(PLUGIN_DESCRIPTIONS)) {
     const maybe = manifest.components.filter((c) => c.plugin === pkg)
     const tail = maybe.length > 0 ? ` (${maybe.length} components)` : ''
-    lines.push(`- \`@iris-ui/${pkg}\`${tail} — ${desc}`)
+    lines.push(`- \`@iris-ui-kit/${pkg}\`${tail} — ${desc}`)
   }
   lines.push('')
 
-  const byFw = manifest.frameworks.map((f) => `${f} ${manifest.stats.byFramework[f]}`).join(', ')
+  const byFw = manifest.frameworks
+    .map((f) => f + ' ' + String(manifest.stats.byFramework[f]))
+    .join(', ')
   lines.push(
-    `## Components (${manifest.stats.total} total — ${manifest.stats.full} in all ` +
-      `${manifest.frameworks.length} frameworks; ${byFw})`,
+    '## Components (' +
+      manifest.stats.total +
+      ' total — ' +
+      manifest.stats.full +
+      ' in all ' +
+      manifest.frameworks.length +
+      ' frameworks; ' +
+      byFw +
+      ')',
   )
   for (const group of manifest.groups) {
     lines.push('')
-    lines.push(`### ${group.group} (${group.count})`)
+    lines.push('### ' + group.group + ' (' + group.count + ')')
     for (const name of group.components) {
       const component = manifest.components.find((c) => c.name === name)
-      const fw = component ? component.frameworks.join('/') : ''
-      // Plugin components note their package so an agent knows to install it and
-      // activate via `<IrisProvider plugins={[…]}>`.
-      const via = component?.plugin ? ` — via ${component.plugin} (IrisProvider plugins)` : ''
-      lines.push(`- ${name} [${fw}]${via}`)
-      // The component's harvested JSDoc summary, so an agent reading llms.txt
-      // knows what each component is for (full prose + @example live in
-      // manifest.json). Rendered on its own indented line below the header.
-      if (component?.description) {
-        lines.push(`  ${component.description}`)
-      }
-      // Compact prop list (names + `?` for optional) so an agent reading
-      // llms.txt knows the API surface; full types live in manifest.json.
-      if (component?.props && component.props.length > 0) {
-        const names = component.props.map((p) => `${p.name}${p.optional ? '?' : ''}`).join(', ')
-        lines.push(`  props: ${names}`)
-      }
-      if (component?.events && component.events.length > 0) {
-        lines.push(`  events: ${component.events.join(', ')}`)
-      }
-      if (component?.slots && component.slots.length > 0) {
-        lines.push(`  slots: ${component.slots.join(', ')}`)
-      }
-      if (component?.quality) {
-        const badges: string[] = []
-        if (component.quality.propCount != null) badges.push(`${component.quality.propCount} props`)
-        if (component.quality.eventCount != null)
-          badges.push(`${component.quality.eventCount} events`)
-        if (badges.length > 0) lines.push(`  quality: ${badges.join(', ')}`)
-      }
+      if (component) renderComponentLines(component, lines)
     }
   }
   lines.push('')
 
-  lines.push(`## Design tokens (${manifest.tokens.all.length})`)
-  lines.push(`- colors: ${manifest.tokens.color.join(', ')}`)
-  lines.push(`- spacing: ${manifest.tokens.spacing.join(', ')}`)
-  lines.push(`- radii: ${manifest.tokens.radii.join(', ')}`)
+  lines.push('## Design tokens (' + manifest.tokens.all.length + ')')
+  lines.push('- colors: ' + manifest.tokens.color.join(', '))
+  lines.push('- spacing: ' + manifest.tokens.spacing.join(', '))
+  lines.push('- radii: ' + manifest.tokens.radii.join(', '))
   lines.push('')
 
   return lines.join('\n')

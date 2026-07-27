@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
 import { fireEvent, screen } from '@testing-library/svelte'
-import { createFormStore } from '@iris-ui/core'
+import { createFormStore } from '@iris-ui-kit/core'
 import FieldArrayHarness from './FieldArrayHarness.svelte'
 
 afterEach(cleanup)
@@ -13,7 +13,7 @@ function makeForm() {
 
 const texts = () => screen.getAllByTestId('row').map((el) => el.textContent)
 
-describe('@iris-ui/svelte useFieldArray', () => {
+describe('@iris-ui-kit/svelte useFieldArray', () => {
   it('renders the initial array', () => {
     const form = makeForm()
     render(FieldArrayHarness, { props: { form } })

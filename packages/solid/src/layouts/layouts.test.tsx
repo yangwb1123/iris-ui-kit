@@ -5,7 +5,7 @@ import { IrisHeaderLayout } from './HeaderLayout'
 
 afterEach(cleanup)
 
-describe('@iris-ui/solid layouts', () => {
+describe('@iris-ui-kit/solid layouts', () => {
   it('IrisSidebarLayout renders sidebar (render-prop) + main, controlled collapse', () => {
     const onCollapsedChange = vi.fn()
     const { container } = render(() => (

@@ -12,8 +12,8 @@ import {
   injectGlobalStyles,
   type Direction,
   type ThemeStore,
-} from '@iris-ui/theme'
-import type { IrisTheme } from '@iris-ui/tokens'
+} from '@iris-ui-kit/theme'
+import type { IrisTheme } from '@iris-ui-kit/tokens'
 import { useStore } from '../useStore'
 
 interface IrisThemeContextValue {
@@ -39,7 +39,7 @@ export interface ThemeProviderProps {
  * theme store, applies CSS variables to `target` (or `document.documentElement`)
  * via a `createEffect`, and reverts on change/unmount through `onCleanup`.
  * **Zero business logic** — `applyTheme` / `createThemeStore` come from
- * `@iris-ui/theme`; this is just the thin Solid bridge.
+ * `@iris-ui-kit/theme`; this is just the thin Solid bridge.
  */
 export function ThemeProvider(props: ThemeProviderProps): JSX.Element {
   const current = useStore(props.store.store)

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { generateId } from '@iris-ui/core'
+  import { generateId } from '@iris-ui-kit/core'
   import { styleToString, mergeStyle } from '../../internal/style'
   import { setFormFieldContext, type FormFieldControl } from './context'
   import type { IrisFormFieldProps } from './types'

@@ -21,7 +21,7 @@ import {
   useResourceController,
   useToast,
   type IrisListItem,
-} from '@iris-ui/vue'
+} from '@iris-ui-kit/vue'
 import {
   createUser,
   fetchUsers,
@@ -172,7 +172,7 @@ async function doBulkDelete() {
         <p class="page-desc" style="margin-bottom: 12px">
           Real CRUD on a live in-memory store via <code>createResourceController</code> +
           <code>createClientFetcher</code> — sort, filter, paginate, select, and
-          <code>mutate</code> (optimistic deletes), all from @iris-ui/core.
+          <code>mutate</code> (optimistic deletes), all from @iris-ui-kit/core.
           <template v-if="state.selectedKeys.length > 0">
             · {{ state.selectedKeys.length }} selected</template
           >

@@ -30,7 +30,7 @@ afterEach(() => {
 
 const links = (c: HTMLElement) => c.querySelectorAll('[data-iris-anchor-link]')
 
-describe('@iris-ui/react IrisAnchor', () => {
+describe('@iris-ui-kit/react IrisAnchor', () => {
   it('renders a nav of links', () => {
     const { container } = render(
       <IrisAnchor

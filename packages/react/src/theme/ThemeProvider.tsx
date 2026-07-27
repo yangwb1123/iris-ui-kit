@@ -6,8 +6,8 @@ import {
   type ApplyThemeResult,
   type Direction,
   type ThemeStore,
-} from '@iris-ui/theme'
-import type { IrisTheme } from '@iris-ui/tokens'
+} from '@iris-ui-kit/theme'
+import type { IrisTheme } from '@iris-ui-kit/tokens'
 import { useStore } from '../useStore'
 
 interface IrisThemeContextValue {
@@ -30,12 +30,12 @@ export interface ThemeProviderProps {
 }
 
 /**
- * Renderless provider that mirrors `<IrisThemeProvider>` from `@iris-ui/vue`:
+ * Renderless provider that mirrors `<IrisThemeProvider>` from `@iris-ui-kit/vue`:
  * subscribes to the theme store, applies CSS variables to `target` (or
  * `document.documentElement`), reverts on unmount.
  *
  * **Zero business logic** — `applyTheme` / `createThemeStore` come straight
- * from `@iris-ui/theme`. This component is just a 30-line React adapter.
+ * from `@iris-ui-kit/theme`. This component is just a 30-line React adapter.
  */
 export function ThemeProvider({
   store,

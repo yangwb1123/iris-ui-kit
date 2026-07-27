@@ -45,7 +45,7 @@ import {
   listKeyboardScenario,
   tableCellEditScenario,
   tableColumnResizeScenario,
-} from '@iris-ui/core/contracts'
+} from '@iris-ui-kit/core/contracts'
 import {
   driverFor,
   SwitchHarness,
@@ -101,7 +101,7 @@ afterEach(() => {
   clearToasts()
 })
 
-describe('@iris-ui/vue — cross-framework behavior contracts', () => {
+describe('@iris-ui-kit/vue — cross-framework behavior contracts', () => {
   const makeHost = () => {
     const el = document.createElement('div')
     document.body.appendChild(el)

@@ -7,7 +7,7 @@ import {
   IrisFormField,
   type IrisDateRange,
   type IrisTimeValue,
-} from '@iris-ui/react'
+} from '@iris-ui-kit/react'
 
 export function DatesShowcase() {
   const [inline, setInline] = useState<Date | null>(new Date())

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createSelectionModel, createKeyboardNav, type KeyboardNavAction } from '@iris-ui/core'
+  import { createSelectionModel, createKeyboardNav, type KeyboardNavAction } from '@iris-ui-kit/core'
   import { toStore } from '../../useStore'
   import type { IrisSegmentedOption } from './types'
 

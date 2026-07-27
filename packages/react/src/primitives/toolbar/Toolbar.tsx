@@ -3,7 +3,7 @@ import {
   createKeyboardNav,
   type KeyboardNavAction,
   type KeyboardNavController,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 export type IrisToolbarOrientation = 'horizontal' | 'vertical'
 
@@ -22,7 +22,7 @@ const SELECTOR = 'button, [href], input, select, textarea, [tabindex]'
  * navigation — one item is in the tab order, and Arrow keys (per orientation)
  * plus Home/End move focus and the tab stop between the focusable children.
  *
- * React port of {@link import('@iris-ui/vue').IrisToolbar}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisToolbar}.
  *
  * Keyboard navigation is single-sourced in `createKeyboardNav` from the core
  * package — the controller handles orientation-aware Arrow keys, looping, and

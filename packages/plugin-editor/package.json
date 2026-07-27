@@ -1,6 +1,6 @@
 {
-  "name": "@iris-ui/plugin-editor",
-  "version": "0.0.0",
+  "name": "@iris-ui-kit/plugin-editor",
+  "version": "0.1.0",
   "description": "Code editor plugin for Iris UI (CodeMirror 6): IrisCodeEditor for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",
@@ -44,7 +44,7 @@
     "clean": "rm -rf dist .turbo .svelte-kit"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*",
+    "@iris-ui-kit/core": "workspace:*",
     "@codemirror/autocomplete": "^6.18.0",
     "@codemirror/state": "^6.4.0",
     "@codemirror/view": "^6.34.0",
@@ -79,10 +79,10 @@
     }
   },
   "devDependencies": {
-    "@iris-ui/react": "workspace:*",
-    "@iris-ui/vue": "workspace:*",
-    "@iris-ui/solid": "workspace:*",
-    "@iris-ui/svelte": "workspace:*",
+    "@iris-ui-kit/react": "workspace:*",
+    "@iris-ui-kit/vue": "workspace:*",
+    "@iris-ui-kit/solid": "workspace:*",
+    "@iris-ui-kit/svelte": "workspace:*",
     "@solidjs/testing-library": "^0.8.10",
     "@sveltejs/package": "^2.3.7",
     "@sveltejs/vite-plugin-svelte": "^4.0.4",
@@ -106,5 +106,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/nousresearch/iris-ui.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

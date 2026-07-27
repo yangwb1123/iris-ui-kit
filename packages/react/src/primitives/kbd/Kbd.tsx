@@ -14,7 +14,7 @@ export interface IrisKbdProps extends Omit<React.HTMLAttributes<HTMLElement>, 'c
   children?: React.ReactNode
 }
 
-/** React port of {@link import('@iris-ui/vue').IrisKbd}. */
+/** React port of {@link import('@iris-ui-kit/vue').IrisKbd}. */
 export function IrisKbd({
   keys = [],
   separator = '+',

@@ -4,7 +4,7 @@ import { IrisNumberInput } from './NumberInput'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisNumberInput', () => {
+describe('@iris-ui-kit/react IrisNumberInput', () => {
   it('renders input + +/- buttons', () => {
     const { container } = render(<IrisNumberInput />)
     expect(container.querySelector('input')).not.toBeNull()

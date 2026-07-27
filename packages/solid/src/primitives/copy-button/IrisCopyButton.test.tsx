@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@solidjs/testing-library'
-import { setClipboardHandler } from '@iris-ui/core'
+import { setClipboardHandler } from '@iris-ui-kit/core'
 import { IrisCopyButton } from './IrisCopyButton'
 
 afterEach(() => {

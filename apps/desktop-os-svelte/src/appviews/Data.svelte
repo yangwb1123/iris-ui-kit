@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { compareValues, createReconnectingSource, createDisposableScope } from '@iris-ui/core'
+  import { compareValues, createReconnectingSource, createDisposableScope } from '@iris-ui-kit/core'
   import { onMount, onDestroy } from 'svelte'
-  import { IrisBadge, type IrisTableColumn, type IrisTableSortState } from '@iris-ui/svelte'
+  import { IrisBadge, type IrisTableColumn, type IrisTableSortState } from '@iris-ui-kit/svelte'
 
   interface Row extends Record<string, unknown> {
     id: number

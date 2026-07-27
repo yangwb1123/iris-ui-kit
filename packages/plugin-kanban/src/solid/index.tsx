@@ -1,5 +1,5 @@
 import { createSignal, onCleanup, For, Show, type JSX } from 'solid-js'
-import { createSortable, type SortableRect } from '@iris-ui/core'
+import { createSortable, type SortableRect } from '@iris-ui-kit/core'
 import { createKanban, type KanbanConfig } from '../core'
 
 export type { KanbanCard, KanbanColumn, KanbanConfig, KanbanState, KanbanStore } from '../core'

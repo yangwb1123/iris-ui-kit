@@ -1,6 +1,6 @@
 import type { JSX } from 'solid-js'
-import { SkinProvider, IrisProvider } from '@iris-ui/solid'
-import { notificationsPlugin } from '@iris-ui/plugin-notifications/core'
+import { SkinProvider, IrisProvider } from '@iris-ui-kit/solid'
+import { notificationsPlugin } from '@iris-ui-kit/plugin-notifications/core'
 import { skinEngine } from './skin'
 import { AuthProvider, useAuth } from './auth'
 import { Shell } from './Shell'

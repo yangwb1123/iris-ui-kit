@@ -86,4 +86,19 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
+  // Framework adapter components: JSX render functions have conditional branches
+  // (ternary, &&) that raise cyclomatic complexity. Relax limit for adapters
+  // and plugin packages with complex render logic.
+  {
+    files: [
+      'packages/react/src/**/*.{ts,tsx}',
+      'packages/solid/src/**/*.{ts,tsx}',
+      'packages/vue/src/**/*.{ts,tsx}',
+      'packages/plugin-pro-table/src/**/*.{ts,tsx}',
+      'packages/plugin-form-builder/src/**/*.{ts,tsx}',
+    ],
+    rules: {
+      complexity: ['warn', 70],
+    },
+  },
 )

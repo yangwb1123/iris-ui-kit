@@ -1,6 +1,6 @@
 <script lang="ts">
   // Test fixture: mounts a consumer under <IrisProvider> with the given plugins.
-  import type { IrisPlugin } from '@iris-ui/core'
+  import type { IrisPlugin } from '@iris-ui-kit/core'
   import IrisProvider from './IrisProvider.svelte'
   import PluginConsumer from './PluginConsumer.svelte'
 

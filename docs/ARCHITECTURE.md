@@ -4,11 +4,11 @@
 
 ## Layers (framework-agnostic → framework-coupled)
 
-1. **`@iris-ui/tokens`** — flat token maps (colors/spacing/radii), light/dark themes; DTCG + Style-Dictionary exports.
-2. **`@iris-ui/theme`** — `applyTheme`/`themeCssVarEntries` (single source for runtime + static `themeToCss`), `applyDirection`, `injectGlobalStyles` (reduced-motion + forced-colors), skin system. Derives `--iris-{semantic}-subtle`.
-3. **`@iris-ui/core`** — pure framework-agnostic controllers + material: `createStore` (subscribable, selective `subscribeWith`), selection/tree-selection, roving, data-view (filter/sort/group/`flattenTree`/`withSortedChildren`), `createDataSource`, expansion, admin-shell, cell-range/edit, `createSortable`+`closestCenter`, file-save/clipboard registries, i18n, color math, `contracts` (cross-fw behavior harness). NO DOM, NO framework imports.
-4. **Adapters** — `@iris-ui/{react,vue,solid,svelte}`: thin bindings that bridge core stores to each framework's reactivity (`useSyncExternalStore` / `shallowRef` / `createSignal` / `$state`). ~144 components at parity. Vue/Solid/Svelte authored as h()-render `.ts` / `.tsx` / `.svelte` (no Vue SFCs).
-5. **Plugins** — `@iris-ui/plugin-*` (pro-table, form-builder, kanban, dashboard, calendar, markdown, charts, notifications, query-builder, editor, admin, locale-zh) + `@iris-ui/{cli,eslint-plugin,manifest,mcp}`. Peer-dep the adapters; single-package multi-framework build (tsup array + svelte-package).
+1. **`@iris-ui-kit/tokens`** — flat token maps (colors/spacing/radii), light/dark themes; DTCG + Style-Dictionary exports.
+2. **`@iris-ui-kit/theme`** — `applyTheme`/`themeCssVarEntries` (single source for runtime + static `themeToCss`), `applyDirection`, `injectGlobalStyles` (reduced-motion + forced-colors), skin system. Derives `--iris-{semantic}-subtle`.
+3. **`@iris-ui-kit/core`** — pure framework-agnostic controllers + material: `createStore` (subscribable, selective `subscribeWith`), selection/tree-selection, roving, data-view (filter/sort/group/`flattenTree`/`withSortedChildren`), `createDataSource`, expansion, admin-shell, cell-range/edit, `createSortable`+`closestCenter`, file-save/clipboard registries, i18n, color math, `contracts` (cross-fw behavior harness). NO DOM, NO framework imports.
+4. **Adapters** — `@iris-ui-kit/{react,vue,solid,svelte}`: thin bindings that bridge core stores to each framework's reactivity (`useSyncExternalStore` / `shallowRef` / `createSignal` / `$state`). ~144 components at parity. Vue/Solid/Svelte authored as h()-render `.ts` / `.tsx` / `.svelte` (no Vue SFCs).
+5. **Plugins** — `@iris-ui-kit/plugin-*` (pro-table, form-builder, kanban, dashboard, calendar, markdown, charts, notifications, query-builder, editor, admin, locale-zh) + `@iris-ui-kit/{cli,eslint-plugin,manifest,mcp}`. Peer-dep the adapters; single-package multi-framework build (tsup array + svelte-package).
 
 ## Key invariants
 

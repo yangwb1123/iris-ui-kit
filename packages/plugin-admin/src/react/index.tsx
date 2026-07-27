@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { IrisAdminLayout, useDataSource, createClientDataSource } from '@iris-ui/react'
+import { IrisAdminLayout, useDataSource, createClientDataSource } from '@iris-ui-kit/react'
 import {
   resolveAdminPage,
   adminDataViewColumns,

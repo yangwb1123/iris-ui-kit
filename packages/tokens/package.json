@@ -1,6 +1,6 @@
 {
-  "name": "@iris-ui/tokens",
-  "version": "0.0.0",
+  "name": "@iris-ui-kit/tokens",
+  "version": "0.1.0",
   "description": "Design token types and default themes for Iris UI",
   "license": "MIT",
   "type": "module",
@@ -30,5 +30,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/nousresearch/iris-ui.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -1,7 +1,7 @@
-import { createStore, createPlugin, generateId, type Store } from '@iris-ui/core'
+import { createStore, createPlugin, generateId, type Store } from '@iris-ui-kit/core'
 
 /**
- * `@iris-ui/plugin-notifications` — a persistent, inbox-style notification
+ * `@iris-ui-kit/plugin-notifications` — a persistent, inbox-style notification
  * center. Where IrisToast is ephemeral (auto-dismiss, announcement-only), this
  * keeps a history with read/unread state, so apps can show a bell + unread
  * count + a list users can review, mark read, and dismiss. All logic lives in

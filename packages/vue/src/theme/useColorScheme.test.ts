@@ -36,7 +36,7 @@ const Probe = defineComponent({
   },
 })
 
-describe('@iris-ui/vue useColorScheme', () => {
+describe('@iris-ui-kit/vue useColorScheme', () => {
   it('reports the initial system scheme', () => {
     mockMatchMedia(true)
     const wrapper = mount(Probe)

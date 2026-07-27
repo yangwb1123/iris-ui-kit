@@ -1,5 +1,5 @@
 /**
- * `@iris-ui/core/event-bus` — a framework-agnostic, strongly-typed publish /
+ * `@iris-ui-kit/core/event-bus` — a framework-agnostic, strongly-typed publish /
  * subscribe primitive. It is the foundation for the inter-plugin event bus
  * (plugins `emit` named events and `on`-subscribe to each other without a hard
  * import), but it stands alone: an `Events` shape maps each event name to its

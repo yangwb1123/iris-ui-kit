@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { IrisButton, IrisBadge } from '@iris-ui/svelte'
+  import { IrisButton, IrisBadge } from '@iris-ui-kit/svelte'
 
   let name = $state('')
 </script>

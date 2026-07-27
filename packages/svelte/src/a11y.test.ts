@@ -37,7 +37,7 @@ async function axeViolations(node: Element): Promise<string[]> {
   return results.violations.map((v) => `${v.id}: ${v.help}`)
 }
 
-describe('@iris-ui/svelte a11y (axe-core)', () => {
+describe('@iris-ui-kit/svelte a11y (axe-core)', () => {
   it('IrisButton has no violations', async () => {
     const { container } = render(ButtonA11yHarness)
     expect(await axeViolations(container)).toEqual([])

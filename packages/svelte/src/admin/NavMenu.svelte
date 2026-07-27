@@ -8,7 +8,7 @@
     isBranch,
     visibleNav,
     type NavNode,
-  } from '@iris-ui/core'
+  } from '@iris-ui-kit/core'
   import { toStore } from '../useStore'
   import { styleToString } from '../internal/style'
   import IrisIcon from '../primitives/icon/IrisIcon.svelte'

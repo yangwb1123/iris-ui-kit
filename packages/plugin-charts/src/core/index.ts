@@ -1,7 +1,7 @@
-import { createPlugin } from '@iris-ui/core'
+import { createPlugin } from '@iris-ui-kit/core'
 
 /**
- * `@iris-ui/plugin-charts` — zero-dependency, token-themed SVG charts for Iris
+ * `@iris-ui-kit/plugin-charts` — zero-dependency, token-themed SVG charts for Iris
  * UI. This `core` entry is framework-agnostic: pure geometry (scales, axis
  * ticks, line/area paths, bar rects) that the four thin SVG renderers consume,
  * plus the {@link chartsPlugin} (registers `--iris-chart-*` theme tokens). No

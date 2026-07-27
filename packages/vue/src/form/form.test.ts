@@ -49,7 +49,7 @@ function makeForm(onSubmit?: (v: { name: string }) => void) {
   })
 }
 
-describe('@iris-ui/vue useForm / useField', () => {
+describe('@iris-ui-kit/vue useForm / useField', () => {
   it('renders the initial field value', () => {
     const wrapper = mount(makeForm())
     expect(wrapper.find<HTMLInputElement>('input').element.value).toBe('')
@@ -121,7 +121,7 @@ describe('@iris-ui/vue useForm / useField', () => {
   })
 })
 
-describe('@iris-ui/vue IrisForm focus-first-error', () => {
+describe('@iris-ui-kit/vue IrisForm focus-first-error', () => {
   // useField must run inside <IrisForm> (descendant), so fields live in a child.
   const Fields = defineComponent({
     setup() {

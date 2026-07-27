@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { IrisButton, type IrisButtonSize, type IrisButtonVariant } from '@iris-ui/vue'
+import { IrisButton, type IrisButtonSize, type IrisButtonVariant } from '@iris-ui-kit/vue'
 
 const VARIANTS: IrisButtonVariant[] = ['solid', 'outline', 'ghost', 'link']
 const SIZES: IrisButtonSize[] = ['sm', 'md', 'lg']

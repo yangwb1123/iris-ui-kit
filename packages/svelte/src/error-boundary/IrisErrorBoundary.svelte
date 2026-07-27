@@ -1,6 +1,6 @@
 <script lang="ts">
   // IrisErrorBoundary — catches render/effect errors thrown by the guarded
-  // subtree and swaps to a fallback. Mirrors @iris-ui/{react,vue,solid}.
+  // subtree and swaps to a fallback. Mirrors @iris-ui-kit/{react,vue,solid}.
   // Built on Svelte 5's <svelte:boundary>. Catching does NOT rethrow.
   import type { Snippet } from 'svelte'
   import { useI18n } from '../i18n'

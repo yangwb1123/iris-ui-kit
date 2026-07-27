@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createSortable, type SortableRect } from '@iris-ui/core'
+  import { createSortable, type SortableRect } from '@iris-ui-kit/core'
   import { createKanban, type KanbanConfig, type KanbanColumn } from '../core'
 
   let {

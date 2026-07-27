@@ -8,7 +8,7 @@
    * read — and persists under the `accent` pref, re-applying on mount so both
    * survive a reload).
    */
-  import { IrisButton, IrisBadge } from '@iris-ui/svelte'
+  import { IrisButton, IrisBadge } from '@iris-ui-kit/svelte'
   import { profile, getApps, useProfileState } from '../profile.svelte'
   import { PERMISSION_META, useGrants } from '../permissions.svelte'
   import { OS_ORDER, CHROMES } from '../os'

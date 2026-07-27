@@ -11,9 +11,9 @@ const src = (name: string) =>
 const coreSubpath = (name: string) =>
   fileURLToPath(new URL(`../../packages/core/src/${name}.ts`, import.meta.url))
 
-// `serve` (dev) aliases @iris-ui/* to source for instant HMR; `build`/`preview`
-// bundle the real published dist artifacts. The `@iris-ui/core/*` subpath aliases
-// MUST come before the bare `@iris-ui/core` alias so they win.
+// `serve` (dev) aliases @iris-ui-kit/* to source for instant HMR; `build`/`preview`
+// bundle the real published dist artifacts. The `@iris-ui-kit/core/*` subpath aliases
+// MUST come before the bare `@iris-ui-kit/core` alias so they win.
 export default defineConfig(({ command }) => ({
   plugins: [svelte()],
   server: {
@@ -27,16 +27,16 @@ export default defineConfig(({ command }) => ({
     alias:
       command === 'serve'
         ? {
-            '@iris-ui/core/window': coreSubpath('window'),
-            '@iris-ui/core/profile': coreSubpath('profile'),
-            '@iris-ui/core/commands': coreSubpath('commands'),
-            '@iris-ui/core/notifications': coreSubpath('notifications'),
-            '@iris-ui/core/clipboard-history': coreSubpath('clipboard-history'),
-            '@iris-ui/core/fs': coreSubpath('fs'),
-            '@iris-ui/core/undo': coreSubpath('undo'),
-            '@iris-ui/core': src('core'),
-            '@iris-ui/tokens': src('tokens'),
-            '@iris-ui/svelte': src('svelte'),
+            '@iris-ui-kit/core/window': coreSubpath('window'),
+            '@iris-ui-kit/core/profile': coreSubpath('profile'),
+            '@iris-ui-kit/core/commands': coreSubpath('commands'),
+            '@iris-ui-kit/core/notifications': coreSubpath('notifications'),
+            '@iris-ui-kit/core/clipboard-history': coreSubpath('clipboard-history'),
+            '@iris-ui-kit/core/fs': coreSubpath('fs'),
+            '@iris-ui-kit/core/undo': coreSubpath('undo'),
+            '@iris-ui-kit/core': src('core'),
+            '@iris-ui-kit/tokens': src('tokens'),
+            '@iris-ui-kit/svelte': src('svelte'),
           }
         : {},
   },

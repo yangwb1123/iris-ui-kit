@@ -9,7 +9,7 @@ function fileOf(name: string, size: number, type = 'text/plain'): File {
   return new File([blob], name, { type })
 }
 
-describe('@iris-ui/vue formatBytes', () => {
+describe('@iris-ui-kit/vue formatBytes', () => {
   it('B / KB / MB / GB', () => {
     expect(formatBytes(0)).toBe('0 B')
     expect(formatBytes(512)).toBe('512 B')
@@ -19,7 +19,7 @@ describe('@iris-ui/vue formatBytes', () => {
   })
 })
 
-describe('@iris-ui/vue IrisFileUpload', () => {
+describe('@iris-ui-kit/vue IrisFileUpload', () => {
   it('renders zone + hidden input', () => {
     const wrap = mount(IrisFileUpload)
     expect(wrap.find('[data-iris-file-upload-zone]').exists()).toBe(true)
@@ -174,7 +174,7 @@ describe('@iris-ui/vue IrisFileUpload', () => {
   })
 })
 
-describe('@iris-ui/vue IrisFileUpload i18n', () => {
+describe('@iris-ui-kit/vue IrisFileUpload i18n', () => {
   it('renders the default localized label', () => {
     const w = mount(IrisFileUpload)
     expect(w.find('[data-iris-file-upload-label]').text()).toBe('Click or drop files to upload')

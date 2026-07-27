@@ -1,4 +1,4 @@
-import { createUndoStack, type UndoStack, type UndoStackOptions } from '@iris-ui/core/undo'
+import { createUndoStack, type UndoStack, type UndoStackOptions } from '@iris-ui-kit/core/undo'
 
 /**
  * Reactive snapshot metadata for the UndoStack: convenience booleans that

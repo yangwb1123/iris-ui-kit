@@ -3,7 +3,7 @@ import { createStore, type Store } from './store'
 /**
  * Framework-agnostic inline cell-edit controller — the small state machine that
  * tracks which cell is being edited and runs a commit. Extracted from
- * `@iris-ui/plugin-pro-table` so the base Table, pro-table, and any future data
+ * `@iris-ui-kit/plugin-pro-table` so the base Table, pro-table, and any future data
  * grid share one editing engine instead of re-implementing start/cancel/commit.
  *
  * It owns ONLY the editing state. Resolving the column/row, coercing the value,

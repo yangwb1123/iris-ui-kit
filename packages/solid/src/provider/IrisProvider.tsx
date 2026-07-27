@@ -1,7 +1,12 @@
 import { createEffect, createMemo, onCleanup, type JSX } from 'solid-js'
-import { runPlugins, type IrisPlugin } from '@iris-ui/core'
-import { applyCssVars, type CssVarEntries, type Direction, type ThemeStore } from '@iris-ui/theme'
-import type { SkinEngine } from '@iris-ui/skins'
+import { runPlugins, type IrisPlugin } from '@iris-ui-kit/core'
+import {
+  applyCssVars,
+  type CssVarEntries,
+  type Direction,
+  type ThemeStore,
+} from '@iris-ui-kit/theme'
+import type { SkinEngine } from '@iris-ui-kit/skins'
 import { ThemeProvider } from '../theme'
 import { SkinProvider } from '../skins'
 import { IrisI18nProvider } from '../i18n'

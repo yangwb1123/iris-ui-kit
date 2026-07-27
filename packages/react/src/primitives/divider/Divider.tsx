@@ -16,7 +16,7 @@ export interface IrisDividerProps extends Omit<React.HTMLAttributes<HTMLElement>
   children?: React.ReactNode
 }
 
-/** React port of {@link import('@iris-ui/vue').IrisDivider}. */
+/** React port of {@link import('@iris-ui-kit/vue').IrisDivider}. */
 export function IrisDivider({
   orientation = 'horizontal',
   label,

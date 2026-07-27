@@ -1,7 +1,7 @@
-import { createPlugin } from '@iris-ui/core'
+import { createPlugin } from '@iris-ui-kit/core'
 
 /**
- * `@iris-ui/plugin-markdown` — core entry.
+ * `@iris-ui-kit/plugin-markdown` — core entry.
  *
  * Provides a minimal Markdown→HTML converter (`markdownToHtml`) with no
  * external dependencies, plus the plugin registration object and design tokens.

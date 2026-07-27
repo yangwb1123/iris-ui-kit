@@ -8,7 +8,7 @@ afterEach(() => {
   __resetSkeletonStyles()
 })
 
-describe('@iris-ui/svelte IrisSkeleton', () => {
+describe('@iris-ui-kit/svelte IrisSkeleton', () => {
   it('renders a div with role=status and aria-busy', () => {
     const { container } = render(IrisSkeleton)
     const el = container.querySelector('[data-iris-skeleton]')

@@ -75,7 +75,7 @@ export interface IrisChipProps extends Omit<
   children?: React.ReactNode
 }
 
-/** React port of {@link import('@iris-ui/vue').IrisChip}. */
+/** React port of {@link import('@iris-ui-kit/vue').IrisChip}. */
 export function IrisChip({
   variant = 'subtle',
   tone = 'neutral',

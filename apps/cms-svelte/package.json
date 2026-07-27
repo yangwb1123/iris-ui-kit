@@ -1,6 +1,6 @@
 {
   "name": "cms-svelte",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,11 +14,11 @@
     "clean": "rm -rf dist .turbo .svelte-kit"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*",
-    "@iris-ui/plugin-form-builder": "workspace:^",
-    "@iris-ui/plugin-notifications": "workspace:*",
-    "@iris-ui/svelte": "workspace:*",
-    "@iris-ui/tokens": "workspace:*",
+    "@iris-ui-kit/core": "workspace:*",
+    "@iris-ui-kit/plugin-form-builder": "workspace:^",
+    "@iris-ui-kit/plugin-notifications": "workspace:*",
+    "@iris-ui-kit/svelte": "workspace:*",
+    "@iris-ui-kit/tokens": "workspace:*",
     "svelte": "^5.16.0"
   },
   "devDependencies": {

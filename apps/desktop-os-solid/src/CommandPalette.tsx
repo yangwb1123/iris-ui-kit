@@ -1,12 +1,12 @@
 import { For, Show, createEffect, createMemo, createSignal, type JSX } from 'solid-js'
-import { type Command, type CommandHit } from '@iris-ui/core/commands'
+import { type Command, type CommandHit } from '@iris-ui-kit/core/commands'
 import { useCommands, useCommandSearch } from './commands'
 
 /**
  * ⌘K / Ctrl+K command palette — a centered, token-skinned overlay that fuzzy-
  * searches the shared command registry and runs the chosen command. ↑/↓ move the
  * selection, Enter runs it (then closes), Esc + click-outside close. The Solid
- * port of the React palette over the SAME `@iris-ui/core/commands` registry.
+ * port of the React palette over the SAME `@iris-ui-kit/core/commands` registry.
  */
 export function CommandPalette(props: { open: boolean; onClose: () => void }): JSX.Element {
   const registry = useCommands()

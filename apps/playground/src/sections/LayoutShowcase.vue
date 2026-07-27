@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { IrisDragger, IrisResizer, IrisSplitter } from '@iris-ui/vue'
+import { IrisDragger, IrisResizer, IrisSplitter } from '@iris-ui-kit/vue'
 
 const split = ref(0.4)
 const size = ref({ width: 220, height: 140 })

@@ -1,5 +1,5 @@
 import { defineComponent, Fragment, h, type VNode } from 'vue'
-import { composeEventHandlers } from '@iris-ui/core'
+import { composeEventHandlers } from '@iris-ui-kit/core'
 
 /** Test whether a prop key looks like a Vue event listener: `onXxx`. */
 function isEventListenerKey(key: string): boolean {

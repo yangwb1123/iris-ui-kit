@@ -1,5 +1,5 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
-import type { Size } from '@iris-ui/core'
+import type { Size } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 
 export type IrisNumberInputSize = Size

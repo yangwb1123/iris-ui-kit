@@ -2,7 +2,7 @@ import { createStore, type Store } from './store'
 import { generateId } from './utils'
 
 /**
- * `@iris-ui/core/window` — a framework-agnostic WINDOW MANAGER: the state engine
+ * `@iris-ui-kit/core/window` — a framework-agnostic WINDOW MANAGER: the state engine
  * behind a desktop-environment UI (Windows / macOS / KDE style shells). Owns the
  * window lifecycle — open/close, focus + z-order (raise-to-front), minimize,
  * maximize/restore, move/resize geometry, and edge-snap/tiling — over a

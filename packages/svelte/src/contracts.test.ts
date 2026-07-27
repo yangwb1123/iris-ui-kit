@@ -46,7 +46,7 @@ import {
   tableCellEditScenario,
   tableColumnResizeScenario,
   type ContractDriver,
-} from '@iris-ui/core/contracts'
+} from '@iris-ui-kit/core/contracts'
 import ContractsHarness from './ContractsHarness.svelte'
 import RatingContractHarness from './RatingContractHarness.svelte'
 import RangeSliderContractHarness from './RangeSliderContractHarness.svelte'
@@ -150,7 +150,7 @@ function driverFor(container: HTMLElement, unmount: () => void = () => {}): Cont
   }
 }
 
-describe('@iris-ui/svelte — cross-framework behavior contracts', () => {
+describe('@iris-ui-kit/svelte — cross-framework behavior contracts', () => {
   it('satisfies the shared Tabs contract', async () => {
     const { container } = render(ContractsHarness)
     await runContract(tabsScenario, driverFor(container), expect)

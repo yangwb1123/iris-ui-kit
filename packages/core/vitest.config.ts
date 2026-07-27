@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config'
 
 /**
- * Real, v8-instrumented coverage for `@iris-ui/core` — the counterpart to
+ * Real, v8-instrumented coverage for `@iris-ui-kit/core` — the counterpart to
  * `scripts/test-coverage-report.mjs`'s test-file line-count heuristic (which
  * only measures how much test CODE exists, not how much source it actually
  * exercises; incremental source changes can pass it with 0% real coverage).

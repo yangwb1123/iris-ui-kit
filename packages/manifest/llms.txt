@@ -2,7 +2,7 @@
 
 Token-driven, cross-framework (React, Vue, SolidJS, Svelte) UI component library.
 
-Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` or `@iris-ui/vue` or `@iris-ui/solid` or `@iris-ui/svelte`.
+Frameworks: react, vue, solid, svelte. Import components from `@iris-ui-kit/react` or `@iris-ui-kit/vue` or `@iris-ui-kit/solid` or `@iris-ui-kit/svelte`.
 
 ## Architecture
 - Layer 0 — Theme System: Design tokens, applyTheme, theme store (CSS variables).
@@ -12,7 +12,7 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 - Layer 4 — System Skeletons: Page / section skeleton scaffolds.
 - Behaviors: Orthogonal interaction behaviors (hotkeys, click-outside, drag).
 
-## Data & Resilience Primitives (framework-agnostic, from @iris-ui/core)
+## Data & Resilience Primitives (framework-agnostic, from @iris-ui-kit/core)
 - `createDisposableScope` — Lifecycle teardown (destroy, child scopes, error isolation).
 - `createEventBus` — Typed pub/sub for cross-plugin and cross-controller communication.
 - `createQueryCache` — Async fetch dedup with TTL + stale-while-revalidate (SWR).
@@ -26,19 +26,19 @@ Frameworks: react, vue, solid, svelte. Import components from `@iris-ui/react` o
 
 ## Plugin Ecosystem (12 plugins)
 Install plugins as separate packages; activate via <IrisProvider plugins={[…]}>.
-Import components from `@iris-ui/plugin-{name}/{framework}`.
-- `@iris-ui/plugin-locale-zh` — Simplified-Chinese (zh-CN) message pack for all Iris UI i18n keys.
-- `@iris-ui/plugin-editor` — CodeMirror 6 code editor (SQL/JSON/JS/plain) with inline diff view.
-- `@iris-ui/plugin-pro-table` — vxe-table-style CRUD data table with sorting, filtering, inline editing, column resize, and row virtualization.
-- `@iris-ui/plugin-charts` — Zero-dependency, token-themed SVG charts: line, area, bar, sparkline.
-- `@iris-ui/plugin-form-builder` — Schema-driven form builder — render a validated form from a declarative schema.
-- `@iris-ui/plugin-notifications` — Persistent notification center with inbox, unread count, mark-read, dismiss.
-- `@iris-ui/plugin-admin` — Admin panel extensions: page layouts, user management widgets.
-- `@iris-ui/plugin-calendar` — Calendar widget with month/week views and event display.
-- `@iris-ui/plugin-dashboard` — Dashboard grid layouts with draggable cards and responsive breakpoints.
-- `@iris-ui/plugin-kanban` — Kanban board with drag-and-drop columns and cards.
-- `@iris-ui/plugin-markdown` — Markdown editor (CodeMirror) and rendered preview with syntax highlighting.
-- `@iris-ui/plugin-query-builder` — Visual query/filter builder with rule groups, operators, and value inputs.
+Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
+- `@iris-ui-kit/plugin-locale-zh` — Simplified-Chinese (zh-CN) message pack for all Iris UI i18n keys.
+- `@iris-ui-kit/plugin-editor` — CodeMirror 6 code editor (SQL/JSON/JS/plain) with inline diff view.
+- `@iris-ui-kit/plugin-pro-table` — vxe-table-style CRUD data table with sorting, filtering, inline editing, column resize, and row virtualization.
+- `@iris-ui-kit/plugin-charts` — Zero-dependency, token-themed SVG charts: line, area, bar, sparkline.
+- `@iris-ui-kit/plugin-form-builder` — Schema-driven form builder — render a validated form from a declarative schema.
+- `@iris-ui-kit/plugin-notifications` — Persistent notification center with inbox, unread count, mark-read, dismiss.
+- `@iris-ui-kit/plugin-admin` — Admin panel extensions: page layouts, user management widgets.
+- `@iris-ui-kit/plugin-calendar` — Calendar widget with month/week views and event display.
+- `@iris-ui-kit/plugin-dashboard` — Dashboard grid layouts with draggable cards and responsive breakpoints.
+- `@iris-ui-kit/plugin-kanban` — Kanban board with drag-and-drop columns and cards.
+- `@iris-ui-kit/plugin-markdown` — Markdown editor (CodeMirror) and rendered preview with syntax highlighting.
+- `@iris-ui-kit/plugin-query-builder` — Visual query/filter builder with rule groups, operators, and value inputs.
 
 ## Components (151 total — 151 in all 4 frameworks; react 151, vue 151, solid 151, svelte 151)
 
@@ -158,58 +158,58 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   quality: 8 props, 0 events
 
 ### plugin (13)
-- IrisAdminApp [react/solid/svelte/vue] — via @iris-ui/plugin-admin (IrisProvider plugins)
+- IrisAdminApp [react/solid/svelte/vue] — via @iris-ui-kit/plugin-admin (IrisProvider plugins)
   Schema-driven CMS for React. Renders `IrisAdminLayout` from a declarative {@link AdminAppSchema} (nav + pages); data pages are backed by the unified data engine (`createDataSource` via `useDataSource`), custom pages are rendered by the host via `renderPage`. The whole app is `<IrisAdminApp schema={...} />`.
   props: schema, renderPage?
   slots: renderPage
   quality: 2 props, 0 events
-- IrisBarChart [react/solid/svelte/vue] — via @iris-ui/plugin-charts (IrisProvider plugins)
+- IrisBarChart [react/solid/svelte/vue] — via @iris-ui-kit/plugin-charts (IrisProvider plugins)
   Vertical bar chart rendered as themed SVG over the core geometry.
   props: data, width?, height?, nice?, gap?, ariaLabel?, className?, style?
   quality: 8 props, 0 events
-- IrisCodeEditor [react/solid/svelte/vue] — via @iris-ui/plugin-editor (IrisProvider plugins)
+- IrisCodeEditor [react/solid/svelte/vue] — via @iris-ui-kit/plugin-editor (IrisProvider plugins)
   CodeMirror 6 code editor for React. Mounts the framework-agnostic {@link createEditor} handle and reconciles `value` / `language` / `readOnly`.
   props: value?, defaultValue?, language?, readOnly?, completions?, base?, onChange?, className?, style?
   events: onChange
   quality: 9 props, 1 events
-- IrisDashboard [react/solid/svelte/vue] — via @iris-ui/plugin-dashboard (IrisProvider plugins)
+- IrisDashboard [react/solid/svelte/vue] — via @iris-ui-kit/plugin-dashboard (IrisProvider plugins)
   Render a CSS Grid dashboard from a declarative config (React). Each widget is positioned using `grid-column` and `grid-row`.
   props: config, className?, style?
   quality: 3 props, 0 events
-- IrisEventCalendar [react/solid/svelte/vue] — via @iris-ui/plugin-calendar (IrisProvider plugins)
+- IrisEventCalendar [react/solid/svelte/vue] — via @iris-ui-kit/plugin-calendar (IrisProvider plugins)
   Render a month-view events calendar from a declarative config (React). Displays a 7-column grid (Sun–Sat) with event chips per day cell. Clicking a day fires `config.onDateClick`; clicking an event chip fires `config.onEventClick`. Themed via CSS vars.
   props: config, class?, style?
   quality: 3 props, 0 events
-- IrisFormBuilder [react/solid/svelte/vue] — via @iris-ui/plugin-form-builder (IrisProvider plugins)
+- IrisFormBuilder [react/solid/svelte/vue] — via @iris-ui-kit/plugin-form-builder (IrisProvider plugins)
   Render a validated form from a declarative schema (React). Each field becomes an accessible native control wired to the core form engine; required fields validate inline; submit runs the schema's `onSubmit`. Themed via CSS vars.
   props: schema, className?, style?
   quality: 3 props, 0 events
-- IrisKanban [react/solid/svelte/vue] — via @iris-ui/plugin-kanban (IrisProvider plugins)
+- IrisKanban [react/solid/svelte/vue] — via @iris-ui-kit/plugin-kanban (IrisProvider plugins)
   Render a Kanban board from a declarative config (React). Columns are laid out horizontally; each card can be moved to any column. WIP-limit columns refuse drops when full. Themed via CSS vars.
   props: config, className?, style?
   quality: 3 props, 0 events
-- IrisLineChart [react/solid/svelte/vue] — via @iris-ui/plugin-charts (IrisProvider plugins)
+- IrisLineChart [react/solid/svelte/vue] — via @iris-ui-kit/plugin-charts (IrisProvider plugins)
   Line (or area) chart rendered as plain themed SVG over the core geometry.
   props: data, width?, height?, area?, nice?, ariaLabel?, className?, style?
   quality: 8 props, 0 events
-- IrisMarkdown [react/solid/svelte/vue] — via @iris-ui/plugin-markdown (IrisProvider plugins)
+- IrisMarkdown [react/solid/svelte/vue] — via @iris-ui-kit/plugin-markdown (IrisProvider plugins)
   Render Markdown as themed HTML (React).
   props: content, className?
   quality: 2 props, 0 events
-- IrisNotificationCenter [react/solid/svelte/vue] — via @iris-ui/plugin-notifications (IrisProvider plugins)
+- IrisNotificationCenter [react/solid/svelte/vue] — via @iris-ui-kit/plugin-notifications (IrisProvider plugins)
   Notification-center panel for React: a header (title + unread badge + mark-all / clear) over a list of notifications (click to mark read, × to dismiss). All state lives in the {@link NotificationCenter}; the host wraps this in a popover / drawer behind a bell icon.
   props: center, title?, emptyText?, dismissLabel?, unreadLabel?, className?
   quality: 6 props, 0 events
-- IrisProTable [react/solid/svelte/vue] — via @iris-ui/plugin-pro-table (IrisProvider plugins)
+- IrisProTable [react/solid/svelte/vue] — via @iris-ui-kit/plugin-pro-table (IrisProvider plugins)
   vxe-table-style CRUD data table for React. All logic lives in the framework-agnostic {@link ProTableStore}; this component subscribes to it and renders header (sortable), selection, inline editors, rows, and a pager.
   props: store, className?, labels?, columnReorder?, virtualized?, rowHeight?, maxHeight?, columnVirtualized?
   quality: 8 props, 0 events
-- IrisQueryBuilder [react/solid/svelte/vue] — via @iris-ui/plugin-query-builder (IrisProvider plugins)
+- IrisQueryBuilder [react/solid/svelte/vue] — via @iris-ui-kit/plugin-query-builder (IrisProvider plugins)
   Visual query builder for React: stacked rule rows (column → operator → value) over a {@link FilterBuilder}, emitting compiled `FilterRule[]` via `onChange` (wire it to `dataSource.setFilterRules`). All logic lives in the builder.
   props: builder, onChange?, addLabel?, className?
   events: onChange
   quality: 4 props, 1 events
-- IrisSparkline [react/solid/svelte/vue] — via @iris-ui/plugin-charts (IrisProvider plugins)
+- IrisSparkline [react/solid/svelte/vue] — via @iris-ui-kit/plugin-charts (IrisProvider plugins)
   Compact, axis-less inline trend line (for tables / stat cards).
   props: data, width?, height?, ariaLabel?, className?, style?
   quality: 6 props, 0 events
@@ -232,7 +232,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   slots: default
   quality: 7 props, 1 events
 - IrisAlert [react/solid/svelte/vue]
-  React port of {@link import('@iris-ui/vue').IrisAlert}.
+  React port of {@link import('@iris-ui-kit/vue').IrisAlert}.
   props: tone?, title?, closable?, open?, onClose?, icon?, children?
   events: onClose
   slots: title, icon, default
@@ -248,7 +248,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   slots: default
   quality: 4 props, 0 events
 - IrisAvatar [react/solid/svelte/vue]
-  React port of {@link import('@iris-ui/vue').IrisAvatar}.
+  React port of {@link import('@iris-ui-kit/vue').IrisAvatar}.
   props: src?, alt?, name?, fallback?, fallbackContent?, size?, shape?
   slots: fallbackContent
   quality: 7 props, 0 events
@@ -259,7 +259,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   slots: default
   quality: 8 props, 1 events
 - IrisBadge [react/solid/svelte/vue]
-  React port of {@link import('@iris-ui/vue').IrisBadge}. Same visual model.
+  React port of {@link import('@iris-ui-kit/vue').IrisBadge}. Same visual model.
   props: variant?, tone?, size?, children?
   slots: default
   quality: 4 props, 0 events
@@ -291,7 +291,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   events: onValueChange
   quality: 11 props, 1 events
 - IrisCard [react/solid/svelte/vue]
-  React port of {@link import('@iris-ui/vue').IrisCard}.
+  React port of {@link import('@iris-ui-kit/vue').IrisCard}.
   props: variant?, padding?, hover?, header?, footer?, children?
   slots: header, footer, default
   quality: 6 props, 0 events
@@ -313,7 +313,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   slots: default
   quality: 7 props, 1 events
 - IrisChip [react/solid/svelte/vue]
-  React port of {@link import('@iris-ui/vue').IrisChip}.
+  React port of {@link import('@iris-ui-kit/vue').IrisChip}.
   props: variant?, tone?, size?, closable?, clickable?, disabled?, onClose?, onClick?, icon?, children?
   events: onClose, onClick
   slots: icon, default
@@ -389,7 +389,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   slots: default
   quality: 2 props, 0 events
 - IrisDivider [react/solid/svelte/vue]
-  React port of {@link import('@iris-ui/vue').IrisDivider}.
+  React port of {@link import('@iris-ui-kit/vue').IrisDivider}.
   props: orientation?, label?, spacing?, children?
   slots: label, default
   quality: 4 props, 0 events
@@ -448,7 +448,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   slots: default
   quality: 2 props, 0 events
 - IrisEmptyState [react/solid/svelte/vue]
-  React port of {@link import('@iris-ui/vue').IrisEmptyState}.
+  React port of {@link import('@iris-ui-kit/vue').IrisEmptyState}.
   props: title?, description?, icon?, action?, children?
   slots: title, description, icon, action, default
   quality: 5 props, 0 events
@@ -479,7 +479,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   slots: format
   quality: 11 props, 0 events
 - IrisIcon [react/solid/svelte/vue]
-  Renders a registered icon as inline SVG. Resolves `name` through an `@iris-ui/icons` registry and renders the icon's structured nodes as real SVG child elements (no raw-HTML injection). Colors follow `currentColor`, so the surrounding CSS `color` themes it. Renders nothing for an unresolved name.
+  Renders a registered icon as inline SVG. Resolves `name` through an `@iris-ui-kit/icons` registry and renders the icon's structured nodes as real SVG child elements (no raw-HTML injection). Colors follow `currentColor`, so the surrounding CSS `color` themes it. Renders nothing for an unresolved name.
   props: name, size?, strokeWidth?, fill?, title?, registry?
   quality: 6 props, 0 events
 - IrisImage [react/solid/svelte/vue]
@@ -492,7 +492,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   slots: prefix, suffix
   quality: 6 props, 0 events
 - IrisKbd [react/solid/svelte/vue]
-  React port of {@link import('@iris-ui/vue').IrisKbd}.
+  React port of {@link import('@iris-ui-kit/vue').IrisKbd}.
   props: keys?, separator?, size?, children?
   slots: default
   quality: 4 props, 0 events
@@ -547,7 +547,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   slots: default
   quality: 2 props, 0 events
 - IrisNumberInput [react/solid/svelte/vue]
-  React port of {@link import('@iris-ui/vue').IrisNumberInput}.
+  React port of {@link import('@iris-ui-kit/vue').IrisNumberInput}.
   props: value?, defaultValue?, onChange?, size?, min?, max?, step?, invalid?, showControls?, ariaDescribedby?
   events: onChange
   quality: 10 props, 1 events
@@ -562,7 +562,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   events: onValueChange
   quality: 9 props, 1 events
 - IrisPasswordInput [react/solid/svelte/vue]
-  React port of {@link import('@iris-ui/vue').IrisPasswordInput}.
+  React port of {@link import('@iris-ui-kit/vue').IrisPasswordInput}.
   props: showToggle?, suffix?, prefix?
   slots: suffix, prefix
   quality: 3 props, 0 events
@@ -597,7 +597,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   slots: default
   quality: 3 props, 0 events
 - IrisRadioGroup [react/solid/svelte/vue]
-  React port of {@link import('@iris-ui/vue').IrisRadioGroup}.
+  React port of {@link import('@iris-ui-kit/vue').IrisRadioGroup}.
   props: name?, value?, defaultValue?, onChange?, disabled?, orientation?, children?
   events: onChange
   slots: default
@@ -658,7 +658,7 @@ Import components from `@iris-ui/plugin-{name}/{framework}`.
   slots: default
   quality: 1 props, 0 events
 - IrisSpinner [react/solid/svelte/vue]
-  React port of {@link import('@iris-ui/vue').IrisSpinner}.
+  React port of {@link import('@iris-ui-kit/vue').IrisSpinner}.
   props: size?, color?, strokeWidth?, label?
   quality: 4 props, 0 events
 - IrisSplitButton [react/solid/svelte/vue]

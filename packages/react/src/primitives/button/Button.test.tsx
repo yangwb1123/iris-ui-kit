@@ -5,7 +5,7 @@ import { __BUTTON_STYLE_ID, __resetButtonStyles } from './styles'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisButton', () => {
+describe('@iris-ui-kit/react IrisButton', () => {
   beforeEach(() => __resetButtonStyles())
   afterEach(() => __resetButtonStyles())
 

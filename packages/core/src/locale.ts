@@ -3,7 +3,7 @@
  * the writing direction and the locale-default first day of week, so a consumer
  * can wire "set locale → flip `dir` / set `lang` / start the calendar on the
  * right day" instead of maintaining an RTL list by hand. `localeDirection` feeds
- * `@iris-ui/theme`'s `applyDirection` (which owns the DOM write); the calendar
+ * `@iris-ui-kit/theme`'s `applyDirection` (which owns the DOM write); the calendar
  * date helpers consume `localeWeekStartsOn`.
  */
 

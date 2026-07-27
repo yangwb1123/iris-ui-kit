@@ -1,5 +1,5 @@
-// @iris-ui/solid — SolidJS adapter. Thin bridges over @iris-ui/core; same
-// component names + semantics as @iris-ui/react and @iris-ui/vue.
+// @iris-ui-kit/solid — SolidJS adapter. Thin bridges over @iris-ui-kit/core; same
+// component names + semantics as @iris-ui-kit/react and @iris-ui-kit/vue.
 
 export { useStore, useStoreSelector } from './useStore'
 export { useMachine } from './useMachine'
@@ -128,14 +128,14 @@ export * from './provider'
 // ── Error boundary ────────────────────────────────────────────────────────────
 export * from './error-boundary'
 
-// ── Framework-agnostic re-exports (mirror @iris-ui/react / @iris-ui/vue) ───────
+// ── Framework-agnostic re-exports (mirror @iris-ui-kit/react / @iris-ui-kit/vue) ───────
 export {
   createStore,
   createMachine,
   composeEventHandlers,
   generateId,
-  // NB: @iris-ui/core's `mergeProps` is intentionally NOT re-exported here —
-  // it would shadow Solid's own `mergeProps`. Import it from @iris-ui/core if needed.
+  // NB: @iris-ui-kit/core's `mergeProps` is intentionally NOT re-exported here —
+  // it would shadow Solid's own `mergeProps`. Import it from @iris-ui-kit/core if needed.
   type Store,
   type Machine,
   type Side,
@@ -143,7 +143,7 @@ export {
   type Placement,
   type Size,
   type Variant,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 export {
   applyTheme,
@@ -153,7 +153,7 @@ export {
   type ApplyThemeResult,
   type ThemeStore,
   type ThemeStoreConfig,
-} from '@iris-ui/theme'
+} from '@iris-ui-kit/theme'
 
 export {
   lightTheme,
@@ -161,4 +161,4 @@ export {
   type IrisTheme,
   type IrisThemeType,
   type IrisThemeColors,
-} from '@iris-ui/tokens'
+} from '@iris-ui-kit/tokens'

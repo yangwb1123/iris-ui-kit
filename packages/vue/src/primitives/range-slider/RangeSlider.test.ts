@@ -4,7 +4,7 @@ import { IrisRangeSlider } from './RangeSlider'
 
 afterEach(() => {})
 
-describe('@iris-ui/vue IrisRangeSlider', () => {
+describe('@iris-ui-kit/vue IrisRangeSlider', () => {
   it('renders track + range + two thumbs', () => {
     const wrap = mount(IrisRangeSlider, {
       props: { modelValue: [20, 80] },

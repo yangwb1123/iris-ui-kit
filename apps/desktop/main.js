@@ -3,7 +3,7 @@
 // the "Framework" menu or Cmd/Ctrl+1–4. Each framework's built `dist/` is served
 // on its own loopback port (Vite emits absolute `/assets/…` paths, so each must
 // be served at its own root); switching just re-points the window. The
-// @iris-ui/core native bridges (file-save + clipboard) are wired to real OS APIs.
+// @iris-ui-kit/core native bridges (file-save + clipboard) are wired to real OS APIs.
 const { app, BrowserWindow, ipcMain, dialog, clipboard, Menu } = require('electron')
 const path = require('path')
 const fs = require('fs')

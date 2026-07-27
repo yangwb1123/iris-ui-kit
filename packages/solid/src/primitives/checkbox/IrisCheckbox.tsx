@@ -1,5 +1,5 @@
 import { createSignal, mergeProps, splitProps, type JSX } from 'solid-js'
-import type { Size } from '@iris-ui/core'
+import type { Size } from '@iris-ui-kit/core'
 import { useFormFieldControl } from '../form-field/context'
 
 export type IrisCheckboxSize = Size

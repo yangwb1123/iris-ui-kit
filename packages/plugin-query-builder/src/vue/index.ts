@@ -27,7 +27,7 @@ export { createFilterBuilder, queryBuilderPlugin, operatorsByType, operatorLabel
 
 /**
  * Visual query builder for Vue (render-function authored to match the
- * `@iris-ui/vue` convention — no `.vue` SFCs): stacked rule rows
+ * `@iris-ui-kit/vue` convention — no `.vue` SFCs): stacked rule rows
  * (column → operator → value) over a {@link FilterBuilder}, emitting compiled
  * `FilterRule[]` via the `onChange` prop (wire it to `dataSource.setFilterRules`).
  * All logic lives in the builder. Bridges the core Store directly: a

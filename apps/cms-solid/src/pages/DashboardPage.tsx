@@ -1,5 +1,5 @@
 import { For, type JSX } from 'solid-js'
-import { IrisDashboardGrid, IrisDashboardCard, IrisBadge } from '@iris-ui/solid'
+import { IrisDashboardGrid, IrisDashboardCard, IrisBadge } from '@iris-ui-kit/solid'
 
 type Tone = 'primary' | 'success' | 'warning' | 'danger' | 'neutral'
 const stats: { label: string; value: string; delta: string; tone: Tone }[] = [
@@ -32,10 +32,10 @@ export function DashboardPage(): JSX.Element {
         <IrisDashboardCard colSpan="full">
           <div class="stat-label">Welcome back 👋</div>
           <p style={{ margin: '8px 0 0', 'max-width': '70ch', 'line-height': 1.6 }}>
-            This is a Vben-style CMS shell assembled from <code>@iris-ui/solid</code>: a data-driven
-            collapsible sidebar nav, a header breadcrumb, and a keep-alive multi-tab bar — all
-            driven by one nav-tree config and the framework-agnostic stores in{' '}
-            <code>@iris-ui/core</code>
+            This is a Vben-style CMS shell assembled from <code>@iris-ui-kit/solid</code>: a
+            data-driven collapsible sidebar nav, a header breadcrumb, and a keep-alive multi-tab bar
+            — all driven by one nav-tree config and the framework-agnostic stores in{' '}
+            <code>@iris-ui-kit/core</code>
             (the same core that powers the React and Vue versions).
           </p>
         </IrisDashboardCard>

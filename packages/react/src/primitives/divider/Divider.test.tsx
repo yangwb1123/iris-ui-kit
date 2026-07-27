@@ -4,7 +4,7 @@ import { IrisDivider } from './Divider'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisDivider', () => {
+describe('@iris-ui-kit/react IrisDivider', () => {
   it('renders an <hr> for plain horizontal', () => {
     const { container } = render(<IrisDivider />)
     expect(container.querySelector('[data-iris-divider]')!.tagName).toBe('HR')

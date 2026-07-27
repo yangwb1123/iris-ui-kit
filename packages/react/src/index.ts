@@ -132,7 +132,7 @@ export {
   type Placement,
   type Size,
   type Variant,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 export {
   applyTheme,
@@ -142,7 +142,7 @@ export {
   type ApplyThemeResult,
   type ThemeStore,
   type ThemeStoreConfig,
-} from '@iris-ui/theme'
+} from '@iris-ui-kit/theme'
 
 export {
   lightTheme,
@@ -160,10 +160,10 @@ export {
   type SpacingToken,
   type RadiusToken,
   type AnyToken,
-} from '@iris-ui/tokens'
+} from '@iris-ui-kit/tokens'
 
 // Icon system runtime + types. The `IrisIcon` *component* (above) owns that
-// name; the data interface is available from '@iris-ui/icons' directly.
+// name; the data interface is available from '@iris-ui-kit/icons' directly.
 export {
   defaultIcons,
   defaultIconRegistry,
@@ -178,4 +178,4 @@ export {
   type CreateIconRegistryOptions,
   type RenderIconOptions,
   type ThemeIconConfig,
-} from '@iris-ui/icons'
+} from '@iris-ui-kit/icons'

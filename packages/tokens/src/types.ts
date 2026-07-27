@@ -29,8 +29,8 @@ export interface IrisTheme {
   zIndex?: IrisThemeZIndex
   /** Transition timing tokens for consistent motion. Components use these as fallback defaults. */
   transitions?: IrisThemeTransitions
-  /** Name of the icon set to use; resolved by `@iris-ui/icons`. */
+  /** Name of the icon set to use; resolved by `@iris-ui-kit/icons`. */
   icons?: string
-  /** Per-icon alias: semantic name → another registered icon's name (resolved by `@iris-ui/icons`). */
+  /** Per-icon alias: semantic name → another registered icon's name (resolved by `@iris-ui-kit/icons`). */
   iconOverrides?: Record<string, string>
 }

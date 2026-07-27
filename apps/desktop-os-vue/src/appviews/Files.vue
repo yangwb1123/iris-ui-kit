@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { IrisButton } from '@iris-ui/vue'
-import { normalizePath } from '@iris-ui/core/fs'
+import { IrisButton } from '@iris-ui-kit/vue'
+import { normalizePath } from '@iris-ui-kit/core/fs'
 import { useFs, useFsState } from '../fs'
 
 /**
- * Files — a real file MANAGER over `@iris-ui/core/fs` (the virtual file system).
+ * Files — a real file MANAGER over `@iris-ui-kit/core/fs` (the virtual file system).
  * Navigate folders, create folders + text files, edit/rename/delete, all persisted
  * to the user profile. This is what makes the `storage` permission it requests
  * actually do something (the old Files view was a static mock). The Vue twin of

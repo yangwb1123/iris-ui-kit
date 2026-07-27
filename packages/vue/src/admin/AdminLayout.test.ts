@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { h } from 'vue'
 import { mount } from '@vue/test-utils'
-import { createTabsNav, type NavNode } from '@iris-ui/core'
+import { createTabsNav, type NavNode } from '@iris-ui-kit/core'
 import { IrisAdminLayout } from './AdminLayout'
 
 const menus: NavNode[] = [

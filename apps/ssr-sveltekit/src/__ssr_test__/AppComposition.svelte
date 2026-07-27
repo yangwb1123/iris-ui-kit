@@ -18,9 +18,9 @@
     IrisDialogDescription,
     IrisDialogClose,
     IrisTable,
-  } from '@iris-ui/svelte'
-  import { createThemeStore } from '@iris-ui/theme'
-  import { lightTheme, darkTheme } from '@iris-ui/tokens'
+  } from '@iris-ui-kit/svelte'
+  import { createThemeStore } from '@iris-ui-kit/theme'
+  import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 
   let name = $state('')
   let dialogOpen = $state(false)

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { matchTypeahead } from '@iris-ui/core'
+  import { matchTypeahead } from '@iris-ui-kit/core'
   import { getDropdownContext } from './context'
   import { useFloating } from '../../floating/useFloating.svelte'
   import { useDismiss } from '../../floating/useDismiss.svelte'

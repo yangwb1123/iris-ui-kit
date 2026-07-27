@@ -8,9 +8,18 @@ export default defineConfig({
   description: 'Token-driven, cross-framework UI infrastructure.',
   cleanUrls: true,
   vite: {
-    plugins: [svelte()],
+    plugins: [
+      // The interactive Explorer mounts client-only @iris-ui-kit/svelte islands. Those
+      // resolve to raw `.svelte` source (svelte-package ships .svelte, not compiled
+      // JS), so VitePress's Vite needs the Svelte plugin to compile them. React /
+      // Solid islands need no plugin (their dist is already compiled JS). The plugin
+      // only claims `.svelte` files, so it can't touch VitePress's Vue/markdown.
+      svelte(),
+    ],
+    // The Svelte runtime + the .svelte island chain must be excluded from SSR
+    // externalization so Vite transforms (compiles) them in the SSR build graph.
     ssr: {
-      noExternal: ['@iris-ui/svelte', 'svelte'],
+      noExternal: ['@iris-ui-kit/svelte', 'svelte'],
     },
   },
   // i18n: English + Simplified Chinese

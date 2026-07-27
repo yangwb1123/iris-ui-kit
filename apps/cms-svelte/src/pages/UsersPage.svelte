@@ -20,7 +20,7 @@
     useResourceController,
     useToast,
     type IrisSelectItem,
-  } from '@iris-ui/svelte'
+  } from '@iris-ui-kit/svelte'
   import {
     createUser,
     fetchUsers,
@@ -175,7 +175,7 @@
       <p class="page-desc" style="margin-bottom: 12px">
         Real CRUD on a live in-memory store via <code>createResourceController</code> +
         <code>createClientFetcher</code> — sort, filter, paginate, select, and
-        <code>mutate</code> (optimistic deletes), all from @iris-ui/core.{#if $view.selectedKeys.length > 0}
+        <code>mutate</code> (optimistic deletes), all from @iris-ui-kit/core.{#if $view.selectedKeys.length > 0}
           · {$view.selectedKeys.length} selected{/if}
       </p>
     </div>

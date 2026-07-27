@@ -1,6 +1,6 @@
 import { For, mergeProps, Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { defaultIconRegistry, resolveThemedIcon, type IrisIconRegistry } from '@iris-ui/icons'
+import { defaultIconRegistry, resolveThemedIcon, type IrisIconRegistry } from '@iris-ui-kit/icons'
 import { useThemeOptional } from '../../theme'
 
 export interface IrisIconProps {

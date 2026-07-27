@@ -1,6 +1,6 @@
 // Electron preload — runs in an isolated context and exposes a minimal,
 // framework-agnostic native API on `window.irisNative`. The renderer (any of
-// the Iris CMS apps) registers it with the @iris-ui/core bridges:
+// the Iris CMS apps) registers it with the @iris-ui-kit/core bridges:
 //   setFileSaveHandler((file) => { window.irisNative.saveFile(file); return true })
 //   setClipboardHandler((text) => { window.irisNative.writeClipboard(text); return true })
 const { contextBridge, ipcRenderer } = require('electron')

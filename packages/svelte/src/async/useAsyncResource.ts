@@ -5,7 +5,7 @@ import {
   type AsyncResourceConfig,
   type AsyncState,
   type AsyncStatus,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 export interface UseAsyncResourceOptions<T> extends AsyncResourceConfig<T> {
   immediate?: boolean

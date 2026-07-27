@@ -11,7 +11,7 @@
  * shared profile + the `useOs` skin state.
  */
 import { computed, onMounted } from 'vue'
-import { IrisBadge, IrisButton } from '@iris-ui/vue'
+import { IrisBadge, IrisButton } from '@iris-ui-kit/vue'
 import { useProfile, useProfileState, useApps } from '../profile'
 import { useOs } from '../os-state'
 import { OS_ORDER, CHROMES } from '../os'

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createRoot } from 'solid-js'
-import { createStore } from '@iris-ui/core'
+import { createStore } from '@iris-ui-kit/core'
 import { useStoreSelector } from './useStore'
 
 describe('useStoreSelector (solid)', () => {

@@ -25,7 +25,7 @@ import {
   type CellRangeState,
   type GridNavKey,
   type TreeRow,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import type {
@@ -61,7 +61,7 @@ export interface IrisTableSetupProps {
   cellRange?: boolean
 }
 
-export type IrisTableEmit = (event: string, ...args: any[]) => void
+export type IrisTableEmit = (event: string, ...args: unknown[]) => void
 
 export function getCellValue<Row extends Record<string, unknown>>(
   row: Row,

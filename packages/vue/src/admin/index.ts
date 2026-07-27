@@ -21,4 +21,4 @@ export {
   type TabsNav,
   type TabsNavState,
   type TabsNavConfig,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'

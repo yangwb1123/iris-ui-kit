@@ -8,4 +8,4 @@ export {
   type ResourceQuery,
   type MutateOptions,
   type DataViewColumn,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'

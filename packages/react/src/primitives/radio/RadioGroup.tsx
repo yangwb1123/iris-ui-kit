@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { createSelectionModel, type SelectionModel } from '@iris-ui/core'
+import { createSelectionModel, type SelectionModel } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { RadioGroupContext } from './context'
 
@@ -18,7 +18,7 @@ export interface IrisRadioGroupProps extends Omit<
 }
 
 /**
- * React port of {@link import('@iris-ui/vue').IrisRadioGroup}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisRadioGroup}.
  *
  * @example
  *   <IrisRadioGroup value={plan} onChange={setPlan}>

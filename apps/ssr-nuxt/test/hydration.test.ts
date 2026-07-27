@@ -24,7 +24,7 @@
 //     auto-import + SFC-compile machinery that this isolated vitest run does not
 //     wire up (no `@vitejs/plugin-vue` in this workspace, and we add no deps).
 //   • So we reproduce the SAME iris tree (ThemeProvider + Button + Input + Badge
-//     + Dialog (closed) + Table) directly from `@iris-ui/vue`, mirroring the
+//     + Dialog (closed) + Table) directly from `@iris-ui-kit/vue`, mirroring the
 //     per-adapter reference test at `packages/vue/src/hydration.test.ts`.
 //
 // How Vue 3.5 signals a mismatch (per the bundled runtime): per-node
@@ -48,9 +48,9 @@ import {
   IrisDialogDescription,
   IrisDialogClose,
   IrisTable,
-} from '@iris-ui/vue'
-import { createThemeStore } from '@iris-ui/theme'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+} from '@iris-ui-kit/vue'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 
 // Same data shape as components/Demo.client.vue.
 const rows: Record<string, unknown>[] = [

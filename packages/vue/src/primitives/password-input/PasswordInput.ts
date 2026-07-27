@@ -1,7 +1,7 @@
 import { defineComponent, h, ref, type PropType } from 'vue'
 import { IrisInput } from '../input/Input'
 import { useI18n } from '../../i18n'
-import type { Size } from '@iris-ui/core'
+import type { Size } from '@iris-ui-kit/core'
 
 export type IrisPasswordInputSize = Size
 

@@ -1,7 +1,7 @@
 import { createEventBus, type EventBus } from './event-bus'
 
 /**
- * Framework-agnostic plugin contract. The four adapters (`@iris-ui/{react,vue,
+ * Framework-agnostic plugin contract. The four adapters (`@iris-ui-kit/{react,vue,
  * solid,svelte}`) each ship an `IrisProvider` that calls {@link runPlugins} and
  * wires the collected registrations into the theme / i18n / context layers.
  *

@@ -23,7 +23,7 @@ export interface CreateIconRegistryOptions {
   sets?: IrisIconSet[]
   /**
    * Lean tree-shaking path: a flat list of individually-imported per-icon consts
-   * (e.g. `[chevronDown, search]` from `@iris-ui/icons`). They are bundled into a
+   * (e.g. `[chevronDown, search]` from `@iris-ui-kit/icons`). They are bundled into a
    * single `'iris-lean'` set so a size-conscious consumer can build a minimal
    * registry from just the icons they import — without pulling the whole default
    * set. Registered AFTER `sets`, so when both are given `sets[0]` stays active.

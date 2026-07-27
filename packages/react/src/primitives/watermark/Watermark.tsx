@@ -26,7 +26,7 @@ const TILE_COUNT = 72
  * `pointer-events: none`, so it never interferes with the underlying UI. Built
  * from structured `<span>` nodes (no raw HTML / canvas / SVG-string injection).
  *
- * React port of {@link import('@iris-ui/vue').IrisWatermark}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisWatermark}.
  */
 export function IrisWatermark({
   content,

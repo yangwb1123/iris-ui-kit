@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { IrisButton } from '@iris-ui/react'
+import { IrisButton } from '@iris-ui-kit/react'
 
 type Op = '+' | '−' | '×' | '÷'
 

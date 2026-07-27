@@ -1,6 +1,6 @@
 /**
  * The ONE command registry for this desktop shell — a module singleton over the
- * framework-agnostic `@iris-ui/core/commands` (`createCommandRegistry`). It's the
+ * framework-agnostic `@iris-ui-kit/core/commands` (`createCommandRegistry`). It's the
  * substrate behind the ⌘K / Ctrl+K command palette: app / window / system
  * actions `register` into it; the palette `search`es + `run`s it.
  *
@@ -13,9 +13,9 @@ import {
   type Command,
   type CommandHit,
   type CommandRegistry,
-} from '@iris-ui/core/commands'
-import type { WindowManagerState } from '@iris-ui/core/window'
-import type { ProfileData } from '@iris-ui/core/profile'
+} from '@iris-ui-kit/core/commands'
+import type { WindowManagerState } from '@iris-ui-kit/core/window'
+import type { ProfileData } from '@iris-ui-kit/core/profile'
 import { wm } from './wm.svelte'
 import { getApps, launchApp } from './profile.svelte'
 import { OS_ORDER, CHROMES } from './os'

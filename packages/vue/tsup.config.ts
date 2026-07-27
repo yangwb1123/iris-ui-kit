@@ -5,7 +5,7 @@ import { join } from 'node:path'
 /**
  * Build the full barrel (`index`) plus a flattened entry per top-level group
  * (`form`, `theme`, `async`, `behaviors`, `layouts`, …) so consumers can
- * deep-import an area: `@iris-ui/vue/form`. Enumerated from the source tree so
+ * deep-import an area: `@iris-ui-kit/vue/form`. Enumerated from the source tree so
  * it never drifts. Granularity is per-group rather than per-primitive because
  * bundling .d.ts for all ~60 component entries exhausts the dts worker;
  * per-group keeps the build robust while still enabling area-scoped imports.
@@ -20,8 +20,8 @@ function buildEntries(): Record<string, string> {
   }
   // `floating` + `modal-utils` live under primitives/ in the Vue tree but are
   // framework utilities (hooks), not components. Surface them as flat deep
-  // entries so consumers get the same `@iris-ui/vue/floating` /
-  // `@iris-ui/vue/modal-utils` paths the React adapter already exposes
+  // entries so consumers get the same `@iris-ui-kit/vue/floating` /
+  // `@iris-ui-kit/vue/modal-utils` paths the React adapter already exposes
   // (consumer import-path parity).
   for (const name of ['floating', 'modal-utils']) {
     const path = join('src', 'primitives', name, 'index.ts')
@@ -40,10 +40,10 @@ export default defineConfig({
   target: 'es2022',
   external: [
     'vue',
-    '@iris-ui/core',
-    '@iris-ui/skins',
-    '@iris-ui/theme',
-    '@iris-ui/tokens',
-    '@iris-ui/icons',
+    '@iris-ui-kit/core',
+    '@iris-ui-kit/skins',
+    '@iris-ui-kit/theme',
+    '@iris-ui-kit/tokens',
+    '@iris-ui-kit/icons',
   ],
 })

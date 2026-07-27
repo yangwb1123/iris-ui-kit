@@ -6,7 +6,7 @@
           <h1 style="margin: 0 0 4px; font-size: 24px">Iris UI · Nuxt 3 SSR smoke</h1>
           <p style="margin: 0; color: var(--iris-muted-foreground, #666)">
             Server-rendered page (<code>app.vue</code>) containing a client island
-            (<code>Demo.client.vue</code>) built from <code>@iris-ui/vue</code>. A successful
+            (<code>Demo.client.vue</code>) built from <code>@iris-ui-kit/vue</code>. A successful
             <code>nuxi build</code> is the SSR-compat proof.
           </p>
         </header>

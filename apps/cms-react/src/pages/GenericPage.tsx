@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IrisButton } from '@iris-ui/react'
+import { IrisButton } from '@iris-ui-kit/react'
 
 const FALLBACK =
   'A placeholder page rendered inside IrisAdminLayout. Increment the counter, switch to another tab, then come back — the value survives because inactive tabs stay mounted (React keep-alive), keyed by the tab cache key.'

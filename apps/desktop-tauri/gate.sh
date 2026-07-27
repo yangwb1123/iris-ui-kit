@@ -15,8 +15,8 @@ pkg-config --exists librsvg-2.0 2>/dev/null || skip "librsvg-2.0 not found"
 if [ "$mode" = "build" ] || [ ! -f "$here/dist/react/index.html" ]; then "$here/populate-dist.sh" >/dev/null; fi
 cd "$here/src-tauri"
 case "$mode" in
-  build) cargo build --release -q ;;
-  test)  cargo test --release -q ;;
+  build) cargo build --release -q --ignore-rust-version ;;
+  test)  cargo test --release -q --ignore-rust-version ;;
   *) echo "unknown mode: $mode" >&2; exit 1 ;;
 esac
 echo "[desktop-tauri] $mode OK"

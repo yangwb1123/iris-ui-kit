@@ -23,7 +23,7 @@ export interface IrisTagInputProps {
  * a tag with Enter or a comma (pasted comma lists split too); Backspace on an
  * empty input removes the last tag; each chip has a remove button.
  *
- * React port of {@link import('@iris-ui/vue').IrisTagInput}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisTagInput}.
  */
 export function IrisTagInput({
   value,

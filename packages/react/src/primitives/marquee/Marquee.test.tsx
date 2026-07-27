@@ -6,7 +6,7 @@ afterEach(() => cleanup())
 
 const copies = (c: HTMLElement) => c.querySelectorAll('[data-iris-marquee-content]')
 
-describe('@iris-ui/react IrisMarquee', () => {
+describe('@iris-ui-kit/react IrisMarquee', () => {
   it('renders the content', () => {
     const { container } = render(
       <IrisMarquee>

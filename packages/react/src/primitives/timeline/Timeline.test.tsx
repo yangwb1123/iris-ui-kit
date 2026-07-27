@@ -10,7 +10,7 @@ const ITEMS: IrisTimelineItem[] = [
   { title: 'Delivered' },
 ]
 
-describe('@iris-ui/react IrisTimeline', () => {
+describe('@iris-ui-kit/react IrisTimeline', () => {
   it('renders an ordered list of items', () => {
     const { container } = render(<IrisTimeline items={ITEMS} />)
     expect(container.querySelector('ol[data-iris-timeline]')).not.toBeNull()

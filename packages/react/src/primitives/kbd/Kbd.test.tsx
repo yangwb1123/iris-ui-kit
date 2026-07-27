@@ -4,7 +4,7 @@ import { IrisKbd } from './Kbd'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisKbd', () => {
+describe('@iris-ui-kit/react IrisKbd', () => {
   it('renders a single key', () => {
     const { container } = render(<IrisKbd keys="K" />)
     const keys = container.querySelectorAll('[data-iris-kbd-key]')

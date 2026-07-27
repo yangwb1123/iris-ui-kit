@@ -1,5 +1,5 @@
 /**
- * The app's representative @iris-ui/solid composition, factored into a single
+ * The app's representative @iris-ui-kit/solid composition, factored into a single
  * tree that BOTH the server renderer and the client hydrator import, so the
  * SSR markup and the hydrated tree are byte-for-byte the same component graph.
  *
@@ -30,9 +30,9 @@ import {
   IrisAccordion,
   IrisAccordionItem,
   IrisProgress,
-} from '@iris-ui/solid'
-import { createThemeStore } from '@iris-ui/theme'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+} from '@iris-ui-kit/solid'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 import type { JSX } from 'solid-js'
 
 interface Row extends Record<string, unknown> {
@@ -67,7 +67,7 @@ export function IrisTree(): JSX.Element {
       <main style={{ 'max-width': '880px', margin: '0 auto', padding: '40px 24px' }}>
         <header style={{ 'margin-bottom': '24px' }}>
           <h1 style={{ margin: '0 0 4px', 'font-size': '24px' }}>Iris UI · SolidStart SSR smoke</h1>
-          <p style={{ margin: 0 }}>Server-rendered page built from @iris-ui/solid.</p>
+          <p style={{ margin: 0 }}>Server-rendered page built from @iris-ui-kit/solid.</p>
         </header>
 
         <section style={{ display: 'grid', gap: '24px' }}>

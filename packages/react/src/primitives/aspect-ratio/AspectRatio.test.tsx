@@ -6,7 +6,7 @@ afterEach(() => cleanup())
 
 const box = (c: HTMLElement) => c.querySelector('[data-iris-aspect-ratio]') as HTMLElement
 
-describe('@iris-ui/react IrisAspectRatio', () => {
+describe('@iris-ui-kit/react IrisAspectRatio', () => {
   it('applies the default 16/9 ratio', () => {
     const { container } = render(<IrisAspectRatio />)
     expect(box(container).getAttribute('data-ratio')).toBe(String(16 / 9))

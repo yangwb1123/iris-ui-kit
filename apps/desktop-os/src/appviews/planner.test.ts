@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createCommandRegistry, toToolName, type McpToolDef } from '@iris-ui/core/commands'
+import { createCommandRegistry, toToolName, type McpToolDef } from '@iris-ui-kit/core/commands'
 import { createAnthropicCall, createLlmPlanner, fuzzyPlanner, type ModelCall } from './planner'
 
 // Mock the Anthropic SDK so the transport can be tested without a key or network.

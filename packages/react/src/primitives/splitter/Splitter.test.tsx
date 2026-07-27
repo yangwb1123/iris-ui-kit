@@ -4,7 +4,7 @@ import { IrisSplitter } from './Splitter'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisSplitter', () => {
+describe('@iris-ui-kit/react IrisSplitter', () => {
   it('renders container + handle + two panes', () => {
     const { container } = render(<IrisSplitter start={<div>S</div>} end={<div>E</div>} />)
     expect(container.querySelector('[data-iris-splitter]')).not.toBeNull()

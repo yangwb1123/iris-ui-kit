@@ -6,7 +6,7 @@ import {
   IrisPopoverContent,
   IrisPopoverTrigger,
   type Placement,
-} from '@iris-ui/vue'
+} from '@iris-ui-kit/vue'
 
 const placements: Placement[] = ['top', 'right', 'bottom', 'left']
 const controlledOpen = ref(false)

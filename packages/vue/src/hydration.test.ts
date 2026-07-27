@@ -130,7 +130,7 @@ function normalizeHtml(html: string): string {
   return el.innerHTML
 }
 
-describe('@iris-ui/vue SSR hydration', () => {
+describe('@iris-ui-kit/vue SSR hydration', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>
   let warnSpy: ReturnType<typeof vi.spyOn>
 

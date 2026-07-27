@@ -1,5 +1,5 @@
 import { createEffect, For, mergeProps, Show, splitProps, type JSX } from 'solid-js'
-import { createSelectionModel, createKeyboardNav, type KeyboardNavAction } from '@iris-ui/core'
+import { createSelectionModel, createKeyboardNav, type KeyboardNavAction } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'

@@ -21,7 +21,7 @@ export interface IrisSpinnerProps extends Omit<React.HTMLAttributes<HTMLSpanElem
   label?: string
 }
 
-/** React port of {@link import('@iris-ui/vue').IrisSpinner}. */
+/** React port of {@link import('@iris-ui-kit/vue').IrisSpinner}. */
 export function IrisSpinner({
   size = 'md',
   color = 'var(--iris-primary)',

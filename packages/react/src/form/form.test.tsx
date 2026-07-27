@@ -38,7 +38,7 @@ function Demo({ onSubmit }: { onSubmit?: (values: { name: string }) => void }) {
   )
 }
 
-describe('@iris-ui/react useForm / useField', () => {
+describe('@iris-ui-kit/react useForm / useField', () => {
   it('renders the initial field value', () => {
     render(<Demo />)
     expect(screen.getByLabelText<HTMLInputElement>('name').value).toBe('')
@@ -103,7 +103,7 @@ describe('@iris-ui/react useForm / useField', () => {
   })
 })
 
-describe('@iris-ui/react useField nested path (v3 R19)', () => {
+describe('@iris-ui-kit/react useField nested path (v3 R19)', () => {
   function SkuField() {
     const sku = useField<string>('items[1].sku')
     return (
@@ -140,7 +140,7 @@ describe('@iris-ui/react useField nested path (v3 R19)', () => {
   })
 })
 
-describe('@iris-ui/react IrisForm focus-first-error', () => {
+describe('@iris-ui-kit/react IrisForm focus-first-error', () => {
   function MultiField() {
     const email = useField<string>('email')
     const name = useField<string>('name')

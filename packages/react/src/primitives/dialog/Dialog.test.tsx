@@ -60,7 +60,7 @@ function dialog(): HTMLElement | null {
   return document.querySelector('[role=dialog]')
 }
 
-describe('@iris-ui/react IrisDialog', () => {
+describe('@iris-ui-kit/react IrisDialog', () => {
   it('renders only the trigger when closed', () => {
     const { container } = render(harness())
     expect(container.querySelector('button')).not.toBeNull()

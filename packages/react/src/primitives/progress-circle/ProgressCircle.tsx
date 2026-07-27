@@ -30,7 +30,7 @@ const COLOR: Record<IrisProgressCircleStatus, string> = {
  * optional centered percent label sits on top. Distinct from the linear
  * `IrisProgress`.
  *
- * React port of {@link import('@iris-ui/vue').IrisProgressCircle}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisProgressCircle}.
  */
 export function IrisProgressCircle({
   value,

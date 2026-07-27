@@ -7,8 +7,8 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { IrisCheckbox } from '@iris-ui/react'
-import { IrisButton } from '@iris-ui/react'
+import { IrisCheckbox } from '@iris-ui-kit/react'
+import { IrisButton } from '@iris-ui-kit/react'
 import type { Todo } from '../types/todo'
 
 export interface TodoItemProps {

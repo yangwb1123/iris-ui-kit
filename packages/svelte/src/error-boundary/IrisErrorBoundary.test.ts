@@ -5,7 +5,7 @@ import CustomFallbackHarness from './CustomFallbackHarness.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisErrorBoundary', () => {
+describe('@iris-ui-kit/svelte IrisErrorBoundary', () => {
   it('renders children on the happy path (no error)', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { container, getByTestId } = render(Harness, { props: { shouldThrow: false } })

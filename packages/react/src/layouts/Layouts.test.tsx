@@ -7,7 +7,7 @@ import { IrisGrid } from './Grid'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisStack', () => {
+describe('@iris-ui-kit/react IrisStack', () => {
   it('renders a flex container with token gap (md → var(--iris-gap-md))', () => {
     const { container } = render(
       <IrisStack>
@@ -63,7 +63,7 @@ describe('@iris-ui/react IrisStack', () => {
   })
 })
 
-describe('@iris-ui/react IrisContainer', () => {
+describe('@iris-ui-kit/react IrisContainer', () => {
   it('renders centered with default lg max-width', () => {
     const { container } = render(<IrisContainer>x</IrisContainer>)
     const el = container.querySelector('[data-iris-container]') as HTMLElement
@@ -109,7 +109,7 @@ describe('@iris-ui/react IrisContainer', () => {
   })
 })
 
-describe('@iris-ui/react IrisGrid', () => {
+describe('@iris-ui-kit/react IrisGrid', () => {
   it('default uses auto-fit with 200px min column width', () => {
     const { container } = render(<IrisGrid>x</IrisGrid>)
     const el = container.querySelector('[data-iris-grid]') as HTMLElement

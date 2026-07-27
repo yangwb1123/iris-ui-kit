@@ -14,7 +14,7 @@ export interface IrisPasswordInputProps extends Omit<
   prefix?: React.ReactNode
 }
 
-/** React port of {@link import('@iris-ui/vue').IrisPasswordInput}. */
+/** React port of {@link import('@iris-ui-kit/vue').IrisPasswordInput}. */
 export const IrisPasswordInput = React.forwardRef<HTMLInputElement, IrisPasswordInputProps>(
   function IrisPasswordInput(
     { showToggle = true, suffix, prefix, disabled, readOnly, ...rest },

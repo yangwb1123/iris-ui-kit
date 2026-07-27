@@ -19,7 +19,7 @@ const SR_ONLY: React.CSSProperties = {
  * readers) but clipped from view — for labels, live-region announcements, and
  * extra context. Forwards attributes like `aria-live` / `role`.
  *
- * React port of {@link import('@iris-ui/vue').IrisVisuallyHidden}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisVisuallyHidden}.
  */
 export function IrisVisuallyHidden({
   children,

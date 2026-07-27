@@ -24,7 +24,7 @@ function makePointerEvent(type: string, init: PointerEventInit = {}): Event {
   return event
 }
 
-describe('@iris-ui/svelte useDrag', () => {
+describe('@iris-ui-kit/svelte useDrag', () => {
   it('fires onStart, onDrag, onEnd with cumulative deltas', () => {
     const events: string[] = []
     let lastDx = 0

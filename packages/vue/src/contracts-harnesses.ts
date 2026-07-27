@@ -1,5 +1,5 @@
 import { defineComponent, h, nextTick, ref } from 'vue'
-import type { ContractDriver } from '@iris-ui/core/contracts'
+import type { ContractDriver } from '@iris-ui-kit/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
 import { IrisTabsList } from './primitives/tabs/TabsList'
 import { IrisTabsTrigger } from './primitives/tabs/TabsTrigger'

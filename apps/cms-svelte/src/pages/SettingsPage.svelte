@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { IrisFormField, IrisInput, IrisSwitch, IrisButton, IrisStack } from '@iris-ui/svelte'
+  import { IrisFormField, IrisInput, IrisSwitch, IrisButton, IrisStack } from '@iris-ui-kit/svelte'
 
   // Local form state — survives tab switches because inactive tabs stay mounted.
   let siteName = $state('Iris CMS')

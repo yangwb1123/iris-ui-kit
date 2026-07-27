@@ -83,6 +83,58 @@ function pathError(message: string, input: string, fallback: PathSegment[]): Pat
   return fallback
 }
 
+/** Validate the input string has no null bytes and balanced brackets. */
+function validatePathSafety(str: string, segments: PathSegment[]): PathSegment[] | null {
+  if (str.includes('\0')) {
+    return pathError('parsePath: null byte (\\x00) in path string is not allowed', str, segments)
+  }
+  let depth = 0
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === '[') depth++
+    else if (str[i] === ']') depth--
+    if (depth < 0) {
+      return pathError(
+        'parsePath: unexpected closing bracket "]" without opening "["',
+        str,
+        segments,
+      )
+    }
+  }
+  if (depth > 0) {
+    return pathError('parsePath: unclosed bracket — missing "]"', str, segments)
+  }
+  return null
+}
+
+/** Parse the regex loop: extract segments from a validated path string. */
+function parseSegments(str: string): PathSegment[] {
+  const segments: PathSegment[] = []
+  const re = /\[([^\]]*)\]|[^.[\]]+/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(str)) !== null) {
+    if (m[1] !== undefined) {
+      // Bracket segment
+      const inner = m[1]
+      const err = pathError('parsePath: empty bracket "[]" is not allowed', str, segments)
+      if (inner === '') return err
+      const unquoted = inner.replace(/^['"]|['"]$/g, '')
+      if (unquoted === inner && /^\d+$/.test(inner)) segments.push(Number(inner))
+      else segments.push(unquoted)
+    } else {
+      const seg = m[0]
+      if (seg === '') {
+        return pathError(
+          'parsePath: empty segment from consecutive dots ".." is not allowed',
+          str,
+          segments,
+        )
+      }
+      segments.push(/^\d+$/.test(seg) ? Number(seg) : seg)
+    }
+  }
+  return segments
+}
+
 /**
  * Parse a path string into segments. Accepts dotted keys (`a.b`), bracket
  * indices (`a[0]`), and bracket keys (`a['b']`, `a["b c"]`). A flat key like
@@ -101,57 +153,10 @@ export function parsePath(path: Path, options?: { allowReserved?: boolean }): Pa
   const str = path as string
   if (str === '') return []
 
-  // Validation (dev throw, prod warn).
-  if (str.includes('\0')) {
-    return pathError('parsePath: null byte (\\x00) in path string is not allowed', str, [])
-  }
+  const safety = validatePathSafety(str, [])
+  if (safety) return safety
 
-  // Check for unclosed / mismatched brackets
-  let depth = 0
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === '[') depth++
-    else if (str[i] === ']') depth--
-    if (depth < 0) {
-      return pathError('parsePath: unexpected closing bracket "]" without opening "["', str, [])
-    }
-  }
-  if (depth > 0) {
-    return pathError('parsePath: unclosed bracket — missing "]"', str, [])
-  }
-
-  const segments: PathSegment[] = []
-  // Match either `[...]` brackets (numeric index or quoted/raw key) or a dotted
-  // identifier run (anything up to the next `.` or `[`).
-  const re = /\[([^\]]*)\]|[^.[\]]+/g
-  let m: RegExpExecArray | null
-  while ((m = re.exec(str)) !== null) {
-    if (m[1] !== undefined) {
-      // Bracket segment: a bare integer is an array index; a quoted string is a key.
-      const inner = m[1]
-
-      // Detect empty brackets: `[]`
-      if (inner === '') {
-        return pathError('parsePath: empty bracket "[]" is not allowed', str, segments)
-      }
-
-      const unquoted = inner.replace(/^['"]|['"]$/g, '')
-      if (unquoted === inner && /^\d+$/.test(inner)) segments.push(Number(inner))
-      else segments.push(unquoted)
-    } else {
-      const seg = m[0]
-
-      // Detect empty segment from consecutive dots (a..b).
-      if (seg === '') {
-        return pathError(
-          'parsePath: empty segment from consecutive dots ".." is not allowed',
-          str,
-          segments,
-        )
-      }
-
-      segments.push(/^\d+$/.test(seg) ? Number(seg) : seg)
-    }
-  }
+  const segments = parseSegments(str)
 
   // Prototype pollution key check (skip when options.allowReserved is true).
   if (!options?.allowReserved) {

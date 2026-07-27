@@ -4,7 +4,7 @@
     createKeyboardNav,
     type KeyboardNavAction,
     type KeyboardNavController,
-  } from '@iris-ui/core'
+  } from '@iris-ui-kit/core'
   import { setAccordionContext } from './context'
 
   type AccordionValue = string | string[] | null

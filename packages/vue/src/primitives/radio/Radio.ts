@@ -10,7 +10,7 @@ import {
   type InjectionKey,
   type PropType,
 } from 'vue'
-import { type Size } from '@iris-ui/core'
+import { type Size } from '@iris-ui-kit/core'
 
 export type IrisRadioSize = Size
 

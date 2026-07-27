@@ -5,7 +5,7 @@ import {
   type ResourceController,
   type ResourceControllerConfig,
   type ResourceState,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { toStore } from '../useStore'
 
 export interface UseResourceController<T> extends ResourceController<T> {
@@ -17,7 +17,7 @@ export interface UseResourceController<T> extends ResourceController<T> {
  * Svelte bridge over the framework-agnostic {@link createResourceController}
  * (L4 CRUD list composite). Svelte component setup runs once per instance, so
  * the controller is created directly and its store surfaced as a readable
- * `state`. A thin bridge — all logic lives in `@iris-ui/core`.
+ * `state`. A thin bridge — all logic lives in `@iris-ui-kit/core`.
  */
 export function useResourceController<T>(
   config: ResourceControllerConfig<T>,

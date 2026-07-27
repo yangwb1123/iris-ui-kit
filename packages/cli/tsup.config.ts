@@ -6,7 +6,7 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   target: 'node18',
-  external: ['@iris-ui/manifest'],
+  external: ['@iris-ui-kit/manifest'],
   // Inject the shebang so the bin entry is executable.
   banner: { js: '#!/usr/bin/env node' },
 })

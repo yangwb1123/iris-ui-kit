@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
-import { setClipboardHandler } from '@iris-ui/core'
+import { setClipboardHandler } from '@iris-ui-kit/core'
 import { IrisCopyButton } from './CopyButton'
 
 afterEach(() => {
@@ -11,7 +11,7 @@ afterEach(() => {
 
 const btn = (c: HTMLElement) => c.querySelector('[data-iris-copy-button]') as HTMLElement
 
-describe('@iris-ui/react IrisCopyButton', () => {
+describe('@iris-ui-kit/react IrisCopyButton', () => {
   it('renders the default copy label', () => {
     const { container } = render(<IrisCopyButton text="hi" />)
     expect(btn(container).textContent).toBe('Copy')

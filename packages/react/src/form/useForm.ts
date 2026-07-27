@@ -5,7 +5,7 @@ import {
   type FormState,
   type FormStore,
   type FormValues,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
 export interface UseFormReturn<V extends FormValues> extends FormState<V> {

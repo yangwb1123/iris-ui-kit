@@ -10,7 +10,7 @@
  */
 // @ts-nocheck
 import figma from '@figma/code-connect'
-import { IrisSwitch } from '@iris-ui/react'
+import { IrisSwitch } from '@iris-ui-kit/react'
 
 figma.connect(IrisSwitch, '<FIGMA_SWITCH_NODE_URL>', {
   props: {

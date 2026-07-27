@@ -1,5 +1,5 @@
 import { getContext, setContext } from 'svelte'
-import type { Placement } from '@iris-ui/core'
+import type { Placement } from '@iris-ui-kit/core'
 
 export const POPOVER_KEY = Symbol('iris-ui:popover')
 

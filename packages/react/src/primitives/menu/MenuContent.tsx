@@ -4,7 +4,7 @@ import {
   createKeyboardNav,
   type KeyboardNavController,
   type KeyboardNavAction,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useMenuContext } from './context'
@@ -22,7 +22,7 @@ export interface IrisMenuContentProps extends Omit<
  * `[role="menuitem"]` descendants (including those inside submenu triggers).
  * Closes on outside click, Escape, and Tab.
  *
- * Keyboard navigation is single-sourced in `@iris-ui/core`'s
+ * Keyboard navigation is single-sourced in `@iris-ui-kit/core`'s
  * {@link createKeyboardNav} — this adapter only bridges the returned actions
  * to DOM focus.
  */

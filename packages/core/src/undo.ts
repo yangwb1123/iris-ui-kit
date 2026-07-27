@@ -1,5 +1,5 @@
 /**
- * `@iris-ui/core/undo` — a generic undo/redo stack engine. Framework-agnostic,
+ * `@iris-ui-kit/core/undo` — a generic undo/redo stack engine. Framework-agnostic,
  * no side-effects or timers. A single factory (`createUndoStack`) builds a
  * stack you `push` snapshots into and `undo`/`redo` out of.
  *
@@ -8,7 +8,7 @@
  * unified replacement: generic over T, configurable merge/equals, bounded stack,
  * zero dependencies on any UI framework.
  *
- * Off the core path (`@iris-ui/core/undo` — own subpath).
+ * Off the core path (`@iris-ui-kit/core/undo` — own subpath).
  */
 
 // ─── Options ────────────────────────────────────────────────────────────────

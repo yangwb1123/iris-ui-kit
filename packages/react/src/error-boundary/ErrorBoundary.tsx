@@ -61,7 +61,7 @@ function DefaultErrorFallback({
  * Standalone component — it does NOT wrap `IrisProvider`'s children, so error
  * semantics for existing consumers are unchanged.
  *
- * React port of {@link import('@iris-ui/vue').IrisErrorBoundary}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisErrorBoundary}.
  */
 export class IrisErrorBoundary extends React.Component<
   IrisErrorBoundaryProps,

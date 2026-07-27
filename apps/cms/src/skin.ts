@@ -1,4 +1,4 @@
-import { createSkinEngine, localStorageSkinStorage, type Skin } from '@iris-ui/vue'
+import { createSkinEngine, localStorageSkinStorage, type Skin } from '@iris-ui-kit/vue'
 
 export const STORAGE_KEY = 'iris-cms-skin'
 

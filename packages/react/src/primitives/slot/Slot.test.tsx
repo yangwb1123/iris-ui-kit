@@ -5,7 +5,7 @@ import { IrisSlot } from './Slot'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisSlot', () => {
+describe('@iris-ui-kit/react IrisSlot', () => {
   it('clones the single child and forwards arbitrary attrs', () => {
     const { container } = render(
       <IrisSlot data-test="slot">

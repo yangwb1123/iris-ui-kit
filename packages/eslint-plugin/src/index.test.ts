@@ -33,40 +33,40 @@ describe('no-internal-import', () => {
     tester.run('no-internal-import', noInternalImport, {
       valid: [
         // Public entry points are fine
-        { code: "import { IrisButton } from '@iris-ui/react'" },
-        { code: "import { IrisButton } from '@iris-ui/vue'" },
-        { code: "import { IrisButton } from '@iris-ui/solid'" },
+        { code: "import { IrisButton } from '@iris-ui-kit/react'" },
+        { code: "import { IrisButton } from '@iris-ui-kit/vue'" },
+        { code: "import { IrisButton } from '@iris-ui-kit/solid'" },
         // Plugin packages are fine
-        { code: "import { IrisProTable } from '@iris-ui/plugin-pro-table'" },
+        { code: "import { IrisProTable } from '@iris-ui-kit/plugin-pro-table'" },
         // Unrelated packages are fine
         { code: "import React from 'react'" },
         // Partial match that is not a src path
-        { code: "import { x } from '@iris-ui/react/dist/index'" },
+        { code: "import { x } from '@iris-ui-kit/react/dist/index'" },
       ],
       invalid: [
         // React internal src path
         {
-          code: "import { Button } from '@iris-ui/react/src/primitives/button/Button'",
+          code: "import { Button } from '@iris-ui-kit/react/src/primitives/button/Button'",
           errors: [{ messageId: 'noInternalImport' }],
         },
         // Vue internal src path
         {
-          code: "import { IrisButton } from '@iris-ui/vue/src/components/button'",
+          code: "import { IrisButton } from '@iris-ui-kit/vue/src/components/button'",
           errors: [{ messageId: 'noInternalImport' }],
         },
         // Solid internal src path
         {
-          code: "import { IrisDialog } from '@iris-ui/solid/src/overlay/dialog'",
+          code: "import { IrisDialog } from '@iris-ui-kit/solid/src/overlay/dialog'",
           errors: [{ messageId: 'noInternalImport' }],
         },
         // Svelte internal src path
         {
-          code: "import IrisMenu from '@iris-ui/svelte/src/navigation/menu'",
+          code: "import IrisMenu from '@iris-ui-kit/svelte/src/navigation/menu'",
           errors: [{ messageId: 'noInternalImport' }],
         },
         // Dynamic import of internal path
         {
-          code: "import('@iris-ui/react/src/primitives/button/Button')",
+          code: "import('@iris-ui-kit/react/src/primitives/button/Button')",
           errors: [{ messageId: 'noInternalImport' }],
         },
       ],
@@ -83,17 +83,17 @@ describe('use-iris-provider', () => {
       valid: [
         // Imports IrisProvider — no warning
         {
-          code: "import { IrisButton, IrisProvider } from '@iris-ui/react'",
+          code: "import { IrisButton, IrisProvider } from '@iris-ui-kit/react'",
         },
         // Also imports IrisProvider alongside other components
         {
           code: `
-            import { IrisProvider, IrisButton, IrisDialog } from '@iris-ui/vue'
+            import { IrisProvider, IrisButton, IrisDialog } from '@iris-ui-kit/vue'
           `,
         },
         // File that only imports from non-framework packages — no warning
         {
-          code: "import { proTablePlugin } from '@iris-ui/plugin-pro-table'",
+          code: "import { proTablePlugin } from '@iris-ui-kit/plugin-pro-table'",
         },
         // No Iris imports at all
         {
@@ -103,24 +103,24 @@ describe('use-iris-provider', () => {
       invalid: [
         // React package imported but no IrisProvider
         {
-          code: "import { IrisButton } from '@iris-ui/react'",
+          code: "import { IrisButton } from '@iris-ui-kit/react'",
           errors: [{ messageId: 'missingIrisProvider' }],
         },
         // Vue package — no IrisProvider
         {
-          code: "import { IrisInput } from '@iris-ui/vue'",
+          code: "import { IrisInput } from '@iris-ui-kit/vue'",
           errors: [{ messageId: 'missingIrisProvider' }],
         },
         // Solid package — no IrisProvider
         {
-          code: "import { IrisDialog } from '@iris-ui/solid'",
+          code: "import { IrisDialog } from '@iris-ui-kit/solid'",
           errors: [{ messageId: 'missingIrisProvider' }],
         },
         // Multiple framework imports but IrisProvider still missing
         {
           code: `
-            import { IrisButton } from '@iris-ui/react'
-            import { IrisDialog } from '@iris-ui/react'
+            import { IrisButton } from '@iris-ui-kit/react'
+            import { IrisDialog } from '@iris-ui-kit/react'
           `,
           errors: [{ messageId: 'missingIrisProvider' }],
         },
@@ -139,73 +139,73 @@ describe('plugin-needs-registration', () => {
         // IrisCodeEditor with its canonical plugin (editorPlugin) imported
         {
           code: `
-            import { IrisCodeEditor, editorPlugin } from '@iris-ui/plugin-editor'
+            import { IrisCodeEditor, editorPlugin } from '@iris-ui-kit/plugin-editor'
           `,
         },
         // Back-compat: the legacy alias codeMirrorPlugin still satisfies it
         {
           code: `
-            import { IrisCodeEditor, codeMirrorPlugin } from '@iris-ui/plugin-editor'
+            import { IrisCodeEditor, codeMirrorPlugin } from '@iris-ui-kit/plugin-editor'
           `,
         },
         // IrisProTable with proTablePlugin imported
         {
           code: `
-            import { IrisProTable, proTablePlugin } from '@iris-ui/plugin-pro-table'
+            import { IrisProTable, proTablePlugin } from '@iris-ui-kit/plugin-pro-table'
           `,
         },
         // IrisFormBuilder with formBuilderPlugin imported
         {
           code: `
-            import { IrisFormBuilder, formBuilderPlugin } from '@iris-ui/plugin-form-builder'
+            import { IrisFormBuilder, formBuilderPlugin } from '@iris-ui-kit/plugin-form-builder'
           `,
         },
         // Newly-recognized plugins, each with its factory registered
         {
-          code: "import { IrisAdminApp, adminPlugin } from '@iris-ui/plugin-admin'",
+          code: "import { IrisAdminApp, adminPlugin } from '@iris-ui-kit/plugin-admin'",
         },
         {
-          code: "import { IrisEventCalendar, calendarPlugin } from '@iris-ui/plugin-calendar'",
+          code: "import { IrisEventCalendar, calendarPlugin } from '@iris-ui-kit/plugin-calendar'",
         },
         {
-          code: "import { IrisLineChart, chartsPlugin } from '@iris-ui/plugin-charts'",
+          code: "import { IrisLineChart, chartsPlugin } from '@iris-ui-kit/plugin-charts'",
         },
         // A different charts component is covered by the same chartsPlugin
         {
-          code: "import { IrisSparkline, chartsPlugin } from '@iris-ui/plugin-charts'",
+          code: "import { IrisSparkline, chartsPlugin } from '@iris-ui-kit/plugin-charts'",
         },
         {
-          code: "import { IrisDashboard, dashboardPlugin } from '@iris-ui/plugin-dashboard'",
+          code: "import { IrisDashboard, dashboardPlugin } from '@iris-ui-kit/plugin-dashboard'",
         },
         {
-          code: "import { IrisKanban, kanbanPlugin } from '@iris-ui/plugin-kanban'",
+          code: "import { IrisKanban, kanbanPlugin } from '@iris-ui-kit/plugin-kanban'",
         },
         {
-          code: "import { IrisMarkdown, markdownPlugin } from '@iris-ui/plugin-markdown'",
+          code: "import { IrisMarkdown, markdownPlugin } from '@iris-ui-kit/plugin-markdown'",
         },
         {
-          code: "import { IrisNotificationCenter, notificationsPlugin } from '@iris-ui/plugin-notifications'",
+          code: "import { IrisNotificationCenter, notificationsPlugin } from '@iris-ui-kit/plugin-notifications'",
         },
         {
-          code: "import { IrisQueryBuilder, queryBuilderPlugin } from '@iris-ui/plugin-query-builder'",
+          code: "import { IrisQueryBuilder, queryBuilderPlugin } from '@iris-ui-kit/plugin-query-builder'",
         },
         // Plugin component not imported — no warning
         {
-          code: "import { IrisButton } from '@iris-ui/react'",
+          code: "import { IrisButton } from '@iris-ui-kit/react'",
         },
         // All three original plugin components with all three plugins registered
         {
           code: `
-            import { IrisCodeEditor, editorPlugin } from '@iris-ui/plugin-editor'
-            import { IrisProTable, proTablePlugin } from '@iris-ui/plugin-pro-table'
-            import { IrisFormBuilder, formBuilderPlugin } from '@iris-ui/plugin-form-builder'
+            import { IrisCodeEditor, editorPlugin } from '@iris-ui-kit/plugin-editor'
+            import { IrisProTable, proTablePlugin } from '@iris-ui-kit/plugin-pro-table'
+            import { IrisFormBuilder, formBuilderPlugin } from '@iris-ui-kit/plugin-form-builder'
           `,
         },
       ],
       invalid: [
         // IrisCodeEditor without its plugin — message names the canonical factory
         {
-          code: "import { IrisCodeEditor } from '@iris-ui/plugin-editor'",
+          code: "import { IrisCodeEditor } from '@iris-ui-kit/plugin-editor'",
           errors: [
             {
               messageId: 'missingPluginRegistration',
@@ -215,17 +215,17 @@ describe('plugin-needs-registration', () => {
         },
         // IrisProTable without proTablePlugin
         {
-          code: "import { IrisProTable } from '@iris-ui/plugin-pro-table'",
+          code: "import { IrisProTable } from '@iris-ui-kit/plugin-pro-table'",
           errors: [{ messageId: 'missingPluginRegistration' }],
         },
         // IrisFormBuilder without formBuilderPlugin
         {
-          code: "import { IrisFormBuilder } from '@iris-ui/plugin-form-builder'",
+          code: "import { IrisFormBuilder } from '@iris-ui-kit/plugin-form-builder'",
           errors: [{ messageId: 'missingPluginRegistration' }],
         },
         // Newly-recognized plugins now flagged when their factory is missing
         {
-          code: "import { IrisDashboard } from '@iris-ui/plugin-dashboard'",
+          code: "import { IrisDashboard } from '@iris-ui-kit/plugin-dashboard'",
           errors: [
             {
               messageId: 'missingPluginRegistration',
@@ -234,20 +234,20 @@ describe('plugin-needs-registration', () => {
           ],
         },
         {
-          code: "import { IrisKanban } from '@iris-ui/plugin-kanban'",
+          code: "import { IrisKanban } from '@iris-ui-kit/plugin-kanban'",
           errors: [{ messageId: 'missingPluginRegistration' }],
         },
         {
-          code: "import { IrisNotificationCenter } from '@iris-ui/plugin-notifications'",
+          code: "import { IrisNotificationCenter } from '@iris-ui-kit/plugin-notifications'",
           errors: [{ messageId: 'missingPluginRegistration' }],
         },
         {
-          code: "import { IrisQueryBuilder } from '@iris-ui/plugin-query-builder'",
+          code: "import { IrisQueryBuilder } from '@iris-ui-kit/plugin-query-builder'",
           errors: [{ messageId: 'missingPluginRegistration' }],
         },
         // A charts component without chartsPlugin
         {
-          code: "import { IrisBarChart } from '@iris-ui/plugin-charts'",
+          code: "import { IrisBarChart } from '@iris-ui-kit/plugin-charts'",
           errors: [
             {
               messageId: 'missingPluginRegistration',
@@ -258,8 +258,8 @@ describe('plugin-needs-registration', () => {
         // Two plugin components, both missing their plugins
         {
           code: `
-            import { IrisCodeEditor } from '@iris-ui/plugin-editor'
-            import { IrisProTable } from '@iris-ui/plugin-pro-table'
+            import { IrisCodeEditor } from '@iris-ui-kit/plugin-editor'
+            import { IrisProTable } from '@iris-ui-kit/plugin-pro-table'
           `,
           errors: [
             { messageId: 'missingPluginRegistration' },
@@ -280,7 +280,7 @@ describe('plugin-needs-registration source-of-truth', () => {
   const packagesDir = resolve(dirname(fileURLToPath(import.meta.url)), '../../')
   const firstPartyPlugins = readdirSync(packagesDir, { withFileTypes: true })
     .filter((d) => d.isDirectory() && d.name.startsWith('plugin-'))
-    .map((d) => `@iris-ui/${d.name}`)
+    .map((d) => `@iris-ui-kit/${d.name}`)
     .sort()
 
   it('expects the same number of plugins that actually exist on disk', () => {
@@ -291,7 +291,7 @@ describe('plugin-needs-registration source-of-truth', () => {
   it('recognizes a plugin factory for every component-bearing plugin', () => {
     // locale-zh is component-less, so it has no factory in the registration
     // rule; every other on-disk plugin must contribute exactly one factory.
-    const componentBearing = firstPartyPlugins.filter((p) => p !== '@iris-ui/plugin-locale-zh')
+    const componentBearing = firstPartyPlugins.filter((p) => p !== '@iris-ui-kit/plugin-locale-zh')
     expect(KNOWN_PLUGIN_FACTORIES.length).toBe(componentBearing.length)
     expect(KNOWN_PLUGIN_FACTORIES.length).toBe(EXPECTED_PLUGIN_PACKAGE_COUNT - 1)
   })
@@ -322,7 +322,7 @@ describe('plugin-needs-registration source-of-truth', () => {
 // ──────────────────────────────────────────────────────────────────
 describe('plugin export', () => {
   it('has correct meta', () => {
-    expect(plugin.meta.name).toBe('@iris-ui/eslint-plugin')
+    expect(plugin.meta.name).toBe('@iris-ui-kit/eslint-plugin')
     expect(plugin.meta.version).toBe('0.1.0')
   })
 
@@ -334,10 +334,10 @@ describe('plugin export', () => {
 
   it('exposes recommended config with correct severities', () => {
     const cfg = plugin.configs.recommended
-    expect(cfg.rules['@iris-ui/no-internal-import']).toBe('error')
-    expect(cfg.rules['@iris-ui/use-iris-provider']).toBe('warn')
-    expect(cfg.rules['@iris-ui/plugin-needs-registration']).toBe('warn')
-    expect(cfg.rules['@iris-ui/no-legacy-tone']).toBe('warn')
+    expect(cfg.rules['@iris-ui-kit/no-internal-import']).toBe('error')
+    expect(cfg.rules['@iris-ui-kit/use-iris-provider']).toBe('warn')
+    expect(cfg.rules['@iris-ui-kit/plugin-needs-registration']).toBe('warn')
+    expect(cfg.rules['@iris-ui-kit/no-legacy-tone']).toBe('warn')
   })
 })
 

@@ -12,7 +12,7 @@
   // scenarios' selector counts. Mirrors the React reference's async harness.
   //
   // Thin bridge: this harness only renders + wires. All logic lives in
-  // @iris-ui/core. The Svelte `useDataSource` bridge exposes the live engine state
+  // @iris-ui-kit/core. The Svelte `useDataSource` bridge exposes the live engine state
   // through a `$state` rune (`ds.state`), so the `{#each}` + the `data-iris-ds-meta`
   // attributes below re-run on every store emission. A local `$state` fetch counter
   // (bumped by the latency fetcher) reflects re-fetches into `data-fetches` so the
@@ -20,7 +20,7 @@
   //
   // Svelte-5 reserved-word note: the bridge's reactive accessor is `ds.state`; we
   // deliberately do NOT introduce a local `$state`-backed variable named `state`.
-  import { createClientDataSource, type DataViewColumn } from '@iris-ui/core'
+  import { createClientDataSource, type DataViewColumn } from '@iris-ui-kit/core'
   import { useDataSource } from './data/useDataSource.svelte'
 
   interface DsRow extends Record<string, unknown> {

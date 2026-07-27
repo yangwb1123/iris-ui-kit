@@ -46,7 +46,7 @@ export interface RawComponent {
   group: ComponentGroup
   module?: string
   frameworks: Framework[]
-  /** Owning plugin package (e.g. `@iris-ui/plugin-editor`) for plugin components. */
+  /** Owning plugin package (e.g. `@iris-ui-kit/plugin-editor`) for plugin components. */
   plugin?: string
   /** Prose summary harvested from the component's leading JSDoc (React source). */
   description?: string
@@ -100,7 +100,7 @@ export interface ManifestComponent {
   /** Import specifier per framework the component is available in. */
   importFrom: Partial<Record<Framework, string>>
   /**
-   * Owning plugin package (e.g. `@iris-ui/plugin-editor`) for plugin components.
+   * Owning plugin package (e.g. `@iris-ui-kit/plugin-editor`) for plugin components.
    * Such components require `<IrisProvider plugins={[…]}>` activation and are
    * imported from the plugin's per-framework sub-path, not the core adapter.
    */

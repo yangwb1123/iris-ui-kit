@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IrisButton, IrisTooltip, type Placement } from '@iris-ui/vue'
+import { IrisButton, IrisTooltip, type Placement } from '@iris-ui-kit/vue'
 
 const placements: Placement[] = ['top', 'right', 'bottom', 'left']
 </script>

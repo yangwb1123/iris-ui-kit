@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@solidjs/testing-library'
 import { IrisAdminBreadcrumb } from './AdminBreadcrumb'
-import type { NavNode } from '@iris-ui/core'
+import type { NavNode } from '@iris-ui-kit/core'
 
 afterEach(cleanup)
 
@@ -11,7 +11,7 @@ const trail: NavNode[] = [
   { key: 'profile', title: 'Profile' },
 ]
 
-describe('@iris-ui/solid IrisAdminBreadcrumb', () => {
+describe('@iris-ui-kit/solid IrisAdminBreadcrumb', () => {
   it('renders a crumb per trail node + marks the last current', () => {
     const { container } = render(() => <IrisAdminBreadcrumb trail={trail} />)
     expect(container.querySelectorAll('[data-iris-admin-crumb]')).toHaveLength(3)

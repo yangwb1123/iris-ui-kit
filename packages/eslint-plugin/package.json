@@ -1,5 +1,5 @@
 {
-  "name": "@iris-ui/eslint-plugin",
+  "name": "@iris-ui-kit/eslint-plugin",
   "version": "0.1.0",
   "description": "ESLint plugin for Iris UI consumers — enforce correct import paths, provider usage, and plugin registration",
   "license": "MIT",
@@ -35,5 +35,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/nousresearch/iris-ui.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

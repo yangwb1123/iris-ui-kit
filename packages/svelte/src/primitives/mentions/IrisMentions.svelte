@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { generateId } from '@iris-ui/core'
+  import { generateId } from '@iris-ui-kit/core'
 
   export interface IrisMentionOption {
     label: string

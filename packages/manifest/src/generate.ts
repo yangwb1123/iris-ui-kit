@@ -6,8 +6,8 @@ import { renderLlmsText } from './llms'
 
 /**
  * Discover the inventory and write `manifest.json` + `llms.txt` inside
- * `@iris-ui/manifest` — the single distributable copy. npm consumers read
- * `node_modules/@iris-ui/manifest/{manifest.json,llms.txt}` (the AI-native
+ * `@iris-ui-kit/manifest` — the single distributable copy. npm consumers read
+ * `node_modules/@iris-ui-kit/manifest/{manifest.json,llms.txt}` (the AI-native
  * contract). Downstream tools (docs prebuild, MCP server, CLI) resolve from
  * this package, so there is no root-level duplicate.
  */

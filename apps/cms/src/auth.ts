@@ -1,4 +1,4 @@
-import { createStore, type Store } from '@iris-ui/core'
+import { createStore, type Store } from '@iris-ui-kit/core'
 
 export type Role = 'admin' | 'viewer'
 

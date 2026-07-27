@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  import type { NotificationTone } from '@iris-ui/core/notifications'
+  import type { NotificationTone } from '@iris-ui-kit/core/notifications'
 
   /** Accent glyph + color per tone (color via token-friendly literals). */
   const TONE: Record<NotificationTone, { glyph: string; color: string }> = {
@@ -20,7 +20,7 @@
    * auto-dismisses after its `timeout` (0 = sticky); ✕ dismisses now. Token-skinned
    * to the active OS — mirrors the React reference (apps/desktop-os/src/components/Toasts.tsx).
    */
-  import type { DesktopNotification } from '@iris-ui/core/notifications'
+  import type { DesktopNotification } from '@iris-ui-kit/core/notifications'
   import { notifications, useNotificationState } from './notifications.svelte'
 
   const nstate = useNotificationState()

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
-import { createStore } from '@iris-ui/core'
+import { createStore } from '@iris-ui-kit/core'
 import { useStoreSelector } from './useStore'
 
 describe('useStoreSelector (vue)', () => {

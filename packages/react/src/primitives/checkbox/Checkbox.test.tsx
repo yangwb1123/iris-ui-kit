@@ -4,7 +4,7 @@ import { IrisCheckbox } from './Checkbox'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisCheckbox', () => {
+describe('@iris-ui-kit/react IrisCheckbox', () => {
   it('renders an <input type="checkbox">', () => {
     const { container } = render(<IrisCheckbox />)
     expect(container.querySelector('input[type="checkbox"]')).not.toBeNull()

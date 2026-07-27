@@ -22,7 +22,7 @@ const baseColumns: IrisTableColumn<Row>[] = [
   { key: 'age', title: 'Age', sortable: true, align: 'right' },
 ]
 
-describe('@iris-ui/react IrisTable column resize', () => {
+describe('@iris-ui-kit/react IrisTable column resize', () => {
   function handle(key: string): HTMLElement | null {
     return document.querySelector(`[data-iris-table-resize-handle][data-column-key="${key}"]`)
   }
@@ -128,7 +128,7 @@ describe('@iris-ui/react IrisTable column resize', () => {
   })
 })
 
-describe('@iris-ui/react IrisTable inline editing', () => {
+describe('@iris-ui-kit/react IrisTable inline editing', () => {
   const editableCols: IrisTableColumn<Row>[] = [
     { key: 'name', title: 'Name', editable: true },
     { key: 'age', title: 'Age', editable: true, editor: 'number' },

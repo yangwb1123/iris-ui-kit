@@ -5,10 +5,10 @@ import {
   formatMonthYear,
   getWeekdayNames,
   formatLocalISO,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 /**
- * `@iris-ui/plugin-calendar` — render an events calendar (Google Calendar
+ * `@iris-ui-kit/plugin-calendar` — render an events calendar (Google Calendar
  * lite) from a declarative config. This `core` entry is framework-agnostic:
  * it owns all state and mutations (prevMonth, nextMonth, goToMonth,
  * addEvent, removeEvent) via a subscribable store. The four thin renderers

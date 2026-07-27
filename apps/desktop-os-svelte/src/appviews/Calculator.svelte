@@ -4,7 +4,7 @@
    * Svelte 5 twin of the React `CalculatorApp`. The whole calculator state lives
    * in a single `$state` object; the keypad dispatches keys through `reducer`.
    */
-  import { IrisButton } from '@iris-ui/svelte'
+  import { IrisButton } from '@iris-ui-kit/svelte'
 
   type Op = '+' | '−' | '×' | '÷'
 

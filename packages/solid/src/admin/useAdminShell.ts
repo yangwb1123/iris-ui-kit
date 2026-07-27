@@ -5,7 +5,7 @@ import {
   type AdminShell,
   type NavNode,
   type TabsNav,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
 export interface UseAdminShellConfig {

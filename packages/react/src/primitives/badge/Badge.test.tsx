@@ -5,7 +5,7 @@ import { IrisBadge } from './Badge'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisBadge', () => {
+describe('@iris-ui-kit/react IrisBadge', () => {
   it('emits a precomputed subtle fallback before the color-mix background', () => {
     // SSR markup serializes the style object verbatim (no CSSOM folding), so we
     // can see BOTH declarations: the static `background-color` fallback (for

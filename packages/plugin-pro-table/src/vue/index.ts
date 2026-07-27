@@ -14,7 +14,7 @@ import {
   createVirtualizer,
   type SortableRect,
   type HeaderCell,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import {
   collectRects,
   proTableLabel,

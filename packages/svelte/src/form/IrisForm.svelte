@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  import type { FormStore, FormValues } from '@iris-ui/core'
+  import type { FormStore, FormValues } from '@iris-ui-kit/core'
   import { setFormContext } from './context'
 
   interface Props {

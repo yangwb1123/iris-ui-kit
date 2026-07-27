@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { formatPath, getByPath } from '@iris-ui/core'
+import { formatPath, getByPath } from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 import { useFormContext } from './context'
 

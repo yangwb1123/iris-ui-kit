@@ -8,7 +8,7 @@ import { IrisSwitch } from './switch'
 
 afterEach(cleanup)
 
-describe('@iris-ui/solid demo primitives', () => {
+describe('@iris-ui-kit/solid demo primitives', () => {
   it('IrisBadge reflects tone/variant + renders content', () => {
     const { getByText, container } = render(() => (
       <IrisBadge tone="success" variant="subtle">

@@ -20,7 +20,7 @@ const trigger = (c: HTMLElement) =>
   c.querySelector('[data-iris-tree-select-trigger]') as HTMLElement
 const nodes = (c: HTMLElement) => c.querySelectorAll('[data-iris-tree-select-node]')
 
-describe('@iris-ui/react IrisTreeSelect', () => {
+describe('@iris-ui-kit/react IrisTreeSelect', () => {
   it('shows the placeholder, closed initially', () => {
     const { container } = render(<IrisTreeSelect options={OPTIONS} placeholder="Pick" />)
     expect(container.querySelector('[role="tree"]')).toBeNull()

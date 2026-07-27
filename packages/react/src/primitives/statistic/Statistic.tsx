@@ -34,7 +34,7 @@ const TREND_ARROW: Record<IrisStatisticTrend, string> = { up: '▲', down: '▼'
  * presentation; the trend glyph is decorative (aria-hidden) — the magnitude
  * text carries the meaning.
  *
- * React port of {@link import('@iris-ui/vue').IrisStatistic}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisStatistic}.
  */
 export function IrisStatistic({
   label,

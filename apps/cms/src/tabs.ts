@@ -1,4 +1,4 @@
-import { createTabsNav } from '@iris-ui/vue'
+import { createTabsNav } from '@iris-ui-kit/vue'
 
 /**
  * The shared multi-tab store. The Dashboard is seeded as a pinned (non-closable)

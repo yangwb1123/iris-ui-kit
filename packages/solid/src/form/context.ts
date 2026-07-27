@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'solid-js'
-import type { FormStore, FormValues } from '@iris-ui/core'
+import type { FormStore, FormValues } from '@iris-ui-kit/core'
 
 export const FormContext = createContext<FormStore<FormValues> | null>(null)
 

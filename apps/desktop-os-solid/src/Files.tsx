@@ -1,6 +1,6 @@
 import { For, Show, createSignal, type JSX } from 'solid-js'
-import { IrisButton } from '@iris-ui/solid'
-import { normalizePath } from '@iris-ui/core/fs'
+import { IrisButton } from '@iris-ui-kit/solid'
+import { normalizePath } from '@iris-ui-kit/core/fs'
 import { useFs, useFsState } from './fs-context'
 
 /** Join a directory + child name into a normalized absolute path. */
@@ -24,7 +24,7 @@ const iconBtn: JSX.CSSProperties = {
 }
 
 /**
- * Files — a real file MANAGER over `@iris-ui/core/fs` (the virtual file system).
+ * Files — a real file MANAGER over `@iris-ui-kit/core/fs` (the virtual file system).
  * Navigate folders, create folders + text files, edit/rename/delete, all persisted
  * to the user profile. This is what makes the `storage` permission it requests
  * actually do something (the old Files view was a static mock). Mirrors the React

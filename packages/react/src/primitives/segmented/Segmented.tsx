@@ -5,7 +5,7 @@ import {
   type KeyboardNavController,
   type KeyboardNavAction,
   type SelectionModel,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 
 export type IrisSegmentedSize = 'sm' | 'md' | 'lg'

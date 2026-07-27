@@ -26,8 +26,8 @@ import {
   IrisToastViewport,
   createSkinEngine,
   localStorageSkinStorage,
-} from '@iris-ui/react'
-import type { Skin } from '@iris-ui/react'
+} from '@iris-ui-kit/react'
+import type { Skin } from '@iris-ui-kit/react'
 import { TodoHeader } from './components/TodoHeader'
 import { TodoFilters } from './components/TodoFilters'
 import { TodoList } from './components/TodoList'
@@ -158,7 +158,7 @@ function TodoAppShell() {
           }}
         >
           Built with{' '}
-          <code style={{ fontFamily: 'ui-monospace, SF Mono, monospace' }}>@iris-ui/react</code>
+          <code style={{ fontFamily: 'ui-monospace, SF Mono, monospace' }}>@iris-ui-kit/react</code>
         </p>
 
         {/* Skin / theme toggle */}

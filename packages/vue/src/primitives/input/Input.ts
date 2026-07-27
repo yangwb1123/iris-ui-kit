@@ -1,5 +1,5 @@
 import { computed, defineComponent, h, ref, type PropType } from 'vue'
-import type { Size } from '@iris-ui/core'
+import type { Size } from '@iris-ui-kit/core'
 
 export type IrisInputSize = Size
 export type IrisInputType = 'text' | 'password' | 'email' | 'number' | 'search' | 'tel' | 'url'

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { type SnapZone } from '@iris-ui/core/window'
+import { type SnapZone } from '@iris-ui-kit/core/window'
 import { OS_ORDER, CHROMES } from '../os'
 import { useApps, useLaunchApp, useOs, useWm, useWmState } from '../shell'
 import { CommandsProvider, useRegisterCommands } from '../commands-context'

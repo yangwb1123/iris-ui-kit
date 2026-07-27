@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { type Command, type CommandHit } from '@iris-ui/core/commands'
+import { type Command, type CommandHit } from '@iris-ui-kit/core/commands'
 import { useCommands, useCommandSearch } from '../commands-context'
 
 /**

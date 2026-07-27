@@ -1,6 +1,6 @@
 # `ssr-next` — Next.js App Router SSR/RSC smoke (ROADMAP v3 R14)
 
-The canonical proof that `@iris-ui/react` works inside a **real meta-framework
+The canonical proof that `@iris-ui-kit/react` works inside a **real meta-framework
 SSR/RSC pipeline**. The library claims "SSR/RSC-ready"; this app is what
 actually builds it through Next.js's App Router server renderer.
 
@@ -11,7 +11,7 @@ strict, end-to-end compatibility gate because it fails hard on:
 
 - **bad client boundaries** — a component using hooks/state/effects without a
   `'use client'` directive (directly or transitively) errors during the RSC
-  pass. `@iris-ui/react` injects `'use client'` into _every_ emitted entry (see
+  pass. `@iris-ui-kit/react` injects `'use client'` into _every_ emitted entry (see
   `packages/react/tsup.config.ts` + the `pnpm check:rsc` tripwire), so its
   components can be imported straight from a Server Component.
 - **server-side DOM access** — any `document` / `window` touched at module-eval
@@ -30,7 +30,7 @@ app/
   page.tsx     Server Component — imports and renders the client island
   Demo.tsx     'use client' island — the interactive components + hydration
   globals.css  minimal page reset
-next.config.mjs  transpilePackages for the workspace @iris-ui packages
+next.config.mjs  transpilePackages for the workspace @iris-ui-kit packages
 ```
 
 `app/page.tsx` (a **Server Component**, no directive) renders `app/Demo.tsx` (a
@@ -60,10 +60,15 @@ A representative spread, on purpose:
 ## next.config — `transpilePackages`
 
 ```js
-transpilePackages: ['@iris-ui/react', '@iris-ui/core', '@iris-ui/theme', '@iris-ui/tokens']
+transpilePackages: [
+  '@iris-ui-kit/react',
+  '@iris-ui-kit/core',
+  '@iris-ui-kit/theme',
+  '@iris-ui-kit/tokens',
+]
 ```
 
-The `@iris-ui/*` workspace packages are consumed via `workspace:*`. Listing them
+The `@iris-ui-kit/*` workspace packages are consumed via `workspace:*`. Listing them
 in `transpilePackages` makes Next run them through its own compiler, so the
 `workspace:*` resolution and the injected `'use client'` boundaries resolve
 cleanly in both the server-render and the client bundle.
@@ -81,7 +86,7 @@ pnpm --filter ssr-next build   # the SSR/RSC-compat proof
 ## React version
 
 Pinned to **React 18.3.1** + **react-dom 18.3.1** to match the repo's React
-adapter (`@iris-ui/react` dev-deps React `^18.3.1`; its peer range is
+adapter (`@iris-ui-kit/react` dev-deps React `^18.3.1`; its peer range is
 `^18 || ^19`). Next is pinned to **14.2.x** — the Next 14 line targets React
 18; Next 15 requires React 19, which would diverge from the rest of the repo.
 
@@ -91,7 +96,7 @@ This round (R14) is intentionally bounded to **one** app: Next.js App Router.
 
 **Nuxt** (Vue), **SvelteKit** (Svelte), and **SolidStart** (Solid) are
 **explicitly deferred**. Each would follow the _identical thin-smoke pattern_:
-a server-rendered page that mounts a small island of `@iris-ui/{vue,svelte,solid}`
+a server-rendered page that mounts a small island of `@iris-ui-kit/{vue,svelte,solid}`
 components (an overlay closed by default + a data component + a few basics),
 where a successful framework build is the SSR proof. They are deferred to avoid
 quadrupling heavy SSR toolchains in the monorepo in a single round; Next is the

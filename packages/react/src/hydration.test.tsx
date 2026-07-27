@@ -140,7 +140,7 @@ function canon(node: Node): string {
 
 afterEach(cleanup)
 
-describe('@iris-ui/react hydration', () => {
+describe('@iris-ui-kit/react hydration', () => {
   it('runs in a real DOM (jsdom) environment', () => {
     // hydrateRoot needs a live `document`; if this regressed to the node env the
     // whole file would be vacuously green.

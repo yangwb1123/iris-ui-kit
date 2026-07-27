@@ -6,7 +6,7 @@ afterEach(() => cleanup())
 
 const fs = (c: HTMLElement) => c.querySelector('[data-iris-fieldset]') as HTMLFieldSetElement
 
-describe('@iris-ui/react IrisFieldset', () => {
+describe('@iris-ui-kit/react IrisFieldset', () => {
   it('renders the legend and children', () => {
     const { container } = render(
       <IrisFieldset legend="Account">

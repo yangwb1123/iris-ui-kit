@@ -4,7 +4,7 @@ import { IrisAvatar } from './Avatar'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisAvatar', () => {
+describe('@iris-ui-kit/react IrisAvatar', () => {
   it('renders an <img> when src is provided', () => {
     const { container } = render(<IrisAvatar src="/u.png" alt="user" />)
     const img = container.querySelector('img')!

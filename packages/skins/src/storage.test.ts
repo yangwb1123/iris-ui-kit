@@ -41,6 +41,7 @@ describe('localStorageSkinStorage', () => {
   })
 
   it('is SSR-safe: a no-op when localStorage is unavailable', () => {
+    vi.stubGlobal('localStorage', undefined)
     const s = localStorageSkinStorage('iris-skin-test')
     expect(s.get()).toBeNull()
     expect(() => s.set('x')).not.toThrow()

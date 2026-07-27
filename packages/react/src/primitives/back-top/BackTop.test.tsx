@@ -4,7 +4,7 @@ import { IrisBackTop } from './BackTop'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisBackTop', () => {
+describe('@iris-ui-kit/react IrisBackTop', () => {
   it('is hidden until the target scrolls past the threshold', () => {
     const target = document.createElement('div')
     const { container } = render(<IrisBackTop target={() => target} visibilityHeight={400} />)

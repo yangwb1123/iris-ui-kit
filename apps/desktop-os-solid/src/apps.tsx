@@ -1,5 +1,5 @@
 import { createSignal, type JSX } from 'solid-js'
-import { IrisButton, IrisBadge } from '@iris-ui/solid'
+import { IrisButton, IrisBadge } from '@iris-ui-kit/solid'
 
 /**
  * The built-in app VIEWS (window bodies). These are pure Solid components; the
@@ -22,10 +22,10 @@ export function AboutApp(): JSX.Element {
       <p style={{ margin: 0 }}>
         A windowed desktop shell whose entire window logic — open, focus &amp; z-order, minimize,
         maximize/restore, move/resize, edge-snap — lives in the framework-agnostic{' '}
-        <code>@iris-ui/core/window</code> (<code>createWindowManager</code>). This is the very same
-        engine the React demo drives — here it runs on <strong>SolidJS</strong>. The app catalog,
-        installable apps and ⌘K command palette are likewise framework-agnostic:{' '}
-        <code>@iris-ui/core/profile</code> + <code>@iris-ui/core/commands</code>.
+        <code>@iris-ui-kit/core/window</code> (<code>createWindowManager</code>). This is the very
+        same engine the React demo drives — here it runs on <strong>SolidJS</strong>. The app
+        catalog, installable apps and ⌘K command palette are likewise framework-agnostic:{' '}
+        <code>@iris-ui-kit/core/profile</code> + <code>@iris-ui-kit/core/commands</code>.
       </p>
       <div style={{ display: 'flex', gap: '8px', 'flex-wrap': 'wrap' }}>
         <IrisBadge tone="primary" variant="subtle">
@@ -69,7 +69,7 @@ export function ShowcaseApp(): JSX.Element {
   return (
     <Pane>
       <p style={{ margin: 0 }}>
-        Real <code>@iris-ui/solid</code> components, rendered inside a managed window.
+        Real <code>@iris-ui-kit/solid</code> components, rendered inside a managed window.
       </p>
       <div style={{ display: 'flex', gap: '8px', 'flex-wrap': 'wrap', 'align-items': 'center' }}>
         <IrisButton variant="solid">Solid</IrisButton>

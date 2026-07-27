@@ -3,7 +3,7 @@ import {
   type DataSourceController,
   type DataSourceConfig,
   type DataSourceState,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 export interface UseDataSource<T> extends DataSourceController<T> {
   /**
@@ -21,7 +21,7 @@ export interface UseDataSource<T> extends DataSourceController<T> {
  * per-row + optimistic mutate). Creates the controller once, kicks the initial
  * load from an effect, bridges its store into a `$state` rune, and returns the
  * controller plus its live `state`. A thin bridge — all logic lives in
- * `@iris-ui/core`. A `.svelte.ts` runes module: call it from a component (runes
+ * `@iris-ui-kit/core`. A `.svelte.ts` runes module: call it from a component (runes
  * need a reactive owner).
  *
  * Constructed with `immediate: false` so no fetch fires during setup; the initial

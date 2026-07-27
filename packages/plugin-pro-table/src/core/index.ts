@@ -29,21 +29,21 @@ import {
   computeVirtualRange,
   buildOffsets,
   type VirtualWindow,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 /**
- * `@iris-ui/plugin-pro-table` — a vxe-table-style CRUD data table for Iris UI.
+ * `@iris-ui-kit/plugin-pro-table` — a vxe-table-style CRUD data table for Iris UI.
  * This `core` entry is framework-agnostic: {@link createProTableStore} owns all
  * the table logic behind a subscribable {@link Store}. Per the re-layering, it
- * is now a **composition** of @iris-ui/core controllers rather than a monolith:
+ * is now a **composition** of @iris-ui-kit/core controllers rather than a monolith:
  * selection → `createSelectionModel`, the filter→sort→paginate pipeline →
  * `filterSort`/`paginate`/`cycleSort`, server loading → `createAsyncResource`
  * (token-guarded, no stale-response clobbering), CSV → `toCsv`. The four
  * framework entries are render-only adapters that read this store.
  */
 
-export type { SortDirection, SortState, TreeRow } from '@iris-ui/core'
-import type { SortState } from '@iris-ui/core'
+export type { SortDirection, SortState, TreeRow } from '@iris-ui-kit/core'
+import type { SortState } from '@iris-ui-kit/core'
 
 export type CellEditor = 'text' | 'number'
 

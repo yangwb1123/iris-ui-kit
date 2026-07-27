@@ -1,6 +1,11 @@
 import { createSignal, onCleanup, type JSX } from 'solid-js'
-import { createReconnectingSource, createDisposableScope } from '@iris-ui/core'
-import { IrisTable, IrisBadge, type IrisTableColumn, type IrisTableSortState } from '@iris-ui/solid'
+import { createReconnectingSource, createDisposableScope } from '@iris-ui-kit/core'
+import {
+  IrisTable,
+  IrisBadge,
+  type IrisTableColumn,
+  type IrisTableSortState,
+} from '@iris-ui-kit/solid'
 
 interface Row extends Record<string, unknown> {
   id: number

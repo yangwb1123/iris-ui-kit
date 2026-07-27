@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { createI18n, type I18n } from '@iris-ui/core'
+import { createI18n, type I18n } from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 import { I18nContext } from './context'
 

@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends Record<string, unknown>">
   // Test fixture: drives useDataSource and exposes both the live controller (via
   // `onready`) and the reactive state through the DOM so assertions can read it.
-  import type { DataSourceConfig } from '@iris-ui/core'
+  import type { DataSourceConfig } from '@iris-ui-kit/core'
   import { useDataSource, type UseDataSource } from './useDataSource.svelte'
 
   let {

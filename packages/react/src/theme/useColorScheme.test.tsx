@@ -33,7 +33,7 @@ function Probe() {
   return <span data-testid="scheme">{scheme}</span>
 }
 
-describe('@iris-ui/react useColorScheme', () => {
+describe('@iris-ui-kit/react useColorScheme', () => {
   it('reports the initial system scheme', () => {
     mockMatchMedia(true)
     render(<Probe />)

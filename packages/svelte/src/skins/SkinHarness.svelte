@@ -1,6 +1,6 @@
 <script lang="ts">
   // Test fixture: wraps <SkinProvider> around a consumer.
-  import type { SkinEngine } from '@iris-ui/skins'
+  import type { SkinEngine } from '@iris-ui-kit/skins'
   import SkinProvider from './SkinProvider.svelte'
   import SkinConsumer from './SkinConsumer.svelte'
   import type { UseSkinReturn } from './useSkin'

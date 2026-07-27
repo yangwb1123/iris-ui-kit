@@ -1,6 +1,6 @@
 <script lang="ts">
   // Test fixture: surfaces a useTabsNav binding's reactive stores into the DOM.
-  import type { TabsNav } from '@iris-ui/core'
+  import type { TabsNav } from '@iris-ui-kit/core'
   import { useTabsNav, type UseTabsNavReturn } from './useTabsNav'
 
   let { nav, onready }: { nav: TabsNav; onready?: (api: UseTabsNavReturn) => void } = $props()

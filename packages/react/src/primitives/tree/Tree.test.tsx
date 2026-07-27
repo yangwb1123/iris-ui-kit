@@ -22,7 +22,7 @@ function items(): HTMLElement[] {
   return Array.from(document.querySelectorAll('[role=treeitem]'))
 }
 
-describe('@iris-ui/react IrisTree', () => {
+describe('@iris-ui-kit/react IrisTree', () => {
   it('renders root nodes only by default', () => {
     render(<IrisTree nodes={nodes} />)
     const ids = items().map((el) => el.getAttribute('data-iris-tree-node'))
@@ -200,7 +200,7 @@ describe('@iris-ui/react IrisTree', () => {
   })
 })
 
-describe('@iris-ui/react IrisTree lazy loading', () => {
+describe('@iris-ui-kit/react IrisTree lazy loading', () => {
   it('shows an expand affordance for a loader-backed node with no eager children', () => {
     const lazy: IrisTreeNode[] = [
       { id: 'root', label: 'Root', loadChildren: vi.fn(async () => []) },
@@ -247,7 +247,7 @@ describe('@iris-ui/react IrisTree lazy loading', () => {
   })
 })
 
-describe('@iris-ui/react IrisTree RTL', () => {
+describe('@iris-ui-kit/react IrisTree RTL', () => {
   it('indents with logical inline-start padding (RTL-safe)', () => {
     render(<IrisTree nodes={nodes} />)
     const root = document.querySelector('[data-iris-tree-node=root]') as HTMLElement
@@ -256,7 +256,7 @@ describe('@iris-ui/react IrisTree RTL', () => {
   })
 })
 
-describe('@iris-ui/react IrisTree data states', () => {
+describe('@iris-ui-kit/react IrisTree data states', () => {
   it('shows the empty state (localized) when nodes is empty', () => {
     render(<IrisTree nodes={[]} />)
     const node = document.querySelector('[data-iris-tree-state]')!

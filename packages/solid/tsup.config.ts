@@ -10,12 +10,12 @@ import { solidPlugin } from 'esbuild-plugin-solid'
 // unchanged except for a lazy `template()` wrapper (see that file for why:
 // solid-js/web's server build throws synchronously when its DOM helpers are
 // *called*, and the compiler calls `template()` eagerly at module scope).
-const DOM_RUNTIME_ALIAS = '@iris-ui/solid-web-runtime'
+const DOM_RUNTIME_ALIAS = '@iris-ui-kit/solid-web-runtime'
 
 /**
  * Build the full barrel (`index`) plus a flattened entry per top-level group
  * (`theme`, `skins`, `admin`, …) so consumers can deep-import an area:
- * `@iris-ui/solid/admin`. Enumerated from the source tree so it never drifts.
+ * `@iris-ui-kit/solid/admin`. Enumerated from the source tree so it never drifts.
  *
  * Solid JSX cannot be compiled by esbuild alone — `esbuild-plugin-solid` runs
  * babel-preset-solid so the output is real Solid reactivity (not React-style
@@ -53,11 +53,11 @@ export default defineConfig({
     'solid-js',
     'solid-js/web',
     'solid-js/store',
-    '@iris-ui/core',
-    '@iris-ui/skins',
-    '@iris-ui/theme',
-    '@iris-ui/tokens',
-    '@iris-ui/icons',
+    '@iris-ui-kit/core',
+    '@iris-ui-kit/skins',
+    '@iris-ui-kit/theme',
+    '@iris-ui-kit/tokens',
+    '@iris-ui-kit/icons',
     '@floating-ui/dom',
   ],
 })

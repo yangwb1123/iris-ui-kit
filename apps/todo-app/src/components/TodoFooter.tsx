@@ -6,8 +6,8 @@
  */
 
 import { useEffect, useState } from 'react'
-import { IrisButton, IrisBadge } from '@iris-ui/react'
-import { useResilientFetcher } from '@iris-ui/react'
+import { IrisButton, IrisBadge } from '@iris-ui-kit/react'
+import { useResilientFetcher } from '@iris-ui-kit/react'
 import { hasCompleted } from '../utils/filters'
 import type { Todo } from '../types/todo'
 

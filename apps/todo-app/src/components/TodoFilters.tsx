@@ -6,7 +6,7 @@
  * the `solid` variant for clear affordance.
  */
 
-import { IrisButton } from '@iris-ui/react'
+import { IrisButton } from '@iris-ui-kit/react'
 import type { TodoFilter } from '../types/todo'
 
 export interface TodoFiltersProps {

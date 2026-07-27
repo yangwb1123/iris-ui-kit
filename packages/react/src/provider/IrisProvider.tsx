@@ -1,12 +1,12 @@
 import { useContext, useEffect, useMemo, useRef, type ReactNode } from 'react'
-import { runPlugins, type IrisPlugin } from '@iris-ui/core'
+import { runPlugins, type IrisPlugin } from '@iris-ui-kit/core'
 import {
   applyCssVars,
   type ApplyCssVarsResult,
   type Direction,
   type ThemeStore,
-} from '@iris-ui/theme'
-import type { SkinEngine } from '@iris-ui/skins'
+} from '@iris-ui-kit/theme'
+import type { SkinEngine } from '@iris-ui-kit/skins'
 import { ThemeProvider } from '../theme'
 import { SkinProvider } from '../skins'
 import { IrisI18nProvider } from '../i18n'

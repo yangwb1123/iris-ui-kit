@@ -1,6 +1,6 @@
 {
-  "name": "@iris-ui/plugin-charts",
-  "version": "0.0.0",
+  "name": "@iris-ui-kit/plugin-charts",
+  "version": "0.0.1",
   "description": "Zero-dependency, token-themed SVG charts plugin for Iris UI: IrisLineChart / IrisBarChart / IrisSparkline for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",
@@ -44,7 +44,7 @@
     "clean": "rm -rf dist .turbo .svelte-kit"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*"
+    "@iris-ui-kit/core": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
@@ -94,5 +94,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/nousresearch/iris-ui.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

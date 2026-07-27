@@ -1,6 +1,6 @@
 import { For, Show, createEffect, createMemo, createSignal, type JSX } from 'solid-js'
-import { IrisButton } from '@iris-ui/solid'
-import type { Command } from '@iris-ui/core/commands'
+import { IrisButton } from '@iris-ui-kit/solid'
+import type { Command } from '@iris-ui-kit/core/commands'
 import { useCommands } from './commands'
 import { createAnthropicCall, createLlmPlanner, fuzzyPlanner, type Planner } from './planner'
 
@@ -23,7 +23,7 @@ const GREETING: Turn = {
 const DEFAULT_MODEL = 'claude-opus-4-8'
 
 /**
- * The agent layer: a natural-ish command runner over `@iris-ui/core/commands`.
+ * The agent layer: a natural-ish command runner over `@iris-ui-kit/core/commands`.
  * The deterministic fallback is `fuzzyPlanner` (fuzzy-match → top command). When
  * the user enables the AI planner and supplies a key, a Claude-backed planner
  * ({@link createLlmPlanner}) takes over — it asks the model to pick a command via

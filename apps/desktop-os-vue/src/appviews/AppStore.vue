@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { IrisButton, IrisBadge, IrisInput } from '@iris-ui/vue'
+import { IrisButton, IrisBadge, IrisInput } from '@iris-ui-kit/vue'
 import { CATALOG, INSTALLABLE_APPS, type AppManifest } from '../catalog'
 import { PERMISSION_META } from '../permissions'
 import {
@@ -98,7 +98,7 @@ function submit() {
         <strong>permissions</strong> it requests — review them, then grant or revoke per app in
         <em>Settings → Privacy &amp; permissions</em>. Link &amp; iframe apps aggregate external
         services — most major sites block iframe embedding, so those open in a new tab instead. Runs
-        on the same <code>@iris-ui/core/profile</code> store as the React demo.
+        on the same <code>@iris-ui-kit/core/profile</code> store as the React demo.
       </p>
     </header>
 

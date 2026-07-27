@@ -16,13 +16,13 @@ import type { Rule } from 'eslint'
  * HOW TO KEEP IN SYNC (do this whenever a plugin is added/renamed):
  *   1. Every package under `packages/plugin-*` that exports an `IrisXxx`
  *      component AND a `xxxPlugin` factory belongs here.
- *   2. `pkg` is the bare public specifier (e.g. `@iris-ui/plugin-pro-table`).
+ *   2. `pkg` is the bare public specifier (e.g. `@iris-ui-kit/plugin-pro-table`).
  *   3. `plugin` is the canonical factory export name (e.g. `proTablePlugin`).
  *   4. `components` lists every `IrisXxx` component the package ships.
  *   5. `pluginAliases` (optional) keeps historically-recognized names passing
  *      so broadening the list never newly-flags previously-passing code.
  *
- * NOTE: `@iris-ui/plugin-locale-zh` is intentionally absent — it is a
+ * NOTE: `@iris-ui-kit/plugin-locale-zh` is intentionally absent — it is a
  * locale-only plugin (`localeZhPlugin`) and ships no component, so there is
  * nothing for this "component needs its plugin" rule to anchor on.
  *
@@ -50,27 +50,27 @@ interface PluginPackage {
  */
 const PLUGIN_PACKAGES: PluginPackage[] = [
   {
-    pkg: '@iris-ui/plugin-admin',
+    pkg: '@iris-ui-kit/plugin-admin',
     plugin: 'adminPlugin',
     components: ['IrisAdminApp'],
   },
   {
-    pkg: '@iris-ui/plugin-calendar',
+    pkg: '@iris-ui-kit/plugin-calendar',
     plugin: 'calendarPlugin',
     components: ['IrisEventCalendar'],
   },
   {
-    pkg: '@iris-ui/plugin-charts',
+    pkg: '@iris-ui-kit/plugin-charts',
     plugin: 'chartsPlugin',
     components: ['IrisLineChart', 'IrisBarChart', 'IrisSparkline'],
   },
   {
-    pkg: '@iris-ui/plugin-dashboard',
+    pkg: '@iris-ui-kit/plugin-dashboard',
     plugin: 'dashboardPlugin',
     components: ['IrisDashboard'],
   },
   {
-    pkg: '@iris-ui/plugin-editor',
+    pkg: '@iris-ui-kit/plugin-editor',
     plugin: 'editorPlugin',
     components: ['IrisCodeEditor'],
     // `codeMirrorPlugin` was the name recognized by earlier versions of this
@@ -78,32 +78,32 @@ const PLUGIN_PACKAGES: PluginPackage[] = [
     pluginAliases: ['codeMirrorPlugin'],
   },
   {
-    pkg: '@iris-ui/plugin-form-builder',
+    pkg: '@iris-ui-kit/plugin-form-builder',
     plugin: 'formBuilderPlugin',
     components: ['IrisFormBuilder'],
   },
   {
-    pkg: '@iris-ui/plugin-kanban',
+    pkg: '@iris-ui-kit/plugin-kanban',
     plugin: 'kanbanPlugin',
     components: ['IrisKanban'],
   },
   {
-    pkg: '@iris-ui/plugin-markdown',
+    pkg: '@iris-ui-kit/plugin-markdown',
     plugin: 'markdownPlugin',
     components: ['IrisMarkdown'],
   },
   {
-    pkg: '@iris-ui/plugin-notifications',
+    pkg: '@iris-ui-kit/plugin-notifications',
     plugin: 'notificationsPlugin',
     components: ['IrisNotificationCenter'],
   },
   {
-    pkg: '@iris-ui/plugin-pro-table',
+    pkg: '@iris-ui-kit/plugin-pro-table',
     plugin: 'proTablePlugin',
     components: ['IrisProTable'],
   },
   {
-    pkg: '@iris-ui/plugin-query-builder',
+    pkg: '@iris-ui-kit/plugin-query-builder',
     plugin: 'queryBuilderPlugin',
     components: ['IrisQueryBuilder'],
   },
@@ -178,7 +178,7 @@ const rule: Rule.RuleModule = {
               componentNodes.set(entry.componentName, node as unknown as Rule.Node)
             }
             // Check if this is the corresponding plugin factory import.
-            // Allow importing from the plugin package or any @iris-ui/* package.
+            // Allow importing from the plugin package or any @iris-ui-kit/* package.
             if (entry.acceptedPlugins.has(name)) {
               importedPlugins.add(name)
             }

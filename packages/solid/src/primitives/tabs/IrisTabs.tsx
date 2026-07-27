@@ -1,5 +1,5 @@
 import { createSignal, mergeProps, Show, splitProps, useContext, type JSX } from 'solid-js'
-import { firstEnabledIndex, lastEnabledIndex, nextEnabledIndex } from '@iris-ui/core'
+import { firstEnabledIndex, lastEnabledIndex, nextEnabledIndex } from '@iris-ui-kit/core'
 import { TabsCtx, type IrisTabsOrientation } from './context'
 
 // ── Types ──────────────────────────────────────────────────────────────────

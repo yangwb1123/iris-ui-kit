@@ -9,7 +9,7 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { createAutoDismiss, type AutoDismiss } from '@iris-ui/core'
+import { createAutoDismiss, type AutoDismiss } from '@iris-ui-kit/core'
 import {
   dismissToast,
   getToasts,

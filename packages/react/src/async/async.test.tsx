@@ -27,7 +27,7 @@ function Probe({ fetcher, immediate }: { fetcher: () => Promise<string>; immedia
   )
 }
 
-describe('@iris-ui/react useAsyncResource', () => {
+describe('@iris-ui-kit/react useAsyncResource', () => {
   it('starts idle and loads on demand', async () => {
     render(<Probe fetcher={async () => 'hello'} />)
     expect(screen.getByTestId('status').textContent).toBe('idle')

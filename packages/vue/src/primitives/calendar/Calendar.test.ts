@@ -14,7 +14,7 @@ import {
 
 afterEach(() => vi.useRealTimers())
 
-describe('@iris-ui/vue dateUtils', () => {
+describe('@iris-ui-kit/vue dateUtils', () => {
   it('buildMonthMatrix returns 6x7 grid with leading/trailing days', () => {
     // March 2024 starts on Friday. weekStartsOn=0 (Sunday) → 5 leading days.
     const matrix = buildMonthMatrix(new Date(2024, 2, 15), 0)
@@ -56,7 +56,7 @@ describe('@iris-ui/vue dateUtils', () => {
   })
 })
 
-describe('@iris-ui/vue IrisCalendar', () => {
+describe('@iris-ui-kit/vue IrisCalendar', () => {
   it('renders header + weekday row + 42-cell grid', () => {
     const wrap = mount(IrisCalendar, {
       props: { defaultMonth: new Date(2024, 2, 15) },

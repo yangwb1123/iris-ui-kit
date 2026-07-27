@@ -1,6 +1,6 @@
 {
-  "name": "@iris-ui/plugin-locale-zh",
-  "version": "0.0.0",
+  "name": "@iris-ui-kit/plugin-locale-zh",
+  "version": "0.0.1",
   "description": "Simplified-Chinese (zh-CN) message pack for Iris UI, as an Iris plugin",
   "license": "MIT",
   "type": "module",
@@ -25,10 +25,13 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*"
+    "@iris-ui-kit/core": "workspace:*"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/nousresearch/iris-ui.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

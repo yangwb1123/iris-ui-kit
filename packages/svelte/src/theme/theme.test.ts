@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@testing-library/svelte'
 import { flushSync } from 'svelte'
-import { createThemeStore } from '@iris-ui/theme'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 import ThemeProvider from './ThemeProvider.svelte'
 import ThemeHarness from './ThemeHarness.svelte'
 import ThemeOptionalProbe from './ThemeOptionalProbe.svelte'
@@ -14,7 +14,7 @@ function makeStore() {
   return createThemeStore({ themes: { light: lightTheme, dark: darkTheme }, default: 'light' })
 }
 
-describe('@iris-ui/svelte theme', () => {
+describe('@iris-ui-kit/svelte theme', () => {
   it('applies CSS vars to document.documentElement and reverts on unmount', () => {
     const { unmount } = render(ThemeProvider, { props: { store: makeStore() } })
     expect(document.documentElement.style.getPropertyValue('--iris-background')).toBeTruthy()

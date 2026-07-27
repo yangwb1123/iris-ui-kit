@@ -14,7 +14,7 @@ function clearBody() {
 
 afterEach(() => clearBody())
 
-describe('@iris-ui/vue IrisResizable', () => {
+describe('@iris-ui-kit/vue IrisResizable', () => {
   it('wraps child in a relative inline-block container with size', () => {
     const wrap = mount(IrisResizable, {
       props: { defaultSize: { width: 300, height: 200 } },
@@ -85,7 +85,7 @@ describe('@iris-ui/vue IrisResizable', () => {
   })
 })
 
-describe('@iris-ui/vue IrisMovable', () => {
+describe('@iris-ui-kit/vue IrisMovable', () => {
   it('wraps child in absolutely-positioned container at defaultPosition', () => {
     const wrap = mount(IrisMovable, {
       props: { defaultPosition: { x: 42, y: -7 } },
@@ -136,7 +136,7 @@ describe('@iris-ui/vue IrisMovable', () => {
   })
 })
 
-describe('@iris-ui/vue IrisHotkey', () => {
+describe('@iris-ui-kit/vue IrisHotkey', () => {
   it('renders children as-is (no wrapper element)', () => {
     const wrap = mount(IrisHotkey, {
       props: { shortcut: 'Escape', onTrigger: () => {} },
@@ -212,7 +212,7 @@ describe('@iris-ui/vue IrisHotkey', () => {
   })
 })
 
-describe('@iris-ui/vue IrisClickOutside', () => {
+describe('@iris-ui-kit/vue IrisClickOutside', () => {
   it('fires outside when pointerdown is outside the wrapped tree', async () => {
     const outside = document.createElement('div')
     outside.setAttribute('data-testid', 'outside')
@@ -262,7 +262,7 @@ describe('@iris-ui/vue IrisClickOutside', () => {
   })
 })
 
-describe('@iris-ui/vue IrisSortable', () => {
+describe('@iris-ui-kit/vue IrisSortable', () => {
   it('renders items with data-iris-sortable-item attributes matching index-based keys', () => {
     const wrap = mount(IrisSortable, {
       props: { items: ['A', 'B', 'C'], onReorder: () => {} },
@@ -295,7 +295,7 @@ describe('@iris-ui/vue IrisSortable', () => {
   })
 })
 
-describe('@iris-ui/vue IrisLongPress', () => {
+describe('@iris-ui-kit/vue IrisLongPress', () => {
   it('renders children inside a [data-iris-long-press] wrapper', () => {
     const wrap = mount(IrisLongPress, {
       props: { onLongPress: () => {} },

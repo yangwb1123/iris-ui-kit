@@ -44,6 +44,28 @@ jobs:
         run: node cli.mjs acceptance --all
         continue-on-error: true
 
+      - name: Manifest up-to-date
+        run: pnpm check:manifest
+
+      - name: Size budget
+        run: pnpm size
+
+      - name: Token audit
+        run: pnpm audit:tokens
+
+      - name: Test coverage report
+        run: pnpm test:coverage
+
+      - name: Core instrumented coverage (v8, real thresholds)
+        run: pnpm turbo run test:coverage:v8 --filter=@iris-ui-kit/core
+
+      - name: Desktop OS parity
+        run: pnpm check:desktop-parity
+
+      - name: RSC directive
+        run: pnpm check:rsc
+
+
       - name: Test
         run: pnpm test
 

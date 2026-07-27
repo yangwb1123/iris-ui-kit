@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, ref, type ComputedRef, type Ref } from 'vue'
-import type { TabsNav, TabsNavState, TabItem } from '@iris-ui/core'
+import type { TabsNav, TabsNavState, TabItem } from '@iris-ui-kit/core'
 
 export interface UseTabsNavReturn {
   tabs: ComputedRef<TabItem[]>

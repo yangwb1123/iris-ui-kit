@@ -2,7 +2,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
-import { ALL_FRAMEWORKS } from '@iris-ui/manifest'
+import { ALL_FRAMEWORKS } from '@iris-ui-kit/manifest'
 import { loadManifest } from './manifest-source'
 import {
   listComponents,

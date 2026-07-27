@@ -3,7 +3,7 @@ import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { useDataState } from './useDataState'
 import { __DATA_STATE_STYLE_ID, __resetDataStateStyles } from './styles'
-import type { DataStateInput } from '@iris-ui/core'
+import type { DataStateInput } from '@iris-ui-kit/core'
 
 afterEach(() => __resetDataStateStyles())
 
@@ -22,7 +22,7 @@ function probe(input: DataStateInput) {
   })
 }
 
-describe('@iris-ui/vue useDataState', () => {
+describe('@iris-ui-kit/vue useDataState', () => {
   it('resolves "content" with no flags', () => {
     const el = mount(probe({})).get('[data-testid=probe]')
     expect(el.attributes('data-state')).toBe('content')

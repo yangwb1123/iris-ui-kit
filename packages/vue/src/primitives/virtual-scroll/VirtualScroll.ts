@@ -10,7 +10,7 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui/core'
+import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui-kit/core'
 
 export type IrisVirtualScrollAlign = 'start' | 'center' | 'end'
 

@@ -20,7 +20,7 @@ describe('buildManifest', () => {
     expect(m.components.map((c) => c.name)).toEqual(['IrisAlert', 'IrisButton', 'IrisStack'])
     const button = m.components.find((c) => c.name === 'IrisButton')
     expect(button?.frameworks).toEqual(['react', 'vue'])
-    expect(button?.importFrom).toEqual({ react: '@iris-ui/react', vue: '@iris-ui/vue' })
+    expect(button?.importFrom).toEqual({ react: '@iris-ui-kit/react', vue: '@iris-ui-kit/vue' })
   })
 
   it('computes per-framework stats', () => {
@@ -102,17 +102,17 @@ describe('discover (real repo)', () => {
     const m = buildManifest(discover())
     const editor = m.components.find((c) => c.name === 'IrisCodeEditor')
     expect(editor?.group).toBe('plugin')
-    expect(editor?.plugin).toBe('@iris-ui/plugin-editor')
-    expect(editor?.importFrom.react).toBe('@iris-ui/plugin-editor/react')
+    expect(editor?.plugin).toBe('@iris-ui-kit/plugin-editor')
+    expect(editor?.importFrom.react).toBe('@iris-ui-kit/plugin-editor/react')
     const proTable = m.components.find((c) => c.name === 'IrisProTable')
-    expect(proTable?.plugin).toBe('@iris-ui/plugin-pro-table')
+    expect(proTable?.plugin).toBe('@iris-ui-kit/plugin-pro-table')
     // llms.txt surfaces the activation hint for plugin components.
     const llms = renderLlmsText(m)
-    expect(llms).toContain('via @iris-ui/plugin-editor')
+    expect(llms).toContain('via @iris-ui-kit/plugin-editor')
     // All four sub-path imports are present.
-    expect(editor?.importFrom.vue).toBe('@iris-ui/plugin-editor/vue')
-    expect(editor?.importFrom.solid).toBe('@iris-ui/plugin-editor/solid')
-    expect(editor?.importFrom.svelte).toBe('@iris-ui/plugin-editor/svelte')
+    expect(editor?.importFrom.vue).toBe('@iris-ui-kit/plugin-editor/vue')
+    expect(editor?.importFrom.solid).toBe('@iris-ui-kit/plugin-editor/solid')
+    expect(editor?.importFrom.svelte).toBe('@iris-ui-kit/plugin-editor/svelte')
   })
 
   it('discovers IrisFormBuilder and all other plugin components across every plugin package', () => {
@@ -125,15 +125,15 @@ describe('discover (real repo)', () => {
     // IrisFormBuilder — recently extended with async validation + debounce.
     const formBuilder = m.components.find((c) => c.name === 'IrisFormBuilder')
     expect(formBuilder?.group).toBe('plugin')
-    expect(formBuilder?.plugin).toBe('@iris-ui/plugin-form-builder')
-    expect(formBuilder?.importFrom.react).toBe('@iris-ui/plugin-form-builder/react')
-    expect(formBuilder?.importFrom.vue).toBe('@iris-ui/plugin-form-builder/vue')
-    expect(formBuilder?.importFrom.solid).toBe('@iris-ui/plugin-form-builder/solid')
-    expect(formBuilder?.importFrom.svelte).toBe('@iris-ui/plugin-form-builder/svelte')
+    expect(formBuilder?.plugin).toBe('@iris-ui-kit/plugin-form-builder')
+    expect(formBuilder?.importFrom.react).toBe('@iris-ui-kit/plugin-form-builder/react')
+    expect(formBuilder?.importFrom.vue).toBe('@iris-ui-kit/plugin-form-builder/vue')
+    expect(formBuilder?.importFrom.solid).toBe('@iris-ui-kit/plugin-form-builder/solid')
+    expect(formBuilder?.importFrom.svelte).toBe('@iris-ui-kit/plugin-form-builder/svelte')
     expect(formBuilder?.frameworks.slice().sort()).toEqual(['react', 'solid', 'svelte', 'vue'])
 
     // Charts package exports three components under one plugin.
-    const charts = pluginComponents.filter((c) => c.plugin === '@iris-ui/plugin-charts')
+    const charts = pluginComponents.filter((c) => c.plugin === '@iris-ui-kit/plugin-charts')
     expect(charts.map((c) => c.name).sort()).toEqual([
       'IrisBarChart',
       'IrisLineChart',

@@ -1,6 +1,6 @@
 import { createEffect, splitProps, Show, type JSX } from 'solid-js'
 import { Portal } from 'solid-js/web'
-import { nextEnabledIndex, matchTypeahead } from '@iris-ui/core'
+import { nextEnabledIndex, matchTypeahead } from '@iris-ui-kit/core'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { useDropdownContext } from './context'

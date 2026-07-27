@@ -10,7 +10,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react'
-import { composeEventHandlers } from '@iris-ui/core'
+import { composeEventHandlers } from '@iris-ui-kit/core'
 import type { IrisButtonSize, IrisButtonType, IrisButtonVariant } from './types'
 import { installButtonStyles } from './styles'
 

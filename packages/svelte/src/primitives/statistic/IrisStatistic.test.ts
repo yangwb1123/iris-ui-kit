@@ -4,7 +4,7 @@ import IrisStatistic from './IrisStatistic.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisStatistic', () => {
+describe('@iris-ui-kit/svelte IrisStatistic', () => {
   it('renders value', () => {
     const { container } = render(IrisStatistic, { props: { value: 1234 } })
     expect(container.querySelector('[data-iris-statistic-number]')!.textContent).toBe('1234')

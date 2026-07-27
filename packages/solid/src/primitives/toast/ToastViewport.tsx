@@ -1,6 +1,6 @@
 import { For, Show, createSignal, onCleanup, splitProps, type JSX } from 'solid-js'
 import { Portal } from 'solid-js/web'
-import { createAutoDismiss, type AutoDismiss } from '@iris-ui/core'
+import { createAutoDismiss, type AutoDismiss } from '@iris-ui-kit/core'
 import {
   dismissToast,
   getToasts,

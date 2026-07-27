@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createSelectionModel } from '@iris-ui/core'
+  import { createSelectionModel } from '@iris-ui-kit/core'
   import { toStore } from '../../useStore'
   import { styleToString, mergeStyle } from '../../internal/style'
   import { setToggleGroupContext } from './context'

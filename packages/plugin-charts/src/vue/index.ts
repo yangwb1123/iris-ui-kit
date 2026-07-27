@@ -11,8 +11,8 @@ import {
 } from '../core'
 
 /**
- * Vue SVG chart renderers for `@iris-ui/plugin-charts` — render-function
- * authored (matching the `@iris-ui/vue` convention), thin wrappers that consume
+ * Vue SVG chart renderers for `@iris-ui-kit/plugin-charts` — render-function
+ * authored (matching the `@iris-ui-kit/vue` convention), thin wrappers that consume
  * the framework-agnostic core geometry and draw plain themed SVG. No charting
  * library, no new geometry; the chart inherits the active theme via the
  * `--iris-chart-*` CSS variables registered by the plugin.

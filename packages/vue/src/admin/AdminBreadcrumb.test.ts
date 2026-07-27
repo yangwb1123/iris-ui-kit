@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { IrisAdminBreadcrumb } from './AdminBreadcrumb'
-import type { NavNode } from '@iris-ui/core'
+import type { NavNode } from '@iris-ui-kit/core'
 
 const trail: NavNode[] = [
   { key: 'sys', title: 'System', icon: 'folder' },

@@ -1,5 +1,5 @@
 /**
- * REAL SSR -> hydrate test for the ssr-solidstart app's @iris-ui/solid
+ * REAL SSR -> hydrate test for the ssr-solidstart app's @iris-ui-kit/solid
  * composition. Replaces the old "build IS the test" placeholder with a genuine
  * renderToString -> hydrate round-trip that fails on a hydration mismatch (the
  * classic createUniqueId drift / server-vs-client markup divergence).

@@ -4,7 +4,7 @@ import IrisDivider from './IrisDivider.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisDivider', () => {
+describe('@iris-ui-kit/svelte IrisDivider', () => {
   it('renders an <hr> for horizontal without label', () => {
     const { container } = render(IrisDivider)
     const el = container.querySelector('[data-iris-divider]')

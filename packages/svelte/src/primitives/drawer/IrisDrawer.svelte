@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createFloatingMachine, generateId } from '@iris-ui/core'
+  import { createFloatingMachine, generateId } from '@iris-ui-kit/core'
   import { toMachine } from '../../useMachine'
   import { setDrawerContext, type IrisDrawerSide } from './context'
 

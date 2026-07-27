@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship a loadable, token-built skin system: a framework-agnostic `@iris-ui/skins` package (inheritance, custom token namespaces, marketplace catalog client, FOUC boot script, persist / follow-system / live-edit runtime) plus thin React/Vue `SkinProvider`+`useSkin` adapters.
+**Goal:** Ship a loadable, token-built skin system: a framework-agnostic `@iris-ui-kit/skins` package (inheritance, custom token namespaces, marketplace catalog client, FOUC boot script, persist / follow-system / live-edit runtime) plus thin React/Vue `SkinProvider`+`useSkin` adapters.
 
-**Architecture:** All logic sinks to `@iris-ui/skins` over `@iris-ui/core`'s `createStore`. A `Skin` (partial, composable) resolves to a `ResolvedSkin` whose `.theme` is a complete `IrisTheme` (drop-in for the unchanged component layer) plus a custom CSS-var bag. Pure units (validate/resolve/registry/render/boot/storage-memory) take no DOM/network; effectful units (applySkin/loadSkin/catalog) isolate side-effects with injectable `fetch`. The DOM-write path is shared with the theme layer via a new `applyCssVars` extracted from `applyTheme`. React/Vue adapters are pure bridges mirroring `ThemeProvider`/`useTheme`.
+**Architecture:** All logic sinks to `@iris-ui-kit/skins` over `@iris-ui-kit/core`'s `createStore`. A `Skin` (partial, composable) resolves to a `ResolvedSkin` whose `.theme` is a complete `IrisTheme` (drop-in for the unchanged component layer) plus a custom CSS-var bag. Pure units (validate/resolve/registry/render/boot/storage-memory) take no DOM/network; effectful units (applySkin/loadSkin/catalog) isolate side-effects with injectable `fetch`. The DOM-write path is shared with the theme layer via a new `applyCssVars` extracted from `applyTheme`. React/Vue adapters are pure bridges mirroring `ThemeProvider`/`useTheme`.
 
 **Tech Stack:** TypeScript (ES2022), pnpm 9 workspaces + Turborepo 2, tsup (ESM+CJS+dts), Vitest + jsdom + @testing-library/react + @vue/test-utils. No semicolons, single quotes, printWidth 100, 2-space, trailingComma all.
 
@@ -14,10 +14,10 @@
 
 **Upstream facts already verified:**
 
-- `@iris-ui/tokens` exports `COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS, ALL_TOKEN_NAMES`, types `ColorToken/SpacingToken/RadiusToken/AnyToken`, `IrisTheme*`, and `lightTheme` / `darkTheme` (names `'iris-light'` / `'iris-dark'` — so builtin skin **ids must be set explicitly** to `'light'`/`'dark'`).
-- `@iris-ui/theme` exports `toCssVarName`, `getCssVar`, `applyTheme`, `injectGlobalStyles`, `watchColorScheme`, `getColorScheme`, `createThemeStore`.
-- `@iris-ui/core` exports `createStore`/`Store<T>`.
-- React: `useStore(store)` at `packages/react/src/useStore.ts`; tsup auto-discovers `src/<dir>/index.ts` as subpath entries and injects `'use client'` into every dist file in `onSuccess`. Vue tsup does the same auto-discovery. So adding `src/skins/index.ts` to each adapter auto-creates `@iris-ui/{react,vue}/skins`.
+- `@iris-ui-kit/tokens` exports `COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS, ALL_TOKEN_NAMES`, types `ColorToken/SpacingToken/RadiusToken/AnyToken`, `IrisTheme*`, and `lightTheme` / `darkTheme` (names `'iris-light'` / `'iris-dark'` — so builtin skin **ids must be set explicitly** to `'light'`/`'dark'`).
+- `@iris-ui-kit/theme` exports `toCssVarName`, `getCssVar`, `applyTheme`, `injectGlobalStyles`, `watchColorScheme`, `getColorScheme`, `createThemeStore`.
+- `@iris-ui-kit/core` exports `createStore`/`Store<T>`.
+- React: `useStore(store)` at `packages/react/src/useStore.ts`; tsup auto-discovers `src/<dir>/index.ts` as subpath entries and injects `'use client'` into every dist file in `onSuccess`. Vue tsup does the same auto-discovery. So adding `src/skins/index.ts` to each adapter auto-creates `@iris-ui-kit/{react,vue}/skins`.
 - `pnpm size` budgets live in `scripts/check-size.mjs` `BUDGETS` map (must add `skins`).
 
 ---
@@ -31,7 +31,7 @@ packages/theme/src/
   index.ts                 EDIT export applyCssVars + type
   applyCssVars.test.ts     NEW
 
-packages/skins/            NEW PACKAGE @iris-ui/skins
+packages/skins/            NEW PACKAGE @iris-ui-kit/skins
   package.json tsup.config.ts tsconfig.json vitest.config.ts
   src/
     index.ts               barrel
@@ -52,13 +52,13 @@ packages/skins/            NEW PACKAGE @iris-ui/skins
 
 packages/react/src/skins/  NEW  SkinProvider.tsx useSkin.ts index.ts *.test.tsx
 packages/react/src/index.ts EDIT re-export ./skins
-packages/react/package.json EDIT add @iris-ui/skins dep
-packages/react/tsup.config.ts EDIT add @iris-ui/skins external
+packages/react/package.json EDIT add @iris-ui-kit/skins dep
+packages/react/tsup.config.ts EDIT add @iris-ui-kit/skins external
 
 packages/vue/src/skins/    NEW  SkinProvider.ts useSkin.ts index.ts *.test.ts
 packages/vue/src/index.ts  EDIT re-export ./skins
-packages/vue/package.json  EDIT add @iris-ui/skins dep
-packages/vue/tsup.config.ts EDIT add @iris-ui/skins external
+packages/vue/package.json  EDIT add @iris-ui-kit/skins dep
+packages/vue/tsup.config.ts EDIT add @iris-ui-kit/skins external
 
 scripts/check-size.mjs     EDIT add skins budget
 ROADMAP.md                 EDIT note skin system
@@ -66,7 +66,7 @@ ROADMAP.md                 EDIT note skin system
 
 ---
 
-## Task 1: Extract `applyCssVars` in `@iris-ui/theme` (enabling refactor)
+## Task 1: Extract `applyCssVars` in `@iris-ui-kit/theme` (enabling refactor)
 
 **Files:**
 
@@ -114,7 +114,7 @@ describe('applyCssVars', () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `pnpm --filter @iris-ui/theme test -- applyCssVars`
+Run: `pnpm --filter @iris-ui-kit/theme test -- applyCssVars`
 Expected: FAIL — cannot resolve `./applyCssVars`.
 
 - [ ] **Step 3: Implement** — `packages/theme/src/applyCssVars.ts`
@@ -131,7 +131,7 @@ export interface ApplyCssVarsResult {
  * Write `[cssVarName, value]` pairs to a target element as inline custom
  * properties, returning a `revert()` that restores the prior values (removing
  * the ones that were previously unset). Pure DOM, no framework dependency —
- * the single write-path shared by `applyTheme` and `@iris-ui/skins`' `applySkin`.
+ * the single write-path shared by `applyTheme` and `@iris-ui-kit/skins`' `applySkin`.
  */
 export function applyCssVars(entries: CssVarEntries, target: HTMLElement): ApplyCssVarsResult {
   const previous: CssVarEntries = []
@@ -153,7 +153,7 @@ export function applyCssVars(entries: CssVarEntries, target: HTMLElement): Apply
 - [ ] **Step 4: Refactor `applyTheme.ts` to delegate** (behavior unchanged)
 
 ```ts
-import type { IrisTheme } from '@iris-ui/tokens'
+import type { IrisTheme } from '@iris-ui-kit/tokens'
 import { toCssVarName } from './toCssVarName'
 import { applyCssVars, type CssVarEntries } from './applyCssVars'
 
@@ -206,7 +206,7 @@ export { applyCssVars, type CssVarEntries, type ApplyCssVarsResult } from './app
 
 - [ ] **Step 6: Run theme tests (new + regression)**
 
-Run: `pnpm --filter @iris-ui/theme test`
+Run: `pnpm --filter @iris-ui-kit/theme test`
 Expected: PASS — new `applyCssVars` tests + unchanged `applyTheme.test.ts`.
 
 - [ ] **Step 7: Commit**
@@ -218,7 +218,7 @@ git commit -m "refactor(theme): extract applyCssVars as shared DOM-write path"
 
 ---
 
-## Task 2: Scaffold `@iris-ui/skins` package + types + errors
+## Task 2: Scaffold `@iris-ui-kit/skins` package + types + errors
 
 **Files:**
 
@@ -229,7 +229,7 @@ git commit -m "refactor(theme): extract applyCssVars as shared DOM-write path"
 
 ```json
 {
-  "name": "@iris-ui/skins",
+  "name": "@iris-ui-kit/skins",
   "version": "0.0.0",
   "description": "Loadable, token-built skin system for Iris UI: inheritance, custom tokens, marketplace catalog, runtime engine",
   "license": "MIT",
@@ -261,9 +261,9 @@ git commit -m "refactor(theme): extract applyCssVars as shared DOM-write path"
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*",
-    "@iris-ui/tokens": "workspace:*",
-    "@iris-ui/theme": "workspace:*"
+    "@iris-ui-kit/core": "workspace:*",
+    "@iris-ui-kit/tokens": "workspace:*",
+    "@iris-ui-kit/theme": "workspace:*"
   }
 }
 ```
@@ -296,7 +296,7 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   target: 'es2022',
-  external: ['@iris-ui/core', '@iris-ui/tokens', '@iris-ui/theme'],
+  external: ['@iris-ui-kit/core', '@iris-ui-kit/tokens', '@iris-ui-kit/theme'],
 })
 ```
 
@@ -321,7 +321,7 @@ import type {
   IrisThemeColors,
   IrisThemeSpacing,
   IrisThemeRadii,
-} from '@iris-ui/tokens'
+} from '@iris-ui-kit/tokens'
 
 /** Partial overrides of the 21 closed core tokens. Colors are strings; spacing/radii numbers. */
 export type SkinTokenOverrides = Partial<IrisThemeColors & IrisThemeSpacing & IrisThemeRadii>
@@ -436,14 +436,14 @@ export { skinError, SkinResolutionError, type SkinError, type SkinErrorCode } fr
 - [ ] **Step 8: Install workspace link + typecheck**
 
 Run: `pnpm install`
-Then: `pnpm --filter @iris-ui/skins typecheck`
+Then: `pnpm --filter @iris-ui-kit/skins typecheck`
 Expected: PASS (no type errors).
 
 - [ ] **Step 9: Commit**
 
 ```bash
 git add packages/skins pnpm-lock.yaml
-git commit -m "feat(skins): scaffold @iris-ui/skins package with types + error model"
+git commit -m "feat(skins): scaffold @iris-ui-kit/skins package with types + error model"
 ```
 
 ---
@@ -505,12 +505,12 @@ describe('validateSkin', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify fail** — `pnpm --filter @iris-ui/skins test -- validateSkin` → FAIL (module missing).
+- [ ] **Step 2: Run to verify fail** — `pnpm --filter @iris-ui-kit/skins test -- validateSkin` → FAIL (module missing).
 
 - [ ] **Step 3: Implement** — `validateSkin.ts`
 
 ```ts
-import { COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS } from '@iris-ui/tokens'
+import { COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS } from '@iris-ui-kit/tokens'
 import type { Skin } from './types'
 import { skinError, type SkinError } from './errors'
 
@@ -593,7 +593,7 @@ export function validateSkin(skin: Skin): SkinError[] {
 
 - [ ] **Step 4: Export from barrel** — add to `index.ts`: `export { validateSkin } from './validateSkin'`
 
-- [ ] **Step 5: Run** — `pnpm --filter @iris-ui/skins test -- validateSkin` → PASS.
+- [ ] **Step 5: Run** — `pnpm --filter @iris-ui-kit/skins test -- validateSkin` → PASS.
 
 - [ ] **Step 6: Commit**
 
@@ -615,7 +615,7 @@ git commit -m "feat(skins): add pure validateSkin"
 
 ```ts
 import { describe, it, expect } from 'vitest'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 import { resolveSkin, type SkinLookup } from './resolveSkin'
 import { SkinResolutionError } from './errors'
 import type { Skin } from './types'
@@ -688,14 +688,14 @@ describe('resolveSkin', () => {
 - [ ] **Step 3: Implement** — `resolveSkin.ts`
 
 ```ts
-import { COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS } from '@iris-ui/tokens'
+import { COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS } from '@iris-ui-kit/tokens'
 import type {
   IrisTheme,
   IrisThemeType,
   ColorToken,
   SpacingToken,
   RadiusToken,
-} from '@iris-ui/tokens'
+} from '@iris-ui-kit/tokens'
 import type { Skin, ResolvedSkin } from './types'
 import { skinError, SkinResolutionError } from './errors'
 
@@ -804,7 +804,7 @@ export function resolveSkin(skin: Skin, registry: SkinLookup): ResolvedSkin {
 - [ ] **Step 4: Implement** — `builtins.ts`
 
 ```ts
-import { lightTheme, darkTheme, type IrisTheme } from '@iris-ui/tokens'
+import { lightTheme, darkTheme, type IrisTheme } from '@iris-ui-kit/tokens'
 import type { Skin } from './types'
 
 function themeToSkin(id: string, theme: IrisTheme): Skin {
@@ -912,7 +912,7 @@ export { createSkinRegistry, type SkinRegistry } from './registry'
 export { lightSkin, darkSkin, builtinSkins } from './builtins'
 ```
 
-- [ ] **Step 8: Run** — `pnpm --filter @iris-ui/skins test` → all pure tests PASS.
+- [ ] **Step 8: Run** — `pnpm --filter @iris-ui-kit/skins test` → all pure tests PASS.
 
 - [ ] **Step 9: Commit**
 
@@ -1011,7 +1011,7 @@ describe('skinBootScript', () => {
 - [ ] **Step 3: Implement** — `renderSkinStyle.ts`
 
 ```ts
-import { toCssVarName } from '@iris-ui/theme'
+import { toCssVarName } from '@iris-ui-kit/theme'
 import type { ResolvedSkin } from './types'
 
 /** All CSS-var entries for a resolved skin: core theme tokens + custom tokens (numbers → px). */
@@ -1124,7 +1124,7 @@ export { skinBootScript, type SkinBootScriptConfig } from './bootScript'
 export { localStorageSkinStorage, memorySkinStorage } from './storage'
 ```
 
-- [ ] **Step 7: Run** — `pnpm --filter @iris-ui/skins test` → PASS.
+- [ ] **Step 7: Run** — `pnpm --filter @iris-ui-kit/skins test` → PASS.
 
 - [ ] **Step 8: Commit**
 
@@ -1173,7 +1173,7 @@ describe('applySkin', () => {
 - [ ] **Step 3: Implement** — `applySkin.ts`
 
 ```ts
-import { applyCssVars, type ApplyCssVarsResult } from '@iris-ui/theme'
+import { applyCssVars, type ApplyCssVarsResult } from '@iris-ui-kit/theme'
 import type { ResolvedSkin } from './types'
 import { skinToCssEntries } from './renderSkinStyle'
 
@@ -1448,7 +1448,7 @@ export { loadSkin, type LoadSkinOptions } from './loadSkin'
 export { createSkinCatalog, type SkinCatalog, type SkinCatalogConfig } from './catalog'
 ```
 
-- [ ] **Step 6: Run** — `pnpm --filter @iris-ui/skins test` → PASS.
+- [ ] **Step 6: Run** — `pnpm --filter @iris-ui-kit/skins test` → PASS.
 
 - [ ] **Step 7: Commit**
 
@@ -1555,8 +1555,8 @@ describe('createSkinEngine', () => {
 - [ ] **Step 3: Implement** — `engine.ts`
 
 ```ts
-import { createStore, type Store } from '@iris-ui/core'
-import { watchColorScheme, getColorScheme } from '@iris-ui/theme'
+import { createStore, type Store } from '@iris-ui-kit/core'
+import { watchColorScheme, getColorScheme } from '@iris-ui-kit/theme'
 import type { Skin, ResolvedSkin, SkinMode, SkinStorage, SkinTokenOverrides } from './types'
 import { createSkinRegistry, type SkinRegistry } from './registry'
 import { builtinSkins } from './builtins'
@@ -1753,11 +1753,11 @@ export function createSkinEngine(config: SkinEngineConfig): SkinEngine {
 export { createSkinEngine, type SkinEngine, type SkinEngineConfig, type SkinPatch } from './engine'
 ```
 
-- [ ] **Step 5: Run** — `pnpm --filter @iris-ui/skins test` → PASS (all engine cases).
+- [ ] **Step 5: Run** — `pnpm --filter @iris-ui-kit/skins test` → PASS (all engine cases).
 
 - [ ] **Step 6: Build + typecheck + lint the package**
 
-Run: `pnpm --filter @iris-ui/skins build && pnpm --filter @iris-ui/skins typecheck && pnpm --filter @iris-ui/skins lint`
+Run: `pnpm --filter @iris-ui-kit/skins build && pnpm --filter @iris-ui-kit/skins typecheck && pnpm --filter @iris-ui-kit/skins lint`
 Expected: dist emitted, no type/lint errors.
 
 - [ ] **Step 7: Commit**
@@ -1784,15 +1784,15 @@ git commit -m "feat(skins): add createSkinEngine (persist, system-follow, live-e
 - [ ] **Step 2: Run the full build + size gate**
 
 Run: `pnpm turbo run build && pnpm size`
-Expected: `@iris-ui/skins ok` within 4KB; all packages ok. If skins is genuinely larger, raise the budget deliberately in this commit.
+Expected: `@iris-ui-kit/skins ok` within 4KB; all packages ok. If skins is genuinely larger, raise the budget deliberately in this commit.
 
-- [ ] **Step 3: ROADMAP note** — append a short line under the status summary noting the skin system shipped (framework-agnostic `@iris-ui/skins`: inheritance + custom tokens + marketplace catalog + persist/FOUC/follow-system/live-edit; React/Vue `SkinProvider`+`useSkin`). Keep the existing "唯二未交付项" (npm publish, QRCode) intact.
+- [ ] **Step 3: ROADMAP note** — append a short line under the status summary noting the skin system shipped (framework-agnostic `@iris-ui-kit/skins`: inheritance + custom tokens + marketplace catalog + persist/FOUC/follow-system/live-edit; React/Vue `SkinProvider`+`useSkin`). Keep the existing "唯二未交付项" (npm publish, QRCode) intact.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add scripts/check-size.mjs ROADMAP.md
-git commit -m "build(skins): add @iris-ui/skins size budget + ROADMAP note"
+git commit -m "build(skins): add @iris-ui-kit/skins size budget + ROADMAP note"
 ```
 
 ---
@@ -1805,8 +1805,8 @@ git commit -m "build(skins): add @iris-ui/skins size budget + ROADMAP note"
 - Modify: `packages/react/src/index.ts`, `packages/react/package.json`, `packages/react/tsup.config.ts`
 
 - [ ] **Step 1: Add dep + external**
-  - `packages/react/package.json` dependencies: add `"@iris-ui/skins": "workspace:*"`.
-  - `packages/react/tsup.config.ts` `external` array: add `'@iris-ui/skins'`.
+  - `packages/react/package.json` dependencies: add `"@iris-ui-kit/skins": "workspace:*"`.
+  - `packages/react/tsup.config.ts` `external` array: add `'@iris-ui-kit/skins'`.
   - Run `pnpm install`.
 
 - [ ] **Step 2: Failing test** — `packages/react/src/skins/SkinProvider.test.tsx`
@@ -1814,7 +1814,7 @@ git commit -m "build(skins): add @iris-ui/skins size budget + ROADMAP note"
 ```tsx
 import { describe, it, expect } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
-import { createSkinEngine, type Skin } from '@iris-ui/skins'
+import { createSkinEngine, type Skin } from '@iris-ui-kit/skins'
 import { SkinProvider } from './SkinProvider'
 import { useSkin } from './useSkin'
 
@@ -1864,8 +1864,13 @@ describe('SkinProvider / useSkin (React)', () => {
 
 ```tsx
 import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react'
-import { injectGlobalStyles } from '@iris-ui/theme'
-import { applySkin, type ResolvedSkin, type SkinEngine, type ApplySkinResult } from '@iris-ui/skins'
+import { injectGlobalStyles } from '@iris-ui-kit/theme'
+import {
+  applySkin,
+  type ResolvedSkin,
+  type SkinEngine,
+  type ApplySkinResult,
+} from '@iris-ui-kit/skins'
 import { useStore } from '../useStore'
 
 interface IrisSkinContextValue {
@@ -1885,7 +1890,7 @@ export interface SkinProviderProps {
  * Renderless provider mirroring `<ThemeProvider>`: subscribes to the skin
  * engine's store, applies the resolved skin's CSS vars to `target` (or
  * `document.documentElement`), reverts on unmount. Zero skin logic — all of it
- * lives in `@iris-ui/skins`. Client boundary (tsup prepends `'use client'`).
+ * lives in `@iris-ui-kit/skins`. Client boundary (tsup prepends `'use client'`).
  */
 export function SkinProvider({ engine, target = null, children }: SkinProviderProps) {
   const current = useStore(engine.store)
@@ -1920,7 +1925,7 @@ export function useSkinOptional(): ResolvedSkin | undefined {
 - [ ] **Step 5: Implement** — `packages/react/src/skins/useSkin.ts`
 
 ```ts
-import type { ResolvedSkin, Skin, SkinMode, SkinPatch, SkinError } from '@iris-ui/skins'
+import type { ResolvedSkin, Skin, SkinMode, SkinPatch, SkinError } from '@iris-ui-kit/skins'
 import { useSkinContext } from './SkinProvider'
 
 export interface UseSkinReturn {
@@ -1970,13 +1975,13 @@ export { useSkin, type UseSkinReturn } from './useSkin'
 export * from './skins'
 ```
 
-- [ ] **Step 8: Run** — `pnpm --filter @iris-ui/react test -- skins` → PASS.
+- [ ] **Step 8: Run** — `pnpm --filter @iris-ui-kit/react test -- skins` → PASS.
 
 - [ ] **Step 9: Commit**
 
 ```bash
 git add packages/react/src/skins packages/react/src/index.ts packages/react/package.json packages/react/tsup.config.ts pnpm-lock.yaml
-git commit -m "feat(react): add SkinProvider + useSkin adapter for @iris-ui/skins"
+git commit -m "feat(react): add SkinProvider + useSkin adapter for @iris-ui-kit/skins"
 ```
 
 ---
@@ -1989,8 +1994,8 @@ git commit -m "feat(react): add SkinProvider + useSkin adapter for @iris-ui/skin
 - Modify: `packages/vue/src/index.ts`, `packages/vue/package.json`, `packages/vue/tsup.config.ts`
 
 - [ ] **Step 1: Add dep + external**
-  - `packages/vue/package.json` dependencies: add `"@iris-ui/skins": "workspace:*"`.
-  - `packages/vue/tsup.config.ts` `external`: add `'@iris-ui/skins'`.
+  - `packages/vue/package.json` dependencies: add `"@iris-ui-kit/skins": "workspace:*"`.
+  - `packages/vue/tsup.config.ts` `external`: add `'@iris-ui-kit/skins'`.
   - Run `pnpm install`.
 
 - [ ] **Step 2: Failing test** — `packages/vue/src/skins/SkinProvider.test.ts`
@@ -1999,7 +2004,7 @@ git commit -m "feat(react): add SkinProvider + useSkin adapter for @iris-ui/skin
 import { describe, it, expect } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
-import { createSkinEngine, type Skin } from '@iris-ui/skins'
+import { createSkinEngine, type Skin } from '@iris-ui-kit/skins'
 import { SkinProvider } from './SkinProvider'
 import { useSkin } from './useSkin'
 
@@ -2056,8 +2061,13 @@ import {
   type PropType,
   type Ref,
 } from 'vue'
-import { injectGlobalStyles } from '@iris-ui/theme'
-import { applySkin, type ApplySkinResult, type ResolvedSkin, type SkinEngine } from '@iris-ui/skins'
+import { injectGlobalStyles } from '@iris-ui-kit/theme'
+import {
+  applySkin,
+  type ApplySkinResult,
+  type ResolvedSkin,
+  type SkinEngine,
+} from '@iris-ui-kit/skins'
 
 export interface IrisSkinContext {
   engine: SkinEngine
@@ -2116,7 +2126,7 @@ export function useSkinContext(): IrisSkinContext {
 ```ts
 import type { ComputedRef } from 'vue'
 import { computed } from 'vue'
-import type { ResolvedSkin, Skin, SkinMode, SkinPatch, SkinError } from '@iris-ui/skins'
+import type { ResolvedSkin, Skin, SkinMode, SkinPatch, SkinError } from '@iris-ui-kit/skins'
 import { useSkinContext } from './SkinProvider'
 
 export interface UseSkinReturn {
@@ -2161,13 +2171,13 @@ export { useSkin, type UseSkinReturn } from './useSkin'
 export * from './skins'
 ```
 
-- [ ] **Step 8: Run** — `pnpm --filter @iris-ui/vue test -- skins` → PASS.
+- [ ] **Step 8: Run** — `pnpm --filter @iris-ui-kit/vue test -- skins` → PASS.
 
 - [ ] **Step 9: Commit**
 
 ```bash
 git add packages/vue/src/skins packages/vue/src/index.ts packages/vue/package.json packages/vue/tsup.config.ts pnpm-lock.yaml
-git commit -m "feat(vue): add SkinProvider + useSkin adapter for @iris-ui/skins"
+git commit -m "feat(vue): add SkinProvider + useSkin adapter for @iris-ui-kit/skins"
 ```
 
 ---
@@ -2216,4 +2226,4 @@ git commit -m "style(skins): prettier formatting"
 
 **Placeholder scan:** none — every code step contains complete content.
 
-**Known follow-ups (not blocking):** playground demos + `@iris-ui/manifest` skin surface were considered (spec §9/§12 step 10) but deferred as non-essential to a working, tested library; they can be a later enhancement. The library is fully functional and gated without them.
+**Known follow-ups (not blocking):** playground demos + `@iris-ui-kit/manifest` skin surface were considered (spec §9/§12 step 10) but deferred as non-essential to a working, tested library; they can be a later enhancement. The library is fully functional and gated without them.

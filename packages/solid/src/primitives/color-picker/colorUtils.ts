@@ -1,4 +1,4 @@
-// Color math now lives in @iris-ui/core (single source across all four
+// Color math now lives in @iris-ui-kit/core (single source across all four
 // frameworks). Re-exported so existing `./colorUtils` imports keep working.
 export {
   clamp01,
@@ -10,4 +10,4 @@ export {
   hsvaToRgba,
   type IrisHsva,
   type IrisRgba,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'

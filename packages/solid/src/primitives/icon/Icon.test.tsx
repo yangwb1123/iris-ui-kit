@@ -4,7 +4,7 @@ import { IrisIcon } from './Icon'
 
 afterEach(cleanup)
 
-describe('@iris-ui/solid IrisIcon', () => {
+describe('@iris-ui-kit/solid IrisIcon', () => {
   it('renders a registered icon as inline SVG with structured nodes', () => {
     const { container } = render(() => <IrisIcon name="chevron-down" />)
     const svg = container.querySelector('svg[data-iris-icon="chevron-down"]')

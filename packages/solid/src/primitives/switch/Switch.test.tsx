@@ -5,7 +5,7 @@ import { IrisSwitch } from './Switch'
 
 afterEach(cleanup)
 
-describe('@iris-ui/solid IrisSwitch', () => {
+describe('@iris-ui-kit/solid IrisSwitch', () => {
   it('renders an input with role=switch', () => {
     const { container } = render(() => <IrisSwitch />)
     const input = container.querySelector('input')!

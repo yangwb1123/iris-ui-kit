@@ -11,7 +11,7 @@ const OPTS: IrisMentionOption[] = [
 
 const options = (c: HTMLElement) => c.querySelectorAll('[data-iris-mentions-option]')
 
-describe('@iris-ui/react IrisMentions', () => {
+describe('@iris-ui-kit/react IrisMentions', () => {
   it('opens filtered suggestions when typing the trigger', () => {
     const { container } = render(<IrisMentions options={OPTS} />)
     fireEvent.change(container.querySelector('textarea')!, {

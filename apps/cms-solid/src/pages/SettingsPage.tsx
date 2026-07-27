@@ -1,5 +1,5 @@
 import { createSignal, type JSX } from 'solid-js'
-import { IrisFormField, IrisInput, IrisSwitch, IrisButton, IrisStack } from '@iris-ui/solid'
+import { IrisFormField, IrisInput, IrisSwitch, IrisButton, IrisStack } from '@iris-ui-kit/solid'
 
 export function SettingsPage(): JSX.Element {
   // Local form state — survives tab switches because inactive tabs stay mounted.

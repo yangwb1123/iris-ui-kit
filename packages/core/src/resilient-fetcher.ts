@@ -3,7 +3,7 @@ import { createCircuitBreaker, type CircuitBreaker } from './circuit-breaker'
 import { createRateLimiter, type RateLimiter } from './rate-limiter'
 
 /**
- * `@iris-ui/core` resilient fetcher — composes the query-cache, circuit-breaker,
+ * `@iris-ui-kit/core` resilient fetcher — composes the query-cache, circuit-breaker,
  * and rate-limiter primitives into one hardened async fetcher. The individual
  * primitives are the building blocks; this is the one-call way to wrap a raw
  * fetcher with de-duplication + TTL/SWR caching, a failure circuit breaker, and

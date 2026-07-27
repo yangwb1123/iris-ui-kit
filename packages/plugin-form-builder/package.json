@@ -1,6 +1,6 @@
 {
-  "name": "@iris-ui/plugin-form-builder",
-  "version": "0.0.0",
+  "name": "@iris-ui-kit/plugin-form-builder",
+  "version": "1.0.0",
   "description": "Schema-driven form builder plugin for Iris UI: IrisFormBuilder renders a form from a declarative schema for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",
@@ -44,13 +44,13 @@
     "clean": "rm -rf dist .turbo .svelte-kit"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*"
+    "@iris-ui-kit/core": "workspace:*"
   },
   "peerDependencies": {
-    "@iris-ui/react": "workspace:*",
-    "@iris-ui/solid": "workspace:*",
-    "@iris-ui/svelte": "workspace:*",
-    "@iris-ui/vue": "workspace:*",
+    "@iris-ui-kit/react": "workspace:*",
+    "@iris-ui-kit/solid": "workspace:*",
+    "@iris-ui-kit/svelte": "workspace:*",
+    "@iris-ui-kit/vue": "workspace:*",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
     "vue": "^3.5.0",
@@ -58,16 +58,16 @@
     "svelte": "^5.0.0"
   },
   "peerDependenciesMeta": {
-    "@iris-ui/react": {
+    "@iris-ui-kit/react": {
       "optional": true
     },
-    "@iris-ui/solid": {
+    "@iris-ui-kit/solid": {
       "optional": true
     },
-    "@iris-ui/svelte": {
+    "@iris-ui-kit/svelte": {
       "optional": true
     },
-    "@iris-ui/vue": {
+    "@iris-ui-kit/vue": {
       "optional": true
     },
     "react": {
@@ -87,10 +87,10 @@
     }
   },
   "devDependencies": {
-    "@iris-ui/react": "workspace:*",
-    "@iris-ui/solid": "workspace:*",
-    "@iris-ui/svelte": "workspace:*",
-    "@iris-ui/vue": "workspace:*",
+    "@iris-ui-kit/react": "workspace:*",
+    "@iris-ui-kit/solid": "workspace:*",
+    "@iris-ui-kit/svelte": "workspace:*",
+    "@iris-ui-kit/vue": "workspace:*",
     "@solidjs/testing-library": "^0.8.10",
     "@sveltejs/package": "^2.3.7",
     "@sveltejs/vite-plugin-svelte": "^4.0.4",
@@ -114,5 +114,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/nousresearch/iris-ui.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

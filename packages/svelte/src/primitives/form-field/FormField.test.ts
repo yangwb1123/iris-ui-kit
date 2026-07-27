@@ -2,7 +2,7 @@ import { render } from '@testing-library/svelte'
 import { describe, it, expect } from 'vitest'
 import FormFieldPropsHarness from './FormFieldPropsHarness.svelte'
 
-describe('@iris-ui/svelte IrisFormField', () => {
+describe('@iris-ui-kit/svelte IrisFormField', () => {
   it('renders a wrapper with data-iris-form-field', () => {
     const { container } = render(FormFieldPropsHarness, { props: { label: 'Name' } })
     expect(container.querySelector('[data-iris-form-field]')).not.toBeNull()

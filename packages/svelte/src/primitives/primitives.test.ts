@@ -8,7 +8,7 @@ import IrisSwitch from './switch/Switch.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte demo primitives', () => {
+describe('@iris-ui-kit/svelte demo primitives', () => {
   it('IrisBadge reflects tone/variant + renders content', () => {
     const { getByText, container } = render(BadgeHarness, {
       props: { tone: 'success', variant: 'subtle' },

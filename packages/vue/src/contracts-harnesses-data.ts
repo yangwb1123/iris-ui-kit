@@ -3,7 +3,7 @@ import {
   createSyncClientDataSource,
   createClientDataSource,
   type DataViewColumn,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useDataSource } from './data/useDataSource'
 
 interface DsRow extends Record<string, unknown> {

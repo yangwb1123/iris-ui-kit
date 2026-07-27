@@ -68,7 +68,7 @@ afterEach(() => {
   wrappers.length = 0
 })
 
-describe('@iris-ui/vue a11y (axe-core)', () => {
+describe('@iris-ui-kit/vue a11y (axe-core)', () => {
   it('IrisButton has no violations', async () => {
     const el = mountIt(() => h(IrisButton, null, { default: () => 'Save' }))
     expect(await axeViolations(el)).toEqual([])

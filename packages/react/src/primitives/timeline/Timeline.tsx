@@ -37,7 +37,7 @@ const VARIANT_COLOR: Record<IrisTimelineVariant, string> = {
  * content (or a custom `renderItem`). Semantic `<ol>` for assistive tech;
  * RTL-safe via logical properties.
  *
- * React port of {@link import('@iris-ui/vue').IrisTimeline}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisTimeline}.
  */
 export function IrisTimeline({
   items,

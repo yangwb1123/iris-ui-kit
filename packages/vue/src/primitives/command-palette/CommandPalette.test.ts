@@ -23,7 +23,7 @@ const items: IrisCommandItem[] = [
   { id: 'pref', label: 'Preferences', group: 'Tab', disabled: true },
 ]
 
-describe('@iris-ui/vue defaultFilter', () => {
+describe('@iris-ui-kit/vue defaultFilter', () => {
   it('empty query matches everything with score 0', () => {
     expect(defaultFilter('', items[0]!)).toBe(0)
   })
@@ -54,7 +54,7 @@ describe('@iris-ui/vue defaultFilter', () => {
   })
 })
 
-describe('@iris-ui/vue IrisCommandPalette', () => {
+describe('@iris-ui-kit/vue IrisCommandPalette', () => {
   it('renders nothing when closed', () => {
     const wrap = mount(IrisCommandPalette, {
       props: { open: false, items },

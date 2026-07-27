@@ -5,8 +5,13 @@
  * Vue twin of the React DataApp — same behavior, adapted to Vue idioms.
  */
 import { ref, onUnmounted } from 'vue'
-import { createReconnectingSource, createDisposableScope } from '@iris-ui/core'
-import { IrisTable, IrisBadge, type IrisTableColumn, type IrisTableSortState } from '@iris-ui/vue'
+import { createReconnectingSource, createDisposableScope } from '@iris-ui-kit/core'
+import {
+  IrisTable,
+  IrisBadge,
+  type IrisTableColumn,
+  type IrisTableSortState,
+} from '@iris-ui-kit/vue'
 
 interface Row extends Record<string, unknown> {
   id: number

@@ -1,7 +1,7 @@
 import { defineConfig, type Options } from 'tsup'
 import { solidPlugin } from 'esbuild-plugin-solid'
 
-const IRIS = ['@iris-ui/core']
+const IRIS = ['@iris-ui-kit/core']
 
 // Main entries (core + react + vue) — plain esbuild handles TS + React JSX.
 const main: Options = {
@@ -19,10 +19,10 @@ const main: Options = {
   tsconfig: 'tsconfig.json',
   external: [
     ...IRIS,
-    '@iris-ui/react',
-    '@iris-ui/react/form',
-    '@iris-ui/vue',
-    '@iris-ui/vue/form',
+    '@iris-ui-kit/react',
+    '@iris-ui-kit/react/form',
+    '@iris-ui-kit/vue',
+    '@iris-ui-kit/vue/form',
     'react',
     'react-dom',
     'react/jsx-runtime',
@@ -43,8 +43,8 @@ const solid: Options = {
   esbuildPlugins: [solidPlugin()],
   external: [
     ...IRIS,
-    '@iris-ui/solid',
-    '@iris-ui/solid/form',
+    '@iris-ui-kit/solid',
+    '@iris-ui-kit/solid/form',
     'solid-js',
     'solid-js/web',
     'solid-js/store',

@@ -1,4 +1,4 @@
-import { createClientFetcher, type DataViewColumn } from '@iris-ui/react'
+import { createClientFetcher, type DataViewColumn } from '@iris-ui-kit/react'
 
 export type UserStatus = 'active' | 'invited' | 'suspended'
 export type UserRole = 'Owner' | 'Admin' | 'Editor' | 'Viewer'

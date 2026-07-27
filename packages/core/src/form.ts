@@ -240,6 +240,34 @@ export interface FormStore<V extends FormValues> {
   hydrate(draft: { values: Partial<V>; touched?: FieldFlags<V> }): void
 }
 
+/** @internal warn when initial values have keys that look like nested paths. */
+function devWarnSuspiciousPaths<V extends FormValues>(values: V): void {
+  if (process.env.NODE_ENV !== 'development') return
+  const suspicious = Object.keys(values).filter(
+    (k) => k.includes('.') || k.includes('[') || k.includes(']'),
+  )
+  if (suspicious.length === 0) return
+  console.warn(
+    '[iris-ui] createFormStore: initialValues keys contain dots or brackets — ' +
+      'these will be treated as nested paths, not literal field names. ' +
+      'Use escapePathSegment() from @iris-ui-kit/core/path for literal dots. Suspicious keys: ' +
+      suspicious.join(', '),
+  )
+}
+
+/** @internal fire validators on mount and touch fields on resolve. */
+function triggerMountValidation<V extends FormValues>(
+  validators: FormValidators<V>,
+  validateField: (name: FieldPath<V>) => Promise<string | undefined>,
+  setTouched: (field: string) => void,
+): void {
+  const mountNames = Object.keys(validators) as Key<V>[]
+  if (mountNames.length === 0) return
+  void Promise.all(mountNames.map((name) => validateField(name))).then(() => {
+    for (const name of mountNames) setTouched(name)
+  })
+}
+
 export function createFormStore<V extends FormValues>(config: FormConfig<V>): FormStore<V> {
   const validators: FormValidators<V> = config.validators ?? {}
   const validateOnChange = config.validateOnChange ?? true
@@ -249,22 +277,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
 
   let initialValues: V = parse({ ...config.initialValues })
 
-  // Dev-mode warning: field keys containing dots or brackets will be interpreted
-  // as nested paths by the form system. Use escapePathSegment() for literal dots.
-  if (process.env.NODE_ENV === 'development') {
-    const suspicious = Object.keys(initialValues).filter(
-      (k) => k.includes('.') || k.includes('[') || k.includes(']'),
-    )
-    if (suspicious.length > 0) {
-      console.warn(
-        '[iris-ui] createFormStore: initialValues keys contain dots or brackets — ' +
-          'these will be treated as nested paths, not literal field names. ' +
-          'Use escapePathSegment() from @iris-ui/core/path for literal dots. ' +
-          'Suspicious keys: ' +
-          suspicious.join(', '),
-      )
-    }
-  }
+  devWarnSuspiciousPaths(initialValues)
 
   const steps = config.steps ?? []
 
@@ -400,19 +413,10 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
   // Validate on mount when configured — useful for edit forms where initial
   // values come from an API. Validates every field with a validator, then
   // touches them so errors are visible without user interaction.
-  const validateOnMount = config.validateOnMount ?? false
-  if (validateOnMount) {
-    const mountNames = Object.keys(validators) as Key<V>[]
-    if (mountNames.length > 0) {
-      // Fire validators but don't block construction; touch fields on resolve.
-      void Promise.all(mountNames.map((name) => validateField(name))).then(() => {
-        store.setState((s) => {
-          const touched: FieldFlags<V> = { ...s.touched }
-          for (const name of mountNames) touched[name] = true
-          return { ...s, touched }
-        })
-      })
-    }
+  if (config.validateOnMount) {
+    triggerMountValidation(validators, validateField, (name) =>
+      store.setState((s) => ({ ...s, touched: { ...s.touched, [name]: true } })),
+    )
   }
 
   // Debounced per-field validate-on-change (one debouncer per field), so an

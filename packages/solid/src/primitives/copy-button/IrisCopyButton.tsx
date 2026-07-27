@@ -1,5 +1,5 @@
 import { createSignal, mergeProps, onCleanup, splitProps, type JSX } from 'solid-js'
-import { copyText } from '@iris-ui/core'
+import { copyText } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 
 export type IrisCopyButtonSize = 'sm' | 'md' | 'lg'

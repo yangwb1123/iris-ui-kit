@@ -22,7 +22,7 @@ function input(): HTMLInputElement {
   return document.querySelector('[data-iris-command-palette-input]') as HTMLInputElement
 }
 
-describe('@iris-ui/react defaultFilter', () => {
+describe('@iris-ui-kit/react defaultFilter', () => {
   it('empty query matches everything with score 0', () => {
     expect(defaultFilter('', items[0]!)).toBe(0)
   })
@@ -53,7 +53,7 @@ describe('@iris-ui/react defaultFilter', () => {
   })
 })
 
-describe('@iris-ui/react IrisCommandPalette', () => {
+describe('@iris-ui-kit/react IrisCommandPalette', () => {
   it('renders nothing when closed', () => {
     render(<IrisCommandPalette open={false} items={items} />)
     expect(document.querySelector('[data-iris-command-palette]')).toBeNull()

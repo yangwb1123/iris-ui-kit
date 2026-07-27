@@ -22,7 +22,7 @@ const OVERFLOW: Record<IrisScrollAreaAxis, React.CSSProperties> = {
  * content via `maxHeight` / `maxWidth` and scrolls on the chosen `axis`. A
  * lightweight alternative to ad-hoc overflow styling.
  *
- * React port of {@link import('@iris-ui/vue').IrisScrollArea}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisScrollArea}.
  */
 export function IrisScrollArea({
   maxHeight,

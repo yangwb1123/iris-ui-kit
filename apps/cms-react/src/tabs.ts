@@ -1,4 +1,4 @@
-import { createTabsNav } from '@iris-ui/react'
+import { createTabsNav } from '@iris-ui-kit/react'
 
 /**
  * The shared multi-tab store. The Dashboard is seeded as a pinned (non-closable)

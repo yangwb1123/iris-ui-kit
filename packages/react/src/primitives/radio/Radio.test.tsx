@@ -27,7 +27,7 @@ function harness(opts?: {
   )
 }
 
-describe('@iris-ui/react IrisRadioGroup + IrisRadio', () => {
+describe('@iris-ui-kit/react IrisRadioGroup + IrisRadio', () => {
   it('renders with role="radiogroup"', () => {
     const { container } = render(harness())
     expect(container.querySelector('[role=radiogroup]')).not.toBeNull()

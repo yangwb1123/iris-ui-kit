@@ -9,7 +9,7 @@ import {
   visibleNav,
   type ExpansionModel,
   type NavNode,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 import { IrisIcon } from '../primitives/icon/Icon'
 import { useI18n } from '../i18n'
@@ -53,7 +53,7 @@ export function IrisNavMenu({
   const { t } = useI18n()
   // Expand/collapse state lives in the core expansion model — the open-set algebra
   // and the active-trail union (`merge`) are byte-identical across every adapter, so
-  // they live in @iris-ui/core. This component keeps only the controlled/uncontrolled
+  // they live in @iris-ui-kit/core. This component keeps only the controlled/uncontrolled
   // wiring: uncontrolled reads + writes the model store; controlled mirrors the
   // `expandedKeys` prop and just notifies. `branchTrail` is the shared selector.
   const trailOf = React.useCallback(

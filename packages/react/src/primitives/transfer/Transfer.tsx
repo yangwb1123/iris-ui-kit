@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { createSelectionModel, type SelectionModel } from '@iris-ui/core'
+import { createSelectionModel, type SelectionModel } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 
@@ -32,7 +32,7 @@ type Side = 'source' | 'target'
  * (`value` = the selected values), with optional per-pane search and a
  * select-all header. Built on native checkboxes for accessibility.
  *
- * React port of {@link import('@iris-ui/vue').IrisTransfer}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisTransfer}.
  */
 export function IrisTransfer({
   options,

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { useField } from '@iris-ui/svelte/form'
+  import { useField } from '@iris-ui-kit/svelte/form'
   import type { FieldSpec } from '../core'
   import { labelOf, pathOf } from './helpers'
 
   // A single scalar control (text/number/email/password/textarea/select/checkbox).
-  // Binds through `@iris-ui/svelte`'s `useField`, which keys per-field state by
+  // Binds through `@iris-ui-kit/svelte`'s `useField`, which keys per-field state by
   // CANONICAL PATH — so a sub-field nested under an array row (`items[2].sku`)
   // tracks its own error/touched/dirty independently of its siblings.
   let { field, prefix }: { field: FieldSpec; prefix?: string } = $props()

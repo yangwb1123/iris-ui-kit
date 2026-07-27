@@ -1,7 +1,7 @@
 <script lang="ts">
   import { get } from 'svelte/store'
-  import { defaultIconRegistry, resolveThemedIcon } from '@iris-ui/icons'
-  import type { IrisTheme } from '@iris-ui/tokens'
+  import { defaultIconRegistry, resolveThemedIcon } from '@iris-ui-kit/icons'
+  import type { IrisTheme } from '@iris-ui-kit/tokens'
   import { useThemeOptional } from '../../theme/useTheme'
   import { mergeStyle } from '../../internal/style'
   import type { IrisIconProps } from './types'

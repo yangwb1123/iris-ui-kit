@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
-import { type DesktopNotification } from '@iris-ui/core/notifications'
+import { type DesktopNotification } from '@iris-ui-kit/core/notifications'
 
 /**
  * One toast — auto-dismisses after its `timeout` (0 = sticky); ✕ dismisses now.

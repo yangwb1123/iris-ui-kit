@@ -1,8 +1,8 @@
 import { createContext, createSignal, onCleanup, useContext, type JSX } from 'solid-js'
-import { type VirtualFs, type VfsState } from '@iris-ui/core/fs'
+import { type VirtualFs, type VfsState } from '@iris-ui-kit/core/fs'
 
 /**
- * Solid glue around ONE `@iris-ui/core/fs` — the framework-agnostic VIRTUAL FILE
+ * Solid glue around ONE `@iris-ui-kit/core/fs` — the framework-agnostic VIRTUAL FILE
  * SYSTEM behind the desktop's Files manager (and any app that opens/saves
  * documents). A single fs lives in context (the SAME engine the React desktop
  * drives, here on Solid); the Files app reads + mutates it (the `storage`

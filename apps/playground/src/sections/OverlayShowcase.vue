@@ -21,7 +21,7 @@ import {
   useToast,
   IrisKbd,
   type IrisCommandItem,
-} from '@iris-ui/vue'
+} from '@iris-ui-kit/vue'
 
 const dialogOpen = ref(false)
 const drawerOpen = ref(false)

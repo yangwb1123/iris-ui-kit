@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import { useDataState } from './useDataState'
 import { __resetDataStateStyles, __DATA_STATE_STYLE_ID } from './styles'
-import type { DataStateInput } from '@iris-ui/core'
+import type { DataStateInput } from '@iris-ui-kit/core'
 
 afterEach(() => {
   cleanup()
@@ -21,7 +21,7 @@ function Probe(input: DataStateInput) {
   )
 }
 
-describe('@iris-ui/react useDataState', () => {
+describe('@iris-ui-kit/react useDataState', () => {
   it('resolves "content" with no flags', () => {
     render(<Probe />)
     const el = screen.getByTestId('probe')

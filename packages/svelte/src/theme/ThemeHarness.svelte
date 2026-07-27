@@ -1,7 +1,7 @@
 <script lang="ts">
   // Test fixture: wraps <ThemeProvider> around a consumer so the context hooks
   // resolve against a real provider ancestor.
-  import type { ThemeStore } from '@iris-ui/theme'
+  import type { ThemeStore } from '@iris-ui-kit/theme'
   import ThemeProvider from './ThemeProvider.svelte'
   import ThemeConsumer from './ThemeConsumer.svelte'
   import type { UseThemeReturn } from './useTheme'

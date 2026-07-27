@@ -1,7 +1,7 @@
 <script lang="ts" generics="T">
   // Test fixture: drives useUndoStack and exposes both the live controller (via
   // `onready`) and the reactive state through the DOM so assertions can read it.
-  import type { UndoStackOptions } from '@iris-ui/core/undo'
+  import type { UndoStackOptions } from '@iris-ui-kit/core/undo'
   import { useUndoStack } from './useUndoStack.svelte'
 
   let {

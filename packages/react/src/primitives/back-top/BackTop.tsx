@@ -31,7 +31,7 @@ const resolve = (target?: () => HTMLElement | Window | null): HTMLElement | Wind
  * and scrolls it back to the top on click (honoring reduced motion). Defaults
  * to the window; pass `target` for a scrollable container.
  *
- * React port of {@link import('@iris-ui/vue').IrisBackTop}.
+ * React port of {@link import('@iris-ui-kit/vue').IrisBackTop}.
  */
 export function IrisBackTop({
   target,

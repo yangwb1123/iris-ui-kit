@@ -1,6 +1,6 @@
 import { Show } from 'solid-js'
 import type { JSX } from 'solid-js'
-import type { TreeRow } from '@iris-ui/core'
+import type { TreeRow } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox'
 import { BASE_CELL_STYLE } from './styles'
 import { getCellValue } from './utils'

@@ -10,7 +10,7 @@
   // container so they can't interact with other scenarios' selector counts.
   //
   // Thin bridge: this harness only renders + wires. All logic lives in
-  // @iris-ui/core; the Svelte `useDataSource` bridge exposes the live engine state
+  // @iris-ui-kit/core; the Svelte `useDataSource` bridge exposes the live engine state
   // through a `$state` rune (`ds.state`), so the `{#each}` below re-runs on every
   // store emission — sort/filter/clear all reflect REACTIVELY with no manual
   // bookkeeping here. Same data (Charlie/30, Alice/25, Bob/35, `name` filterable),
@@ -20,7 +20,7 @@
   // (read off the returned controller). We deliberately do NOT introduce a local
   // `$state`-backed variable named `state` here — that name clashes with Svelte's
   // reserved rune-adjacent identifier; the bridge already owns the rune internally.
-  import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui/core'
+  import { createSyncClientDataSource, type DataViewColumn } from '@iris-ui-kit/core'
   import { useDataSource } from './data/useDataSource.svelte'
 
   interface DsRow extends Record<string, unknown> {

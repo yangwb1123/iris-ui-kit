@@ -9,7 +9,7 @@ import {
   onMount,
   type JSX,
 } from 'solid-js'
-import { type SnapZone } from '@iris-ui/core/window'
+import { type SnapZone } from '@iris-ui-kit/core/window'
 import { CHROMES, OS_ORDER } from './os'
 import { useApps, useLaunchApp } from './profile'
 import { useOs } from './os-state'
@@ -240,7 +240,7 @@ export function Desktop(): JSX.Element {
           <div>
             <div style={{ 'font-size': '22px', 'font-weight': 600 }}>Iris Desktop OS</div>
             <div style={{ opacity: 0.85, 'margin-top': '6px' }}>
-              Double-click an icon, press Start, or hit ⌘K — all driven by @iris-ui/core. Try
+              Double-click an icon, press Start, or hit ⌘K — all driven by @iris-ui-kit/core. Try
               Settings to switch skins.
             </div>
           </div>

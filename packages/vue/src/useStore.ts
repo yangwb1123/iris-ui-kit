@@ -1,8 +1,8 @@
 import { shallowRef, onScopeDispose, type ShallowRef } from 'vue'
-import type { ReadonlyStore, Store } from '@iris-ui/core'
+import type { ReadonlyStore, Store } from '@iris-ui-kit/core'
 
 /**
- * Bridge a framework-agnostic `@iris-ui/core` store into a Vue ref — updates on
+ * Bridge a framework-agnostic `@iris-ui-kit/core` store into a Vue ref — updates on
  * every store emission. The mirror of React's `useSyncExternalStore`, Solid's
  * `createSignal`, and Svelte's `readable`. Seeds synchronously from
  * `store.getState()` (SSR-safe); detaches on scope dispose.

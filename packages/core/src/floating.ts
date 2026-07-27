@@ -19,7 +19,7 @@ export type FloatingMachine = Machine<FloatingState, Record<string, never>, Floa
  *
  * Adapters bridge the resulting store into framework reactivity via
  * `useMachine`. The DOM-level positioning is handled separately by the
- * framework adapter (e.g. `useFloating` in `@iris-ui/vue`).
+ * framework adapter (e.g. `useFloating` in `@iris-ui-kit/vue`).
  */
 export function createFloatingMachine(initial: FloatingState = 'closed'): FloatingMachine {
   return createMachine<FloatingState, Record<string, never>, FloatingEvent>({

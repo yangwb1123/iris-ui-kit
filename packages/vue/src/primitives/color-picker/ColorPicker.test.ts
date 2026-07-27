@@ -5,7 +5,7 @@ import { hexToRgba, hsvToRgb, rgbToHex, rgbToHsv } from './colorUtils'
 
 afterEach(() => {})
 
-describe('@iris-ui/vue colorUtils', () => {
+describe('@iris-ui-kit/vue colorUtils', () => {
   it('hexToRgba parses #rgb / #rrggbb / #rrggbbaa', () => {
     expect(hexToRgba('#f00')).toEqual({ r: 255, g: 0, b: 0, a: 1 })
     expect(hexToRgba('#00ff00')).toEqual({ r: 0, g: 255, b: 0, a: 1 })
@@ -41,7 +41,7 @@ describe('@iris-ui/vue colorUtils', () => {
   })
 })
 
-describe('@iris-ui/vue IrisColorPicker', () => {
+describe('@iris-ui-kit/vue IrisColorPicker', () => {
   it('renders pad + hue strip + hex/RGB inputs', () => {
     const wrap = mount(IrisColorPicker, { props: { modelValue: '#ff0000' } })
     expect(wrap.find('[data-iris-color-picker-pad]').exists()).toBe(true)

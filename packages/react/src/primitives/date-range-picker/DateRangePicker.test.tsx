@@ -8,7 +8,7 @@ function trig(): HTMLButtonElement {
   return document.querySelector('[data-iris-date-range-picker-trigger]') as HTMLButtonElement
 }
 
-describe('@iris-ui/react IrisDateRangePicker', () => {
+describe('@iris-ui-kit/react IrisDateRangePicker', () => {
   it('shows placeholder when empty', () => {
     render(<IrisDateRangePicker placeholder="Pick range…" />)
     expect(trig().textContent).toBe('Pick range…')

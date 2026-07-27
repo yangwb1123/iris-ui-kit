@@ -25,7 +25,7 @@ import {
   type CellRangeState,
   type GridNavKey,
   type TreeRow,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useDrag } from '../drag/useDrag'

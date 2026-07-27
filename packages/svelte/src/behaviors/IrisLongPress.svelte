@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createLongPress } from '@iris-ui/core'
+  import { createLongPress } from '@iris-ui-kit/core'
   import type { Snippet } from 'svelte'
 
   interface Props {

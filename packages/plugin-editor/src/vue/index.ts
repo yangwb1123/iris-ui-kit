@@ -5,7 +5,7 @@ export type { EditorLanguage } from '../core'
 
 /**
  * CodeMirror 6 code editor for Vue. Authored as a render function (matching the
- * `@iris-ui/vue` convention — no `.vue` SFCs). Supports `v-model:value`.
+ * `@iris-ui-kit/vue` convention — no `.vue` SFCs). Supports `v-model:value`.
  */
 export const IrisCodeEditor = defineComponent({
   name: 'IrisCodeEditor',

@@ -98,19 +98,19 @@ importers:
 
   apps/cms:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/plugin-form-builder':
+      '@iris-ui-kit/plugin-form-builder':
         specifier: workspace:^
         version: link:../../packages/plugin-form-builder
-      '@iris-ui/plugin-notifications':
+      '@iris-ui-kit/plugin-notifications':
         specifier: workspace:*
         version: link:../../packages/plugin-notifications
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../../packages/vue
       vue:
@@ -132,28 +132,28 @@ importers:
 
   apps/cms-react:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/plugin-form-builder':
+      '@iris-ui-kit/plugin-form-builder':
         specifier: workspace:^
         version: link:../../packages/plugin-form-builder
-      '@iris-ui/plugin-locale-zh':
+      '@iris-ui-kit/plugin-locale-zh':
         specifier: workspace:^
         version: link:../../packages/plugin-locale-zh
-      '@iris-ui/plugin-markdown':
+      '@iris-ui-kit/plugin-markdown':
         specifier: workspace:^
         version: link:../../packages/plugin-markdown
-      '@iris-ui/plugin-notifications':
+      '@iris-ui-kit/plugin-notifications':
         specifier: workspace:^
         version: link:../../packages/plugin-notifications
-      '@iris-ui/plugin-pro-table':
+      '@iris-ui-kit/plugin-pro-table':
         specifier: workspace:^
         version: link:../../packages/plugin-pro-table
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       react:
@@ -181,19 +181,19 @@ importers:
 
   apps/cms-solid:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/plugin-form-builder':
+      '@iris-ui-kit/plugin-form-builder':
         specifier: workspace:^
         version: link:../../packages/plugin-form-builder
-      '@iris-ui/plugin-notifications':
+      '@iris-ui-kit/plugin-notifications':
         specifier: workspace:*
         version: link:../../packages/plugin-notifications
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../../packages/solid
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       solid-js:
@@ -212,19 +212,19 @@ importers:
 
   apps/cms-svelte:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/plugin-form-builder':
+      '@iris-ui-kit/plugin-form-builder':
         specifier: workspace:^
         version: link:../../packages/plugin-form-builder
-      '@iris-ui/plugin-notifications':
+      '@iris-ui-kit/plugin-notifications':
         specifier: workspace:*
         version: link:../../packages/plugin-notifications
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../../packages/svelte
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       svelte:
@@ -258,13 +258,13 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.105.0
         version: 0.105.0(zod@4.4.3)
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       react:
@@ -298,13 +298,13 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.105.0
         version: 0.105.0(zod@4.4.3)
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../../packages/solid
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       solid-js:
@@ -329,13 +329,13 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.105.0
         version: 0.105.0(zod@4.4.3)
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../../packages/svelte
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       svelte:
@@ -363,13 +363,13 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.105.0
         version: 0.105.0(zod@4.4.3)
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../../packages/vue
       vue:
@@ -398,23 +398,23 @@ importers:
 
   apps/docs:
     dependencies:
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../../packages/theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../../packages/vue
     devDependencies:
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../../packages/solid
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../../packages/svelte
       '@sveltejs/vite-plugin-svelte':
@@ -439,24 +439,46 @@ importers:
         specifier: ^3.5.13
         version: 3.5.34(typescript@5.9.3)
 
+  apps/iris-desktop-tauri:
+    dependencies:
+      '@tauri-apps/api':
+        specifier: ^2
+        version: 2.11.1
+      '@tauri-apps/plugin-clipboard-manager':
+        specifier: ^2
+        version: 2.3.2
+      '@tauri-apps/plugin-fs':
+        specifier: ^2
+        version: 2.5.1
+      '@tauri-apps/plugin-notification':
+        specifier: ^2
+        version: 2.3.3
+      '@tauri-apps/plugin-opener':
+        specifier: ^2
+        version: 2.5.4
+    devDependencies:
+      '@tauri-apps/cli':
+        specifier: ^2
+        version: 2.11.4
+
   apps/playground:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:^
         version: link:../../packages/core
-      '@iris-ui/plugin-calendar':
+      '@iris-ui-kit/plugin-calendar':
         specifier: workspace:^
         version: link:../../packages/plugin-calendar
-      '@iris-ui/plugin-charts':
+      '@iris-ui-kit/plugin-charts':
         specifier: workspace:^
         version: link:../../packages/plugin-charts
-      '@iris-ui/plugin-markdown':
+      '@iris-ui-kit/plugin-markdown':
         specifier: workspace:^
         version: link:../../packages/plugin-markdown
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../../packages/vue
       vue:
@@ -475,40 +497,40 @@ importers:
 
   apps/playground-react:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:^
         version: link:../../packages/core
-      '@iris-ui/plugin-admin':
+      '@iris-ui-kit/plugin-admin':
         specifier: workspace:^
         version: link:../../packages/plugin-admin
-      '@iris-ui/plugin-calendar':
+      '@iris-ui-kit/plugin-calendar':
         specifier: workspace:^
         version: link:../../packages/plugin-calendar
-      '@iris-ui/plugin-charts':
+      '@iris-ui-kit/plugin-charts':
         specifier: workspace:^
         version: link:../../packages/plugin-charts
-      '@iris-ui/plugin-dashboard':
+      '@iris-ui-kit/plugin-dashboard':
         specifier: workspace:^
         version: link:../../packages/plugin-dashboard
-      '@iris-ui/plugin-editor':
+      '@iris-ui-kit/plugin-editor':
         specifier: workspace:^
         version: link:../../packages/plugin-editor
-      '@iris-ui/plugin-form-builder':
+      '@iris-ui-kit/plugin-form-builder':
         specifier: workspace:^
         version: link:../../packages/plugin-form-builder
-      '@iris-ui/plugin-kanban':
+      '@iris-ui-kit/plugin-kanban':
         specifier: workspace:^
         version: link:../../packages/plugin-kanban
-      '@iris-ui/plugin-markdown':
+      '@iris-ui-kit/plugin-markdown':
         specifier: workspace:^
         version: link:../../packages/plugin-markdown
-      '@iris-ui/plugin-query-builder':
+      '@iris-ui-kit/plugin-query-builder':
         specifier: workspace:^
         version: link:../../packages/plugin-query-builder
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       react:
@@ -533,16 +555,16 @@ importers:
 
   apps/ssr-next:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../../packages/theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       next:
@@ -570,16 +592,16 @@ importers:
 
   apps/ssr-nuxt:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../../packages/theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../../packages/vue
       nuxt:
@@ -601,16 +623,16 @@ importers:
 
   apps/ssr-solidstart:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../../packages/solid
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../../packages/theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       '@solidjs/router':
@@ -635,16 +657,16 @@ importers:
 
   apps/ssr-sveltekit:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../../packages/svelte
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../../packages/theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       '@sveltejs/kit':
@@ -672,19 +694,19 @@ importers:
 
   apps/todo-app:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@iris-ui/skins':
+      '@iris-ui-kit/skins':
         specifier: workspace:*
         version: link:../../packages/skins
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../../packages/theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       react:
@@ -709,7 +731,7 @@ importers:
 
   packages/cli:
     dependencies:
-      '@iris-ui/manifest':
+      '@iris-ui-kit/manifest':
         specifier: workspace:*
         version: link:../manifest
 
@@ -730,7 +752,7 @@ importers:
 
   packages/mcp:
     dependencies:
-      '@iris-ui/manifest':
+      '@iris-ui-kit/manifest':
         specifier: workspace:*
         version: link:../manifest
       '@modelcontextprotocol/sdk':
@@ -742,20 +764,20 @@ importers:
 
   packages/plugin-admin:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../react
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../solid
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../svelte
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../vue
       '@solidjs/testing-library':
@@ -818,7 +840,7 @@ importers:
 
   packages/plugin-calendar:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -882,7 +904,7 @@ importers:
 
   packages/plugin-charts:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -946,7 +968,7 @@ importers:
 
   packages/plugin-dashboard:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -1034,20 +1056,20 @@ importers:
       '@codemirror/view':
         specifier: ^6.34.0
         version: 6.43.0
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../react
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../solid
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../svelte
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../vue
       '@solidjs/testing-library':
@@ -1110,20 +1132,20 @@ importers:
 
   packages/plugin-form-builder:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
-      '@iris-ui/react':
+      '@iris-ui-kit/react':
         specifier: workspace:*
         version: link:../react
-      '@iris-ui/solid':
+      '@iris-ui-kit/solid':
         specifier: workspace:*
         version: link:../solid
-      '@iris-ui/svelte':
+      '@iris-ui-kit/svelte':
         specifier: workspace:*
         version: link:../svelte
-      '@iris-ui/vue':
+      '@iris-ui-kit/vue':
         specifier: workspace:*
         version: link:../vue
       '@solidjs/testing-library':
@@ -1186,7 +1208,7 @@ importers:
 
   packages/plugin-kanban:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -1250,13 +1272,13 @@ importers:
 
   packages/plugin-locale-zh:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
 
   packages/plugin-markdown:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -1320,7 +1342,7 @@ importers:
 
   packages/plugin-notifications:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -1384,7 +1406,7 @@ importers:
 
   packages/plugin-pro-table:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -1448,7 +1470,7 @@ importers:
 
   packages/plugin-query-builder:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -1515,19 +1537,19 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.7.6
         version: 1.7.6
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
-      '@iris-ui/icons':
+      '@iris-ui-kit/icons':
         specifier: workspace:*
         version: link:../icons
-      '@iris-ui/skins':
+      '@iris-ui-kit/skins':
         specifier: workspace:*
         version: link:../skins
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../tokens
     devDependencies:
@@ -1549,13 +1571,13 @@ importers:
 
   packages/skins:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../tokens
 
@@ -1564,19 +1586,19 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.7.6
         version: 1.7.6
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
-      '@iris-ui/icons':
+      '@iris-ui-kit/icons':
         specifier: workspace:*
         version: link:../icons
-      '@iris-ui/skins':
+      '@iris-ui-kit/skins':
         specifier: workspace:*
         version: link:../skins
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../tokens
     devDependencies:
@@ -1607,19 +1629,19 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.7.6
         version: 1.7.6
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
-      '@iris-ui/icons':
+      '@iris-ui-kit/icons':
         specifier: workspace:*
         version: link:../icons
-      '@iris-ui/skins':
+      '@iris-ui-kit/skins':
         specifier: workspace:*
         version: link:../skins
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../tokens
     devDependencies:
@@ -1647,10 +1669,10 @@ importers:
 
   packages/theme:
     dependencies:
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../tokens
 
@@ -1661,19 +1683,19 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.7.6
         version: 1.7.6
-      '@iris-ui/core':
+      '@iris-ui-kit/core':
         specifier: workspace:*
         version: link:../core
-      '@iris-ui/icons':
+      '@iris-ui-kit/icons':
         specifier: workspace:*
         version: link:../icons
-      '@iris-ui/skins':
+      '@iris-ui-kit/skins':
         specifier: workspace:*
         version: link:../skins
-      '@iris-ui/theme':
+      '@iris-ui-kit/theme':
         specifier: workspace:*
         version: link:../theme
-      '@iris-ui/tokens':
+      '@iris-ui-kit/tokens':
         specifier: workspace:*
         version: link:../tokens
     devDependencies:
@@ -4020,6 +4042,92 @@ packages:
   '@tanstack/server-functions-plugin@1.121.21':
     resolution: {integrity: sha512-a05fzK+jBGacsSAc1vE8an7lpBh4H0PyIEcivtEyHLomgSeElAJxm9E2It/0nYRZ5Lh23m0okbhzJNaYWZpAOg==}
     engines: {node: '>=12'}
+
+  '@tauri-apps/api@2.11.1':
+    resolution: {integrity: sha512-M2FPuYND2m+wh5hfW9ZpSdxMPdEJovPBWwoHJmwUpysTYNHaOkVFN419m/K0LIgjb/7KU2vBgsUepJWugQCvAA==}
+
+  '@tauri-apps/cli-darwin-arm64@2.11.4':
+    resolution: {integrity: sha512-1ryOF3ZhpZ/nemHV5zVwBQBz9jDGKmKPvWPADOhc83ig0P4bMc2iER4NbC6r9sjeIZ6RVQ4g3RZIYvezhcl4TQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@tauri-apps/cli-darwin-x64@2.11.4':
+    resolution: {integrity: sha512-uFsGQAAfuyz1k/yGLmkWfkBlgKAqZfxqlHmLWx81QU27RJWfmbNHCIq8T8w1e+VClleIuZUjpHWfoE4E3DLo3A==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@tauri-apps/cli-linux-arm-gnueabihf@2.11.4':
+    resolution: {integrity: sha512-IaHZn5CdBL21oUmjiVOS1ctw6Ip1O0pjp70FwOWmYz1myWe0SY96ZIj2FYf7pT0m8bI2h/hrs5ZbEXXh44/MkQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm]
+    os: [linux]
+
+  '@tauri-apps/cli-linux-arm64-gnu@2.11.4':
+    resolution: {integrity: sha512-N41/ukTRVe6XSuUTESuFdGeOW2i7k62tK+6gHK5Kd5/q5RPvvi19GaWAVPPb9u95HSGmTChSolBfzynUsssFaA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@tauri-apps/cli-linux-arm64-musl@2.11.4':
+    resolution: {integrity: sha512-v277UnT/fB64xAfSroL5N3Km3tLmvATWqJJw/wRI+g6o+HkeD0slyE7gOhNs1MbjE41R7bQOTxMVoL3aomUJmw==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@tauri-apps/cli-linux-riscv64-gnu@2.11.4':
+    resolution: {integrity: sha512-qqgNkQ2u1yZHxjhxsZaxUtRDW8dIqIYm33rx/mzwQv0SfY9x1B+iraj8vWeFiXjjSVVhEMepXSOts1TqPzvXNQ==}
+    engines: {node: '>= 10'}
+    cpu: [riscv64]
+    os: [linux]
+
+  '@tauri-apps/cli-linux-x64-gnu@2.11.4':
+    resolution: {integrity: sha512-2VRNWl84FOH0m2giiDkO2h0QXlcMJeX+zJDpI5kDIQAx6s+geF3v48F4DXfJez4GS/FdoDGnPnw1C2iYGbQ7bQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+
+  '@tauri-apps/cli-linux-x64-musl@2.11.4':
+    resolution: {integrity: sha512-o9GyhYor/nc7xarmwDE3ka2szuW3uuZzXjHWh64Q8YX5AtSgxdQkFWzrY4O8KiGtVNvFBI14H3Q49Qj5TOIP/A==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+
+  '@tauri-apps/cli-win32-arm64-msvc@2.11.4':
+    resolution: {integrity: sha512-ld5Ehb598m0VkYyylRPNeCFsBe/km0jxis6KgMpl3IGY6I/i1RwQXO05I1AsXUXO2WC6AvB/Lw4qTf/asiuEiQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@tauri-apps/cli-win32-ia32-msvc@2.11.4':
+    resolution: {integrity: sha512-12Hxi0XX/H5VFxO/bGgHkFWhml9VMgEOu9CidjeCeTNQ1l6fpUlbiGgSP7CLI3PFtW9/FfbeHieZ+kyWK5H7CA==}
+    engines: {node: '>= 10'}
+    cpu: [ia32]
+    os: [win32]
+
+  '@tauri-apps/cli-win32-x64-msvc@2.11.4':
+    resolution: {integrity: sha512-+vDiqBIU5dMISg/wNvX3sF+ZHfgJGJ5T0AcO+EHNXV9GGAG+P5fzodlDXD3QdKCRgZxMoCm5PPvj3BqLNjBthw==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+
+  '@tauri-apps/cli@2.11.4':
+    resolution: {integrity: sha512-R8xGtMpwyetawSqm9kYOuMmEqkhUbvcUy8n0aNXIxollKBLESUu5f4Fx+64hgASYm1H+jSWq6jCW6zqTnH6hqQ==}
+    engines: {node: '>= 10'}
+    hasBin: true
+
+  '@tauri-apps/plugin-clipboard-manager@2.3.2':
+    resolution: {integrity: sha512-CUlb5Hqi2oZbcZf4VUyUH53XWPPdtpw43EUpCza5HWZJwxEoDowFzNUDt1tRUXA8Uq+XPn17Ysfptip33sG4eQ==}
+
+  '@tauri-apps/plugin-fs@2.5.1':
+    resolution: {integrity: sha512-9Lz+Jopp6QyeEWhlpkMx4R/+P9HgR+AVAI4vOZhlT8Xaymtz8iVI/Ov984/XTqgJz/5gz5NretqPB/XEMS3NhQ==}
+
+  '@tauri-apps/plugin-notification@2.3.3':
+    resolution: {integrity: sha512-Zw+ZH18RJb41G4NrfHgIuofJiymusqN+q8fGUIIV7vyCH+5sSn5coqRv/MWB9qETsUs97vmU045q7OyseCV3Qg==}
+
+  '@tauri-apps/plugin-opener@2.5.4':
+    resolution: {integrity: sha512-1HnPkb+AmgO29HBazm4uPLKB+r7zzcTBW1d0fyYp1uP+jwtpoiNDGKMMzz58SFp49nOIrxdE3aUJtT57lfO9CQ==}
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -11620,6 +11728,71 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - vite
+
+  '@tauri-apps/api@2.11.1': {}
+
+  '@tauri-apps/cli-darwin-arm64@2.11.4':
+    optional: true
+
+  '@tauri-apps/cli-darwin-x64@2.11.4':
+    optional: true
+
+  '@tauri-apps/cli-linux-arm-gnueabihf@2.11.4':
+    optional: true
+
+  '@tauri-apps/cli-linux-arm64-gnu@2.11.4':
+    optional: true
+
+  '@tauri-apps/cli-linux-arm64-musl@2.11.4':
+    optional: true
+
+  '@tauri-apps/cli-linux-riscv64-gnu@2.11.4':
+    optional: true
+
+  '@tauri-apps/cli-linux-x64-gnu@2.11.4':
+    optional: true
+
+  '@tauri-apps/cli-linux-x64-musl@2.11.4':
+    optional: true
+
+  '@tauri-apps/cli-win32-arm64-msvc@2.11.4':
+    optional: true
+
+  '@tauri-apps/cli-win32-ia32-msvc@2.11.4':
+    optional: true
+
+  '@tauri-apps/cli-win32-x64-msvc@2.11.4':
+    optional: true
+
+  '@tauri-apps/cli@2.11.4':
+    optionalDependencies:
+      '@tauri-apps/cli-darwin-arm64': 2.11.4
+      '@tauri-apps/cli-darwin-x64': 2.11.4
+      '@tauri-apps/cli-linux-arm-gnueabihf': 2.11.4
+      '@tauri-apps/cli-linux-arm64-gnu': 2.11.4
+      '@tauri-apps/cli-linux-arm64-musl': 2.11.4
+      '@tauri-apps/cli-linux-riscv64-gnu': 2.11.4
+      '@tauri-apps/cli-linux-x64-gnu': 2.11.4
+      '@tauri-apps/cli-linux-x64-musl': 2.11.4
+      '@tauri-apps/cli-win32-arm64-msvc': 2.11.4
+      '@tauri-apps/cli-win32-ia32-msvc': 2.11.4
+      '@tauri-apps/cli-win32-x64-msvc': 2.11.4
+
+  '@tauri-apps/plugin-clipboard-manager@2.3.2':
+    dependencies:
+      '@tauri-apps/api': 2.11.1
+
+  '@tauri-apps/plugin-fs@2.5.1':
+    dependencies:
+      '@tauri-apps/api': 2.11.1
+
+  '@tauri-apps/plugin-notification@2.3.3':
+    dependencies:
+      '@tauri-apps/api': 2.11.1
+
+  '@tauri-apps/plugin-opener@2.5.4':
+    dependencies:
+      '@tauri-apps/api': 2.11.1
 
   '@testing-library/dom@10.4.1':
     dependencies:

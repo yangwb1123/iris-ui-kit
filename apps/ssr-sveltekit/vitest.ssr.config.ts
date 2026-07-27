@@ -10,7 +10,7 @@ import { svelte, vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 //     `vitePreprocess()` runs Vite's `preprocessCSS`, which crashes under
 //     Vitest's lightweight transform — `PartialEnvironment` proxy error).
 //   * `vitePreprocess({ script: true, style: false })` keeps the TS→JS script
-//     transform (the published `@iris-ui/svelte` `.svelte` files still carry
+//     transform (the published `@iris-ui-kit/svelte` `.svelte` files still carry
 //     `lang="ts"`) but skips CSS preprocessing — the dist `<style>` blocks are
 //     already plain CSS (svelte-package preprocessed them), so the svelte
 //     compiler handles them natively.

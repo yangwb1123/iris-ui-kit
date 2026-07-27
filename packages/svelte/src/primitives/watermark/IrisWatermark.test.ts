@@ -4,7 +4,7 @@ import IrisWatermark from './IrisWatermark.svelte'
 
 afterEach(cleanup)
 
-describe('@iris-ui/svelte IrisWatermark', () => {
+describe('@iris-ui-kit/svelte IrisWatermark', () => {
   it('renders the watermark container', () => {
     const { container } = render(IrisWatermark, { props: { content: 'CONFIDENTIAL' } })
     expect(container.querySelector('[data-iris-watermark]')).not.toBeNull()

@@ -10,8 +10,13 @@ import {
   type PropType,
   type Ref,
 } from 'vue'
-import { injectGlobalStyles } from '@iris-ui/theme'
-import { applySkin, type ApplySkinResult, type ResolvedSkin, type SkinEngine } from '@iris-ui/skins'
+import { injectGlobalStyles } from '@iris-ui-kit/theme'
+import {
+  applySkin,
+  type ApplySkinResult,
+  type ResolvedSkin,
+  type SkinEngine,
+} from '@iris-ui-kit/skins'
 
 export interface IrisSkinContext {
   engine: SkinEngine

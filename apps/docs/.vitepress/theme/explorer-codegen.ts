@@ -1,10 +1,10 @@
 // Manifest-driven, deterministic per-framework codegen for the docs Component
 // Explorer. This is a small, browser-safe re-implementation of the wiring rules
-// in `@iris-ui/mcp`'s codegen (packages/mcp/src/codegen.ts): same controlled-pair
+// in `@iris-ui-kit/mcp`'s codegen (packages/mcp/src/codegen.ts): same controlled-pair
 // detection, same per-framework state scaffolding (useState / ref / createSignal
 // / $state), same v-model / bind: / value+handler attribute syntax.
 //
-// We re-implement (rather than import) because @iris-ui/mcp is a Node MCP server
+// We re-implement (rather than import) because @iris-ui-kit/mcp is a Node MCP server
 // (not a docs dep) and we only need the single-component snippet path here, fed by
 // LIVE control values rather than the manifest defaults. The rules below mirror
 // the mcp module so the docs code tabs match what the MCP `scaffold_component`
@@ -253,7 +253,7 @@ export function snippetFor(
   opts: SnippetOptions,
 ): string {
   const { name } = component
-  const importPath = component.importFrom?.[framework] ?? `@iris-ui/${framework}`
+  const importPath = component.importFrom?.[framework] ?? `@iris-ui-kit/${framework}`
   const propByName = new Map((component.props ?? []).map((p) => [p.name, p]))
   const pair = detectControlledPair(component)
 

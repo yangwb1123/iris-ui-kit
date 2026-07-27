@@ -1,7 +1,7 @@
 <script lang="ts">
   import { setContext } from 'svelte'
   import { readonly, writable } from 'svelte/store'
-  import { applyDirection, applyTheme, injectGlobalStyles } from '@iris-ui/theme'
+  import { applyDirection, applyTheme, injectGlobalStyles } from '@iris-ui-kit/theme'
   // (Direction is inferred from the `dir` prop via ThemeProviderProps.)
   import { toStore } from '../useStore'
   import { THEME_KEY, type IrisThemeContextValue, type ThemeProviderProps } from './context'
@@ -10,7 +10,7 @@
 
   // Bridge the framework-agnostic theme store into a Svelte readable, exactly
   // like the React `useSyncExternalStore` / Vue `ref + subscribe` / Solid
-  // `useStore` bridges. Zero business logic — `applyTheme` lives in @iris-ui/theme.
+  // `useStore` bridges. Zero business logic — `applyTheme` lives in @iris-ui-kit/theme.
   // svelte-ignore state_referenced_locally — `store` is a stable instance, read once.
   const current = toStore(store.store)
   const theme = $derived($current)

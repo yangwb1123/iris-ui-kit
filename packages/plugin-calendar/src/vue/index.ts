@@ -21,7 +21,7 @@ export type { CalendarEvent, CalendarConfig, CalendarState, CalendarStore } from
 
 /**
  * Render a month-view events calendar from a declarative config (Vue, render-
- * function authored to match the `@iris-ui/vue` convention). Event chips are
+ * function authored to match the `@iris-ui-kit/vue` convention). Event chips are
  * clickable; day cells call `config.onDateClick`. Themed via CSS vars.
  */
 export const IrisEventCalendar = defineComponent({

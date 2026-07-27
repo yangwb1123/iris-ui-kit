@@ -5,7 +5,7 @@ import {
   createSelectionModel,
   type CellRangeController,
   type ExpansionModel,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import type {
   IrisTableCellEditEvent,

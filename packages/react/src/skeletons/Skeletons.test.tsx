@@ -5,7 +5,7 @@ import { IrisDashboardTemplate } from './DashboardTemplate'
 
 afterEach(() => cleanup())
 
-describe('@iris-ui/react IrisLoginTemplate', () => {
+describe('@iris-ui-kit/react IrisLoginTemplate', () => {
   it('renders title + 2 inputs + submit button', () => {
     render(<IrisLoginTemplate title="Welcome back" />)
     expect(document.querySelector('h1')?.textContent).toBe('Welcome back')
@@ -64,7 +64,7 @@ describe('@iris-ui/react IrisLoginTemplate', () => {
   })
 })
 
-describe('@iris-ui/react IrisDashboardTemplate', () => {
+describe('@iris-ui-kit/react IrisDashboardTemplate', () => {
   it('renders sidebar (complementary) + header + main', () => {
     render(
       <IrisDashboardTemplate

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@testing-library/svelte'
 import IrisNavMenu from './NavMenu.svelte'
-import type { NavNode } from '@iris-ui/core'
+import type { NavNode } from '@iris-ui-kit/core'
 
 afterEach(cleanup)
 
@@ -21,7 +21,7 @@ const items: NavNode[] = [
 const navItems = (c: HTMLElement) =>
   Array.from(c.querySelectorAll<HTMLElement>('[data-iris-nav-item]'))
 
-describe('@iris-ui/svelte IrisNavMenu', () => {
+describe('@iris-ui-kit/svelte IrisNavMenu', () => {
   it('renders top-level items; branches collapsed by default', () => {
     const { container } = render(IrisNavMenu, { props: { items } })
     expect(navItems(container)).toHaveLength(2)

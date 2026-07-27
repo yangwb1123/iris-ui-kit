@@ -7,7 +7,7 @@ import {
   type FormState,
   type FormStore,
   type FormValues,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 
 export interface UseFormReturn<V extends FormValues> {
   /** The form store — pass to `<IrisForm :form="...">`. */

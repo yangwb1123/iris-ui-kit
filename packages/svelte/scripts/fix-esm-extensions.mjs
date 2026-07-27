@@ -4,12 +4,12 @@
 // `svelte-package` transpiles each .ts/.svelte file in isolation via
 // `ts.transpileModule` (no cross-file module resolution, unlike a bundler),
 // so it emits relative import/export specifiers byte-for-byte as written in
-// source. This package's source — like every other @iris-ui/* package —
+// source. This package's source — like every other @iris-ui-kit/* package —
 // writes them extensionless (idiomatic TS style under
 // `moduleResolution: "Bundler"`). Bundlers (Vite, webpack, tsup's own
 // bundling for react/vue/solid) resolve those leniently, but native Node ESM
 // resolution requires an explicit extension on relative specifiers, so a
-// real external `npm install` consumer's `import('@iris-ui/svelte')` fails
+// real external `npm install` consumer's `import('@iris-ui-kit/svelte')` fails
 // with ERR_MODULE_NOT_FOUND (caught by scripts/check-pack-install.mjs at the
 // repo root).
 //

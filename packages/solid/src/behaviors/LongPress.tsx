@@ -1,5 +1,5 @@
 import { mergeProps, splitProps, type JSX } from 'solid-js'
-import { createLongPress } from '@iris-ui/core'
+import { createLongPress } from '@iris-ui-kit/core'
 
 export interface IrisLongPressProps {
   /** Time the pointer must be held before `onLongPress` fires, in ms. Defaults to 500. */
@@ -12,7 +12,7 @@ export interface IrisLongPressProps {
 
 /**
  * IrisLongPress (Solid) — Behavior wrapper for press-and-hold gestures.
- * Wraps the framework-agnostic `createLongPress` from `@iris-ui/core`. Renders
+ * Wraps the framework-agnostic `createLongPress` from `@iris-ui-kit/core`. Renders
  * a `<span data-iris-long-press>` with `display: contents` so it doesn't
  * affect layout.
  */

@@ -1,7 +1,13 @@
-import { createPlugin, firstLeaf, readCell, type NavNode, type DataViewColumn } from '@iris-ui/core'
+import {
+  createPlugin,
+  firstLeaf,
+  readCell,
+  type NavNode,
+  type DataViewColumn,
+} from '@iris-ui-kit/core'
 
 /**
- * `@iris-ui/plugin-admin` — a schema-driven CMS shell. This `core` entry is
+ * `@iris-ui-kit/plugin-admin` — a schema-driven CMS shell. This `core` entry is
  * framework-agnostic: it defines the declarative {@link AdminAppSchema} (a nav
  * tree + a page per route key) and the pure helpers the four `IrisAdminApp`
  * renderers share. Each renderer composes the adapter's `IrisAdminLayout`
@@ -9,7 +15,7 @@ import { createPlugin, firstLeaf, readCell, type NavNode, type DataViewColumn } 
  * `useDataSource`) — "configuration is the application".
  */
 
-export type { NavNode } from '@iris-ui/core'
+export type { NavNode } from '@iris-ui-kit/core'
 
 /** A display + data column for an admin data page. */
 export interface AdminColumn {

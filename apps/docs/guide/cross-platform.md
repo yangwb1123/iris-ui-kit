@@ -44,7 +44,7 @@ and use **hash** routing rather than history routing. Iris UI itself hardcodes n
 The browser `<a download>` path that Iris UI uses by default is unreliable in system webviews (WKWebView often ignores the `download` attribute; custom protocols block `blob:`). Register **one** handler at startup and every table export routes through it:
 
 ```ts
-import { setFileSaveHandler } from '@iris-ui/core'
+import { setFileSaveHandler } from '@iris-ui-kit/core'
 
 // Tauri
 import { save } from '@tauri-apps/plugin-dialog'
@@ -79,7 +79,7 @@ setFileSaveHandler(({ filename, content }) => writeToCordovaFile(filename, conte
 `navigator.clipboard` needs a secure context and is `undefined` under Cordova `file://` and some custom protocols, so `IrisCopyButton` silently no-ops there. Register a clipboard handler the same way:
 
 ```ts
-import { setClipboardHandler } from '@iris-ui/core'
+import { setClipboardHandler } from '@iris-ui-kit/core'
 
 // Tauri
 import { writeText } from '@tauri-apps/plugin-clipboard-manager'

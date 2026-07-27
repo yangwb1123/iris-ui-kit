@@ -15,7 +15,7 @@ plain object; swapping it reskins the whole system.
 ## Light / dark + system
 
 ```ts
-import { useColorScheme } from '@iris-ui/react' // or @iris-ui/vue
+import { useColorScheme } from '@iris-ui-kit/react' // or @iris-ui-kit/vue
 // follow the OS preference:
 const scheme = useColorScheme() // 'light' | 'dark', reactive
 // then store.setTheme(scheme === 'dark' ? 'dark' : 'light')

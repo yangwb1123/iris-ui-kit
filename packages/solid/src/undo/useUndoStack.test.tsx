@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
-import type { UndoStackOptions } from '@iris-ui/core/undo'
+import type { UndoStackOptions } from '@iris-ui-kit/core/undo'
 import { useUndoStack } from './useUndoStack'
 
 afterEach(cleanup)
@@ -22,7 +22,7 @@ function probe<T>(options?: UndoStackOptions<T>) {
   return { ...utils, api }
 }
 
-describe('@iris-ui/solid useUndoStack', () => {
+describe('@iris-ui-kit/solid useUndoStack', () => {
   it('returns a stable stack reference', () => {
     const { api } = probe<number>()
     const stack1 = api.stack

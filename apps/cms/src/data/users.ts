@@ -1,4 +1,4 @@
-import { createClientFetcher, type DataViewColumn } from '@iris-ui/vue'
+import { createClientFetcher, type DataViewColumn } from '@iris-ui-kit/vue'
 
 export type UserStatus = 'active' | 'invited' | 'suspended'
 export type UserRole = 'Owner' | 'Admin' | 'Editor' | 'Viewer'

@@ -6,8 +6,8 @@
     IrisSelect,
     IrisIcon,
     IrisStack,
-  } from '@iris-ui/svelte'
-  import type { IrisSelectItem } from '@iris-ui/svelte'
+  } from '@iris-ui-kit/svelte'
+  import type { IrisSelectItem } from '@iris-ui-kit/svelte'
   import { useAuth, type Role } from '../auth'
 
   const roleItems: IrisSelectItem<Role>[] = [

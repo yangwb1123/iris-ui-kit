@@ -6,16 +6,16 @@ Iris UI ships the same components for **React 18/19**, **Vue 3.5**, **Solid 1.9*
 
 ```bash
 # React
-pnpm add @iris-ui/react @iris-ui/theme @iris-ui/tokens
+pnpm add @iris-ui-kit/react @iris-ui-kit/theme @iris-ui-kit/tokens
 
 # Vue
-pnpm add @iris-ui/vue @iris-ui/theme @iris-ui/tokens
+pnpm add @iris-ui-kit/vue @iris-ui-kit/theme @iris-ui-kit/tokens
 
 # Solid
-pnpm add @iris-ui/solid @iris-ui/theme @iris-ui/tokens
+pnpm add @iris-ui-kit/solid @iris-ui-kit/theme @iris-ui-kit/tokens
 
 # Svelte
-pnpm add @iris-ui/svelte @iris-ui/theme @iris-ui/tokens
+pnpm add @iris-ui-kit/svelte @iris-ui-kit/theme @iris-ui-kit/tokens
 ```
 
 ## 1. Theme provider
@@ -25,9 +25,9 @@ and the writing direction. Every Iris component reads `var(--iris-*)` tokens.
 
 ```tsx
 // React
-import { ThemeProvider, IrisButton } from '@iris-ui/react'
-import { createThemeStore } from '@iris-ui/theme'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+import { ThemeProvider, IrisButton } from '@iris-ui-kit/react'
+import { createThemeStore } from '@iris-ui-kit/theme'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 
 const store = createThemeStore({
   themes: { light: lightTheme, dark: darkTheme },
@@ -51,8 +51,8 @@ Build a fully functional data list with sorting, filtering, pagination, and
 optimistic mutations — in ~30 lines:
 
 ```tsx
-import { useResourceController, createClientFetcher, IrisTable } from '@iris-ui/react'
-import type { DataViewColumn } from '@iris-ui/core'
+import { useResourceController, createClientFetcher, IrisTable } from '@iris-ui-kit/react'
+import type { DataViewColumn } from '@iris-ui-kit/core'
 
 interface User {
   id: number
@@ -97,8 +97,8 @@ function UserTable() {
 Define a form schema and render a validated, accessible form instantly:
 
 ```tsx
-import { IrisFormBuilder } from '@iris-ui/plugin-form-builder/react'
-import type { FormSchema } from '@iris-ui/plugin-form-builder/react'
+import { IrisFormBuilder } from '@iris-ui-kit/plugin-form-builder/react'
+import type { FormSchema } from '@iris-ui-kit/plugin-form-builder/react'
 
 const schema: FormSchema = {
   submitLabel: 'Create User',
@@ -129,7 +129,7 @@ Subscribe to a live stream with automatic exponential-backoff reconnection:
 
 ```tsx
 import { useEffect, useState } from 'react'
-import { createReconnectingSource } from '@iris-ui/core'
+import { createReconnectingSource } from '@iris-ui-kit/core'
 
 function StockTicker() {
   const [price, setPrice] = useState(0)
@@ -159,16 +159,16 @@ function StockTicker() {
 Heavy capabilities are packaged as plugins — install them on demand:
 
 ```bash
-pnpm add @iris-ui/plugin-editor @iris-ui/plugin-pro-table @iris-ui/plugin-charts \
-  @iris-ui/plugin-form-builder @iris-ui/plugin-notifications @iris-ui/plugin-locale-zh
+pnpm add @iris-ui-kit/plugin-editor @iris-ui-kit/plugin-pro-table @iris-ui-kit/plugin-charts \
+  @iris-ui-kit/plugin-form-builder @iris-ui-kit/plugin-notifications @iris-ui-kit/plugin-locale-zh
 ```
 
 Wrap with `IrisProvider` to activate tokens, messages, and stores:
 
 ```tsx
-import { IrisProvider, IrisCodeEditor } from '@iris-ui/react'
-import { editorPlugin } from '@iris-ui/plugin-editor/core'
-import { zhPlugin } from '@iris-ui/plugin-locale-zh/core'
+import { IrisProvider, IrisCodeEditor } from '@iris-ui-kit/react'
+import { editorPlugin } from '@iris-ui-kit/plugin-editor/core'
+import { zhPlugin } from '@iris-ui-kit/plugin-locale-zh/core'
 
 function App() {
   return (
@@ -184,9 +184,9 @@ function App() {
 Import a single area to keep bundles lean:
 
 ```ts
-import { useForm } from '@iris-ui/react/form'
-import { useColorScheme } from '@iris-ui/vue/theme'
-import { IrisProTable } from '@iris-ui/plugin-pro-table/react'
+import { useForm } from '@iris-ui-kit/react/form'
+import { useColorScheme } from '@iris-ui-kit/vue/theme'
+import { IrisProTable } from '@iris-ui-kit/plugin-pro-table/react'
 ```
 
 ## Next

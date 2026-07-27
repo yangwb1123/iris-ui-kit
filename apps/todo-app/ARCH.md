@@ -2,7 +2,7 @@
 
 ## 1. 概述
 
-基于 Iris UI (`@iris-ui/react`) 的 **单页 Todo 应用**，演示 Iris UI 组件库在实际应用中的用法。
+基于 Iris UI (`@iris-ui-kit/react`) 的 **单页 Todo 应用**，演示 Iris UI 组件库在实际应用中的用法。
 
 **目标**：
 
@@ -153,4 +153,4 @@ apps/todo-app/
 - 使用 `createResourceController` 实现后端同步
 - 添加拖拽排序（`useDraggable`）
 - Tags / 分类 / 优先级（`IrisSelect` + `IrisChip`）
-- Undo/redo（`@iris-ui/react/undo`）
+- Undo/redo（`@iris-ui-kit/react/undo`）

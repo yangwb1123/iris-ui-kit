@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@solidjs/testing-library'
-import { createTabsNav, type NavNode } from '@iris-ui/core'
+import { createTabsNav, type NavNode } from '@iris-ui-kit/core'
 import { IrisAdminLayout } from './AdminLayout'
 
 afterEach(cleanup)
@@ -23,7 +23,7 @@ const navItems = (c: HTMLElement) =>
 const findByText = (c: HTMLElement, text: string) =>
   navItems(c).find((b) => b.textContent!.includes(text))!
 
-describe('@iris-ui/solid IrisAdminLayout', () => {
+describe('@iris-ui-kit/solid IrisAdminLayout', () => {
   it('renders the sidebar shell: logo, nav, header bar, content', () => {
     const { container } = render(() => (
       <IrisAdminLayout menus={menus} activeKey="dash">

@@ -27,7 +27,7 @@
     "bench": "turbo run bench",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
-    "gen:manifest": "pnpm --filter @iris-ui/manifest build && node packages/manifest/dist/generate.js",
+    "gen:manifest": "pnpm --filter @iris-ui-kit/manifest build && node packages/manifest/dist/generate.js",
     "check:manifest": "pnpm gen:manifest && git diff --exit-code -- packages/manifest/manifest.json packages/manifest/llms.txt",
     "size": "node cli.mjs check-size",
     "check:rsc": "node cli.mjs check-rsc",

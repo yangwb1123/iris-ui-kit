@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { For } from 'solid-js'
-import type { FormStore } from '@iris-ui/core'
+import type { FormStore } from '@iris-ui-kit/core'
 import { IrisForm } from './IrisForm'
 import { useForm } from './useForm'
 import { useFieldArray } from './useFieldArray'

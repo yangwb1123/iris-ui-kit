@@ -14,7 +14,7 @@ import {
   IrisRadioGroup,
   IrisSwitch,
   type IrisCheckboxValue,
-} from '@iris-ui/vue'
+} from '@iris-ui-kit/vue'
 
 const text = ref('Hello, Iris!')
 const enabled = ref(false)

@@ -5,7 +5,7 @@ import {
   type KeyboardNavAction,
   type Placement,
   type Size,
-} from '@iris-ui/core'
+} from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { useStore } from '../../useStore'
 import { IrisPopover } from '../popover/Popover'

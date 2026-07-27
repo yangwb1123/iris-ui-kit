@@ -1,6 +1,6 @@
 {
   "name": "cms-react",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,14 +14,14 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@iris-ui/core": "workspace:*",
-    "@iris-ui/plugin-form-builder": "workspace:^",
-    "@iris-ui/plugin-locale-zh": "workspace:^",
-    "@iris-ui/plugin-markdown": "workspace:^",
-    "@iris-ui/plugin-notifications": "workspace:^",
-    "@iris-ui/plugin-pro-table": "workspace:^",
-    "@iris-ui/react": "workspace:*",
-    "@iris-ui/tokens": "workspace:*",
+    "@iris-ui-kit/core": "workspace:*",
+    "@iris-ui-kit/plugin-form-builder": "workspace:^",
+    "@iris-ui-kit/plugin-locale-zh": "workspace:^",
+    "@iris-ui-kit/plugin-markdown": "workspace:^",
+    "@iris-ui-kit/plugin-notifications": "workspace:^",
+    "@iris-ui-kit/plugin-pro-table": "workspace:^",
+    "@iris-ui-kit/react": "workspace:*",
+    "@iris-ui-kit/tokens": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

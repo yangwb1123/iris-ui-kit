@@ -30,82 +30,10 @@ import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/IrisVirtualScroll'
-import type {
-  IrisTableColumn,
-  IrisTableColumnWidths,
-  IrisTableSortState,
-  IrisTableCellEditEvent,
-  IrisTableVirtualOptions,
-} from './types'
+import type { IrisTableProps } from './props'
+import type { IrisTableColumn, IrisTableColumnWidths, IrisTableSortState } from './types'
 
-export interface IrisTableProps<Row extends Record<string, unknown> = Record<string, unknown>> {
-  columns: IrisTableColumn<Row>[]
-  data: Row[]
-  rowKey?: string
-  selectable?: 'none' | 'single' | 'multi'
-  selection?: Array<string | number>
-  onSelectionChange?: (selection: Array<string | number>) => void
-  sort?: IrisTableSortState | null
-  onSortChange?: (sort: IrisTableSortState | null) => void
-  striped?: boolean
-  bordered?: boolean
-  loading?: boolean
-  error?: boolean
-  /** Enable column resizing (drag the header's trailing edge or focus + arrow keys). */
-  resizableColumns?: boolean
-  /** Controlled per-column pixel widths, keyed by column `key`. */
-  columnWidths?: IrisTableColumnWidths
-  /** Uncontrolled initial per-column pixel widths, keyed by column `key`. */
-  defaultColumnWidths?: IrisTableColumnWidths
-  /** Notified with the full width map whenever the user resizes a column. */
-  onColumnWidthsChange?: (next: IrisTableColumnWidths) => void
-  onRowClick?: (row: Row, index: number) => void
-  onCellEdit?: (event: IrisTableCellEditEvent<Row>) => void
-  /**
-   * Render an expandable detail panel beneath a row. Providing this adds a
-   * leading expand-toggle column; clicking it reveals a full-width detail row.
-   */
-  renderDetail?: (row: Row, rowIndex: number) => JSX.Element
-  /** Which rows can expand a detail panel. Defaults to all rows when `renderDetail` is set. */
-  rowExpandable?: (row: Row, rowIndex: number) => boolean
-  /** Initially-expanded row keys (uncontrolled). */
-  defaultExpandedRowKeys?: Array<string | number>
-  /** Notified with the expanded row keys whenever they change. */
-  onExpandedRowsChange?: (keys: Array<string | number>) => void
-  /**
-   * Return a row's child rows to enable TREE MODE: `data` is treated as the root
-   * rows, each parent gets an inline expand toggle in its first cell, and the
-   * (shared) expansion model controls which branches are visible. Column sort
-   * reorders siblings hierarchically (each level sorted, structure kept), and
-   * tree rows virtualize like flat rows when `virtualScroll` is set (unless
-   * `renderDetail` is also used, since detail panels are variable-height).
-   * Additive — absent means the table stays in flat mode.
-   */
-  getSubRows?: (row: Row) => Row[] | undefined
-  /**
-   * Enable WAI-ARIA grid keyboard navigation: the table becomes `role="grid"`
-   * and Arrow / Home / End / Page Up·Down move a roving cell focus across the
-   * data cells. Off by default; opt-in and additive (no effect on mouse / Tab
-   * behavior). Does not hijack keystrokes while a cell is being edited.
-   */
-  keyboardNavigation?: boolean
-  /**
-   * Enable rectangular cell-range selection (Excel-style). Click starts a
-   * range; Shift+Click or Shift+Arrow extends it; Escape clears it.
-   * Cells within the range get `data-iris-cell-selected="true"`.
-   */
-  cellRange?: boolean
-  /** Enable virtual scrolling for the body (renders only the visible window). */
-  virtualScroll?: IrisTableVirtualOptions
-  /**
-   * Render only the horizontally-visible columns (plus pinned + a small
-   * overscan) for very wide tables. Needs numeric column widths; the table
-   * becomes a horizontal scroll container. Off-screen grid tracks stay sized,
-   * so alignment, resize, and pinned columns keep working.
-   */
-  columnVirtualization?: boolean
-  style?: JSX.CSSProperties
-}
+export type { IrisTableProps } from './props'
 
 const DEFAULT_COL_WIDTH = 140
 const DEFAULT_MIN_WIDTH = 60
@@ -269,7 +197,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   }
 
   // ---- Sort ----
-  const [internalSort, setInternalSort] = createSignal<IrisTableSortState | null>(null)
+  const [internalSort, setInternalSort] = createSignal<IrisTableSortState | null>(
+    props.defaultSort ?? null,
+  )
   const effectiveSort = (): IrisTableSortState | null =>
     props.sort !== undefined ? (props.sort ?? null) : internalSort()
 
@@ -363,7 +293,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const selectionMode = merged.selectable === 'single' ? 'single' : 'multiple'
   const selectionModel = createSelectionModel<string | number>({
     mode: selectionMode,
-    defaultSelected: props.selection ?? [],
+    defaultSelected: props.selection ?? props.defaultSelection ?? [],
     onChange: (keys) => merged.onSelectionChange?.(keys),
   })
   const selection = useStore(selectionModel.store)
@@ -1172,12 +1102,12 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             when={merged.error}
             fallback={
               <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>
-                {t('table.loading')}
+                {props.loadingState ?? t('table.loading')}
               </div>
             }
           >
             <div role="row" data-iris-table-row="error" style={stateRowStyle}>
-              {t('table.error')}
+              {props.errorState ?? t('table.error')}
             </div>
           </Show>
         }
@@ -1186,7 +1116,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           when={bodyRows().length > 0}
           fallback={
             <div role="row" data-iris-table-row="empty" style={stateRowStyle}>
-              {t('table.empty')}
+              {props.emptyState ?? t('table.empty')}
             </div>
           }
         >

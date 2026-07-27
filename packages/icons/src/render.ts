@@ -15,14 +15,92 @@ export interface RenderIconOptions {
 
 const DEFAULT_VIEW_BOX = '0 0 24 24'
 
-function serializeAttrs(attrs: Record<string, string | number>): string {
+const SAFE_NODE_TAGS = new Set(['circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect'])
+
+const SAFE_ROOT_ATTRS = new Set([
+  'aria-hidden',
+  'aria-label',
+  'class',
+  'fill',
+  'focusable',
+  'height',
+  'id',
+  'preserveAspectRatio',
+  'role',
+  'stroke',
+  'stroke-dasharray',
+  'stroke-dashoffset',
+  'stroke-linecap',
+  'stroke-linejoin',
+  'stroke-width',
+  'tabindex',
+  'transform',
+  'viewBox',
+  'width',
+  'xmlns',
+])
+
+const SAFE_NODE_ATTRS = new Set([
+  'aria-hidden',
+  'aria-label',
+  'class',
+  'clip-rule',
+  'cx',
+  'cy',
+  'd',
+  'fill',
+  'fill-rule',
+  'height',
+  'id',
+  'opacity',
+  'pathLength',
+  'points',
+  'r',
+  'role',
+  'rx',
+  'ry',
+  'stroke',
+  'stroke-dasharray',
+  'stroke-dashoffset',
+  'stroke-linecap',
+  'stroke-linejoin',
+  'stroke-width',
+  'transform',
+  'vector-effect',
+  'width',
+  'x',
+  'x1',
+  'x2',
+  'y',
+  'y1',
+  'y2',
+])
+
+const SAFE_EXTENSION_ATTR = /^(?:aria|data)-[A-Za-z0-9_.:-]+$/
+
+function escapeXml(value: string | number): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
+function isAllowedAttr(name: string, allowed: Set<string>): boolean {
+  return allowed.has(name) || SAFE_EXTENSION_ATTR.test(name)
+}
+
+function serializeAttrs(attrs: Record<string, string | number>, allowed: Set<string>): string {
   return Object.entries(attrs)
-    .map(([key, value]) => `${key}="${String(value)}"`)
+    .filter(([key]) => isAllowedAttr(key, allowed))
+    .map(([key, value]) => `${key}="${escapeXml(value)}"`)
     .join(' ')
 }
 
 function serializeNode(node: IrisIconNode): string {
-  const attrs = serializeAttrs(node.attrs)
+  if (!SAFE_NODE_TAGS.has(node.tag)) return ''
+  const attrs = serializeAttrs(node.attrs, SAFE_NODE_ATTRS)
   return `<${node.tag}${attrs ? ` ${attrs}` : ''}/>`
 }
 
@@ -53,9 +131,11 @@ export function renderIconSvg(icon: IrisIcon, options: RenderIconOptions = {}): 
   } else {
     root['aria-hidden'] = 'true'
   }
-  Object.assign(root, attrs)
+  for (const [key, value] of Object.entries(attrs)) {
+    if (isAllowedAttr(key, SAFE_ROOT_ATTRS)) root[key] = value
+  }
 
-  const titleEl = title ? `<title>${title}</title>` : ''
+  const titleEl = title ? `<title>${escapeXml(title)}</title>` : ''
   const body = icon.nodes.map(serializeNode).join('')
-  return `<svg ${serializeAttrs(root)}>${titleEl}${body}</svg>`
+  return `<svg ${serializeAttrs(root, SAFE_ROOT_ATTRS)}>${titleEl}${body}</svg>`
 }

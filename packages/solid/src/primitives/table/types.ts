@@ -66,6 +66,16 @@ export interface IrisTableCellEditEvent<Row = Record<string, unknown>> {
   rowIndex: number
 }
 
+export type IrisTableRenderDetail<Row = Record<string, unknown>> = (
+  row: Row,
+  rowIndex: number,
+) => JSX.Element
+
+export type IrisTableRowExpandable<Row = Record<string, unknown>> = (
+  row: Row,
+  rowIndex: number,
+) => boolean
+
 export type IrisTableColumnWidths = Record<string, number>
 
 import type { JSX } from 'solid-js'

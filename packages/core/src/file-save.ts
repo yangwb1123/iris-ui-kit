@@ -60,3 +60,55 @@ export async function saveFile(file: SaveFilePayload): Promise<boolean> {
   const result = await handler(file)
   return result !== false
 }
+
+interface DownloadAnchor {
+  href: string
+  download: string
+  style: { display: string }
+  click(): void
+  remove(): void
+}
+
+interface DownloadRuntime {
+  document?: {
+    body?: { appendChild(node: DownloadAnchor): unknown }
+    createElement(tag: 'a'): DownloadAnchor
+  }
+  Blob?: new (parts: string[], options: { type: string }) => unknown
+  URL?: {
+    createObjectURL(blob: unknown): string
+    revokeObjectURL(url: string): void
+  }
+}
+
+/**
+ * Route a file through the host handler, then fall back to a browser download.
+ *
+ * Returns `true` when either path handled the request and `false` in a
+ * non-browser environment with no host handler. Keeping this framework-neutral
+ * fallback here prevents every adapter from carrying its own Blob/anchor copy.
+ */
+export async function downloadFile(file: SaveFilePayload): Promise<boolean> {
+  if (await saveFile(file)) return true
+  const runtime = globalThis as unknown as DownloadRuntime
+  const document = runtime.document
+  const Blob = runtime.Blob
+  const URL = runtime.URL
+  if (!document?.body || !Blob || !URL || typeof URL.createObjectURL !== 'function') {
+    return false
+  }
+
+  const url = URL.createObjectURL(new Blob([file.content], { type: file.mimeType }))
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = file.filename
+  anchor.style.display = 'none'
+  document.body.appendChild(anchor)
+  try {
+    anchor.click()
+  } finally {
+    anchor.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 0)
+  }
+  return true
+}

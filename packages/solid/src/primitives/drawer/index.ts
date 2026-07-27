@@ -5,6 +5,8 @@ export {
   IrisDrawerTitle,
   IrisDrawerClose,
   type IrisDrawerContentProps,
+  type IrisDrawerTitleProps,
+  type IrisDrawerCloseProps,
 } from './IrisDrawerContent'
 export {
   DrawerContext,

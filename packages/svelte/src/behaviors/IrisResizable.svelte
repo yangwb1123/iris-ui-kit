@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+  import { useI18n } from '../i18n'
 
   export type IrisResizableHandle =
     | 'top'
@@ -56,6 +57,8 @@
     children,
   }: Props = $props()
 
+  const { t } = useI18n()
+
   const isControlled = $derived(sizeProp !== undefined)
   // svelte-ignore state_referenced_locally
   let internal = $state<IrisResizableSize>({ ...defaultSize })
@@ -101,6 +104,30 @@
     document.addEventListener('mouseup', onUp)
   }
 
+  function resizeByKeyboard(event: KeyboardEvent, handle: IrisResizableHandle): void {
+    if (disabled) return
+    const step = event.shiftKey ? 1 : 10
+    let dx = 0
+    let dy = 0
+    if (event.key === 'ArrowLeft') dx = -step
+    else if (event.key === 'ArrowRight') dx = step
+    else if (event.key === 'ArrowUp') dy = -step
+    else if (event.key === 'ArrowDown') dy = step
+    else return
+    event.preventDefault()
+    let width = size.width
+    let height = size.height
+    if (handle.includes('right')) width = clamp(size.width + dx, minWidth, maxWidth)
+    if (handle.includes('left')) width = clamp(size.width - dx, minWidth, maxWidth)
+    if (handle.includes('bottom')) height = clamp(size.height + dy, minHeight, maxHeight)
+    if (handle.includes('top')) height = clamp(size.height - dy, minHeight, maxHeight)
+    const next = { width, height }
+    onResizeStart?.(size)
+    if (!isControlled) internal = next
+    onSizeChange?.(next)
+    onResizeEnd?.(next)
+  }
+
   function handleStyle(h: IrisResizableHandle): string {
     const t = h.includes('top')
     const b = h.includes('bottom')
@@ -133,10 +160,14 @@
   {@render children?.()}
 
   {#each handles as handle (handle)}
-    <div
+    <button
+      type="button"
+      disabled={disabled || undefined}
+      aria-label={t('resizer.handle', { handle })}
       data-iris-resizable-handle={handle}
       onmousedown={(e) => startResize(e, handle)}
-      style={handleStyle(handle)}
-    ></div>
+      onkeydown={(e) => resizeByKeyboard(e, handle)}
+      style="{handleStyle(handle)} border: 0; padding: 0; background: transparent"
+    ></button>
   {/each}
 </div>

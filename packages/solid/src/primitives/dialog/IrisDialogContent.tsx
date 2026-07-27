@@ -10,6 +10,18 @@ export interface IrisDialogContentProps extends JSX.HTMLAttributes<HTMLDivElemen
   children?: JSX.Element
 }
 
+export interface IrisDialogTitleProps extends JSX.HTMLAttributes<HTMLHeadingElement> {
+  as?: string
+}
+
+export interface IrisDialogDescriptionProps extends JSX.HTMLAttributes<HTMLParagraphElement> {
+  as?: string
+}
+
+export interface IrisDialogCloseProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
+  children?: JSX.Element
+}
+
 /**
  * The modal surface (and its backdrop). Renders only while the dialog is open.
  * Behaviors: body scroll lock, focus trap, Escape to dismiss, backdrop click to dismiss.
@@ -35,6 +47,7 @@ export function IrisDialogContent(props: IrisDialogContentProps): JSX.Element {
   }
 
   createEffect(() => {
+    if (typeof document === 'undefined') return
     if (ctx.open()) {
       document.addEventListener('keydown', onKeyDown)
     } else {
@@ -43,7 +56,7 @@ export function IrisDialogContent(props: IrisDialogContentProps): JSX.Element {
   })
 
   onCleanup(() => {
-    document.removeEventListener('keydown', onKeyDown)
+    if (typeof document !== 'undefined') document.removeEventListener('keydown', onKeyDown)
   })
 
   const onBackdropPointerDown = (event: MouseEvent): void => {
@@ -116,9 +129,7 @@ export function IrisDialogContent(props: IrisDialogContentProps): JSX.Element {
 /**
  * Accessible title for the dialog.
  */
-export function IrisDialogTitle(
-  props: JSX.HTMLAttributes<HTMLHeadingElement> & { as?: string },
-): JSX.Element {
+export function IrisDialogTitle(props: IrisDialogTitleProps): JSX.Element {
   const ctx = useDialogContext('IrisDialogTitle')
   ctx.setHasTitle(true)
 
@@ -142,9 +153,7 @@ export function IrisDialogTitle(
 /**
  * Accessible description for the dialog.
  */
-export function IrisDialogDescription(
-  props: JSX.HTMLAttributes<HTMLParagraphElement> & { as?: string },
-): JSX.Element {
+export function IrisDialogDescription(props: IrisDialogDescriptionProps): JSX.Element {
   const ctx = useDialogContext('IrisDialogDescription')
   ctx.setHasDescription(true)
 
@@ -168,7 +177,7 @@ export function IrisDialogDescription(
 /**
  * Close button for dialog.
  */
-export function IrisDialogClose(props: JSX.ButtonHTMLAttributes<HTMLButtonElement>): JSX.Element {
+export function IrisDialogClose(props: IrisDialogCloseProps): JSX.Element {
   const ctx = useDialogContext('IrisDialogClose')
   const { onClick, children, ...rest } = props
 

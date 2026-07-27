@@ -72,6 +72,21 @@ describe('@iris-ui-kit/svelte IrisList', () => {
     expect(opts[0]!.getAttribute('tabindex')).toBe('0')
   })
 
+  it('uses a rerendered loop setting at the list boundary', async () => {
+    const { container, rerender } = render(IrisList, {
+      props: { items: ITEMS, loop: false },
+    })
+    const list = container.querySelector('ul')!
+    await fireEvent.keyDown(list, { key: 'End' })
+    await fireEvent.keyDown(list, { key: 'ArrowDown' })
+    expect(container.querySelectorAll('[role="option"]')[1]?.getAttribute('tabindex')).toBe('0')
+
+    await rerender({ items: ITEMS, loop: true })
+    await fireEvent.keyDown(list, { key: 'End' })
+    await fireEvent.keyDown(list, { key: 'ArrowDown' })
+    expect(container.querySelectorAll('[role="option"]')[0]?.getAttribute('tabindex')).toBe('0')
+  })
+
   it('Enter selects the active option', async () => {
     const onValueChange = vi.fn()
     const { container } = render(IrisList, { props: { items: ITEMS, onValueChange } })

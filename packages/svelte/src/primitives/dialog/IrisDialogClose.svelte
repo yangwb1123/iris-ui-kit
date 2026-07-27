@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import { getDialogContext } from './context'
+  import { createSlotChildProps, type IrisSlotChildProps } from '../slot/slot'
 
   /** Props forwarded to an `asChild` consumer's element (spread `{...props}`). */
-  export interface DialogCloseChildProps {
+  export interface DialogCloseChildProps extends IrisSlotChildProps {
     onclick: (e: MouseEvent) => void
     'data-iris-dialog-close': true
   }
@@ -20,15 +21,18 @@
   const ctx = getDialogContext('IrisDialogClose')
 
   function handleClick(e: MouseEvent): void {
-    if (e.defaultPrevented) return
     onclick?.(e)
+    if (e.defaultPrevented) return
     ctx.setOpen(false)
   }
 
-  const childProps = $derived<DialogCloseChildProps>({
-    onclick: handleClick,
-    'data-iris-dialog-close': true,
-  })
+  const childProps = $derived<DialogCloseChildProps>(
+    createSlotChildProps({
+      ...rest,
+      onclick: handleClick,
+      'data-iris-dialog-close': true,
+    }) as DialogCloseChildProps,
+  )
 </script>
 
 {#if asChild}

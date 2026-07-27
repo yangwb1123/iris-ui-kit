@@ -4,10 +4,20 @@ import type {
   IrisThemeColors,
   IrisThemeSpacing,
   IrisThemeRadii,
+  IrisThemeShadows,
+  IrisThemeZIndex,
+  IrisThemeTransitions,
 } from '@iris-ui-kit/tokens'
 
-/** Partial overrides of the 21 closed core tokens. Colors are strings; spacing/radii numbers. */
-export type SkinTokenOverrides = Partial<IrisThemeColors & IrisThemeSpacing & IrisThemeRadii>
+/** Partial overrides of the closed core token set. Omitted values inherit from parent skins. */
+export type SkinTokenOverrides = Partial<
+  IrisThemeColors &
+    IrisThemeSpacing &
+    IrisThemeRadii &
+    IrisThemeShadows &
+    IrisThemeZIndex &
+    IrisThemeTransitions
+>
 
 /** Authoring shape: partial + composable. Resolves to a complete `ResolvedSkin`. */
 export interface Skin {
@@ -21,7 +31,7 @@ export interface Skin {
   type?: IrisThemeType
   /** Inheritance: a parent id or ordered list (later wins). Cycles are an error. */
   extends?: string | string[]
-  /** Partial overrides of the 21 core tokens (omitted ones inherit from the chain). */
+  /** Partial overrides of core theme tokens (omitted ones inherit from the chain). */
   tokens?: SkinTokenOverrides
   /** Free-form custom tokens beyond the closed schema (dot-notation key → string|number). */
   custom?: Record<string, string | number>
@@ -40,7 +50,7 @@ export interface ResolvedSkin {
   id: string
   name: string
   type: IrisThemeType
-  /** A complete, valid IrisTheme — all 21 tokens present. */
+  /** A complete, valid IrisTheme, including any resolved optional token sections. */
   theme: IrisTheme
   /** Fully-merged custom token map. */
   custom: Record<string, string | number>

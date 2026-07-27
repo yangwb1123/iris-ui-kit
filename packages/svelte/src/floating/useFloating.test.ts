@@ -61,6 +61,26 @@ describe('useFloating (svelte) size middleware', () => {
 
     expect(lastMiddleware().some((m) => m?.name === 'size')).toBe(false)
   })
+
+  it('restarts positioning with rerendered placement, offset, and size options', async () => {
+    computePositionMock.mockReset()
+    computePositionMock.mockResolvedValue(pos(0, 0))
+    const { rerender } = render(FloatingHarness, {
+      props: { placement: 'top', offset: 2, size: false },
+    })
+    flushSync()
+    expect(computePositionMock.mock.calls.at(-1)?.[2]).toMatchObject({ placement: 'top' })
+
+    await rerender({ placement: 'right', offset: 12, size: true })
+    flushSync()
+    const options = computePositionMock.mock.calls.at(-1)?.[2] as {
+      placement: string
+      middleware: { name?: string }[]
+    }
+    expect(options.placement).toBe('right')
+    expect(options.middleware.some((middleware) => middleware.name === 'offset')).toBe(true)
+    expect(options.middleware.some((middleware) => middleware.name === 'size')).toBe(true)
+  })
 })
 
 describe('useFloating (svelte) arrow middleware', () => {

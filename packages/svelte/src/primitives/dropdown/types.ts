@@ -1,6 +1,7 @@
 import type { Snippet } from 'svelte'
 import type { HTMLAttributes, HTMLButtonAttributes } from 'svelte/elements'
 import type { Placement } from '@iris-ui-kit/core'
+import type { IrisSlotChildProps } from '../slot/slot'
 
 export interface IrisDropdownProps {
   open?: boolean
@@ -11,7 +12,10 @@ export interface IrisDropdownProps {
   children?: Snippet
 }
 
-export type IrisDropdownTriggerProps = HTMLButtonAttributes
+export interface IrisDropdownTriggerProps extends Omit<HTMLButtonAttributes, 'children'> {
+  asChild?: boolean
+  children?: Snippet | Snippet<[IrisSlotChildProps]>
+}
 
 export interface IrisDropdownMenuProps extends HTMLAttributes<HTMLDivElement> {
   /** Portal target; `false` renders in place. Default `document.body`. */

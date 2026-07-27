@@ -57,6 +57,11 @@ export type IrisTableRenderDetail<Row = Record<string, unknown>> = (
   rowIndex: number,
 ) => unknown
 
+export type IrisTableRowExpandable<Row = Record<string, unknown>> = (
+  row: Row,
+  rowIndex: number,
+) => boolean
+
 export interface IrisTableCellEditEvent<Row = Record<string, unknown>> {
   row: Row
   column: IrisTableColumn<Row>

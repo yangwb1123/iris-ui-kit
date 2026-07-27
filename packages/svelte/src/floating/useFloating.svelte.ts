@@ -11,6 +11,11 @@ import {
   type Strategy,
 } from '@floating-ui/dom'
 
+type ReactiveOption<T> = T | (() => T | undefined)
+
+const readOption = <T>(option: ReactiveOption<T> | undefined): T | undefined =>
+  typeof option === 'function' ? (option as () => T)() : option
+
 export interface UseFloatingOptions {
   /** Element the floating panel is positioned relative to. */
   anchor: () => HTMLElement | undefined | null
@@ -18,19 +23,19 @@ export interface UseFloatingOptions {
   floating: () => HTMLElement | undefined | null
   /** Whether the floating element is visible. Controls the `autoUpdate` lifecycle. */
   open: () => boolean
-  placement?: Placement
-  strategy?: Strategy
-  offset?: number
-  flip?: boolean
-  shift?: boolean
+  placement?: ReactiveOption<Placement>
+  strategy?: ReactiveOption<Strategy>
+  offset?: ReactiveOption<number>
+  flip?: ReactiveOption<boolean>
+  shift?: ReactiveOption<boolean>
   /**
    * Constrain the floating element to the available viewport space — sets
    * `maxWidth`/`maxHeight` (minus 8px padding) on it so a long dropdown/popover
    * never overflows the screen (pair with `overflow:auto` for scroll). Off by
    * default. Pass a number to override the viewport padding.
    */
-  size?: boolean | number
-  middleware?: Middleware[]
+  size?: ReactiveOption<boolean | number>
+  middleware?: ReactiveOption<Middleware[]>
   /**
    * Optional getter returning the arrow element inside the floating panel.
    * When provided, `arrowX`, `arrowY`, `arrowSide` in the return are populated.
@@ -57,22 +62,24 @@ export interface UseFloatingReturn {
  * `useFloating`.
  */
 export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
-  const placement = options.placement ?? 'bottom'
-  const strategy = options.strategy ?? 'absolute'
-
   let x = $state(0)
   let y = $state(0)
-  let finalPlacement = $state<Placement>(placement)
+  let finalPlacement = $state<Placement>('bottom')
   let arrowX = $state<number | undefined>(undefined)
   let arrowY = $state<number | undefined>(undefined)
 
   const buildMiddleware = (): Middleware[] => {
     const mw: Middleware[] = []
-    if (options.offset !== undefined) mw.push(offsetMiddleware(options.offset))
-    if (options.flip !== false) mw.push(flipMiddleware())
-    if (options.shift !== false) mw.push(shiftMiddleware({ padding: 8 }))
-    if (options.size) {
-      const padding = typeof options.size === 'number' ? options.size : 8
+    const offset = readOption(options.offset)
+    const flip = readOption(options.flip)
+    const shift = readOption(options.shift)
+    const size = readOption(options.size)
+    const middleware = readOption(options.middleware)
+    if (offset !== undefined) mw.push(offsetMiddleware(offset))
+    if (flip !== false) mw.push(flipMiddleware())
+    if (shift !== false) mw.push(shiftMiddleware({ padding: 8 }))
+    if (size) {
+      const padding = typeof size === 'number' ? size : 8
       mw.push(
         sizeMiddleware({
           padding,
@@ -87,7 +94,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     }
     const arrowEl = options.arrow?.()
     if (arrowEl) mw.push(arrowMiddleware({ element: arrowEl }))
-    if (options.middleware) mw.push(...options.middleware)
+    if (middleware) mw.push(...middleware)
     return mw
   }
 
@@ -111,12 +118,18 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     const a = options.anchor()
     const f = options.floating()
     if (!a || !f) return
+    const placement = readOption(options.placement) ?? 'bottom'
+    const strategy = readOption(options.strategy) ?? 'absolute'
+    // Build while the effect is collecting dependencies so getter-backed
+    // options (placement/offset/size/middleware) restart positioning when they
+    // change. The resulting middleware is stable for this autoUpdate cycle.
+    const middleware = buildMiddleware()
     const update = (): void => {
       const token = ++epoch
       void computePosition(a, f, {
         placement,
         strategy,
-        middleware: buildMiddleware(),
+        middleware,
       }).then((result) => {
         if (token !== epoch) return
         x = result.x
@@ -139,6 +152,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
       return finalPlacement
     },
     get floatingStyles() {
+      const strategy = readOption(options.strategy) ?? 'absolute'
       return `position: ${strategy}; top: 0; left: 0; transform: translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0); width: max-content`
     },
     get arrowX() {

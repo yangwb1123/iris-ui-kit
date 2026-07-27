@@ -1,1 +1,6 @@
-export { default as IrisSelect, type IrisSelectItem } from './IrisSelect.svelte'
+export {
+  default as IrisSelect,
+  type IrisSelectItem,
+  type IrisSelectProps,
+  type IrisSelectSize,
+} from './IrisSelect.svelte'

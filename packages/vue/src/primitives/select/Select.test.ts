@@ -36,6 +36,28 @@ describe('IrisSelect', () => {
     expect(wrapper.text()).toContain('Banana')
   })
 
+  it('uses defaultValue and updates its label in uncontrolled mode', async () => {
+    const wrapper = mount(IrisSelect, {
+      props: { items, defaultValue: 'a', teleport: false },
+      attachTo: host,
+    })
+    expect(wrapper.find('[data-iris-select-trigger]').text()).toContain('Apple')
+    await wrapper.find('[data-iris-select-trigger]').trigger('click')
+    await wrapper.findAll('[role="option"]')[1]!.trigger('click')
+    expect(wrapper.find('[data-iris-select-trigger]').text()).toContain('Banana')
+  })
+
+  it('emits one v-model update and the framework-neutral valueChange event', async () => {
+    const wrapper = mount(IrisSelect, {
+      props: { items, teleport: false },
+      attachTo: host,
+    })
+    await wrapper.find('[data-iris-select-trigger]').trigger('click')
+    await wrapper.findAll('[role="option"]')[1]!.trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toEqual([['b']])
+    expect(wrapper.emitted('valueChange')).toEqual([['b']])
+  })
+
   it('trigger announces a listbox popup (not the popover default dialog)', () => {
     const wrapper = mount(IrisSelect, { props: { items, modelValue: null }, attachTo: host })
     expect(wrapper.find('[data-iris-select-trigger]').attributes('aria-haspopup')).toBe('listbox')

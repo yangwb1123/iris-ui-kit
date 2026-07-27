@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import type { FormStore, FormValues } from '@iris-ui-kit/core'
   import type { UseFieldArrayReturn } from './useFieldArray'
   import { setFormContext } from './context'
@@ -12,13 +13,14 @@
 
   let { form, fieldName = 'items', onready }: Props = $props()
 
-  setFormContext(form)
+  // Context and field-array identity are construction-time inputs for this test
+  // fixture; `untrack` makes that lifecycle explicit.
+  setFormContext(untrack(() => form))
 
-  const arr = useFieldArray<string>(fieldName)
+  const arr = useFieldArray<string>(untrack(() => fieldName))
   const { fields, push, remove, insert, move } = arr
 
-  // svelte-ignore state_referenced_locally — fixture: hand the controller out once.
-  onready?.(arr)
+  untrack(() => onready)?.(arr)
 </script>
 
 <ul>

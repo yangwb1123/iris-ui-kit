@@ -1,26 +1,20 @@
 <script lang="ts">
-  /**
-   * IrisSlot — "as-child" polymorphic slot pattern.
-   * Merges props/handlers onto its single child element so the caller can
-   * replace the default rendered element with any element of their choice.
-   *
-   * When `asChild` is false (default) it renders a <span style="display:contents">.
-   * When `asChild` is true it passes its own props down to {@render children()}.
-   */
+  import type { Snippet } from 'svelte'
+  import { createSlotChildProps, type IrisSlotChildProps, type IrisSlotRef } from './slot'
 
   interface Props {
+    /**
+     * Kept for source compatibility. IrisSlot is always wrapper-free and
+     * always renders through its single child snippet.
+     */
     asChild?: boolean
-    class?: string
-    style?: string
+    ref?: IrisSlotRef
+    children?: Snippet<[IrisSlotChildProps]>
     [key: string]: unknown
-    children?: import('svelte').Snippet<[]>
   }
 
-  let { asChild = false, children, ...rest }: Props = $props()
+  let { asChild: _asChild, ref, children, ...rest }: Props = $props()
+  const childProps = $derived(createSlotChildProps(rest, ref))
 </script>
 
-{#if asChild}
-  {@render children?.()}
-{:else}
-  <span data-iris-slot style="display:contents" {...rest}>{@render children?.()}</span>
-{/if}
+{@render children?.(childProps)}

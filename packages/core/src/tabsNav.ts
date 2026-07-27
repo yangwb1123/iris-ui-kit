@@ -59,6 +59,8 @@ export interface TabsNav {
   refresh(key: string): void
   /** Pin / unpin a tab (pinned tabs are not closable). */
   setPinned(key: string, pinned: boolean): void
+  /** Move a tab to a zero-based target index. Out-of-range targets are clamped. */
+  move(key: string, targetIndex: number): void
   /** Composite keep-alive key for `key` (`key:version`); changes on refresh. */
   cacheKey(key: string): string
   /** Keep-alive include-set: the composite cache keys of all open tabs. */
@@ -194,6 +196,20 @@ export function createTabsNav(config: TabsNavConfig = {}): TabsNav {
     }))
   }
 
+  const move: TabsNav['move'] = (key, targetIndex) => {
+    store.setState((s) => {
+      const from = s.tabs.findIndex((tab) => tab.key === key)
+      if (from < 0 || s.tabs.length < 2) return s
+      const to = Math.max(0, Math.min(Math.trunc(targetIndex), s.tabs.length - 1))
+      if (from === to) return s
+      const tabs = [...s.tabs]
+      const [tab] = tabs.splice(from, 1)
+      if (!tab) return s
+      tabs.splice(to, 0, tab)
+      return { ...s, tabs }
+    })
+  }
+
   const cacheKey: TabsNav['cacheKey'] = (key) => `${key}:${store.getState().versions[key] ?? 0}`
   const cacheKeys: TabsNav['cacheKeys'] = () => store.getState().tabs.map((t) => cacheKey(t.key))
 
@@ -210,6 +226,7 @@ export function createTabsNav(config: TabsNavConfig = {}): TabsNav {
     closeRight,
     refresh,
     setPinned,
+    move,
     cacheKey,
     cacheKeys,
   }

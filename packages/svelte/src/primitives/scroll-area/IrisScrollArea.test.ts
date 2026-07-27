@@ -13,9 +13,11 @@ describe('IrisScrollArea', () => {
     expect(container.querySelector('[data-axis="horizontal"]')).not.toBeNull()
   })
 
-  it('is focusable (tabindex=0)', () => {
+  it('exposes the scrollable content as a region', () => {
     const { container } = render(IrisScrollArea)
-    expect(container.querySelector('[data-iris-scroll-area]')!.getAttribute('tabindex')).toBe('0')
+    const region = container.querySelector('[data-iris-scroll-area]')!
+    expect(region.getAttribute('role')).toBe('region')
+    expect(region.getAttribute('tabindex')).toBe('0')
   })
 
   it('applies maxHeight style', () => {

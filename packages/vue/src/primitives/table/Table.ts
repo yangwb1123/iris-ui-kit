@@ -31,6 +31,7 @@ import { useI18n } from '../../i18n'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
+import { tableControlProps } from './controlProps'
 import type {
   IrisTableCellEditEvent,
   IrisTableColumn,
@@ -103,18 +104,7 @@ export const IrisTable = defineComponent({
       required: true,
     },
     rowKey: { type: String, default: 'id' },
-    selectable: {
-      type: String as PropType<'none' | 'single' | 'multi'>,
-      default: 'none',
-    },
-    selection: {
-      type: Array as PropType<Array<string | number>>,
-      default: undefined,
-    },
-    sort: {
-      type: Object as PropType<IrisTableSortState | null>,
-      default: undefined,
-    },
+    ...tableControlProps,
     striped: { type: Boolean, default: false },
     bordered: { type: Boolean, default: true },
     /** Enable per-column resize handles. Combine with `v-model:columnWidths` for persistence. */
@@ -208,7 +198,7 @@ export const IrisTable = defineComponent({
     const headerMatrix = computed(() => (grouped.value ? buildHeaderMatrix(props.columns) : null))
 
     // -------- Sort --------
-    const internalSortValue = ref<IrisTableSortState | null>(null)
+    const internalSortValue = ref<IrisTableSortState | null>(props.defaultSort ?? null)
     const internalSort = computed<IrisTableSortState | null>({
       get: () => (props.sort === undefined ? internalSortValue.value : props.sort),
       set: (value) => {
@@ -248,7 +238,7 @@ export const IrisTable = defineComponent({
     // replace (`set`) and multi-select a `toggle`, matching the previous behavior.
     const selControlled = computed(() => props.selection !== undefined)
     const selectionModel = createSelectionModel<string | number>({
-      defaultSelected: props.selection ?? [],
+      defaultSelected: props.selection ?? props.defaultSelection ?? [],
       onChange: (keys) => emit('update:selection', keys),
     })
     const selectedKeys = shallowRef<Array<string | number>>(selectionModel.get())
@@ -1509,3 +1499,6 @@ export const IrisTable = defineComponent({
     }
   },
 })
+
+/** Public input/event surface inferred from the runtime Vue component. */
+export type IrisTableProps = InstanceType<typeof IrisTable>['$props']

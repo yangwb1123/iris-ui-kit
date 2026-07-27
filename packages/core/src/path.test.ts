@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   parsePath,
   formatPath,
@@ -19,6 +19,16 @@ describe('parsePath', () => {
   it('parses dotted + bracket-index paths', () => {
     expect(parsePath('a.b[2].c')).toEqual(['a', 'b', 2, 'c'])
     expect(parsePath('items[0]')).toEqual(['items', 0])
+  })
+  it('does not report an empty-bracket error for valid bracket segments', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      expect(parsePath('items[0].sku')).toEqual(['items', 0, 'sku'])
+      expect(parsePath("items['key']")).toEqual(['items', 'key'])
+      expect(warn).not.toHaveBeenCalled()
+    } finally {
+      warn.mockRestore()
+    }
   })
   it('parses bracket-key (quoted) segments as string keys, not indices', () => {
     expect(parsePath("a['b c']")).toEqual(['a', 'b c'])

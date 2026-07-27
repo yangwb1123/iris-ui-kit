@@ -85,4 +85,26 @@ describe('@iris-ui-kit/svelte IrisAdminLayout', () => {
     expect(container.querySelector('[data-iris-nav-menu]')).toBeNull()
     expect(container.querySelector('[data-page]')!.textContent).toBe('dash')
   })
+
+  it('renders horizontal navigation with centered content', () => {
+    const { container } = render(AdminLayoutHarness, {
+      props: {
+        menus,
+        activeKey: 'dash',
+        mode: 'horizontal',
+        menuAlign: 'center',
+        contentWidth: 'centered',
+      },
+    })
+    expect(
+      container.querySelector('[data-iris-admin-layout][data-mode="horizontal"]'),
+    ).not.toBeNull()
+    expect(container.querySelector('[data-iris-admin-topnav]')).not.toBeNull()
+    expect(
+      container.querySelector('[data-iris-nav-menu][data-orientation="horizontal"]'),
+    ).not.toBeNull()
+    expect(
+      container.querySelector('[data-iris-admin-content][data-width="centered"]'),
+    ).not.toBeNull()
+  })
 })

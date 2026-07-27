@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@testing-library/svelte'
 import DropdownHarness from './DropdownHarness.svelte'
+import DropdownAsChildHarness from './DropdownAsChildHarness.svelte'
 
 afterEach(cleanup)
 
@@ -47,5 +48,24 @@ describe('@iris-ui-kit/svelte IrisDropdown', () => {
     expect(container.querySelector('[role="menu"]')).not.toBeNull()
     await fireEvent.keyDown(document, { key: 'Escape' })
     expect(container.querySelector('[role="menu"]')).toBeNull()
+  })
+
+  it('asChild renders one custom trigger and preserves its handler', async () => {
+    const childClick = vi.fn()
+    const { getByText, container } = render(DropdownAsChildHarness, {
+      props: { childClick },
+    })
+
+    const trigger = getByText('Custom actions') as HTMLAnchorElement
+    expect(container.querySelector('button')).toBeNull()
+    expect(trigger.id).toBe('custom-trigger')
+    expect(trigger.className).toBe('parent child')
+    expect(trigger.getAttribute('aria-haspopup')).toBe('menu')
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+
+    await fireEvent.click(trigger)
+    expect(childClick).toHaveBeenCalledTimes(1)
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+    expect(container.querySelector('[role="menu"]')).not.toBeNull()
   })
 })

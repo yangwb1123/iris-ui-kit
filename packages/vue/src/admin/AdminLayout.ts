@@ -18,7 +18,10 @@ import { IrisIcon } from '../primitives/icon/Icon'
 import { useI18n } from '../i18n'
 import { useAdminShell } from './useAdminShell'
 
-export type IrisAdminLayoutMode = 'sidebar' | 'full-content'
+export type IrisAdminLayoutMode = 'sidebar' | 'horizontal' | 'full-content'
+export type IrisAdminMenuAlign = 'start' | 'center' | 'end'
+export type IrisAdminContentWidth = 'fluid' | 'centered'
+export type IrisAdminContentHeight = 'auto' | 'viewport'
 
 /**
  * The CMS / admin shell — a Vben-style, router-agnostic, data-driven layout that
@@ -40,6 +43,8 @@ export const IrisAdminLayout = defineComponent({
     menus: { type: Array as PropType<NavNode[]>, required: true },
     /** Active page key (v-model:activeKey). */
     activeKey: { type: String, default: undefined },
+    /** Initial active page key when `activeKey` is uncontrolled. */
+    defaultActiveKey: { type: String, default: undefined },
     /** Sidebar collapsed (v-model:collapsed); undefined = uncontrolled. */
     collapsed: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     defaultCollapsed: { type: Boolean, default: false },
@@ -48,7 +53,16 @@ export const IrisAdminLayout = defineComponent({
     appTitle: { type: String, default: 'Iris Admin' },
     /** Optional shared tabs store; when present the tab bar is rendered. */
     tabs: { type: Object as PropType<TabsNav>, default: undefined },
+    showTabs: { type: Boolean, default: true },
     showBreadcrumb: { type: Boolean, default: true },
+    stickyHeader: { type: Boolean, default: true },
+    stickyTabs: { type: Boolean, default: true },
+    menuAlign: { type: String as PropType<IrisAdminMenuAlign>, default: 'start' },
+    contentWidth: { type: String as PropType<IrisAdminContentWidth>, default: 'fluid' },
+    contentHeight: {
+      type: String as PropType<IrisAdminContentHeight>,
+      default: 'viewport',
+    },
     sidebarWidth: { type: [Number, String] as PropType<number | string>, default: 240 },
     collapsedWidth: { type: [Number, String] as PropType<number | string>, default: 64 },
   },
@@ -68,6 +82,7 @@ export const IrisAdminLayout = defineComponent({
     } = useAdminShell({
       menus: () => props.menus,
       activeKey: () => props.activeKey,
+      defaultActiveKey: props.defaultActiveKey,
       tabs: props.tabs,
       onActiveKeyChange: (key) => emit('update:activeKey', key),
       onSelect: (key, node) => emit('select', key, node),
@@ -202,12 +217,44 @@ export const IrisAdminLayout = defineComponent({
         ],
       )
 
-    const renderContent = (): VNode =>
+    const renderContent = (horizontal = false): VNode =>
       h(
         'div',
-        { 'data-iris-admin-content': '', style: { padding: '16px' } },
-        slots.default?.({ activeKey: activeKey.value }) ?? [],
+        {
+          'data-iris-admin-content': '',
+          'data-width': props.contentWidth,
+          style: {
+            boxSizing: 'border-box',
+            width: '100%',
+            maxWidth: props.contentWidth === 'centered' ? '72rem' : undefined,
+            marginInline: props.contentWidth === 'centered' ? 'auto' : undefined,
+            padding: '16px',
+          },
+        },
+        [
+          horizontal && props.showBreadcrumb
+            ? h(IrisAdminBreadcrumb, { trail: trail.value, hideSingle: false, onSelect })
+            : null,
+          ...(slots.default?.({ activeKey: activeKey.value }) ?? []),
+        ],
       )
+
+    const renderTabs = (): VNode | null =>
+      props.tabs && props.showTabs
+        ? h(
+            'div',
+            {
+              'data-iris-admin-tabs-region': '',
+              'data-sticky': props.stickyTabs ? 'true' : undefined,
+              style: {
+                position: props.stickyTabs && !props.stickyHeader ? 'sticky' : 'relative',
+                top: '0',
+                zIndex: '49',
+              },
+            },
+            [h(IrisAdminTabs, { nav: props.tabs })],
+          )
+        : null
 
     return () => {
       if (props.mode === 'full-content') {
@@ -223,6 +270,89 @@ export const IrisAdminLayout = defineComponent({
             },
           },
           slots.default?.({ activeKey: activeKey.value }) ?? [],
+        )
+      }
+
+      if (props.mode === 'horizontal') {
+        const justifyContent =
+          props.menuAlign === 'center'
+            ? 'center'
+            : props.menuAlign === 'end'
+              ? 'flex-end'
+              : 'flex-start'
+        return h(
+          'div',
+          {
+            ...attrs,
+            'data-iris-admin-layout': '',
+            'data-mode': 'horizontal',
+            style: {
+              height: props.contentHeight === 'viewport' ? '100vh' : 'auto',
+              minHeight: '100vh',
+              ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            },
+          },
+          [
+            h(
+              IrisHeaderLayout,
+              { sticky: props.stickyHeader },
+              {
+                header: () =>
+                  h('div', { 'data-iris-admin-header': '' }, [
+                    h(
+                      'div',
+                      {
+                        'data-iris-admin-headerbar': '',
+                        style: {
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          minHeight: '52px',
+                          padding: '0 16px',
+                          background: 'var(--iris-background)',
+                        },
+                      },
+                      [
+                        renderLogo({ collapsed: false }),
+                        h(
+                          'div',
+                          {
+                            'data-iris-admin-topnav': '',
+                            style: {
+                              display: 'flex',
+                              flex: '1',
+                              minWidth: '0',
+                              justifyContent,
+                            },
+                          },
+                          [
+                            h(IrisNavMenu, {
+                              items: props.menus,
+                              activeKey: activeKey.value,
+                              orientation: 'horizontal',
+                              onSelect,
+                            }),
+                          ],
+                        ),
+                        slots.toolbar
+                          ? h(
+                              'div',
+                              {
+                                'data-iris-admin-toolbar': '',
+                                style: { display: 'flex', alignItems: 'center', gap: '8px' },
+                              },
+                              slots.toolbar(),
+                            )
+                          : null,
+                      ],
+                    ),
+                    renderTabs(),
+                  ]),
+                default: () => renderContent(true),
+                ...(slots.footer ? { footer: () => slots.footer!() } : {}),
+              },
+            ),
+          ],
         )
       }
 
@@ -274,13 +404,10 @@ export const IrisAdminLayout = defineComponent({
           default: () =>
             h(
               IrisHeaderLayout,
-              { sticky: true },
+              { sticky: props.stickyHeader },
               {
                 header: () =>
-                  h('div', { 'data-iris-admin-header': '' }, [
-                    renderHeaderBar(),
-                    props.tabs ? h(IrisAdminTabs, { nav: props.tabs }) : null,
-                  ]),
+                  h('div', { 'data-iris-admin-header': '' }, [renderHeaderBar(), renderTabs()]),
                 default: () => renderContent(),
                 ...(slots.footer ? { footer: () => slots.footer!() } : {}),
               },
@@ -290,3 +417,6 @@ export const IrisAdminLayout = defineComponent({
     }
   },
 })
+
+/** Public input/event surface inferred from the runtime Vue component. */
+export type IrisAdminLayoutProps = InstanceType<typeof IrisAdminLayout>['$props']

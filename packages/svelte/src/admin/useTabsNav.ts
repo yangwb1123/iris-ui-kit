@@ -16,6 +16,7 @@ export interface UseTabsNavReturn {
   closeRight: TabsNav['closeRight']
   refresh: TabsNav['refresh']
   setPinned: TabsNav['setPinned']
+  move: TabsNav['move']
   cacheKey: TabsNav['cacheKey']
 }
 
@@ -41,6 +42,7 @@ export function useTabsNav(nav: TabsNav): UseTabsNavReturn {
     closeRight: nav.closeRight,
     refresh: nav.refresh,
     setPinned: nav.setPinned,
+    move: nav.move,
     cacheKey: nav.cacheKey,
   }
 }

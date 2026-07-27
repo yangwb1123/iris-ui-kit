@@ -19,6 +19,7 @@ export interface IrisSortableProps<T = string> {
   className?: string
   style?: React.CSSProperties
   disabled?: boolean
+  orientation?: 'vertical' | 'horizontal'
 }
 
 export const SORTABLE_ITEM_ATTR = 'data-iris-sortable-item'
@@ -28,6 +29,7 @@ export function IrisSortable<T>({
   onReorder,
   getKey = (_item, index) => String(index),
   disabled = false,
+  orientation = 'vertical',
   style,
   className,
   children,
@@ -94,7 +96,7 @@ export function IrisSortable<T>({
       className={className}
       style={{
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: orientation === 'horizontal' ? 'row' : 'column',
         gap: 'var(--iris-gap-sm, 4px)',
         opacity: disabled ? 0.6 : 1,
         userSelect: dragging ? 'none' : undefined,

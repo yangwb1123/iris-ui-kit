@@ -102,24 +102,21 @@
   const isEnabled = (i: number): boolean => !items[i]?.disabled
 
   // Keyboard navigation (single-sourced in core controller)
-  const nav = createKeyboardNav({
-    count: items.length,
-    loop,
-    isEnabled,
-  })
+  const nav = $derived.by(() =>
+    createKeyboardNav({
+      count: items.length,
+      loop,
+      isEnabled,
+    }),
+  )
 
-  // svelte-ignore state_referenced_locally
-  let activeIndex = $state(nav.index)
+  let activeIndex = $state(-1)
   $effect(() => {
+    activeIndex = nav.index
     const unsub = nav.store.subscribe((next) => {
       activeIndex = next
     })
     return unsub
-  })
-
-  // Reset nav when items change
-  $effect(() => {
-    nav.reset(items.length)
   })
 
   let listEl = $state<HTMLElement | undefined>(undefined)
@@ -193,7 +190,6 @@
   }
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <ul
   {...rest}
   use:setList
@@ -233,6 +229,12 @@
         data-iris-list-item
         data-state={selected ? 'selected' : active ? 'active' : 'idle'}
         onclick={() => select(item)}
+        onkeydown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            select(item)
+          }
+        }}
         onfocus={() => {
           activeIndex = index
         }}

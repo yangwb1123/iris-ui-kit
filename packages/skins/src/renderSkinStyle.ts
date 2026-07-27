@@ -1,4 +1,4 @@
-import { toCssVarName } from '@iris-ui-kit/theme'
+import { themeCssVarEntries, toCssVarName } from '@iris-ui-kit/theme'
 import type { ResolvedSkin } from './types'
 
 // Skins can be loaded from a remote URL (see loadSkin), so a skin's custom
@@ -29,9 +29,7 @@ export function skinToCssEntries(resolved: ResolvedSkin): Array<[string, string]
   const push = (name: string, value: string): void => {
     if (SAFE_VAR_NAME.test(name)) out.push([name, sanitizeCssValue(value)])
   }
-  for (const [k, v] of Object.entries(resolved.theme.colors)) push(toCssVarName(k), v)
-  for (const [k, v] of Object.entries(resolved.theme.spacing)) push(toCssVarName(k), `${v}px`)
-  for (const [k, v] of Object.entries(resolved.theme.radii)) push(toCssVarName(k), `${v}px`)
+  for (const [name, value] of themeCssVarEntries(resolved.theme)) push(name, value)
   for (const [k, v] of Object.entries(resolved.custom)) {
     push(toCssVarName(k), typeof v === 'number' ? `${v}px` : v)
   }

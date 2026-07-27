@@ -1,4 +1,4 @@
-export { IrisTable } from './Table'
+export { IrisTable, type IrisTableProps } from './Table'
 export { exportCsv, downloadCsv } from './exportCsv'
 export { exportExcel, downloadExcel } from './exportExcel'
 export type {
@@ -6,6 +6,9 @@ export type {
   IrisTableColumn,
   IrisTableColumnWidths,
   IrisTableEditor,
+  IrisTableAggregateOp,
+  IrisTableRenderDetail,
+  IrisTableRowExpandable,
   IrisTableSortDirection,
   IrisTableSortState,
   IrisTableVirtualOptions,

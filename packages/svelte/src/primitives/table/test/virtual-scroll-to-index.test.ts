@@ -55,7 +55,7 @@ describe('@iris-ui-kit/svelte IrisVirtualScroll scrollToIndex handle', () => {
       40,
       'end',
     )
-    expect(root().scrollTop).toBe(40 * 36 + 36)
+    expect(root().scrollTop).toBe(40 * 36 - 200 + 36)
   })
 
   it('also exposes scrollToOffset (clamped to the scrollable range)', async () => {

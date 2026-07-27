@@ -65,6 +65,9 @@ describe('IrisDialog', () => {
       expect(buttons.length).toBe(1)
       const trigger = buttons[0]
       expect(trigger.classList.contains('iris-button')).toBe(true)
+      expect(trigger.classList.contains('trigger-rest')).toBe(true)
+      expect(trigger.id).toBe('dialog-trigger')
+      expect(trigger.getAttribute('data-trigger-rest')).toBe('kept')
     })
 
     it('forwards trigger attrs (aria-*/data-state) onto the child element', () => {
@@ -93,6 +96,8 @@ describe('IrisDialog', () => {
       expect(closeBtn.tagName).toBe('BUTTON')
       expect(closeBtn.classList.contains('iris-button')).toBe(true)
       expect(closeBtn.getAttribute('data-iris-dialog-close')).not.toBeNull()
+      expect(closeBtn.id).toBe('dialog-close')
+      expect(closeBtn.getAttribute('data-close-rest')).toBe('kept')
       await fireEvent.click(closeBtn)
       expect(document.querySelector('[data-iris-dialog-content]')).toBeNull()
     })

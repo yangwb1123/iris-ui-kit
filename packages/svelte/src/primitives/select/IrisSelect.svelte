@@ -12,17 +12,19 @@
     disabled?: boolean
   }
 
-  type IrisSelectSize = 'sm' | 'md' | 'lg'
+  export type IrisSelectSize = 'sm' | 'md' | 'lg'
 
-  interface Props {
+  export interface IrisSelectProps {
     items: IrisSelectItem[]
     value?: unknown
+    defaultValue?: unknown
     placeholder?: string
     size?: IrisSelectSize
     disabled?: boolean
     placement?: Placement
     invalid?: boolean
     id?: string
+    ariaDescribedby?: string
     /** Pass `false` to render the dropdown list inline (no portal). */
     portalTarget?: HTMLElement | false
     onValueChange?: (value: unknown) => void
@@ -32,29 +34,36 @@
 
   let {
     items,
-    value,
+    value = $bindable(),
+    defaultValue,
     placeholder,
     size = 'md',
     disabled = false,
     placement = 'bottom-start',
     invalid = false,
     id,
+    ariaDescribedby,
     portalTarget,
     onValueChange,
     style,
     ...rest
-  }: Props = $props()
+  }: IrisSelectProps = $props()
 
   const { t } = useI18n()
 
   const baseId = generateId()
   const listboxId = `${baseId}-listbox`
 
+  const isControlled = $derived(value !== undefined)
+  // svelte-ignore state_referenced_locally — `defaultValue` is an initial seed.
+  let internalValue = $state(defaultValue)
+  const currentValue = $derived(isControlled ? value : internalValue)
+
   let open = $state(false)
   let triggerEl = $state<HTMLElement | undefined>(undefined)
   let contentEl = $state<HTMLElement | undefined>(undefined)
 
-  const selectedItem = $derived(items.find((item) => item.value === value) ?? null)
+  const selectedItem = $derived(items.find((item) => item.value === currentValue) ?? null)
   const triggerLabel = $derived(
     selectedItem
       ? (selectedItem.label ?? String(selectedItem.value))
@@ -73,7 +82,7 @@
     anchor: () => triggerEl,
     floating: () => contentEl,
     open: () => open,
-    placement,
+    placement: () => placement,
     offset: 6,
   })
 
@@ -108,25 +117,22 @@
 
   function selectItem(item: IrisSelectItem): void {
     if (item.disabled) return
+    if (isControlled) value = item.value
+    else internalValue = item.value
     onValueChange?.(item.value)
     open = false
   }
 
   // ── Keyboard navigation (single-sourced in core controller) ─────────────
   const isEnabled = (i: number): boolean => !items[i]?.disabled
-  const labels = $derived(items.map((it) => it.label ?? String(it.value)))
-
-  const nav = createKeyboardNav({
-    count: items.length,
-    loop: true,
-    isEnabled,
-    labels,
-  })
-
-  // Reset nav when items change
-  $effect(() => {
-    nav.reset(items.length)
-  })
+  const nav = $derived.by(() =>
+    createKeyboardNav({
+      count: items.length,
+      loop: true,
+      isEnabled,
+      labels: items.map((it) => it.label ?? String(it.value)),
+    }),
+  )
 
   const listOptions = (): HTMLElement[] =>
     Array.from(document.querySelectorAll<HTMLElement>(`#${listboxId} [role="option"]`))
@@ -141,7 +147,7 @@
     queueMicrotask(() => {
       const options = Array.from(node.querySelectorAll<HTMLElement>('[role="option"]'))
       if (options.length === 0) return
-      const selIdx = items.findIndex((it) => it.value === value && !it.disabled)
+      const selIdx = items.findIndex((it) => it.value === currentValue && !it.disabled)
       if (selIdx >= 0) {
         nav.focus(selIdx)
         options[selIdx]?.focus()
@@ -169,6 +175,7 @@
 
 <button
   type="button"
+  role="combobox"
   {id}
   disabled={disabled || undefined}
   data-iris-select-trigger
@@ -177,6 +184,8 @@
   aria-haspopup="listbox"
   aria-expanded={open ? 'true' : 'false'}
   aria-controls={listboxId}
+  aria-invalid={invalid ? 'true' : undefined}
+  aria-describedby={ariaDescribedby}
   {...rest}
   use:setTrigger
   onclick={handleToggle}
@@ -226,7 +235,7 @@
     {#each items as item}
       <li
         role="option"
-        aria-selected={item.value === value ? 'true' : 'false'}
+        aria-selected={item.value === currentValue ? 'true' : 'false'}
         aria-disabled={item.disabled ? 'true' : undefined}
         data-iris-select-option
         onclick={() => selectItem(item)}
@@ -241,9 +250,9 @@
           ? 'not-allowed'
           : 'pointer'}; color: {item.disabled
           ? 'var(--iris-muted)'
-          : 'var(--iris-foreground)'}; background: {item.value === value
+          : 'var(--iris-foreground)'}; background: {item.value === currentValue
           ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-          : 'transparent'}; font-weight: {item.value === value ? '600' : '400'}"
+          : 'transparent'}; font-weight: {item.value === currentValue ? '600' : '400'}"
       >
         {item.label ?? String(item.value)}
       </li>

@@ -53,17 +53,20 @@
   }
 
   function handleInput(e: Event) {
-    const raw = (e.target as HTMLInputElement).value
+    const target = e.target as HTMLInputElement
+    const raw = target.value
     if (raw.includes(',')) {
       const parts = raw.split(',')
       const last = parts.pop() ?? ''
       let next = value
       for (const p of parts) {
         const txt = p.trim()
+        if (!txt) continue
         if (canAdd(txt, next)) next = [...next, txt]
       }
       if (next !== value) onchange?.(next)
       inputText = last
+      target.value = last
     } else {
       inputText = raw
     }

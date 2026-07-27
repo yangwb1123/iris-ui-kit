@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import * as iconExports from './icons'
-import { chevronDown, defaultIcons, search } from './icons'
+import * as publicExports from './index'
+import { chevronDown, search } from './icons'
+import { defaultIcons } from './default-icons'
 import { createIconRegistry, defaultIconRegistry, resolveIcon } from './registry'
 import { renderIconSvg } from './render'
 import { resolveThemedIcon } from './theme'
@@ -38,10 +40,10 @@ describe('@iris-ui-kit/icons per-icon tree-shakeable exports', () => {
     expect(search.nodes[0]!.tag).toBe('circle')
   })
 
-  it('defaultIcons is byte-equivalent to aggregating every per-icon const', () => {
+  it('defaultIcons contains every per-icon const without drift', () => {
     // Collect every exported per-icon const (an object with name + nodes) and
-    // rebuild the map the way defaultIcons does — proving defaultIcons is purely
-    // an aggregation of the same consts, in the same order, with no drift.
+    // rebuild the map the way defaultIcons does. Module namespace enumeration
+    // order is not an API contract once icons span multiple source modules.
     const perIcon = Object.values(iconExports).filter(
       (v): v is IrisIcon =>
         typeof v === 'object' &&
@@ -51,10 +53,17 @@ describe('@iris-ui-kit/icons per-icon tree-shakeable exports', () => {
         Array.isArray((v as IrisIcon).nodes),
     )
     const rebuilt = Object.fromEntries(perIcon.map((icon) => [icon.name, icon]))
-    expect(JSON.stringify(rebuilt)).toBe(JSON.stringify(defaultIcons.icons))
+    expect(rebuilt).toEqual(defaultIcons.icons)
     // Every per-icon const is the SAME object reference held by defaultIcons.
     for (const icon of perIcon) {
       expect(defaultIcons.icons[icon.name]).toBe(icon)
+    }
+  })
+
+  it('publishes every per-icon const from the package barrel', () => {
+    for (const [name, value] of Object.entries(iconExports)) {
+      if (name === 'defaultIcons') continue
+      expect(publicExports[name as keyof typeof publicExports]).toBe(value)
     }
   })
 })
@@ -175,6 +184,50 @@ describe('@iris-ui-kit/icons renderIconSvg', () => {
     const out = renderIconSvg(defaultIcons.icons.info!, { attrs: { class: 'ic', id: 'i1' } })
     expect(out).toContain('class="ic"')
     expect(out).toContain('id="i1"')
+  })
+
+  it('escapes XML and drops unsafe tags and attributes', () => {
+    const malicious: IrisIcon = {
+      name: 'malicious',
+      viewBox: '0 0 24 24" onload="alert(1)',
+      nodes: [
+        { tag: 'script', attrs: { id: 'never-rendered' } },
+        {
+          tag: 'path',
+          attrs: {
+            d: 'M0 0 & " < >',
+            onload: 'alert(1)',
+            href: 'javascript:alert(1)',
+            style: 'fill:url(javascript:alert(1))',
+            'data-safe': 'a"b',
+          },
+        },
+      ],
+    }
+    const out = renderIconSvg(malicious, {
+      title: '<img src=x onerror=alert(1)> & "quoted"',
+      attrs: {
+        class: 'icon "quoted"',
+        'data-testid': 'safe&sound',
+        onclick: 'alert(1)',
+        style: 'background:url(javascript:alert(1))',
+      },
+    })
+
+    expect(out).not.toContain('<script')
+    expect(out).not.toContain('never-rendered')
+    expect(out).not.toMatch(/\sonload="/)
+    expect(out).not.toMatch(/\sonclick="/)
+    expect(out).not.toContain('href=')
+    expect(out).not.toContain('style=')
+    expect(out).not.toContain('javascript:')
+    expect(out).toContain(
+      '<title>&lt;img src=x onerror=alert(1)&gt; &amp; &quot;quoted&quot;</title>',
+    )
+    expect(out).toContain('viewBox="0 0 24 24&quot; onload=&quot;alert(1)"')
+    expect(out).toContain('d="M0 0 &amp; &quot; &lt; &gt;"')
+    expect(out).toContain('data-safe="a&quot;b"')
+    expect(out).toContain('data-testid="safe&amp;sound"')
   })
 })
 

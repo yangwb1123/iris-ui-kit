@@ -96,6 +96,20 @@ describe('createTabsNav', () => {
     expect(n.getState().tabs).toHaveLength(1) // pinned, ignored
   })
 
+  it('moves a tab to a clamped target index without changing activation', () => {
+    const n = createTabsNav({ tabs: [tab('home', { pinned: true })] })
+    n.open(tab('a'))
+    n.open(tab('b'))
+    n.move('b', 0)
+    expect(n.getState().tabs.map((t) => t.key)).toEqual(['b', 'home', 'a'])
+    expect(n.getState().activeKey).toBe('b')
+
+    n.move('home', 99)
+    expect(n.getState().tabs.map((t) => t.key)).toEqual(['b', 'a', 'home'])
+    n.move('missing', 0)
+    expect(n.getState().tabs.map((t) => t.key)).toEqual(['b', 'a', 'home'])
+  })
+
   it('notifies subscribers on change', () => {
     const n = createTabsNav()
     const seen = vi.fn()

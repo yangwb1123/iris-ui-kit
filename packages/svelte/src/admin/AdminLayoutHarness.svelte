@@ -2,7 +2,7 @@
   // Test fixture: drives IrisAdminLayout with a content render-prop Snippet.
   import type { NavNode, TabsNav } from '@iris-ui-kit/core'
   import IrisAdminLayout from './AdminLayout.svelte'
-  import type { IrisAdminLayoutMode } from './types'
+  import type { IrisAdminContentWidth, IrisAdminLayoutMode, IrisAdminMenuAlign } from './types'
 
   let {
     menus,
@@ -13,6 +13,8 @@
     collapsed,
     onCollapsedChange,
     mode,
+    menuAlign,
+    contentWidth,
     tabs,
   }: {
     menus: NavNode[]
@@ -23,6 +25,8 @@
     collapsed?: boolean
     onCollapsedChange?: (next: boolean) => void
     mode?: IrisAdminLayoutMode
+    menuAlign?: IrisAdminMenuAlign
+    contentWidth?: IrisAdminContentWidth
     tabs?: TabsNav
   } = $props()
 </script>
@@ -36,6 +40,8 @@
   {collapsed}
   {onCollapsedChange}
   {mode}
+  {menuAlign}
+  {contentWidth}
   {tabs}
 >
   {#snippet children(s)}

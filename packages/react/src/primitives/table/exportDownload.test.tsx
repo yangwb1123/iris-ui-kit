@@ -10,8 +10,12 @@ describe('@iris-ui-kit/react table download → file-save handler', () => {
     // jsdom doesn't implement these; stub so the browser-download path is observable.
     URL.createObjectURL = vi.fn(() => 'blob:x')
     URL.revokeObjectURL = vi.fn()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
   })
-  afterEach(() => setFileSaveHandler(null))
+  afterEach(() => {
+    setFileSaveHandler(null)
+    vi.restoreAllMocks()
+  })
 
   it('downloadCsv routes to the host handler and skips the browser download', async () => {
     const handler = vi.fn()
@@ -38,7 +42,7 @@ describe('@iris-ui-kit/react table download → file-save handler', () => {
     expect(handler).toHaveBeenCalledWith({
       filename: 'data.xls',
       content: '<xml/>',
-      mimeType: 'application/vnd.ms-excel',
+      mimeType: 'application/vnd.ms-excel;charset=utf-8',
     })
     expect(URL.createObjectURL).not.toHaveBeenCalled()
   })

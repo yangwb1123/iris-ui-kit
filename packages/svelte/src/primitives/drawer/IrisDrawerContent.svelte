@@ -101,6 +101,7 @@
   <!-- backdrop -->
   <div
     use:portal={portalTarget}
+    role="presentation"
     data-iris-drawer-backdrop
     onpointerdown={handleBackdropPointerDown}
     style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1199"

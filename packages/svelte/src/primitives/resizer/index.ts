@@ -1,5 +1,2 @@
-export {
-  default as IrisResizer,
-  type IrisResizerHandle,
-  type IrisResizerSize,
-} from './IrisResizer.svelte'
+export { default as IrisResizer } from './IrisResizer.svelte'
+export type { IrisResizerHandle, IrisResizerSize } from './types'

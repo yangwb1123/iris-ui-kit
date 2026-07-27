@@ -11,6 +11,7 @@
 </script>
 
 <script lang="ts">
+  import { untrack } from 'svelte'
   import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui-kit/core'
 
   interface Props {
@@ -43,7 +44,7 @@
 
   let viewportEl = $state<HTMLElement | undefined>(undefined)
   let scrollTopState = $state(0)
-  let viewportHeightState = $state(typeof height === 'number' ? height : 0)
+  let viewportHeightState = $state(untrack(() => (typeof height === 'number' ? height : 0)))
   let rafId: number | null = null
 
   const isAuto = $derived(itemHeight === 'auto')
@@ -72,13 +73,17 @@
   // Live inputs read by the controller's config closures (refs) — reassigned on
   // every render so the closures captured at create time always see fresh values
   // without recreating the controller (recreating would reset scroll + cache).
-  let estimateRef = estimateSize
-  let keyOfRef = keyOf
-  let itemsRef = items
+  let estimateRef: (index: number) => number = () => 40
+  let keyOfRef: Props['keyOf'] = undefined
+  let itemsRef: readonly unknown[] = []
   $effect(() => {
     estimateRef = estimateSize
     keyOfRef = keyOf
     itemsRef = items
+    // Re-seat cached measurements against live item keys even when the item
+    // count stays the same (reorder/filter is otherwise invisible to the memo
+    // key that intentionally preserves this controller).
+    virtualizer.setCount(items.length)
   })
 
   // One stateful controller, rebuilt only when count or sizing MODE changes.
@@ -104,7 +109,7 @@
         return fn && it !== undefined ? fn(it, index) : index
       },
       buffer,
-      viewportSize: typeof height === 'number' ? height : 0,
+      viewportSize: viewportHeightState,
     })
     vstate = virtualizer.getState()
     unsubscribe = virtualizer.subscribe((s) => {
@@ -115,11 +120,13 @@
   // Build synchronously on first run so the initial render has a real controller.
   // `itemsRef`/`estimateRef`/`keyOfRef` are assigned to their props above before
   // this runs (module-eval order), so the seed reads correct values.
-  estimateRef = estimateSize
-  keyOfRef = keyOf
-  itemsRef = items
-  memoKey = `${items.length}|${buffer}|${variable}`
-  buildVirtualizer()
+  untrack(() => {
+    estimateRef = estimateSize
+    keyOfRef = keyOf
+    itemsRef = items
+    memoKey = `${items.length}|${buffer}|${variable}`
+    buildVirtualizer()
+  })
 
   // Rebuild ONLY when the memo key (count / buffer / sizing-mode) changes.
   $effect(() => {
@@ -200,8 +207,20 @@
   function measureViewport(): void {
     const el = viewportEl
     if (!el) return
-    viewportHeightState = el.clientHeight
+    const measured = el.clientHeight
+    // jsdom and hidden/pre-layout containers report 0. Preserve a numeric
+    // configured height in that case so the initial and rerendered window stay
+    // useful; a real non-zero measurement always wins.
+    viewportHeightState = measured || (typeof height === 'number' ? height : 0)
   }
+
+  // A numeric height is also the viewport contract before layout and remains
+  // reactive when ResizeObserver is unavailable.
+  $effect(() => {
+    if (typeof height === 'number' && (!viewportEl || viewportEl.clientHeight === 0)) {
+      viewportHeightState = height
+    }
+  })
 
   let resizeObserver: ResizeObserver | null = null
 

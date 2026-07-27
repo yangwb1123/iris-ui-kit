@@ -240,6 +240,7 @@
   <div
     data-iris-calendar-grid
     role="grid"
+    tabindex="-1"
     aria-label={title}
     onkeydown={onGridKeyDown}
     style:display="grid"

@@ -124,20 +124,25 @@ Several classes the original harness punted on are now covered — recorded here
 the gotchas that unblocked them aren't relearned:
 
 - **Overlays** (Dialog / Popover / Drawer / Dropdown-menu / Tooltip / Combobox /
-  Select / Menu) — now have **open + dismiss** contracts. The portal-scoping
-  problem was solved by mounting each in a dedicated harness with the portal
-  disabled per-test (React/Solid `portalTarget={false}`, Vue host wrapper,
-  Svelte dedicated container), so the floating content lands _inside_ the
-  driver's container-scoped `queryAll`. Reads `role`/`aria-expanded`/presence,
-  not portal-specific internals, to stay adapter-agnostic.
+  Select / Menu) — now have **open + dismiss** contracts. Component-specific
+  scenarios use dedicated harnesses so their observable content is scoped
+  consistently; assertions read roles, `aria-expanded`, presence and focus
+  rather than framework internals.
+- **Production portal cleanup** — `overlayDestroyScenario` intentionally keeps
+  Dialog's default `document.body` portal enabled. Its document-scoped
+  assertions prove that opening creates exactly one dialog and unmounting leaves
+  no leaked role-bearing portal node.
+- **Focus restore** — `overlayFocusScenario` proves that opening a modal moves
+  focus off its trigger and Escape restores focus to that trigger. It uses
+  `document.activeElement`, so it does not need container access to portalled
+  content.
 - **Table column-resize + cell-edit** — both landed. Column-resize drives a
   pointer sequence (`pointerdown`→`pointermove`→`pointerup`) and reads the
   reflected width; cell-edit uses the new `dblclick` action + `type` action +
   `read: 'value'` to edit-in-place and assert the committed value.
-- **Text ENTRY** — the `ContractDriver` grew a `type` action (sets an input value
-  - fires `input`/`change`) and a `dblclick` action, and the runner grew a
-    `read: 'value'` reader. Edit/entry flows are now first-class (no more
-    keydown-on-seeded-state workaround).
+- **Text entry** — the `ContractDriver` grew a `type` action (sets an input value
+  and fires `input`/`change`) and a `dblclick` action, and the runner grew a
+  `read: 'value'` reader. Edit/entry flows are now first-class.
 - **Async data-source timing** — the `DataSource` contract now has an **async**
   sibling (`dataSourceAsyncScenario`): an infinite-mode harness driven by an
   injectable-latency (microtask-resolving) fetcher exercises `loadMore` append,
@@ -147,20 +152,19 @@ the gotchas that unblocked them aren't relearned:
   before assertions — the sync scenarios are unaffected (the extra awaits are
   no-ops when nothing async is pending).
 
-## Genuinely still deferred
+## Boundaries
 
-- **True on-body portal mode** — the overlay contracts disable the portal so
-  content is container-scoped. The _portalled_-to-`document.body` rendering path
-  (the production default) is not asserted by the shared runner, whose `queryAll`
-  is container-scoped. Verified per-framework instead. Lifting this needs a
-  body-scoped driver variant.
-- **Focus lifecycle** — focus _trapping_, restore-on-close, and initial-focus
-  placement for overlays aren't asserted (jsdom's focus model is unreliable and
-  varies by test lib). Covered by per-framework unit tests.
+- The shared focus scenario asserts **focus leaves the trigger** and
+  **restore-on-close**. It does not attempt to prove every tab-cycle edge of a
+  focus trap or exact initial-focus placement; those remain per-framework unit
+  and browser-test responsibilities.
+- The production on-body portal lifecycle is covered for Dialog cleanup through
+  `overlayDestroyScenario`; the component-specific open/dismiss scenarios remain
+  intentionally focused on framework-neutral observable behavior.
 
 ## Coverage at a glance
 
-**39 scenarios across 33 components/behaviors**, every one replayed on all four
+**42 scenarios across 34 component/behavior surfaces**, every one replayed on all four
 adapters (React / Vue / Solid / Svelte):
 
 - **Form controls** — tabs, switch, checkbox, accordion, segmented, toggle-group
@@ -170,8 +174,12 @@ adapters (React / Vue / Solid / Svelte):
   overlay set with open + dismiss contracts: dialog, popover, drawer, dropdown,
   tooltip, combobox, select, menu.
 - **Feedback / actions** — toast, alert, banner, copy-button, split-button, form.
+- **List keyboard** — disabled-item skipping, wrap-around roving focus and
+  selection through the shared list/selection controllers.
 - **Table** — sort, multi-select, row-expand, cell-edit (dblclick + `type` +
   `read: 'value'`), and column-resize (pointer-drag).
+- **Overlay lifecycle** — modal focus leave/restore plus real on-body portal
+  cleanup on adapter unmount.
 - **Data engine** — the `useDataSource` bridge over `createDataSource`, both the
   **sync** happy-path (`load` / `setSort` / `setFilter` / `clearFilters`) and the
   **async** contract (`dataSourceAsyncScenario`: infinite `loadMore` append,

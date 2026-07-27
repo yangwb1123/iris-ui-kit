@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+  import { useI18n } from '../i18n'
 
   export interface IrisMovablePosition {
     x: number
@@ -18,6 +19,7 @@
     bounds?: IrisMovableBounds
     byHandle?: boolean
     disabled?: boolean
+    ariaLabel?: string
     onPositionChange?: (pos: IrisMovablePosition) => void
     onDragStart?: (pos: IrisMovablePosition) => void
     onDragEnd?: (pos: IrisMovablePosition) => void
@@ -30,11 +32,14 @@
     bounds = {},
     byHandle = false,
     disabled = false,
+    ariaLabel,
     onPositionChange,
     onDragStart,
     onDragEnd,
     children,
   }: Props = $props()
+
+  const { t } = useI18n()
 
   const isControlled = $derived(positionProp !== undefined)
 
@@ -84,12 +89,38 @@
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
   }
+
+  function onKeyDown(event: KeyboardEvent): void {
+    if (disabled) return
+    const step = event.shiftKey ? 1 : 10
+    let dx = 0
+    let dy = 0
+    if (event.key === 'ArrowLeft') dx = -step
+    else if (event.key === 'ArrowRight') dx = step
+    else if (event.key === 'ArrowUp') dy = -step
+    else if (event.key === 'ArrowDown') dy = step
+    else return
+    event.preventDefault()
+    const next = {
+      x: clamp(pos.x + dx, bounds.minX, bounds.maxX),
+      y: clamp(pos.y + dy, bounds.minY, bounds.maxY),
+    }
+    onDragStart?.(pos)
+    if (!isControlled) internal = next
+    onPositionChange?.(next)
+    onDragEnd?.(next)
+  }
 </script>
 
 <div
+  role="button"
+  aria-roledescription={t('movable.roleDescription')}
+  aria-label={ariaLabel}
+  tabindex={disabled ? -1 : 0}
   data-iris-movable
   data-dragging={dragging ? '' : undefined}
   onmousedown={onMouseDown}
+  onkeydown={onKeyDown}
   style:position="absolute"
   style:transform={`translate(${pos.x}px, ${pos.y}px)`}
   style:cursor={disabled ? 'default' : byHandle ? 'default' : 'grab'}

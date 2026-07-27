@@ -1,1 +1,2 @@
-export { IrisSelect, type IrisSelectSize } from './Select'
+export { IrisSelect, type IrisSelectProps, type IrisSelectSize } from './Select'
+export type { IrisListItem as IrisSelectItem } from '../list/List'

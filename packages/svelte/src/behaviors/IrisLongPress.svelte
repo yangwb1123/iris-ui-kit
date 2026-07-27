@@ -31,6 +31,7 @@
 </script>
 
 <span
+  role="presentation"
   data-iris-long-press
   style:display="contents"
   onpointerdown={handlePointerDown}

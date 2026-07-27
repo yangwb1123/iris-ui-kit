@@ -22,6 +22,9 @@ export interface IrisSelectProps<T = unknown> {
   items: IrisSelectItem<T>[]
   value?: T
   defaultValue?: T
+  /** Framework-neutral change callback. */
+  onValueChange?: (value: T) => void
+  /** @deprecated Prefer `onValueChange` for cross-framework code. */
   onChange?: (value: T) => void
   placeholder?: string
   size?: IrisSelectSize
@@ -29,6 +32,7 @@ export interface IrisSelectProps<T = unknown> {
   placement?: Placement
   invalid?: boolean
   id?: string
+  ariaDescribedby?: string
   portalTarget?: HTMLElement | false
   style?: JSX.CSSProperties
 }
@@ -144,6 +148,7 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
   const selectItem = (item: IrisSelectItem<T>): void => {
     if (item.disabled) return
     if (!isControlled()) setInternalValue(() => item.value as T)
+    props.onValueChange?.(item.value)
     props.onChange?.(item.value)
     setOpen(false)
   }
@@ -216,6 +221,7 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
         aria-expanded={open()}
         aria-controls={listboxId}
         aria-invalid={merged.invalid ? 'true' : undefined}
+        aria-describedby={props.ariaDescribedby}
         data-iris-select-trigger=""
         data-iris-select-size={merged.size}
         data-state={open() ? 'open' : 'closed'}

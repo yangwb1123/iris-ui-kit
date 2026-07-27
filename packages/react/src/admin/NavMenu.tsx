@@ -25,6 +25,8 @@ export interface IrisNavMenuProps {
   defaultExpandedKeys?: string[]
   /** Icon-only rail (top-level items only). */
   collapsed?: boolean
+  /** Top-level flow. Horizontal branches open an anchored dropdown panel. */
+  orientation?: 'vertical' | 'horizontal'
   ariaLabel?: string
   onSelect?: (key: string, node: NavNode) => void
   onExpandedKeysChange?: (keys: string[]) => void
@@ -46,11 +48,13 @@ export function IrisNavMenu({
   expandedKeys,
   defaultExpandedKeys,
   collapsed = false,
+  orientation = 'vertical',
   ariaLabel,
   onSelect,
   onExpandedKeysChange,
 }: IrisNavMenuProps): React.ReactElement {
   const { t } = useI18n()
+  const horizontal = orientation === 'horizontal'
   // Expand/collapse state lives in the core expansion model — the open-set algebra
   // and the active-trail union (`merge`) are byte-identical across every adapter, so
   // they live in @iris-ui-kit/core. This component keeps only the controlled/uncontrolled
@@ -107,7 +111,7 @@ export function IrisNavMenu({
     display: 'flex',
     alignItems: 'center',
     gap: 10,
-    width: '100%',
+    width: horizontal && opts.depth === 0 ? 'auto' : '100%',
     boxSizing: 'border-box',
     border: 'none',
     borderRadius: 'var(--iris-radius-md, 6px)',
@@ -127,7 +131,8 @@ export function IrisNavMenu({
     textAlign: 'start',
     cursor: opts.disabled ? 'not-allowed' : 'pointer',
     opacity: opts.disabled ? 0.5 : 1,
-    padding: collapsed ? 10 : `8px 10px 8px ${12 + opts.depth * 16}px`,
+    padding: collapsed ? 10 : '8px 10px',
+    paddingInlineStart: collapsed ? 10 : 12 + opts.depth * 16,
     justifyContent: collapsed ? 'center' : 'flex-start',
   })
 
@@ -240,15 +245,43 @@ export function IrisNavMenu({
 
     if (!branch || !open) {
       return (
-        <div key={node.key} data-iris-nav-group={branch ? '' : undefined}>
+        <div
+          key={node.key}
+          data-iris-nav-group={branch ? '' : undefined}
+          style={{ position: horizontal && depth === 0 ? 'relative' : undefined }}
+        >
           {row}
         </div>
       )
     }
     return (
-      <div key={node.key} data-iris-nav-group="" data-open="true">
+      <div
+        key={node.key}
+        data-iris-nav-group=""
+        data-open="true"
+        style={{ position: horizontal && depth === 0 ? 'relative' : undefined }}
+      >
         {row}
-        <div data-iris-nav-children="" role="group">
+        <div
+          data-iris-nav-children=""
+          role="group"
+          style={
+            horizontal && depth === 0
+              ? {
+                  position: 'absolute',
+                  insetBlockStart: 'calc(100% + 4px)',
+                  insetInlineStart: 0,
+                  zIndex: 60,
+                  minWidth: 220,
+                  padding: 6,
+                  border: '1px solid var(--iris-border)',
+                  borderRadius: 'var(--iris-radius-md, 6px)',
+                  background: 'var(--iris-surface)',
+                  boxShadow: 'var(--iris-shadow-md)',
+                }
+              : undefined
+          }
+        >
           {(node.children ?? []).map((child) => renderItem(child, depth + 1))}
         </div>
       </div>
@@ -305,9 +338,15 @@ export function IrisNavMenu({
     <nav
       data-iris-nav-menu=""
       data-collapsed={collapsed ? 'true' : undefined}
+      data-orientation={orientation}
       aria-label={ariaLabel ?? t('admin.nav')}
       onKeyDown={onKeyDown}
-      style={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+      style={{
+        display: 'flex',
+        flexDirection: horizontal ? 'row' : 'column',
+        alignItems: horizontal ? 'center' : undefined,
+        gap: 2,
+      }}
     >
       {collapsed
         ? tree.map((node) => renderCollapsed(node))

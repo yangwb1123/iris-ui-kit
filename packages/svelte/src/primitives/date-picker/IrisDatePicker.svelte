@@ -88,6 +88,7 @@
 >
   <button
     type="button"
+    role="combobox"
     {id}
     {disabled}
     aria-invalid={invalid ? 'true' : undefined}

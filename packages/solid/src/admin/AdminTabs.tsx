@@ -6,6 +6,7 @@ import { IrisDropdown } from '../primitives/dropdown/Dropdown'
 import { IrisDropdownTrigger } from '../primitives/dropdown/DropdownTrigger'
 import { IrisDropdownMenu } from '../primitives/dropdown/DropdownMenu'
 import { IrisDropdownItem, IrisDropdownSeparator } from '../primitives/dropdown/DropdownItem'
+import { IrisSortable } from '../behaviors/IrisSortable'
 import { useI18n } from '../i18n'
 
 export interface IrisAdminTabsProps {
@@ -14,6 +15,9 @@ export interface IrisAdminTabsProps {
   onChange?: (key: string) => void
   onClose?: (key: string) => void
   onRefresh?: (key: string) => void
+  /** Enable pointer/touch reordering. */
+  reorderable?: boolean
+  onReorder?: (tabs: TabItem[]) => void
 }
 
 /**
@@ -48,6 +52,10 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
   const refresh = (key: string): void => {
     props.nav.refresh(key)
     props.onRefresh?.(key)
+  }
+  const reorder = (tabs: TabItem[]): void => {
+    tabs.forEach((tab, index) => props.nav.move(tab.key, index))
+    props.onReorder?.(tabs)
   }
 
   const onKeyDown = (e: KeyboardEvent): void => {
@@ -182,15 +190,22 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
         role="tablist"
         aria-label={translate('admin.openPages')}
         onKeyDown={onKeyDown}
-        style={{
-          display: 'flex',
-          'align-items': 'center',
-          gap: '6px',
-          'overflow-x': 'auto',
-          flex: 1,
-        }}
+        style={{ 'overflow-x': 'auto', flex: 1 }}
       >
-        <For each={t.tabs()}>{(tab) => chip(tab)}</For>
+        <IrisSortable
+          items={t.tabs()}
+          getKey={(tab) => tab.key}
+          onReorder={reorder}
+          disabled={props.reorderable === false}
+          orientation="horizontal"
+          style={{
+            'align-items': 'center',
+            gap: '6px',
+            width: 'max-content',
+          }}
+        >
+          <For each={t.tabs()}>{(tab) => chip(tab)}</For>
+        </IrisSortable>
       </div>
 
       <IrisDropdown>
@@ -225,6 +240,12 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
                   {translate('admin.close')}
                 </IrisDropdownItem>
                 <IrisDropdownSeparator />
+                <IrisDropdownItem onSelect={() => props.nav.closeLeft(key())}>
+                  {translate('admin.closeLeft')}
+                </IrisDropdownItem>
+                <IrisDropdownItem onSelect={() => props.nav.closeRight(key())}>
+                  {translate('admin.closeRight')}
+                </IrisDropdownItem>
                 <IrisDropdownItem onSelect={() => props.nav.closeOthers(key())}>
                   {translate('admin.closeOthers')}
                 </IrisDropdownItem>

@@ -135,6 +135,17 @@ describe('IrisSegmented', () => {
       expect(items(container)[2].getAttribute('data-selected')).toBe('true')
     })
 
+    it('navigates options added by a rerender', async () => {
+      const onchange = vi.fn()
+      const { container, rerender } = render(IrisSegmented, {
+        props: { options: ['One', 'Two'], onchange },
+      })
+      await rerender({ options: ['One', 'Two', 'Three'], onchange })
+      await fireEvent.keyDown(items(container)[0], { key: 'End' })
+      flushSync()
+      expect(onchange).toHaveBeenCalledWith('Three')
+    })
+
     it('Enter on a segment selects it (via button click)', async () => {
       const onchange = vi.fn()
       const { container } = render(IrisSegmented, {

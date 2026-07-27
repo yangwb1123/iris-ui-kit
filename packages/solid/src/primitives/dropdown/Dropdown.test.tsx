@@ -63,4 +63,41 @@ describe('@iris-ui-kit/solid IrisDropdown', () => {
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(container.querySelector('[role="menu"]')).toBeNull()
   })
+
+  it('asChild renders one custom trigger and preserves its handler', () => {
+    const childClick = vi.fn((event: MouseEvent) => event.preventDefault())
+    let triggerRef: HTMLElement | undefined
+    const { getByText, container } = render(() => (
+      <IrisDropdown>
+        <IrisDropdownTrigger
+          asChild
+          id="custom-trigger"
+          class="parent"
+          ref={(element) => {
+            triggerRef = element
+          }}
+        >
+          <a href="/actions" class="child" onClick={childClick}>
+            Custom actions
+          </a>
+        </IrisDropdownTrigger>
+        <IrisDropdownMenu portalTarget={false}>
+          <IrisDropdownItem>Copy</IrisDropdownItem>
+        </IrisDropdownMenu>
+      </IrisDropdown>
+    ))
+
+    const trigger = getByText('Custom actions') as HTMLAnchorElement
+    expect(container.querySelector('button')).toBeNull()
+    expect(trigger.id).toBe('custom-trigger')
+    expect(trigger.className).toBe('parent child')
+    expect(trigger.getAttribute('aria-haspopup')).toBe('menu')
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+    expect(triggerRef).toBe(trigger)
+
+    fireEvent.click(trigger)
+    expect(childClick).toHaveBeenCalledTimes(1)
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+    expect(container.querySelector('[role="menu"]')).not.toBeNull()
+  })
 })

@@ -20,9 +20,9 @@
   useDrag({
     handle: () => handleEl,
     disabled: () => disabled,
-    onStart,
-    onDrag,
-    onEnd,
+    onStart: (state) => onStart?.(state),
+    onDrag: (state) => onDrag?.(state),
+    onEnd: (state) => onEnd?.(state),
   })
 
   function setHandle(node: HTMLElement): { destroy: () => void } {

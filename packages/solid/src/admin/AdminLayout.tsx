@@ -10,7 +10,10 @@ import { IrisIcon } from '../primitives/icon/Icon'
 import { useI18n } from '../i18n'
 import { useAdminShell } from './useAdminShell'
 
-export type IrisAdminLayoutMode = 'sidebar' | 'full-content'
+export type IrisAdminLayoutMode = 'sidebar' | 'horizontal' | 'full-content'
+export type IrisAdminMenuAlign = 'start' | 'center' | 'end'
+export type IrisAdminContentWidth = 'fluid' | 'centered'
+export type IrisAdminContentHeight = 'auto' | 'viewport'
 
 type LogoRenderer = JSX.Element | ((state: { collapsed: boolean }) => JSX.Element)
 type ContentRenderer = JSX.Element | ((state: { activeKey: string }) => JSX.Element)
@@ -28,7 +31,13 @@ export interface IrisAdminLayoutProps {
   appTitle?: string
   /** Optional shared tabs store; when present the tab bar is rendered. */
   tabs?: TabsNav
+  showTabs?: boolean
   showBreadcrumb?: boolean
+  stickyHeader?: boolean
+  stickyTabs?: boolean
+  menuAlign?: IrisAdminMenuAlign
+  contentWidth?: IrisAdminContentWidth
+  contentHeight?: IrisAdminContentHeight
   sidebarWidth?: number | string
   collapsedWidth?: number | string
   /** Brand region; render-prop receives `{ collapsed }`. */
@@ -57,7 +66,13 @@ export function IrisAdminLayout(props: IrisAdminLayoutProps): JSX.Element {
       defaultCollapsed: false,
       mode: 'sidebar' as IrisAdminLayoutMode,
       appTitle: 'Iris Admin',
+      showTabs: true,
       showBreadcrumb: true,
+      stickyHeader: true,
+      stickyTabs: true,
+      menuAlign: 'start' as IrisAdminMenuAlign,
+      contentWidth: 'fluid' as IrisAdminContentWidth,
+      contentHeight: 'viewport' as IrisAdminContentHeight,
       sidebarWidth: 240 as number | string,
       collapsedWidth: 64 as number | string,
     },
@@ -202,6 +217,109 @@ export function IrisAdminLayout(props: IrisAdminLayoutProps): JSX.Element {
     </div>
   )
 
+  const tabsBar = (): JSX.Element => (
+    <Show when={props.tabs && merged.showTabs}>
+      <div
+        data-iris-admin-tabs-region=""
+        data-sticky={merged.stickyTabs ? 'true' : undefined}
+        style={{
+          position: merged.stickyTabs && !merged.stickyHeader ? 'sticky' : 'relative',
+          top: 0,
+          'z-index': 49,
+        }}
+      >
+        <IrisAdminTabs nav={props.tabs!} />
+      </div>
+    </Show>
+  )
+
+  const contentRegion = (horizontal = false): JSX.Element => (
+    <div
+      data-iris-admin-content=""
+      data-width={merged.contentWidth}
+      style={{
+        'box-sizing': 'border-box',
+        width: '100%',
+        'max-width': merged.contentWidth === 'centered' ? '72rem' : undefined,
+        'margin-inline': merged.contentWidth === 'centered' ? 'auto' : undefined,
+        padding: '16px',
+      }}
+    >
+      <Show when={horizontal && merged.showBreadcrumb}>
+        <IrisAdminBreadcrumb trail={trail()} onSelect={handleSelect} />
+      </Show>
+      {renderContent()}
+    </div>
+  )
+
+  const horizontalLayout = (): JSX.Element => {
+    const justifyContent = (): string =>
+      merged.menuAlign === 'center'
+        ? 'center'
+        : merged.menuAlign === 'end'
+          ? 'flex-end'
+          : 'flex-start'
+    return (
+      <div
+        data-iris-admin-layout=""
+        data-mode="horizontal"
+        style={{
+          height: merged.contentHeight === 'viewport' ? '100vh' : 'auto',
+          'min-height': '100vh',
+        }}
+      >
+        <IrisHeaderLayout
+          sticky={merged.stickyHeader}
+          footer={props.footer}
+          header={
+            <div data-iris-admin-header="">
+              <div
+                data-iris-admin-headerbar=""
+                style={{
+                  display: 'flex',
+                  'align-items': 'center',
+                  gap: '12px',
+                  'min-height': '52px',
+                  padding: '0 16px',
+                  background: 'var(--iris-background)',
+                }}
+              >
+                {renderLogo({ collapsed: false })}
+                <div
+                  data-iris-admin-topnav=""
+                  style={{
+                    display: 'flex',
+                    flex: 1,
+                    'min-width': 0,
+                    'justify-content': justifyContent(),
+                  }}
+                >
+                  <IrisNavMenu
+                    items={props.menus}
+                    activeKey={currentActive()}
+                    orientation="horizontal"
+                    onSelect={handleSelect}
+                  />
+                </div>
+                <Show when={props.toolbar}>
+                  <div
+                    data-iris-admin-toolbar=""
+                    style={{ display: 'flex', 'align-items': 'center', gap: '8px' }}
+                  >
+                    {props.toolbar}
+                  </div>
+                </Show>
+              </div>
+              {tabsBar()}
+            </div>
+          }
+        >
+          {contentRegion(true)}
+        </IrisHeaderLayout>
+      </div>
+    )
+  }
+
   return (
     <Show
       when={merged.mode !== 'full-content'}
@@ -211,54 +329,59 @@ export function IrisAdminLayout(props: IrisAdminLayoutProps): JSX.Element {
         </div>
       }
     >
-      <IrisSidebarLayout
-        data-iris-admin-layout=""
-        data-mode="sidebar"
-        collapsed={currentCollapsed()}
-        onCollapsedChange={setCollapsed}
-        width={merged.sidebarWidth}
-        collapsedWidth={merged.collapsedWidth}
-        style={{ height: '100vh' }}
-        sidebar={(state) => (
-          <div
-            data-iris-admin-sidebar=""
-            style={{
-              display: 'flex',
-              'flex-direction': 'column',
-              height: '100%',
-              'border-inline-end': '1px solid var(--iris-border)',
-              background: 'var(--iris-surface)',
-            }}
-          >
-            {renderLogo(state)}
-            <div style={{ flex: 1, 'overflow-y': 'auto', 'overflow-x': 'hidden', padding: '8px' }}>
-              <IrisNavMenu
-                items={props.menus}
-                activeKey={currentActive()}
-                collapsed={state.collapsed}
-                onSelect={handleSelect}
-              />
+      <Show when={merged.mode === 'sidebar'} fallback={horizontalLayout()}>
+        <IrisSidebarLayout
+          data-iris-admin-layout=""
+          data-mode="sidebar"
+          collapsed={currentCollapsed()}
+          onCollapsedChange={setCollapsed}
+          width={merged.sidebarWidth}
+          collapsedWidth={merged.collapsedWidth}
+          style={{ height: '100vh' }}
+          sidebar={(state) => (
+            <div
+              data-iris-admin-sidebar=""
+              style={{
+                display: 'flex',
+                'flex-direction': 'column',
+                height: '100%',
+                'border-inline-end': '1px solid var(--iris-border)',
+                background: 'var(--iris-surface)',
+              }}
+            >
+              {renderLogo(state)}
+              <div
+                style={{
+                  flex: 1,
+                  'overflow-y': 'auto',
+                  'overflow-x': 'hidden',
+                  padding: '8px',
+                }}
+              >
+                <IrisNavMenu
+                  items={props.menus}
+                  activeKey={currentActive()}
+                  collapsed={state.collapsed}
+                  onSelect={handleSelect}
+                />
+              </div>
             </div>
-          </div>
-        )}
-      >
-        <IrisHeaderLayout
-          sticky
-          header={
-            <div data-iris-admin-header="">
-              {headerBar()}
-              <Show when={props.tabs}>
-                <IrisAdminTabs nav={props.tabs!} />
-              </Show>
-            </div>
-          }
-          footer={props.footer}
+          )}
         >
-          <div data-iris-admin-content="" style={{ padding: '16px' }}>
-            {renderContent()}
-          </div>
-        </IrisHeaderLayout>
-      </IrisSidebarLayout>
+          <IrisHeaderLayout
+            sticky={merged.stickyHeader}
+            header={
+              <div data-iris-admin-header="">
+                {headerBar()}
+                {tabsBar()}
+              </div>
+            }
+            footer={props.footer}
+          >
+            {contentRegion()}
+          </IrisHeaderLayout>
+        </IrisSidebarLayout>
+      </Show>
     </Show>
   )
 }

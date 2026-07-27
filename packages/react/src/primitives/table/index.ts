@@ -3,8 +3,11 @@ export {
   type IrisTableColumn,
   type IrisTableColumnWidths,
   type IrisTableEditor,
+  type IrisTableAggregateOp,
   type IrisTableCellEditEvent,
   type IrisTableVirtualOptions,
+  type IrisTableRenderDetail,
+  type IrisTableRowExpandable,
   type IrisTableSortDirection,
   type IrisTableSortState,
 } from './types'

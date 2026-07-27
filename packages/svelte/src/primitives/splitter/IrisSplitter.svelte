@@ -1,5 +1,6 @@
 <script lang="ts">
   import { useDrag } from '../drag/useDrag.svelte'
+  import { useI18n } from '../../i18n'
 
   export type IrisSplitterOrientation = 'horizontal' | 'vertical'
 
@@ -28,6 +29,8 @@
     style,
     ...rest
   }: Props = $props()
+
+  const { t } = useI18n()
 
   let containerEl = $state<HTMLElement | undefined>(undefined)
   let handleEl = $state<HTMLElement | undefined>(undefined)
@@ -81,6 +84,24 @@
       },
     }
   }
+
+  function handleKeyDown(event: KeyboardEvent): void {
+    if (disabled) return
+    const backward =
+      event.key === (isHorizontal ? 'ArrowLeft' : 'ArrowUp') ||
+      event.key === (isHorizontal ? 'ArrowUp' : 'ArrowLeft')
+    const forward =
+      event.key === (isHorizontal ? 'ArrowRight' : 'ArrowDown') ||
+      event.key === (isHorizontal ? 'ArrowDown' : 'ArrowRight')
+    if (!backward && !forward) return
+    event.preventDefault()
+    const rect = containerEl?.getBoundingClientRect()
+    const size = isHorizontal ? rect?.width : rect?.height
+    const min = size && size > 0 ? minStart / size : 0
+    const max = size && size > 0 ? 1 - minEnd / size : 1
+    const step = event.shiftKey ? 0.01 : 0.05
+    onValueChange?.(Math.max(min, Math.min(max, value + (forward ? step : -step))))
+  }
 </script>
 
 <div
@@ -102,19 +123,22 @@
   <div
     use:setHandle
     data-iris-splitter-handle
-    role="separator"
+    role="slider"
+    aria-label={t('splitter.resize')}
     aria-orientation={orientation}
     aria-valuenow={Math.round(value * 100)}
     aria-valuemin={0}
     aria-valuemax={100}
+    aria-disabled={disabled ? 'true' : undefined}
     tabindex={disabled ? -1 : 0}
+    onkeydown={handleKeyDown}
     style="flex: 0 0 4px; background: {dragging
       ? 'var(--iris-primary)'
       : 'var(--iris-border)'}; cursor: {disabled
       ? 'not-allowed'
       : isHorizontal
         ? 'col-resize'
-        : 'row-resize'}; transition: background-color 120ms ease; position: relative; touch-action: none"
+        : 'row-resize'}; transition: background-color 120ms ease; position: relative; touch-action: none; border: 0; padding: 0"
   ></div>
   <div
     data-iris-splitter-pane="end"

@@ -3,6 +3,7 @@ export { default as IrisNavMenu } from './NavMenu.svelte'
 export { default as IrisAdminBreadcrumb } from './AdminBreadcrumb.svelte'
 export { default as IrisAdminTabs } from './AdminTabs.svelte'
 export { useTabsNav, type UseTabsNavReturn } from './useTabsNav'
+export { useAdminPreferences, type UseAdminPreferencesReturn } from './useAdminPreferences'
 export {
   useAdminShell,
   type UseAdminShellConfig,
@@ -11,6 +12,9 @@ export {
 export type {
   IrisAdminLayoutProps,
   IrisAdminLayoutMode,
+  IrisAdminMenuAlign,
+  IrisAdminContentWidth,
+  IrisAdminContentHeight,
   IrisNavMenuProps,
   IrisAdminBreadcrumbProps,
   IrisAdminTabsProps,
@@ -20,6 +24,8 @@ export type {
 // from one import (mirror the Solid adapter).
 export {
   createTabsNav,
+  createAdminPreferences,
+  localStorageAdminPreferencesStorage,
   isClosable,
   isBranch,
   visibleNav,
@@ -27,9 +33,13 @@ export {
   findNavNode,
   findNavPath,
   firstLeaf,
+  filterNavByAccess,
+  nodeAllowsRoles,
   type NavNode,
   type TabItem,
   type TabsNav,
   type TabsNavState,
   type TabsNavConfig,
+  type AdminPreferences,
+  type AdminPreferencesState,
 } from '@iris-ui-kit/core'

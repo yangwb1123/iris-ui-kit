@@ -8,9 +8,24 @@ import { useI18n } from '../../i18n'
 
 export type IrisSelectSize = Size
 
+export interface IrisSelectProps<T = unknown> {
+  items: IrisListItem<T>[]
+  modelValue?: T
+  defaultValue?: T
+  placeholder?: string
+  size?: IrisSelectSize
+  disabled?: boolean
+  placement?: Placement
+  invalid?: boolean
+  id?: string
+  ariaDescribedby?: string
+  teleport?: false | HTMLElement | string
+}
+
 /**
  * Single-select dropdown. Composes Popover (positioning + dismiss) with List
- * (keyboard nav + selection). Two-way binds via `v-model`.
+ * (keyboard nav + selection). Two-way binds via `v-model`; when `modelValue`
+ * is omitted it owns its value, seeded by `defaultValue`.
  *
  * The trigger is a styled `<button>` showing the current item's `label` (or
  * `value` as fallback) or `placeholder` when empty. Pass `#trigger` to fully
@@ -22,6 +37,7 @@ export const IrisSelect = defineComponent({
   props: {
     items: { type: Array as PropType<IrisListItem<unknown>[]>, required: true },
     modelValue: { type: null as unknown as PropType<unknown> },
+    defaultValue: { type: null as unknown as PropType<unknown>, default: undefined },
     placeholder: { type: String, default: undefined },
     size: { type: String as PropType<IrisSelectSize>, default: 'md' },
     disabled: { type: Boolean, default: false },
@@ -39,13 +55,17 @@ export const IrisSelect = defineComponent({
   },
   emits: {
     'update:modelValue': (_value: unknown) => true,
+    valueChange: (_value: unknown) => true,
   },
   setup(props, { slots, attrs, emit }) {
     const { t } = useI18n()
     const open = ref(false)
+    const internalValue = ref<unknown>(props.defaultValue)
+    const controlled = computed(() => props.modelValue !== undefined)
+    const currentValue = computed(() => (controlled.value ? props.modelValue : internalValue.value))
 
     const selectedItem = computed(
-      () => props.items.find((item) => item.value === props.modelValue) ?? null,
+      () => props.items.find((item) => item.value === currentValue.value) ?? null,
     )
 
     const triggerLabel = computed(() => {
@@ -55,7 +75,9 @@ export const IrisSelect = defineComponent({
     })
 
     const onSelect = (item: IrisListItem<unknown>) => {
+      if (!controlled.value) internalValue.value = item.value
       emit('update:modelValue', item.value)
+      emit('valueChange', item.value)
       open.value = false
     }
 
@@ -129,7 +151,7 @@ export const IrisSelect = defineComponent({
             h(IrisPopoverTrigger, { asChild: true }, () => [
               slots.trigger
                 ? slots.trigger({
-                    value: props.modelValue,
+                    value: currentValue.value,
                     label: triggerLabel.value,
                     open: open.value,
                   })
@@ -168,8 +190,7 @@ export const IrisSelect = defineComponent({
               () =>
                 h(IrisList, {
                   items: props.items,
-                  modelValue: props.modelValue,
-                  'onUpdate:modelValue': (v: unknown) => emit('update:modelValue', v),
+                  modelValue: currentValue.value,
                   onSelect,
                   ariaLabel: t('select.options'),
                 }),

@@ -1,5 +1,5 @@
 import type { IrisIcon, IrisIconResolver, IrisIconSet } from './types'
-import { defaultIcons } from './icons'
+import { defaultIcons } from './default-icons'
 
 export interface IrisIconRegistry {
   /** Register (or replace) an icon set. The first registered set becomes active. */

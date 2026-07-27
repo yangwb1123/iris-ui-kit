@@ -1,7 +1,6 @@
 <script lang="ts">
-  // Test fixture: IrisSortable's `children` snippet takes no per-item args
-  // (it's re-rendered once per item), so a plain .ts test file can't supply
-  // one directly — wrap it in a harness .svelte file instead.
+  // Test fixture kept in Svelte so the item-aware snippet is compiled exactly
+  // like an application consumer.
   import IrisSortable from './IrisSortable.svelte'
 
   let {
@@ -18,7 +17,7 @@
 </script>
 
 <IrisSortable {items} {onReorder} {getKey} {disabled}>
-  {#snippet children()}
-    <div>x</div>
+  {#snippet children(item)}
+    <div>{String(item)}</div>
   {/snippet}
 </IrisSortable>

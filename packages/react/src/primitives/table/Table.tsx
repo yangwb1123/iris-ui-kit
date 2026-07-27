@@ -22,14 +22,15 @@ import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
+import type { IrisTableProps } from './props'
 import type {
-  IrisTableCellEditEvent,
   IrisTableColumn,
   IrisTableColumnWidths,
   IrisTableSortDirection,
   IrisTableSortState,
-  IrisTableVirtualOptions,
 } from './types'
+
+export type { IrisTableProps } from './props'
 
 const RESIZE_STEP = 16
 const SELECTION_COL_WIDTH = 40
@@ -121,88 +122,6 @@ function getCellValue<Row extends Record<string, unknown>>(
   return row[key]
 }
 
-export interface IrisTableProps<Row extends Record<string, unknown> = Record<string, unknown>> {
-  columns: IrisTableColumn<Row>[]
-  data: Row[]
-  /** Field to use as the row key. */
-  rowKey?: string
-  /** Selection mode. */
-  selectable?: 'none' | 'single' | 'multi'
-  selection?: Array<string | number>
-  defaultSelection?: Array<string | number>
-  onSelectionChange?: (next: Array<string | number>) => void
-  sort?: IrisTableSortState | null
-  defaultSort?: IrisTableSortState | null
-  onSortChange?: (next: IrisTableSortState | null) => void
-  striped?: boolean
-  bordered?: boolean
-  /** Enable column resizing (drag the header's trailing edge or focus + arrow keys). */
-  resizableColumns?: boolean
-  /** Controlled per-column pixel widths, keyed by column `key`. */
-  columnWidths?: IrisTableColumnWidths
-  defaultColumnWidths?: IrisTableColumnWidths
-  onColumnWidthsChange?: (next: IrisTableColumnWidths) => void
-  /** Called when an inline-editable cell is committed with a changed value. */
-  onCellEdit?: (event: IrisTableCellEditEvent<Row>) => void
-  /**
-   * Render an expandable detail panel beneath a row. Providing this adds a
-   * leading expand-toggle column; clicking it reveals a full-width detail row.
-   * (Not applied in the virtual-scroll path.)
-   */
-  renderDetail?: (row: Row, rowIndex: number) => React.ReactNode
-  /** Which rows can expand a detail panel. Defaults to all rows when `renderDetail` is set. */
-  rowExpandable?: (row: Row, rowIndex: number) => boolean
-  /** Initially-expanded row keys (uncontrolled). Shared by detail rows + tree rows. */
-  defaultExpandedRowKeys?: Array<string | number>
-  /** Notified with the expanded row keys whenever they change. */
-  onExpandedRowsChange?: (keys: Array<string | number>) => void
-  /**
-   * Read a row's child rows to render the table as a TREE. Providing this enables
-   * tree mode: `data` is treated as the root rows, each row's first cell gains a
-   * depth indent + an expand/collapse toggle (when it has children), and the
-   * expand state reuses `defaultExpandedRowKeys`/`onExpandedRowsChange`. Column
-   * sort reorders siblings hierarchically (each level sorted, structure kept),
-   * and tree rows virtualize like flat rows when `virtualScroll` is set (unless
-   * `renderDetail` is also used, since detail panels are variable-height).
-   */
-  getSubRows?: (row: Row) => Row[] | undefined
-  /**
-   * Enable WAI-ARIA grid keyboard navigation: the table becomes `role="grid"`
-   * and Arrow / Home / End / Page Up·Down move a roving cell focus across the
-   * data cells. Off by default; opt-in and additive (no effect on mouse / Tab
-   * behavior). Pairs best without virtualization (the focused cell must be
-   * rendered) and does not hijack keystrokes while a cell is being edited.
-   */
-  keyboardNavigation?: boolean
-  /** Enable virtual scrolling for the body (renders only the visible window). */
-  virtualScroll?: IrisTableVirtualOptions
-  /**
-   * Render only the horizontally-visible columns (plus pinned + a small
-   * overscan) for very wide tables. Needs numeric column widths; the table
-   * becomes a horizontal scroll container. Off-screen grid tracks stay sized,
-   * so alignment, resize, and pinned columns keep working.
-   */
-  columnVirtualization?: boolean
-  /**
-   * Enable rectangular cell-range selection (Excel-style). Click starts a
-   * range; Shift+Click or Shift+Arrow extends it; Escape clears it.
-   * Cells within the range get `data-iris-cell-selected="true"`.
-   */
-  cellRange?: boolean
-  /** Empty state node (replaces the row body when `data` is empty). */
-  emptyState?: React.ReactNode
-  /** Show the loading state instead of rows. */
-  loading?: boolean
-  /** Show the error state instead of rows (takes precedence over loading). */
-  error?: boolean
-  /** Custom loading-state node (defaults to the localized `table.loading`). */
-  loadingState?: React.ReactNode
-  /** Custom error-state node (defaults to the localized `table.error`). */
-  errorState?: React.ReactNode
-  style?: React.CSSProperties
-  className?: string
-}
-
 /**
  * Data-driven table. Renders as a CSS-grid layout (no native `<table>`) so it
  * can support future virtual scroll / column resize uniformly. Wires ARIA
@@ -227,6 +146,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   columnWidths: columnWidthsProp,
   defaultColumnWidths,
   onColumnWidthsChange,
+  onRowClick,
   onCellEdit,
   renderDetail,
   rowExpandable,
@@ -714,6 +634,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         aria-posinset={treeMeta ? treeMeta.posInset : undefined}
         data-iris-table-row={String(k ?? idx)}
         data-iris-table-row-selected={selected ? 'true' : undefined}
+        onClick={() => onRowClick?.(row, idx)}
         style={{ display: 'grid', gridTemplateColumns, ...extraStyle }}
       >
         {hasDetail ? (

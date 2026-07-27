@@ -90,7 +90,7 @@
     return min + ratio * (max - min)
   }
 
-  function handleTrackClick(e: MouseEvent) {
+  function handleTrackPointerDown(e: PointerEvent) {
     if (disabled) return
     if (e.target !== e.currentTarget) return
     setValue(valueFromPointer(e.clientX, e.clientY), true)
@@ -205,7 +205,13 @@
     style,
   )}
 >
-  <div bind:this={trackEl} data-iris-slider-track style={trackStyle} onclick={handleTrackClick}>
+  <div
+    bind:this={trackEl}
+    role="presentation"
+    data-iris-slider-track
+    style={trackStyle}
+    onpointerdown={handleTrackPointerDown}
+  >
     <div data-iris-slider-fill style={fillStyle}></div>
     <div
       bind:this={thumbEl}

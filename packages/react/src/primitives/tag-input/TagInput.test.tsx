@@ -82,4 +82,112 @@ describe('@iris-ui-kit/react IrisTagInput', () => {
     const { container } = render(<IrisTagInput value={[]} />)
     expect(tags(container).length).toBe(0)
   })
+
+  it('trims committed text and clears the field', () => {
+    const onValueChange = vi.fn()
+    const { container } = render(<IrisTagInput onValueChange={onValueChange} />)
+    const input = field(container)
+
+    fireEvent.change(input, { target: { value: '  release  ' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(onValueChange).toHaveBeenLastCalledWith(['release'])
+    expect(input.value).toBe('')
+  })
+
+  it('commits a pasted comma list and keeps the unfinished suffix', () => {
+    const onValueChange = vi.fn()
+    const { container } = render(<IrisTagInput value={['stable']} onValueChange={onValueChange} />)
+
+    fireEvent.change(field(container), {
+      target: { value: ' alpha, stable, beta, unfinished' },
+    })
+
+    expect(onValueChange).toHaveBeenLastCalledWith(['stable', 'alpha', 'beta'])
+    expect(field(container).value).toBe(' unfinished')
+  })
+
+  it('allows duplicate tags when requested', () => {
+    const onValueChange = vi.fn()
+    const { container } = render(
+      <IrisTagInput value={['same']} allowDuplicates onValueChange={onValueChange} />,
+    )
+
+    fireEvent.change(field(container), { target: { value: 'same' } })
+    fireEvent.keyDown(field(container), { key: 'Enter' })
+
+    expect(onValueChange).toHaveBeenLastCalledWith(['same', 'same'])
+  })
+
+  it('updates its uncontrolled defaultValue when adding and removing tags', () => {
+    const onValueChange = vi.fn()
+    const { container } = render(
+      <IrisTagInput defaultValue={['seed']} onValueChange={onValueChange} />,
+    )
+
+    fireEvent.change(field(container), { target: { value: 'next' } })
+    fireEvent.keyDown(field(container), { key: 'Enter' })
+    expect(Array.from(tags(container), (tag) => tag.getAttribute('data-value'))).toEqual([
+      'seed',
+      'next',
+    ])
+
+    fireEvent.click(removes(container)[0])
+    expect(Array.from(tags(container), (tag) => tag.getAttribute('data-value'))).toEqual(['next'])
+    expect(onValueChange).toHaveBeenLastCalledWith(['next'])
+  })
+
+  it('exposes invalid, focus and form-description states', () => {
+    const { container } = render(
+      <IrisTagInput invalid id="labels" ariaDescribedby="labels-error" />,
+    )
+    const root = container.querySelector('[data-iris-tag-input]') as HTMLElement
+    const input = field(container)
+
+    expect(root.dataset.state).toBe('invalid')
+    expect(input.id).toBe('labels')
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(input.getAttribute('aria-describedby')).toBe('labels-error')
+
+    fireEvent.focus(input)
+    expect(root.dataset.state).toBe('invalid')
+    fireEvent.blur(input)
+    expect(root.dataset.state).toBe('invalid')
+  })
+
+  it('uses focused state when valid and only shows placeholder without tags', () => {
+    const { container, rerender } = render(<IrisTagInput placeholder="Add label" />)
+    const root = container.querySelector('[data-iris-tag-input]') as HTMLElement
+
+    expect(field(container).placeholder).toBe('Add label')
+    fireEvent.focus(field(container))
+    expect(root.dataset.state).toBe('focused')
+    fireEvent.blur(field(container))
+    expect(root.dataset.state).toBe('idle')
+
+    rerender(<IrisTagInput value={['present']} placeholder="Add label" />)
+    expect(field(container).hasAttribute('placeholder')).toBe(false)
+  })
+
+  it('disables removal and forwards root presentation props', () => {
+    const onValueChange = vi.fn()
+    const { container } = render(
+      <IrisTagInput
+        value={['locked']}
+        disabled
+        className="custom-root"
+        style={{ marginTop: 12 }}
+        onValueChange={onValueChange}
+      />,
+    )
+    const root = container.querySelector('[data-iris-tag-input]') as HTMLElement
+    const remove = removes(container)[0] as HTMLButtonElement
+
+    expect(root.className).toBe('custom-root')
+    expect(root.style.marginTop).toBe('12px')
+    expect(remove.disabled).toBe(true)
+    fireEvent.click(remove)
+    fireEvent.keyDown(field(container), { key: 'Backspace' })
+    expect(onValueChange).not.toHaveBeenCalled()
+  })
 })

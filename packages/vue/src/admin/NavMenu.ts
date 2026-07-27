@@ -46,6 +46,10 @@ export const IrisNavMenu = defineComponent({
     defaultExpandedKeys: { type: Array as PropType<string[]>, default: undefined },
     /** Icon-only rail (top-level items only). */
     collapsed: { type: Boolean, default: false },
+    orientation: {
+      type: String as PropType<'vertical' | 'horizontal'>,
+      default: 'vertical',
+    },
     ariaLabel: { type: String, default: undefined },
   },
   emits: {
@@ -126,7 +130,7 @@ export const IrisNavMenu = defineComponent({
         display: 'flex',
         alignItems: 'center',
         gap: '10px',
-        width: '100%',
+        width: props.orientation === 'horizontal' && opts.depth === 0 ? 'auto' : '100%',
         boxSizing: 'border-box',
         border: 'none',
         borderRadius: 'var(--iris-radius-md, 6px)',
@@ -142,7 +146,8 @@ export const IrisNavMenu = defineComponent({
         textAlign: 'start',
         cursor: opts.disabled ? 'not-allowed' : 'pointer',
         opacity: opts.disabled ? '0.5' : '1',
-        padding: props.collapsed ? '10px' : `8px 10px 8px ${12 + opts.depth * 16}px`,
+        padding: props.collapsed ? '10px' : '8px 10px',
+        paddingInlineStart: props.collapsed ? '10px' : `${12 + opts.depth * 16}px`,
         justifyContent: props.collapsed ? 'center' : 'flex-start',
       }
     }
@@ -251,17 +256,45 @@ export const IrisNavMenu = defineComponent({
         ],
       )
 
+      const groupStyle =
+        props.orientation === 'horizontal' && depth === 0 ? { position: 'relative' } : undefined
       if (!branch || !open)
-        return h('div', { key: node.key, 'data-iris-nav-group': branch ? '' : undefined }, [row])
-
-      return h('div', { key: node.key, 'data-iris-nav-group': '', 'data-open': 'true' }, [
-        row,
-        h(
+        return h(
           'div',
-          { 'data-iris-nav-children': '', role: 'group' },
-          (node.children ?? []).map((child) => renderItem(child, depth + 1)),
-        ),
-      ])
+          { key: node.key, 'data-iris-nav-group': branch ? '' : undefined, style: groupStyle },
+          [row],
+        )
+
+      return h(
+        'div',
+        { key: node.key, 'data-iris-nav-group': '', 'data-open': 'true', style: groupStyle },
+        [
+          row,
+          h(
+            'div',
+            {
+              'data-iris-nav-children': '',
+              role: 'group',
+              style:
+                props.orientation === 'horizontal' && depth === 0
+                  ? {
+                      position: 'absolute',
+                      insetBlockStart: 'calc(100% + 4px)',
+                      insetInlineStart: '0',
+                      zIndex: '60',
+                      minWidth: '220px',
+                      padding: '6px',
+                      border: '1px solid var(--iris-border)',
+                      borderRadius: 'var(--iris-radius-md, 6px)',
+                      background: 'var(--iris-surface)',
+                      boxShadow: 'var(--iris-shadow-md)',
+                    }
+                  : undefined,
+            },
+            (node.children ?? []).map((child) => renderItem(child, depth + 1)),
+          ),
+        ],
+      )
     }
 
     // Arrow-key navigation over the visible items (Tab still works as a
@@ -323,11 +356,13 @@ export const IrisNavMenu = defineComponent({
           ...attrs,
           'data-iris-nav-menu': '',
           'data-collapsed': props.collapsed ? 'true' : undefined,
+          'data-orientation': props.orientation,
           'aria-label': props.ariaLabel ?? t('admin.nav'),
           onKeydown,
           style: {
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: props.orientation === 'horizontal' ? 'row' : 'column',
+            alignItems: props.orientation === 'horizontal' ? 'center' : undefined,
             gap: '2px',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },

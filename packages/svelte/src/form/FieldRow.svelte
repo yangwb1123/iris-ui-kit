@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import { useField } from './useField'
 
   interface Props {
@@ -6,10 +7,10 @@
     onRemove: () => void
   }
 
-  // svelte-ignore state_referenced_locally — fixture: capture once on mount
   let { index, onRemove }: Props = $props()
 
-  const { value, setValue } = useField<string>(`items.${index}.name`)
+  // A field hook binds to one path for the lifetime of this keyed row.
+  const { value, setValue } = useField<string>(`items.${untrack(() => index)}.name`)
 
   function handleInput(e: Event) {
     const target = e.target as HTMLInputElement

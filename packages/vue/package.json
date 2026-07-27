@@ -13,10 +13,95 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.js",
-      "require": "./dist/*.cjs"
+    "./admin": {
+      "types": "./dist/admin.d.ts",
+      "import": "./dist/admin.js",
+      "require": "./dist/admin.cjs"
+    },
+    "./async": {
+      "types": "./dist/async.d.ts",
+      "import": "./dist/async.js",
+      "require": "./dist/async.cjs"
+    },
+    "./behaviors": {
+      "types": "./dist/behaviors.d.ts",
+      "import": "./dist/behaviors.js",
+      "require": "./dist/behaviors.cjs"
+    },
+    "./data": {
+      "types": "./dist/data.d.ts",
+      "import": "./dist/data.js",
+      "require": "./dist/data.cjs"
+    },
+    "./error-boundary": {
+      "types": "./dist/error-boundary.d.ts",
+      "import": "./dist/error-boundary.js",
+      "require": "./dist/error-boundary.cjs"
+    },
+    "./floating": {
+      "types": "./dist/floating.d.ts",
+      "import": "./dist/floating.js",
+      "require": "./dist/floating.cjs"
+    },
+    "./form": {
+      "types": "./dist/form.d.ts",
+      "import": "./dist/form.js",
+      "require": "./dist/form.cjs"
+    },
+    "./i18n": {
+      "types": "./dist/i18n.d.ts",
+      "import": "./dist/i18n.js",
+      "require": "./dist/i18n.cjs"
+    },
+    "./layouts": {
+      "types": "./dist/layouts.d.ts",
+      "import": "./dist/layouts.js",
+      "require": "./dist/layouts.cjs"
+    },
+    "./machine": {
+      "types": "./dist/machine.d.ts",
+      "import": "./dist/machine.js",
+      "require": "./dist/machine.cjs"
+    },
+    "./modal-utils": {
+      "types": "./dist/modal-utils.d.ts",
+      "import": "./dist/modal-utils.js",
+      "require": "./dist/modal-utils.cjs"
+    },
+    "./motion": {
+      "types": "./dist/motion.d.ts",
+      "import": "./dist/motion.js",
+      "require": "./dist/motion.cjs"
+    },
+    "./provider": {
+      "types": "./dist/provider.d.ts",
+      "import": "./dist/provider.js",
+      "require": "./dist/provider.cjs"
+    },
+    "./resource": {
+      "types": "./dist/resource.d.ts",
+      "import": "./dist/resource.js",
+      "require": "./dist/resource.cjs"
+    },
+    "./skeletons": {
+      "types": "./dist/skeletons.d.ts",
+      "import": "./dist/skeletons.js",
+      "require": "./dist/skeletons.cjs"
+    },
+    "./skins": {
+      "types": "./dist/skins.d.ts",
+      "import": "./dist/skins.js",
+      "require": "./dist/skins.cjs"
+    },
+    "./theme": {
+      "types": "./dist/theme.d.ts",
+      "import": "./dist/theme.js",
+      "require": "./dist/theme.cjs"
+    },
+    "./undo": {
+      "types": "./dist/undo.d.ts",
+      "import": "./dist/undo.js",
+      "require": "./dist/undo.cjs"
     },
     "./package.json": "./package.json"
   },

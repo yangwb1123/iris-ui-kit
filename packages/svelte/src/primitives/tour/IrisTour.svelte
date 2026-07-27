@@ -102,8 +102,9 @@
     <div {...rest} data-iris-tour use:portal style={style ?? ''}>
       <!-- Backdrop -->
       <div
+        role="presentation"
         data-iris-tour-backdrop
-        onclick={close}
+        onpointerdown={close}
         style="position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000"
       ></div>
 

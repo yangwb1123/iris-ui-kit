@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { createSelectionModel, createKeyboardNav, type KeyboardNavAction } from '@iris-ui-kit/core'
+  import {
+    createSelectionModel,
+    createKeyboardNav,
+    type KeyboardNavAction,
+  } from '@iris-ui-kit/core'
   import { toStore } from '../../useStore'
   import type { IrisSegmentedOption } from './types'
 
@@ -76,15 +80,18 @@
   const isEnabled = (i: number): boolean => !norm[i]?.disabled
 
   // Keyboard navigation (single-sourced in core controller)
-  const nav = createKeyboardNav({
-    count: norm.length,
-    loop: true,
-    orientation: 'horizontal',
-    isEnabled,
-  })
+  const nav = $derived.by(() =>
+    createKeyboardNav({
+      count: norm.length,
+      loop: true,
+      orientation: 'horizontal',
+      isEnabled,
+    }),
+  )
 
-  let activeIndex = $state(nav.index)
+  let activeIndex = $state(-1)
   $effect(() => {
+    activeIndex = nav.index
     const unsub = nav.store.subscribe((next) => {
       activeIndex = next
     })
@@ -96,11 +103,6 @@
     if (selectedIndex >= 0) {
       nav.focus(selectedIndex)
     }
-  })
-
-  // Reset nav count when items change
-  $effect(() => {
-    nav.reset(norm.length)
   })
 
   function select(i: number): void {

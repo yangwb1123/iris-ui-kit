@@ -26,6 +26,7 @@ export interface IrisSortableProps<T = string> {
   class?: string
   style?: JSX.CSSProperties
   disabled?: boolean
+  orientation?: 'vertical' | 'horizontal'
 }
 
 /**
@@ -37,6 +38,7 @@ export function IrisSortable<T>(props: IrisSortableProps<T>): JSX.Element {
     {
       getKey: (_item: T, index: number) => String(index),
       disabled: false,
+      orientation: 'vertical' as const,
     },
     props,
   )
@@ -48,6 +50,7 @@ export function IrisSortable<T>(props: IrisSortableProps<T>): JSX.Element {
     'children',
     'class',
     'style',
+    'orientation',
   ])
 
   const sortable = createSortable()
@@ -135,7 +138,7 @@ export function IrisSortable<T>(props: IrisSortableProps<T>): JSX.Element {
       class={local.class}
       style={{
         display: 'flex',
-        'flex-direction': 'column',
+        'flex-direction': local.orientation === 'horizontal' ? 'row' : 'column',
         gap: 'var(--iris-gap-sm, 4px)',
         opacity: local.disabled ? 0.6 : 1,
         'user-select': activeKey() ? 'none' : undefined,

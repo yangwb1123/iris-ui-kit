@@ -9,7 +9,7 @@ import {
 import type { Skin } from './types'
 import { skinError, type SkinError } from './errors'
 
-const COLOR_SET = new Set<string>(COLOR_TOKENS)
+const STRING_SET = new Set<string>([...COLOR_TOKENS, ...SHADOW_TOKENS, ...TRANSITION_TOKENS])
 const DIMENSION_SET = new Set<string>([...SPACING_TOKENS, ...RADII_TOKENS, ...ZINDEX_TOKENS])
 const CORE_SET = new Set<string>([
   ...COLOR_TOKENS,
@@ -54,9 +54,9 @@ function validateTokens(skin: Skin, id: string | undefined): SkinError[] {
       )
       continue
     }
-    if (COLOR_SET.has(key) && typeof value !== 'string') {
+    if (STRING_SET.has(key) && typeof value !== 'string') {
       errors.push(
-        skinError('validate', `color token "${key}" must be a string`, { id, keys: [key] }),
+        skinError('validate', `string token "${key}" must be a string`, { id, keys: [key] }),
       )
     } else if (DIMENSION_SET.has(key) && typeof value !== 'number') {
       errors.push(

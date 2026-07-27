@@ -97,6 +97,14 @@ export interface IrisDrawerContentProps extends JSX.HTMLAttributes<HTMLDivElemen
   children?: JSX.Element
 }
 
+export interface IrisDrawerTitleProps extends JSX.HTMLAttributes<HTMLHeadingElement> {
+  children?: JSX.Element
+}
+
+export interface IrisDrawerCloseProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
+  children?: JSX.Element
+}
+
 /**
  * The slide-in panel. Uses body scroll lock + focus trap.
  * Animate in/out via transform with a mounted/visible state pair.
@@ -211,7 +219,7 @@ export function IrisDrawerContent(props: IrisDrawerContentProps): JSX.Element {
 }
 
 /** Accessible title for the drawer. */
-export function IrisDrawerTitle(props: JSX.HTMLAttributes<HTMLHeadingElement>): JSX.Element {
+export function IrisDrawerTitle(props: IrisDrawerTitleProps): JSX.Element {
   const ctx = useDrawerContext('IrisDrawerTitle')
   ctx.setHasTitle(true)
 
@@ -233,7 +241,7 @@ export function IrisDrawerTitle(props: JSX.HTMLAttributes<HTMLHeadingElement>): 
 }
 
 /** Close button for the drawer. */
-export function IrisDrawerClose(props: JSX.ButtonHTMLAttributes<HTMLButtonElement>): JSX.Element {
+export function IrisDrawerClose(props: IrisDrawerCloseProps): JSX.Element {
   const ctx = useDrawerContext('IrisDrawerClose')
   const { onClick, children, ...rest } = props
 

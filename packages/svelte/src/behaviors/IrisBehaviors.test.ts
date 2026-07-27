@@ -32,6 +32,17 @@ describe('IrisMovable', () => {
     expect(el).toBeTruthy()
     expect(el.style.transform).toContain('translate(10px, 20px)')
   })
+
+  it('supports keyboard movement', async () => {
+    const onPositionChange = vi.fn()
+    const { container } = render(IrisMovable, {
+      props: { defaultPosition: { x: 10, y: 20 }, onPositionChange },
+    })
+    await fireEvent.keyDown(container.querySelector('[data-iris-movable]')!, {
+      key: 'ArrowRight',
+    })
+    expect(onPositionChange).toHaveBeenCalledWith({ x: 20, y: 20 })
+  })
 })
 
 describe('IrisResizable', () => {
@@ -51,6 +62,21 @@ describe('IrisResizable', () => {
     })
     expect(container.querySelector('[data-iris-resizable-handle="right"]')).toBeTruthy()
     expect(container.querySelector('[data-iris-resizable-handle="bottom"]')).toBeTruthy()
+  })
+
+  it('supports keyboard resizing from a handle', async () => {
+    const onSizeChange = vi.fn()
+    const { container } = render(IrisResizable, {
+      props: {
+        defaultSize: { width: 200, height: 100 },
+        handles: ['bottom'],
+        onSizeChange,
+      },
+    })
+    await fireEvent.keyDown(container.querySelector('[data-iris-resizable-handle="bottom"]')!, {
+      key: 'ArrowDown',
+    })
+    expect(onSizeChange).toHaveBeenCalledWith({ width: 200, height: 110 })
   })
 })
 
@@ -81,6 +107,17 @@ describe('IrisSortable', () => {
     })
     const root = container.querySelector('[data-iris-sortable]') as HTMLElement
     expect(root.style.opacity).toBe('0.6')
+  })
+
+  it('supports keyboard reordering', async () => {
+    const onReorder = vi.fn()
+    const { container } = render(IrisSortableHarness, {
+      props: { items: ['A', 'B', 'C'], onReorder },
+    })
+    await fireEvent.keyDown(container.querySelectorAll('[data-iris-sortable-item]')[0]!, {
+      key: 'ArrowDown',
+    })
+    expect(onReorder).toHaveBeenCalledWith(['B', 'A', 'C'])
   })
 })
 

@@ -3,6 +3,7 @@ import { render, fireEvent, cleanup } from '@testing-library/svelte'
 import DrawerHarness from './DrawerHarness.svelte'
 import SafeAreaDrawerHarness from './SafeAreaDrawerHarness.svelte'
 import EscapeDrawerHarness from './EscapeDrawerHarness.svelte'
+import DrawerAsChildHarness from './DrawerAsChildHarness.svelte'
 
 afterEach(cleanup)
 
@@ -65,5 +66,29 @@ describe('IrisDrawer', () => {
     const style = panel.getAttribute('style') ?? ''
     expect(style).toContain('height: 100vh')
     expect(style).toContain('max-height: 100dvh')
+  })
+
+  it('asChild trigger keeps rest attrs, emits no wrapper, and opens', async () => {
+    const { container, getByText } = render(DrawerAsChildHarness)
+    const trigger = getByText('Open custom drawer')
+    expect(container.querySelectorAll('button')).toHaveLength(1)
+    expect(trigger.id).toBe('drawer-trigger')
+    expect(trigger.getAttribute('data-trigger-rest')).toBe('kept')
+    expect(trigger.getAttribute('aria-haspopup')).toBe('dialog')
+
+    await fireEvent.click(trigger)
+    expect(document.querySelector('[data-iris-drawer-content]')).not.toBeNull()
+  })
+
+  it('asChild close keeps rest attrs, emits no wrapper, and closes', async () => {
+    const { getByText } = render(DrawerAsChildHarness)
+    await fireEvent.click(getByText('Open custom drawer'))
+    const close = getByText('Close custom drawer')
+    expect(close.id).toBe('drawer-close')
+    expect(close.getAttribute('data-close-rest')).toBe('kept')
+    expect(close.getAttribute('data-iris-drawer-close')).not.toBeNull()
+
+    await fireEvent.click(close)
+    expect(document.querySelector('[data-iris-drawer-content]')).toBeNull()
   })
 })

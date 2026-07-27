@@ -6,7 +6,14 @@ function themeToSkin(id: string, theme: IrisTheme): Skin {
     id,
     name: theme.name,
     type: theme.type,
-    tokens: { ...theme.colors, ...theme.spacing, ...theme.radii },
+    tokens: {
+      ...theme.colors,
+      ...theme.spacing,
+      ...theme.radii,
+      ...theme.shadows,
+      ...theme.zIndex,
+      ...theme.transitions,
+    },
     ...(theme.icons !== undefined ? { icons: theme.icons } : {}),
     ...(theme.iconOverrides !== undefined ? { iconOverrides: theme.iconOverrides } : {}),
   }

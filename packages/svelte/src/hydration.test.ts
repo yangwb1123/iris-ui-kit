@@ -65,6 +65,7 @@ import type { Component } from 'svelte'
 // are wrapped in a small `src/__ssr__` harness (mirroring the repo's existing
 // `*Harness.svelte` test-fixture convention).
 import ButtonHarness from './__ssr__/ButtonHarness.svelte'
+import ButtonAsChildHarness from './primitives/button/ButtonAsChildHarness.svelte'
 import ChipHarness from './__ssr__/ChipHarness.svelte'
 import AlertHarness from './__ssr__/AlertHarness.svelte'
 import CardHarness from './__ssr__/CardHarness.svelte'
@@ -176,6 +177,19 @@ describe('@iris-ui-kit/svelte — SSR render + hydration-safety guard (non-overl
     expect(body.length).toBeGreaterThan(0)
     // Svelte 5 SSR + hydratable output carries hydration markers (`<!--[-->`).
     expect(body).toContain('<!--[-->')
+  })
+
+  it('Button asChild SSR emits one merged child element with no wrapper', () => {
+    const { body, errors, warnings } = ssr(ButtonAsChildHarness as Component<never>, {})
+    expect(body).not.toContain('<button')
+    expect(body.match(/<a\b/g)).toHaveLength(1)
+    expect(body).toContain('id="save-link"')
+    expect(body).toContain('class="iris-button parent child"')
+    expect(body).toContain('background: black')
+    expect(body).toContain('color: blue')
+    expect(body).toContain('data-iris-button-variant="solid"')
+    expect(errors).toEqual([])
+    expect(warnings).toEqual([])
   })
 
   for (const c of cases) {

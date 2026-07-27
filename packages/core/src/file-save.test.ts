@@ -1,7 +1,16 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { setFileSaveHandler, getFileSaveHandler, saveFile, type SaveFilePayload } from './file-save'
+import {
+  setFileSaveHandler,
+  getFileSaveHandler,
+  saveFile,
+  downloadFile,
+  type SaveFilePayload,
+} from './file-save'
 
-afterEach(() => setFileSaveHandler(null))
+afterEach(() => {
+  setFileSaveHandler(null)
+  vi.unstubAllGlobals()
+})
 
 const payload: SaveFilePayload = {
   filename: 'data.csv',
@@ -64,5 +73,60 @@ describe('file-save handler registry', () => {
       throw new Error('async save failed')
     })
     await expect(saveFile(payload)).rejects.toThrow('async save failed')
+  })
+})
+
+describe('downloadFile', () => {
+  it('is SSR-safe and reports an unhandled download without a host', async () => {
+    await expect(downloadFile(payload)).resolves.toBe(false)
+  })
+
+  it('uses the host handler without requiring browser globals', async () => {
+    const host = vi.fn()
+    setFileSaveHandler(host)
+    await expect(downloadFile(payload)).resolves.toBe(true)
+    expect(host).toHaveBeenCalledWith(payload)
+  })
+
+  it('creates and cleans up an anchor for the browser fallback', async () => {
+    const anchor = {
+      href: '',
+      download: '',
+      style: { display: '' },
+      click: vi.fn(),
+      remove: vi.fn(),
+    }
+    const appendChild = vi.fn()
+    const createObjectURL = vi.fn(() => 'blob:iris')
+    const revokeObjectURL = vi.fn()
+    class TestBlob {
+      constructor(
+        readonly parts: string[],
+        readonly options: { type: string },
+      ) {}
+    }
+
+    vi.stubGlobal('document', {
+      body: { appendChild },
+      createElement: vi.fn(() => anchor),
+    })
+    vi.stubGlobal('Blob', TestBlob)
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL })
+
+    await expect(downloadFile(payload)).resolves.toBe(true)
+    expect(createObjectURL).toHaveBeenCalledWith(
+      expect.objectContaining({ parts: [payload.content], options: { type: payload.mimeType } }),
+    )
+    expect(appendChild).toHaveBeenCalledWith(anchor)
+    expect(anchor).toMatchObject({
+      href: 'blob:iris',
+      download: payload.filename,
+      style: { display: 'none' },
+    })
+    expect(anchor.click).toHaveBeenCalledOnce()
+    expect(anchor.remove).toHaveBeenCalledOnce()
+
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:iris')
   })
 })

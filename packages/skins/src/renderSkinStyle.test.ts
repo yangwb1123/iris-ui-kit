@@ -11,7 +11,26 @@ describe('renderSkinStyle', () => {
     const css = renderSkinStyle(reg.resolve('light'))
     expect(css.startsWith(':root{')).toBe(true)
     expect(css).toContain('--iris-primary:')
+    expect(css).toContain('--iris-shadow-sm:')
+    expect(css).toContain('--iris-z-toast:')
+    expect(css).toContain('--iris-transition-fast:')
     expect(css.endsWith('}')).toBe(true)
+  })
+
+  it('serializes inherited overrides for shadows, z-index and transitions', () => {
+    reg.register({
+      id: 'full-theme',
+      extends: 'light',
+      tokens: {
+        'iris.shadow.md': '0 8px 16px rgb(0 0 0 / 0.2)',
+        'iris.z.modal': 4096,
+        'iris.transition.normal': '180ms',
+      },
+    })
+    const entries = skinToCssEntries(reg.resolve('full-theme'))
+    expect(entries).toContainEqual(['--iris-shadow-md', '0 8px 16px rgb(0 0 0 / 0.2)'])
+    expect(entries).toContainEqual(['--iris-z-modal', '4096'])
+    expect(entries).toContainEqual(['--iris-transition-normal', '180ms'])
   })
 
   it('serializes custom tokens, numbers as px', () => {

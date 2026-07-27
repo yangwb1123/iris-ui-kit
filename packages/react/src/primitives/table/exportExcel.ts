@@ -1,4 +1,4 @@
-import { saveFile, toSpreadsheetXml, type SpreadsheetXmlOptions } from '@iris-ui-kit/core'
+import { downloadFile, toSpreadsheetXml, type SpreadsheetXmlOptions } from '@iris-ui-kit/core'
 import type { IrisTableColumn } from './types'
 
 /**
@@ -28,18 +28,9 @@ export function exportExcel<Row extends Record<string, unknown>>(
  * shells; otherwise falls back to the browser `<a download>`. SSR-safe.
  */
 export async function downloadExcel(filename: string, xml: string): Promise<void> {
-  if (await saveFile({ filename, content: xml, mimeType: 'application/vnd.ms-excel' })) {
-    return
-  }
-  if (typeof document === 'undefined') return
-  const blob = new Blob([xml], { type: 'application/vnd.ms-excel' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = filename
-  anchor.style.display = 'none'
-  document.body.appendChild(anchor)
-  anchor.click()
-  document.body.removeChild(anchor)
-  setTimeout(() => URL.revokeObjectURL(url), 0)
+  await downloadFile({
+    filename,
+    content: xml,
+    mimeType: 'application/vnd.ms-excel;charset=utf-8',
+  })
 }

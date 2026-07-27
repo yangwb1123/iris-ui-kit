@@ -129,6 +129,18 @@ describe('IrisCascader (svelte)', () => {
       })
       expect(triggerEl(container).textContent).toContain('Dog')
     })
+
+    it('uses a controlled path updated while closed when it next opens', async () => {
+      const { container, rerender } = render(IrisCascader, {
+        props: { options, value: ['animals', 'dog'] },
+      })
+      await rerender({ options, value: ['plants', 'rose'] })
+      await openDropdown(container)
+      const selected = Array.from(
+        container.querySelectorAll<HTMLElement>('[data-iris-cascader-item][data-state="selected"]'),
+      ).map((item) => item.textContent?.trim())
+      expect(selected).toEqual(expect.arrayContaining(['Plants ›', 'Rose']))
+    })
   })
 
   describe('disabled state', () => {

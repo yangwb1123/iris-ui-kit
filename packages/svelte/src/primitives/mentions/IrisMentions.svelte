@@ -194,7 +194,14 @@
           aria-selected={i === activeIndex}
           data-iris-mentions-item
           data-state={i === activeIndex ? 'active' : 'idle'}
+          onmousedown={(event) => event.preventDefault()}
           onclick={() => selectOption(opt)}
+          onkeydown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              selectOption(opt)
+            }
+          }}
           style:padding="6px 12px"
           style:cursor="pointer"
           style:font-size="14px"

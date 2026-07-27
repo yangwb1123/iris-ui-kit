@@ -10,7 +10,10 @@ import { IrisIcon } from '../primitives/icon/Icon'
 import { useI18n } from '../i18n'
 import { useAdminShell } from './useAdminShell'
 
-export type IrisAdminLayoutMode = 'sidebar' | 'full-content'
+export type IrisAdminLayoutMode = 'sidebar' | 'horizontal' | 'full-content'
+export type IrisAdminMenuAlign = 'start' | 'center' | 'end'
+export type IrisAdminContentWidth = 'fluid' | 'centered'
+export type IrisAdminContentHeight = 'auto' | 'viewport'
 
 type LogoRenderer = React.ReactNode | ((state: { collapsed: boolean }) => React.ReactNode)
 type ContentRenderer = React.ReactNode | ((state: { activeKey: string }) => React.ReactNode)
@@ -30,7 +33,13 @@ export interface IrisAdminLayoutProps {
   appTitle?: string
   /** Optional shared tabs store; when present the tab bar is rendered. */
   tabs?: TabsNav
+  showTabs?: boolean
   showBreadcrumb?: boolean
+  stickyHeader?: boolean
+  stickyTabs?: boolean
+  menuAlign?: IrisAdminMenuAlign
+  contentWidth?: IrisAdminContentWidth
+  contentHeight?: IrisAdminContentHeight
   sidebarWidth?: number | string
   collapsedWidth?: number | string
   /** Brand region; render-prop receives `{ collapsed }`. */
@@ -83,7 +92,13 @@ export function IrisAdminLayout({
   mode = 'sidebar',
   appTitle = 'Iris Admin',
   tabs,
+  showTabs = true,
   showBreadcrumb = true,
+  stickyHeader = true,
+  stickyTabs = true,
+  menuAlign = 'start',
+  contentWidth = 'fluid',
+  contentHeight = 'viewport',
   sidebarWidth = 240,
   collapsedWidth = 64,
   logo,
@@ -162,6 +177,40 @@ export function IrisAdminLayout({
   const renderLogo = (state: { collapsed: boolean }): React.ReactNode =>
     typeof logo === 'function' ? logo(state) : (logo ?? defaultLogo(state))
 
+  const tabsBar =
+    tabs && showTabs ? (
+      <div
+        data-iris-admin-tabs-region=""
+        data-sticky={stickyTabs ? 'true' : undefined}
+        style={{
+          position: stickyTabs && !stickyHeader ? 'sticky' : 'relative',
+          top: 0,
+          zIndex: 49,
+        }}
+      >
+        <IrisAdminTabs nav={tabs} />
+      </div>
+    ) : null
+
+  const contentRegion = (
+    <div
+      data-iris-admin-content=""
+      data-width={contentWidth}
+      style={{
+        boxSizing: 'border-box',
+        width: '100%',
+        maxWidth: contentWidth === 'centered' ? '72rem' : undefined,
+        marginInline: contentWidth === 'centered' ? 'auto' : undefined,
+        padding: 16,
+      }}
+    >
+      {mode === 'horizontal' && showBreadcrumb ? (
+        <IrisAdminBreadcrumb trail={trail} onSelect={handleSelect} />
+      ) : null}
+      {renderContent()}
+    </div>
+  )
+
   const collapseToggle = (
     <button
       type="button"
@@ -211,6 +260,66 @@ export function IrisAdminLayout({
     </div>
   )
 
+  if (mode === 'horizontal') {
+    const justifyContent =
+      menuAlign === 'center' ? 'center' : menuAlign === 'end' ? 'flex-end' : 'flex-start'
+    return (
+      <div
+        data-iris-admin-layout=""
+        data-mode="horizontal"
+        style={{
+          height: contentHeight === 'viewport' ? '100vh' : 'auto',
+          minHeight: '100vh',
+        }}
+      >
+        {tabs ? <TabsSync nav={tabs} activeKey={currentActive} onActivate={syncFromTab} /> : null}
+        <IrisHeaderLayout
+          sticky={stickyHeader}
+          footer={footer}
+          header={
+            <div data-iris-admin-header="">
+              <div
+                data-iris-admin-headerbar=""
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  minHeight: 52,
+                  padding: '0 16px',
+                  background: 'var(--iris-background)',
+                }}
+              >
+                {renderLogo({ collapsed: false })}
+                <div
+                  data-iris-admin-topnav=""
+                  style={{ display: 'flex', flex: 1, minWidth: 0, justifyContent }}
+                >
+                  <IrisNavMenu
+                    items={menus}
+                    activeKey={currentActive}
+                    orientation="horizontal"
+                    onSelect={handleSelect}
+                  />
+                </div>
+                {toolbar ? (
+                  <div
+                    data-iris-admin-toolbar=""
+                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
+                    {toolbar}
+                  </div>
+                ) : null}
+              </div>
+              {tabsBar}
+            </div>
+          }
+        >
+          {contentRegion}
+        </IrisHeaderLayout>
+      </div>
+    )
+  }
+
   return (
     <IrisSidebarLayout
       data-iris-admin-layout=""
@@ -245,18 +354,16 @@ export function IrisAdminLayout({
     >
       {tabs ? <TabsSync nav={tabs} activeKey={currentActive} onActivate={syncFromTab} /> : null}
       <IrisHeaderLayout
-        sticky
+        sticky={stickyHeader}
         header={
           <div data-iris-admin-header="">
             {headerBar}
-            {tabs ? <IrisAdminTabs nav={tabs} /> : null}
+            {tabsBar}
           </div>
         }
         footer={footer}
       >
-        <div data-iris-admin-content="" style={{ padding: 16 }}>
-          {renderContent()}
-        </div>
+        {contentRegion}
       </IrisHeaderLayout>
     </IrisSidebarLayout>
   )

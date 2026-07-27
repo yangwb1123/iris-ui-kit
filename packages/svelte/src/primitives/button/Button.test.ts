@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, cleanup, fireEvent } from '@testing-library/svelte'
 import IrisButton from './IrisButton.svelte'
+import ButtonAsChildHarness from './ButtonAsChildHarness.svelte'
 import { __resetButtonStyles, __BUTTON_STYLE_ID } from './styles'
 
 afterEach(() => {
@@ -58,5 +59,37 @@ describe('@iris-ui-kit/svelte IrisButton', () => {
     render(IrisButton)
     render(IrisButton)
     expect(document.querySelectorAll(`#${__BUTTON_STYLE_ID}`)).toHaveLength(1)
+  })
+
+  it('asChild merges props onto one custom element with no wrapper', async () => {
+    const calls: string[] = []
+    const { container, getByText } = render(ButtonAsChildHarness, {
+      props: {
+        parentClick: () => calls.push('button'),
+        childClick: () => calls.push('child'),
+      },
+    })
+
+    const anchor = getByText('Save link') as HTMLAnchorElement
+    expect(container.children).toHaveLength(1)
+    expect(container.querySelector('button')).toBeNull()
+    expect(anchor.id).toBe('save-link')
+    expect(anchor.className).toBe('iris-button parent child')
+    expect(anchor.getAttribute('data-iris-button-variant')).toBe('solid')
+    expect(anchor.style.color).toBe('blue')
+    expect(anchor.style.background).toBe('black')
+
+    await fireEvent.click(anchor)
+    expect(calls).toEqual(['button', 'child'])
+  })
+
+  it('asChild disabled intercepts the child click', async () => {
+    const childClick = vi.fn()
+    const { getByText } = render(ButtonAsChildHarness, {
+      props: { disabled: true, childClick },
+    })
+
+    await fireEvent.click(getByText('Save link'))
+    expect(childClick).not.toHaveBeenCalled()
   })
 })

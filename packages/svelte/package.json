@@ -12,12 +12,84 @@
       "svelte": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./admin": {
+      "types": "./dist/admin/index.d.ts",
+      "svelte": "./dist/admin/index.js",
+      "default": "./dist/admin/index.js"
+    },
+    "./async": {
+      "types": "./dist/async/index.d.ts",
+      "svelte": "./dist/async/index.js",
+      "default": "./dist/async/index.js"
+    },
+    "./behaviors": {
+      "types": "./dist/behaviors/index.d.ts",
+      "svelte": "./dist/behaviors/index.js",
+      "default": "./dist/behaviors/index.js"
+    },
+    "./data": {
+      "types": "./dist/data/index.d.ts",
+      "svelte": "./dist/data/index.js",
+      "default": "./dist/data/index.js"
+    },
+    "./error-boundary": {
+      "types": "./dist/error-boundary/index.d.ts",
+      "svelte": "./dist/error-boundary/index.js",
+      "default": "./dist/error-boundary/index.js"
+    },
+    "./floating": {
+      "types": "./dist/floating/index.d.ts",
+      "svelte": "./dist/floating/index.js",
+      "default": "./dist/floating/index.js"
+    },
     "./form": {
       "types": "./dist/form/index.d.ts",
+      "svelte": "./dist/form/index.js",
       "default": "./dist/form/index.js"
+    },
+    "./i18n": {
+      "types": "./dist/i18n/index.d.ts",
+      "svelte": "./dist/i18n/index.js",
+      "default": "./dist/i18n/index.js"
+    },
+    "./layouts": {
+      "types": "./dist/layouts/index.d.ts",
+      "svelte": "./dist/layouts/index.js",
+      "default": "./dist/layouts/index.js"
+    },
+    "./motion": {
+      "types": "./dist/motion/index.d.ts",
+      "svelte": "./dist/motion/index.js",
+      "default": "./dist/motion/index.js"
+    },
+    "./provider": {
+      "types": "./dist/provider/index.d.ts",
+      "svelte": "./dist/provider/index.js",
+      "default": "./dist/provider/index.js"
+    },
+    "./resource": {
+      "types": "./dist/resource/index.d.ts",
+      "svelte": "./dist/resource/index.js",
+      "default": "./dist/resource/index.js"
+    },
+    "./skeletons": {
+      "types": "./dist/skeletons/index.d.ts",
+      "svelte": "./dist/skeletons/index.js",
+      "default": "./dist/skeletons/index.js"
+    },
+    "./skins": {
+      "types": "./dist/skins/index.d.ts",
+      "svelte": "./dist/skins/index.js",
+      "default": "./dist/skins/index.js"
+    },
+    "./theme": {
+      "types": "./dist/theme/index.d.ts",
+      "svelte": "./dist/theme/index.js",
+      "default": "./dist/theme/index.js"
     },
     "./undo": {
       "types": "./dist/undo/index.d.ts",
+      "svelte": "./dist/undo/index.js",
       "default": "./dist/undo/index.js"
     },
     "./package.json": "./package.json"
@@ -29,7 +101,7 @@
     "**/*.css"
   ],
   "scripts": {
-    "build": "svelte-package -i src -o dist && node scripts/fix-esm-extensions.mjs",
+    "build": "svelte-package -i src -o dist && node ../../scripts/prune-package-dist.mjs dist && node scripts/fix-esm-extensions.mjs",
     "dev": "svelte-package -i src -o dist --watch",
     "test": "vitest run && vitest run --config vitest.ssr.config.ts",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json",

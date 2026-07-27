@@ -24,7 +24,13 @@
     mode = 'sidebar',
     appTitle = 'Iris Admin',
     tabs,
+    showTabs = true,
     showBreadcrumb = true,
+    stickyHeader = true,
+    stickyTabs = true,
+    menuAlign = 'start',
+    contentWidth = 'fluid',
+    contentHeight = 'viewport',
     sidebarWidth = 240,
     collapsedWidth = 64,
     logo,
@@ -130,7 +136,17 @@
 {#snippet headerRegion()}
   <div data-iris-admin-header>
     {@render headerBar()}
-    {#if tabs}<IrisAdminTabs nav={tabs} />{/if}
+    {#if tabs && showTabs}
+      <div
+        data-iris-admin-tabs-region
+        data-sticky={stickyTabs ? 'true' : undefined}
+        style:position={stickyTabs && !stickyHeader ? 'sticky' : 'relative'}
+        style:top="0"
+        style:z-index="49"
+      >
+        <IrisAdminTabs nav={tabs} />
+      </div>
+    {/if}
   </div>
 {/snippet}
 
@@ -138,9 +154,82 @@
   {@render children?.({ activeKey: currentActive })}
 {/snippet}
 
+{#snippet contentRegion(horizontal = false)}
+  <div
+    data-iris-admin-content
+    data-width={contentWidth}
+    style:box-sizing="border-box"
+    style:width="100%"
+    style:max-width={contentWidth === 'centered' ? '72rem' : undefined}
+    style:margin-inline={contentWidth === 'centered' ? 'auto' : undefined}
+    style:padding="16px"
+  >
+    {#if horizontal && showBreadcrumb}
+      <IrisAdminBreadcrumb {trail} onSelect={handleSelect} />
+    {/if}
+    {@render content()}
+  </div>
+{/snippet}
+
+{#snippet horizontalHeader()}
+  <div data-iris-admin-header>
+    <div
+      data-iris-admin-headerbar
+      style="display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 16px; background: var(--iris-background)"
+    >
+      {@render logoRegion({ collapsed: false })}
+      <div
+        data-iris-admin-topnav
+        style:display="flex"
+        style:flex="1"
+        style:min-width="0"
+        style:justify-content={menuAlign === 'center'
+          ? 'center'
+          : menuAlign === 'end'
+            ? 'flex-end'
+            : 'flex-start'}
+      >
+        <IrisNavMenu
+          items={menus}
+          activeKey={currentActive}
+          orientation="horizontal"
+          onSelect={handleSelect}
+        />
+      </div>
+      {#if toolbar}
+        <div data-iris-admin-toolbar style="display: flex; align-items: center; gap: 8px">
+          {@render toolbar()}
+        </div>
+      {/if}
+    </div>
+    {#if tabs && showTabs}
+      <div
+        data-iris-admin-tabs-region
+        data-sticky={stickyTabs ? 'true' : undefined}
+        style:position={stickyTabs && !stickyHeader ? 'sticky' : 'relative'}
+        style:top="0"
+        style:z-index="49"
+      >
+        <IrisAdminTabs nav={tabs} />
+      </div>
+    {/if}
+  </div>
+{/snippet}
+
 {#if mode === 'full-content'}
   <div data-iris-admin-layout data-mode="full-content" style="height: 100%">
     {@render content()}
+  </div>
+{:else if mode === 'horizontal'}
+  <div
+    data-iris-admin-layout
+    data-mode="horizontal"
+    style:height={contentHeight === 'viewport' ? '100vh' : 'auto'}
+    style:min-height="100vh"
+  >
+    <IrisHeaderLayout sticky={stickyHeader} header={horizontalHeader} {footer}>
+      {@render contentRegion(true)}
+    </IrisHeaderLayout>
   </div>
 {:else}
   <IrisSidebarLayout
@@ -153,10 +242,8 @@
     style="height: 100vh"
     sidebar={sidebarRegion}
   >
-    <IrisHeaderLayout sticky header={headerRegion} {footer}>
-      <div data-iris-admin-content style="padding: 16px">
-        {@render content()}
-      </div>
+    <IrisHeaderLayout sticky={stickyHeader} header={headerRegion} {footer}>
+      {@render contentRegion()}
     </IrisHeaderLayout>
   </IrisSidebarLayout>
 {/if}

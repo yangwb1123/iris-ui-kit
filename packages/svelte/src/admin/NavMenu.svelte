@@ -23,6 +23,7 @@
     expandedKeys,
     defaultExpandedKeys,
     collapsed = false,
+    orientation = 'vertical',
     ariaLabel,
     onSelect,
     onExpandedKeysChange,
@@ -78,7 +79,7 @@
       display: 'flex',
       'align-items': 'center',
       gap: '10px',
-      width: '100%',
+      width: orientation === 'horizontal' && opts.depth === 0 ? 'auto' : '100%',
       'box-sizing': 'border-box',
       border: 'none',
       'border-radius': 'var(--iris-radius-md, 6px)',
@@ -98,7 +99,8 @@
       'text-align': 'start',
       cursor: opts.disabled ? 'not-allowed' : 'pointer',
       opacity: opts.disabled ? '0.5' : '1',
-      padding: collapsed ? '10px' : `8px 10px 8px ${12 + opts.depth * 16}px`,
+      padding: collapsed ? '10px' : '8px 10px',
+      'padding-inline-start': collapsed ? '10px' : `${12 + opts.depth * 16}px`,
       'justify-content': collapsed ? 'center' : 'flex-start',
     })
   }
@@ -156,6 +158,7 @@
   <div
     data-iris-nav-group={branch ? '' : undefined}
     data-open={branch && open ? 'true' : undefined}
+    style:position={orientation === 'horizontal' && depth === 0 ? 'relative' : undefined}
   >
     <button
       type="button"
@@ -206,7 +209,30 @@
       {/if}
     </button>
     {#if branch && open}
-      <div data-iris-nav-children role="group">
+      <div
+        data-iris-nav-children
+        role="group"
+        style:position={orientation === 'horizontal' && depth === 0 ? 'absolute' : undefined}
+        style:inset-block-start={orientation === 'horizontal' && depth === 0
+          ? 'calc(100% + 4px)'
+          : undefined}
+        style:inset-inline-start={orientation === 'horizontal' && depth === 0 ? '0' : undefined}
+        style:z-index={orientation === 'horizontal' && depth === 0 ? '60' : undefined}
+        style:min-width={orientation === 'horizontal' && depth === 0 ? '220px' : undefined}
+        style:padding={orientation === 'horizontal' && depth === 0 ? '6px' : undefined}
+        style:border={orientation === 'horizontal' && depth === 0
+          ? '1px solid var(--iris-border)'
+          : undefined}
+        style:border-radius={orientation === 'horizontal' && depth === 0
+          ? 'var(--iris-radius-md, 6px)'
+          : undefined}
+        style:background={orientation === 'horizontal' && depth === 0
+          ? 'var(--iris-surface)'
+          : undefined}
+        style:box-shadow={orientation === 'horizontal' && depth === 0
+          ? 'var(--iris-shadow-md)'
+          : undefined}
+      >
         {#each node.children ?? [] as child (child.key)}
           {@render navItem(child, depth + 1)}
         {/each}
@@ -253,9 +279,13 @@
 <nav
   data-iris-nav-menu
   data-collapsed={collapsed ? 'true' : undefined}
+  data-orientation={orientation}
   aria-label={ariaLabel ?? t('admin.nav')}
   onkeydown={onKeyDown}
-  style="display: flex; flex-direction: column; gap: 2px"
+  style:display="flex"
+  style:flex-direction={orientation === 'horizontal' ? 'row' : 'column'}
+  style:align-items={orientation === 'horizontal' ? 'center' : undefined}
+  style:gap="2px"
 >
   {#each tree as node (node.key)}
     {#if collapsed}{@render collapsedItem(node)}{:else}{@render navItem(node, 0)}{/if}

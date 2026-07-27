@@ -9,7 +9,7 @@
 </script>
 
 <IrisDialog>
-  <IrisDialogTrigger asChild>
+  <IrisDialogTrigger asChild id="dialog-trigger" class="trigger-rest" data-trigger-rest="kept">
     {#snippet children(props)}
       <IrisButton variant="outline" {...props.attrs}>Open Dialog</IrisButton>
     {/snippet}
@@ -17,7 +17,7 @@
   <IrisDialogContent>
     <IrisDialogTitle>Dialog Title</IrisDialogTitle>
     <IrisDialogDescription>Dialog body content</IrisDialogDescription>
-    <IrisDialogClose asChild>
+    <IrisDialogClose asChild id="dialog-close" data-close-rest="kept">
       {#snippet children(props)}
         <IrisButton variant="solid" {...props}>Close</IrisButton>
       {/snippet}

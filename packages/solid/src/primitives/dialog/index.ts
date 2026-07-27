@@ -6,5 +6,8 @@ export {
   IrisDialogDescription,
   IrisDialogClose,
   type IrisDialogContentProps,
+  type IrisDialogTitleProps,
+  type IrisDialogDescriptionProps,
+  type IrisDialogCloseProps,
 } from './IrisDialogContent'
 export { DialogContext, useDialogContext, type DialogContext as DialogContextType } from './context'

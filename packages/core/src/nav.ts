@@ -38,6 +38,12 @@ export interface NavNode {
   children?: NavNode[]
 }
 
+/** Flat authoring shape accepted by {@link buildNavTree}. */
+export interface FlatNavNode extends Omit<NavNode, 'children'> {
+  /** Parent node key; `null`/undefined makes this a root node. */
+  parentKey?: string | null
+}
+
 /** A node is a branch (group / submenu) when it has at least one child. */
 export function isBranch(node: NavNode): boolean {
   return Array.isArray(node.children) && node.children.length > 0
@@ -198,4 +204,69 @@ export function filterNavByAccess(
     }
   }
   return out
+}
+
+/**
+ * Build a normalized `NavNode[]` tree from a flat route/menu list.
+ *
+ * Unknown parents are promoted to roots so a partially loaded server menu
+ * remains usable. Duplicate keys keep the first item. Parent cycles are broken
+ * by promoting the cyclic node to a root.
+ */
+export function buildNavTree(flat: FlatNavNode[]): NavNode[] {
+  const nodes = new Map<string, NavNode>()
+  const parents = new Map<string, string | null>()
+  for (const item of flat) {
+    if (nodes.has(item.key)) continue
+    const { parentKey, ...node } = item
+    nodes.set(item.key, { ...node })
+    parents.set(item.key, parentKey ?? null)
+  }
+
+  const roots: NavNode[] = []
+  const createsCycle = (key: string, parentKey: string): boolean => {
+    const seen = new Set([key])
+    let cursor: string | null | undefined = parentKey
+    while (cursor) {
+      if (seen.has(cursor)) return true
+      seen.add(cursor)
+      cursor = parents.get(cursor)
+    }
+    return false
+  }
+
+  for (const [key, node] of nodes) {
+    const parentKey = parents.get(key)
+    const parent = parentKey ? nodes.get(parentKey) : undefined
+    if (!parent || (parentKey && createsCycle(key, parentKey))) {
+      roots.push(node)
+      continue
+    }
+    parent.children = [...(parent.children ?? []), node]
+  }
+  return roots
+}
+
+const routeSegments = (value: string): string[] => {
+  const path = value.split(/[?#]/, 1)[0] ?? ''
+  return path.split('/').filter(Boolean)
+}
+
+/**
+ * Match a concrete path against a route pattern.
+ *
+ * `:segment` matches exactly one path segment and `*` consumes the remainder.
+ * Query/hash fragments and trailing slashes do not affect matching.
+ */
+export function matchRoutePattern(path: string, pattern: string): boolean {
+  const actual = routeSegments(path)
+  const expected = routeSegments(pattern)
+  let i = 0
+  for (; i < expected.length; i += 1) {
+    const segment = expected[i]
+    if (segment === '*') return true
+    if (actual[i] === undefined) return false
+    if (!segment?.startsWith(':') && segment !== actual[i]) return false
+  }
+  return i === actual.length
 }

@@ -153,17 +153,22 @@
       style="position: absolute; inset-inline-end: 0; top: 100%; margin-block-start: 4px; min-width: 140px; list-style: none; margin-top: 4px; padding: 4px; z-index: 50; background: var(--iris-background); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); box-shadow: 0 8px 24px rgba(0,0,0,0.12)"
     >
       {#each actions! as action}
-        <li
-          role="menuitem"
-          aria-disabled={action.disabled ? 'true' : undefined}
-          data-iris-split-button-item
-          data-key={action.key}
-          onclick={() => selectAction(action)}
-          style="padding: 6px 10px; font-size: 14px; border-radius: var(--iris-radius-sm, 4px); cursor: {action.disabled
-            ? 'not-allowed'
-            : 'pointer'}; color: {action.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)'}"
-        >
-          {action.label}
+        <li role="none" style="list-style: none">
+          <button
+            type="button"
+            role="menuitem"
+            disabled={action.disabled || undefined}
+            data-iris-split-button-item
+            data-key={action.key}
+            onclick={() => selectAction(action)}
+            style="box-sizing: border-box; width: 100%; border: 0; background: transparent; text-align: start; padding: 6px 10px; font-size: 14px; border-radius: var(--iris-radius-sm, 4px); cursor: {action.disabled
+              ? 'not-allowed'
+              : 'pointer'}; color: {action.disabled
+              ? 'var(--iris-muted)'
+              : 'var(--iris-foreground)'}"
+          >
+            {action.label}
+          </button>
         </li>
       {/each}
     </ul>

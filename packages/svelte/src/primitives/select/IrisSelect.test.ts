@@ -39,6 +39,51 @@ describe('IrisSelect', () => {
     expect(onValueChange).toHaveBeenCalledWith('banana')
   })
 
+  it('uses defaultValue and updates its label in uncontrolled mode', async () => {
+    const { container } = render(IrisSelect, {
+      props: { items, defaultValue: 'apple', portalTarget: false },
+    })
+    const trigger = container.querySelector('[data-iris-select-trigger]')!
+    expect(trigger.textContent).toContain('Apple')
+    await fireEvent.click(trigger)
+    await fireEvent.click(container.querySelectorAll('[data-iris-select-option]')[1]!)
+    expect(trigger.textContent).toContain('Banana')
+  })
+
+  it('forwards invalid and described-by semantics to the trigger', () => {
+    const { container } = render(IrisSelect, {
+      props: { items, invalid: true, ariaDescribedby: 'fruit-error' },
+    })
+    const trigger = container.querySelector('[data-iris-select-trigger]')!
+    expect(trigger.getAttribute('aria-invalid')).toBe('true')
+    expect(trigger.getAttribute('aria-describedby')).toBe('fruit-error')
+  })
+
+  it('uses rerendered item labels for typeahead navigation', async () => {
+    const { container, rerender } = render(IrisSelect, {
+      props: {
+        items: [
+          { label: 'One', value: 'one' },
+          { label: 'Two', value: 'two' },
+        ],
+        portalTarget: false,
+      },
+    })
+    await rerender({
+      items: [
+        { label: 'One', value: 'one' },
+        { label: 'Xylophone', value: 'xylophone' },
+      ],
+      portalTarget: false,
+    })
+    await fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+    await Promise.resolve()
+    const listbox = container.querySelector('[data-iris-select-listbox]')!
+    const options = container.querySelectorAll<HTMLElement>('[data-iris-select-option]')
+    await fireEvent.keyDown(listbox, { key: 'x' })
+    expect(document.activeElement).toBe(options[1])
+  })
+
   describe('keyboard navigation', () => {
     const optionEls = () =>
       Array.from(document.querySelectorAll('[role="option"]')) as HTMLElement[]

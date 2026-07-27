@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isClosable } from '@iris-ui-kit/core'
+  import { isClosable, type TabItem } from '@iris-ui-kit/core'
   import { useTabsNav } from './useTabsNav'
   import IrisIcon from '../primitives/icon/IrisIcon.svelte'
   import IrisDropdown from '../primitives/dropdown/Dropdown.svelte'
@@ -7,13 +7,21 @@
   import IrisDropdownMenu from '../primitives/dropdown/DropdownMenu.svelte'
   import IrisDropdownItem from '../primitives/dropdown/DropdownItem.svelte'
   import IrisDropdownSeparator from '../primitives/dropdown/DropdownSeparator.svelte'
+  import IrisSortable from '../behaviors/IrisSortable.svelte'
   import { styleToString } from '../internal/style'
   import { useI18n } from '../i18n'
   import type { IrisAdminTabsProps } from './types'
 
   const { t: translate } = useI18n()
 
-  let { nav, onChange, onClose, onRefresh }: IrisAdminTabsProps = $props()
+  let {
+    nav,
+    onChange,
+    onClose,
+    onRefresh,
+    reorderable = true,
+    onReorder,
+  }: IrisAdminTabsProps = $props()
   // svelte-ignore state_referenced_locally — `nav` is a stable store instance.
   const t = useTabsNav(nav)
   const { tabs, activeKey } = t
@@ -41,6 +49,11 @@
   function refresh(key: string): void {
     nav.refresh(key)
     onRefresh?.(key)
+  }
+  function reorder(items: unknown[]): void {
+    const next = items as TabItem[]
+    next.forEach((tab, index) => nav.move(tab.key, index))
+    onReorder?.(next)
   }
 
   function onKeyDown(e: KeyboardEvent): void {
@@ -105,45 +118,56 @@
     role="tablist"
     aria-label={translate('admin.openPages')}
     onkeydown={onKeyDown}
-    style="display: flex; align-items: center; gap: 6px; overflow-x: auto; flex: 1"
+    style="overflow-x: auto; flex: 1"
   >
-    {#each $tabs as tab (tab.key)}
-      {@const active = tab.key === $activeKey}
-      {@const closable = isClosable(tab)}
-      <div data-iris-tab data-active={active ? 'true' : undefined} style={chipStyle(active)}>
-        <button
-          type="button"
-          role="tab"
-          data-iris-tab-label
-          data-key={tab.key}
-          aria-selected={active ? 'true' : 'false'}
-          aria-current={active ? 'page' : undefined}
-          tabindex={active ? 0 : -1}
-          style={LABEL_STYLE}
-          onclick={() => activate(tab.key)}
-        >
-          {#if tab.icon}<IrisIcon name={tab.icon} size={14} />{/if}
-          <span style="white-space: nowrap">{tab.title}</span>
-        </button>
-        {#if closable}
+    <IrisSortable
+      items={$tabs}
+      getKey={(item) => (item as TabItem).key}
+      onReorder={reorder}
+      disabled={!reorderable}
+      orientation="horizontal"
+      containerRole="presentation"
+      itemRole="presentation"
+    >
+      {#snippet children(value)}
+        {@const tab = value as TabItem}
+        {@const active = tab.key === $activeKey}
+        {@const closable = isClosable(tab)}
+        <div data-iris-tab data-active={active ? 'true' : undefined} style={chipStyle(active)}>
           <button
             type="button"
-            tabindex={-1}
-            data-iris-tab-close
-            aria-label={translate('admin.closeTab', { title: tab.title })}
-            style={CLOSE_STYLE}
-            onclick={(e) => {
-              e.stopPropagation()
-              close(tab.key)
-            }}
+            role="tab"
+            data-iris-tab-label
+            data-key={tab.key}
+            aria-selected={active ? 'true' : 'false'}
+            aria-current={active ? 'page' : undefined}
+            tabindex={active ? 0 : -1}
+            style={LABEL_STYLE}
+            onclick={() => activate(tab.key)}
           >
-            <IrisIcon name="x" size={12} />
+            {#if tab.icon}<IrisIcon name={tab.icon} size={14} />{/if}
+            <span style="white-space: nowrap">{tab.title}</span>
           </button>
-        {:else if tab.pinned}
-          <IrisIcon name="check-circle" size={12} style="opacity: 0.5" />
-        {/if}
-      </div>
-    {/each}
+          {#if closable}
+            <button
+              type="button"
+              tabindex={-1}
+              data-iris-tab-close
+              aria-label={translate('admin.closeTab', { title: tab.title })}
+              style={CLOSE_STYLE}
+              onclick={(e) => {
+                e.stopPropagation()
+                close(tab.key)
+              }}
+            >
+              <IrisIcon name="x" size={12} />
+            </button>
+          {:else if tab.pinned}
+            <IrisIcon name="check-circle" size={12} style="opacity: 0.5" />
+          {/if}
+        </div>
+      {/snippet}
+    </IrisSortable>
   </div>
 
   <IrisDropdown>
@@ -158,6 +182,12 @@
         >
         <IrisDropdownItem onSelect={() => close(key)}>{translate('admin.close')}</IrisDropdownItem>
         <IrisDropdownSeparator />
+        <IrisDropdownItem onSelect={() => nav.closeLeft(key)}
+          >{translate('admin.closeLeft')}</IrisDropdownItem
+        >
+        <IrisDropdownItem onSelect={() => nav.closeRight(key)}
+          >{translate('admin.closeRight')}</IrisDropdownItem
+        >
         <IrisDropdownItem onSelect={() => nav.closeOthers(key)}
           >{translate('admin.closeOthers')}</IrisDropdownItem
         >

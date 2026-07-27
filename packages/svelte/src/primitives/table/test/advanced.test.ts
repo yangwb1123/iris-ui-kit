@@ -287,8 +287,8 @@ describe('IrisTable column resize', () => {
     })
     expect(container.querySelectorAll('[data-iris-table-resize-handle]').length).toBe(2)
     const h = handle(container, 'name')!
-    expect(h.getAttribute('role')).toBe('separator')
-    expect(h.getAttribute('aria-orientation')).toBe('vertical')
+    expect(h.getAttribute('role')).toBe('slider')
+    expect(h.getAttribute('aria-orientation')).toBe('horizontal')
   })
 
   it('ArrowRight grows the column width (uncontrolled)', async () => {

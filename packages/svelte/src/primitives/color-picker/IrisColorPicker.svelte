@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import { hexToRgba, hsvaToRgba, rgbToHex, rgbaToHsva, clamp01 } from './colorUtils'
   import type { IrisHsva } from './colorUtils'
   import { useI18n } from '../../i18n'
@@ -40,9 +41,8 @@
     return rgbaToHsva(rgba)
   }
 
-  // svelte-ignore state_referenced_locally
-  let hsva = $state<IrisHsva>(parseValue(value))
-  let hexInput = $state(value)
+  let hsva = $state<IrisHsva>(parseValue(untrack(() => value)))
+  let hexInput = $state(untrack(() => value))
 
   $effect(() => {
     const rgba = hsvaToRgba(hsva)
@@ -125,6 +125,32 @@
     document.addEventListener('pointerup', upHandler)
     onHuePointer(e as unknown as PointerEvent)
   }
+
+  function onSatValKeyDown(event: KeyboardEvent): void {
+    if (disabled) return
+    const step = event.shiftKey ? 0.1 : 0.01
+    let next = hsva
+    if (event.key === 'ArrowLeft') next = { ...hsva, s: clamp01(hsva.s - step) }
+    else if (event.key === 'ArrowRight') next = { ...hsva, s: clamp01(hsva.s + step) }
+    else if (event.key === 'ArrowDown') next = { ...hsva, v: clamp01(hsva.v - step) }
+    else if (event.key === 'ArrowUp') next = { ...hsva, v: clamp01(hsva.v + step) }
+    else return
+    event.preventDefault()
+    hsva = next
+  }
+
+  function onHueKeyDown(event: KeyboardEvent): void {
+    if (disabled) return
+    const step = event.shiftKey ? 1 : 10
+    let hue: number
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') hue = hsva.h - step
+    else if (event.key === 'ArrowRight' || event.key === 'ArrowUp') hue = hsva.h + step
+    else if (event.key === 'Home') hue = 0
+    else if (event.key === 'End') hue = 360
+    else return
+    event.preventDefault()
+    hsva = { ...hsva, h: Math.max(0, Math.min(360, hue)) }
+  }
 </script>
 
 <div
@@ -145,8 +171,20 @@
   <!-- Saturation / Value picker -->
   <div
     bind:this={satValEl}
+    role="slider"
+    tabindex={disabled ? -1 : 0}
+    aria-label={t('colorPicker.saturationBrightness')}
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow={Math.round(hsva.s * 100)}
+    aria-valuetext={t('colorPicker.saturationBrightnessValue', {
+      saturation: Math.round(hsva.s * 100),
+      brightness: Math.round(hsva.v * 100),
+    })}
+    aria-disabled={disabled ? 'true' : undefined}
     data-iris-color-picker-satval
     onmousedown={onSatValMousedown}
+    onkeydown={onSatValKeyDown}
     style:position="relative"
     style:height="140px"
     style:border-radius="var(--iris-radius-sm, 4px)"
@@ -184,8 +222,16 @@
   <!-- Hue slider -->
   <div
     bind:this={hueEl}
+    role="slider"
+    tabindex={disabled ? -1 : 0}
+    aria-label={t('colorPicker.hue')}
+    aria-valuemin="0"
+    aria-valuemax="360"
+    aria-valuenow={Math.round(hsva.h)}
+    aria-disabled={disabled ? 'true' : undefined}
     data-iris-color-picker-hue
     onmousedown={onHueMousedown}
+    onkeydown={onHueKeyDown}
     style:position="relative"
     style:height="12px"
     style:border-radius="6px"

@@ -76,3 +76,13 @@ export interface IrisTableCellEditEvent<Row = Record<string, unknown>> {
   newValue: unknown
   rowIndex: number
 }
+
+export type IrisTableRenderDetail<Row = Record<string, unknown>> = (
+  row: Row,
+  rowIndex: number,
+) => import('react').ReactNode
+
+export type IrisTableRowExpandable<Row = Record<string, unknown>> = (
+  row: Row,
+  rowIndex: number,
+) => boolean

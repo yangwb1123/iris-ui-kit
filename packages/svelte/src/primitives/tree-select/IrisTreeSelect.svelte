@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { generateId } from '@iris-ui-kit/core'
   import IrisTree from '../tree/IrisTree.svelte'
   import { useI18n } from '../../i18n'
   import type { IrisTreeNode, IrisTreeSelectionMode } from '../tree/types'
@@ -29,6 +30,7 @@
   }: Props = $props()
 
   const { t } = useI18n()
+  const panelId = `${generateId()}-panel`
 
   let open = $state(false)
   let containerEl = $state<HTMLElement | undefined>(undefined)
@@ -90,9 +92,11 @@
 >
   <button
     type="button"
+    role="combobox"
     {disabled}
     aria-invalid={invalid ? 'true' : undefined}
     aria-expanded={open}
+    aria-controls={panelId}
     aria-haspopup="tree"
     data-iris-tree-select-trigger
     data-state={open ? 'open' : 'closed'}
@@ -120,6 +124,7 @@
 
   {#if open}
     <div
+      id={panelId}
       data-iris-tree-select-panel
       role="dialog"
       style:position="absolute"

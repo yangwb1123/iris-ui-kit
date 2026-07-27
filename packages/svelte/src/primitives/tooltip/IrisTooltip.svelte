@@ -42,8 +42,6 @@
   // The onChange callback synchronously sets the reactive $state variable.
   // Created eagerly so event handlers on first mount have a valid `hi`.
   let hi: ReturnType<typeof createHoverIntent> = createHoverIntent({
-    openDelay,
-    closeDelay,
     onChange: (v) => {
       open = v
     },
@@ -87,8 +85,8 @@
     anchor: () => triggerEl,
     floating: () => tooltipEl,
     open: () => open,
-    placement,
-    offset,
+    placement: () => placement,
+    offset: () => offset,
   })
 
   function setTrigger(node: HTMLElement): { destroy: () => void } {
@@ -113,6 +111,7 @@
 <!-- Trigger wrapper -->
 <span
   use:setTrigger
+  role="group"
   aria-describedby={open ? tooltipId : undefined}
   onpointerenter={() => {
     if (openDelay > 0) hi.pointerEnter()
@@ -122,8 +121,8 @@
     if (closeDelay > 0) hi.pointerLeave()
     else hi.close()
   }}
-  onfocus={() => hi.open()}
-  onblur={() => hi.close()}
+  onfocusin={() => hi.open()}
+  onfocusout={() => hi.close()}
   data-iris-tooltip-trigger
   style="display: contents"
 >

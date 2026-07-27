@@ -115,8 +115,9 @@ function parseSegments(str: string): PathSegment[] {
     if (m[1] !== undefined) {
       // Bracket segment
       const inner = m[1]
-      const err = pathError('parsePath: empty bracket "[]" is not allowed', str, segments)
-      if (inner === '') return err
+      if (inner === '') {
+        return pathError('parsePath: empty bracket "[]" is not allowed', str, segments)
+      }
       const unquoted = inner.replace(/^['"]|['"]$/g, '')
       if (unquoted === inner && /^\d+$/.test(inner)) segments.push(Number(inner))
       else segments.push(unquoted)

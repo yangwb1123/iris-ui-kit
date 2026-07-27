@@ -41,6 +41,10 @@ export const IrisSortable = defineComponent({
       type: Boolean,
       default: false,
     },
+    orientation: {
+      type: String as PropType<'vertical' | 'horizontal'>,
+      default: 'vertical',
+    },
     class: {
       type: String,
       default: undefined,
@@ -171,7 +175,7 @@ export const IrisSortable = defineComponent({
           class: props.class,
           style: {
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: props.orientation === 'horizontal' ? 'row' : 'column',
             gap: 'var(--iris-gap-sm, 4px)',
             opacity: props.disabled ? 0.6 : 1,
             userSelect: activeKey.value ? 'none' : undefined,

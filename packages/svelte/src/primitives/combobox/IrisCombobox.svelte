@@ -184,8 +184,8 @@
     >
       {#if filtered().length === 0}
         <li
+          role="presentation"
           data-iris-combobox-empty
-          aria-disabled="true"
           style="padding: 6px 10px; color: var(--iris-muted); font-size: {sz.fontSize}"
         >
           {emptyText ?? t('combobox.empty')}
@@ -199,11 +199,17 @@
             aria-disabled={opt.disabled ? 'true' : undefined}
             data-iris-combobox-option
             data-active={i === activeIndex ? 'true' : undefined}
-            onmousedown={(e) => e.preventDefault()}
+            onmousedown={(event) => event.preventDefault()}
             onmouseenter={() => {
               activeIndex = i
             }}
             onclick={() => selectOption(opt)}
+            onkeydown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                selectOption(opt)
+              }
+            }}
             style="padding: 6px 10px; font-size: {sz.fontSize}; border-radius: var(--iris-radius-sm, 4px); cursor: {opt.disabled
               ? 'not-allowed'
               : 'pointer'}; color: {opt.disabled

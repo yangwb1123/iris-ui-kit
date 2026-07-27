@@ -6,6 +6,7 @@ import { IrisDropdown } from '../primitives/dropdown/Dropdown'
 import { IrisDropdownTrigger } from '../primitives/dropdown/DropdownTrigger'
 import { IrisDropdownMenu } from '../primitives/dropdown/DropdownMenu'
 import { IrisDropdownItem, IrisDropdownSeparator } from '../primitives/dropdown/DropdownItem'
+import { IrisSortable } from '../behaviors/Sortable'
 import { useI18n } from '../i18n'
 
 /**
@@ -25,11 +26,13 @@ export const IrisAdminTabs = defineComponent({
   props: {
     /** Shared tabs store (from `createTabsNav`). */
     nav: { type: Object as PropType<TabsNav>, required: true },
+    reorderable: { type: Boolean, default: true },
   },
   emits: {
     change: (_key: string) => true,
     close: (_key: string) => true,
     refresh: (_key: string) => true,
+    reorder: (_tabs: TabItem[]) => true,
   },
   setup(props, { emit, attrs }) {
     const { t: tr } = useI18n()
@@ -46,6 +49,10 @@ export const IrisAdminTabs = defineComponent({
     const refresh = (key: string): void => {
       props.nav.refresh(key)
       emit('refresh', key)
+    }
+    const reorder = (tabs: TabItem[]): void => {
+      tabs.forEach((tab, index) => props.nav.move(tab.key, index))
+      emit('reorder', tabs)
     }
 
     const focusTab = (root: HTMLElement | null, key: string | undefined): void => {
@@ -215,6 +222,8 @@ export const IrisAdminTabs = defineComponent({
                 action(tr('admin.refresh'), () => refresh(key)),
                 action(tr('admin.close'), () => close(key)),
                 h(IrisDropdownSeparator),
+                action(tr('admin.closeLeft'), () => props.nav.closeLeft(key)),
+                action(tr('admin.closeRight'), () => props.nav.closeRight(key)),
                 action(tr('admin.closeOthers'), () => props.nav.closeOthers(key)),
                 action(tr('admin.closeAll'), () => props.nav.closeAll()),
               ]
@@ -248,14 +257,28 @@ export const IrisAdminTabs = defineComponent({
               'aria-label': tr('admin.openPages'),
               onKeydown: onTablistKeydown,
               style: {
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
                 overflowX: 'auto',
                 flex: '1',
               },
             },
-            t.tabs.value.map((tab) => chip(tab)),
+            [
+              h(
+                IrisSortable,
+                {
+                  items: t.tabs.value,
+                  getKey: (item: unknown) => (item as TabItem).key,
+                  onReorder: (items: unknown[]) => reorder(items as TabItem[]),
+                  disabled: !props.reorderable,
+                  orientation: 'horizontal',
+                  style: {
+                    alignItems: 'center',
+                    gap: '6px',
+                    width: 'max-content',
+                  },
+                },
+                { default: () => t.tabs.value.map((tab) => chip(tab)) },
+              ),
+            ],
           ),
           actionsMenu(),
         ],

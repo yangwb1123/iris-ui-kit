@@ -181,6 +181,24 @@ describe('@iris-ui-kit/solid — SSR render + createUniqueId drift guard (non-ov
     expect(html).toMatch(/data-hk=/)
   })
 
+  it('Button asChild SSR emits one merged child element with no wrapper', () => {
+    const { html, errors, warnings } = ssr(() => (
+      <IrisButton asChild id="ssr-link" class="parent" style={{ color: 'red' }}>
+        <a href="/save" class="child" style={{ color: 'blue' }}>
+          Save link
+        </a>
+      </IrisButton>
+    ))
+
+    expect(html).not.toContain('<button')
+    expect(html.match(/<a\b/g)).toHaveLength(1)
+    expect(html).toContain('id="ssr-link"')
+    expect(html).toContain('class="iris-button parent child"')
+    expect(html).toContain('color:blue')
+    expect(errors).toEqual([])
+    expect(warnings).toEqual([])
+  })
+
   for (const c of cases) {
     it(`server-renders <${c.name}/> with no console error/warn`, () => {
       const { html, errors, warnings } = ssr(c.render)

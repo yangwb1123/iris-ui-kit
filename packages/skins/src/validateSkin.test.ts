@@ -27,6 +27,20 @@ describe('validateSkin', () => {
     expect(errs.some((e) => e.keys?.includes('iris.gap.md'))).toBe(true)
   })
 
+  it('validates shadow, z-index and transition token value types', () => {
+    const errs = validateSkin({
+      id: 'x',
+      tokens: {
+        'iris.shadow.sm': 1 as never,
+        'iris.z.toast': '1000' as never,
+        'iris.transition.fast': 150 as never,
+      },
+    })
+    expect(errs.some((e) => e.keys?.includes('iris.shadow.sm'))).toBe(true)
+    expect(errs.some((e) => e.keys?.includes('iris.z.toast'))).toBe(true)
+    expect(errs.some((e) => e.keys?.includes('iris.transition.fast'))).toBe(true)
+  })
+
   it('accepts custom tokens with string or number values', () => {
     expect(
       validateSkin({ id: 'x', custom: { 'iris.shadow.card': '0 1px 2px #000', 'brand.z': 10 } }),

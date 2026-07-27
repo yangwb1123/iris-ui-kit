@@ -1,16 +1,7 @@
 import { defineConfig } from 'tsup'
 import { existsSync, readdirSync } from 'node:fs'
-import { join, resolve } from 'node:path'
-import { solidPlugin } from 'esbuild-plugin-solid'
-
-// Babel-plugin-jsx-dom-expressions imports its DOM runtime helpers
-// (template/insert/spread/…) from this specifier in every compiled
-// component. It isn't a real package — `esbuildOptions.alias` below redirects
-// it to `src/internal/lazyTemplate.ts`, which re-exports `solid-js/web`
-// unchanged except for a lazy `template()` wrapper (see that file for why:
-// solid-js/web's server build throws synchronously when its DOM helpers are
-// *called*, and the compiler calls `template()` eagerly at module scope).
-const DOM_RUNTIME_ALIAS = '@iris-ui-kit/solid-web-runtime'
+import { join } from 'node:path'
+import { solidSsrSafeBuild } from '../../scripts/solid-ssr-build.ts'
 
 /**
  * Build the full barrel (`index`) plus a flattened entry per top-level group
@@ -42,13 +33,7 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   target: 'es2022',
-  esbuildPlugins: [solidPlugin({ solid: { moduleName: DOM_RUNTIME_ALIAS } })],
-  esbuildOptions(options) {
-    options.alias = {
-      ...options.alias,
-      [DOM_RUNTIME_ALIAS]: resolve('src/internal/lazyTemplate.ts'),
-    }
-  },
+  ...solidSsrSafeBuild(),
   external: [
     'solid-js',
     'solid-js/web',

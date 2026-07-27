@@ -23,15 +23,15 @@ export default defineConfig({
         'src/**/__tests__/**',
         'src/contracts/scenarios/**', // cross-framework scenario fixtures, not core logic
       ],
-      // Measured baseline (2026-07-16): 91.94% stmts / 90.58% branches /
-      // 93.37% functions. Thresholds set with headroom below that baseline —
+      // Measured baseline (2026-07-27): 91.61% stmts+lines / 90.77% branches /
+      // 94.60% functions. Thresholds retain modest headroom below that baseline —
       // raise them deliberately (in a reviewed commit) as coverage improves,
       // matching this repo's scripts/check-size.mjs budget convention.
       thresholds: {
-        statements: 80,
-        branches: 78,
-        functions: 80,
-        lines: 80,
+        statements: 90,
+        branches: 89,
+        functions: 92,
+        lines: 90,
       },
     },
   },

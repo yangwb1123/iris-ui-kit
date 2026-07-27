@@ -18,83 +18,8 @@
   import { useI18n } from '../../i18n'
   import { useDrag } from '../drag/useDrag.svelte'
   import IrisVirtualScroll from '../virtual-scroll/IrisVirtualScroll.svelte'
-  import type {
-    IrisTableColumn,
-    IrisTableSortState,
-    IrisTableColumnWidths,
-    IrisTableVirtualOptions,
-    IrisTableCellEditEvent,
-  } from './types'
-
-  interface Props {
-    columns: IrisTableColumn[]
-    data: Array<Record<string, unknown>>
-    rowKey?: string
-    selectable?: 'none' | 'single' | 'multi'
-    selection?: Array<string | number>
-    sort?: IrisTableSortState | null
-    striped?: boolean
-    bordered?: boolean
-    loading?: boolean
-    error?: boolean
-    virtualScroll?: IrisTableVirtualOptions
-    /**
-     * Render only the horizontally-visible columns (plus pinned + a small
-     * overscan) for very wide tables. Needs numeric column widths; the table
-     * becomes a horizontal scroll container. Off-screen grid tracks stay sized,
-     * so alignment, resize, and pinned columns keep working.
-     */
-    columnVirtualization?: boolean
-    /** Enable per-column resize handles (drag the header's trailing edge or focus + arrow keys). */
-    resizableColumns?: boolean
-    /** Controlled per-column pixel widths, keyed by column `key`. */
-    columnWidths?: IrisTableColumnWidths
-    /** Uncontrolled initial per-column pixel widths (seeds the internal width state). */
-    defaultColumnWidths?: IrisTableColumnWidths
-    /** Called with the full width map whenever a column is resized. */
-    onColumnWidthsChange?: (next: IrisTableColumnWidths) => void
-    /**
-     * Render an expandable detail panel beneath a row. Providing this adds a
-     * leading expand-toggle column; clicking it reveals a full-width detail row.
-     */
-    renderDetail?: (row: Record<string, unknown>, rowIndex: number) => unknown
-    /** Which rows can expand a detail panel. Defaults to all rows when `renderDetail` is set. */
-    rowExpandable?: (row: Record<string, unknown>, rowIndex: number) => boolean
-    /** Initially-expanded row keys (uncontrolled). */
-    defaultExpandedRowKeys?: Array<string | number>
-    /** Notified with the expanded row keys whenever they change. */
-    onExpandedRowsChange?: (keys: Array<string | number>) => void
-    /**
-     * Read a row's child rows to render the table as a TREE. Providing this
-     * enables tree mode: `data` is treated as the root rows, each row's first
-     * cell gains a depth indent + an expand/collapse toggle (when it has
-     * children), and the expand state reuses
-     * `defaultExpandedRowKeys`/`onExpandedRowsChange`. Column sort reorders
-     * siblings hierarchically (each level sorted, structure kept), and tree rows
-     * virtualize like flat rows when `virtualScroll` is set (unless
-     * `renderDetail` is also used, since detail panels are variable-height).
-     */
-    getSubRows?: (row: Record<string, unknown>) => Array<Record<string, unknown>> | undefined
-    /**
-     * Enable WAI-ARIA grid keyboard navigation: the table becomes `role="grid"`
-     * and Arrow / Home / End / Page Up·Down move a roving cell focus across the
-     * data cells. Off by default; opt-in and additive (no effect on mouse / Tab
-     * behavior). Does not hijack keystrokes while a cell is being edited.
-     */
-    keyboardNavigation?: boolean
-    /**
-     * Enable rectangular cell-range selection (Excel-style). Click starts a
-     * range; Shift+Click or Shift+Arrow extends it; Escape clears it.
-     * Cells within the range get `data-iris-cell-selected="true"`.
-     */
-    cellRange?: boolean
-    onUpdateSelection?: (value: Array<string | number>) => void
-    onUpdateSort?: (value: IrisTableSortState | null) => void
-    onRowClick?: (row: Record<string, unknown>, index: number) => void
-    onCellEdit?: (event: IrisTableCellEditEvent) => void
-    style?: string
-    [key: string]: unknown
-  }
+  import type { IrisTableProps } from './props'
+  import type { IrisTableColumn, IrisTableSortState, IrisTableColumnWidths } from './types'
 
   let {
     columns,
@@ -102,11 +27,16 @@
     rowKey = 'id',
     selectable = 'none',
     selection,
+    defaultSelection,
     sort,
+    defaultSort,
     striped = false,
     bordered = true,
     loading = false,
     error = false,
+    emptyState,
+    loadingState,
+    errorState,
     virtualScroll,
     columnVirtualization = false,
     resizableColumns = false,
@@ -126,7 +56,7 @@
     onCellEdit,
     style,
     ...rest
-  }: Props = $props()
+  }: IrisTableProps = $props()
 
   const { t } = useI18n()
 
@@ -157,7 +87,8 @@
   const headerMatrix = $derived(grouped ? buildHeaderMatrix(columns) : null)
 
   // Sort state
-  let internalSort = $state<IrisTableSortState | null>(null)
+  // svelte-ignore state_referenced_locally — `defaultSort` is an initial seed.
+  let internalSort = $state<IrisTableSortState | null>(defaultSort ?? null)
   const effectiveSort = $derived(sort !== undefined ? sort : internalSort)
 
   // The active sort comparator (or null). Shared by the root-row sort AND the
@@ -198,6 +129,22 @@
     onUpdateSort?.(next)
   }
 
+  function handleHeaderKeyDown(event: KeyboardEvent, column: IrisTableColumn): void {
+    if (!column.sortable || (event.key !== 'Enter' && event.key !== ' ')) return
+    event.preventDefault()
+    handleHeaderClick(column)
+  }
+
+  function handleRowKeyDown(
+    event: KeyboardEvent,
+    row: Record<string, unknown>,
+    index: number,
+  ): void {
+    if (!onRowClick || (event.key !== 'Enter' && event.key !== ' ')) return
+    event.preventDefault()
+    onRowClick(row, index)
+  }
+
   // Selection state — single-sourced in the core selection model (single/multiple
   // toggle, dedup, select-all). The model owns the uncontrolled state; a
   // controlled `selection` prop is mirrored in via `sync` from an effect, and
@@ -206,7 +153,7 @@
   // svelte-ignore state_referenced_locally — initial seed; controlled changes sync below.
   const selectionModel = createSelectionModel<string | number>({
     mode: selectable === 'single' ? 'single' : 'multiple',
-    defaultSelected: selection ?? [],
+    defaultSelected: selection ?? defaultSelection ?? [],
     onChange: (keys) => onUpdateSelection?.(keys),
   })
   const selectedKeys = toStore(selectionModel.store)
@@ -676,6 +623,8 @@
             data-iris-table-header-group={isGroup ? '' : undefined}
             aria-colspan={cell.colSpan}
             onclick={sortable ? () => handleHeaderClick(col) : undefined}
+            onkeydown={sortable ? (event) => handleHeaderKeyDown(event, col) : undefined}
+            tabindex={sortable ? 0 : undefined}
             aria-sort={sortable
               ? effectiveSort?.key === col.key
                 ? effectiveSort.direction === 'asc'
@@ -759,7 +708,9 @@
             role="columnheader"
             data-iris-table-header={col.key}
             data-iris-table-pinned={col.pinned}
-            onclick={() => handleHeaderClick(col)}
+            onclick={col.sortable ? () => handleHeaderClick(col) : undefined}
+            onkeydown={col.sortable ? (event) => handleHeaderKeyDown(event, col) : undefined}
+            tabindex={col.sortable ? 0 : undefined}
             aria-sort={effectiveSort?.key === col.key
               ? effectiveSort.direction === 'asc'
                 ? 'ascending'
@@ -809,19 +760,20 @@
                  splitter pattern; the click-stop keeps a drag from toggling sort.
                  The grip IS the interactive control (focusable, keyboard-resizable),
                  so the noninteractive-* a11y heuristics don't apply here. -->
-              <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-              <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
               <span
                 use:registerResizeHandle={col.key}
-                role="separator"
-                aria-orientation="vertical"
-                aria-label={`Resize ${col.title}`}
+                role="slider"
+                aria-orientation="horizontal"
+                aria-label={t('table.resizeColumn', { column: col.title })}
+                aria-valuenow={effectiveWidths[col.key] ?? resolveInitialWidth(col)}
+                aria-valuemin={col.minWidth ?? DEFAULT_MIN_WIDTH}
+                aria-valuemax={col.maxWidth ?? 10_000}
                 tabindex="0"
                 data-iris-table-resize-handle=""
                 data-column-key={col.key}
                 onclick={(e) => e.stopPropagation()}
                 onkeydown={(e) => onResizeHandleKeydown(e, col)}
-                style="position: absolute; top: 0; right: 0; bottom: 0; width: 6px; cursor: col-resize; touch-action: none; user-select: none; z-index: 1"
+                style="position: absolute; top: 0; right: 0; bottom: 0; width: 6px; border: 0; padding: 0; background: transparent; cursor: col-resize; touch-action: none; user-select: none; z-index: 1"
               ></span>
             {/if}
           </div>
@@ -832,13 +784,17 @@
 
   <!-- Body -->
   {#if error}
-    <div role="row" data-iris-table-row="error" style={stateRowStyle}>{t('table.error')}</div>
+    <div role="row" data-iris-table-row="error" style={stateRowStyle}>
+      {#if errorState}{@render errorState()}{:else}{t('table.error')}{/if}
+    </div>
   {:else if loading}
     <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>
-      {t('table.loading')}
+      {#if loadingState}{@render loadingState()}{:else}{t('table.loading')}{/if}
     </div>
   {:else if bodyData.length === 0}
-    <div role="row" data-iris-table-row="empty" style={stateRowStyle}>{t('table.empty')}</div>
+    <div role="row" data-iris-table-row="empty" style={stateRowStyle}>
+      {#if emptyState}{@render emptyState()}{:else}{t('table.empty')}{/if}
+    </div>
   {:else if useVirtual}
     <!-- Virtualize flat mode, and tree mode too — tree rows are uniform height,
          so the only thing that bars it is variable-height detail panels, hence
@@ -910,7 +866,9 @@
       aria-level={treeMeta ? treeMeta.depth + 1 : undefined}
       aria-setsize={treeMeta ? treeMeta.setSize : undefined}
       aria-posinset={treeMeta ? treeMeta.posInset : undefined}
-      onclick={() => onRowClick?.(row, index)}
+      onclick={onRowClick ? () => onRowClick(row, index) : undefined}
+      onkeydown={onRowClick ? (event) => handleRowKeyDown(event, row, index) : undefined}
+      tabindex={onRowClick ? 0 : undefined}
       style="display: grid; grid-template-columns: {gridTemplate()};{fillHeight
         ? ' height: 100%;'
         : ''} background: {selected
@@ -983,6 +941,14 @@
                   } else {
                     cellRangeCtrl.startRange(index, ci)
                   }
+                }
+              : undefined}
+            onkeydown={cellRange
+              ? (event) => {
+                  if (event.key !== 'Enter' && event.key !== ' ') return
+                  event.preventDefault()
+                  if (event.shiftKey) cellRangeCtrl.extendRange(index, ci)
+                  else cellRangeCtrl.startRange(index, ci)
                 }
               : undefined}
             ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}

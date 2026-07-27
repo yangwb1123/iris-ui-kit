@@ -1,5 +1,5 @@
 import type { Snippet } from 'svelte'
-import type { NavNode, TabsNav } from '@iris-ui-kit/core'
+import type { NavNode, TabItem, TabsNav } from '@iris-ui-kit/core'
 
 // ── NavMenu ─────────────────────────────────────────────────────────────────────
 export interface IrisNavMenuProps {
@@ -8,6 +8,7 @@ export interface IrisNavMenuProps {
   expandedKeys?: string[]
   defaultExpandedKeys?: string[]
   collapsed?: boolean
+  orientation?: 'vertical' | 'horizontal'
   ariaLabel?: string
   onSelect?: (key: string, node: NavNode) => void
   onExpandedKeysChange?: (keys: string[]) => void
@@ -31,10 +32,16 @@ export interface IrisAdminTabsProps {
   onChange?: (key: string) => void
   onClose?: (key: string) => void
   onRefresh?: (key: string) => void
+  /** Enable pointer/touch reordering. */
+  reorderable?: boolean
+  onReorder?: (tabs: TabItem[]) => void
 }
 
 // ── AdminLayout ─────────────────────────────────────────────────────────────────
-export type IrisAdminLayoutMode = 'sidebar' | 'full-content'
+export type IrisAdminLayoutMode = 'sidebar' | 'horizontal' | 'full-content'
+export type IrisAdminMenuAlign = 'start' | 'center' | 'end'
+export type IrisAdminContentWidth = 'fluid' | 'centered'
+export type IrisAdminContentHeight = 'auto' | 'viewport'
 
 export interface IrisAdminLayoutProps {
   /** Normalized nav tree driving menu + breadcrumb. */
@@ -49,7 +56,13 @@ export interface IrisAdminLayoutProps {
   appTitle?: string
   /** Optional shared tabs store; when present the tab bar is rendered. */
   tabs?: TabsNav
+  showTabs?: boolean
   showBreadcrumb?: boolean
+  stickyHeader?: boolean
+  stickyTabs?: boolean
+  menuAlign?: IrisAdminMenuAlign
+  contentWidth?: IrisAdminContentWidth
+  contentHeight?: IrisAdminContentHeight
   sidebarWidth?: number | string
   collapsedWidth?: number | string
   /** Brand region; Snippet receives `{ collapsed }`. */

@@ -50,13 +50,13 @@ describe('IrisVirtualScroll', () => {
       props: { items, itemHeight: 40, height: 400 },
     })
     const root = container.querySelector('[data-iris-virtual-scroll]') as HTMLDivElement
-    // jsdom reports clientHeight 0, so viewportHeight collapses to 0:
-    // align=end → start - viewport + size = 50*40 - 0 + 40 = 2040.
+    // A configured numeric viewport remains authoritative when jsdom reports a
+    // zero layout height: 50*40 - 400 + 40 = 1640.
     ;(component as unknown as { scrollToIndex: (i: number, a: 'end') => void }).scrollToIndex(
       50,
       'end',
     )
-    expect(root.scrollTop).toBe(2040)
+    expect(root.scrollTop).toBe(1640)
   })
 
   it('scrollToOffset is clamped to the scrollable range', () => {
@@ -92,5 +92,39 @@ describe('IrisVirtualScroll', () => {
     expect((rows[0] as HTMLElement).style.height).toBe('30px')
     expect((rows[1] as HTMLElement).style.transform).toMatch(/translateY\(30px\)/)
     expect((rows[1] as HTMLElement).style.height).toBe('50px')
+  })
+
+  it('remeasures live item, sizing, key, and viewport props after rerender', async () => {
+    const small = items.slice(0, 4)
+    const { container, component, rerender } = render(IrisVirtualScroll, {
+      props: {
+        items: small,
+        itemHeight: () => 10,
+        height: 20,
+        buffer: 0,
+        keyOf: (item) => (item as { id: number }).id,
+      },
+    })
+    const spacer = container.querySelector('[data-iris-virtual-spacer]') as HTMLElement
+    expect(spacer.style.height).toBe('40px')
+
+    const reversed = [...small].reverse()
+    await rerender({
+      items: reversed,
+      itemHeight: () => 25,
+      height: 50,
+      buffer: 0,
+      keyOf: (item) => `row-${(item as { id: number }).id}`,
+    })
+    expect(spacer.style.height).toBe('100px')
+    expect(
+      (container.querySelector('[data-iris-virtual-scroll]') as HTMLElement).style.height,
+    ).toBe('50px')
+    ;(
+      component as unknown as { scrollToIndex: (index: number, align: 'end') => void }
+    ).scrollToIndex(3, 'end')
+    expect((container.querySelector('[data-iris-virtual-scroll]') as HTMLElement).scrollTop).toBe(
+      50,
+    )
   })
 })

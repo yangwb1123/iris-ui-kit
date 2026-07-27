@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import { getDialogContext } from './context'
+  import { createSlotChildProps, type IrisSlotChildProps } from '../slot/slot'
 
   /** Spreadable attributes/handlers for an `asChild` consumer's element. */
-  export interface DialogTriggerChildAttrs {
+  export interface DialogTriggerChildAttrs extends IrisSlotChildProps {
     onclick: (e: MouseEvent) => void
     'aria-haspopup': 'dialog'
     'aria-expanded': boolean
@@ -45,17 +46,22 @@
 
   function handleClick(e: MouseEvent): void {
     onclick?.(e)
+    if (e.defaultPrevented) return
     ctx.setOpen(true)
   }
 
   const childProps = $derived<DialogTriggerChildProps>({
-    attrs: {
-      onclick: handleClick,
-      'aria-haspopup': 'dialog',
-      'aria-expanded': ctx.open,
-      'aria-controls': ctx.contentId,
-      'data-state': ctx.open ? 'open' : 'closed',
-    },
+    attrs: createSlotChildProps(
+      {
+        ...rest,
+        onclick: handleClick,
+        'aria-haspopup': 'dialog',
+        'aria-expanded': ctx.open,
+        'aria-controls': ctx.contentId,
+        'data-state': ctx.open ? 'open' : 'closed',
+      },
+      setTriggerRef,
+    ) as DialogTriggerChildAttrs,
     ref: setTriggerRef,
   })
 </script>

@@ -2,6 +2,7 @@ import { mergeProps, splitProps, Show, type JSX } from 'solid-js'
 import { onMount } from 'solid-js'
 import type { IrisButtonSize, IrisButtonType, IrisButtonVariant } from './types'
 import { installButtonStyles } from './styles'
+import { IrisSlot } from '../slot/IrisSlot'
 
 type StyleMap = Record<string, string>
 
@@ -55,12 +56,16 @@ function Spinner(): JSX.Element {
   )
 }
 
-export interface IrisButtonProps {
+export interface IrisButtonProps extends Omit<
+  JSX.ButtonHTMLAttributes<HTMLButtonElement>,
+  'type' | 'disabled' | 'onClick' | 'class' | 'style' | 'children'
+> {
   variant?: IrisButtonVariant
   size?: IrisButtonSize
   disabled?: boolean
   loading?: boolean
   type?: IrisButtonType
+  asChild?: boolean
   /** Leading content (icon / spinner replaces it when loading). */
   leading?: JSX.Element
   class?: string
@@ -74,8 +79,8 @@ export interface IrisButtonProps {
  * versions (variant/size/disabled/loading/type/leading) — no business logic
  * duplicated; only the thin Solid wrapper differs.
  *
- * (The React/Vue `asChild` polymorphism relies on cloneElement, which Solid
- * lacks; Solid's idiom is a `Dynamic`/`as` prop — deferred as a follow-up.)
+ * `asChild` merges these props onto the single supplied element through
+ * `IrisSlot`, returning that element directly with no wrapper.
  */
 export function IrisButton(props: IrisButtonProps): JSX.Element {
   const merged = mergeProps(
@@ -94,11 +99,13 @@ export function IrisButton(props: IrisButtonProps): JSX.Element {
     'disabled',
     'loading',
     'type',
+    'asChild',
     'leading',
     'class',
     'style',
     'children',
     'onClick',
+    'ref',
   ])
 
   onMount(() => installButtonStyles())
@@ -113,18 +120,50 @@ export function IrisButton(props: IrisButtonProps): JSX.Element {
     local.onClick?.(event)
   }
 
+  const visualProps = {
+    get class() {
+      return ['iris-button', local.class].filter(Boolean).join(' ')
+    },
+    get 'data-iris-button-variant'() {
+      return local.variant
+    },
+    get 'data-iris-button-size'() {
+      return local.size
+    },
+    get 'aria-disabled'() {
+      return local.disabled ? 'true' : undefined
+    },
+    get 'aria-busy'() {
+      return local.loading ? 'true' : undefined
+    },
+    get style() {
+      return { ...buildInlineStyle(local.variant, local.size), ...(local.style ?? {}) }
+    },
+    onClick: handleClick,
+  }
+
+  if (local.asChild) {
+    return (
+      <IrisSlot
+        {...others}
+        {...visualProps}
+        attr:disabled={interactive() ? undefined : true}
+        ref={(element) => {
+          if (typeof local.ref === 'function') local.ref(element as HTMLButtonElement)
+        }}
+      >
+        {local.children}
+      </IrisSlot>
+    )
+  }
+
   return (
     <button
       type={local.type}
-      class={['iris-button', local.class].filter(Boolean).join(' ')}
-      data-iris-button-variant={local.variant}
-      data-iris-button-size={local.size}
-      aria-disabled={local.disabled ? 'true' : undefined}
-      aria-busy={local.loading ? 'true' : undefined}
-      disabled={!interactive()}
-      style={{ ...buildInlineStyle(local.variant, local.size), ...(local.style ?? {}) }}
-      onClick={handleClick}
       {...others}
+      {...visualProps}
+      disabled={!interactive()}
+      ref={local.ref}
     >
       <Show when={local.loading || local.leading}>
         <span class="iris-button-leading">{local.loading ? <Spinner /> : local.leading}</span>

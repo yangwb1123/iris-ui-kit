@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import { getDrawerContext } from './context'
+  import { createSlotChildProps, type IrisSlotChildProps } from '../slot/slot'
 
   /** Props forwarded to an `asChild` consumer's element (spread `{...props}`). */
-  export interface DrawerCloseChildProps {
+  export interface DrawerCloseChildProps extends IrisSlotChildProps {
     onclick: (e: MouseEvent) => void
     'data-iris-drawer-close': true
   }
@@ -20,15 +21,18 @@
   const ctx = getDrawerContext('IrisDrawerClose')
 
   function handleClick(e: MouseEvent): void {
-    if (e.defaultPrevented) return
     onclick?.(e)
+    if (e.defaultPrevented) return
     ctx.setOpen(false)
   }
 
-  const childProps = $derived<DrawerCloseChildProps>({
-    onclick: handleClick,
-    'data-iris-drawer-close': true,
-  })
+  const childProps = $derived<DrawerCloseChildProps>(
+    createSlotChildProps({
+      ...rest,
+      onclick: handleClick,
+      'data-iris-drawer-close': true,
+    }) as DrawerCloseChildProps,
+  )
 </script>
 
 {#if asChild}

@@ -61,6 +61,9 @@ export function IrisDateRangePicker(props: IrisDateRangePickerProps): JSX.Elemen
 
   const displayStart = createMemo(() => formatDisplay(currentValue().start, local.locale))
   const displayEnd = createMemo(() => formatDisplay(currentValue().end, local.locale))
+  const calendarValue = createMemo(() =>
+    selecting() === 'start' ? currentValue().start : currentValue().end,
+  )
 
   const onSelect = (date: Date | null) => {
     if (!date) return
@@ -163,7 +166,7 @@ export function IrisDateRangePicker(props: IrisDateRangePickerProps): JSX.Elemen
           onMouseDown={(e) => e.preventDefault()}
         >
           <IrisCalendar
-            value={selecting() === 'start' ? currentValue().start : currentValue().end}
+            value={calendarValue()}
             min={local.min}
             max={local.max}
             weekStartsOn={local.weekStartsOn}

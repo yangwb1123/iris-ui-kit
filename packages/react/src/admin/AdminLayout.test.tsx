@@ -114,6 +114,31 @@ describe('IrisAdminLayout (react)', () => {
     expect(container.querySelector('[data-page]')!.textContent).toBe('dash')
   })
 
+  it('renders a horizontal shell with top navigation and centered content', () => {
+    const { container } = render(
+      <IrisAdminLayout
+        menus={menus}
+        activeKey="dash"
+        mode="horizontal"
+        menuAlign="center"
+        contentWidth="centered"
+      >
+        {page}
+      </IrisAdminLayout>,
+    )
+    expect(
+      container.querySelector('[data-iris-admin-layout][data-mode="horizontal"]'),
+    ).not.toBeNull()
+    expect(container.querySelector('[data-iris-admin-topnav]')).not.toBeNull()
+    expect(
+      container.querySelector('[data-iris-nav-menu][data-orientation="horizontal"]'),
+    ).not.toBeNull()
+    expect(
+      container.querySelector('[data-iris-admin-content][data-width="centered"]'),
+    ).not.toBeNull()
+    expect(container.querySelector('[data-iris-admin-collapse]')).toBeNull()
+  })
+
   it('renders the toolbar in the header', () => {
     const { container } = render(
       <IrisAdminLayout menus={menus} activeKey="dash" toolbar={<button data-tool="">Theme</button>}>

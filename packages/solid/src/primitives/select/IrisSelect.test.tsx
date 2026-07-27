@@ -39,6 +39,33 @@ describe('IrisSelect', () => {
     expect(onChange).toHaveBeenCalledWith('banana')
   })
 
+  it('calls onValueChange and preserves the legacy onChange alias', () => {
+    const onValueChange = vi.fn()
+    const onChange = vi.fn()
+    const { container, getByText } = render(() => (
+      <IrisSelect
+        items={items}
+        onValueChange={onValueChange}
+        onChange={onChange}
+        portalTarget={false}
+      />
+    ))
+    fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+    fireEvent.click(getByText('Banana'))
+    expect(onValueChange).toHaveBeenCalledWith('banana')
+    expect(onChange).toHaveBeenCalledWith('banana')
+  })
+
+  it('uses defaultValue and updates its label in uncontrolled mode', () => {
+    const { container, getByText } = render(() => (
+      <IrisSelect items={items} defaultValue="apple" portalTarget={false} />
+    ))
+    expect(container.querySelector('[data-iris-select-trigger]')?.textContent).toContain('Apple')
+    fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+    fireEvent.click(getByText('Banana'))
+    expect(container.querySelector('[data-iris-select-trigger]')?.textContent).toContain('Banana')
+  })
+
   it('shows selected label in trigger', () => {
     const { container } = render(() => <IrisSelect items={items} value="cherry" />)
     expect(container.querySelector('[data-iris-select-trigger]')?.textContent).toContain('Cherry')

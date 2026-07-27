@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildNavTree,
   isBranch,
   visibleNav,
   flattenNav,
   findNavNode,
   findNavPath,
   firstLeaf,
+  matchRoutePattern,
   type NavNode,
 } from './nav'
 
@@ -207,5 +209,44 @@ describe('nav selectors', () => {
       const result = flattenNav([root])
       expect(result).toHaveLength(10)
     })
+  })
+})
+
+describe('buildNavTree', () => {
+  it('builds an ordered-depth tree from flat parent keys', () => {
+    const result = buildNavTree([
+      { key: 'root', title: 'Root' },
+      { key: 'child', title: 'Child', parentKey: 'root' },
+      { key: 'leaf', title: 'Leaf', parentKey: 'child' },
+    ])
+    expect(result).toHaveLength(1)
+    expect(result[0]?.children?.[0]?.children?.[0]?.key).toBe('leaf')
+  })
+
+  it('promotes missing parents and breaks parent cycles', () => {
+    const result = buildNavTree([
+      { key: 'orphan', title: 'Orphan', parentKey: 'missing' },
+      { key: 'a', title: 'A', parentKey: 'b' },
+      { key: 'b', title: 'B', parentKey: 'a' },
+    ])
+    expect(
+      flattenNav(result)
+        .map((node) => node.key)
+        .sort(),
+    ).toEqual(['a', 'b', 'orphan'])
+  })
+})
+
+describe('matchRoutePattern', () => {
+  it('matches exact, dynamic and wildcard paths', () => {
+    expect(matchRoutePattern('/orders/42', '/orders/:id')).toBe(true)
+    expect(matchRoutePattern('/orders/42/items/7', '/orders/*')).toBe(true)
+    expect(matchRoutePattern('/orders/42?tab=info', '/orders/:id/')).toBe(true)
+  })
+
+  it('rejects different segment counts and literals', () => {
+    expect(matchRoutePattern('/orders', '/orders/:id')).toBe(false)
+    expect(matchRoutePattern('/users/42', '/orders/:id')).toBe(false)
+    expect(matchRoutePattern('/orders/42/items', '/orders/:id')).toBe(false)
   })
 })

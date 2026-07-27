@@ -40,6 +40,14 @@ describe('IrisAdminLayout', () => {
     expect(w.emitted('select')!.at(-1)![0]).toBe('users')
   })
 
+  it('uses defaultActiveKey in uncontrolled mode', () => {
+    const w = mount(IrisAdminLayout, {
+      props: { menus, defaultActiveKey: 'roles' },
+      slots,
+    })
+    expect(w.find('[data-page]').text()).toBe('roles')
+  })
+
   it('the collapse toggle emits update:collapsed and collapses the nav', async () => {
     const w = mount(IrisAdminLayout, { props: { menus, activeKey: 'dash' }, slots })
     await w.find('[data-iris-admin-collapse]').trigger('click')
@@ -79,6 +87,24 @@ describe('IrisAdminLayout', () => {
     expect(w.find('[data-iris-admin-headerbar]').exists()).toBe(false)
     expect(w.find('[data-iris-nav-menu]').exists()).toBe(false)
     expect(w.find('[data-page]').text()).toBe('dash')
+  })
+
+  it('renders horizontal navigation and centered content', () => {
+    const w = mount(IrisAdminLayout, {
+      props: {
+        menus,
+        activeKey: 'dash',
+        mode: 'horizontal',
+        menuAlign: 'center',
+        contentWidth: 'centered',
+      },
+      slots,
+    })
+    expect(w.find('[data-iris-admin-layout][data-mode="horizontal"]').exists()).toBe(true)
+    expect(w.find('[data-iris-admin-topnav]').exists()).toBe(true)
+    expect(w.find('[data-iris-nav-menu][data-orientation="horizontal"]').exists()).toBe(true)
+    expect(w.find('[data-iris-admin-content][data-width="centered"]').exists()).toBe(true)
+    expect(w.find('[data-iris-admin-collapse]').exists()).toBe(false)
   })
 
   it('renders the toolbar slot in the header', () => {

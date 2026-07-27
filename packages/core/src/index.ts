@@ -139,6 +139,7 @@ export {
   setFileSaveHandler,
   getFileSaveHandler,
   saveFile,
+  downloadFile,
   type SaveFilePayload,
   type FileSaveHandler,
 } from './file-save'
@@ -274,7 +275,10 @@ export {
   branchTrail,
   filterNavByAccess,
   nodeAllowsRoles,
+  buildNavTree,
+  matchRoutePattern,
   type NavNode,
+  type FlatNavNode,
 } from './nav'
 export {
   createExpansion,
@@ -288,6 +292,20 @@ export {
   type AdminShellConfig,
   type AdminShellState,
 } from './admin-shell'
+export {
+  createAdminPreferences,
+  localStorageAdminPreferencesStorage,
+  defaultAdminPreferences,
+  type AdminPreferences,
+  type AdminPreferencesConfig,
+  type AdminPreferencesState,
+  type AdminPreferencesStorage,
+  type AdminNavigationMode,
+  type AdminMenuAlign,
+  type AdminContentWidth,
+  type AdminContentHeight,
+  type AdminDensity,
+} from './admin-preferences'
 export {
   createResourceController,
   createClientFetcher,

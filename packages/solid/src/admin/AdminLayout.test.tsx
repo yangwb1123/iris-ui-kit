@@ -96,4 +96,28 @@ describe('@iris-ui-kit/solid IrisAdminLayout', () => {
     expect(container.querySelector('[data-iris-nav-menu]')).toBeNull()
     expect(container.querySelector('[data-page]')!.textContent).toBe('dash')
   })
+
+  it('renders horizontal navigation with centered content', () => {
+    const { container } = render(() => (
+      <IrisAdminLayout
+        menus={menus}
+        activeKey="dash"
+        mode="horizontal"
+        menuAlign="center"
+        contentWidth="centered"
+      >
+        {(s) => <main data-page="">{s.activeKey}</main>}
+      </IrisAdminLayout>
+    ))
+    expect(
+      container.querySelector('[data-iris-admin-layout][data-mode="horizontal"]'),
+    ).not.toBeNull()
+    expect(container.querySelector('[data-iris-admin-topnav]')).not.toBeNull()
+    expect(
+      container.querySelector('[data-iris-nav-menu][data-orientation="horizontal"]'),
+    ).not.toBeNull()
+    expect(
+      container.querySelector('[data-iris-admin-content][data-width="centered"]'),
+    ).not.toBeNull()
+  })
 })

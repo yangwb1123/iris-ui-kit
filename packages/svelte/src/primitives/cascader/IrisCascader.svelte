@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { generateId } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
 
   export interface IrisCascaderNode {
@@ -49,9 +50,10 @@
   }: Props = $props()
 
   const { t } = useI18n()
+  const popupId = `${generateId()}-popup`
 
   let open = $state(false)
-  let activePath = $state<string[]>([...value])
+  let activePath = $state<string[]>([])
   let containerEl = $state<HTMLElement | undefined>(undefined)
 
   function pathLabels(nodes: IrisCascaderNode[], path: string[]): string[] {
@@ -123,6 +125,11 @@
     return () => document.removeEventListener('mousedown', onDocDown)
   })
 
+  // Keep the next-open navigation path aligned with a controlled value update.
+  $effect(() => {
+    if (!open) activePath = [...value]
+  })
+
   const sz = $derived(SIZE_MAP[size])
   const borderColor = $derived(invalid ? 'var(--iris-danger)' : 'var(--iris-border)')
 </script>
@@ -139,10 +146,12 @@
 >
   <button
     type="button"
+    role="combobox"
     {id}
     {disabled}
     aria-invalid={invalid ? 'true' : undefined}
     aria-expanded={open}
+    aria-controls={popupId}
     aria-haspopup="listbox"
     data-iris-cascader-trigger
     onkeydown={onTriggerKeyDown}
@@ -171,6 +180,7 @@
 
   {#if open}
     <div
+      id={popupId}
       data-iris-cascader-dropdown
       style:position="absolute"
       style:top="calc(100% + 4px)"
@@ -208,6 +218,13 @@
               data-iris-cascader-item
               data-state={isActive ? 'selected' : 'idle'}
               onclick={() => selectOption(colIdx, node)}
+              onkeydown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  selectOption(colIdx, node)
+                }
+              }}
+              tabindex={node.disabled ? -1 : 0}
               style:display="flex"
               style:align-items="center"
               style:justify-content="space-between"

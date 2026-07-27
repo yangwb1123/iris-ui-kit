@@ -73,4 +73,54 @@ describe('@iris-ui-kit/solid IrisButton', () => {
     render(() => <IrisButton>B</IrisButton>)
     expect(document.querySelectorAll(`#${__BUTTON_STYLE_ID}`)).toHaveLength(1)
   })
+
+  it('asChild merges button props onto one custom element with no wrapper', () => {
+    const calls: string[] = []
+    const { container, getByText } = render(() => (
+      <IrisButton
+        asChild
+        id="save-link"
+        class="parent"
+        style={{ color: 'red', background: 'black' }}
+        onClick={() => calls.push('button')}
+      >
+        <a
+          href="/save"
+          class="child"
+          style={{ color: 'blue' }}
+          onClick={(event) => {
+            event.preventDefault()
+            calls.push('child')
+          }}
+        >
+          Save link
+        </a>
+      </IrisButton>
+    ))
+
+    const anchor = getByText('Save link')
+    expect(container.children).toHaveLength(1)
+    expect(anchor.tagName).toBe('A')
+    expect(anchor.id).toBe('save-link')
+    expect(anchor.className).toBe('iris-button parent child')
+    expect(anchor.getAttribute('data-iris-button-variant')).toBe('solid')
+    expect((anchor as HTMLElement).style.color).toBe('blue')
+    expect((anchor as HTMLElement).style.background).toBe('black')
+    fireEvent.click(anchor)
+    expect(calls).toEqual(['button', 'child'])
+  })
+
+  it('asChild disabled intercepts the child click', () => {
+    const childClick = vi.fn()
+    const { getByText } = render(() => (
+      <IrisButton asChild disabled>
+        <a href="/blocked" onClick={childClick}>
+          Disabled link
+        </a>
+      </IrisButton>
+    ))
+
+    fireEvent.click(getByText('Disabled link'))
+    expect(childClick).not.toHaveBeenCalled()
+  })
 })

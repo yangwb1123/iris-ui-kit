@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// RSC directive gate. Every emitted JS entry of @iris-ui/react must begin with
+// RSC directive gate. Every emitted JS entry of @iris-ui-kit/react must begin with
 // the `'use client'` directive so the package (and every deep-import subpath)
 // can be consumed directly inside a React Server Component — i.e. imported from
 // a Next.js App Router Server Component without a manual client wrapper. The
@@ -36,7 +36,7 @@ for (const f of files) {
 }
 
 // eslint-disable-next-line no-console
-console.log("\nRSC 'use client' directive (@iris-ui/react)\n" + '─'.repeat(48))
+console.log("\nRSC 'use client' directive (@iris-ui-kit/react)\n" + '─'.repeat(48))
 // eslint-disable-next-line no-console
 console.log(`${files.length} JS entr${files.length === 1 ? 'y' : 'ies'} scanned, ${offenders.length} missing`)
 

@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // The @iris-ui workspace packages ship ESM/source consumed directly from the
+  // The @iris-ui-kit workspace packages ship ESM/source consumed directly from the
   // monorepo. transpilePackages tells Next to run them through its compiler
   // (instead of treating node_modules as pre-compiled), which is what makes the
   // `workspace:*` resolution + the `'use client'` boundaries resolve cleanly in
   // both the server-render and the client bundle.
-  transpilePackages: ['@iris-ui/react', '@iris-ui/core', '@iris-ui/theme', '@iris-ui/tokens'],
+  transpilePackages: ['@iris-ui-kit/react', '@iris-ui-kit/core', '@iris-ui-kit/theme', '@iris-ui-kit/tokens'],
   // This app is a build-time SSR/RSC smoke proof, not a deployable surface; a
   // green `next build` (which server-renders every route) is the whole point.
   eslint: {

@@ -42,8 +42,8 @@ const viteDir = dirname(createRequire(vitestEntry).resolve('vite/package.json'))
 const viteEntry = join(viteDir, 'dist/node/index.js')
 const viteMajor = /vite@(\d+)\./.exec(viteDir)?.[1] ?? ''
 
-// vite-plugin-solid — devDep of @iris-ui/solid; pick the build for this vite major.
-const irisPkg = req.resolve('@iris-ui/solid/package.json')
+// vite-plugin-solid — devDep of @iris-ui-kit/solid; pick the build for this vite major.
+const irisPkg = req.resolve('@iris-ui-kit/solid/package.json')
 let pluginEntry
 try {
   pluginEntry = createRequire(irisPkg).resolve('vite-plugin-solid')
@@ -70,9 +70,9 @@ const server = await createServer({
   configFile: false,
   root: appRoot,
   plugins: [solid({ ssr: true })],
-  resolve: { alias: { '@iris-ui/solid': irisSolidSrc } },
+  resolve: { alias: { '@iris-ui-kit/solid': irisSolidSrc } },
   server: { middlewareMode: true, hmr: false },
-  ssr: { noExternal: [/solid-js/, /@solidjs/, /@iris-ui/] },
+  ssr: { noExternal: [/solid-js/, /@solidjs/, /@iris-ui-kit/] },
   optimizeDeps: { noDiscovery: true, include: [] },
   logLevel: 'silent',
 })

@@ -5,7 +5,7 @@
  *
  * Scans all 4 framework adapter directories for `var(--iris-*)` usage,
  * compares against the canonical token set, and reports:
- *   1. Tokens used but NOT defined in @iris-ui/tokens
+ *   1. Tokens used but NOT defined in @iris-ui-kit/tokens
  *   2. Per-framework token coverage gaps
  *   3. Single-framework-only tokens (potential copy-paste drift)
  *
@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
 
-// ── Known token set (parsed from @iris-ui/tokens) ──────────────────────────
+// ── Known token set (parsed from @iris-ui-kit/tokens) ──────────────────────────
 const TOKENS_DIR = path.join(ROOT, 'packages/tokens/src')
 
 function extractDotTokens(filePath) {
@@ -136,13 +136,13 @@ function main() {
 
   var exitCode = 0
 
-  // 1. Tokens used but NOT defined in @iris-ui/tokens
+  // 1. Tokens used but NOT defined in @iris-ui-kit/tokens
   var unknownTokens = [...allTokens].filter(function(t) { return !knownCss.has(t) })
   unknownTokens.sort()
 
   if (unknownTokens.length > 0) {
     console.log('')
-    console.log('  WARNING: ' + unknownTokens.length + ' token(s) used in adapters but NOT defined in @iris-ui/tokens:')
+    console.log('  WARNING: ' + unknownTokens.length + ' token(s) used in adapters but NOT defined in @iris-ui-kit/tokens:')
     console.log('')
     for (var t of unknownTokens) {
       var frameworksUsing = []
@@ -153,11 +153,11 @@ function main() {
     }
     console.log('')
     console.log('  These may be component-local custom properties. If they should be themeable,')
-    console.log('  add them to @iris-ui/tokens.')
+    console.log('  add them to @iris-ui-kit/tokens.')
     exitCode = 1
   } else {
     console.log('')
-    console.log('  All ' + allTokens.size + ' tokens are defined in @iris-ui/tokens.')
+    console.log('  All ' + allTokens.size + ' tokens are defined in @iris-ui-kit/tokens.')
   }
 
   // 2. Per-framework coverage

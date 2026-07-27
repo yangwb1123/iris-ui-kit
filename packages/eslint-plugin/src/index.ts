@@ -12,7 +12,7 @@ export const plugin = {
   get configs() {
     return {
       recommended: {
-        plugins: { '@iris-ui': plugin },
+        plugins: { '@iris-ui-kit': plugin },
         rules: {
           '@iris-ui-kit/no-internal-import': 'error' as const,
           '@iris-ui-kit/use-iris-provider': 'warn' as const,

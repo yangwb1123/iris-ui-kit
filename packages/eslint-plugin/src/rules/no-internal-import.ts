@@ -1,6 +1,6 @@
 import type { Rule } from 'eslint'
 
-const INTERNAL_PATH_RE = /^@iris-ui\/(react|vue|solid|svelte)\/src\//
+const INTERNAL_PATH_RE = /^@iris-ui-kit\/(react|vue|solid|svelte)\/src\//
 
 const rule: Rule.RuleModule = {
   meta: {

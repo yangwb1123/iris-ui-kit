@@ -1,7 +1,7 @@
 import type { Rule } from 'eslint'
 
-/** Any @iris-ui framework adapter (not plugins) */
-const IRIS_FRAMEWORK_RE = /^@iris-ui\/(react|vue|solid|svelte)(\/|$)/
+/** Any @iris-ui-kit framework adapter (not plugins) */
+const IRIS_FRAMEWORK_RE = /^@iris-ui-kit\/(react|vue|solid|svelte)(\/|$)/
 
 const rule: Rule.RuleModule = {
   meta: {

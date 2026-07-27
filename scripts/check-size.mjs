@@ -92,9 +92,9 @@ const BUDGETS = {
  * Per-NAMED-EXPORT tree-shake cost table — the gzip cost a consumer ACTUALLY
  * pays to import a SINGLE symbol from an adapter barrel, which the whole-package
  * budget above is blind to. For each export we bundle a tiny entry that
- * re-exports ONLY that symbol (`export { X } from '@iris-ui/react'`) with
+ * re-exports ONLY that symbol (`export { X } from '@iris-ui-kit/react'`) with
  * esbuild's tree-shaking + minify, externalize the framework + sibling
- * `@iris-ui/*` packages (so we measure the adapter's own payload, not React/Vue),
+ * `@iris-ui-kit/*` packages (so we measure the adapter's own payload, not React/Vue),
  * then gzip the result. The delta between a single export and its whole package
  * is the tree-shake-effectiveness signal: a cheap export tree-shakes cleanly; an
  * expensive one drags in a fat shared chunk and is the marker to split.
@@ -107,8 +107,8 @@ const ESBUILD_BIN = join(repoRoot, 'node_modules', '.bin', 'esbuild')
 
 /** Externals so the probe measures the ADAPTER's payload, not its peer deps. */
 const EXTERNALS = {
-  react: ['react', 'react-dom', 'react/jsx-runtime', '@iris-ui/*'],
-  vue: ['vue', '@iris-ui/*'],
+  react: ['react', 'react-dom', 'react/jsx-runtime', '@iris-ui-kit/*'],
+  vue: ['vue', '@iris-ui-kit/*'],
   icons: [],
 }
 
@@ -205,7 +205,7 @@ const IMPORT_PROBES = [
       const gzipKb = bundleExportGzipKb(p.pkg, p.export)
       if (gzipKb === null) return null
       const whole = current[p.pkg]
-      const share = whole ? ` (${Math.round((gzipKb / whole) * 100)}% of @iris-ui/${p.pkg})` : ''
+      const share = whole ? ` (${Math.round((gzipKb / whole) * 100)}% of @iris-ui-kit/${p.pkg})` : ''
       return { gzipKb, note: `single-export bundle${share}` }
     },
   })),
@@ -279,9 +279,9 @@ const pad = (s, n) => String(s).padEnd(n)
 const MARK = { ok: '✓', OVER: '✗', MISSING: '✗', WARN: '!', skip: '·' }
 const printRow = (r) => {
   const mark = MARK[r.status] ?? '?'
-  // Package rows get the @iris-ui/ prefix + aligned columns; probe rows (whose
+  // Package rows get the @iris-ui-kit/ prefix + aligned columns; probe rows (whose
   // name carries spaces) print as a free-form line.
-  const label = r.pkg.includes(' ') ? r.pkg : '@iris-ui/' + r.pkg
+  const label = r.pkg.includes(' ') ? r.pkg : '@iris-ui-kit/' + r.pkg
   // eslint-disable-next-line no-console
   console.log(`${mark} ${pad(label, 20)} ${pad(r.status, 8)} ${r.detail}`)
 }

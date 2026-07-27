@@ -1,5 +1,5 @@
 // Generate DTCG token files + a Style Dictionary config from the Iris themes.
-// Run after building the package:  pnpm --filter @iris-ui/tokens tokens:build
+// Run after building the package:  pnpm --filter @iris-ui-kit/tokens tokens:build
 //
 // Outputs (under dist/tokens/, a build artifact — not committed):
 //   iris-light.tokens.json     DTCG token document for the light theme

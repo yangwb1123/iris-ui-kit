@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React 18/19 adapter for Iris UI — full component set",
   "license": "MIT",
   "type": "module",

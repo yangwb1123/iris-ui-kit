@@ -9,8 +9,8 @@
 // workspace, then does a real `import` from each and checks it resolves to a
 // non-empty module. Run after build:
 //
-//   pnpm turbo run build --filter=@iris-ui/core --filter=@iris-ui/react \
-//     --filter=@iris-ui/vue --filter=@iris-ui/solid --filter=@iris-ui/svelte
+//   pnpm turbo run build --filter=@iris-ui-kit/core --filter=@iris-ui-kit/react \
+//     --filter=@iris-ui-kit/vue --filter=@iris-ui-kit/solid --filter=@iris-ui-kit/svelte
 //   pnpm check:pack-install
 //
 // Zero deps: node:fs/os/path/url + child_process (pnpm/npm/node CLIs).
@@ -25,7 +25,7 @@ const packagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'package
 const CURATED = ['core', 'react', 'vue', 'solid', 'svelte']
 // core/react/vue/solid are fully precompiled to plain JS (tsup bundles them),
 // so a real external consumer's plain `import()` is a realistic, meaningful
-// proof. @iris-ui/svelte ships raw .svelte source files (via `svelte-package`,
+// proof. @iris-ui-kit/svelte ships raw .svelte source files (via `svelte-package`,
 // the OFFICIAL tool for packaging Svelte component libraries) — this is
 // deliberate and idiomatic: Svelte's own packaging guidance says libraries
 // SHOULD ship uncompiled .svelte files so the *consumer's* Svelte compiler
@@ -43,13 +43,13 @@ const EXPORTS_RESOLVE_CHECK = ['svelte']
 const readPkg = (dir) => JSON.parse(readFileSync(join(packagesDir, dir, 'package.json'), 'utf8'))
 const irisDeps = (dir) =>
   Object.keys(readPkg(dir).dependencies || {})
-    .filter((d) => d.startsWith('@iris-ui/'))
-    .map((d) => d.slice('@iris-ui/'.length))
+    .filter((d) => d.startsWith('@iris-ui-kit/'))
+    .map((d) => d.slice('@iris-ui-kit/'.length))
 
 // `pnpm pack` bakes "workspace:*" down to a literal version (e.g. "0.0.0"), so
-// react/vue/solid/svelte's un-published @iris-ui/{icons,skins,theme,tokens}
+// react/vue/solid/svelte's un-published @iris-ui-kit/{icons,skins,theme,tokens}
 // deps become real, unresolvable registry requests unless we pack + file:
-// those too. BFS the whole @iris-ui/* closure from CURATED so `npm install`
+// those too. BFS the whole @iris-ui-kit/* closure from CURATED so `npm install`
 // never has to reach the registry for anything workspace-internal.
 const closure = new Set(CURATED)
 const queue = [...CURATED]
@@ -103,7 +103,7 @@ async function run() {
     if (failed) return false
 
     // 2. A plain, non-workspace package.json — no "workspace:*", every
-    //    @iris-ui/* dep pinned to its packed tarball via file:.
+    //    @iris-ui-kit/* dep pinned to its packed tarball via file:.
     const dependencies = {}
     for (const dir of ALL) dependencies[readPkg(dir).name] = `file:${tarballs[dir]}`
     writeFileSync(

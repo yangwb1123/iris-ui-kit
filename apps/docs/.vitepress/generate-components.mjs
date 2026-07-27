@@ -5,8 +5,8 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { themeToCss } from '@iris-ui/theme'
-import { lightTheme, darkTheme } from '@iris-ui/tokens'
+import { themeToCss } from '@iris-ui-kit/theme'
+import { lightTheme, darkTheme } from '@iris-ui-kit/tokens'
 
 // Curated live demos (Vue, mounted client-only via the <IrisDemo> wrapper).
 // Keyed by component name; injected right after the component heading. Only
@@ -104,7 +104,7 @@ lines.push(
 )
 lines.push('')
 lines.push(
-  `Import from ${manifest.frameworks.map((f) => `\`@iris-ui/${f}\``).join(', ')} ` +
+  `Import from ${manifest.frameworks.map((f) => `\`@iris-ui-kit/${f}\``).join(', ')} ` +
     `(same names, same semantics).`,
 )
 lines.push('')
@@ -202,7 +202,7 @@ writeFileSync(outPath, lines.join('\n'))
 console.log(`[docs] wrote components.md (${manifest.stats.total} components)`)
 
 // Static token stylesheet for the live demos — the real Iris light/dark CSS
-// variables (via @iris-ui/theme themeToCss), so demos are themed without a
+// variables (via @iris-ui-kit/theme themeToCss), so demos are themed without a
 // runtime <ThemeProvider> (components fall back to these CSS vars). `.dark`
 // matches VitePress's dark-mode class.
 const tokensCss =

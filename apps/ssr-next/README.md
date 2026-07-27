@@ -30,7 +30,7 @@ app/
   page.tsx     Server Component — imports and renders the client island
   Demo.tsx     'use client' island — the interactive components + hydration
   globals.css  minimal page reset
-next.config.mjs  transpilePackages for the workspace @iris-ui packages
+next.config.mjs  transpilePackages for the workspace @iris-ui-kit packages
 ```
 
 `app/page.tsx` (a **Server Component**, no directive) renders `app/Demo.tsx` (a

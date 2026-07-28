@@ -1,29 +1,29 @@
 {
-  "_comment": "Performance baselines — auto-calibrated from measured ops/sec. Update with 'node scripts/check-bench-regression.mjs --update'.",
+  "_comment": "Performance baselines in ops/sec, calibrated on GitHub Actions ubuntu-latest with Node 20. Update only from the same CI environment.",
   "form": {
-    "10k sequential field updates (keystroke sim)": 99,
-    "validate 10 fields × 1k iterations": 881,
-    "insert + remove 1k rows": 33,
-    "10k nested path field updates": 16,
-    "500 swaps (reorder simulation)": 73
+    "10k sequential field updates (keystroke sim)": 27.3715,
+    "validate 10 fields × 1k iterations": 232.71,
+    "insert + remove 1k rows": 6.6493,
+    "10k nested path field updates": 6.2923,
+    "500 swaps (reorder simulation)": 13.7581
   },
   "resilience": {
-    "10k unique fetches (no cache hits)": 532,
-    "10k repeated fetches (all cache hits)": 1539,
-    "10k state checks (no-op while closed)": 1785,
-    "10k tryRemove (all succeed with large capacity)": 2990,
-    "10k cache hit (resilient path)": 1466,
-    "10k enqueue (all succeed immediately)": 0.87
+    "10k unique fetches (no cache hits)": 224.02,
+    "10k repeated fetches (all cache hits)": 698.77,
+    "10k state checks (no-op while closed)": 759.43,
+    "10k tryRemove (all succeed with large capacity)": 1799.85,
+    "10k cache hit (resilient path)": 673.38,
+    "10k enqueue (all succeed immediately)": 0.44
   },
   "scale": {
-    "construct + initial sync load": 144190,
-    "setSort (full re-sort + page)": 683,
-    "setFilter (full scan + page)": 3036,
-    "100 scroll steps (O(log n) windowing each)": 764,
-    "1000 measures (O(log n) point updates)": 645,
-    "bulk set 100k keys": 150,
-    "100k isSelected lookups (Set-backed O(1))": 130,
-    "toggleAll → partial toggle → toggleAll again": 455,
-    "post 1000 notifications": 259
+    "construct + initial sync load": 47307.35,
+    "setSort (full re-sort + page)": 294.35,
+    "setFilter (full scan + page)": 1301.47,
+    "100 scroll steps (O(log n) windowing each)": 243.28,
+    "1000 measures (O(log n) point updates)": 217.25,
+    "bulk set 100k keys": 52.855,
+    "100k isSelected lookups (Set-backed O(1))": 45.2515,
+    "toggleAll → partial toggle → toggleAll again": 220.92,
+    "post 1000 notifications": 282.74
   }
 }

@@ -1,7 +1,7 @@
 {
   "schema": "iris-ui/registry@1",
   "name": "Iris UI official source registry",
-  "homepage": "https://github.com/nousresearch/iris-ui",
+  "homepage": "https://github.com/yangwb1123/iris-ui-kit",
   "items": [
     {
       "name": "admin-layout",

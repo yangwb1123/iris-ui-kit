@@ -48,7 +48,7 @@ export function createProjectConfig(
     framework,
     aliases: { ...DEFAULT_ALIASES, ...overrides.aliases },
     registries: {
-      iris: 'https://raw.githubusercontent.com/nousresearch/iris-ui/main/registry/registry.json',
+      iris: 'https://raw.githubusercontent.com/yangwb1123/iris-ui-kit/main/registry/registry.json',
       ...overrides.registries,
     },
   }

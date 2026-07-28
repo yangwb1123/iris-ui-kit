@@ -133,7 +133,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nousresearch/iris-ui.git"
+    "url": "https://github.com/yangwb1123/iris-ui-kit.git"
   },
   "publishConfig": {
     "access": "public"

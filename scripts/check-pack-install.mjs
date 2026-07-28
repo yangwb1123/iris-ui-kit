@@ -68,6 +68,23 @@ const PUBLISHABLE = readdirSync(packagesDir)
   .filter((dir) => readPkg(dir).private !== true)
   .sort()
 
+// npm provenance verifies each published package's repository metadata against
+// the GitHub Actions source repository. Keep this exact so a repository move
+// cannot pass pack-install and then fail every publish with E422.
+const EXPECTED_REPOSITORY_URL = 'https://github.com/yangwb1123/iris-ui-kit.git'
+const invalidRepositories = PUBLISHABLE.flatMap((dir) => {
+  const repository = readPkg(dir).repository
+  const url = typeof repository === 'string' ? repository : repository?.url
+  return url === EXPECTED_REPOSITORY_URL ? [] : [`packages/${dir}: ${url ?? '<missing>'}`]
+})
+if (invalidRepositories.length > 0) {
+  console.error(
+    `✗ Publishable package repository metadata must be ${EXPECTED_REPOSITORY_URL}:\n` +
+      invalidRepositories.map((entry) => `  - ${entry}`).join('\n'),
+  )
+  process.exit(1)
+}
+
 const irisDeps = (dir) =>
   Object.keys(readPkg(dir).dependencies || {})
     .filter((d) => d.startsWith('@iris-ui-kit/'))

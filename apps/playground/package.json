@@ -19,11 +19,11 @@
     "@iris-ui-kit/plugin-markdown": "workspace:^",
     "@iris-ui-kit/tokens": "workspace:*",
     "@iris-ui-kit/vue": "workspace:*",
-    "vue": "^3.5.13"
+    "vue": "^3.5.40"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
-    "vite": "^5.4.11",
+    "vite": "^8.1.5",
     "vue-tsc": "^2.1.10"
   }
 }

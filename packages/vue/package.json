@@ -118,7 +118,7 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@floating-ui/dom": "^1.7.6",
+    "@floating-ui/dom": "^1.8.0",
     "@iris-ui-kit/core": "workspace:*",
     "@iris-ui-kit/icons": "workspace:*",
     "@iris-ui-kit/skins": "workspace:*",
@@ -132,7 +132,7 @@
     "@vue/server-renderer": "3.5.34",
     "@vue/test-utils": "^2.4.6",
     "jsdom": "^25.0.1",
-    "vue": "^3.5.13"
+    "vue": "^3.5.40"
   },
   "repository": {
     "type": "git",

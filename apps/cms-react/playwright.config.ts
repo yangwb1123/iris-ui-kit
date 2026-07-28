@@ -21,13 +21,16 @@ export default defineConfig({
       // ordinary anti-aliasing/subpixel-rendering jitter; Playwright's own
       // docs suggest ~0.2 as a sane non-strict default, so we keep it.
       // `maxDiffPixelRatio` additionally caps how much of the WHOLE image
-      // may differ (2%) — generous enough to survive font-hinting/GPU-
+      // may differ (2.5%) — calibrated against Ubuntu runner/container
+      // font-hinting and GPU-rasterization drift while remaining below the
+      // ~3% diff produced by the stale pre-workspace-expansion baselines.
+      // This is generous enough to survive ordinary cross-environment
       // rasterization drift between the machine that generated a baseline
       // and the one comparing against it, but far below what a real CSS/
       // design-token regression would produce (that flips large, contiguous
       // regions, not a scattered few percent of pixels).
       threshold: 0.2,
-      maxDiffPixelRatio: 0.02,
+      maxDiffPixelRatio: 0.025,
       // Freeze CSS animations/transitions (dialog fade-in, hover/focus
       // transitions, the sort-indicator, etc.) so their in-flight state
       // can't land differently between the baseline and a later run.

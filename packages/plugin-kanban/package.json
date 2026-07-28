@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/plugin-kanban",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Kanban board plugin for Iris UI: IrisKanban renders a drag-and-drop board from a declarative column/card config for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",

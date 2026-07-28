@@ -1,6 +1,6 @@
 {
   "name": "ssr-nuxt",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "type": "module",
   "description": "Nuxt 3 file-routed SSR reference app for @iris-ui-kit/vue",

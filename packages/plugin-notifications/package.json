@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/plugin-notifications",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Persistent notification center for Iris UI: an inbox-style store + IrisNotificationCenter panel (unread count, mark-read, dismiss) for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",

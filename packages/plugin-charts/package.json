@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/plugin-charts",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Zero-dependency, token-themed SVG charts plugin for Iris UI: IrisLineChart / IrisBarChart / IrisSparkline for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",

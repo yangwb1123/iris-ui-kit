@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/skins",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Loadable, token-built skin system for Iris UI: inheritance, custom tokens, marketplace catalog, runtime engine",
   "license": "MIT",
   "type": "module",

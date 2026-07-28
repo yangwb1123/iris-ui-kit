@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Framework-agnostic engines for Iris UI: store, state machine, forms, i18n, virtualization, async, pagination",
   "license": "MIT",
   "type": "module",

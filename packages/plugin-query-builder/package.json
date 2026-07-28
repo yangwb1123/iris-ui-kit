@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/plugin-query-builder",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Visual query/filter builder for Iris UI: compose the data engine's typed FilterRule operators as stacked rule rows, for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",

@@ -1,5 +1,16 @@
 # todo-app
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [38f5b85]
+  - @iris-ui-kit/core@0.2.0
+  - @iris-ui-kit/tokens@0.2.0
+  - @iris-ui-kit/theme@0.2.0
+  - @iris-ui-kit/skins@0.1.0
+  - @iris-ui-kit/react@0.2.0
+
 ## 0.0.1
 
 ### Patch Changes

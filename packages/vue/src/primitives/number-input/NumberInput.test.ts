@@ -3,6 +3,16 @@ import { mount } from '@vue/test-utils'
 import { IrisNumberInput } from './NumberInput'
 
 describe('IrisNumberInput', () => {
+  it('syncs its displayed text when a controlled value arrives asynchronously', async () => {
+    const w = mount(IrisNumberInput, { props: { modelValue: null } })
+    const input = w.find('input')
+    expect((input.element as HTMLInputElement).value).toBe('')
+    await w.setProps({ modelValue: 1200 })
+    expect((input.element as HTMLInputElement).value).toBe('1200')
+    await w.setProps({ modelValue: null })
+    expect((input.element as HTMLInputElement).value).toBe('')
+  })
+
   it('renders input + +/- buttons', () => {
     const w = mount(IrisNumberInput)
     expect(w.find('input').exists()).toBe(true)

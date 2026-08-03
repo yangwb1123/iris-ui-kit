@@ -1,4 +1,4 @@
-import { computed, defineComponent, h, ref, type PropType } from 'vue'
+import { computed, defineComponent, h, ref, watch, type PropType } from 'vue'
 import type { Size } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 
@@ -54,6 +54,13 @@ export const IrisNumberInput = defineComponent({
     const focused = ref(false)
     const rawText = ref<string>(
       props.modelValue === null || props.modelValue === undefined ? '' : String(props.modelValue),
+    )
+
+    watch(
+      () => props.modelValue,
+      (next) => {
+        rawText.value = next === null || next === undefined ? '' : String(next)
+      },
     )
 
     const startValue = computed(() => {

@@ -118,7 +118,7 @@ export function IrisNavMenu({
     background: opts.active
       ? 'var(--iris-primary)'
       : opts.hovered && !opts.disabled
-        ? 'var(--iris-surface)'
+        ? 'var(--iris-surface-hover, var(--iris-surface))'
         : 'transparent',
     color: opts.active
       ? 'var(--iris-primary-foreground, #fff)'

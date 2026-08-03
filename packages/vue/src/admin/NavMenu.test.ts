@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { IrisNavMenu } from './NavMenu'
 import type { NavNode } from '@iris-ui-kit/core'
+import { __NAV_MENU_STYLE_ID, __resetNavMenuStyles } from './styles'
 
 const items: NavNode[] = [
   { key: 'dash', title: 'Dashboard', icon: 'menu' },
@@ -12,6 +13,20 @@ const items: NavNode[] = [
     children: [
       { key: 'users', title: 'Users' },
       { key: 'roles', title: 'Roles', badge: 3 },
+    ],
+  },
+]
+
+const nestedItems: NavNode[] = [
+  {
+    key: 'sys',
+    title: 'System',
+    children: [
+      {
+        key: 'admin',
+        title: 'Administration',
+        children: [{ key: 'users', title: 'Users' }],
+      },
     ],
   },
 ]
@@ -46,9 +61,254 @@ describe('IrisNavMenu', () => {
     expect(w.find('[data-iris-nav-children]').exists()).toBe(true)
     const active = w
       .findAll('[data-iris-nav-item]')
-      .find((b) => b.attributes('data-active') === 'true')
-    expect(active!.text()).toContain('Users')
-    expect(active!.attributes('aria-current')).toBe('page')
+      .filter((b) => b.attributes('data-active') === 'true')
+    expect(active).toHaveLength(1)
+    expect(active[0]!.text()).toContain('Users')
+    expect(active[0]!.attributes('aria-current')).toBe('page')
+
+    const trail = w
+      .findAll('[data-iris-nav-item]')
+      .filter((b) => b.attributes('data-active-trail') === 'true')
+    expect(trail).toHaveLength(1)
+    expect(trail[0]!.attributes('data-key')).toBe('sys')
+    expect(trail[0]!.attributes('aria-current')).toBeUndefined()
+  })
+
+  it('keeps expansion history distinct from horizontal visibility and active state', () => {
+    const horizontalItems: NavNode[] = [
+      ...items,
+      {
+        key: 'ops',
+        title: 'Operations',
+        children: [{ key: 'jobs', title: 'Jobs' }],
+      },
+    ]
+    const w = mount(IrisNavMenu, {
+      props: {
+        items: horizontalItems,
+        activeKey: 'users',
+        expandedKeys: ['sys', 'ops'],
+        orientation: 'horizontal',
+      },
+    })
+
+    expect(
+      w
+        .findAll('[data-iris-nav-item][data-active="true"]')
+        .map((item) => item.attributes('data-key')),
+    ).toEqual(['users'])
+    expect(
+      w
+        .findAll('[data-iris-nav-item][data-active-trail="true"]')
+        .map((item) => item.attributes('data-key')),
+    ).toEqual(['sys'])
+    expect(
+      w
+        .findAll('[data-iris-nav-item][data-open="true"]')
+        .map((item) => item.attributes('data-key')),
+    ).toEqual([])
+  })
+
+  it('shows a horizontal submenu on hover and keeps it open while leaving the trigger', async () => {
+    const w = mount(IrisNavMenu, { props: { items, orientation: 'horizontal' } })
+    const group = w.find('[data-iris-nav-group]')
+    const trigger = group.find('[data-iris-nav-item]')
+    const children = group.find('[data-iris-nav-children]')
+
+    expect(children.exists()).toBe(true)
+    expect(children.attributes('style')).toContain('display: none')
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+
+    await group.trigger('mouseenter')
+    expect(children.attributes('style')).toContain('display: block')
+    expect(trigger.attributes('aria-expanded')).toBe('true')
+
+    await trigger.trigger('mouseleave')
+    expect(children.attributes('style')).toContain('display: block')
+
+    await group.trigger('mouseleave')
+    expect(children.attributes('style')).toContain('display: none')
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+  })
+
+  it('closes horizontal menus after selecting a leaf', async () => {
+    const w = mount(IrisNavMenu, {
+      props: { items: nestedItems, orientation: 'horizontal' },
+    })
+    const groups = w.findAll('[data-iris-nav-group]')
+    const groupFor = (key: string) =>
+      groups.find((group) => group.element.firstElementChild?.getAttribute('data-key') === key)!
+
+    await groupFor('sys').trigger('mouseenter')
+    await groupFor('admin').trigger('mouseenter')
+    expect(w.findAll('[data-iris-nav-item][data-open="true"]')).toHaveLength(2)
+
+    await w.find('[data-key="users"]').trigger('click')
+    expect(
+      w
+        .findAll('[data-iris-nav-children]')
+        .every((children) => children.attributes('style')?.includes('display: none')),
+    ).toBe(true)
+    expect(w.findAll('[data-iris-nav-item][data-open="true"]')).toHaveLength(0)
+    expect(w.emitted('select')![0]).toEqual(['users', nestedItems[0]!.children![0]!.children![0]])
+  })
+
+  it('opens nested horizontal branches as right-side flyouts without depth indentation', async () => {
+    const w = mount(IrisNavMenu, {
+      props: { items: nestedItems, orientation: 'horizontal' },
+    })
+    const groups = w.findAll('[data-iris-nav-group]')
+    const groupFor = (key: string) =>
+      groups.find((group) => group.element.firstElementChild?.getAttribute('data-key') === key)!
+
+    await groupFor('sys').trigger('mouseenter')
+    await groupFor('admin').trigger('mouseenter')
+
+    const flyoutStyle = groupFor('admin').find('[data-iris-nav-children]').attributes('style')
+    expect(flyoutStyle).toContain('display: block')
+    expect(flyoutStyle).toContain('position: absolute')
+    expect(flyoutStyle).toContain('inset-block-start: 0')
+    expect(flyoutStyle).toContain('inset-inline-start: 100%')
+    expect(w.find('[data-key="admin"]').attributes('style')).toContain('padding-inline-start: 10px')
+    expect(w.find('[data-key="users"]').attributes('style')).toContain('padding-inline-start: 10px')
+  })
+
+  it('opens a horizontal submenu for keyboard focus', async () => {
+    const w = mount(IrisNavMenu, { props: { items, orientation: 'horizontal' } })
+    const group = w.find('[data-iris-nav-group]')
+    const children = group.find('[data-iris-nav-children]')
+
+    await group.trigger('focusin')
+    expect(children.attributes('style')).toContain('display: block')
+    await group.trigger('focusout')
+    expect(children.attributes('style')).toContain('display: none')
+  })
+
+  it('gives the hovered horizontal branch priority over a previously focused sibling', async () => {
+    const horizontalItems: NavNode[] = [
+      ...items,
+      {
+        key: 'ops',
+        title: 'Operations',
+        children: [{ key: 'jobs', title: 'Jobs' }],
+      },
+    ]
+    const w = mount(IrisNavMenu, {
+      props: { items: horizontalItems, orientation: 'horizontal' },
+    })
+    const groups = w.findAll('[data-iris-nav-group]')
+    const groupFor = (key: string) =>
+      groups.find((group) => group.element.firstElementChild?.getAttribute('data-key') === key)!
+
+    await groupFor('sys').trigger('focusin')
+    await groupFor('ops').trigger('mouseenter')
+
+    expect(
+      w
+        .findAll('[data-iris-nav-item][data-open="true"]')
+        .map((item) => item.attributes('data-key')),
+    ).toEqual(['ops'])
+  })
+
+  it('uses down arrows only for top-level horizontal branches', () => {
+    const horizontal = mount(IrisNavMenu, {
+      props: { items: nestedItems, orientation: 'horizontal' },
+    })
+    const vertical = mount(IrisNavMenu, {
+      props: { items: nestedItems, activeKey: 'users', orientation: 'vertical' },
+    })
+
+    expect(horizontal.find('[data-key="sys"] [data-iris-icon="chevron-down"]').exists()).toBe(true)
+    expect(horizontal.find('[data-key="admin"] [data-iris-icon="chevron-right"]').exists()).toBe(
+      true,
+    )
+    expect(horizontal.find('[data-key="admin"] [data-iris-icon="chevron-down"]').exists()).toBe(
+      false,
+    )
+    expect(vertical.findAll('[data-iris-icon="chevron-right"]')).toHaveLength(2)
+    expect(vertical.find('[data-iris-icon="chevron-down"]').exists()).toBe(false)
+  })
+
+  it('reverses a branch arrow while active, hovered, open, or on the active trail', async () => {
+    const vertical = mount(IrisNavMenu, { props: { items } })
+    const branch = vertical.find('[data-key="sys"]')
+    const arrow = () => branch.find('.iris-nav-menu-arrow')
+
+    expect(arrow().attributes('data-reversed')).toBeUndefined()
+    await branch.trigger('mouseenter')
+    expect(arrow().attributes('data-reversed')).toBe('true')
+    await branch.trigger('mouseleave')
+    expect(arrow().attributes('data-reversed')).toBeUndefined()
+
+    await branch.trigger('click')
+    expect(arrow().attributes('data-reversed')).toBe('true')
+
+    const activeBranch = mount(IrisNavMenu, {
+      props: { items, activeKey: 'sys' },
+    })
+    expect(
+      activeBranch.find('[data-key="sys"] .iris-nav-menu-arrow').attributes('data-reversed'),
+    ).toBe('true')
+
+    const activeTrail = mount(IrisNavMenu, {
+      props: { items: nestedItems, activeKey: 'users' },
+    })
+    expect(
+      activeTrail.find('[data-key="sys"] .iris-nav-menu-arrow').attributes('data-reversed'),
+    ).toBe('true')
+    expect(
+      activeTrail.find('[data-key="admin"] .iris-nav-menu-arrow').attributes('data-reversed'),
+    ).toBe('true')
+  })
+
+  it('keeps a horizontal arrow reversed while its hover flyout remains visible', async () => {
+    const w = mount(IrisNavMenu, {
+      props: { items: nestedItems, orientation: 'horizontal' },
+    })
+    const group = w.find('[data-iris-nav-group]')
+    const arrow = () => group.find('.iris-nav-menu-arrow')
+
+    expect(arrow().attributes('data-reversed')).toBeUndefined()
+    await group.trigger('mouseenter')
+    expect(arrow().attributes('data-reversed')).toBe('true')
+    await group.find('[data-iris-nav-item]').trigger('mouseleave')
+    expect(arrow().attributes('data-reversed')).toBe('true')
+    await group.trigger('mouseleave')
+    expect(arrow().attributes('data-reversed')).toBeUndefined()
+  })
+
+  it('installs class-based arrow motion once with reduced-motion support', () => {
+    __resetNavMenuStyles()
+    const first = mount(IrisNavMenu, { props: { items } })
+    const second = mount(IrisNavMenu, { props: { items } })
+    const styles = document.querySelectorAll(`#${__NAV_MENU_STYLE_ID}`)
+
+    expect(styles).toHaveLength(1)
+    expect(styles[0]?.textContent).toContain('.iris-nav-menu-arrow[data-reversed="true"]')
+    expect(styles[0]?.textContent).toContain('transform: rotate(180deg)')
+    expect(styles[0]?.textContent).toContain('prefers-reduced-motion: reduce')
+
+    first.unmount()
+    second.unmount()
+  })
+
+  it('applies the hover token only to an enabled hovered item', async () => {
+    const w = mount(IrisNavMenu, {
+      props: {
+        items: [...items, { key: 'disabled', title: 'Disabled', disabled: true }],
+      },
+    })
+    const [dash, sys, disabled] = w.findAll('[data-iris-nav-item]')
+
+    await dash!.trigger('mouseenter')
+
+    expect(dash!.attributes('style')).toContain(
+      'background: var(--iris-surface-hover, var(--iris-surface))',
+    )
+    expect(sys!.attributes('style')).toContain('background: transparent')
+
+    await disabled!.trigger('mouseenter')
+    expect(disabled!.attributes('style')).toContain('background: transparent')
   })
 
   it('renders a badge for a leaf with badge', async () => {

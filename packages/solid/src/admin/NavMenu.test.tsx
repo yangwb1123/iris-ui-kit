@@ -82,4 +82,22 @@ describe('@iris-ui-kit/solid IrisNavMenu', () => {
     expect(onExpanded).toHaveBeenCalledWith(['sys'])
     expect(container.querySelector('[data-iris-nav-children]')).toBeNull()
   })
+
+  it('applies the hover token only to an enabled hovered item', () => {
+    const { container } = render(() => (
+      <IrisNavMenu
+        items={[
+          { key: 'enabled', title: 'Enabled' },
+          { key: 'disabled', title: 'Disabled', disabled: true },
+        ]}
+      />
+    ))
+    const [enabled, disabled] = navItems(container)
+
+    fireEvent.mouseEnter(enabled!)
+    expect(enabled!.style.background).toBe('var(--iris-surface-hover, var(--iris-surface))')
+
+    fireEvent.mouseEnter(disabled!)
+    expect(disabled!.style.background).toBe('transparent')
+  })
 })

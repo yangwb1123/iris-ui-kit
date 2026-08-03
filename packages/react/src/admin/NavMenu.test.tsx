@@ -98,6 +98,24 @@ describe('IrisNavMenu (react)', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
+  it('applies the hover token only to an enabled hovered item', () => {
+    const { container } = render(
+      <IrisNavMenu
+        items={[
+          { key: 'enabled', title: 'Enabled' },
+          { key: 'disabled', title: 'Disabled', disabled: true },
+        ]}
+      />,
+    )
+    const [enabled, disabled] = navItems(container)
+
+    fireEvent.mouseEnter(enabled!)
+    expect(enabled!.style.background).toBe('var(--iris-surface-hover, var(--iris-surface))')
+
+    fireEvent.mouseEnter(disabled!)
+    expect(disabled!.style.background).toBe('transparent')
+  })
+
   it('Arrow Down / Up / Home / End move focus between visible items', () => {
     const { container } = render(<IrisNavMenu items={items} />, {
       container: document.body.appendChild(document.createElement('div')),

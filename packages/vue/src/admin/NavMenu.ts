@@ -21,6 +21,7 @@ import {
 } from '@iris-ui-kit/core'
 import { IrisIcon } from '../primitives/icon/Icon'
 import { useI18n } from '../i18n'
+import { installNavMenuStyles } from './styles'
 
 /**
  * Data-driven nested navigation menu — the sidebar nav of the admin shell.
@@ -57,6 +58,7 @@ export const IrisNavMenu = defineComponent({
     'update:expandedKeys': (_keys: string[]) => true,
   },
   setup(props, { emit, attrs }) {
+    installNavMenuStyles()
     const { t } = useI18n()
     const tree = computed(() => visibleNav(props.items))
     const activePath = computed(() =>
@@ -108,23 +110,56 @@ export const IrisNavMenu = defineComponent({
       }
     }
 
+    const hovered = ref<string | null>(null)
+    const hoveredBranches = ref<string[]>([])
+    const focusedBranches = ref<string[]>([])
+
+    const closeHorizontalMenus = (): void => {
+      if (props.orientation !== 'horizontal') return
+      hovered.value = null
+      hoveredBranches.value = []
+      focusedBranches.value = []
+    }
+
     const select = (node: NavNode): void => {
       if (node.disabled) return
+      closeHorizontalMenus()
       emit('select', node.key, node)
     }
 
-    const hovered = ref<string | null>(null)
+    const setBranchInteraction = (
+      state: typeof hoveredBranches,
+      key: string,
+      enabled: boolean,
+    ): void => {
+      const current = state.value
+      if (enabled) {
+        if (!current.includes(key)) state.value = [...current, key]
+      } else if (current.includes(key)) {
+        state.value = current.filter((item) => item !== key)
+      }
+    }
+
+    const interactionKeyAtDepth = (keys: string[], depth: number): string | undefined =>
+      keys.find((key) => findNavPath(props.items, key).length === depth + 1)
+
+    const horizontalBranchVisible = (key: string, depth: number): boolean => {
+      const hoveredAtDepth = interactionKeyAtDepth(hoveredBranches.value, depth)
+      if (hoveredAtDepth) return hoveredAtDepth === key
+      return interactionKeyAtDepth(focusedBranches.value, depth) === key
+    }
 
     const itemStyle = (opts: {
       depth: number
       active: boolean
       trail: boolean
+      hovered: boolean
       disabled: boolean
     }): Record<string, string> => {
       const bg = opts.active
         ? 'var(--iris-primary)'
-        : hovered.value && !opts.disabled
-          ? 'var(--iris-surface)'
+        : opts.hovered && !opts.disabled
+          ? 'var(--iris-surface-hover, var(--iris-surface))'
           : 'transparent'
       return {
         display: 'flex',
@@ -147,7 +182,10 @@ export const IrisNavMenu = defineComponent({
         cursor: opts.disabled ? 'not-allowed' : 'pointer',
         opacity: opts.disabled ? '0.5' : '1',
         padding: props.collapsed ? '10px' : '8px 10px',
-        paddingInlineStart: props.collapsed ? '10px' : `${12 + opts.depth * 16}px`,
+        paddingInlineStart:
+          props.collapsed || props.orientation === 'horizontal'
+            ? '10px'
+            : `${12 + opts.depth * 16}px`,
         justifyContent: props.collapsed ? 'center' : 'flex-start',
       }
     }
@@ -200,7 +238,13 @@ export const IrisNavMenu = defineComponent({
             title: node.title,
             'aria-label': branch ? `${node.title} (section)` : node.title,
             'aria-current': active && !branch ? 'page' : undefined,
-            style: itemStyle({ depth: 0, active, trail: false, disabled: !!node.disabled }),
+            style: itemStyle({
+              depth: 0,
+              active,
+              trail: false,
+              hovered: hovered.value === node.key,
+              disabled: !!node.disabled,
+            }),
             ...hoverHandlers(node.key),
             onClick: () => select(branch ? firstLeaf(node) : node),
           },
@@ -211,8 +255,12 @@ export const IrisNavMenu = defineComponent({
     const renderItem = (node: NavNode, depth: number): VNode => {
       const branch = isBranch(node)
       const open = expanded.value.includes(node.key)
+      const horizontal = props.orientation === 'horizontal'
+      const shown = horizontal ? horizontalBranchVisible(node.key, depth) : open
       const active = node.key === props.activeKey
-      const trail = branch && activePath.value.includes(node.key)
+      const trail = branch && !active && activePath.value.includes(node.key)
+      const arrowReversed =
+        branch && !node.disabled && (active || trail || shown || hovered.value === node.key)
 
       const row = h(
         'button',
@@ -222,12 +270,19 @@ export const IrisNavMenu = defineComponent({
           'data-key': node.key,
           'data-branch': branch ? 'true' : undefined,
           'data-active': active ? 'true' : undefined,
-          'data-open': branch && open ? 'true' : undefined,
+          'data-active-trail': trail ? 'true' : undefined,
+          'data-open': branch && shown ? 'true' : undefined,
           'data-depth': String(depth),
           disabled: node.disabled,
-          'aria-expanded': branch ? (open ? 'true' : 'false') : undefined,
+          'aria-expanded': branch ? (shown ? 'true' : 'false') : undefined,
           'aria-current': active ? 'page' : undefined,
-          style: itemStyle({ depth, active, trail, disabled: !!node.disabled }),
+          style: itemStyle({
+            depth,
+            active,
+            trail,
+            hovered: hovered.value === node.key,
+            disabled: !!node.disabled,
+          }),
           ...hoverHandlers(node.key),
           onClick: () => (branch ? toggle(node.key) : select(node)),
         },
@@ -248,17 +303,18 @@ export const IrisNavMenu = defineComponent({
           badgeNode(node),
           branch
             ? h(IrisIcon, {
-                name: open ? 'chevron-down' : 'chevron-right',
+                name: horizontal && depth === 0 ? 'chevron-down' : 'chevron-right',
                 size: 16,
-                style: { marginInlineStart: badgeNode(node) ? '6px' : 'auto', opacity: '0.6' },
+                class: 'iris-nav-menu-arrow',
+                'data-reversed': arrowReversed ? 'true' : undefined,
+                style: { marginInlineStart: badgeNode(node) ? '6px' : 'auto' },
               })
             : null,
         ],
       )
 
-      const groupStyle =
-        props.orientation === 'horizontal' && depth === 0 ? { position: 'relative' } : undefined
-      if (!branch || !open)
+      const groupStyle = horizontal && branch ? { position: 'relative' } : undefined
+      if (!branch || (!horizontal && !open))
         return h(
           'div',
           { key: node.key, 'data-iris-nav-group': branch ? '' : undefined, style: groupStyle },
@@ -267,7 +323,26 @@ export const IrisNavMenu = defineComponent({
 
       return h(
         'div',
-        { key: node.key, 'data-iris-nav-group': '', 'data-open': 'true', style: groupStyle },
+        {
+          key: node.key,
+          'data-iris-nav-group': '',
+          'data-open': shown ? 'true' : undefined,
+          style: groupStyle,
+          ...(horizontal
+            ? {
+                onMouseenter: () => setBranchInteraction(hoveredBranches, node.key, true),
+                onMouseleave: () => setBranchInteraction(hoveredBranches, node.key, false),
+                onFocusin: () => setBranchInteraction(focusedBranches, node.key, true),
+                onFocusout: (event: FocusEvent) => {
+                  const group = event.currentTarget as HTMLElement
+                  const next = event.relatedTarget as Node | null
+                  if (!next || !group.contains(next)) {
+                    setBranchInteraction(focusedBranches, node.key, false)
+                  }
+                },
+              }
+            : {}),
+        },
         [
           row,
           h(
@@ -275,21 +350,22 @@ export const IrisNavMenu = defineComponent({
             {
               'data-iris-nav-children': '',
               role: 'group',
-              style:
-                props.orientation === 'horizontal' && depth === 0
-                  ? {
-                      position: 'absolute',
-                      insetBlockStart: 'calc(100% + 4px)',
-                      insetInlineStart: '0',
-                      zIndex: '60',
-                      minWidth: '220px',
-                      padding: '6px',
-                      border: '1px solid var(--iris-border)',
-                      borderRadius: 'var(--iris-radius-md, 6px)',
-                      background: 'var(--iris-surface)',
-                      boxShadow: 'var(--iris-shadow-md)',
-                    }
-                  : undefined,
+              'aria-hidden': horizontal && !shown ? 'true' : undefined,
+              style: horizontal
+                ? {
+                    display: shown ? 'block' : 'none',
+                    position: 'absolute',
+                    insetBlockStart: depth === 0 ? '100%' : '0',
+                    insetInlineStart: depth === 0 ? '0' : '100%',
+                    zIndex: depth === 0 ? '60' : '61',
+                    minWidth: '220px',
+                    padding: '6px',
+                    border: '1px solid var(--iris-border)',
+                    borderRadius: 'var(--iris-radius-md, 6px)',
+                    background: 'var(--iris-surface)',
+                    boxShadow: 'var(--iris-shadow-md)',
+                  }
+                : undefined,
             },
             (node.children ?? []).map((child) => renderItem(child, depth + 1)),
           ),
@@ -302,7 +378,9 @@ export const IrisNavMenu = defineComponent({
     // into it; Left collapses an open branch else moves to the parent.
     const onKeydown = (e: KeyboardEvent): void => {
       const root = e.currentTarget as HTMLElement
-      const buttons = Array.from(root.querySelectorAll<HTMLElement>('[data-iris-nav-item]'))
+      const buttons = Array.from(root.querySelectorAll<HTMLElement>('[data-iris-nav-item]')).filter(
+        (button) => !button.closest('[data-iris-nav-children][aria-hidden="true"]'),
+      )
       if (buttons.length === 0) return
       const idx = buttons.indexOf(document.activeElement as HTMLElement)
       const focusAt = (i: number): void => buttons[(i + buttons.length) % buttons.length]?.focus()

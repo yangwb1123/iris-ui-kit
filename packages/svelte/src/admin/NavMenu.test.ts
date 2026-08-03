@@ -80,4 +80,22 @@ describe('@iris-ui-kit/svelte IrisNavMenu', () => {
     expect(onExpanded).toHaveBeenCalledWith(['sys'])
     expect(container.querySelector('[data-iris-nav-children]')).toBeNull()
   })
+
+  it('applies the hover token only to an enabled hovered item', async () => {
+    const { container } = render(IrisNavMenu, {
+      props: {
+        items: [
+          { key: 'enabled', title: 'Enabled' },
+          { key: 'disabled', title: 'Disabled', disabled: true },
+        ],
+      },
+    })
+    const [enabled, disabled] = navItems(container)
+
+    await fireEvent.mouseEnter(enabled!)
+    expect(enabled!.style.background).toBe('var(--iris-surface-hover, var(--iris-surface))')
+
+    await fireEvent.mouseEnter(disabled!)
+    expect(disabled!.style.background).toBe('transparent')
+  })
 })

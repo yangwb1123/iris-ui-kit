@@ -18,12 +18,14 @@ import {
   createCellRange,
   createExpansion,
   createSelectionModel,
+  createTreeSelection,
   flattenLeafColumns,
   flattenTree,
   withSortedChildren,
   nextGridCell,
   type CellRangeState,
   type GridNavKey,
+  type TreeSelectionNode,
   type TreeRow,
 } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
@@ -73,7 +75,8 @@ function resolveInitialWidth(col: IrisTableColumn): number {
  * are wired explicitly for screen readers.
  *
  * **Features**:
- *   - Column-driven rendering with optional `#cell.<key>` slots
+ *   - Column-driven rendering with optional `#header.<key>` and `#cell.<key>` slots
+ *   - Row activation via `rowClick` and `rowDblclick` events
  *   - Sorting (controlled or uncontrolled, cycles `none → asc → desc → none`)
  *   - Row selection (single / multi) with master checkbox + indeterminate
  *   - **Column resize** (`resizable-columns`) — draggable handle on each
@@ -174,12 +177,20 @@ export const IrisTable = defineComponent({
       >,
       default: undefined,
     },
+    /**
+     * Cascade multi-row selection through the complete tree supplied by
+     * `getSubRows`. Selecting a branch selects every descendant (including
+     * collapsed rows); partially selected branches render indeterminate.
+     * Ignored outside tree mode and for non-multi selection.
+     */
+    treeSelectionCascade: { type: Boolean, default: false },
   },
   emits: {
     'update:selection': (_value: Array<string | number>) => true,
     'update:sort': (_value: IrisTableSortState | null) => true,
     'update:columnWidths': (_value: IrisTableColumnWidths) => true,
     rowClick: (_row: Record<string, unknown>, _index: number) => true,
+    rowDblclick: (_row: Record<string, unknown>, _index: number) => true,
     cellEdit: (_payload: IrisTableCellEditEvent<Record<string, unknown>>) => true,
     expandedRowsChange: (_keys: Array<string | number>) => true,
   },
@@ -302,15 +313,75 @@ export const IrisTable = defineComponent({
       flatTree.value ? flatTree.value.map((t) => t.row) : sortedRows.value,
     )
 
-    const isSelected = (id: string | number) => displaySelection.value.includes(id)
-    const allRowIds = computed(() => bodyData.value.map((r, i) => rowId(r, i)))
+    const cascadingTreeSelection = computed(
+      () => props.treeSelectionCascade && props.selectable === 'multi' && treeMode.value,
+    )
+    const treeSelectionNodes = computed<TreeSelectionNode<string | number>[]>(() => {
+      const getChildren = props.getSubRows
+      if (!cascadingTreeSelection.value || !getChildren) return []
+
+      const nodes: TreeSelectionNode<string | number>[] = []
+      const seen = new Set<string | number>()
+      let rowIndex = 0
+      const walk = (rows: Array<Record<string, unknown>>, parentKey?: string | number): void => {
+        for (const row of rows) {
+          const key = rowId(row, rowIndex)
+          rowIndex += 1
+          if (seen.has(key)) continue
+          seen.add(key)
+          nodes.push({ key, parentKey })
+          const children = getChildren(row)
+          if (children && children.length > 0) walk(children, key)
+        }
+      }
+      walk(sortedRows.value)
+      return nodes
+    })
+    const compactTreeSelectionSeed = (keys: Array<string | number>): Array<string | number> => {
+      const selected = new Set(keys)
+      const parentByKey = new Map(
+        treeSelectionNodes.value.map((node) => [node.key, node.parentKey]),
+      )
+      return keys.filter((key) => {
+        const visited = new Set<string | number>()
+        let parent = parentByKey.get(key)
+        while (parent !== undefined && !visited.has(parent)) {
+          if (selected.has(parent)) return false
+          visited.add(parent)
+          parent = parentByKey.get(parent)
+        }
+        return true
+      })
+    }
+    const resolvedTreeSelection = computed(() =>
+      cascadingTreeSelection.value
+        ? createTreeSelection<string | number>({
+            nodes: treeSelectionNodes.value,
+            // Canonical payloads contain fully-selected branches and their
+            // leaves. Seed only the highest selected ancestors so rebuilding a
+            // large fully-selected tree does not cascade once per descendant.
+            defaultChecked: compactTreeSelectionSeed(displaySelection.value),
+          })
+        : null,
+    )
+
+    const isSelected = (id: string | number) =>
+      resolvedTreeSelection.value?.isChecked(id) ?? displaySelection.value.includes(id)
+    const isSelectionIndeterminate = (id: string | number) =>
+      resolvedTreeSelection.value?.isIndeterminate(id) ?? false
+    const allRowIds = computed(() =>
+      cascadingTreeSelection.value
+        ? treeSelectionNodes.value.map((node) => node.key)
+        : bodyData.value.map((row, index) => rowId(row, index)),
+    )
     const allSelected = computed(() => {
-      const sel = displaySelection.value
-      return allRowIds.value.length > 0 && allRowIds.value.every((id) => sel.includes(id))
+      return allRowIds.value.length > 0 && allRowIds.value.every((id) => isSelected(id))
     })
     const someSelected = computed(() => {
-      const sel = displaySelection.value
-      return !allSelected.value && allRowIds.value.some((id) => sel.includes(id))
+      return (
+        !allSelected.value &&
+        allRowIds.value.some((id) => isSelected(id) || isSelectionIndeterminate(id))
+      )
     })
 
     const toggleRow = (id: string | number) => {
@@ -318,12 +389,36 @@ export const IrisTable = defineComponent({
       if (props.selectable === 'single') {
         selectionModel.set(selectionModel.isSelected(id) ? [] : [id])
       } else if (props.selectable === 'multi') {
-        selectionModel.toggle(id)
+        if (cascadingTreeSelection.value) {
+          // Build an action-local model from the displayed controlled value.
+          // Mutating `resolvedTreeSelection` would leave its cached render model
+          // optimistic when a controlled parent rejects the emitted update.
+          const treeSelection = createTreeSelection<string | number>({
+            nodes: treeSelectionNodes.value,
+            defaultChecked: compactTreeSelectionSeed(displaySelection.value),
+          })
+          treeSelection.toggle(id)
+          selectionModel.set(treeSelection.getChecked())
+        } else {
+          selectionModel.toggle(id)
+        }
       }
     }
     const toggleAll = () => {
       rebaseToProp()
-      selectionModel.set(allSelected.value ? [] : [...allRowIds.value])
+      if (allSelected.value) {
+        selectionModel.set([])
+        return
+      }
+      if (cascadingTreeSelection.value) {
+        const treeSelection = createTreeSelection<string | number>({
+          nodes: treeSelectionNodes.value,
+          defaultChecked: allRowIds.value,
+        })
+        selectionModel.set(treeSelection.getChecked())
+        return
+      }
+      selectionModel.set([...allRowIds.value])
     }
 
     // -------- Inline editing --------
@@ -708,6 +803,8 @@ export const IrisTable = defineComponent({
             const isLeaf = !col.children || col.children.length === 0
             const sortable = isLeaf && col.sortable
             const align = col.align ?? 'left'
+            const headerSlot = slots[`header.${col.key}`]
+            const title = headerSlot?.({ column: col }) ?? col.title
             cells.push(
               h(
                 'div',
@@ -750,7 +847,7 @@ export const IrisTable = defineComponent({
                     textOverflow: 'ellipsis',
                   },
                 },
-                [col.title, sortable ? sortIndicator(col) : null],
+                [title, sortable ? sortIndicator(col) : null],
               ),
             )
           }
@@ -827,6 +924,8 @@ export const IrisTable = defineComponent({
         const col = props.columns[ci]
         if (visibleColSet.value && !visibleColSet.value.has(ci)) continue
         const align = col.align ?? 'left'
+        const headerSlot = slots[`header.${col.key}`]
+        const title = headerSlot?.({ column: col }) ?? col.title
         wireResize(col)
         const handle = props.resizableColumns
           ? h('span', {
@@ -907,7 +1006,7 @@ export const IrisTable = defineComponent({
                     ? 'none'
                     : undefined,
             },
-            [col.title, sortIndicator(col), handle],
+            [title, sortIndicator(col), handle],
           ),
         )
       }
@@ -1002,7 +1101,7 @@ export const IrisTable = defineComponent({
               },
               [
                 h(IrisCheckbox, {
-                  modelValue: selected,
+                  modelValue: isSelectionIndeterminate(id) ? 'indeterminate' : selected,
                   size: 'sm',
                   ariaLabel: t('table.selectRow', { key: id }),
                   'onUpdate:modelValue': () => toggleRow(id),
@@ -1226,6 +1325,7 @@ export const IrisTable = defineComponent({
             'data-iris-table-row': '',
             'data-state': selected ? 'selected' : undefined,
             onClick: () => emit('rowClick', row, index),
+            onDblclick: () => emit('rowDblclick', row, index),
             style: {
               display: 'grid',
               gridTemplateColumns: gridTemplate.value,

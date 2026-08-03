@@ -58,6 +58,32 @@ describe('IrisTable', () => {
     expect(firstRow.text()).toContain('31')
   })
 
+  it('renders a custom #header.<key> slot', () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: rows, rowKey: 'id' },
+      slots: {
+        'header.name': ({ column }: { column: IrisTableColumn<Row> }) =>
+          h('strong', { 'data-custom-name-header': '' }, `${column.title} custom`),
+      },
+      attachTo: host,
+    })
+    const header = wrapper.find('[data-iris-table-header="name"]')
+    expect(header.find('[data-custom-name-header]').exists()).toBe(true)
+    expect(header.text()).toContain('Name custom')
+  })
+
+  it('emits rowDblclick with the row and sorted index', async () => {
+    const wrapper = mount(IrisTable, {
+      props: { columns, data: rows, rowKey: 'id' },
+      attachTo: host,
+    })
+    const firstRow = wrapper.findAll('[data-iris-table-row]')[0]!
+    await firstRow.trigger('dblclick')
+    const events = wrapper.emitted('rowDblclick')
+    expect(events).toHaveLength(1)
+    expect(events?.[0]).toEqual([rows[0], 0])
+  })
+
   it('renders a localized empty state when data is empty', () => {
     const wrapper = mount(IrisTable, { props: { columns, data: [], rowKey: 'id' }, attachTo: host })
     const empty = wrapper.find('[data-iris-table-row="empty"]')
@@ -1245,6 +1271,23 @@ describe('IrisTable multi-level (grouped) headers', () => {
     const wrapper = mount(Harness, { attachTo: host })
     await wrapper.find('[data-iris-table-header="age"]').trigger('click')
     expect(sort.value).toEqual({ key: 'age', direction: 'asc' })
+  })
+
+  it('renders custom header slots for grouped and leaf columns', () => {
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns: groupedCols as IrisTableColumn<Record<string, unknown>>[],
+        data: rows,
+        rowKey: 'id',
+      },
+      slots: {
+        'header.info': () => h('span', { 'data-custom-group-header': '' }, 'Details'),
+        'header.age': () => h('span', { 'data-custom-leaf-header': '' }, 'Years'),
+      },
+      attachTo: host,
+    })
+    expect(wrapper.find('[data-custom-group-header]').text()).toBe('Details')
+    expect(wrapper.find('[data-custom-leaf-header]').text()).toBe('Years')
   })
 })
 

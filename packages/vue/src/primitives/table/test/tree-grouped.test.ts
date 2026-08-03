@@ -94,6 +94,131 @@ describe('IrisTable tree rows', () => {
     expect(visibleNames(wrapper)).toEqual(['Root A', 'Root B'])
   })
 
+  it('cascades branch selection through collapsed descendants and renders partial branches', async () => {
+    const selection = ref<Array<string | number>>([])
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(IrisTable, {
+            columns: treeCols,
+            data: treeData,
+            rowKey: 'id',
+            getSubRows,
+            selectable: 'multi',
+            treeSelectionCascade: true,
+            selection: selection.value,
+            'onUpdate:selection': (keys: Array<string | number>) => {
+              selection.value = keys
+            },
+          })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: host })
+    const rowCheckbox = (index: number) =>
+      wrapper.findAll('[data-iris-table-row]')[index]!.find('[data-iris-checkbox] input')
+
+    // Root A starts collapsed, but selecting it includes both hidden children.
+    await rowCheckbox(0).setValue(true)
+    await nextTick()
+    expect(new Set(selection.value)).toEqual(new Set([1, 11, 12]))
+
+    await toggleAt(wrapper, 0).trigger('click')
+    await nextTick()
+    expect(rowCheckbox(0).attributes('aria-checked')).toBe('true')
+    expect(rowCheckbox(1).attributes('aria-checked')).toBe('true')
+    expect(rowCheckbox(2).attributes('aria-checked')).toBe('true')
+
+    // Removing one child keeps its sibling selected and makes the parent mixed.
+    await rowCheckbox(1).setValue(false)
+    await nextTick()
+    expect(selection.value).toEqual([12])
+    expect(rowCheckbox(0).attributes('aria-checked')).toBe('mixed')
+    expect(rowCheckbox(2).attributes('aria-checked')).toBe('true')
+
+    // Clicking a mixed parent completes the subtree; clicking it again clears it.
+    await rowCheckbox(0).setValue(true)
+    await nextTick()
+    expect(new Set(selection.value)).toEqual(new Set([1, 11, 12]))
+    await rowCheckbox(0).setValue(false)
+    await nextTick()
+    expect(selection.value).toEqual([])
+  })
+
+  it('tree select-all includes descendants hidden under collapsed branches', async () => {
+    const selection = ref<Array<string | number>>([])
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(IrisTable, {
+            columns: treeCols,
+            data: treeData,
+            rowKey: 'id',
+            getSubRows,
+            selectable: 'multi',
+            treeSelectionCascade: true,
+            selection: selection.value,
+            'onUpdate:selection': (keys: Array<string | number>) => {
+              selection.value = keys
+            },
+          })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: host })
+    const master = wrapper.find('[data-iris-table-header-row] [data-iris-checkbox] input')
+
+    await master.setValue(true)
+    await nextTick()
+    expect(new Set(selection.value)).toEqual(new Set([1, 11, 12, 2]))
+
+    await toggleAt(wrapper, 0).trigger('click')
+    await nextTick()
+    expect(
+      wrapper
+        .findAll('[data-iris-table-row] [data-iris-checkbox] input')
+        .every((checkbox) => checkbox.attributes('aria-checked') === 'true'),
+    ).toBe(true)
+  })
+
+  it('rebases controlled tree cascade actions when the parent rejects an update', async () => {
+    const value = ref<Array<string | number>>([])
+    const emitted: Array<Array<string | number>> = []
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(IrisTable, {
+            columns: treeCols,
+            data: treeData,
+            rowKey: 'id',
+            getSubRows,
+            selectable: 'multi',
+            treeSelectionCascade: true,
+            selection: value.value,
+            'onUpdate:selection': (keys: Array<string | number>) => {
+              emitted.push(keys)
+            },
+          })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: host })
+    const root = () =>
+      wrapper.findAll('[data-iris-table-row]')[0]!.find('[data-iris-checkbox] input')
+
+    await root().setValue(true)
+    expect(new Set(emitted.at(-1))).toEqual(new Set([1, 11, 12]))
+    expect(root().attributes('aria-checked')).toBe('false')
+
+    // The rejected action must not become the base for the next click.
+    await root().setValue(true)
+    expect(new Set(emitted.at(-1))).toEqual(new Set([1, 11, 12]))
+    expect(root().attributes('aria-checked')).toBe('false')
+
+    value.value = emitted.at(-1) ?? []
+    await nextTick()
+    expect(root().attributes('aria-checked')).toBe('true')
+    await root().setValue(false)
+    expect(emitted.at(-1)).toEqual([])
+  })
+
   it('defaultExpandedRowKeys starts a branch open + emits expandedRowsChange on toggle', async () => {
     const changed = ref<Array<string | number> | null>(null)
     const Harness = defineComponent({

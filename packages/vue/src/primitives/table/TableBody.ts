@@ -312,6 +312,7 @@ function renderRow(
       'data-iris-table-row': '',
       'data-state': selected ? 'selected' : undefined,
       onClick: () => emit('rowClick', row, index),
+      onDblclick: () => emit('rowDblclick', row, index),
       style: {
         display: 'grid',
         gridTemplateColumns: state.gridTemplate.value,

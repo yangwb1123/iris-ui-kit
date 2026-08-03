@@ -18,7 +18,7 @@ export function renderTableHeader(
   const showDetail = state.hasDetail.value
 
   if (state.grouped.value && state.headerMatrix.value) {
-    return renderGroupedHeader(state, props, showSelection, showDetail)
+    return renderGroupedHeader(state, props, showSelection, showDetail, slots)
   }
 
   const cells: VNode[] = renderLeadingHeaderCells(state, props, showSelection, showDetail, slots)
@@ -29,10 +29,16 @@ export function renderTableHeader(
     state.wireResize(col)
 
     cells.push(
-      renderHeaderCell(col, ci, state, {
-        visibleColSet: props.visibleColSet,
-        resizableColumns: props.resizableColumns,
-      }),
+      renderHeaderCell(
+        col,
+        ci,
+        state,
+        {
+          visibleColSet: props.visibleColSet,
+          resizableColumns: props.resizableColumns,
+        },
+        slots,
+      ),
     )
   }
 
@@ -52,6 +58,7 @@ function renderGroupedHeader(
   _props: { columns: IrisTableColumn[]; selectable: string },
   showSelection: boolean,
   showDetail: boolean,
+  slots: Record<string, (...args: unknown[]) => VNode[]>,
 ): VNode {
   const matrix = state.headerMatrix.value!
   const lead = (showDetail ? 1 : 0) + (showSelection ? 1 : 0)
@@ -90,6 +97,8 @@ function renderGroupedHeader(
       const col = cell.column as IrisTableColumn
       const isLeaf = !col.children?.length
       const sortable = isLeaf && col.sortable
+      const headerSlot = slots[`header.${col.key}`]
+      const title = headerSlot?.({ column: col }) ?? col.title
       cells.push(
         h(
           'div',
@@ -119,7 +128,7 @@ function renderGroupedHeader(
               textOverflow: 'ellipsis',
             },
           },
-          [col.title, sortable ? state.sortIndicator(col) : null],
+          [title, sortable ? state.sortIndicator(col) : null],
         ),
       )
     }
@@ -207,8 +216,11 @@ function renderHeaderCell(
   ci: number,
   state: TableState,
   p: { visibleColSet: Set<number> | null; resizableColumns: boolean },
+  slots: Record<string, (...args: unknown[]) => VNode[]>,
 ): VNode {
   const align = col.align ?? 'left'
+  const headerSlot = slots[`header.${col.key}`]
+  const title = headerSlot?.({ column: col }) ?? col.title
   const handle = p.resizableColumns
     ? h('span', {
         role: 'separator',
@@ -276,7 +288,7 @@ function renderHeaderCell(
         ...(col.pinned ? { ...state.pinnedStyle(col.key), background: 'var(--iris-surface)' } : {}),
       },
     },
-    [col.title, state.sortIndicator(col), handle],
+    [title, state.sortIndicator(col), handle],
   )
 }
 

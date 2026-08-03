@@ -1,5 +1,109 @@
 # @iris-ui-kit/vue
 
+## 0.2.13
+
+### Patch Changes
+
+- Reverse navigation branch arrows with a reduced-motion-aware transition while
+  the item is active, on the active route trail, hovered, or visibly expanded.
+
+## 0.2.12
+
+### Patch Changes
+
+- Use the dedicated surface-hover token for navigation items so hover feedback
+  remains visible inside sidebars and horizontal menu flyouts.
+
+## 0.2.11
+
+### Patch Changes
+
+- Publish workspace dependencies with registry-resolvable versions so the
+  Popover trigger fix can be installed by external applications.
+
+## 0.2.10
+
+### Patch Changes
+
+- Resolve Vue component triggers used through `IrisPopoverTrigger asChild` to
+  their root HTML element so floating placement, outside dismissal, and focus
+  restoration operate on a valid DOM reference.
+
+## 0.2.9
+
+### Patch Changes
+
+- Preserve strict controlled-state semantics for cascading tree-table selection
+  when a parent rejects an emitted selection update.
+
+## 0.2.8
+
+### Patch Changes
+
+- Add opt-in cascading selection to tree tables, including collapsed
+  descendants, indeterminate parent rows, and complete-tree select-all.
+
+## 0.2.7
+
+### Patch Changes
+
+- Close horizontal navigation flyouts after a leaf is selected.
+- Keep top-level horizontal branch arrows pointing down while nested branch
+  arrows point right into right-side flyouts.
+- Normalize horizontal flyout row indentation so nested items use the full row.
+
+## 0.2.6
+
+### Patch Changes
+
+- Render horizontal navigation subtrees before interaction so pointer hover and
+  keyboard focus can reveal them without a preparatory click.
+- Keep the horizontal trigger and its submenu pointer-contiguous, and use
+  orientation-specific branch arrows: down in horizontal menus and right in
+  vertical sidebars.
+
+## 0.2.5
+
+### Patch Changes
+
+- Keep `IrisNavMenu`'s exact active item distinct from expanded branches by
+  exposing active ancestors through `data-active-trail`.
+- Scope navigation hover presentation to the item actually under the pointer.
+
+## 0.2.4
+
+### Patch Changes
+
+- Keep the displayed text of controlled `IrisNumberInput` instances in sync
+  when `modelValue` is populated or cleared after mount.
+
+## 0.2.3
+
+### Patch Changes
+
+- Move the default `IrisTabsList` and `IrisTabsTrigger` presentation from
+  component-authored inline styles to low-specificity Iris classes. Consumer
+  classes can now place the active indicator on the top edge without
+  `!important`, while explicitly supplied `style` attributes still pass
+  through.
+
+## 0.2.2
+
+### Patch Changes
+
+- Add `header.<key>` slots to `IrisTable`, including grouped headers, so
+  consumers can render semantic header content without replacing the table.
+- Add the `rowDblclick(row, index)` event to normal, tree, and virtualized table
+  rows.
+
+## 0.2.1
+
+### Patch Changes
+
+- Fix teleported popover content so VNodes carrying template refs are created
+  inside the component render pass. Controlled `IrisSelect` instances can now
+  close after selection without Vue `refs`/`parentNode` runtime crashes.
+
 ## 0.2.0
 
 ### Minor Changes

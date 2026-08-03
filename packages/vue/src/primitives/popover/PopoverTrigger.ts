@@ -2,6 +2,15 @@ import { defineComponent, h, inject, type VNode } from 'vue'
 import { findFirstElement, mergeSlotProps } from '../slot/Slot'
 import { PopoverContextKey } from './context'
 
+function resolveTriggerElement(value: unknown): HTMLElement | null {
+  const candidate =
+    value !== null && typeof value === 'object' && '$el' in value
+      ? (value as { $el?: unknown }).$el
+      : value
+
+  return typeof HTMLElement !== 'undefined' && candidate instanceof HTMLElement ? candidate : null
+}
+
 /**
  * The element the user interacts with to toggle the Popover. Defaults to a
  * `<button type="button">`; pass `as-child` to attach behavior to any
@@ -32,7 +41,11 @@ export const IrisPopoverTrigger = defineComponent({
     }
 
     const captureRef = (el: unknown) => {
-      ctx.triggerRef.value = (el ?? null) as HTMLElement | null
+      // A ref attached to an `asChild` Vue component resolves to its public
+      // component instance, not to the component's root DOM node. Floating
+      // positioning, outside-dismiss, and focus restoration all require the
+      // actual HTMLElement, which Vue exposes as `$el` on that instance.
+      ctx.triggerRef.value = resolveTriggerElement(el)
     }
 
     return () => {

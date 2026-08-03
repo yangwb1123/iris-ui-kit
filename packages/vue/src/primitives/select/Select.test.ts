@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { IrisSelect } from './Select'
@@ -56,6 +56,38 @@ describe('IrisSelect', () => {
     await wrapper.findAll('[role="option"]')[1]!.trigger('click')
     expect(wrapper.emitted('update:modelValue')).toEqual([['b']])
     expect(wrapper.emitted('valueChange')).toEqual([['b']])
+  })
+
+  it('closes a controlled teleported list after selection without ref errors', async () => {
+    const value = ref<string | undefined>('a')
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(IrisSelect, {
+            items,
+            modelValue: value.value,
+            'onUpdate:modelValue': (next) => {
+              value.value = next as string
+            },
+          })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: host })
+
+    await wrapper.find('[data-iris-select-trigger]').trigger('click')
+    await nextTick()
+    const option = document.querySelectorAll<HTMLElement>('[role="option"]')[1]
+    expect(option).toBeDefined()
+    option!.click()
+    await nextTick()
+    await nextTick()
+
+    expect(value.value).toBe('b')
+    expect(wrapper.find('[data-iris-select-trigger]').text()).toContain('Banana')
+    expect(document.querySelector('[role="listbox"]')).toBeNull()
+    expect(error).not.toHaveBeenCalled()
+    error.mockRestore()
   })
 
   it('trigger announces a listbox popup (not the popover default dialog)', () => {

@@ -1,14 +1,4 @@
-import {
-  Teleport,
-  computed,
-  defineComponent,
-  h,
-  inject,
-  nextTick,
-  ref,
-  watch,
-  type PropType,
-} from 'vue'
+import { Teleport, defineComponent, h, inject, nextTick, ref, watch, type PropType } from 'vue'
 import { useFloating } from '../floating/useFloating'
 import { useDismiss } from '../floating/useDismiss'
 import { PopoverContextKey } from './context'
@@ -71,7 +61,10 @@ export const IrisPopoverContent = defineComponent({
       }
     })
 
-    const contentVNode = computed(() =>
+    // VNodes that carry refs must be created while this component is rendering.
+    // Caching one in a computed can evaluate it from a floating-position watcher,
+    // outside a render owner; Vue then crashes while mounting/unmounting the ref.
+    const renderContent = () =>
       h(
         'div',
         {
@@ -99,12 +92,11 @@ export const IrisPopoverContent = defineComponent({
           },
         },
         slots.default?.(),
-      ),
-    )
+      )
 
     return () => {
       if (!ctx.open.value) return null
-      const node = contentVNode.value
+      const node = renderContent()
       if (props.teleport === false) return node
       return h(Teleport, { to: props.teleport as string | HTMLElement }, [node])
     }

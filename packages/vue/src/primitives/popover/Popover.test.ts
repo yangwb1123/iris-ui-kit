@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
-import { mount } from '@vue/test-utils'
+import { defineComponent, h, inject, nextTick, ref, watchEffect } from 'vue'
+import { flushPromises, mount } from '@vue/test-utils'
+import { IrisButton } from '../button/Button'
 import { IrisPopover } from './Popover'
 import { IrisPopoverTrigger } from './PopoverTrigger'
 import { IrisPopoverContent } from './PopoverContent'
+import { PopoverContextKey } from './context'
 
 function Harness(slotConfig?: {
   triggerLabel?: string
@@ -58,6 +60,75 @@ describe('IrisPopover', () => {
     await wrapper.find('[aria-haspopup="dialog"]').trigger('click')
     await nextTick()
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+  })
+
+  it('resolves an as-child component trigger to its root HTMLElement', async () => {
+    let observedTrigger: HTMLElement | null = null
+    const TriggerRefProbe = defineComponent({
+      setup() {
+        const ctx = inject(PopoverContextKey)
+        if (!ctx) throw new Error('missing popover context')
+        watchEffect(() => {
+          observedTrigger = ctx.triggerRef.value
+        })
+        return () => null
+      },
+    })
+    const ComponentTriggerHarness = defineComponent({
+      setup() {
+        return () =>
+          h(IrisPopover, null, {
+            default: () => [
+              h(IrisPopoverTrigger, { asChild: true }, () => [
+                h(IrisButton, { variant: 'outline' }, () => 'Component trigger'),
+              ]),
+              h(TriggerRefProbe),
+              h(IrisPopoverContent, { teleport: false }, () => 'Panel'),
+            ],
+          })
+      },
+    })
+
+    const wrapper = mount(ComponentTriggerHarness, { attachTo: host })
+    await nextTick()
+    const trigger = wrapper.get('button').element as HTMLButtonElement
+    expect(observedTrigger).toBe(trigger)
+    expect(observedTrigger).toBeInstanceOf(HTMLElement)
+
+    const rectSpy = vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue({
+      x: 20,
+      y: 10,
+      width: 120,
+      height: 32,
+      top: 10,
+      right: 140,
+      bottom: 42,
+      left: 20,
+      toJSON: () => ({}),
+    } as DOMRect)
+
+    trigger.focus()
+    await wrapper.get('button').trigger('click')
+    await nextTick()
+    await flushPromises()
+    const content = wrapper.get('[role="dialog"]').element as HTMLElement
+    expect(rectSpy).toHaveBeenCalled()
+    expect(document.activeElement).toBe(content)
+
+    // The trigger is excluded from outside-dismiss checks. This specifically
+    // exercises HTMLElement.contains() on the captured ref.
+    trigger.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    await nextTick()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+
+    const outside = document.createElement('div')
+    document.body.appendChild(outside)
+    outside.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    await nextTick()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(document.activeElement).toBe(trigger)
+    outside.remove()
+    wrapper.unmount()
   })
 
   it('closes on a second trigger click (toggle)', async () => {

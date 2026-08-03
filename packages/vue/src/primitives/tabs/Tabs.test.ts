@@ -5,6 +5,7 @@ import { IrisTabs } from './Tabs'
 import { IrisTabsList } from './TabsList'
 import { IrisTabsTrigger } from './TabsTrigger'
 import { IrisTabsContent } from './TabsContent'
+import { __resetTabsStyles, __TABS_STYLE_ID } from './styles'
 
 enableAutoUnmount(afterEach)
 
@@ -58,16 +59,66 @@ function Harness(
 describe('IrisTabs', () => {
   let host: HTMLDivElement
   beforeEach(() => {
+    __resetTabsStyles()
     host = document.createElement('div')
     document.body.appendChild(host)
   })
-  afterEach(() => host.remove())
+  afterEach(() => {
+    host.remove()
+    __resetTabsStyles()
+  })
 
   it('renders one trigger per child and a tablist wrapper', async () => {
     const wrapper = mount(Harness(), { attachTo: host })
     await nextTick()
     expect(wrapper.find('[role="tablist"]').exists()).toBe(true)
     expect(wrapper.findAll('[role="tab"]').length).toBe(3)
+  })
+
+  it('uses Iris classes without component-authored inline styles', async () => {
+    const wrapper = mount(Harness({ defaultValue: 'a' }), { attachTo: host })
+    await nextTick()
+    const list = wrapper.find('[role="tablist"]')
+    const trigger = wrapper.find('[role="tab"]')
+    expect(list.classes()).toContain('iris-tabs-list')
+    expect(trigger.classes()).toContain('iris-tabs-trigger')
+    expect(list.attributes('style')).toBeUndefined()
+    expect(trigger.attributes('style')).toBeUndefined()
+    expect(document.getElementById(__TABS_STYLE_ID)?.textContent).toContain(
+      ':where(.iris-tabs-trigger)',
+    )
+  })
+
+  it('preserves explicitly supplied classes and styles', async () => {
+    const Styled = defineComponent({
+      setup() {
+        return () =>
+          h(IrisTabs, { defaultValue: 'a' }, () => [
+            h(IrisTabsList, { class: 'consumer-list', style: { gap: '9px' } }, () =>
+              h(
+                IrisTabsTrigger,
+                {
+                  value: 'a',
+                  class: 'consumer-trigger',
+                  style: { paddingTop: '11px' },
+                },
+                () => 'A',
+              ),
+            ),
+            h(IrisTabsContent, { value: 'a' }, () => 'Content A'),
+          ])
+      },
+    })
+    const wrapper = mount(Styled, { attachTo: host })
+    await nextTick()
+    expect(wrapper.find('[role="tablist"]').classes()).toEqual(
+      expect.arrayContaining(['iris-tabs-list', 'consumer-list']),
+    )
+    expect(wrapper.find('[role="tablist"]').attributes('style')).toContain('gap: 9px')
+    expect(wrapper.find('[role="tab"]').classes()).toEqual(
+      expect.arrayContaining(['iris-tabs-trigger', 'consumer-trigger']),
+    )
+    expect(wrapper.find('[role="tab"]').attributes('style')).toContain('padding-top: 11px')
   })
 
   it('first registered trigger becomes default active when no value given', async () => {

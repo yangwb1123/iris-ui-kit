@@ -1,6 +1,7 @@
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, type VNode } from 'vue'
 import { findFirstElement, mergeSlotProps } from '../slot/Slot'
 import { TabsContextKey } from './context'
+import { installTabsStyles } from './styles'
 
 /**
  * A single tab button. Registers with the parent `IrisTabs` so arrow keys
@@ -19,6 +20,7 @@ export const IrisTabsTrigger = defineComponent({
     asChild: { type: Boolean, default: false },
   },
   setup(props, { slots, attrs }) {
+    installTabsStyles()
     const ctx = inject(TabsContextKey)
     if (!ctx) {
       throw new Error('[iris-ui] IrisTabsTrigger must be inside an IrisTabs')
@@ -73,6 +75,8 @@ export const IrisTabsTrigger = defineComponent({
         disabled: isDisabled.value ? true : undefined,
         onClick,
         onKeydown: onKeyDown,
+        class: ['iris-tabs-trigger', attrs.class],
+        style: attrs.style,
       }
 
       if (props.asChild) {
@@ -84,43 +88,18 @@ export const IrisTabsTrigger = defineComponent({
           return null
         }
         const merged = mergeSlotProps(
-          { ...triggerProps, ...attrs },
+          { ...attrs, ...triggerProps },
           (root.props ?? {}) as Record<string, unknown>,
         )
         return h(root.type as string, merged, root.children as unknown as VNode[])
       }
 
-      const colors = isActive.value
-        ? { background: 'transparent', color: 'var(--iris-primary)' }
-        : { background: 'transparent', color: 'var(--iris-muted)' }
-      const borderActive =
-        ctx.orientation.value === 'horizontal'
-          ? { borderBottom: `2px solid ${isActive.value ? 'var(--iris-primary)' : 'transparent'}` }
-          : {
-              borderInlineEnd: `2px solid ${isActive.value ? 'var(--iris-primary)' : 'transparent'}`,
-            }
       return h(
         'button',
         {
           type: 'button',
           ...attrs,
           ...triggerProps,
-          style: {
-            padding: '8px var(--iris-padding-md)',
-            fontSize: '14px',
-            fontWeight: '500',
-            fontFamily: 'inherit',
-            cursor: isDisabled.value ? 'not-allowed' : 'pointer',
-            opacity: isDisabled.value ? '0.5' : '1',
-            border: 'none',
-            outline: 'none',
-            marginBottom: ctx.orientation.value === 'horizontal' ? '-1px' : undefined,
-            marginInlineEnd: ctx.orientation.value === 'vertical' ? '-1px' : undefined,
-            transition: 'color 120ms ease, border-color 120ms ease',
-            ...colors,
-            ...borderActive,
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
-          },
         },
         slots.default?.(),
       )

@@ -75,6 +75,38 @@ describe('useUndoStack (vue)', () => {
     expect(api.undo()).toBeUndefined()
   })
 
+  it('regression: syncs reactive state when undefined is a legal snapshot value', async () => {
+    // T = number | undefined: `undefined` is a valid snapshot. undo() returns
+    // undefined both for a legal snapshot AND for a no-op, so the bridge must
+    // not use the return value as a proxy for "pointer moved".
+    const { w, api } = probe<number | undefined>()
+
+    api.push(undefined) // baseline snapshot [undefined]
+    api.push(1) // stack [undefined, 1], index 1
+    await w.vm.$nextTick()
+    expect(w.find('[data-can-undo]').text()).toBe('true')
+    expect(w.find('[data-can-redo]').text()).toBe('false')
+    expect(w.find('[data-index]').text()).toBe('1')
+
+    // undo() returns undefined (the legal baseline snapshot), but the pointer
+    // HAS advanced — reactive state must follow (pre-fix it stayed stale).
+    const value = api.undo()
+    await w.vm.$nextTick()
+    expect(value).toBeUndefined()
+    expect(w.find('[data-can-undo]').text()).toBe('false')
+    expect(w.find('[data-can-redo]').text()).toBe('true')
+    expect(w.find('[data-depth]').text()).toBe('2')
+    expect(w.find('[data-index]').text()).toBe('0')
+
+    // redo() returns 1 and state follows back.
+    const value2 = api.redo()
+    await w.vm.$nextTick()
+    expect(value2).toBe(1)
+    expect(w.find('[data-can-undo]').text()).toBe('true')
+    expect(w.find('[data-can-redo]').text()).toBe('false')
+    expect(w.find('[data-index]').text()).toBe('1')
+  })
+
   it('clear resets the stack', async () => {
     const { w, api } = probe<number>({ initial: 0 })
 

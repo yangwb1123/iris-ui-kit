@@ -37,3 +37,6 @@ app.config.timestamp_*.js
 .solid/
 *.timestamp-*.mjs
 *.bundled_*.mjs
+
+# pi-batch 运行时目录（campaign 配置同步与状态）
+.pi-batch/

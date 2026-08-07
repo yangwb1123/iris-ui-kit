@@ -116,19 +116,39 @@ describe('IrisNavMenu', () => {
     const children = group.find('[data-iris-nav-children]')
 
     expect(children.exists()).toBe(true)
-    expect(children.attributes('style')).toContain('display: none')
+    expect(children.attributes('aria-hidden')).toBe('true')
     expect(trigger.attributes('aria-expanded')).toBe('false')
+    expect(group.attributes('data-open')).toBeUndefined()
 
     await group.trigger('mouseenter')
-    expect(children.attributes('style')).toContain('display: block')
+    expect(children.attributes('aria-hidden')).toBeUndefined()
+    expect(group.attributes('data-open')).toBe('true')
     expect(trigger.attributes('aria-expanded')).toBe('true')
 
     await trigger.trigger('mouseleave')
-    expect(children.attributes('style')).toContain('display: block')
+    expect(children.attributes('aria-hidden')).toBeUndefined()
+    expect(group.attributes('data-open')).toBe('true')
 
     await group.trigger('mouseleave')
-    expect(children.attributes('style')).toContain('display: none')
+    expect(children.attributes('aria-hidden')).toBe('true')
+    expect(group.attributes('data-open')).toBeUndefined()
     expect(trigger.attributes('aria-expanded')).toBe('false')
+  })
+
+  it('keeps a submenu open when moving the pointer from trigger into its children area', async () => {
+    const w = mount(IrisNavMenu, { props: { items, orientation: 'horizontal' } })
+    const group = w.find('[data-iris-nav-group]')
+    const trigger = group.find('[data-iris-nav-item]')
+    const children = group.find('[data-iris-nav-children]')
+
+    await group.trigger('mouseover')
+    expect(children.attributes('aria-hidden')).toBeUndefined()
+
+    await group.trigger('mouseout', { relatedTarget: children.element })
+    expect(children.attributes('aria-hidden')).toBeUndefined()
+
+    await group.trigger('mouseout', { relatedTarget: document.body })
+    expect(children.attributes('aria-hidden')).toBe('true')
   })
 
   it('closes horizontal menus after selecting a leaf', async () => {
@@ -144,11 +164,7 @@ describe('IrisNavMenu', () => {
     expect(w.findAll('[data-iris-nav-item][data-open="true"]')).toHaveLength(2)
 
     await w.find('[data-key="users"]').trigger('click')
-    expect(
-      w
-        .findAll('[data-iris-nav-children]')
-        .every((children) => children.attributes('style')?.includes('display: none')),
-    ).toBe(true)
+    expect(w.findAll('[data-iris-nav-children][aria-hidden="true"]')).toHaveLength(2)
     expect(w.findAll('[data-iris-nav-item][data-open="true"]')).toHaveLength(0)
     expect(w.emitted('select')![0]).toEqual(['users', nestedItems[0]!.children![0]!.children![0]])
   })
@@ -164,13 +180,12 @@ describe('IrisNavMenu', () => {
     await groupFor('sys').trigger('mouseenter')
     await groupFor('admin').trigger('mouseenter')
 
-    const flyoutStyle = groupFor('admin').find('[data-iris-nav-children]').attributes('style')
-    expect(flyoutStyle).toContain('display: block')
-    expect(flyoutStyle).toContain('position: absolute')
-    expect(flyoutStyle).toContain('inset-block-start: 0')
-    expect(flyoutStyle).toContain('inset-inline-start: 100%')
-    expect(w.find('[data-key="admin"]').attributes('style')).toContain('padding-inline-start: 10px')
-    expect(w.find('[data-key="users"]').attributes('style')).toContain('padding-inline-start: 10px')
+    const flyout = groupFor('admin').find('[data-iris-nav-children]')
+    expect(flyout.classes()).toContain('iris-nav-menu-children')
+    expect(groupFor('admin').attributes('data-open')).toBe('true')
+    expect(flyout.attributes('aria-hidden')).toBeUndefined()
+    expect(w.find('[data-key="admin"]').attributes('data-depth')).toBe('1')
+    expect(w.find('[data-key="users"]').attributes('data-depth')).toBe('2')
   })
 
   it('opens a horizontal submenu for keyboard focus', async () => {
@@ -179,9 +194,9 @@ describe('IrisNavMenu', () => {
     const children = group.find('[data-iris-nav-children]')
 
     await group.trigger('focusin')
-    expect(children.attributes('style')).toContain('display: block')
+    expect(children.attributes('aria-hidden')).toBeUndefined()
     await group.trigger('focusout')
-    expect(children.attributes('style')).toContain('display: none')
+    expect(children.attributes('aria-hidden')).toBe('true')
   })
 
   it('gives the hovered horizontal branch priority over a previously focused sibling', async () => {
@@ -284,7 +299,7 @@ describe('IrisNavMenu', () => {
     const styles = document.querySelectorAll(`#${__NAV_MENU_STYLE_ID}`)
 
     expect(styles).toHaveLength(1)
-    expect(styles[0]?.textContent).toContain('.iris-nav-menu-arrow[data-reversed="true"]')
+    expect(styles[0]?.textContent).toContain(":where(.iris-nav-menu-arrow[data-reversed='true'])")
     expect(styles[0]?.textContent).toContain('transform: rotate(180deg)')
     expect(styles[0]?.textContent).toContain('prefers-reduced-motion: reduce')
 
@@ -302,13 +317,11 @@ describe('IrisNavMenu', () => {
 
     await dash!.trigger('mouseenter')
 
-    expect(dash!.attributes('style')).toContain(
-      'background: var(--iris-surface-hover, var(--iris-surface))',
-    )
-    expect(sys!.attributes('style')).toContain('background: transparent')
+    expect(dash!.classes()).toContain('is-hovered')
+    expect(sys!.classes()).not.toContain('is-hovered')
 
     await disabled!.trigger('mouseenter')
-    expect(disabled!.attributes('style')).toContain('background: transparent')
+    expect(disabled!.classes()).not.toContain('is-hovered')
   })
 
   it('renders a badge for a leaf with badge', async () => {

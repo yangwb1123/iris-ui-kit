@@ -112,4 +112,52 @@ describe('IrisCombobox', () => {
     await el.trigger('keydown', { key: 'Enter' })
     expect(w.emitted('update:modelValue')?.[0]).toEqual(['apple'])
   })
+
+  it('allowCommit: Enter with unmatched free text emits commit (not modelValue)', async () => {
+    const w = mount(IrisCombobox, { props: { options: OPTIONS, allowCommit: true } })
+    const el = input(w)
+    await el.trigger('focus')
+    await el.setValue('Mango')
+    await el.trigger('keydown', { key: 'Enter' })
+    expect(w.emitted('commit')?.[0]).toEqual(['Mango'])
+    expect(w.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('allowCommit: blur with unmatched free text commits it', async () => {
+    const w = mount(IrisCombobox, { props: { options: OPTIONS, allowCommit: true } })
+    const el = input(w)
+    await el.trigger('focus')
+    await el.setValue('  Mango  ')
+    await el.trigger('blur')
+    expect(w.emitted('commit')?.[0]).toEqual(['Mango'])
+  })
+
+  it('allowCommit: matching option still selects it (commit not emitted)', async () => {
+    const w = mount(IrisCombobox, { props: { options: OPTIONS, allowCommit: true } })
+    const el = input(w)
+    await el.trigger('focus')
+    await el.setValue('Ba')
+    await opts(w)[0].trigger('click')
+    expect(w.emitted('update:modelValue')?.[0]).toEqual(['banana'])
+    expect(w.emitted('commit')).toBeUndefined()
+  })
+
+  it('allowCommit: blank query does not emit commit on blur', async () => {
+    const w = mount(IrisCombobox, { props: { options: OPTIONS, allowCommit: true } })
+    const el = input(w)
+    await el.trigger('focus')
+    await el.setValue('   ')
+    await el.trigger('blur')
+    expect(w.emitted('commit')).toBeUndefined()
+  })
+
+  it('default (no allowCommit): Enter with unmatched text emits nothing', async () => {
+    const w = mount(IrisCombobox, { props: { options: OPTIONS } })
+    const el = input(w)
+    await el.trigger('focus')
+    await el.setValue('Mango')
+    await el.trigger('keydown', { key: 'Enter' })
+    expect(w.emitted('commit')).toBeUndefined()
+    expect(w.emitted('update:modelValue')).toBeUndefined()
+  })
 })

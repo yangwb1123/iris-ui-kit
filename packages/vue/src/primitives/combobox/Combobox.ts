@@ -35,6 +35,10 @@ export const IrisCombobox = defineComponent({
     size: { type: String as PropType<IrisComboboxSize>, default: 'md' },
     /** Text shown when no option matches the query. Defaults to the i18n value. */
     emptyText: { type: String, default: undefined },
+    /** Allow committing free text that matches no option: Enter/blur emits
+     * `commit` with the trimmed query (antd AutoComplete parity). Default
+     * false keeps the option-only contract. */
+    allowCommit: { type: Boolean, default: false },
     /** id forwarded to the input. Set by IrisFormField. */
     id: { type: String, default: undefined },
     /** Forwarded as `aria-describedby` on the input. Set by IrisFormField. */
@@ -42,6 +46,8 @@ export const IrisCombobox = defineComponent({
   },
   emits: {
     'update:modelValue': (_value: string) => true,
+    /** Free-text commit when `allowCommit` is on and no option is selected. */
+    commit: (_text: string) => true,
   },
   setup(props, { attrs, emit }) {
     const { t } = useI18n()
@@ -77,6 +83,14 @@ export const IrisCombobox = defineComponent({
       close()
     }
 
+    const commitQuery = () => {
+      const text = query.value.trim()
+      if (!text) return
+      emit('commit', text)
+      query.value = ''
+      close()
+    }
+
     const onInput = (event: Event) => {
       query.value = (event.target as HTMLInputElement).value
       filtering.value = true
@@ -103,6 +117,9 @@ export const IrisCombobox = defineComponent({
         if (open.value && activeIndex.value >= 0 && list[activeIndex.value]) {
           event.preventDefault()
           selectOption(list[activeIndex.value])
+        } else if (props.allowCommit) {
+          event.preventDefault()
+          commitQuery()
         }
       } else if (event.key === 'Escape') {
         if (open.value) {
@@ -183,6 +200,11 @@ export const IrisCombobox = defineComponent({
             },
             onBlur: () => {
               focused.value = false
+              if (props.allowCommit && query.value.trim()) {
+                // 自由文本失焦提交（仅 allowCommit 时）
+                commitQuery()
+                return
+              }
               close()
             },
             style: {

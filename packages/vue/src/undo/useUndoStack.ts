@@ -70,13 +70,17 @@ export function useUndoStack<T>(options?: UndoStackOptions<T>): {
 
   const undo = (): T | undefined => {
     const result = stack.undo()
-    if (result !== undefined) sync()
+    // Always sync: `undefined` is a legal snapshot value for a generic T, so
+    // the return value cannot distinguish "no-op" from "moved onto an
+    // undefined snapshot". A true no-op writes identical values, which is
+    // harmless (same as push/clear).
+    sync()
     return result
   }
 
   const redo = (): T | undefined => {
     const result = stack.redo()
-    if (result !== undefined) sync()
+    sync()
     return result
   }
 

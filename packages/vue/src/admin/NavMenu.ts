@@ -140,6 +140,15 @@ export const IrisNavMenu = defineComponent({
       }
     }
 
+    const keepsPointerInside = (
+      container: EventTarget | null,
+      event: { relatedTarget?: EventTarget | null },
+    ): boolean => {
+      if (!container || !(container instanceof HTMLElement)) return false
+      const next = event.relatedTarget
+      return !!(next && next instanceof Node && container.contains(next))
+    }
+
     const interactionKeyAtDepth = (keys: string[], depth: number): string | undefined =>
       keys.find((key) => findNavPath(props.items, key).length === depth + 1)
 
@@ -149,53 +158,27 @@ export const IrisNavMenu = defineComponent({
       return interactionKeyAtDepth(focusedBranches.value, depth) === key
     }
 
-    const itemStyle = (opts: {
+    const itemClass = (opts: {
       depth: number
       active: boolean
       trail: boolean
       hovered: boolean
+      open: boolean
       disabled: boolean
-    }): Record<string, string> => {
-      const bg = opts.active
-        ? 'var(--iris-primary)'
-        : opts.hovered && !opts.disabled
-          ? 'var(--iris-surface-hover, var(--iris-surface))'
-          : 'transparent'
-      return {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        width: props.orientation === 'horizontal' && opts.depth === 0 ? 'auto' : '100%',
-        boxSizing: 'border-box',
-        border: 'none',
-        borderRadius: 'var(--iris-radius-md, 6px)',
-        background: bg,
-        color: opts.active
-          ? 'var(--iris-primary-foreground, #fff)'
-          : opts.trail
-            ? 'var(--iris-primary)'
-            : 'var(--iris-foreground)',
-        font: 'inherit',
-        fontSize: '14px',
-        fontWeight: opts.active || opts.trail ? '600' : '400',
-        textAlign: 'start',
-        cursor: opts.disabled ? 'not-allowed' : 'pointer',
-        opacity: opts.disabled ? '0.5' : '1',
-        padding: props.collapsed ? '10px' : '8px 10px',
-        paddingInlineStart:
-          props.collapsed || props.orientation === 'horizontal'
-            ? '10px'
-            : `${12 + opts.depth * 16}px`,
-        justifyContent: props.collapsed ? 'center' : 'flex-start',
-      }
+      branch: boolean
+    }): string[] => {
+      const depth = Math.min(9, opts.depth)
+      return [
+        'iris-nav-menu-item',
+        `iris-nav-menu-item--depth-${depth}`,
+        `iris-nav-menu-item--${opts.branch ? 'branch' : 'leaf'}`,
+        opts.active ? 'is-active' : undefined,
+        opts.trail ? 'is-trail' : undefined,
+        opts.hovered ? 'is-hovered' : undefined,
+        opts.open ? 'is-open' : undefined,
+        opts.disabled ? 'is-disabled' : undefined,
+      ].filter(Boolean) as string[]
     }
-
-    const hoverHandlers = (key: string): Record<string, (e: Event) => void> => ({
-      onMouseenter: () => (hovered.value = key),
-      onMouseleave: () => {
-        if (hovered.value === key) hovered.value = null
-      },
-    })
 
     const iconNode = (node: NavNode, size = 18): VNode | null =>
       node.icon ? h(IrisIcon, { name: node.icon, size }) : null
@@ -205,16 +188,8 @@ export const IrisNavMenu = defineComponent({
         ? h(
             'span',
             {
+              class: 'iris-nav-menu-badge',
               'data-iris-nav-badge': '',
-              style: {
-                marginInlineStart: 'auto',
-                fontSize: '11px',
-                lineHeight: '1',
-                padding: '2px 6px',
-                borderRadius: '999px',
-                background: 'var(--iris-danger, #e5484d)',
-                color: '#fff',
-              },
             },
             String(node.badge),
           )
@@ -230,25 +205,41 @@ export const IrisNavMenu = defineComponent({
           {
             key: node.key,
             type: 'button',
+            class: [
+              ...itemClass({
+                depth: 0,
+                active,
+                trail: false,
+                hovered: hovered.value === node.key,
+                open: false,
+                disabled: !!node.disabled,
+                branch,
+              }),
+              'is-collapsed',
+            ],
             'data-iris-nav-item': '',
             'data-key': node.key,
             'data-active': active ? 'true' : undefined,
             'data-branch': branch ? 'true' : undefined,
+            'data-hovered': hovered.value === node.key ? 'true' : undefined,
             disabled: node.disabled,
             title: node.title,
             'aria-label': branch ? `${node.title} (section)` : node.title,
             'aria-current': active && !branch ? 'page' : undefined,
-            style: itemStyle({
-              depth: 0,
-              active,
-              trail: false,
-              hovered: hovered.value === node.key,
-              disabled: !!node.disabled,
-            }),
-            ...hoverHandlers(node.key),
+            onMouseenter: () => {
+              if (!node.disabled) hovered.value = node.key
+            },
+            onMouseleave: (event: MouseEvent) => {
+              if (hovered.value === node.key && !keepsPointerInside(event.currentTarget, event)) {
+                hovered.value = null
+              }
+            },
             onClick: () => select(branch ? firstLeaf(node) : node),
           },
-          [iconNode(node, 20) ?? h('span', { style: { fontWeight: '700' } }, node.title.charAt(0))],
+          [
+            iconNode(node, 20) ??
+              h('span', { class: 'iris-nav-menu-fallback-icon' }, node.title.charAt(0)),
+          ],
         )
       })
 
@@ -266,24 +257,35 @@ export const IrisNavMenu = defineComponent({
         'button',
         {
           type: 'button',
+          class: itemClass({
+            depth,
+            active,
+            trail,
+            hovered: hovered.value === node.key,
+            open: branch ? shown : false,
+            disabled: !!node.disabled,
+            branch,
+          }),
           'data-iris-nav-item': '',
           'data-key': node.key,
           'data-branch': branch ? 'true' : undefined,
           'data-active': active ? 'true' : undefined,
           'data-active-trail': trail ? 'true' : undefined,
           'data-open': branch && shown ? 'true' : undefined,
+          'data-hovered': hovered.value === node.key ? 'true' : undefined,
           'data-depth': String(depth),
+          'data-orientation': props.orientation,
           disabled: node.disabled,
           'aria-expanded': branch ? (shown ? 'true' : 'false') : undefined,
           'aria-current': active ? 'page' : undefined,
-          style: itemStyle({
-            depth,
-            active,
-            trail,
-            hovered: hovered.value === node.key,
-            disabled: !!node.disabled,
-          }),
-          ...hoverHandlers(node.key),
+          onMouseenter: () => {
+            if (!node.disabled) hovered.value = node.key
+          },
+          onMouseleave: (event: MouseEvent) => {
+            if (hovered.value === node.key && !keepsPointerInside(event.currentTarget, event)) {
+              hovered.value = null
+            }
+          },
           onClick: () => (branch ? toggle(node.key) : select(node)),
         },
         [
@@ -291,12 +293,7 @@ export const IrisNavMenu = defineComponent({
           h(
             'span',
             {
-              style: {
-                flex: branch ? '1' : '0 1 auto',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              },
+              class: 'iris-nav-menu-label',
             },
             node.title,
           ),
@@ -307,17 +304,19 @@ export const IrisNavMenu = defineComponent({
                 size: 16,
                 class: 'iris-nav-menu-arrow',
                 'data-reversed': arrowReversed ? 'true' : undefined,
-                style: { marginInlineStart: badgeNode(node) ? '6px' : 'auto' },
               })
             : null,
         ],
       )
 
-      const groupStyle = horizontal && branch ? { position: 'relative' } : undefined
       if (!branch || (!horizontal && !open))
         return h(
           'div',
-          { key: node.key, 'data-iris-nav-group': branch ? '' : undefined, style: groupStyle },
+          {
+            key: node.key,
+            'data-iris-nav-group': branch ? '' : undefined,
+            class: ['iris-nav-menu-group', `iris-nav-menu-group--depth-${Math.min(9, depth)}`],
+          },
           [row],
         )
 
@@ -327,11 +326,30 @@ export const IrisNavMenu = defineComponent({
           key: node.key,
           'data-iris-nav-group': '',
           'data-open': shown ? 'true' : undefined,
-          style: groupStyle,
+          'data-depth': String(depth),
+          class: ['iris-nav-menu-group', `iris-nav-menu-group--depth-${Math.min(9, depth)}`],
           ...(horizontal
             ? {
-                onMouseenter: () => setBranchInteraction(hoveredBranches, node.key, true),
-                onMouseleave: () => setBranchInteraction(hoveredBranches, node.key, false),
+                onMouseenter: (event: MouseEvent) => {
+                  if (!keepsPointerInside(event.currentTarget, event)) {
+                    setBranchInteraction(hoveredBranches, node.key, true)
+                  }
+                },
+                onMouseover: (event: MouseEvent) => {
+                  if (!keepsPointerInside(event.currentTarget, event)) {
+                    setBranchInteraction(hoveredBranches, node.key, true)
+                  }
+                },
+                onMouseout: (event: MouseEvent) => {
+                  if (!keepsPointerInside(event.currentTarget, event)) {
+                    setBranchInteraction(hoveredBranches, node.key, false)
+                  }
+                },
+                onMouseleave: (event: MouseEvent) => {
+                  if (!keepsPointerInside(event.currentTarget, event)) {
+                    setBranchInteraction(hoveredBranches, node.key, false)
+                  }
+                },
                 onFocusin: () => setBranchInteraction(focusedBranches, node.key, true),
                 onFocusout: (event: FocusEvent) => {
                   const group = event.currentTarget as HTMLElement
@@ -348,24 +366,10 @@ export const IrisNavMenu = defineComponent({
           h(
             'div',
             {
+              class: 'iris-nav-menu-children',
               'data-iris-nav-children': '',
               role: 'group',
               'aria-hidden': horizontal && !shown ? 'true' : undefined,
-              style: horizontal
-                ? {
-                    display: shown ? 'block' : 'none',
-                    position: 'absolute',
-                    insetBlockStart: depth === 0 ? '100%' : '0',
-                    insetInlineStart: depth === 0 ? '0' : '100%',
-                    zIndex: depth === 0 ? '60' : '61',
-                    minWidth: '220px',
-                    padding: '6px',
-                    border: '1px solid var(--iris-border)',
-                    borderRadius: 'var(--iris-radius-md, 6px)',
-                    background: 'var(--iris-surface)',
-                    boxShadow: 'var(--iris-shadow-md)',
-                  }
-                : undefined,
             },
             (node.children ?? []).map((child) => renderItem(child, depth + 1)),
           ),
@@ -373,9 +377,9 @@ export const IrisNavMenu = defineComponent({
       )
     }
 
-    // Arrow-key navigation over the visible items (Tab still works as a
-    // fallback). Up/Down/Home/End move focus; Right expands a branch then steps
-    // into it; Left collapses an open branch else moves to the parent.
+    // Arrow-key navigation over the visible items (Tab still works as a fallback).
+    // Up/Down/Home/End move focus; Right expands a branch then steps into it;
+    // Left collapses an open branch else moves to the parent.
     const onKeydown = (e: KeyboardEvent): void => {
       const root = e.currentTarget as HTMLElement
       const buttons = Array.from(root.querySelectorAll<HTMLElement>('[data-iris-nav-item]')).filter(
@@ -427,23 +431,24 @@ export const IrisNavMenu = defineComponent({
       }
     }
 
+    const menuClass = [
+      'iris-nav-menu',
+      `iris-nav-menu--${props.orientation}`,
+      props.collapsed ? 'iris-nav-menu--collapsed' : 'iris-nav-menu--expanded',
+    ]
+
     return () =>
       h(
         'nav',
         {
           ...attrs,
+          class: [...menuClass, attrs.class as unknown as string | string[] | undefined],
           'data-iris-nav-menu': '',
           'data-collapsed': props.collapsed ? 'true' : undefined,
           'data-orientation': props.orientation,
           'aria-label': props.ariaLabel ?? t('admin.nav'),
           onKeydown,
-          style: {
-            display: 'flex',
-            flexDirection: props.orientation === 'horizontal' ? 'row' : 'column',
-            alignItems: props.orientation === 'horizontal' ? 'center' : undefined,
-            gap: '2px',
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
-          },
+          style: attrs.style as Record<string, string> | undefined,
         },
         props.collapsed ? renderCollapsed() : tree.value.map((node) => renderItem(node, 0)),
       )

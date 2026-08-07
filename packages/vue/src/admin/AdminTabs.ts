@@ -152,6 +152,10 @@ export const IrisAdminTabs = defineComponent({
               onClick: (e: Event) => {
                 e.stopPropagation()
                 close(tab.key)
+                const root = (e.currentTarget as HTMLElement).closest(
+                  '[role="tablist"]',
+                ) as HTMLElement | null
+                void nextTick(() => focusTab(root, props.nav.getState().activeKey))
               },
             },
             [h(IrisIcon, { name: 'x', size: 12 })],

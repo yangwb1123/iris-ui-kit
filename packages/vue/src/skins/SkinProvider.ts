@@ -57,6 +57,12 @@ export const SkinProvider = defineComponent({
     watch(current, () => {
       if (applied) apply()
     })
+    watch(
+      () => props.target,
+      () => {
+        if (applied) apply()
+      },
+    )
     onBeforeUnmount(() => {
       unsubscribe()
       applied?.revert()

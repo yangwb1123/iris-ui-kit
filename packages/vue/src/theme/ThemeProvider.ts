@@ -64,7 +64,7 @@ export const ThemeProvider = defineComponent({
   },
   setup(props, { slots }) {
     const current = ref(props.store.store.getState()) as Ref<IrisTheme>
-    const unsubscribe = props.store.store.subscribe((next) => {
+    let unsubscribe = props.store.store.subscribe((next) => {
       current.value = next
     })
 
@@ -92,6 +92,26 @@ export const ThemeProvider = defineComponent({
     watch(current, () => {
       if (applied) applyCurrent()
     })
+
+    watch(
+      () => props.store,
+      (nextStore) => {
+        unsubscribe()
+        unsubscribe = nextStore.store.subscribe((next) => {
+          current.value = next
+        })
+        current.value = nextStore.store.getState()
+        if (applied) applyCurrent()
+      },
+    )
+
+    watch(
+      () => props.target,
+      () => {
+        if (applied) applyCurrent()
+        if (dirApplied) applyDir()
+      },
+    )
 
     watch(
       () => props.dir,

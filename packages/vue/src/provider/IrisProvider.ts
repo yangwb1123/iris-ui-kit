@@ -4,16 +4,19 @@ import {
   onBeforeUnmount,
   onMounted,
   provide,
+  shallowReactive,
+  shallowRef,
+  watch,
   type PropType,
   type VNode,
 } from 'vue'
-import { runPlugins, type IrisPlugin } from '@iris-ui-kit/core'
+import { runPlugins, type CollectedRegistrations, type IrisPlugin } from '@iris-ui-kit/core'
 import { applyCssVars, type ApplyCssVarsResult, type ThemeStore } from '@iris-ui-kit/theme'
 import type { SkinEngine } from '@iris-ui-kit/skins'
 import { ThemeProvider } from '../theme'
 import { SkinProvider } from '../skins'
 import { IrisI18nProvider } from '../i18n'
-import { PluginStoreContextKey } from './context'
+import { PluginStoreContextKey, type PluginStoreContext } from './context'
 
 const DEFAULT_LOCALE = 'en-US'
 
@@ -55,34 +58,75 @@ export const IrisProvider = defineComponent({
     target: { type: Object as PropType<HTMLElement | null>, default: null },
   },
   setup(props, { slots }) {
-    // Sync, pure, deterministic — computed once per setup over `plugins`.
-    const collected = runPlugins(props.plugins ?? [])
+    // R1: `collected` is reactive so a `plugins` swap re-derives everything
+    // downstream (tokens, messages, stores, installed set). Shallow: the stores
+    // Map and store instances stay raw — never proxied — so `instanceof` /
+    // private fields on class-based stores keep working.
+    const collected = shallowRef<CollectedRegistrations>(runPlugins(props.plugins ?? []))
+
+    // R4: one reactive context created once in setup (`provide()` cannot run
+    // from a watcher — it requires the setup instance context) and mutated in
+    // place on swap so `usePlugin` / `usePluginStore` consumers observe the new
+    // stores and installed set after a re-render. Shallow for the same reason.
+    const ctx = shallowReactive<PluginStoreContext>({
+      stores: collected.value.stores,
+      installed: new Set((props.plugins ?? []).map((p) => p.name)),
+    })
+    provide(PluginStoreContextKey, ctx)
 
     // tokens → additive CSS-var layer over the active theme; reverted on unmount.
     let applied: ApplyCssVarsResult | null = null
+    // Pre-mount swaps must not create a token layer whose revert handle gets
+    // shadowed by onMounted — `onMounted` applies the (already current) set.
+    let mounted = false
     onMounted(() => {
+      mounted = true
       if (typeof document === 'undefined') return
       const el = props.target ?? document.documentElement
-      applied = applyCssVars(Object.entries(collected.tokens), el)
+      applied = applyCssVars(Object.entries(collected.value.tokens), el)
     })
+
+    // R1–R4: re-collect when the `plugins` prop identity changes (array ref,
+    // `Object.is` — same semantics as React `useMemo([plugins])` / Solid
+    // `createMemo` / Svelte `$derived`). Non-immediate: the initial collection
+    // happens in setup above, so an immediate watch would re-run `runPlugins`
+    // (double eager store factories + spurious install→teardown→install).
+    // Compute-then-commit: `runPlugins` is the only fallible step; a throwing
+    // install aborts before any revert/teardown/replacement is committed.
+    watch(
+      () => props.plugins,
+      (next) => {
+        const prev = collected.value
+        const nextCollected = runPlugins(next ?? [])
+        applied?.revert()
+        applied = null
+        // R3: the removed set is torn exactly once at the swap (idempotent in
+        // core); the current set is still torn exactly once in onBeforeUnmount.
+        prev.teardown()
+        collected.value = nextCollected
+        ctx.stores = nextCollected.stores
+        ctx.installed = new Set((next ?? []).map((p) => p.name))
+        // R2 + R5: re-apply the new layer (guard `document` for SSR). Pre-mount
+        // swaps are applied by onMounted — exactly one layer, no orphaned handle.
+        if (mounted && typeof document !== 'undefined') {
+          const el = props.target ?? document.documentElement
+          applied = applyCssVars(Object.entries(nextCollected.tokens), el)
+        }
+      },
+    )
+
     onBeforeUnmount(() => {
       applied?.revert()
       applied = null
       // Run plugin teardowns on unmount so eager stores / subscriptions /
       // timers don't leak. Idempotent and safe with no plugins.
-      collected.teardown()
-    })
-
-    // stores + installed names → PluginStoreContext.
-    provide(PluginStoreContextKey, {
-      stores: collected.stores,
-      installed: new Set((props.plugins ?? []).map((p) => p.name)),
+      collected.value.teardown()
     })
 
     return () => {
       const locale = props.locale ?? DEFAULT_LOCALE
       // Plugin messages as BASE, user messages WIN.
-      const messages = { ...collected.messages[locale], ...(props.messages ?? {}) }
+      const messages = { ...collected.value.messages[locale], ...(props.messages ?? {}) }
 
       // I18n always renders, wrapping children.
       let tree: VNode = h(

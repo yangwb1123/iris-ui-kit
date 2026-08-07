@@ -896,6 +896,19 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                   onChange={toggleAll}
                   aria-label={t('table.selectAll')}
                 />
+                <Show when={props.selection && props.selection.length > 0}>
+                  <span
+                    data-iris-table-selected-count=""
+                    style={{
+                      'margin-inline-start': 'var(--iris-space-xs, 8px)',
+                      'font-size': 'var(--iris-font-size-sm, 13px)',
+                      color: 'var(--iris-muted)',
+                      'white-space': 'nowrap',
+                    }}
+                  >
+                    {t('table.selectedCount', { count: String(props.selection!.length) })}
+                  </span>
+                </Show>
               </Show>
             </div>
           </Show>
@@ -996,6 +1009,19 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                   onChange={toggleAll}
                   aria-label={t('table.selectAll')}
                 />
+                <Show when={props.selection && props.selection.length > 0}>
+                  <span
+                    data-iris-table-selected-count=""
+                    style={{
+                      'margin-inline-start': 'var(--iris-space-xs, 8px)',
+                      'font-size': 'var(--iris-font-size-sm, 13px)',
+                      color: 'var(--iris-muted)',
+                      'white-space': 'nowrap',
+                    }}
+                  >
+                    {t('table.selectedCount', { count: String(props.selection!.length) })}
+                  </span>
+                </Show>
               </Show>
             </div>
           </Show>

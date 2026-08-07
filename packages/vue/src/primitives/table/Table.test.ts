@@ -88,7 +88,7 @@ describe('IrisTable', () => {
     const wrapper = mount(IrisTable, { props: { columns, data: [], rowKey: 'id' }, attachTo: host })
     const empty = wrapper.find('[data-iris-table-row="empty"]')
     expect(empty.exists()).toBe(true)
-    expect(empty.text()).toBe('No data')
+    expect(empty.text()).toBe('No data to display')
   })
 
   it('renders a custom #empty slot when provided', () => {

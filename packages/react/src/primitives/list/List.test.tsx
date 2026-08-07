@@ -182,7 +182,7 @@ describe('@iris-ui-kit/react IrisList data states', () => {
     const node = document.querySelector('[data-iris-list-state]')!
     expect(node).not.toBeNull()
     expect(node.getAttribute('data-iris-list-state')).toBe('empty')
-    expect(node.textContent).toBe('No items')
+    expect(node.textContent).toBe('No items to display')
   })
 
   it('shows loading over empty, with aria-busy on the listbox', () => {

@@ -612,6 +612,14 @@
               onchange={toggleAll}
               aria-label={t('table.selectAll')}
             />
+            {#if selection && selection.length > 0}
+              <span
+                data-iris-table-selected-count=""
+                style="margin-inline-start: var(--iris-space-xs, 8px); font-size: var(--iris-font-size-sm, 13px); color: var(--iris-muted); white-space: nowrap"
+              >
+                {t('table.selectedCount', { count: String(selection.length) })}
+              </span>
+            {/if}
           {/if}
         </div>
       {/if}
@@ -703,6 +711,14 @@
               onchange={toggleAll}
               aria-label={t('table.selectAll')}
             />
+            {#if selection && selection.length > 0}
+              <span
+                data-iris-table-selected-count=""
+                style="margin-inline-start: var(--iris-space-xs, 8px); font-size: var(--iris-font-size-sm, 13px); color: var(--iris-muted); white-space: nowrap"
+              >
+                {t('table.selectedCount', { count: String(selection.length) })}
+              </span>
+            {/if}
           {/if}
         </div>
       {/if}

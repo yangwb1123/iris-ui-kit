@@ -222,13 +222,32 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
                 'border-radius': 'var(--iris-radius-sm, 4px)',
                 cursor: item.disabled ? 'not-allowed' : 'pointer',
                 color: item.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
-                background: isActive()
-                  ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-                  : 'transparent',
+                background: isSelected()
+                  ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
+                  : isActive()
+                    ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+                    : 'transparent',
                 'font-weight': isSelected() ? '600' : '400',
               }}
             >
-              {item.label ?? String(item.value)}
+              <span style={{ flex: '1', 'min-width': '0' }}>
+                {item.label ?? String(item.value)}
+              </span>
+              <Show when={isSelected()}>
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--iris-primary)"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              </Show>
             </div>
           )
         }}

@@ -271,15 +271,30 @@
           }
         }}
         tabindex={item.disabled ? -1 : 0}
-        style="padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); font-size: {sz.fontSize}; border-radius: var(--iris-radius-sm, 4px); cursor: {item.disabled
+        style="display: flex; align-items: center; gap: var(--iris-gap-sm, 6px); padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); font-size: {sz.fontSize}; border-radius: var(--iris-radius-sm, 4px); cursor: {item.disabled
           ? 'not-allowed'
           : 'pointer'}; color: {item.disabled
           ? 'var(--iris-muted)'
           : 'var(--iris-foreground)'}; background: {item.value === currentValue
-          ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+          ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
           : 'transparent'}; font-weight: {item.value === currentValue ? '600' : '400'}"
       >
-        {item.label ?? String(item.value)}
+        <span style="flex: 1; min-width: 0">{item.label ?? String(item.value)}</span>
+        {#if item.value === currentValue}
+          <svg
+            aria-hidden="true"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--iris-primary)"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        {/if}
       </li>
     {/each}
   </ul>

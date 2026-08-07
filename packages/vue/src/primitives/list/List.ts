@@ -179,14 +179,13 @@ export const IrisList = defineComponent({
           opacity: item.disabled ? '0.5' : '1',
           fontSize: 'var(--iris-font-size-md, 14px)',
           background: selected
-            ? 'var(--iris-primary)'
+            ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
             : active
               ? 'var(--iris-surface-hover)'
               : 'transparent',
-          color: selected ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
+          color: 'var(--iris-foreground)',
+          fontWeight: selected ? '600' : '400',
           outline: 'none',
-          maxHeight: '240px',
-          overflowY: 'auto',
         }
 
         const slotContent = slots.item?.({
@@ -211,7 +210,30 @@ export const IrisList = defineComponent({
             onFocus,
             style: baseStyle,
           },
-          slotContent ?? item.label ?? String(item.value),
+          [
+            h(
+              'span',
+              { style: { flex: '1', minWidth: '0' } },
+              slotContent ?? item.label ?? String(item.value),
+            ),
+            selected
+              ? h(
+                  'svg',
+                  {
+                    'aria-hidden': 'true',
+                    width: '14',
+                    height: '14',
+                    viewBox: '0 0 24 24',
+                    fill: 'none',
+                    stroke: 'var(--iris-primary)',
+                    'stroke-width': '2.5',
+                    'stroke-linecap': 'round',
+                    'stroke-linejoin': 'round',
+                  },
+                  [h('path', { d: 'M20 6 9 17l-5-5' })],
+                )
+              : null,
+          ],
         )
       })
 
@@ -237,6 +259,8 @@ export const IrisList = defineComponent({
             flexDirection: 'column',
             gap: 'var(--iris-space-xxs, 4px)',
             outline: 'none',
+            maxHeight: '240px',
+            overflowY: 'auto',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },
         },

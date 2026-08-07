@@ -69,7 +69,9 @@ describe('@iris-ui-kit/react IrisCombobox', () => {
     fireEvent.focus(input(container))
     fireEvent.change(input(container), { target: { value: 'zzz' } })
     expect(opts(container).length).toBe(0)
-    expect(container.querySelector('[data-iris-combobox-empty]')!.textContent).toBe('No results')
+    expect(container.querySelector('[data-iris-combobox-empty]')!.textContent).toBe(
+      'No matching results',
+    )
   })
 
   it('reflects the selected value as the input text (controlled)', () => {

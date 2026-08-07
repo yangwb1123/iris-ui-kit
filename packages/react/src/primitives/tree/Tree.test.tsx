@@ -261,7 +261,7 @@ describe('@iris-ui-kit/react IrisTree data states', () => {
     render(<IrisTree nodes={[]} />)
     const node = document.querySelector('[data-iris-tree-state]')!
     expect(node.getAttribute('data-iris-tree-state')).toBe('empty')
-    expect(node.textContent).toBe('No items')
+    expect(node.textContent).toBe('No items to display')
   })
 
   it('shows loading with aria-busy; error takes precedence', () => {

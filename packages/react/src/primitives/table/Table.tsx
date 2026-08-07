@@ -896,6 +896,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   aria-label={t('table.selectAll')}
                 />
               ) : null}
+              {selectable === 'multi' && displaySelection.length > 0 ? (
+                <span
+                  data-iris-table-selected-count=""
+                  style={{
+                    marginInlineStart: 'var(--iris-space-xs, 8px)',
+                    fontSize: 'var(--iris-font-size-sm, 13px)',
+                    color: 'var(--iris-muted)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {t('table.selectedCount', { count: String(displaySelection.length) })}
+                </span>
+              ) : null}
             </div>
           ) : null}
           {headerMatrix.flatMap((cells) =>

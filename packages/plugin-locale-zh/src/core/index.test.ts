@@ -15,7 +15,7 @@ describe('localeZhPlugin', () => {
 
   it('covers a representative set of built-in keys', () => {
     expect(zhCNMessages['dialog.close']).toBe('关闭')
-    expect(zhCNMessages['table.empty']).toBe('暂无数据')
+    expect(zhCNMessages['table.empty']).toBe('暂无数据可显示')
     expect(zhCNMessages['tour.finish']).toBe('完成')
   })
 

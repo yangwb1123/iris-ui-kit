@@ -783,16 +783,33 @@ export const IrisTable = defineComponent({
               },
               props.selectable === 'multi'
                 ? [
-                    h(IrisCheckbox, {
-                      modelValue: allSelected.value
-                        ? true
-                        : someSelected.value
-                          ? 'indeterminate'
-                          : false,
-                      size: 'sm',
-                      ariaLabel: t('table.selectAll'),
-                      'onUpdate:modelValue': toggleAll,
-                    }),
+                    [
+                      h(IrisCheckbox, {
+                        modelValue: allSelected.value
+                          ? true
+                          : someSelected.value
+                            ? 'indeterminate'
+                            : false,
+                        size: 'sm',
+                        ariaLabel: t('table.selectAll'),
+                        'onUpdate:modelValue': toggleAll,
+                      }),
+                      props.selection && props.selection.length > 0
+                        ? h(
+                            'span',
+                            {
+                              'data-iris-table-selected-count': '',
+                              style: {
+                                marginInlineStart: 'var(--iris-space-xs, 8px)',
+                                fontSize: 'var(--iris-font-size-sm, 13px)',
+                                color: 'var(--iris-muted)',
+                                whiteSpace: 'nowrap',
+                              },
+                            },
+                            t('table.selectedCount', { count: String(props.selection.length) }),
+                          )
+                        : null,
+                    ],
                   ]
                 : '',
             ),

@@ -63,7 +63,7 @@ describe('IrisCombobox', () => {
     await input(w).trigger('focus')
     await input(w).setValue('zzz')
     expect(opts(w).length).toBe(0)
-    expect(w.find('[data-iris-combobox-empty]').text()).toBe('No results')
+    expect(w.find('[data-iris-combobox-empty]').text()).toBe('No matching results')
   })
 
   it('reflects the selected value as the input text (v-model)', () => {

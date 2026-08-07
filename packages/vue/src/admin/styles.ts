@@ -3,7 +3,7 @@ export const __NAV_MENU_STYLE_ID = 'iris-nav-menu-styles'
 const CSS = `
 :where(.iris-nav-menu) {
   --iris-nav-indent-step: 16px;
-  --iris-nav-item-padding-inline: 10px;
+  --iris-nav-item-padding-inline: 12px;
   --iris-nav-item-padding-block: 8px;
   --iris-nav-item-border-radius: var(--iris-radius-md, 6px);
   --iris-nav-item-hover: var(--iris-surface-hover, var(--iris-surface));
@@ -58,7 +58,7 @@ const CSS = `
 }
 
 :where(.iris-nav-menu-item[data-depth='0']) {
-  --iris-nav-item-padding-inline-start: 10px;
+  --iris-nav-item-padding-inline-start: 12px;
 }
 
 :where(.iris-nav-menu-item[data-depth='1']) {

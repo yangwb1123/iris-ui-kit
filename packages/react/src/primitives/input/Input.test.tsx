@@ -59,7 +59,7 @@ describe('@iris-ui-kit/react IrisInput', () => {
     )
     rerender(<IrisInput size="lg" />)
     expect(container.querySelector('[data-iris-input]')!.getAttribute('style')).toContain(
-      'font-size: 16px',
+      'font-size: var(--iris-font-size-lg, 16px)',
     )
   })
 

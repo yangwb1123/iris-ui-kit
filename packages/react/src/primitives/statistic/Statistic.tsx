@@ -22,7 +22,7 @@ export interface IrisStatisticProps {
 
 const VALUE_FONT: Record<IrisStatisticSize, number> = { sm: 20, md: 28, lg: 36 }
 const TREND_COLOR: Record<IrisStatisticTrend, string> = {
-  up: 'var(--iris-success, #16a34a)',
+  up: 'var(--iris-success, #10b981)',
   down: 'var(--iris-danger)',
   neutral: 'var(--iris-muted)',
 }
@@ -59,7 +59,10 @@ export function IrisStatistic({
       style={{ display: 'flex', flexDirection: 'column', gap: 4, ...style }}
     >
       {label != null ? (
-        <div data-iris-statistic-label="" style={{ fontSize: 13, color: 'var(--iris-muted)' }}>
+        <div
+          data-iris-statistic-label=""
+          style={{ fontSize: 'var(--iris-font-size-sm, 13px)', color: 'var(--iris-muted)' }}
+        >
           {label}
         </div>
       ) : null}
@@ -94,7 +97,7 @@ export function IrisStatistic({
             display: 'inline-flex',
             alignItems: 'center',
             gap: 4,
-            fontSize: 13,
+            fontSize: 'var(--iris-font-size-sm, 13px)',
             color: trend ? TREND_COLOR[trend] : 'var(--iris-muted)',
           }}
         >
@@ -105,7 +108,10 @@ export function IrisStatistic({
         </div>
       ) : null}
       {description != null ? (
-        <div data-iris-statistic-desc="" style={{ fontSize: 12, color: 'var(--iris-muted)' }}>
+        <div
+          data-iris-statistic-desc=""
+          style={{ fontSize: 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-muted)' }}
+        >
           {description}
         </div>
       ) : null}

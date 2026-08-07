@@ -44,7 +44,7 @@ describe('IrisKbd', () => {
 
   it('size sm changes font size', () => {
     const w = mount(IrisKbd, { props: { keys: 'K', size: 'sm' } })
-    expect(w.attributes('style')).toContain('font-size: 10px')
+    expect(w.attributes('style')).toContain('font-size: var(--iris-font-size-xs, 12px)')
   })
 
   it('exposes data-iris-kbd-size', () => {

@@ -26,6 +26,10 @@ const stackStyle: React.CSSProperties = {
   flexDirection: 'column',
   gap: 'var(--iris-gap-md)',
 }
+const pageStackStyle: React.CSSProperties = {
+  ...stackStyle,
+  gap: 'var(--iris-admin-page-gap, var(--iris-gap-md))',
+}
 const rowStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
@@ -161,7 +165,7 @@ export function AdminDataPageView({
   }
 
   return (
-    <div data-iris-admin-data-page={page.key} style={stackStyle}>
+    <div data-iris-admin-data-page={page.key} style={pageStackStyle}>
       <div style={rowStyle}>
         {page.title ? <h2 data-iris-admin-page-title="">{page.title}</h2> : null}
         {canCreate ? (

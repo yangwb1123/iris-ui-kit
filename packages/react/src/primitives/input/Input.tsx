@@ -4,9 +4,13 @@ export type IrisInputSize = 'sm' | 'md' | 'lg'
 export type IrisInputType = 'text' | 'password' | 'email' | 'number' | 'search' | 'tel' | 'url'
 
 const SIZE_MAP: Record<IrisInputSize, { padding: string; fontSize: string; minHeight: string }> = {
-  sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
-  md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
-  lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
+  sm: { padding: '4px 8px', fontSize: 'var(--iris-font-size-xs, 12px)', minHeight: '28px' },
+  md: {
+    padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+    minHeight: '34px',
+  },
+  lg: { padding: '8px 12px', fontSize: 'var(--iris-font-size-lg, 16px)', minHeight: '40px' },
 }
 
 export interface IrisInputProps extends Omit<
@@ -59,7 +63,7 @@ export const IrisInput = React.forwardRef<HTMLInputElement, IrisInputProps>(func
   const wrapperStyle: React.CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '6px',
+    gap: 'var(--iris-space-xs, 8px)',
     background: 'var(--iris-background)',
     color: 'var(--iris-foreground)',
     border: `1px solid ${borderColor}`,

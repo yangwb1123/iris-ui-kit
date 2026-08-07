@@ -109,7 +109,7 @@ export function IrisTagInput({
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
-        gap: 6,
+        gap: 'var(--iris-space-xs, 8px)',
         padding: '4px 8px',
         minHeight: 34,
         background: 'var(--iris-background)',
@@ -130,8 +130,8 @@ export function IrisTagInput({
             display: 'inline-flex',
             alignItems: 'center',
             gap: 4,
-            padding: '2px 6px',
-            fontSize: 13,
+            padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
             background: 'var(--iris-surface)',
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-sm, 4px)',
@@ -150,7 +150,7 @@ export function IrisTagInput({
               background: 'transparent',
               color: 'var(--iris-muted)',
               cursor: disabled ? 'not-allowed' : 'pointer',
-              fontSize: 14,
+              fontSize: 'var(--iris-font-size-md, 14px)',
               lineHeight: 1,
               padding: 0,
             }}
@@ -180,8 +180,8 @@ export function IrisTagInput({
           background: 'transparent',
           color: 'var(--iris-foreground)',
           fontFamily: 'inherit',
-          fontSize: 14,
-          padding: '2px 0',
+          fontSize: 'var(--iris-font-size-md, 14px)',
+          padding: 'var(--iris-space-xxs, 4px) 0',
         }}
       />
     </div>

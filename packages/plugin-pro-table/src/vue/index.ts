@@ -89,7 +89,7 @@ export const IrisProTable = defineComponent({
                         sortableState.value.activeId &&
                         sortableState.value.overId === c.key &&
                         sortableState.value.activeId !== c.key
-                          ? '2px solid var(--iris-primary, #2563eb)'
+                          ? '2px solid var(--iris-primary, #6366f1)'
                           : undefined,
                       outlineOffset: '-2px',
                       ...pinnedStyle(c),
@@ -254,35 +254,48 @@ export const IrisProTable = defineComponent({
             onChange: () => props.store.toggleRow(key),
           }),
         )
-        return h('tr', { key, 'data-selected': props.store.isSelected(key) ? '' : undefined }, [
-          h('td', { style: { paddingInlineStart: `${depth * 24}px` } }, checkboxChildren),
-          ...renderColumns.map((c) => {
-            const editing =
-              state.value.editing?.rowKey === key && state.value.editing?.columnKey === c.key
-            return h(
-              'td',
-              {
-                key: c.key,
-                style: { textAlign: c.align, ...pinnedStyle(c) },
-                onDblclick: c.editable ? () => props.store.startEdit(key, c.key) : undefined,
-              },
-              editing
-                ? [
-                    h('input', {
-                      type: c.editor === 'number' ? 'number' : 'text',
-                      value: draft.value,
-                      onInput: (e: Event) => (draft.value = (e.target as HTMLInputElement).value),
-                      onBlur: () => props.store.commitEdit(draft.value),
-                      onKeydown: (e: KeyboardEvent) => {
-                        if (e.key === 'Enter') props.store.commitEdit(draft.value)
-                        if (e.key === 'Escape') props.store.cancelEdit()
-                      },
-                    }),
-                  ]
-                : String(props.store.cellValue(row, c) ?? ''),
-            )
-          }),
-        ])
+        return h(
+          'tr',
+          {
+            key,
+            'data-selected': props.store.isSelected(key) ? '' : undefined,
+            style: props.store.isSelected(key)
+              ? {
+                  background:
+                    'var(--iris-pro-table-selected-bg, var(--iris-surface-selected, #eef2ff))',
+                }
+              : undefined,
+          },
+          [
+            h('td', { style: { paddingInlineStart: `${depth * 24}px` } }, checkboxChildren),
+            ...renderColumns.map((c) => {
+              const editing =
+                state.value.editing?.rowKey === key && state.value.editing?.columnKey === c.key
+              return h(
+                'td',
+                {
+                  key: c.key,
+                  style: { textAlign: c.align, ...pinnedStyle(c) },
+                  onDblclick: c.editable ? () => props.store.startEdit(key, c.key) : undefined,
+                },
+                editing
+                  ? [
+                      h('input', {
+                        type: c.editor === 'number' ? 'number' : 'text',
+                        value: draft.value,
+                        onInput: (e: Event) => (draft.value = (e.target as HTMLInputElement).value),
+                        onBlur: () => props.store.commitEdit(draft.value),
+                        onKeydown: (e: KeyboardEvent) => {
+                          if (e.key === 'Enter') props.store.commitEdit(draft.value)
+                          if (e.key === 'Escape') props.store.cancelEdit()
+                        },
+                      }),
+                    ]
+                  : String(props.store.cellValue(row, c) ?? ''),
+              )
+            }),
+          ],
+        )
       }
 
       const totalColumnCount = columns.length + 1
@@ -334,7 +347,7 @@ export const IrisProTable = defineComponent({
                     {
                       key: k,
                       style:
-                        'display:inline-flex;align-items:center;gap:0.25rem;padding:0.125rem 0.5rem;background:var(--iris-pro-table-chip-bg);border-radius:9999px;',
+                        'display:inline-flex;align-items:center;gap:0.25rem;padding:var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px);background:var(--iris-pro-table-chip-bg, var(--iris-surface-hover, #f1f5f9));border-radius:9999px;',
                     },
                     [
                       `${title}: "${state.value.filters[k]}"`,

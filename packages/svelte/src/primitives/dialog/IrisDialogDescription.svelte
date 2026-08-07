@@ -21,7 +21,7 @@
   {...rest}
   id={ctx.descriptionId}
   data-iris-dialog-description
-  style="margin: 0 0 var(--iris-gap-lg, 16px) 0; color: var(--iris-muted); font-size: 14px;{(rest.style as string)
+  style="margin: 0 0 var(--iris-gap-lg, 16px) 0; color: var(--iris-muted); font-size: var(--iris-font-size-md, 14px);{(rest.style as string)
     ? ' ' + (rest.style as string)
     : ''}"
 >

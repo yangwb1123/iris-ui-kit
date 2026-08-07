@@ -43,20 +43,31 @@ export function IrisEmptyState(props: IrisEmptyStateProps): JSX.Element {
       <Show when={local.icon}>
         <div
           data-iris-empty-state-icon=""
-          style={{ color: 'var(--iris-muted)', 'font-size': '32px', 'line-height': '1' }}
+          style={{
+            color: 'var(--iris-muted)',
+            'font-size': 'var(--iris-font-size-4xl, 30px)',
+            'line-height': '1',
+          }}
         >
           {local.icon}
         </div>
       </Show>
       <Show when={local.title || local.children}>
-        <div data-iris-empty-state-title="" style={{ 'font-weight': '600', 'font-size': '16px' }}>
+        <div
+          data-iris-empty-state-title=""
+          style={{ 'font-weight': '600', 'font-size': 'var(--iris-font-size-lg, 16px)' }}
+        >
           {local.children ?? local.title}
         </div>
       </Show>
       <Show when={local.description}>
         <div
           data-iris-empty-state-description=""
-          style={{ color: 'var(--iris-muted)', 'font-size': '14px', 'max-width': '380px' }}
+          style={{
+            color: 'var(--iris-muted)',
+            'font-size': 'var(--iris-font-size-md, 14px)',
+            'max-width': '380px',
+          }}
         >
           {local.description}
         </div>

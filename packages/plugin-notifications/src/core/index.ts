@@ -212,9 +212,7 @@ export function createNotificationCenter(
 }
 
 /** CSS custom properties the notification center reads; overridable by the host theme. */
-export const notificationTokens: Record<string, string> = {
-  '--iris-notification-gap': 'var(--iris-gap-sm)',
-}
+export const notificationTokens: Record<string, string> = {}
 
 /** English defaults registered into IrisProvider's additive i18n layer. */
 export const notificationMessages: Record<string, string> = {

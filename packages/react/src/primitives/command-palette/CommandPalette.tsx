@@ -180,7 +180,7 @@ export function IrisCommandPalette({
           color: 'var(--iris-foreground)',
           border: '1px solid var(--iris-border)',
           borderRadius: 'var(--iris-radius-lg, 8px)',
-          boxShadow: '0 20px 40px -12px rgba(0,0,0,0.25)',
+          boxShadow: 'var(--iris-shadow-xl)',
           overflow: 'hidden',
           ...style,
         }}
@@ -195,11 +195,11 @@ export function IrisCommandPalette({
             onChange={(e) => setQuery(e.target.value)}
             style={{
               width: '100%',
-              padding: '8px 10px',
+              padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              fontSize: 16,
+              fontSize: 'var(--iris-font-size-lg, 16px)',
               fontFamily: 'inherit',
               color: 'inherit',
             }}
@@ -214,7 +214,12 @@ export function IrisCommandPalette({
           {groupedFlat.length === 0 ? (
             <li
               data-iris-command-palette-empty=""
-              style={{ padding: 20, textAlign: 'center', color: 'var(--iris-muted)', fontSize: 13 }}
+              style={{
+                padding: 20,
+                textAlign: 'center',
+                color: 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-sm, 13px)',
+              }}
             >
               {resolvedEmptyText}
             </li>
@@ -226,8 +231,8 @@ export function IrisCommandPalette({
                     key={`g-${row.label}-${i}`}
                     data-iris-command-palette-group=""
                     style={{
-                      padding: '6px 12px',
-                      fontSize: 11,
+                      padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+                      fontSize: 'var(--iris-font-size-xs, 12px)',
                       fontWeight: 600,
                       textTransform: 'uppercase',
                       letterSpacing: '0.04em',
@@ -260,14 +265,14 @@ export function IrisCommandPalette({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 10,
+                    gap: 'var(--iris-space-sm, 12px)',
                     padding: '8px 12px',
                     borderRadius: 'var(--iris-radius-sm, 4px)',
                     cursor: item.disabled ? 'not-allowed' : 'pointer',
                     opacity: item.disabled ? 0.5 : 1,
                     background: isActive ? 'var(--iris-surface-hover)' : 'transparent',
                     color: 'inherit',
-                    fontSize: 14,
+                    fontSize: 'var(--iris-font-size-md, 14px)',
                   }}
                 >
                   {item.icon ? (
@@ -280,8 +285,8 @@ export function IrisCommandPalette({
                     <span
                       data-iris-command-palette-shortcut=""
                       style={{
-                        fontSize: 11,
-                        padding: '2px 6px',
+                        fontSize: 'var(--iris-font-size-xs, 12px)',
+                        padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
                         background: 'var(--iris-background)',
                         border: '1px solid var(--iris-border)',
                         borderRadius: 'var(--iris-radius-sm, 4px)',

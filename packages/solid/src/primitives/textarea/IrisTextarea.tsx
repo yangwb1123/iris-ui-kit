@@ -4,9 +4,15 @@ import type { Size } from '@iris-ui-kit/core'
 export type IrisTextareaSize = Size
 
 const SIZE_STYLES: Record<IrisTextareaSize, { padding: string; fontSize: string }> = {
-  sm: { padding: '6px var(--iris-padding-sm, 8px)', fontSize: '12px' },
-  md: { padding: '8px var(--iris-padding-md, 12px)', fontSize: '14px' },
-  lg: { padding: '10px var(--iris-padding-md, 12px)', fontSize: '16px' },
+  sm: {
+    padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-sm, 6px)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+  },
+  md: { padding: '8px var(--iris-padding-md, 12px)', fontSize: 'var(--iris-font-size-md, 14px)' },
+  lg: {
+    padding: 'var(--iris-space-sm, 12px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+  },
 }
 
 export interface IrisTextareaProps {

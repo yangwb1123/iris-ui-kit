@@ -38,9 +38,22 @@ export interface IrisSelectProps<T = unknown> {
 }
 
 const SIZE_MAP: Record<IrisSelectSize, { padding: string; fontSize: string; minHeight: string }> = {
-  sm: { padding: '4px 24px 4px 8px', fontSize: '12px', minHeight: '28px' },
-  md: { padding: '6px 28px 6px 12px', fontSize: '14px', minHeight: '34px' },
-  lg: { padding: '8px 32px 8px 12px', fontSize: '16px', minHeight: '40px' },
+  sm: {
+    padding: '4px 24px 4px 8px',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    minHeight: '28px',
+  },
+  md: {
+    padding:
+      'var(--iris-padding-sm, 6px) var(--iris-space-xl, 24px) var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+    minHeight: '34px',
+  },
+  lg: {
+    padding: '8px 32px 8px 12px',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    minHeight: '40px',
+  },
 }
 
 /**
@@ -171,7 +184,7 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
         padding: '4px',
         'max-height': '240px',
         'overflow-y': 'auto',
-        'box-shadow': '0 8px 24px rgba(0,0,0,0.12)',
+        'box-shadow': 'var(--iris-shadow-lg)',
         'min-width': '180px',
         'z-index': 1000,
       }}
@@ -191,7 +204,7 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
               onMouseEnter={() => !item.disabled && setActiveIndex(i)}
               onClick={() => selectItem(item)}
               style={{
-                padding: '6px 10px',
+                padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
                 'font-size': sz().fontSize,
                 'border-radius': 'var(--iris-radius-sm, 4px)',
                 cursor: item.disabled ? 'not-allowed' : 'pointer',

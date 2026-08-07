@@ -156,12 +156,12 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
           display: 'inline-flex',
           'align-items': 'center',
           gap: '8px',
-          padding: '6px 12px',
+          padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
           background: 'var(--iris-surface)',
           border: `1px solid ${local.invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
           'border-radius': 'var(--iris-radius-md, 6px)',
           color: displayLabel() ? 'var(--iris-foreground)' : 'var(--iris-muted)',
-          'font-size': '14px',
+          'font-size': 'var(--iris-font-size-md, 14px)',
           'font-family': 'inherit',
           cursor: local.disabled ? 'not-allowed' : 'pointer',
           'min-width': '160px',
@@ -186,7 +186,7 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
             background: 'var(--iris-surface)',
             border: '1px solid var(--iris-border)',
             'border-radius': 'var(--iris-radius-md, 6px)',
-            'box-shadow': '0 4px 16px rgba(0,0,0,0.12)',
+            'box-shadow': 'var(--iris-shadow-lg)',
             overflow: 'hidden',
           }}
         >
@@ -221,7 +221,7 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
                           display: 'flex',
                           'align-items': 'center',
                           'justify-content': 'space-between',
-                          padding: '7px 10px',
+                          padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
                           'border-radius': 'var(--iris-radius-sm, 4px)',
                           cursor: node.disabled ? 'not-allowed' : 'pointer',
                           background: isActive() ? 'var(--iris-primary)' : 'transparent',
@@ -231,7 +231,7 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
                               ? 'var(--iris-muted)'
                               : 'var(--iris-foreground)',
                           opacity: node.disabled ? '0.5' : '1',
-                          'font-size': '14px',
+                          'font-size': 'var(--iris-font-size-md, 14px)',
                         }}
                       >
                         <span>{node.label}</span>

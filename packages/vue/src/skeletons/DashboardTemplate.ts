@@ -85,8 +85,8 @@ export const IrisDashboardTemplate = defineComponent({
                         'div',
                         {
                           style: {
-                            padding: '8px 12px',
-                            fontSize: '14px',
+                            padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+                            fontSize: 'var(--iris-font-size-md, 14px)',
                             fontWeight: '600',
                             color: 'var(--iris-foreground)',
                             opacity: state.collapsed ? 0 : 1,
@@ -102,7 +102,11 @@ export const IrisDashboardTemplate = defineComponent({
                   'nav',
                   {
                     'aria-label': 'Primary',
-                    style: { display: 'flex', flexDirection: 'column', gap: '2px' },
+                    style: {
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 'var(--iris-space-xxs, 4px)',
+                    },
                   },
                   props.nav.map((item) => {
                     const isActive = item.id === props.activeId
@@ -117,8 +121,8 @@ export const IrisDashboardTemplate = defineComponent({
                         style: {
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '10px',
-                          padding: '8px 12px',
+                          gap: 'var(--iris-space-sm, 12px)',
+                          padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
                           background: isActive ? 'var(--iris-primary)' : 'transparent',
                           color: isActive
                             ? 'var(--iris-primary-foreground, #fff)'
@@ -126,7 +130,7 @@ export const IrisDashboardTemplate = defineComponent({
                           border: 'none',
                           borderRadius: 'var(--iris-radius-sm, 4px)',
                           cursor: 'pointer',
-                          fontSize: '14px',
+                          fontSize: 'var(--iris-font-size-md, 14px)',
                           fontFamily: 'inherit',
                           textAlign: 'start',
                           outline: 'none',
@@ -172,8 +176,8 @@ export const IrisDashboardTemplate = defineComponent({
                         'div',
                         {
                           style: {
-                            padding: '12px 20px',
-                            fontSize: '16px',
+                            padding: 'var(--iris-space-sm, 12px) var(--iris-space-lg, 20px)',
+                            fontSize: 'var(--iris-font-size-lg, 16px)',
                             fontWeight: '600',
                           },
                         },
@@ -200,8 +204,8 @@ export const IrisDashboardTemplate = defineComponent({
                                   'h3',
                                   {
                                     style: {
-                                      margin: '0 0 8px 0',
-                                      fontSize: '14px',
+                                      margin: '0 0 var(--iris-space-xs, 8px) 0',
+                                      fontSize: 'var(--iris-font-size-md, 14px)',
                                       fontWeight: '600',
                                       color: 'var(--iris-foreground)',
                                     },
@@ -213,7 +217,12 @@ export const IrisDashboardTemplate = defineComponent({
                                   : card.body
                                     ? h(
                                         'div',
-                                        { style: { fontSize: '13px', color: 'var(--iris-muted)' } },
+                                        {
+                                          style: {
+                                            fontSize: 'var(--iris-font-size-sm, 13px)',
+                                            color: 'var(--iris-muted)',
+                                          },
+                                        },
                                         card.body,
                                       )
                                     : null,

@@ -67,7 +67,7 @@
     onclick?.()
   }
 
-  const baseStyle = `position: fixed; inset-inline-end: 24px; inset-block-end: 24px; z-index: 100; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--iris-border); background: var(--iris-surface, var(--iris-background)); color: var(--iris-foreground); cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: inline-flex; align-items: center; justify-content: center; font-size: 18px;`
+  const baseStyle = `position: fixed; inset-inline-end: 24px; inset-block-end: 24px; z-index: 100; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--iris-border); background: var(--iris-surface, var(--iris-background)); color: var(--iris-foreground); cursor: pointer; box-shadow: var(--iris-shadow-md); display: inline-flex; align-items: center; justify-content: center; font-size: var(--iris-font-size-xl, 18px);`
 </script>
 
 {#if visible}

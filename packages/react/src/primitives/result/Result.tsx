@@ -17,9 +17,9 @@ export interface IrisResultProps {
 }
 
 const STATUS: Record<IrisResultStatus, { color: string; glyph: string }> = {
-  success: { color: 'var(--iris-success, #16a34a)', glyph: '✓' },
+  success: { color: 'var(--iris-success, #10b981)', glyph: '✓' },
   error: { color: 'var(--iris-danger)', glyph: '✕' },
-  info: { color: 'var(--iris-info, #0ea5e9)', glyph: 'i' },
+  info: { color: 'var(--iris-info, #3b82f6)', glyph: 'i' },
   warning: { color: 'var(--iris-warning, #f59e0b)', glyph: '!' },
 }
 
@@ -68,9 +68,9 @@ export function IrisResult({
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 30,
+          fontSize: 'var(--iris-font-size-4xl, 30px)',
           fontWeight: 700,
-          color: '#fff',
+          color: 'var(--iris-primary-foreground, #fff)',
           background: s.color,
           marginBlockEnd: 8,
         }}
@@ -80,7 +80,11 @@ export function IrisResult({
       {title != null ? (
         <div
           data-iris-result-title=""
-          style={{ fontSize: 20, fontWeight: 600, color: 'var(--iris-foreground)' }}
+          style={{
+            fontSize: 'var(--iris-font-size-2xl, 20px)',
+            fontWeight: 600,
+            color: 'var(--iris-foreground)',
+          }}
         >
           {title}
         </div>
@@ -88,7 +92,11 @@ export function IrisResult({
       {subtitle != null ? (
         <div
           data-iris-result-subtitle=""
-          style={{ fontSize: 14, color: 'var(--iris-muted)', maxWidth: 480 }}
+          style={{
+            fontSize: 'var(--iris-font-size-md, 14px)',
+            color: 'var(--iris-muted)',
+            maxWidth: 480,
+          }}
         >
           {subtitle}
         </div>

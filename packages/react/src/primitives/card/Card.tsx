@@ -21,7 +21,7 @@ function variantStyle(variant: IrisCardVariant): React.CSSProperties {
   }
   switch (variant) {
     case 'elevated':
-      return { ...base, boxShadow: '0 1px 2px rgba(0,0,0,.05), 0 4px 12px rgba(0,0,0,.06)' }
+      return { ...base, boxShadow: 'var(--iris-shadow-md)' }
     case 'outline':
       return { ...base, border: '1px solid var(--iris-border)' }
     case 'subtle':

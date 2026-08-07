@@ -89,7 +89,7 @@ export function IrisNavMenu(props: IrisNavMenuProps): JSX.Element {
   }): JSX.CSSProperties => ({
     display: 'flex',
     'align-items': 'center',
-    gap: '10px',
+    gap: 'var(--iris-space-sm, 12px)',
     width: horizontal() && opts.depth === 0 ? 'auto' : '100%',
     'box-sizing': 'border-box',
     border: 'none',
@@ -105,7 +105,7 @@ export function IrisNavMenu(props: IrisNavMenuProps): JSX.Element {
         ? 'var(--iris-primary)'
         : 'var(--iris-foreground)',
     font: 'inherit',
-    'font-size': '14px',
+    'font-size': 'var(--iris-font-size-md, 14px)',
     'font-weight': opts.active || opts.trail ? '600' : '400',
     'text-align': 'start',
     cursor: opts.disabled ? 'not-allowed' : 'pointer',
@@ -201,12 +201,12 @@ export function IrisNavMenu(props: IrisNavMenuProps): JSX.Element {
             data-iris-nav-badge=""
             style={{
               'margin-inline-start': 'auto',
-              'font-size': '11px',
+              'font-size': 'var(--iris-font-size-xs, 12px)',
               'line-height': '1',
-              padding: '2px 6px',
+              padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
               'border-radius': '999px',
-              background: 'var(--iris-danger, #e5484d)',
-              color: '#fff',
+              background: 'var(--iris-danger, #ef4444)',
+              color: 'var(--iris-primary-foreground, #fff)',
             }}
           >
             {String(node.badge)}
@@ -241,7 +241,7 @@ export function IrisNavMenu(props: IrisNavMenuProps): JSX.Element {
                     'inset-inline-start': 0,
                     'z-index': 60,
                     'min-width': '220px',
-                    padding: '6px',
+                    padding: 'var(--iris-space-xs, 8px)',
                     border: '1px solid var(--iris-border)',
                     'border-radius': 'var(--iris-radius-md, 6px)',
                     background: 'var(--iris-surface)',
@@ -313,7 +313,7 @@ export function IrisNavMenu(props: IrisNavMenuProps): JSX.Element {
         display: 'flex',
         'flex-direction': horizontal() ? 'row' : 'column',
         'align-items': horizontal() ? 'center' : undefined,
-        gap: '2px',
+        gap: 'var(--iris-space-xxs, 4px)',
       }}
     >
       <For each={tree()}>

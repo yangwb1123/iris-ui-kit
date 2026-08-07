@@ -147,7 +147,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
           gap: '8px',
           padding: '8px 12px',
           'border-bottom': '1px solid var(--iris-border)',
-          'font-size': '13px',
+          'font-size': 'var(--iris-font-size-sm, 13px)',
           'font-weight': '600',
           color: 'var(--iris-foreground)',
         }}
@@ -169,7 +169,12 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
         </span>
       </div>
       <Show when={local.searchable}>
-        <div style={{ padding: '6px 8px', 'border-bottom': '1px solid var(--iris-border)' }}>
+        <div
+          style={{
+            padding: 'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px)',
+            'border-bottom': '1px solid var(--iris-border)',
+          }}
+        >
           <input
             type="text"
             placeholder={t('transfer.search')}
@@ -181,7 +186,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
               background: 'transparent',
               border: '1px solid var(--iris-border)',
               'border-radius': 'var(--iris-radius-sm, 4px)',
-              'font-size': '13px',
+              'font-size': 'var(--iris-font-size-sm, 13px)',
               color: 'var(--iris-foreground)',
               'box-sizing': 'border-box',
               outline: 'none',
@@ -211,7 +216,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
                 display: 'flex',
                 'align-items': 'center',
                 gap: '8px',
-                padding: '6px 8px',
+                padding: 'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px)',
                 'border-radius': 'var(--iris-radius-sm, 4px)',
                 cursor: item.disabled || local.disabled ? 'not-allowed' : 'pointer',
                 opacity: item.disabled ? '0.5' : '1',
@@ -230,7 +235,12 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
                 }}
                 onClick={(e) => e.stopPropagation()}
               />
-              <span style={{ 'font-size': '14px', color: 'var(--iris-foreground)' }}>
+              <span
+                style={{
+                  'font-size': 'var(--iris-font-size-md, 14px)',
+                  color: 'var(--iris-foreground)',
+                }}
+              >
                 {item.label}
               </span>
             </li>
@@ -252,7 +262,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
     border: 'none',
     'border-radius': 'var(--iris-radius-sm, 4px)',
     cursor: 'pointer',
-    'font-size': '14px',
+    'font-size': 'var(--iris-font-size-md, 14px)',
   }
 
   return (

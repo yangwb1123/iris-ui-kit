@@ -39,18 +39,18 @@ export const IrisInput = defineComponent({
     const sizeStyles = computed<Record<string, string>>(() => {
       const map: Record<IrisInputSize, { padding: string; fontSize: string; minHeight: string }> = {
         sm: {
-          padding: '4px var(--iris-padding-sm)',
-          fontSize: '12px',
+          padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm)',
+          fontSize: 'var(--iris-font-size-xs, 12px)',
           minHeight: '28px',
         },
         md: {
-          padding: '6px var(--iris-padding-md)',
-          fontSize: '14px',
+          padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+          fontSize: 'var(--iris-font-size-md, 14px)',
           minHeight: '34px',
         },
         lg: {
-          padding: '8px var(--iris-padding-md)',
-          fontSize: '16px',
+          padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+          fontSize: 'var(--iris-font-size-lg, 16px)',
           minHeight: '40px',
         },
       }

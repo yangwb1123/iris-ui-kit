@@ -99,7 +99,7 @@ export const IrisCountdown = defineComponent({
                 'div',
                 {
                   'data-iris-countdown-title': '',
-                  style: { fontSize: '13px', color: 'var(--iris-muted)' },
+                  style: { fontSize: 'var(--iris-font-size-sm, 13px)', color: 'var(--iris-muted)' },
                 },
                 String(props.title),
               )

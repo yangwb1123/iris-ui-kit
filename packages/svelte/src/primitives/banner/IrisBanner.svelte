@@ -84,7 +84,7 @@
         data-iris-banner-close
         aria-label={t('banner.close')}
         onclick={handleClose}
-        style="background:transparent; border:none; cursor:pointer; color:var(--iris-muted); font-size:16px; padding:0 4px; line-height:1; flex-shrink:0;"
+        style="background:transparent; border:none; cursor:pointer; color:var(--iris-muted); font-size:var(--iris-font-size-lg, 16px); padding:0 var(--iris-space-xxs, 4px); line-height:1; flex-shrink:0;"
         >✕</button
       >
     {/if}

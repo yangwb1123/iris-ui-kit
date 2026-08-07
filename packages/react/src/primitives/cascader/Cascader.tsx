@@ -30,9 +30,13 @@ export interface IrisCascaderProps {
 
 const SIZE_MAP: Record<IrisCascaderSize, { padding: string; fontSize: string; minHeight: string }> =
   {
-    sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
-    md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
-    lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
+    sm: { padding: '4px 8px', fontSize: 'var(--iris-font-size-xs, 12px)', minHeight: '28px' },
+    md: {
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      minHeight: '34px',
+    },
+    lg: { padding: '8px 12px', fontSize: 'var(--iris-font-size-lg, 16px)', minHeight: '40px' },
   }
 
 /** Labels along a value path (stops at the first missing node). */
@@ -187,7 +191,10 @@ export function IrisCascader({
         <span data-iris-cascader-value="">
           {labels.length ? labels.join(separator) : (placeholder ?? t('select.placeholder'))}
         </span>
-        <span aria-hidden="true" style={{ color: 'var(--iris-muted)', fontSize: 10 }}>
+        <span
+          aria-hidden="true"
+          style={{ color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-xs, 12px)' }}
+        >
           ▾
         </span>
       </button>
@@ -204,7 +211,7 @@ export function IrisCascader({
             background: 'var(--iris-background)',
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-md, 6px)',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            boxShadow: 'var(--iris-shadow-lg)',
             overflow: 'hidden',
           }}
         >
@@ -241,7 +248,7 @@ export function IrisCascader({
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       gap: 8,
-                      padding: '6px 10px',
+                      padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
                       fontSize: sz.fontSize,
                       borderRadius: 'var(--iris-radius-sm, 4px)',
                       cursor: node.disabled ? 'not-allowed' : 'pointer',
@@ -253,7 +260,13 @@ export function IrisCascader({
                   >
                     <span>{node.label}</span>
                     {hasChildren ? (
-                      <span aria-hidden="true" style={{ color: 'var(--iris-muted)', fontSize: 10 }}>
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          color: 'var(--iris-muted)',
+                          fontSize: 'var(--iris-font-size-xs, 12px)',
+                        }}
+                      >
                         ›
                       </span>
                     ) : null}

@@ -7,9 +7,18 @@ import { IrisSlot } from '../slot/IrisSlot'
 type StyleMap = Record<string, string>
 
 const SIZE_STYLES: Record<IrisButtonSize, StyleMap> = {
-  sm: { padding: 'var(--iris-padding-sm) var(--iris-padding-md)', 'font-size': '12px' },
-  md: { padding: 'var(--iris-padding-sm) var(--iris-padding-lg)', 'font-size': '14px' },
-  lg: { padding: 'var(--iris-padding-md) var(--iris-padding-lg)', 'font-size': '16px' },
+  sm: {
+    padding: 'var(--iris-padding-sm) var(--iris-padding-md)',
+    'font-size': 'var(--iris-font-size-xs, 12px)',
+  },
+  md: {
+    padding: 'var(--iris-padding-sm) var(--iris-padding-lg)',
+    'font-size': 'var(--iris-font-size-md, 14px)',
+  },
+  lg: {
+    padding: 'var(--iris-padding-md) var(--iris-padding-lg)',
+    'font-size': 'var(--iris-font-size-lg, 16px)',
+  },
 }
 
 const VARIANT_STYLES: Record<IrisButtonVariant, StyleMap> = {

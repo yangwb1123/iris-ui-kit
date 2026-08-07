@@ -131,7 +131,7 @@ describe('@iris-ui-kit/solid IrisFormField', () => {
       </IrisFormField>
     ))
     const label = container.querySelector('label[data-iris-form-field-label]') as HTMLLabelElement
-    expect(label.style.fontSize).toBe('12px')
+    expect(label.style.fontSize).toBe('var(--iris-font-size-xs, 12px)')
   })
 
   it('label color flips to danger when error present', () => {

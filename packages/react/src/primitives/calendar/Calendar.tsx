@@ -225,7 +225,7 @@ export function IrisCalendar({
         <div
           data-iris-calendar-title=""
           aria-live="polite"
-          style={{ fontWeight: 600, fontSize: 14 }}
+          style={{ fontWeight: 600, fontSize: 'var(--iris-font-size-md, 14px)' }}
         >
           {title}
         </div>
@@ -250,14 +250,14 @@ export function IrisCalendar({
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-          gap: 2,
-          fontSize: 12,
+          gap: 'var(--iris-space-xxs, 4px)',
+          fontSize: 'var(--iris-font-size-xs, 12px)',
           color: 'var(--iris-muted)',
           textAlign: 'center',
         }}
       >
         {weekdays.map((name) => (
-          <div key={name} role="columnheader" style={{ padding: '2px 0' }}>
+          <div key={name} role="columnheader" style={{ padding: 'var(--iris-space-xxs, 4px) 0' }}>
             {name}
           </div>
         ))}
@@ -270,7 +270,7 @@ export function IrisCalendar({
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-          gap: 2,
+          gap: 'var(--iris-space-xxs, 4px)',
         }}
       >
         {matrix.map((week, wi) => (
@@ -330,7 +330,7 @@ export function IrisCalendar({
                     borderRadius: 'var(--iris-radius-sm, 4px)',
                     cursor: isDisabled ? 'not-allowed' : 'pointer',
                     opacity: isDisabled ? 0.45 : 1,
-                    fontSize: 13,
+                    fontSize: 'var(--iris-font-size-sm, 13px)',
                     fontFamily: 'inherit',
                     outline: 'none',
                   }}

@@ -92,7 +92,7 @@ export function IrisDashboardTemplate({
               <div
                 style={{
                   padding: '8px 12px',
-                  fontSize: 14,
+                  fontSize: 'var(--iris-font-size-md, 14px)',
                   fontWeight: 600,
                   color: 'var(--iris-foreground)',
                   opacity: state.collapsed ? 0 : 1,
@@ -104,7 +104,14 @@ export function IrisDashboardTemplate({
                 {sidebarTitle}
               </div>
             ) : null}
-            <nav aria-label="Primary" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <nav
+              aria-label="Primary"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--iris-space-xxs, 4px)',
+              }}
+            >
               {nav.map((item) => {
                 const isActive = item.id === activeId
                 return (
@@ -117,7 +124,7 @@ export function IrisDashboardTemplate({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 10,
+                      gap: 'var(--iris-space-sm, 12px)',
                       padding: '8px 12px',
                       background: isActive ? 'var(--iris-primary)' : 'transparent',
                       color: isActive
@@ -126,7 +133,7 @@ export function IrisDashboardTemplate({
                       border: 'none',
                       borderRadius: 'var(--iris-radius-sm, 4px)',
                       cursor: 'pointer',
-                      fontSize: 14,
+                      fontSize: 'var(--iris-font-size-md, 14px)',
                       fontFamily: 'inherit',
                       textAlign: 'start',
                       outline: 'none',
@@ -159,7 +166,15 @@ export function IrisDashboardTemplate({
         <IrisHeaderLayout
           header={
             header ?? (
-              <div style={{ padding: '12px 20px', fontSize: 16, fontWeight: 600 }}>{title}</div>
+              <div
+                style={{
+                  padding: '12px 20px',
+                  fontSize: 'var(--iris-font-size-lg, 16px)',
+                  fontWeight: 600,
+                }}
+              >
+                {title}
+              </div>
             )
           }
         >
@@ -176,7 +191,7 @@ export function IrisDashboardTemplate({
                     <h3
                       style={{
                         margin: '0 0 8px 0',
-                        fontSize: 14,
+                        fontSize: 'var(--iris-font-size-md, 14px)',
                         fontWeight: 600,
                         color: 'var(--iris-foreground)',
                       }}
@@ -186,7 +201,14 @@ export function IrisDashboardTemplate({
                     {cardSlots?.[card.id] !== undefined ? (
                       cardSlots[card.id]
                     ) : card.body ? (
-                      <div style={{ fontSize: 13, color: 'var(--iris-muted)' }}>{card.body}</div>
+                      <div
+                        style={{
+                          fontSize: 'var(--iris-font-size-sm, 13px)',
+                          color: 'var(--iris-muted)',
+                        }}
+                      >
+                        {card.body}
+                      </div>
                     ) : null}
                   </IrisDashboardCard>
                 ))}

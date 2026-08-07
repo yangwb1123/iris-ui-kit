@@ -3,9 +3,15 @@ import * as React from 'react'
 export type IrisTextareaSize = 'sm' | 'md' | 'lg'
 
 const SIZE_MAP: Record<IrisTextareaSize, { padding: string; fontSize: string }> = {
-  sm: { padding: '6px 8px', fontSize: '12px' },
-  md: { padding: '8px 12px', fontSize: '14px' },
-  lg: { padding: '10px 12px', fontSize: '16px' },
+  sm: {
+    padding: 'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+  },
+  md: { padding: '8px 12px', fontSize: 'var(--iris-font-size-md, 14px)' },
+  lg: {
+    padding: 'var(--iris-space-sm, 12px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+  },
 }
 
 export interface IrisTextareaProps extends Omit<

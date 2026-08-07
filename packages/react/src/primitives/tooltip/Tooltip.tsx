@@ -124,7 +124,7 @@ export function IrisTooltip({
         color: 'var(--iris-background)',
         padding: '4px 8px',
         borderRadius: 'var(--iris-radius-sm, 4px)',
-        fontSize: '12px',
+        fontSize: 'var(--iris-font-size-xs, 12px)',
         lineHeight: 1.4,
         maxWidth: '240px',
         pointerEvents: 'none',

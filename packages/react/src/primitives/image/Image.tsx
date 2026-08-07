@@ -118,8 +118,8 @@ export function IrisImage({
               borderRadius: '50%',
               border: 'none',
               background: 'rgba(0,0,0,0.5)',
-              color: '#fff',
-              fontSize: 22,
+              color: 'var(--iris-primary-foreground, #fff)',
+              fontSize: 'var(--iris-font-size-2xl, 20px)',
               lineHeight: 1,
               cursor: 'pointer',
             }}

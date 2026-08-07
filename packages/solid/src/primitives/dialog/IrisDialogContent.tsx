@@ -102,7 +102,7 @@ export function IrisDialogContent(props: IrisDialogContentProps): JSX.Element {
           border: '1px solid var(--iris-border)',
           'border-radius': 'var(--iris-radius-lg)',
           padding: 'var(--iris-padding-lg)',
-          'box-shadow': '0 24px 48px -16px rgba(0,0,0,0.32), 0 8px 16px -4px rgba(0,0,0,0.16)',
+          'box-shadow': 'var(--iris-shadow-xl)',
           'max-width': '90vw',
           'max-height': '85vh',
           overflow: 'auto',
@@ -142,7 +142,7 @@ export function IrisDialogTitle(props: IrisDialogTitleProps): JSX.Element {
       id={ctx.titleId}
       style={{
         margin: '0 0 var(--iris-gap-md) 0',
-        'font-size': '18px',
+        'font-size': 'var(--iris-font-size-xl, 18px)',
         'font-weight': '600',
         ...((style as JSX.CSSProperties) ?? {}),
       }}
@@ -167,7 +167,7 @@ export function IrisDialogDescription(props: IrisDialogDescriptionProps): JSX.El
       style={{
         margin: '0 0 var(--iris-gap-lg) 0',
         color: 'var(--iris-muted)',
-        'font-size': '14px',
+        'font-size': 'var(--iris-font-size-md, 14px)',
         ...((style as JSX.CSSProperties) ?? {}),
       }}
     />

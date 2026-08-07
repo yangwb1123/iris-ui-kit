@@ -28,7 +28,7 @@ interface Rect {
 
 const btnBase: React.CSSProperties = {
   padding: '4px 12px',
-  fontSize: 13,
+  fontSize: 'var(--iris-font-size-sm, 13px)',
   borderRadius: 'var(--iris-radius-sm, 4px)',
   cursor: 'pointer',
 }
@@ -42,7 +42,7 @@ const btnPrimary: React.CSSProperties = {
   ...btnBase,
   border: 'none',
   background: 'var(--iris-primary)',
-  color: '#fff',
+  color: 'var(--iris-primary-foreground, #fff)',
 }
 
 /**
@@ -171,19 +171,26 @@ export function IrisTour({
           background: 'var(--iris-background)',
           border: '1px solid var(--iris-border)',
           borderRadius: 'var(--iris-radius-md, 6px)',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+          boxShadow: 'var(--iris-shadow-lg)',
           ...cardPos,
         }}
       >
         {stepData.title != null ? (
-          <div data-iris-tour-title="" style={{ fontWeight: 600, marginBlockEnd: 6 }}>
+          <div
+            data-iris-tour-title=""
+            style={{ fontWeight: 600, marginBlockEnd: 'var(--iris-space-xs, 8px)' }}
+          >
             {stepData.title}
           </div>
         ) : null}
         {stepData.description != null ? (
           <div
             data-iris-tour-description=""
-            style={{ fontSize: 14, color: 'var(--iris-foreground)', marginBlockEnd: 12 }}
+            style={{
+              fontSize: 'var(--iris-font-size-md, 14px)',
+              color: 'var(--iris-foreground)',
+              marginBlockEnd: 12,
+            }}
           >
             {stepData.description}
           </div>
@@ -191,7 +198,10 @@ export function IrisTour({
         <div
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}
         >
-          <span data-iris-tour-indicator="" style={{ fontSize: 12, color: 'var(--iris-muted)' }}>
+          <span
+            data-iris-tour-indicator=""
+            style={{ fontSize: 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-muted)' }}
+          >
             {t('tour.step', { current: current + 1, total })}
           </span>
           <div style={{ display: 'flex', gap: 8 }}>

@@ -76,7 +76,7 @@
 {#snippet defaultLogo(state: { collapsed: boolean })}
   <div
     data-iris-admin-logo
-    style="display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 16px; color: var(--iris-foreground); font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; flex-shrink: 0"
+    style="display: flex; align-items: center; gap: var(--iris-space-sm, 12px); height: 52px; padding: 0 var(--iris-space-md, 16px); color: var(--iris-foreground); font-weight: 700; font-size: var(--iris-font-size-lg, 16px); white-space: nowrap; overflow: hidden; flex-shrink: 0"
   >
     <span
       style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--iris-radius-md, 6px); background: var(--iris-primary); color: var(--iris-primary-foreground, #fff); flex-shrink: 0"

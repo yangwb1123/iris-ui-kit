@@ -131,15 +131,20 @@
         onchange={toggleAllSource}
         {disabled}
       />
-      <span style:font-size="13px" style:font-weight="600"
+      <span style:font-size="var(--iris-font-size-sm, 13px)" style:font-weight="600"
         >{titles?.[0] ?? t('transfer.sourceTitle')}</span
       >
-      <span style:margin-left="auto" style:font-size="12px" style:color="var(--iris-muted)"
-        >{$sourceChecked.length}/{filteredSource.length}</span
+      <span
+        style:margin-left="auto"
+        style:font-size="var(--iris-font-size-xs, 12px)"
+        style:color="var(--iris-muted)">{$sourceChecked.length}/{filteredSource.length}</span
       >
     </div>
     {#if searchable}
-      <div style:padding="6px 8px" style:border-bottom="1px solid var(--iris-border)">
+      <div
+        style:padding="var(--iris-space-xs, 8px)"
+        style:border-bottom="1px solid var(--iris-border)"
+      >
         <input
           type="text"
           placeholder={t('transfer.search')}
@@ -147,7 +152,7 @@
           style:width="100%"
           style:border="none"
           style:outline="none"
-          style:font-size="13px"
+          style:font-size="var(--iris-font-size-sm, 13px)"
           style:background="transparent"
           style:color="var(--iris-foreground)"
         />
@@ -159,10 +164,10 @@
           style:display="flex"
           style:align-items="center"
           style:gap="8px"
-          style:padding="6px 12px"
+          style:padding="var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)"
           style:cursor={item.disabled || disabled ? 'not-allowed' : 'pointer'}
           style:opacity={item.disabled ? '0.5' : '1'}
-          style:font-size="13px"
+          style:font-size="var(--iris-font-size-sm, 13px)"
           style:color="var(--iris-foreground)"
         >
           <input
@@ -178,7 +183,7 @@
         <div
           style:padding="12px"
           style:color="var(--iris-muted)"
-          style:font-size="13px"
+          style:font-size="var(--iris-font-size-sm, 13px)"
           style:text-align="center"
         >
           {t('transfer.empty')}
@@ -191,7 +196,7 @@
   <div
     style:display="flex"
     style:flex-direction="column"
-    style:gap="6px"
+    style:gap="var(--iris-space-xs, 8px)"
     style:align-items="center"
   >
     <button
@@ -243,15 +248,20 @@
         onchange={toggleAllTarget}
         {disabled}
       />
-      <span style:font-size="13px" style:font-weight="600"
+      <span style:font-size="var(--iris-font-size-sm, 13px)" style:font-weight="600"
         >{titles?.[1] ?? t('transfer.targetTitle')}</span
       >
-      <span style:margin-left="auto" style:font-size="12px" style:color="var(--iris-muted)"
-        >{$targetChecked.length}/{filteredTarget.length}</span
+      <span
+        style:margin-left="auto"
+        style:font-size="var(--iris-font-size-xs, 12px)"
+        style:color="var(--iris-muted)">{$targetChecked.length}/{filteredTarget.length}</span
       >
     </div>
     {#if searchable}
-      <div style:padding="6px 8px" style:border-bottom="1px solid var(--iris-border)">
+      <div
+        style:padding="var(--iris-space-xs, 8px)"
+        style:border-bottom="1px solid var(--iris-border)"
+      >
         <input
           type="text"
           placeholder={t('transfer.search')}
@@ -259,7 +269,7 @@
           style:width="100%"
           style:border="none"
           style:outline="none"
-          style:font-size="13px"
+          style:font-size="var(--iris-font-size-sm, 13px)"
           style:background="transparent"
           style:color="var(--iris-foreground)"
         />
@@ -271,10 +281,10 @@
           style:display="flex"
           style:align-items="center"
           style:gap="8px"
-          style:padding="6px 12px"
+          style:padding="var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)"
           style:cursor={item.disabled || disabled ? 'not-allowed' : 'pointer'}
           style:opacity={item.disabled ? '0.5' : '1'}
-          style:font-size="13px"
+          style:font-size="var(--iris-font-size-sm, 13px)"
           style:color="var(--iris-foreground)"
         >
           <input
@@ -290,7 +300,7 @@
         <div
           style:padding="12px"
           style:color="var(--iris-muted)"
-          style:font-size="13px"
+          style:font-size="var(--iris-font-size-sm, 13px)"
           style:text-align="center"
         >
           {t('transfer.empty')}

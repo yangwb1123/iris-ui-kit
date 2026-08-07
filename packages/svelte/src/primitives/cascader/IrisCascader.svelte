@@ -29,9 +29,21 @@
     IrisCascaderSize,
     { padding: string; fontSize: string; minHeight: string }
   > = {
-    sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
-    md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
-    lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      minHeight: '28px',
+    },
+    md: {
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      minHeight: '34px',
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      minHeight: '40px',
+    },
   }
 
   let {
@@ -162,7 +174,7 @@
     style:display="inline-flex"
     style:align-items="center"
     style:justify-content="space-between"
-    style:gap="6px"
+    style:gap="var(--iris-space-xs, 8px)"
     style:padding={sz.padding}
     style:font-size={sz.fontSize}
     style:min-height={sz.minHeight}
@@ -192,7 +204,7 @@
       style:background="var(--iris-background)"
       style:border="1px solid var(--iris-border)"
       style:border-radius="var(--iris-radius-md, 6px)"
-      style:box-shadow="0 8px 24px rgba(0,0,0,0.12)"
+      style:box-shadow="var(--iris-shadow-lg)"
       style:overflow="hidden"
     >
       {#each columns as col, colIdx (colIdx)}
@@ -231,7 +243,7 @@
               style:align-items="center"
               style:justify-content="space-between"
               style:gap="8px"
-              style:padding="7px 12px"
+              style:padding="var(--iris-space-xs, 8px) var(--iris-padding-md, 12px)"
               style:cursor={node.disabled ? 'not-allowed' : 'pointer'}
               style:border-radius="var(--iris-radius-sm, 4px)"
               style:background={isActive ? 'var(--iris-surface-hover)' : 'transparent'}

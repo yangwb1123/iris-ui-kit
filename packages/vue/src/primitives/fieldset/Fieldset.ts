@@ -23,8 +23,8 @@ export const IrisFieldset = defineComponent({
               {
                 'data-iris-fieldset-legend': '',
                 style: {
-                  padding: '0 6px',
-                  fontSize: '14px',
+                  padding: '0 var(--iris-space-xs, 8px)',
+                  fontSize: 'var(--iris-font-size-md, 14px)',
                   fontWeight: '600',
                   color: 'var(--iris-foreground)',
                 },
@@ -38,7 +38,11 @@ export const IrisFieldset = defineComponent({
               'div',
               {
                 'data-iris-fieldset-hint': '',
-                style: { fontSize: '12px', color: 'var(--iris-muted)', marginBlockEnd: '8px' },
+                style: {
+                  fontSize: 'var(--iris-font-size-xs, 12px)',
+                  color: 'var(--iris-muted)',
+                  marginBlockEnd: '8px',
+                },
               },
               props.hint,
             )

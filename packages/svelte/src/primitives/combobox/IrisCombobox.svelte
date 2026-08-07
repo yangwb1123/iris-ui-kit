@@ -63,9 +63,21 @@
     IrisComboboxSize,
     { padding: string; fontSize: string; minHeight: string }
   > = {
-    sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
-    md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
-    lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      minHeight: '28px',
+    },
+    md: {
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      minHeight: '34px',
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      minHeight: '40px',
+    },
   }
   const sz = $derived(SIZE_MAP[size])
 
@@ -182,13 +194,13 @@
       id={listboxId}
       role="listbox"
       data-iris-combobox-listbox
-      style="position: absolute; inset-inline-start: 0; inset-inline-end: 0; top: 100%; margin-block-start: 4px; max-height: 240px; overflow-y: auto; list-style: none; margin: 0; padding: 4px; z-index: 50; background: var(--iris-background); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); box-shadow: 0 8px 24px rgba(0,0,0,0.12)"
+      style="position: absolute; inset-inline-start: 0; inset-inline-end: 0; top: 100%; margin-block-start: 4px; max-height: 240px; overflow-y: auto; list-style: none; margin: 0; padding: 4px; z-index: 50; background: var(--iris-background); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); box-shadow: var(--iris-shadow-lg)"
     >
       {#if filtered().length === 0}
         <li
           role="presentation"
           data-iris-combobox-empty
-          style="padding: 6px 10px; color: var(--iris-muted); font-size: {sz.fontSize}"
+          style="padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); color: var(--iris-muted); font-size: {sz.fontSize}"
         >
           {emptyText ?? t('combobox.empty')}
         </li>
@@ -212,7 +224,7 @@
                 selectOption(opt)
               }
             }}
-            style="padding: 6px 10px; font-size: {sz.fontSize}; border-radius: var(--iris-radius-sm, 4px); cursor: {opt.disabled
+            style="padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); font-size: {sz.fontSize}; border-radius: var(--iris-radius-sm, 4px); cursor: {opt.disabled
               ? 'not-allowed'
               : 'pointer'}; color: {opt.disabled
               ? 'var(--iris-muted)'

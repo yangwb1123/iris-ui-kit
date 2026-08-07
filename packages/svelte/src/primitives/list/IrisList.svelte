@@ -164,7 +164,7 @@
       padding: 'var(--iris-padding-sm)',
       display: 'flex',
       'flex-direction': 'column',
-      gap: '2px',
+      gap: 'var(--iris-space-xxs, 4px)',
       outline: 'none',
     }),
   )
@@ -174,11 +174,11 @@
       display: 'flex',
       'align-items': 'center',
       gap: 'var(--iris-gap-sm)',
-      padding: '6px var(--iris-padding-md)',
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md)',
       'border-radius': 'var(--iris-radius-sm)',
       cursor: disabled ? 'not-allowed' : 'pointer',
       opacity: disabled ? '0.5' : '1',
-      'font-size': '14px',
+      'font-size': 'var(--iris-font-size-md, 14px)',
       background: selected
         ? 'var(--iris-primary)'
         : active
@@ -206,7 +206,7 @@
       role="presentation"
       data-iris-list-state={dataState}
       aria-live="polite"
-      style="list-style: none; padding: 12px; text-align: center; color: var(--iris-muted); font-size: 14px"
+      style="list-style: none; padding: 12px; text-align: center; color: var(--iris-muted); font-size: var(--iris-font-size-md, 14px)"
     >
       {#if dataState === 'error'}
         {#if errorState}{@render errorState()}{:else}{t('list.error')}{/if}

@@ -189,7 +189,9 @@ describe('createFilterBuilder', () => {
 
   it('plugin registers its tokens', () => {
     const { tokens } = runPlugins([queryBuilderPlugin])
-    expect(tokens['--iris-query-builder-gap']).toBe(queryBuilderTokens['--iris-query-builder-gap'])
+    // No render-layer consumers → no dead token registrations (§6c).
+    expect(tokens['--iris-query-builder-gap']).toBeUndefined()
+    expect(queryBuilderTokens).toEqual({})
   })
 
   it('subscribe fires on rule changes', () => {

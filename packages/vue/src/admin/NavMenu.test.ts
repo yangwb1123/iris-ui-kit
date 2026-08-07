@@ -138,7 +138,6 @@ describe('IrisNavMenu', () => {
   it('keeps a submenu open when moving the pointer from trigger into its children area', async () => {
     const w = mount(IrisNavMenu, { props: { items, orientation: 'horizontal' } })
     const group = w.find('[data-iris-nav-group]')
-    const trigger = group.find('[data-iris-nav-item]')
     const children = group.find('[data-iris-nav-children]')
 
     await group.trigger('mouseover')

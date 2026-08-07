@@ -148,7 +148,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
         padding: 'var(--iris-padding-sm, 4px)',
         display: 'flex',
         'flex-direction': 'column',
-        gap: '2px',
+        gap: 'var(--iris-space-xxs, 4px)',
         outline: 'none',
         ...((local.style as JSX.CSSProperties) ?? {}),
       }}
@@ -166,7 +166,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
               padding: '12px',
               'text-align': 'center',
               color: 'var(--iris-muted)',
-              'font-size': '14px',
+              'font-size': 'var(--iris-font-size-md, 14px)',
             }}
           >
             {state() === 'error'
@@ -203,11 +203,11 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
                   display: 'flex',
                   'align-items': 'center',
                   gap: 'var(--iris-gap-sm, 6px)',
-                  padding: '6px var(--iris-padding-md, 12px)',
+                  padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
                   'border-radius': 'var(--iris-radius-sm, 4px)',
                   cursor: item.disabled ? 'not-allowed' : 'pointer',
                   opacity: item.disabled ? '0.5' : '1',
-                  'font-size': '14px',
+                  'font-size': 'var(--iris-font-size-md, 14px)',
                   background: selected()
                     ? 'var(--iris-primary)'
                     : active()

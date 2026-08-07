@@ -12,9 +12,7 @@ export const chartTokens: Record<string, string> = {
   '--iris-chart-series-5': 'var(--iris-danger)',
   '--iris-chart-series-6': 'var(--iris-info)',
   '--iris-chart-point-stroke': 'var(--iris-background)',
-  '--iris-chart-axis': 'var(--iris-border)',
   '--iris-chart-text': 'var(--iris-muted)',
-  '--iris-chart-grid': 'var(--iris-muted-subtle)',
 }
 
 /** Token registration for `IrisProvider`. */

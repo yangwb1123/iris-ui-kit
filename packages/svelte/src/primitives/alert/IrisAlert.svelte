@@ -88,7 +88,7 @@
         data-iris-alert-close
         aria-label={t('alert.close')}
         onclick={handleClose}
-        style="background: transparent; border: none; cursor: pointer; color: var(--iris-muted); font-size: 16px; padding: 0; line-height: 1; flex-shrink: 0"
+        style="background: transparent; border: none; cursor: pointer; color: var(--iris-muted); font-size: var(--iris-font-size-lg, 16px); padding: 0; line-height: 1; flex-shrink: 0"
       >
         ✕
       </button>

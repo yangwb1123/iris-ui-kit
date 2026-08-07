@@ -78,7 +78,7 @@ export const IrisSwitch = React.forwardRef<HTMLInputElement, IrisSwitchProps>(fu
     background: 'var(--iris-background)',
     borderRadius: 999,
     transition: 'left 140ms ease',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.18)',
+    boxShadow: 'var(--iris-shadow-sm)',
   }
 
   return (

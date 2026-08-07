@@ -79,7 +79,7 @@ export const IrisDivider = defineComponent({
             gap: '8px',
             margin: `${SPACING_MAP[props.spacing]} 0`,
             color: 'var(--iris-muted)',
-            fontSize: '12px',
+            fontSize: 'var(--iris-font-size-xs, 12px)',
             textTransform: 'uppercase',
             letterSpacing: '0.04em',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),

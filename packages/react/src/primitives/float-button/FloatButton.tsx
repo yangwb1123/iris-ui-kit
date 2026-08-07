@@ -33,10 +33,10 @@ const fab = (size: number, primary: boolean): React.CSSProperties => ({
   justifyContent: 'center',
   border: primary ? 'none' : '1px solid var(--iris-border)',
   background: primary ? 'var(--iris-primary)' : 'var(--iris-background)',
-  color: primary ? '#fff' : 'var(--iris-foreground)',
+  color: primary ? 'var(--iris-primary-foreground, #fff)' : 'var(--iris-foreground)',
   cursor: 'pointer',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
-  fontSize: size > 44 ? 22 : 16,
+  boxShadow: 'var(--iris-shadow-md)',
+  fontSize: size > 44 ? 'var(--iris-font-size-2xl, 20px)' : 'var(--iris-font-size-lg, 16px)',
   lineHeight: 1,
 })
 

@@ -32,7 +32,7 @@ export const IrisDescriptions = defineComponent({
       const pad = props.bordered ? '8px 12px' : undefined
       const labelStyle: Record<string, string | undefined> = {
         margin: '0',
-        fontSize: '13px',
+        fontSize: 'var(--iris-font-size-sm, 13px)',
         fontWeight: '500',
         color: 'var(--iris-muted)',
         padding: pad,
@@ -40,7 +40,7 @@ export const IrisDescriptions = defineComponent({
       }
       const valueStyle: Record<string, string | undefined> = {
         margin: '0',
-        fontSize: '14px',
+        fontSize: 'var(--iris-font-size-md, 14px)',
         color: 'var(--iris-foreground)',
         padding: pad,
       }

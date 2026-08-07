@@ -5,9 +5,18 @@ import { useI18n } from '../../i18n'
 export type IrisCopyButtonSize = 'sm' | 'md' | 'lg'
 
 const SIZE_MAP: Record<IrisCopyButtonSize, { padding: string; fontSize: string }> = {
-  sm: { padding: '4px 8px', fontSize: '12px' },
-  md: { padding: '6px 12px', fontSize: '14px' },
-  lg: { padding: '8px 16px', fontSize: '16px' },
+  sm: {
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+  },
+  md: {
+    padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+  },
+  lg: {
+    padding: 'var(--iris-space-xs, 8px) var(--iris-space-md, 16px)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+  },
 }
 
 /**
@@ -77,14 +86,14 @@ export const IrisCopyButton = defineComponent({
           style: {
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: 'var(--iris-space-xs, 8px)',
             padding: sz.padding,
             fontSize: sz.fontSize,
             fontFamily: 'inherit',
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-md, 6px)',
-            background: copied.value ? 'var(--iris-success, #16a34a)' : 'var(--iris-surface)',
-            color: copied.value ? '#fff' : 'var(--iris-foreground)',
+            background: copied.value ? 'var(--iris-success, #10b981)' : 'var(--iris-surface)',
+            color: copied.value ? 'var(--iris-primary-foreground, #fff)' : 'var(--iris-foreground)',
             cursor: props.disabled ? 'not-allowed' : 'pointer',
             opacity: props.disabled ? '0.6' : '1',
             transition: 'background-color 120ms ease, color 120ms ease',

@@ -98,7 +98,8 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
           display: 'inline-flex',
           'align-items': 'center',
           gap: '4px',
-          padding: '5px 8px 5px 10px',
+          padding:
+            'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px) var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
           'border-radius': 'var(--iris-radius-md, 6px)',
           border: `1px solid ${active() ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
           background: active() ? 'var(--iris-primary)' : 'var(--iris-surface)',
@@ -117,12 +118,12 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
           style={{
             display: 'inline-flex',
             'align-items': 'center',
-            gap: '6px',
+            gap: 'var(--iris-space-xs, 8px)',
             border: 'none',
             background: 'transparent',
             color: 'inherit',
             font: 'inherit',
-            'font-size': '13px',
+            'font-size': 'var(--iris-font-size-sm, 13px)',
             cursor: 'pointer',
             padding: 0,
           }}
@@ -178,8 +179,8 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
       style={{
         display: 'flex',
         'align-items': 'center',
-        gap: '6px',
-        padding: '6px 10px',
+        gap: 'var(--iris-space-xs, 8px)',
+        padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
         'border-bottom': '1px solid var(--iris-border)',
         background: 'var(--iris-background)',
       }}
@@ -200,7 +201,7 @@ export function IrisAdminTabs(props: IrisAdminTabsProps): JSX.Element {
           orientation="horizontal"
           style={{
             'align-items': 'center',
-            gap: '6px',
+            gap: 'var(--iris-space-xs, 8px)',
             width: 'max-content',
           }}
         >

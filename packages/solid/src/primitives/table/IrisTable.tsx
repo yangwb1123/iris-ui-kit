@@ -521,7 +521,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           'flex-direction': 'column',
           'margin-inline-start': '4px',
           'line-height': '0.6',
-          'font-size': '8px',
+          'font-size': 'var(--iris-font-size-xs, 12px)',
           color: isActive ? 'var(--iris-primary)' : 'var(--iris-muted)',
         }}
       >
@@ -695,7 +695,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                           : 'flex-start',
                     padding: isEditing() ? '4px' : '8px var(--iris-padding-md)',
                     'border-bottom': '1px solid var(--iris-border)',
-                    'font-size': '14px',
+                    'font-size': 'var(--iris-font-size-md, 14px)',
                     'white-space': 'nowrap',
                     overflow: 'hidden',
                     'text-overflow': 'ellipsis',
@@ -791,7 +791,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                             editError() ? 'var(--iris-danger)' : 'var(--iris-primary)'
                           }`,
                           'border-radius': 'var(--iris-radius-sm)',
-                          padding: '4px 6px',
+                          padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
                           font: 'inherit',
                           background: 'var(--iris-background)',
                           color: 'var(--iris-foreground)',
@@ -805,7 +805,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                           data-iris-table-editor-error=""
                           style={{
                             'margin-top': '2px',
-                            'font-size': '12px',
+                            'font-size': 'var(--iris-font-size-xs, 12px)',
                             color: 'var(--iris-danger)',
                           }}
                         >
@@ -933,7 +933,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                     background: 'var(--iris-surface)',
                     'border-bottom': '1px solid var(--iris-border)',
                     'font-weight': '600',
-                    'font-size': '13px',
+                    'font-size': 'var(--iris-font-size-sm, 13px)',
                     color: 'var(--iris-foreground)',
                     'white-space': 'nowrap',
                     overflow: 'hidden',
@@ -1030,7 +1030,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                       background: 'var(--iris-surface)',
                       'border-bottom': '1px solid var(--iris-border)',
                       'font-weight': '600',
-                      'font-size': '13px',
+                      'font-size': 'var(--iris-font-size-sm, 13px)',
                       color: 'var(--iris-foreground)',
                       'white-space': 'nowrap',
                       overflow: 'hidden',
@@ -1221,7 +1221,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                             : 'flex-start',
                       padding: '8px var(--iris-padding-md)',
                       'border-bottom': '1px solid var(--iris-border)',
-                      'font-size': '14px',
+                      'font-size': 'var(--iris-font-size-md, 14px)',
                       'white-space': 'nowrap',
                       overflow: 'hidden',
                       'text-overflow': 'ellipsis',

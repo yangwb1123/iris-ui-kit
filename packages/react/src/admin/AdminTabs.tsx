@@ -115,12 +115,12 @@ export function IrisAdminTabs({
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 6,
+          gap: 'var(--iris-space-xs, 8px)',
           border: 'none',
           background: 'transparent',
           color: 'inherit',
           font: 'inherit',
-          fontSize: 13,
+          fontSize: 'var(--iris-font-size-sm, 13px)',
           cursor: 'pointer',
           padding: 0,
         }}
@@ -171,7 +171,8 @@ export function IrisAdminTabs({
           display: 'inline-flex',
           alignItems: 'center',
           gap: 4,
-          padding: '5px 8px 5px 10px',
+          padding:
+            'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px) var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
           borderRadius: 'var(--iris-radius-md, 6px)',
           border: `1px solid ${active ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
           background: active ? 'var(--iris-primary)' : 'var(--iris-surface)',
@@ -192,8 +193,8 @@ export function IrisAdminTabs({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
-        padding: '6px 10px',
+        gap: 'var(--iris-space-xs, 8px)',
+        padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
         borderBottom: '1px solid var(--iris-border)',
         background: 'var(--iris-background)',
       }}
@@ -212,7 +213,7 @@ export function IrisAdminTabs({
           onReorder={reorder}
           disabled={!reorderable}
           orientation="horizontal"
-          style={{ alignItems: 'center', gap: 6, width: 'max-content' }}
+          style={{ alignItems: 'center', gap: 'var(--iris-space-xs, 8px)', width: 'max-content' }}
         >
           {t.tabs.map((tab) => chip(tab))}
         </IrisSortable>

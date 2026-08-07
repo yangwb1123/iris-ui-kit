@@ -107,8 +107,8 @@
     style:display="inline-flex"
     style:align-items="center"
     style:justify-content="space-between"
-    style:gap="6px"
-    style:padding="6px 12px"
+    style:gap="var(--iris-space-xs, 8px)"
+    style:padding="var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)"
     style:min-height="34px"
     style:min-width="180px"
     style:background="var(--iris-background)"
@@ -116,12 +116,14 @@
     style:border={`1px solid ${invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`}
     style:border-radius="var(--iris-radius-md, 6px)"
     style:cursor={disabled ? 'not-allowed' : 'pointer'}
-    style:font-size="14px"
+    style:font-size="var(--iris-font-size-md, 14px)"
     style:font-family="inherit"
     style:text-align="start"
   >
     <span style:flex="1">{display || (placeholder ?? t('select.placeholder'))}</span>
-    <span aria-hidden="true" style:font-size="10px">{open ? '▲' : '▼'}</span>
+    <span aria-hidden="true" style:font-size="var(--iris-font-size-xs, 12px)"
+      >{open ? '▲' : '▼'}</span
+    >
   </button>
 
   {#if open}
@@ -139,7 +141,7 @@
       style:background="var(--iris-background)"
       style:border="1px solid var(--iris-border)"
       style:border-radius="var(--iris-radius-md, 6px)"
-      style:box-shadow="0 8px 24px rgba(0,0,0,0.12)"
+      style:box-shadow="var(--iris-shadow-lg)"
       style:padding="4px"
     >
       <IrisTree

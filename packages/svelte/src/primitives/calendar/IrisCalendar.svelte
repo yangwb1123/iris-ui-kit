@@ -228,13 +228,13 @@
     role="row"
     style:display="grid"
     style:grid-template-columns="repeat(7, minmax(0, 1fr))"
-    style:gap="2px"
-    style:font-size="12px"
+    style:gap="var(--iris-space-xxs, 4px)"
+    style:font-size="var(--iris-font-size-xs, 12px)"
     style:color="var(--iris-muted)"
     style:text-align="center"
   >
     {#each weekdays as name (name)}
-      <div role="columnheader" style:padding="2px 0">{name}</div>
+      <div role="columnheader" style:padding="var(--iris-space-xxs, 4px) 0">{name}</div>
     {/each}
   </div>
 
@@ -247,7 +247,7 @@
     onkeydown={onGridKeyDown}
     style:display="grid"
     style:grid-template-columns="repeat(7, minmax(0, 1fr))"
-    style:gap="2px"
+    style:gap="var(--iris-space-xxs, 4px)"
   >
     {#each matrix as week}
       <!--

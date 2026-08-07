@@ -133,7 +133,7 @@ export function IrisTooltip(props: IrisTooltipProps): JSX.Element {
         color: 'var(--iris-background)',
         padding: '4px 8px',
         'border-radius': 'var(--iris-radius-sm)',
-        'font-size': '12px',
+        'font-size': 'var(--iris-font-size-xs, 12px)',
         'line-height': '1.4',
         'max-width': '240px',
         'pointer-events': 'none',

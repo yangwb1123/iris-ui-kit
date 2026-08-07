@@ -55,7 +55,7 @@ export function IrisLoginTemplate(props: IrisLoginTemplateProps): JSX.Element {
     'box-sizing': 'border-box',
     width: '100%',
     padding: '8px 12px',
-    'font-size': '14px',
+    'font-size': 'var(--iris-font-size-md, 14px)',
     'font-family': 'inherit',
     background: 'var(--iris-surface)',
     border: '1px solid var(--iris-border)',
@@ -85,14 +85,26 @@ export function IrisLoginTemplate(props: IrisLoginTemplateProps): JSX.Element {
           border: '1px solid var(--iris-border)',
           'border-radius': 'var(--iris-radius-lg, 8px)',
           padding: '32px',
-          'box-shadow': '0 4px 16px rgba(0,0,0,0.08)',
+          'box-shadow': 'var(--iris-shadow-md)',
         }}
       >
-        <h1 style={{ margin: '0 0 8px 0', 'font-size': '24px', 'font-weight': '700' }}>
+        <h1
+          style={{
+            margin: '0 0 8px 0',
+            'font-size': 'var(--iris-font-size-3xl, 24px)',
+            'font-weight': '700',
+          }}
+        >
           {local.title}
         </h1>
         <Show when={local.description}>
-          <p style={{ margin: '0 0 24px 0', 'font-size': '14px', color: 'var(--iris-muted)' }}>
+          <p
+            style={{
+              margin: '0 0 24px 0',
+              'font-size': 'var(--iris-font-size-md, 14px)',
+              color: 'var(--iris-muted)',
+            }}
+          >
             {local.description}
           </p>
         </Show>
@@ -102,11 +114,11 @@ export function IrisLoginTemplate(props: IrisLoginTemplateProps): JSX.Element {
             data-iris-login-template-error=""
             role="alert"
             style={{
-              padding: '10px 14px',
-              background: 'var(--iris-danger-light, #fee2e2)',
+              padding: 'var(--iris-space-sm, 12px) var(--iris-space-md, 16px)',
+              background: 'var(--iris-danger-subtle, #fef2f2)',
               color: 'var(--iris-danger, #ef4444)',
               'border-radius': 'var(--iris-radius-md, 6px)',
-              'font-size': '14px',
+              'font-size': 'var(--iris-font-size-md, 14px)',
               'margin-bottom': '16px',
             }}
           >
@@ -121,7 +133,7 @@ export function IrisLoginTemplate(props: IrisLoginTemplateProps): JSX.Element {
                 for="iris-login-email"
                 style={{
                   display: 'block',
-                  'font-size': '13px',
+                  'font-size': 'var(--iris-font-size-sm, 13px)',
                   'font-weight': '500',
                   'margin-bottom': '4px',
                 }}
@@ -145,7 +157,7 @@ export function IrisLoginTemplate(props: IrisLoginTemplateProps): JSX.Element {
                 for="iris-login-password"
                 style={{
                   display: 'block',
-                  'font-size': '13px',
+                  'font-size': 'var(--iris-font-size-sm, 13px)',
                   'font-weight': '500',
                   'margin-bottom': '4px',
                 }}
@@ -170,7 +182,7 @@ export function IrisLoginTemplate(props: IrisLoginTemplateProps): JSX.Element {
                   display: 'flex',
                   'align-items': 'center',
                   gap: '8px',
-                  'font-size': '14px',
+                  'font-size': 'var(--iris-font-size-md, 14px)',
                   cursor: 'pointer',
                 }}
               >
@@ -190,12 +202,12 @@ export function IrisLoginTemplate(props: IrisLoginTemplateProps): JSX.Element {
               disabled={local.loading || undefined}
               style={{
                 width: '100%',
-                padding: '10px 16px',
+                padding: 'var(--iris-space-sm, 12px) var(--iris-space-md, 16px)',
                 background: 'var(--iris-primary)',
                 color: 'var(--iris-primary-foreground, #fff)',
                 border: 'none',
                 'border-radius': 'var(--iris-radius-md, 6px)',
-                'font-size': '14px',
+                'font-size': 'var(--iris-font-size-md, 14px)',
                 'font-weight': '500',
                 'font-family': 'inherit',
                 cursor: local.loading ? 'not-allowed' : 'pointer',

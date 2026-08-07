@@ -17,11 +17,16 @@ export type IrisSelectSize = Size
 
 const SIZE_STYLES: Record<
   IrisSelectSize,
-  { padding: string; fontSize: number; minHeight: number }
+  { padding: string; fontSize: string; minHeight: number }
 > = {
-  sm: { padding: '4px 24px 4px 8px', fontSize: 12, minHeight: 28 },
-  md: { padding: '6px 28px 6px 12px', fontSize: 14, minHeight: 34 },
-  lg: { padding: '8px 32px 8px 12px', fontSize: 16, minHeight: 40 },
+  sm: { padding: '4px 24px 4px 8px', fontSize: 'var(--iris-font-size-xs, 12px)', minHeight: 28 },
+  md: {
+    padding:
+      'var(--iris-padding-sm, 6px) var(--iris-space-xl, 24px) var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+    minHeight: 34,
+  },
+  lg: { padding: '8px 32px 8px 12px', fontSize: 'var(--iris-font-size-lg, 16px)', minHeight: 40 },
 }
 
 export interface IrisSelectProps<T = unknown> {
@@ -250,7 +255,7 @@ export function IrisSelect<T = unknown>({
             padding: 0,
             display: 'flex',
             flexDirection: 'column',
-            gap: 2,
+            gap: 'var(--iris-space-xxs, 4px)',
             outline: 'none',
           }}
         >
@@ -273,11 +278,11 @@ export function IrisSelect<T = unknown>({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 'var(--iris-gap-sm, 6px)',
-                  padding: '6px var(--iris-padding-md, 12px)',
+                  padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
                   borderRadius: 'var(--iris-radius-sm, 4px)',
                   cursor: item.disabled ? 'not-allowed' : 'pointer',
                   opacity: item.disabled ? 0.5 : 1,
-                  fontSize: 14,
+                  fontSize: 'var(--iris-font-size-md, 14px)',
                   background: isSelected
                     ? 'var(--iris-primary)'
                     : isActive

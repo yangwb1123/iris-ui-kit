@@ -177,7 +177,7 @@ export const IrisRangeSlider = defineComponent({
           style: {
             position: 'relative',
             width: '100%',
-            padding: '14px 8px',
+            padding: 'var(--iris-space-md, 16px) var(--iris-space-xs, 8px)',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },
         },

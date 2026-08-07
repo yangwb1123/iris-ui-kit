@@ -155,7 +155,7 @@
     style:box-sizing="border-box"
     style:width="100%"
     style:padding="8px 12px"
-    style:font-size="14px"
+    style:font-size="var(--iris-font-size-md, 14px)"
     style:font-family="inherit"
     style:color="var(--iris-foreground)"
     style:background={invalid ? 'var(--iris-background)' : 'var(--iris-background)'}
@@ -187,7 +187,7 @@
       style:background="var(--iris-background)"
       style:border="1px solid var(--iris-border)"
       style:border-radius="var(--iris-radius-md, 6px)"
-      style:box-shadow="0 8px 24px rgba(0,0,0,0.12)"
+      style:box-shadow="var(--iris-shadow-lg)"
     >
       {#each filtered() as opt, i (opt.value)}
         <li
@@ -204,9 +204,9 @@
               selectOption(opt)
             }
           }}
-          style:padding="6px 12px"
+          style:padding="var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)"
           style:cursor="pointer"
-          style:font-size="14px"
+          style:font-size="var(--iris-font-size-md, 14px)"
           style:border-radius="var(--iris-radius-sm, 4px)"
           style:background={i === activeIndex ? 'var(--iris-surface-hover)' : 'transparent'}
           style:color="var(--iris-foreground)"

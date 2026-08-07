@@ -188,7 +188,7 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
             background: 'var(--iris-surface)',
             border: '1px solid var(--iris-border)',
             'border-radius': 'var(--iris-radius-lg, 8px)',
-            'box-shadow': '0 8px 32px rgba(0,0,0,0.18)',
+            'box-shadow': 'var(--iris-shadow-lg)',
             overflow: 'hidden',
           }}
         >
@@ -208,7 +208,7 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
-                'font-size': '16px',
+                'font-size': 'var(--iris-font-size-lg, 16px)',
                 color: 'var(--iris-foreground)',
                 'font-family': 'inherit',
               }}
@@ -233,7 +233,7 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
                     padding: '20px',
                     'text-align': 'center',
                     color: 'var(--iris-muted)',
-                    'font-size': '14px',
+                    'font-size': 'var(--iris-font-size-md, 14px)',
                   }}
                 >
                   {local.emptyText ?? t('commandPalette.empty')}
@@ -246,8 +246,9 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
                     <Show when={group}>
                       <div
                         style={{
-                          padding: '6px 8px 2px',
-                          'font-size': '11px',
+                          padding:
+                            'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px) var(--iris-space-xxs, 4px)',
+                          'font-size': 'var(--iris-font-size-xs, 12px)',
                           'font-weight': '600',
                           color: 'var(--iris-muted)',
                           'text-transform': 'uppercase',
@@ -275,7 +276,7 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
                               display: 'flex',
                               'align-items': 'center',
                               gap: '8px',
-                              padding: '8px 10px',
+                              padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
                               'border-radius': 'var(--iris-radius-sm, 4px)',
                               background: isActive() ? 'var(--iris-primary)' : 'transparent',
                               color: isActive()
@@ -285,11 +286,14 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
                                   : 'var(--iris-foreground)',
                               cursor: item.disabled ? 'not-allowed' : 'pointer',
                               opacity: item.disabled ? '0.5' : '1',
-                              'font-size': '14px',
+                              'font-size': 'var(--iris-font-size-md, 14px)',
                             }}
                           >
                             <Show when={item.icon}>
-                              <span aria-hidden="true" style={{ 'font-size': '16px' }}>
+                              <span
+                                aria-hidden="true"
+                                style={{ 'font-size': 'var(--iris-font-size-lg, 16px)' }}
+                              >
                                 {item.icon}
                               </span>
                             </Show>
@@ -297,8 +301,8 @@ export function IrisCommandPalette(props: IrisCommandPaletteProps): JSX.Element 
                             <Show when={item.shortcut}>
                               <kbd
                                 style={{
-                                  'font-size': '11px',
-                                  padding: '2px 4px',
+                                  'font-size': 'var(--iris-font-size-xs, 12px)',
+                                  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xxs, 4px)',
                                   background: 'rgba(0,0,0,0.1)',
                                   'border-radius': '3px',
                                   opacity: '0.7',

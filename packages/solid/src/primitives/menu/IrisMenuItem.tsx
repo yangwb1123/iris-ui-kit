@@ -44,8 +44,8 @@ export function IrisMenuItem(props: IrisMenuItemProps): JSX.Element {
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       style={{
-        padding: '6px 12px',
-        'font-size': '14px',
+        padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+        'font-size': 'var(--iris-font-size-md, 14px)',
         'border-radius': 'var(--iris-radius-sm, 4px)',
         cursor: local.disabled ? 'not-allowed' : 'pointer',
         color: local.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',

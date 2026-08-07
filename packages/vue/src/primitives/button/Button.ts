@@ -8,15 +8,15 @@ type StyleMap = Record<string, string>
 const SIZE_STYLES: Record<IrisButtonSize, StyleMap> = {
   sm: {
     padding: 'var(--iris-padding-sm) var(--iris-padding-md)',
-    fontSize: '12px',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
   },
   md: {
     padding: 'var(--iris-padding-sm) var(--iris-padding-lg)',
-    fontSize: '14px',
+    fontSize: 'var(--iris-font-size-md, 14px)',
   },
   lg: {
     padding: 'var(--iris-padding-md) var(--iris-padding-lg)',
-    fontSize: '16px',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
   },
 }
 

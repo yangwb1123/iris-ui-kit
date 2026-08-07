@@ -138,7 +138,7 @@ export function IrisTabsList(props: IrisTabsListProps): JSX.Element {
       style={{
         display: 'inline-flex',
         'flex-direction': ctx.orientation === 'horizontal' ? 'row' : 'column',
-        gap: '2px',
+        gap: 'var(--iris-space-xxs, 4px)',
         'border-bottom': ctx.orientation === 'horizontal' ? '1px solid var(--iris-border)' : 'none',
         ...((typeof local.style === 'object' ? local.style : {}) as JSX.CSSProperties),
       }}
@@ -232,7 +232,7 @@ export function IrisTabsTrigger(props: IrisTabsTriggerProps): JSX.Element {
         color: isActive() ? 'var(--iris-primary)' : 'var(--iris-foreground)',
         'font-weight': isActive() ? '600' : '400',
         'font-family': 'inherit',
-        'font-size': '14px',
+        'font-size': 'var(--iris-font-size-md, 14px)',
         cursor: isDisabled() ? 'not-allowed' : 'pointer',
         opacity: isDisabled() ? 0.5 : 1,
         transition: 'color 120ms ease, border-color 120ms ease',

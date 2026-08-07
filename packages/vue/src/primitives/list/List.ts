@@ -14,7 +14,7 @@ const LIST_STATE_STYLE: Record<string, string> = {
   padding: '12px',
   textAlign: 'center',
   color: 'var(--iris-muted)',
-  fontSize: '14px',
+  fontSize: 'var(--iris-font-size-md, 14px)',
 }
 
 /**
@@ -173,11 +173,11 @@ export const IrisList = defineComponent({
           display: 'flex',
           alignItems: 'center',
           gap: 'var(--iris-gap-sm)',
-          padding: '6px var(--iris-padding-md)',
+          padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md)',
           borderRadius: 'var(--iris-radius-sm)',
           cursor: item.disabled ? 'not-allowed' : 'pointer',
           opacity: item.disabled ? '0.5' : '1',
-          fontSize: '14px',
+          fontSize: 'var(--iris-font-size-md, 14px)',
           background: selected
             ? 'var(--iris-primary)'
             : active
@@ -233,7 +233,7 @@ export const IrisList = defineComponent({
             padding: 'var(--iris-padding-sm)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '2px',
+            gap: 'var(--iris-space-xxs, 4px)',
             outline: 'none',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },

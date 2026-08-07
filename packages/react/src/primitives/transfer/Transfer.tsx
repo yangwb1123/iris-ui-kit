@@ -115,7 +115,7 @@ export function IrisTransfer({
     background: 'var(--iris-background)',
     color: 'var(--iris-foreground)',
     cursor: 'pointer',
-    fontSize: 16,
+    fontSize: 'var(--iris-font-size-lg, 16px)',
     lineHeight: 1,
   }
 
@@ -147,13 +147,20 @@ export function IrisTransfer({
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 8,
-            padding: '6px 10px',
+            padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
             borderBlockEnd: '1px solid var(--iris-border)',
-            fontSize: 13,
+            fontSize: 'var(--iris-font-size-sm, 13px)',
             fontWeight: 500,
           }}
         >
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <label
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 'var(--iris-space-xs, 8px)',
+              minWidth: 0,
+            }}
+          >
             <input
               type="checkbox"
               data-iris-transfer-select-all=""
@@ -166,7 +173,10 @@ export function IrisTransfer({
             />
             <span>{titles?.[side === 'source' ? 0 : 1]}</span>
           </label>
-          <span data-iris-transfer-count="" style={{ color: 'var(--iris-muted)', fontSize: 12 }}>
+          <span
+            data-iris-transfer-count=""
+            style={{ color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-xs, 12px)' }}
+          >
             {checkedCount}/{items.length}
           </span>
         </div>
@@ -182,7 +192,7 @@ export function IrisTransfer({
             style={{
               margin: 8,
               padding: '4px 8px',
-              fontSize: 13,
+              fontSize: 'var(--iris-font-size-sm, 13px)',
               border: '1px solid var(--iris-border)',
               borderRadius: 'var(--iris-radius-sm, 4px)',
               background: 'var(--iris-background)',
@@ -206,9 +216,9 @@ export function IrisTransfer({
             <li
               data-iris-transfer-empty=""
               style={{
-                padding: '8px 10px',
+                padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
                 color: 'var(--iris-muted)',
-                fontSize: 13,
+                fontSize: 'var(--iris-font-size-sm, 13px)',
                 textAlign: 'center',
               }}
             >
@@ -226,7 +236,7 @@ export function IrisTransfer({
                     borderRadius: 'var(--iris-radius-sm, 4px)',
                     cursor: o.disabled ? 'not-allowed' : 'pointer',
                     opacity: o.disabled ? 0.5 : 1,
-                    fontSize: 14,
+                    fontSize: 'var(--iris-font-size-md, 14px)',
                   }}
                 >
                   <input

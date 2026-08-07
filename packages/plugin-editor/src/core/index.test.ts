@@ -81,9 +81,15 @@ describe('createEditor', () => {
 })
 
 describe('editorPlugin', () => {
-  it('registers editor tokens and an editor store', () => {
+  it('registers an editor store; registers only consumed tokens', () => {
     const { tokens, stores } = runPlugins([editorPlugin])
-    expect(tokens['--iris-editor-bg']).toBe(editorTokens['--iris-editor-bg'])
+    // CM6 ships its own theme; only the diff-decor tokens have render-layer
+    // consumers (diff-extension.ts) and are registered (§6c).
+    expect(tokens['--iris-editor-bg']).toBeUndefined()
+    expect(tokens['--iris-editor-diff-added-bg']).toBe(editorTokens['--iris-editor-diff-added-bg'])
+    expect(tokens['--iris-editor-diff-removed-bg']).toBe(
+      editorTokens['--iris-editor-diff-removed-bg'],
+    )
     expect(stores.has('editor')).toBe(true)
   })
 

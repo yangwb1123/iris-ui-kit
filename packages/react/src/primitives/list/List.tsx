@@ -52,7 +52,7 @@ const LIST_STATE_STYLE: React.CSSProperties = {
   padding: '12px',
   textAlign: 'center',
   color: 'var(--iris-muted)',
-  fontSize: 14,
+  fontSize: 'var(--iris-font-size-md, 14px)',
 }
 
 /**
@@ -241,7 +241,7 @@ export function IrisList<T = unknown>({
         padding: 'var(--iris-padding-sm, 4px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 2,
+        gap: 'var(--iris-space-xxs, 4px)',
         outline: 'none',
         ...style,
       }}
@@ -254,11 +254,11 @@ export function IrisList<T = unknown>({
             display: 'flex',
             alignItems: 'center',
             gap: 'var(--iris-gap-sm, 6px)',
-            padding: '6px var(--iris-padding-md, 12px)',
+            padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
             borderRadius: 'var(--iris-radius-sm, 4px)',
             cursor: item.disabled ? 'not-allowed' : 'pointer',
             opacity: item.disabled ? 0.5 : 1,
-            fontSize: 14,
+            fontSize: 'var(--iris-font-size-md, 14px)',
             background: selected
               ? 'var(--iris-primary)'
               : active

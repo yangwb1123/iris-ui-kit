@@ -159,7 +159,7 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
           'box-sizing': 'border-box',
           width: '100%',
           padding: '8px 12px',
-          'font-size': '14px',
+          'font-size': 'var(--iris-font-size-md, 14px)',
           'font-family': 'inherit',
           color: 'var(--iris-foreground)',
           background: 'var(--iris-background)',
@@ -189,7 +189,7 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
             background: 'var(--iris-background)',
             border: '1px solid var(--iris-border)',
             'border-radius': 'var(--iris-radius-md, 6px)',
-            'box-shadow': '0 8px 24px rgba(0,0,0,0.12)',
+            'box-shadow': 'var(--iris-shadow-lg)',
           }}
         >
           <For each={filtered()}>
@@ -205,10 +205,10 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
                 }}
                 onMouseEnter={() => setActiveIdx(i())}
                 style={{
-                  padding: '7px 10px',
+                  padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
                   'border-radius': 'var(--iris-radius-sm, 4px)',
                   cursor: 'pointer',
-                  'font-size': '14px',
+                  'font-size': 'var(--iris-font-size-md, 14px)',
                   background: i() === activeIdx() ? 'var(--iris-primary)' : 'transparent',
                   color:
                     i() === activeIdx()

@@ -11,7 +11,7 @@ const CSS = `
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 2px;
+  gap: var(--iris-space-xxs, 4px);
   width: 100%;
 }
 
@@ -36,16 +36,16 @@ const CSS = `
   border: none;
   border-radius: var(--iris-nav-item-border-radius);
   background: transparent;
-  color: var(--iris-foreground, var(--iris-color-text, var(--iris-foreground)));
+  color: var(--iris-foreground);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--iris-font-size-md, 14px);
   line-height: 1.2;
   font-weight: 400;
   text-align: start;
   cursor: pointer;
   opacity: 1;
   margin: 0;
-  gap: 10px;
+  gap: var(--iris-space-sm, 12px);
   padding-block: var(--iris-nav-item-padding-block);
   padding-inline: var(--iris-nav-item-padding-inline);
   text-overflow: ellipsis;
@@ -135,13 +135,13 @@ const CSS = `
 }
 
 :where(.iris-nav-menu-badge) {
-  margin-inline-start: 6px;
-  font-size: 11px;
+  margin-inline-start: var(--iris-space-xs, 8px);
+  font-size: var(--iris-font-size-xs, 12px);
   line-height: 1;
-  padding: 2px 6px;
+  padding: var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px);
   border-radius: 999px;
-  background: var(--iris-danger, #e5484d);
-  color: #fff;
+  background: var(--iris-danger, #ef4444);
+  color: var(--iris-primary-foreground, #fff);
   flex: 0 0 auto;
 }
 
@@ -195,7 +195,7 @@ const CSS = `
 :where(.iris-nav-menu--horizontal .iris-nav-menu-group > .iris-nav-menu-children) {
   position: absolute;
   min-width: 220px;
-  padding: 6px;
+  padding: var(--iris-space-xs, 8px);
   border: 1px solid var(--iris-border);
   border-radius: var(--iris-radius-md, 6px);
   background: var(--iris-surface);

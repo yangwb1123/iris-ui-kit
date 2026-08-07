@@ -113,7 +113,7 @@ export function IrisBanner({
             border: 'none',
             cursor: 'pointer',
             color: 'var(--iris-muted)',
-            fontSize: 16,
+            fontSize: 'var(--iris-font-size-lg, 16px)',
             padding: '0 4px',
             lineHeight: 1,
             flexShrink: 0,

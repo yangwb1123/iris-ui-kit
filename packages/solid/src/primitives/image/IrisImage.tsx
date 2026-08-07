@@ -109,8 +109,8 @@ export function IrisImage(props: IrisImageProps): JSX.Element {
               'border-radius': '50%',
               border: 'none',
               background: 'rgba(0,0,0,0.5)',
-              color: '#fff',
-              'font-size': '22px',
+              color: 'var(--iris-primary-foreground, #fff)',
+              'font-size': 'var(--iris-font-size-2xl, 20px)',
               'line-height': '1',
               cursor: 'pointer',
             }}

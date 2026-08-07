@@ -195,7 +195,7 @@ export function IrisFileUpload({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 'var(--iris-space-xs, 8px)',
     padding: 'var(--iris-padding-lg, 20px)',
     border: `2px dashed ${dragOver ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
     borderRadius: 'var(--iris-radius-md, 6px)',
@@ -250,10 +250,17 @@ export function IrisFileUpload({
         onDrop={onDrop}
         style={zoneStyle}
       >
-        <div data-iris-file-upload-label="" style={{ fontSize: 14, fontWeight: 500 }}>
+        <div
+          data-iris-file-upload-label=""
+          style={{ fontSize: 'var(--iris-font-size-md, 14px)', fontWeight: 500 }}
+        >
           {resolvedLabel}
         </div>
-        {accept ? <div style={{ fontSize: 12, color: 'var(--iris-muted)' }}>{accept}</div> : null}
+        {accept ? (
+          <div style={{ fontSize: 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-muted)' }}>
+            {accept}
+          </div>
+        ) : null}
       </div>
       {renderList ? (
         renderList({ files, remove: removeAt })
@@ -277,15 +284,17 @@ export function IrisFileUpload({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                padding: '6px 10px',
+                padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
                 background: 'var(--iris-surface)',
                 border: '1px solid var(--iris-border)',
                 borderRadius: 'var(--iris-radius-sm, 4px)',
-                fontSize: 13,
+                fontSize: 'var(--iris-font-size-sm, 13px)',
               }}
             >
               <span style={{ flex: 1, minWidth: 0 }}>{item.name}</span>
-              <span style={{ color: 'var(--iris-muted)', fontSize: 12 }}>
+              <span
+                style={{ color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-xs, 12px)' }}
+              >
                 {formatBytes(item.size)}
               </span>
               <button
@@ -301,7 +310,7 @@ export function IrisFileUpload({
                   border: 'none',
                   color: 'var(--iris-muted)',
                   cursor: disabled ? 'not-allowed' : 'pointer',
-                  fontSize: 16,
+                  fontSize: 'var(--iris-font-size-lg, 16px)',
                   lineHeight: 1,
                   padding: '0 4px',
                 }}

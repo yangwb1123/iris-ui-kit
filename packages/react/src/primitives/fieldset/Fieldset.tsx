@@ -46,8 +46,8 @@ export function IrisFieldset({
         <legend
           data-iris-fieldset-legend=""
           style={{
-            padding: '0 6px',
-            fontSize: 14,
+            padding: '0 var(--iris-padding-sm, 6px)',
+            fontSize: 'var(--iris-font-size-md, 14px)',
             fontWeight: 600,
             color: 'var(--iris-foreground)',
           }}
@@ -58,7 +58,11 @@ export function IrisFieldset({
       {hint != null ? (
         <div
           data-iris-fieldset-hint=""
-          style={{ fontSize: 12, color: 'var(--iris-muted)', marginBlockEnd: 8 }}
+          style={{
+            fontSize: 'var(--iris-font-size-xs, 12px)',
+            color: 'var(--iris-muted)',
+            marginBlockEnd: 8,
+          }}
         >
           {hint}
         </div>

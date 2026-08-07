@@ -226,7 +226,7 @@ export const IrisCalendar = defineComponent({
                 {
                   'data-iris-calendar-title': '',
                   'aria-live': 'polite',
-                  style: { fontWeight: '600', fontSize: '14px' },
+                  style: { fontWeight: '600', fontSize: 'var(--iris-font-size-md, 14px)' },
                 },
                 title.value,
               ),
@@ -257,8 +257,8 @@ export const IrisCalendar = defineComponent({
               style: {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-                gap: '2px',
-                fontSize: '12px',
+                gap: 'var(--iris-space-xxs, 4px)',
+                fontSize: 'var(--iris-font-size-xs, 12px)',
                 color: 'var(--iris-muted)',
                 textAlign: 'center',
               },
@@ -269,7 +269,7 @@ export const IrisCalendar = defineComponent({
                 {
                   key: name,
                   role: 'columnheader',
-                  style: { padding: '2px 0' },
+                  style: { padding: 'var(--iris-space-xxs, 4px) 0' },
                 },
                 name,
               ),
@@ -286,7 +286,7 @@ export const IrisCalendar = defineComponent({
               style: {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-                gap: '2px',
+                gap: 'var(--iris-space-xxs, 4px)',
               },
             },
             matrix.value.map((week, wi) =>
@@ -351,7 +351,7 @@ export const IrisCalendar = defineComponent({
                         borderRadius: 'var(--iris-radius-sm, 4px)',
                         cursor: isDisabled ? 'not-allowed' : 'pointer',
                         opacity: isDisabled ? '0.45' : '1',
-                        fontSize: '13px',
+                        fontSize: 'var(--iris-font-size-sm, 13px)',
                         fontFamily: 'inherit',
                         outline: 'none',
                       },

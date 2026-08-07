@@ -63,7 +63,7 @@ export const IrisStepperStep = React.forwardRef<HTMLLIElement, IrisStepperStepPr
           background: s === 'completed' ? color : 'var(--iris-background)',
           color: s === 'completed' ? 'var(--iris-primary-foreground, #fff)' : color,
           border: `2px solid ${color}`,
-          fontSize: 13,
+          fontSize: 'var(--iris-font-size-sm, 13px)',
           fontWeight: 600,
           lineHeight: 1,
           transition: 'background-color 120ms ease, color 120ms ease, border-color 120ms ease',
@@ -77,7 +77,7 @@ export const IrisStepperStep = React.forwardRef<HTMLLIElement, IrisStepperStepPr
       <div
         data-iris-stepper-title=""
         style={{
-          fontSize: 13,
+          fontSize: 'var(--iris-font-size-sm, 13px)',
           fontWeight: s === 'active' ? 600 : 500,
           color: s === 'pending' ? 'var(--iris-muted)' : 'var(--iris-foreground)',
         }}
@@ -87,7 +87,10 @@ export const IrisStepperStep = React.forwardRef<HTMLLIElement, IrisStepperStepPr
     ) : null
 
     const descNode = description ? (
-      <div data-iris-stepper-description="" style={{ fontSize: 12, color: 'var(--iris-muted)' }}>
+      <div
+        data-iris-stepper-description=""
+        style={{ fontSize: 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-muted)' }}
+      >
         {description}
       </div>
     ) : null
@@ -109,7 +112,7 @@ export const IrisStepperStep = React.forwardRef<HTMLLIElement, IrisStepperStepPr
                 width: 1,
                 minHeight: 24,
                 background: index < ctx.current ? STATUS_COLOR.completed : 'var(--iris-border)',
-                marginInlineStart: 13,
+                marginInlineStart: 'var(--iris-space-md, 16px)',
                 marginTop: 4,
                 marginBottom: 4,
               }

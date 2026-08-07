@@ -6,7 +6,7 @@
 
   const VALUE_FONT: Record<StatisticSize, number> = { sm: 20, md: 28, lg: 36 }
   const TREND_COLOR: Record<StatisticTrend, string> = {
-    up: 'var(--iris-success, #16a34a)',
+    up: 'var(--iris-success, #10b981)',
     down: 'var(--iris-danger)',
     neutral: 'var(--iris-muted)',
   }
@@ -39,7 +39,10 @@
   )}
 >
   {#if label != null}
-    <div data-iris-statistic-label style="font-size: 13px; color: var(--iris-muted)">
+    <div
+      data-iris-statistic-label
+      style="font-size: var(--iris-font-size-sm, 13px); color: var(--iris-muted)"
+    >
       {String(label)}
     </div>
   {/if}
@@ -58,7 +61,7 @@
   {#if trend != null || trendValue != null}
     <div
       data-iris-statistic-trend
-      style="display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: {trend
+      style="display: inline-flex; align-items: center; gap: var(--iris-space-xxs, 4px); font-size: var(--iris-font-size-sm, 13px); color: {trend
         ? TREND_COLOR[trend]
         : 'var(--iris-muted)'}"
     >
@@ -71,7 +74,10 @@
     </div>
   {/if}
   {#if description != null}
-    <div data-iris-statistic-desc style="font-size: 12px; color: var(--iris-muted)">
+    <div
+      data-iris-statistic-desc
+      style="font-size: var(--iris-font-size-xs, 12px); color: var(--iris-muted)"
+    >
       {String(description)}
     </div>
   {/if}

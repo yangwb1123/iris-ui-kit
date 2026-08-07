@@ -108,7 +108,7 @@
   }
 
   const VISUAL =
-    'background: var(--iris-surface); color: var(--iris-foreground); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-sm, 4px); box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08); min-width: 160px; outline: none; z-index: 1000'
+    'background: var(--iris-surface); color: var(--iris-foreground); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-sm, 4px); box-shadow: var(--iris-shadow-lg); min-width: 160px; outline: none; z-index: 1000'
   const menuStyle = $derived(mergeStyle(`${floating.floatingStyles}; ${VISUAL}`, style))
 </script>
 

@@ -29,10 +29,10 @@ function fabStyle(size: number, primary: boolean): JSX.CSSProperties {
     'justify-content': 'center',
     border: primary ? 'none' : '1px solid var(--iris-border)',
     background: primary ? 'var(--iris-primary)' : 'var(--iris-background)',
-    color: primary ? '#fff' : 'var(--iris-foreground)',
+    color: primary ? 'var(--iris-primary-foreground, #fff)' : 'var(--iris-foreground)',
     cursor: 'pointer',
-    'box-shadow': '0 4px 12px rgba(0,0,0,0.18)',
-    'font-size': size > 44 ? '22px' : '16px',
+    'box-shadow': 'var(--iris-shadow-md)',
+    'font-size': size > 44 ? 'var(--iris-font-size-2xl, 20px)' : 'var(--iris-font-size-lg, 16px)',
     'line-height': '1',
   }
 }

@@ -124,7 +124,7 @@ export const IrisFormField = defineComponent({
                 {
                   id: hintId,
                   'data-iris-form-field-hint': '',
-                  style: { fontSize: '12px', color: 'var(--iris-muted)' },
+                  style: { fontSize: 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-muted)' },
                 },
                 props.hint,
               )
@@ -136,7 +136,10 @@ export const IrisFormField = defineComponent({
                   id: errorId,
                   'data-iris-form-field-error': '',
                   role: 'alert',
-                  style: { fontSize: '12px', color: 'var(--iris-danger)' },
+                  style: {
+                    fontSize: 'var(--iris-font-size-xs, 12px)',
+                    color: 'var(--iris-danger)',
+                  },
                 },
                 props.error,
               )

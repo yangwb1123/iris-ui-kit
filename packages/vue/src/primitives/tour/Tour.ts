@@ -15,8 +15,8 @@ interface Rect {
 }
 
 const btnBase: Record<string, string> = {
-  padding: '4px 12px',
-  fontSize: '13px',
+  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+  fontSize: 'var(--iris-font-size-sm, 13px)',
   borderRadius: 'var(--iris-radius-sm, 4px)',
   cursor: 'pointer',
 }
@@ -30,7 +30,7 @@ const btnPrimary: Record<string, string> = {
   ...btnBase,
   border: 'none',
   background: 'var(--iris-primary)',
-  color: '#fff',
+  color: 'var(--iris-primary-foreground, #fff)',
 }
 
 /**
@@ -139,7 +139,8 @@ export const IrisTour = defineComponent({
                 height: `${sl.height + 8}px`,
                 border: '2px solid var(--iris-primary)',
                 borderRadius: 'var(--iris-radius-sm, 4px)',
-                boxShadow: '0 0 0 9999px rgba(0,0,0,0.45)',
+                boxShadow:
+                  '0 0 0 9999px color-mix(in srgb, var(--iris-foreground) 45%, transparent)',
                 zIndex: '1001',
                 pointerEvents: 'none',
               },
@@ -160,7 +161,7 @@ export const IrisTour = defineComponent({
               background: 'var(--iris-background)',
               border: '1px solid var(--iris-border)',
               borderRadius: 'var(--iris-radius-md, 6px)',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+              boxShadow: 'var(--iris-shadow-lg)',
               ...cardPos,
             },
           },
@@ -181,7 +182,7 @@ export const IrisTour = defineComponent({
                   {
                     'data-iris-tour-description': '',
                     style: {
-                      fontSize: '14px',
+                      fontSize: 'var(--iris-font-size-md, 14px)',
                       color: 'var(--iris-foreground)',
                       marginBlockEnd: '12px',
                     },
@@ -204,7 +205,10 @@ export const IrisTour = defineComponent({
                   'span',
                   {
                     'data-iris-tour-indicator': '',
-                    style: { fontSize: '12px', color: 'var(--iris-muted)' },
+                    style: {
+                      fontSize: 'var(--iris-font-size-xs, 12px)',
+                      color: 'var(--iris-muted)',
+                    },
                   },
                   t('tour.step', { current: current + 1, total }),
                 ),

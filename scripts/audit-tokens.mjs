@@ -72,6 +72,30 @@ const KNOWN_EXCEPTIONS = {
     'needs the CSS-var indirection to pipe its `gap` prop into a scoped ' +
     '<style> block; React/Vue/Solid bind the prop directly via inline JS ' +
     'styles, so they never reference the var by name.',
+  '--iris-nav-indent-step':
+    'Vue admin scoped style variable (packages/vue/src/admin/styles.ts) ' +
+    'feeding the NavMenu indent step; component-local, not a design token.',
+  '--iris-nav-item-border-radius':
+    'Vue admin scoped style variable (NavMenu item radius); component-local.',
+  '--iris-nav-item-height':
+    'Vue admin scoped style variable (NavMenu item height 34px); component-local.',
+  '--iris-nav-item-hover':
+    'Vue admin scoped style variable (NavMenu hover surface); component-local.',
+  '--iris-nav-item-padding-block':
+    'Vue admin scoped style variable (NavMenu block padding); component-local.',
+  '--iris-nav-item-padding-inline':
+    'Vue admin scoped style variable (NavMenu inline padding); component-local.',
+  '--iris-nav-item-padding-inline-start':
+    'Vue admin scoped style variable (NavMenu inline-start padding); component-local.',
+  '--iris-focus-ring':
+    'Vue tabs/admin scoped style variable (focus outline color alias of ' +
+    '--iris-primary); component-local, not a themeable token.',
+  '--iris-ring':
+    'Vue admin scoped style variable (focus outline alias of --iris-primary); ' +
+    'component-local.',
+  '--iris-mask':
+    'Svelte Tour scoped style variable (overlay mask rgba(0,0,0,0.45)); ' +
+    'component-local, not a themeable token.',
   '--iris-primary-ghost':
     'Pre-existing Solid-only choice: IrisTree tints the ' +
     'selected row with a translucent primary wash, while React/Vue/Svelte ' +
@@ -80,7 +104,7 @@ const KNOWN_EXCEPTIONS = {
     'not a token-porting fix.',
 }
 
-const LEGACY_TOKEN_PREFIXES = ['--iris-color-', '--iris-space-']
+const LEGACY_TOKEN_PREFIXES = ['--iris-color-']
 const LEGACY_TOKEN_NAMES = new Set([
   '--iris-font-body',
   '--iris-primary-muted',

@@ -63,7 +63,7 @@ describe('@iris-ui-kit/solid IrisInput', () => {
     )
     setSize('lg')
     expect(container.querySelector('[data-iris-input]')!.getAttribute('style')).toContain(
-      'font-size: 16px',
+      'font-size: var(--iris-font-size-lg, 16px)',
     )
   })
 

@@ -12,16 +12,16 @@ const CSS = `
 [data-iris-breadcrumb-list] {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--iris-space-xs, 8px);
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 14px;
+  font-size: var(--iris-font-size-md, 14px);
 }
 [data-iris-breadcrumb-item] {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--iris-space-xs, 8px);
 }
 [data-iris-breadcrumb-item]:not(:first-child)::before {
   content: var(--iris-breadcrumb-sep, "/");

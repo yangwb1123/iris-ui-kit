@@ -110,7 +110,7 @@ export function IrisNavMenu({
   }): React.CSSProperties => ({
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
+    gap: 'var(--iris-space-sm, 12px)',
     width: horizontal && opts.depth === 0 ? 'auto' : '100%',
     boxSizing: 'border-box',
     border: 'none',
@@ -126,12 +126,12 @@ export function IrisNavMenu({
         ? 'var(--iris-primary)'
         : 'var(--iris-foreground)',
     font: 'inherit',
-    fontSize: 14,
+    fontSize: 'var(--iris-font-size-md, 14px)',
     fontWeight: opts.active || opts.trail ? 600 : 400,
     textAlign: 'start',
     cursor: opts.disabled ? 'not-allowed' : 'pointer',
     opacity: opts.disabled ? 0.5 : 1,
-    padding: collapsed ? 10 : '8px 10px',
+    padding: collapsed ? 10 : 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
     paddingInlineStart: collapsed ? 10 : 12 + opts.depth * 16,
     justifyContent: collapsed ? 'center' : 'flex-start',
   })
@@ -145,12 +145,12 @@ export function IrisNavMenu({
         data-iris-nav-badge=""
         style={{
           marginInlineStart: 'auto',
-          fontSize: 11,
+          fontSize: 'var(--iris-font-size-xs, 12px)',
           lineHeight: 1,
-          padding: '2px 6px',
+          padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
           borderRadius: 999,
-          background: 'var(--iris-danger, #e5484d)',
-          color: '#fff',
+          background: 'var(--iris-danger, #ef4444)',
+          color: 'var(--iris-primary-foreground, #fff)',
         }}
       >
         {String(node.badge)}
@@ -273,7 +273,7 @@ export function IrisNavMenu({
                   insetInlineStart: 0,
                   zIndex: 60,
                   minWidth: 220,
-                  padding: 6,
+                  padding: 'var(--iris-space-xs, 8px)',
                   border: '1px solid var(--iris-border)',
                   borderRadius: 'var(--iris-radius-md, 6px)',
                   background: 'var(--iris-surface)',
@@ -345,7 +345,7 @@ export function IrisNavMenu({
         display: 'flex',
         flexDirection: horizontal ? 'row' : 'column',
         alignItems: horizontal ? 'center' : undefined,
-        gap: 2,
+        gap: 'var(--iris-space-xxs, 4px)',
       }}
     >
       {collapsed

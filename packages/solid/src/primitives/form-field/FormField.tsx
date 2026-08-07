@@ -62,7 +62,10 @@ export function IrisFormField(props: IrisFormFieldProps): JSX.Element {
             for={controlId()}
             data-iris-form-field-label=""
             style={{
-              'font-size': local.size === 'sm' ? '12px' : '14px',
+              'font-size':
+                local.size === 'sm'
+                  ? 'var(--iris-font-size-xs, 12px)'
+                  : 'var(--iris-font-size-md, 14px)',
               'font-weight': 500,
               color: local.error ? 'var(--iris-danger)' : 'var(--iris-foreground)',
               display: 'inline-flex',
@@ -87,7 +90,7 @@ export function IrisFormField(props: IrisFormFieldProps): JSX.Element {
           <div
             id={hintId}
             data-iris-form-field-hint=""
-            style={{ 'font-size': '12px', color: 'var(--iris-muted)' }}
+            style={{ 'font-size': 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-muted)' }}
           >
             {local.hint}
           </div>
@@ -97,7 +100,7 @@ export function IrisFormField(props: IrisFormFieldProps): JSX.Element {
             id={errorId}
             data-iris-form-field-error=""
             role="alert"
-            style={{ 'font-size': '12px', color: 'var(--iris-danger)' }}
+            style={{ 'font-size': 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-danger)' }}
           >
             {local.error}
           </div>

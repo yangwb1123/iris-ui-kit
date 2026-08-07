@@ -788,7 +788,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       width: '100%',
                       border: `1px solid ${editError ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
                       borderRadius: 'var(--iris-radius-sm, 4px)',
-                      padding: '4px 6px',
+                      padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
                       font: 'inherit',
                       background: 'var(--iris-background)',
                       color: 'var(--iris-foreground)',
@@ -800,7 +800,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       id={`${cellId(k, col.key)}-error`}
                       role="alert"
                       data-iris-table-editor-error=""
-                      style={{ marginTop: 2, fontSize: 12, color: 'var(--iris-danger)' }}
+                      style={{
+                        marginTop: 'var(--iris-space-xxs, 4px)',
+                        fontSize: 'var(--iris-font-size-xs, 12px)',
+                        color: 'var(--iris-danger)',
+                      }}
                     >
                       {editError}
                     </div>
@@ -846,7 +850,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       style={{
         background: 'var(--iris-background)',
         color: 'var(--iris-foreground)',
-        fontSize: 14,
+        fontSize: 'var(--iris-font-size-md, 14px)',
         border: borderStyle,
         borderRadius: 'var(--iris-radius-md, 6px)',
         // Column virtualization turns the table into a horizontal scroll container.
@@ -940,8 +944,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       aria-hidden="true"
                       data-iris-table-sort-indicator=""
                       style={{
-                        marginInlineStart: 6,
-                        fontSize: 11,
+                        marginInlineStart: 'var(--iris-space-xs, 8px)',
+                        fontSize: 'var(--iris-font-size-xs, 12px)',
                         color: dir ? 'var(--iris-primary)' : 'var(--iris-muted)',
                       }}
                     >
@@ -1051,8 +1055,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     aria-hidden="true"
                     data-iris-table-sort-indicator=""
                     style={{
-                      marginInlineStart: 6,
-                      fontSize: 11,
+                      marginInlineStart: 'var(--iris-space-xs, 8px)',
+                      fontSize: 'var(--iris-font-size-xs, 12px)',
                       color: dir ? 'var(--iris-primary)' : 'var(--iris-muted)',
                     }}
                   >

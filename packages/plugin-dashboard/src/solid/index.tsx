@@ -120,7 +120,7 @@ export function IrisDashboard(props: IrisDashboardProps) {
       style={{
         display: 'grid',
         'grid-template-columns': `repeat(${dashboardState().columns}, 1fr)`,
-        gap: 'var(--iris-dashboard-gap, 16px)',
+        gap: 'var(--iris-dashboard-gap, var(--iris-space-md, 16px))',
         position: 'relative',
         ...props.style,
       }}
@@ -137,7 +137,7 @@ export function IrisDashboard(props: IrisDashboardProps) {
               // Live drop highlight for the touch/pen pointer path.
               outline:
                 sortableState().activeId && sortableState().overId === `${c}-${r}`
-                  ? '2px dashed var(--iris-primary, #2563eb)'
+                  ? '2px dashed var(--iris-primary, #6366f1)'
                   : undefined,
               'outline-offset': '-2px',
             }}
@@ -166,9 +166,9 @@ export function IrisDashboard(props: IrisDashboardProps) {
               style={{
                 'grid-column': `${widget.col} / span ${widget.colSpan}`,
                 'grid-row': `${widget.row} / span ${widget.rowSpan}`,
-                background: 'var(--iris-dashboard-widget-bg, #fff)',
-                border: '1px solid var(--iris-border, #e5e7eb)',
-                'border-radius': 'var(--iris-dashboard-widget-radius, 8px)',
+                background: 'var(--iris-dashboard-widget-bg, var(--iris-surface, #f8fafc))',
+                border: '1px solid var(--iris-border, #e2e8f0)',
+                'border-radius': 'var(--iris-dashboard-widget-radius, 6px)',
                 display: 'flex',
                 'flex-direction': 'column',
                 overflow: 'hidden',
@@ -183,10 +183,10 @@ export function IrisDashboard(props: IrisDashboardProps) {
                 style={{
                   display: 'flex',
                   'align-items': 'center',
-                  gap: '6px',
+                  gap: 'var(--iris-space-xs, 8px)',
                   padding: '8px 12px',
                   cursor: 'grab',
-                  'border-bottom': '1px solid var(--iris-border, #e5e7eb)',
+                  'border-bottom': '1px solid var(--iris-border, #e2e8f0)',
                   'font-weight': '600',
                   'user-select': 'none',
                   // Let the pointer path own touch gestures on the drag handle.
@@ -210,7 +210,7 @@ export function IrisDashboard(props: IrisDashboardProps) {
                   style={{
                     'font-size': '1rem',
                     'line-height': '1',
-                    color: 'var(--iris-muted, #9ca3af)',
+                    color: 'var(--iris-muted, #64748b)',
                   }}
                 >
                   ⠿

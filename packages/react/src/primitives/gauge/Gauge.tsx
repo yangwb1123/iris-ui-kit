@@ -20,7 +20,7 @@ export interface IrisGaugeProps {
 
 const COLOR: Record<IrisGaugeStatus, string> = {
   default: 'var(--iris-primary)',
-  success: 'var(--iris-success, #16a34a)',
+  success: 'var(--iris-success, #10b981)',
   danger: 'var(--iris-danger)',
   warning: 'var(--iris-warning, #f59e0b)',
 }

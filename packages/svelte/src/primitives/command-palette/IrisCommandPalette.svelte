@@ -149,7 +149,7 @@
       style:background="var(--iris-background)"
       style:border="1px solid var(--iris-border)"
       style:border-radius="var(--iris-radius-lg, 8px)"
-      style:box-shadow="0 16px 48px rgba(0,0,0,0.2)"
+      style:box-shadow="var(--iris-shadow-xl)"
       style:width="min(560px, 90vw)"
       style:overflow="hidden"
       style:display="flex"
@@ -196,7 +196,8 @@
             {#if row.kind === 'header'}
               <div
                 data-iris-command-palette-group
-                style:padding="6px 8px 2px"
+                style:padding="var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px)
+                var(--iris-space-xxs, 4px)"
                 style:font-size="11px"
                 style:font-weight="600"
                 style:color="var(--iris-muted)"
@@ -238,7 +239,7 @@
                 {#if row.item.shortcut}
                   <kbd
                     style:font-size="11px"
-                    style:padding="2px 5px"
+                    style:padding="var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)"
                     style:border="1px solid var(--iris-border)"
                     style:border-radius="3px"
                     style:background="var(--iris-surface)"

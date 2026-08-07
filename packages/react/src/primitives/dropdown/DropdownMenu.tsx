@@ -148,7 +148,7 @@ export const IrisDropdownMenu = React.forwardRef<HTMLDivElement, IrisDropdownMen
           border: '1px solid var(--iris-border)',
           borderRadius: 'var(--iris-radius-md, 6px)',
           padding: 'var(--iris-padding-sm, 4px)',
-          boxShadow: '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
+          boxShadow: 'var(--iris-shadow-lg)',
           minWidth: 160,
           outline: 'none',
           zIndex: 1000,

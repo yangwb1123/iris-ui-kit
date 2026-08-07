@@ -224,9 +224,7 @@ export function IrisSlider(props: IrisSliderProps): JSX.Element {
             'border-radius': '50%',
             background: 'var(--iris-background)',
             border: '2px solid var(--iris-primary)',
-            'box-shadow': dragging()
-              ? '0 0 0 4px rgba(99,102,241,0.18)'
-              : '0 1px 2px rgba(0,0,0,.15)',
+            'box-shadow': dragging() ? '0 0 0 4px rgba(99,102,241,0.18)' : 'var(--iris-shadow-sm)',
             cursor: local.disabled ? 'not-allowed' : 'grab',
             transition: 'box-shadow 120ms ease',
             'touch-action': 'none',

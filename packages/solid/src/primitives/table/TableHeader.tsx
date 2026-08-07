@@ -46,7 +46,7 @@ export function TableHeader<Row extends Record<string, unknown>>(
         data-iris-table-sort-indicator=""
         style={{
           'margin-inline-start': '6px',
-          'font-size': '11px',
+          'font-size': 'var(--iris-font-size-xs, 12px)',
           color: dir ? 'var(--iris-primary)' : 'var(--iris-muted)',
         }}
       >

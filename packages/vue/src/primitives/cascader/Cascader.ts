@@ -12,9 +12,21 @@ export interface IrisCascaderNode {
 
 const SIZE_MAP: Record<IrisCascaderSize, { padding: string; fontSize: string; minHeight: string }> =
   {
-    sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
-    md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
-    lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      minHeight: '28px',
+    },
+    md: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      minHeight: '34px',
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      minHeight: '40px',
+    },
   }
 
 function pathLabels(options: IrisCascaderNode[], path: string[]): string[] {
@@ -178,7 +190,10 @@ export const IrisCascader = defineComponent({
               ),
               h(
                 'span',
-                { 'aria-hidden': 'true', style: { color: 'var(--iris-muted)', fontSize: '10px' } },
+                {
+                  'aria-hidden': 'true',
+                  style: { color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-xs, 12px)' },
+                },
                 '▾',
               ),
             ],
@@ -198,7 +213,7 @@ export const IrisCascader = defineComponent({
                     background: 'var(--iris-background)',
                     border: '1px solid var(--iris-border)',
                     borderRadius: 'var(--iris-radius-md, 6px)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    boxShadow: 'var(--iris-shadow-lg)',
                     overflow: 'hidden',
                   },
                 },
@@ -238,7 +253,7 @@ export const IrisCascader = defineComponent({
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             gap: '8px',
-                            padding: '6px 10px',
+                            padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
                             fontSize: sz.fontSize,
                             borderRadius: 'var(--iris-radius-sm, 4px)',
                             cursor: node.disabled ? 'not-allowed' : 'pointer',
@@ -255,7 +270,10 @@ export const IrisCascader = defineComponent({
                                 'span',
                                 {
                                   'aria-hidden': 'true',
-                                  style: { color: 'var(--iris-muted)', fontSize: '10px' },
+                                  style: {
+                                    color: 'var(--iris-muted)',
+                                    fontSize: 'var(--iris-font-size-xs, 12px)',
+                                  },
                                 },
                                 '›',
                               )

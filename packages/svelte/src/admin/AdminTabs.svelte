@@ -90,7 +90,8 @@
       display: 'inline-flex',
       'align-items': 'center',
       gap: '4px',
-      padding: '5px 8px 5px 10px',
+      padding:
+        'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px) var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
       'border-radius': 'var(--iris-radius-md, 6px)',
       border: `1px solid ${active ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
       background: active ? 'var(--iris-primary)' : 'var(--iris-surface)',
@@ -100,7 +101,7 @@
   }
 
   const LABEL_STYLE =
-    'display: inline-flex; align-items: center; gap: 6px; border: none; background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; padding: 0'
+    'display: inline-flex; align-items: center; gap: var(--iris-space-xs, 8px); border: none; background: transparent; color: inherit; font: inherit; font-size: var(--iris-font-size-sm, 13px); cursor: pointer; padding: 0'
   const CLOSE_STYLE =
     'display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border: none; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; padding: 0; opacity: 0.6'
   const TRIGGER_STYLE =
@@ -109,7 +110,7 @@
 
 <div
   data-iris-admin-tabs
-  style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--iris-border); background: var(--iris-background)"
+  style="display: flex; align-items: center; gap: var(--iris-space-xs, 8px); padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); border-bottom: 1px solid var(--iris-border); background: var(--iris-background)"
 >
   <!-- svelte-ignore a11y_interactive_supports_focus — WAI-ARIA tabs: roving tabindex lives on the tabs -->
   <div

@@ -22,10 +22,10 @@ interface FlatNode {
 }
 
 const TREE_STATE_STYLE: Record<string, string> = {
-  padding: '12px',
+  padding: 'var(--iris-space-sm, 12px)',
   textAlign: 'center',
   color: 'var(--iris-muted)',
-  fontSize: '14px',
+  fontSize: 'var(--iris-font-size-md, 14px)',
 }
 
 /**
@@ -467,7 +467,7 @@ export const IrisTree = defineComponent({
                   : 'transparent',
               color: isSelected ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
               outline: 'none',
-              fontSize: '14px',
+              fontSize: 'var(--iris-font-size-md, 14px)',
             },
           },
           [chevron, checkbox, h('span', { style: { flex: '1', minWidth: '0' } }, node.label)],
@@ -488,7 +488,7 @@ export const IrisTree = defineComponent({
           style: {
             display: 'flex',
             flexDirection: 'column',
-            gap: '2px',
+            gap: 'var(--iris-space-xxs, 4px)',
             outline: 'none',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },

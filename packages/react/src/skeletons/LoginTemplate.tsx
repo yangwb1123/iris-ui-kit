@@ -83,19 +83,27 @@ export function IrisLoginTemplate({
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-lg, 8px)',
             padding: 32,
-            boxShadow: '0 6px 20px -8px rgba(0, 0, 0, 0.16)',
+            boxShadow: 'var(--iris-shadow-md)',
           }}
         >
           <IrisStack spacing="lg">
             {header ?? (
               <div style={{ textAlign: 'center' }}>
-                <h1 style={{ margin: '0 0 4px 0', fontSize: 22, fontWeight: 700 }}>{title}</h1>
+                <h1
+                  style={{
+                    margin: '0 0 4px 0',
+                    fontSize: 'var(--iris-font-size-2xl, 20px)',
+                    fontWeight: 700,
+                  }}
+                >
+                  {title}
+                </h1>
                 {description ? (
                   <p
                     style={{
                       margin: 0,
                       color: 'var(--iris-muted)',
-                      fontSize: 14,
+                      fontSize: 'var(--iris-font-size-md, 14px)',
                     }}
                   >
                     {description}

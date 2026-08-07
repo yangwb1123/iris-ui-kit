@@ -331,7 +331,7 @@
 
   // Base per-cell style shared by the summary cells (mirrors the body cell base).
   const summaryCellStyle = (col: IrisTableColumn): string =>
-    `display: flex; align-items: center; justify-content: ${col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: 8px var(--iris-padding-md, 12px); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis`
+    `display: flex; align-items: center; justify-content: ${col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: 8px var(--iris-padding-md, 12px); font-size: var(--iris-font-size-md, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis`
 
   const gridTemplate = $derived(() => {
     const parts: string[] = []
@@ -645,13 +645,13 @@
               ? 'pointer'
               : 'default'}; user-select: {sortable
               ? 'none'
-              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: 13px; color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-sm, 13px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
           >
             {col.title}
             {#if sortable}
               <span
                 aria-hidden="true"
-                style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: 8px; color: {effectiveSort?.key ===
+                style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: var(--iris-font-size-xs, 12px); color: {effectiveSort?.key ===
                 col.key
                   ? 'var(--iris-primary)'
                   : 'var(--iris-muted)'}"
@@ -731,13 +731,13 @@
               ? 'pointer'
               : 'default'}; user-select: {col.sortable
               ? 'none'
-              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: 13px; color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-sm, 13px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
           >
             {col.title}
             {#if col.sortable}
               <span
                 aria-hidden="true"
-                style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: 8px; color: {effectiveSort?.key ===
+                style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: var(--iris-font-size-xs, 12px); color: {effectiveSort?.key ===
                 col.key
                   ? 'var(--iris-primary)'
                   : 'var(--iris-muted)'}"
@@ -964,7 +964,7 @@
               ? ` grid-column-start: ${colTrack(ci)};`
               : ''} padding: {isEditing
               ? '4px'
-              : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable
+              : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: var(--iris-font-size-md, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable
               ? 'cell'
               : 'default'}{cellRange && isInRange(index, ci)
               ? '; background: var(--iris-surface-selected, rgba(99,102,241,0.12))'
@@ -1018,14 +1018,14 @@
                 onclick={(e) => e.stopPropagation()}
                 style="width: 100%; border: 1px solid {editError
                   ? 'var(--iris-danger)'
-                  : 'var(--iris-primary)'}; border-radius: var(--iris-radius-sm, 4px); padding: 4px 6px; font: inherit; background: var(--iris-background); color: var(--iris-foreground); outline: none"
+                  : 'var(--iris-primary)'}; border-radius: var(--iris-radius-sm, 4px); padding: var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px); font: inherit; background: var(--iris-background); color: var(--iris-foreground); outline: none"
               />
               {#if editError}
                 <div
                   id={`${cellId(id, col.key)}-error`}
                   role="alert"
                   data-iris-table-editor-error
-                  style="margin-top: 2px; font-size: 12px; color: var(--iris-danger)"
+                  style="margin-top: var(--iris-space-xxs, 4px); font-size: var(--iris-font-size-xs, 12px); color: var(--iris-danger)"
                 >
                   {editError}
                 </div>

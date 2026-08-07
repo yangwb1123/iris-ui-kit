@@ -107,8 +107,8 @@
       `border: 1px solid ${VARIANT_BORDER[toast.variant]}; ` +
       `border-inline-start: 4px solid ${VARIANT_ACCENT[toast.variant]}; ` +
       'border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-md, 12px); ' +
-      'box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08); ' +
-      'min-width: 280px; font-size: 14px'
+      'box-shadow: var(--iris-shadow-lg); ' +
+      'min-width: 280px; font-size: var(--iris-font-size-md, 14px)'
     )
   }
 
@@ -239,7 +239,9 @@
           <div style="font-weight: 600">{toast.title}</div>
         {/if}
         {#if toast.description}
-          <div style="color: var(--iris-muted); font-size: 13px; margin-top: 2px">
+          <div
+            style="color: var(--iris-muted); font-size: var(--iris-font-size-sm, 13px); margin-top: var(--iris-space-xxs, 4px)"
+          >
             {toast.description}
           </div>
         {/if}
@@ -254,7 +256,7 @@
           }}
           style="background: transparent; border: none; color: {VARIANT_ACCENT[
             toast.variant
-          ]}; font-weight: 600; cursor: pointer; padding: 4px 8px; font-size: 13px; font-family: inherit"
+          ]}; font-weight: 600; cursor: pointer; padding: var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px); font-size: var(--iris-font-size-sm, 13px); font-family: inherit"
         >
           {action.label}
         </button>
@@ -263,7 +265,7 @@
         type="button"
         aria-label={t('toast.dismiss')}
         onclick={() => dismissToast(toast.id)}
-        style="background: transparent; border: none; cursor: pointer; padding: 4px; color: var(--iris-muted); line-height: 1; font-family: inherit; font-size: 16px"
+        style="background: transparent; border: none; cursor: pointer; padding: var(--iris-space-xxs, 4px); color: var(--iris-muted); line-height: 1; font-family: inherit; font-size: var(--iris-font-size-lg, 16px)"
       >
         ×
       </button>

@@ -60,7 +60,7 @@ describe('IrisTextarea', () => {
       mount(IrisTextarea, { props: { size: 'sm' } }).attributes('data-iris-textarea-size'),
     ).toBe('sm')
     expect(mount(IrisTextarea, { props: { size: 'lg' } }).attributes('style')).toContain(
-      'font-size: 16px',
+      'font-size: var(--iris-font-size-lg, 16px)',
     )
   })
 })

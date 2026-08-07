@@ -1735,20 +1735,20 @@ importers:
         specifier: ^1.7.6
         version: 1.7.6
       '@iris-ui-kit/core':
-        specifier: workspace:*
-        version: link:../core
+        specifier: 0.2.0
+        version: 0.2.0
       '@iris-ui-kit/icons':
-        specifier: workspace:*
-        version: link:../icons
+        specifier: 0.2.0
+        version: 0.2.0
       '@iris-ui-kit/skins':
-        specifier: workspace:*
-        version: link:../skins
+        specifier: 0.1.0
+        version: 0.1.0
       '@iris-ui-kit/theme':
-        specifier: workspace:*
-        version: link:../theme
+        specifier: 0.2.0
+        version: 0.2.0
       '@iris-ui-kit/tokens':
-        specifier: workspace:*
-        version: link:../tokens
+        specifier: 0.2.0
+        version: 0.2.0
     devDependencies:
       '@vue/server-renderer':
         specifier: 3.5.34
@@ -2846,6 +2846,21 @@ packages:
 
   '@ioredis/commands@1.10.0':
     resolution: {integrity: sha512-UmeW7z4LfctwoQ5wkhVzgq8tXkreED2xZGpX+Bg+zA+WJFZCT6c062AfCK/Dfk81xZnnwdhJCUMkitihRaoC2Q==}
+
+  '@iris-ui-kit/core@0.2.0':
+    resolution: {integrity: sha512-aIi/1cbzcaI3cz1RpNYtTDmgqMPI4QVxigUSZ+q8xrzfs2E24796hlFTjlWW0TBVNzSED95URXO3OqbIAOqXWA==}
+
+  '@iris-ui-kit/icons@0.2.0':
+    resolution: {integrity: sha512-1N7I1I/lYFuvuStUFI2z3bghB4HjhN6oP0TbOCZSZVMfXGSUYygxF+1yeZuw7m68ybwL+HGs9vRLc+5KZ/8gKQ==}
+
+  '@iris-ui-kit/skins@0.1.0':
+    resolution: {integrity: sha512-ut7Im/PRtXMZlkNpp+yj7MlZcj3kvE75oLVUutw2Cmez7EnzuWa6z9fsjMQlaeKgCgfpRtAWdv5UGhZg7kVOmw==}
+
+  '@iris-ui-kit/theme@0.2.0':
+    resolution: {integrity: sha512-zrhCeod8SXzrVpJkFp60KlqZKMUi83NemUjStAEqO42p2f1pEACgo+EKVZPzOwlYZ5n01Q37A4N4A4sJEWH/7w==}
+
+  '@iris-ui-kit/tokens@0.2.0':
+    resolution: {integrity: sha512-W0jR7jKgfQaBDCN2vZZyTtneFF+bkerHdJ3SH9dAYAUbDeXkVW+Ruc4nrutzgMuQEJb6ehMR27SeuGLmvpjNNQ==}
 
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
@@ -10135,6 +10150,23 @@ snapshots:
       '@types/node': 20.19.41
 
   '@ioredis/commands@1.10.0': {}
+
+  '@iris-ui-kit/core@0.2.0': {}
+
+  '@iris-ui-kit/icons@0.2.0': {}
+
+  '@iris-ui-kit/skins@0.1.0':
+    dependencies:
+      '@iris-ui-kit/core': 0.2.0
+      '@iris-ui-kit/theme': 0.2.0
+      '@iris-ui-kit/tokens': 0.2.0
+
+  '@iris-ui-kit/theme@0.2.0':
+    dependencies:
+      '@iris-ui-kit/core': 0.2.0
+      '@iris-ui-kit/tokens': 0.2.0
+
+  '@iris-ui-kit/tokens@0.2.0': {}
 
   '@isaacs/cliui@8.0.2':
     dependencies:

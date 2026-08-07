@@ -94,7 +94,10 @@ export function IrisCountdown({
       style={{ display: 'flex', flexDirection: 'column', gap: 4, ...style }}
     >
       {title != null ? (
-        <div data-iris-countdown-title="" style={{ fontSize: 13, color: 'var(--iris-muted)' }}>
+        <div
+          data-iris-countdown-title=""
+          style={{ fontSize: 'var(--iris-font-size-sm, 13px)', color: 'var(--iris-muted)' }}
+        >
           {title}
         </div>
       ) : null}

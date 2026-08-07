@@ -140,7 +140,7 @@ export const IrisDropdownMenu = defineComponent({
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-md)',
             padding: 'var(--iris-padding-sm)',
-            boxShadow: '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
+            boxShadow: 'var(--iris-shadow-lg)',
             minWidth: '160px',
             outline: 'none',
             zIndex: '1000',

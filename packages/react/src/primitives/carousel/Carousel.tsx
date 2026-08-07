@@ -39,7 +39,7 @@ const ARROW_BTN: React.CSSProperties = {
   background: 'var(--iris-background)',
   color: 'var(--iris-foreground)',
   cursor: 'pointer',
-  fontSize: 18,
+  fontSize: 'var(--iris-font-size-xl, 18px)',
   lineHeight: 1,
 }
 
@@ -202,7 +202,7 @@ export function IrisCarousel({
           style={{
             display: 'flex',
             justifyContent: 'center',
-            gap: 6,
+            gap: 'var(--iris-space-xs, 8px)',
             marginBlockStart: 8,
           }}
         >

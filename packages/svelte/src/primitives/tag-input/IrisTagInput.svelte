@@ -92,7 +92,7 @@
       display: 'flex',
       'flex-wrap': 'wrap',
       'align-items': 'center',
-      gap: '6px',
+      gap: 'var(--iris-space-xs, 8px)',
       padding: '4px 8px',
       'min-height': '34px',
       background: 'var(--iris-background)',
@@ -108,8 +108,8 @@
     display: 'inline-flex',
     'align-items': 'center',
     gap: '4px',
-    padding: '2px 6px',
-    'font-size': '13px',
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+    'font-size': 'var(--iris-font-size-sm, 13px)',
     background: 'var(--iris-surface)',
     border: '1px solid var(--iris-border)',
     'border-radius': 'var(--iris-radius-sm, 4px)',
@@ -134,7 +134,8 @@
         onclick={() => removeAt(i)}
         style="border: none; background: transparent; color: var(--iris-muted); cursor: {disabled
           ? 'not-allowed'
-          : 'pointer'}; font-size: 14px; line-height: 1; padding: 0;">×</button
+          : 'pointer'}; font-size: var(--iris-font-size-md, 14px); line-height: 1; padding: 0;"
+        >×</button
       >
     </span>
   {/each}
@@ -155,6 +156,6 @@
     onblur={() => {
       focused = false
     }}
-    style="flex: 1; min-width: 80px; border: none; outline: none; background: transparent; color: var(--iris-foreground); font-family: inherit; font-size: 14px; padding: 2px 0;"
+    style="flex: 1; min-width: 80px; border: none; outline: none; background: transparent; color: var(--iris-foreground); font-family: inherit; font-size: var(--iris-font-size-md, 14px); padding: var(--iris-space-xxs, 4px) 0;"
   />
 </div>

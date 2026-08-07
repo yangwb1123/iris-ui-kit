@@ -25,8 +25,8 @@ function detect(text: string, caret: number, prefix: string): Active | null {
 const TEXTAREA_STYLE: Record<string, string> = {
   boxSizing: 'border-box',
   width: '100%',
-  padding: '8px 12px',
-  fontSize: '14px',
+  padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+  fontSize: 'var(--iris-font-size-md, 14px)',
   fontFamily: 'inherit',
   color: 'var(--iris-foreground)',
   background: 'var(--iris-background)',
@@ -50,7 +50,7 @@ const LIST_STYLE: Record<string, string> = {
   background: 'var(--iris-background)',
   border: '1px solid var(--iris-border)',
   borderRadius: 'var(--iris-radius-md, 6px)',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+  boxShadow: 'var(--iris-shadow-lg)',
 }
 
 /**
@@ -210,8 +210,8 @@ export const IrisMentions = defineComponent({
                       },
                       onClick: () => insert(opt),
                       style: {
-                        padding: '6px 10px',
-                        fontSize: '14px',
+                        padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+                        fontSize: 'var(--iris-font-size-md, 14px)',
                         borderRadius: 'var(--iris-radius-sm, 4px)',
                         cursor: 'pointer',
                         background:

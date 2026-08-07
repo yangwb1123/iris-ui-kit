@@ -76,9 +76,6 @@ export function computeProTableColumnWindow<Row>(
 
 /** CSS custom properties the ProTable reads; overridable by the host theme. */
 export const proTableTokens: Record<string, string> = {
-  '--iris-pro-table-border': 'var(--iris-border)',
-  '--iris-pro-table-header-bg': 'var(--iris-surface-hover)',
-  '--iris-pro-table-row-hover': 'var(--iris-surface-hover)',
   '--iris-pro-table-selected-bg': 'var(--iris-primary-subtle)',
   '--iris-pro-table-chip-bg': 'var(--iris-surface-hover)',
 }

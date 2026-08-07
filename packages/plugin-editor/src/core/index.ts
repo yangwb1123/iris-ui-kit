@@ -190,11 +190,9 @@ export function createEditorSettingsStore(initial?: Partial<EditorSettings>): Ed
 
 /** CSS custom properties the editor reads; overridable by the host theme. */
 export const editorTokens: Record<string, string> = {
-  '--iris-editor-bg': '#1e1e1e',
-  '--iris-editor-fg': '#d4d4d4',
-  '--iris-editor-font': "13px/1.6 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
-  '--iris-editor-radius': '8px',
-  '--iris-editor-border': '#33333a',
+  // Consumed by diff-extension.ts (CM6 diff decorations). Editor chrome is
+  // styled by CM6's own theme, so --iris-editor-bg/fg/font/radius/border stay
+  // unregistered (§6c — no dead registrations).
   '--iris-editor-diff-added-bg': 'rgba(40, 160, 80, 0.15)',
   '--iris-editor-diff-removed-bg': 'rgba(220, 60, 60, 0.12)',
 }

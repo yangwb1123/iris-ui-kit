@@ -3,8 +3,14 @@ import * as React from 'react'
 export type IrisKbdSize = 'sm' | 'md'
 
 const SIZE_MAP: Record<IrisKbdSize, { fontSize: string; padding: string }> = {
-  sm: { fontSize: '10px', padding: '2px 5px' },
-  md: { fontSize: '12px', padding: '3px 6px' },
+  sm: {
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+  },
+  md: {
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+  },
 }
 
 export interface IrisKbdProps extends Omit<React.HTMLAttributes<HTMLElement>, 'children'> {
@@ -26,7 +32,7 @@ export function IrisKbd({
   const baseStyle: React.CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 3,
+    gap: 'var(--iris-space-xxs, 4px)',
     fontFamily: 'var(--iris-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace)',
     fontSize: SIZE_MAP[size].fontSize,
     verticalAlign: 'middle',

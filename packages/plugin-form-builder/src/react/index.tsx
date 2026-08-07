@@ -60,7 +60,11 @@ export function IrisFormBuilder({
       <form
         data-iris-form-builder=""
         className={className}
-        style={{ display: 'grid', gap: 'var(--iris-form-gap, 16px)', ...style }}
+        style={{
+          display: 'grid',
+          gap: 'var(--iris-form-gap, var(--iris-space-md, 16px))',
+          ...style,
+        }}
         onSubmit={(e) => {
           e.preventDefault()
           void form.handleSubmit()

@@ -74,7 +74,8 @@ export function IrisPagination(props: IrisPaginationProps): JSX.Element {
   }
 
   const btnSize = (): string => (local.size === 'sm' ? '28px' : '32px')
-  const fontSize = (): string => (local.size === 'sm' ? '12px' : '14px')
+  const fontSize = (): string =>
+    local.size === 'sm' ? 'var(--iris-font-size-xs, 12px)' : 'var(--iris-font-size-md, 14px)'
 
   const baseBtnStyle = (): JSX.CSSProperties => ({
     display: 'inline-flex',

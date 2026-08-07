@@ -204,8 +204,8 @@
       data-iris-carousel-indicators
       style:display="flex"
       style:justify-content="center"
-      style:gap="6px"
-      style:padding="8px 0 4px"
+      style:gap="var(--iris-space-xs, 8px)"
+      style:padding="var(--iris-space-xs, 8px) 0 var(--iris-space-xxs, 4px)"
     >
       {#each Array.from({ length: slideCount }, (_, i) => i) as i (i)}
         <button

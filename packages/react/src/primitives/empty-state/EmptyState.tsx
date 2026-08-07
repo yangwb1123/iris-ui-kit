@@ -41,20 +41,31 @@ export function IrisEmptyState({
       {icon ? (
         <div
           data-iris-empty-state-icon=""
-          style={{ color: 'var(--iris-muted)', fontSize: 32, lineHeight: 1 }}
+          style={{
+            color: 'var(--iris-muted)',
+            fontSize: 'var(--iris-font-size-4xl, 30px)',
+            lineHeight: 1,
+          }}
         >
           {icon}
         </div>
       ) : null}
       {title ? (
-        <div data-iris-empty-state-title="" style={{ fontWeight: 600, fontSize: 16 }}>
+        <div
+          data-iris-empty-state-title=""
+          style={{ fontWeight: 600, fontSize: 'var(--iris-font-size-lg, 16px)' }}
+        >
           {title}
         </div>
       ) : null}
       {description || children ? (
         <div
           data-iris-empty-state-description=""
-          style={{ color: 'var(--iris-muted)', fontSize: 14, maxWidth: 380 }}
+          style={{
+            color: 'var(--iris-muted)',
+            fontSize: 'var(--iris-font-size-md, 14px)',
+            maxWidth: 380,
+          }}
         >
           {description ?? children}
         </div>

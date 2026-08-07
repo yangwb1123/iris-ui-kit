@@ -75,7 +75,7 @@
       background: 'var(--iris-background)',
       'border-radius': '999px',
       transition: 'left 140ms ease',
-      'box-shadow': '0 1px 3px rgba(0, 0, 0, 0.18)',
+      'box-shadow': 'var(--iris-shadow-sm)',
     }),
   )
 </script>

@@ -33,11 +33,11 @@ export function IrisBreadcrumb(props: IrisBreadcrumbProps): JSX.Element {
         style={{
           display: 'inline-flex',
           'align-items': 'center',
-          gap: '6px',
+          gap: 'var(--iris-space-xs, 8px)',
           margin: 0,
           padding: 0,
           'list-style': 'none',
-          'font-size': '14px',
+          'font-size': 'var(--iris-font-size-md, 14px)',
         }}
       >
         <For each={items()}>

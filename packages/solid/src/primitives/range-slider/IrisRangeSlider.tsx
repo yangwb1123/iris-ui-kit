@@ -162,7 +162,7 @@ export function IrisRangeSlider(props: IrisRangeSliderProps): JSX.Element {
       style={{
         position: 'relative',
         width: '100%',
-        padding: '14px 8px',
+        padding: 'var(--iris-space-md, 16px) var(--iris-space-xs, 8px)',
         ...((typeof local.style === 'object' ? local.style : {}) as JSX.CSSProperties),
       }}
     >

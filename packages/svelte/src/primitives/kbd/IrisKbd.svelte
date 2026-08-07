@@ -4,8 +4,14 @@
   type KbdSize = 'sm' | 'md'
 
   const SIZE_MAP: Record<KbdSize, { fontSize: string; padding: string }> = {
-    sm: { fontSize: '10px', padding: '2px 5px' },
-    md: { fontSize: '12px', padding: '3px 6px' },
+    sm: {
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+    },
+    md: {
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+    },
   }
 
   let {
@@ -24,7 +30,7 @@
     styleToString({
       display: 'inline-flex',
       'align-items': 'center',
-      gap: '3px',
+      gap: 'var(--iris-space-xxs, 4px)',
       'font-family':
         'var(--iris-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace)',
       'font-size': sz.fontSize,

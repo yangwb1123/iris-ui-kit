@@ -30,10 +30,18 @@ export interface IrisSegmentedProps {
   className?: string
 }
 
-const SIZE_MAP: Record<IrisSegmentedSize, { padding: string; fontSize: number; height: number }> = {
-  sm: { padding: '2px 8px', fontSize: 12, height: 24 },
-  md: { padding: '4px 12px', fontSize: 14, height: 30 },
-  lg: { padding: '6px 16px', fontSize: 16, height: 36 },
+const SIZE_MAP: Record<IrisSegmentedSize, { padding: string; fontSize: string; height: number }> = {
+  sm: {
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    height: 24,
+  },
+  md: { padding: '4px 12px', fontSize: 'var(--iris-font-size-md, 14px)', height: 30 },
+  lg: {
+    padding: 'var(--iris-padding-sm, 6px) var(--iris-space-md, 16px)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    height: 36,
+  },
 }
 
 const normalize = (options: Array<IrisSegmentedOption | string>): IrisSegmentedOption[] =>
@@ -137,8 +145,8 @@ export function IrisSegmented({
       style={{
         display: block ? 'flex' : 'inline-flex',
         width: block ? '100%' : undefined,
-        gap: 2,
-        padding: 2,
+        gap: 'var(--iris-space-xxs, 4px)',
+        padding: 'var(--iris-space-xxs, 4px)',
         background: 'var(--iris-surface)',
         borderRadius: 'var(--iris-radius-md, 6px)',
         opacity: disabled ? 0.6 : 1,

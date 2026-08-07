@@ -125,7 +125,7 @@ export const IrisAlert = defineComponent({
                     border: 'none',
                     cursor: 'pointer',
                     color: 'var(--iris-muted)',
-                    fontSize: '16px',
+                    fontSize: 'var(--iris-font-size-lg, 16px)',
                     padding: '0',
                     lineHeight: '1',
                     flexShrink: '0',

@@ -3,9 +3,9 @@ import { mergeProps, Show, splitProps, type JSX } from 'solid-js'
 export type IrisResultStatus = 'success' | 'error' | 'info' | 'warning'
 
 const STATUS: Record<IrisResultStatus, { color: string; glyph: string }> = {
-  success: { color: 'var(--iris-success, #16a34a)', glyph: '✓' },
+  success: { color: 'var(--iris-success, #10b981)', glyph: '✓' },
   error: { color: 'var(--iris-danger)', glyph: '✕' },
-  info: { color: 'var(--iris-info, #0ea5e9)', glyph: 'i' },
+  info: { color: 'var(--iris-info, #3b82f6)', glyph: 'i' },
   warning: { color: 'var(--iris-warning, #f59e0b)', glyph: '!' },
 }
 
@@ -62,9 +62,9 @@ export function IrisResult(props: IrisResultProps): JSX.Element {
           display: 'inline-flex',
           'align-items': 'center',
           'justify-content': 'center',
-          'font-size': '30px',
+          'font-size': 'var(--iris-font-size-4xl, 30px)',
           'font-weight': '700',
-          color: '#fff',
+          color: 'var(--iris-primary-foreground, #fff)',
           background: s().color,
           'margin-block-end': '8px',
         }}
@@ -74,7 +74,11 @@ export function IrisResult(props: IrisResultProps): JSX.Element {
       <Show when={local.title != null}>
         <div
           data-iris-result-title=""
-          style={{ 'font-size': '20px', 'font-weight': '600', color: 'var(--iris-foreground)' }}
+          style={{
+            'font-size': 'var(--iris-font-size-2xl, 20px)',
+            'font-weight': '600',
+            color: 'var(--iris-foreground)',
+          }}
         >
           {local.title}
         </div>
@@ -82,7 +86,11 @@ export function IrisResult(props: IrisResultProps): JSX.Element {
       <Show when={local.subtitle != null}>
         <div
           data-iris-result-subtitle=""
-          style={{ 'font-size': '14px', color: 'var(--iris-muted)', 'max-width': '480px' }}
+          style={{
+            'font-size': 'var(--iris-font-size-md, 14px)',
+            color: 'var(--iris-muted)',
+            'max-width': '480px',
+          }}
         >
           {local.subtitle}
         </div>

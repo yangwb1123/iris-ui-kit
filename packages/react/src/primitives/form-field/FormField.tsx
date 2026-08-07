@@ -103,7 +103,7 @@ export const IrisFormField = React.forwardRef<HTMLDivElement, IrisFormFieldProps
           <div
             id={hintId}
             data-iris-form-field-hint=""
-            style={{ fontSize: 12, color: 'var(--iris-muted)' }}
+            style={{ fontSize: 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-muted)' }}
           >
             {hint}
           </div>
@@ -113,7 +113,7 @@ export const IrisFormField = React.forwardRef<HTMLDivElement, IrisFormFieldProps
             id={errorId}
             data-iris-form-field-error=""
             role="alert"
-            style={{ fontSize: 12, color: 'var(--iris-danger)' }}
+            style={{ fontSize: 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-danger)' }}
           >
             {error}
           </div>

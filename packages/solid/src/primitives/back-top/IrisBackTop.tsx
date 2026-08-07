@@ -89,11 +89,11 @@ export function IrisBackTop(props: IrisBackTopProps): JSX.Element {
           background: 'var(--iris-surface, var(--iris-background))',
           color: 'var(--iris-foreground)',
           cursor: 'pointer',
-          'box-shadow': '0 4px 12px rgba(0,0,0,0.15)',
+          'box-shadow': 'var(--iris-shadow-md)',
           display: 'inline-flex',
           'align-items': 'center',
           'justify-content': 'center',
-          'font-size': '18px',
+          'font-size': 'var(--iris-font-size-xl, 18px)',
           ...((typeof local.style === 'object' ? local.style : {}) as JSX.CSSProperties),
         }}
       >

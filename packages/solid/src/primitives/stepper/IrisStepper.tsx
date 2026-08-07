@@ -105,7 +105,7 @@ export function IrisStepper(props: IrisStepperProps): JSX.Element {
 const STATUS_COLOR: Record<IrisStepStatus, string> = {
   pending: 'var(--iris-muted)',
   active: 'var(--iris-primary)',
-  completed: 'var(--iris-success, #16a34a)',
+  completed: 'var(--iris-success, #10b981)',
   error: 'var(--iris-danger)',
 }
 
@@ -162,7 +162,7 @@ export function IrisStepperStep(props: IrisStepperStepProps): JSX.Element {
         background: s() === 'completed' ? color() : 'var(--iris-background)',
         color: s() === 'completed' ? 'var(--iris-primary-foreground, #fff)' : color(),
         border: `2px solid ${color()}`,
-        'font-size': '13px',
+        'font-size': 'var(--iris-font-size-sm, 13px)',
         'font-weight': '600',
         'line-height': '1',
         transition: 'background-color 120ms ease, color 120ms ease, border-color 120ms ease',
@@ -208,7 +208,7 @@ export function IrisStepperStep(props: IrisStepperStepProps): JSX.Element {
           <div
             data-iris-stepper-title=""
             style={{
-              'font-size': '13px',
+              'font-size': 'var(--iris-font-size-sm, 13px)',
               'font-weight': s() === 'active' ? '600' : '500',
               color: s() === 'pending' ? 'var(--iris-muted)' : 'var(--iris-foreground)',
             }}
@@ -219,7 +219,7 @@ export function IrisStepperStep(props: IrisStepperStepProps): JSX.Element {
         {local.description && (
           <div
             data-iris-stepper-description=""
-            style={{ 'font-size': '12px', color: 'var(--iris-muted)' }}
+            style={{ 'font-size': 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-muted)' }}
           >
             {local.description}
           </div>

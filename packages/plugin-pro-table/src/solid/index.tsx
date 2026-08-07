@@ -10,6 +10,7 @@ import {
   type ProTableViewOptions,
 } from '../core'
 import { pinnedStyle } from './style'
+const SBG = 'var(--iris-pro-table-selected-bg, var(--iris-surface-selected, #eef2ff))'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
 
@@ -128,10 +129,11 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
     const key = props.store.rowKeyOf(row)
     const treeRow = treeRowMap()?.get(key)
     const depth = treeRow?.depth ?? 0
+    const sel = props.store.isSelected(key)
     const hasChildren = treeRow?.hasChildren ?? false
     const expanded = treeRow?.expanded ?? false
     return (
-      <tr data-selected={props.store.isSelected(key) ? '' : undefined}>
+      <tr style={sel ? { background: SBG } : undefined}>
         <td style={depth > 0 ? { 'padding-inline-start': `${depth * 24}px` } : undefined}>
           <Show when={hasChildren}>
             <button
@@ -262,7 +264,7 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                             sortableState().activeId &&
                             sortableState().overId === cell.column.key &&
                             sortableState().activeId !== cell.column.key
-                              ? '2px solid var(--iris-primary, #2563eb)'
+                              ? '2px solid var(--iris-primary, #6366f1)'
                               : undefined,
                           'outline-offset': '-2px',
                           ...pinnedStyle(cell.column),
@@ -446,8 +448,8 @@ export function IrisProTable<Row extends Record<string, unknown>>(props: IrisPro
                     display: 'inline-flex',
                     'align-items': 'center',
                     gap: '0.25rem',
-                    padding: '0.125rem 0.5rem',
-                    background: 'var(--iris-pro-table-chip-bg)',
+                    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                    background: 'var(--iris-pro-table-chip-bg, var(--iris-surface-hover, #f1f5f9))',
                     'border-radius': '9999px',
                   }}
                 >

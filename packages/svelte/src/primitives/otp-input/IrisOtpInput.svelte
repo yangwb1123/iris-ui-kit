@@ -44,9 +44,9 @@
   }: Props = $props()
 
   const SIZE_MAP: Record<OtpSize, { box: string; height: string; fontSize: string }> = {
-    sm: { box: '32px', height: '36px', fontSize: '14px' },
-    md: { box: '38px', height: '44px', fontSize: '18px' },
-    lg: { box: '44px', height: '52px', fontSize: '20px' },
+    sm: { box: '32px', height: '36px', fontSize: 'var(--iris-font-size-md, 14px)' },
+    md: { box: '38px', height: '44px', fontSize: 'var(--iris-font-size-xl, 18px)' },
+    lg: { box: '44px', height: '52px', fontSize: 'var(--iris-font-size-2xl, 20px)' },
   }
 
   const PATTERNS: Record<OtpType, RegExp> = {

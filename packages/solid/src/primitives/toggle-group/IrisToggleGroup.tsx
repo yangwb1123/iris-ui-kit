@@ -177,9 +177,9 @@ const SIZE_PADDING: Record<'sm' | 'md' | 'lg', string> = {
   lg: '8px 18px',
 }
 const SIZE_FONT: Record<'sm' | 'md' | 'lg', string> = {
-  sm: '12px',
-  md: '13px',
-  lg: '14px',
+  sm: 'var(--iris-font-size-xs, 12px)',
+  md: 'var(--iris-font-size-sm, 13px)',
+  lg: 'var(--iris-font-size-md, 14px)',
 }
 
 export interface IrisToggleGroupItemProps {
@@ -260,7 +260,7 @@ export function IrisToggleGroupItem(props: IrisToggleGroupItemProps): JSX.Elemen
         display: 'inline-flex',
         'align-items': 'center',
         'justify-content': 'center',
-        gap: '6px',
+        gap: 'var(--iris-space-xs, 8px)',
         padding: SIZE_PADDING[ctx.size],
         'font-size': SIZE_FONT[ctx.size],
         'font-family': 'inherit',

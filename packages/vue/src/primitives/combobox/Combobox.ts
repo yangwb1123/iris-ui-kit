@@ -11,9 +11,21 @@ export interface IrisComboboxOption {
 
 const SIZE_MAP: Record<IrisComboboxSize, { padding: string; fontSize: string; minHeight: string }> =
   {
-    sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
-    md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
-    lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      minHeight: '28px',
+    },
+    md: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      minHeight: '34px',
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      minHeight: '40px',
+    },
   }
 
 /**
@@ -248,7 +260,7 @@ export const IrisCombobox = defineComponent({
                     background: 'var(--iris-background)',
                     border: '1px solid var(--iris-border)',
                     borderRadius: 'var(--iris-radius-md, 6px)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    boxShadow: 'var(--iris-shadow-lg)',
                   },
                 },
                 list.length === 0
@@ -259,7 +271,7 @@ export const IrisCombobox = defineComponent({
                           'data-iris-combobox-empty': '',
                           'aria-disabled': 'true',
                           style: {
-                            padding: '6px 10px',
+                            padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
                             color: 'var(--iris-muted)',
                             fontSize: sz.fontSize,
                           },
@@ -286,7 +298,7 @@ export const IrisCombobox = defineComponent({
                           },
                           onClick: () => selectOption(opt),
                           style: {
-                            padding: '6px 10px',
+                            padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
                             fontSize: sz.fontSize,
                             borderRadius: 'var(--iris-radius-sm, 4px)',
                             cursor: opt.disabled ? 'not-allowed' : 'pointer',

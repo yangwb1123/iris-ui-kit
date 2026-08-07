@@ -76,7 +76,7 @@
         ? color
         : 'var(--iris-background)'}; color:{status === 'completed'
         ? 'var(--iris-primary-foreground,#fff)'
-        : color}; border:2px solid {color}; font-size:13px; font-weight:600; line-height:1; transition:background-color 120ms ease,color 120ms ease,border-color 120ms ease;"
+        : color}; border:2px solid {color}; font-size:var(--iris-font-size-sm, 13px); font-weight:600; line-height:1; transition:background-color 120ms ease,color 120ms ease,border-color 120ms ease;"
     >
       {status === 'completed' ? '✓' : status === 'error' ? '!' : String(index + 1)}
     </span>
@@ -84,7 +84,7 @@
       {#if title || titleSnippet}
         <div
           data-iris-stepper-title
-          style="font-size:13px; font-weight:{status === 'active'
+          style="font-size:var(--iris-font-size-sm, 13px); font-weight:{status === 'active'
             ? '600'
             : '500'}; color:{status === 'pending'
             ? 'var(--iris-muted)'
@@ -94,7 +94,10 @@
         </div>
       {/if}
       {#if description || descriptionSnippet}
-        <div data-iris-stepper-description style="font-size:12px; color:var(--iris-muted);">
+        <div
+          data-iris-stepper-description
+          style="font-size:var(--iris-font-size-xs, 12px); color:var(--iris-muted);"
+        >
           {#if descriptionSnippet}{@render descriptionSnippet()}{:else}{description}{/if}
         </div>
       {/if}

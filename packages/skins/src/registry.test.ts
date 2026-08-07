@@ -9,7 +9,10 @@ describe('createSkinRegistry', () => {
     expect(reg.has('dark')).toBe(true)
     const dark = reg.resolve('dark')
     expect(dark.type).toBe('dark')
-    expect(Object.keys(dark.theme.colors).length).toBe(22)
+    // 键数与 tokens 包定义同步（刻度扩展：font 家族 + on.color/warning.foreground）
+    expect(Object.keys(dark.theme.colors).length).toBeGreaterThanOrEqual(40)
+    expect(Object.keys(dark.theme.colors)).toContain('iris.font.size.4xl')
+    expect(Object.keys(dark.theme.colors)).toContain('iris.on.color')
   })
 
   it('resolves a partial skin that extends a builtin', () => {

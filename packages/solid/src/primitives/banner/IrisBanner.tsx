@@ -97,7 +97,7 @@ export function IrisBanner(props: IrisBannerProps): JSX.Element {
               border: 'none',
               cursor: 'pointer',
               color: 'var(--iris-muted)',
-              'font-size': '16px',
+              'font-size': 'var(--iris-font-size-lg, 16px)',
               padding: '0 4px',
               'line-height': '1',
               'flex-shrink': '0',

@@ -32,7 +32,7 @@ export function badgeStyle(
     'font-weight': 500,
     'line-height': 1,
     'white-space': 'nowrap',
-    'font-size': size === 'sm' ? '11px' : '12px',
+    'font-size': 'var(--iris-font-size-xs, 12px)',
     padding: size === 'sm' ? '2px 6px' : '3px 8px',
   }
   if (variant === 'solid')

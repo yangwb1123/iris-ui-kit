@@ -66,7 +66,7 @@ export function IrisDashboardTemplate(props: IrisDashboardTemplateProps): JSX.El
         <div
           style={{
             padding: '8px 12px',
-            'font-size': '14px',
+            'font-size': 'var(--iris-font-size-md, 14px)',
             'font-weight': '600',
             color: 'var(--iris-foreground)',
             opacity: state.collapsed ? '0' : '1',
@@ -78,7 +78,10 @@ export function IrisDashboardTemplate(props: IrisDashboardTemplateProps): JSX.El
           {local.sidebarTitle}
         </div>
       </Show>
-      <nav aria-label="Primary" style={{ display: 'flex', 'flex-direction': 'column', gap: '2px' }}>
+      <nav
+        aria-label="Primary"
+        style={{ display: 'flex', 'flex-direction': 'column', gap: 'var(--iris-space-xxs, 4px)' }}
+      >
         <For each={local.nav}>
           {(item) => {
             const isActive = () => item.id === local.activeId
@@ -91,7 +94,7 @@ export function IrisDashboardTemplate(props: IrisDashboardTemplateProps): JSX.El
                 style={{
                   display: 'flex',
                   'align-items': 'center',
-                  gap: '10px',
+                  gap: 'var(--iris-space-sm, 12px)',
                   padding: '8px 12px',
                   background: isActive() ? 'var(--iris-primary)' : 'transparent',
                   color: isActive()
@@ -100,7 +103,7 @@ export function IrisDashboardTemplate(props: IrisDashboardTemplateProps): JSX.El
                   border: 'none',
                   'border-radius': 'var(--iris-radius-sm, 4px)',
                   cursor: 'pointer',
-                  'font-size': '14px',
+                  'font-size': 'var(--iris-font-size-md, 14px)',
                   'font-family': 'inherit',
                   'text-align': 'start',
                   outline: 'none',
@@ -134,7 +137,13 @@ export function IrisDashboardTemplate(props: IrisDashboardTemplateProps): JSX.El
   const mainContent = (
     <IrisHeaderLayout
       header={
-        <div style={{ padding: '12px 20px', 'font-size': '16px', 'font-weight': '600' }}>
+        <div
+          style={{
+            padding: '12px 20px',
+            'font-size': 'var(--iris-font-size-lg, 16px)',
+            'font-weight': '600',
+          }}
+        >
           {local.title}
         </div>
       }
@@ -152,7 +161,7 @@ export function IrisDashboardTemplate(props: IrisDashboardTemplateProps): JSX.El
                   <h3
                     style={{
                       margin: '0 0 8px 0',
-                      'font-size': '14px',
+                      'font-size': 'var(--iris-font-size-md, 14px)',
                       'font-weight': '600',
                       color: 'var(--iris-foreground)',
                     }}
@@ -160,7 +169,12 @@ export function IrisDashboardTemplate(props: IrisDashboardTemplateProps): JSX.El
                     {card.title}
                   </h3>
                   <Show when={card.body}>
-                    <div style={{ 'font-size': '13px', color: 'var(--iris-muted)' }}>
+                    <div
+                      style={{
+                        'font-size': 'var(--iris-font-size-sm, 13px)',
+                        color: 'var(--iris-muted)',
+                      }}
+                    >
                       {card.body}
                     </div>
                   </Show>

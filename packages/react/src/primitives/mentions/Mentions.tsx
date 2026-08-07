@@ -172,7 +172,7 @@ export function IrisMentions({
           boxSizing: 'border-box',
           width: '100%',
           padding: '8px 12px',
-          fontSize: 14,
+          fontSize: 'var(--iris-font-size-md, 14px)',
           fontFamily: 'inherit',
           color: 'var(--iris-foreground)',
           background: 'var(--iris-background)',
@@ -202,7 +202,7 @@ export function IrisMentions({
             background: 'var(--iris-background)',
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-md, 6px)',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            boxShadow: 'var(--iris-shadow-lg)',
           }}
         >
           {filtered.map((opt, i) => (
@@ -217,8 +217,8 @@ export function IrisMentions({
               onMouseEnter={() => setActiveIndex(i)}
               onClick={() => insert(opt)}
               style={{
-                padding: '6px 10px',
-                fontSize: 14,
+                padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
                 borderRadius: 'var(--iris-radius-sm, 4px)',
                 cursor: 'pointer',
                 background:

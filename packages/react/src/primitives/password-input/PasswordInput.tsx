@@ -39,8 +39,8 @@ export const IrisPasswordInput = React.forwardRef<HTMLInputElement, IrisPassword
           border: 'none',
           cursor: disabled ? 'not-allowed' : 'pointer',
           color: 'var(--iris-muted)',
-          padding: '0 2px',
-          fontSize: 13,
+          padding: '0 var(--iris-space-xxs, 4px)',
+          fontSize: 'var(--iris-font-size-sm, 13px)',
           lineHeight: 1,
         }}
       >

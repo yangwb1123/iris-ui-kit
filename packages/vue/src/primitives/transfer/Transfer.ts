@@ -98,7 +98,7 @@ export const IrisTransfer = defineComponent({
       background: 'var(--iris-background)',
       color: 'var(--iris-foreground)',
       cursor: 'pointer',
-      fontSize: '16px',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
       lineHeight: '1',
     }
 
@@ -131,10 +131,10 @@ export const IrisTransfer = defineComponent({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '8px',
-              padding: '6px 10px',
+              gap: 'var(--iris-space-xs, 8px)',
+              padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
               borderBlockEnd: '1px solid var(--iris-border)',
-              fontSize: '13px',
+              fontSize: 'var(--iris-font-size-sm, 13px)',
               fontWeight: '500',
             },
           },
@@ -142,7 +142,12 @@ export const IrisTransfer = defineComponent({
             h(
               'label',
               {
-                style: { display: 'inline-flex', alignItems: 'center', gap: '6px', minWidth: '0' },
+                style: {
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 'var(--iris-space-xs, 8px)',
+                  minWidth: '0',
+                },
               },
               [
                 h('input', {
@@ -162,7 +167,7 @@ export const IrisTransfer = defineComponent({
               'span',
               {
                 'data-iris-transfer-count': '',
-                style: { color: 'var(--iris-muted)', fontSize: '12px' },
+                style: { color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-xs, 12px)' },
               },
               `${checkedCount}/${items.length}`,
             ),
@@ -180,9 +185,9 @@ export const IrisTransfer = defineComponent({
                 queryRef.value = (e.target as HTMLInputElement).value
               },
               style: {
-                margin: '8px',
-                padding: '4px 8px',
-                fontSize: '13px',
+                margin: 'var(--iris-space-xs, 8px)',
+                padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                fontSize: 'var(--iris-font-size-sm, 13px)',
                 border: '1px solid var(--iris-border)',
                 borderRadius: 'var(--iris-radius-sm, 4px)',
                 background: 'var(--iris-background)',
@@ -211,9 +216,9 @@ export const IrisTransfer = defineComponent({
                   {
                     'data-iris-transfer-empty': '',
                     style: {
-                      padding: '8px 10px',
+                      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
                       color: 'var(--iris-muted)',
-                      fontSize: '13px',
+                      fontSize: 'var(--iris-font-size-sm, 13px)',
                       textAlign: 'center',
                     },
                   },
@@ -229,11 +234,11 @@ export const IrisTransfer = defineComponent({
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
-                        padding: '4px 8px',
+                        padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
                         borderRadius: 'var(--iris-radius-sm, 4px)',
                         cursor: o.disabled ? 'not-allowed' : 'pointer',
                         opacity: o.disabled ? '0.5' : '1',
-                        fontSize: '14px',
+                        fontSize: 'var(--iris-font-size-md, 14px)',
                       },
                     },
                     [

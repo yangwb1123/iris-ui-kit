@@ -26,7 +26,7 @@ interface Rect {
 
 const btnBase: JSX.CSSProperties = {
   padding: '4px 12px',
-  'font-size': '13px',
+  'font-size': 'var(--iris-font-size-sm, 13px)',
   'border-radius': 'var(--iris-radius-sm, 4px)',
   cursor: 'pointer',
 }
@@ -40,7 +40,7 @@ const btnPrimary: JSX.CSSProperties = {
   ...btnBase,
   border: 'none',
   background: 'var(--iris-primary)',
-  color: '#fff',
+  color: 'var(--iris-primary-foreground, #fff)',
 }
 
 export interface IrisTourProps {
@@ -194,7 +194,7 @@ export function IrisTour(props: IrisTourProps): JSX.Element {
                 background: 'var(--iris-background)',
                 border: '1px solid var(--iris-border)',
                 'border-radius': 'var(--iris-radius-md, 6px)',
-                'box-shadow': '0 8px 24px rgba(0,0,0,0.18)',
+                'box-shadow': 'var(--iris-shadow-lg)',
                 ...cardPos(),
               }}
             >
@@ -210,7 +210,7 @@ export function IrisTour(props: IrisTourProps): JSX.Element {
                 <div
                   data-iris-tour-description=""
                   style={{
-                    'font-size': '14px',
+                    'font-size': 'var(--iris-font-size-md, 14px)',
                     color: 'var(--iris-foreground)',
                     'margin-block-end': '12px',
                   }}
@@ -228,7 +228,10 @@ export function IrisTour(props: IrisTourProps): JSX.Element {
               >
                 <span
                   data-iris-tour-indicator=""
-                  style={{ 'font-size': '12px', color: 'var(--iris-muted)' }}
+                  style={{
+                    'font-size': 'var(--iris-font-size-xs, 12px)',
+                    color: 'var(--iris-muted)',
+                  }}
                 >
                   {current() + 1} / {total()}
                 </span>

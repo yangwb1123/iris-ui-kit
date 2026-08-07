@@ -65,7 +65,7 @@ export const IrisStepperStep = defineComponent({
             background: s === 'completed' ? color : 'var(--iris-background)',
             color: s === 'completed' ? 'var(--iris-primary-foreground, #fff)' : color,
             border: `2px solid ${color}`,
-            fontSize: '13px',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
             fontWeight: '600',
             lineHeight: '1',
             transition: 'background-color 120ms ease, color 120ms ease, border-color 120ms ease',
@@ -81,7 +81,7 @@ export const IrisStepperStep = defineComponent({
               {
                 'data-iris-stepper-title': '',
                 style: {
-                  fontSize: '13px',
+                  fontSize: 'var(--iris-font-size-sm, 13px)',
                   fontWeight: s === 'active' ? '600' : '500',
                   color: s === 'pending' ? 'var(--iris-muted)' : 'var(--iris-foreground)',
                 },
@@ -96,7 +96,7 @@ export const IrisStepperStep = defineComponent({
               'div',
               {
                 'data-iris-stepper-description': '',
-                style: { fontSize: '12px', color: 'var(--iris-muted)' },
+                style: { fontSize: 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-muted)' },
               },
               slots.description?.() ?? props.description,
             )

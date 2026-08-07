@@ -148,7 +148,7 @@ export const IrisSparkline = defineComponent({
   },
   setup(props) {
     return () => {
-      const box = plotBox({ width: props.width, height: props.height, padding: 2 })
+      const box = plotBox({ width: props.width, height: props.height, padding: 4 })
       const domain = dataDomain(props.data)
       const points = seriesPoints(props.data, domain, box)
 

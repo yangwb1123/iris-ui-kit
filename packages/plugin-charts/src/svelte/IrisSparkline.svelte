@@ -17,7 +17,7 @@
     style?: string
   } = $props()
 
-  const box = $derived(plotBox({ width, height, padding: 2 } satisfies ChartDimensions))
+  const box = $derived(plotBox({ width, height, padding: 4 } satisfies ChartDimensions))
   const domain = $derived(dataDomain(data))
   const points = $derived(seriesPoints(data, domain, box))
 </script>

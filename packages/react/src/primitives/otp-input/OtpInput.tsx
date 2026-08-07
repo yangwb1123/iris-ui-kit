@@ -32,10 +32,10 @@ export interface IrisOtpInputProps {
   className?: string
 }
 
-const SIZE_MAP: Record<IrisOtpInputSize, { box: number; height: number; fontSize: number }> = {
-  sm: { box: 32, height: 36, fontSize: 14 },
-  md: { box: 38, height: 44, fontSize: 18 },
-  lg: { box: 44, height: 52, fontSize: 20 },
+const SIZE_MAP: Record<IrisOtpInputSize, { box: number; height: number; fontSize: string }> = {
+  sm: { box: 32, height: 36, fontSize: 'var(--iris-font-size-md, 14px)' },
+  md: { box: 38, height: 44, fontSize: 'var(--iris-font-size-xl, 18px)' },
+  lg: { box: 44, height: 52, fontSize: 'var(--iris-font-size-2xl, 20px)' },
 }
 
 const PATTERNS: Record<IrisOtpInputType, RegExp> = {

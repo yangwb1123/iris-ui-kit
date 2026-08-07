@@ -237,10 +237,9 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
                 'border-inline-start': `4px solid ${VARIANT_ACCENT[toast.variant]}`,
                 'border-radius': 'var(--iris-radius-md, 6px)',
                 padding: 'var(--iris-padding-md, 12px)',
-                'box-shadow':
-                  '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
+                'box-shadow': 'var(--iris-shadow-lg)',
                 'min-width': '280px',
-                'font-size': '14px',
+                'font-size': 'var(--iris-font-size-md, 14px)',
               }}
             >
               <div style={{ flex: '1', 'min-width': '0' }}>
@@ -249,7 +248,11 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
                 </Show>
                 <Show when={toast.description}>
                   <div
-                    style={{ color: 'var(--iris-muted)', 'font-size': '13px', 'margin-top': '2px' }}
+                    style={{
+                      color: 'var(--iris-muted)',
+                      'font-size': 'var(--iris-font-size-sm, 13px)',
+                      'margin-top': '2px',
+                    }}
                   >
                     {toast.description}
                   </div>
@@ -270,7 +273,7 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
                       'font-weight': '600',
                       cursor: 'pointer',
                       padding: '4px 8px',
-                      'font-size': '13px',
+                      'font-size': 'var(--iris-font-size-sm, 13px)',
                       'font-family': 'inherit',
                     }}
                   >
@@ -290,7 +293,7 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
                   color: 'var(--iris-muted)',
                   'line-height': '1',
                   'font-family': 'inherit',
-                  'font-size': '16px',
+                  'font-size': 'var(--iris-font-size-lg, 16px)',
                 }}
               >
                 ×

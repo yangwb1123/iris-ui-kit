@@ -138,8 +138,8 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
           display: 'flex',
           'align-items': 'center',
           'justify-content': 'space-between',
-          padding: '6px 12px',
-          'font-size': '14px',
+          padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+          'font-size': 'var(--iris-font-size-md, 14px)',
           'border-radius': 'var(--iris-radius-sm, 4px)',
           cursor: props.disabled ? 'not-allowed' : 'pointer',
           color: props.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
@@ -147,7 +147,10 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
         }}
       >
         <span>{props.label}</span>
-        <span aria-hidden="true" style={{ 'font-size': '10px', opacity: '0.7' }}>
+        <span
+          aria-hidden="true"
+          style={{ 'font-size': 'var(--iris-font-size-xs, 12px)', opacity: '0.7' }}
+        >
           ▶
         </span>
       </div>
@@ -168,7 +171,7 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
             border: '1px solid var(--iris-border)',
             'border-radius': 'var(--iris-radius-md, 6px)',
             padding: 'var(--iris-padding-sm, 4px)',
-            'box-shadow': '0 8px 24px -8px rgba(0,0,0,0.16)',
+            'box-shadow': 'var(--iris-shadow-lg)',
             'min-width': '140px',
             outline: 'none',
             'z-index': 1001,

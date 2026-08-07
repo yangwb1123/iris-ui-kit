@@ -42,9 +42,21 @@ export const IrisTextarea = defineComponent({
         IrisTextareaSize,
         { padding: string; fontSize: string; lineHeight: string }
       > = {
-        sm: { padding: '6px var(--iris-padding-sm)', fontSize: '12px', lineHeight: '1.5' },
-        md: { padding: '8px var(--iris-padding-md)', fontSize: '14px', lineHeight: '1.5' },
-        lg: { padding: '10px var(--iris-padding-md)', fontSize: '16px', lineHeight: '1.5' },
+        sm: {
+          padding: 'var(--iris-space-xs, 8px) var(--iris-padding-sm)',
+          fontSize: 'var(--iris-font-size-xs, 12px)',
+          lineHeight: '1.5',
+        },
+        md: {
+          padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+          fontSize: 'var(--iris-font-size-md, 14px)',
+          lineHeight: '1.5',
+        },
+        lg: {
+          padding: 'var(--iris-space-sm, 12px) var(--iris-padding-md)',
+          fontSize: 'var(--iris-font-size-lg, 16px)',
+          lineHeight: '1.5',
+        },
       }
       return map[props.size]
     })

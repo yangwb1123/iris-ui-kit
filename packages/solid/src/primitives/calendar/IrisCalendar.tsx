@@ -240,7 +240,7 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
         <div
           data-iris-calendar-title=""
           aria-live="polite"
-          style={{ 'font-weight': '600', 'font-size': '14px' }}
+          style={{ 'font-weight': '600', 'font-size': 'var(--iris-font-size-md, 14px)' }}
         >
           {title()}
         </div>
@@ -267,15 +267,15 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
         style={{
           display: 'grid',
           'grid-template-columns': 'repeat(7, minmax(0, 1fr))',
-          gap: '2px',
-          'font-size': '12px',
+          gap: 'var(--iris-space-xxs, 4px)',
+          'font-size': 'var(--iris-font-size-xs, 12px)',
           color: 'var(--iris-muted)',
           'text-align': 'center',
         }}
       >
         <For each={weekdays()}>
           {(name) => (
-            <div role="columnheader" style={{ padding: '2px 0' }}>
+            <div role="columnheader" style={{ padding: 'var(--iris-space-xxs, 4px) 0' }}>
               {name}
             </div>
           )}
@@ -291,7 +291,7 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
         style={{
           display: 'grid',
           'grid-template-columns': 'repeat(7, minmax(0, 1fr))',
-          gap: '2px',
+          gap: 'var(--iris-space-xxs, 4px)',
         }}
       >
         <For each={matrix()}>
@@ -358,7 +358,7 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
                         'border-radius': 'var(--iris-radius-sm, 4px)',
                         cursor: isDisabled() ? 'not-allowed' : 'pointer',
                         opacity: isDisabled() ? '0.45' : '1',
-                        'font-size': '13px',
+                        'font-size': 'var(--iris-font-size-sm, 13px)',
                         'font-family': 'inherit',
                         outline: 'none',
                       }}

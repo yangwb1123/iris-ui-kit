@@ -3,8 +3,14 @@ import { computed, defineComponent, h, type PropType } from 'vue'
 export type IrisKbdSize = 'sm' | 'md'
 
 const SIZE_MAP: Record<IrisKbdSize, { fontSize: string; padding: string }> = {
-  sm: { fontSize: '10px', padding: '2px 5px' },
-  md: { fontSize: '12px', padding: '3px 6px' },
+  sm: {
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+  },
+  md: {
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+  },
 }
 
 /**
@@ -35,7 +41,7 @@ export const IrisKbd = defineComponent({
     const baseStyle: Record<string, string> = {
       display: 'inline-flex',
       alignItems: 'center',
-      gap: '3px',
+      gap: 'var(--iris-space-xxs, 4px)',
       fontFamily: 'var(--iris-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace)',
       fontSize: SIZE_MAP[props.size].fontSize,
       verticalAlign: 'middle',

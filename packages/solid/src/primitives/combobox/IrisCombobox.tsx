@@ -11,9 +11,13 @@ export interface IrisComboboxOption {
 
 const SIZE_MAP: Record<IrisComboboxSize, { padding: string; fontSize: string; minHeight: string }> =
   {
-    sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
-    md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
-    lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
+    sm: { padding: '4px 8px', fontSize: 'var(--iris-font-size-xs, 12px)', minHeight: '28px' },
+    md: {
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      minHeight: '34px',
+    },
+    lg: { padding: '8px 12px', fontSize: 'var(--iris-font-size-lg, 16px)', minHeight: '40px' },
   }
 
 export interface IrisComboboxProps {
@@ -214,7 +218,7 @@ export function IrisCombobox(props: IrisComboboxProps): JSX.Element {
             background: 'var(--iris-background)',
             border: '1px solid var(--iris-border)',
             'border-radius': 'var(--iris-radius-md, 6px)',
-            'box-shadow': '0 8px 24px rgba(0,0,0,0.12)',
+            'box-shadow': 'var(--iris-shadow-lg)',
           }}
         >
           <Show
@@ -224,7 +228,7 @@ export function IrisCombobox(props: IrisComboboxProps): JSX.Element {
                 data-iris-combobox-empty=""
                 aria-disabled="true"
                 style={{
-                  padding: '6px 10px',
+                  padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
                   color: 'var(--iris-muted)',
                   'font-size': sz().fontSize,
                 }}
@@ -250,7 +254,7 @@ export function IrisCombobox(props: IrisComboboxProps): JSX.Element {
                     onMouseEnter={() => setActiveIndex(i)}
                     onClick={() => selectOption(opt)}
                     style={{
-                      padding: '6px 10px',
+                      padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
                       'font-size': sz().fontSize,
                       'border-radius': 'var(--iris-radius-sm, 4px)',
                       cursor: opt.disabled ? 'not-allowed' : 'pointer',

@@ -147,7 +147,7 @@ export function IrisSparkline(props: IrisSparklineProps) {
   const height = () => props.height ?? 24
 
   const points = () => {
-    const box = plotBox({ width: width(), height: height(), padding: 2 })
+    const box = plotBox({ width: width(), height: height(), padding: 4 })
     const domain = dataDomain(props.data)
     return seriesPoints(props.data, domain, box)
   }

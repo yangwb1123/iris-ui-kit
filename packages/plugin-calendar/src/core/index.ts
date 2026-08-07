@@ -120,7 +120,7 @@ export function createCalendar(config: CalendarConfig): CalendarStore {
 export const calendarTokens: Record<string, string> = {
   '--iris-cal-today-bg': 'var(--iris-primary)',
   '--iris-cal-event-bg': 'var(--iris-primary-subtle)',
-  '--iris-cal-grid-gap': '1px',
+  '--iris-cal-grid-gap': 'var(--iris-space-xxs, 4px)',
 }
 
 /**

@@ -107,12 +107,12 @@ export function IrisDateRangePicker(props: IrisDateRangePickerProps): JSX.Elemen
           setOpen(true)
         }}
         style={{
-          padding: '6px 12px',
+          padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
           background: 'var(--iris-surface)',
           border: '1px solid var(--iris-border)',
           'border-radius': 'var(--iris-radius-md, 6px)',
           color: displayStart() ? 'var(--iris-foreground)' : 'var(--iris-muted)',
-          'font-size': '14px',
+          'font-size': 'var(--iris-font-size-md, 14px)',
           'font-family': 'inherit',
           cursor: local.disabled ? 'not-allowed' : 'pointer',
           'min-width': '120px',
@@ -136,12 +136,12 @@ export function IrisDateRangePicker(props: IrisDateRangePickerProps): JSX.Elemen
           setOpen(true)
         }}
         style={{
-          padding: '6px 12px',
+          padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
           background: 'var(--iris-surface)',
           border: '1px solid var(--iris-border)',
           'border-radius': 'var(--iris-radius-md, 6px)',
           color: displayEnd() ? 'var(--iris-foreground)' : 'var(--iris-muted)',
-          'font-size': '14px',
+          'font-size': 'var(--iris-font-size-md, 14px)',
           'font-family': 'inherit',
           cursor: local.disabled ? 'not-allowed' : 'pointer',
           'min-width': '120px',
@@ -160,7 +160,7 @@ export function IrisDateRangePicker(props: IrisDateRangePickerProps): JSX.Elemen
             left: '0',
             'z-index': '100',
             'margin-top': '4px',
-            'box-shadow': '0 4px 16px rgba(0,0,0,0.12)',
+            'box-shadow': 'var(--iris-shadow-lg)',
             'border-radius': 'var(--iris-radius-md, 6px)',
           }}
           onMouseDown={(e) => e.preventDefault()}

@@ -23,7 +23,7 @@
     disabled: boolean,
   ): string {
     const v = `var(${TONE_TO_VAR[tone]})`
-    const base = `display:inline-flex; align-items:center; gap:6px; border-radius:9999px; font-family:var(--iris-font-family,inherit); font-weight:500; line-height:1; white-space:nowrap; cursor:${disabled ? 'not-allowed' : clickable ? 'pointer' : 'default'}; opacity:${disabled ? '0.6' : '1'}; transition:background-color 120ms ease,box-shadow 120ms ease; font-size:${size === 'sm' ? '11px' : '12px'}; padding:${size === 'sm' ? '3px 8px' : '4px 10px'}; user-select:none;`
+    const base = `display:inline-flex; align-items:center; gap:var(--iris-space-xs, 8px); border-radius:9999px; font-family:var(--iris-font-family,inherit); font-weight:500; line-height:1; white-space:nowrap; cursor:${disabled ? 'not-allowed' : clickable ? 'pointer' : 'default'}; opacity:${disabled ? '0.6' : '1'}; transition:background-color 120ms ease,box-shadow 120ms ease; font-size:var(--iris-font-size-xs, 12px); padding:${size === 'sm' ? 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)' : 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)'}; user-select:none;`
     switch (variant) {
       case 'solid':
         return `${base} background:${v}; color:var(--iris-primary-foreground,#fff); border:1px solid transparent;`
@@ -115,7 +115,7 @@
         }}
         style="background:transparent; border:none; cursor:{disabled
           ? 'not-allowed'
-          : 'pointer'}; color:inherit; padding:0; margin-inline-start:2px; font-size:12px; line-height:1; flex-shrink:0; opacity:0.7; display:inline-flex;"
+          : 'pointer'}; color:inherit; padding:0; margin-inline-start:2px; font-size:var(--iris-font-size-xs, 12px); line-height:1; flex-shrink:0; opacity:0.7; display:inline-flex;"
         >✕</span
       >
     {/if}
@@ -144,7 +144,7 @@
         onclick={onCloseClick}
         style="background:transparent; border:none; cursor:{disabled
           ? 'not-allowed'
-          : 'pointer'}; color:inherit; padding:0; margin-inline-start:2px; font-size:12px; line-height:1; flex-shrink:0; opacity:0.7;"
+          : 'pointer'}; color:inherit; padding:0; margin-inline-start:2px; font-size:var(--iris-font-size-xs, 12px); line-height:1; flex-shrink:0; opacity:0.7;"
         >✕</button
       >
     {/if}

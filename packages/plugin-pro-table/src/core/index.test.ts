@@ -247,8 +247,14 @@ describe('createProTableStore — export', () => {
 describe('proTablePlugin', () => {
   it('registers table tokens', () => {
     const { tokens } = runPlugins([proTablePlugin])
-    expect(tokens['--iris-pro-table-border']).toBe(proTableTokens['--iris-pro-table-border'])
+    // Dead registrations (no render-layer consumer) must not be registered.
+    expect(tokens['--iris-pro-table-border']).toBeUndefined()
+    expect(tokens['--iris-pro-table-header-bg']).toBeUndefined()
+    expect(tokens['--iris-pro-table-row-hover']).toBeUndefined()
     expect(tokens['--iris-pro-table-chip-bg']).toBe(proTableTokens['--iris-pro-table-chip-bg'])
+    expect(tokens['--iris-pro-table-selected-bg']).toBe(
+      proTableTokens['--iris-pro-table-selected-bg'],
+    )
   })
 })
 

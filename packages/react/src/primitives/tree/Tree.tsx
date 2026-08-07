@@ -49,7 +49,7 @@ const TREE_STATE_STYLE: React.CSSProperties = {
   padding: '12px',
   textAlign: 'center',
   color: 'var(--iris-muted)',
-  fontSize: 14,
+  fontSize: 'var(--iris-font-size-md, 14px)',
 }
 
 /**
@@ -332,7 +332,7 @@ export function IrisTree({
         color: 'var(--iris-foreground)',
         border: '1px solid var(--iris-border)',
         borderRadius: 'var(--iris-radius-md, 6px)',
-        fontSize: 14,
+        fontSize: 'var(--iris-font-size-md, 14px)',
         ...style,
       }}
     >
@@ -403,7 +403,7 @@ export function IrisTree({
                     color: 'inherit',
                     cursor: 'pointer',
                     padding: 0,
-                    fontSize: 11,
+                    fontSize: 'var(--iris-font-size-xs, 12px)',
                     fontFamily: 'inherit',
                     transition: 'transform 120ms ease',
                     transform: isLoading ? 'none' : isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',

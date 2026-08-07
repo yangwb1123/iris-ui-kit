@@ -8,9 +8,10 @@
     "packages/core/src/form.test.ts": 808,
     "packages/core/src/form.ts": 856,
     "packages/core/src/window.ts": 547,
+    "packages/plugin-pro-table/src/react/index.tsx": 502,
     "packages/react/src/contracts.test.tsx": 809,
     "packages/react/src/primitives/table/Table.test.tsx": 1174,
-    "packages/react/src/primitives/table/Table.tsx": 1178,
+    "packages/react/src/primitives/table/Table.tsx": 1182,
     "packages/solid/src/contracts.test.tsx": 752,
     "packages/solid/src/primitives/table/IrisTable.test.tsx": 857,
     "packages/solid/src/primitives/table/IrisTable.tsx": 1248,
@@ -19,9 +20,9 @@
     "packages/svelte/src/primitives/table/IrisTable.svelte": 1078,
     "packages/svelte/src/primitives/table/IrisTable.test.ts": 848,
     "packages/vue/src/contracts.test.ts": 541,
-    "packages/vue/src/primitives/table/Table.test.ts": 1372,
-    "packages/vue/src/primitives/table/Table.ts": 1478,
-    "packages/vue/src/primitives/table/TableBody.ts": 518,
+    "packages/vue/src/primitives/table/Table.test.ts": 1415,
+    "packages/vue/src/primitives/table/Table.ts": 1580,
+    "packages/vue/src/primitives/table/TableBody.ts": 525,
     "packages/vue/src/primitives/table/useTableState.ts": 613
   }
 }

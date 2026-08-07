@@ -180,3 +180,17 @@
 ## Earlier
 
 See `ROADMAP.md` history + git log for R1–R86 (ROADMAP v2 fully implemented) and the plugin/CLI/eslint/MCP expansion.
+
+- **2026-08-07 — 设计系统统一升级（ai-batch-runner 高维 UI 流水线驱动）。**
+  用 ai-batch-runner 的多维 UI 审计体系（hex/spacing/shadow/font 四维机械
+  门禁 + ui/visual 对抗审查 + VERDICT 裁决门）把全仓推到"统一、产品完成度
+  高"：589 处设计违规归零（裸字号 303 / 魔法间距 103 / fallback 漂移 91 /
+  硬编码阴影 60 / 未知 token 17 / 裸 hex 15）。tokens 包补全产品级刻度
+  （font.size 9 档 + weight/line-height/letter-spacing、space 4pt 刻度 +
+  control.height、shadow.xl、on.color/warning.foreground）；四框架组件样式
+  100% 由 --iris-\* 驱动；插件孤儿 token 恢复嵌套 var 消费。Gate 第一轮
+  FAIL 反馈全部落实（审计脚本多值/数字解析升级、对比度回归修复、arch
+  baseline 更新）。视觉验证（Playwright 像素对比）：Solid 与 React 渲染
+  一致，Vue/Svelte 差异归因 CMS 应用层组件选择（手写 table vs IrisTable），
+  并修复 vue NavMenu 10px 漂移。新增长期资产：iris-ui-spec.py 机械门禁 +
+  visual-parity.spec.ts 像素门禁（4 框架分发）。全仓 180/180 turbo 绿。

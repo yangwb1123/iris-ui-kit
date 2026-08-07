@@ -111,6 +111,7 @@
   )
 
   let activeIndex = $state(-1)
+  let hoveredIndex = $state(-1)
   $effect(() => {
     activeIndex = nav.index
     const unsub = nav.store.subscribe((next) => {
@@ -169,7 +170,12 @@
     }),
   )
 
-  function itemStyle(selected: boolean, active: boolean, disabled?: boolean): string {
+  function itemStyle(
+    selected: boolean,
+    active: boolean,
+    hovered: boolean,
+    disabled?: boolean,
+  ): string {
     return styleToString({
       display: 'flex',
       'align-items': 'center',
@@ -181,9 +187,11 @@
       'font-size': '14px',
       background: selected
         ? 'var(--iris-primary)'
-        : active
+        : hovered
           ? 'var(--iris-surface-hover)'
-          : 'transparent',
+          : active
+            ? 'var(--iris-surface-hover)'
+            : 'transparent',
       color: selected ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
       outline: 'none',
     })
@@ -238,7 +246,13 @@
         onfocus={() => {
           activeIndex = index
         }}
-        style={itemStyle(selected, active, item.disabled)}
+        onmouseenter={() => {
+          hoveredIndex = index
+        }}
+        onmouseleave={() => {
+          if (hoveredIndex === index) hoveredIndex = -1
+        }}
+        style={itemStyle(selected, active, hoveredIndex === index, item.disabled)}
       >
         {#if renderItem}{@render renderItem(item, { selected, active, index })}
         {:else}{item.label ?? String(item.value)}{/if}

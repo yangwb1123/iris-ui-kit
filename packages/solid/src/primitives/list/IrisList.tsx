@@ -1,4 +1,4 @@
-import { createEffect, For, mergeProps, Show, splitProps, type JSX } from 'solid-js'
+import { createEffect, createSignal, For, mergeProps, Show, splitProps, type JSX } from 'solid-js'
 import { createSelectionModel, createKeyboardNav, type KeyboardNavAction } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
@@ -57,6 +57,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
   ])
 
   const { t } = useI18n()
+  const [hoveredIndex, setHoveredIndex] = createSignal(-1)
   const { state, isContent, stateProps } = useDataState(() => ({
     loading: local.loading,
     error: local.error,
@@ -199,6 +200,8 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
                   }
                 }}
                 onFocus={() => nav.focus(i)}
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex((current) => (current === i ? -1 : current))}
                 style={{
                   display: 'flex',
                   'align-items': 'center',
@@ -210,9 +213,11 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
                   'font-size': '14px',
                   background: selected()
                     ? 'var(--iris-primary)'
-                    : active()
+                    : hoveredIndex() === i
                       ? 'var(--iris-surface-hover)'
-                      : 'transparent',
+                      : active()
+                        ? 'var(--iris-surface-hover)'
+                        : 'transparent',
                   color: selected() ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
                   outline: 'none',
                 }}

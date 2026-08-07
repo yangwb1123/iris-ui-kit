@@ -41,7 +41,12 @@ const VARIANT_STYLES: Record<IrisButtonVariant, StyleMap> = {
     background: 'transparent',
     color: 'var(--iris-primary)',
     border: '1px solid transparent',
-    'text-decoration': 'none',
+    textDecoration: 'none',
+  },
+  danger: {
+    background: 'var(--iris-danger)',
+    color: 'var(--iris-on-color, #ffffff)',
+    border: '1px solid var(--iris-danger)',
   },
 }
 

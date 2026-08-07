@@ -1735,8 +1735,8 @@ importers:
         specifier: ^1.7.6
         version: 1.7.6
       '@iris-ui-kit/core':
-        specifier: 0.2.0
-        version: 0.2.0
+        specifier: workspace:*
+        version: link:../core
       '@iris-ui-kit/icons':
         specifier: 0.2.0
         version: 0.2.0

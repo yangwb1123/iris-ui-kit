@@ -19,4 +19,4 @@ export type Placement = `${Side}-${Align}` | Side
 export type Size = 'sm' | 'md' | 'lg'
 
 /** Common visual variants. */
-export type Variant = 'solid' | 'outline' | 'ghost' | 'link'
+export type Variant = 'solid' | 'outline' | 'ghost' | 'link' | 'danger'

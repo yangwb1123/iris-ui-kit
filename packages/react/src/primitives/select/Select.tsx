@@ -259,6 +259,19 @@ export function IrisSelect<T = unknown>({
             outline: 'none',
           }}
         >
+          {safeItems.length === 0 ? (
+            <li
+              data-iris-select-empty=""
+              style={{
+                padding: 'var(--iris-space-xs, 8px) var(--iris-padding-sm, 6px)',
+                color: 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-sm, 13px)',
+                textAlign: 'center' as const,
+              }}
+            >
+              {t('select.empty')}
+            </li>
+          ) : null}
           {safeItems.map((item, index) => {
             const isSelected = item.value === value
             const isActive = index === activeIndex

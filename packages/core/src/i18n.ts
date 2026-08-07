@@ -65,6 +65,7 @@ export const defaultMessages: I18nMessages = {
   'toast.dismiss': 'Dismiss',
   'select.placeholder': 'Select…',
   'select.options': 'Options',
+  'select.empty': 'No options',
   'commandPalette.placeholder': 'Type a command…',
   'commandPalette.empty': 'No results',
   'commandPalette.label': 'Command palette',

@@ -189,6 +189,19 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
         'z-index': 1000,
       }}
     >
+      <Show when={merged.items.length === 0}>
+        <div
+          data-iris-select-empty=""
+          style={{
+            padding: 'var(--iris-space-xs, 8px) var(--iris-padding-sm, 6px)',
+            color: 'var(--iris-muted)',
+            'font-size': 'var(--iris-font-size-sm, 13px)',
+            'text-align': 'center',
+          }}
+        >
+          {t('select.empty')}
+        </div>
+      </Show>
       <For each={merged.items}>
         {(item, index) => {
           const i = index()

@@ -53,6 +53,11 @@ const VARIANT_STYLES: Record<IrisButtonVariant, StyleMap> = {
     border: '1px solid transparent',
     textDecoration: 'none',
   },
+  danger: {
+    background: 'var(--iris-danger)',
+    color: 'var(--iris-on-color, #ffffff)',
+    border: '1px solid var(--iris-danger)',
+  },
 }
 
 function buildInlineStyle(variant: IrisButtonVariant, size: IrisButtonSize): CSSProperties {

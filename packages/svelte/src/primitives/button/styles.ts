@@ -45,6 +45,11 @@ const VARIANT_STYLES: Record<IrisButtonVariant, Record<string, string>> = {
     border: '1px solid transparent',
     'text-decoration': 'none',
   },
+  danger: {
+    background: 'var(--iris-danger)',
+    color: 'var(--iris-on-color, #ffffff)',
+    border: '1px solid var(--iris-danger)',
+  },
 }
 
 export function styleToString(style: Record<string, string>): string {

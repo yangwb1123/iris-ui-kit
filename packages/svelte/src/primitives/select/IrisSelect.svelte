@@ -249,6 +249,14 @@
     onkeydown={handleListKeyDown}
     style="{floating.floatingStyles}; background: var(--iris-background); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-sm, 4px); box-shadow: var(--iris-shadow-lg); min-width: 180px; list-style: none; margin: 0; z-index: 1000; max-height: 240px; overflow-y: auto"
   >
+    {#if items.length === 0}
+      <li
+        data-iris-select-empty=""
+        style="padding: var(--iris-space-xs, 8px) var(--iris-padding-sm, 6px); color: var(--iris-muted); font-size: var(--iris-font-size-sm, 13px); text-align: center; list-style: none"
+      >
+        {t('select.empty')}
+      </li>
+    {/if}
     {#each items as item}
       <li
         role="option"

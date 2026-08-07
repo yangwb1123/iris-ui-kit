@@ -194,3 +194,14 @@ See `ROADMAP.md` history + git log for R1–R86 (ROADMAP v2 fully implemented) a
   一致，Vue/Svelte 差异归因 CMS 应用层组件选择（手写 table vs IrisTable），
   并修复 vue NavMenu 10px 漂移。新增长期资产：iris-ui-spec.py 机械门禁 +
   visual-parity.spec.ts 像素门禁（4 框架分发）。全仓 180/180 turbo 绿。
+
+- **2026-08-07 — 设计智能评审全部可执行项落地 + 四框架视觉门禁正式化。**
+  评审（design-intelligence 6 维度）落实 18 项：Button danger variant、
+  Select 空状态/界高/选中项软化（subtle bg + checkmark）、Table 选中计数/
+  错误态 Retry/数字列右对齐、Card hover、Button :active 微交互、Gauge
+  诚实值（非 0-100 显示原始值）、Statistic trendTone、Badge solid 对比度
+  （AA）、info tone 统一、focus ring color-mix、backdrop token、空态文案
+  教学化。视觉门禁正式化：visual-parity.spec.ts 四框架分发（solid/svelte
+  0.02 硬门、vue 0.05 回归门——2.8% 已知渲染基线，>5% 视为回归），四框架
+  light/dark 全 PASS。剩余唯一记录项：Gauge 阈值映射（显式 status 保持，
+  组件注释给出消费方推导建议）。180/180 turbo 绿，审计 0 违规。

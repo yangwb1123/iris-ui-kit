@@ -89,3 +89,13 @@ Manifest 与文档参考生成物均已通过生成前后内容一致性检查�
 - Vue/Svelte CMS UsersPage 迁移 IrisTable（对齐 react/solid）。
 - 新增长期资产：iris-ui-spec.py 机械门禁、visual-parity.spec.ts 像素
   门禁（4 框架分发）、docs/requirements/REQUIREMENTS-BASELINE.md。
+
+## 2026-08-07 设计智能评审修复批
+
+- 评审产出 docs/ui-audit/design-intelligence.md（6 维度 + component-spec）。
+- 落实 12 项 [MECHANICAL]：info tone 统一、focus ring color-mix、
+  backdrop token、Card hover、Select 界高、Button :active、Statistic
+  trendTone、Gauge 诚实值、Badge solid 对比度、数字列右对齐、Table
+  错误态重试按钮（onRetry）、Button danger variant。
+- 剩余 [JUDGMENT] 项（Table 选中计数/Select 选中项软化/空态文案/
+  Gauge 阈值映射）记录在评审报告，待维护者决策。

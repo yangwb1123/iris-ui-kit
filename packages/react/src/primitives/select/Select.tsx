@@ -81,6 +81,7 @@ export function IrisSelect<T = unknown>({
   const [internal, setInternal] = React.useState<T | undefined>(defaultValue)
   const value = isControlled ? valueProp : internal
   const [open, setOpen] = React.useState(false)
+  const [hoveredIndex, setHoveredIndex] = React.useState(-1)
 
   const selectedItem = safeItems.find((it) => it.value === value) ?? null
   const label = selectedItem
@@ -269,6 +270,10 @@ export function IrisSelect<T = unknown>({
                 data-state={isSelected ? 'selected' : isActive ? 'active' : 'idle'}
                 onClick={item.disabled ? undefined : () => selectItem(item)}
                 onFocus={() => nav.focus(index)}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() =>
+                  setHoveredIndex((current) => (current === index ? -1 : current))
+                }
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -280,9 +285,11 @@ export function IrisSelect<T = unknown>({
                   fontSize: 14,
                   background: isSelected
                     ? 'var(--iris-primary)'
-                    : isActive
+                    : hoveredIndex === index
                       ? 'var(--iris-surface-hover)'
-                      : 'transparent',
+                      : isActive
+                        ? 'var(--iris-surface-hover)'
+                        : 'transparent',
                   color: isSelected
                     ? 'var(--iris-primary-foreground, #fff)'
                     : 'var(--iris-foreground)',

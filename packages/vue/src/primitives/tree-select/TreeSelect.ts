@@ -56,6 +56,7 @@ export const IrisTreeSelect = defineComponent({
     const { t } = useI18n()
     const open = ref(false)
     const focused = ref(false)
+    const hoveredValue = ref<string | null>(null)
     const expanded = ref<Set<string>>(new Set(props.defaultExpanded))
     let rootEl: HTMLElement | null = null
 
@@ -101,6 +102,12 @@ export const IrisTreeSelect = defineComponent({
             h(
               'div',
               {
+                onMouseenter: () => {
+                  hoveredValue.value = node.value
+                },
+                onMouseleave: () => {
+                  if (hoveredValue.value === node.value) hoveredValue.value = null
+                },
                 style: {
                   display: 'flex',
                   alignItems: 'center',
@@ -109,9 +116,10 @@ export const IrisTreeSelect = defineComponent({
                   paddingInlineEnd: '6px',
                   paddingBlock: '4px',
                   borderRadius: 'var(--iris-radius-sm, 4px)',
-                  background: isSelected
-                    ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-                    : 'transparent',
+                  background:
+                    isSelected || hoveredValue.value === node.value
+                      ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+                      : 'transparent',
                 },
               },
               [

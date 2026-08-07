@@ -196,7 +196,7 @@
             {#if row.kind === 'header'}
               <div
                 data-iris-command-palette-group
-                style="padding: var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px) var(--iris-space-xxs, 4px); font-size: 11px; font-weight: 600; color: var(--iris-muted); text-transform: uppercase; letter-spacing: 0.05em"
+                style="padding: var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px) var(--iris-space-xxs, 4px); font-size: var(--iris-font-size-xs, 12px); font-weight: 600; color: var(--iris-muted); text-transform: uppercase; letter-spacing: 0.05em"
               >
                 {row.label}
               </div>

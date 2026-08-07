@@ -236,6 +236,7 @@
         data-iris-list-index={index}
         data-iris-list-item
         data-state={selected ? 'selected' : active ? 'active' : 'idle'}
+        data-hovered={hoveredIndex === index ? 'true' : 'false'}
         onclick={() => select(item)}
         onkeydown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {

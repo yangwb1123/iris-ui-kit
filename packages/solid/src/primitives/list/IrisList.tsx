@@ -193,6 +193,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
                 data-iris-list-index={i}
                 data-iris-list-item=""
                 data-state={selected() ? 'selected' : active() ? 'active' : 'idle'}
+                data-hovered={hoveredIndex() === i ? 'true' : 'false'}
                 onClick={() => {
                   if (!item.disabled) {
                     nav.focus(i)

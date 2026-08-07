@@ -208,12 +208,13 @@ export const IrisList = defineComponent({
             'data-iris-list-index': index,
             'data-iris-list-item': '',
             'data-state': selected ? 'selected' : active ? 'active' : 'idle',
+            'data-hovered': hoveredIndex.value === index ? 'true' : 'false',
             onClick: item.disabled ? undefined : onClick,
             onFocus,
-            onMouseEnter: () => {
+            onMouseenter: () => {
               hoveredIndex.value = index
             },
-            onMouseLeave: () => {
+            onMouseleave: () => {
               if (hoveredIndex.value === index) hoveredIndex.value = -1
             },
             style: baseStyle,

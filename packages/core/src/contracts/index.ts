@@ -41,6 +41,7 @@ export { otpInputScenario } from './scenarios/otp-input'
 export { dataSourceScenario } from './scenarios/data-source'
 export { dataSourceAsyncScenario } from './scenarios/data-source-async'
 export { listKeyboardScenario } from './scenarios/list-keyboard'
+export { listHoverScenario } from './scenarios/list-hover'
 export type {
   ContractScenario,
   ContractStep,

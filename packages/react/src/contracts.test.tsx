@@ -44,6 +44,7 @@ import {
   formScenario,
   tableCellEditScenario,
   listKeyboardScenario,
+  listHoverScenario,
   type ContractDriver,
 } from '@iris-ui-kit/core/contracts'
 import { useCallback, useState } from 'react'
@@ -135,8 +136,14 @@ function driverFor(container: HTMLElement, unmount: () => void = () => {}): Cont
     pointer: (selector, index, event) => {
       const el = at(selector, index)
       if (!el) return
-      if (event === 'enter') fireEvent.pointerEnter(el)
-      else fireEvent.pointerLeave(el)
+      if (event === 'enter') {
+        fireEvent.pointerEnter(el)
+        // React 的 onMouseEnter 由 mouseover 模拟——补发以覆盖 mouse 监听组件
+        fireEvent.mouseEnter(el)
+      } else {
+        fireEvent.pointerLeave(el)
+        fireEvent.mouseLeave(el)
+      }
     },
     type: (sel, idx, text) => {
       const el = at(sel, idx) as HTMLInputElement
@@ -346,6 +353,19 @@ describe('@iris-ui-kit/react — cross-framework behavior contracts', () => {
       />,
     )
     await runContract(listKeyboardScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared List hover contract', async () => {
+    const { container } = render(
+      <IrisList
+        items={[
+          { value: 'a', label: 'Alpha' },
+          { value: 'b', label: 'Bravo' },
+          { value: 'c', label: 'Charlie' },
+        ]}
+      />,
+    )
+    await runContract(listHoverScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Switch contract', async () => {

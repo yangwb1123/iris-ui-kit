@@ -41,7 +41,7 @@ export function badgeStyle(
       background: v,
       color:
         tone === 'warning'
-          ? 'var(--iris-warning-foreground, #78350f)'
+          ? 'var(--iris-warning-foreground, #451a03)'
           : tone === 'primary'
             ? 'var(--iris-primary-foreground, #fff)'
             : 'var(--iris-foreground, #0f172a)',

@@ -39,6 +39,7 @@
     emptyState,
     loadingState,
     errorState,
+    onRetry = undefined as (() => void) | undefined,
     virtualScroll,
     columnVirtualization = false,
     resizableColumns = false,
@@ -789,7 +790,19 @@
   <!-- Body -->
   {#if error}
     <div role="row" data-iris-table-row="error" style={stateRowStyle}>
-      {#if errorState}{@render errorState()}{:else}{t('table.error')}{/if}
+      <span style="margin-inline-end: {onRetry ? 'var(--iris-space-sm, 12px)' : '0px'}">
+        {#if errorState}{@render errorState()}{:else}{t('table.error')}{/if}
+      </span>
+      {#if onRetry}
+        <button
+          type="button"
+          data-iris-table-retry=""
+          onclick={onRetry}
+          style="border: 1px solid var(--iris-border); background: var(--iris-surface); color: var(--iris-foreground); border-radius: var(--iris-radius-sm, 4px); padding: var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px); font-size: var(--iris-font-size-sm, 13px); cursor: pointer"
+        >
+          {t('table.retry')}
+        </button>
+      {/if}
     </div>
   {:else if loading}
     <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>

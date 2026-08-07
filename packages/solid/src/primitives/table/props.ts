@@ -28,6 +28,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   emptyState?: JSX.Element
   loadingState?: JSX.Element
   errorState?: JSX.Element
+  /** Fired by the built-in Retry button in the error state row. */
+  onRetry?: () => void
   /** Enable column resizing. */
   resizableColumns?: boolean
   columnWidths?: IrisTableColumnWidths

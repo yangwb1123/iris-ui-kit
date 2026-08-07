@@ -1372,7 +1372,7 @@ export const IrisTable = defineComponent({
                     background: 'var(--iris-surface)',
                     color: 'var(--iris-foreground)',
                     borderRadius: 'var(--iris-radius-sm, 4px)',
-                    padding: '2px 10px',
+                    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
                     fontSize: 'var(--iris-font-size-sm, 13px)',
                     cursor: 'pointer',
                   },

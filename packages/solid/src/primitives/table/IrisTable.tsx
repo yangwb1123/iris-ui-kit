@@ -1083,7 +1083,31 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             }
           >
             <div role="row" data-iris-table-row="error" style={stateRowStyle}>
-              {props.errorState ?? t('table.error')}
+              <span
+                style={{
+                  'margin-inline-end': props.onRetry ? 'var(--iris-space-sm, 12px)' : '0px',
+                }}
+              >
+                {props.errorState ?? t('table.error')}
+              </span>
+              <Show when={props.onRetry}>
+                <button
+                  type="button"
+                  data-iris-table-retry=""
+                  onClick={props.onRetry}
+                  style={{
+                    border: '1px solid var(--iris-border)',
+                    background: 'var(--iris-surface)',
+                    color: 'var(--iris-foreground)',
+                    'border-radius': 'var(--iris-radius-sm, 4px)',
+                    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                    'font-size': 'var(--iris-font-size-sm, 13px)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('table.retry')}
+                </button>
+              </Show>
             </div>
           </Show>
         }

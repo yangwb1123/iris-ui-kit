@@ -24,6 +24,8 @@ export interface IrisTableProps {
   emptyState?: Snippet
   loadingState?: Snippet
   errorState?: Snippet
+  /** Fired by the built-in Retry button in the error state row. */
+  onRetry?: () => void
   virtualScroll?: IrisTableVirtualOptions
   /** Render only horizontally-visible columns plus pinned columns and overscan. */
   columnVirtualization?: boolean

@@ -149,4 +149,56 @@ describe('useUndoStack', () => {
     expect(result.current.state.canUndo).toBe(true)
     expect(result.current.state.canUndo).not.toBe(initialCanUndo)
   })
+  it('re-renders when state changes (canUndo flips)', () => {
+    const { result } = renderHook(() => useUndoStack<number>({ initial: 0 }))
+    const initialCanUndo = result.current.state.canUndo
+
+    act(() => {
+      result.current.push(1)
+    })
+    expect(result.current.state.canUndo).toBe(true)
+    expect(result.current.state.canUndo).not.toBe(initialCanUndo)
+  })
+
+  it('regression: raw stack direct mutations keep reactive state in sync', () => {
+    const { result } = renderHook(() => useUndoStack<number>({ initial: 0 }))
+    act(() => {
+      result.current.stack.push(1)
+    })
+    expect(result.current.state.canUndo).toBe(true)
+    expect(result.current.state.depth).toBe(2)
+    act(() => {
+      result.current.stack.undo()
+    })
+    expect(result.current.state.canUndo).toBe(false)
+    expect(result.current.state.canRedo).toBe(true)
+    act(() => {
+      result.current.stack.clear()
+    })
+    expect(result.current.state.depth).toBe(0)
+    expect(result.current.state.canUndo).toBe(false)
+  })
+
+  it('regression: undefined is a legal snapshot and still syncs on undo', () => {
+    const { result } = renderHook(() => useUndoStack<number | undefined>())
+    act(() => {
+      result.current.stack.push(undefined)
+      result.current.stack.push(1)
+    })
+    expect(result.current.state.depth).toBe(2)
+    act(() => {
+      result.current.undo()
+    })
+    // undo 返回 undefined（合法快照），但指针已推进——state 必须跟随
+    expect(result.current.state.canRedo).toBe(true)
+    expect(result.current.state.index).toBe(0)
+  })
+
+  it('regression: tracked stack keeps stable method identities', () => {
+    const { result } = renderHook(() => useUndoStack<number>({ initial: 0 }))
+    expect(result.current.stack.push).toBe(result.current.stack.push)
+    expect(result.current.stack.undo).toBe(result.current.stack.undo)
+    // 纯读取属性透传无副作用
+    expect(typeof result.current.stack.depth).toBe('number')
+  })
 })

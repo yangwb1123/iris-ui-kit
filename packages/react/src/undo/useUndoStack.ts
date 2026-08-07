@@ -2,6 +2,38 @@ import * as React from 'react'
 import { createUndoStack, type UndoStack, type UndoStackOptions } from '@iris-ui-kit/core/undo'
 
 /**
+ * Module-private helper: wrap a raw UndoStack so that every mutating call
+ * (push/undo/redo/clear — including true no-ops and undefined-returning
+ * undos) fires `onMutate`, keeping the bridge's reactive state in sync even
+ * when consumers mutate the returned `stack` directly (the documented
+ * "stable reference" contract). Written to be lifted to core verbatim so the
+ * four bridges share one implementation.
+ */
+function trackUndoStack<T>(stack: UndoStack<T>, onMutate: () => void): UndoStack<T> {
+  const mutating = new Set(['push', 'undo', 'redo', 'clear'])
+  const cache = new Map<string, (...args: unknown[]) => unknown>()
+  return new Proxy(stack, {
+    get(target, prop, receiver) {
+      if (typeof prop === 'string' && mutating.has(prop)) {
+        const method = target[prop as keyof UndoStack<T>]
+        if (typeof method !== 'function') return undefined
+        let wrapped = cache.get(prop)
+        if (!wrapped) {
+          wrapped = (...args: unknown[]) => {
+            const result = Reflect.apply(method, target, args)
+            onMutate()
+            return result
+          }
+          cache.set(prop, wrapped)
+        }
+        return wrapped
+      }
+      return Reflect.get(target, prop, receiver)
+    },
+  })
+}
+
+/**
  * Reactive snapshot metadata for the UndoStack: convenience booleans that
  * update on every push/undo/redo/clear for use in UI bindings (enable/disable
  * undo/redo buttons).
@@ -69,13 +101,13 @@ export function useUndoStack<T>(options?: UndoStackOptions<T>): {
 
   const undo = React.useCallback((): T | undefined => {
     const result = stack.undo()
-    if (result !== undefined) bump()
+    bump()
     return result
   }, [stack, bump])
 
   const redo = React.useCallback((): T | undefined => {
     const result = stack.redo()
-    if (result !== undefined) bump()
+    bump()
     return result
   }, [stack, bump])
 
@@ -83,6 +115,11 @@ export function useUndoStack<T>(options?: UndoStackOptions<T>): {
     stack.clear()
     bump()
   }, [stack, bump])
+
+  // Expose a tracked stack: direct mutations (api.stack.push/undo/clear)
+  // keep the reactive state in sync (组(1) fix, aligned with vue 0.2.19+).
+  // Stable across renders because the proxy caches its method wrappers.
+  const trackedStack = React.useMemo(() => trackUndoStack(stack, bump), [stack, bump])
 
   // Compute reactive state. `canUndo`/`canRedo` are methods on the interface,
   // so we call them each render to get current values.
@@ -93,5 +130,5 @@ export function useUndoStack<T>(options?: UndoStackOptions<T>): {
     index: stack.index,
   }
 
-  return { push, undo, redo, clear, stack, state }
+  return { push, undo, redo, clear, stack: trackedStack, state }
 }

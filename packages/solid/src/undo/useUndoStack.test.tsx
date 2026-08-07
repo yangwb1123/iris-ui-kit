@@ -132,4 +132,34 @@ describe('@iris-ui-kit/solid useUndoStack', () => {
     api.push(1)
     expect(container.querySelector('[data-can-undo]')!.textContent).toBe('true')
   })
+  it('re-renders when state changes (canUndo flips)', () => {
+    const { container, api } = probe<number>({ initial: 0 })
+    expect(container.querySelector('[data-can-undo]')!.textContent).toBe('false')
+
+    api.push(1)
+    expect(container.querySelector('[data-can-undo]')!.textContent).toBe('true')
+  })
+
+  it('regression: raw stack direct mutations keep reactive state in sync', () => {
+    const { container, api } = probe<number>({ initial: 0 })
+    api.stack.push(1)
+    expect(container.querySelector('[data-can-undo]')!.textContent).toBe('true')
+    expect(container.querySelector('[data-depth]')!.textContent).toBe('2')
+    api.stack.undo()
+    expect(container.querySelector('[data-can-undo]')!.textContent).toBe('false')
+    expect(container.querySelector('[data-can-redo]')!.textContent).toBe('true')
+    api.stack.clear()
+    expect(container.querySelector('[data-depth]')!.textContent).toBe('0')
+  })
+
+  it('regression: undefined is a legal snapshot and still syncs on undo', () => {
+    const { container, api } = probe<number | undefined>()
+    api.stack.push(undefined)
+    api.stack.push(1)
+    expect(container.querySelector('[data-depth]')!.textContent).toBe('2')
+    api.undo()
+    // undefined 合法快照 + 指针已推进——state 必须跟随（组2 修复）
+    expect(container.querySelector('[data-can-redo]')!.textContent).toBe('true')
+    expect(container.querySelector('[data-index]')!.textContent).toBe('0')
+  })
 })

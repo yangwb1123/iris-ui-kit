@@ -177,4 +177,70 @@ describe('useUndoStack (vue)', () => {
     await w.vm.$nextTick()
     expect(w.find('[data-can-undo]').text()).toBe('true')
   })
+
+  it('regression: raw stack direct mutations keep reactive state in sync', async () => {
+    // `api.stack` is documented as a stable, modifiable reference. Mutating it
+    // directly (including through a held reference) must refresh `state` —
+    // pre-fix it bypassed sync() and left the reactive state permanently stale.
+    const { w, api } = probe<number>({ initial: 0 })
+    const s = api.stack // consumer pattern: hold the reference, then mutate it
+
+    s.push(1)
+    await w.vm.$nextTick()
+    expect(w.find('[data-can-undo]').text()).toBe('true')
+    expect(w.find('[data-can-redo]').text()).toBe('false')
+    expect(w.find('[data-depth]').text()).toBe('2')
+    expect(w.find('[data-index]').text()).toBe('1')
+
+    s.undo()
+    await w.vm.$nextTick()
+    expect(w.find('[data-can-undo]').text()).toBe('false')
+    expect(w.find('[data-can-redo]').text()).toBe('true')
+    expect(w.find('[data-index]').text()).toBe('0')
+
+    s.redo()
+    await w.vm.$nextTick()
+    expect(w.find('[data-can-undo]').text()).toBe('true')
+    expect(w.find('[data-can-redo]').text()).toBe('false')
+    expect(w.find('[data-index]').text()).toBe('1')
+
+    s.clear()
+    await w.vm.$nextTick()
+    expect(w.find('[data-depth]').text()).toBe('0')
+    expect(w.find('[data-index]').text()).toBe('-1')
+    expect(w.find('[data-can-undo]').text()).toBe('false')
+    expect(w.find('[data-can-redo]').text()).toBe('false')
+  })
+
+  it('regression: direct stack mutation of an undefined snapshot still syncs', async () => {
+    // T = number | undefined: raw undo() returns undefined (a legal snapshot)
+    // while the pointer DID move — sync must fire regardless of return value.
+    const { w, api } = probe<number | undefined>()
+
+    api.stack.push(undefined) // baseline [undefined]
+    api.stack.push(1) // [undefined, 1], index 1
+    await w.vm.$nextTick()
+    expect(w.find('[data-can-undo]').text()).toBe('true')
+    expect(w.find('[data-index]').text()).toBe('1')
+
+    const value = api.stack.undo()
+    await w.vm.$nextTick()
+    expect(value).toBeUndefined()
+    expect(w.find('[data-can-undo]').text()).toBe('false')
+    expect(w.find('[data-can-redo]').text()).toBe('true')
+    expect(w.find('[data-index]').text()).toBe('0')
+  })
+
+  it('wrapped stack methods are stable identities; read-only members pass through', () => {
+    const { api } = probe<number>({ initial: 0 })
+    expect(api.stack.push).toBe(api.stack.push)
+    expect(api.stack.undo).toBe(api.stack.undo)
+    expect(api.stack.redo).toBe(api.stack.redo)
+    expect(api.stack.clear).toBe(api.stack.clear)
+    // Reads are pure: they pass through without mutating or syncing.
+    expect(api.stack.canUndo()).toBe(false)
+    expect(api.stack.canRedo()).toBe(false)
+    expect(api.stack.depth).toBe(1)
+    expect(api.stack.index).toBe(0)
+  })
 })

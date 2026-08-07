@@ -2,6 +2,35 @@ import { createSignal } from 'solid-js'
 import { createUndoStack, type UndoStack, type UndoStackOptions } from '@iris-ui-kit/core/undo'
 
 /**
+ * Module-private helper: wrap a raw UndoStack so that every mutating call
+ * fires `onMutate` (see react bridge — same contract, kept per-bridge until
+ * lifted to core).
+ */
+function trackUndoStack<T>(stack: UndoStack<T>, onMutate: () => void): UndoStack<T> {
+  const mutating = new Set(['push', 'undo', 'redo', 'clear'])
+  const cache = new Map<string, (...args: unknown[]) => unknown>()
+  return new Proxy(stack, {
+    get(target, prop, receiver) {
+      if (typeof prop === 'string' && mutating.has(prop)) {
+        const method = target[prop as keyof UndoStack<T>]
+        if (typeof method !== 'function') return undefined
+        let wrapped = cache.get(prop)
+        if (!wrapped) {
+          wrapped = (...args: unknown[]) => {
+            const result = Reflect.apply(method, target, args)
+            onMutate()
+            return result
+          }
+          cache.set(prop, wrapped)
+        }
+        return wrapped
+      }
+      return Reflect.get(target, prop, receiver)
+    },
+  })
+}
+
+/**
  * Reactive snapshot metadata for the UndoStack: convenience booleans that
  * update on every push/undo/redo/clear for use in UI bindings (enable/disable
  * undo/redo buttons).
@@ -67,13 +96,13 @@ export function useUndoStack<T>(options?: UndoStackOptions<T>): {
 
   const undo = (): T | undefined => {
     const result = stack.undo()
-    if (result !== undefined) sync()
+    sync()
     return result
   }
 
   const redo = (): T | undefined => {
     const result = stack.redo()
-    if (result !== undefined) sync()
+    sync()
     return result
   }
 
@@ -82,5 +111,8 @@ export function useUndoStack<T>(options?: UndoStackOptions<T>): {
     sync()
   }
 
-  return { push, undo, redo, clear, stack, state }
+  // Direct stack mutations stay reactive (组(1) fix, aligned with vue 0.2.19+)
+  const trackedStack = trackUndoStack(stack, sync)
+
+  return { push, undo, redo, clear, stack: trackedStack, state }
 }

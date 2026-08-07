@@ -1,13 +1,16 @@
 # TODO
 
 > 仅保留当前可行动项。完成历史见 `CHANGELOG.md`；不要把已关闭的历史 gap
-> 重新复制成新待办。日期：2026-07-27。
+> 重新复制成新待办。日期：2026-08-07。
 
 ## 当前收口
 
-- 当前没有未关闭的可行动实现项。`pnpm test:coverage` 已在补强 12 个
-  React/Vue/Solid/Svelte 复杂组件后通过：388 个测试文件、41,086 行测试，
-  high-complexity 缺口为 0。
+- 设计系统统一迭代（token 刻度补全 + 589 违规归零 + 四框架视觉一致）
+  已收口：180/180 turbo 绿、audit 0 违规、solid/svelte 像素一致、
+  vue 2.8% 记录为已知渲染基线（`docs/ui-audit/visual/REPORT-v2.md`）。
+- 待办：设计智能评审结果（`docs/ui-audit/design-intelligence.md`）中的
+  高价值 [MECHANICAL] 项按需修复；Vue 2.8% 渲染基线是否继续收敛由
+  维护者决定。
 
 ## 已实现、不要再报为缺口
 

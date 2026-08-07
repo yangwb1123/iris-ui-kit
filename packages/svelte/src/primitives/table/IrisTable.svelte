@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte'
+  type RowSnippet = Snippet<[Record<string, unknown>]>
   import {
     aggregate,
     buildHeaderMatrix,
@@ -1030,6 +1032,8 @@
                   {editError}
                 </div>
               {/if}
+            {:else if col.render}
+              {@render (col.render(getCellValue(row, col), row) as RowSnippet)(row)}
             {:else}
               {String(getCellValue(row, col) ?? '')}
             {/if}

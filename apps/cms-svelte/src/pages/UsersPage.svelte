@@ -3,7 +3,6 @@
     IrisAvatar,
     IrisBadge,
     IrisButton,
-    IrisCheckbox,
     IrisDialog,
     IrisDialogContent,
     IrisDialogTitle,
@@ -17,7 +16,9 @@
     IrisPagination,
     IrisSelect,
     IrisStack,
+    IrisTable,
     useResourceController,
+    type IrisTableSortState,
     useToast,
     type IrisSelectItem,
   } from '@iris-ui-kit/svelte'
@@ -45,14 +46,6 @@
   const tone = (s: UserStatus): 'success' | 'warning' | 'danger' =>
     s === 'active' ? 'success' : s === 'invited' ? 'warning' : 'danger'
 
-  /** Tri-state header sort cycle: none → asc → desc → none. */
-  type Sort = { key: string; direction: 'asc' | 'desc' } | null
-  function nextSort(current: Sort, key: string): Sort {
-    if (!current || current.key !== key) return { key, direction: 'asc' }
-    if (current.direction === 'asc') return { key, direction: 'desc' }
-    return null
-  }
-
   const emptyDraft: UserDraft = { name: '', email: '', role: 'Viewer', status: 'invited' }
 
   // The flagship CRUD resource. List + sort + filter + pagination + selection
@@ -76,25 +69,11 @@
   let confirmDelete = $state<User | null>(null)
   let confirmBulk = $state(false)
 
-  const pageIds = $derived($view.rows.map((u) => String(u.id)))
-  const allOnPage = $derived(
-    pageIds.length > 0 && pageIds.every((id) => $view.selectedKeys.includes(id)),
-  )
   const selectedIds = $derived($view.selectedKeys.map(Number))
 
-  const ariaSort = (key: string): 'ascending' | 'descending' | 'none' =>
-    $view.sort?.key === key ? ($view.sort.direction === 'asc' ? 'ascending' : 'descending') : 'none'
-  const sortGlyph = (key: string) =>
-    $view.sort?.key === key ? ($view.sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
-
-  function toggleSort(key: string) {
-    users.setSort(nextSort($view.sort, key))
-  }
-  function onHeaderKey(e: KeyboardEvent, key: string) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      toggleSort(key)
-    }
+  function onSelectionChange(next: Array<string | number>) {
+    users.selection.clear()
+    for (const k of next) users.selection.select(String(k))
   }
 
   function openCreate() {
@@ -202,86 +181,71 @@
     />
   </div>
 
-  <table class="cms-table">
-    <thead>
-      <tr>
-        <th style="width: 36px">
-          <IrisCheckbox
-            value={allOnPage}
-            onchange={() => users.selection.toggleAll(pageIds)}
-            aria-label="Select all on page"
-          />
-        </th>
-        <th
-          scope="col"
-          aria-sort={ariaSort('name')}
-          tabindex={0}
-          style="cursor: pointer"
-          onclick={() => toggleSort('name')}
-          onkeydown={(e) => onHeaderKey(e, 'name')}
-        >
-          User<span aria-hidden="true">{sortGlyph('name')}</span>
-        </th>
-        <th
-          scope="col"
-          aria-sort={ariaSort('role')}
-          tabindex={0}
-          style="cursor: pointer"
-          onclick={() => toggleSort('role')}
-          onkeydown={(e) => onHeaderKey(e, 'role')}
-        >
-          Role<span aria-hidden="true">{sortGlyph('role')}</span>
-        </th>
-        <th scope="col">Status</th>
-        {#if canWrite}
-          <th scope="col" style="width: 120px; text-align: end">Actions</th>
-        {/if}
-      </tr>
-    </thead>
-    <tbody>
-      {#each $view.rows as u (u.id)}
-        <tr>
-          <td>
-            <IrisCheckbox
-              value={$view.selectedKeys.includes(String(u.id))}
-              onchange={() => users.selection.toggle(String(u.id))}
-              aria-label={`Select ${u.name}`}
-            />
-          </td>
-          <td>
-            <span class="cms-user">
-              <IrisAvatar name={u.name} size={32} />
-              <span>
-                <div style="font-weight: 600">{u.name}</div>
-                <div style="color: var(--iris-muted); font-size: 12px">{u.email}</div>
-              </span>
-            </span>
-          </td>
-          <td>{u.role}</td>
-          <td>
-            <IrisBadge tone={tone(u.status)} variant="subtle">{u.status}</IrisBadge>
-          </td>
-          {#if canWrite}
-            <td style="text-align: end">
-              <span style="display: inline-flex; gap: 6px">
-                <IrisButton size="sm" variant="ghost" onclick={() => openEdit(u)}>Edit</IrisButton>
-                <IrisButton size="sm" variant="ghost" onclick={() => (confirmDelete = u)}>
-                  Delete
-                </IrisButton>
-              </span>
-            </td>
-          {/if}
-        </tr>
-      {/each}
-      {#if $view.rows.length === 0}
-        <tr>
-          <td colspan={canWrite ? 5 : 4} style="color: var(--iris-muted); padding: 24px">
-            No users match the current filter.
-          </td>
-        </tr>
-      {/if}
-    </tbody>
-  </table>
+  {#snippet userCell(row: Record<string, unknown>)}
+    <span class="cms-user">
+      <IrisAvatar name={(row as unknown as User).name} size={32} />
+      <span>
+        <div style="font-weight: 600">{(row as unknown as User).name}</div>
+        <div style="color: var(--iris-muted); font-size: var(--iris-font-size-xs, 12px)">
+          {(row as unknown as User).email}
+        </div>
+      </span>
+    </span>
+  {/snippet}
+  {#snippet statusCell(row: Record<string, unknown>)}
+    <IrisBadge tone={tone((row as unknown as User).status)} variant="subtle">
+      {(row as unknown as User).status}
+    </IrisBadge>
+  {/snippet}
+  {#snippet actionsCell(row: Record<string, unknown>)}
+    <span style="display: inline-flex; gap: var(--iris-space-xs, 8px)">
+      <IrisButton size="sm" variant="ghost" onclick={() => openEdit(row as unknown as User)}
+        >Edit</IrisButton
+      >
+      <IrisButton
+        size="sm"
+        variant="ghost"
+        onclick={() => (confirmDelete = row as unknown as User)}
+      >
+        Delete
+      </IrisButton>
+    </span>
+  {/snippet}
+
+  <IrisTable
+    columns={[
+      {
+        key: 'name',
+        title: 'User',
+        sortable: true,
+        render: (_v: unknown, row: Record<string, unknown>) => userCell(row),
+      },
+      { key: 'role', title: 'Role', sortable: true },
+      {
+        key: 'status',
+        title: 'Status',
+        render: (_v: unknown, row: Record<string, unknown>) => statusCell(row),
+      },
+      ...(canWrite
+        ? [
+            {
+              key: 'actions',
+              title: 'Actions',
+              align: 'right' as const,
+              render: (_v: unknown, row: Record<string, unknown>) => actionsCell(row),
+            },
+          ]
+        : []),
+    ]}
+    data={$view.rows as unknown as Record<string, unknown>[]}
+    rowKey="id"
+    selectable="multi"
+    selection={$view.selectedKeys}
+    onselectionchange={onSelectionChange}
+    sort={$view.sort as IrisTableSortState | null}
+    onsortchange={(next: IrisTableSortState | null) => users.setSort(next)}
+    striped
+  ></IrisTable>
 
   <div style="margin-top: 16px">
     <IrisPagination

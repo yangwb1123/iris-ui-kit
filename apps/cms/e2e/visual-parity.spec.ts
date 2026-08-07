@@ -38,6 +38,8 @@ for (const theme of THEMES) {
       await toggle.click()
       await expect(toggle).toHaveAccessibleName('Light mode')
     }
+    // 消除焦点态差异（focus ring 会引入 primary 紫像素噪声）
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.())
     await page.waitForTimeout(400)
     await expect(page).toHaveScreenshot(`crossfw-${theme}-react.png`, {
       threshold: 0.2,

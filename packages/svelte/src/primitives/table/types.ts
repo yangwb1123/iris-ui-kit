@@ -40,6 +40,12 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    */
   renderSummary?: (value: number, rows: Row[]) => unknown
   /**
+   * Custom cell renderer (framework-native Svelte snippet). Receives the raw
+   * cell value and the row; return a snippet rendered in place of the plain
+   * value. Parity with React `render` / Vue `cell.{key}` slots.
+   */
+  render?: (value: unknown, row: Row) => unknown
+  /**
    * Child columns. A column WITH children is a header GROUP (not a data column);
    * its leaf descendants render the body. Additive: when absent the table is
    * flat (current behavior). Drives multi-level (grouped) headers.

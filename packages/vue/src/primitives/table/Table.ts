@@ -775,7 +775,7 @@ export const IrisTable = defineComponent({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '8px',
+                  padding: '8px 12px',
                   background: 'var(--iris-surface)',
                   borderBottom: '1px solid var(--iris-border)',
                 },
@@ -840,7 +840,7 @@ export const IrisTable = defineComponent({
                     background: 'var(--iris-surface)',
                     borderBottom: '1px solid var(--iris-border)',
                     fontWeight: '600',
-                    fontSize: 'var(--iris-font-size-sm, 13px)',
+                    fontSize: 'var(--iris-font-size-md, 14px)',
                     color: 'var(--iris-foreground)',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
@@ -898,7 +898,7 @@ export const IrisTable = defineComponent({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '8px',
+                padding: '8px 12px',
                 background: 'var(--iris-surface)',
                 borderBottom: '1px solid var(--iris-border)',
               },
@@ -987,7 +987,7 @@ export const IrisTable = defineComponent({
                 background: 'var(--iris-surface)',
                 borderBottom: '1px solid var(--iris-border)',
                 fontWeight: '600',
-                fontSize: 'var(--iris-font-size-sm, 13px)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
                 color: 'var(--iris-foreground)',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -1050,7 +1050,7 @@ export const IrisTable = defineComponent({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '8px',
+                  padding: '8px 12px',
                   borderBottom: '1px solid var(--iris-border)',
                 },
               },
@@ -1095,7 +1095,7 @@ export const IrisTable = defineComponent({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '8px',
+                  padding: '8px 12px',
                   borderBottom: '1px solid var(--iris-border)',
                 },
               },
@@ -1291,6 +1291,8 @@ export const IrisTable = defineComponent({
                   alignItems: 'center',
                   justifyContent:
                     align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start',
+                  background:
+                    props.striped && index % 2 === 1 ? 'var(--iris-surface)' : 'transparent',
                   padding: isEditing
                     ? 'var(--iris-space-xxs, 4px)'
                     : 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
@@ -1331,11 +1333,7 @@ export const IrisTable = defineComponent({
             style: {
               display: 'grid',
               gridTemplateColumns: gridTemplate.value,
-              background: selected
-                ? 'var(--iris-surface-hover)'
-                : props.striped && index % 2 === 1
-                  ? 'var(--iris-surface)'
-                  : 'transparent',
+              background: selected ? 'var(--iris-surface-hover)' : 'transparent',
               transition: 'background-color 120ms ease',
               cursor: 'default',
               ...style,
@@ -1472,7 +1470,7 @@ export const IrisTable = defineComponent({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '8px',
+                padding: '8px 12px',
               },
             }),
           )
@@ -1562,6 +1560,7 @@ export const IrisTable = defineComponent({
           style: {
             background: 'var(--iris-background)',
             color: 'var(--iris-foreground)',
+            fontSize: 'var(--iris-font-size-md, 14px)',
             border: props.bordered ? '1px solid var(--iris-border)' : 'none',
             borderRadius: 'var(--iris-radius-md)',
             // Column virtualization turns the table into a horizontal scroll container.

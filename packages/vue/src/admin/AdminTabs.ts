@@ -191,28 +191,23 @@ export const IrisAdminTabs = defineComponent({
         default: () => [
           h(
             IrisDropdownTrigger,
-            { 'aria-label': tr('admin.tabActions') },
             {
-              default: () =>
-                h(
-                  'span',
-                  {
-                    'data-iris-tab-actions': '',
-                    style: {
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: 'var(--iris-radius-md, 6px)',
-                      border: '1px solid var(--iris-border)',
-                      background: 'var(--iris-surface)',
-                      color: 'var(--iris-foreground)',
-                      cursor: 'pointer',
-                    },
-                  },
-                  [h(IrisIcon, { name: 'more-horizontal', size: 16 })],
-                ),
+              'aria-label': tr('admin.tabActions'),
+              style: {
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '28px',
+                height: '28px',
+                borderRadius: 'var(--iris-radius-md, 6px)',
+                border: '1px solid var(--iris-border)',
+                background: 'var(--iris-surface)',
+                color: 'var(--iris-foreground)',
+                cursor: 'pointer',
+              },
+            },
+            {
+              default: () => h(IrisIcon, { name: 'more-horizontal', size: 16 }),
             },
           ),
           h(IrisDropdownMenu, null, {

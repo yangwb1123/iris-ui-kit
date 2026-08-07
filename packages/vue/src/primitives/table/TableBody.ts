@@ -153,7 +153,7 @@ function renderRow(
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '8px',
+            padding: '8px 12px',
             borderBottom: '1px solid var(--iris-border)',
           },
         },
@@ -200,7 +200,7 @@ function renderRow(
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '8px',
+            padding: '8px 12px',
             borderBottom: '1px solid var(--iris-border)',
           },
         },
@@ -281,6 +281,7 @@ function renderRow(
             display: 'flex',
             alignItems: 'center',
             justifyContent: flexAlign(col.align),
+            background: props.striped && index % 2 === 1 ? 'var(--iris-surface)' : 'transparent',
             padding: isEditing
               ? 'var(--iris-space-xxs, 4px)'
               : 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
@@ -318,11 +319,7 @@ function renderRow(
       style: {
         display: 'grid',
         gridTemplateColumns: state.gridTemplate.value,
-        background: selected
-          ? 'var(--iris-surface-hover)'
-          : props.striped && index % 2 === 1
-            ? 'var(--iris-surface)'
-            : 'transparent',
+        background: selected ? 'var(--iris-surface-hover)' : 'transparent',
         transition: 'background-color 120ms ease',
         cursor: 'default',
         ...extraStyle,
@@ -463,7 +460,12 @@ export function renderSummaryRow(
         key: '__selection',
         role: 'cell',
         'data-iris-table-cell': '__selection',
-        style: { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px' },
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '8px 12px',
+        },
       }),
     )
   }

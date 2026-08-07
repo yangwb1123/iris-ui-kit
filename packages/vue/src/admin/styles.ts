@@ -106,7 +106,7 @@ const CSS = `
   background: var(--iris-nav-item-hover);
 }
 
-:where(.iris-nav-menu-item[data-active='true']) {
+.iris-nav-menu-item[data-active='true'] {
   background: var(--iris-primary);
   color: var(--iris-primary-foreground, #fff);
   font-weight: 600;

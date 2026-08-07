@@ -4,7 +4,6 @@ import {
   IrisAvatar,
   IrisBadge,
   IrisButton,
-  IrisCheckbox,
   IrisDialog,
   IrisDialogContent,
   IrisDialogTitle,
@@ -18,7 +17,10 @@ import {
   IrisPagination,
   IrisSelect,
   IrisStack,
+  IrisTable,
   useResourceController,
+  type IrisTableColumn,
+  type IrisTableSortState,
   useToast,
   type IrisListItem,
 } from '@iris-ui-kit/vue'
@@ -43,14 +45,6 @@ const statusItems: IrisListItem<UserStatus>[] = USER_STATUSES.map((s) => ({ valu
 const tone = (s: UserStatus): 'success' | 'warning' | 'danger' =>
   s === 'active' ? 'success' : s === 'invited' ? 'warning' : 'danger'
 
-/** Tri-state header sort cycle: none → asc → desc → none. */
-type Sort = { key: string; direction: 'asc' | 'desc' } | null
-function nextSort(current: Sort, key: string): Sort {
-  if (!current || current.key !== key) return { key, direction: 'asc' }
-  if (current.direction === 'asc') return { key, direction: 'desc' }
-  return null
-}
-
 const emptyDraft = (): UserDraft => ({ name: '', email: '', role: 'Viewer', status: 'invited' })
 
 // Admin-only write access drives the RBAC affordances (New / Edit / Delete).
@@ -66,20 +60,19 @@ const toast = useToast()
 const controller = useResourceController<User>({ fetcher: fetchUsers, pageSize: 6 })
 const { state, selection, setPage, setSort, setFilter, mutate } = controller
 
-const pageIds = computed(() => state.value.rows.map((u) => String(u.id)))
-const allOnPage = computed(
-  () => pageIds.value.length > 0 && pageIds.value.every((id) => selection.isSelected(id)),
-)
 const selectedIds = computed(() => state.value.selectedKeys.map(Number))
 
-const ariaSort = (key: string): 'ascending' | 'descending' | 'none' =>
-  state.value.sort?.key === key
-    ? state.value.sort.direction === 'asc'
-      ? 'ascending'
-      : 'descending'
-    : 'none'
-const sortGlyph = (key: string) =>
-  state.value.sort?.key === key ? (state.value.sort.direction === 'asc' ? ' ▲' : ' ▼') : ''
+const columns = computed<IrisTableColumn[]>(() => [
+  { key: 'name', title: 'User', sortable: true },
+  { key: 'role', title: 'Role', sortable: true },
+  { key: 'status', title: 'Status' },
+  ...(canWrite.value ? [{ key: 'actions', title: 'Actions', align: 'right' as const }] : []),
+])
+
+const onSelectionChange = (next: Array<string | number>) => {
+  selection.clear()
+  for (const k of next) selection.select(String(k))
+}
 
 // ── Drawer form + confirmation state ─────────────────────────────────────────
 const draft = ref<UserDraft>(emptyDraft())
@@ -201,80 +194,40 @@ async function doBulkDelete() {
       />
     </div>
 
-    <table class="cms-table">
-      <thead>
-        <tr>
-          <th style="width: 36px">
-            <IrisCheckbox
-              :model-value="allOnPage"
-              aria-label="Select all on page"
-              @update:model-value="selection.toggleAll(pageIds)"
-            />
-          </th>
-          <th
-            scope="col"
-            :aria-sort="ariaSort('name')"
-            :tabindex="0"
-            style="cursor: pointer"
-            @click="setSort(nextSort(state.sort, 'name'))"
-            @keydown.enter.prevent="setSort(nextSort(state.sort, 'name'))"
-            @keydown.space.prevent="setSort(nextSort(state.sort, 'name'))"
-          >
-            User<span aria-hidden="true">{{ sortGlyph('name') }}</span>
-          </th>
-          <th
-            scope="col"
-            :aria-sort="ariaSort('role')"
-            :tabindex="0"
-            style="cursor: pointer"
-            @click="setSort(nextSort(state.sort, 'role'))"
-            @keydown.enter.prevent="setSort(nextSort(state.sort, 'role'))"
-            @keydown.space.prevent="setSort(nextSort(state.sort, 'role'))"
-          >
-            Role<span aria-hidden="true">{{ sortGlyph('role') }}</span>
-          </th>
-          <th scope="col">Status</th>
-          <th v-if="canWrite" scope="col" style="width: 120px; text-align: end">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="u in state.rows" :key="u.id">
-          <td>
-            <IrisCheckbox
-              :model-value="selection.isSelected(String(u.id))"
-              :aria-label="`Select ${u.name}`"
-              @update:model-value="selection.toggle(String(u.id))"
-            />
-          </td>
-          <td>
-            <span class="cms-user">
-              <IrisAvatar :name="u.name" :size="32" />
-              <span>
-                <div style="font-weight: 600">{{ u.name }}</div>
-                <div style="color: var(--iris-muted); font-size: 12px">{{ u.email }}</div>
-              </span>
-            </span>
-          </td>
-          <td>{{ u.role }}</td>
-          <td>
-            <IrisBadge :tone="tone(u.status)" variant="subtle">{{ u.status }}</IrisBadge>
-          </td>
-          <td v-if="canWrite" style="text-align: end">
-            <span style="display: inline-flex; gap: 6px">
-              <IrisButton size="sm" variant="ghost" @click="openEdit(u)">Edit</IrisButton>
-              <IrisButton size="sm" variant="ghost" @click="confirmDelete = u">Delete</IrisButton>
-            </span>
-          </td>
-        </tr>
-        <tr v-if="state.rows.length === 0">
-          <td :colspan="canWrite ? 5 : 4" style="color: var(--iris-muted); padding: 24px">
-            No users match the current filter.
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <IrisTable
+      :columns="columns"
+      :data="state.rows as unknown as Record<string, unknown>[]"
+      row-key="id"
+      selectable="multi"
+      :selection="state.selectedKeys"
+      @update:selection="onSelectionChange"
+      :sort="state.sort as IrisTableSortState | null"
+      @update:sort="setSort"
+      :striped="true"
+    >
+      <template #cell-name="{ row }">
+        <span class="cms-user">
+          <IrisAvatar :name="row.name" :size="32" />
+          <span>
+            <div style="font-weight: 600">{{ row.name }}</div>
+            <div style="color: var(--iris-muted); font-size: var(--iris-font-size-xs, 12px)">
+              {{ row.email }}
+            </div>
+          </span>
+        </span>
+      </template>
+      <template #cell-status="{ row }">
+        <IrisBadge :tone="tone(row.status)" variant="subtle">{{ row.status }}</IrisBadge>
+      </template>
+      <template v-if="canWrite" #cell-actions="{ row }">
+        <span style="display: inline-flex; gap: var(--iris-space-xs, 8px)">
+          <IrisButton size="sm" variant="ghost" @click="openEdit(row)">Edit</IrisButton>
+          <IrisButton size="sm" variant="ghost" @click="confirmDelete = row">Delete</IrisButton>
+        </span>
+      </template>
+    </IrisTable>
 
-    <div style="margin-top: 16px">
+    <div style="margin-top: var(--iris-space-md, 16px)">
       <IrisPagination
         :model-value="state.page"
         :total="state.total"

@@ -9,6 +9,11 @@ export interface IrisGaugeProps {
   /** Diameter in px. */
   size?: number
   strokeWidth?: number
+  /**
+   * Semantic status — drives the stroke color. Explicit by design (honesty
+   * preserved): for threshold-based decision support, derive it yourself,
+   * e.g. `status={value > 80 ? 'danger' : value > 60 ? 'warning' : 'success'}`.
+   */
   status?: IrisGaugeStatus
   showValue?: boolean
   /** Custom center label given the value and rounded percent. */

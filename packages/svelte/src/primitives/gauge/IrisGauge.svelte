@@ -14,6 +14,7 @@
     max = 100,
     size = 120,
     strokeWidth = 10,
+    /** Semantic status (explicit by design; derive thresholds in the consumer). */
     status = 'default',
     showValue = true,
     format,

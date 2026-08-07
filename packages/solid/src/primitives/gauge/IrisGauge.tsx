@@ -16,6 +16,7 @@ export interface IrisGaugeProps {
   /** Diameter in px */
   size?: number
   strokeWidth?: number
+  /** Semantic status (explicit by design; derive thresholds in the consumer, e.g. value > 80 ? 'danger' : 'success'). */
   status?: IrisGaugeStatus
   showValue?: boolean
   format?: (value: number, percent: number) => string

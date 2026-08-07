@@ -24,6 +24,7 @@ export const IrisGauge = defineComponent({
     /** Diameter in px. */
     size: { type: Number, default: 120 },
     strokeWidth: { type: Number, default: 10 },
+    /** Semantic status (explicit by design; derive thresholds in the consumer). */
     status: { type: String as PropType<IrisGaugeStatus>, default: 'default' },
     showValue: { type: Boolean, default: true },
     /** Custom center label given the value and rounded percent. */

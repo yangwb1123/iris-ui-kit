@@ -49,6 +49,9 @@ const CSS = `
 .iris-button[data-iris-button-variant="solid"]:not([disabled]):not([aria-busy="true"]):hover {
   filter: brightness(1.08);
 }
+.iris-button:not([disabled]):not([aria-busy="true"]):active {
+  transform: scale(0.98);
+}
 .iris-button[data-iris-button-variant="outline"]:not([disabled]):not([aria-busy="true"]):hover,
 .iris-button[data-iris-button-variant="ghost"]:not([disabled]):not([aria-busy="true"]):hover {
   background-color: var(--iris-surface-hover);

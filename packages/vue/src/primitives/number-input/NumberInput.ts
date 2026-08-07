@@ -166,7 +166,7 @@ export const IrisNumberInput = defineComponent({
           ? 'var(--iris-primary)'
           : 'var(--iris-border)'
       const boxShadow = focused.value
-        ? `0 0 0 3px ${props.invalid ? 'rgba(239, 68, 68, 0.18)' : 'rgba(99, 102, 241, 0.18)'}`
+        ? `0 0 0 3px ${props.invalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
         : 'none'
       return {
         display: 'inline-flex',

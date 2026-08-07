@@ -72,3 +72,10 @@
     </div>
   {/if}
 </div>
+
+<style>
+  [data-iris-card-hover='true']:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--iris-shadow-md);
+  }
+</style>

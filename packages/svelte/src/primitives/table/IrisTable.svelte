@@ -958,7 +958,8 @@
                 }
               : undefined}
             ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}
-            style="display: flex; align-items: center; justify-content: {col.align === 'right'
+            style="display: flex; align-items: center; justify-content: {(col.align ??
+              (typeof getCellValue(row, col) === 'number' ? 'right' : 'left')) === 'right'
               ? 'flex-end'
               : col.align === 'center'
                 ? 'center'
@@ -969,7 +970,7 @@
               : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: var(--iris-font-size-md, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable
               ? 'cell'
               : 'default'}{cellRange && isInRange(index, ci)
-              ? '; background: var(--iris-surface-selected, rgba(99,102,241,0.12))'
+              ? '; background: var(--iris-surface-selected, color-mix(in srgb, var(--iris-primary) 12%, transparent))'
               : ''}"
           >
             {#if treeMeta && ci === 0}

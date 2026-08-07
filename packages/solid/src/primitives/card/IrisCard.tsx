@@ -1,5 +1,21 @@
-import { mergeProps, Show, splitProps, type JSX } from 'solid-js'
+import { mergeProps, onMount, Show, splitProps, type JSX } from 'solid-js'
 
+const STYLE_ID = 'iris-card-styles'
+let installed = false
+function installCardStyles() {
+  if (installed || typeof document === 'undefined') return
+  installed = true
+  if (document.getElementById(STYLE_ID)) return
+  const style = document.createElement('style')
+  style.id = STYLE_ID
+  style.textContent = `
+[data-iris-card-hover="true"]:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--iris-shadow-md);
+}
+`
+  document.head.appendChild(style)
+}
 export type IrisCardVariant = 'elevated' | 'outline' | 'subtle'
 export type IrisCardPadding = 'none' | 'sm' | 'md' | 'lg'
 
@@ -55,6 +71,7 @@ export function IrisCard(props: IrisCardProps): JSX.Element {
 
   const sectionPadding = () => PADDING_MAP[local.padding]
 
+  onMount(installCardStyles)
   return (
     <div
       {...rest}

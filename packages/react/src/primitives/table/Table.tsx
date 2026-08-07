@@ -157,6 +157,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   error = false,
   loadingState,
   errorState,
+  onRetry,
   style,
   className,
   ...rest
@@ -705,7 +706,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 ...baseCellStyle,
                 ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
                 justifyContent:
-                  col.align === 'right'
+                  (col.align ?? (typeof getCellValue(row, col) === 'number' ? 'right' : 'left')) ===
+                  'right'
                     ? 'flex-end'
                     : col.align === 'center'
                       ? 'center'
@@ -1082,7 +1084,27 @@ export function IrisTable<Row extends Record<string, unknown>>({
       {/* Body — state precedence: error → loading → empty → rows. */}
       {error ? (
         <div role="row" data-iris-table-row="error" style={STATE_ROW_STYLE}>
-          {errorState ?? t('table.error')}
+          <span style={{ marginInlineEnd: onRetry ? 'var(--iris-space-sm, 12px)' : 0 }}>
+            {errorState ?? t('table.error')}
+          </span>
+          {onRetry ? (
+            <button
+              type="button"
+              data-iris-table-retry=""
+              onClick={onRetry}
+              style={{
+                border: '1px solid var(--iris-border)',
+                background: 'var(--iris-surface)',
+                color: 'var(--iris-foreground)',
+                borderRadius: 'var(--iris-radius-sm, 4px)',
+                padding: '2px 10px',
+                fontSize: 'var(--iris-font-size-sm, 13px)',
+                cursor: 'pointer',
+              }}
+            >
+              {t('table.retry')}
+            </button>
+          ) : null}
         </div>
       ) : loading ? (
         <div role="row" aria-busy="true" data-iris-table-row="loading" style={STATE_ROW_STYLE}>

@@ -243,6 +243,8 @@ export function IrisList<T = unknown>({
         flexDirection: 'column',
         gap: 'var(--iris-space-xxs, 4px)',
         outline: 'none',
+        maxHeight: 240,
+        overflowY: 'auto',
         ...style,
       }}
     >

@@ -4,7 +4,7 @@ import { useI18n } from '../../i18n'
 export type IrisBannerTone = 'info' | 'success' | 'warning' | 'danger' | 'neutral'
 
 const TONE_TO_VAR: Record<IrisBannerTone, string> = {
-  info: '--iris-primary',
+  info: '--iris-info',
   success: '--iris-success',
   warning: '--iris-warning',
   danger: '--iris-danger',

@@ -63,6 +63,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   loadingState?: ReactNode
   /** Custom error-state node. */
   errorState?: ReactNode
+  /** Fired by the built-in Retry button in the error state row. */
+  onRetry?: () => void
   style?: CSSProperties
   className?: string
 }

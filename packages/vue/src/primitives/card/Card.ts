@@ -1,5 +1,21 @@
 import { computed, defineComponent, h, type PropType } from 'vue'
 
+const STYLE_ID = 'iris-card-styles'
+let installed = false
+function installCardStyles() {
+  if (installed || typeof document === 'undefined') return
+  installed = true
+  if (document.getElementById(STYLE_ID)) return
+  const style = document.createElement('style')
+  style.id = STYLE_ID
+  style.textContent = `
+[data-iris-card-hover="true"]:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--iris-shadow-md);
+}
+`
+  document.head.appendChild(style)
+}
 export type IrisCardVariant = 'elevated' | 'outline' | 'subtle'
 export type IrisCardPadding = 'none' | 'sm' | 'md' | 'lg'
 
@@ -28,6 +44,7 @@ export const IrisCard = defineComponent({
     hover: { type: Boolean, default: false },
   },
   setup(props, { slots, attrs }) {
+    installCardStyles()
     const containerStyle = computed<Record<string, string>>(() => {
       const base: Record<string, string> = {
         display: 'flex',

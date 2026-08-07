@@ -11,6 +11,11 @@
     neutral: 'var(--iris-muted)',
   }
   const TREND_ARROW: Record<StatisticTrend, string> = { up: '▲', down: '▼', neutral: '' }
+  const TREND_TONE: Record<string, string> = {
+    success: 'var(--iris-success, #10b981)',
+    danger: 'var(--iris-danger)',
+    neutral: 'var(--iris-muted)',
+  }
 
   let {
     label = undefined as string | number | undefined,
@@ -20,6 +25,7 @@
     description = undefined as string | number | undefined,
     trend = undefined as StatisticTrend | undefined,
     trendValue = undefined as string | number | undefined,
+    trendTone = undefined as 'success' | 'danger' | 'neutral' | undefined,
     size = 'md' as StatisticSize,
     style,
     ...rest
@@ -62,7 +68,9 @@
     <div
       data-iris-statistic-trend
       style="display: inline-flex; align-items: center; gap: var(--iris-space-xxs, 4px); font-size: var(--iris-font-size-sm, 13px); color: {trend
-        ? TREND_COLOR[trend]
+        ? trendTone
+          ? TREND_TONE[trendTone]
+          : TREND_COLOR[trend]
         : 'var(--iris-muted)'}"
     >
       {#if trend && TREND_ARROW[trend]}

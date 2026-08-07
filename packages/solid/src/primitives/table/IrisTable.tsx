@@ -688,7 +688,8 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                     display: 'flex',
                     'align-items': 'center',
                     'justify-content':
-                      col.align === 'right'
+                      (col.align ??
+                        (typeof getCellValue(row, col) === 'number' ? 'right' : 'left')) === 'right'
                         ? 'flex-end'
                         : col.align === 'center'
                           ? 'center'

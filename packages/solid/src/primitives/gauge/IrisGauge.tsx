@@ -72,7 +72,9 @@ export function IrisGauge(props: IrisGaugeProps): JSX.Element {
       aria-valuenow={local.value}
       aria-valuemin={local.min}
       aria-valuemax={local.max}
-      aria-valuetext={`${percent()}%`}
+      aria-valuetext={
+        local.min === 0 && local.max === 100 ? `${percent()}%` : `${local.value} (${percent()}%)`
+      }
       aria-label={local.ariaLabel}
       style={{
         position: 'relative',
@@ -121,7 +123,11 @@ export function IrisGauge(props: IrisGaugeProps): JSX.Element {
             'font-variant-numeric': 'tabular-nums',
           }}
         >
-          {local.format ? local.format(local.value, percent()) : `${percent()}%`}
+          {local.format
+            ? local.format(local.value, percent())
+            : local.min === 0 && local.max === 100
+              ? `${percent()}%`
+              : String(local.value)}
         </div>
       )}
     </div>

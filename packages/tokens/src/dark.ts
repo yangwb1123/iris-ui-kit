@@ -23,6 +23,7 @@ export const darkTheme: IrisTheme = {
     'iris.muted.subtle': '#1f2937',
     'iris.surface.selected': '#1e1b4b',
     'iris.primary.ghost': '#1e1b4b',
+    'iris.backdrop': 'rgba(0, 0, 0, 0.6)',
     'iris.font.family': "'Inter', system-ui, sans-serif",
     'iris.font.mono': "'JetBrains Mono', 'Fira Code', monospace",
     'iris.font.size.xs': '12px',

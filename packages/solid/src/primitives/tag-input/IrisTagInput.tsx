@@ -109,7 +109,9 @@ export function IrisTagInput(props: IrisTagInputProps): JSX.Element {
         border: `1px solid ${borderColor()}`,
         'border-radius': 'var(--iris-radius-md, 6px)',
         opacity: local.disabled ? 0.6 : 1,
-        'box-shadow': focused() ? '0 0 0 3px rgba(99,102,241,0.18)' : 'none',
+        'box-shadow': focused()
+          ? '0 0 0 3px color-mix(in srgb, var(--iris-primary) 18%, transparent)'
+          : 'none',
         transition: 'border-color 120ms ease, box-shadow 120ms ease',
         ...((typeof local.style === 'object' ? local.style : {}) as JSX.CSSProperties),
       }}

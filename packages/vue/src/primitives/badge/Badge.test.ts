@@ -39,7 +39,7 @@ describe('IrisBadge', () => {
     const w = mount(IrisBadge, { props: { variant: 'solid', tone: 'success' } })
     const style = w.attributes('style') ?? ''
     expect(style).toContain('--iris-success')
-    expect(style).toContain('--iris-primary-foreground')
+    expect(style).toContain('--iris-foreground')
   })
 
   it('outline variant has transparent background + colored border', () => {

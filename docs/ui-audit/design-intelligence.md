@@ -221,3 +221,25 @@ _Spec numbers from `ui-specs/component-spec.md` + `tokens.json`; the library del
 - **Form-family consistency** (Input/Select/Combobox/DatePicker/TimePicker share sizes, borders, rings, disabled/invalid treatment) — a genuine cognitive-load win.
 - **Honest data rendering** — clamping, ARIA meter/progressbar semantics, and correct indeterminate handling (`progress/Progress.tsx:43-48`) show a library that respects the difference between showing data and decorating it.
 - **Reduced-motion and a11y hygiene** (skeleton/spinner media queries, focus traps, `aria-live` on spinner, alert role semantics, safe-area insets) — the emotional-design layer is engineered, not decorative.
+
+---
+
+## 执行状态（2026-08-07）
+
+| 项                                               | 状态                                  |
+| ------------------------------------------------ | ------------------------------------- |
+| R1 Button danger variant（四框架）               | ✅ af7a9232                           |
+| R2 Select 空状态（四框架 + i18n）                | ✅ af7a9232                           |
+| D2.1 Select/IrisList 弹层 max-height 240px       | ✅ 本迭代                             |
+| D2.4 Card hover 单例样式（:hover 规则）          | ✅ 本迭代                             |
+| D3.3 Button :active scale(0.98)                  | ✅ 本迭代                             |
+| D4.1 Statistic trendTone 覆盖 prop               | ✅ 本迭代                             |
+| D4.3 Gauge 非 0-100 显示原始值 + aria-valuetext  | ✅ 本迭代                             |
+| D5.1 Badge solid per-tone 前景（AA 对比度）      | ✅ 本迭代                             |
+| D5.2 info tone 统一 --iris-info（12 文件）       | ✅ 本迭代                             |
+| D5.3 focus ring 去硬编码（color-mix，28 文件）   | ✅ 本迭代                             |
+| D5.4 Dialog backdrop token（light 0.4/dark 0.6） | ✅ 本迭代                             |
+| R4 数字列默认右对齐（四框架 Table）              | ✅ 本迭代                             |
+| D3.2 Table 错误态重试按钮（onRetry + i18n）      | ✅ 本迭代                             |
+| R3 Table 选中计数 / R5 Select 选中项软化         | 记录（JUDGMENT，待维护者决策）        |
+| D3.1 空态文案教学化 / D4.2 Gauge 阈值映射        | 记录（JUDGMENT，默认简洁文案+可定制） |

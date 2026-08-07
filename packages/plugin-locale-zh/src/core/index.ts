@@ -46,6 +46,7 @@ export const zhCNMessages: Record<string, string> = {
   'table.empty': '暂无数据',
   'table.loading': '加载中…',
   'table.error': '数据加载失败',
+  'table.retry': '重试',
   'list.empty': '暂无数据',
   'list.loading': '加载中…',
   'list.error': '加载失败',

@@ -36,7 +36,9 @@ describe('@iris-ui-kit/react IrisGauge', () => {
 
   it('respects the min/max range', () => {
     const { container } = render(<IrisGauge value={5} min={0} max={10} />)
-    expect(label(container)?.textContent).toBe('50%')
+    // 非 0-100 范围显示原始值（诚实表达）
+    expect(label(container)?.textContent).toBe('5')
+    expect(meter(container)?.getAttribute('aria-valuetext')).toContain('50%')
   })
 
   it('showValue=false hides the label; status sets the data attr', () => {

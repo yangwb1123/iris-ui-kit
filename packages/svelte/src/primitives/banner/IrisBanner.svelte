@@ -6,7 +6,7 @@
   type BannerTone = 'info' | 'success' | 'warning' | 'danger' | 'neutral'
 
   const TONE_TO_VAR: Record<BannerTone, string> = {
-    info: '--iris-primary',
+    info: '--iris-info',
     success: '--iris-success',
     warning: '--iris-warning',
     danger: '--iris-danger',

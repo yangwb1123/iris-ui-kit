@@ -185,6 +185,8 @@ export const IrisList = defineComponent({
               : 'transparent',
           color: selected ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
           outline: 'none',
+          maxHeight: '240px',
+          overflowY: 'auto',
         }
 
         const slotContent = slots.item?.({

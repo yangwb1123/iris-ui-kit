@@ -126,6 +126,7 @@ export const IrisTable = defineComponent({
     loading: { type: Boolean, default: false },
     /** Show the error state instead of rows (takes precedence over loading). */
     error: { type: Boolean, default: false },
+    onRetry: { type: Function as PropType<(() => void) | undefined>, default: undefined },
     /** Render only the horizontally-visible columns (+ pinned + overscan) for wide tables. */
     columnVirtualization: { type: Boolean, default: false },
     /**
@@ -1353,11 +1354,33 @@ export const IrisTable = defineComponent({
       let bodyNode: VNode
       // Precedence: error → loading → empty → rows.
       if (props.error) {
-        bodyNode = h(
-          'div',
-          { role: 'row', 'data-iris-table-row': 'error', style: stateRowStyle },
-          slots.error ? slots.error() : t('table.error'),
-        )
+        bodyNode = h('div', { role: 'row', 'data-iris-table-row': 'error', style: stateRowStyle }, [
+          h(
+            'span',
+            { style: { marginInlineEnd: props.onRetry ? 'var(--iris-space-sm, 12px)' : '0px' } },
+            slots.error ? slots.error() : t('table.error'),
+          ),
+          props.onRetry
+            ? h(
+                'button',
+                {
+                  type: 'button',
+                  'data-iris-table-retry': '',
+                  onClick: props.onRetry,
+                  style: {
+                    border: '1px solid var(--iris-border)',
+                    background: 'var(--iris-surface)',
+                    color: 'var(--iris-foreground)',
+                    borderRadius: 'var(--iris-radius-sm, 4px)',
+                    padding: '2px 10px',
+                    fontSize: 'var(--iris-font-size-sm, 13px)',
+                    cursor: 'pointer',
+                  },
+                },
+                t('table.retry'),
+              )
+            : null,
+        ])
       } else if (props.loading) {
         bodyNode = h(
           'div',

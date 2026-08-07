@@ -64,7 +64,7 @@ export function IrisGauge({
       aria-valuenow={value}
       aria-valuemin={min}
       aria-valuemax={max}
-      aria-valuetext={`${percent}%`}
+      aria-valuetext={min === 0 && max === 100 ? `${percent}%` : `${value} (${percent}%)`}
       aria-label={ariaLabel}
       className={className}
       {...rest}
@@ -105,7 +105,11 @@ export function IrisGauge({
             fontVariantNumeric: 'tabular-nums',
           }}
         >
-          {format ? format(value, percent) : `${percent}%`}
+          {format
+            ? format(value, percent)
+            : min === 0 && max === 100
+              ? `${percent}%`
+              : String(value)}
         </div>
       ) : null}
     </div>

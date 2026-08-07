@@ -7,7 +7,7 @@
   type AlertTone = 'info' | 'success' | 'warning' | 'danger'
 
   const TONE_TO_VAR: Record<AlertTone, string> = {
-    info: '--iris-primary',
+    info: '--iris-info',
     success: '--iris-success',
     warning: '--iris-warning',
     danger: '--iris-danger',

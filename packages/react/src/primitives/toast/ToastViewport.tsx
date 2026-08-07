@@ -23,7 +23,7 @@ const VARIANT_BORDER: Record<IrisToastVariant, string> = {
   success: 'var(--iris-success)',
   danger: 'var(--iris-danger)',
   warning: 'var(--iris-warning)',
-  info: 'var(--iris-primary)',
+  info: 'var(--iris-info)',
 }
 
 const VARIANT_ACCENT: Record<IrisToastVariant, string> = {
@@ -31,7 +31,7 @@ const VARIANT_ACCENT: Record<IrisToastVariant, string> = {
   success: 'var(--iris-success)',
   danger: 'var(--iris-danger)',
   warning: 'var(--iris-warning)',
-  info: 'var(--iris-primary)',
+  info: 'var(--iris-info)',
 }
 
 function positionStyle(position: IrisToastPosition): React.CSSProperties {

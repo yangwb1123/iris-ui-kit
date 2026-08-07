@@ -45,7 +45,7 @@ describe('@iris-ui-kit/react IrisBadge', () => {
     )
     const style = screen.getByText('x').getAttribute('style') ?? ''
     expect(style).toContain('--iris-success')
-    expect(style).toContain('--iris-primary-foreground')
+    expect(style).toContain('--iris-foreground')
   })
 
   it('outline variant uses transparent background + colored border', () => {

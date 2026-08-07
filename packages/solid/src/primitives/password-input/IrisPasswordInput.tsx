@@ -100,7 +100,7 @@ export function IrisPasswordInput(props: IrisPasswordInputProps): JSX.Element {
 
   const boxShadow = (): string =>
     focused()
-      ? `0 0 0 3px ${local.invalid ? 'rgba(239,68,68,0.18)' : 'rgba(99,102,241,0.18)'}`
+      ? `0 0 0 3px ${local.invalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
       : 'none'
 
   const wrapperStyle = (): JSX.CSSProperties => ({

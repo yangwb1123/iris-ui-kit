@@ -104,6 +104,7 @@ export const defaultMessages: I18nMessages = {
   'table.empty': 'No data',
   'table.loading': 'Loading…',
   'table.error': 'Failed to load data',
+  'table.retry': 'Retry',
   'list.empty': 'No items',
   'list.loading': 'Loading…',
   'list.error': 'Failed to load',

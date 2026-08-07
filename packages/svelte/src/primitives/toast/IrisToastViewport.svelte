@@ -37,7 +37,7 @@
     success: 'var(--iris-success)',
     danger: 'var(--iris-danger)',
     warning: 'var(--iris-warning)',
-    info: 'var(--iris-primary)',
+    info: 'var(--iris-info)',
   }
 
   const VARIANT_ACCENT: Record<IrisToastVariant, string> = {
@@ -45,7 +45,7 @@
     success: 'var(--iris-success)',
     danger: 'var(--iris-danger)',
     warning: 'var(--iris-warning)',
-    info: 'var(--iris-primary)',
+    info: 'var(--iris-info)',
   }
 
   let toasts = $state<IrisToast[]>(getToasts())

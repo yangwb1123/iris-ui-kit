@@ -55,7 +55,8 @@ export const IrisGauge = defineComponent({
           'aria-valuenow': props.value,
           'aria-valuemin': props.min,
           'aria-valuemax': props.max,
-          'aria-valuetext': `${percent}%`,
+          'aria-valuetext':
+            props.min === 0 && props.max === 100 ? `${percent}%` : `${props.value} (${percent}%)`,
           'aria-label': props.ariaLabel,
           style: {
             position: 'relative',
@@ -111,7 +112,11 @@ export const IrisGauge = defineComponent({
                     fontVariantNumeric: 'tabular-nums',
                   },
                 },
-                props.format ? props.format(props.value, percent) : `${percent}%`,
+                props.format
+                  ? props.format(props.value, percent)
+                  : props.min === 0 && props.max === 100
+                    ? `${percent}%`
+                    : String(props.value),
               )
             : null,
         ],

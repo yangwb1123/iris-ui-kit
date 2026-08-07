@@ -2,6 +2,7 @@ import { defineComponent, h, type PropType } from 'vue'
 
 export type IrisStatisticSize = 'sm' | 'md' | 'lg'
 export type IrisStatisticTrend = 'up' | 'down' | 'neutral'
+export type IrisStatisticTone = 'success' | 'danger' | 'neutral'
 
 const VALUE_FONT: Record<IrisStatisticSize, number> = { sm: 20, md: 28, lg: 36 }
 const TREND_COLOR: Record<IrisStatisticTrend, string> = {
@@ -10,6 +11,11 @@ const TREND_COLOR: Record<IrisStatisticTrend, string> = {
   neutral: 'var(--iris-muted)',
 }
 const TREND_ARROW: Record<IrisStatisticTrend, string> = { up: '▲', down: '▼', neutral: '' }
+const TREND_TONE: Record<IrisStatisticTone, string> = {
+  success: 'var(--iris-success, #10b981)',
+  danger: 'var(--iris-danger)',
+  neutral: 'var(--iris-muted)',
+}
 
 /**
  * Compact statistic / KPI display: a label, a prominent value (with optional
@@ -27,6 +33,7 @@ export const IrisStatistic = defineComponent({
     description: { type: [String, Number], default: undefined },
     trend: { type: String as PropType<IrisStatisticTrend>, default: undefined },
     trendValue: { type: [String, Number], default: undefined },
+    trendTone: { type: String as PropType<IrisStatisticTone>, default: undefined },
     size: { type: String as PropType<IrisStatisticSize>, default: 'md' },
   },
   setup(props, { attrs }) {
@@ -98,7 +105,11 @@ export const IrisStatistic = defineComponent({
                     alignItems: 'center',
                     gap: '4px',
                     fontSize: 'var(--iris-font-size-sm, 13px)',
-                    color: props.trend ? TREND_COLOR[props.trend] : 'var(--iris-muted)',
+                    color: props.trend
+                      ? props.trendTone
+                        ? TREND_TONE[props.trendTone]
+                        : TREND_COLOR[props.trend]
+                      : 'var(--iris-muted)',
                   },
                 },
                 [

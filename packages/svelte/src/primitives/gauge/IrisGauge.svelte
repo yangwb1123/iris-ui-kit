@@ -55,7 +55,7 @@
   aria-valuenow={value}
   aria-valuemin={min}
   aria-valuemax={max}
-  aria-valuetext="{percent}%"
+  aria-valuetext={min === 0 && max === 100 ? `${percent}%` : `${value} (${percent}%)`}
   aria-label={ariaLabel}
   style="position:relative; display:inline-block; width:{size}px;{style ? ' ' + style : ''}"
 >
@@ -86,7 +86,7 @@
         size * 0.18,
       )}px; font-weight:600; color:var(--iris-foreground); font-variant-numeric:tabular-nums;"
     >
-      {format ? format(value, percent) : `${percent}%`}
+      {format ? format(value, percent) : min === 0 && max === 100 ? `${percent}%` : String(value)}
     </div>
   {/if}
 </div>

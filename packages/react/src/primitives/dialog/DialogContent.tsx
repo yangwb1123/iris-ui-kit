@@ -84,7 +84,7 @@ export const IrisDialogContent = React.forwardRef<HTMLDivElement, IrisDialogCont
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
+          background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
           zIndex: 1200,
           display: 'flex',
           alignItems: 'center',

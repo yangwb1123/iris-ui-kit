@@ -104,7 +104,7 @@
     use:portal={portalTarget}
     data-iris-drawer-backdrop
     onpointerdown={handleBackdropPointerDown}
-    style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1199"
+    style="position: fixed; inset: 0; background: var(--iris-backdrop, rgba(0, 0, 0, 0.5)); z-index: 1199"
   ></div>
   <!-- panel -->
   <div

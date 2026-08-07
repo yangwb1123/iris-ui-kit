@@ -2,6 +2,7 @@ import { mergeProps, Show, splitProps, type JSX } from 'solid-js'
 
 export type IrisStatisticSize = 'sm' | 'md' | 'lg'
 export type IrisStatisticTrend = 'up' | 'down' | 'neutral'
+export type IrisStatisticTone = 'success' | 'danger' | 'neutral'
 
 const VALUE_FONT: Record<IrisStatisticSize, number> = { sm: 20, md: 28, lg: 36 }
 const TREND_COLOR: Record<IrisStatisticTrend, string> = {
@@ -10,6 +11,11 @@ const TREND_COLOR: Record<IrisStatisticTrend, string> = {
   neutral: 'var(--iris-muted)',
 }
 const TREND_ARROW: Record<IrisStatisticTrend, string> = { up: '▲', down: '▼', neutral: '' }
+const TREND_TONE: Record<IrisStatisticTone, string> = {
+  success: 'var(--iris-success, #10b981)',
+  danger: 'var(--iris-danger)',
+  neutral: 'var(--iris-muted)',
+}
 
 export interface IrisStatisticProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'prefix'> {
   label?: string | number
@@ -18,6 +24,7 @@ export interface IrisStatisticProps extends Omit<JSX.HTMLAttributes<HTMLDivEleme
   suffix?: string | number
   description?: string | number
   trend?: IrisStatisticTrend
+  trendTone?: IrisStatisticTone
   trendValue?: string | number
   size?: IrisStatisticSize
 }
@@ -35,6 +42,7 @@ export function IrisStatistic(props: IrisStatisticProps): JSX.Element {
     'suffix',
     'description',
     'trend',
+    'trendTone',
     'trendValue',
     'size',
     'style',
@@ -94,7 +102,11 @@ export function IrisStatistic(props: IrisStatisticProps): JSX.Element {
             'align-items': 'center',
             gap: '4px',
             'font-size': 'var(--iris-font-size-sm, 13px)',
-            color: local.trend ? TREND_COLOR[local.trend] : 'var(--iris-muted)',
+            color: local.trend
+              ? local.trendTone
+                ? TREND_TONE[local.trendTone]
+                : TREND_COLOR[local.trend]
+              : 'var(--iris-muted)',
           }}
         >
           <Show when={local.trend && TREND_ARROW[local.trend]}>

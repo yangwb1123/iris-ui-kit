@@ -23,6 +23,7 @@ export const COLOR_TOKENS = [
   'iris.muted.subtle',
   'iris.surface.selected',
   'iris.primary.ghost',
+  'iris.backdrop',
   'iris.font.family',
   'iris.font.mono',
   'iris.font.size.xs',

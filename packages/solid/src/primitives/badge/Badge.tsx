@@ -39,7 +39,12 @@ export function badgeStyle(
     return {
       ...base,
       background: v,
-      color: 'var(--iris-primary-foreground, #fff)',
+      color:
+        tone === 'warning'
+          ? 'var(--iris-warning-foreground, #78350f)'
+          : tone === 'primary'
+            ? 'var(--iris-primary-foreground, #fff)'
+            : 'var(--iris-foreground, #0f172a)',
       border: '1px solid transparent',
     }
   if (variant === 'outline')

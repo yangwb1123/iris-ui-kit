@@ -122,6 +122,7 @@ export const zhCNMessages: Record<string, string> = {
   'rating.label': '评分',
   // select / table
   'select.options': '选项',
+  'select.empty': '无选项',
   'table.selectAll': '全选',
   'table.selectRow': '选择第 {key} 行',
   // transfer

@@ -1,4 +1,4 @@
-import { computed, defineComponent, h, ref, type PropType, type VNode } from 'vue'
+import { computed, defineComponent, h, ref, type PropType, type Ref } from 'vue'
 import { useDrag } from '../primitives/drag/useDrag'
 
 export type IrisResizableHandle =
@@ -66,6 +66,86 @@ function handlePosition(handle: IrisResizableHandle): Record<string, string> {
 }
 
 /**
+ * Internal per-handle sub-component (NOT exported). Declared at module level
+ * so its type identity is stable across parent re-renders: each handle
+ * instance's `setup()` — and therefore its single `useDrag` call — runs
+ * exactly once. The previous implementation invoked `useDrag` from a
+ * per-render `renderHandle()` helper with a fresh ref each time; because Vue
+ * never re-invokes old *function* refs on patch, those listener sets were
+ * never detached and emitted duplicates from the second drag onward.
+ */
+const ResizableHandle = defineComponent({
+  name: 'ResizableHandle',
+  props: {
+    handle: { type: String as PropType<IrisResizableHandle>, required: true },
+    disabled: { type: Boolean, default: false },
+    keepAspect: { type: Boolean, default: false },
+    minWidth: { type: Number, default: 40 },
+    minHeight: { type: Number, default: 40 },
+    maxWidth: { type: Number, default: Infinity },
+    maxHeight: { type: Number, default: Infinity },
+    /** Stable computed ref from the parent; read only (never mutated). */
+    sizeRef: { type: Object as PropType<Ref<IrisResizableSize>>, required: true },
+    /** Stable setup-level callbacks from the parent. */
+    onUpdate: { type: Function as PropType<(next: IrisResizableSize) => void>, required: true },
+    onResizeStart: {
+      type: Function as PropType<(s: IrisResizableSize) => void>,
+      default: undefined,
+    },
+    onResizeEnd: { type: Function as PropType<() => void>, default: undefined },
+  },
+  setup(props) {
+    // Created ONCE per handle instance (not per render):
+    const handleRef = ref<HTMLElement | null>(null)
+    let startSize: IrisResizableSize = { width: 0, height: 0 }
+    let aspect = 1
+
+    useDrag({
+      handle: handleRef,
+      disabled: computed(() => props.disabled),
+      onStart: () => {
+        startSize = { ...props.sizeRef.value }
+        aspect = startSize.width / Math.max(1, startSize.height)
+        props.onResizeStart?.(startSize)
+      },
+      onDrag: ({ dx, dy }) => {
+        const t = props.handle.includes('top')
+        const b = props.handle.includes('bottom')
+        const l = props.handle.includes('left')
+        const r = props.handle.includes('right')
+        let nextW = startSize.width
+        let nextH = startSize.height
+        if (r) nextW = startSize.width + dx
+        if (l) nextW = startSize.width - dx
+        if (b) nextH = startSize.height + dy
+        if (t) nextH = startSize.height - dy
+        if (props.keepAspect && (t || b) && (l || r)) {
+          nextH = nextW / aspect
+        }
+        nextW = Math.max(props.minWidth, Math.min(props.maxWidth, nextW))
+        nextH = Math.max(props.minHeight, Math.min(props.maxHeight, nextH))
+        props.onUpdate({ width: nextW, height: nextH })
+      },
+      onEnd: () => props.onResizeEnd?.(),
+    })
+
+    return () =>
+      h('div', {
+        ref: (el: unknown) => {
+          handleRef.value = (el ?? null) as HTMLElement | null
+        },
+        'data-iris-resizable-handle': props.handle,
+        style: {
+          ...handlePosition(props.handle),
+          touchAction: 'none',
+          background: 'transparent',
+          zIndex: '1',
+        },
+      })
+  },
+})
+
+/**
  * Behavior wrapper: makes its child resizable via 8-direction handles. The
  * wrapper itself is `display: inline-block; position: relative` so the child
  * can be ANY element. Handles overlay the wrapper's edges.
@@ -111,55 +191,10 @@ export const IrisResizable = defineComponent({
       emit('update:size', next)
     }
 
-    const renderHandle = (handle: IrisResizableHandle): VNode => {
-      const handleRef = ref<HTMLElement | null>(null)
-      let startSize: IrisResizableSize = { width: 0, height: 0 }
-      let aspect = 1
-
-      useDrag({
-        handle: handleRef,
-        disabled: computed(() => props.disabled),
-        onStart: () => {
-          startSize = { ...size.value }
-          aspect = startSize.width / Math.max(1, startSize.height)
-          emit('resizeStart', startSize)
-        },
-        onDrag: ({ dx, dy }) => {
-          const t = handle.includes('top')
-          const b = handle.includes('bottom')
-          const l = handle.includes('left')
-          const r = handle.includes('right')
-          let nextW = startSize.width
-          let nextH = startSize.height
-          if (r) nextW = startSize.width + dx
-          if (l) nextW = startSize.width - dx
-          if (b) nextH = startSize.height + dy
-          if (t) nextH = startSize.height - dy
-          if (props.keepAspect && (t || b) && (l || r)) {
-            nextH = nextW / aspect
-          }
-          nextW = Math.max(props.minWidth, Math.min(props.maxWidth, nextW))
-          nextH = Math.max(props.minHeight, Math.min(props.maxHeight, nextH))
-          setSize({ width: nextW, height: nextH })
-        },
-        onEnd: () => {
-          emit('resizeEnd', size.value)
-        },
-      })
-
-      return h('div', {
-        ref: (el: unknown) => {
-          handleRef.value = (el ?? null) as HTMLElement | null
-        },
-        'data-iris-resizable-handle': handle,
-        style: {
-          ...handlePosition(handle),
-          touchAction: 'none',
-          background: 'transparent',
-          zIndex: '1',
-        },
-      })
-    }
+    // Stable setup-level bindings: passed as props to the keyed handle
+    // instances so they never trigger re-invocation of the child setup.
+    const emitResizeStart = (s: IrisResizableSize) => emit('resizeStart', s)
+    const emitResizeEnd = () => emit('resizeEnd', size.value)
 
     return () =>
       h(
@@ -176,7 +211,25 @@ export const IrisResizable = defineComponent({
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
           },
         },
-        [slots.default?.(), ...props.handles.map(renderHandle)],
+        [
+          slots.default?.(),
+          ...props.handles.map((handle) =>
+            h(ResizableHandle, {
+              key: handle,
+              handle,
+              disabled: props.disabled,
+              keepAspect: props.keepAspect,
+              minWidth: props.minWidth,
+              minHeight: props.minHeight,
+              maxWidth: props.maxWidth,
+              maxHeight: props.maxHeight,
+              sizeRef: size,
+              onUpdate: setSize,
+              onResizeStart: emitResizeStart,
+              onResizeEnd: emitResizeEnd,
+            }),
+          ),
+        ],
       )
   },
 })

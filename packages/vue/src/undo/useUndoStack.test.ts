@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick, watch } from 'vue'
 import { mount } from '@vue/test-utils'
 import type { UndoStackOptions } from '@iris-ui-kit/core/undo'
 import { useUndoStack } from './useUndoStack'
@@ -242,5 +242,117 @@ describe('useUndoStack (vue)', () => {
     expect(api.stack.canRedo()).toBe(false)
     expect(api.stack.depth).toBe(1)
     expect(api.stack.index).toBe(0)
+  })
+
+  // ─── No-op guard: state.value is only reassigned on real metadata moves ───
+
+  it('regression: equals-dedup push preserves the state reference (identical value)', () => {
+    const { push, state } = useUndoStack<number>({ initial: 42 })
+    const before = state.value
+    expect(push(42)).toBe(42) // Object.is(42, 42) → core skips the push
+    expect(state.value).toBe(before) // metadata unchanged → no reassignment
+  })
+
+  it('regression: merge-coalesced push preserves the state reference', () => {
+    const { push, state } = useUndoStack<{ field: string; value: string }>({
+      initial: { field: '', value: '' },
+      merge: (prev, next) => prev.field === next.field,
+    })
+    push({ field: 'name', value: 'J' }) // real push — metadata legitimately updates
+    const before = state.value
+    expect(push({ field: 'name', value: 'Jo' })).toEqual({ field: 'name', value: 'Jo' })
+    // Merge replaced the top: depth/index/canUndo/canRedo are all unchanged.
+    expect(state.value).toBe(before)
+  })
+
+  it('regression: undo and redo on an empty stack preserve the state reference', () => {
+    const { undo, redo, state } = useUndoStack<number>()
+    const before = state.value
+    expect(undo()).toBeUndefined()
+    expect(state.value).toBe(before)
+    expect(redo()).toBeUndefined()
+    expect(state.value).toBe(before)
+  })
+
+  it('regression: clear on an empty stack preserves the state reference', () => {
+    const { clear, state } = useUndoStack<number>()
+    const before = state.value
+    clear()
+    expect(state.value).toBe(before)
+  })
+
+  it('regression: bounded-stack trim preserves the state reference when metadata is unchanged', () => {
+    const { push, state } = useUndoStack<number>({ initial: 0, maxHistory: 3 })
+    push(1) // depth 2, index 1
+    push(2) // depth 3, index 2
+    const before = state.value
+    push(3) // push then trim: [0,1,2,3] → [1,2,3], ptr 2 → same depth/index/canUndo/canRedo
+    expect(state.value).toBe(before)
+    expect(state.value).toEqual({ canUndo: true, canRedo: false, depth: 3, index: 2 })
+  })
+
+  it('regression: direct stack.* no-op calls get the same guard (identity preserved)', () => {
+    const { stack, state } = useUndoStack<number>()
+    const before = state.value
+    expect(stack.undo()).toBeUndefined()
+    expect(state.value).toBe(before)
+    expect(stack.redo()).toBeUndefined()
+    expect(state.value).toBe(before)
+    stack.clear()
+    expect(state.value).toBe(before)
+  })
+
+  it('regression: direct stack.push dedup preserves the reference; real pushes reassign', () => {
+    const { stack, state } = useUndoStack<number>({ initial: 1 })
+    const before = state.value
+    stack.push(1) // Object.is dedup → no-op
+    expect(state.value).toBe(before)
+    stack.push(2) // real move
+    expect(state.value).not.toBe(before)
+    expect(state.value).toEqual({ canUndo: true, canRedo: false, depth: 2, index: 1 })
+  })
+
+  it('regression: watchers on state.value fire only for real metadata moves', async () => {
+    const { push, undo, redo, clear, state } = useUndoStack<number>()
+    const spy = vi.fn()
+    watch(() => state.value, spy)
+
+    undo() // empty-stack no-op
+    await nextTick()
+    redo() // empty-stack no-op
+    await nextTick()
+    clear() // empty-stack no-op
+    await nextTick()
+    expect(spy).toHaveBeenCalledTimes(0) // zero triggers from no-ops
+
+    push(1) // real mutation
+    await nextTick()
+    expect(spy).toHaveBeenCalledTimes(1) // exactly one trigger
+    expect(spy.mock.calls[0]![0]).toBe(state.value)
+  })
+
+  it('regression: merge no-op adds no trigger; undo/redo fire exactly once each', async () => {
+    const { push, undo, redo, state } = useUndoStack<{ field: string; value: string }>({
+      initial: { field: '', value: '' },
+      merge: (prev, next) => prev.field === next.field,
+    })
+    const spy = vi.fn()
+    watch(() => state.value, spy)
+
+    push({ field: 'name', value: 'J' }) // real push
+    await nextTick()
+    expect(spy).toHaveBeenCalledTimes(1)
+
+    push({ field: 'name', value: 'Jo' }) // merge-coalesced → metadata unchanged
+    await nextTick()
+    expect(spy).toHaveBeenCalledTimes(1) // still 1 — no extra trigger
+
+    undo() // pointer moves back
+    await nextTick()
+    expect(spy).toHaveBeenCalledTimes(2)
+
+    redo() // pointer moves forward
+    await nextTick()
+    expect(spy).toHaveBeenCalledTimes(3)
   })
 })

@@ -96,6 +96,9 @@ export const IrisTree = defineComponent({
       loading: props.loading,
       error: props.error,
       empty: props.nodes.length === 0,
+      // Already-loaded nodes stay mounted during a revalidate (SWR): a load
+      // in flight no longer replaces them with the loading/error state.
+      hasContent: props.nodes.length > 0,
     }))
 
     // Lazily-loaded children cache, keyed by node id.
@@ -483,7 +486,9 @@ export const IrisTree = defineComponent({
           role: 'tree',
           'aria-label': props.ariaLabel ?? t('tree.label'),
           'aria-multiselectable': props.selectionMode === 'multi' ? 'true' : undefined,
-          'aria-busy': state.value === 'loading' ? 'true' : undefined,
+          // Decoupled from resolved state: signals both the initial load and
+          // an in-flight background revalidate (content stays mounted).
+          'aria-busy': props.loading ? 'true' : undefined,
           'data-iris-tree': '',
           style: {
             display: 'flex',

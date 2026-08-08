@@ -256,22 +256,74 @@ export function resolveEnumValues(
   return undefined
 }
 
-/** Split a destructuring body on top-level commas (respecting `{}`/`[]`/`()` nesting). */
+/**
+ * Split a destructuring body on top-level commas (respecting `{}`/`[]`/`()`
+ * nesting). Block/line comments are skipped entirely — a JSDoc above a prop
+ * may contain commas or braces (e.g. `(1, 5, 10, 15, 30)`) that must not be
+ * treated as entry separators, and string literals are respected so a comma
+ * inside a default value stays put. A trailing comma yields a final empty
+ * entry (callers skip it via their per-entry parsing).
+ */
 export function splitTopLevel(body: string): string[] {
   const parts: string[] = []
   let depth = 0
   let start = 0
-  for (let i = 0; i < body.length; i += 1) {
+  let i = 0
+  while (i < body.length) {
     const ch = body[i]
-    if (ch === '{' || ch === '[' || ch === '(') depth += 1
-    else if (ch === '}' || ch === ']' || ch === ')') depth -= 1
+    const next = body[i + 1]
+    if (ch === '/' && next === '*') {
+      i = skipBlockComment(body, i)
+      continue
+    }
+    if (ch === '/' && next === '/') {
+      i = skipLineComment(body, i)
+      continue
+    }
+    if (ch === "'" || ch === '"' || ch === '`') {
+      i = skipQuoted(body, i, ch)
+      continue
+    }
+    const nextDepth = bracketDepth(ch, depth)
+    if (nextDepth !== depth) depth = nextDepth
     else if (ch === ',' && depth === 0) {
       parts.push(body.slice(start, i))
       start = i + 1
     }
+    i += 1
   }
   parts.push(body.slice(start))
   return parts
+}
+
+/** Return the updated nesting depth for a `{}`/`[]`/`()` character. */
+function bracketDepth(ch: string, depth: number): number {
+  if (ch === '{' || ch === '[' || ch === '(') return depth + 1
+  if (ch === '}' || ch === ']' || ch === ')') return depth - 1
+  return depth
+}
+
+/** Advance past a `/* … *\/` comment (or to end of body when unterminated). */
+function skipBlockComment(body: string, i: number): number {
+  const end = body.indexOf('*/', i + 2)
+  return end < 0 ? body.length : end + 2
+}
+
+/** Advance past a `// …` comment. */
+function skipLineComment(body: string, i: number): number {
+  const end = body.indexOf('\n', i + 2)
+  return end < 0 ? body.length : end
+}
+
+/** Advance past a quoted string literal (respecting backslash escapes). */
+function skipQuoted(body: string, i: number, quote: string): number {
+  let j = i + 1
+  while (j < body.length) {
+    if (body[j] === '\\') j += 2
+    else if (body[j] === quote) return j + 1
+    else j += 1
+  }
+  return j
 }
 
 /** A literal default (`'x'` / `"x"` / number / boolean) → its serialized form, else undefined. */

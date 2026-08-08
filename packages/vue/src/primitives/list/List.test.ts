@@ -188,4 +188,39 @@ describe('IrisList data states', () => {
     const w = mount(IrisList, { props: { items: [], loading: true } })
     expect(w.find('[data-iris-list-state]').classes()).toContain('iris-data-state-enter')
   })
+
+  it('keeps options mounted during revalidate (SWR) with aria-busy', () => {
+    const w = mount(IrisList, { props: { items: sampleItems, loading: true } })
+    expect(w.find('[data-iris-list-state]').exists()).toBe(false)
+    expect(w.findAll('[role=option]').length).toBe(sampleItems.length)
+    expect(w.find('[role=listbox]').attributes('aria-busy')).toBe('true')
+  })
+
+  it('keeps options mounted when revalidate also errors (stale-while-revalidate)', () => {
+    const w = mount(IrisList, { props: { items: sampleItems, loading: true, error: true } })
+    expect(w.find('[data-iris-list-state]').exists()).toBe(false)
+    expect(w.findAll('[role=option]').length).toBe(sampleItems.length)
+    expect(w.find('[role=listbox]').attributes('aria-busy')).toBe('true')
+  })
+
+  it('aria-busy tracks props.loading on the root, not the resolved state', async () => {
+    const w = mount(IrisList, { props: { items: sampleItems } })
+    expect(w.find('[role=listbox]').attributes('aria-busy')).toBeUndefined()
+    await w.setProps({ loading: true })
+    expect(w.find('[role=listbox]').attributes('aria-busy')).toBe('true')
+    // Empty content + loading still renders the state node (byte-identical
+    // precedence), but the busy flag now also covers the error-over-loading case.
+    await w.setProps({ items: [], loading: true })
+    expect(w.find('[data-iris-list-state]').attributes('data-iris-list-state')).toBe('loading')
+    await w.setProps({ loading: true, error: true })
+    expect(w.find('[data-iris-list-state]').attributes('data-iris-list-state')).toBe('error')
+    expect(w.find('[role=listbox]').attributes('aria-busy')).toBe('true')
+  })
+
+  it('keeps keyboard navigation live during revalidate', async () => {
+    const w = mount(IrisList, { props: { items: sampleItems, loading: true } })
+    await w.find('[role=listbox]').trigger('keydown', { key: 'ArrowDown' })
+    await nextTick()
+    expect(w.findAll('[role=option]')[1]!.attributes('tabindex')).toBe('0')
+  })
 })

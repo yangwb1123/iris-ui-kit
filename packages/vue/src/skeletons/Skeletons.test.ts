@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { IrisLoginTemplate } from './LoginTemplate'
 import { IrisDashboardTemplate } from './DashboardTemplate'
@@ -147,5 +148,72 @@ describe('@iris-ui-kit/vue IrisDashboardTemplate', () => {
       props: { defaultCollapsed: true },
     })
     expect(wrapClosed.find('[data-iris-sidebar]').attributes('data-collapsed')).toBe('')
+  })
+
+  it('controlled collapsed prop renders the sidebar collapsed/expanded', () => {
+    const wrapCollapsed = mount(IrisDashboardTemplate, { props: { collapsed: true } })
+    expect(wrapCollapsed.find('[data-iris-sidebar]').attributes('data-collapsed')).toBe('')
+    // F5 guard: the declared prop must not leak onto the root div as a DOM attribute.
+    expect(
+      wrapCollapsed.find('[data-iris-dashboard-template]').attributes('collapsed'),
+    ).toBeUndefined()
+    const wrapExpanded = mount(IrisDashboardTemplate, { props: { collapsed: false } })
+    expect(wrapExpanded.find('[data-iris-sidebar]').attributes('data-collapsed')).toBeUndefined()
+  })
+
+  it('v-model:collapsed round-trips while the controlled prop takes precedence', async () => {
+    const emitted: boolean[] = []
+    const wrap = mount(IrisDashboardTemplate, {
+      props: {
+        collapsed: false,
+        'onUpdate:collapsed': (v: boolean) => emitted.push(v),
+      },
+      slots: {
+        'sidebar-header': (state: { collapsed: boolean; setCollapsed: (v: boolean) => void }) =>
+          h(
+            'button',
+            {
+              'data-test': 'collapse-toggle',
+              onClick: () => state.setCollapsed(!state.collapsed),
+            },
+            'toggle',
+          ),
+      },
+    })
+    const sidebar = () => wrap.find('[data-iris-sidebar]')
+    expect(sidebar().attributes('data-collapsed')).toBeUndefined() // controlled false → expanded
+
+    // Toggle fires: emitted, but the controlled prop (still false) governs.
+    await wrap.find('[data-test=collapse-toggle]').trigger('click')
+    expect(wrap.emitted('update:collapsed')!.at(-1)![0]).toBe(true)
+    expect(emitted).toEqual([true])
+    expect(sidebar().attributes('data-collapsed')).toBeUndefined() // prop precedence
+
+    // Parent applies the v-model value → re-renders to the controlled value.
+    await wrap.setProps({ collapsed: true })
+    expect(sidebar().attributes('data-collapsed')).toBe('')
+    wrap.unmount()
+  })
+
+  it('uncontrolled: slot setCollapsed flips the sidebar without parent involvement', async () => {
+    const wrap = mount(IrisDashboardTemplate, {
+      props: { defaultCollapsed: false },
+      slots: {
+        'sidebar-header': (state: { collapsed: boolean; setCollapsed: (v: boolean) => void }) =>
+          h(
+            'button',
+            {
+              'data-test': 'collapse-toggle',
+              onClick: () => state.setCollapsed(!state.collapsed),
+            },
+            'toggle',
+          ),
+      },
+    })
+    expect(wrap.find('[data-iris-sidebar]').attributes('data-collapsed')).toBeUndefined()
+    await wrap.find('[data-test=collapse-toggle]').trigger('click')
+    expect(wrap.find('[data-iris-sidebar]').attributes('data-collapsed')).toBe('')
+    expect(wrap.emitted('update:collapsed')!.at(-1)![0]).toBe(true)
+    wrap.unmount()
   })
 })

@@ -62,6 +62,9 @@ export const IrisList = defineComponent({
       loading: props.loading,
       error: props.error,
       empty: props.items.length === 0,
+      // Already-loaded items stay mounted during a revalidate (SWR): a load
+      // in flight no longer replaces them with the loading/error state.
+      hasContent: props.items.length > 0,
     }))
 
     const isEnabled = (i: number) => !props.items[i]?.disabled
@@ -234,7 +237,9 @@ export const IrisList = defineComponent({
           role: 'listbox',
           'aria-label': props.ariaLabel,
           'aria-multiselectable': props.multi ? 'true' : undefined,
-          'aria-busy': state.value === 'loading' ? 'true' : undefined,
+          // Decoupled from resolved state: signals both the initial load and
+          // an in-flight background revalidate (content stays mounted).
+          'aria-busy': props.loading ? 'true' : undefined,
           'data-iris-list': '',
           onKeydown: onKeyDown,
           style: {

@@ -56,6 +56,23 @@ export interface UndoStackReactiveState {
   index: number
 }
 
+/** Keys of {@link UndoStackReactiveState} known to the sync guard below. */
+const _STATE_KEYS = ['canUndo', 'canRedo', 'depth', 'index'] as const
+type StateKey = (typeof _STATE_KEYS)[number]
+
+/** Keys of {@link UndoStackReactiveState} the guard does NOT know about yet. */
+type _MissingKeys = Exclude<keyof UndoStackReactiveState, StateKey>
+
+/**
+ * Compile-time exhaustiveness canary: if a 5th field is ever added to
+ * {@link UndoStackReactiveState}, `_MissingKeys` becomes non-`never` and this
+ * assignment fails to type-check (TS2322) — forcing the `sync` guard below to
+ * cover the new field instead of silently desyncing. The `void` read marks the
+ * const as used under `noUnusedLocals`.
+ */
+const _stateKeysExhaustive: _MissingKeys extends never ? true : never = true
+void _stateKeysExhaustive
+
 /**
  * Vue bridge over the framework-agnostic {@link createUndoStack}.
  * Creates the stack once in `setup()` and returns a stable controller
@@ -66,6 +83,11 @@ export interface UndoStackReactiveState {
  * state — no manual `.value = ...` needed. The same holds for mutating the
  * returned `stack` directly (`api.stack.push(x)`, `api.stack.undo()`, …): the
  * raw stack is wrapped so every mutation is observed and synced.
+ *
+ * No-op mutations (duplicate pushes, merge-coalesced pushes, undo/redo on an
+ * empty stack, clear on an empty stack) do **not** reassign `state.value` —
+ * `state` is only refreshed when `canUndo`/`canRedo`/`depth`/`index` actually
+ * change, so watchers on the reference fire only for real state moves.
  *
  * @example
  *   const { push, undo, redo, state } = useUndoStack({ initial: formValues })
@@ -103,12 +125,29 @@ export function useUndoStack<T>(options?: UndoStackOptions<T>): {
   })
 
   const sync = () => {
-    state.value = {
+    const next = {
       canUndo: raw.canUndo(),
       canRedo: raw.canRedo(),
       depth: raw.depth,
       index: raw.index,
     }
+    const cur = state.value
+    // Skip the shallowRef assignment when nothing actually changed. Core's
+    // mutators are no-ops for: equals-dedup pushes, merge-coalesced pushes,
+    // undo/redo on an empty stack, clear on an empty stack (and bounded-stack
+    // pushes that trim to the exact same depth/index). `state` tracks metadata
+    // only, so when all four fields are identical the reference is preserved
+    // and no watcher/effect/render fires — the guard is a strict superset of
+    // the documented no-op cases, with zero behavior change for real moves.
+    if (
+      next.canUndo === cur.canUndo &&
+      next.canRedo === cur.canRedo &&
+      next.depth === cur.depth &&
+      next.index === cur.index
+    ) {
+      return
+    }
+    state.value = next
   }
 
   // Wrap the raw stack so direct `api.stack.push/undo/redo/clear` calls also

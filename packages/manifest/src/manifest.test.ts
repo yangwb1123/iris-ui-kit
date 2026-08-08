@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildManifest } from './build'
 import { renderLlmsText } from './llms'
 import { discover, findRepoRoot } from './discover'
-import { classifyProps } from './props'
+import { classifyProps, splitTopLevel } from './props'
 import type { ManifestProp, RawDiscovery } from './schema'
 
 const sample: RawDiscovery = {
@@ -284,6 +284,35 @@ describe('classifyProps', () => {
     const { events, slots } = classifyProps(props)
     expect(events).toEqual([])
     expect(slots).toEqual(['default', 'trigger'])
+  })
+
+  it('splitTopLevel ignores commas inside JSDoc comments above props', () => {
+    const body = [
+      "title: { type: String, default: 'Dashboard' },",
+      '/**',
+      ' * Controlled state. When unset (`undefined`), the component manages',
+      ' * its own state seeded from `defaultCollapsed`; commas inside the',
+      ' * doc must not split the entry — see the (1, 2, 3) case.',
+      ' */',
+      'collapsed: { type: Boolean, default: undefined }',
+    ].join('\n')
+    const parts = splitTopLevel(body)
+    expect(parts).toHaveLength(2)
+    expect(parts[0]).toContain('title:')
+    expect(parts[1]).toContain('collapsed:')
+    expect(parts[1]).toContain('/**')
+  })
+
+  it('splitTopLevel respects string literals and line comments', () => {
+    const body = [
+      "url: { type: String, default: 'https://example.com/a,b' },",
+      '// docs with a comma, ignored',
+      'enabled: { type: Boolean, default: true }',
+    ].join('\n')
+    const parts = splitTopLevel(body)
+    expect(parts).toHaveLength(2)
+    expect(parts[0]).toContain('https://example.com/a,b')
+    expect(parts[1]).toContain('enabled:')
   })
 
   it('deduplicates slot names', () => {

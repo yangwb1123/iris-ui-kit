@@ -184,6 +184,7 @@ export function IrisList<T = unknown>({
   }
 
   const activeIndex = useStore(nav.store)
+  const [hoveredIndex, setHoveredIndex] = React.useState(-1)
   const listRef = React.useRef<HTMLUListElement | null>(null)
 
   const focusAt = (index: number) => {
@@ -263,9 +264,11 @@ export function IrisList<T = unknown>({
             fontSize: 'var(--iris-font-size-md, 14px)',
             background: selected
               ? 'var(--iris-primary)'
-              : active
+              : hoveredIndex === index
                 ? 'var(--iris-surface-hover)'
-                : 'transparent',
+                : active
+                  ? 'var(--iris-surface-hover)'
+                  : 'transparent',
             color: selected ? 'var(--iris-primary-foreground, #fff)' : 'var(--iris-foreground)',
             outline: 'none',
           }
@@ -279,6 +282,8 @@ export function IrisList<T = unknown>({
               data-iris-list-index={index}
               data-iris-list-item=""
               data-state={selected ? 'selected' : active ? 'active' : 'idle'}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex((current) => (current === index ? -1 : current))}
               onClick={item.disabled ? undefined : () => select(item)}
               onFocus={() => nav.focus(index)}
               style={baseStyle}

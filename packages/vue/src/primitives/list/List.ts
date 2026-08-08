@@ -73,6 +73,7 @@ export const IrisList = defineComponent({
       isEnabled,
     })
     const activeIndex = ref<number>(nav.index)
+    const hoveredIndex = ref(-1)
     watch(
       () => props.items,
       () => {
@@ -180,9 +181,11 @@ export const IrisList = defineComponent({
           fontSize: 'var(--iris-font-size-md, 14px)',
           background: selected
             ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
-            : active
+            : hoveredIndex.value === index
               ? 'var(--iris-surface-hover)'
-              : 'transparent',
+              : active
+                ? 'var(--iris-surface-hover)'
+                : 'transparent',
           color: 'var(--iris-foreground)',
           fontWeight: selected ? '600' : '400',
           outline: 'none',
@@ -208,6 +211,12 @@ export const IrisList = defineComponent({
             'data-state': selected ? 'selected' : active ? 'active' : 'idle',
             onClick: item.disabled ? undefined : onClick,
             onFocus,
+            onMouseEnter: () => {
+              hoveredIndex.value = index
+            },
+            onMouseLeave: () => {
+              if (hoveredIndex.value === index) hoveredIndex.value = -1
+            },
             style: baseStyle,
           },
           [

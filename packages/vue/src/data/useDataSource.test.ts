@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, effectScope, h, nextTick } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import {
   createClientDataSource,
@@ -217,5 +217,61 @@ describe('useDataSource (vue)', () => {
     await nextTick()
     expect(getFetches()).toBe(1)
     expect(get().state.value.rows).toHaveLength(3)
+  })
+
+  it('AC1: bare effectScope with immediate: false registers no onMounted — warning-free at setup and after stop', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const { fetcher, getFetches } = makeCountedFetcher()
+      let ds!: UseDataSource<Row>
+      const scope = effectScope()
+      scope.run(() => {
+        ds = useDataSource<Row>({ fetcher, pageSize: 10, immediate: false })
+      })
+      // The onMounted registration is conditional on `immediate`, so a bare
+      // effectScope (no component instance) never registers one: no fetch
+      // fires and Vue's "no active component instance" dev warning is absent.
+      // With the unconditional registration this test fails — the warning
+      // fires at setup and the scan below catches it.
+      expect(getFetches()).toBe(0)
+      expect(ds.state.value.rows).toEqual([])
+      expect(
+        warnSpy.mock.calls.some((c) => String(c[0]).includes('no active component instance')),
+      ).toBe(false)
+
+      scope.stop() // onScopeDispose → controller.destroy() — still warning-free
+      expect(
+        warnSpy.mock.calls.some((c) => String(c[0]).includes('no active component instance')),
+      ).toBe(false)
+    } finally {
+      warnSpy.mockRestore()
+    }
+  })
+
+  it('AC2: bare effectScope with immediate: true defers the load — escape-hatch load() fetches once before stop', async () => {
+    const { fetcher, getFetches } = makeCountedFetcher()
+    let ds!: UseDataSource<Row>
+    const scope = effectScope()
+    scope.run(() => {
+      ds = useDataSource<Row>({ fetcher, pageSize: 10, immediate: true })
+    })
+    // No component ever mounts inside a bare scope, so the conditionally
+    // registered onMounted load never fires — the escape hatch is the explicit
+    // load(). (Vue still dev-warns on the conditional onMounted registration
+    // itself with no active instance — sibling parity with
+    // useResourceController, whose own AC3 test avoids this path — so this
+    // test asserts only the guaranteed contract: no throw, no auto-fetch, one
+    // manual fetch, clean scope.stop().)
+    expect(getFetches()).toBe(0)
+    expect(ds.state.value.loading).toBe(false)
+
+    await ds.load()
+    await flushPromises()
+    await nextTick()
+    expect(getFetches()).toBe(1)
+    expect(ds.state.value.rows).toHaveLength(3)
+
+    scope.stop() // clean teardown: destroy() aborts + detaches — no further fetches
+    expect(getFetches()).toBe(1)
   })
 })

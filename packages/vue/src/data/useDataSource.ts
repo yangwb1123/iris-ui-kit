@@ -23,18 +23,22 @@ export interface UseDataSource<T> extends DataSourceController<T> {
  * mirrors its store into a reactive ref, and returns the controller plus its
  * live `state`. A thin bridge — all logic lives in `@iris-ui-kit/core`.
  *
- * Constructed with `immediate: false` so no fetch fires during `setup()`; the
- * initial load is kicked from `onMounted` and the controller is torn down on
- * scope dispose (aborting any in-flight request) so a late response never
- * writes back to a torn-down instance.
+ * Constructed with `immediate: false` so no fetch fires during `setup()`
+ * (SSR-safe: server rendering never runs `onMounted`); the initial load is
+ * kicked from `onMounted` when the caller's config says `immediate !== false`.
+ * The `onMounted` registration is conditional on that flag — inside a bare
+ * `effectScope` there is no component instance and Vue would warn on an
+ * unconditional registration. The controller is torn down on scope dispose
+ * (aborting any in-flight fetch), so a late response never writes back to a
+ * torn-down instance.
  */
 export function useDataSource<T>(config: DataSourceConfig<T>): UseDataSource<T> {
   const controller = createDataSource({ ...config, immediate: false })
   const immediate = config.immediate !== false
 
-  onMounted(() => {
-    if (immediate) void controller.load()
-  })
+  if (immediate) {
+    onMounted(() => void controller.load())
+  }
   // Abort any in-flight fetch + detach the controller's internal subscriptions
   // on unmount (a late response must not write back to a torn-down instance).
   onScopeDispose(() => controller.destroy())

@@ -1,4 +1,12 @@
-import { defineComponent, h, onErrorCaptured, ref, type PropType, type VNode } from 'vue'
+import {
+  defineComponent,
+  getCurrentInstance,
+  h,
+  onErrorCaptured,
+  ref,
+  type PropType,
+  type VNode,
+} from 'vue'
 import { useI18n } from '../i18n'
 
 /** Render-customization payload handed to the `#fallback` slot / `fallback` prop. */
@@ -48,14 +56,28 @@ export const IrisErrorBoundary = defineComponent({
   setup(props, { attrs, slots }) {
     const { t } = useI18n()
     const error = ref<unknown>(null)
+    // App-level telemetry handler (Sentry/…). Read live so a handler
+    // configured after this component's setup is still picked up.
+    const appContext = getCurrentInstance()!.appContext
 
     const reset = () => {
       error.value = null
     }
 
-    onErrorCaptured((err, _instance, info) => {
+    onErrorCaptured((err, instance, info) => {
       error.value = err
       props.onError?.(err, info)
+      // Vue's handleError skips its app.config.errorHandler branch when a hook
+      // returns false, so forward explicitly with the exact args Vue would
+      // have passed — (err, exposedInstance, errorInfo). Guarded so a throwing
+      // handler is logged, not rethrown: a bare call would escape containment
+      // from inside the hook and re-enter handleError with the handler's own
+      // error (Vue's own path wraps the handler in callWithErrorHandling).
+      try {
+        appContext.config.errorHandler?.(err, instance, info)
+      } catch (handlerError) {
+        console.error(handlerError)
+      }
       // Stop further propagation so the error does not crash the parent tree.
       return false
     })

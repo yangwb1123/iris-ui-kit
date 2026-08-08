@@ -15,3 +15,4 @@ export type { IrisResizableProps, IrisResizableSize, IrisResizableHandle } from 
 
 export { IrisSortable, SORTABLE_ITEM_ATTR } from './IrisSortable'
 export type { IrisSortableProps } from './IrisSortable'
+export { IrisCompose, type IrisComposeProps } from './Compose'

@@ -48,9 +48,10 @@
   "groups": [
     {
       "group": "behaviors",
-      "count": 6,
+      "count": 7,
       "components": [
         "IrisClickOutside",
+        "IrisCompose",
         "IrisHotkey",
         "IrisLongPress",
         "IrisMovable",
@@ -9018,6 +9019,251 @@
       "quality": {
         "propCount": 8,
         "eventCount": 2
+      }
+    },
+    {
+      "name": "IrisCompose",
+      "group": "behaviors",
+      "layer": "behavior",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
+      },
+      "props": [
+        {
+          "name": "resizable",
+          "type": "IrisResizableProps",
+          "optional": true,
+          "description": "Resizable wrapper config (enables 8-direction resize)."
+        },
+        {
+          "name": "movable",
+          "type": "IrisMovableProps",
+          "optional": true,
+          "description": "Movable wrapper config (drag positioning)."
+        },
+        {
+          "name": "sortable",
+          "type": "IrisSortableProps",
+          "optional": true,
+          "description": "Sortable wrapper config (drag reorder of children)."
+        },
+        {
+          "name": "clickOutside",
+          "type": "IrisClickOutsideProps",
+          "optional": true,
+          "description": "Click-outside detection."
+        },
+        {
+          "name": "hotkey",
+          "type": "IrisHotkeyProps",
+          "optional": true,
+          "description": "Global keyboard shortcut binding."
+        },
+        {
+          "name": "children",
+          "type": "React.ReactNode",
+          "optional": true
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "style",
+          "type": "React.CSSProperties",
+          "optional": true
+        }
+      ],
+      "frameworkContracts": {
+        "react": {
+          "source": "native",
+          "props": [
+            {
+              "name": "resizable",
+              "type": "IrisResizableProps",
+              "optional": true,
+              "description": "Resizable wrapper config (enables 8-direction resize)."
+            },
+            {
+              "name": "movable",
+              "type": "IrisMovableProps",
+              "optional": true,
+              "description": "Movable wrapper config (drag positioning)."
+            },
+            {
+              "name": "sortable",
+              "type": "IrisSortableProps",
+              "optional": true,
+              "description": "Sortable wrapper config (drag reorder of children)."
+            },
+            {
+              "name": "clickOutside",
+              "type": "IrisClickOutsideProps",
+              "optional": true,
+              "description": "Click-outside detection."
+            },
+            {
+              "name": "hotkey",
+              "type": "IrisHotkeyProps",
+              "optional": true,
+              "description": "Global keyboard shortcut binding."
+            },
+            {
+              "name": "children",
+              "type": "React.ReactNode",
+              "optional": true
+            },
+            {
+              "name": "className",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "style",
+              "type": "React.CSSProperties",
+              "optional": true
+            }
+          ],
+          "events": [],
+          "slots": [
+            "default"
+          ],
+          "publicTypes": []
+        },
+        "vue": {
+          "source": "native",
+          "props": [
+            {
+              "name": "resizable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "movable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "sortable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "clickOutside",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "hotkey",
+              "type": "Record<string, unknown>",
+              "optional": true
+            }
+          ],
+          "events": [],
+          "slots": [
+            "default"
+          ],
+          "publicTypes": []
+        },
+        "solid": {
+          "source": "native",
+          "props": [
+            {
+              "name": "resizable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "movable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "sortable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "clickOutside",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "hotkey",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "children",
+              "type": "import('solid-js').JSX.Element",
+              "optional": true
+            }
+          ],
+          "events": [],
+          "slots": [
+            "default"
+          ],
+          "publicTypes": [
+            "IrisComposeProps"
+          ]
+        },
+        "svelte": {
+          "source": "native",
+          "props": [
+            {
+              "name": "resizable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "movable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "sortable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "clickOutside",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "hotkey",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "children",
+              "type": "import('svelte').Snippet",
+              "optional": false
+            }
+          ],
+          "events": [],
+          "slots": [
+            "default"
+          ],
+          "publicTypes": []
+        }
+      },
+      "slots": [
+        "default"
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 0
       }
     },
     {
@@ -30956,18 +31202,26 @@
         },
         {
           "name": "value",
-          "type": "T",
-          "optional": true
+          "type": "T | T[]",
+          "optional": true,
+          "description": "Single value, or an array when `multiple`."
         },
         {
           "name": "defaultValue",
-          "type": "T",
+          "type": "T | T[]",
           "optional": true
         },
         {
           "name": "onValueChange",
-          "type": "(value: T) => void",
+          "type": "(value: T | T[]) => void",
           "optional": true
+        },
+        {
+          "name": "multiple",
+          "type": "boolean",
+          "optional": true,
+          "description": "Allow selecting multiple options (values become arrays).",
+          "default": "false"
         },
         {
           "name": "placeholder",
@@ -31049,18 +31303,26 @@
             },
             {
               "name": "value",
-              "type": "T",
-              "optional": true
+              "type": "T | T[]",
+              "optional": true,
+              "description": "Single value, or an array when `multiple`."
             },
             {
               "name": "defaultValue",
-              "type": "T",
+              "type": "T | T[]",
               "optional": true
             },
             {
               "name": "onValueChange",
-              "type": "(value: T) => void",
+              "type": "(value: T | T[]) => void",
               "optional": true
+            },
+            {
+              "name": "multiple",
+              "type": "boolean",
+              "optional": true,
+              "description": "Allow selecting multiple options (values become arrays).",
+              "default": "false"
             },
             {
               "name": "placeholder",
@@ -31158,6 +31420,12 @@
               "optional": true
             },
             {
+              "name": "multiple",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "defaultValue",
               "type": "unknown",
               "optional": true
@@ -31232,6 +31500,12 @@
               "name": "items",
               "type": "IrisSelectItem<T>[]",
               "optional": false
+            },
+            {
+              "name": "multiple",
+              "type": "boolean",
+              "optional": true,
+              "description": "Allow multiple selection (value becomes an array)."
             },
             {
               "name": "value",
@@ -31427,7 +31701,7 @@
         "renderTrigger"
       ],
       "quality": {
-        "propCount": 15,
+        "propCount": 16,
         "eventCount": 1
       }
     },
@@ -42623,13 +42897,13 @@
     ]
   },
   "stats": {
-    "total": 154,
-    "full": 154,
+    "total": 155,
+    "full": 155,
     "byFramework": {
-      "react": 154,
-      "vue": 154,
-      "solid": 154,
-      "svelte": 154
+      "react": 155,
+      "vue": 155,
+      "solid": 155,
+      "svelte": 155
     }
   }
 }

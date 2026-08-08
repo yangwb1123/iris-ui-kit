@@ -41,9 +41,9 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
 - `@iris-ui-kit/plugin-markdown` — Markdown editor (CodeMirror) and rendered preview with syntax highlighting.
 - `@iris-ui-kit/plugin-query-builder` — Visual query/filter builder with rule groups, operators, and value inputs.
 
-## Components (154 total — 154 in all 4 frameworks; react 154, vue 154, solid 154, svelte 154)
+## Components (155 total — 155 in all 4 frameworks; react 155, vue 155, solid 155, svelte 155)
 
-### behaviors (6)
+### behaviors (7)
 - IrisClickOutside [react/solid/svelte/vue] — behavior
   Behavior wrapper: fires `onOutside` when a pointerdown happens outside the wrapped child tree. Renders a thin `<span style="display:contents">` to capture the child's bounding box without disrupting layout.
   react: props onOutside, disabled?, ignore?, children?; events onOutside; slots default; types IrisClickOutsideProps
@@ -51,6 +51,12 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   svelte: props disabled?, onOutside?, children?; events onOutside; slots default
   vue: props disabled?, ignore?; events outside; slots default
   quality: 4 props, 1 events
+- IrisCompose [react/solid/svelte/vue] — behavior
+  react: props resizable?, movable?, sortable?, clickOutside?, hotkey?, children?, className?, style?; slots default
+  solid: props resizable?, movable?, sortable?, clickOutside?, hotkey?, children?; slots default; types IrisComposeProps
+  svelte: props resizable?, movable?, sortable?, clickOutside?, hotkey?, children; slots default
+  vue: props resizable?, movable?, sortable?, clickOutside?, hotkey?; slots default
+  quality: 8 props, 0 events
 - IrisHotkey [react/solid/svelte/vue] — behavior
   Behavior wrapper: binds a global keyboard shortcut while children are mounted. Renderless — returns children verbatim (no extra DOM).
   react: props shortcut, onTrigger, disabled?, allowInInputs?, scope?, children?; events onTrigger; slots default; types IrisHotkeyProps
@@ -891,11 +897,11 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 10 props, 1 events
 - IrisSelect [react/solid/svelte/vue] — layer-2
   Single-select dropdown. Composes Popover (positioning + dismiss) with an inline listbox (keyboard nav + selection). Arrow-key, typeahead, Home/End, and Enter/Space navigation are single-sourced in `createKeyboardNav` (core).
-  react: props items, value?, defaultValue?, onValueChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, style?, className?, virtual?; events onValueChange; slots renderTrigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize, IrisSelectTriggerState
-  solid: props items, value?, defaultValue?, onValueChange?, onChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, portalTarget?, style?, virtual?; events onChange, onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
+  react: props items, value?, defaultValue?, onValueChange?, multiple?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, style?, className?, virtual?; events onValueChange; slots renderTrigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize, IrisSelectTriggerState
+  solid: props items, multiple?, value?, defaultValue?, onValueChange?, onChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, portalTarget?, style?, virtual?; events onChange, onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
   svelte: props items, value?, defaultValue?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, portalTarget?, onValueChange?, style?, virtual?; events onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
-  vue: props items, modelValue?, defaultValue?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, teleport?; events update:modelValue, valueChange; slots trigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize
-  quality: 15 props, 1 events
+  vue: props items, modelValue?, multiple?, defaultValue?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, teleport?; events update:modelValue, valueChange; slots trigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize
+  quality: 16 props, 1 events
 - IrisSkeleton [react/solid/svelte/vue] — layer-1
   A placeholder shape that pulses to indicate content is loading. Supports `rect`, `circle`, and `text` shapes with configurable dimensions. Its shimmer animation respects `prefers-reduced-motion`.
   react: props width?, height?, shape?, animated?; types IrisSkeletonProps, IrisSkeletonShape

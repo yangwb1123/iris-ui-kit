@@ -376,3 +376,9 @@ export * from './event-bus'
 export * from './circuit-breaker'
 export * from './rate-limiter'
 export * from './resilient-fetcher'
+export {
+  composeFeatures,
+  hasComposableFeatures,
+  COMPOSE_ORDER,
+  type ComposableFeature,
+} from './compose'

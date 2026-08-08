@@ -343,7 +343,7 @@ describe('@iris-ui-kit/react IrisSelect virtual listbox', () => {
 describe('@iris-ui-kit/react IrisSelect multiple', () => {
   it('multiple: toggles values into an array, keeps popover open', () => {
     const onChange = vi.fn()
-    const { getByRole, getAllByRole } = render(
+    const { getAllByRole } = render(
       <IrisSelect
         multiple
         items={[

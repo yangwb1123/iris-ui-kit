@@ -83,7 +83,7 @@ export type PageItem = number | 'ellipsis-left' | 'ellipsis-right'
  * Configuration for grouping rows by a key column.
  * Supports single-level grouping (one dimension at a time).
  */
-export interface GroupedViewConfig<Row, K = string> {
+export interface GroupedViewConfig<Row, K extends string | number = string> {
   /** Function to derive the group key from a row. */
   keyOf: (row: Row) => K
   /** Columns to compute aggregate values for each group. */
@@ -99,7 +99,7 @@ export interface GroupedViewConfig<Row, K = string> {
 }
 
 /** The stateful result of grouping rows. */
-export interface GroupedViewState<Row, K = string> {
+export interface GroupedViewState<Row, K extends string | number = string> {
   /** Groups in first-seen key order. */
   groups: Array<{ key: K; rows: Row[] }>
   /** Aggregate values per group (key → specKey → value). */

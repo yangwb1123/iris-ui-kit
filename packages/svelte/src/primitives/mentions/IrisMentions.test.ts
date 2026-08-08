@@ -137,3 +137,121 @@ describe('IrisMentions (svelte)', () => {
     })
   })
 })
+
+describe('IrisMentions virtual listbox (svelte)', () => {
+  const makeOptions = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ label: `Item ${i}`, value: `item-${i}` }))
+  const spacers = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll('[data-iris-mentions-spacer]'))
+  /** Mention listbox rows are a constant 32px estimate (see ROW_HEIGHT). */
+  const ROW = 32
+
+  it('A1: virtual off (default) — all options, no spacers', async () => {
+    const { container } = render(IrisMentions, { props: { options: makeOptions(3) } })
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement
+    await typeAt(ta, '@', 1)
+    expect(listItems(container).length).toBe(3)
+    expect(spacers(container).length).toBe(0)
+  })
+
+  it('A1: small list with virtual — total window, spacer sum invariant', async () => {
+    const { container } = render(IrisMentions, {
+      props: { options: makeOptions(3), virtual: true },
+    })
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement
+    await typeAt(ta, '@', 1)
+    const rendered = listItems(container)
+    expect(rendered.length).toBe(3)
+    const sp = spacers(container)
+    expect(sp.length).toBe(2)
+    expect(sp[0]!.getAttribute('data-iris-mentions-spacer-type')).toBe('top')
+    expect(sp[1]!.getAttribute('data-iris-mentions-spacer-type')).toBe('bottom')
+    expect(parseFloat(sp[0]!.style.height)).toBe(0)
+    expect(parseFloat(sp[1]!.style.height)).toBe(0)
+    expect(
+      parseFloat(sp[0]!.style.height) + rendered.length * ROW + parseFloat(sp[1]!.style.height),
+    ).toBe(3 * ROW)
+    expect(rendered[0]!.getAttribute('aria-setsize')).toBe('3')
+    expect(rendered[0]!.getAttribute('aria-posinset')).toBe('1')
+  })
+
+  it('A2: 10k options — windowed render with spacer invariant', async () => {
+    const { container } = render(IrisMentions, {
+      props: { options: makeOptions(10_000), virtual: true },
+    })
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement
+    await typeAt(ta, '@', 1)
+    const rendered = listItems(container)
+    expect(rendered.length).toBeGreaterThanOrEqual(1)
+    expect(rendered.length).toBeLessThanOrEqual(60)
+    expect(rendered[0]!.id).toMatch(/-opt-0$/)
+    const sp = spacers(container)
+    expect(parseFloat(sp[0]!.style.height)).toBe(0)
+    expect(
+      parseFloat(sp[0]!.style.height) + rendered.length * ROW + parseFloat(sp[1]!.style.height),
+    ).toBe(10_000 * ROW)
+  })
+
+  it('A3: ArrowDown across the window edge scrolls (scrollTop === 88)', async () => {
+    const { container } = render(IrisMentions, {
+      props: { options: makeOptions(10_000), virtual: true },
+    })
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement
+    await typeAt(ta, '@', 1)
+    for (let i = 0; i < 8; i++) {
+      await fireEvent.keyDown(ta, { key: 'ArrowDown' })
+      flushSync()
+    }
+    expect(ta.getAttribute('aria-activedescendant')).toMatch(/-opt-8$/)
+    const lb = container.querySelector('[role="listbox"]') as HTMLElement
+    expect(lb.scrollTop).toBe(88)
+  })
+
+  it('A4: keystroke re-anchors the window to 0 (filtered to 100 matches)', async () => {
+    const mixed = [
+      ...makeOptions(9_900),
+      ...makeOptions(100).map((o, i) => ({ ...o, label: `target-${i}`, value: `target-${i}` })),
+    ]
+    const { container } = render(IrisMentions, { props: { options: mixed, virtual: true } })
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement
+    await typeAt(ta, '@', 1)
+    const lb = container.querySelector('[role="listbox"]') as HTMLElement
+    lb.scrollTop = 31_800
+    await fireEvent.scroll(lb)
+    flushSync()
+    await typeAt(ta, '@target', 7)
+    const rendered = listItems(container)
+    expect(rendered[0]!.id).toMatch(/-opt-0$/)
+    expect(ta.getAttribute('aria-activedescendant')).toMatch(/-opt-0$/)
+    expect(lb.scrollTop).toBe(0)
+    const sp = spacers(container)
+    expect(parseFloat(sp[0]!.style.height)).toBe(0)
+    expect(
+      parseFloat(sp[0]!.style.height) + rendered.length * ROW + parseFloat(sp[1]!.style.height),
+    ).toBe(100 * ROW)
+  })
+
+  it('A4: external options swap clamps scroll (31,800 → 3,000, first -opt-89)', async () => {
+    const { container, rerender } = render(IrisMentions, {
+      props: { options: makeOptions(10_000), virtual: true },
+    })
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement
+    await typeAt(ta, '@', 1)
+    const lb = container.querySelector('[role="listbox"]') as HTMLElement
+    lb.scrollTop = 31_800
+    await fireEvent.scroll(lb)
+    flushSync()
+    await rerender({ options: makeOptions(100), virtual: true })
+    flushSync()
+    const rendered = listItems(container)
+    expect(rendered[0]!.id).toMatch(/-opt-89$/)
+    expect(lb.scrollTop).toBe(3_000)
+    const sp = spacers(container)
+    const top = sp[0] as HTMLElement
+    const bottom = sp[1] as HTMLElement
+    expect(parseFloat(bottom.style.height)).toBe(0)
+    expect(
+      parseFloat(top.style.height) + rendered.length * ROW + parseFloat(bottom.style.height),
+    ).toBe(100 * ROW)
+  })
+})

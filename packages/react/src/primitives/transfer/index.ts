@@ -1,1 +1,6 @@
-export { IrisTransfer, type IrisTransferProps, type IrisTransferItem } from './Transfer'
+export {
+  IrisTransfer,
+  type IrisTransferProps,
+  type IrisTransferItem,
+  type IrisTransferVirtualOptions,
+} from './Transfer'

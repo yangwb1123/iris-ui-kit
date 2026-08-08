@@ -22,15 +22,28 @@ import {
   IrisTooltip,
   useToast,
   IrisKbd,
+  IrisCommandPalette,
 } from '@iris-ui-kit/react'
 
 const SIDES = ['left', 'right', 'top', 'bottom'] as const
 type Side = (typeof SIDES)[number]
 
+// 10k generated commands — the `virtual` toggle proves the palette stays
+// fluid while only a ~20-row window is mounted.
+const PALETTE_ITEMS = Array.from({ length: 10_000 }, (_, i) => ({
+  id: `cmd-${i}`,
+  label: `Command ${i}`,
+  group: `Group ${Math.floor(i / 500)}`,
+  shortcut: i % 200 === 0 ? `⌘${((i / 200) % 9) + 1}` : undefined,
+  ...(i === 3 ? { disabled: true } : {}),
+}))
+
 export function OverlayShowcase() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerSide, setDrawerSide] = useState<Side>('right')
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [paletteVirtual, setPaletteVirtual] = useState(false)
   const toast = useToast()
 
   return (
@@ -178,9 +191,41 @@ export function OverlayShowcase() {
       </div>
 
       <div className="row">
+        <span className="row-label">command palette</span>
+        <IrisButton size="sm" variant="outline" onClick={() => setPaletteOpen(true)}>
+          Open palette (10k items)
+        </IrisButton>
+        <label
+          style={{
+            fontSize: 13,
+            color: 'var(--iris-muted)',
+            display: 'flex',
+            gap: 6,
+            alignItems: 'center',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={paletteVirtual}
+            onChange={(e) => setPaletteVirtual(e.target.checked)}
+          />
+          virtual
+        </label>
+        <IrisCommandPalette
+          open={paletteOpen}
+          onOpenChange={setPaletteOpen}
+          items={PALETTE_ITEMS}
+          virtual={paletteVirtual}
+          onSelect={(item) => toast.info({ title: `Picked: ${item.label}` })}
+        />
+      </div>
+
+      <div className="row">
         <span className="row-label">hint</span>
         <span style={{ fontSize: 13, color: 'var(--iris-muted)' }}>
-          <IrisKbd>⌘</IrisKbd>+<IrisKbd>K</IrisKbd> (CommandPalette is Vue-only currently)
+          <IrisKbd>⌘</IrisKbd>+<IrisKbd>K</IrisKbd> (wire your own shortcut — the palette does not
+          register one) · <IrisKbd>↑</IrisKbd>/<IrisKbd>↓</IrisKbd> navigate,{' '}
+          <IrisKbd>Enter</IrisKbd> picks, <IrisKbd>Esc</IrisKbd> dismisses
         </span>
       </div>
     </section>

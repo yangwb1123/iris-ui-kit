@@ -7,9 +7,8 @@ import {
   splitProps,
   type JSX,
 } from 'solid-js'
+import { createCalendarNav } from '@iris-ui-kit/core'
 import {
-  addDays,
-  addMonths,
   buildMonthMatrix,
   clampDate,
   endOfMonth,
@@ -23,6 +22,7 @@ import {
   startOfDay,
   startOfMonth,
 } from './dateUtils'
+import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 
 export interface IrisCalendarProps {
@@ -66,10 +66,26 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
   const { t } = useI18n()
 
   const initialMonth = local.defaultMonth ?? local.defaultValue ?? local.value ?? new Date()
-  const [visibleMonth, setVisibleMonth] = createSignal(startOfMonth(initialMonth))
-  const [focusDate, setFocusDate] = createSignal<Date>(
-    clampDate(local.value ?? local.defaultValue ?? new Date(), local.min, local.max),
-  )
+  // Keyboard roving lives in the core `createCalendarNav` controller; this
+  // adapter only renders and bridges. Options are captured at creation.
+  const nav = createCalendarNav({
+    initialMonth: startOfMonth(initialMonth),
+    initialFocusDate: clampDate(
+      local.value ?? local.defaultValue ?? new Date(),
+      local.min,
+      local.max,
+    ),
+    weekStartsOn: local.weekStartsOn,
+    min: local.min,
+    max: local.max,
+  })
+  const state = useStore(nav.store)
+  // Slice memos: the matrix must NOT rebuild on focus-only changes (a rebuilt
+  // matrix array makes `<For>` recreate every cell button, dropping focus).
+  // `state()` returns a fresh object per store emit, so read the Date refs
+  // through memos that bail out when the reference is unchanged.
+  const visibleMonth = createMemo(() => state().visibleMonth)
+  const focusDate = createMemo(() => state().focusDate)
 
   // Selection: controlled via `value`, otherwise an internal signal seeded from
   // `defaultValue` (parity with the React adapter). Previously `aria-selected`
@@ -85,9 +101,9 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
   // Sync visible month when controlled value changes to a different month
   createEffect(() => {
     const v = local.value
-    if (v && !isSameMonth(v, visibleMonth())) {
-      setVisibleMonth(startOfMonth(v))
-      setFocusDate(clampDate(v, local.min, local.max))
+    if (v && !isSameMonth(v, nav.getVisibleMonth())) {
+      nav.setVisibleMonth(startOfMonth(v))
+      nav.setFocusDate(clampDate(v, local.min, local.max))
     }
   })
 
@@ -116,16 +132,8 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
     return startOfMonth(endOfMonth(visibleMonth())) >= startOfMonth(local.max)
   })
 
-  const goPrevMonth = () => setVisibleMonth((m) => addMonths(m, -1))
-  const goNextMonth = () => setVisibleMonth((m) => addMonths(m, 1))
-
-  const moveFocus = (delta: number) => {
-    const next = clampDate(addDays(focusDate(), delta), local.min, local.max)
-    setFocusDate(next)
-    if (!isSameMonth(next, visibleMonth())) {
-      setVisibleMonth(startOfMonth(next))
-    }
-  }
+  const goPrevMonth = () => nav.goToMonth(-1)
+  const goNextMonth = () => nav.goToMonth(1)
 
   const selectDate = (date: Date) => {
     if (local.disabled) return
@@ -136,50 +144,13 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
   }
 
   const onGridKeyDown = (event: KeyboardEvent) => {
-    switch (event.key) {
-      case 'ArrowLeft':
-        event.preventDefault()
-        moveFocus(-1)
-        break
-      case 'ArrowRight':
-        event.preventDefault()
-        moveFocus(1)
-        break
-      case 'ArrowUp':
-        event.preventDefault()
-        moveFocus(-7)
-        break
-      case 'ArrowDown':
-        event.preventDefault()
-        moveFocus(7)
-        break
-      case 'Home': {
-        event.preventDefault()
-        const offset = focusDate().getDay() - local.weekStartsOn
-        moveFocus(-((offset + 7) % 7))
-        break
-      }
-      case 'End': {
-        event.preventDefault()
-        const offset = (focusDate().getDay() - local.weekStartsOn + 7) % 7
-        moveFocus(6 - offset)
-        break
-      }
-      case 'PageUp':
-        event.preventDefault()
-        setVisibleMonth((m) => addMonths(m, -1))
-        setFocusDate((d) => clampDate(addMonths(d, -1), local.min, local.max))
-        break
-      case 'PageDown':
-        event.preventDefault()
-        setVisibleMonth((m) => addMonths(m, 1))
-        setFocusDate((d) => clampDate(addMonths(d, 1), local.min, local.max))
-        break
-      case 'Enter':
-      case ' ':
-        event.preventDefault()
-        selectDate(focusDate())
-        break
+    if (nav.handleKey(event.key)) {
+      event.preventDefault()
+      return
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      selectDate(focusDate())
     }
   }
 
@@ -335,10 +306,10 @@ export function IrisCalendar(props: IrisCalendarProps): JSX.Element {
                       data-outside-month={!inMonth() ? 'true' : undefined}
                       disabled={isDisabled() || undefined}
                       onClick={() => {
-                        setFocusDate(date)
+                        nav.setFocusDate(date)
                         selectDate(date)
                       }}
-                      onFocus={() => setFocusDate(date)}
+                      onFocus={() => nav.setFocusDate(date)}
                       style={{
                         height: '32px',
                         display: 'inline-flex',

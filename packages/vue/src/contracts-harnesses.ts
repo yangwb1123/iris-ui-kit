@@ -1,4 +1,4 @@
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref, type PropType } from 'vue'
 import type { ContractDriver } from '@iris-ui-kit/core/contracts'
 import { IrisTabs } from './primitives/tabs/Tabs'
 import { IrisTabsList } from './primitives/tabs/TabsList'
@@ -352,12 +352,23 @@ export const StepperHarness = defineComponent({
 
 export const CalendarHarness = defineComponent({
   name: 'CalendarHarness',
-  setup() {
-    const value = ref<Date | null>(null)
+  // Optional overrides for the keyboard-roving scenario (`calendarNavScenario`):
+  // a seeded initial value + bounds + locale. Existing mounts pass nothing.
+  props: {
+    initialValue: { type: Date as unknown as PropType<Date | null>, default: null },
+    min: { type: Date as unknown as PropType<Date | undefined>, default: undefined },
+    max: { type: Date as unknown as PropType<Date | undefined>, default: undefined },
+    locale: { type: String, default: undefined },
+  },
+  setup(props) {
+    const value = ref<Date | null>(props.initialValue)
     return () =>
       h(IrisCalendar, {
         modelValue: value.value,
         defaultMonth: new Date(2024, 5, 1),
+        min: props.min,
+        max: props.max,
+        locale: props.locale,
         'onUpdate:modelValue': (v: Date | null) => {
           value.value = v
         },

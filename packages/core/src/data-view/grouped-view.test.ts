@@ -173,4 +173,92 @@ describe('createGroupedView', () => {
     gv.toggleGroup('fruit')
     expect(listener).toHaveBeenCalled()
   })
+
+  it('exposes the composed expansion model; controller and model stay in sync', () => {
+    const gv = createGroupedView<Item, string>({ keyOf: (r) => r.category })
+    gv.setRows(data, cols)
+    expect(gv.expansion.get()).toEqual([])
+
+    // Controller methods drive the model.
+    gv.expandGroup('fruit')
+    expect(gv.expansion.get()).toEqual(['fruit'])
+    expect([...gv.getState().expanded]).toEqual(['fruit'])
+
+    // Direct model calls (additive API) drive the view state too.
+    gv.expansion.toggle('veg')
+    expect(gv.getState().expanded.has('veg')).toBe(true)
+    expect(gv.expansion.isExpanded('veg')).toBe(true)
+
+    gv.expansion.collapse('fruit')
+    expect(gv.getState().expanded.has('fruit')).toBe(false)
+    expect(gv.expansion.get()).toEqual(['veg'])
+  })
+
+  it('controlled mode: model untouched and no callback on guarded methods', () => {
+    const onExpandedChange = vi.fn()
+    const gv = createGroupedView<Item, string>({
+      keyOf: (r) => r.category,
+      expanded: ['fruit'],
+      onExpandedChange,
+    })
+    gv.setRows(data, cols)
+    expect(gv.expansion.get()).toEqual(['fruit'])
+
+    gv.toggleGroup('veg')
+    gv.expandGroup('veg')
+    gv.collapseGroup('fruit')
+    gv.expandAll()
+    gv.collapseAll()
+
+    expect(gv.expansion.get()).toEqual(['fruit']) // model untouched
+    expect(onExpandedChange).not.toHaveBeenCalled()
+    expect(gv.getState().expanded.has('veg')).toBe(false)
+  })
+
+  it('controlled setConfig syncs the model silently (no onExpandedChange)', () => {
+    const onExpandedChange = vi.fn()
+    const gv = createGroupedView<Item, string>({
+      keyOf: (r) => r.category,
+      expanded: ['fruit'],
+      onExpandedChange,
+    })
+    gv.setRows(data, cols)
+
+    gv.setConfig({ expanded: ['fruit', 'veg'] })
+    expect(gv.getState().expanded.has('veg')).toBe(true)
+    expect(gv.expansion.get()).toEqual(['fruit', 'veg'])
+    expect(onExpandedChange).not.toHaveBeenCalled() // silent sync preserved
+  })
+
+  it('expandAll derives keys from computed groups: keyOf runs exactly n times', () => {
+    const keyOf = vi.fn((r: { category: number }) => r.category)
+    const n = 100_000
+    const rows = Array.from({ length: n }, (_, i) => ({ category: i % 50 }))
+    const gv = createGroupedView<{ category: number }, number>({ keyOf })
+    gv.setRows(rows)
+    expect(keyOf).toHaveBeenCalledTimes(n) // grouping pass only
+
+    keyOf.mockClear()
+    gv.expandAll()
+    // Exactly ONE keyOf pass (the recompute that rebuilds groups) — the old
+    // implementation ran a second derive pass (`currentRows.map(keyOf)`), i.e.
+    // 2n here. Deterministic, no wall clock.
+    expect(keyOf).toHaveBeenCalledTimes(n)
+    expect(gv.getState().expanded.size).toBe(50)
+    expect([...gv.getState().expanded].sort((a, b) => a - b)).toEqual(
+      Array.from({ length: 50 }, (_, i) => i),
+    )
+  })
+
+  it('expandAll unions with already-open keys (replace→union delta, test-unlocked)', () => {
+    const gv = createGroupedView<Item, string>({ keyOf: (r) => r.category })
+    gv.setRows(data, cols)
+    gv.expandGroup('fruit')
+    // Swap rows so only 'veg' remains — 'fruit' is a stale open key.
+    gv.setRows([data[2]!], cols) // Eggplant (veg) only
+    gv.expandAll()
+    // Model semantics union: stale 'fruit' survives; replace would have dropped it.
+    expect(gv.expansion.get()).toEqual(['fruit', 'veg'])
+    expect(gv.getState().expanded.has('fruit')).toBe(true)
+  })
 })

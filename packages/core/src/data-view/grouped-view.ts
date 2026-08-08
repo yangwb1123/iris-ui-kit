@@ -8,6 +8,13 @@
  * into their table adapter as a flat, indented list (like a TreeGrid) or as
  * section headers + children.
  *
+ * Expansion is **composed** from {@link createExpansion} (multiple-open
+ * semantics): the controller exposes the model as `expansion`, and every
+ * expand/collapse method delegates to it. The grouped `state.expanded` is
+ * derived from the model, so direct model calls (e.g. `gv.expansion.toggle(k)`)
+ * stay in sync with the view — and `onExpandedChange` fires from the model's
+ * single `onChange` site.
+ *
  * Usage:
  * ```ts
  * const grouped = createGroupedView({ keyOf: (r) => r.category })
@@ -17,10 +24,13 @@
  * const state = grouped.getState()
  * // state.groups → [{ key: 'cat1', rows: [...] }, ...]
  * // state.expanded → Set of keys currently open
+ * // Direct model access (additive):
+ * grouped.expansion.expand('cat1')
  * ```
  */
 
 import { createStore, type Store } from '../store'
+import { createExpansion, type ExpansionModel } from '../expansion'
 import { groupRows, aggregate as computeAggregate } from './aggregate'
 import type { GroupedViewConfig, GroupedViewState, AggregateSpec, DataViewColumn } from './types'
 
@@ -28,7 +38,7 @@ import type { GroupedViewConfig, GroupedViewState, AggregateSpec, DataViewColumn
  * GroupedView controller state, stored in a subscribable {@link Store} so
  * framework adapters can bridge it to their reactivity model.
  */
-export interface GroupedViewStore<Row, K = string> {
+export interface GroupedViewStore<Row, K extends string | number = string> {
   /** The raw config (keyOf, aggregates, groupSort, etc.). */
   config: GroupedViewConfig<Row, K>
   /** The current row set. */
@@ -49,11 +59,17 @@ export interface GroupedViewStore<Row, K = string> {
  * optional group-key sort are managed here; per-group aggregates are computed
  * eagerly.
  */
-export function createGroupedView<Row, K = string>(
+export function createGroupedView<Row, K extends string | number = string>(
   config: GroupedViewConfig<Row, K>,
 ): {
   /** Subscribable store with the full grouped state. */
   store: Store<GroupedViewStore<Row, K>>
+  /**
+   * The composed expansion model (multiple-open). Direct model calls
+   * (toggle/expand/collapse/set/merge) stay in sync with the grouped state —
+   * every commit re-derives `state.expanded` and fires `onExpandedChange`.
+   */
+  expansion: ExpansionModel<K>
   /** Set the source rows (re-computes groups and aggregates). */
   setRows: (rows: readonly Row[], columns?: readonly DataViewColumn<Row>[]) => void
   /** Toggle a group's expanded state. */
@@ -71,13 +87,33 @@ export function createGroupedView<Row, K = string>(
   /** Update the config (e.g., change keyOf or groupSort). Triggers recompute. */
   setConfig: (partial: Partial<GroupedViewConfig<Row, K>>) => void
 } {
-  // Internal expanded set: controlled via config.expanded if provided, else internal.
-  const defaultExpanded = new Set<K>(config.defaultExpanded ?? [])
-  let expandedSet = new Set<K>(defaultExpanded)
   let currentRows: readonly Row[] = []
   let currentColumns: readonly DataViewColumn<Row>[] = []
 
   const initialConfig: GroupedViewConfig<Row, K> = { ...config }
+  let currentConfig: GroupedViewConfig<Row, K> = { ...initialConfig }
+
+  function recompute(): void {
+    store.setState((prev) => ({
+      ...prev,
+      state: buildState(currentRows, currentColumns, currentConfig),
+    }))
+  }
+
+  // Composed expansion model — the single source of truth for open keys.
+  // `defaultExpanded` also mirrors an initially-controlled `expanded` so the
+  // first snapshot is correct without firing onChange during creation.
+  const expansion = createExpansion<K>({
+    mode: 'multiple',
+    defaultExpanded: initialConfig.expanded ?? initialConfig.defaultExpanded,
+    onChange: (keys) => {
+      // Single firing site for onExpandedChange. In controlled mode the caller
+      // drives the model via setConfig({ expanded }) — stay silent there
+      // (preserves the historical silent-sync behavior).
+      if (!currentConfig.expanded) currentConfig.onExpandedChange?.(keys)
+      recompute()
+    },
+  })
 
   // Compute groups from rows.
   function computeGroups(
@@ -126,9 +162,10 @@ export function createGroupedView<Row, K = string>(
     columns: readonly DataViewColumn<Row>[],
     cfg: GroupedViewConfig<Row, K>,
   ): GroupedViewState<Row, K> {
-    // Use config.expanded if controlled.
-    const expanded = cfg.expanded ? new Set(cfg.expanded) : expandedSet
-    if (cfg.expanded) expandedSet = new Set(cfg.expanded)
+    // Derived from the composed expansion model (setConfig mirrors an external
+    // `expanded` into the model in controlled mode). Snapshot — callers cannot
+    // mutate the internal set through the returned state.
+    const expanded = new Set(expansion.get())
     const keyOf = cfg.keyOf
     if (!keyOf || rows.length === 0) {
       return { groups: [], aggregates: new Map(), expanded, isGrouped: false }
@@ -147,17 +184,9 @@ export function createGroupedView<Row, K = string>(
 
   const store = createStore<GroupedViewStore<Row, K>>(initialStoreState)
 
-  let currentConfig: GroupedViewConfig<Row, K> = { ...initialConfig }
-
-  function recompute(): void {
-    store.setState((prev) => ({
-      ...prev,
-      state: buildState(currentRows, currentColumns, currentConfig),
-    }))
-  }
-
   const api = {
     store,
+    expansion,
 
     setRows(rows: readonly Row[], columns?: readonly DataViewColumn<Row>[]): void {
       currentRows = rows
@@ -166,47 +195,30 @@ export function createGroupedView<Row, K = string>(
     },
 
     toggleGroup(key: K): void {
-      if (currentConfig.expanded) return // controlled — no internal mutation
-      if (expandedSet.has(key)) {
-        expandedSet = new Set([...expandedSet].filter((k) => k !== key))
-      } else {
-        expandedSet = new Set([...expandedSet, key])
-      }
-      currentConfig.onExpandedChange?.([...expandedSet])
-      recompute()
+      if (currentConfig.expanded) return // controlled — caller drives via setConfig
+      expansion.toggle(key)
     },
 
     expandGroup(key: K): void {
       if (currentConfig.expanded) return
-      if (!expandedSet.has(key)) {
-        expandedSet = new Set([...expandedSet, key])
-        currentConfig.onExpandedChange?.([...expandedSet])
-        recompute()
-      }
+      expansion.expand(key)
     },
 
     collapseGroup(key: K): void {
       if (currentConfig.expanded) return
-      if (expandedSet.has(key)) {
-        expandedSet = new Set([...expandedSet].filter((k) => k !== key))
-        currentConfig.onExpandedChange?.([...expandedSet])
-        recompute()
-      }
+      expansion.collapse(key)
     },
 
     expandAll(): void {
       if (currentConfig.expanded) return
-      const allKeys = currentRows.map((r) => currentConfig.keyOf(r))
-      expandedSet = new Set(allKeys)
-      currentConfig.onExpandedChange?.([...expandedSet])
-      recompute()
+      // Derive keys from the already-computed groups — zero extra keyOf calls
+      // (deterministic; the model unions, matching createExpansion semantics).
+      expansion.expandAll(store.getState().state.groups.map((g) => g.key))
     },
 
     collapseAll(): void {
       if (currentConfig.expanded) return
-      expandedSet = new Set<K>()
-      currentConfig.onExpandedChange?.([...expandedSet])
-      recompute()
+      expansion.collapseAll()
     },
 
     getState(): GroupedViewState<Row, K> {
@@ -215,15 +227,15 @@ export function createGroupedView<Row, K = string>(
 
     setConfig(partial: Partial<GroupedViewConfig<Row, K>>): void {
       currentConfig = { ...currentConfig, ...partial }
-      // If expanded is being controlled externally, sync.
-      if (partial.expanded) {
-        expandedSet = new Set(partial.expanded)
-      }
-      store.setState((prev) => ({
-        ...prev,
-        config: currentConfig,
-      }))
-      recompute()
+      // Controlled sync: mirror the new expanded set into the model. The
+      // model's onChange re-derives the view state inside the same batch;
+      // onExpandedChange stays silent in controlled mode (historical behavior).
+      const nextExpanded = partial.expanded
+      store.batch(() => {
+        if (nextExpanded) expansion.set(nextExpanded)
+        store.setState((prev) => ({ ...prev, config: currentConfig }))
+        recompute()
+      })
     },
   }
 

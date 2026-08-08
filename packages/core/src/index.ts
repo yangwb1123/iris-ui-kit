@@ -204,6 +204,12 @@ export {
   type GridNavOptions,
 } from './roving'
 export {
+  createCalendarNav,
+  type CalendarNav,
+  type CalendarNavState,
+  type CreateCalendarNavOptions,
+} from './calendar-nav'
+export {
   flattenLeafColumns,
   buildHeaderMatrix,
   dataIndexOf,

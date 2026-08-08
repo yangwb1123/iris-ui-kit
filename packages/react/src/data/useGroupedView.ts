@@ -2,9 +2,11 @@ import * as React from 'react'
 import { createGroupedView, type GroupedViewConfig, type GroupedViewState } from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
-export interface UseGroupedView<Row, K = string> {
+export interface UseGroupedView<Row, K extends string | number = string> {
   /** Subscribable store with the full grouped state. */
   store: ReturnType<typeof createGroupedView<Row, K>>['store']
+  /** The composed expansion model (multiple-open) — bridge it like IrisTable does: `useStore(expansion.store)`. */
+  expansion: ReturnType<typeof createGroupedView<Row, K>>['expansion']
   /** Set the source rows (re-computes groups and aggregates). */
   setRows: (
     rows: readonly Row[],
@@ -31,7 +33,7 @@ export interface UseGroupedView<Row, K = string> {
  * Creates the controller once (ref), subscribes to its store, and returns
  * the controller plus its live `state`.
  */
-export function useGroupedView<Row, K = string>(
+export function useGroupedView<Row, K extends string | number = string>(
   config: GroupedViewConfig<Row, K>,
 ): UseGroupedView<Row, K> {
   const ref = React.useRef<ReturnType<typeof createGroupedView<Row, K>> | null>(null)
@@ -64,6 +66,7 @@ export function useGroupedView<Row, K = string>(
   return React.useMemo(
     () => ({
       store: controller.store,
+      expansion: controller.expansion,
       setRows,
       toggleGroup,
       expandGroup,

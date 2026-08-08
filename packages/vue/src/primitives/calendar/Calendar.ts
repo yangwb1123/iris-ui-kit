@@ -1,7 +1,6 @@
-import { computed, defineComponent, h, ref, watch, type PropType } from 'vue'
+import { computed, defineComponent, h, watch, type PropType } from 'vue'
+import { createCalendarNav } from '@iris-ui-kit/core'
 import {
-  addDays,
-  addMonths,
   buildMonthMatrix,
   clampDate,
   endOfMonth,
@@ -15,6 +14,7 @@ import {
   startOfDay,
   startOfMonth,
 } from './dateUtils'
+import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 
 /**
@@ -47,24 +47,32 @@ export const IrisCalendar = defineComponent({
   },
   setup(props, { attrs, emit }) {
     const { t } = useI18n()
+    // Keyboard roving lives in the core `createCalendarNav` controller; this
+    // adapter only renders and bridges. Options are captured at creation.
     const initialMonth = props.defaultMonth ?? props.modelValue ?? new Date()
-    const visibleMonth = ref(startOfMonth(initialMonth))
-    const focusDate = ref<Date>(clampDate(props.modelValue ?? new Date(), props.min, props.max))
+    const nav = createCalendarNav({
+      initialMonth: startOfMonth(initialMonth),
+      initialFocusDate: clampDate(props.modelValue ?? new Date(), props.min, props.max),
+      weekStartsOn: props.weekStartsOn,
+      min: props.min,
+      max: props.max,
+    })
+    const state = useStore(nav.store)
 
     // Sync visible month if controlled modelValue changes to a different month.
     watch(
       () => props.modelValue,
       (value) => {
-        if (value && !isSameMonth(value, visibleMonth.value)) {
-          visibleMonth.value = startOfMonth(value)
-          focusDate.value = clampDate(value, props.min, props.max)
+        if (value && !isSameMonth(value, nav.getVisibleMonth())) {
+          nav.setVisibleMonth(startOfMonth(value))
+          nav.setFocusDate(clampDate(value, props.min, props.max))
         }
       },
     )
 
-    const matrix = computed(() => buildMonthMatrix(visibleMonth.value, props.weekStartsOn))
+    const matrix = computed(() => buildMonthMatrix(state.value.visibleMonth, props.weekStartsOn))
     const weekdays = computed(() => getWeekdayNames(props.weekStartsOn, props.locale))
-    const title = computed(() => formatMonthYear(visibleMonth.value, props.locale))
+    const title = computed(() => formatMonthYear(state.value.visibleMonth, props.locale))
     // One memoized formatter for the full-date cell label (e.g. "Monday, June 9,
     // 2026") so screen readers announce the whole date, not just the day number.
     const dayLabelFmt = computed(
@@ -78,18 +86,10 @@ export const IrisCalendar = defineComponent({
     )
 
     const goPrevMonth = () => {
-      visibleMonth.value = addMonths(visibleMonth.value, -1)
+      nav.goToMonth(-1)
     }
     const goNextMonth = () => {
-      visibleMonth.value = addMonths(visibleMonth.value, 1)
-    }
-
-    const moveFocus = (delta: number) => {
-      const next = clampDate(addDays(focusDate.value, delta), props.min, props.max)
-      focusDate.value = next
-      if (!isSameMonth(next, visibleMonth.value)) {
-        visibleMonth.value = startOfMonth(next)
-      }
+      nav.goToMonth(1)
     }
 
     const selectDate = (date: Date) => {
@@ -99,61 +99,24 @@ export const IrisCalendar = defineComponent({
     }
 
     const onGridKeyDown = (event: KeyboardEvent) => {
-      switch (event.key) {
-        case 'ArrowLeft':
-          event.preventDefault()
-          moveFocus(-1)
-          break
-        case 'ArrowRight':
-          event.preventDefault()
-          moveFocus(1)
-          break
-        case 'ArrowUp':
-          event.preventDefault()
-          moveFocus(-7)
-          break
-        case 'ArrowDown':
-          event.preventDefault()
-          moveFocus(7)
-          break
-        case 'Home': {
-          event.preventDefault()
-          const offset = focusDate.value.getDay() - props.weekStartsOn
-          moveFocus(-((offset + 7) % 7))
-          break
-        }
-        case 'End': {
-          event.preventDefault()
-          const offset = (focusDate.value.getDay() - props.weekStartsOn + 7) % 7
-          moveFocus(6 - offset)
-          break
-        }
-        case 'PageUp':
-          event.preventDefault()
-          visibleMonth.value = addMonths(visibleMonth.value, -1)
-          focusDate.value = clampDate(addMonths(focusDate.value, -1), props.min, props.max)
-          break
-        case 'PageDown':
-          event.preventDefault()
-          visibleMonth.value = addMonths(visibleMonth.value, 1)
-          focusDate.value = clampDate(addMonths(focusDate.value, 1), props.min, props.max)
-          break
-        case 'Enter':
-        case ' ':
-          event.preventDefault()
-          selectDate(focusDate.value)
-          break
+      if (nav.handleKey(event.key)) {
+        event.preventDefault()
+        return
+      }
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        selectDate(state.value.focusDate)
       }
     }
 
     const today = startOfDay(new Date())
     const prevDisabled = computed(() => {
       if (!props.min) return false
-      return startOfMonth(visibleMonth.value) <= startOfMonth(props.min)
+      return startOfMonth(state.value.visibleMonth) <= startOfMonth(props.min)
     })
     const nextDisabled = computed(() => {
       if (!props.max) return false
-      const endOfVisible = endOfMonth(visibleMonth.value)
+      const endOfVisible = endOfMonth(state.value.visibleMonth)
       return startOfMonth(endOfVisible) >= startOfMonth(props.max)
     })
 
@@ -297,9 +260,9 @@ export const IrisCalendar = defineComponent({
                 'div',
                 { key: `week-${wi}`, role: 'row', style: { display: 'contents' } },
                 week.map((date) => {
-                  const inMonth = isSameMonth(date, visibleMonth.value)
+                  const inMonth = isSameMonth(date, state.value.visibleMonth)
                   const selected = props.modelValue ? isSameDay(date, props.modelValue) : false
-                  const focused = isSameDay(date, focusDate.value)
+                  const focused = isSameDay(date, state.value.focusDate)
                   const isToday = isSameDay(date, today)
                   const oof = isOutOfRange(date, props.min, props.max)
                   const isDisabled = props.disabled || oof
@@ -326,11 +289,11 @@ export const IrisCalendar = defineComponent({
                       'data-outside-month': !inMonth ? 'true' : undefined,
                       disabled: isDisabled || undefined,
                       onClick: () => {
-                        focusDate.value = date
+                        nav.setFocusDate(date)
                         selectDate(date)
                       },
                       onFocus: () => {
-                        focusDate.value = date
+                        nav.setFocusDate(date)
                       },
                       style: {
                         height: '32px',

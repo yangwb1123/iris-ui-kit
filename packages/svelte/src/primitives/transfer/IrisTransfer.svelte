@@ -2,11 +2,25 @@
   import { createSelectionModel } from '@iris-ui-kit/core'
   import { toStore } from '../../useStore'
   import { useI18n } from '../../i18n'
+  import IrisVirtualScroll from '../virtual-scroll/IrisVirtualScroll.svelte'
 
   export interface IrisTransferItem {
     label: string
     value: string
     disabled?: boolean
+  }
+
+  /** Opt-in windowed rendering of a pane's list (mirrors `IrisTableVirtualOptions`). */
+  export interface IrisTransferVirtualOptions {
+    /** Per-item height in px (uniform). */
+    itemHeight: number
+    /**
+     * Viewport height. Number → px; string → CSS length. Defaults to the pane's
+     * intrinsic list height (240px).
+     */
+    height?: number | string
+    /** Extra rows rendered above and below the viewport. */
+    buffer?: number
   }
 
   interface Props {
@@ -15,6 +29,11 @@
     titles?: [string, string]
     searchable?: boolean
     disabled?: boolean
+    /**
+     * Opt-in windowed rendering of both pane lists via the core virtualizer
+     * (10k+ options stay smooth). Off by default — the plain path is unchanged.
+     */
+    virtual?: IrisTransferVirtualOptions
     onValueChange?: (values: string[]) => void
     style?: string
     class?: string
@@ -26,6 +45,7 @@
     titles,
     searchable = false,
     disabled = false,
+    virtual,
     onValueChange,
     style,
     class: className,
@@ -104,6 +124,29 @@
     'display:flex;flex-direction:column;width:220px;border:1px solid var(--iris-border);border-radius:var(--iris-radius-md,6px);background:var(--iris-background);overflow:hidden;'
 </script>
 
+<!-- Shared row renderer: a plain `<label>` in both the plain pane and inside
+     the virtual scroller's div wrapper (div > label is valid HTML). -->
+{#snippet row(o: IrisTransferItem, checked: string[], onToggle: (v: string) => void)}
+  <label
+    style:display="flex"
+    style:align-items="center"
+    style:gap="8px"
+    style:padding="var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)"
+    style:cursor={o.disabled || disabled ? 'not-allowed' : 'pointer'}
+    style:opacity={o.disabled ? '0.5' : '1'}
+    style:font-size="var(--iris-font-size-sm, 13px)"
+    style:color="var(--iris-foreground)"
+  >
+    <input
+      type="checkbox"
+      checked={checked.includes(o.value)}
+      disabled={o.disabled || disabled}
+      onchange={() => onToggle(o.value)}
+    />
+    {o.label}
+  </label>
+{/snippet}
+
 <div
   data-iris-transfer
   data-disabled={disabled ? '' : undefined}
@@ -158,38 +201,36 @@
         />
       </div>
     {/if}
-    <div style:overflow-y="auto" style:flex="1" style:max-height="240px">
-      {#each filteredSource as item (item.value)}
-        <label
-          style:display="flex"
-          style:align-items="center"
-          style:gap="8px"
-          style:padding="var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)"
-          style:cursor={item.disabled || disabled ? 'not-allowed' : 'pointer'}
-          style:opacity={item.disabled ? '0.5' : '1'}
-          style:font-size="var(--iris-font-size-sm, 13px)"
-          style:color="var(--iris-foreground)"
-        >
-          <input
-            type="checkbox"
-            checked={$sourceChecked.includes(item.value)}
-            disabled={item.disabled || disabled}
-            onchange={() => toggleSource(item.value)}
-          />
-          {item.label}
-        </label>
-      {/each}
-      {#if filteredSource.length === 0}
-        <div
-          style:padding="12px"
-          style:color="var(--iris-muted)"
-          style:font-size="var(--iris-font-size-sm, 13px)"
-          style:text-align="center"
-        >
-          {t('transfer.empty')}
-        </div>
-      {/if}
-    </div>
+    {#if virtual && filteredSource.length > 0}
+      <IrisVirtualScroll
+        items={filteredSource}
+        itemHeight={virtual.itemHeight}
+        height={virtual.height ?? 240}
+        buffer={virtual.buffer}
+        keyOf={(it: unknown) => String((it as IrisTransferItem).value)}
+        style="flex:1;max-height:240px;box-sizing:content-box"
+      >
+        {#snippet item({ item: it })}
+          {@render row(it as IrisTransferItem, $sourceChecked, toggleSource)}
+        {/snippet}
+      </IrisVirtualScroll>
+    {:else}
+      <div style:overflow-y="auto" style:flex="1" style:max-height="240px">
+        {#each filteredSource as item (item.value)}
+          {@render row(item, $sourceChecked, toggleSource)}
+        {/each}
+        {#if filteredSource.length === 0}
+          <div
+            style:padding="12px"
+            style:color="var(--iris-muted)"
+            style:font-size="var(--iris-font-size-sm, 13px)"
+            style:text-align="center"
+          >
+            {t('transfer.empty')}
+          </div>
+        {/if}
+      </div>
+    {/if}
   </div>
 
   <!-- Move buttons -->
@@ -275,37 +316,35 @@
         />
       </div>
     {/if}
-    <div style:overflow-y="auto" style:flex="1" style:max-height="240px">
-      {#each filteredTarget as item (item.value)}
-        <label
-          style:display="flex"
-          style:align-items="center"
-          style:gap="8px"
-          style:padding="var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)"
-          style:cursor={item.disabled || disabled ? 'not-allowed' : 'pointer'}
-          style:opacity={item.disabled ? '0.5' : '1'}
-          style:font-size="var(--iris-font-size-sm, 13px)"
-          style:color="var(--iris-foreground)"
-        >
-          <input
-            type="checkbox"
-            checked={$targetChecked.includes(item.value)}
-            disabled={item.disabled || disabled}
-            onchange={() => toggleTarget(item.value)}
-          />
-          {item.label}
-        </label>
-      {/each}
-      {#if filteredTarget.length === 0}
-        <div
-          style:padding="12px"
-          style:color="var(--iris-muted)"
-          style:font-size="var(--iris-font-size-sm, 13px)"
-          style:text-align="center"
-        >
-          {t('transfer.empty')}
-        </div>
-      {/if}
-    </div>
+    {#if virtual && filteredTarget.length > 0}
+      <IrisVirtualScroll
+        items={filteredTarget}
+        itemHeight={virtual.itemHeight}
+        height={virtual.height ?? 240}
+        buffer={virtual.buffer}
+        keyOf={(it: unknown) => String((it as IrisTransferItem).value)}
+        style="flex:1;max-height:240px;box-sizing:content-box"
+      >
+        {#snippet item({ item: it })}
+          {@render row(it as IrisTransferItem, $targetChecked, toggleTarget)}
+        {/snippet}
+      </IrisVirtualScroll>
+    {:else}
+      <div style:overflow-y="auto" style:flex="1" style:max-height="240px">
+        {#each filteredTarget as item (item.value)}
+          {@render row(item, $targetChecked, toggleTarget)}
+        {/each}
+        {#if filteredTarget.length === 0}
+          <div
+            style:padding="12px"
+            style:color="var(--iris-muted)"
+            style:font-size="var(--iris-font-size-sm, 13px)"
+            style:text-align="center"
+          >
+            {t('transfer.empty')}
+          </div>
+        {/if}
+      </div>
+    {/if}
   </div>
 </div>

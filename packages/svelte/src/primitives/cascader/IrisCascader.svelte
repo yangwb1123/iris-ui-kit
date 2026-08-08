@@ -1,6 +1,7 @@
 <script lang="ts">
   import { generateId } from '@iris-ui-kit/core'
   import { useI18n } from '../../i18n'
+  import IrisVirtualScroll from '../virtual-scroll/IrisVirtualScroll.svelte'
 
   export interface IrisCascaderNode {
     label: string
@@ -19,6 +20,12 @@
     invalid?: boolean
     separator?: string
     size?: IrisCascaderSize
+    /**
+     * Opt-in: window each open column with the core virtualizer instead of
+     * rendering every option. Fixed deterministic sizing (viewport 240px, row
+     * height per size, buffer 4). Default false — no behavior change.
+     */
+    virtual?: boolean
     id?: string
     onValueChange?: (path: string[]) => void
     style?: string
@@ -46,6 +53,13 @@
     },
   }
 
+  /** Matches the current `maxHeight: 240` of a column. */
+  const CASCADER_COLUMN_VIEWPORT = 240
+  /** Fixed row heights, aligned with SIZE_MAP minHeights so rows never clip. */
+  const CASCADER_ROW_HEIGHT: Record<IrisCascaderSize, number> = { sm: 28, md: 34, lg: 40 }
+  /** Extra rows rendered above and below the visible window. */
+  const CASCADER_VIRTUAL_BUFFER = 4
+
   let {
     options = [],
     value = [],
@@ -58,6 +72,7 @@
     onValueChange,
     style,
     class: className,
+    virtual = false,
     ...rest
   }: Props = $props()
 
@@ -211,54 +226,83 @@
         {#if colIdx > 0}
           <div style:width="1px" style:background="var(--iris-border)"></div>
         {/if}
-        <ul
-          role="listbox"
-          aria-label={t('cascader.level', { level: colIdx + 1 })}
-          style:min-width="140px"
-          style:max-height="240px"
-          style:overflow-y="auto"
-          style:margin="0"
-          style:padding="4px"
-          style:list-style="none"
-          style:padding-inline-start="0"
-          style:margin-block="0"
-        >
-          {#each col as node (node.value)}
-            {@const isActive = activePath[colIdx] === node.value}
-            <li
-              role="option"
-              aria-selected={isActive}
-              aria-disabled={node.disabled ? 'true' : undefined}
-              data-iris-cascader-item
-              data-state={isActive ? 'selected' : 'idle'}
-              onclick={() => selectOption(colIdx, node)}
-              onkeydown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault()
-                  selectOption(colIdx, node)
-                }
-              }}
-              tabindex={node.disabled ? -1 : 0}
-              style:display="flex"
-              style:align-items="center"
-              style:justify-content="space-between"
-              style:gap="8px"
-              style:padding="var(--iris-space-xs, 8px) var(--iris-padding-md, 12px)"
-              style:cursor={node.disabled ? 'not-allowed' : 'pointer'}
-              style:border-radius="var(--iris-radius-sm, 4px)"
-              style:background={isActive ? 'var(--iris-surface-hover)' : 'transparent'}
-              style:color={node.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)'}
-              style:font-size={sz.fontSize}
-              style:opacity={node.disabled ? '0.5' : '1'}
-            >
-              <span>{node.label}</span>
-              {#if node.children && node.children.length > 0}
-                <span aria-hidden="true" style:font-size="10px">›</span>
-              {/if}
-            </li>
-          {/each}
-        </ul>
+        {#if virtual}
+          <IrisVirtualScroll
+            items={col}
+            itemHeight={CASCADER_ROW_HEIGHT[size]}
+            height={CASCADER_COLUMN_VIEWPORT}
+            buffer={CASCADER_VIRTUAL_BUFFER}
+            keyOf={(item) => (item as IrisCascaderNode).value}
+            role="listbox"
+            aria-label={t('cascader.level', { level: colIdx + 1 })}
+            style="min-width: 140px"
+          >
+            {#snippet item(slotData)}
+              {@const node = slotData.item as IrisCascaderNode}
+              {@render optionItem(node, colIdx, true)}
+            {/snippet}
+          </IrisVirtualScroll>
+        {:else}
+          <ul
+            role="listbox"
+            aria-label={t('cascader.level', { level: colIdx + 1 })}
+            style:min-width="140px"
+            style:max-height="240px"
+            style:overflow-y="auto"
+            style:margin="0"
+            style:padding="4px"
+            style:list-style="none"
+            style:padding-inline-start="0"
+            style:margin-block="0"
+          >
+            {#each col as node (node.value)}
+              {@render optionItem(node, colIdx, false)}
+            {/each}
+          </ul>
+        {/if}
       {/each}
     </div>
   {/if}
 </div>
+
+<!-- Shared option renderer — used by BOTH the plain and the virtual column
+     paths so the a11y attribute surface is structurally identical. When
+     virtual, the virtualizer pins each row's height, so the option fills the
+     row (height 100% + border-box keeps the padding inside it). -->
+{#snippet optionItem(node: IrisCascaderNode, colIdx: number, fill: boolean)}
+  {@const isActive = activePath[colIdx] === node.value}
+  {@const hasChildren = node.children !== undefined && node.children.length > 0}
+  <li
+    role="option"
+    aria-selected={isActive}
+    aria-disabled={node.disabled ? 'true' : undefined}
+    data-iris-cascader-item
+    data-state={isActive ? 'selected' : 'idle'}
+    onclick={() => selectOption(colIdx, node)}
+    onkeydown={(event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        selectOption(colIdx, node)
+      }
+    }}
+    tabindex={node.disabled ? -1 : 0}
+    style:display="flex"
+    style:align-items="center"
+    style:justify-content="space-between"
+    style:gap="8px"
+    style:padding="var(--iris-space-xs, 8px) var(--iris-padding-md, 12px)"
+    style:cursor={node.disabled ? 'not-allowed' : 'pointer'}
+    style:border-radius="var(--iris-radius-sm, 4px)"
+    style:background={isActive ? 'var(--iris-surface-hover)' : 'transparent'}
+    style:color={node.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)'}
+    style:font-size={sz.fontSize}
+    style:opacity={node.disabled ? '0.5' : '1'}
+    style:height={fill ? '100%' : undefined}
+    style:box-sizing={fill ? 'border-box' : undefined}
+  >
+    <span>{node.label}</span>
+    {#if hasChildren}
+      <span aria-hidden="true" style:font-size="10px">›</span>
+    {/if}
+  </li>
+{/snippet}

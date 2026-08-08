@@ -1,10 +1,12 @@
 import * as React from 'react'
 import {
   createKeyboardNav,
+  createVirtualizer,
   type KeyboardNavController,
   type KeyboardNavAction,
   type Placement,
   type Size,
+  type Virtualizer,
 } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { useStore } from '../../useStore'
@@ -32,6 +34,15 @@ export interface IrisSelectTriggerState<T = unknown> {
   /** Always present; `true` when the select is disabled. */
   disabled: boolean
 }
+
+/** Listbox maxHeight — the virtualizer's viewport (px). */
+const LISTBOX_MAX_HEIGHT = 240
+/**
+ * Fixed per-option row height (px) — option padding 6+6 + 14px line ≈ 32px
+ * plus the 4px inter-row gap. A single constant (options use a fixed 14px
+ * font in every size), never measured — the combobox estimate approach.
+ */
+const ROW_HEIGHT = 36
 
 const SIZE_STYLES: Record<
   IrisSelectSize,
@@ -66,6 +77,12 @@ export interface IrisSelectProps<T = unknown> {
   renderTrigger?: (state: IrisSelectTriggerState<T>) => React.ReactNode
   style?: React.CSSProperties
   className?: string
+  /**
+   * Opt-in windowed rendering of the listbox via the core virtualizer.
+   * When true, only the visible window (+ buffer) of options is rendered;
+   * keyboard navigation scrolls the active option into view. Default false.
+   */
+  virtual?: boolean
 }
 
 /**
@@ -96,6 +113,7 @@ export function IrisSelect<T = unknown>({
   renderTrigger,
   style,
   className,
+  virtual = false,
   ...rest
 }: IrisSelectProps<T>): React.ReactElement {
   const { t } = useI18n()
@@ -168,14 +186,76 @@ export function IrisSelect<T = unknown>({
 
   const listRef = React.useRef<HTMLUListElement | null>(null)
 
-  // When activeIndex changes while open, focus that option.
+  // ── Virtualized listbox (opt-in) — combobox precedent ────────────────
+  // One controller per mount; reactive inputs read through refs so the
+  // instance (scroll offset + keyed cache) survives renders, exactly like
+  // IrisCombobox / IrisVirtualScroll.
+  const safeItemsRef = React.useRef(safeItems)
+  safeItemsRef.current = safeItems
+  const virtualizer = React.useMemo<Virtualizer>(
+    () =>
+      createVirtualizer({
+        count: 0,
+        estimateSize: () => ROW_HEIGHT,
+        getItemKey: (i) => String(safeItemsRef.current[i]?.value ?? i),
+        viewportSize: LISTBOX_MAX_HEIGHT,
+        buffer: 4,
+      }),
+    [],
+  )
+  const vstate = React.useSyncExternalStore(virtualizer.subscribe, virtualizer.getState)
+  const [listScrollTop, setListScrollTop] = React.useState(0)
+
+  // L1 (sync layout): push count + scroll into the controller pre-paint and
+  // re-clamp the DOM scrollTop when the list shrinks (combobox A8.3).
+  React.useLayoutEffect(() => {
+    if (!virtual) return
+    virtualizer.setCount(safeItems.length)
+    virtualizer.setScroll(listScrollTop)
+    const el = listRef.current
+    if (el) {
+      const max = Math.max(0, virtualizer.totalSize() - LISTBOX_MAX_HEIGHT)
+      if (el.scrollTop > max) el.scrollTop = max
+    }
+  }, [virtual, virtualizer, safeItems.length, listScrollTop])
+
+  // L2 (sync layout): scroll the active option into view ('auto' semantics:
+  // no-op when already fully inside the viewport). Estimates are constant
+  // and never measured, so `start = index × rowHeight` is exact. Runs before
+  // the passive focus effect below, so the focus effect always sees the
+  // option already in the (post-scroll) DOM.
+  React.useLayoutEffect(() => {
+    if (!virtual || !open || activeIndex < 0) return
+    const el = listRef.current
+    if (!el) return
+    const top = el.scrollTop
+    const start = activeIndex * ROW_HEIGHT
+    if (start >= top && start + ROW_HEIGHT <= top + LISTBOX_MAX_HEIGHT) return
+    const target = virtualizer.scrollToIndex(activeIndex, start < top ? 'start' : 'end')
+    el.scrollTop = target
+    setListScrollTop(target)
+  }, [virtual, open, activeIndex, virtualizer])
+
+  // The listbox unmounts per open (PopoverContent returns null when closed),
+  // so the DOM scrollTop resets naturally — but the controller's internal
+  // offset must reset too, else the next open re-windows mid-list (A3.4).
+  React.useEffect(() => {
+    if (!open) setListScrollTop(0)
+  }, [open])
+
+  // When activeIndex changes while open, focus that option. In virtual mode
+  // the deps include `listScrollTop` (the scroll-triggered window commit from
+  // L2): the effect re-runs only after the option has been rendered into the
+  // DOM, so the null pre-scroll querySelector result is never acted on.
+  // `preventScroll` keeps wheel-driven window shifts from being fought by
+  // refocusing (the row is already in view after a nav scroll).
   React.useEffect(() => {
     if (!open || activeIndex < 0) return
     const el = listRef.current?.querySelector<HTMLElement>(
       `[data-iris-select-option-index="${activeIndex}"]`,
     )
-    el?.focus()
-  }, [open, activeIndex])
+    el?.focus(virtual ? { preventScroll: true } : undefined)
+  }, [open, activeIndex, virtual, listScrollTop])
 
   const selectItem = (item: IrisSelectItem<T>) => {
     if (item.disabled) return
@@ -230,6 +310,63 @@ export function IrisSelect<T = unknown>({
     fontSize: sizeStyles.fontSize,
     minHeight: sizeStyles.minHeight,
     ...style,
+  }
+
+  // Shared option renderer: the virtual path renders the same node (plus
+  // virtual-list ARIA) so the visible window keeps today's selectors.
+  const renderOption = (item: IrisSelectItem<T>, index: number, windowed: boolean) => {
+    const isSelected = item.value === value
+    const isActive = index === activeIndex
+    return (
+      <li
+        key={String(item.value ?? index)}
+        role="option"
+        tabIndex={isActive ? 0 : -1}
+        aria-selected={isSelected}
+        aria-disabled={item.disabled ? 'true' : undefined}
+        aria-setsize={windowed ? safeItems.length : undefined}
+        aria-posinset={windowed ? index + 1 : undefined}
+        data-iris-select-option=""
+        data-iris-select-option-index={index}
+        data-state={isSelected ? 'selected' : isActive ? 'active' : 'idle'}
+        onClick={item.disabled ? undefined : () => selectItem(item)}
+        onFocus={() => nav.focus(index)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--iris-gap-sm, 6px)',
+          padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+          borderRadius: 'var(--iris-radius-sm, 4px)',
+          cursor: item.disabled ? 'not-allowed' : 'pointer',
+          opacity: item.disabled ? 0.5 : 1,
+          fontSize: 'var(--iris-font-size-md, 14px)',
+          background: isSelected
+            ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
+            : isActive
+              ? 'var(--iris-surface-hover)'
+              : 'transparent',
+          color: 'var(--iris-foreground)',
+          fontWeight: isSelected ? 600 : 400,
+        }}
+      >
+        <span style={{ flex: 1, minWidth: 0 }}>{item.label ?? String(item.value)}</span>
+        {isSelected ? (
+          <svg
+            aria-hidden="true"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--iris-primary)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        ) : null}
+      </li>
+    )
   }
 
   const triggerNode = renderTrigger ? (
@@ -293,6 +430,10 @@ export function IrisSelect<T = unknown>({
           aria-label={t('select.options')}
           data-iris-select-listbox=""
           onKeyDown={handleKeyDown}
+          onScroll={(e) => {
+            if (!virtual) return
+            setListScrollTop(e.currentTarget.scrollTop)
+          }}
           tabIndex={-1}
           style={{
             listStyle: 'none',
@@ -300,7 +441,9 @@ export function IrisSelect<T = unknown>({
             padding: 0,
             display: 'flex',
             flexDirection: 'column',
-            gap: 'var(--iris-space-xxs, 4px)',
+            // Virtual mode drops the inter-row gap: ROW_HEIGHT already
+            // includes the 4px spacing, so the spacer-sum invariant is exact.
+            ...(virtual ? {} : { gap: 'var(--iris-space-xxs, 4px)' }),
 
             maxHeight: 240,
             overflowY: 'auto',
@@ -318,59 +461,33 @@ export function IrisSelect<T = unknown>({
             >
               {t('select.empty')}
             </li>
-          ) : null}
-          {safeItems.map((item, index) => {
-            const isSelected = item.value === value
-            const isActive = index === activeIndex
-            return (
+          ) : virtual ? (
+            <>
               <li
-                key={String(item.value ?? index)}
-                role="option"
-                tabIndex={isActive ? 0 : -1}
-                aria-selected={isSelected}
-                aria-disabled={item.disabled ? 'true' : undefined}
-                data-iris-select-option=""
-                data-iris-select-option-index={index}
-                data-state={isSelected ? 'selected' : isActive ? 'active' : 'idle'}
-                onClick={item.disabled ? undefined : () => selectItem(item)}
-                onFocus={() => nav.focus(index)}
+                role="presentation"
+                aria-hidden="true"
+                data-iris-select-spacer=""
+                data-iris-select-spacer-type="top"
+                style={{ height: vstate.offsetBefore }}
+              />
+              {vstate.items.map((item) => {
+                const opt = safeItems[item.index]
+                if (!opt) return null
+                return renderOption(opt, item.index, true)
+              })}
+              <li
+                role="presentation"
+                aria-hidden="true"
+                data-iris-select-spacer=""
+                data-iris-select-spacer-type="bottom"
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--iris-gap-sm, 6px)',
-                  padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
-                  borderRadius: 'var(--iris-radius-sm, 4px)',
-                  cursor: item.disabled ? 'not-allowed' : 'pointer',
-                  opacity: item.disabled ? 0.5 : 1,
-                  fontSize: 'var(--iris-font-size-md, 14px)',
-                  background: isSelected
-                    ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
-                    : isActive
-                      ? 'var(--iris-surface-hover)'
-                      : 'transparent',
-                  color: 'var(--iris-foreground)',
-                  fontWeight: isSelected ? 600 : 400,
+                  height: vstate.totalSize - vstate.offsetBefore - vstate.items.length * ROW_HEIGHT,
                 }}
-              >
-                <span style={{ flex: 1, minWidth: 0 }}>{item.label ?? String(item.value)}</span>
-                {isSelected ? (
-                  <svg
-                    aria-hidden="true"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--iris-primary)"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M20 6 9 17l-5-5" />
-                  </svg>
-                ) : null}
-              </li>
-            )
-          })}
+              />
+            </>
+          ) : (
+            safeItems.map((item, index) => renderOption(item, index, false))
+          )}
         </ul>
       </IrisPopoverContent>
     </IrisPopover>

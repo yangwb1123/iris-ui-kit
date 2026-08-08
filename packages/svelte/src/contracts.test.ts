@@ -22,6 +22,7 @@ import {
   tableExpandScenario,
   treeScenario,
   calendarScenario,
+  calendarNavScenario,
   comboboxScenario,
   toastScenario,
   copyButtonScenario,
@@ -316,6 +317,16 @@ describe('@iris-ui-kit/svelte — cross-framework behavior contracts', () => {
     // CalendarContractHarness.svelte for the full note.
     const { container } = render(CalendarContractHarness)
     await runContract(calendarScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Calendar keyboard-roving contract', async () => {
+    const { container } = render(CalendarContractHarness, {
+      initialValue: new Date(2024, 5, 10),
+      min: new Date(2024, 5, 10),
+      max: new Date(2024, 6, 20),
+      locale: 'en-US',
+    })
+    await runContract(calendarNavScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared TagInput contract', async () => {

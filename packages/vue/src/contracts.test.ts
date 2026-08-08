@@ -22,6 +22,7 @@ import {
   treeScenario,
   tooltipScenario,
   calendarScenario,
+  calendarNavScenario,
   rangeSliderScenario,
   tagInputScenario,
   otpInputScenario,
@@ -117,10 +118,11 @@ describe('@iris-ui-kit/vue — cross-framework behavior contracts', () => {
       harness: Parameters<typeof mount>[0],
       driverForEl: (wrapper: ReturnType<typeof mount>) => HTMLElement = (w) =>
         w.element as HTMLElement,
+      mountProps: Record<string, unknown> = {},
     ) =>
     async (scenario: Parameters<typeof runContract>[0]) => {
       const el = makeHost()
-      const wrapper = mount(harness, { attachTo: el })
+      const wrapper = mount(harness, { attachTo: el, props: mountProps })
       await nextTick()
       await runContract(scenario, driverFor(driverForEl(wrapper)), expect)
     }
@@ -144,6 +146,13 @@ describe('@iris-ui-kit/vue — cross-framework behavior contracts', () => {
   it('satisfies the shared Pagination contract', () => run(PaginationHarness)(paginationScenario))
   it('satisfies the shared Stepper contract', () => run(StepperHarness)(stepperScenario))
   it('satisfies the shared Calendar contract', () => run(CalendarHarness)(calendarScenario))
+  it('satisfies the shared Calendar keyboard-roving contract', () =>
+    run(CalendarHarness, undefined, {
+      initialValue: new Date(2024, 5, 10),
+      min: new Date(2024, 5, 10),
+      max: new Date(2024, 6, 20),
+      locale: 'en-US',
+    })(calendarNavScenario))
   it('satisfies the shared TagInput contract', () => run(TagInputHarness)(tagInputScenario))
   it('satisfies the shared OtpInput contract', () => run(OtpInputHarness)(otpInputScenario))
 

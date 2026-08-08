@@ -3,8 +3,10 @@ import { createGroupedView, type GroupedViewConfig, type GroupedViewState } from
 import type { DataViewColumn } from '@iris-ui-kit/core'
 import { useStore } from '../useStore'
 
-export interface UseGroupedView<Row, K = string> {
+export interface UseGroupedView<Row, K extends string | number = string> {
   store: ReturnType<typeof createGroupedView<Row, K>>['store']
+  /** The composed expansion model (multiple-open) — bridge it like a Solid Table: `useStore(expansion.store)`. */
+  expansion: ReturnType<typeof createGroupedView<Row, K>>['expansion']
   setRows: (rows: readonly Row[], columns?: readonly DataViewColumn<Row>[]) => void
   toggleGroup: (key: K) => void
   expandGroup: (key: K) => void
@@ -21,7 +23,7 @@ export interface UseGroupedView<Row, K = string> {
  * Creates the controller once (module-level singleton) and bridges the store
  * into Solid reactivity via {@link useStore}.
  */
-export function useGroupedView<Row, K = string>(
+export function useGroupedView<Row, K extends string | number = string>(
   config: GroupedViewConfig<Row, K>,
 ): UseGroupedView<Row, K> {
   const controller = createGroupedView<Row, K>(config)
@@ -30,6 +32,7 @@ export function useGroupedView<Row, K = string>(
 
   return {
     store: controller.store,
+    expansion: controller.expansion,
     setRows: (rows, columns) => controller.setRows(rows, columns),
     toggleGroup: (key) => controller.toggleGroup(key),
     expandGroup: (key) => controller.expandGroup(key),

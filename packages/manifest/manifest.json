@@ -6431,6 +6431,13 @@
           "default": "md"
         },
         {
+          "name": "virtual",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in: window each open column with the core virtualizer instead of rendering every option. Fixed deterministic sizing (viewport 240px, row height per size, buffer 4). Default false — no behavior change.",
+          "default": "false"
+        },
+        {
           "name": "id",
           "type": "string",
           "optional": true
@@ -6512,6 +6519,13 @@
               "default": "md"
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in: window each open column with the core virtualizer instead of rendering every option. Fixed deterministic sizing (viewport 240px, row height per size, buffer 4). Default false — no behavior change.",
+              "default": "false"
+            },
+            {
               "name": "id",
               "type": "string",
               "optional": true
@@ -6590,6 +6604,12 @@
               ]
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "id",
               "type": "string",
               "optional": true
@@ -6651,6 +6671,12 @@
               "name": "onChange",
               "type": "(path: string[]) => void",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in: window each open column with the core virtualizer instead of rendering every option. Fixed deterministic sizing (viewport 240px, row height 34px, buffer 4). Default false — no behavior change."
             },
             {
               "name": "id",
@@ -6715,6 +6741,13 @@
               "default": "md"
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in: window each open column with the core virtualizer instead of rendering every option. Fixed deterministic sizing (viewport 240px, row height per size, buffer 4). Default false — no behavior change.",
+              "default": "false"
+            },
+            {
               "name": "id",
               "type": "string",
               "optional": true
@@ -6749,7 +6782,7 @@
         "onValueChange"
       ],
       "quality": {
-        "propCount": 13,
+        "propCount": 14,
         "eventCount": 1
       }
     },
@@ -8368,6 +8401,13 @@
           "name": "className",
           "type": "string",
           "optional": true
+        },
+        {
+          "name": "virtual",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false.",
+          "default": "false"
         }
       ],
       "frameworkContracts": {
@@ -8451,6 +8491,13 @@
               "name": "className",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false.",
+              "default": "false"
             }
           ],
           "events": [
@@ -8592,6 +8639,12 @@
               "optional": true
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false."
+            },
+            {
               "name": "style",
               "type": "JSX.CSSProperties",
               "optional": true
@@ -8665,6 +8718,13 @@
               "optional": true
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false.",
+              "default": "false"
+            },
+            {
               "name": "style",
               "type": "string",
               "optional": true
@@ -8684,7 +8744,7 @@
         "onValueChange"
       ],
       "quality": {
-        "propCount": 13,
+        "propCount": 14,
         "eventCount": 1
       }
     },
@@ -8744,6 +8804,13 @@
           "name": "onSelect",
           "type": "(item: IrisCommandItem) => void",
           "optional": true
+        },
+        {
+          "name": "virtual",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in windowed rendering of the results list via the core virtualizer. When true, only the visible window (+ buffer) of rows is rendered and keyboard navigation scrolls the active row into view. Default false — the plain list renders bit-for-bit as before.",
+          "default": "false"
         }
       ],
       "frameworkContracts": {
@@ -8787,6 +8854,13 @@
               "name": "onSelect",
               "type": "(item: IrisCommandItem) => void",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the results list via the core virtualizer. When true, only the visible window (+ buffer) of rows is rendered and keyboard navigation scrolls the active row into view. Default false — the plain list renders bit-for-bit as before.",
+              "default": "false"
             }
           ],
           "events": [
@@ -8942,7 +9016,7 @@
         "onSelect"
       ],
       "quality": {
-        "propCount": 7,
+        "propCount": 8,
         "eventCount": 2
       }
     },
@@ -21597,6 +21671,13 @@
           "default": "3"
         },
         {
+          "name": "virtual",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in windowed rendering of the suggestion listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view and every keystroke re-anchors the window to the top. Default false.",
+          "default": "false"
+        },
+        {
           "name": "id",
           "type": "string",
           "optional": true,
@@ -21672,6 +21753,13 @@
               "type": "number",
               "optional": true,
               "default": "3"
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the suggestion listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view and every keystroke re-anchors the window to the top. Default false.",
+              "default": "false"
             },
             {
               "name": "id",
@@ -21815,6 +21903,12 @@
               "name": "onChange",
               "type": "(value: string) => void",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the suggestion listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view and every keystroke re-anchors the window to the top. Default false."
             }
           ],
           "events": [
@@ -21884,6 +21978,13 @@
               "optional": true
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the suggestion listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view and every keystroke re-anchors the window to the top. Default false.",
+              "default": "false"
+            },
+            {
               "name": "style",
               "type": "string",
               "optional": true
@@ -21905,7 +22006,7 @@
         "onValueChange"
       ],
       "quality": {
-        "propCount": 13,
+        "propCount": 14,
         "eventCount": 1
       }
     },
@@ -30928,6 +31029,13 @@
           "name": "className",
           "type": "string",
           "optional": true
+        },
+        {
+          "name": "virtual",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false.",
+          "default": "false"
         }
       ],
       "frameworkContracts": {
@@ -31014,6 +31122,13 @@
               "name": "className",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false.",
+              "default": "false"
             }
           ],
           "events": [
@@ -31189,6 +31304,12 @@
               "name": "style",
               "type": "JSX.CSSProperties",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false."
             }
           ],
           "events": [
@@ -31279,6 +31400,13 @@
               "name": "style",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false.",
+              "default": "false"
             }
           ],
           "events": [
@@ -31299,7 +31427,7 @@
         "renderTrigger"
       ],
       "quality": {
-        "propCount": 14,
+        "propCount": 15,
         "eventCount": 1
       }
     },
@@ -40244,6 +40372,12 @@
           "default": "false"
         },
         {
+          "name": "virtual",
+          "type": "IrisTransferVirtualOptions",
+          "optional": true,
+          "description": "Opt-in windowed rendering of both pane lists via the core virtualizer (10k+ options stay smooth). Off by default — the plain path is unchanged."
+        },
+        {
           "name": "style",
           "type": "React.CSSProperties",
           "optional": true
@@ -40299,6 +40433,12 @@
               "default": "false"
             },
             {
+              "name": "virtual",
+              "type": "IrisTransferVirtualOptions",
+              "optional": true,
+              "description": "Opt-in windowed rendering of both pane lists via the core virtualizer (10k+ options stay smooth). Off by default — the plain path is unchanged."
+            },
+            {
               "name": "style",
               "type": "React.CSSProperties",
               "optional": true
@@ -40317,7 +40457,8 @@
           ],
           "publicTypes": [
             "IrisTransferItem",
-            "IrisTransferProps"
+            "IrisTransferProps",
+            "IrisTransferVirtualOptions"
           ]
         },
         "vue": {
@@ -40349,6 +40490,11 @@
               "type": "boolean",
               "optional": true,
               "default": "false"
+            },
+            {
+              "name": "virtual",
+              "type": "IrisTransferVirtualOptions",
+              "optional": true
             }
           ],
           "events": [
@@ -40356,7 +40502,8 @@
           ],
           "slots": [],
           "publicTypes": [
-            "IrisTransferItem"
+            "IrisTransferItem",
+            "IrisTransferVirtualOptions"
           ]
         },
         "solid": {
@@ -40393,6 +40540,12 @@
               "optional": true
             },
             {
+              "name": "virtual",
+              "type": "IrisTransferVirtualOptions",
+              "optional": true,
+              "description": "Opt-in windowed rendering of both pane lists via the core virtualizer (10k+ options stay smooth). Off by default — the plain path is unchanged."
+            },
+            {
               "name": "onChange",
               "type": "(values: string[]) => void",
               "optional": true
@@ -40404,7 +40557,8 @@
           "slots": [],
           "publicTypes": [
             "IrisTransferItem",
-            "IrisTransferProps"
+            "IrisTransferProps",
+            "IrisTransferVirtualOptions"
           ]
         },
         "svelte": {
@@ -40438,6 +40592,12 @@
               "default": "false"
             },
             {
+              "name": "virtual",
+              "type": "IrisTransferVirtualOptions",
+              "optional": true,
+              "description": "Opt-in windowed rendering of both pane lists via the core virtualizer (10k+ options stay smooth). Off by default — the plain path is unchanged."
+            },
+            {
               "name": "onValueChange",
               "type": "(values: string[]) => void",
               "optional": true
@@ -40458,7 +40618,8 @@
           ],
           "slots": [],
           "publicTypes": [
-            "IrisTransferItem"
+            "IrisTransferItem",
+            "IrisTransferVirtualOptions"
           ]
         }
       },
@@ -40469,7 +40630,7 @@
         "titles"
       ],
       "quality": {
-        "propCount": 9,
+        "propCount": 10,
         "eventCount": 1
       }
     },
@@ -40603,6 +40764,12 @@
           "name": "className",
           "type": "string",
           "optional": true
+        },
+        {
+          "name": "virtual",
+          "type": "IrisTreeVirtualOptions",
+          "optional": true,
+          "description": "Opt-in windowed rendering: only the visible window + buffer of `treeitem` rows is mounted, via `IrisVirtualScroll` / the core `createVirtualizer`. Keyboard navigation scrolls the active row into view. Default off."
         }
       ],
       "frameworkContracts": {
@@ -40720,6 +40887,12 @@
               "name": "className",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "IrisTreeVirtualOptions",
+              "optional": true,
+              "description": "Opt-in windowed rendering: only the visible window + buffer of `treeitem` rows is mounted, via `IrisVirtualScroll` / the core `createVirtualizer`. Keyboard navigation scrolls the active row into view. Default off."
             }
           ],
           "events": [
@@ -40738,7 +40911,8 @@
             "IrisTreeSelectNode",
             "IrisTreeSelectProps",
             "IrisTreeSelectSize",
-            "IrisTreeSelectionMode"
+            "IrisTreeSelectionMode",
+            "IrisTreeVirtualOptions"
           ]
         },
         "vue": {
@@ -41085,7 +41259,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 19,
+        "propCount": 20,
         "eventCount": 3
       }
     },
@@ -41564,6 +41738,24 @@
           "name": "className",
           "type": "string",
           "optional": true
+        },
+        {
+          "name": "role",
+          "type": "string",
+          "optional": true,
+          "description": "ARIA role for the scroll container (e.g. \"listbox\"). Forwarded to the root."
+        },
+        {
+          "name": "tabIndex",
+          "type": "number",
+          "optional": true,
+          "description": "Tab order for the scroll container (roving-tabindex hosts pass -1)."
+        },
+        {
+          "name": "onKeyDown",
+          "type": "React.KeyboardEventHandler<HTMLDivElement>",
+          "optional": true,
+          "description": "Keydown handler on the scroll container (keydowns from focused rows bubble)."
         }
       ],
       "frameworkContracts": {
@@ -41633,9 +41825,28 @@
               "name": "className",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "role",
+              "type": "string",
+              "optional": true,
+              "description": "ARIA role for the scroll container (e.g. \"listbox\"). Forwarded to the root."
+            },
+            {
+              "name": "tabIndex",
+              "type": "number",
+              "optional": true,
+              "description": "Tab order for the scroll container (roving-tabindex hosts pass -1)."
+            },
+            {
+              "name": "onKeyDown",
+              "type": "React.KeyboardEventHandler<HTMLDivElement>",
+              "optional": true,
+              "description": "Keydown handler on the scroll container (keydowns from focused rows bubble)."
             }
           ],
           "events": [
+            "onKeyDown",
             "onRangeChange",
             "onScroll"
           ],
@@ -41836,14 +42047,15 @@
       },
       "events": [
         "onScroll",
-        "onRangeChange"
+        "onRangeChange",
+        "onKeyDown"
       ],
       "slots": [
         "renderItem"
       ],
       "quality": {
-        "propCount": 11,
-        "eventCount": 2
+        "propCount": 14,
+        "eventCount": 3
       }
     },
     {

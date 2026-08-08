@@ -19,6 +19,12 @@ function listEl(container: HTMLElement): HTMLElement | null {
 function optionEls(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll('[data-iris-combobox-option]'))
 }
+function spacerEls(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll('[data-iris-combobox-spacer]'))
+}
+function makeOptions(n: number): { label: string; value: string }[] {
+  return Array.from({ length: n }, (_, i) => ({ label: `Item ${i}`, value: `item-${i}` }))
+}
 
 describe('IrisCombobox', () => {
   it('renders without crashing', () => {
@@ -195,6 +201,57 @@ describe('IrisCombobox', () => {
       if (disabledItem) fireEvent.click(disabledItem)
       // Disabled option should not trigger onChange
       expect(onChange).not.toHaveBeenCalled()
+    })
+    describe('virtual listbox', () => {
+      it('A1: virtual off (default) — all options, no spacers', () => {
+        const { container } = render(() => <IrisCombobox options={options} />)
+        fireEvent.focus(inputEl(container))
+        expect(optionEls(container).length).toBe(3)
+        expect(spacerEls(container).length).toBe(0)
+      })
+
+      it('A1: small list with virtual — total window, spacer sum invariant', () => {
+        const { container } = render(() => <IrisCombobox options={options} virtual />)
+        fireEvent.focus(inputEl(container))
+        expect(optionEls(container).length).toBe(3)
+        const sp = spacerEls(container)
+        expect(sp.length).toBe(2)
+        expect(sp[0]!.getAttribute('data-iris-combobox-spacer-type')).toBe('top')
+        expect(sp[1]!.getAttribute('data-iris-combobox-spacer-type')).toBe('bottom')
+        expect(
+          parseFloat(sp[0]!.style.height) +
+            optionEls(container).length * 34 +
+            parseFloat(sp[1]!.style.height),
+        ).toBe(3 * 34)
+        expect(optionEls(container)[0]!.getAttribute('aria-setsize')).toBe('3')
+        expect(optionEls(container)[0]!.getAttribute('aria-posinset')).toBe('1')
+      })
+
+      it('A2 smoke: 10k options — windowed render with spacer invariant', () => {
+        const { container } = render(() => <IrisCombobox options={makeOptions(10_000)} virtual />)
+        fireEvent.focus(inputEl(container))
+        const rendered = optionEls(container)
+        expect(rendered.length).toBeGreaterThanOrEqual(1)
+        expect(rendered.length).toBeLessThanOrEqual(50)
+        expect(rendered[0]!.id).toMatch(/-opt-0$/)
+        const sp = spacerEls(container)
+        expect(parseFloat(sp[0]!.style.height)).toBe(0)
+        expect(
+          parseFloat(sp[0]!.style.height) + rendered.length * 34 + parseFloat(sp[1]!.style.height),
+        ).toBe(10_000 * 34)
+      })
+
+      it('A3 smoke: End scrolls the last option into view (maxScroll)', () => {
+        const { container } = render(() => <IrisCombobox options={makeOptions(10_000)} virtual />)
+        const input = inputEl(container)
+        fireEvent.focus(input)
+        fireEvent.keyDown(input, { key: 'End' })
+        expect(input.getAttribute('aria-activedescendant')).toMatch(/-opt-9999$/)
+        const lb = listEl(container) as HTMLElement
+        expect(lb.scrollTop).toBe(339_760)
+        const rendered = optionEls(container)
+        expect(rendered.some((o) => o.id.endsWith('-opt-9999'))).toBe(true)
+      })
     })
   })
 })

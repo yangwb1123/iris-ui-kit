@@ -9,6 +9,7 @@ import {
   type JSX,
 } from 'solid-js'
 import { useI18n } from '../../i18n'
+import { IrisVirtualScroll } from '../virtual-scroll/IrisVirtualScroll'
 
 export interface IrisCascaderNode {
   label: string
@@ -41,6 +42,13 @@ function buildColumns(options: IrisCascaderNode[], activePath: string[]): IrisCa
   return cols
 }
 
+/** Matches the current `maxHeight: 240` of a column. */
+const CASCADER_COLUMN_VIEWPORT = 240
+/** Fixed row height (md — the solid cascader has no size prop). */
+const CASCADER_ROW_HEIGHT = 34
+/** Extra rows rendered above and below the visible window. */
+const CASCADER_VIRTUAL_BUFFER = 4
+
 export interface IrisCascaderProps {
   options?: IrisCascaderNode[]
   value?: string[]
@@ -50,6 +58,12 @@ export interface IrisCascaderProps {
   invalid?: boolean
   separator?: string
   onChange?: (path: string[]) => void
+  /**
+   * Opt-in: window each open column with the core virtualizer instead of
+   * rendering every option. Fixed deterministic sizing (viewport 240px, row
+   * height 34px, buffer 4). Default false — no behavior change.
+   */
+  virtual?: boolean
   id?: string
 }
 
@@ -66,6 +80,7 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
       disabled: false,
       invalid: false,
       separator: ' / ',
+      virtual: false,
     },
     props,
   )
@@ -78,6 +93,7 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
     'invalid',
     'separator',
     'onChange',
+    'virtual',
     'id',
   ])
 
@@ -113,6 +129,52 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
       local.onChange?.(newPath)
       setOpen(false)
     }
+  }
+
+  // Shared option renderer — used by BOTH the plain and the virtual column
+  // paths so the a11y attribute surface is structurally identical. When
+  // virtual, the virtualizer pins each row's height, so the option fills the
+  // row (height 100% + border-box keeps the padding inside it).
+  const renderOption = (
+    colIdx: () => number,
+    node: IrisCascaderNode,
+    fill: boolean,
+  ): JSX.Element => {
+    const isActive = () => activePath()[colIdx()] === node.value
+    const hasChildren = () => (node.children?.length ?? 0) > 0
+    return (
+      <li
+        role="option"
+        aria-selected={isActive()}
+        aria-disabled={node.disabled ? 'true' : undefined}
+        data-iris-cascader-option={node.value}
+        onClick={() => onOptionClick(colIdx(), node)}
+        style={{
+          display: 'flex',
+          'align-items': 'center',
+          'justify-content': 'space-between',
+          padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+          'border-radius': 'var(--iris-radius-sm, 4px)',
+          cursor: node.disabled ? 'not-allowed' : 'pointer',
+          background: isActive() ? 'var(--iris-primary)' : 'transparent',
+          color: isActive()
+            ? 'var(--iris-primary-foreground, #fff)'
+            : node.disabled
+              ? 'var(--iris-muted)'
+              : 'var(--iris-foreground)',
+          opacity: node.disabled ? '0.5' : '1',
+          'font-size': 'var(--iris-font-size-md, 14px)',
+          ...(fill ? { height: '100%', 'box-sizing': 'border-box' } : {}),
+        }}
+      >
+        <span>{node.label}</span>
+        <Show when={hasChildren()}>
+          <span aria-hidden="true" style={{ 'margin-left': '8px', opacity: '0.6' }}>
+            ›
+          </span>
+        </Show>
+      </li>
+    )
   }
 
   // Close on click outside
@@ -191,61 +253,42 @@ export function IrisCascader(props: IrisCascaderProps): JSX.Element {
           }}
         >
           <For each={columns()}>
-            {(col, colIdx) => (
-              <ul
-                data-iris-cascader-column={colIdx()}
-                role="listbox"
-                style={{
-                  'list-style': 'none',
-                  margin: '0',
-                  padding: '4px',
-                  'min-width': '140px',
-                  'max-height': '240px',
-                  'overflow-y': 'auto',
-                  'border-right':
-                    colIdx() < columns().length - 1 ? '1px solid var(--iris-border)' : 'none',
-                }}
-              >
-                <For each={col}>
-                  {(node) => {
-                    const isActive = () => activePath()[colIdx()] === node.value
-                    const hasChildren = () => (node.children?.length ?? 0) > 0
-                    return (
-                      <li
-                        role="option"
-                        aria-selected={isActive()}
-                        aria-disabled={node.disabled ? 'true' : undefined}
-                        data-iris-cascader-option={node.value}
-                        onClick={() => onOptionClick(colIdx(), node)}
-                        style={{
-                          display: 'flex',
-                          'align-items': 'center',
-                          'justify-content': 'space-between',
-                          padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
-                          'border-radius': 'var(--iris-radius-sm, 4px)',
-                          cursor: node.disabled ? 'not-allowed' : 'pointer',
-                          background: isActive() ? 'var(--iris-primary)' : 'transparent',
-                          color: isActive()
-                            ? 'var(--iris-primary-foreground, #fff)'
-                            : node.disabled
-                              ? 'var(--iris-muted)'
-                              : 'var(--iris-foreground)',
-                          opacity: node.disabled ? '0.5' : '1',
-                          'font-size': 'var(--iris-font-size-md, 14px)',
-                        }}
-                      >
-                        <span>{node.label}</span>
-                        <Show when={hasChildren()}>
-                          <span aria-hidden="true" style={{ 'margin-left': '8px', opacity: '0.6' }}>
-                            ›
-                          </span>
-                        </Show>
-                      </li>
-                    )
+            {(col, colIdx) =>
+              local.virtual ? (
+                <IrisVirtualScroll
+                  items={col}
+                  itemHeight={CASCADER_ROW_HEIGHT}
+                  height={CASCADER_COLUMN_VIEWPORT}
+                  buffer={CASCADER_VIRTUAL_BUFFER}
+                  keyOf={(node: IrisCascaderNode) => node.value}
+                  renderItem={(node: IrisCascaderNode) => renderOption(colIdx, node, true)}
+                  role="listbox"
+                  data-iris-cascader-column={colIdx()}
+                  style={{
+                    'min-width': '140px',
+                    'border-right':
+                      colIdx() < columns().length - 1 ? '1px solid var(--iris-border)' : 'none',
                   }}
-                </For>
-              </ul>
-            )}
+                />
+              ) : (
+                <ul
+                  data-iris-cascader-column={colIdx()}
+                  role="listbox"
+                  style={{
+                    'list-style': 'none',
+                    margin: '0',
+                    padding: '4px',
+                    'min-width': '140px',
+                    'max-height': '240px',
+                    'overflow-y': 'auto',
+                    'border-right':
+                      colIdx() < columns().length - 1 ? '1px solid var(--iris-border)' : 'none',
+                  }}
+                >
+                  <For each={col}>{(node) => renderOption(colIdx, node, false)}</For>
+                </ul>
+              )
+            }
           </For>
         </div>
       </Show>

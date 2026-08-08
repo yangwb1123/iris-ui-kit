@@ -1,1 +1,0 @@
-{"pid": 3791481, "start": 1786172279.2501066, "host": "u1-FAEX9", "argv": "/home/u1/ai-batch-runner/pi-batch.py campaign --config .pi-batch/core-campaign/campaign.yaml --retry-failed --jobs 2 --log-file /tmp/core-campaign-retry.log --stream-output none", "token": "1f6409954f2c4ae6a692d5e7a7bd35ac"}

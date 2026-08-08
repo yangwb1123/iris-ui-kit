@@ -2,11 +2,25 @@ import * as React from 'react'
 import { createSelectionModel, type SelectionModel } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
+import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 
 export interface IrisTransferItem {
   label: string
   value: string
   disabled?: boolean
+}
+
+/** Opt-in windowed rendering of a pane's list (mirrors `IrisTableVirtualOptions`). */
+export interface IrisTransferVirtualOptions {
+  /** Per-item height in px (uniform). */
+  itemHeight: number
+  /**
+   * Viewport height. Number → px; string → CSS length. Defaults to the pane's
+   * intrinsic list height (200px).
+   */
+  height?: number | string
+  /** Extra rows rendered above and below the viewport. */
+  buffer?: number
 }
 
 export interface IrisTransferProps {
@@ -20,6 +34,11 @@ export interface IrisTransferProps {
   /** Show a search box per pane. */
   searchable?: boolean
   disabled?: boolean
+  /**
+   * Opt-in windowed rendering of both pane lists via the core virtualizer
+   * (10k+ options stay smooth). Off by default — the plain path is unchanged.
+   */
+  virtual?: IrisTransferVirtualOptions
   style?: React.CSSProperties
   className?: string
 }
@@ -42,6 +61,7 @@ export function IrisTransfer({
   titles,
   searchable = false,
   disabled = false,
+  virtual,
   style,
   className,
   ...rest
@@ -138,6 +158,56 @@ export function IrisTransfer({
       model.set(allChecked ? [] : selectable.map((o) => o.value))
     }
 
+    const listStyle: React.CSSProperties = {
+      listStyle: 'none',
+      margin: 0,
+      padding: 4,
+      maxHeight: 200,
+      overflowY: 'auto',
+      flex: 1,
+    }
+    // Shared row renderer: `<li>` in the plain ul, `<div>` inside the virtual
+    // scroller's div wrapper (an `li` there would be invalid HTML).
+    const renderRow = (o: IrisTransferItem, Tag: 'li' | 'div'): React.ReactElement => (
+      <Tag key={o.value} data-iris-transfer-item="" data-value={o.value}>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '4px 8px',
+            borderRadius: 'var(--iris-radius-sm, 4px)',
+            cursor: o.disabled ? 'not-allowed' : 'pointer',
+            opacity: o.disabled ? 0.5 : 1,
+            fontSize: 'var(--iris-font-size-md, 14px)',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={checked.includes(o.value)}
+            disabled={disabled || o.disabled}
+            onChange={() => toggle(o.value)}
+          />
+          <span>{o.label}</span>
+        </label>
+      </Tag>
+    )
+    const emptyRow = (
+      <li
+        data-iris-transfer-empty=""
+        style={{
+          padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+          color: 'var(--iris-muted)',
+          fontSize: 'var(--iris-font-size-sm, 13px)',
+          textAlign: 'center',
+        }}
+      >
+        {t('transfer.empty')}
+      </li>
+    )
+    const virtualized = virtual !== undefined && visible.length > 0
+    const virtualHeight = virtual?.height ?? 200
+
     return (
       <div data-iris-transfer-pane="" data-side={side} style={paneStyle}>
         <div
@@ -201,56 +271,26 @@ export function IrisTransfer({
             }}
           />
         ) : null}
-        <ul
-          data-iris-transfer-list=""
-          style={{
-            listStyle: 'none',
-            margin: 0,
-            padding: 4,
-            maxHeight: 200,
-            overflowY: 'auto',
-            flex: 1,
-          }}
-        >
-          {visible.length === 0 ? (
-            <li
-              data-iris-transfer-empty=""
-              style={{
-                padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
-                color: 'var(--iris-muted)',
-                fontSize: 'var(--iris-font-size-sm, 13px)',
-                textAlign: 'center',
-              }}
-            >
-              {t('transfer.empty')}
-            </li>
-          ) : (
-            visible.map((o) => (
-              <li key={o.value} data-iris-transfer-item="" data-value={o.value}>
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '4px 8px',
-                    borderRadius: 'var(--iris-radius-sm, 4px)',
-                    cursor: o.disabled ? 'not-allowed' : 'pointer',
-                    opacity: o.disabled ? 0.5 : 1,
-                    fontSize: 'var(--iris-font-size-md, 14px)',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked.includes(o.value)}
-                    disabled={disabled || o.disabled}
-                    onChange={() => toggle(o.value)}
-                  />
-                  <span>{o.label}</span>
-                </label>
-              </li>
-            ))
-          )}
-        </ul>
+        {virtualized ? (
+          <IrisVirtualScroll
+            items={visible}
+            itemHeight={virtual.itemHeight}
+            height={virtualHeight}
+            buffer={virtual.buffer}
+            keyOf={(o) => o.value}
+            data-iris-transfer-list=""
+            style={{
+              flex: 1,
+              maxHeight: virtualHeight,
+              boxSizing: 'content-box',
+            }}
+            renderItem={(o) => renderRow(o, 'div')}
+          />
+        ) : (
+          <ul data-iris-transfer-list="" style={listStyle}>
+            {visible.length === 0 ? emptyRow : visible.map((o) => renderRow(o, 'li'))}
+          </ul>
+        )}
       </div>
     )
   }

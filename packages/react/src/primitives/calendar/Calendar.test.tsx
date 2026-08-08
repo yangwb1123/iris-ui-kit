@@ -191,4 +191,47 @@ describe('@iris-ui-kit/react IrisCalendar', () => {
     })
     expect(day('2024-06-12').getAttribute('aria-selected')).toBe('true')
   })
+
+  describe('grid roving semantics (sunk to core createCalendarNav)', () => {
+    // The seeded `value` is also the roving focus; on that cell `selected` wins
+    // over `focused` in data-state, so focus is asserted via `tabindex`.
+    const bounds = {
+      defaultMonth: new Date(2024, 5, 1),
+      min: new Date(2024, 5, 10),
+      max: new Date(2024, 6, 20),
+      locale: 'en-US',
+    } as const
+    const key = (k: string) =>
+      act(() => {
+        fireEvent.keyDown(document.querySelector('[data-iris-calendar-grid]')!, { key: k })
+      })
+
+    it('ArrowRight at a row end stays (no wrap, no month flip)', () => {
+      render(<IrisCalendar value={new Date(2024, 5, 15)} {...bounds} />)
+      key('ArrowRight')
+      expect(day('2024-06-15').tabIndex).toBe(0)
+      expect(day('2024-06-16').tabIndex).toBe(-1)
+      expect(document.querySelector('[data-iris-calendar-title]')?.textContent).toMatch(/June 2024/)
+    })
+
+    it('ArrowLeft blocked by a disabled cell stays', () => {
+      render(<IrisCalendar value={new Date(2024, 5, 10)} {...bounds} />)
+      key('ArrowLeft')
+      expect(day('2024-06-10').tabIndex).toBe(0)
+      expect(day('2024-06-11').tabIndex).toBe(-1)
+    })
+
+    it('Home skips disabled cells to the nearest enabled row start', () => {
+      render(<IrisCalendar value={new Date(2024, 5, 11)} {...bounds} />)
+      key('Home')
+      expect(day('2024-06-10').tabIndex).toBe(0)
+    })
+
+    it('ArrowUp skips a fully-disabled column segment (stays, no clamp-jump)', () => {
+      render(<IrisCalendar value={new Date(2024, 5, 12)} {...bounds} />)
+      key('ArrowUp')
+      expect(day('2024-06-12').tabIndex).toBe(0)
+      expect(day('2024-06-10').tabIndex).toBe(-1)
+    })
+  })
 })

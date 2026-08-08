@@ -1,1 +1,1 @@
-export { IrisTransfer, type IrisTransferItem } from './Transfer'
+export { IrisTransfer, type IrisTransferItem, type IrisTransferVirtualOptions } from './Transfer'

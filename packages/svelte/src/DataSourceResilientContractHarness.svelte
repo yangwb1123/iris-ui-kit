@@ -14,7 +14,12 @@
   // @iris-ui-kit/core. The Svelte `useDataSource` bridge exposes the live engine
   // state through a `$state` rune (`ds.state`), so the `{#each}` + the
   // `data-iris-ds-meta` attributes re-run on every store emission.
-  import { filterSort, paginate, type DataViewColumn, type DataSourceQuery } from '@iris-ui-kit/core'
+  import {
+    filterSort,
+    paginate,
+    type DataViewColumn,
+    type DataSourceQuery,
+  } from '@iris-ui-kit/core'
   import { useDataSource } from './data/useDataSource.svelte'
 
   interface DsRow extends Record<string, unknown> {

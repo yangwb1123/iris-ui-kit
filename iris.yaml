@@ -27,39 +27,42 @@ filesize:
   # 豁免文件列表（大而内聚的合法文件，已在 arch-baseline.json 中基线化）
   # test 文件因大量用例行数偏高，Table/Tree 等高复杂度组件因天然内聚性偏高
   exemptions:
-    - "packages/core/src/store.ts"
-    - "packages/core/src/data-view.ts"
-    - "packages/core/src/form.ts"
-    - "packages/core/src/index.ts"
-    - "packages/core/src/data-source.ts"
-    - "packages/core/src/virtualizer.ts"
-    - "packages/icons/src/icons.ts"
-    - "packages/core/src/form.test.ts"
-    - "packages/core/src/plugin.ts"
-    - "packages/core/src/window.ts"
-    - "packages/mcp/src/codegen.ts"
-    - "packages/plugin-pro-table/src/core/index.ts"
-    - "packages/plugin-pro-table/src/react/index.tsx"
-    - "packages/plugin-pro-table/src/solid/index.tsx"
-    - "packages/plugin-pro-table/src/svelte/IrisProTable.svelte"
-    - "packages/plugin-pro-table/src/vue/index.ts"
-    - "packages/react/src/contracts.test.tsx"
-    - "packages/react/src/primitives/table/Table.test.tsx"
-    - "packages/react/src/primitives/table/Table.tsx"
-    - "packages/react/src/primitives/tree/Tree.tsx"
-    - "packages/solid/src/contracts.test.tsx"
-    - "packages/solid/src/primitives/table/IrisTable.test.tsx"
-    - "packages/solid/src/primitives/table/IrisTable.tsx"
-    - "packages/solid/src/primitives/tree/IrisTree.tsx"
-    - "packages/svelte/src/contracts.test.ts"
-    - "packages/svelte/src/primitives/table/IrisTable.svelte"
-    - "packages/svelte/src/primitives/table/IrisTable.test.ts"
-    - "packages/vue/src/contracts.test.ts"
-    - "packages/vue/src/primitives/table/Table.test.ts"
-    - "packages/vue/src/primitives/table/Table.ts"
-    - "packages/vue/src/primitives/table/TableBody.ts"
-    - "packages/vue/src/primitives/table/useTableState.ts"
-    - "packages/vue/src/primitives/tree/Tree.ts"
+    - packages/core/src/store.ts
+    - packages/core/src/data-view.ts
+    - packages/core/src/form.ts
+    - packages/core/src/index.ts
+    - packages/core/src/data-source.ts
+    - packages/core/src/virtualizer.ts
+    - packages/icons/src/icons.ts
+    - packages/core/src/form.test.ts
+    - packages/core/src/plugin.ts
+    - packages/core/src/window.ts
+    - packages/mcp/src/codegen.ts
+    - packages/plugin-pro-table/src/core/index.ts
+    - packages/plugin-pro-table/src/react/index.tsx
+    - packages/plugin-pro-table/src/solid/index.tsx
+    - packages/plugin-pro-table/src/svelte/IrisProTable.svelte
+    - packages/plugin-pro-table/src/vue/index.ts
+    - packages/react/src/contracts.test.tsx
+    - packages/react/src/primitives/table/Table.test.tsx
+    - packages/react/src/primitives/table/Table.tsx
+    - packages/react/src/primitives/tree/Tree.tsx
+    - packages/solid/src/contracts.test.tsx
+    - packages/solid/src/primitives/table/IrisTable.test.tsx
+    - packages/solid/src/primitives/table/IrisTable.tsx
+    - packages/solid/src/primitives/tree/IrisTree.tsx
+    - packages/svelte/src/contracts.test.ts
+    - packages/svelte/src/primitives/table/IrisTable.svelte
+    - packages/svelte/src/primitives/table/IrisTable.test.ts
+    - packages/vue/src/contracts.test.ts
+    - packages/vue/src/primitives/table/Table.test.ts
+    - packages/vue/src/primitives/table/Table.ts
+    - packages/vue/src/primitives/table/TableBody.ts
+    - packages/vue/src/primitives/table/useTableState.ts
+    - packages/vue/src/primitives/tree/Tree.ts
+    # 2026-08-08 能力组合（virtual 窗口化）：Select 实现随 virtual 扩展增长
+    - packages/solid/src/primitives/select/IrisSelect.tsx
+    - packages/vue/src/primitives/select/Select.ts
 
 # ── 架构依赖方向门 ──────────────────────────────────────────────────────────
 architecture:

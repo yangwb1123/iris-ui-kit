@@ -2,7 +2,8 @@ import * as React from 'react'
 import { createTreeSelection, type TreeSelectionNode } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { useDataState } from '../../motion'
-import type { IrisTreeNode, IrisTreeSelectionMode } from './types'
+import { IrisVirtualScroll, type IrisVirtualScrollHandle } from '../virtual-scroll/VirtualScroll'
+import type { IrisTreeNode, IrisTreeSelectionMode, IrisTreeVirtualOptions } from './types'
 
 interface FlatNode {
   node: IrisTreeNode
@@ -43,6 +44,12 @@ export interface IrisTreeProps {
   errorState?: React.ReactNode
   style?: React.CSSProperties
   className?: string
+  /**
+   * Opt-in windowed rendering: only the visible window + buffer of `treeitem`
+   * rows is mounted, via `IrisVirtualScroll` / the core `createVirtualizer`.
+   * Keyboard navigation scrolls the active row into view. Default off.
+   */
+  virtual?: IrisTreeVirtualOptions
 }
 
 const TREE_STATE_STYLE: React.CSSProperties = {
@@ -68,6 +75,9 @@ const TREE_STATE_STYLE: React.CSSProperties = {
  * animated loading / error / empty state in place of the tree. Per-node
  * `loadChildren` lazy loading is independent of this top-level state. Semantic
  * parity with the Vue adapter's `IrisTree`.
+ *
+ * Opt-in `virtual` prop: pass {@link IrisTreeVirtualOptions} to render only the
+ * visible window of treeitems (uniform rows) via `IrisVirtualScroll`.
  */
 export function IrisTree({
   nodes,
@@ -89,6 +99,7 @@ export function IrisTree({
   errorState,
   style,
   className,
+  virtual,
   ...rest
 }: IrisTreeProps): React.ReactElement {
   const safeNodes = nodes ?? []
@@ -193,6 +204,61 @@ export function IrisTree({
     }
   }, [flat, activeId])
 
+  // --- Virtual mode -------------------------------------------------------
+  const vsRef = React.useRef<IrisVirtualScrollHandle | null>(null)
+  // Set by the six keyboard keys that move activeId; consumed by the
+  // focus-follows effect below so only keyboard moves steal focus (mount and
+  // pointer-driven changes keep today's no-autofocus behavior).
+  const keyboardMoveRef = React.useRef(false)
+  // Last flat index the scroll effect targeted. Guards the effect so `flat`
+  // changes (expand/collapse) never reset the user's scroll position when the
+  // active row did not move — only activeId moves trigger a scroll.
+  const lastScrolledIndexRef = React.useRef<number | null>(null)
+  // Latest activeId, read by the (rAF-deferred) focus-follows tick so stale
+  // chains from superseded keyboard moves drop out instead of stealing focus
+  // when their target row later mounts.
+  const activeIdRef = React.useRef(activeId)
+  activeIdRef.current = activeId
+
+  // Scroll the active row into view (virtual only). `refresh()` re-syncs the
+  // window from the element's real scrollTop via rAF, so it is deterministic
+  // even where no native scroll event fires (jsdom).
+  React.useEffect(() => {
+    if (!virtual) return
+    if (!activeId) return
+    const idx = flat.findIndex((f) => f.node.id === activeId)
+    if (idx < 0) return
+    if (lastScrolledIndexRef.current === idx) return
+    lastScrolledIndexRef.current = idx
+    vsRef.current?.scrollToIndex(idx, 'start')
+    vsRef.current?.refresh()
+  }, [virtual, activeId, flat])
+
+  // Follow the active row with focus across the window (virtual + keyboard
+  // only): a row that scrolls out unmounts and focus would drop to <body>.
+  // Poll via rAF (max 5 frames ≈ 80ms) until the row remounts, then focus it.
+  // Declared after the scroll effect so its rAF registers after the scroll
+  // rAF — the final window is rendered before the focus re-check runs.
+  React.useEffect(() => {
+    if (!virtual || !keyboardMoveRef.current) return
+    keyboardMoveRef.current = false
+    const targetId = activeId
+    let frames = 0
+    const tick = () => {
+      frames += 1
+      if (frames > 5) return
+      // A newer keyboard move superseded this chain — drop it instead of
+      // stealing focus when the old target row later mounts.
+      if (activeIdRef.current !== targetId) return
+      const el = Array.from(document.querySelectorAll<HTMLElement>('[data-iris-tree-node]')).find(
+        (n) => n.getAttribute('data-iris-tree-node') === targetId,
+      )
+      if (el) el.focus()
+      else requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }, [virtual, activeId])
+
   // Always-current expanded list so the async error handler collapses against
   // the latest state rather than a stale render closure.
   const expandedRef = React.useRef(expanded)
@@ -270,17 +336,21 @@ export function IrisTree({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
+        keyboardMoveRef.current = true
         moveActive(1)
         break
       case 'ArrowUp':
         e.preventDefault()
+        keyboardMoveRef.current = true
         moveActive(-1)
         break
       case 'ArrowRight':
         e.preventDefault()
         if (current.hasChildren) {
-          if (expandedSet.has(activeId)) moveActive(1)
-          else void expandNode(current.node)
+          if (expandedSet.has(activeId)) {
+            keyboardMoveRef.current = true
+            moveActive(1)
+          } else void expandNode(current.node)
         }
         break
       case 'ArrowLeft':
@@ -288,15 +358,18 @@ export function IrisTree({
         if (current.hasChildren && expandedSet.has(activeId)) {
           collapseNode(activeId)
         } else if (current.parentId) {
+          keyboardMoveRef.current = true
           setActiveId(current.parentId)
         }
         break
       case 'Home':
         e.preventDefault()
+        keyboardMoveRef.current = true
         setActiveId(flat[0]!.node.id)
         break
       case 'End':
         e.preventDefault()
+        keyboardMoveRef.current = true
         setActiveId(flat[flat.length - 1]!.node.id)
         break
       case 'Enter':
@@ -313,6 +386,170 @@ export function IrisTree({
       : state === 'loading'
         ? (loadingState ?? t('tree.loading'))
         : (emptyState ?? t('tree.empty'))
+
+  // Shared row renderer — single source of truth for the treeitem markup,
+  // used by both the plain (all rows mounted) and virtual (windowed) paths.
+  const renderFlatNode = (f: FlatNode): React.ReactElement => {
+    const { node, depth, hasChildren } = f
+    const isExpanded = expandedSet.has(node.id)
+    const isSelected = selectedSet.has(node.id)
+    const isActive = node.id === activeId
+    const isLoading = loadingIds.has(node.id)
+    const isError = errorIds.has(node.id)
+    const disabled = Boolean(node.disabled)
+    return (
+      <div
+        key={node.id}
+        role="treeitem"
+        aria-expanded={hasChildren ? isExpanded : undefined}
+        aria-selected={selectionMode !== 'none' ? isSelected : undefined}
+        aria-disabled={disabled ? 'true' : undefined}
+        aria-level={depth + 1}
+        tabIndex={isActive ? 0 : -1}
+        data-iris-tree-node={node.id}
+        data-state={isSelected ? 'selected' : isActive ? 'active' : 'idle'}
+        data-loading={isLoading ? '' : undefined}
+        data-error={isError ? '' : undefined}
+        onClick={() => {
+          // Pointer moves never steal focus — clear any stale keyboard flag.
+          keyboardMoveRef.current = false
+          setActiveId(node.id)
+          selectNode(node.id)
+        }}
+        onFocus={() => setActiveId(node.id)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          paddingInlineStart: 6 + depth * 16,
+          paddingTop: 4,
+          paddingBottom: 4,
+          paddingInlineEnd: 8,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.5 : 1,
+          background: isSelected
+            ? 'var(--iris-primary)'
+            : isActive
+              ? 'var(--iris-surface-hover)'
+              : 'transparent',
+          color: isSelected ? 'var(--iris-primary-foreground, #fff)' : 'inherit',
+          borderRadius: 'var(--iris-radius-sm, 4px)',
+          outline: 'none',
+          userSelect: 'none',
+        }}
+      >
+        {hasChildren ? (
+          <button
+            type="button"
+            aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            data-iris-tree-toggle=""
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleExpand(node)
+            }}
+            style={{
+              width: 16,
+              height: 16,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'transparent',
+              border: 'none',
+              color: 'inherit',
+              cursor: 'pointer',
+              padding: 0,
+              fontSize: 'var(--iris-font-size-xs, 12px)',
+              fontFamily: 'inherit',
+              transition: 'transform 120ms ease',
+              transform: isLoading ? 'none' : isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            }}
+          >
+            {isLoading ? (
+              <svg
+                className="iris-button-spinner"
+                viewBox="0 0 24 24"
+                width={12}
+                height={12}
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle
+                  cx={12}
+                  cy={12}
+                  r={10}
+                  stroke="currentColor"
+                  strokeOpacity={0.25}
+                  strokeWidth={3}
+                />
+                <path
+                  d="M22 12a10 10 0 0 1-10 10"
+                  stroke="currentColor"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                />
+              </svg>
+            ) : (
+              '▸'
+            )}
+          </button>
+        ) : (
+          <span style={{ width: 16, display: 'inline-block' }} />
+        )}
+        {checkable && (
+          <input
+            type="checkbox"
+            data-iris-tree-checkbox=""
+            checked={checkModel.isChecked(node.id)}
+            aria-checked={
+              checkModel.isIndeterminate(node.id) ? 'mixed' : checkModel.isChecked(node.id)
+            }
+            aria-label={node.label}
+            disabled={disabled}
+            ref={(el) => {
+              if (el) el.indeterminate = checkModel.isIndeterminate(node.id)
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onChange={() => checkModel.toggle(node.id)}
+            style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
+          />
+        )}
+        <span data-iris-tree-label="" style={{ flex: 1, minWidth: 0 }}>
+          {node.label}
+        </span>
+      </div>
+    )
+  }
+
+  if (virtual && isContent) {
+    return (
+      <IrisVirtualScroll
+        ref={vsRef}
+        items={flat}
+        itemHeight={virtual.itemHeight}
+        height={virtual.height}
+        buffer={virtual.buffer}
+        keyOf={(f) => f.node.id}
+        renderItem={(f) => renderFlatNode(f)}
+        role="tree"
+        aria-label={ariaLabel ?? t('tree.label')}
+        aria-busy={state === 'loading' ? true : undefined}
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
+        className={className}
+        data-iris-tree=""
+        {...rest}
+        style={{
+          padding: 'var(--iris-padding-sm, 4px)',
+          background: 'var(--iris-background)',
+          color: 'var(--iris-foreground)',
+          border: '1px solid var(--iris-border)',
+          borderRadius: 'var(--iris-radius-md, 6px)',
+          fontSize: 'var(--iris-font-size-md, 14px)',
+          ...style,
+        }}
+      />
+    )
+  }
 
   return (
     <div
@@ -337,133 +574,7 @@ export function IrisTree({
       }}
     >
       {isContent ? (
-        flat.map(({ node, depth, hasChildren }) => {
-          const isExpanded = expandedSet.has(node.id)
-          const isSelected = selectedSet.has(node.id)
-          const isActive = node.id === activeId
-          const isLoading = loadingIds.has(node.id)
-          const isError = errorIds.has(node.id)
-          const disabled = Boolean(node.disabled)
-          return (
-            <div
-              key={node.id}
-              role="treeitem"
-              aria-expanded={hasChildren ? isExpanded : undefined}
-              aria-selected={selectionMode !== 'none' ? isSelected : undefined}
-              aria-disabled={disabled ? 'true' : undefined}
-              aria-level={depth + 1}
-              tabIndex={isActive ? 0 : -1}
-              data-iris-tree-node={node.id}
-              data-state={isSelected ? 'selected' : isActive ? 'active' : 'idle'}
-              data-loading={isLoading ? '' : undefined}
-              data-error={isError ? '' : undefined}
-              onClick={() => {
-                setActiveId(node.id)
-                selectNode(node.id)
-              }}
-              onFocus={() => setActiveId(node.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                paddingInlineStart: 6 + depth * 16,
-                paddingTop: 4,
-                paddingBottom: 4,
-                paddingInlineEnd: 8,
-                cursor: disabled ? 'not-allowed' : 'pointer',
-                opacity: disabled ? 0.5 : 1,
-                background: isSelected
-                  ? 'var(--iris-primary)'
-                  : isActive
-                    ? 'var(--iris-surface-hover)'
-                    : 'transparent',
-                color: isSelected ? 'var(--iris-primary-foreground, #fff)' : 'inherit',
-                borderRadius: 'var(--iris-radius-sm, 4px)',
-                outline: 'none',
-                userSelect: 'none',
-              }}
-            >
-              {hasChildren ? (
-                <button
-                  type="button"
-                  aria-label={isExpanded ? 'Collapse' : 'Expand'}
-                  data-iris-tree-toggle=""
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggleExpand(node)
-                  }}
-                  style={{
-                    width: 16,
-                    height: 16,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'inherit',
-                    cursor: 'pointer',
-                    padding: 0,
-                    fontSize: 'var(--iris-font-size-xs, 12px)',
-                    fontFamily: 'inherit',
-                    transition: 'transform 120ms ease',
-                    transform: isLoading ? 'none' : isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                  }}
-                >
-                  {isLoading ? (
-                    <svg
-                      className="iris-button-spinner"
-                      viewBox="0 0 24 24"
-                      width={12}
-                      height={12}
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <circle
-                        cx={12}
-                        cy={12}
-                        r={10}
-                        stroke="currentColor"
-                        strokeOpacity={0.25}
-                        strokeWidth={3}
-                      />
-                      <path
-                        d="M22 12a10 10 0 0 1-10 10"
-                        stroke="currentColor"
-                        strokeWidth={3}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  ) : (
-                    '▸'
-                  )}
-                </button>
-              ) : (
-                <span style={{ width: 16, display: 'inline-block' }} />
-              )}
-              {checkable && (
-                <input
-                  type="checkbox"
-                  data-iris-tree-checkbox=""
-                  checked={checkModel.isChecked(node.id)}
-                  aria-checked={
-                    checkModel.isIndeterminate(node.id) ? 'mixed' : checkModel.isChecked(node.id)
-                  }
-                  aria-label={node.label}
-                  disabled={disabled}
-                  ref={(el) => {
-                    if (el) el.indeterminate = checkModel.isIndeterminate(node.id)
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={() => checkModel.toggle(node.id)}
-                  style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
-                />
-              )}
-              <span data-iris-tree-label="" style={{ flex: 1, minWidth: 0 }}>
-                {node.label}
-              </span>
-            </div>
-          )
-        })
+        flat.map((f) => renderFlatNode(f))
       ) : (
         <div
           key={stateKey}

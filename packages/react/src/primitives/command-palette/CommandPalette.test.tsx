@@ -199,3 +199,144 @@ describe('@iris-ui-kit/react IrisCommandPalette', () => {
     expect(shortcuts[0]?.textContent).toBe('⌘O')
   })
 })
+
+describe('@iris-ui-kit/react IrisCommandPalette virtual', () => {
+  // 10k items, no groups → spacer = pure item math (36px each).
+  const BIG: IrisCommandItem[] = Array.from({ length: 10_000 }, (_, i) => ({
+    id: `c${i}`,
+    label: `Command ${i}`,
+  }))
+
+  // jsdom reports clientHeight 0 → viewport collapses. Sanctioned stub
+  // (Cascader.test.tsx pattern): 400px viewport stands in for the flex-resolved
+  // 70vh surface; 400 / 36 ≈ 12 visible rows + 2×4 buffer.
+  let originalClientHeight: PropertyDescriptor | undefined
+  beforeEach(() => {
+    originalClientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight')
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      value: 400,
+    })
+  })
+  afterEach(() => {
+    if (originalClientHeight) {
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', originalClientHeight)
+    } else {
+      delete (HTMLElement.prototype as { clientHeight?: unknown }).clientHeight
+    }
+  })
+
+  const scroller = () => document.querySelector('[data-iris-virtual-scroll]') as HTMLElement
+  const mountedIndices = () =>
+    [...scroller().querySelectorAll('[data-iris-virtual-index]')].map((el) =>
+      Number(el.getAttribute('data-iris-virtual-index')),
+    )
+
+  it('A1: default off — full DOM, no virtual scroller', () => {
+    const { unmount } = render(<IrisCommandPalette open items={BIG} />)
+    expect(document.querySelectorAll('[data-iris-command-palette-item]').length).toBe(10_000)
+    expect(document.querySelector('[data-iris-virtual-scroll]')).toBeNull()
+    unmount()
+    // Group headers still render on the plain path.
+    render(<IrisCommandPalette open items={items} />)
+    expect(document.querySelectorAll('[data-iris-command-palette-group]').length).toBe(2)
+  })
+
+  it('A2: virtual on — windowed mount, exact spacer, single listbox', () => {
+    render(<IrisCommandPalette open items={BIG} virtual />)
+    const mounted = document.querySelectorAll('[data-iris-command-palette-item]').length
+    expect(mounted).toBeGreaterThanOrEqual(1)
+    expect(mounted).toBeLessThanOrEqual(20) // 12 visible @400px/36 + 2×4 buffer
+    const spacer = document.querySelector('[data-iris-virtual-spacer]') as HTMLElement
+    expect(spacer.style.height).toBe('360000px') // 10_000 × 36
+    expect(document.querySelectorAll('[role="listbox"]').length).toBe(1)
+    expect(scroller().style.overflow).toBe('auto')
+    expect(
+      (document.querySelector('[data-iris-command-palette-list]') as HTMLElement).style.overflow,
+    ).toBe('hidden')
+  })
+
+  it('A3: ArrowDown×25 scrolls the active row into view (clamped offset)', async () => {
+    render(<IrisCommandPalette open items={BIG} virtual />)
+    act(() => {
+      for (let i = 0; i < 25; i += 1) fireEvent.keyDown(document, { key: 'ArrowDown' })
+    })
+    expect(scroller().scrollTop).toBe(900) // 25 × 36
+    act(() => {
+      fireEvent.scroll(scroller())
+    })
+    await act(async () => {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    })
+    expect(mountedIndices()[0]).toBe(21) // 25 − buffer
+  })
+
+  it('A4: wrap-around clamps to the tail', async () => {
+    render(<IrisCommandPalette open items={BIG} virtual />)
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowUp' }) // wraps to 9999
+    })
+    expect(scroller().scrollTop).toBe(359600) // 360_000 − 400 (clamped max)
+    act(() => {
+      fireEvent.scroll(scroller())
+    })
+    await act(async () => {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    })
+    const indices = mountedIndices()
+    expect(indices[indices.length - 1]).toBe(9999)
+  })
+
+  it('A5: query change resets scroll + active row', async () => {
+    render(<IrisCommandPalette open items={BIG} virtual />)
+    act(() => {
+      scroller().scrollTop = 900
+      fireEvent.scroll(scroller())
+    })
+    await act(async () => {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    })
+    expect(scroller().scrollTop).toBe(900)
+    act(() => {
+      fireEvent.change(input(), { target: { value: 'Command 9999' } })
+    })
+    // 'Command 9999' is a subsequence of exactly one label (four 9s only
+    // occur in c9999), so the list collapses to a single row.
+    const rows = document.querySelectorAll('[data-iris-command-palette-item]')
+    expect(rows.length).toBe(1)
+    expect(rows[0]?.getAttribute('aria-selected')).toBe('true')
+    expect(scroller().scrollTop).toBe(0)
+  })
+
+  it('A6: mixed header/item heights are exact', () => {
+    // Consecutive 100-item groups → exactly 100 headers.
+    const grouped = BIG.map((it, i) => ({ ...it, group: `Group ${Math.floor(i / 100)}` }))
+    render(<IrisCommandPalette open items={grouped} virtual />)
+    const spacer = document.querySelector('[data-iris-virtual-spacer]') as HTMLElement
+    expect(spacer.style.height).toBe('362800px') // 100×28 + 10_000×36
+    expect(document.querySelector('[data-iris-command-palette-group]')).not.toBeNull()
+  })
+
+  it('A7: disabled rows are skipped by virtual nav and preserved', () => {
+    const withDisabled = BIG.map((it, i) => (i === 1 ? { ...it, disabled: true } : it))
+    render(<IrisCommandPalette open items={withDisabled} virtual />)
+    act(() => {
+      fireEvent.keyDown(document, { key: 'ArrowDown' })
+    })
+    const selected = [...document.querySelectorAll('[data-iris-command-palette-item]')].find(
+      (el) => el.getAttribute('aria-selected') === 'true',
+    )
+    expect(selected?.getAttribute('data-iris-command-palette-item')).toBe('c2')
+    const disabled = document.querySelector('[data-iris-command-palette-item="c1"]')
+    expect(disabled?.getAttribute('aria-disabled')).toBe('true')
+  })
+
+  it('A8: empty state renders outside virtualization', () => {
+    render(<IrisCommandPalette open items={BIG} virtual />)
+    act(() => {
+      fireEvent.change(input(), { target: { value: 'zzz-no-match' } })
+    })
+    expect(document.querySelector('[data-iris-command-palette-empty]')).not.toBeNull()
+    expect(document.querySelector('[data-iris-virtual-scroll]')).toBeNull()
+  })
+})

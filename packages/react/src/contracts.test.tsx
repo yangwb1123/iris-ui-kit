@@ -21,6 +21,7 @@ import {
   tableColumnResizeScenario,
   treeScenario,
   calendarScenario,
+  calendarNavScenario,
   rangeSliderScenario,
   tagInputScenario,
   otpInputScenario,
@@ -646,6 +647,19 @@ describe('@iris-ui-kit/react — cross-framework behavior contracts', () => {
   it('satisfies the shared Calendar contract', async () => {
     const { container } = render(<IrisCalendar defaultMonth={new Date(2024, 5, 1)} />)
     await runContract(calendarScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared Calendar keyboard-roving contract', async () => {
+    const { container } = render(
+      <IrisCalendar
+        value={new Date(2024, 5, 10)}
+        defaultMonth={new Date(2024, 5, 1)}
+        min={new Date(2024, 5, 10)}
+        max={new Date(2024, 6, 20)}
+        locale="en-US"
+      />,
+    )
+    await runContract(calendarNavScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared RangeSlider contract', async () => {

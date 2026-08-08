@@ -1,11 +1,34 @@
-import { computed, defineComponent, h, onBeforeUnmount, ref, shallowRef, type PropType } from 'vue'
+import {
+  computed,
+  defineComponent,
+  h,
+  onBeforeUnmount,
+  ref,
+  shallowRef,
+  type PropType,
+  type VNode,
+} from 'vue'
 import { createSelectionModel } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 
 export interface IrisTransferItem {
   label: string
   value: string
   disabled?: boolean
+}
+
+/** Opt-in windowed rendering of a pane's list (mirrors `IrisTableVirtualOptions`). */
+export interface IrisTransferVirtualOptions {
+  /** Per-item height in px (uniform). */
+  itemHeight: number
+  /**
+   * Viewport height. Number → px; string → CSS length. Defaults to the pane's
+   * intrinsic list height (200px).
+   */
+  height?: number | string
+  /** Extra rows rendered above and below the viewport. */
+  buffer?: number
 }
 
 type Side = 'source' | 'target'
@@ -28,6 +51,11 @@ export const IrisTransfer = defineComponent({
     /** Show a search box per pane. */
     searchable: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
+    /**
+     * Opt-in windowed rendering of both pane lists via the core virtualizer
+     * (10k+ options stay smooth). Off by default — the plain path is unchanged.
+     */
+    virtual: { type: Object as PropType<IrisTransferVirtualOptions>, default: undefined },
   },
   emits: {
     'update:modelValue': (_values: string[]) => true,
@@ -102,6 +130,28 @@ export const IrisTransfer = defineComponent({
       lineHeight: '1',
     }
 
+    const listStyle: Record<string, string> = {
+      listStyle: 'none',
+      margin: '0',
+      padding: '4px',
+      maxHeight: '200px',
+      overflowY: 'auto',
+      flex: '1',
+    }
+    const emptyRow = h(
+      'li',
+      {
+        'data-iris-transfer-empty': '',
+        style: {
+          padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+          color: 'var(--iris-muted)',
+          fontSize: 'var(--iris-font-size-sm, 13px)',
+          textAlign: 'center',
+        },
+      },
+      t('transfer.empty'),
+    )
+
     const renderPane = (side: Side) => {
       const items = (side === 'source' ? sourceItems : targetItems).value
       const model = side === 'source' ? sourceModel : targetModel
@@ -121,6 +171,38 @@ export const IrisTransfer = defineComponent({
         if (allChecked) model.clear()
         else model.set(selectable.map((o) => o.value))
       }
+
+      // Shared row renderer: `<li>` in the plain ul, `<div>` inside the virtual
+      // scroller's div wrapper (an `li` there would be invalid HTML).
+      const renderRow = (o: IrisTransferItem, tag: 'li' | 'div'): VNode =>
+        h(tag, { key: o.value, 'data-iris-transfer-item': '', 'data-value': o.value }, [
+          h(
+            'label',
+            {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                borderRadius: 'var(--iris-radius-sm, 4px)',
+                cursor: o.disabled ? 'not-allowed' : 'pointer',
+                opacity: o.disabled ? '0.5' : '1',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+              },
+            },
+            [
+              h('input', {
+                type: 'checkbox',
+                checked: checked.has(o.value),
+                disabled: props.disabled || o.disabled || undefined,
+                onChange: () => toggle(o.value),
+              }),
+              h('span', o.label),
+            ],
+          ),
+        ])
+      const virtualHeight = props.virtual?.height ?? 200
+      const virtualized = props.virtual !== undefined && visible.length > 0
 
       return h('div', { 'data-iris-transfer-pane': '', 'data-side': side, style: paneStyle }, [
         h(
@@ -196,64 +278,35 @@ export const IrisTransfer = defineComponent({
               },
             })
           : null,
-        h(
-          'ul',
-          {
-            'data-iris-transfer-list': '',
-            style: {
-              listStyle: 'none',
-              margin: '0',
-              padding: '4px',
-              maxHeight: '200px',
-              overflowY: 'auto',
-              flex: '1',
-            },
-          },
-          visible.length === 0
-            ? [
-                h(
-                  'li',
-                  {
-                    'data-iris-transfer-empty': '',
-                    style: {
-                      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
-                      color: 'var(--iris-muted)',
-                      fontSize: 'var(--iris-font-size-sm, 13px)',
-                      textAlign: 'center',
-                    },
-                  },
-                  t('transfer.empty'),
-                ),
-              ]
-            : visible.map((o) =>
-                h('li', { key: o.value, 'data-iris-transfer-item': '', 'data-value': o.value }, [
-                  h(
-                    'label',
-                    {
-                      style: {
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
-                        borderRadius: 'var(--iris-radius-sm, 4px)',
-                        cursor: o.disabled ? 'not-allowed' : 'pointer',
-                        opacity: o.disabled ? '0.5' : '1',
-                        fontSize: 'var(--iris-font-size-md, 14px)',
-                      },
-                    },
-                    [
-                      h('input', {
-                        type: 'checkbox',
-                        checked: checked.has(o.value),
-                        disabled: props.disabled || o.disabled || undefined,
-                        onChange: () => toggle(o.value),
-                      }),
-                      h('span', o.label),
-                    ],
-                  ),
-                ]),
-              ),
-        ),
+        virtualized
+          ? h(
+              IrisVirtualScroll,
+              {
+                items: visible,
+                itemHeight: props.virtual!.itemHeight,
+                height: virtualHeight,
+                buffer: props.virtual!.buffer,
+                keyOf: (o: unknown) => String((o as IrisTransferItem).value),
+                'data-iris-transfer-list': '',
+                style: {
+                  flex: '1',
+                  maxHeight:
+                    typeof virtualHeight === 'number' ? `${virtualHeight}px` : virtualHeight,
+                  boxSizing: 'content-box',
+                },
+              },
+              {
+                item: ({ item }: { item: unknown }) => renderRow(item as IrisTransferItem, 'div'),
+              },
+            )
+          : h(
+              'ul',
+              {
+                'data-iris-transfer-list': '',
+                style: listStyle,
+              },
+              visible.length === 0 ? [emptyRow] : visible.map((o) => renderRow(o, 'li')),
+            ),
       ])
     }
 

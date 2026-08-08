@@ -87,7 +87,12 @@ const BUDGETS = {
   // Bumped icons 6→7 (2026-07-27): the renderer now rejects unsafe SVG tags
   // and attributes and escapes XML text/attribute values. This is deliberate
   // security logic on the public SSR renderer, not accidental icon-data drift.
-  core: 35,
+  // Bumped 35→36 (2026-08-08): createCalendarNav — the month-view calendar
+  // keyboard-roving controller sunk to core (composes nextGridCell + date
+  // math), replacing the four adapters' duplicated 8-case switches. Genuine
+  // shared logic (A-core); the adapters each LOSE their switch (~30 lines), so
+  // the net repo size is flat-to-down — measured +0.5KB gzip on core itself.
+  core: 36,
   // Bumped 3→4 (2026-08-07): font.size 9 档刻度 + space 4pt + control.height +
   // foreground/floating/backdrop 语义 token 家族（设计系统统一 + 美学评审）。
   tokens: 4,
@@ -105,7 +110,16 @@ const BUDGETS = {
   // Bumped 90→93 (2026-07-27): the shared table sort controller now has a
   // native Solid bridge, closing the final adapter gap for controlled/default
   // sort state. The measured +2.4KB is the new bridge, not incidental drift.
-  solid: 93,
+  // Bumped 93→94 (2026-08-08): IrisCascader gains an opt-in `virtual` prop
+  // (per-column core-virtualizer windowing). The measured +0.4KB is the
+  // cascader's windowed column branch + shared option renderer — the bridge
+  // itself was already in the bundle.
+  // Bumped 94→95 (2026-08-08): measured +0.2KB over 94 with the in-tree
+  // virtual-prop work (cascader + combobox listbox windowing) — NOT the
+  // calendar-nav sink (that change SHRINKS solid: measured −144B gzip by
+  // deleting the adapter's 8-case switch). Deliberate headroom for the
+  // accumulated virtual-prop surface; re-measured 94.4KB pre-calendar.
+  solid: 95,
   svelte: 6,
   manifest: 2,
 }

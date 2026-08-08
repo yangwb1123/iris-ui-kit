@@ -1,7 +1,5 @@
 <script lang="ts">
   import {
-    addDays,
-    addMonths,
     buildMonthMatrix,
     clampDate,
     endOfMonth,
@@ -15,6 +13,8 @@
     startOfDay,
     startOfMonth,
   } from './dateUtils'
+  import { createCalendarNav } from '@iris-ui-kit/core'
+  import { toStore } from '../../useStore'
   import { useI18n } from '../../i18n'
 
   const { t } = useI18n()
@@ -47,21 +47,34 @@
     ...rest
   }: Props = $props()
 
+  // Keyboard roving lives in the core `createCalendarNav` controller; this
+  // adapter only renders and bridges. Options are captured at creation
+  // (svelte-ignore: intentional — the resource-controller precedent).
   // svelte-ignore state_referenced_locally
-  let visibleMonth = $state(startOfMonth(defaultMonth ?? value ?? new Date()))
-  // svelte-ignore state_referenced_locally
-  let focusDate = $state(clampDate(value ?? new Date(), min, max))
+  const nav = createCalendarNav({
+    initialMonth: startOfMonth(defaultMonth ?? value ?? new Date()),
+    initialFocusDate: clampDate(value ?? new Date(), min, max),
+    weekStartsOn,
+    min,
+    max,
+  })
+  const navState = toStore(nav.store)
 
   $effect(() => {
-    if (value && !isSameMonth(value, visibleMonth)) {
-      visibleMonth = startOfMonth(value)
-      focusDate = clampDate(value, min, max)
+    // Sync ONLY on an external `value` change (never on internal month
+    // navigation): `nav.getVisibleMonth()` is a plain read, not reactive, so
+    // this effect re-runs just when `value` moves — matching React/Vue/Solid.
+    // (The old $state version tracked the visible month and snapped the view
+    // back after PageUp/PageDown when a controlled value was set.)
+    if (value && !isSameMonth(value, nav.getVisibleMonth())) {
+      nav.setVisibleMonth(startOfMonth(value))
+      nav.setFocusDate(clampDate(value, min, max))
     }
   })
 
-  const matrix = $derived(buildMonthMatrix(visibleMonth, weekStartsOn))
+  const matrix = $derived(buildMonthMatrix($navState.visibleMonth, weekStartsOn))
   const weekdays = $derived(getWeekdayNames(weekStartsOn, locale))
-  const title = $derived(formatMonthYear(visibleMonth, locale))
+  const title = $derived(formatMonthYear($navState.visibleMonth, locale))
   // One memoized formatter for the full-date cell label (e.g. "Monday, June 9,
   // 2026") so screen readers announce the whole date, not just the day number.
   const dayLabelFmt = $derived(
@@ -73,27 +86,21 @@
     }),
   )
 
-  const prevDisabled = $derived(min ? startOfMonth(visibleMonth) <= startOfMonth(min) : false)
+  const prevDisabled = $derived(
+    min ? startOfMonth($navState.visibleMonth) <= startOfMonth(min) : false,
+  )
   const nextDisabled = $derived(
-    max ? startOfMonth(endOfMonth(visibleMonth)) >= startOfMonth(max) : false,
+    max ? startOfMonth(endOfMonth($navState.visibleMonth)) >= startOfMonth(max) : false,
   )
 
   const today = startOfDay(new Date())
 
   function goPrevMonth() {
-    visibleMonth = addMonths(visibleMonth, -1)
+    nav.goToMonth(-1)
   }
 
   function goNextMonth() {
-    visibleMonth = addMonths(visibleMonth, 1)
-  }
-
-  function moveFocus(delta: number) {
-    const next = clampDate(addDays(focusDate, delta), min, max)
-    focusDate = next
-    if (!isSameMonth(next, visibleMonth)) {
-      visibleMonth = startOfMonth(next)
-    }
+    nav.goToMonth(1)
   }
 
   function selectDate(date: Date) {
@@ -103,50 +110,13 @@
   }
 
   function onGridKeyDown(event: KeyboardEvent) {
-    switch (event.key) {
-      case 'ArrowLeft':
-        event.preventDefault()
-        moveFocus(-1)
-        break
-      case 'ArrowRight':
-        event.preventDefault()
-        moveFocus(1)
-        break
-      case 'ArrowUp':
-        event.preventDefault()
-        moveFocus(-7)
-        break
-      case 'ArrowDown':
-        event.preventDefault()
-        moveFocus(7)
-        break
-      case 'Home': {
-        event.preventDefault()
-        const offset = focusDate.getDay() - weekStartsOn
-        moveFocus(-((offset + 7) % 7))
-        break
-      }
-      case 'End': {
-        event.preventDefault()
-        const offset = (focusDate.getDay() - weekStartsOn + 7) % 7
-        moveFocus(6 - offset)
-        break
-      }
-      case 'PageUp':
-        event.preventDefault()
-        visibleMonth = addMonths(visibleMonth, -1)
-        focusDate = clampDate(addMonths(focusDate, -1), min, max)
-        break
-      case 'PageDown':
-        event.preventDefault()
-        visibleMonth = addMonths(visibleMonth, 1)
-        focusDate = clampDate(addMonths(focusDate, 1), min, max)
-        break
-      case 'Enter':
-      case ' ':
-        event.preventDefault()
-        selectDate(focusDate)
-        break
+    if (nav.handleKey(event.key)) {
+      event.preventDefault()
+      return
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      selectDate($navState.focusDate)
     }
   }
 </script>
@@ -257,9 +227,9 @@
       -->
       <div role="row" style:display="contents">
         {#each week as date (date.toISOString())}
-          {@const inMonth = isSameMonth(date, visibleMonth)}
+          {@const inMonth = isSameMonth(date, $navState.visibleMonth)}
           {@const selected = value ? isSameDay(date, value) : false}
-          {@const focused = isSameDay(date, focusDate)}
+          {@const focused = isSameDay(date, $navState.focusDate)}
           {@const isToday = isSameDay(date, today)}
           {@const oof = isOutOfRange(date, min, max)}
           {@const isDisabled = disabled || oof}
@@ -277,11 +247,11 @@
             data-outside-month={!inMonth ? 'true' : undefined}
             disabled={isDisabled || undefined}
             onclick={() => {
-              focusDate = date
+              nav.setFocusDate(date)
               selectDate(date)
             }}
             onfocus={() => {
-              focusDate = date
+              nav.setFocusDate(date)
             }}
             style:height="32px"
             style:display="inline-flex"

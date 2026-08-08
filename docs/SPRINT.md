@@ -68,3 +68,11 @@ Svelte 目标 83/83、全包 855/855 + SSR 31/31。
 - 门禁：180/180 turbo、审计 0 违规、visual-parity 四框架 PASS、
   format/arch/token 全绿。
 - 记录项：Gauge 阈值映射（显式 status，注释已给建议）。
+
+## 2026-08-08 迭代记录（react 适配器，未提交）
+
+- `IrisTree` 新增 opt-in `virtual?: IrisTreeVirtualOptions`（窗口化扁平节点
+  列表）：零 core 改动，复用 `createVirtualizer` + `IrisVirtualScroll` 桥；
+  键盘导航滚动到活动行 + 焦点跟随（rAF 重查、过期链丢弃）；不传 `virtual`
+  与之前逐字节一致。react 包 1478/1478 测试 + typecheck/lint/build 全绿。
+- 门禁状态以实际跑通为准：本条目记录迭代内容，不预宣称整仓门。

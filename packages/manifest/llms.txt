@@ -425,11 +425,11 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 13 props, 1 events
 - IrisCascader [react/solid/svelte/vue] — layer-2
   Cascader: a hierarchical select that drills down through columns — choosing a branch reveals its children in the next column; choosing a leaf commits the full path. Controlled or uncontrolled; closes on leaf-select, Escape, or outside click.
-  react: props options, value?, defaultValue?, onValueChange?, placeholder?, disabled?, invalid?, separator?, size?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisCascaderNode, IrisCascaderProps, IrisCascaderSize
-  solid: props options?, value?, defaultValue?, placeholder?, disabled?, invalid?, separator?, onChange?, id?; events onChange; types IrisCascaderNode, IrisCascaderProps
-  svelte: props options?, value?, placeholder?, disabled?, invalid?, separator?, size?, id?, onValueChange?, style?, class?; events onValueChange; types IrisCascaderNode, IrisCascaderSize
-  vue: props options?, modelValue?, placeholder?, disabled?, invalid?, separator?, size?, id?, ariaDescribedby?; events update:modelValue; types IrisCascaderNode, IrisCascaderSize
-  quality: 13 props, 1 events
+  react: props options, value?, defaultValue?, onValueChange?, placeholder?, disabled?, invalid?, separator?, size?, virtual?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisCascaderNode, IrisCascaderProps, IrisCascaderSize
+  solid: props options?, value?, defaultValue?, placeholder?, disabled?, invalid?, separator?, onChange?, virtual?, id?; events onChange; types IrisCascaderNode, IrisCascaderProps
+  svelte: props options?, value?, placeholder?, disabled?, invalid?, separator?, size?, virtual?, id?, onValueChange?, style?, class?; events onValueChange; types IrisCascaderNode, IrisCascaderSize
+  vue: props options?, modelValue?, placeholder?, disabled?, invalid?, separator?, size?, virtual?, id?, ariaDescribedby?; events update:modelValue; types IrisCascaderNode, IrisCascaderSize
+  quality: 14 props, 1 events
 - IrisCheckbox [react/solid/svelte/vue] — layer-1
   Tri-state checkbox supporting `true`, `false`, and `'indeterminate'`, in both controlled (`checked`) and uncontrolled (`defaultChecked`) modes.
   react: props checked?, defaultChecked?, onChange?, size?, invalid?, ariaDescribedby?, children?; events onChange; slots default; types IrisCheckboxProps, IrisCheckboxSize, IrisCheckboxValue
@@ -453,18 +453,18 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 5 props, 1 events
 - IrisCombobox [react/solid/svelte/vue] — layer-2
   Filterable single-select (searchable select): a text input that type-ahead filters a listbox of options. The displayed text is derived (`filtering ? query : selected label`) so controlled value changes stay in sync without an effect. Opens downward; follows the ARIA 1.2 combobox pattern.
-  react: props value?, defaultValue?, onValueChange?, options, placeholder?, disabled?, invalid?, size?, emptyText?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisComboboxOption, IrisComboboxProps, IrisComboboxSize
-  solid: props value?, options?, placeholder?, disabled?, invalid?, size?, emptyText?, id?, onChange?, style?; events onChange; types IrisComboboxOption, IrisComboboxProps, IrisComboboxSize
-  svelte: props value?, options?, placeholder?, disabled?, invalid?, size?, emptyText?, id?, onValueChange?, style?; events onValueChange; types IrisComboboxOption, IrisComboboxSize
+  react: props value?, defaultValue?, onValueChange?, options, placeholder?, disabled?, invalid?, size?, emptyText?, id?, ariaDescribedby?, style?, className?, virtual?; events onValueChange; types IrisComboboxOption, IrisComboboxProps, IrisComboboxSize
+  solid: props value?, options?, placeholder?, disabled?, invalid?, size?, emptyText?, id?, onChange?, virtual?, style?; events onChange; types IrisComboboxOption, IrisComboboxProps, IrisComboboxSize
+  svelte: props value?, options?, placeholder?, disabled?, invalid?, size?, emptyText?, id?, onValueChange?, virtual?, style?; events onValueChange; types IrisComboboxOption, IrisComboboxSize
   vue: props modelValue?, options?, placeholder?, disabled?, invalid?, size?, emptyText?, allowCommit?, id?, ariaDescribedby?; events commit, update:modelValue; types IrisComboboxOption, IrisComboboxSize
-  quality: 13 props, 1 events
+  quality: 14 props, 1 events
 - IrisCommandPalette [react/solid/svelte/vue] — layer-2
   Command palette: searchable, keyboard-driven action launcher. Built on the modal-utils suite (scroll lock + focus trap). Pattern: open via shortcut (consumer wires the listener), type to filter, ↑/↓ to navigate, Enter to execute the focused item, Escape to dismiss.
-  react: props open?, onOpenChange?, items, placeholder?, emptyText?, filter?, onSelect?; events onOpenChange, onSelect; types IrisCommandPaletteProps
+  react: props open?, onOpenChange?, items, placeholder?, emptyText?, filter?, onSelect?, virtual?; events onOpenChange, onSelect; types IrisCommandPaletteProps
   solid: props open?, defaultOpen?, items?, placeholder?, emptyText?, filter?, onOpenChange?, onSelect?; events onOpenChange, onSelect; types IrisCommandPaletteProps
   svelte: props open?, items?, placeholder?, emptyText?, filter?, onOpenChange?, onSelect?; events onOpenChange, onSelect
   vue: props open?, items, placeholder?, emptyText?, filter?; events select, update:open
-  quality: 7 props, 2 events
+  quality: 8 props, 2 events
 - IrisCopyButton [react/solid/svelte/vue] — layer-1
   Copy-to-clipboard button: writes `text` to the clipboard and flips to a "Copied" state for `timeout` ms. The clipboard write is best-effort (guarded for unsupported environments) and the copied state still reflects intent.
   react: props text, children?, copiedLabel?, timeout?, onCopy?, disabled?, size?, style?, className?; events onCopy; slots copiedLabel, default; types IrisCopyButtonProps, IrisCopyButtonSize
@@ -718,11 +718,11 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 5 props, 0 events
 - IrisMentions [react/solid/svelte/vue] — layer-1
   Mentions: a textarea that opens an autocomplete listbox when the user types the trigger character (default `@`). Selecting a suggestion replaces the `@query` token with the chosen label. Keyboard: ↑/↓ to move, Enter to pick, Esc to dismiss.
-  react: props value?, defaultValue?, onValueChange?, options, prefix?, placeholder?, disabled?, invalid?, rows?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisMentionsProps
-  solid: props value?, defaultValue?, options?, prefix?, placeholder?, disabled?, invalid?, rows?, id?, onChange?; events onChange; types IrisMentionsProps
-  svelte: props value?, defaultValue?, options?, prefix?, placeholder?, disabled?, invalid?, rows?, id?, onValueChange?, style?, class?; events onValueChange
+  react: props value?, defaultValue?, onValueChange?, options, prefix?, placeholder?, disabled?, invalid?, rows?, virtual?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisMentionsProps
+  solid: props value?, defaultValue?, options?, prefix?, placeholder?, disabled?, invalid?, rows?, id?, onChange?, virtual?; events onChange; types IrisMentionsProps
+  svelte: props value?, defaultValue?, options?, prefix?, placeholder?, disabled?, invalid?, rows?, id?, onValueChange?, virtual?, style?, class?; events onValueChange
   vue: props modelValue?, options?, prefix?, placeholder?, disabled?, invalid?, rows?, id?, ariaDescribedby?; events update:modelValue
-  quality: 13 props, 1 events
+  quality: 14 props, 1 events
 - IrisMenu [react/solid/svelte/vue] — layer-2
   Root of a (potentially nested) menu. Provides the "close everything" channel so picking a leaf in a deeply nested branch closes the whole tree.
   react: props open?, defaultOpen?, onOpenChange?, placement?, offset?, children?; events onOpenChange; slots default; types IrisMenuContentProps, IrisMenuItemProps, IrisMenuProps, IrisMenuSeparatorProps, IrisMenuSubProps, IrisMenuTriggerProps
@@ -891,11 +891,11 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 10 props, 1 events
 - IrisSelect [react/solid/svelte/vue] — layer-2
   Single-select dropdown. Composes Popover (positioning + dismiss) with an inline listbox (keyboard nav + selection). Arrow-key, typeahead, Home/End, and Enter/Space navigation are single-sourced in `createKeyboardNav` (core).
-  react: props items, value?, defaultValue?, onValueChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, style?, className?; events onValueChange; slots renderTrigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize, IrisSelectTriggerState
-  solid: props items, value?, defaultValue?, onValueChange?, onChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, portalTarget?, style?; events onChange, onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
-  svelte: props items, value?, defaultValue?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, portalTarget?, onValueChange?, style?; events onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
+  react: props items, value?, defaultValue?, onValueChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, renderTrigger?, style?, className?, virtual?; events onValueChange; slots renderTrigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize, IrisSelectTriggerState
+  solid: props items, value?, defaultValue?, onValueChange?, onChange?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, portalTarget?, style?, virtual?; events onChange, onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
+  svelte: props items, value?, defaultValue?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, portalTarget?, onValueChange?, style?, virtual?; events onValueChange; types IrisSelectItem, IrisSelectProps, IrisSelectSize
   vue: props items, modelValue?, defaultValue?, placeholder?, size?, disabled?, placement?, invalid?, id?, ariaDescribedby?, teleport?; events update:modelValue, valueChange; slots trigger; types IrisSelectItem, IrisSelectProps, IrisSelectSize
-  quality: 14 props, 1 events
+  quality: 15 props, 1 events
 - IrisSkeleton [react/solid/svelte/vue] — layer-1
   A placeholder shape that pulses to indicate content is loading. Supports `rect`, `circle`, and `text` shapes with configurable dimensions. Its shimmer animation respects `prefers-reduced-motion`.
   react: props width?, height?, shape?, animated?; types IrisSkeletonProps, IrisSkeletonShape
@@ -1073,18 +1073,18 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 8 props, 3 events
 - IrisTransfer [react/solid/svelte/vue] — layer-2
   Dual-list transfer: move items between an "available" and a "selected" pane via per-item checkboxes and the ›/‹ buttons. Controlled or uncontrolled (`value` = the selected values), with optional per-pane search and a select-all header. Built on native checkboxes for accessibility.
-  react: props options, value?, defaultValue?, onValueChange?, titles?, searchable?, disabled?, style?, className?; events onValueChange; slots titles; types IrisTransferItem, IrisTransferProps
-  solid: props options?, value?, defaultValue?, titles?, searchable?, disabled?, onChange?; events onChange; types IrisTransferItem, IrisTransferProps
-  svelte: props options?, value?, titles?, searchable?, disabled?, onValueChange?, style?, class?; events onValueChange; types IrisTransferItem
-  vue: props options?, modelValue?, titles?, searchable?, disabled?; events update:modelValue; types IrisTransferItem
-  quality: 9 props, 1 events
+  react: props options, value?, defaultValue?, onValueChange?, titles?, searchable?, disabled?, virtual?, style?, className?; events onValueChange; slots titles; types IrisTransferItem, IrisTransferProps, IrisTransferVirtualOptions
+  solid: props options?, value?, defaultValue?, titles?, searchable?, disabled?, virtual?, onChange?; events onChange; types IrisTransferItem, IrisTransferProps, IrisTransferVirtualOptions
+  svelte: props options?, value?, titles?, searchable?, disabled?, virtual?, onValueChange?, style?, class?; events onValueChange; types IrisTransferItem, IrisTransferVirtualOptions
+  vue: props options?, modelValue?, titles?, searchable?, disabled?, virtual?; events update:modelValue; types IrisTransferItem, IrisTransferVirtualOptions
+  quality: 10 props, 1 events
 - IrisTree [react/solid/svelte/vue] — layer-2
   Tree control. Renders a hierarchy of `IrisTreeNode`s with expand/collapse, single/multi selection, and optional lazy-loaded children. WAI-ARIA Tree pattern: root `role="tree"`, each node `role="treeitem"`, roving tabindex.
-  react: props nodes, expanded?, defaultExpanded?, onExpandedChange?, selected?, defaultSelected?, onSelectedChange?, selectionMode?, checkable?, defaultChecked?, onCheckedChange?, ariaLabel?, loading?, error?, emptyState?, loadingState?, errorState?, style?, className?; events onCheckedChange, onExpandedChange, onSelectedChange; slots emptyState, errorState, loadingState; types IrisTreeNode, IrisTreeProps, IrisTreeSelectNode, IrisTreeSelectProps, IrisTreeSelectSize, IrisTreeSelectionMode
+  react: props nodes, expanded?, defaultExpanded?, onExpandedChange?, selected?, defaultSelected?, onSelectedChange?, selectionMode?, checkable?, defaultChecked?, onCheckedChange?, ariaLabel?, loading?, error?, emptyState?, loadingState?, errorState?, style?, className?, virtual?; events onCheckedChange, onExpandedChange, onSelectedChange; slots emptyState, errorState, loadingState; types IrisTreeNode, IrisTreeProps, IrisTreeSelectNode, IrisTreeSelectProps, IrisTreeSelectSize, IrisTreeSelectionMode, IrisTreeVirtualOptions
   solid: props nodes?, selectedIds?, defaultSelectedIds?, expandedIds?, defaultExpandedIds?, selectionMode?, checkable?, defaultChecked?, onCheckedChange?, disabled?, onSelect?, onExpand?, ariaLabel?, loading?, error?, emptyState?, loadingState?, errorState?; events onCheckedChange, onExpand, onSelect; slots emptyState, errorState, loadingState; types IrisTreeNode, IrisTreeProps, IrisTreeSelectProps, IrisTreeSelectionMode
   svelte: props nodes?, expanded?, defaultExpanded?, selected?, defaultSelected?, selectionMode?, checkable?, defaultChecked?, onCheckedChange?, ariaLabel?, loading?, error?, onExpandedChange?, onSelectedChange?, onExpand?, onCollapse?, onSelect?, style?, class?; events onCheckedChange, onCollapse, onExpand, onExpandedChange, onSelect, onSelectedChange; types IrisTreeNode, IrisTreeSelectionMode
   vue: props nodes, expanded?, defaultExpanded?, selected?, defaultSelected?, selectionMode?, defaultChecked?, ariaLabel?, loading?, error?; events checkedChange, collapse, expand, select, update:expanded, update:selected; slots empty, error, loading; types IrisTreeNode, IrisTreeSelectNode, IrisTreeSelectSize, IrisTreeSelectionMode
-  quality: 19 props, 3 events
+  quality: 20 props, 3 events
 - IrisTreeSelect [react/solid/svelte/vue] — layer-2
   Hierarchical single-select: a trigger that opens a `role="tree"` dropdown with expand/collapse toggles. Selecting a node sets the value and closes. Controlled or uncontrolled; closes on select, Escape, or outside click.
   react: props options, value?, defaultValue?, onValueChange?, defaultExpanded?, placeholder?, disabled?, invalid?, size?, id?, ariaDescribedby?, style?, className?; events onValueChange; types IrisTreeSelectNode, IrisTreeSelectProps, IrisTreeSelectSize, IrisTreeSelectionMode
@@ -1094,11 +1094,11 @@ Import components from `@iris-ui-kit/plugin-{name}/{framework}`.
   quality: 13 props, 1 events
 - IrisVirtualScroll [react/solid/svelte/vue] — layer-2
   Virtual scroller. Renders only the visible window of items plus a configurable buffer above and below. Vertical-only. `itemHeight` may be a fixed number, a `(index) => px` function for variable-height rows, or `'auto'` to measure rendered rows.
-  react: props items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, renderItem, onScroll?, onRangeChange?, style?, className?; events onRangeChange, onScroll; slots renderItem; types IrisVirtualScrollAlign, IrisVirtualScrollHandle, IrisVirtualScrollProps
+  react: props items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, renderItem, onScroll?, onRangeChange?, style?, className?, role?, tabIndex?, onKeyDown?; events onKeyDown, onRangeChange, onScroll; slots renderItem; types IrisVirtualScrollAlign, IrisVirtualScrollHandle, IrisVirtualScrollProps
   solid: props items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, renderItem, onScroll?, onRangeChange?, style?, ref?; events onRangeChange, onScroll; slots renderItem; types IrisVirtualScrollAlign, IrisVirtualScrollHandle, IrisVirtualScrollProps
   svelte: props items, itemHeight, estimatedItemHeight?, height?, buffer?, keyOf?, onScroll?, onRangeChange?, item?, style?; events onRangeChange, onScroll; slots item; types IrisVirtualScrollAlign, IrisVirtualScrollHandle
   vue: props items, height?, buffer?, keyOf?; events rangeChange, scroll; slots item; types IrisVirtualScrollAlign, IrisVirtualScrollExposed
-  quality: 11 props, 2 events
+  quality: 14 props, 3 events
 - IrisVisuallyHidden [react/solid/svelte/vue] — layer-1
   Visually-hidden content: present in the accessibility tree (read by screen readers) but clipped from view — for labels, live-region announcements, and extra context. Forwards attributes like `aria-live` / `role`.
   react: types IrisVisuallyHiddenProps

@@ -16,6 +16,7 @@
     nextGridCell,
     type GridNavKey,
     type TreeRow,
+    validateEditRulesAsync,
   } from '@iris-ui-kit/core'
   import { toStore } from '../../useStore'
   import { useI18n } from '../../i18n'
@@ -382,6 +383,17 @@
           ? oldValue
           : Number(draft)
         : draft
+    // Declarative editRules run async (may contain async validators).
+    if (column.editRules && column.editRules.length > 0) {
+      void validateEditRulesAsync(column.editRules, draft, row).then((r: { valid: boolean; messages: string[] }) => {
+        if (!r.valid) {
+          editError = r.messages[0] ?? null
+          return
+        }
+        finishCommit(row, column, rowIndex, oldValue, newValue)
+      })
+      return
+    }
     // A column validator can reject the draft: keep the editor open, surface the
     // message, and skip the commit until the value is valid (or the user cancels).
     if (column.validate) {
@@ -391,6 +403,16 @@
         return
       }
     }
+    finishCommit(row, column, rowIndex, oldValue, newValue)
+  }
+
+  function finishCommit(
+    row: Record<string, unknown>,
+    column: IrisTableColumn,
+    rowIndex: number,
+    oldValue: unknown,
+    newValue: unknown,
+  ): void {
     editError = null
     editingCellId = null
     if (newValue !== oldValue) {

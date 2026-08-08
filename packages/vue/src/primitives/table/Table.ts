@@ -27,6 +27,7 @@ import {
   type GridNavKey,
   type TreeSelectionNode,
   type TreeRow,
+  validateEditRulesAsync,
 } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { IrisCheckbox } from '../checkbox/Checkbox'
@@ -109,6 +110,14 @@ export const IrisTable = defineComponent({
     rowKey: { type: String, default: 'id' },
     ...tableControlProps,
     striped: { type: Boolean, default: false },
+    editConfig: {
+      type: Object as PropType<{
+        trigger?: 'click' | 'dblclick' | 'manual'
+        showAsterisk?: boolean
+        autoClear?: boolean
+      }>,
+      default: undefined,
+    },
     bordered: { type: Boolean, default: true },
     /** Enable per-column resize handles. Combine with `v-model:columnWidths` for persistence. */
     resizableColumns: { type: Boolean, default: false },
@@ -471,6 +480,18 @@ export const IrisTable = defineComponent({
             ? oldValue
             : Number(draft)
           : draft
+      // Declarative editRules run async (may contain async validators); the
+      // legacy validate callback stays sync.
+      if (column.editRules && column.editRules.length > 0) {
+        validateEditRulesAsync(column.editRules, draft, row).then((r) => {
+          if (!r.valid) {
+            editError.value = r.messages[0] ?? null
+            return
+          }
+          finishCommit(row, column, rowIndex, oldValue, newValue)
+        })
+        return
+      }
       // A column validator can reject the draft: keep the editor open, surface the
       // message, and skip the commit until the value is valid (or the user cancels).
       if (column.validate) {
@@ -480,6 +501,21 @@ export const IrisTable = defineComponent({
           return
         }
       }
+      finishCommit(row, column, rowIndex, oldValue, newValue)
+      editError.value = null
+      editingCellId.value = null
+      if (newValue !== oldValue) {
+        emit('cellEdit', { row, column, oldValue, newValue, rowIndex })
+      }
+    }
+
+    const finishCommit = (
+      row: Record<string, unknown>,
+      column: IrisTableColumn,
+      rowIndex: number,
+      oldValue: unknown,
+      newValue: unknown,
+    ) => {
       editError.value = null
       editingCellId.value = null
       if (newValue !== oldValue) {
@@ -1317,6 +1353,10 @@ export const IrisTable = defineComponent({
                     }
                   : {}),
                 onDblclick: col.editable ? () => beginEdit(row, col, id) : undefined,
+                onClick:
+                  col.editable && props.editConfig?.trigger === 'click'
+                    ? () => beginEdit(row, col, id)
+                    : undefined,
                 style: {
                   display: 'flex',
                   alignItems: 'center',

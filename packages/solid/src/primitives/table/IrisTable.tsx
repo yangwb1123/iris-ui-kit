@@ -24,6 +24,7 @@ import {
   type GridNavKey,
   type HeaderCell,
   type TreeRow,
+  validateEditRulesAsync,
 } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
@@ -139,6 +140,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       resizableColumns: false,
       keyboardNavigation: false,
       cellRange: false,
+      editConfig: undefined as
+        | { trigger?: 'click' | 'dblclick' | 'manual'; showAsterisk?: boolean; autoClear?: boolean }
+        | undefined,
       columnVirtualization: false,
     },
     props,
@@ -348,6 +352,17 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           ? oldValue
           : Number(draft)
         : draft
+    // Declarative editRules run async (may contain async validators).
+    if (column.editRules && column.editRules.length > 0) {
+      void validateEditRulesAsync(column.editRules, draft, row).then((r) => {
+        if (!r.valid) {
+          setEditError(r.messages[0] ?? null)
+          return
+        }
+        finishCommit(row, column, rowIndex, oldValue, newValue)
+      })
+      return
+    }
     // A column validator can reject the draft: keep the editor open, surface the
     // message, and skip the commit until the value is valid (or the user cancels).
     if (column.validate) {
@@ -357,6 +372,16 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         return
       }
     }
+    finishCommit(row, column, rowIndex, oldValue, newValue)
+  }
+
+  const finishCommit = (
+    row: Row,
+    column: IrisTableColumn<Row>,
+    rowIndex: number,
+    oldValue: unknown,
+    newValue: unknown,
+  ): void => {
     setEditError(null)
     setEditingCellId(null)
     if (newValue !== oldValue) {
@@ -696,7 +721,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                             cellRangeCtrl.startRange(index, colIndex)
                           }
                         }
-                      : undefined
+                      : col.editable && merged.editConfig?.trigger === 'click'
+                        ? () => beginEdit(row, col, id)
+                        : undefined
                   }
                   onDblClick={col.editable ? () => beginEdit(row, col, id) : undefined}
                   style={{

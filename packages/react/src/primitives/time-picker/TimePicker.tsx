@@ -144,7 +144,7 @@ export function IrisTimePicker({
     color: 'var(--iris-foreground)',
     border: `1px solid ${invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
     borderRadius: 'var(--iris-radius-sm, 4px)',
-    fontSize: 'var(--iris-font-size-base, 15px)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
     fontFamily: 'inherit',
     textAlign: 'center',
     outline: 'none',
@@ -181,7 +181,7 @@ export function IrisTimePicker({
       />
       <span
         aria-hidden="true"
-        style={{ color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-base, 15px)' }}
+        style={{ color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-md, 14px)' }}
       >
         :
       </span>

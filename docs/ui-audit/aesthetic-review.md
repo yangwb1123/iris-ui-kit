@@ -349,13 +349,13 @@ P1-P15 全部落地（提交 87bde91f）：
 - P5 ✅ Card padding 对齐（md 20 / lg 24）
 - P6 ✅ 阴影双层分层 + Card hover md→lg
 - P7 ✅ Button hover color-mix（去 filter）
-- P8 ✅ Table row hover/selected（--iris-cell-bg，react/vue；solid/svelte
-  保持 row 级 selected，像素门禁保证一致）
+- P8 ✅ Table row hover/selected 四框架（--iris-cell-bg / --iris-row-bg
+  CSS 变量方案，含 solid/svelte）
 - P9 ✅ Statistic 20/24/30 + Badge sm 12px + z-index token
 - P10 ✅ Switch 150ms 同步
 - P11 ✅ info → #0ea5e9（sky）
 - P12 ✅ radius.sm 2→4
-- P13 记录：base 15px 保留（兼容），display tracking 待后续
+- P13 ✅ TimePicker 15→14（fold base 进 md）+ label tracking → wide token + display tight -0.02em
 - P14 ✅ EmptyState icon 48px 容器
 - P15 ✅ skeleton radius 4
 

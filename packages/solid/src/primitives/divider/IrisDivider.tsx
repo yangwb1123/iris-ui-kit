@@ -94,7 +94,7 @@ export function IrisDivider(props: IrisDividerProps): JSX.Element {
             color: 'var(--iris-muted)',
             'font-size': 'var(--iris-font-size-xs, 12px)',
             'text-transform': 'uppercase',
-            'letter-spacing': '0.04em',
+            'letter-spacing': 'var(--iris-letter-spacing-wide, 0.04em)',
             ...((local.style as JSX.CSSProperties) ?? {}),
           }}
         >

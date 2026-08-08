@@ -46,9 +46,9 @@ export const lightTheme: IrisTheme = {
     'iris.font.line.height.sm': '1.4',
     'iris.font.line.height.md': '1.5',
     'iris.font.line.height.lg': '1.6',
-    'iris.font.letter.spacing.tight': '-0.01em',
+    'iris.font.letter.spacing.tight': '-0.02em',
     'iris.font.letter.spacing.normal': '0em',
-    'iris.font.letter.spacing.wide': '0.02em',
+    'iris.font.letter.spacing.wide': '0.04em',
   },
   spacing: {
     'iris.gap.sm': 4,

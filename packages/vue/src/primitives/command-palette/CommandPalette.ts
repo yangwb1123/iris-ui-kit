@@ -280,7 +280,7 @@ export const IrisCommandPalette = defineComponent({
                               fontSize: 'var(--iris-font-size-xs, 12px)',
                               fontWeight: '600',
                               textTransform: 'uppercase',
-                              letterSpacing: '0.04em',
+                              letterSpacing: 'var(--iris-letter-spacing-wide, 0.04em)',
                               color: 'var(--iris-muted)',
                             },
                           },

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import type { Snippet } from 'svelte'
   type RowSnippet = Snippet<[Record<string, unknown>]>
   import {
@@ -564,6 +565,21 @@
   // across all four flat/tree × detail combinations). When `virtualScroll` is
   // unset this is false, so the non-virtual body path renders unchanged.
   const useVirtual = $derived(virtualScroll != null && !(treeMode && hasDetail))
+  onMount(() => {
+    if (typeof document === 'undefined') return
+    if (document.getElementById('iris-table-row-styles')) return
+    const style = document.createElement('style')
+    style.id = 'iris-table-row-styles'
+    style.textContent = `
+[data-iris-table] [role="row"]:hover {
+  --iris-row-bg: var(--iris-surface-hover);
+}
+[data-iris-table-row-selected="true"] {
+  --iris-row-bg: var(--iris-surface-selected);
+}
+`
+    document.head.appendChild(style)
+  })
 </script>
 
 <div
@@ -906,10 +922,10 @@
       style="display: grid; grid-template-columns: {gridTemplate()};{fillHeight
         ? ' height: 100%;'
         : ''} background: {selected
-        ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+        ? 'var(--iris-surface-selected)'
         : striped && index % 2 === 1
           ? 'var(--iris-surface)'
-          : 'transparent'}; transition: background-color 120ms ease; cursor: default"
+          : 'var(--iris-row-bg, transparent)'}; transition: background-color var(--iris-transition-fast, 150ms) ease; cursor: default"
     >
       {#if hasDetail}
         <div

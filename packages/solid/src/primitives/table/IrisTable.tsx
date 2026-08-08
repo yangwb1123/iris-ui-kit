@@ -476,6 +476,21 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     (hasDetail() ? 1 : 0) + (merged.selectable !== 'none' ? 2 : 1) + i
 
   onMount(() => {
+    if (typeof document === 'undefined') return
+    if (document.getElementById('iris-table-row-styles')) return
+    const style = document.createElement('style')
+    style.id = 'iris-table-row-styles'
+    style.textContent = `
+[data-iris-table] [role="row"]:hover {
+  --iris-row-bg: var(--iris-surface-hover);
+}
+[data-iris-table-row-selected="true"] {
+  --iris-row-bg: var(--iris-surface-selected);
+}
+`
+    document.head.appendChild(style)
+  })
+  onMount(() => {
     if (!merged.columnVirtualization || !rootRef) return
     const el = rootRef
     const measure = (): void => {
@@ -569,10 +584,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           display: 'grid',
           'grid-template-columns': gridTemplate(),
           background: selected()
-            ? 'var(--iris-surface-hover)'
+            ? 'var(--iris-surface-selected)'
             : merged.striped && index % 2 === 1
               ? 'var(--iris-surface)'
-              : 'transparent',
+              : 'var(--iris-row-bg, transparent)',
           transition: 'background-color 120ms ease',
           cursor: 'default',
         }}

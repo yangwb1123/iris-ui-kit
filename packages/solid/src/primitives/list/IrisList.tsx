@@ -209,16 +209,34 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
                   opacity: item.disabled ? '0.5' : '1',
                   'font-size': 'var(--iris-font-size-md, 14px)',
                   background: selected()
-                    ? 'var(--iris-primary)'
+                    ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
                     : active()
                       ? 'var(--iris-surface-hover)'
                       : 'transparent',
-                  color: selected() ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
+                  color: 'var(--iris-foreground)',
+                  'font-weight': selected() ? '600' : '400',
                   outline: 'none',
                 }}
               >
-                <Show when={local.renderItem} fallback={<>{item.label ?? String(item.value)}</>}>
-                  {local.renderItem!(item, selected())}
+                <span style={{ flex: '1', 'min-width': '0' }}>
+                  <Show when={local.renderItem} fallback={<>{item.label ?? String(item.value)}</>}>
+                    {local.renderItem!(item, selected())}
+                  </Show>
+                </span>
+                <Show when={selected()}>
+                  <svg
+                    aria-hidden="true"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--iris-primary)"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
                 </Show>
               </li>
             )

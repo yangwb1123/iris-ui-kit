@@ -263,13 +263,14 @@ export function IrisList<T = unknown>({
             opacity: item.disabled ? 0.5 : 1,
             fontSize: 'var(--iris-font-size-md, 14px)',
             background: selected
-              ? 'var(--iris-primary)'
+              ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
               : hoveredIndex === index
                 ? 'var(--iris-surface-hover)'
                 : active
                   ? 'var(--iris-surface-hover)'
                   : 'transparent',
-            color: selected ? 'var(--iris-primary-foreground, #fff)' : 'var(--iris-foreground)',
+            color: 'var(--iris-foreground)',
+            fontWeight: selected ? 600 : 400,
             outline: 'none',
           }
           return (
@@ -288,9 +289,26 @@ export function IrisList<T = unknown>({
               onFocus={() => nav.focus(index)}
               style={baseStyle}
             >
-              {renderItem
-                ? renderItem(item, { selected, active, index })
-                : (item.label ?? String(item.value))}
+              <span style={{ flex: 1, minWidth: 0 }}>
+                {renderItem
+                  ? renderItem(item, { selected, active, index })
+                  : (item.label ?? String(item.value))}
+              </span>
+              {selected ? (
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--iris-primary)"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              ) : null}
             </li>
           )
         })

@@ -60,9 +60,12 @@ const SIZE_STYLES: Record<
 
 export interface IrisSelectProps<T = unknown> {
   items: IrisSelectItem<T>[]
-  value?: T
-  defaultValue?: T
-  onValueChange?: (value: T) => void
+  /** Single value, or an array when `multiple`. */
+  value?: T | T[]
+  defaultValue?: T | T[]
+  onValueChange?: (value: T | T[]) => void
+  /** Allow selecting multiple options (values become arrays). */
+  multiple?: boolean
   placeholder?: string
   size?: IrisSelectSize
   disabled?: boolean
@@ -103,6 +106,7 @@ export function IrisSelect<T = unknown>({
   value: valueProp,
   defaultValue,
   onValueChange,
+  multiple = false,
   placeholder,
   size = 'md',
   disabled = false,
@@ -120,8 +124,15 @@ export function IrisSelect<T = unknown>({
   const safeItems = items ?? []
   const resolvedPlaceholder = placeholder ?? t('select.placeholder')
   const isControlled = valueProp !== undefined
-  const [internal, setInternal] = React.useState<T | undefined>(defaultValue)
+  const [internal, setInternal] = React.useState<T | T[] | undefined>(defaultValue)
   const value = isControlled ? valueProp : internal
+  const selectedValues: T[] = multiple
+    ? Array.isArray(value)
+      ? (value as T[])
+      : value !== undefined
+        ? [value as T]
+        : []
+    : []
   const [open, setOpen] = React.useState(false)
 
   // Typeahead-open target, consumed (read + cleared) by the open-reset effect
@@ -129,12 +140,18 @@ export function IrisSelect<T = unknown>({
   // item. Freshly set on every open-producing keydown ⇒ never stale.
   const pendingOpenTargetRef = React.useRef<number | null>(null)
 
-  const selectedItem = safeItems.find((it) => it.value === value) ?? null
-  const label = selectedItem
-    ? (selectedItem.label ?? String(selectedItem.value))
-    : resolvedPlaceholder
+  const selectedItems = multiple
+    ? safeItems.filter((it) => selectedValues.includes(it.value))
+    : (safeItems.find((it) => it.value === value) ?? null)
+  const label = Array.isArray(selectedItems)
+    ? selectedItems.length > 0
+      ? selectedItems.map((it) => it.label ?? String(it.value)).join(', ')
+      : resolvedPlaceholder
+    : selectedItems
+      ? (selectedItems.label ?? String(selectedItems.value))
+      : resolvedPlaceholder
 
-  const setValue = (next: T) => {
+  const setValue = (next: T | T[]) => {
     if (!isControlled) setInternal(next)
     onValueChange?.(next)
   }
@@ -259,6 +276,15 @@ export function IrisSelect<T = unknown>({
 
   const selectItem = (item: IrisSelectItem<T>) => {
     if (item.disabled) return
+    if (multiple) {
+      const exists = selectedValues.includes(item.value)
+      const next = exists
+        ? selectedValues.filter((v) => v !== item.value)
+        : [...selectedValues, item.value]
+      setValue(next)
+      // Keep the popover open for multi-select; closing only on outside click.
+      return
+    }
     setValue(item.value)
     setOpen(false)
   }
@@ -296,7 +322,7 @@ export function IrisSelect<T = unknown>({
     alignItems: 'center',
     gap: 'var(--iris-gap-sm, 6px)',
     background: 'var(--iris-background)',
-    color: selectedItem ? 'var(--iris-foreground)' : 'var(--iris-muted)',
+    color: selectedItems ? 'var(--iris-foreground)' : 'var(--iris-muted)',
     border: `1px solid ${invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
     borderRadius: 'var(--iris-radius-md, 6px)',
     cursor: disabled ? 'not-allowed' : 'pointer',
@@ -315,7 +341,7 @@ export function IrisSelect<T = unknown>({
   // Shared option renderer: the virtual path renders the same node (plus
   // virtual-list ARIA) so the visible window keeps today's selectors.
   const renderOption = (item: IrisSelectItem<T>, index: number, windowed: boolean) => {
-    const isSelected = item.value === value
+    const isSelected = multiple ? selectedValues.includes(item.value) : item.value === value
     const isActive = index === activeIndex
     return (
       <li
@@ -370,7 +396,15 @@ export function IrisSelect<T = unknown>({
   }
 
   const triggerNode = renderTrigger ? (
-    renderTrigger({ value, label, open, id, ariaDescribedby, invalid, disabled })
+    renderTrigger({
+      value: value as T | undefined,
+      label,
+      open,
+      id,
+      ariaDescribedby,
+      invalid,
+      disabled,
+    })
   ) : (
     <button
       type="button"

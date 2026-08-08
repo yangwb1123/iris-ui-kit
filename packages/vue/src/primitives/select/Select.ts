@@ -61,6 +61,7 @@ export const IrisSelect = defineComponent({
   props: {
     items: { type: Array as PropType<IrisListItem<unknown>[]>, required: true },
     modelValue: { type: null as unknown as PropType<unknown> },
+    multiple: { type: Boolean, default: false },
     defaultValue: { type: null as unknown as PropType<unknown>, default: undefined },
     placeholder: { type: String, default: undefined },
     size: { type: String as PropType<IrisSelectSize>, default: 'md' },
@@ -94,17 +95,38 @@ export const IrisSelect = defineComponent({
     const controlled = computed(() => props.modelValue !== undefined)
     const currentValue = computed(() => (controlled.value ? props.modelValue : internalValue.value))
 
+    const selectedValues = computed<unknown[]>(() => {
+      if (!props.multiple) return []
+      const v = currentValue.value
+      return Array.isArray(v) ? (v as unknown[]) : v !== undefined ? [v] : []
+    })
+
     const selectedItem = computed(
       () => props.items.find((item) => item.value === currentValue.value) ?? null,
     )
 
     const triggerLabel = computed(() => {
+      if (props.multiple) {
+        const items = props.items.filter((it) => selectedValues.value.includes(it.value))
+        if (items.length === 0) return props.placeholder ?? t('select.placeholder')
+        return items.map((it) => it.label ?? String(it.value)).join(', ')
+      }
       const item = selectedItem.value
       if (!item) return props.placeholder ?? t('select.placeholder')
       return item.label ?? String(item.value)
     })
 
     const onSelect = (item: IrisListItem<unknown>) => {
+      if (props.multiple) {
+        const exists = selectedValues.value.includes(item.value)
+        const next = exists
+          ? selectedValues.value.filter((v) => v !== item.value)
+          : [...selectedValues.value, item.value]
+        if (!controlled.value) internalValue.value = next
+        emit('update:modelValue', next)
+        emit('valueChange', next)
+        return // keep popover open for multi-select
+      }
       if (!controlled.value) internalValue.value = item.value
       emit('update:modelValue', item.value)
       emit('valueChange', item.value)
@@ -411,7 +433,9 @@ export const IrisSelect = defineComponent({
                 const opt = list[item.index]
                 if (!opt) return null
                 const active = item.index === activeIndex.value
-                const selected = opt.value === currentValue.value
+                const selected = props.multiple
+                  ? selectedValues.value.includes(opt.value)
+                  : opt.value === currentValue.value
                 return h(
                   'li',
                   {

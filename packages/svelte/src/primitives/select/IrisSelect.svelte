@@ -48,6 +48,7 @@
   let {
     items,
     value = $bindable(),
+    multiple = false,
     defaultValue,
     placeholder,
     size = 'md',
@@ -78,11 +79,21 @@
   let contentEl = $state<HTMLElement | undefined>(undefined)
   let listboxEl = $state<HTMLUListElement | undefined>(undefined)
 
+  const selectedValues = $derived<string[]>(
+    multiple ? (Array.isArray(value) ? (value as string[]) : value !== undefined ? [value as string] : []) : [],
+  )
   const selectedItem = $derived(items.find((item) => item.value === currentValue) ?? null)
   const triggerLabel = $derived(
-    selectedItem
-      ? (selectedItem.label ?? String(selectedItem.value))
-      : (placeholder ?? t('select.placeholder')),
+    multiple
+      ? (() => {
+          const sel = items.filter((it) => selectedValues.includes(it.value as string))
+          return sel.length > 0
+            ? sel.map((it) => it.label ?? String(it.value)).join(', ')
+            : (placeholder ?? t('select.placeholder'))
+        })()
+      : selectedItem
+        ? (selectedItem.label ?? String(selectedItem.value))
+        : (placeholder ?? t('select.placeholder')),
   )
 
   const SIZE_MAP: Record<IrisSelectSize, { padding: string; fontSize: string; minHeight: string }> =
@@ -147,6 +158,16 @@
 
   function selectItem(item: IrisSelectItem): void {
     if (item.disabled) return
+    if (multiple) {
+      const exists = selectedValues.includes(item.value as string)
+      const next = exists
+        ? selectedValues.filter((v) => v !== item.value)
+        : [...selectedValues, item.value as string]
+      if (isControlled) value = next
+      else internalValue = next
+      onValueChange?.(next)
+      return // keep popover open
+    }
     if (isControlled) value = item.value
     else internalValue = item.value
     onValueChange?.(item.value)
@@ -403,7 +424,7 @@
         {#if opt}
           <li
             role="option"
-            aria-selected={opt.value === currentValue ? 'true' : 'false'}
+            aria-selected={multiple ? selectedValues.includes(opt.value as string) : opt.value === currentValue ? 'true' : 'false'}
             aria-disabled={opt.disabled ? 'true' : undefined}
             aria-setsize={list.length}
             aria-posinset={item.index + 1}

@@ -34,6 +34,8 @@ export interface IrisSelectItem<T = unknown> {
 
 export interface IrisSelectProps<T = unknown> {
   items: IrisSelectItem<T>[]
+  /** Allow multiple selection (value becomes an array). */
+  multiple?: boolean
   value?: T
   defaultValue?: T
   /** Framework-neutral change callback. */
@@ -101,6 +103,14 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
   const { t } = useI18n()
 
   const isControlled = (): boolean => props.value !== undefined
+  const selectedValues = (): T[] =>
+    merged.multiple
+      ? Array.isArray(props.value)
+        ? (props.value as T[])
+        : props.value !== undefined
+          ? [props.value as T]
+          : []
+      : []
   const [internalValue, setInternalValue] = createSignal<T | undefined>(merged.defaultValue)
   const currentValue = (): T | undefined =>
     isControlled() ? (props.value as T) : (internalValue() as T | undefined)
@@ -110,6 +120,11 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
   )
 
   const triggerLabel = createMemo(() => {
+    if (merged.multiple) {
+      const items = merged.items.filter((it) => selectedValues().includes(it.value))
+      if (items.length === 0) return merged.placeholder ?? t('select.placeholder')
+      return items.map((it) => it.label ?? String(it.value)).join(', ')
+    }
     const item = selectedItem()
     if (!item) return merged.placeholder ?? t('select.placeholder')
     return item.label ?? String(item.value)
@@ -296,6 +311,16 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
 
   const selectItem = (item: IrisSelectItem<T>): void => {
     if (item.disabled) return
+    if (merged.multiple) {
+      const exists = selectedValues().includes(item.value)
+      const next = exists
+        ? selectedValues().filter((v) => v !== item.value)
+        : [...selectedValues(), item.value]
+      if (!isControlled()) setInternalValue(() => next as unknown as T)
+      props.onValueChange?.(next as unknown as T)
+      props.onChange?.(next as unknown as T)
+      return // keep popover open
+    }
     if (!isControlled()) setInternalValue(() => item.value as T)
     props.onValueChange?.(item.value)
     props.onChange?.(item.value)
@@ -351,7 +376,10 @@ export function IrisSelect<T = unknown>(props: IrisSelectProps<T>): JSX.Element 
             {(item, index) => {
               const i = index()
               const isActive = () => i === activeIndex()
-              const isSelected = () => item.value === currentValue()
+              const isSelected = () =>
+                merged.multiple
+                  ? selectedValues().includes(item.value)
+                  : item.value === currentValue()
               return (
                 <div
                   role="option"

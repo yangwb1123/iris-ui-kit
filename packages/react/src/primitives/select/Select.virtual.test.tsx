@@ -339,3 +339,54 @@ describe('@iris-ui-kit/react IrisSelect virtual listbox', () => {
     expect(listbox()).not.toBeNull()
   })
 })
+
+describe('@iris-ui-kit/react IrisSelect multiple', () => {
+  it('multiple: toggles values into an array, keeps popover open', () => {
+    const onChange = vi.fn()
+    const { getByRole, getAllByRole } = render(
+      <IrisSelect
+        multiple
+        items={[
+          { value: 'a', label: 'A' },
+          { value: 'b', label: 'B' },
+        ]}
+        onValueChange={onChange}
+      />,
+    )
+    fireEvent.click(document.querySelector('[data-iris-select-trigger]')!)
+    fireEvent.click(getAllByRole('option')[0])
+    expect(onChange).toHaveBeenCalledWith(['a'])
+    // second pick appends
+    fireEvent.click(getAllByRole('option')[1])
+    expect(onChange).toHaveBeenLastCalledWith(['a', 'b'])
+  })
+
+  it('multiple: clicking the selected option removes it', () => {
+    const onChange = vi.fn()
+    const { getAllByRole } = render(
+      <IrisSelect
+        multiple
+        value={['a']}
+        items={[{ value: 'a', label: 'A' }]}
+        onValueChange={onChange}
+      />,
+    )
+    fireEvent.click(document.querySelector('[data-iris-select-trigger]')!)
+    fireEvent.click(getAllByRole('option')[0])
+    expect(onChange).toHaveBeenCalledWith([])
+  })
+
+  it('multiple: trigger label joins selected values', () => {
+    const { container } = render(
+      <IrisSelect
+        multiple
+        value={['a', 'b']}
+        items={[
+          { value: 'a', label: 'A' },
+          { value: 'b', label: 'B' },
+        ]}
+      />,
+    )
+    expect(container.querySelector('[data-iris-select-trigger]')!.textContent).toContain('A, B')
+  })
+})

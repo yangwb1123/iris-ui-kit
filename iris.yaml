@@ -63,6 +63,8 @@ filesize:
     # 2026-08-08 能力组合（virtual 窗口化）：Select 实现随 virtual 扩展增长
     - packages/solid/src/primitives/select/IrisSelect.tsx
     - packages/vue/src/primitives/select/Select.ts
+    - packages/react/src/primitives/select/Select.tsx
+    - packages/svelte/src/primitives/select/IrisSelect.svelte
 
 # ── 架构依赖方向门 ──────────────────────────────────────────────────────────
 architecture:

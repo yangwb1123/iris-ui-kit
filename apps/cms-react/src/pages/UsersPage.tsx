@@ -302,7 +302,7 @@ export function UsersPage() {
                 <IrisSelect<UserRole>
                   items={roleItems}
                   value={draft.role}
-                  onValueChange={(role) => setDraft((d) => ({ ...d, role }))}
+                  onValueChange={(role) => setDraft((d) => ({ ...d, role: role as UserRole }))}
                   style={{ width: '100%' }}
                 />
               </IrisFormField>
@@ -310,7 +310,9 @@ export function UsersPage() {
                 <IrisSelect<UserStatus>
                   items={statusItems}
                   value={draft.status}
-                  onValueChange={(status) => setDraft((d) => ({ ...d, status }))}
+                  onValueChange={(status) =>
+                    setDraft((d) => ({ ...d, status: status as UserStatus }))
+                  }
                   style={{ width: '100%' }}
                 />
               </IrisFormField>

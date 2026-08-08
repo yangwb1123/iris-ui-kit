@@ -36100,6 +36100,24 @@
           "description": "Called when a data row is clicked. Interactive child controls stop propagation."
         },
         {
+          "name": "columnDrag",
+          "type": "{",
+          "optional": true,
+          "description": "Column drag-sort (vxe-grid columnDragConfig parity). Reorders leaf columns on drop; parent owns columns (pass the reordered array back)."
+        },
+        {
+          "name": "seq",
+          "type": "boolean",
+          "optional": true,
+          "description": "Render a leading sequence-number column (vxe-grid seqConfig parity)."
+        },
+        {
+          "name": "spanMethod",
+          "type": "(params: { rowIndex: number; columnIndex: number }) => {",
+          "optional": true,
+          "description": "Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }` for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make the cell span adjacent cells (the spanned cells are skipped)."
+        },
+        {
           "name": "rowDrag",
           "type": "{",
           "optional": true,
@@ -36316,6 +36334,24 @@
               "type": "(row: Row, rowIndex: number) => void",
               "optional": true,
               "description": "Called when a data row is clicked. Interactive child controls stop propagation."
+            },
+            {
+              "name": "columnDrag",
+              "type": "{",
+              "optional": true,
+              "description": "Column drag-sort (vxe-grid columnDragConfig parity). Reorders leaf columns on drop; parent owns columns (pass the reordered array back)."
+            },
+            {
+              "name": "seq",
+              "type": "boolean",
+              "optional": true,
+              "description": "Render a leading sequence-number column (vxe-grid seqConfig parity)."
+            },
+            {
+              "name": "spanMethod",
+              "type": "(params: { rowIndex: number; columnIndex: number }) => {",
+              "optional": true,
+              "description": "Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }` for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make the cell span adjacent cells (the spanned cells are skipped)."
             },
             {
               "name": "rowDrag",
@@ -37051,7 +37087,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 37,
+        "propCount": 40,
         "eventCount": 7
       }
     },

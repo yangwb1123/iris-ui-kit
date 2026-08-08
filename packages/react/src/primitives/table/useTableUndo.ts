@@ -35,7 +35,7 @@ export function useTableUndo<T>(
 ): TableUndo<T> {
   const stackRef = React.useRef<UndoStack<T[]> | null>(null)
   if (stackRef.current === null) {
-    stackRef.current = createUndoStack<T[]>({ maxSize: 100 })
+    stackRef.current = createUndoStack<T[]>({ maxHistory: 100 })
   }
   const stack = stackRef.current
   const dataRef = React.useRef(data)
@@ -47,7 +47,7 @@ export function useTableUndo<T>(
   return React.useMemo(
     () => ({
       pushSnapshot() {
-        stack.push(dataRef.current)
+        stack.push([...dataRef.current])
       },
       undo() {
         const snapshot = stack.undo()

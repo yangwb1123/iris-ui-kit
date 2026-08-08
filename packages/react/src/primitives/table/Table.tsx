@@ -160,6 +160,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onCellEdit,
   editConfig,
   rowDrag,
+  columnDrag,
+  seq = false,
+  spanMethod,
   renderDetail,
   rowExpandable,
   defaultExpandedRowKeys,
@@ -353,8 +356,61 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // drag handle that seeds the press. Drop targets are collected on first
   // movement past the threshold (rects are captured once, then reused).
   const rowDragCtrl = React.useMemo(() => createSortable(), [])
+  // ── Column drag-sort (composed over core createSortable) ────────────────
+  const colDragCtrl = React.useMemo(() => createSortable(), [])
+  const colDragState = useStore(colDragCtrl)
+  const colRectsRef = React.useRef<SortableRect[]>([])
+  const colDragActive = colDragState.activeId
+  const colDragOver = colDragState.overId
+
+  const handleColDragPointerDown = (e: React.PointerEvent, colKey: string) => {
+    if (!columnDrag || e.button !== 0) return
+    e.preventDefault()
+    e.stopPropagation()
+    colDragCtrl.press(colKey, e.clientX, e.clientY)
+  }
+
+  const handleColDragPointerMove = (e: React.PointerEvent) => {
+    if (!columnDrag) return
+    if (colDragCtrl.isPending()) {
+      const started = colDragCtrl.tryStart(e.clientX, e.clientY)
+      if (started) {
+        const rects: SortableRect[] = []
+        rootRef.current?.querySelectorAll('[data-iris-table-header]').forEach((el) => {
+          const r = (el as HTMLElement).getBoundingClientRect()
+          const id = (el as HTMLElement).getAttribute('data-iris-table-header')
+          if (id) rects.push({ id, left: r.left, top: r.top, width: r.width, height: r.height })
+        })
+        colRectsRef.current = rects
+      }
+    }
+    if (colDragCtrl.getState().activeId !== null) {
+      colDragCtrl.moveOver({ x: e.clientX, y: e.clientY }, colRectsRef.current)
+    }
+  }
+
+  const handleColDragPointerUp = () => {
+    if (!columnDrag) return
+    if (colDragCtrl.isPending()) {
+      colDragCtrl.cancel()
+      return
+    }
+    const { activeId, overId } = colDragCtrl.end()
+    if (activeId !== null && overId !== null && activeId !== overId) {
+      const next = [...leafColumns]
+      const from = next.findIndex((c) => c.key === activeId)
+      const to = next.findIndex((c) => c.key === overId)
+      if (from >= 0 && to >= 0 && from !== to) {
+        const [moved] = next.splice(from, 1)
+        next.splice(to, 0, moved)
+        columnDrag.onReorder(next as IrisTableColumn<Row>[])
+      }
+    }
+    colRectsRef.current = []
+  }
   const rowDragState = useStore(rowDragCtrl)
   const rowRectsRef = React.useRef<SortableRect[]>([])
+  const spanOccupyRef = React.useRef<Set<string>>(new Set())
   const rowDragActiveId = rowDragState.activeId
   const rowDragOverId = rowDragState.overId
 
@@ -745,6 +801,21 @@ export function IrisTable<Row extends Record<string, unknown>>({
             </span>
           </div>
         ) : null}
+        {seq ? (
+          <div
+            role="cell"
+            data-iris-table-cell="__seq"
+            style={{
+              ...baseCellStyle,
+              justifyContent: 'center',
+              color: 'var(--iris-muted)',
+              borderBottom: borderStyle,
+              userSelect: 'none',
+            }}
+          >
+            {idx + 1}
+          </div>
+        ) : null}
         {hasDetail ? (
           <div
             role="cell"
@@ -804,6 +875,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
         ) : null}
         {leafColumns.map((col, ci) => {
           if (visibleColSet && !visibleColSet.has(ci)) return null
+          const spanKey = `${idx}:${ci}`
+          if (spanMethod && spanOccupyRef.current.has(spanKey)) return null
+          const span = spanMethod?.({ rowIndex: idx, columnIndex: ci })
+          const rowspan = span?.rowspan ?? 1
+          const colspan = span?.colspan ?? 1
+          if (rowspan > 1) {
+            for (let r = 1; r < rowspan; r++) spanOccupyRef.current.add(`${idx + r}:${ci}`)
+          }
+          if (colspan > 1) {
+            for (let c = 1; c < colspan; c++) spanOccupyRef.current.add(`${idx}:${ci + c}`)
+          }
           const raw = getCellValue(row, col)
           const editing = cellEdit.isEditing(cellId(k, col.key), col.key)
           return (
@@ -856,6 +938,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
               style={{
                 ...baseCellStyle,
                 ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
+                ...(colspan > 1 ? { gridColumnEnd: `span ${colspan}` } : null),
+                ...(rowspan > 1 ? { gridRowEnd: `span ${rowspan}` } : null),
                 justifyContent:
                   (col.align ?? (typeof getCellValue(row, col) === 'number' ? 'right' : 'left')) ===
                   'right'
@@ -996,8 +1080,22 @@ export function IrisTable<Row extends Record<string, unknown>>({
             }
           : undefined
       }
-      onPointerMove={rowDrag ? handleRowDragPointerMove : undefined}
-      onPointerUp={rowDrag ? handleRowDragPointerUp : undefined}
+      onPointerMove={
+        rowDrag || columnDrag
+          ? (e) => {
+              handleRowDragPointerMove(e)
+              handleColDragPointerMove(e)
+            }
+          : undefined
+      }
+      onPointerUp={
+        rowDrag || columnDrag
+          ? () => {
+              handleRowDragPointerUp()
+              handleColDragPointerUp()
+            }
+          : undefined
+      }
       onPointerLeave={rowDrag ? handleRowDragPointerLeave : undefined}
       onScroll={
         columnVirtualization
@@ -1083,6 +1181,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   role="columnheader"
                   data-iris-table-header={col.key}
                   data-iris-table-header-group={isLeaf ? undefined : ''}
+                  data-iris-col-drag-active={colDragActive === col.key ? 'true' : undefined}
+                  data-iris-col-drag-over={colDragOver === col.key ? 'true' : undefined}
+                  onPointerDown={
+                    columnDrag && isLeaf ? (e) => handleColDragPointerDown(e, col.key) : undefined
+                  }
                   aria-colspan={cell.colSpan}
                   aria-sort={
                     isSortKey
@@ -1196,6 +1299,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 onKeyDown={col.sortable ? (e) => onHeaderKeyDown(e, col) : undefined}
                 data-iris-table-header={col.key}
                 data-iris-table-pinned={col.pinned}
+                data-iris-col-drag-active={colDragActive === col.key ? 'true' : undefined}
+                data-iris-col-drag-over={colDragOver === col.key ? 'true' : undefined}
+                onPointerDown={columnDrag ? (e) => handleColDragPointerDown(e, col.key) : undefined}
                 data-sortable={col.sortable ? 'true' : undefined}
                 data-sort-direction={dir}
                 style={{
@@ -1302,6 +1408,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         />
       ) : (
         bodyData.map((row, idx) => {
+          if (spanMethod && idx === 0) spanOccupyRef.current.clear()
           const main = renderRow(row, idx, undefined, flatTree?.[idx])
           if (
             !hasDetail ||

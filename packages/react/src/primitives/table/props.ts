@@ -34,6 +34,28 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   /** Called when a data row is clicked. Interactive child controls stop propagation. */
   onRowClick?: (row: Row, rowIndex: number) => void
   /** Called when an inline-editable cell is committed with a changed value. */
+  /**
+   * Column drag-sort (vxe-grid columnDragConfig parity). Reorders leaf
+   * columns on drop; parent owns columns (pass the reordered array back).
+   */
+  columnDrag?: {
+    /** Called with the reordered column array after a drop. */
+    onReorder: (columns: IrisTableColumn<Row>[]) => void
+  }
+  /** Render a leading sequence-number column (vxe-grid seqConfig parity). */
+  seq?: boolean
+  /**
+   * Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }`
+   * for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make
+   * the cell span adjacent cells (the spanned cells are skipped).
+   */
+  spanMethod?: (params: { rowIndex: number; columnIndex: number }) =>
+    | {
+        rowspan?: number
+        colspan?: number
+      }
+    | null
+    | undefined
   /** Row drag-sort configuration (composed over core createSortable). */
   rowDrag?: {
     /** Reorder callback — receives the reordered row array (parent owns data). */

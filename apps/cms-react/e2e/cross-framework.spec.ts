@@ -36,14 +36,7 @@ async function openSettings(page: Page): Promise<void> {
 }
 
 type WorkspaceRoute =
-  | 'articles'
-  | 'categories'
-  | 'media'
-  | 'roles'
-  | 'overview'
-  | 'reports'
-  | 'calendar'
-  | 'audit-log'
+  'articles' | 'categories' | 'media' | 'roles' | 'overview' | 'reports' | 'calendar' | 'audit-log'
 
 interface WorkspaceNavigation {
   route: WorkspaceRoute

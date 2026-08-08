@@ -4899,7 +4899,8 @@
             "solid",
             "outline",
             "ghost",
-            "link"
+            "link",
+            "danger"
           ],
           "default": "solid"
         },
@@ -4981,7 +4982,8 @@
                 "solid",
                 "outline",
                 "ghost",
-                "link"
+                "link",
+                "danger"
               ],
               "default": "solid"
             },
@@ -5077,7 +5079,8 @@
                 "solid",
                 "outline",
                 "ghost",
-                "link"
+                "link",
+                "danger"
               ]
             },
             {
@@ -5146,7 +5149,8 @@
                 "solid",
                 "outline",
                 "ghost",
-                "link"
+                "link",
+                "danger"
               ]
             },
             {
@@ -5236,7 +5240,8 @@
                 "solid",
                 "outline",
                 "ghost",
-                "link"
+                "link",
+                "danger"
               ],
               "default": "solid"
             },
@@ -8506,6 +8511,12 @@
               "optional": true
             },
             {
+              "name": "allowCommit",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "id",
               "type": "string",
               "optional": true
@@ -8517,6 +8528,7 @@
             }
           ],
           "events": [
+            "commit",
             "update:modelValue"
           ],
           "slots": [],
@@ -17043,6 +17055,7 @@
           "name": "status",
           "type": "IrisGaugeStatus",
           "optional": true,
+          "description": "Semantic status — drives the stroke color. Explicit by design (honesty preserved): for threshold-based decision support, derive it yourself, e.g. `status={value > 80 ? 'danger' : value > 60 ? 'warning' : 'success'}`.",
           "enum": [
             "default",
             "success",
@@ -17117,6 +17130,7 @@
               "name": "status",
               "type": "IrisGaugeStatus",
               "optional": true,
+              "description": "Semantic status — drives the stroke color. Explicit by design (honesty preserved): for threshold-based decision support, derive it yourself, e.g. `status={value > 80 ? 'danger' : value > 60 ? 'warning' : 'success'}`.",
               "enum": [
                 "default",
                 "success",
@@ -17262,6 +17276,7 @@
               "name": "status",
               "type": "IrisGaugeStatus",
               "optional": true,
+              "description": "Semantic status (explicit by design; derive thresholds in the consumer, e.g. value > 80 ? 'danger' : 'success').",
               "enum": [
                 "default",
                 "success",
@@ -17343,8 +17358,7 @@
                 "success",
                 "danger",
                 "warning"
-              ],
-              "default": "default"
+              ]
             },
             {
               "name": "showValue",
@@ -34436,6 +34450,17 @@
           "description": "Trend magnitude text (e.g. \"12%\")."
         },
         {
+          "name": "trendTone",
+          "type": "IrisStatisticTone",
+          "optional": true,
+          "description": "Override the trend arrow color (defaults to direction semantics: up=success, down=danger). Use for cost/risk KPIs where \"up\" is bad.",
+          "enum": [
+            "success",
+            "danger",
+            "neutral"
+          ]
+        },
+        {
           "name": "size",
           "type": "IrisStatisticSize",
           "optional": true,
@@ -34504,6 +34529,17 @@
               "type": "React.ReactNode",
               "optional": true,
               "description": "Trend magnitude text (e.g. \"12%\")."
+            },
+            {
+              "name": "trendTone",
+              "type": "IrisStatisticTone",
+              "optional": true,
+              "description": "Override the trend arrow color (defaults to direction semantics: up=success, down=danger). Use for cost/risk KPIs where \"up\" is bad.",
+              "enum": [
+                "success",
+                "danger",
+                "neutral"
+              ]
             },
             {
               "name": "size",
@@ -34587,6 +34623,16 @@
               "optional": true
             },
             {
+              "name": "trendTone",
+              "type": "IrisStatisticTone",
+              "optional": true,
+              "enum": [
+                "success",
+                "danger",
+                "neutral"
+              ]
+            },
+            {
               "name": "size",
               "type": "IrisStatisticSize",
               "optional": true,
@@ -34640,6 +34686,16 @@
               "enum": [
                 "up",
                 "down",
+                "neutral"
+              ]
+            },
+            {
+              "name": "trendTone",
+              "type": "IrisStatisticTone",
+              "optional": true,
+              "enum": [
+                "success",
+                "danger",
                 "neutral"
               ]
             },
@@ -34706,6 +34762,11 @@
               "optional": true
             },
             {
+              "name": "trendTone",
+              "type": "unknown",
+              "optional": true
+            },
+            {
               "name": "size",
               "type": "unknown",
               "optional": true
@@ -34730,7 +34791,7 @@
         "trendValue"
       ],
       "quality": {
-        "propCount": 10,
+        "propCount": 11,
         "eventCount": 0
       }
     },
@@ -35726,6 +35787,12 @@
           "description": "Custom error-state node."
         },
         {
+          "name": "onRetry",
+          "type": "() => void",
+          "optional": true,
+          "description": "Fired by the built-in Retry button in the error state row."
+        },
+        {
           "name": "style",
           "type": "CSSProperties",
           "optional": true
@@ -35926,6 +35993,12 @@
               "description": "Custom error-state node."
             },
             {
+              "name": "onRetry",
+              "type": "() => void",
+              "optional": true,
+              "description": "Fired by the built-in Retry button in the error state row."
+            },
+            {
               "name": "style",
               "type": "CSSProperties",
               "optional": true
@@ -35940,6 +36013,7 @@
             "onCellEdit",
             "onColumnWidthsChange",
             "onExpandedRowsChange",
+            "onRetry",
             "onRowClick",
             "onSelectionChange",
             "onSortChange"
@@ -36023,6 +36097,11 @@
               "default": "false"
             },
             {
+              "name": "onRetry",
+              "type": "(() =",
+              "optional": true
+            },
+            {
               "name": "columnVirtualization",
               "type": "boolean",
               "optional": true,
@@ -36054,12 +36133,20 @@
               "name": "defaultExpandedRowKeys",
               "type": "Array<string | number>",
               "optional": true
+            },
+            {
+              "name": "treeSelectionCascade",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             }
           ],
           "events": [
             "cellEdit",
             "expandedRowsChange",
+            "onRetry",
             "rowClick",
+            "rowDblclick",
             "update:columnWidths",
             "update:selection",
             "update:sort"
@@ -36177,6 +36264,12 @@
               "optional": true
             },
             {
+              "name": "onRetry",
+              "type": "() => void",
+              "optional": true,
+              "description": "Fired by the built-in Retry button in the error state row."
+            },
+            {
               "name": "resizableColumns",
               "type": "boolean",
               "optional": true,
@@ -36264,6 +36357,7 @@
             "onCellEdit",
             "onColumnWidthsChange",
             "onExpandedRowsChange",
+            "onRetry",
             "onRowClick",
             "onSelectionChange",
             "onSortChange"
@@ -36377,6 +36471,12 @@
               "optional": true
             },
             {
+              "name": "onRetry",
+              "type": "() => void",
+              "optional": true,
+              "description": "Fired by the built-in Retry button in the error state row."
+            },
+            {
               "name": "virtualScroll",
               "type": "IrisTableVirtualOptions",
               "optional": true
@@ -36479,6 +36579,7 @@
             "onCellEdit",
             "onColumnWidthsChange",
             "onExpandedRowsChange",
+            "onRetry",
             "onRowClick",
             "onUpdateSelection",
             "onUpdateSort"
@@ -36509,7 +36610,8 @@
         "onColumnWidthsChange",
         "onRowClick",
         "onCellEdit",
-        "onExpandedRowsChange"
+        "onExpandedRowsChange",
+        "onRetry"
       ],
       "slots": [
         "emptyState",
@@ -36517,8 +36619,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 34,
-        "eventCount": 6
+        "propCount": 35,
+        "eventCount": 7
       }
     },
     {
@@ -38577,6 +38679,14 @@
           "name": "position",
           "type": "IrisToastPosition",
           "optional": true,
+          "enum": [
+            "top-left",
+            "top-right",
+            "top-center",
+            "bottom-left",
+            "bottom-right",
+            "bottom-center"
+          ],
           "default": "top-right"
         },
         {
@@ -38600,6 +38710,14 @@
               "name": "position",
               "type": "IrisToastPosition",
               "optional": true,
+              "enum": [
+                "top-left",
+                "top-right",
+                "top-center",
+                "bottom-left",
+                "bottom-right",
+                "bottom-center"
+              ],
               "default": "top-right"
             },
             {
@@ -38628,7 +38746,15 @@
               "name": "position",
               "type": "IrisToastPosition",
               "optional": true,
-              "default": "top-right"
+              "default": "top-right",
+              "enum": [
+                "top-left",
+                "top-right",
+                "top-center",
+                "bottom-left",
+                "bottom-right",
+                "bottom-center"
+              ]
             },
             {
               "name": "teleport",
@@ -38658,7 +38784,15 @@
             {
               "name": "position",
               "type": "IrisToastPosition",
-              "optional": true
+              "optional": true,
+              "enum": [
+                "top-left",
+                "top-right",
+                "top-center",
+                "bottom-left",
+                "bottom-right",
+                "bottom-center"
+              ]
             },
             {
               "name": "portalTarget",
@@ -38691,6 +38825,14 @@
               "name": "position",
               "type": "IrisToastPosition",
               "optional": true,
+              "enum": [
+                "top-left",
+                "top-right",
+                "top-center",
+                "bottom-left",
+                "bottom-right",
+                "bottom-center"
+              ],
               "default": "top-right"
             },
             {
@@ -42093,18 +42235,41 @@
       "iris.primary.foreground",
       "iris.accent",
       "iris.danger",
+      "iris.danger.foreground",
       "iris.danger.subtle",
       "iris.success",
+      "iris.success.foreground",
       "iris.warning",
+      "iris.warning.foreground",
       "iris.info",
+      "iris.info.foreground",
+      "iris.on.color",
       "iris.muted.subtle",
       "iris.surface.selected",
+      "iris.surface.floating",
       "iris.primary.ghost",
+      "iris.backdrop",
       "iris.font.family",
       "iris.font.mono",
+      "iris.font.size.xs",
       "iris.font.size.sm",
       "iris.font.size.md",
-      "iris.font.size.lg"
+      "iris.font.size.base",
+      "iris.font.size.lg",
+      "iris.font.size.xl",
+      "iris.font.size.2xl",
+      "iris.font.size.3xl",
+      "iris.font.size.4xl",
+      "iris.font.weight.regular",
+      "iris.font.weight.medium",
+      "iris.font.weight.semibold",
+      "iris.font.weight.bold",
+      "iris.font.line.height.sm",
+      "iris.font.line.height.md",
+      "iris.font.line.height.lg",
+      "iris.font.letter.spacing.tight",
+      "iris.font.letter.spacing.normal",
+      "iris.font.letter.spacing.wide"
     ],
     "spacing": [
       "iris.gap.sm",
@@ -42114,7 +42279,20 @@
       "iris.padding.md",
       "iris.padding.lg",
       "iris.masonry.gap",
-      "iris.breadcrumb.gap"
+      "iris.breadcrumb.gap",
+      "iris.space.xxs",
+      "iris.space.xs",
+      "iris.space.sm",
+      "iris.space.md",
+      "iris.space.lg",
+      "iris.space.xl",
+      "iris.space.2xl",
+      "iris.space.3xl",
+      "iris.space.4xl",
+      "iris.space.5xl",
+      "iris.control.height.sm",
+      "iris.control.height.md",
+      "iris.control.height.lg"
     ],
     "radii": [
       "iris.radius.sm",
@@ -42124,7 +42302,8 @@
     "shadows": [
       "iris.shadow.sm",
       "iris.shadow.md",
-      "iris.shadow.lg"
+      "iris.shadow.lg",
+      "iris.shadow.xl"
     ],
     "zIndex": [
       "iris.z.dropdown",
@@ -42154,18 +42333,41 @@
       "iris.primary.foreground",
       "iris.accent",
       "iris.danger",
+      "iris.danger.foreground",
       "iris.danger.subtle",
       "iris.success",
+      "iris.success.foreground",
       "iris.warning",
+      "iris.warning.foreground",
       "iris.info",
+      "iris.info.foreground",
+      "iris.on.color",
       "iris.muted.subtle",
       "iris.surface.selected",
+      "iris.surface.floating",
       "iris.primary.ghost",
+      "iris.backdrop",
       "iris.font.family",
       "iris.font.mono",
+      "iris.font.size.xs",
       "iris.font.size.sm",
       "iris.font.size.md",
+      "iris.font.size.base",
       "iris.font.size.lg",
+      "iris.font.size.xl",
+      "iris.font.size.2xl",
+      "iris.font.size.3xl",
+      "iris.font.size.4xl",
+      "iris.font.weight.regular",
+      "iris.font.weight.medium",
+      "iris.font.weight.semibold",
+      "iris.font.weight.bold",
+      "iris.font.line.height.sm",
+      "iris.font.line.height.md",
+      "iris.font.line.height.lg",
+      "iris.font.letter.spacing.tight",
+      "iris.font.letter.spacing.normal",
+      "iris.font.letter.spacing.wide",
       "iris.gap.sm",
       "iris.gap.md",
       "iris.gap.lg",
@@ -42174,12 +42376,26 @@
       "iris.padding.lg",
       "iris.masonry.gap",
       "iris.breadcrumb.gap",
+      "iris.space.xxs",
+      "iris.space.xs",
+      "iris.space.sm",
+      "iris.space.md",
+      "iris.space.lg",
+      "iris.space.xl",
+      "iris.space.2xl",
+      "iris.space.3xl",
+      "iris.space.4xl",
+      "iris.space.5xl",
+      "iris.control.height.sm",
+      "iris.control.height.md",
+      "iris.control.height.lg",
       "iris.radius.sm",
       "iris.radius.md",
       "iris.radius.lg",
       "iris.shadow.sm",
       "iris.shadow.md",
       "iris.shadow.lg",
+      "iris.shadow.xl",
       "iris.z.dropdown",
       "iris.z.sticky",
       "iris.z.fixed",

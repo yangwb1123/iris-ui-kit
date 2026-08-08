@@ -1,10 +1,5 @@
 export type SkinErrorCode =
-  | 'validate'
-  | 'cycle'
-  | 'missing-parent'
-  | 'incomplete'
-  | 'load'
-  | 'catalog'
+  'validate' | 'cycle' | 'missing-parent' | 'incomplete' | 'load' | 'catalog'
 
 export interface SkinError {
   code: SkinErrorCode

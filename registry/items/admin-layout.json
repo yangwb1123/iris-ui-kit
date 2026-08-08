@@ -11,16 +11,16 @@
   },
   "dependenciesByFramework": {
     "react": {
-      "@iris-ui-kit/react": "^0.2.0"
+      "@iris-ui-kit/react": "^0.2.2"
     },
     "vue": {
-      "@iris-ui-kit/vue": "^0.2.0"
+      "@iris-ui-kit/vue": "^0.2.21"
     },
     "solid": {
-      "@iris-ui-kit/solid": "^0.2.0"
+      "@iris-ui-kit/solid": "^0.2.2"
     },
     "svelte": {
-      "@iris-ui-kit/svelte": "^0.2.0"
+      "@iris-ui-kit/svelte": "^0.2.2"
     }
   },
   "files": [

@@ -18,14 +18,7 @@ export type { FormValues } from '@iris-ui-kit/core'
  */
 
 export type FieldType =
-  | 'text'
-  | 'number'
-  | 'email'
-  | 'password'
-  | 'textarea'
-  | 'select'
-  | 'checkbox'
-  | 'array'
+  'text' | 'number' | 'email' | 'password' | 'textarea' | 'select' | 'checkbox' | 'array'
 
 export interface FieldOption {
   label: string

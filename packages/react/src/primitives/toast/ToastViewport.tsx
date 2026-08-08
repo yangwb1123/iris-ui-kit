@@ -12,12 +12,7 @@ import {
 import { useI18n } from '../../i18n'
 
 export type IrisToastPosition =
-  | 'top-left'
-  | 'top-right'
-  | 'top-center'
-  | 'bottom-left'
-  | 'bottom-right'
-  | 'bottom-center'
+  'top-left' | 'top-right' | 'top-center' | 'bottom-left' | 'bottom-right' | 'bottom-center'
 
 const VARIANT_BORDER: Record<IrisToastVariant, string> = {
   default: 'var(--iris-border)',

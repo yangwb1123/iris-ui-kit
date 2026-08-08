@@ -118,14 +118,11 @@ export function resolveSkin(skin: Skin, registry: SkinLookup): ResolvedSkin {
   ) as Record<RadiusToken, number>
   // Optional sections — not required (no missing entry for these)
   const shadows = collectOptionalTokens(tokens, SHADOW_TOKENS, 'string') as
-    | Record<ShadowToken, string>
-    | undefined
+    Record<ShadowToken, string> | undefined
   const zIndex = collectOptionalTokens(tokens, ZINDEX_TOKENS, 'number') as
-    | Record<ZIndexToken, number>
-    | undefined
+    Record<ZIndexToken, number> | undefined
   const transitions = collectOptionalTokens(tokens, TRANSITION_TOKENS, 'string') as
-    | Record<TransitionToken, string>
-    | undefined
+    Record<TransitionToken, string> | undefined
   if (missing.length > 0) {
     throw new SkinResolutionError(
       skinError('incomplete', `skin "${skin.id}" missing tokens: ${missing.join(', ')}`, {

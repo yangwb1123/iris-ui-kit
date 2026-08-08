@@ -1,14 +1,7 @@
 import { createSignal, mergeProps, splitProps, For, type JSX } from 'solid-js'
 
 export type IrisResizableHandle =
-  | 'top'
-  | 'right'
-  | 'bottom'
-  | 'left'
-  | 'top-left'
-  | 'top-right'
-  | 'bottom-left'
-  | 'bottom-right'
+  'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
 export interface IrisResizableSize {
   width: number

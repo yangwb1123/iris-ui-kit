@@ -120,11 +120,11 @@ iris-ui is a **well-engineered, token-disciplined** library: semantic color toke
 
 ### Recommendations
 
-| #   | Action                                                                                                                | Value                     | Effort                                                               |
+| # | Action | Value | Effort |
 | --- | --------------------------------------------------------------------------------------------------------------------- | ------------------------- | -------------------------------------------------------------------- | --------------------------- | --- |
 | R12 | Add `tone?: 'positive'                                                                                                | 'negative'                | 'neutral'`(or`trendColor`) to Statistic, decoupling arrow from color | High (business correctness) | Low |
-| R13 | Add `thresholds?: {from, to, status}[]` to Gauge/ProgressCircle for auto status (with manual override still possible) | Medium (decision support) | Low                                                                  |
-| R14 | Gauge: default `format` to show raw value + unit (consumer-supplied), keep percent in `aria-valuetext` only           | Medium (honesty)          | Very low                                                             |
+| R13 | Add `thresholds?: {from, to, status}[]` to Gauge/ProgressCircle for auto status (with manual override still possible) | Medium (decision support) | Low |
+| R14 | Gauge: default `format` to show raw value + unit (consumer-supplied), keep percent in `aria-valuetext` only | Medium (honesty) | Very low |
 
 ---
 
@@ -187,13 +187,13 @@ _Spec numbers from `ui-specs/component-spec.md` + `tokens.json`; the library del
 
 ### Recommendations
 
-| #   | Action                                                                                                                                                                                      | Value                                   | Effort                                                     |
+| # | Action | Value | Effort |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------- | ------ | --- |
-| R19 | Build Button on `--iris-control-height-*` (sm:28/md:34/lg:40 is the library's own ladder) so md≈34, and document the divergence from the 40px spec in one place                             | High (consistency + predictable layout) | Low                                                        |
-| R20 | Card: align with spec (padding 20/radius 12/shadow level 1) **or** bump spec-visible tokens (`radius-lg` adoption) — the current state matches neither spec nor the token ladder's top tier | Medium                                  | Low                                                        |
+| R19 | Build Button on `--iris-control-height-*` (sm:28/md:34/lg:40 is the library's own ladder) so md≈34, and document the divergence from the 40px spec in one place | High (consistency + predictable layout) | Low |
+| R20 | Card: align with spec (padding 20/radius 12/shadow level 1) **or** bump spec-visible tokens (`radius-lg` adoption) — the current state matches neither spec nor the token ladder's top tier | Medium | Low |
 | R21 | Dialog: add `size="sm                                                                                                                                                                       | md                                      | lg"` preset (420/560/720) + padding 24; Drawer default 480 | Medium | Low |
-| R22 | Table: add `rowHeight` (default 48, compact 40) — also stabilizes virtual scrolling math                                                                                                    | Medium                                  | Low-Medium                                                 |
-| R23 | Input: `data-state="readonly"` + surface-bg styling                                                                                                                                         | Low                                     | Very low                                                   |
+| R22 | Table: add `rowHeight` (default 48, compact 40) — also stabilizes virtual scrolling math | Medium | Low-Medium |
+| R23 | Input: `data-state="readonly"` + surface-bg styling | Low | Very low |
 
 ---
 

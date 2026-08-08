@@ -4,13 +4,7 @@ export type Framework = 'react' | 'vue' | 'solid' | 'svelte'
 export const ALL_FRAMEWORKS: Framework[] = ['react', 'vue', 'solid', 'svelte']
 
 export type ComponentLayer =
-  | 'layer-0'
-  | 'layer-1'
-  | 'layer-2'
-  | 'layer-3'
-  | 'layer-4'
-  | 'behavior'
-  | 'plugin'
+  'layer-0' | 'layer-1' | 'layer-2' | 'layer-3' | 'layer-4' | 'behavior' | 'plugin'
 
 export type ComponentGroup =
   | 'primitives'

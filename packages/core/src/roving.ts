@@ -61,14 +61,7 @@ export interface GridCell {
 
 /** Keys that move focus in a `role="grid"` (WAI-ARIA grid pattern). */
 export type GridNavKey =
-  | 'ArrowUp'
-  | 'ArrowDown'
-  | 'ArrowLeft'
-  | 'ArrowRight'
-  | 'Home'
-  | 'End'
-  | 'PageUp'
-  | 'PageDown'
+  'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight' | 'Home' | 'End' | 'PageUp' | 'PageDown'
 
 export interface GridNavOptions {
   rowCount: number

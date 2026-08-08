@@ -110,12 +110,7 @@ export type ShadowToken = (typeof SHADOW_TOKENS)[number]
 export type ZIndexToken = (typeof ZINDEX_TOKENS)[number]
 export type TransitionToken = (typeof TRANSITION_TOKENS)[number]
 export type AnyToken =
-  | ColorToken
-  | SpacingToken
-  | RadiusToken
-  | ShadowToken
-  | ZIndexToken
-  | TransitionToken
+  ColorToken | SpacingToken | RadiusToken | ShadowToken | ZIndexToken | TransitionToken
 
 export const ALL_TOKEN_NAMES: readonly AnyToken[] = [
   ...COLOR_TOKENS,

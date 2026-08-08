@@ -21,8 +21,7 @@
       <h4 style="margin: 0 0 8px">Submitted Values</h4>
       <pre
         style="margin: 0; font-size: 13px; white-space: pre-wrap; color: var(--iris-foreground)"
-        >{{ JSON.stringify(submitted, null, 2) }}</pre
-      >
+        >{{ JSON.stringify(submitted, null, 2) }}</pre>
     </div>
   </div>
 </template>

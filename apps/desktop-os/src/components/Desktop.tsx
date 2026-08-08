@@ -53,9 +53,10 @@ function DesktopInner() {
   const [menu, setMenu] = React.useState<{ x: number; y: number } | null>(null)
 
   const desktopMenuItems: MenuItem[] = [
-    ...OS_ORDER.map(
-      (id): MenuItem => ({ label: `Use ${CHROMES[id].label}`, onClick: () => setOs(id) }),
-    ),
+    ...OS_ORDER.map((id): MenuItem => ({
+      label: `Use ${CHROMES[id].label}`,
+      onClick: () => setOs(id),
+    })),
     { separator: true },
     { label: 'Display settings', onClick: () => open('settings') },
     { label: 'Refresh', onClick: () => setMenu(null) },

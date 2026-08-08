@@ -271,8 +271,7 @@ export function createMachine<TState extends string, TContext, TEvent extends Ma
     const parent = nodeOf(current.value)
     const transition = (child?.on?.[event.type as TEvent['type']] ??
       parent?.on?.[event.type as TEvent['type']]) as
-      | Transition<TState, TContext, TEvent>
-      | undefined
+      Transition<TState, TContext, TEvent> | undefined
     if (!transition) return
     if (transition.guard && !transition.guard(current.context, event)) return
     applyTransition(transition, event)

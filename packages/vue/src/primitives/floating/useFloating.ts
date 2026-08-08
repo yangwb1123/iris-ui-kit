@@ -182,11 +182,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
   const arrowSide = computed(
     () =>
       OPPOSITE[finalPlacement.value.split('-')[0]] as
-        | 'top'
-        | 'right'
-        | 'bottom'
-        | 'left'
-        | undefined,
+        'top' | 'right' | 'bottom' | 'left' | undefined,
   )
 
   const floatingStyles = computed<Record<string, string>>(() => ({

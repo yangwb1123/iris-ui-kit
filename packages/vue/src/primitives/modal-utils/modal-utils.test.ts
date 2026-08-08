@@ -68,8 +68,7 @@ const Trap = defineComponent({
       container,
       active: props.active as unknown as Ref<boolean>,
       returnFocusTo: props.returnFocusTo as unknown as
-        | Ref<HTMLElement | null | undefined>
-        | undefined,
+        Ref<HTMLElement | null | undefined> | undefined,
       initialFocus: false,
     })
     return () => h('div', { ref: container }, [h('button', { type: 'button' }, 'inside')])

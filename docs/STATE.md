@@ -75,8 +75,8 @@ Manifest 与文档参考生成物均已通过生成前后内容一致性检查�
 
 ## 2026-08-07 设计系统统一迭代（ai-batch-runner 驱动）
 
-- tokens 补全产品级刻度：font.size 9 档（xs~4xl）+ weight/line-height/
-  letter-spacing；space.xxs~5xl 4pt 刻度 + control.height；shadow.xl；
+- tokens 补全产品级刻度：font.size 9 档（xs~~4xl）+ weight/line-height/
+  letter-spacing；space.xxs~~5xl 4pt 刻度 + control.height；shadow.xl；
   on.color / warning.foreground（对比度纪律）；font.size.md 15→14、
   lg 18→16（消费面仅 drawer/charts）。
 - 全仓 589 处设计违规归零（裸字号/魔法间距/fallback 漂移/硬编码阴影/

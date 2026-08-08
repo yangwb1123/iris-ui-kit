@@ -54,6 +54,7 @@ const CONSUMER_RUNTIME_DEPENDENCIES = Object.fromEntries([
 ])
 const CONSUMER_DEV_DEPENDENCIES = Object.fromEntries([
   pinnedInstalledPackage('node_modules', 'typescript'),
+  pinnedInstalledPackage('node_modules', 'eslint'),
   pinnedInstalledPackage('node_modules', '@types', 'node'),
   pinnedInstalledPackage('packages', 'react', 'node_modules', '@types', 'react'),
   pinnedInstalledPackage('packages', 'react', 'node_modules', '@types', 'react-dom'),
@@ -265,7 +266,7 @@ async function run() {
     )
     const install = spawnSync(
       'npm',
-      ['install', '--include=dev', '--prefer-offline', '--no-audit', '--no-fund'],
+      ['install', '--include=dev', '--prefer-offline', '--no-audit', '--no-fund', '--legacy-peer-deps'],
       {
         cwd: scratchDir,
         encoding: 'utf8',

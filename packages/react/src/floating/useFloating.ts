@@ -185,11 +185,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     right: 'left',
   }
   const arrowSide = OPPOSITE[finalPlacement.split('-')[0]] as
-    | 'top'
-    | 'right'
-    | 'bottom'
-    | 'left'
-    | undefined
+    'top' | 'right' | 'bottom' | 'left' | undefined
 
   return { x, y, strategy, finalPlacement, floatingStyles, update, arrowX, arrowY, arrowSide }
 }

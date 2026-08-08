@@ -91,16 +91,14 @@ export function useDesktopCommands(): ComputedRef<Command[]> {
     ]
 
     const systemCommands: Command[] = [
-      ...OS_ORDER.map(
-        (id): Command => ({
-          id: `system:os:${id}`,
-          title: `Switch to ${CHROMES[id].label}`,
-          keywords: `${CHROMES[id].label} skin theme os switch windows macos`,
-          group: 'System',
-          icon: '🖥️',
-          run: () => setOs(id),
-        }),
-      ),
+      ...OS_ORDER.map((id): Command => ({
+        id: `system:os:${id}`,
+        title: `Switch to ${CHROMES[id].label}`,
+        keywords: `${CHROMES[id].label} skin theme os switch windows macos`,
+        group: 'System',
+        icon: '🖥️',
+        run: () => setOs(id),
+      })),
       {
         id: 'system:appstore',
         title: 'Open App Store',

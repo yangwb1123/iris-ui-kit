@@ -88,7 +88,9 @@ const BUDGETS = {
   // and attributes and escapes XML text/attribute values. This is deliberate
   // security logic on the public SSR renderer, not accidental icon-data drift.
   core: 35,
-  tokens: 3,
+  // Bumped 3→4 (2026-08-07): font.size 9 档刻度 + space 4pt + control.height +
+  // foreground/floating/backdrop 语义 token 家族（设计系统统一 + 美学评审）。
+  tokens: 4,
   theme: 3.5,
   skins: 5,
   icons: 7,

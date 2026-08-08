@@ -1,10 +1,7 @@
 import * as React from 'react'
 
 export type IrisGridColumns =
-  | number
-  | 'auto-fit'
-  | 'auto-fill'
-  | string /* raw grid-template-columns value */
+  number | 'auto-fit' | 'auto-fill' | string /* raw grid-template-columns value */
 
 function resolveColumns(columns: IrisGridColumns, minColWidth: string): string {
   if (typeof columns === 'number') return `repeat(${columns}, minmax(0, 1fr))`

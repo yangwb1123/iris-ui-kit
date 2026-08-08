@@ -28,7 +28,10 @@ export interface CreateCellEditOptions {
    * session stays open, `getError()` reports it); null/undefined to accept.
    * Receives the raw draft and the target.
    */
-  validate?: (draft: unknown, target: CellEditTarget) => string | null | undefined
+  validate?: (
+    draft: unknown,
+    target: CellEditTarget,
+  ) => string | null | undefined | Promise<string | null | undefined>
   /**
    * Coerce a raw draft into the committed value (e.g. string → number for a
    * number editor). Runs after validation passes; the result is passed to
@@ -74,9 +77,24 @@ export function createCellEdit(options: CreateCellEditOptions = {}): CellEdit {
     validated: undefined,
   })
 
-  const validateDraft = (draft: unknown, target: CellEditTarget): string | null => {
+  const validateDraft = (
+    draft: unknown,
+    target: CellEditTarget,
+  ): string | null | undefined | Promise<string | null | undefined> => {
     if (!options.validate) return null
     return options.validate(draft, target) ?? null
+  }
+
+  const commitAsync = async (draft: unknown, target: CellEditTarget): Promise<boolean> => {
+    const error = (await validateDraft(draft, target)) as string | null | undefined
+    if (error) {
+      store.setState((prev) => ({ ...prev, error }))
+      return false
+    }
+    const coerced = options.coerce ? options.coerce(draft, target) : draft
+    options.onCommit?.(target, coerced)
+    store.setState({ editing: null, draft: '', error: null, validated: coerced })
+    return true
   }
 
   return {
@@ -92,10 +110,14 @@ export function createCellEdit(options: CreateCellEditOptions = {}): CellEdit {
 
     startEdit(rowKey, columnKey, initialDraft = '') {
       const target = { rowKey, columnKey }
+      const err = validateDraft(initialDraft, target)
       store.setState({
         editing: target,
         draft: initialDraft,
-        error: validateDraft(initialDraft, target),
+        error:
+          err && typeof (err as Promise<unknown>).then === 'function'
+            ? null
+            : (err as string | null),
         validated: undefined,
       })
     },
@@ -103,7 +125,15 @@ export function createCellEdit(options: CreateCellEditOptions = {}): CellEdit {
     setDraft(value) {
       const target = store.getState().editing
       if (!target) return
-      store.setState((prev) => ({ ...prev, draft: value, error: validateDraft(value, target) }))
+      const err = validateDraft(value, target) as string | null | Promise<string | null | undefined>
+      store.setState((prev) => ({
+        ...prev,
+        draft: value,
+        error:
+          err && typeof (err as Promise<unknown>).then === 'function'
+            ? null
+            : (err as string | null),
+      }))
     },
 
     cancelEdit() {
@@ -114,9 +144,14 @@ export function createCellEdit(options: CreateCellEditOptions = {}): CellEdit {
       const target = store.getState().editing
       if (!target) return false
       const draft = value !== undefined ? value : store.getState().draft
-      const error = validateDraft(draft, target)
+      const error = validateDraft(draft, target) as
+        string | null | undefined | Promise<string | null | undefined>
+      if (error && typeof (error as Promise<unknown>).then === 'function') {
+        void commitAsync(draft, target)
+        return false
+      }
       if (error) {
-        store.setState((prev) => ({ ...prev, error }))
+        store.setState((prev) => ({ ...prev, error: error as string }))
         return false
       }
       const coerced = options.coerce ? options.coerce(draft, target) : draft

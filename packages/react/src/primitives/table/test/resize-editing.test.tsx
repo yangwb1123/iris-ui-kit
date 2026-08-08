@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { IrisTable } from '../Table'
 import type { IrisTableColumn } from '../types'
 
@@ -277,5 +277,71 @@ describe('@iris-ui-kit/react IrisTable inline editing', () => {
     })
     expect(editor()).toBeNull()
     expect(onCellEdit).not.toHaveBeenCalled()
+  })
+})
+
+describe('IrisTable editRules (vxe editRules parity)', () => {
+  it('required rule blocks empty commit with the rule message', async () => {
+    const onCellEdit = vi.fn()
+    const columns = [
+      {
+        key: 'name',
+        title: 'Name',
+        editable: true,
+        editRules: [{ required: true, message: '必填' }],
+      },
+      { key: 'role', title: 'Role' },
+    ]
+    const rows = [{ id: 1, name: 'Alice', role: 'admin' }]
+    const { container } = render(
+      <IrisTable columns={columns} data={rows} rowKey="id" onCellEdit={onCellEdit} />,
+    )
+    const cell = container.querySelector('[data-iris-table-cell="name"]')!
+    fireEvent.doubleClick(cell)
+    const input = container.querySelector('[data-iris-table-editor]') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() => {
+      expect(onCellEdit).not.toHaveBeenCalled()
+      expect(container.querySelector('[data-iris-table-editor-error]')?.textContent).toContain(
+        '必填',
+      )
+    })
+  })
+
+  it('pattern rule rejects invalid format, valid value commits', async () => {
+    const onCellEdit = vi.fn()
+    const columns = [
+      {
+        key: 'code',
+        title: 'Code',
+        editable: true,
+        editRules: [{ pattern: /^\d+$/, message: '必须是数字' }],
+      },
+    ]
+    const rows = [{ id: 1, code: '123' }]
+    const { container } = render(
+      <IrisTable columns={columns} data={rows} rowKey="id" onCellEdit={onCellEdit} />,
+    )
+    const cell = container.querySelector('[data-iris-table-cell="code"]')!
+    fireEvent.doubleClick(cell)
+    const input = container.querySelector('[data-iris-table-editor]') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'abc' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onCellEdit).not.toHaveBeenCalled()
+    fireEvent.change(input, { target: { value: '456' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() => expect(onCellEdit).toHaveBeenCalled())
+  })
+
+  it('editConfig trigger click opens the editor on a single click', () => {
+    const columns = [{ key: 'name', title: 'Name', editable: true }]
+    const rows = [{ id: 1, name: 'Alice' }]
+    const { container } = render(
+      <IrisTable columns={columns} data={rows} rowKey="id" editConfig={{ trigger: 'click' }} />,
+    )
+    const cell = container.querySelector('[data-iris-table-cell="name"]')!
+    fireEvent.click(cell)
+    expect(container.querySelector('[data-iris-table-editor]')).not.toBeNull()
   })
 })

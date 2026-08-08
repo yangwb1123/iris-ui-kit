@@ -382,3 +382,9 @@ export {
   COMPOSE_ORDER,
   type ComposableFeature,
 } from './compose'
+export {
+  validateEditRules,
+  validateEditRulesAsync,
+  type EditRule,
+  type EditRules,
+} from './edit-rules'

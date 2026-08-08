@@ -18,7 +18,7 @@ import {
 } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useStore } from '../../useStore'
-import { createCellEdit } from '@iris-ui-kit/core'
+import { createCellEdit, validateEditRulesAsync } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
@@ -153,6 +153,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onColumnWidthsChange,
   onRowClick,
   onCellEdit,
+  editConfig,
   renderDetail,
   rowExpandable,
   defaultExpandedRowKeys,
@@ -304,8 +305,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
       createCellEdit({
         validate: (draft, _target) => {
           const ctx = editCtxRef.current
-          if (!ctx?.col.validate) return null
-          return ctx.col.validate(coerceValue(ctx.col, draft), ctx.row) ?? null
+          if (!ctx) return null
+          // Declarative editRules run async (they may contain async validators);
+          // the legacy validate callback stays synchronous for the sync commit
+          // path.
+          if (ctx.col.editRules && ctx.col.editRules.length > 0) {
+            return validateEditRulesAsync(ctx.col.editRules, draft, ctx.row).then((r) =>
+              r.valid ? null : (r.messages[0] ?? null),
+            )
+          }
+          if (ctx.col.validate) {
+            return ctx.col.validate(coerceValue(ctx.col, draft), ctx.row) ?? null
+          }
+          return null
         },
         coerce: (draft, _target) => {
           const ctx = editCtxRef.current
@@ -738,6 +750,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   }
                 : null)}
               onDoubleClick={col.editable ? () => beginEdit(row, col, k, idx) : undefined}
+              onClick={
+                cellRange
+                  ? (e: React.MouseEvent) => {
+                      if (e.shiftKey) cellRangeCtrl.extendRange(idx, ci)
+                      else cellRangeCtrl.startRange(idx, ci)
+                    }
+                  : col.editable && editConfig?.trigger === 'click'
+                    ? () => beginEdit(row, col, k, idx)
+                    : undefined
+              }
               style={{
                 ...baseCellStyle,
                 ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
@@ -1094,6 +1116,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   cursor: col.sortable ? 'pointer' : 'default',
                   fontWeight: 600,
                   userSelect: col.sortable ? 'none' : 'auto',
+                  ...(editConfig?.showAsterisk && col.editRules?.some((r) => r.required)
+                    ? { '::after': undefined }
+                    : {}),
                   position: 'relative',
                   // Pinned header keeps a solid surface bg + sticky position
                   // (overrides position: relative above for the sticky edge).

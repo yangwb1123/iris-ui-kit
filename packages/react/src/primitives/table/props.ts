@@ -34,6 +34,15 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   /** Called when a data row is clicked. Interactive child controls stop propagation. */
   onRowClick?: (row: Row, rowIndex: number) => void
   /** Called when an inline-editable cell is committed with a changed value. */
+  /** Inline-edit configuration (vxe-grid editConfig parity). */
+  editConfig?: {
+    /** What opens the editor. Default `'dblclick'`. */
+    trigger?: 'click' | 'dblclick' | 'manual'
+    /** Show a required asterisk next to headers of columns with rules. */
+    showAsterisk?: boolean
+    /** Drop the draft when opening another cell without committing. */
+    autoClear?: boolean
+  }
   onCellEdit?: (event: IrisTableCellEditEvent<Row>) => void
   /** Render an expandable detail panel beneath a row. */
   renderDetail?: IrisTableRenderDetail<Row>

@@ -1,5 +1,15 @@
 # @iris-ui-kit/vue
 
+## 0.2.21
+
+### Patch Changes
+
+- Updated dependencies [267713a]
+- Updated dependencies [a5a34d9]
+  - @iris-ui-kit/tokens@0.3.0
+  - @iris-ui-kit/theme@0.3.0
+  - @iris-ui-kit/skins@0.1.1
+
 ## 0.2.13
 
 ### Patch Changes

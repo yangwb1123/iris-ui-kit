@@ -1,5 +1,11 @@
 # @iris-ui-kit/marketplace
 
+## 0.1.2
+
+### Patch Changes
+
+- @iris-ui-kit/skins@0.1.1
+
 ## 0.1.1
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/plugin-admin",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Schema-driven CMS shell for Iris UI: IrisAdminApp renders a nav + data pages from a declarative schema, composing the admin shell and the unified data engine, for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",

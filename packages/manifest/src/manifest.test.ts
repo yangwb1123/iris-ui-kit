@@ -195,7 +195,7 @@ describe('discover (real repo)', () => {
     // variant is `IrisButtonVariant` → `Variant` (in core) → a string union;
     // the resolver follows the alias chain to the literal values.
     const variant = button?.props?.find((p) => p.name === 'variant')
-    expect(variant?.enum).toEqual(['solid', 'outline', 'ghost', 'link'])
+    expect(variant?.enum).toEqual(['solid', 'outline', 'ghost', 'link', 'danger'])
     const size = button?.props?.find((p) => p.name === 'size')
     expect(size?.enum).toEqual(['sm', 'md', 'lg'])
     // non-enumerable types carry no `enum`.

@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/solid",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "SolidJS adapter for Iris UI — thin bridges over @iris-ui-kit/core",
   "license": "MIT",
   "type": "module",

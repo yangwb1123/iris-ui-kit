@@ -107,6 +107,10 @@ describe('css variable reference validity', () => {
     }
     for (const s of ['primary', 'success', 'warning', 'danger', 'muted'])
       set.add(`--iris-${s}-subtle`)
+    // Runtime-injected CSS variables (floating entrance animations): defined
+    // in the injected stylesheet :root, consumed via var(--iris-anim-*) with
+    // no fallback. Not theme tokens — but always defined before use.
+    for (const a of ['dialog', 'popover', 'toast', 'tooltip']) set.add(`--iris-anim-${a}`)
     return set
   }
   const noFallbackRefs = (dir: string): Set<string> => {

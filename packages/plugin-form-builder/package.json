@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/plugin-form-builder",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Schema-driven form builder plugin for Iris UI: IrisFormBuilder renders a form from a declarative schema for react/vue/solid/svelte",
   "license": "MIT",
   "type": "module",

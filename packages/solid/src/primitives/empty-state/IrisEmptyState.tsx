@@ -44,8 +44,16 @@ export function IrisEmptyState(props: IrisEmptyStateProps): JSX.Element {
         <div
           data-iris-empty-state-icon=""
           style={{
+            display: 'flex',
+            'align-items': 'center',
+            'justify-content': 'center',
+            width: '48px',
+            height: '48px',
+            'border-radius': 'var(--iris-radius-lg, 12px)',
+            background: 'var(--iris-surface)',
             color: 'var(--iris-muted)',
-            'font-size': 'var(--iris-font-size-4xl, 30px)',
+            opacity: '0.9',
+            'font-size': 'var(--iris-font-size-2xl, 20px)',
             'line-height': '1',
           }}
         >

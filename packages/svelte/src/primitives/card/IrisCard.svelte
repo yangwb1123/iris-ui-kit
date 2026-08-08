@@ -7,8 +7,8 @@
   const PADDING_MAP: Record<CardPadding, string> = {
     none: '0',
     sm: '12px',
-    md: 'var(--iris-padding-md, 16px)',
-    lg: '24px',
+    md: 'var(--iris-padding-lg, 20px)',
+    lg: 'var(--iris-space-xl, 24px)',
   }
 
   let {
@@ -76,6 +76,6 @@
 <style>
   [data-iris-card-hover='true']:hover {
     transform: translateY(-2px);
-    box-shadow: var(--iris-shadow-md);
+    box-shadow: var(--iris-shadow-lg);
   }
 </style>

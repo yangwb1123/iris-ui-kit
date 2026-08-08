@@ -166,7 +166,7 @@ export function IrisMenuSub(props: IrisMenuSubProps): JSX.Element {
           onKeyDown={handleKeyDown}
           style={{
             ...floatingStyles(),
-            background: 'var(--iris-surface)',
+            background: 'var(--iris-surface-floating)',
             color: 'var(--iris-foreground)',
             border: '1px solid var(--iris-border)',
             'border-radius': 'var(--iris-radius-md, 6px)',

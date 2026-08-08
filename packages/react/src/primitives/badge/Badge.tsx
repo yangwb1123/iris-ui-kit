@@ -27,7 +27,7 @@ function badgeStyle(
     fontWeight: 500,
     lineHeight: 1,
     whiteSpace: 'nowrap',
-    fontSize: size === 'sm' ? '11px' : '12px',
+    fontSize: size === 'sm' ? 'var(--iris-font-size-xs, 12px)' : '12px',
     padding: size === 'sm' ? '2px 6px' : '3px 8px',
   }
   switch (variant) {
@@ -40,7 +40,11 @@ function badgeStyle(
             ? 'var(--iris-warning-foreground, #451a03)'
             : tone === 'primary'
               ? 'var(--iris-primary-foreground, #fff)'
-              : 'var(--iris-foreground, #0f172a)',
+              : tone === 'success'
+                ? 'var(--iris-success-foreground, #0f172a)'
+                : tone === 'danger'
+                  ? 'var(--iris-danger-foreground, #0f172a)'
+                  : 'var(--iris-foreground, #0f172a)',
         border: '1px solid transparent',
       }
     case 'outline':

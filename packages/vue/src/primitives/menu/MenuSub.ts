@@ -212,7 +212,7 @@ export const IrisMenuSub = defineComponent({
               onPointerenter: clearTimer,
               style: {
                 ...floatingStyles.value,
-                background: 'var(--iris-surface)',
+                background: 'var(--iris-surface-floating)',
                 color: 'var(--iris-foreground)',
                 border: '1px solid var(--iris-border)',
                 borderRadius: 'var(--iris-radius-md)',

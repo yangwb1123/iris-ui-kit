@@ -1,4 +1,5 @@
 import { createEffect, splitProps, Show, type JSX } from 'solid-js'
+import { installFloatingAnimations, ANIM_POPOVER } from '../../floating/animations'
 import { Portal } from 'solid-js/web'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
@@ -47,6 +48,7 @@ export function IrisPopoverContent(props: IrisPopoverContentProps): JSX.Element 
   let wasOpen = false
   let lastFocused: HTMLElement | null = null
   createEffect(() => {
+    installFloatingAnimations()
     const isOpen = ctx.open()
     if (isOpen && !wasOpen) {
       lastFocused = (document.activeElement as HTMLElement | null) ?? ctx.trigger() ?? null
@@ -68,7 +70,8 @@ export function IrisPopoverContent(props: IrisPopoverContentProps): JSX.Element 
       data-iris-popover-content=""
       style={{
         ...floatingStyles(),
-        background: 'var(--iris-surface)',
+        background: 'var(--iris-surface-floating)',
+        animation: ANIM_POPOVER,
         color: 'var(--iris-foreground)',
         border: '1px solid var(--iris-border)',
         'border-radius': 'var(--iris-radius-md, 6px)',
@@ -76,7 +79,7 @@ export function IrisPopoverContent(props: IrisPopoverContentProps): JSX.Element 
         'box-shadow': 'var(--iris-shadow-lg)',
         'min-width': '160px',
         outline: 'none',
-        'z-index': 1000,
+        'z-index': 'var(--iris-z-popover, 1000)',
         ...((local.style as JSX.CSSProperties) ?? {}),
       }}
     >

@@ -68,7 +68,7 @@ export const IrisMenuItem = React.forwardRef<HTMLDivElement, IrisMenuItemProps>(
           opacity: disabled ? 0.5 : 1,
           background: hovered && !disabled ? 'var(--iris-surface-hover)' : 'transparent',
           color: 'inherit',
-          outline: 'none',
+
           fontSize: 'var(--iris-font-size-md, 14px)',
           transition: 'background-color 80ms ease',
           ...style,

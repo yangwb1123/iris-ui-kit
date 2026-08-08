@@ -256,7 +256,7 @@ export function IrisSelect<T = unknown>({
             display: 'flex',
             flexDirection: 'column',
             gap: 'var(--iris-space-xxs, 4px)',
-            outline: 'none',
+
             maxHeight: 240,
             overflowY: 'auto',
           }}
@@ -305,7 +305,6 @@ export function IrisSelect<T = unknown>({
                       : 'transparent',
                   color: 'var(--iris-foreground)',
                   fontWeight: isSelected ? 600 : 400,
-                  outline: 'none',
                 }}
               >
                 <span style={{ flex: 1, minWidth: 0 }}>{item.label ?? String(item.value)}</span>

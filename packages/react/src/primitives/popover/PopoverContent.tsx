@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useFloating } from '../../floating/useFloating'
 import { useDismiss } from '../../floating/useDismiss'
 import { usePopoverContext } from './context'
+import { installFloatingAnimations, ANIM_POPOVER } from '../../floating/animations'
 
 export interface IrisPopoverContentProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
@@ -37,6 +38,7 @@ export const IrisPopoverContent = React.forwardRef<HTMLDivElement, IrisPopoverCo
 
     const captureRef = React.useCallback(
       (el: HTMLDivElement | null) => {
+        installFloatingAnimations()
         innerRef.current = el
         ctx.contentRef.current = el
         if (typeof forwardedRef === 'function') forwardedRef(el)
@@ -96,14 +98,15 @@ export const IrisPopoverContent = React.forwardRef<HTMLDivElement, IrisPopoverCo
         data-placement={ctx.placement}
         style={{
           ...floatingStyles,
-          background: 'var(--iris-surface)',
+          background: 'var(--iris-surface-floating)',
+          animation: ANIM_POPOVER,
           color: 'var(--iris-foreground)',
           border: '1px solid var(--iris-border)',
           borderRadius: 'var(--iris-radius-md, 6px)',
           padding: 'var(--iris-padding-md, 12px)',
           boxShadow: 'var(--iris-shadow-lg)',
           fontSize: 'var(--iris-font-size-md, 14px)',
-          zIndex: 1000,
+          zIndex: 'var(--iris-z-popover, 1000)',
           outline: 'none',
           ...style,
         }}

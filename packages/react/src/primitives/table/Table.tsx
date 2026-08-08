@@ -22,6 +22,15 @@ import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import type { IrisTableProps } from './props'
+
+const TABLE_ROW_CSS = `
+[data-iris-table] [role="row"]:hover {
+  --iris-cell-bg: var(--iris-surface-hover);
+}
+[data-iris-table-row-selected="true"] {
+  --iris-cell-bg: var(--iris-surface-selected);
+}
+`
 import { useTableSort } from './useTableSort'
 import type { IrisTableColumn, IrisTableColumnWidths, IrisTableSortDirection } from './types'
 
@@ -162,6 +171,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
   className,
   ...rest
 }: IrisTableProps<Row>): React.ReactElement {
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return
+    if (document.getElementById('iris-table-row-styles')) return
+    const style = document.createElement('style')
+    style.id = 'iris-table-row-styles'
+    style.textContent = TABLE_ROW_CSS
+    document.head.appendChild(style)
+  }, [])
+
   const { t } = useI18n()
   // Defensive: null/undefined columns → empty array
   const safeColumns = React.useMemo(() => columns ?? [], [columns])
@@ -611,7 +629,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             style={{
               ...baseCellStyle,
               justifyContent: 'center',
-              background: striped && idx % 2 === 1 ? 'var(--iris-surface)' : 'transparent',
+              background: 'var(--iris-cell-bg, transparent)',
               borderBottom: borderStyle,
             }}
           >
@@ -650,7 +668,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             style={{
               ...baseCellStyle,
               justifyContent: 'center',
-              background: striped && idx % 2 === 1 ? 'var(--iris-surface)' : 'transparent',
+              background: 'var(--iris-cell-bg, transparent)',
               borderBottom: borderStyle,
             }}
           >

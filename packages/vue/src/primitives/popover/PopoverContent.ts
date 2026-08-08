@@ -1,8 +1,8 @@
 import { Teleport, defineComponent, h, inject, nextTick, ref, watch, type PropType } from 'vue'
+import { installFloatingAnimations, ANIM_POPOVER } from '../floating/animations'
 import { useFloating } from '../floating/useFloating'
 import { useDismiss } from '../floating/useDismiss'
 import { PopoverContextKey } from './context'
-
 /**
  * The floating panel rendered when the Popover is open. Position is computed
  * by `useFloating` (Floating UI); dismissal (outside pointerdown + Escape)
@@ -23,17 +23,16 @@ export const IrisPopoverContent = defineComponent({
     },
   },
   setup(props, { slots, attrs }) {
+    installFloatingAnimations()
     const ctx = inject(PopoverContextKey)
     if (!ctx) {
       throw new Error('[iris-ui] IrisPopoverContent must be a descendant of IrisPopover')
     }
-
     const innerRef = ref<HTMLElement | null>(null)
     // Mirror into ctx.contentRef so siblings (Trigger, useDismiss) can see it.
     watch(innerRef, (el) => {
       ctx.contentRef.value = el
     })
-
     const { floatingStyles } = useFloating({
       anchor: ctx.triggerRef,
       floating: innerRef,
@@ -41,13 +40,11 @@ export const IrisPopoverContent = defineComponent({
       placement: ctx.placement,
       offset: ctx.offset,
     })
-
     useDismiss({
       enabled: ctx.open,
       exclude: [ctx.triggerRef, innerRef],
       onDismiss: () => ctx.setOpen(false),
     })
-
     // Focus management: focus content on open; restore focus to trigger on close.
     let lastFocused: HTMLElement | null = null
     watch(ctx.open, async (isOpen, wasOpen) => {
@@ -60,7 +57,6 @@ export const IrisPopoverContent = defineComponent({
         target?.focus()
       }
     })
-
     // VNodes that carry refs must be created while this component is rendering.
     // Caching one in a computed can evaluate it from a floating-position watcher,
     // outside a render owner; Vue then crashes while mounting/unmounting the ref.
@@ -79,7 +75,8 @@ export const IrisPopoverContent = defineComponent({
           'data-placement': ctx.placement,
           style: {
             ...floatingStyles.value,
-            background: 'var(--iris-surface)',
+            background: 'var(--iris-surface-floating)',
+            animation: ANIM_POPOVER,
             color: 'var(--iris-foreground)',
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-md)',
@@ -93,7 +90,6 @@ export const IrisPopoverContent = defineComponent({
         },
         slots.default?.(),
       )
-
     return () => {
       if (!ctx.open.value) return null
       const node = renderContent()

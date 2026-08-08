@@ -281,7 +281,7 @@ function renderRow(
             display: 'flex',
             alignItems: 'center',
             justifyContent: flexAlign(col.align),
-            background: props.striped && index % 2 === 1 ? 'var(--iris-surface)' : 'transparent',
+            background: 'var(--iris-cell-bg, transparent)',
             padding: isEditing
               ? 'var(--iris-space-xxs, 4px)'
               : 'var(--iris-space-xs, 8px) var(--iris-padding-md)',

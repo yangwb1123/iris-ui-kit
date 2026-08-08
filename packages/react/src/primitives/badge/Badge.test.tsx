@@ -45,7 +45,7 @@ describe('@iris-ui-kit/react IrisBadge', () => {
     )
     const style = screen.getByText('x').getAttribute('style') ?? ''
     expect(style).toContain('--iris-success')
-    expect(style).toContain('--iris-foreground')
+    expect(style).toContain('--iris-success-foreground')
   })
 
   it('outline variant uses transparent background + colored border', () => {
@@ -72,7 +72,7 @@ describe('@iris-ui-kit/react IrisBadge', () => {
   it('sm size has smaller font', () => {
     render(<IrisBadge size="sm">x</IrisBadge>)
     const style = screen.getByText('x').getAttribute('style') ?? ''
-    expect(style).toContain('font-size: 11px')
+    expect(style).toContain('font-size: var(--iris-font-size-xs, 12px)')
   })
 
   it('preserves consumer style', () => {

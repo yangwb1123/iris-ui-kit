@@ -1,8 +1,8 @@
 import { Teleport, defineComponent, h, inject, ref, watch, type PropType, type VNode } from 'vue'
+import { installFloatingAnimations, ANIM_DIALOG } from '../floating/animations'
 import { DialogContextKey } from './context'
 import { useFocusTrap, useBodyScrollLock } from '../modal-utils'
 import { findFirstElement, mergeSlotProps } from '../slot/Slot'
-
 /**
  * The modal surface (and its backdrop). Renders only while the dialog is
  * open. Behaviors enabled automatically:
@@ -23,23 +23,21 @@ export const IrisDialogContent = defineComponent({
     },
   },
   setup(props, { slots, attrs }) {
+    installFloatingAnimations()
     const ctx = inject(DialogContextKey)
     if (!ctx) {
       throw new Error('[iris-ui] IrisDialogContent must be a descendant of IrisDialog')
     }
-
     const innerRef = ref<HTMLElement | null>(null)
     watch(innerRef, (el) => {
       ctx.contentRef.value = el
     })
-
     useBodyScrollLock(ctx.open)
     useFocusTrap({
       container: innerRef,
       active: ctx.open,
       returnFocusTo: ctx.triggerRef,
     })
-
     // Escape handler — scoped to the document while open.
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && ctx.closeOnEscape) {
@@ -56,22 +54,18 @@ export const IrisDialogContent = defineComponent({
       },
       { flush: 'post', immediate: true },
     )
-
     const onBackdropPointerDown = (event: Event) => {
       if (!ctx.closeOnOutsideClick) return
       if (event.target === event.currentTarget) {
         ctx.setOpen(false)
       }
     }
-
     const onContentPointerDown = (event: Event) => {
       // Stop bubbling so the backdrop doesn't see the click and close.
       event.stopPropagation()
     }
-
     return () => {
       if (!ctx.open.value) return null
-
       const backdrop = h(
         'div',
         {
@@ -105,7 +99,8 @@ export const IrisDialogContent = defineComponent({
               'data-state': 'open',
               onPointerdown: onContentPointerDown,
               style: {
-                background: 'var(--iris-surface)',
+                background: 'var(--iris-surface-floating)',
+                animation: ANIM_DIALOG,
                 color: 'var(--iris-foreground)',
                 border: '1px solid var(--iris-border)',
                 borderRadius: 'var(--iris-radius-lg)',
@@ -122,13 +117,11 @@ export const IrisDialogContent = defineComponent({
           ),
         ],
       )
-
       if (props.teleport === false) return backdrop
       return h(Teleport, { to: props.teleport as string | HTMLElement }, [backdrop])
     }
   },
 })
-
 /**
  * Sets `aria-labelledby` on the dialog content automatically. Renders a
  * heading element (default `<h2>`).
@@ -161,7 +154,6 @@ export const IrisDialogTitle = defineComponent({
       )
   },
 })
-
 /**
  * Sets `aria-describedby` on the dialog content automatically. Renders a
  * `<p>` by default.
@@ -194,7 +186,6 @@ export const IrisDialogDescription = defineComponent({
       )
   },
 })
-
 /** Close button. Supports `as-child`. */
 export const IrisDialogClose = defineComponent({
   name: 'IrisDialogClose',

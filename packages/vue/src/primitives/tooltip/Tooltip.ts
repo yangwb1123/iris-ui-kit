@@ -1,3 +1,4 @@
+import { installFloatingAnimations, ANIM_TOOLTIP } from '../floating/animations'
 import {
   Fragment,
   Teleport,
@@ -13,7 +14,6 @@ import {
 import { createHoverIntent, type Placement } from '@iris-ui-kit/core'
 import { useFloating } from '../floating/useFloating'
 import { composeRefs, findFirstElement, mergeSlotProps } from '../slot/Slot'
-
 /**
  * Hover / focus triggered tooltip. Powered by `createHoverIntent` state machine.
  *
@@ -54,11 +54,11 @@ export const IrisTooltip = defineComponent({
     disabled: { type: Boolean, default: false },
   },
   setup(props, { slots, attrs }) {
+    installFloatingAnimations()
     const triggerRef = ref<HTMLElement | null>(null)
     const tooltipRef = ref<HTMLElement | null>(null)
     const tooltipId = useId()
     const open = ref(false)
-
     // createHoverIntent with synchronous onChange bridge to Vue ref.
     let hi: ReturnType<typeof createHoverIntent> = createHoverIntent({
       openDelay: props.openDelay,
@@ -67,7 +67,6 @@ export const IrisTooltip = defineComponent({
         open.value = v
       },
     })
-
     // Re-create when delays change (watcher fires on mount too).
     watch(
       () => [props.openDelay, props.closeDelay],
@@ -82,9 +81,7 @@ export const IrisTooltip = defineComponent({
         })
       },
     )
-
     onScopeDispose(() => hi.stop())
-
     // Escape closes immediately.
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && open.value) hi.close()
@@ -94,7 +91,6 @@ export const IrisTooltip = defineComponent({
       if (isOpen) document.addEventListener('keydown', onKeyDown)
       else document.removeEventListener('keydown', onKeyDown)
     })
-
     // If disabled while open, close immediately.
     watch(
       () => props.disabled,
@@ -102,7 +98,6 @@ export const IrisTooltip = defineComponent({
         if (disabled && open.value) hi.close()
       },
     )
-
     const { floatingStyles } = useFloating({
       anchor: triggerRef,
       floating: tooltipRef,
@@ -110,7 +105,6 @@ export const IrisTooltip = defineComponent({
       placement: props.placement,
       offset: props.offset,
     })
-
     // 0-delay → FORCE_OPEN/COSE (single transition, sync Vue reactivity).
     // Positive delay → pointerEnter/Leave (machine after-timer).
     const handleEnter = () => {
@@ -123,7 +117,6 @@ export const IrisTooltip = defineComponent({
       if (props.closeDelay > 0) hi.pointerLeave()
       else hi.close()
     }
-
     const triggerListeners: Record<string, (event: Event) => void> = {
       onPointerenter: handleEnter as unknown as (e: Event) => void,
       onPointerleave: handleLeave as unknown as (e: Event) => void,
@@ -134,11 +127,9 @@ export const IrisTooltip = defineComponent({
         if (!props.disabled) hi.close()
       }) as unknown as (e: Event) => void,
     }
-
     const captureTriggerRef = (el: unknown) => {
       triggerRef.value = (el ?? null) as HTMLElement | null
     }
-
     const renderTrigger = () => {
       const root = findFirstElement(slots.default?.())
       if (!root) {
@@ -149,20 +140,17 @@ export const IrisTooltip = defineComponent({
         }
         return null
       }
-
       const parentProps: Record<string, unknown> = {
         ...triggerListeners,
         ref: captureTriggerRef,
         'aria-describedby': open.value ? tooltipId : undefined,
       }
-
       const merged = mergeSlotProps(parentProps, (root.props ?? {}) as Record<string, unknown>)
       if (root.props && 'ref' in root.props) {
         merged.ref = composeRefs(captureTriggerRef, (root.props as Record<string, unknown>).ref)
       }
       return h(root.type as string, merged, root.children as unknown as VNode[])
     }
-
     const renderTooltip = (): VNode | null => {
       if (!open.value) return null
       const tooltipNode = h(
@@ -180,6 +168,7 @@ export const IrisTooltip = defineComponent({
             ...floatingStyles.value,
             background: 'var(--iris-foreground)',
             color: 'var(--iris-background)',
+            animation: ANIM_TOOLTIP,
             padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
             borderRadius: 'var(--iris-radius-sm)',
             fontSize: 'var(--iris-font-size-xs, 12px)',
@@ -196,7 +185,6 @@ export const IrisTooltip = defineComponent({
       if (portalDest === false) return tooltipNode
       return h(Teleport, { to: portalDest as string | HTMLElement }, [tooltipNode])
     }
-
     return () => {
       const trigger = renderTrigger()
       const tooltip = renderTooltip()

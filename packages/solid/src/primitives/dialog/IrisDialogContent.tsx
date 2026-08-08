@@ -1,4 +1,5 @@
 import { createEffect, onCleanup, splitProps, Show, type JSX } from 'solid-js'
+import { installFloatingAnimations, ANIM_DIALOG } from '../../floating/animations'
 import { Portal, Dynamic } from 'solid-js/web'
 import { useBodyScrollLock } from '../../modal-utils/useBodyScrollLock'
 import { useFocusTrap } from '../../modal-utils/useFocusTrap'
@@ -47,6 +48,7 @@ export function IrisDialogContent(props: IrisDialogContentProps): JSX.Element {
   }
 
   createEffect(() => {
+    installFloatingAnimations()
     if (typeof document === 'undefined') return
     if (ctx.open()) {
       document.addEventListener('keydown', onKeyDown)
@@ -78,7 +80,7 @@ export function IrisDialogContent(props: IrisDialogContentProps): JSX.Element {
         position: 'fixed',
         inset: '0',
         background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
-        'z-index': 1200,
+        'z-index': 'var(--iris-z-modal, 1200)',
         display: 'flex',
         'align-items': 'center',
         'justify-content': 'center',
@@ -97,7 +99,8 @@ export function IrisDialogContent(props: IrisDialogContentProps): JSX.Element {
         data-state="open"
         onPointerDown={onContentPointerDown}
         style={{
-          background: 'var(--iris-surface)',
+          background: 'var(--iris-surface-floating)',
+          animation: ANIM_DIALOG,
           color: 'var(--iris-foreground)',
           border: '1px solid var(--iris-border)',
           'border-radius': 'var(--iris-radius-lg)',

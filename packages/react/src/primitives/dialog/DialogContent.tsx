@@ -5,6 +5,7 @@ import { useBodyScrollLock } from '../../modal-utils/useBodyScrollLock'
 import { useFocusTrap } from '../../modal-utils/useFocusTrap'
 import { IrisSlot } from '../slot/Slot'
 import { useDialogContext } from './context'
+import { installFloatingAnimations, ANIM_DIALOG } from '../../floating/animations'
 
 export interface IrisDialogContentProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
@@ -45,6 +46,7 @@ export const IrisDialogContent = React.forwardRef<HTMLDivElement, IrisDialogCont
       },
       [ctx, forwardedRef],
     )
+    installFloatingAnimations()
 
     useBodyScrollLock(ctx.open)
     useFocusTrap({
@@ -85,7 +87,7 @@ export const IrisDialogContent = React.forwardRef<HTMLDivElement, IrisDialogCont
           position: 'fixed',
           inset: 0,
           background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
-          zIndex: 1200,
+          zIndex: 'var(--iris-z-modal, 1200)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -104,10 +106,11 @@ export const IrisDialogContent = React.forwardRef<HTMLDivElement, IrisDialogCont
           data-state="open"
           onPointerDown={handleContentPointerDown}
           style={{
-            background: 'var(--iris-surface)',
+            background: 'var(--iris-surface-floating)',
             color: 'var(--iris-foreground)',
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-lg, 8px)',
+            animation: ANIM_DIALOG,
             padding: 'var(--iris-padding-lg, 20px)',
             boxShadow: 'var(--iris-shadow-xl)',
             maxWidth: '90vw',

@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { installFloatingAnimations, ANIM_TOAST } from '../../floating/animations'
 import { createPortal } from 'react-dom'
 import { createAutoDismiss, type AutoDismiss } from '@iris-ui-kit/core'
 import {
@@ -37,7 +38,7 @@ const VARIANT_ACCENT: Record<IrisToastVariant, string> = {
 function positionStyle(position: IrisToastPosition): React.CSSProperties {
   const base: React.CSSProperties = {
     position: 'fixed',
-    zIndex: 1400,
+    zIndex: 'var(--iris-z-toast, 1400)',
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--iris-gap-md, 12px)',
@@ -92,6 +93,7 @@ export function IrisToastViewport({
   style,
   ...rest
 }: IrisToastViewportProps): React.ReactElement | null {
+  installFloatingAnimations()
   const { t } = useI18n()
   const allToasts = React.useSyncExternalStore(subscribeToasts, getToasts, () => [] as IrisToast[])
 
@@ -226,7 +228,8 @@ export function IrisToastViewport({
               display: 'flex',
               alignItems: 'flex-start',
               gap: 'var(--iris-gap-md, 12px)',
-              background: 'var(--iris-surface)',
+              background: 'var(--iris-surface-floating)',
+              animation: ANIM_TOAST,
               color: 'var(--iris-foreground)',
               border: `1px solid ${VARIANT_BORDER[toast.variant]}`,
               borderInlineStart: `4px solid ${VARIANT_ACCENT[toast.variant]}`,

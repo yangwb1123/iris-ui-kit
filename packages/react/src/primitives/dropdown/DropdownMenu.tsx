@@ -143,7 +143,7 @@ export const IrisDropdownMenu = React.forwardRef<HTMLDivElement, IrisDropdownMen
         onKeyDown={handleKeyDown}
         style={{
           ...floatingStyles,
-          background: 'var(--iris-surface)',
+          background: 'var(--iris-surface-floating)',
           color: 'var(--iris-foreground)',
           border: '1px solid var(--iris-border)',
           borderRadius: 'var(--iris-radius-md, 6px)',
@@ -151,7 +151,7 @@ export const IrisDropdownMenu = React.forwardRef<HTMLDivElement, IrisDropdownMen
           boxShadow: 'var(--iris-shadow-lg)',
           minWidth: 160,
           outline: 'none',
-          zIndex: 1000,
+          zIndex: 'var(--iris-z-popover, 1000)',
           ...style,
         }}
       >

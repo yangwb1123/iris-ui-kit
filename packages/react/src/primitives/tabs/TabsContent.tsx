@@ -34,7 +34,7 @@ export const IrisTabsContent = React.forwardRef<HTMLDivElement, IrisTabsContentP
         tabIndex={0}
         style={{
           padding: 'var(--iris-padding-md, 12px) 0',
-          outline: 'none',
+
           ...style,
         }}
       >

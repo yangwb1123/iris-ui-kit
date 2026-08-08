@@ -71,7 +71,7 @@
     use:portal={portalTarget}
     data-iris-dialog-backdrop
     onpointerdown={handleBackdropPointerDown}
-    style="position: fixed; inset: 0; background: var(--iris-backdrop, rgba(0, 0, 0, 0.5)); z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 24px"
+    style="position: fixed; inset: 0; background: var(--iris-backdrop, rgba(0, 0, 0, 0.5)); z-index: var(--iris-z-modal, 1200); display: flex; align-items: center; justify-content: center; padding: 24px"
   >
     <!-- content -->
     <div
@@ -86,7 +86,7 @@
       data-iris-dialog-content
       data-state="open"
       onpointerdown={stopPropagation}
-      style="background: var(--iris-surface); color: var(--iris-foreground); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-lg, 8px); padding: var(--iris-padding-lg, 24px); box-shadow: var(--iris-shadow-xl); max-width: 90vw; max-height: 85vh; overflow: auto; outline: none;{style
+      style="background: var(--iris-surface-floating); animation: var(--iris-anim-dialog); color: var(--iris-foreground); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-lg, 8px); padding: var(--iris-padding-lg, 24px); box-shadow: var(--iris-shadow-xl); max-width: 90vw; max-height: 85vh; overflow: auto; outline: none;{style
         ? ' ' + style
         : ''}"
     >

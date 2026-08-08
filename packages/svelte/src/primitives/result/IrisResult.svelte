@@ -6,7 +6,7 @@
   const STATUS: Record<ResultStatus, { color: string; glyph: string }> = {
     success: { color: 'var(--iris-success, #10b981)', glyph: '✓' },
     error: { color: 'var(--iris-danger)', glyph: '✕' },
-    info: { color: 'var(--iris-info, #3b82f6)', glyph: 'i' },
+    info: { color: 'var(--iris-info, #0ea5e9)', glyph: 'i' },
     warning: { color: 'var(--iris-warning, #f59e0b)', glyph: '!' },
   }
 

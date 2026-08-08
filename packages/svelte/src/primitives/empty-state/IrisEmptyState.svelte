@@ -29,7 +29,7 @@
   {#if icon}
     <div
       data-iris-empty-state-icon
-      style="color: var(--iris-muted); font-size: var(--iris-font-size-4xl, 30px); line-height: 1"
+      style="display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: var(--iris-radius-lg, 12px); background: var(--iris-surface); color: var(--iris-muted); opacity: 0.9; font-size: var(--iris-font-size-2xl, 20px); line-height: 1"
     >
       {@render icon()}
     </div>

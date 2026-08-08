@@ -44,8 +44,16 @@ export const IrisEmptyState = defineComponent({
                 {
                   'data-iris-empty-state-icon': '',
                   style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: 'var(--iris-radius-lg, 12px)',
+                    background: 'var(--iris-surface)',
                     color: 'var(--iris-muted)',
-                    fontSize: 'var(--iris-font-size-4xl, 30px)',
+                    opacity: '0.9',
+                    fontSize: 'var(--iris-font-size-2xl, 20px)',
                     lineHeight: '1',
                   },
                 },

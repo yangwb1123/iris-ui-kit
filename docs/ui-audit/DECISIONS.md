@@ -73,3 +73,8 @@
 
 - task /home/u1/iris-ui/docs/ui-audit/design-intelligence.md [ok]: Executive Summary: iris-ui is a **well-engineered, token-disciplined** library: semantic color tokens exist in light/dark with correct dark; Dimension 1: Information Priority; Strengths: - **Semantic tone system is pervasive and consistent at the token level.** Alert (`alert/Alert.tsx:9-14`), Badge, Chip, ; Issues: 1. **[MECHANICAL] No danger variant on Button or SplitButton — destructive actions cannot be color-encoded.** `core/type; Recommendations (ranked): | # | Action | Value | Effort |
 - evidence: /home/u1/iris-ui/docs/ui-audit/design-intelligence.md
+
+## 2026-08-07 15:54:19 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/ui-audit/aesthetic.md [ok]: Summary: **Color harmony** — The primary/accent pair (`#6366f1`/`#8b5cf6`, ~19° apart) is genuinely cohesive and dark mode lifts
+- evidence: /home/u1/iris-ui/docs/ui-audit/aesthetic.md

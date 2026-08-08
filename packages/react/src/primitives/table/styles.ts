@@ -23,3 +23,11 @@ export const BASE_CELL_STYLE: React.CSSProperties = {
 
 export const borderStyle = (bordered: boolean): string =>
   bordered ? '1px solid var(--iris-border)' : 'none'
+export const TABLE_ROW_CSS = `
+[data-iris-table] [role="row"]:hover {
+  --iris-cell-bg: var(--iris-surface-hover);
+}
+[data-iris-table-row-selected="true"] {
+  --iris-cell-bg: var(--iris-surface-selected);
+}
+`

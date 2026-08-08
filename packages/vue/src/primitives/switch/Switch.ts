@@ -46,7 +46,7 @@ export const IrisSwitch = defineComponent({
       height: dims.value.height,
       background: props.modelValue ? 'var(--iris-primary)' : 'var(--iris-border)',
       borderRadius: '999px',
-      transition: 'background-color 120ms ease',
+      transition: 'background-color var(--iris-transition-fast, 150ms) ease',
       cursor: props.disabled ? 'not-allowed' : 'pointer',
       opacity: props.disabled ? '0.6' : '1',
       verticalAlign: 'middle',
@@ -65,7 +65,7 @@ export const IrisSwitch = defineComponent({
         height: dims.value.thumb,
         background: 'var(--iris-background)',
         borderRadius: '999px',
-        transition: 'left 140ms ease',
+        transition: 'left var(--iris-transition-fast, 150ms) ease',
         boxShadow: 'var(--iris-shadow-sm)',
       }
     })

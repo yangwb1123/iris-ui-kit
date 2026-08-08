@@ -1,3 +1,4 @@
+import { installFloatingAnimations, ANIM_TOOLTIP } from '../../floating/animations'
 import {
   createEffect,
   createMemo,
@@ -86,6 +87,7 @@ export function IrisTooltip(props: IrisTooltipProps): JSX.Element {
 
   // Escape closes immediately.
   createEffect(() => {
+    installFloatingAnimations()
     if (!open()) return
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') hi().close()
@@ -131,13 +133,14 @@ export function IrisTooltip(props: IrisTooltipProps): JSX.Element {
         ...floatingStyles(),
         background: 'var(--iris-foreground)',
         color: 'var(--iris-background)',
+        animation: ANIM_TOOLTIP,
         padding: '4px 8px',
         'border-radius': 'var(--iris-radius-sm)',
         'font-size': 'var(--iris-font-size-xs, 12px)',
         'line-height': '1.4',
         'max-width': '240px',
         'pointer-events': 'none',
-        'z-index': 1100,
+        'z-index': 'var(--iris-z-tooltip, 1100)',
         ...(merged.style ?? {}),
       }}
     >

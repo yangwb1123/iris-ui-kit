@@ -44,7 +44,11 @@ export function badgeStyle(
           ? 'var(--iris-warning-foreground, #451a03)'
           : tone === 'primary'
             ? 'var(--iris-primary-foreground, #fff)'
-            : 'var(--iris-foreground, #0f172a)',
+            : tone === 'success'
+              ? 'var(--iris-success-foreground, #0f172a)'
+              : tone === 'danger'
+                ? 'var(--iris-danger-foreground, #0f172a)'
+                : 'var(--iris-foreground, #0f172a)',
       border: '1px solid transparent',
     }
   if (variant === 'outline')

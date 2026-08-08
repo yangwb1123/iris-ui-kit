@@ -116,7 +116,7 @@ export const IrisTabsTrigger = React.forwardRef<HTMLElement, IrisTabsTriggerProp
           cursor: isDisabled ? 'not-allowed' : 'pointer',
           opacity: isDisabled ? 0.5 : 1,
           border: 'none',
-          outline: 'none',
+
           background: 'transparent',
           color: isActive ? 'var(--iris-primary)' : 'var(--iris-muted)',
           marginBottom: horizontal ? -1 : undefined,

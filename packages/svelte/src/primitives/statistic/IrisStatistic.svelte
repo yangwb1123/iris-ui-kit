@@ -4,7 +4,11 @@
   type StatisticSize = 'sm' | 'md' | 'lg'
   type StatisticTrend = 'up' | 'down' | 'neutral'
 
-  const VALUE_FONT: Record<StatisticSize, number> = { sm: 20, md: 28, lg: 36 }
+  const VALUE_FONT: Record<StatisticSize, string> = {
+    sm: 'var(--iris-font-size-2xl, 20px)',
+    md: 'var(--iris-font-size-3xl, 24px)',
+    lg: 'var(--iris-font-size-4xl, 30px)',
+  }
   const TREND_COLOR: Record<StatisticTrend, string> = {
     up: 'var(--iris-success, #10b981)',
     down: 'var(--iris-danger)',

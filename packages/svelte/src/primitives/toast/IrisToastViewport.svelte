@@ -103,7 +103,7 @@
       opacity +
       transition +
       'touch-action: pan-y; cursor: grab; display: flex; align-items: flex-start; ' +
-      'gap: var(--iris-gap-md, 12px); background: var(--iris-surface); color: var(--iris-foreground); ' +
+      'gap: var(--iris-gap-md, 12px); background: var(--iris-surface-floating); animation: var(--iris-anim-toast); color: var(--iris-foreground); ' +
       `border: 1px solid ${VARIANT_BORDER[toast.variant]}; ` +
       `border-inline-start: 4px solid ${VARIANT_ACCENT[toast.variant]}; ` +
       'border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-md, 12px); ' +
@@ -192,7 +192,7 @@
     // (Host must set <meta name="viewport" content="...,viewport-fit=cover">.)
     const parts = [
       'position: fixed',
-      'z-index: 1400',
+      'z-index: var(--iris-z-toast, 1400)',
       'display: flex',
       'flex-direction: column',
       'gap: var(--iris-gap-md, 12px)',

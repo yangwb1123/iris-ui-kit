@@ -1,4 +1,5 @@
 import { For, Show, createSignal, onCleanup, splitProps, type JSX } from 'solid-js'
+import { installFloatingAnimations, ANIM_TOAST } from '../../floating/animations'
 import { Portal } from 'solid-js/web'
 import { createAutoDismiss, type AutoDismiss } from '@iris-ui-kit/core'
 import {
@@ -92,6 +93,7 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
     const dismisser = createAutoDismiss({
       duration: remaining,
       onDismiss: () => {
+        installFloatingAnimations()
         dismissers.delete(toast.id)
         dismissToast(toast.id)
       },
@@ -231,7 +233,8 @@ export function IrisToastViewport(props: IrisToastViewportProps): JSX.Element {
                 display: 'flex',
                 'align-items': 'flex-start',
                 gap: 'var(--iris-gap-md, 12px)',
-                background: 'var(--iris-surface)',
+                background: 'var(--iris-surface-floating)',
+                animation: ANIM_TOAST,
                 color: 'var(--iris-foreground)',
                 border: `1px solid ${VARIANT_BORDER[toast.variant]}`,
                 'border-inline-start': `4px solid ${VARIANT_ACCENT[toast.variant]}`,

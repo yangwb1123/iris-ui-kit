@@ -196,6 +196,19 @@ export const IrisTable = defineComponent({
     expandedRowsChange: (_keys: Array<string | number>) => true,
   },
   setup(props, { slots, attrs, emit }) {
+    if (typeof document !== 'undefined' && !document.getElementById('iris-table-row-styles')) {
+      const style = document.createElement('style')
+      style.id = 'iris-table-row-styles'
+      style.textContent = `
+[data-iris-table] [role="row"]:hover {
+  --iris-cell-bg: var(--iris-surface-hover);
+}
+[data-iris-table-row-selected="true"] {
+  --iris-cell-bg: var(--iris-surface-selected);
+}
+`
+      document.head.appendChild(style)
+    }
     const { t } = useI18n()
 
     // -------- Multi-level (grouped) headers --------
@@ -1309,8 +1322,7 @@ export const IrisTable = defineComponent({
                   alignItems: 'center',
                   justifyContent:
                     align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start',
-                  background:
-                    props.striped && index % 2 === 1 ? 'var(--iris-surface)' : 'transparent',
+                  background: 'var(--iris-cell-bg, transparent)',
                   padding: isEditing
                     ? 'var(--iris-space-xxs, 4px)'
                     : 'var(--iris-space-xs, 8px) var(--iris-padding-md)',

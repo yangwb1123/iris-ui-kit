@@ -61,7 +61,7 @@ export const IrisSwitch = React.forwardRef<HTMLInputElement, IrisSwitchProps>(fu
     height: dim.height,
     background: value ? 'var(--iris-primary)' : 'var(--iris-border)',
     borderRadius: 999,
-    transition: 'background-color 120ms ease',
+    transition: 'background-color var(--iris-transition-fast, 150ms) ease',
     cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.6 : 1,
     verticalAlign: 'middle',
@@ -77,7 +77,7 @@ export const IrisSwitch = React.forwardRef<HTMLInputElement, IrisSwitchProps>(fu
     height: dim.thumb,
     background: 'var(--iris-background)',
     borderRadius: 999,
-    transition: 'left 140ms ease',
+    transition: 'left var(--iris-transition-fast, 150ms) ease',
     boxShadow: 'var(--iris-shadow-sm)',
   }
 

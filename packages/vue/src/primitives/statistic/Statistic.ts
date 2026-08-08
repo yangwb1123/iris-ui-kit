@@ -4,7 +4,11 @@ export type IrisStatisticSize = 'sm' | 'md' | 'lg'
 export type IrisStatisticTrend = 'up' | 'down' | 'neutral'
 export type IrisStatisticTone = 'success' | 'danger' | 'neutral'
 
-const VALUE_FONT: Record<IrisStatisticSize, number> = { sm: 20, md: 28, lg: 36 }
+const VALUE_FONT: Record<IrisStatisticSize, string> = {
+  sm: 'var(--iris-font-size-2xl, 20px)',
+  md: 'var(--iris-font-size-3xl, 24px)',
+  lg: 'var(--iris-font-size-4xl, 30px)',
+}
 const TREND_COLOR: Record<IrisStatisticTrend, string> = {
   up: 'var(--iris-success, #10b981)',
   down: 'var(--iris-danger)',

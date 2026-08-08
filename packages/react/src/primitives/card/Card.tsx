@@ -11,7 +11,7 @@ function installCardStyles() {
   style.textContent = `
 [data-iris-card-hover="true"]:hover {
   transform: translateY(-2px);
-  box-shadow: var(--iris-shadow-md);
+  box-shadow: var(--iris-shadow-lg);
 }
 `
   document.head.appendChild(style)
@@ -23,8 +23,8 @@ export type IrisCardPadding = 'none' | 'sm' | 'md' | 'lg'
 const PADDING_MAP: Record<IrisCardPadding, string> = {
   none: '0',
   sm: '12px',
-  md: 'var(--iris-padding-md, 16px)',
-  lg: '24px',
+  md: 'var(--iris-padding-lg, 20px)',
+  lg: 'var(--iris-space-xl, 24px)',
 }
 
 function variantStyle(variant: IrisCardVariant): React.CSSProperties {

@@ -152,7 +152,7 @@ export function IrisMenuSub({
         padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
         borderRadius: 'var(--iris-radius-sm, 4px)',
         cursor: 'pointer',
-        outline: 'none',
+
         fontSize: 'var(--iris-font-size-md, 14px)',
         background: open ? 'var(--iris-surface-hover)' : 'transparent',
       }}
@@ -184,14 +184,14 @@ export function IrisMenuSub({
       onPointerEnter={clearTimer}
       style={{
         ...floatingStyles,
-        background: 'var(--iris-surface)',
+        background: 'var(--iris-surface-floating)',
         color: 'var(--iris-foreground)',
         border: '1px solid var(--iris-border)',
         borderRadius: 'var(--iris-radius-md, 6px)',
         padding: 'var(--iris-padding-sm, 4px)',
         boxShadow: 'var(--iris-shadow-lg)',
         minWidth: 180,
-        outline: 'none',
+
         zIndex: 1001,
       }}
     >

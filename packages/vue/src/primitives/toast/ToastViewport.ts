@@ -1,3 +1,4 @@
+import { installFloatingAnimations, ANIM_TOAST } from '../floating/animations'
 import {
   Teleport,
   defineComponent,
@@ -74,6 +75,7 @@ export const IrisToastViewport = defineComponent({
     max: { type: Number, default: 5 },
   },
   setup(props, { attrs }) {
+    installFloatingAnimations()
     const { t } = useI18n()
     const toasts = ref<IrisToast[]>(getToasts())
     const hovered = ref(false)
@@ -256,7 +258,8 @@ export const IrisToastViewport = defineComponent({
             display: 'flex',
             alignItems: 'flex-start',
             gap: 'var(--iris-gap-md)',
-            background: 'var(--iris-surface)',
+            background: 'var(--iris-surface-floating)',
+            animation: ANIM_TOAST,
             color: 'var(--iris-foreground)',
             border: `1px solid ${VARIANT_BORDER[toast.variant]}`,
             borderInlineStart: `4px solid ${VARIANT_ACCENT[toast.variant]}`,

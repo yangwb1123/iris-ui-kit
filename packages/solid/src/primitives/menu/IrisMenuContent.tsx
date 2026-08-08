@@ -94,7 +94,7 @@ export function IrisMenuContent(props: IrisMenuContentProps): JSX.Element {
       onKeyDown={handleKeyDown}
       style={{
         ...floatingStyles(),
-        background: 'var(--iris-surface)',
+        background: 'var(--iris-surface-floating)',
         color: 'var(--iris-foreground)',
         border: '1px solid var(--iris-border)',
         'border-radius': 'var(--iris-radius-md, 6px)',
@@ -102,7 +102,7 @@ export function IrisMenuContent(props: IrisMenuContentProps): JSX.Element {
         'box-shadow': 'var(--iris-shadow-lg)',
         'min-width': '160px',
         outline: 'none',
-        'z-index': 1000,
+        'z-index': 'var(--iris-z-popover, 1000)',
         ...((local.style as JSX.CSSProperties) ?? {}),
       }}
     >

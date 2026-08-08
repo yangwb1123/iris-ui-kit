@@ -58,7 +58,7 @@
       height: dim.height,
       background: value ? 'var(--iris-primary)' : 'var(--iris-border)',
       'border-radius': '999px',
-      transition: 'background-color 120ms ease',
+      transition: 'background-color var(--iris-transition-fast, 150ms) ease',
       cursor: disabled ? 'not-allowed' : 'pointer',
       opacity: disabled ? 0.6 : 1,
       'vertical-align': 'middle',
@@ -74,7 +74,7 @@
       height: dim.thumb,
       background: 'var(--iris-background)',
       'border-radius': '999px',
-      transition: 'left 140ms ease',
+      transition: 'left var(--iris-transition-fast, 150ms) ease',
       'box-shadow': 'var(--iris-shadow-sm)',
     }),
   )

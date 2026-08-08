@@ -8,7 +8,7 @@
     success: 'var(--iris-success, #10b981)',
     warning: 'var(--iris-warning, #f59e0b)',
     danger: 'var(--iris-danger)',
-    info: 'var(--iris-info, #3b82f6)',
+    info: 'var(--iris-info, #0ea5e9)',
   }
 
   let {

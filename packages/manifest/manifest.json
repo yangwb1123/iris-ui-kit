@@ -8506,6 +8506,12 @@
               "optional": true
             },
             {
+              "name": "allowCommit",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "id",
               "type": "string",
               "optional": true
@@ -8517,6 +8523,7 @@
             }
           ],
           "events": [
+            "commit",
             "update:modelValue"
           ],
           "slots": [],
@@ -36054,12 +36061,19 @@
               "name": "defaultExpandedRowKeys",
               "type": "Array<string | number>",
               "optional": true
+            },
+            {
+              "name": "treeSelectionCascade",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             }
           ],
           "events": [
             "cellEdit",
             "expandedRowsChange",
             "rowClick",
+            "rowDblclick",
             "update:columnWidths",
             "update:selection",
             "update:sort"

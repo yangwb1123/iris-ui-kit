@@ -1,4 +1,14 @@
-import { computed, onBeforeUnmount, onMounted, ref, type ComputedRef, type Ref } from 'vue'
+import {
+  computed,
+  isRef,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+  type ComputedRef,
+  type MaybeRefOrGetter,
+  type Ref,
+} from 'vue'
 import {
   createPaginatedResource,
   type PageQuery,
@@ -34,12 +44,59 @@ export interface UsePaginatedResourceReturn<T> {
 /**
  * Vue binding for the server-side pagination resource. Created in `setup()`
  * (fetcher closure stays live) and bridged to computed refs.
+ *
+ * The fetcher may be reactive — pass `ref(fetcher)` or `computed(() => fetcher)`
+ * and the *current* closure is used on every page load (`goToPage`/`loadMore`/
+ * `refresh`). Updating it does NOT auto-refetch; trigger a load yourself:
+ *
+ * ```ts
+ * const p = usePaginatedResource(computed(() => api.listUsers(props.id)))
+ * watch(() => props.id, () => void p.refresh())
+ * ```
+ *
+ * A bare getter `() => fetcher` is indistinguishable from a plain fetcher and
+ * is treated as one — use `computed`/`ref` for reactive fetchers.
  */
 export function usePaginatedResource<T>(
-  fetcher: (query: PageQuery) => Promise<PageResult<T>>,
+  fetcher: MaybeRefOrGetter<(query: PageQuery) => Promise<PageResult<T>>>,
   options: UsePaginatedResourceOptions = {},
 ): UsePaginatedResourceReturn<T> {
-  const resource = createPaginatedResource<T>(fetcher, {
+  // Plain-object holder (the Vue analog of React's `latest.current` ref):
+  // core only ever sees the wrapper below, which re-reads `holder.current` at
+  // call time — so every page load (and `refresh`'s replay) uses the fresh
+  // closure for the component's whole lifetime.
+  const holder: { current: (query: PageQuery) => Promise<PageResult<T>> } = {
+    // isRef-only resolution. NEVER toValue() here: the element type is itself
+    // a function, so toValue(fetcher) would *invoke the fetcher at setup*
+    // (spurious request) and toValue(getter) would do the same. isRef narrows
+    // to the only unambiguous reactive form: ref(fetcher) / computed(() =>
+    // fetcher) / shallowRef(fetcher) — a ComputedRef IS a Ref.
+    // F3 elision point — the ONE explicit narrowing cast: after the isRef
+    // guard the else arm is `F | (() => F)`, and the bare-getter arm's return
+    // `F` (a function) is not assignable to `F` (TS2322). No runtime
+    // discriminant distinguishes a plain fetcher from a bare getter (both are
+    // functions), so the cast encodes exactly the documented F3 ambiguity and
+    // adds no unsafety beyond F3.
+    current: (isRef(fetcher) ? fetcher.value : fetcher) as (
+      query: PageQuery,
+    ) => Promise<PageResult<T>>,
+  }
+  if (isRef(fetcher)) {
+    // Ref sources only. watch(fn, cb) would treat a plain function source as a
+    // getter: evaluate it once at setup (spurious fetcher invocation) and track
+    // its deps. flush: 'sync' (precedent useAdminShell.ts:67) guarantees a
+    // page load in the same tick as the ref assignment sees the new closure.
+    // Plain-object holder => the swap is not reactive, no re-render.
+    watch(
+      fetcher,
+      (next) => {
+        holder.current = next
+      },
+      { flush: 'sync' },
+    )
+  }
+
+  const resource = createPaginatedResource<T>((query) => holder.current(query), {
     pageSize: options.pageSize,
     mode: options.mode,
   })

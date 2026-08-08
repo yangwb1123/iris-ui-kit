@@ -1,6 +1,6 @@
-import { computed, onBeforeUnmount, ref, type ComputedRef, type Ref } from 'vue'
-import type { FormState, FormValues } from '@iris-ui-kit/core'
+import { computed, type ComputedRef } from 'vue'
 import { useFormContext } from './context'
+import { useStoreSelector } from '../useStore'
 
 export interface UseFieldArrayReturn<T> {
   name: string
@@ -28,17 +28,19 @@ export interface UseFieldArrayReturn<T> {
  */
 export function useFieldArray<T = unknown>(name: string): UseFieldArrayReturn<T> {
   const form = useFormContext()
-  const state = ref(form.getState()) as Ref<FormState<FormValues>>
-  const unsubscribe = form.subscribe((next) => {
-    state.value = next
-  })
-  onBeforeUnmount(unsubscribe)
+
+  // One narrow slice for the whole array, Object.is-gated by core `subscribeWith`.
+  // CRITICAL: the selector must not allocate — `(s) => s.values[name] ?? []` would
+  // mint a fresh [] per emission and defeat the Object.is gate — so the `[]`
+  // fallback lives in the computed wrapper (re-evaluated only when the raw slice
+  // moves). Array mutations produce a fresh array (correct re-render); untouched
+  // rows are unaffected.
+  const raw = useStoreSelector(form.store, (s) => s.values[name])
+  const fields = computed(() => (Array.isArray(raw.value) ? raw.value : []) as T[])
 
   return {
     name,
-    fields: computed(
-      () => (Array.isArray(state.value.values[name]) ? state.value.values[name] : []) as T[],
-    ),
+    fields,
     push: (item) => form.arrayPush(name as never, item as never),
     remove: (index) => form.arrayRemove(name as never, index),
     insert: (index, item) => form.arrayInsert(name as never, index, item as never),

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- 拆分共享 import 段，测试体动态使用 */
 import { describe, it, expect, vi } from 'vitest'
 import {
   compareValues,

@@ -388,3 +388,4 @@ export {
   type EditRule,
   type EditRules,
 } from './edit-rules'
+export { createUndoStack, type UndoStack, type UndoStackOptions } from './undo'

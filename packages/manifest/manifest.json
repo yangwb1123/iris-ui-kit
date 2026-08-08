@@ -9138,7 +9138,9 @@
           "slots": [
             "default"
           ],
-          "publicTypes": []
+          "publicTypes": [
+            "IrisComposeProps"
+          ]
         },
         "vue": {
           "source": "native",
@@ -36098,10 +36100,22 @@
           "description": "Called when a data row is clicked. Interactive child controls stop propagation."
         },
         {
+          "name": "rowDrag",
+          "type": "{",
+          "optional": true,
+          "description": "Row drag-sort configuration (composed over core createSortable)."
+        },
+        {
+          "name": "editConfig",
+          "type": "{",
+          "optional": true,
+          "description": "Inline-edit configuration (vxe-grid editConfig parity)."
+        },
+        {
           "name": "onCellEdit",
           "type": "(event: IrisTableCellEditEvent<Row>) => void",
           "optional": true,
-          "description": "Called when an inline-editable cell is committed with a changed value."
+          "description": "Drop the draft when opening another cell without committing."
         },
         {
           "name": "renderDetail",
@@ -36304,10 +36318,22 @@
               "description": "Called when a data row is clicked. Interactive child controls stop propagation."
             },
             {
+              "name": "rowDrag",
+              "type": "{",
+              "optional": true,
+              "description": "Row drag-sort configuration (composed over core createSortable)."
+            },
+            {
+              "name": "editConfig",
+              "type": "{",
+              "optional": true,
+              "description": "Inline-edit configuration (vxe-grid editConfig parity)."
+            },
+            {
               "name": "onCellEdit",
               "type": "(event: IrisTableCellEditEvent<Row>) => void",
               "optional": true,
-              "description": "Called when an inline-editable cell is committed with a changed value."
+              "description": "Drop the draft when opening another cell without committing."
             },
             {
               "name": "renderDetail",
@@ -36462,6 +36488,11 @@
               "type": "boolean",
               "optional": true,
               "default": "false"
+            },
+            {
+              "name": "editConfig",
+              "type": "{ trigger?: 'click' | 'dblclick' | 'manual' showAsterisk?: boolean autoClear?: boolean }",
+              "optional": true
             },
             {
               "name": "bordered",
@@ -37020,7 +37051,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 35,
+        "propCount": 37,
         "eventCount": 7
       }
     },

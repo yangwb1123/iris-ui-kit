@@ -18,7 +18,12 @@ import {
 } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useStore } from '../../useStore'
-import { createCellEdit, validateEditRulesAsync } from '@iris-ui-kit/core'
+import {
+  createCellEdit,
+  createSortable,
+  validateEditRulesAsync,
+  type SortableRect,
+} from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
@@ -154,6 +159,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onRowClick,
   onCellEdit,
   editConfig,
+  rowDrag,
   renderDetail,
   rowExpandable,
   defaultExpandedRowKeys,
@@ -342,6 +348,66 @@ export function IrisTable<Row extends Record<string, unknown>>({
   )
   const editTarget = useStore(cellEdit.store)
   const editingTarget = editTarget.editing
+  // ── Row drag-sort (composed over core createSortable) ──────────────────
+  // One controller + container-level pointer handling; each row renders a
+  // drag handle that seeds the press. Drop targets are collected on first
+  // movement past the threshold (rects are captured once, then reused).
+  const rowDragCtrl = React.useMemo(() => createSortable(), [])
+  const rowDragState = useStore(rowDragCtrl)
+  const rowRectsRef = React.useRef<SortableRect[]>([])
+  const rowDragActiveId = rowDragState.activeId
+  const rowDragOverId = rowDragState.overId
+
+  const handleRowDragPointerDown = (e: React.PointerEvent, rowId: string) => {
+    if (!rowDrag || e.button !== 0) return
+    e.preventDefault()
+    rowDragCtrl.press(rowId, e.clientX, e.clientY)
+  }
+
+  const handleRowDragPointerMove = (e: React.PointerEvent) => {
+    if (!rowDrag) return
+    if (rowDragCtrl.isPending()) {
+      const started = rowDragCtrl.tryStart(e.clientX, e.clientY)
+      if (started) {
+        const rects: SortableRect[] = []
+        rootRef.current?.querySelectorAll('[data-iris-table-row]').forEach((el) => {
+          const r = (el as HTMLElement).getBoundingClientRect()
+          const id = (el as HTMLElement).getAttribute('data-iris-table-row')
+          if (id) rects.push({ id, left: r.left, top: r.top, width: r.width, height: r.height })
+        })
+        rowRectsRef.current = rects
+      }
+    }
+    if (rowDragCtrl.getState().activeId !== null) {
+      rowDragCtrl.moveOver({ x: e.clientX, y: e.clientY }, rowRectsRef.current)
+    }
+  }
+
+  const handleRowDragPointerUp = () => {
+    if (!rowDrag) return
+    if (rowDragCtrl.isPending()) {
+      rowDragCtrl.cancel()
+      return
+    }
+    const { activeId, overId } = rowDragCtrl.end()
+    if (activeId !== null && overId !== null && activeId !== overId) {
+      const rows = [...bodyData] as Row[]
+      const from = rows.findIndex((r) => String(rowKeyOf(r)) === activeId)
+      const to = rows.findIndex((r) => String(rowKeyOf(r)) === overId)
+      if (from >= 0 && to >= 0 && from !== to) {
+        const [moved] = rows.splice(from, 1)
+        rows.splice(to, 0, moved)
+        rowDrag.onReorder(rows)
+      }
+    }
+    rowRectsRef.current = []
+  }
+
+  const handleRowDragPointerLeave = () => {
+    if (rowDrag && rowDragCtrl.getState().activeId !== null) {
+      rowDragCtrl.cancel()
+    }
+  }
 
   React.useEffect(() => {
     if (editingTarget !== null) editorRef.current?.focus()
@@ -652,6 +718,33 @@ export function IrisTable<Row extends Record<string, unknown>>({
         onClick={() => onRowClick?.(row, idx)}
         style={{ display: 'grid', gridTemplateColumns, ...extraStyle }}
       >
+        {rowDrag ? (
+          <div
+            role="cell"
+            data-iris-table-cell="__drag"
+            data-iris-row-drag-active={rowDragActiveId === String(k ?? idx) ? 'true' : undefined}
+            data-iris-row-drag-over={rowDragOverId === String(k ?? idx) ? 'true' : undefined}
+            onPointerDown={(e) => handleRowDragPointerDown(e, String(k ?? idx))}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              ...baseCellStyle,
+              justifyContent: 'center',
+              cursor: 'grab',
+              color: 'var(--iris-muted)',
+              borderBottom: borderStyle,
+              background:
+                rowDragActiveId === String(k ?? idx)
+                  ? 'var(--iris-surface-hover)'
+                  : rowDragOverId === String(k ?? idx)
+                    ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
+                    : 'transparent',
+            }}
+          >
+            <span aria-hidden="true" style={{ fontSize: 'var(--iris-font-size-sm, 13px)' }}>
+              ⠿
+            </span>
+          </div>
+        ) : null}
         {hasDetail ? (
           <div
             role="cell"
@@ -903,6 +996,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
             }
           : undefined
       }
+      onPointerMove={rowDrag ? handleRowDragPointerMove : undefined}
+      onPointerUp={rowDrag ? handleRowDragPointerUp : undefined}
+      onPointerLeave={rowDrag ? handleRowDragPointerLeave : undefined}
       onScroll={
         columnVirtualization
           ? (e) => setScrollLeft((e.currentTarget as HTMLDivElement).scrollLeft)

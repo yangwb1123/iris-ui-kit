@@ -34,6 +34,11 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   /** Called when a data row is clicked. Interactive child controls stop propagation. */
   onRowClick?: (row: Row, rowIndex: number) => void
   /** Called when an inline-editable cell is committed with a changed value. */
+  /** Row drag-sort configuration (composed over core createSortable). */
+  rowDrag?: {
+    /** Reorder callback — receives the reordered row array (parent owns data). */
+    onReorder: (rows: Row[]) => void
+  }
   /** Inline-edit configuration (vxe-grid editConfig parity). */
   editConfig?: {
     /** What opens the editor. Default `'dblclick'`. */

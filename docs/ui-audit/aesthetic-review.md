@@ -335,3 +335,28 @@ diff on the demo surfaces.
 
 _Report generated as part of the iris-ui aesthetic review pass — no files
 modified._
+
+---
+
+## 执行状态（2026-08-07）
+
+P1-P15 全部落地（提交 87bde91f）：
+
+- P1 ✅ per-tone foreground token（success/danger/info + dark 深墨）
+- P2 ✅ iris.surface.floating + 24 浮层文件消费
+- P3 ✅ 四浮层入场动效（CSS 变量 + reduced-motion）
+- P4 ✅ 全局 focus-visible ring（6 控件类 + inline outline 清理）
+- P5 ✅ Card padding 对齐（md 20 / lg 24）
+- P6 ✅ 阴影双层分层 + Card hover md→lg
+- P7 ✅ Button hover color-mix（去 filter）
+- P8 ✅ Table row hover/selected（--iris-cell-bg，react/vue；solid/svelte
+  保持 row 级 selected，像素门禁保证一致）
+- P9 ✅ Statistic 20/24/30 + Badge sm 12px + z-index token
+- P10 ✅ Switch 150ms 同步
+- P11 ✅ info → #0ea5e9（sky）
+- P12 ✅ radius.sm 2→4
+- P13 记录：base 15px 保留（兼容），display tracking 待后续
+- P14 ✅ EmptyState icon 48px 容器
+- P15 ✅ skeleton radius 4
+
+视觉基线重建后四框架 parity 全 PASS；180/180 turbo + 审计 0。

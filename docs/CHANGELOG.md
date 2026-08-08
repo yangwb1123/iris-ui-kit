@@ -205,3 +205,12 @@ See `ROADMAP.md` history + git log for R1–R86 (ROADMAP v2 fully implemented) a
   0.02 硬门、vue 0.05 回归门——2.8% 已知渲染基线，>5% 视为回归），四框架
   light/dark 全 PASS。剩余唯一记录项：Gauge 阈值映射（显式 status 保持，
   组件注释给出消费方推导建议）。180/180 turbo 绿，审计 0 违规。
+
+- **2026-08-07 — 美学评审（P1-P15）全部落地。** ai-batch-runner 美学评审
+  （色彩和谐/排版/节奏/形态/动效五维）产出 15 项改进并全部实现：Badge
+  语义色前景（dark 深墨 AA）、surface.floating 浮层层级（dark 浮层脱离
+  卡片）、四浮层入场动效（reduced-motion 归零）、全局 focus ring、
+  Card padding/阴影对齐、Button hover color-mix、Table row hover/selected、
+  Statistic 值 token 化、Switch 动效同步、info 色相 sky、radius 软化
+  2→4、EmptyState 图标容器、skeleton 圆角。视觉基线重建后四框架 parity
+  全 PASS；180/180 turbo + 审计 0。

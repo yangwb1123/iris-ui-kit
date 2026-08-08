@@ -15,6 +15,24 @@ import type { IrisSelectItem } from './types'
 
 export type IrisSelectSize = Size
 
+/**
+ * State handed to `renderTrigger`. Additive superset of the historical
+ * `{ value, label, open }` — existing destructuring callers keep compiling.
+ */
+export interface IrisSelectTriggerState<T = unknown> {
+  value: T | undefined
+  label: string
+  open: boolean
+  /** Forwarded from the `id` prop; set by `IrisFormField`. */
+  id?: string
+  /** Forwarded from the `ariaDescribedby` prop; set by `IrisFormField`. */
+  ariaDescribedby?: string
+  /** Always present; `true` when the FormField (or caller) marks invalid. */
+  invalid: boolean
+  /** Always present; `true` when the select is disabled. */
+  disabled: boolean
+}
+
 const SIZE_STYLES: Record<
   IrisSelectSize,
   { padding: string; fontSize: string; minHeight: number }
@@ -43,8 +61,9 @@ export interface IrisSelectProps<T = unknown> {
   id?: string
   /** Forwarded as `aria-describedby` on the trigger. Set by `IrisFormField`. */
   ariaDescribedby?: string
-  /** Custom render for the trigger button. Receives current label + open state. */
-  renderTrigger?: (state: { value: T | undefined; label: string; open: boolean }) => React.ReactNode
+  /** Custom render for the trigger button. Receives label + open state plus
+   *  the form wiring (`id` / `ariaDescribedby` / `invalid` / `disabled`). */
+  renderTrigger?: (state: IrisSelectTriggerState<T>) => React.ReactNode
   style?: React.CSSProperties
   className?: string
 }
@@ -87,6 +106,11 @@ export function IrisSelect<T = unknown>({
   const value = isControlled ? valueProp : internal
   const [open, setOpen] = React.useState(false)
 
+  // Typeahead-open target, consumed (read + cleared) by the open-reset effect
+  // below so a typeahead match isn't clobbered by re-anchoring to the selected
+  // item. Freshly set on every open-producing keydown ⇒ never stale.
+  const pendingOpenTargetRef = React.useRef<number | null>(null)
+
   const selectedItem = safeItems.find((it) => it.value === value) ?? null
   const label = selectedItem
     ? (selectedItem.label ?? String(selectedItem.value))
@@ -127,6 +151,10 @@ export function IrisSelect<T = unknown>({
   // Reset active index when opening so focus starts at the selected (or first enabled) item.
   React.useEffect(() => {
     if (open) {
+      // A typeahead-open already emitted its match to the store — skip the reset.
+      const pending = pendingOpenTargetRef.current
+      pendingOpenTargetRef.current = null
+      if (pending !== null) return
       const selIdx = safeItems.findIndex((it) => it.value === value)
       if (selIdx >= 0 && !safeItems[selIdx]?.disabled) {
         nav.focus(selIdx)
@@ -167,6 +195,21 @@ export function IrisSelect<T = unknown>({
     // Escape is implicitly handled by Popover's dismiss
   }
 
+  // Closed-trigger keyboard (combobox pattern, trigger half): ArrowDown and
+  // typeahead open the popover via the shared core keymap; all other keys are
+  // left untouched so native Space/Enter button activation still toggles.
+  const handleTriggerKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (disabled || open) return
+    const action: KeyboardNavAction = nav.handleClosedKeyDown({
+      key: e.key,
+      preventDefault: () => e.preventDefault(),
+    })
+    if (action.type === 'open') {
+      pendingOpenTargetRef.current = action.target ?? null
+      setOpen(true)
+    }
+  }
+
   const sizeStyles = SIZE_STYLES[size]
   const triggerStyle: React.CSSProperties = {
     display: 'inline-flex',
@@ -190,7 +233,7 @@ export function IrisSelect<T = unknown>({
   }
 
   const triggerNode = renderTrigger ? (
-    renderTrigger({ value, label, open })
+    renderTrigger({ value, label, open, id, ariaDescribedby, invalid, disabled })
   ) : (
     <button
       type="button"
@@ -237,7 +280,9 @@ export function IrisSelect<T = unknown>({
 
   return (
     <IrisPopover open={open} onOpenChange={setOpen} placement={placement}>
-      <IrisPopoverTrigger asChild>{triggerNode as React.ReactElement}</IrisPopoverTrigger>
+      <IrisPopoverTrigger asChild onKeyDown={handleTriggerKeyDown}>
+        {triggerNode as React.ReactElement}
+      </IrisPopoverTrigger>
       <IrisPopoverContent
         autoFocus={false}
         style={{ padding: 'var(--iris-padding-sm, 4px)', minWidth: 180 }}

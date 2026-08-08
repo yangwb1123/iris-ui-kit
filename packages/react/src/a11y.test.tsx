@@ -213,6 +213,31 @@ describe('@iris-ui-kit/react a11y (axe-core)', () => {
     expect(await axeViolations(document.body)).toEqual([])
   })
 
+  it('keyboard-opened IrisSelect has no violations; Escape closes and restores trigger focus', async () => {
+    render(
+      <IrisFormField label="Choose">
+        <IrisSelect
+          items={[
+            { value: 'a', label: 'Alpha' },
+            { value: 'b', label: 'Bravo' },
+          ]}
+        />
+      </IrisFormField>,
+    )
+    const trigger = document.querySelector('[data-iris-select-trigger]') as HTMLButtonElement
+    await act(async () => {
+      trigger.focus()
+      fireEvent.keyDown(trigger, { key: 'ArrowDown' }) // closed-trigger open path
+    })
+    expect(await axeViolations(document.body)).toEqual([])
+    await act(async () => {
+      fireEvent.keyDown(trigger, { key: 'Escape' })
+    })
+    expect(document.querySelector('[role=listbox]')).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+    expect(await axeViolations(document.body)).toEqual([])
+  })
+
   it('open IrisCombobox has no violations', async () => {
     const { container } = render(
       <IrisFormField label="Fruit">

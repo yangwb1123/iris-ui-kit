@@ -27,6 +27,7 @@ import {
   otpInputScenario,
   dataSourceScenario,
   dataSourceAsyncScenario,
+  dataSourceResilientScenario,
   dialogScenario,
   popoverScenario,
   drawerScenario,
@@ -67,7 +68,11 @@ import {
   OtpInputHarness,
   ColumnResizeHarness,
 } from './contracts-harnesses'
-import { DataSourceHarness, DataSourceAsyncHarness } from './contracts-harnesses-data'
+import {
+  DataSourceHarness,
+  DataSourceAsyncHarness,
+  DataSourceResilientHarness,
+} from './contracts-harnesses-data'
 import { IrisList } from './primitives/list/List'
 import { IrisTable } from './primitives/table/Table'
 import { IrisTree } from './primitives/tree/Tree'
@@ -513,6 +518,18 @@ describe('@iris-ui-kit/vue — cross-framework behavior contracts', () => {
     await nextTick()
     await nextTick()
     await runContract(dataSourceAsyncScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared resilient DataSource contract', async () => {
+    const el = makeHost()
+    const wrapper = mount(DataSourceResilientHarness, { attachTo: el })
+    await nextTick()
+    await nextTick()
+    await runContract(
+      dataSourceResilientScenario,
+      driverFor(wrapper.element as HTMLElement),
+      expect,
+    )
   })
 
   it('satisfies the shared List keyboard contract', async () => {

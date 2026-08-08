@@ -30916,9 +30916,8 @@
         },
         {
           "name": "renderTrigger",
-          "type": "(state: { value: T | undefined; label: string; open: boolean }) => React.ReactNode",
-          "optional": true,
-          "description": "Custom render for the trigger button. Receives current label + open state."
+          "type": "(state: IrisSelectTriggerState<T>) => React.ReactNode",
+          "optional": true
         },
         {
           "name": "style",
@@ -31003,9 +31002,8 @@
             },
             {
               "name": "renderTrigger",
-              "type": "(state: { value: T | undefined; label: string; open: boolean }) => React.ReactNode",
-              "optional": true,
-              "description": "Custom render for the trigger button. Receives current label + open state."
+              "type": "(state: IrisSelectTriggerState<T>) => React.ReactNode",
+              "optional": true
             },
             {
               "name": "style",
@@ -31027,7 +31025,8 @@
           "publicTypes": [
             "IrisSelectItem",
             "IrisSelectProps",
-            "IrisSelectSize"
+            "IrisSelectSize",
+            "IrisSelectTriggerState"
           ]
         },
         "vue": {

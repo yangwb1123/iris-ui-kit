@@ -32,6 +32,7 @@ import {
   overlayDestroyScenario,
   dataSourceScenario,
   dataSourceAsyncScenario,
+  dataSourceResilientScenario,
   tooltipScenario,
   comboboxScenario,
   toastScenario,
@@ -50,7 +51,10 @@ import { useCallback, useState } from 'react'
 import {
   createSyncClientDataSource,
   createClientDataSource,
+  filterSort,
+  paginate,
   type DataViewColumn,
+  type DataSourceQuery,
 } from '@iris-ui-kit/core'
 import { useDataSource } from './data/useDataSource'
 import { IrisTabs } from './primitives/tabs/Tabs'
@@ -260,6 +264,79 @@ function DataSourceAsyncHarness() {
         data-loading={String(ds.state.loading)}
         data-fetches={String(getFetches())}
       />
+      {ds.state.rows.map((r) => (
+        <div key={r.id} data-iris-ds-row>
+          {r.name}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Resilient-contract dataset: 3 rows, paged mode, pageSize 10, TTL 60s. The
+ * fetcher reads a MUTABLE backing store and returns per-row COPIES (never
+ * aliasing it), so the rename mutation becomes visible ONLY through a real
+ * re-fetch — and `data-fetches` proves cache hits (reload within TTL) vs.
+ * genuine network reads (multiSort key change, post-mutate invalidation).
+ */
+const dsResilientData: DsRow[] = [
+  { id: 1, name: 'Charlie', age: 30 },
+  { id: 2, name: 'Alice', age: 25 },
+  { id: 3, name: 'Bob', age: 35 },
+]
+
+function makeResilientFetcher() {
+  const backing: DsRow[] = dsResilientData.map((r) => ({ ...r }))
+  let fetches = 0
+  const fetcher = (q: DataSourceQuery) => {
+    const processed = filterSort(backing, dsColumns, {
+      filters: q.filters,
+      sort: q.sort,
+      multiSort: q.multiSort,
+      filterRules: q.filterRules,
+    })
+    fetches += 1
+    return {
+      rows: paginate(processed, q.page, q.pageSize).map((r) => ({ ...r })),
+      total: processed.length,
+    }
+  }
+  const renameFirst = () => {
+    backing[0] = { ...backing[0]!, name: `${backing[0]!.name}!` }
+  }
+  return { fetcher, getFetches: () => fetches, renameFirst }
+}
+
+/** Component exercising the useDataSource bridge with `resilient` enabled. */
+function DataSourceResilientHarness() {
+  const [{ fetcher, getFetches, renameFirst }] = useState(makeResilientFetcher)
+  const ds = useDataSource<DsRow>({
+    fetcher,
+    pageSize: 10,
+    resilient: { ttlMs: 60000 },
+  })
+  return (
+    <div>
+      <button data-iris-ds-reload onClick={() => void ds.reload()}>
+        reload
+      </button>
+      <button
+        data-iris-ds-multisort-a
+        onClick={() => ds.setMultiSort([{ key: 'age', direction: 'asc' }])}
+      >
+        sortAge
+      </button>
+      <button
+        data-iris-ds-multisort-b
+        onClick={() => ds.setMultiSort([{ key: 'name', direction: 'desc' }])}
+      >
+        sortName
+      </button>
+      <button data-iris-ds-mutate onClick={() => void ds.mutate(async () => renameFirst())}>
+        mutate
+      </button>
+      <div data-iris-ds-meta data-fetches={String(getFetches())} />
       {ds.state.rows.map((r) => (
         <div key={r.id} data-iris-ds-row>
           {r.name}
@@ -635,6 +712,11 @@ describe('@iris-ui-kit/react — cross-framework behavior contracts', () => {
   it('satisfies the shared async DataSource contract', async () => {
     const { container } = render(<DataSourceAsyncHarness />)
     await runContract(dataSourceAsyncScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared resilient DataSource contract', async () => {
+    const { container } = render(<DataSourceResilientHarness />)
+    await runContract(dataSourceResilientScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Tooltip contract', async () => {

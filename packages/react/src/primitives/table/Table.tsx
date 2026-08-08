@@ -18,6 +18,7 @@ import {
 } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useStore } from '../../useStore'
+import { createCellEdit } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
@@ -281,58 +282,75 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
 
   // Inline editing: one cell at a time, keyed by `${rowKey}::${colKey}`. The
-  // draft is mirrored into a ref so a commit reads the latest value even when
-  // the change + Enter events are processed in the same React batch.
-  const [editingCellId, setEditingCellId] = React.useState<string | null>(null)
-  const [editingDraft, setEditingDraft] = React.useState('')
-  const [editError, setEditError] = React.useState<string | null>(null)
-  const draftRef = React.useRef('')
+  // whole draft/validate/coerce session lives in the framework-agnostic
+  // createCellEdit controller (core); the adapter only bridges the editor
+  // element and resolves the row/column context for the session callbacks.
   const editorRef = React.useRef<HTMLInputElement | null>(null)
+  const onCellEditRef = React.useRef(onCellEdit)
+  onCellEditRef.current = onCellEdit
+  const editCtxRef = React.useRef<{ row: Row; col: IrisTableColumn<Row>; rowIndex: number } | null>(
+    null,
+  )
   const cellId = (rowIdent: string | number, colKey: string): string => `${rowIdent}::${colKey}`
+  const coerceValue = (col: IrisTableColumn<Row>, draft: unknown): unknown => {
+    const s = String(draft)
+    if (col.editor !== 'number') return s
+    return s === '' || Number.isNaN(Number(s))
+      ? getCellValue(editCtxRef.current!.row, col)
+      : Number(s)
+  }
+  const cellEdit = React.useMemo(
+    () =>
+      createCellEdit({
+        validate: (draft, _target) => {
+          const ctx = editCtxRef.current
+          if (!ctx?.col.validate) return null
+          return ctx.col.validate(coerceValue(ctx.col, draft), ctx.row) ?? null
+        },
+        coerce: (draft, _target) => {
+          const ctx = editCtxRef.current
+          return ctx ? coerceValue(ctx.col, draft) : draft
+        },
+        onCommit: (_target, value) => {
+          const ctx = editCtxRef.current
+          if (!ctx) return
+          const oldValue = getCellValue(ctx.row, ctx.col)
+          if (value !== oldValue) {
+            onCellEditRef.current?.({
+              row: ctx.row,
+              column: ctx.col,
+              oldValue,
+              newValue: value,
+              rowIndex: ctx.rowIndex,
+            })
+          }
+        },
+      }),
+    [],
+  )
+  const editTarget = useStore(cellEdit.store)
+  const editingTarget = editTarget.editing
 
   React.useEffect(() => {
-    if (editingCellId !== null) editorRef.current?.focus()
-  }, [editingCellId])
+    if (editingTarget !== null) editorRef.current?.focus()
+  }, [editingTarget])
 
-  const setDraft = (value: string) => {
-    draftRef.current = value
-    setEditingDraft(value)
-  }
-  const beginEdit = (row: Row, col: IrisTableColumn<Row>, rowIdent: string | number) => {
+  const beginEdit = (
+    row: Row,
+    col: IrisTableColumn<Row>,
+    rowIdent: string | number,
+    rowIndex: number,
+  ) => {
     if (!col.editable) return
+    editCtxRef.current = { row, col, rowIndex }
     const current = getCellValue(row, col)
-    setDraft(current == null ? '' : String(current))
-    setEditError(null)
-    setEditingCellId(cellId(rowIdent, col.key))
+    cellEdit.startEdit(cellId(rowIdent, col.key), col.key, current == null ? '' : String(current))
   }
   const cancelEdit = () => {
-    setEditError(null)
-    setEditingCellId(null)
+    cellEdit.cancelEdit()
   }
-  const commitEdit = (row: Row, col: IrisTableColumn<Row>, rowIndex: number) => {
-    if (editingCellId === null) return
-    const oldValue = getCellValue(row, col)
-    const draft = draftRef.current
-    const newValue =
-      col.editor === 'number'
-        ? draft === '' || Number.isNaN(Number(draft))
-          ? oldValue
-          : Number(draft)
-        : draft
-    // A column validator can reject the draft: keep the editor open, surface the
-    // message, and skip the commit until the value is valid (or the user cancels).
-    if (col.validate) {
-      const error = col.validate(newValue, row)
-      if (error) {
-        setEditError(error)
-        return
-      }
-    }
-    setEditError(null)
-    setEditingCellId(null)
-    if (newValue !== oldValue) {
-      onCellEdit?.({ row, column: col, oldValue, newValue, rowIndex })
-    }
+  const commitEdit = () => {
+    cellEdit.commitEdit()
   }
 
   const onHeaderKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, col: IrisTableColumn<Row>) => {
@@ -682,7 +700,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         {leafColumns.map((col, ci) => {
           if (visibleColSet && !visibleColSet.has(ci)) return null
           const raw = getCellValue(row, col)
-          const editing = editingCellId === cellId(k, col.key)
+          const editing = cellEdit.isEditing(cellId(k, col.key), col.key)
           return (
             <div
               key={col.key}
@@ -719,7 +737,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     },
                   }
                 : null)}
-              onDoubleClick={col.editable ? () => beginEdit(row, col, k) : undefined}
+              onDoubleClick={col.editable ? () => beginEdit(row, col, k, idx) : undefined}
               style={{
                 ...baseCellStyle,
                 ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
@@ -788,25 +806,27 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   <input
                     ref={editorRef}
                     type={col.editor === 'number' ? 'number' : 'text'}
-                    value={editingDraft}
+                    value={String(cellEdit.getDraft() ?? '')}
                     data-iris-table-editor=""
-                    aria-invalid={editError ? 'true' : undefined}
-                    aria-describedby={editError ? `${cellId(k, col.key)}-error` : undefined}
-                    onChange={(e) => setDraft(e.target.value)}
+                    aria-invalid={cellEdit.getError() ? 'true' : undefined}
+                    aria-describedby={
+                      cellEdit.getError() ? `${cellId(k, col.key)}-error` : undefined
+                    }
+                    onChange={(e) => cellEdit.setDraft(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault()
-                        commitEdit(row, col, idx)
+                        commitEdit()
                       } else if (e.key === 'Escape') {
                         e.preventDefault()
                         cancelEdit()
                       }
                     }}
-                    onBlur={() => commitEdit(row, col, idx)}
+                    onBlur={() => commitEdit()}
                     onClick={(e) => e.stopPropagation()}
                     style={{
                       width: '100%',
-                      border: `1px solid ${editError ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
+                      border: `1px solid ${cellEdit.getError() ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
                       borderRadius: 'var(--iris-radius-sm, 4px)',
                       padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
                       font: 'inherit',
@@ -815,7 +835,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       outline: 'none',
                     }}
                   />
-                  {editError ? (
+                  {cellEdit.getError() ? (
                     <div
                       id={`${cellId(k, col.key)}-error`}
                       role="alert"
@@ -826,7 +846,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         color: 'var(--iris-danger)',
                       }}
                     >
-                      {editError}
+                      {cellEdit.getError()}
                     </div>
                   ) : null}
                 </>

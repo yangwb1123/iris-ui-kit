@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createFormStore, createDirtyGuard } from './form'
+import { createFormStore, createDirtyGuard, type FieldErrors, type FormStore } from './form'
 
 describe('createFormStore', () => {
   it('seeds state from initialValues', () => {
@@ -247,6 +247,115 @@ describe('createFormStore', () => {
       })
       const errors = await form.validateForm()
       expect(errors.confirm).toBe('Passwords must match')
+    })
+
+    it('drops a stale whole-form result when superseded', async () => {
+      const gate: Array<(e: FieldErrors<{ field: string }>) => void> = []
+      const form = createFormStore({
+        initialValues: { field: 'v1' },
+        validateOnChange: false,
+        validate: () =>
+          new Promise<FieldErrors<{ field: string }>>((resolve) => {
+            gate.push(resolve)
+          }),
+      })
+      const p1 = form.validateForm() // whole-form pass against v1
+      form.setFieldValue('field', 'v2') // edit bumps the form token
+      const p2 = form.validateForm() // newer pass against v2
+      // Let both passes reach their config.validate before resolving.
+      await Promise.resolve()
+      gate[1]!({ field: 'E2' }) // newer pass wins first
+      await p2
+      gate[0]!({ field: 'E1-stale' }) // stale pass resolves after
+      const staleResult = await p1
+      // The stale E1-stale must not resurrect into the current map.
+      expect(form.getState().errors).toEqual({ field: 'E2' })
+      // The superseded pass returns the CURRENT map, not its stale one.
+      expect(staleResult).toEqual({ field: 'E2' })
+    })
+
+    it('stale whole-form error cannot resurrect a cleared field', async () => {
+      let resolveStale!: (e: FieldErrors<{ field: string }>) => void
+      const form = createFormStore({
+        initialValues: { field: 'x' },
+        validateOnChange: false,
+        validate: () =>
+          new Promise<FieldErrors<{ field: string }>>((resolve) => {
+            resolveStale = resolve
+          }),
+      })
+      const p1 = form.validateForm() // slow whole-form pass
+      form.setFieldValue('field', 'y') // mid-flight edit
+      await Promise.resolve() // let the pass reach config.validate
+      resolveStale({ field: 'stale error' })
+      const result = await p1
+      expect(form.getState().errors.field).toBeUndefined()
+      // `finally` still clears isValidating for the stale pass.
+      expect(form.getState().isValidating).toBe(false)
+      expect(result).toEqual({})
+    })
+
+    // F1 tripwire: EVERY values-write site must invalidate an in-flight
+    // whole-form pass, or the stale-merge reproduction window stays open.
+    type WriteSite = (form: FormStore<{ field: string }>) => void
+    const writeSites: Array<[string, WriteSite]> = [
+      ['immediate setFieldValue', (f) => f.setFieldValue('field', 'z')],
+      ['setValues', (f) => f.setValues({ field: 'z' })],
+      ['undo', (f) => f.undo()],
+      [
+        'redo',
+        (f) => {
+          f.undo()
+          f.redo()
+        },
+      ],
+      ['hydrate', (f) => f.hydrate({ values: { field: 'z' } })],
+      ['reset', (f) => f.reset()],
+    ]
+    it.each(writeSites)('%s invalidates an in-flight whole-form pass', async (_label, write) => {
+      let resolveStale!: (e: FieldErrors<{ field: string }>) => void
+      const form = createFormStore({
+        initialValues: { field: 'x' },
+        validateOnChange: false,
+        maxHistory: 10,
+        validate: () =>
+          new Promise<FieldErrors<{ field: string }>>((resolve) => {
+            resolveStale = resolve
+          }),
+      })
+      form.setFieldValue('field', 'y') // history baseline for undo/redo
+      const p = form.validateForm() // in-flight whole-form pass
+      await Promise.resolve() // let the pass reach config.validate
+      write(form) // the write site under test
+      resolveStale({ field: 'stale' })
+      const result = await p
+      // The stale pass wrote nothing — error map is the pre-pass map.
+      expect(form.getState().errors).toEqual({})
+      expect(result).toEqual({})
+    })
+
+    it('invalidates an in-flight whole-form pass on a debounced setFieldValue flush', async () => {
+      vi.useFakeTimers()
+      let resolveStale!: (e: FieldErrors<{ field: string }>) => void
+      const form = createFormStore({
+        initialValues: { field: 'x' },
+        validateOnChange: false,
+        setFieldValueDebounceMs: 100,
+        validate: () =>
+          new Promise<FieldErrors<{ field: string }>>((resolve) => {
+            resolveStale = resolve
+          }),
+      })
+      const p = form.validateForm()
+      form.setFieldValue('field', 'y') // buffered — no store write yet
+      vi.advanceTimersByTime(250) // flush → store write + form-token bump
+      await Promise.resolve() // let the pass reach config.validate
+      resolveStale({ field: 'stale' })
+      const result = await p
+      expect(form.getState().errors).toEqual({})
+      expect(form.getState().values.field).toBe('y')
+      expect(result).toEqual({})
+      vi.useRealTimers()
     })
   })
 

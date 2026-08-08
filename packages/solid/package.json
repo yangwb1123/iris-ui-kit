@@ -113,7 +113,7 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@floating-ui/dom": "^1.7.6",
+    "@floating-ui/dom": "^1.8.0",
     "@iris-ui-kit/core": "workspace:*",
     "@iris-ui-kit/icons": "workspace:*",
     "@iris-ui-kit/skins": "workspace:*",
@@ -128,7 +128,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "esbuild-plugin-solid": "^0.6.0",
     "jsdom": "^25.0.1",
-    "solid-js": "^1.9.3",
+    "solid-js": "^1.9.14",
     "tsup": "^8.3.5",
     "vite-plugin-solid": "^2.11.0"
   },

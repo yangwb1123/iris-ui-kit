@@ -1,6 +1,8 @@
 export { IrisTable, type IrisTableProps } from './Table'
 export {
   type IrisTableColumn,
+  type IrisTableCellClickParams,
+  type IrisTableSeqMethodParams,
   type IrisTableColumnWidths,
   type IrisTableEditor,
   type IrisTableAggregateOp,

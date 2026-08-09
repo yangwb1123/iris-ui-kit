@@ -29,7 +29,7 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   /** First sequence number (vxe seq-config.startIndex parity). Default 1. */
   seqStartIndex?: number
   /** Custom sequence renderer (vxe seq-config.seqMethod parity). */
-  seqMethod?: (params: { rowIndex: number; columnIndex: number }) => string | number
+  seqMethod?: (params: import('./types').IrisTableSeqMethodParams) => string | number
   /** Current (highlighted) row key (vxe row-config.isCurrent parity). */
   currentRowKey?: string | number
   /** Fired when the current row changes (row click). */
@@ -79,12 +79,7 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
     rowIndex: number,
   ) => import('react').CSSProperties
   /** Cell click (vxe cell-click parity). Fired after internal handlers. */
-  onCellClick?: (params: {
-    row: Row
-    column: import('./types').IrisTableColumn<Row>
-    rowIndex: number
-    columnIndex: number
-  }) => void
+  onCellClick?: (params: import('./types').IrisTableCellClickParams<Row>) => void
   bordered?: boolean
   /** Enable column resizing (drag the header's trailing edge or focus + arrow keys). */
   resizableColumns?: boolean
@@ -137,13 +132,10 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make
    * the cell span adjacent cells (the spanned cells are skipped).
    */
-  spanMethod?: (params: { rowIndex: number; columnIndex: number }) =>
-    | {
-        rowspan?: number
-        colspan?: number
-      }
-    | null
-    | undefined
+  spanMethod?: (params: {
+    rowIndex: number
+    columnIndex: number
+  }) => { rowspan?: number; colspan?: number } | null | undefined
   /** Row drag-sort configuration (composed over core createSortable). */
   rowDrag?: {
     /** Reorder callback — receives the reordered row array (parent owns data). */

@@ -22,6 +22,20 @@ export interface IrisTableSortState {
   direction: IrisTableSortDirection
 }
 
+/** Params delivered to `IrisTableProps.seqMethod` (vxe seqMethod parity). */
+export interface IrisTableSeqMethodParams {
+  rowIndex: number
+  columnIndex: number
+}
+
+/** Coordinates delivered to `IrisTableProps.onCellClick` (vxe cell-click parity). */
+export interface IrisTableCellClickParams<Row = Record<string, unknown>> {
+  row: Row
+  column: IrisTableColumn<Row>
+  rowIndex: number
+  columnIndex: number
+}
+
 export interface IrisTableColumn<Row = Record<string, unknown>> {
   key: string
   title: string

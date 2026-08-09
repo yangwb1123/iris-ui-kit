@@ -36146,43 +36146,43 @@
         },
         {
           "name": "cellClassName",
-          "type": "(row: Row, column: import('./types').IrisTableColumn<Row>, rowIndex: number) => string",
+          "type": "(row: Row, column: IrisTableColumn<Row>, rowIndex: number) => string",
           "optional": true,
           "description": "Per-cell class hook (vxe cell-class-name parity)."
         },
         {
           "name": "headerCellClassName",
-          "type": "(column: import('./types').IrisTableColumn<Row>) => string",
+          "type": "(column: IrisTableColumn<Row>) => string",
           "optional": true,
           "description": "Per-header-cell class hook (vxe header-cell-class-name parity)."
         },
         {
           "name": "footerCellClassName",
-          "type": "(column: import('./types').IrisTableColumn<Row>, rowIndex: number) => string",
+          "type": "(column: IrisTableColumn<Row>, rowIndex: number) => string",
           "optional": true,
           "description": "Per-footer-cell class hook (vxe footer-cell-class-name parity)."
         },
         {
           "name": "rowStyle",
-          "type": "(row: Row, rowIndex: number) => import('react').CSSProperties",
+          "type": "(row: Row, rowIndex: number) => CSSProperties",
           "optional": true,
           "description": "Per-row inline style hook (vxe row-style parity)."
         },
         {
           "name": "cellStyle",
-          "type": "(row: Row, column: import('./types').IrisTableColumn<Row>, rowIndex: number) => import('react').CSSProperties",
+          "type": "(row: Row, column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties",
           "optional": true,
           "description": "Per-cell inline style hook (vxe cell-style parity)."
         },
         {
           "name": "headerCellStyle",
-          "type": "(column: import('./types').IrisTableColumn<Row>) => import('react').CSSProperties",
+          "type": "(column: IrisTableColumn<Row>) => CSSProperties",
           "optional": true,
           "description": "Per-header-cell inline style hook (vxe header-cell-style parity)."
         },
         {
           "name": "footerCellStyle",
-          "type": "(column: import('./types').IrisTableColumn<Row>, rowIndex: number) => import('react').CSSProperties",
+          "type": "(column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties",
           "optional": true,
           "description": "Per-footer-cell inline style hook (vxe footer-cell-style parity)."
         },
@@ -36248,6 +36248,12 @@
           "type": "(next: Record<string, string>) => void",
           "optional": true,
           "description": "Fired when a filter value changes (parent owns the map)."
+        },
+        {
+          "name": "formConfig",
+          "type": "IrisTableFormConfig",
+          "optional": true,
+          "description": "Search form (vxe-grid formConfig parity)."
         },
         {
           "name": "toolbar",
@@ -36550,43 +36556,43 @@
             },
             {
               "name": "cellClassName",
-              "type": "(row: Row, column: import('./types').IrisTableColumn<Row>, rowIndex: number) => string",
+              "type": "(row: Row, column: IrisTableColumn<Row>, rowIndex: number) => string",
               "optional": true,
               "description": "Per-cell class hook (vxe cell-class-name parity)."
             },
             {
               "name": "headerCellClassName",
-              "type": "(column: import('./types').IrisTableColumn<Row>) => string",
+              "type": "(column: IrisTableColumn<Row>) => string",
               "optional": true,
               "description": "Per-header-cell class hook (vxe header-cell-class-name parity)."
             },
             {
               "name": "footerCellClassName",
-              "type": "(column: import('./types').IrisTableColumn<Row>, rowIndex: number) => string",
+              "type": "(column: IrisTableColumn<Row>, rowIndex: number) => string",
               "optional": true,
               "description": "Per-footer-cell class hook (vxe footer-cell-class-name parity)."
             },
             {
               "name": "rowStyle",
-              "type": "(row: Row, rowIndex: number) => import('react').CSSProperties",
+              "type": "(row: Row, rowIndex: number) => CSSProperties",
               "optional": true,
               "description": "Per-row inline style hook (vxe row-style parity)."
             },
             {
               "name": "cellStyle",
-              "type": "(row: Row, column: import('./types').IrisTableColumn<Row>, rowIndex: number) => import('react').CSSProperties",
+              "type": "(row: Row, column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties",
               "optional": true,
               "description": "Per-cell inline style hook (vxe cell-style parity)."
             },
             {
               "name": "headerCellStyle",
-              "type": "(column: import('./types').IrisTableColumn<Row>) => import('react').CSSProperties",
+              "type": "(column: IrisTableColumn<Row>) => CSSProperties",
               "optional": true,
               "description": "Per-header-cell inline style hook (vxe header-cell-style parity)."
             },
             {
               "name": "footerCellStyle",
-              "type": "(column: import('./types').IrisTableColumn<Row>, rowIndex: number) => import('react').CSSProperties",
+              "type": "(column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties",
               "optional": true,
               "description": "Per-footer-cell inline style hook (vxe footer-cell-style parity)."
             },
@@ -36652,6 +36658,12 @@
               "type": "(next: Record<string, string>) => void",
               "optional": true,
               "description": "Fired when a filter value changes (parent owns the map)."
+            },
+            {
+              "name": "formConfig",
+              "type": "IrisTableFormConfig",
+              "optional": true,
+              "description": "Search form (vxe-grid formConfig parity)."
             },
             {
               "name": "toolbar",
@@ -36834,6 +36846,8 @@
             "IrisTableColumn",
             "IrisTableColumnWidths",
             "IrisTableEditor",
+            "IrisTableFormConfig",
+            "IrisTableFormField",
             "IrisTableProps",
             "IrisTableProxyQueryParams",
             "IrisTableRenderDetail",
@@ -37438,7 +37452,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 67,
+        "propCount": 68,
         "eventCount": 12
       }
     },

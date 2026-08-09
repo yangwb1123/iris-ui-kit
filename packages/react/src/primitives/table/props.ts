@@ -3,6 +3,7 @@ import type {
   IrisTableCellEditEvent,
   IrisTableColumn,
   IrisTableColumnWidths,
+  IrisTableFormField,
   IrisTableRenderDetail,
   IrisTableRowExpandable,
   IrisTableSortState,
@@ -35,6 +36,24 @@ export interface IrisTableProxyConfig<Row extends Record<string, unknown>> {
   defaultPage?: number
   /** Fired when the page changes. */
   onPageChange?: (page: number, pageSize: number) => void
+}
+
+/**
+ * Search-form configuration (vxe-grid formConfig parity). Renders a field row
+ * above the toolbar (or the table root). Submit merges the values into the
+ * table filters: client-side via the existing `filteredData` path, or into the
+ * proxy query (`setParams({ filters, page: 1 })`) when `proxyConfig` is set.
+ */
+export interface IrisTableFormConfig {
+  fields: IrisTableFormField[]
+  /** Label of the submit button. Defaults to the i18n `table.formSubmit` key. */
+  submitText?: string
+  /** Label of the reset button. Defaults to the i18n `table.formReset` key. */
+  resetText?: string
+  /** Fired on submit with every field's value (empty strings stripped). */
+  onSearch?: (values: Record<string, string>) => void
+  /** Fired on reset with the reset values (defaults re-applied). */
+  onReset?: (values: Record<string, string>) => void
 }
 
 /** Public input surface for the React table adapter. */
@@ -81,32 +100,19 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   /** Per-row class hook (vxe row-class-name parity). */
   rowClassName?: (row: Row, rowIndex: number) => string
   /** Per-cell class hook (vxe cell-class-name parity). */
-  cellClassName?: (
-    row: Row,
-    column: import('./types').IrisTableColumn<Row>,
-    rowIndex: number,
-  ) => string
+  cellClassName?: (row: Row, column: IrisTableColumn<Row>, rowIndex: number) => string
   /** Per-header-cell class hook (vxe header-cell-class-name parity). */
-  headerCellClassName?: (column: import('./types').IrisTableColumn<Row>) => string
+  headerCellClassName?: (column: IrisTableColumn<Row>) => string
   /** Per-footer-cell class hook (vxe footer-cell-class-name parity). */
-  footerCellClassName?: (column: import('./types').IrisTableColumn<Row>, rowIndex: number) => string
+  footerCellClassName?: (column: IrisTableColumn<Row>, rowIndex: number) => string
   /** Per-row inline style hook (vxe row-style parity). */
-  rowStyle?: (row: Row, rowIndex: number) => import('react').CSSProperties
+  rowStyle?: (row: Row, rowIndex: number) => CSSProperties
   /** Per-cell inline style hook (vxe cell-style parity). */
-  cellStyle?: (
-    row: Row,
-    column: import('./types').IrisTableColumn<Row>,
-    rowIndex: number,
-  ) => import('react').CSSProperties
+  cellStyle?: (row: Row, column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties
   /** Per-header-cell inline style hook (vxe header-cell-style parity). */
-  headerCellStyle?: (
-    column: import('./types').IrisTableColumn<Row>,
-  ) => import('react').CSSProperties
+  headerCellStyle?: (column: IrisTableColumn<Row>) => CSSProperties
   /** Per-footer-cell inline style hook (vxe footer-cell-style parity). */
-  footerCellStyle?: (
-    column: import('./types').IrisTableColumn<Row>,
-    rowIndex: number,
-  ) => import('react').CSSProperties
+  footerCellStyle?: (column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties
   /** Cell click (vxe cell-click parity). Fired after internal handlers. */
   onCellClick?: (params: import('./types').IrisTableCellClickParams<Row>) => void
   bordered?: boolean
@@ -134,6 +140,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   filters?: Record<string, string>
   /** Fired when a filter value changes (parent owns the map). */
   onFiltersChange?: (next: Record<string, string>) => void
+  /** Search form (vxe-grid formConfig parity). */
+  formConfig?: IrisTableFormConfig
   /** Toolbar (vxe-grid toolbarConfig parity, minimal built-ins). */
   toolbar?: {
     title?: string
@@ -143,6 +151,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
     columnSettings?: boolean
     /** Enable the CSV import button. Receives parsed rows (header → keys). */
     onImport?: (rows: Record<string, unknown>[]) => void
+    /** Custom action buttons rendered after the built-ins (vxe toolbar buttons parity). */
+    buttons?: Array<{ key: string; label: string; onClick: () => void; icon?: string }>
   }
   /** Render with print-friendly styles (hides the toolbar, keeps rows). */
   printable?: boolean

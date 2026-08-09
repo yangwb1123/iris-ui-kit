@@ -63,27 +63,28 @@
 
 ## iris-ui 现状对比
 
-| 类别       | vxe-grid                    | iris-ui IrisTable            | 差距                                  |
-| ---------- | --------------------------- | ---------------------------- | ------------------------------------- |
-| 编辑       | editConfig+editRules 规则集 | editable 列 + validate 回调  | 缺规则集/click 激活/row 模式/状态图标 |
-| 选择       | checkbox/radio              | selectable multi ✓           | 缺 radio 单列                         |
-| 虚拟       | virtualX/virtualY           | virtualScroll ✓              | 基本对齐                              |
-| 列宽       | resizableConfig             | resizableColumns ✓           | 对齐                                  |
-| 列拖拽     | columnDragConfig            | —                            | 缺                                    |
-| 行拖拽     | rowDragConfig               | IrisSortable（外部）         | 可组合                                |
-| 序号列     | seqConfig                   | —                            | 缺                                    |
-| 合并单元格 | spanMethod                  | —                            | 缺                                    |
-| 排序       | sortConfig 多列             | sort 单列                    | 多列可扩展                            |
-| 筛选       | filterConfig                | —                            | 缺                                    |
-| 展开行     | expandConfig                | expandable ✓                 | 对齐                                  |
-| 树形       | treeConfig                  | tree ✓                       | 对齐                                  |
-| 汇总       | footerMethod                | summary ✓                    | 对齐                                  |
-| 撤销       | undoRedoHistory             | core undo（外部）            | 可组合                                |
-| 工具栏     | toolbarConfig               | —                            | 缺                                    |
-| 搜索表单   | formConfig                  | 外部组件                     | 可组合                                |
-| 数据代理   | proxyConfig                 | proxyConfig ✓（批 C，react） | 对齐（react，core 控制器）            |
-| 导入导出   | export/import               | exportCsv/Excel ✓            | 缺导入                                |
-| 打印       | printConfig                 | —                            | 缺                                    |
+| 类别       | vxe-grid                    | iris-ui IrisTable            | 差距                                       |
+| ---------- | --------------------------- | ---------------------------- | ------------------------------------------ |
+| 编辑       | editConfig+editRules 规则集 | editable 列 + validate 回调  | 缺规则集/click 激活/row 模式/状态图标      |
+| 选择       | checkbox/radio              | selectable multi ✓           | 缺 radio 单列                              |
+| 虚拟       | virtualX/virtualY           | virtualScroll ✓              | 基本对齐                                   |
+| 列宽       | resizableConfig             | resizableColumns ✓           | 对齐                                       |
+| 列拖拽     | columnDragConfig            | —                            | 缺                                         |
+| 行拖拽     | rowDragConfig               | IrisSortable（外部）         | 可组合                                     |
+| 序号列     | seqConfig                   | —                            | 缺                                         |
+| 合并单元格 | spanMethod                  | —                            | 缺                                         |
+| 排序       | sortConfig 多列             | sort 单列                    | 多列可扩展                                 |
+| 筛选       | filterConfig                | —                            | 缺                                         |
+| 展开行     | expandConfig                | expandable ✓                 | 对齐                                       |
+| 树形       | treeConfig                  | tree ✓                       | 对齐                                       |
+| 汇总       | footerMethod                | summary ✓                    | 对齐                                       |
+| 撤销       | undoRedoHistory             | core undo（外部）            | 可组合                                     |
+| 工具栏     | toolbarConfig               | —                            | 缺                                         |
+| 搜索表单   | formConfig                  | 外部组件                     | 可组合                                     |
+| 数据代理   | proxyConfig                 | proxyConfig ✓（批 C，react） | 对齐（react，core 控制器）                 |
+| 搜索表单   | formConfig                  | formConfig ✓（批 D，react）  | 对齐（react；远程合并 filters + 本地过滤） |
+| 导入导出   | export/import               | exportCsv/Excel ✓            | 缺导入                                     |
+| 打印       | printConfig                 | —                            | 缺                                         |
 
 ## 构建状态（2026-08 完成，react only）
 

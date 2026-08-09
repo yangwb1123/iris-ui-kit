@@ -16,6 +16,7 @@ import { IrisTable, type IrisTableColumn } from '@iris-ui-kit/react'
  *   editConfig/trigger     → editConfig={{ trigger: 'click' }}
  *   editRules              → columns[].editRules
  *   proxyConfig            → proxyConfig={{ query, remoteSort, pageSize }}
+ *   formConfig             → formConfig={{ fields, submitText, resetText }}
  */
 
 interface GridRow {
@@ -172,6 +173,51 @@ export function VxeGridExamplePage() {
           proxyConfig={{
             query: remoteQuery,
             remoteSort: true,
+            pageSize: 8,
+          }}
+          columns={columns}
+        />
+      </section>
+
+      <section>
+        <h2 style={{ margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }}>
+          搜索表单（Search form）
+        </h2>
+        <p
+          style={{
+            margin: '0 0 12px',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
+            color: 'var(--iris-muted)',
+          }}
+        >
+          官方示例对照：formConfig——表格上方搜索区；提交将表单值合并进远程查询 filters 并重置到第 1
+          页（服务端筛选），重置清空并重新查询
+        </p>
+        <IrisTable
+          bordered
+          rowKey="id"
+          formConfig={{
+            fields: [
+              { key: 'name', label: 'Name', type: 'text', placeholder: 'Test2' },
+              {
+                key: 'role',
+                label: 'Role',
+                type: 'select',
+                options: [
+                  { value: '', label: '全部' },
+                  { value: 'Develop', label: 'Develop' },
+                  { value: 'Test', label: 'Test' },
+                  { value: 'PM', label: 'PM' },
+                  { value: 'Designer', label: 'Designer' },
+                ],
+              },
+            ],
+            submitText: '查询',
+            resetText: '重置',
+          }}
+          proxyConfig={{
+            query: remoteQuery,
+            remoteFilter: true,
             pageSize: 8,
           }}
           columns={columns}

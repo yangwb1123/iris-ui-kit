@@ -1,6 +1,7 @@
 import * as React from 'react'
 import {
   aggregate,
+  buildFormValues,
   buildHeaderMatrix,
   computeVirtualRange,
   createCellRange,
@@ -8,6 +9,8 @@ import {
   createSelectionModel,
   flattenLeafColumns,
   flattenTree,
+  mergeFormFilters,
+  seedFormValues,
   withSortedChildren,
   nextGridCell,
   type CellRangeController,
@@ -17,6 +20,10 @@ import {
   type TreeRow,
 } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
+import { IrisInput } from '../input/Input'
+import { IrisSelect } from '../select/Select'
+import { IrisFormField } from '../form-field/FormField'
+import { IrisButton } from '../button/Button'
 import { useStore } from '../../useStore'
 import {
   createCellEdit,
@@ -44,6 +51,9 @@ const TABLE_ROW_CSS = `
 }
 @media print {
   [data-iris-table-toolbar] {
+    display: none !important;
+  }
+  [data-iris-table-form] {
     display: none !important;
   }
   [data-iris-table][data-printable="true"] {
@@ -209,6 +219,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   columnVisibility,
   onColumnVisibilityChange,
   filters,
+  formConfig,
   toolbar,
   printable = false,
   seq = false,
@@ -382,12 +393,70 @@ export function IrisTable<Row extends Record<string, unknown>>({
     proxyRef.current?.setParams({ sort: sort ?? null })
   }, [proxy, remoteSort, sort])
 
+  // ── Search form (vxe-grid formConfig parity, batch D) ──────────────────
+  // Draft/applied two-state: keystrokes only touch the DRAFT (never trigger a
+  // query); submit/reset promote the built values into the APPLIED filters.
+  // The draft is seeded from field defaultValue and re-seeded only when the
+  // field set (or a default) actually changes, so an inline formConfig object
+  // with a fresh identity each render never wipes user input.
+  const [formDraft, setFormDraft] = React.useState<Record<string, string>>(() =>
+    seedFormValues(formConfig?.fields),
+  )
+  const [formApplied, setFormApplied] = React.useState<Record<string, string>>({})
+  const formFieldSignature = (formConfig?.fields ?? [])
+    .map((f) => `${f.key}=${f.defaultValue ?? ''}`)
+    .join('\u0000')
+  React.useEffect(() => {
+    setFormDraft(seedFormValues(formConfig?.fields))
+    setFormApplied({})
+    // Keyed on the field signature only — inline formConfig objects with a
+    // fresh identity per render must not re-seed (nor wipe user input).
+  }, [formFieldSignature])
+  const setFormValue = (key: string, value: string): void => {
+    setFormDraft((prev) => (prev[key] === value ? prev : { ...prev, [key]: value }))
+  }
+  const handleFormSubmit = (e: React.FormEvent): void => {
+    e.preventDefault()
+    const values = buildFormValues(formConfig?.fields, formDraft)
+    formConfig?.onSearch?.(values)
+    setFormApplied(values)
+    // Proxy mode: the server owns filtering — merge the form values into the
+    // controller filters (page resets to 1 in core applyParams, vxe behavior).
+    if (proxy) {
+      proxyRef.current?.setParams({ filters: mergeFormFilters(filters ?? {}, values), page: 1 })
+    }
+  }
+  const handleFormReset = (e: React.FormEvent): void => {
+    e.preventDefault()
+    const defaults = seedFormValues(formConfig?.fields)
+    setFormDraft(defaults)
+    const values = buildFormValues(formConfig?.fields, defaults)
+    setFormApplied(values)
+    formConfig?.onReset?.(values)
+    if (proxy) {
+      // setParams returns false when the merged params are unchanged (e.g.
+      // filters already cleared) — a reset must still re-query, so force a
+      // refetch only in that no-op case (no double request when it changed).
+      if (
+        proxyRef.current?.setParams({
+          filters: mergeFormFilters(filters ?? {}, values),
+          page: 1,
+        }) === false
+      ) {
+        proxyRef.current?.refetch()
+      }
+    }
+  }
+
   // remoteFilter parity: hand the filter map to the server and never hide
-  // rows client-side (vxe proxyConfig.filter).
+  // rows client-side (vxe proxyConfig.filter). Form values are merged in so a
+  // later `filters` prop change from the parent does not silently drop the
+  // applied search (the draft would still show it). The effect lives after
+  // the form state declarations (formApplied is referenced in the deps).
   React.useEffect(() => {
     if (!proxy || !remoteFilter) return
-    proxyRef.current?.setParams({ filters: filters ?? {} })
-  }, [proxy, remoteFilter, filters])
+    proxyRef.current?.setParams({ filters: mergeFormFilters(filters ?? {}, formApplied) })
+  }, [proxy, remoteFilter, filters, formApplied])
 
   // Row-selection logic (single/multiple toggle, dedup, select-all,
   // controlled/uncontrolled) is single-sourced in the core model; keys are the
@@ -757,9 +826,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // Client-side filters (vxe filterConfig parity, local mode): core filterSort
   // applied to the sorted data before paging/virtualizing (flat mode). With
   // remoteFilter, the server owns filtering — rows are never hidden locally.
+  // The search form's applied values merge over the `filters` prop (form wins,
+  // neither input is mutated); in proxy mode the server owns form filtering,
+  // so only the prop map filters the loaded page (batch C behavior preserved).
   const filteredData = React.useMemo(() => {
-    if (remoteFilter || !filters) return sortedData
-    const active = Object.entries(filters).filter(([, v]) => v != null && v !== '')
+    if (remoteFilter) return sortedData
+    const merged: Record<string, string> = proxy
+      ? (filters ?? {})
+      : mergeFormFilters(filters ?? {}, formApplied)
+    const active = Object.entries(merged).filter(([, v]) => v != null && v !== '')
     if (active.length === 0) return sortedData
     return sortedData.filter((row) =>
       active.every(([key, value]) => {
@@ -772,7 +847,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           .includes(value.toLowerCase())
       }),
     )
-  }, [sortedData, filters, displayColumns, remoteFilter])
+  }, [sortedData, filters, formApplied, displayColumns, remoteFilter, proxy])
   const bodyData = flatTree ? flatTree.map((t) => t.row) : filteredData
 
   const toggleAll = () => {
@@ -1332,6 +1407,55 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   return (
     <>
+      {formConfig ? (
+        <form
+          data-iris-table-form=""
+          onSubmit={handleFormSubmit}
+          onReset={handleFormReset}
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+            gap: 'var(--iris-space-sm, 12px)',
+            padding: 'var(--iris-space-sm, 12px)',
+            border: '1px solid var(--iris-border)',
+            borderBottom: 'none',
+            background: 'var(--iris-surface)',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
+          }}
+        >
+          {formConfig.fields.map((field) => (
+            <div key={field.key} data-iris-table-form-field={field.key} style={{ minWidth: 180 }}>
+              <IrisFormField label={field.label} size="sm">
+                {field.type === 'select' ? (
+                  <IrisSelect
+                    items={(field.options ?? []).map((o) => ({ value: o.value, label: o.label }))}
+                    value={formDraft[field.key] ?? ''}
+                    onValueChange={(v) => setFormValue(field.key, String(v ?? ''))}
+                    placeholder={field.placeholder ?? t('select.placeholder')}
+                    size="sm"
+                  />
+                ) : (
+                  <IrisInput
+                    value={formDraft[field.key] ?? ''}
+                    onChange={(e) => setFormValue(field.key, e.target.value)}
+                    placeholder={field.placeholder}
+                    size="sm"
+                  />
+                )}
+              </IrisFormField>
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: 'var(--iris-space-xs, 8px)' }}>
+            <IrisButton type="submit" size="sm" data-iris-table-form-submit="">
+              {formConfig.submitText ?? t('table.formSubmit')}
+            </IrisButton>
+            <IrisButton type="reset" variant="outline" size="sm" data-iris-table-form-reset="">
+              {formConfig.resetText ?? t('table.formReset')}
+            </IrisButton>
+          </div>
+        </form>
+      ) : null}
       {toolbar ? (
         <div
           data-iris-table-toolbar=""
@@ -1459,6 +1583,37 @@ export function IrisTable<Row extends Record<string, unknown>>({
               ) : null}
             </>
           ) : null}
+          {toolbar.buttons && toolbar.buttons.length > 0
+            ? toolbar.buttons.map((btn) => (
+                <button
+                  key={btn.key}
+                  type="button"
+                  data-iris-table-toolbar-button={btn.key}
+                  {...{ [`data-iris-table-toolbar-button-${btn.key}`]: '' }}
+                  onClick={btn.onClick}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    color: 'var(--iris-foreground)',
+                    fontSize: 'var(--iris-font-size-md, 14px)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 'var(--iris-space-xxs, 4px)',
+                    padding: '0 var(--iris-space-xxs, 4px)',
+                  }}
+                  aria-label={btn.label}
+                  title={btn.label}
+                >
+                  {btn.icon ? (
+                    <span aria-hidden="true" style={{ fontSize: 'var(--iris-font-size-sm, 13px)' }}>
+                      {btn.icon}
+                    </span>
+                  ) : null}
+                  {btn.label}
+                </button>
+              ))
+            : null}
         </div>
       ) : null}
       <div

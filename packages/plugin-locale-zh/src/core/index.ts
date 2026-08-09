@@ -50,6 +50,8 @@ export const zhCNMessages: Record<string, string> = {
   'table.refresh': '刷新',
   'table.columnSettings': '列设置',
   'table.import': '导入 CSV',
+  'table.formSubmit': '查询',
+  'table.formReset': '重置',
   'list.empty': '暂无数据可显示',
   'list.loading': '加载中…',
   'list.error': '加载失败',

@@ -109,6 +109,8 @@ export const defaultMessages: I18nMessages = {
   'table.refresh': 'Refresh',
   'table.columnSettings': 'Column settings',
   'table.import': 'Import CSV',
+  'table.formSubmit': 'Search',
+  'table.formReset': 'Reset',
   'list.empty': 'No items to display',
   'list.loading': 'Loading…',
   'list.error': 'Failed to load',

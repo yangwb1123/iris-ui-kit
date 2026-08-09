@@ -1,4 +1,5 @@
 export { IrisTable, type IrisTableProps } from './Table'
+export { type IrisTableFormConfig } from './props'
 export {
   type IrisTableColumn,
   type IrisTableCellClickParams,
@@ -13,6 +14,7 @@ export {
   type IrisTableRowExpandable,
   type IrisTableSortDirection,
   type IrisTableSortState,
+  type IrisTableFormField,
 } from './types'
 export { exportCsv, downloadCsv } from './exportCsv'
 export { exportExcel, downloadExcel } from './exportExcel'

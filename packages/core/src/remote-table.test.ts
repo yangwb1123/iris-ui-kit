@@ -117,9 +117,22 @@ describe('createRemoteTableSource', () => {
     const query = datasetQuery(25)
     const source = createRemoteTableSource({ query })
     query.mockClear()
-    source.setParams({ page: 1 })
-    source.setParams({ sort: null })
-    source.setParams({ filters: {} })
+    // Returns false (no request) when nothing changed — callers that must
+    // re-query regardless (e.g. form reset) fall back to refetch().
+    expect(source.setParams({ page: 1 })).toBe(false)
+    expect(source.setParams({ sort: null })).toBe(false)
+    expect(source.setParams({ filters: {} })).toBe(false)
+    expect(query).not.toHaveBeenCalled()
+  })
+
+  it('setParams returns true when a request fires (params changed)', async () => {
+    const query = datasetQuery(25)
+    const source = createRemoteTableSource({ query, autoLoad: false })
+    expect(source.setParams({ page: 2 })).toBe(true)
+    await vi.waitFor(() => expect(query).toHaveBeenCalledTimes(1))
+    // Same value again → no-op.
+    query.mockClear()
+    expect(source.setParams({ page: 2 })).toBe(false)
     expect(query).not.toHaveBeenCalled()
   })
 

@@ -59,9 +59,11 @@ export interface RemoteTableSource<Row> {
   refetch(): Promise<void>
   /**
    * Merge partial params and re-request. A sort/filter change resets the page
-   * to 1 (vxe proxyConfig behavior). No-op (no request) when nothing changed.
+   * to 1 (vxe proxyConfig behavior). Returns false when nothing changed (no
+   * request fired) — callers that must re-query regardless (e.g. form reset)
+   * can fall back to `refetch()`.
    */
-  setParams(partial: Partial<RemoteTableParams>): void
+  setParams(partial: Partial<RemoteTableParams>): boolean
   /**
    * Tear down: abort any in-flight request so a late response never writes
    * back to a torn-down (e.g. unmounted) instance. Idempotent; safe to
@@ -197,8 +199,9 @@ export function createRemoteTableSource<Row>(
     },
     refetch: () => loadClamped(),
     setParams(partial) {
-      if (!applyParams(partial)) return
+      if (!applyParams(partial)) return false
       void loadClamped()
+      return true
     },
     destroy: () => ds.destroy(),
   }

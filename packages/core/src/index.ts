@@ -329,6 +329,7 @@ export {
   type RemoteTableSourceState,
   type RemoteTableParams,
 } from './remote-table'
+export { buildFormValues, mergeFormFilters, seedFormValues } from './table-form'
 export {
   createTabsNav,
   isClosable,

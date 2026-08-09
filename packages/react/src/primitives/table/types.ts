@@ -22,6 +22,25 @@ export interface IrisTableSortState {
   direction: IrisTableSortDirection
 }
 
+/**
+ * One search-form field (vxe-grid formConfig items parity). On submit the
+ * field's value merges into the table filters under `key` (client-side path
+ * or the proxy query); empty strings are inactive and stripped.
+ */
+export interface IrisTableFormField {
+  /** Filter key — matched against column keys and the query `filters` map. */
+  key: string
+  /** Visible field label. */
+  label: string
+  /** Control kind. Default `'text'`. */
+  type?: 'text' | 'select'
+  /** Options when `type: 'select'`. */
+  options?: Array<{ value: string; label: string }>
+  placeholder?: string
+  /** Initial value; reset restores it. */
+  defaultValue?: string
+}
+
 /** Params delivered to `IrisTableProps.proxyConfig.query` (vxe proxyConfig parity). */
 export interface IrisTableProxyQueryParams {
   /** 1-based page number. */

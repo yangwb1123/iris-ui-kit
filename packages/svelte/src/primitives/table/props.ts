@@ -10,7 +10,8 @@ import type {
 /** Public input surface for the Svelte table adapter. */
 export interface IrisTableProps {
   columns: IrisTableColumn[]
-  data: Array<Record<string, unknown>>
+  /** Table data. Optional (server-side sources may omit it). */
+  data?: Array<Record<string, unknown>>
   rowKey?: string
   selectable?: 'none' | 'single' | 'multi'
   selection?: Array<string | number>

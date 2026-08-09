@@ -36012,7 +36012,8 @@
         {
           "name": "data",
           "type": "Row[]",
-          "optional": false
+          "optional": true,
+          "description": "Table data. Optional when `proxyConfig` is set (server-side source)."
         },
         {
           "name": "rowKey",
@@ -36145,24 +36146,9 @@
         },
         {
           "name": "cellClassName",
-          "type": "(",
+          "type": "(row: Row, column: import('./types').IrisTableColumn<Row>, rowIndex: number) => string",
           "optional": true,
           "description": "Per-cell class hook (vxe cell-class-name parity)."
-        },
-        {
-          "name": "row",
-          "type": "Row",
-          "optional": false
-        },
-        {
-          "name": "column",
-          "type": "import('./types').IrisTableColumn<Row>",
-          "optional": false
-        },
-        {
-          "name": "rowIndex",
-          "type": "number",
-          "optional": false
         },
         {
           "name": "headerCellClassName",
@@ -36184,51 +36170,21 @@
         },
         {
           "name": "cellStyle",
-          "type": "(",
+          "type": "(row: Row, column: import('./types').IrisTableColumn<Row>, rowIndex: number) => import('react').CSSProperties",
           "optional": true,
           "description": "Per-cell inline style hook (vxe cell-style parity)."
         },
         {
-          "name": "row",
-          "type": "Row",
-          "optional": false
-        },
-        {
-          "name": "column",
-          "type": "import('./types').IrisTableColumn<Row>",
-          "optional": false
-        },
-        {
-          "name": "rowIndex",
-          "type": "number",
-          "optional": false
-        },
-        {
           "name": "headerCellStyle",
-          "type": "(",
+          "type": "(column: import('./types').IrisTableColumn<Row>) => import('react').CSSProperties",
           "optional": true,
           "description": "Per-header-cell inline style hook (vxe header-cell-style parity)."
         },
         {
-          "name": "column",
-          "type": "import('./types').IrisTableColumn<Row>",
-          "optional": false
-        },
-        {
           "name": "footerCellStyle",
-          "type": "(",
+          "type": "(column: import('./types').IrisTableColumn<Row>, rowIndex: number) => import('react').CSSProperties",
           "optional": true,
           "description": "Per-footer-cell inline style hook (vxe footer-cell-style parity)."
-        },
-        {
-          "name": "column",
-          "type": "import('./types').IrisTableColumn<Row>",
-          "optional": false
-        },
-        {
-          "name": "rowIndex",
-          "type": "number",
-          "optional": false
         },
         {
           "name": "onCellClick",
@@ -36460,7 +36416,8 @@
             {
               "name": "data",
               "type": "Row[]",
-              "optional": false
+              "optional": true,
+              "description": "Table data. Optional when `proxyConfig` is set (server-side source)."
             },
             {
               "name": "rowKey",
@@ -36593,24 +36550,9 @@
             },
             {
               "name": "cellClassName",
-              "type": "(",
+              "type": "(row: Row, column: import('./types').IrisTableColumn<Row>, rowIndex: number) => string",
               "optional": true,
               "description": "Per-cell class hook (vxe cell-class-name parity)."
-            },
-            {
-              "name": "row",
-              "type": "Row",
-              "optional": false
-            },
-            {
-              "name": "column",
-              "type": "import('./types').IrisTableColumn<Row>",
-              "optional": false
-            },
-            {
-              "name": "rowIndex",
-              "type": "number",
-              "optional": false
             },
             {
               "name": "headerCellClassName",
@@ -36632,51 +36574,21 @@
             },
             {
               "name": "cellStyle",
-              "type": "(",
+              "type": "(row: Row, column: import('./types').IrisTableColumn<Row>, rowIndex: number) => import('react').CSSProperties",
               "optional": true,
               "description": "Per-cell inline style hook (vxe cell-style parity)."
             },
             {
-              "name": "row",
-              "type": "Row",
-              "optional": false
-            },
-            {
-              "name": "column",
-              "type": "import('./types').IrisTableColumn<Row>",
-              "optional": false
-            },
-            {
-              "name": "rowIndex",
-              "type": "number",
-              "optional": false
-            },
-            {
               "name": "headerCellStyle",
-              "type": "(",
+              "type": "(column: import('./types').IrisTableColumn<Row>) => import('react').CSSProperties",
               "optional": true,
               "description": "Per-header-cell inline style hook (vxe header-cell-style parity)."
             },
             {
-              "name": "column",
-              "type": "import('./types').IrisTableColumn<Row>",
-              "optional": false
-            },
-            {
               "name": "footerCellStyle",
-              "type": "(",
+              "type": "(column: import('./types').IrisTableColumn<Row>, rowIndex: number) => import('react').CSSProperties",
               "optional": true,
               "description": "Per-footer-cell inline style hook (vxe footer-cell-style parity)."
-            },
-            {
-              "name": "column",
-              "type": "import('./types').IrisTableColumn<Row>",
-              "optional": false
-            },
-            {
-              "name": "rowIndex",
-              "type": "number",
-              "optional": false
             },
             {
               "name": "onCellClick",
@@ -36923,6 +36835,7 @@
             "IrisTableColumnWidths",
             "IrisTableEditor",
             "IrisTableProps",
+            "IrisTableProxyQueryParams",
             "IrisTableRenderDetail",
             "IrisTableRowExpandable",
             "IrisTableSeqMethodParams",
@@ -36942,7 +36855,7 @@
             {
               "name": "data",
               "type": "Array<Record<string, unknown>>",
-              "optional": false
+              "optional": true
             },
             {
               "name": "rowKey",
@@ -37080,7 +36993,8 @@
             {
               "name": "data",
               "type": "Row[]",
-              "optional": false
+              "optional": true,
+              "description": "Table data. Optional (server-side sources may omit it)."
             },
             {
               "name": "rowKey",
@@ -37291,7 +37205,8 @@
             {
               "name": "data",
               "type": "Array<Record<string, unknown>>",
-              "optional": false
+              "optional": true,
+              "description": "Table data. Optional (server-side sources may omit it)."
             },
             {
               "name": "rowKey",
@@ -37523,7 +37438,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 76,
+        "propCount": 67,
         "eventCount": 12
       }
     },

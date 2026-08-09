@@ -2,6 +2,7 @@ export { IrisTable, type IrisTableProps } from './Table'
 export {
   type IrisTableColumn,
   type IrisTableCellClickParams,
+  type IrisTableProxyQueryParams,
   type IrisTableSeqMethodParams,
   type IrisTableColumnWidths,
   type IrisTableEditor,

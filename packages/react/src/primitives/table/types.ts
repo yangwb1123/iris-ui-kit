@@ -22,6 +22,15 @@ export interface IrisTableSortState {
   direction: IrisTableSortDirection
 }
 
+/** Params delivered to `IrisTableProps.proxyConfig.query` (vxe proxyConfig parity). */
+export interface IrisTableProxyQueryParams {
+  /** 1-based page number. */
+  page: number
+  pageSize: number
+  sort: import('./types').IrisTableSortState | null
+  filters: Record<string, string>
+}
+
 /** Params delivered to `IrisTableProps.seqMethod` (vxe seqMethod parity). */
 export interface IrisTableSeqMethodParams {
   rowIndex: number

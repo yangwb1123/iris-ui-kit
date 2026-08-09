@@ -20,12 +20,9 @@ export interface IrisTableProxyConfig<Row extends Record<string, unknown>> {
    * Fetch one page. 1-based `page`; `sort`/`filters` are the ACTIVE state,
    * passed through when `remoteSort`/`remoteFilter` are enabled.
    */
-  query: (params: {
-    page: number
-    pageSize: number
-    sort: IrisTableSortState | null
-    filters: Record<string, string>
-  }) => Promise<{ rows: Row[]; total: number }>
+  query: (
+    params: import('./types').IrisTableProxyQueryParams,
+  ) => Promise<{ rows: Row[]; total: number }>
   /** Auto-load the first page on mount (vxe autoLoad parity). Default true. */
   autoLoad?: boolean
   /** Sort changes re-query the server instead of sorting client-side (vxe proxyConfig.sort). Default false. */

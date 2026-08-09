@@ -12,7 +12,8 @@ import type {
 /** Public input surface for the Solid table adapter. */
 export interface IrisTableProps<Row extends Record<string, unknown> = Record<string, unknown>> {
   columns: IrisTableColumn<Row>[]
-  data: Row[]
+  /** Table data. Optional (server-side sources may omit it). */
+  data?: Row[]
   rowKey?: string
   selectable?: 'none' | 'single' | 'multi'
   selection?: Array<string | number>

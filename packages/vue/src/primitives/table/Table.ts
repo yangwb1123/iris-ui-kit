@@ -105,7 +105,8 @@ export const IrisTable = defineComponent({
     },
     data: {
       type: Array as PropType<Array<Record<string, unknown>>>,
-      required: true,
+      required: false,
+      default: undefined,
     },
     rowKey: { type: String, default: 'id' },
     ...tableControlProps,

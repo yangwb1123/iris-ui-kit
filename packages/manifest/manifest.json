@@ -36100,6 +36100,42 @@
           "description": "Called when a data row is clicked. Interactive child controls stop propagation."
         },
         {
+          "name": "columnVisibility",
+          "type": "Record<string, boolean>",
+          "optional": true,
+          "description": "Column visibility (vxe-grid columnConfig.visible parity). Map of column key → visible (default true). Hidden columns are not rendered."
+        },
+        {
+          "name": "onColumnVisibilityChange",
+          "type": "(next: Record<string, boolean>) => void",
+          "optional": true,
+          "description": "Fired when visibility changes (parent owns the map)."
+        },
+        {
+          "name": "filters",
+          "type": "Record<string, string>",
+          "optional": true,
+          "description": "Client-side filters (vxe-grid filterConfig parity, local mode). Map of column key → filter text; rows are filtered with the core filterSort material (substring, case-insensitive)."
+        },
+        {
+          "name": "onFiltersChange",
+          "type": "(next: Record<string, string>) => void",
+          "optional": true,
+          "description": "Fired when a filter value changes (parent owns the map)."
+        },
+        {
+          "name": "toolbar",
+          "type": "{",
+          "optional": true,
+          "description": "Toolbar (vxe-grid toolbarConfig parity, minimal built-ins)."
+        },
+        {
+          "name": "printable",
+          "type": "boolean",
+          "optional": true,
+          "description": "Render with print-friendly styles (hides the toolbar, keeps rows)."
+        },
+        {
           "name": "columnDrag",
           "type": "{",
           "optional": true,
@@ -36113,7 +36149,7 @@
         },
         {
           "name": "spanMethod",
-          "type": "(params: { rowIndex: number; columnIndex: number }) => {",
+          "type": "(params: { rowIndex: number; columnIndex: number }) =>",
           "optional": true,
           "description": "Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }` for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make the cell span adjacent cells (the spanned cells are skipped)."
         },
@@ -36336,6 +36372,42 @@
               "description": "Called when a data row is clicked. Interactive child controls stop propagation."
             },
             {
+              "name": "columnVisibility",
+              "type": "Record<string, boolean>",
+              "optional": true,
+              "description": "Column visibility (vxe-grid columnConfig.visible parity). Map of column key → visible (default true). Hidden columns are not rendered."
+            },
+            {
+              "name": "onColumnVisibilityChange",
+              "type": "(next: Record<string, boolean>) => void",
+              "optional": true,
+              "description": "Fired when visibility changes (parent owns the map)."
+            },
+            {
+              "name": "filters",
+              "type": "Record<string, string>",
+              "optional": true,
+              "description": "Client-side filters (vxe-grid filterConfig parity, local mode). Map of column key → filter text; rows are filtered with the core filterSort material (substring, case-insensitive)."
+            },
+            {
+              "name": "onFiltersChange",
+              "type": "(next: Record<string, string>) => void",
+              "optional": true,
+              "description": "Fired when a filter value changes (parent owns the map)."
+            },
+            {
+              "name": "toolbar",
+              "type": "{",
+              "optional": true,
+              "description": "Toolbar (vxe-grid toolbarConfig parity, minimal built-ins)."
+            },
+            {
+              "name": "printable",
+              "type": "boolean",
+              "optional": true,
+              "description": "Render with print-friendly styles (hides the toolbar, keeps rows)."
+            },
+            {
               "name": "columnDrag",
               "type": "{",
               "optional": true,
@@ -36349,7 +36421,7 @@
             },
             {
               "name": "spanMethod",
-              "type": "(params: { rowIndex: number; columnIndex: number }) => {",
+              "type": "(params: { rowIndex: number; columnIndex: number }) =>",
               "optional": true,
               "description": "Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }` for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make the cell span adjacent cells (the spanned cells are skipped)."
             },
@@ -36474,8 +36546,10 @@
           ],
           "events": [
             "onCellEdit",
+            "onColumnVisibilityChange",
             "onColumnWidthsChange",
             "onExpandedRowsChange",
+            "onFiltersChange",
             "onRetry",
             "onRowClick",
             "onSelectionChange",
@@ -37077,6 +37151,8 @@
         "onSortChange",
         "onColumnWidthsChange",
         "onRowClick",
+        "onColumnVisibilityChange",
+        "onFiltersChange",
         "onCellEdit",
         "onExpandedRowsChange",
         "onRetry"
@@ -37087,8 +37163,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 40,
-        "eventCount": 7
+        "propCount": 46,
+        "eventCount": 9
       }
     },
     {

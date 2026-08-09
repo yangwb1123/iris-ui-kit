@@ -271,3 +271,82 @@ describe('IrisTable columnDrag (vxe columnDragConfig parity)', () => {
     expect(next.map((c) => c.key)).toEqual(['b', 'c', 'a'])
   })
 })
+
+describe('IrisTable columnVisibility / filters / toolbar (批 4)', () => {
+  it('columnVisibility hides columns', () => {
+    const columns = [
+      { key: 'a', title: 'A' },
+      { key: 'b', title: 'B' },
+    ]
+    const rows = [{ id: 1, a: 'x', b: 'y' }]
+    const { container } = render(
+      <IrisTable columns={columns} data={rows} rowKey="id" columnVisibility={{ b: false }} />,
+    )
+    expect(container.querySelectorAll('[data-iris-table-cell="a"]').length).toBe(1)
+    expect(container.querySelectorAll('[data-iris-table-cell="b"]').length).toBe(0)
+  })
+
+  it('filters rows with the core filterSort material', () => {
+    const columns = [
+      { key: 'name', title: 'Name' },
+      { key: 'age', title: 'Age' },
+    ]
+    const rows = [
+      { id: 1, name: 'Alice', age: 30 },
+      { id: 2, name: 'Bob', age: 25 },
+    ]
+    const { container } = render(
+      <IrisTable columns={columns} data={rows} rowKey="id" filters={{ name: 'ali' }} />,
+    )
+    const rowsEl = [...container.querySelectorAll('[data-iris-table-row]')]
+    // header + 1 matching row
+    expect(rowsEl.length).toBe(2)
+    expect(rowsEl[1]?.textContent).toContain('Alice')
+  })
+
+  it('toolbar renders title + refresh + column settings menu', () => {
+    const onRefresh = vi.fn()
+    const columns = [
+      { key: 'a', title: 'A' },
+      { key: 'b', title: 'B' },
+    ]
+    const rows = [{ id: 1, a: 'x', b: 'y' }]
+    const { container } = render(
+      <IrisTable
+        columns={columns}
+        data={rows}
+        rowKey="id"
+        toolbar={{ title: 'Users', onRefresh, columnSettings: true }}
+        columnVisibility={{}}
+        onColumnVisibilityChange={vi.fn()}
+      />,
+    )
+    const toolbar = container.querySelector('[data-iris-table-toolbar]')!
+    expect(toolbar?.textContent).toContain('Users')
+    fireEvent.click(toolbar.querySelector('[data-iris-table-toolbar-refresh]')!)
+    expect(onRefresh).toHaveBeenCalled()
+    fireEvent.click(toolbar.querySelector('[data-iris-table-toolbar-columns]')!)
+    expect(container.querySelector('[data-iris-table-column-settings]')).not.toBeNull()
+  })
+})
+
+describe('IrisTable import button + printable (批 5)', () => {
+  it('printable marks the root for print styling', () => {
+    const columns = [{ key: 'a', title: 'A' }]
+    const rows = [{ id: 1, a: 'x' }]
+    const { container } = render(<IrisTable columns={columns} data={rows} rowKey="id" printable />)
+    expect(container.querySelector('[data-iris-table]')?.getAttribute('data-printable')).toBe(
+      'true',
+    )
+  })
+
+  it('toolbar onImport renders the CSV import button', () => {
+    const onImport = vi.fn()
+    const columns = [{ key: 'a', title: 'A' }]
+    const rows = [{ id: 1, a: 'x' }]
+    const { container } = render(
+      <IrisTable columns={columns} data={rows} rowKey="id" toolbar={{ onImport }} />,
+    )
+    expect(container.querySelector('[data-iris-table-toolbar-import]')).not.toBeNull()
+  })
+})

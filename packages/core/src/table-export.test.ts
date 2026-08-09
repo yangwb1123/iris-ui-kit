@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { toSpreadsheetXml, toCsv, toJson, toHtml, type TableExportColumn } from './table-export'
+import {
+  toSpreadsheetXml,
+  toCsv,
+  toJson,
+  toHtml,
+  parseCsv,
+  type TableExportColumn,
+} from './table-export'
 
 interface Row extends Record<string, unknown> {
   name: string
@@ -160,5 +167,34 @@ describe('toHtml', () => {
 
   it('adds a caption when given', () => {
     expect(toHtml(rows, columns, { caption: 'People' })).toContain('<caption>People</caption>')
+  })
+})
+
+describe('parseCsv (import parity)', () => {
+  it('parses simple rows', () => {
+    expect(parseCsv('a,b\n1,2')).toEqual([
+      ['a', 'b'],
+      ['1', '2'],
+    ])
+  })
+
+  it('handles quoted fields with commas and quotes', () => {
+    expect(parseCsv('"x,y","say ""hi"""')).toEqual([['x,y', 'say "hi"']])
+  })
+
+  it('round-trips toCsv output', () => {
+    const csv = toCsv(
+      [
+        { a: 1, b: 'x,y' },
+        { a: 2, b: 'z' },
+      ],
+      [
+        { key: 'a', title: 'a' },
+        { key: 'b', title: 'b' },
+      ],
+    )
+    const parsed = parseCsv(csv)
+    expect(parsed[0]).toEqual(['a', 'b'])
+    expect(parsed[1]).toEqual(['1', 'x,y'])
   })
 })

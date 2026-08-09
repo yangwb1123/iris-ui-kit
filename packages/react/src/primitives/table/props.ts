@@ -35,6 +35,33 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   onRowClick?: (row: Row, rowIndex: number) => void
   /** Called when an inline-editable cell is committed with a changed value. */
   /**
+   * Column visibility (vxe-grid columnConfig.visible parity). Map of
+   * column key → visible (default true). Hidden columns are not rendered.
+   */
+  columnVisibility?: Record<string, boolean>
+  /** Fired when visibility changes (parent owns the map). */
+  onColumnVisibilityChange?: (next: Record<string, boolean>) => void
+  /**
+   * Client-side filters (vxe-grid filterConfig parity, local mode). Map of
+   * column key → filter text; rows are filtered with the core filterSort
+   * material (substring, case-insensitive).
+   */
+  filters?: Record<string, string>
+  /** Fired when a filter value changes (parent owns the map). */
+  onFiltersChange?: (next: Record<string, string>) => void
+  /** Toolbar (vxe-grid toolbarConfig parity, minimal built-ins). */
+  toolbar?: {
+    title?: string
+    /** Fired by the refresh button. */
+    onRefresh?: () => void
+    /** Show the column-visibility toggle button. */
+    columnSettings?: boolean
+    /** Enable the CSV import button. Receives parsed rows (header → keys). */
+    onImport?: (rows: Record<string, unknown>[]) => void
+  }
+  /** Render with print-friendly styles (hides the toolbar, keeps rows). */
+  printable?: boolean
+  /**
    * Column drag-sort (vxe-grid columnDragConfig parity). Reorders leaf
    * columns on drop; parent owns columns (pass the reordered array back).
    */

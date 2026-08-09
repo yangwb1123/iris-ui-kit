@@ -131,6 +131,7 @@ export {
   toCsv,
   toJson,
   toHtml,
+  parseCsv,
   type TableExportColumn,
   type SpreadsheetXmlOptions,
   type TableHtmlOptions,

@@ -44,7 +44,7 @@ const TABLE_ROW_CSS = `
   }
   [data-iris-table][data-printable="true"] {
     border: none !important;
-    box-shadow: none !important;
+    box-shadow: var(--iris-shadow-none, none) !important;
   }
 }
 `
@@ -175,7 +175,6 @@ export function IrisTable<Row extends Record<string, unknown>>({
   columnVisibility,
   onColumnVisibilityChange,
   filters,
-  onFiltersChange,
   toolbar,
   printable = false,
   seq = false,

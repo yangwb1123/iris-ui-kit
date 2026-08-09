@@ -65,6 +65,9 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
   const [finalPlacement, setFinalPlacement] = createSignal<Placement>(placement())
   const [arrowX, setArrowX] = createSignal<number | undefined>()
   const [arrowY, setArrowY] = createSignal<number | undefined>()
+  // True once the first positioning cycle lands. Until then the panel stays
+  // `visibility: hidden` so it never flashes at the viewport origin (0,0).
+  const [positioned, setPositioned] = createSignal(false)
 
   const buildMiddleware = (): Middleware[] => {
     const mw: Middleware[] = []
@@ -101,6 +104,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     const a = options.anchor()
     const f = options.floating()
     if (!a || !f) return
+    setPositioned(false)
     const update = (): void => {
       const token = ++epoch
       void computePosition(a, f, {
@@ -111,6 +115,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
         if (token !== epoch) return
         setX(result.x)
         setY(result.y)
+        setPositioned(true)
         setFinalPlacement(result.placement)
         const arrowData = result.middlewareData.arrow as { x?: number; y?: number } | undefined
         setArrowX(arrowData?.x)
@@ -139,6 +144,10 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     left: '0',
     transform: `translate3d(${Math.round(x())}px, ${Math.round(y())}px, 0)`,
     width: 'max-content',
+    // Hidden until the first positioning cycle lands — prevents a flash at
+    // the viewport origin. visibility (not display:none) keeps the panel
+    // measurable so Floating UI can compute its real coordinates.
+    visibility: positioned() ? 'visible' : 'hidden',
   })
 
   return { finalPlacement, floatingStyles, arrowX, arrowY, arrowSide }

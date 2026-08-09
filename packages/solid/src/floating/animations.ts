@@ -28,17 +28,24 @@ export function installFloatingAnimations(): void {
   --iris-anim-toast: iris-toast-in 200ms ease-out;
   --iris-anim-tooltip: iris-tooltip-in 120ms ease-out;
 }
+/*
+ * NOTE: these keyframes animate OPACITY ONLY. The floating layers are
+ * positioned via inline transform: translate3d(...) (Floating UI), and any
+ * transform in the keyframes would override it for the animation duration —
+ * flashing the panel at the viewport origin (0,0) before it jumps into place.
+ * Fade-only keeps the entrance motion without touching positioning.
+ */
 @keyframes iris-dialog-in {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes iris-popover-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes iris-toast-in {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes iris-tooltip-in {
   from { opacity: 0; }

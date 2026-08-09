@@ -36400,6 +36400,30 @@
           "description": "Server-side data proxy (vxe-grid proxyConfig parity, query slice). When set, rows come from the proxy `query` (paged) and a pager renders below the body; `loading`/`error` are driven by the proxy state."
         },
         {
+          "name": "tableRef",
+          "type": "MutableRefObject<IrisTableHandle<Row> | null>",
+          "optional": true,
+          "description": "Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity)."
+        },
+        {
+          "name": "onDataChange",
+          "type": "(rows: Row[]) => void",
+          "optional": true,
+          "description": "Fired after any internal row operation / edit write-back, with the new row list."
+        },
+        {
+          "name": "checkMethod",
+          "type": "(row: Row, rowIndex: number) => boolean",
+          "optional": true,
+          "description": "Veto rows from selection (vxe-grid checkboxConfig.checkMethod parity)."
+        },
+        {
+          "name": "pagerConfig",
+          "type": "IrisTablePagerConfig",
+          "optional": true,
+          "description": "Pager options (vxe-grid pagerConfig parity)."
+        },
+        {
           "name": "style",
           "type": "CSSProperties",
           "optional": true
@@ -36810,6 +36834,30 @@
               "description": "Server-side data proxy (vxe-grid proxyConfig parity, query slice). When set, rows come from the proxy `query` (paged) and a pager renders below the body; `loading`/`error` are driven by the proxy state."
             },
             {
+              "name": "tableRef",
+              "type": "MutableRefObject<IrisTableHandle<Row> | null>",
+              "optional": true,
+              "description": "Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity)."
+            },
+            {
+              "name": "onDataChange",
+              "type": "(rows: Row[]) => void",
+              "optional": true,
+              "description": "Fired after any internal row operation / edit write-back, with the new row list."
+            },
+            {
+              "name": "checkMethod",
+              "type": "(row: Row, rowIndex: number) => boolean",
+              "optional": true,
+              "description": "Veto rows from selection (vxe-grid checkboxConfig.checkMethod parity)."
+            },
+            {
+              "name": "pagerConfig",
+              "type": "IrisTablePagerConfig",
+              "optional": true,
+              "description": "Pager options (vxe-grid pagerConfig parity)."
+            },
+            {
               "name": "style",
               "type": "CSSProperties",
               "optional": true
@@ -36827,6 +36875,7 @@
             "onColumnWidthsChange",
             "onCurrentColumnChange",
             "onCurrentRowChange",
+            "onDataChange",
             "onExpandedRowsChange",
             "onFiltersChange",
             "onRetry",
@@ -36848,6 +36897,8 @@
             "IrisTableEditor",
             "IrisTableFormConfig",
             "IrisTableFormField",
+            "IrisTableHandle",
+            "IrisTablePagerConfig",
             "IrisTableProps",
             "IrisTableProxyQueryParams",
             "IrisTableRenderDetail",
@@ -37444,7 +37495,8 @@
         "onFiltersChange",
         "onCellEdit",
         "onExpandedRowsChange",
-        "onRetry"
+        "onRetry",
+        "onDataChange"
       ],
       "slots": [
         "emptyState",
@@ -37452,8 +37504,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 68,
-        "eventCount": 12
+        "propCount": 72,
+        "eventCount": 13
       }
     },
     {

@@ -42,3 +42,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-d-gate.md [FAILED: task timed out]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-d-gate.md
+
+## 2026-08-08 22:43:23 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-e-baseline.md [ok]: Key findings baked in: **vxe semantics** (grounded in `/tmp/vxe-grid/package/types/components/table.d.ts`):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-e-baseline.md
+
+## 2026-08-08 22:58:23 — stage 'adapt' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-e-adapt.md [FAILED: task timed out]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-e-adapt.md

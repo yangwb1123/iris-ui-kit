@@ -29,8 +29,11 @@ import {
   createCellEdit,
   createRemoteTableSource,
   createSortable,
+  insertRowInList,
   parseCsv,
+  removeRowFromList,
   setCellValue,
+  updateRowInList,
   validateEditRulesAsync,
   type RemoteTableSource,
   type RemoteTableSourceState,
@@ -40,7 +43,7 @@ import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisPagination } from '../pagination'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
-import type { IrisTableProps, IrisTableProxyConfig } from './props'
+import type { IrisTableHandle, IrisTableProps, IrisTableProxyConfig } from './props'
 
 const TABLE_ROW_CSS = `
 [data-iris-table] [role="row"]:hover {
@@ -213,6 +216,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onColumnWidthsChange,
   onRowClick,
   onCellEdit,
+  tableRef,
+  onDataChange,
+  checkMethod,
+  pagerConfig,
   editConfig,
   rowDrag,
   columnDrag,
@@ -356,9 +363,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // local edit write-backs until the next refetch replaces them.
   const [liveData, setLiveData] = React.useState<Row[]>(data ?? [])
   const externalDataRef = React.useRef(data)
+  // Reference of the LAST data the parent actually fed us (updated only by
+  // this effect). Internal write-backs (edit commit / row ops) update
+  // `externalDataRef` but NOT this, so the effect can distinguish "parent fed
+  // new data" from "we mutated our own live copy" and never clobber edits.
+  const lastExternalRef = React.useRef(data)
   React.useEffect(() => {
     const next = proxy ? proxyState.data : data
-    if (next !== externalDataRef.current) {
+    if (next !== lastExternalRef.current) {
+      lastExternalRef.current = next
       externalDataRef.current = next
       setLiveData(next ?? [])
     }
@@ -796,8 +809,47 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   // Single mode toggles off / replaces, multiple toggles inclusion — both are
   // the model's `toggle` semantics for the row's key.
-  const toggleRow = (row: Row) => {
+  // ── Imperative row ops (vxe-grid insert/remove/setRow parity, batch E) ──
+  const onDataChangeRef = React.useRef(onDataChange)
+  onDataChangeRef.current = onDataChange
+  const commitRowList = React.useCallback((next: Row[]) => {
+    setLiveData(next)
+    externalDataRef.current = next
+    onDataChangeRef.current?.(next)
+  }, [])
+  const handleRef = React.useRef<IrisTableHandle<Row> | null>(null)
+  handleRef.current = {
+    insertRow: (row, index) => {
+      commitRowList(insertRowInList(externalDataRef.current ?? [], rowKey, row, index))
+    },
+    removeRow: (key) => {
+      const rows = externalDataRef.current ?? []
+      const next = removeRowFromList(rows, rowKey, key)
+      if (next !== rows) {
+        if (displaySelection.includes(key)) {
+          rebaseToProp()
+          selModel.toggle(key)
+        }
+        commitRowList(next)
+      }
+    },
+    updateRow: (key, patch) => {
+      commitRowList(updateRowInList(externalDataRef.current ?? [], rowKey, key, patch))
+    },
+    refetch: () => {
+      proxyRef.current?.refetch()
+    },
+  }
+  React.useEffect(() => {
+    if (tableRef) tableRef.current = handleRef.current
+    return () => {
+      if (tableRef) tableRef.current = null
+    }
+  }, [tableRef])
+
+  const toggleRow = (row: Row, idx?: number) => {
     if (selectable === 'none') return
+    if (idx != null && checkMethod && !checkMethod(row, idx)) return
     rebaseToProp()
     selModel.toggle(rowKeyOf(row))
   }
@@ -853,7 +905,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const toggleAll = () => {
     if (selectable !== 'multi') return
     rebaseToProp()
-    selModel.toggleAll(bodyData.map(rowKeyOf))
+    const keys = bodyData
+      .map((row, i) => (checkMethod && !checkMethod(row, i) ? null : rowKeyOf(row)))
+      .filter((k): k is string | number => k != null)
+    selModel.toggleAll(keys)
   }
 
   const allKeys = bodyData.map(rowKeyOf)
@@ -1200,7 +1255,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
           >
             <IrisCheckbox
               checked={selected}
-              onChange={() => toggleRow(row)}
+              disabled={checkMethod ? !checkMethod(row, idx) : false}
+              onChange={() => toggleRow(row, idx)}
               aria-label={t('table.selectRow', { key: String(k ?? idx) })}
             />
           </div>
@@ -2130,15 +2186,34 @@ export function IrisTable<Row extends Record<string, unknown>>({
               background: 'var(--iris-surface)',
             }}
           >
-            <IrisPagination
-              total={proxyState.total}
-              pageSize={proxyState.params.pageSize}
-              value={proxyState.params.page}
-              onValueChange={(page) => {
-                proxyRef.current?.setParams({ page })
-                proxyConfig?.onPageChange?.(page, proxyState.params.pageSize)
-              }}
-            />
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: 'var(--iris-space-xs, 8px)' }}
+            >
+              {pagerConfig?.pageSizes && pagerConfig.pageSizes.length > 0 ? (
+                <IrisSelect
+                  items={pagerConfig.pageSizes.map((s) => ({
+                    value: String(s),
+                    label: `${s} / ${t('table.page')}`,
+                  }))}
+                  value={String(proxyState.params.pageSize)}
+                  onValueChange={(v) => {
+                    const size = Number(v)
+                    proxyRef.current?.setParams({ pageSize: size, page: 1 })
+                    proxyConfig?.onPageChange?.(1, size)
+                  }}
+                  aria-label={t('table.pageSize')}
+                />
+              ) : null}
+              <IrisPagination
+                total={proxyState.total}
+                pageSize={proxyState.params.pageSize}
+                value={proxyState.params.page}
+                onValueChange={(page) => {
+                  proxyRef.current?.setParams({ page })
+                  proxyConfig?.onPageChange?.(page, proxyState.params.pageSize)
+                }}
+              />
+            </div>
           </div>
         ) : null}
       </div>

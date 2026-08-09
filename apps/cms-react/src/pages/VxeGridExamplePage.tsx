@@ -1,4 +1,5 @@
-import { IrisTable, type IrisTableColumn } from '@iris-ui-kit/react'
+import { useRef, type MutableRefObject } from 'react'
+import { IrisTable, type IrisTableColumn, type IrisTableHandle } from '@iris-ui-kit/react'
 
 /**
  * The official vxe-grid "basic usage" example, implemented with IrisTable.
@@ -238,6 +239,66 @@ export function VxeGridExamplePage() {
           columns={columns}
         />
       </section>
+
+      <section>
+        <h2 style={{ margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }}>
+          行操作 + 勾选条件（Row ops + checkMethod）
+        </h2>
+        <p
+          style={{
+            margin: '0 0 12px',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
+            color: 'var(--iris-muted)',
+          }}
+        >
+          官方示例对照：insertRow/removeRow（tableRef 方法）+ checkboxConfig.checkMethod （age &lt;
+          20 的行不可勾选，全选自动跳过）
+        </p>
+        <RowOpsDemo />
+      </section>
     </div>
+  )
+}
+
+/** 行操作演示：toolbar 按钮触发 tableRef.insertRow，checkMethod 禁用低龄行。 */
+function RowOpsDemo() {
+  const tableRef = useRef<IrisTableHandle<GridRow> | null>(null)
+  const rowOpsColumns: IrisTableColumn<GridRow>[] = [
+    { key: 'name', title: 'Name' },
+    { key: 'role', title: 'Role' },
+    { key: 'age', title: 'Age', align: 'right' },
+  ]
+  return (
+    <IrisTable
+      bordered
+      rowKey="id"
+      selectable="multi"
+      tableRef={tableRef as MutableRefObject<IrisTableHandle<GridRow> | null>}
+      checkMethod={(row) => (row.age as number) >= 20}
+      toolbar={{
+        buttons: [
+          {
+            key: 'insert',
+            label: '新增行',
+            onClick: () =>
+              tableRef.current?.insertRow({
+                id: 9000,
+                name: 'Newbie',
+                role: 'Test',
+                sex: 'Man',
+                age: 19,
+                address: 'test abc',
+              }),
+          },
+          {
+            key: 'remove',
+            label: '删除末行',
+            onClick: () => tableRef.current?.removeRow(9000),
+          },
+        ],
+      }}
+      columns={rowOpsColumns}
+      data={tableData}
+    />
   )
 }

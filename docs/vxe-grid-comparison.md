@@ -83,6 +83,9 @@
 | 搜索表单   | formConfig                  | 外部组件                     | 可组合                                     |
 | 数据代理   | proxyConfig                 | proxyConfig ✓（批 C，react） | 对齐（react，core 控制器）                 |
 | 搜索表单   | formConfig                  | formConfig ✓（批 D，react）  | 对齐（react；远程合并 filters + 本地过滤） |
+| 行操作     | insertRow/removeRow/setRow  | tableRef ✓（批 E，react）    | 对齐（react；core table-rows 纯函数）      |
+| 勾选条件   | checkboxConfig.checkMethod  | checkMethod ✓（批 E，react） | 对齐（react；全选跳过禁用行）              |
+| 分页配置   | pagerConfig.pageSizes       | pagerConfig ✓（批 E，react） | 对齐（react；切换重置页码）                |
 | 导入导出   | export/import               | exportCsv/Excel ✓            | 缺导入                                     |
 | 打印       | printConfig                 | —                            | 缺                                         |
 

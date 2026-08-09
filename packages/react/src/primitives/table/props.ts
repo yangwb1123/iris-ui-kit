@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, MutableRefObject, ReactNode } from 'react'
 import type {
   IrisTableCellEditEvent,
   IrisTableColumn,
@@ -54,6 +54,32 @@ export interface IrisTableFormConfig {
   onSearch?: (values: Record<string, string>) => void
   /** Fired on reset with the reset values (defaults re-applied). */
   onReset?: (values: Record<string, string>) => void
+}
+
+/**
+ * Imperative row operations (vxe-grid insert/remove/setRow parity, simplified
+ * to key addressing). Assigned to `tableRef.current` on mount; every op
+ * applies a core pure helper to the live row list, commits through the same
+ * write-back channel as cell edits, and fires `onDataChange` with the new
+ * list. Not-found keys are silent no-ops (the core helpers return the
+ * original reference).
+ */
+export interface IrisTableHandle<Row extends Record<string, unknown> = Record<string, unknown>> {
+  /** Insert a row at `index` (default: end). A missing `rowKeyField` value gets an auto id. */
+  insertRow: (row: Row, index?: number) => void
+  /** Remove the row with `key`; its selection is pruned. */
+  removeRow: (key: string | number) => void
+  /** Patch the row with `key` ({ ...row, ...patch }). */
+  updateRow: (key: string | number, patch: Partial<Row>) => void
+  /** Re-fetch the current page (proxy mode). */
+  refetch: () => void
+}
+
+/** Pager configuration (vxe-grid pagerConfig parity). */
+export interface IrisTablePagerConfig {
+  /** Rows-per-page options rendered as a size selector next to the pager. A
+   * change re-queries with the new size and resets the page to 1. */
+  pageSizes?: number[]
 }
 
 /** Public input surface for the React table adapter. */
@@ -226,6 +252,14 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * the body; `loading`/`error` are driven by the proxy state.
    */
   proxyConfig?: IrisTableProxyConfig<Row>
+  /** Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity). */
+  tableRef?: MutableRefObject<IrisTableHandle<Row> | null>
+  /** Fired after any internal row operation / edit write-back, with the new row list. */
+  onDataChange?: (rows: Row[]) => void
+  /** Veto rows from selection (vxe-grid checkboxConfig.checkMethod parity). */
+  checkMethod?: (row: Row, rowIndex: number) => boolean
+  /** Pager options (vxe-grid pagerConfig parity). */
+  pagerConfig?: IrisTablePagerConfig
   style?: CSSProperties
   className?: string
 }

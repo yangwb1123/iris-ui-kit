@@ -323,6 +323,13 @@ export {
   type MutateOptions,
 } from './resource'
 export {
+  createRemoteTableSource,
+  type RemoteTableSource,
+  type RemoteTableSourceOptions,
+  type RemoteTableSourceState,
+  type RemoteTableParams,
+} from './remote-table'
+export {
   createTabsNav,
   isClosable,
   type TabsNav,

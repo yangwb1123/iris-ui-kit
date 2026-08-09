@@ -9,6 +9,37 @@ import type {
   IrisTableVirtualOptions,
 } from './types'
 
+/**
+ * vxe-grid proxyConfig parity — the server-side data proxy (query slice).
+ * When set, `data` is ignored: rows come from `query` (paged), and the table
+ * renders a pager below the body. Edit write-back keeps working — committed
+ * edits update the live rows locally until the next refetch replaces them.
+ */
+export interface IrisTableProxyConfig<Row extends Record<string, unknown>> {
+  /**
+   * Fetch one page. 1-based `page`; `sort`/`filters` are the ACTIVE state,
+   * passed through when `remoteSort`/`remoteFilter` are enabled.
+   */
+  query: (params: {
+    page: number
+    pageSize: number
+    sort: IrisTableSortState | null
+    filters: Record<string, string>
+  }) => Promise<{ rows: Row[]; total: number }>
+  /** Auto-load the first page on mount (vxe autoLoad parity). Default true. */
+  autoLoad?: boolean
+  /** Sort changes re-query the server instead of sorting client-side (vxe proxyConfig.sort). Default false. */
+  remoteSort?: boolean
+  /** Filter changes re-query the server instead of filtering client-side (vxe proxyConfig.filter). Default false. */
+  remoteFilter?: boolean
+  /** Rows per page. Default 10. */
+  pageSize?: number
+  /** Initial page (1-based). Default 1. */
+  defaultPage?: number
+  /** Fired when the page changes. */
+  onPageChange?: (page: number, pageSize: number) => void
+}
+
 /** Public input surface for the React table adapter. */
 export interface IrisTableProps<Row extends Record<string, unknown> = Record<string, unknown>> {
   columns: IrisTableColumn<Row>[]
@@ -181,6 +212,12 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   errorState?: ReactNode
   /** Fired by the built-in Retry button in the error state row. */
   onRetry?: () => void
+  /**
+   * Server-side data proxy (vxe-grid proxyConfig parity, query slice). When
+   * set, rows come from the proxy `query` (paged) and a pager renders below
+   * the body; `loading`/`error` are driven by the proxy state.
+   */
+  proxyConfig?: IrisTableProxyConfig<Row>
   style?: CSSProperties
   className?: string
 }

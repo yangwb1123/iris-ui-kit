@@ -36085,7 +36085,7 @@
         },
         {
           "name": "seqMethod",
-          "type": "(params: { rowIndex: number; columnIndex: number }) => string | number",
+          "type": "(params: import('./types').IrisTableSeqMethodParams) => string | number",
           "optional": true,
           "description": "Custom sequence renderer (vxe seq-config.seqMethod parity)."
         },
@@ -36232,7 +36232,7 @@
         },
         {
           "name": "onCellClick",
-          "type": "(params: {",
+          "type": "(params: import('./types').IrisTableCellClickParams<Row>) => void",
           "optional": true,
           "description": "Cell click (vxe cell-click parity). Fired after internal handlers."
         },
@@ -36319,7 +36319,7 @@
         },
         {
           "name": "spanMethod",
-          "type": "(params: { rowIndex: number; columnIndex: number }) =>",
+          "type": "(params: {",
           "optional": true,
           "description": "Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }` for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make the cell span adjacent cells (the spanned cells are skipped)."
         },
@@ -36432,6 +36432,12 @@
           "description": "Fired by the built-in Retry button in the error state row."
         },
         {
+          "name": "proxyConfig",
+          "type": "IrisTableProxyConfig<Row>",
+          "optional": true,
+          "description": "Server-side data proxy (vxe-grid proxyConfig parity, query slice). When set, rows come from the proxy `query` (paged) and a pager renders below the body; `loading`/`error` are driven by the proxy state."
+        },
+        {
           "name": "style",
           "type": "CSSProperties",
           "optional": true
@@ -36527,7 +36533,7 @@
             },
             {
               "name": "seqMethod",
-              "type": "(params: { rowIndex: number; columnIndex: number }) => string | number",
+              "type": "(params: import('./types').IrisTableSeqMethodParams) => string | number",
               "optional": true,
               "description": "Custom sequence renderer (vxe seq-config.seqMethod parity)."
             },
@@ -36674,7 +36680,7 @@
             },
             {
               "name": "onCellClick",
-              "type": "(params: {",
+              "type": "(params: import('./types').IrisTableCellClickParams<Row>) => void",
               "optional": true,
               "description": "Cell click (vxe cell-click parity). Fired after internal handlers."
             },
@@ -36761,7 +36767,7 @@
             },
             {
               "name": "spanMethod",
-              "type": "(params: { rowIndex: number; columnIndex: number }) =>",
+              "type": "(params: {",
               "optional": true,
               "description": "Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }` for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make the cell span adjacent cells (the spanned cells are skipped)."
             },
@@ -36874,6 +36880,12 @@
               "description": "Fired by the built-in Retry button in the error state row."
             },
             {
+              "name": "proxyConfig",
+              "type": "IrisTableProxyConfig<Row>",
+              "optional": true,
+              "description": "Server-side data proxy (vxe-grid proxyConfig parity, query slice). When set, rows come from the proxy `query` (paged) and a pager renders below the body; `loading`/`error` are driven by the proxy state."
+            },
+            {
               "name": "style",
               "type": "CSSProperties",
               "optional": true
@@ -36905,6 +36917,7 @@
           ],
           "publicTypes": [
             "IrisTableAggregateOp",
+            "IrisTableCellClickParams",
             "IrisTableCellEditEvent",
             "IrisTableColumn",
             "IrisTableColumnWidths",
@@ -36912,6 +36925,7 @@
             "IrisTableProps",
             "IrisTableRenderDetail",
             "IrisTableRowExpandable",
+            "IrisTableSeqMethodParams",
             "IrisTableSortDirection",
             "IrisTableSortState",
             "IrisTableVirtualOptions"
@@ -37509,7 +37523,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 75,
+        "propCount": 76,
         "eventCount": 12
       }
     },

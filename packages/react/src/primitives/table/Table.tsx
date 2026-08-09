@@ -20,16 +20,20 @@ import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useStore } from '../../useStore'
 import {
   createCellEdit,
+  createRemoteTableSource,
   createSortable,
   parseCsv,
   setCellValue,
   validateEditRulesAsync,
+  type RemoteTableSource,
+  type RemoteTableSourceState,
   type SortableRect,
 } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
+import { IrisPagination } from '../pagination'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
-import type { IrisTableProps } from './props'
+import type { IrisTableProps, IrisTableProxyConfig } from './props'
 
 const TABLE_ROW_CSS = `
 [data-iris-table] [role="row"]:hover {
@@ -51,7 +55,7 @@ const TABLE_ROW_CSS = `
 import { useTableSort } from './useTableSort'
 import type { IrisTableColumn, IrisTableColumnWidths, IrisTableSortDirection } from './types'
 
-export type { IrisTableProps } from './props'
+export type { IrisTableProps, IrisTableProxyConfig } from './props'
 
 const RESIZE_STEP = 16
 const SELECTION_COL_WIDTH = 40
@@ -64,6 +68,16 @@ const STATE_ROW_STYLE: React.CSSProperties = {
   textAlign: 'center',
   color: 'var(--iris-muted)',
 }
+
+/** Null-proxy snapshot for useSyncExternalStore (a STABLE reference is required). */
+const EMPTY_PROXY_STATE: RemoteTableSourceState<never> = {
+  data: [],
+  total: 0,
+  loading: false,
+  error: null,
+  params: { page: 1, pageSize: 10, sort: null, filters: {} },
+}
+const noopProxySubscribe = (): (() => void) => () => {}
 
 /**
  * Focusable resize grip at a column header's trailing edge. Pointer drag (via
@@ -214,6 +228,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   loadingState,
   errorState,
   onRetry,
+  proxyConfig,
   style,
   className,
   ...rest
@@ -254,30 +269,125 @@ export function IrisTable<Row extends Record<string, unknown>>({
     [grouped, displayColumns],
   )
 
+  // ── Server-side proxy (vxe-grid proxyConfig parity, query slice) ────────
+  // The controller lives in a ref and is created once; the unified core data
+  // engine inside it owns paging / latest-wins / dedupe. The bridge only maps
+  // state → props and routes sort / filter / page events back to setParams.
+  const remoteSort = proxyConfig?.remoteSort === true
+  const remoteFilter = proxyConfig?.remoteFilter === true
+  const proxyQueryRef = React.useRef<IrisTableProxyConfig<Row>['query'] | undefined>(undefined)
+  proxyQueryRef.current = proxyConfig?.query
+  const createProxySource = (): RemoteTableSource<Row> =>
+    createRemoteTableSource<Row>({
+      // The latest query closure is read at request time, so a parent that
+      // swaps the query never leaves a stale closure behind.
+      query: (params) => proxyQueryRef.current!(params),
+      // Kicked from an effect below — never fire a fetch during render.
+      autoLoad: false,
+      initialParams: {
+        page: proxyConfig?.defaultPage ?? 1,
+        pageSize: proxyConfig?.pageSize ?? 10,
+        sort: remoteSort ? ((sortProp !== undefined ? sortProp : defaultSort) ?? null) : null,
+        filters: remoteFilter ? (filters ?? {}) : {},
+      },
+    })
+  const proxyRef = React.useRef<RemoteTableSource<Row> | null>(null)
+  if (proxyConfig && proxyRef.current === null) {
+    proxyRef.current = createProxySource()
+  }
+  // A proxyConfig-less render never exposes a (possibly destroyed) stale
+  // controller: rows/loading/pager all fall back to the null proxy.
+  const proxy = proxyConfig ? proxyRef.current : null
+  const proxyState = React.useSyncExternalStore(
+    proxy ? proxy.subscribe : noopProxySubscribe,
+    proxy ? proxy.getState : ((() => EMPTY_PROXY_STATE) as () => RemoteTableSourceState<Row>),
+    proxy ? proxy.getState : ((() => EMPTY_PROXY_STATE) as () => RemoteTableSourceState<Row>),
+  )
+  // Proxy mode drives the table's loading/error UI from the controller state
+  // (reusing the existing loading/error props rendering below).
+  const tableLoading = proxy ? proxyState.loading : loading
+  const tableError = proxy ? proxyState.error !== null : error
+  const handleRetry = React.useCallback(() => {
+    void proxyRef.current?.refetch()
+    onRetry?.()
+  }, [onRetry])
+  const retry = proxy ? handleRetry : onRetry
+
+  // autoLoad parity: kick the first request from an effect (never during the
+  // render phase); tear the controller down when the proxy is removed or the
+  // table unmounts so a late response never writes back to a dead instance.
+  // Keyed on proxy PRESENCE (not identity): a proxyConfig that arrives after
+  // the first render still auto-loads + registers cleanup, and an inline-object
+  // proxyConfig doesn't destroy/recreate the controller on every render. If a
+  // previous cleanup tore the controller down (removal / StrictMode remount),
+  // recreate it here and force a re-render so useSyncExternalStore subscribes
+  // to the fresh instance.
+  const [, forceRender] = React.useReducer((x: number) => x + 1, 0)
+  const hasProxy = proxyConfig !== undefined
+  React.useEffect(() => {
+    let ctrl = proxyRef.current
+    if (!ctrl && hasProxy) {
+      ctrl = createProxySource()
+      proxyRef.current = ctrl
+      forceRender()
+    }
+    if (ctrl && proxyConfig?.autoLoad !== false) void ctrl.request()
+    return () => {
+      if (proxyRef.current === ctrl) proxyRef.current = null
+      ctrl?.destroy()
+    }
+  }, [hasProxy])
+
   // Editable write-back (vxe-grid parity): the table owns a live copy of the
   // data so committed edits survive WITHOUT the parent re-feeding `data`.
-  // External `data` reference changes still win (controlled mode).
+  // External `data` reference changes still win (controlled mode); in proxy
+  // mode the source of truth is the proxy's loaded page — liveData holds
+  // local edit write-backs until the next refetch replaces them.
   const [liveData, setLiveData] = React.useState<Row[]>(data ?? [])
   const externalDataRef = React.useRef(data)
   React.useEffect(() => {
-    if (data !== externalDataRef.current) {
-      externalDataRef.current = data
-      setLiveData(data ?? [])
+    const next = proxy ? proxyState.data : data
+    if (next !== externalDataRef.current) {
+      externalDataRef.current = next
+      setLiveData(next ?? [])
     }
-  }, [data])
+  }, [proxy, proxyState, data])
 
   // Sort state managed by useTableSort hook (controlled/uncontrolled, comparator, sorted data).
   const {
     sortState: sort,
     cycleSort,
     sortComparator,
-    sortedData,
+    sortedData: localSortedData,
   } = useTableSort<Row>(liveData, {
     leafColumns,
     sort: sortProp,
     defaultSort,
-    onSortChange,
+    onSortChange: (next) => {
+      onSortChange?.(next)
+      // remoteSort parity: sort changes re-query the server (page resets to 1
+      // in the core controller, vxe behavior).
+      if (remoteSort) proxyRef.current?.setParams({ sort: next })
+    },
   })
+  // remoteSort parity: the server owns the ordering — never re-sort locally.
+  const sortedData = remoteSort ? liveData : localSortedData
+
+  // remoteSort parity: hand the sort state to the server. Header clicks are
+  // pushed via the onSortChange wrapper above; this effect covers controlled
+  // `sort` prop updates from the parent (core setParams dedupes unchanged
+  // params, so the click path does not double-request).
+  React.useEffect(() => {
+    if (!proxy || !remoteSort) return
+    proxyRef.current?.setParams({ sort: sort ?? null })
+  }, [proxy, remoteSort, sort])
+
+  // remoteFilter parity: hand the filter map to the server and never hide
+  // rows client-side (vxe proxyConfig.filter).
+  React.useEffect(() => {
+    if (!proxy || !remoteFilter) return
+    proxyRef.current?.setParams({ filters: filters ?? {} })
+  }, [proxy, remoteFilter, filters])
 
   // Row-selection logic (single/multiple toggle, dedup, select-all,
   // controlled/uncontrolled) is single-sourced in the core model; keys are the
@@ -645,9 +755,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
     [treeMode, sortedData, getSubRows, expandedKeys, rowKey, sortComparator],
   )
   // Client-side filters (vxe filterConfig parity, local mode): core filterSort
-  // applied to the sorted data before paging/virtualizing (flat mode).
+  // applied to the sorted data before paging/virtualizing (flat mode). With
+  // remoteFilter, the server owns filtering — rows are never hidden locally.
   const filteredData = React.useMemo(() => {
-    if (!filters) return sortedData
+    if (remoteFilter || !filters) return sortedData
     const active = Object.entries(filters).filter(([, v]) => v != null && v !== '')
     if (active.length === 0) return sortedData
     return sortedData.filter((row) =>
@@ -661,7 +772,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           .includes(value.toLowerCase())
       }),
     )
-  }, [sortedData, filters, displayColumns])
+  }, [sortedData, filters, displayColumns, remoteFilter])
   const bodyData = flatTree ? flatTree.map((t) => t.row) : filteredData
 
   const toggleAll = () => {
@@ -1674,16 +1785,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
         ) : null}
 
         {/* Body — state precedence: error → loading → empty → rows. */}
-        {error ? (
+        {tableError ? (
           <div role="row" data-iris-table-row="error" style={STATE_ROW_STYLE}>
-            <span style={{ marginInlineEnd: onRetry ? 'var(--iris-space-sm, 12px)' : 0 }}>
+            <span style={{ marginInlineEnd: retry ? 'var(--iris-space-sm, 12px)' : 0 }}>
               {errorState ?? t('table.error')}
             </span>
-            {onRetry ? (
+            {retry ? (
               <button
                 type="button"
                 data-iris-table-retry=""
-                onClick={onRetry}
+                onClick={retry}
                 style={{
                   border: '1px solid var(--iris-border)',
                   background: 'var(--iris-surface)',
@@ -1698,7 +1809,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               </button>
             ) : null}
           </div>
-        ) : loading ? (
+        ) : tableLoading ? (
           <div role="row" aria-busy="true" data-iris-table-row="loading" style={STATE_ROW_STYLE}>
             {loadingState ?? t('table.loading')}
           </div>
@@ -1754,7 +1865,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
         {/* Summary / footer row: each column with a `summary` op aggregates over
           the full sorted dataset (the core `aggregate` material). */}
-        {!error && !loading && bodyData.length > 0 && leafColumns.some((c) => c.summary) ? (
+        {!tableError &&
+        !tableLoading &&
+        bodyData.length > 0 &&
+        leafColumns.some((c) => c.summary) ? (
           <div
             role="row"
             data-iris-table-row="summary"
@@ -1794,7 +1908,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
         {/* Custom footer rows (vxe footer-data parity): one grid row per entry,
           rendered below the summary row. */}
-        {!error && !loading && footerData && footerData.length > 0 ? (
+        {!tableError && !tableLoading && footerData && footerData.length > 0 ? (
           <div data-iris-table-footer="" style={{ display: 'contents' }}>
             {footerData.map((footerRow, fi) => (
               <div
@@ -1839,6 +1953,33 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 })}
               </div>
             ))}
+          </div>
+        ) : null}
+
+        {/* Server-side pager (vxe-grid proxyConfig parity): driven by the
+          controller's page/pageSize/total; page changes call setParams and
+          proxyConfig.onPageChange. */}
+        {proxy ? (
+          <div
+            data-iris-table-pager=""
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+              borderTop: borderStyle,
+              background: 'var(--iris-surface)',
+            }}
+          >
+            <IrisPagination
+              total={proxyState.total}
+              pageSize={proxyState.params.pageSize}
+              value={proxyState.params.page}
+              onValueChange={(page) => {
+                proxyRef.current?.setParams({ page })
+                proxyConfig?.onPageChange?.(page, proxyState.params.pageSize)
+              }}
+            />
           </div>
         ) : null}
       </div>

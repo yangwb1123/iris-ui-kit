@@ -22,6 +22,12 @@ export interface RemoteTableParams {
   pageSize: number
   /** Active sort, or null. Passed through when remote sort is enabled. */
   sort: SortState | null
+  /**
+   * Multi-column sort (vxe sort-config.multiple parity), most-significant
+   * first. Optional — only multiSort-mode tables set it; the single `sort`
+   * field stays the single-column channel (the two are mutually exclusive).
+   */
+  sorts?: SortState[]
   /** key → filter value (empty string = inactive). */
   filters: Record<string, string>
 }
@@ -81,6 +87,17 @@ function sortEqual(a: SortState | null, b: SortState | null): boolean {
   return (a?.key ?? null) === (b?.key ?? null) && (a?.direction ?? null) === (b?.direction ?? null)
 }
 
+/** Order-sensitive multi-sort equality; `undefined` and `[]` are equivalent. */
+function sortsEqual(a: SortState[] | undefined, b: SortState[] | undefined): boolean {
+  const la = a?.length ?? 0
+  const lb = b?.length ?? 0
+  if (la !== lb) return false
+  for (let i = 0; i < la; i += 1) {
+    if (!sortEqual(a?.[i] ?? null, b?.[i] ?? null)) return false
+  }
+  return true
+}
+
 function filtersEqual(a: Record<string, string>, b: Record<string, string>): boolean {
   if (Object.keys(a).length !== Object.keys(b).length) return false
   return Object.keys(a).every((key) => a[key] === b[key])
@@ -103,6 +120,7 @@ function normalizeFilters(filters: Record<string, string>): Record<string, strin
 function paramsEqual(a: RemoteTableParams, b: RemoteTableParams): boolean {
   if (a.page !== b.page || a.pageSize !== b.pageSize) return false
   if (!sortEqual(a.sort, b.sort)) return false
+  if (!sortsEqual(a.sorts, b.sorts)) return false
   return filtersEqual(a.filters, b.filters)
 }
 
@@ -116,6 +134,7 @@ export function createRemoteTableSource<Row>(
     page: options.initialParams?.page ?? 1,
     pageSize: options.initialParams?.pageSize ?? 10,
     sort: options.initialParams?.sort ?? null,
+    sorts: options.initialParams?.sorts,
     filters: normalizeFilters(options.initialParams?.filters ?? {}),
   }
 
@@ -124,8 +143,16 @@ export function createRemoteTableSource<Row>(
   // false` so no request fires during construction — `autoLoad` is honored
   // explicitly below (the React bridge kicks the load from an effect instead).
   const ds = createDataSource<Row>({
-    fetcher: ({ page, pageSize, sort, filters }) =>
-      options.query({ page, pageSize, sort, filters }),
+    fetcher: ({ page, pageSize, sort, filters, multiSort }) =>
+      options.query({
+        page,
+        pageSize,
+        sort,
+        filters,
+        // The `sorts` channel only exists in multi mode (the engine nulls the
+        // single `sort` there), so single-mode queries stay byte-identical.
+        ...(multiSort.length > 0 ? { sorts: multiSort } : {}),
+      }),
     pageSize: initial.pageSize,
     immediate: false,
   })
@@ -134,7 +161,10 @@ export function createRemoteTableSource<Row>(
   ds.store.setState((s) => ({
     ...s,
     page: initial.page,
-    sort: initial.sort,
+    // Multi mode maps into the engine's multiSort slot (which nulls the
+    // single sort — the two channels are mutually exclusive, vxe parity).
+    sort: initial.sorts !== undefined ? null : initial.sort,
+    multiSort: initial.sorts ?? s.multiSort,
     filters: initial.filters,
   }))
 
@@ -143,15 +173,23 @@ export function createRemoteTableSource<Row>(
     total: s.total,
     loading: s.loading,
     error: toError(s.error),
-    params: { page: s.page, pageSize: s.pageSize, sort: s.sort, filters: s.filters },
+    params: {
+      page: s.page,
+      pageSize: s.pageSize,
+      sort: s.sort,
+      filters: s.filters,
+      ...(s.multiSort.length > 0 ? { sorts: s.multiSort } : {}),
+    },
   }))
 
   const applyParams = (partial: Partial<RemoteTableParams>): boolean => {
     const s = ds.store.getState()
+    const currentSorts: SortState[] | undefined = s.multiSort.length > 0 ? s.multiSort : undefined
     const merged: RemoteTableParams = {
       page: partial.page ?? s.page,
       pageSize: partial.pageSize ?? s.pageSize,
       sort: partial.sort !== undefined ? partial.sort : s.sort,
+      sorts: partial.sorts !== undefined ? partial.sorts : currentSorts,
       filters: partial.filters !== undefined ? normalizeFilters(partial.filters) : s.filters,
     }
     // vxe behavior: a sort/filter VALUE change resets the page to 1. Compare
@@ -159,16 +197,28 @@ export function createRemoteTableSource<Row>(
     // fresh object identity each render never spuriously resets an active
     // page or re-queries (e.g. an inline `sort={{ key, direction }}` literal).
     const sortChanged = partial.sort !== undefined && !sortEqual(s.sort, partial.sort)
+    const sortsChanged = partial.sorts !== undefined && !sortsEqual(currentSorts, partial.sorts)
     const filtersChanged = partial.filters !== undefined && !filtersEqual(s.filters, merged.filters)
-    if (sortChanged || filtersChanged) merged.page = 1
+    if (sortChanged || sortsChanged || filtersChanged) merged.page = 1
     const current: RemoteTableParams = {
       page: s.page,
       pageSize: s.pageSize,
       sort: s.sort,
+      sorts: currentSorts,
       filters: s.filters,
     }
     if (paramsEqual(current, merged)) return false
-    ds.store.setState({ ...s, ...merged })
+    // sorts (multi mode) maps into the engine's multiSort slot (which nulls
+    // the single sort); single mode keeps writing the `sort` field, so the
+    // two channels stay mutually exclusive (vxe sort-config.multiple parity).
+    ds.store.setState((st) => ({
+      ...st,
+      page: merged.page,
+      pageSize: merged.pageSize,
+      sort: merged.sorts !== undefined ? null : merged.sort,
+      multiSort: merged.sorts ?? st.multiSort,
+      filters: merged.filters,
+    }))
     return true
   }
 

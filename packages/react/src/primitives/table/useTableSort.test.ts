@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import type { IrisTableColumn } from './types'
+import type { IrisTableColumn, IrisTableSortState } from './types'
 import { useTableSort } from './useTableSort'
 
 interface TestRow {
@@ -127,5 +127,131 @@ describe('useTableSort', () => {
     // id column has no custom sorter but exists — falls back to compareValues
     expect(result.current.sortComparator).not.toBeNull()
     expect(result.current.sortedData.map((r) => r.id)).toEqual([1, 2, 3])
+  })
+
+  // ── Multi-column mode (vxe sort-config.multiple parity, batch F) ──────
+
+  it('multi: appends columns in click order (most-significant first)', () => {
+    const { result } = renderHook(() =>
+      useTableSort(data, { leafColumns: columns, multiSort: true }),
+    )
+    act(() => {
+      result.current.cycleMultiSort(columns[0]) // name asc
+    })
+    act(() => {
+      result.current.cycleMultiSort(columns[1]) // age asc appended
+    })
+    expect(result.current.multiSortState).toEqual([
+      { key: 'name', direction: 'asc' },
+      { key: 'age', direction: 'asc' },
+    ])
+  })
+
+  it('multi: cycles asc → desc → remove for an existing column, append restarts at asc', () => {
+    const { result } = renderHook(() =>
+      useTableSort(data, { leafColumns: columns, multiSort: true }),
+    )
+    act(() => {
+      result.current.cycleMultiSort(columns[0])
+    })
+    expect(result.current.multiSortState).toEqual([{ key: 'name', direction: 'asc' }])
+    act(() => {
+      result.current.cycleMultiSort(columns[0])
+    })
+    expect(result.current.multiSortState).toEqual([{ key: 'name', direction: 'desc' }])
+    act(() => {
+      result.current.cycleMultiSort(columns[0])
+    })
+    expect(result.current.multiSortState).toEqual([])
+    // Re-appending a removed column starts at asc again
+    act(() => {
+      result.current.cycleMultiSort(columns[0])
+    })
+    expect(result.current.multiSortState).toEqual([{ key: 'name', direction: 'asc' }])
+  })
+
+  it('multi: comparator precedence — first non-zero comparison wins (stable ties)', () => {
+    const tieData: TestRow[] = [
+      { id: 1, name: 'Alice', age: 30 },
+      { id: 2, name: 'Bob', age: 35 },
+      { id: 3, name: 'Alice', age: 25 },
+    ]
+    const { result } = renderHook(() =>
+      useTableSort(tieData, {
+        leafColumns: columns,
+        multiSort: true,
+        defaultMultiSort: [
+          { key: 'name', direction: 'asc' },
+          { key: 'age', direction: 'asc' },
+        ],
+      }),
+    )
+    // name asc first: Alice(25), Alice(30), then Bob — age breaks the Alice tie
+    expect(result.current.sortedData.map((r) => r.id)).toEqual([3, 1, 2])
+  })
+
+  it('multi: desc flips the direction of that column only', () => {
+    const tieData: TestRow[] = [
+      { id: 1, name: 'Alice', age: 30 },
+      { id: 2, name: 'Bob', age: 35 },
+      { id: 3, name: 'Alice', age: 25 },
+    ]
+    const { result } = renderHook(() =>
+      useTableSort(tieData, {
+        leafColumns: columns,
+        multiSort: true,
+        defaultMultiSort: [
+          { key: 'name', direction: 'asc' },
+          { key: 'age', direction: 'desc' },
+        ],
+      }),
+    )
+    expect(result.current.sortedData.map((r) => r.id)).toEqual([1, 3, 2])
+  })
+
+  it('multi: respects controlled multiSortState and fires onMultiSortChange', () => {
+    const onMulti = vi.fn()
+    const { result, rerender } = renderHook(
+      ({ ms }: { ms: IrisTableSortState[] }) =>
+        useTableSort(data, {
+          leafColumns: columns,
+          multiSort: true,
+          multiSortState: ms,
+          onMultiSortChange: onMulti,
+        }),
+      { initialProps: { ms: [{ key: 'name', direction: 'asc' }] } },
+    )
+    expect(result.current.multiSortState).toEqual([{ key: 'name', direction: 'asc' }])
+    // Controlled: the emitted next value is computed from the prop, but the
+    // displayed state only changes when the parent writes back.
+    act(() => {
+      result.current.cycleMultiSort(columns[1])
+    })
+    expect(onMulti).toHaveBeenLastCalledWith([
+      { key: 'name', direction: 'asc' },
+      { key: 'age', direction: 'asc' },
+    ])
+    expect(result.current.multiSortState).toEqual([{ key: 'name', direction: 'asc' }])
+    rerender({
+      ms: [
+        { key: 'name', direction: 'asc' },
+        { key: 'age', direction: 'asc' },
+      ],
+    })
+    expect(result.current.multiSortState).toEqual([
+      { key: 'name', direction: 'asc' },
+      { key: 'age', direction: 'asc' },
+    ])
+  })
+
+  it('multi: does not cycle a non-sortable column', () => {
+    const { result } = renderHook(() =>
+      useTableSort(data, { leafColumns: columns, multiSort: true }),
+    )
+    act(() => {
+      result.current.cycleMultiSort(columns[2]) // id, sortable=false
+    })
+    expect(result.current.multiSortState).toEqual([])
+    expect(result.current.sortedData).toEqual(data)
   })
 })

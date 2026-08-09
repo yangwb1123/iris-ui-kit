@@ -47,7 +47,24 @@ export interface IrisTableProxyQueryParams {
   page: number
   pageSize: number
   sort: import('./types').IrisTableSortState | null
+  /**
+   * Multi-column sort (vxe sort-config.multiple parity), most-significant
+   * first. Present only in multiSort mode — single mode keeps passing `sort`.
+   */
+  sorts?: IrisTableSortState[]
   filters: Record<string, string>
+}
+
+/**
+ * Edit-validation presentation (vxe-grid ValidConfig parity).
+ */
+export interface IrisTableValidConfig {
+  /**
+   * Render the inline editor error message (`data-iris-table-editor-error`).
+   * `false` still runs validation and blocks the commit — only the message
+   * element is skipped (`aria-invalid` stays). Default true.
+   */
+  showMessage?: boolean
 }
 
 /** Params delivered to `IrisTableProps.seqMethod` (vxe seqMethod parity). */

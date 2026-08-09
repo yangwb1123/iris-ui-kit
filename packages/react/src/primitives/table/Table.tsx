@@ -188,6 +188,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   sort: sortProp,
   defaultSort,
   onSortChange,
+  multiSort = false,
+  multiSortState: multiSortStateProp,
+  defaultMultiSort,
+  onMultiSortChange,
   striped = false,
   size,
   seqStartIndex = 1,
@@ -221,6 +225,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   checkMethod,
   pagerConfig,
   editConfig,
+  validConfig,
   rowDrag,
   columnDrag,
   columnVisibility,
@@ -234,6 +239,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   renderDetail,
   rowExpandable,
   defaultExpandedRowKeys,
+  expandAll = false,
   onExpandedRowsChange,
   getSubRows,
   keyboardNavigation = false,
@@ -306,6 +312,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         page: proxyConfig?.defaultPage ?? 1,
         pageSize: proxyConfig?.pageSize ?? 10,
         sort: remoteSort ? ((sortProp !== undefined ? sortProp : defaultSort) ?? null) : null,
+        sorts: remoteSort && multiSort ? (multiSortStateProp ?? defaultMultiSort ?? []) : undefined,
         filters: remoteFilter ? (filters ?? {}) : {},
       },
     })
@@ -383,6 +390,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
     cycleSort,
     sortComparator,
     sortedData: localSortedData,
+    multiSortState,
+    cycleMultiSort,
   } = useTableSort<Row>(liveData, {
     leafColumns,
     sort: sortProp,
@@ -393,6 +402,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // in the core controller, vxe behavior).
       if (remoteSort) proxyRef.current?.setParams({ sort: next })
     },
+    multiSort,
+    multiSortState: multiSortStateProp,
+    defaultMultiSort,
+    onMultiSortChange: (next) => {
+      onMultiSortChange?.(next)
+      // remoteSort parity (multi mode): the FULL sort list re-queries the
+      // server; the single `sort` param stays the single-column channel.
+      if (remoteSort) proxyRef.current?.setParams({ sorts: next })
+    },
   })
   // remoteSort parity: the server owns the ordering — never re-sort locally.
   const sortedData = remoteSort ? liveData : localSortedData
@@ -400,11 +418,22 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // remoteSort parity: hand the sort state to the server. Header clicks are
   // pushed via the onSortChange wrapper above; this effect covers controlled
   // `sort` prop updates from the parent (core setParams dedupes unchanged
-  // params, so the click path does not double-request).
+  // params, so the click path does not double-request). In multiSort mode the
+  // single-column channel is inert — the multi effect below owns the sync.
   React.useEffect(() => {
-    if (!proxy || !remoteSort) return
+    if (!proxy || !remoteSort || multiSort) return
     proxyRef.current?.setParams({ sort: sort ?? null })
-  }, [proxy, remoteSort, sort])
+  }, [proxy, remoteSort, sort, multiSort])
+
+  // remoteSort parity (multi mode): hand the full sort list to the server,
+  // keyed on click order. The header-click path pushes via the
+  // onMultiSortChange wrapper; this effect covers controlled `multiSortState`
+  // prop updates from the parent (core setParams dedupes unchanged sorts, so
+  // neither path double-requests).
+  React.useEffect(() => {
+    if (!proxy || !remoteSort || !multiSort) return
+    proxyRef.current?.setParams({ sorts: multiSortState })
+  }, [proxy, remoteSort, multiSort, multiSortState])
 
   // ── Search form (vxe-grid formConfig parity, batch D) ──────────────────
   // Draft/applied two-state: keystrokes only touch the DRAFT (never trigger a
@@ -772,8 +801,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!col.sortable) return
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      cycleSort(col)
+      if (multiSort) cycleMultiSort(col)
+      else cycleSort(col)
     }
+  }
+
+  // Sortable header click: multi mode appends/cycles the list, single mode
+  // keeps the asc → desc → none cycle — both routed through one entry point.
+  const cycleHeaderSort = (col: IrisTableColumn<Row>) => {
+    if (multiSort) cycleMultiSort(col)
+    else cycleSort(col)
   }
 
   const rowKeyOf = (row: Row): string | number => {
@@ -839,6 +876,29 @@ export function IrisTable<Row extends Record<string, unknown>>({
     refetch: () => {
       proxyRef.current?.refetch()
     },
+    // ── Selection methods (vxe clearCheckboxRow / setAllCheckboxRow(true) /
+    // toggleCheckboxRow parity, batch F) ───────────────────────────────────
+    clearSelection: () => {
+      if (selectable === 'none') return
+      rebaseToProp()
+      selModel.clear()
+    },
+    selectAll: () => {
+      if (selectable !== 'multi') return
+      rebaseToProp()
+      // vxe setAllCheckboxRow(true): select every checkMethod-eligible row of
+      // the current page (checkMethod rows are skipped, vxe parity).
+      const keys = bodyData
+        .map((row, i) => (checkMethod && !checkMethod(row, i) ? null : rowKeyOf(row)))
+        .filter((k): k is string | number => k != null)
+      selModel.set(keys)
+    },
+    toggleRowSelection: (key) => {
+      if (selectable === 'none') return
+      rebaseToProp()
+      // vxe toggleCheckboxRow: a DIRECT toggle by key — bypasses checkMethod.
+      selModel.toggle(key)
+    },
   }
   React.useEffect(() => {
     if (tableRef) tableRef.current = handleRef.current
@@ -901,6 +961,31 @@ export function IrisTable<Row extends Record<string, unknown>>({
     )
   }, [sortedData, filters, formApplied, displayColumns, remoteFilter, proxy])
   const bodyData = flatTree ? flatTree.map((t) => t.row) : filteredData
+
+  // expandAll parity (vxe expand-config.expandAll — one-shot at init): seed the
+  // expansion model with every tree key that HAS children, walked from the top
+  // of `sortedData` (not the flattened rows — the flat tree is DERIVED from the
+  // expansion model, so flattening first is chicken/egg). Proxy data arrives
+  // async, so the seed waits for the first non-empty page; the ref keeps it
+  // initial-only (a later prop toggle does not re-seed).
+  const expandAllSeededRef = React.useRef(false)
+  React.useEffect(() => {
+    if (!expandAll || !treeMode || expandAllSeededRef.current) return
+    if (sortedData.length === 0) return
+    expandAllSeededRef.current = true
+    const keys: string[] = []
+    const collect = (rows: Row[]): void => {
+      for (const row of rows) {
+        const children = getSubRows!(row)
+        if (children && children.length > 0) {
+          keys.push(String((row as Record<string, unknown>)[rowKey] as string | number))
+          collect(children)
+        }
+      }
+    }
+    collect(sortedData)
+    if (keys.length > 0) expansion.merge(keys)
+  }, [expandAll, treeMode, sortedData, getSubRows, expansion, rowKey])
 
   const toggleAll = () => {
     if (selectable !== 'multi') return
@@ -1403,7 +1488,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     data-iris-table-editor=""
                     aria-invalid={cellEdit.getError() ? 'true' : undefined}
                     aria-describedby={
-                      cellEdit.getError() ? `${cellId(k, col.key)}-error` : undefined
+                      cellEdit.getError() && validConfig?.showMessage !== false
+                        ? `${cellId(k, col.key)}-error`
+                        : undefined
                     }
                     onChange={(e) => cellEdit.setDraft(e.target.value)}
                     onKeyDown={(e) => {
@@ -1428,7 +1515,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       outline: 'none',
                     }}
                   />
-                  {cellEdit.getError() ? (
+                  {/* validConfig.showMessage=false: validation still blocks the
+                    commit and aria-invalid stays — only the message element is
+                    skipped (vxe ValidConfig parity). */}
+                  {cellEdit.getError() && validConfig?.showMessage !== false ? (
                     <div
                       id={`${cellId(k, col.key)}-error`}
                       role="alert"
@@ -1786,9 +1876,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 const col = cell.column
                 const isLeaf = !col.children || col.children.length === 0
                 const sortable = isLeaf && col.sortable
-                const isSortKey = sortable && sort?.key === col.key
+                const multiIdx =
+                  multiSort && sortable ? multiSortState.findIndex((s) => s.key === col.key) : -1
+                const isSortKey = sortable && (multiSort ? multiIdx >= 0 : sort?.key === col.key)
                 const dir: IrisTableSortDirection | undefined = isSortKey
-                  ? sort?.direction
+                  ? multiSort
+                    ? multiSortState[multiIdx]!.direction
+                    : sort?.direction
                   : undefined
                 const lead = (hasDetail ? 1 : 0) + (selectable !== 'none' ? 1 : 0)
                 return (
@@ -1814,7 +1908,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                           : undefined
                     }
                     tabIndex={sortable ? 0 : undefined}
-                    onClick={sortable ? () => cycleSort(col) : undefined}
+                    onClick={sortable ? () => cycleHeaderSort(col) : undefined}
                     onKeyDown={sortable ? (e) => onHeaderKeyDown(e, col) : undefined}
                     style={{
                       gridColumn: `${lead + cell.colStart} / span ${cell.colSpan}`,
@@ -1846,6 +1940,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         }}
                       >
                         {dir === 'asc' ? '↑' : dir === 'desc' ? '↓' : '↕'}
+                      </span>
+                    ) : null}
+                    {/* Multi mode: non-primary sort columns show their click-order
+                      sequence number (vxe sort-config sequence parity). */}
+                    {multiSort && multiIdx > 0 ? (
+                      <span
+                        data-iris-sort-seq=""
+                        style={{
+                          marginInlineStart: 'var(--iris-space-xxs, 4px)',
+                          fontSize: 'var(--iris-font-size-xs, 12px)',
+                          color: 'var(--iris-muted)',
+                        }}
+                      >
+                        {multiIdx + 1}
                       </span>
                     ) : null}
                   </div>
@@ -1901,9 +2009,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
             ) : null}
             {displayColumns.map((col, ci) => {
               if (visibleColSet && !visibleColSet.has(ci)) return null
-              const isSortKey = sort?.key === col.key
+              const multiIdx = multiSort ? multiSortState.findIndex((s) => s.key === col.key) : -1
+              const isSortKey = multiSort ? multiIdx >= 0 : sort?.key === col.key
               const dir: IrisTableSortDirection | undefined = isSortKey
-                ? sort?.direction
+                ? multiSort
+                  ? multiSortState[multiIdx]!.direction
+                  : sort?.direction
                 : undefined
               return (
                 <div
@@ -1922,7 +2033,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   onClick={
                     col.sortable
                       ? () => {
-                          cycleSort(col)
+                          cycleHeaderSort(col)
                           setCurrentColumn(col)
                         }
                       : () => setCurrentColumn(col)
@@ -1981,6 +2092,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       }}
                     >
                       {dir === 'asc' ? '↑' : dir === 'desc' ? '↓' : '↕'}
+                    </span>
+                  ) : null}
+                  {/* Multi mode: non-primary sort columns show their click-order
+                    sequence number (vxe sort-config sequence parity). */}
+                  {multiSort && multiIdx > 0 ? (
+                    <span
+                      data-iris-sort-seq=""
+                      style={{
+                        marginInlineStart: 'var(--iris-space-xxs, 4px)',
+                        fontSize: 'var(--iris-font-size-xs, 12px)',
+                        color: 'var(--iris-muted)',
+                      }}
+                    >
+                      {multiIdx + 1}
                     </span>
                   ) : null}
                   {resizableColumns ? (

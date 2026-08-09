@@ -15,6 +15,7 @@ export {
   type IrisTableSortDirection,
   type IrisTableSortState,
   type IrisTableFormField,
+  type IrisTableValidConfig,
 } from './types'
 export { exportCsv, downloadCsv } from './exportCsv'
 export { exportExcel, downloadExcel } from './exportExcel'

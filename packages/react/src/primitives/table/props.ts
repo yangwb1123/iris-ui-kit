@@ -7,6 +7,7 @@ import type {
   IrisTableRenderDetail,
   IrisTableRowExpandable,
   IrisTableSortState,
+  IrisTableValidConfig,
   IrisTableVirtualOptions,
 } from './types'
 
@@ -73,6 +74,14 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   updateRow: (key: string | number, patch: Partial<Row>) => void
   /** Re-fetch the current page (proxy mode). */
   refetch: () => void
+  /** Clear every selected row (vxe clearCheckboxRow parity). */
+  clearSelection: () => void
+  /** Select every checkMethod-eligible row of the current page (vxe
+   * setAllCheckboxRow(true) parity — `checkMethod` rows are skipped). */
+  selectAll: () => void
+  /** Toggle a single row's selection by key (vxe toggleCheckboxRow parity —
+   * a direct toggle that bypasses `checkMethod`). */
+  toggleRowSelection: (key: string | number) => void
 }
 
 /** Pager configuration (vxe-grid pagerConfig parity). */
@@ -97,6 +106,14 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   sort?: IrisTableSortState | null
   defaultSort?: IrisTableSortState | null
   onSortChange?: (next: IrisTableSortState | null) => void
+  /** Multi-column sort (vxe sort-config.multiple parity): header clicks
+   * append/cycle columns in click order instead of replacing. Default false. */
+  multiSort?: boolean
+  /** Controlled multi-column sort state (multiSort mode). */
+  multiSortState?: IrisTableSortState[]
+  /** Default multi-column sort (multiSort mode, uncontrolled). */
+  defaultMultiSort?: IrisTableSortState[]
+  onMultiSortChange?: (next: IrisTableSortState[]) => void
   striped?: boolean
   /** Size preset (vxe-grid size parity): medium / small / mini. */
   size?: 'medium' | 'small' | 'mini'
@@ -215,6 +232,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
     /** Drop the draft when opening another cell without committing. */
     autoClear?: boolean
   }
+  /** Edit-validation presentation (vxe-grid ValidConfig parity). */
+  validConfig?: IrisTableValidConfig
   onCellEdit?: (event: IrisTableCellEditEvent<Row>) => void
   /** Render an expandable detail panel beneath a row. */
   renderDetail?: IrisTableRenderDetail<Row>
@@ -222,6 +241,10 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   rowExpandable?: IrisTableRowExpandable<Row>
   /** Initially-expanded row keys (uncontrolled). Shared by detail rows + tree rows. */
   defaultExpandedRowKeys?: Array<string | number>
+  /** Expand every tree row that has children on mount (vxe expand-config
+   * expandAll parity). One-shot: seeds the expansion model with all tree keys
+   * on the first data arrival (proxy pages load async). Default false. */
+  expandAll?: boolean
   /** Notified with the expanded row keys whenever they change. */
   onExpandedRowsChange?: (keys: Array<string | number>) => void
   /** Read a row's child rows to render the table as a tree. */

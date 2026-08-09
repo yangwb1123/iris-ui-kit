@@ -52,3 +52,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-e-adapt.md [FAILED: task timed out]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-e-adapt.md
+
+## 2026-08-08 23:31:19 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-f-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-f-baseline.md
+
+## 2026-08-08 23:42:52 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-f-adapt.md [ok]: Report — vxe-grid Batch F (multiSort + validConfig + selection methods + expandAll); Files changed (9, all required by the spec): | File | Change |; Tests added: 21 (core 3 + react 18); totals: core **1245/1245** · react **1559/1559** (144 files): Coverage: multi append/cycle/remove/re-append, comparator precedence with ties + desc flip, controlled mode, non-sortabl; Verification: - `core test` ✅ 1245 passed · `react typecheck` ✅ · `react test` ✅ 1559 passed · `react lint` ✅ 0 errors (1 pre-existing; Left unfinished: - None of the implementation. Notes: (1) `manifest.json`/`llms.txt` intentionally not regenerated per constraint (source
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-f-adapt.md
+
+## 2026-08-08 23:50:06 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-f-review.md [ok]: Summary: **All 8 checklist items verified green:**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-f-review.md

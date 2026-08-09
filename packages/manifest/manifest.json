@@ -36063,6 +36063,28 @@
           "optional": true
         },
         {
+          "name": "multiSort",
+          "type": "boolean",
+          "optional": true
+        },
+        {
+          "name": "multiSortState",
+          "type": "IrisTableSortState[]",
+          "optional": true,
+          "description": "Controlled multi-column sort state (multiSort mode)."
+        },
+        {
+          "name": "defaultMultiSort",
+          "type": "IrisTableSortState[]",
+          "optional": true,
+          "description": "Default multi-column sort (multiSort mode, uncontrolled)."
+        },
+        {
+          "name": "onMultiSortChange",
+          "type": "(next: IrisTableSortState[]) => void",
+          "optional": true
+        },
+        {
           "name": "striped",
           "type": "boolean",
           "optional": true
@@ -36298,10 +36320,15 @@
           "description": "Inline-edit configuration (vxe-grid editConfig parity)."
         },
         {
+          "name": "validConfig",
+          "type": "IrisTableValidConfig",
+          "optional": true,
+          "description": "Edit-validation presentation (vxe-grid ValidConfig parity)."
+        },
+        {
           "name": "onCellEdit",
           "type": "(event: IrisTableCellEditEvent<Row>) => void",
-          "optional": true,
-          "description": "Drop the draft when opening another cell without committing."
+          "optional": true
         },
         {
           "name": "renderDetail",
@@ -36320,6 +36347,12 @@
           "type": "Array<string | number>",
           "optional": true,
           "description": "Initially-expanded row keys (uncontrolled). Shared by detail rows + tree rows."
+        },
+        {
+          "name": "expandAll",
+          "type": "boolean",
+          "optional": true,
+          "description": "expandAll parity). One-shot: seeds the expansion model with all tree keys"
         },
         {
           "name": "onExpandedRowsChange",
@@ -36494,6 +36527,28 @@
             {
               "name": "onSortChange",
               "type": "(next: IrisTableSortState | null) => void",
+              "optional": true
+            },
+            {
+              "name": "multiSort",
+              "type": "boolean",
+              "optional": true
+            },
+            {
+              "name": "multiSortState",
+              "type": "IrisTableSortState[]",
+              "optional": true,
+              "description": "Controlled multi-column sort state (multiSort mode)."
+            },
+            {
+              "name": "defaultMultiSort",
+              "type": "IrisTableSortState[]",
+              "optional": true,
+              "description": "Default multi-column sort (multiSort mode, uncontrolled)."
+            },
+            {
+              "name": "onMultiSortChange",
+              "type": "(next: IrisTableSortState[]) => void",
               "optional": true
             },
             {
@@ -36732,10 +36787,15 @@
               "description": "Inline-edit configuration (vxe-grid editConfig parity)."
             },
             {
+              "name": "validConfig",
+              "type": "IrisTableValidConfig",
+              "optional": true,
+              "description": "Edit-validation presentation (vxe-grid ValidConfig parity)."
+            },
+            {
               "name": "onCellEdit",
               "type": "(event: IrisTableCellEditEvent<Row>) => void",
-              "optional": true,
-              "description": "Drop the draft when opening another cell without committing."
+              "optional": true
             },
             {
               "name": "renderDetail",
@@ -36754,6 +36814,12 @@
               "type": "Array<string | number>",
               "optional": true,
               "description": "Initially-expanded row keys (uncontrolled). Shared by detail rows + tree rows."
+            },
+            {
+              "name": "expandAll",
+              "type": "boolean",
+              "optional": true,
+              "description": "expandAll parity). One-shot: seeds the expansion model with all tree keys"
             },
             {
               "name": "onExpandedRowsChange",
@@ -36878,6 +36944,7 @@
             "onDataChange",
             "onExpandedRowsChange",
             "onFiltersChange",
+            "onMultiSortChange",
             "onRetry",
             "onRowClick",
             "onSelectionChange",
@@ -36906,6 +36973,7 @@
             "IrisTableSeqMethodParams",
             "IrisTableSortDirection",
             "IrisTableSortState",
+            "IrisTableValidConfig",
             "IrisTableVirtualOptions"
           ]
         },
@@ -37486,6 +37554,7 @@
       "events": [
         "onSelectionChange",
         "onSortChange",
+        "onMultiSortChange",
         "onCurrentRowChange",
         "onCurrentColumnChange",
         "onCellClick",
@@ -37504,8 +37573,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 72,
-        "eventCount": 13
+        "propCount": 78,
+        "eventCount": 14
       }
     },
     {

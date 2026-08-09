@@ -136,6 +136,72 @@ describe('createRemoteTableSource', () => {
     expect(query).not.toHaveBeenCalled()
   })
 
+  it('multiSort: setParams({ sorts }) re-queries with `sorts` and nulls `sort`', async () => {
+    const query = datasetQuery(25)
+    const source = createRemoteTableSource({ query })
+    await vi.waitFor(() => expect(source.getState().loading).toBe(false))
+    query.mockClear()
+    source.setParams({ sorts: [{ key: 'team', direction: 'asc' }] })
+    expect(query).toHaveBeenCalledTimes(1)
+    expect(query).toHaveBeenCalledWith({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      sorts: [{ key: 'team', direction: 'asc' }],
+      filters: {},
+    })
+    expect(source.getState().params).toMatchObject({
+      page: 1,
+      sort: null,
+      sorts: [{ key: 'team', direction: 'asc' }],
+    })
+  })
+
+  it('multiSort: sorts changes reset the page to 1; same-value sorts dedupe', async () => {
+    const query = datasetQuery(25)
+    const source = createRemoteTableSource({ query })
+    source.setParams({ page: 3, sorts: [{ key: 'team', direction: 'asc' }] })
+    expect(source.getState().params.page).toBe(1)
+    expect(source.getState().params.sorts).toEqual([{ key: 'team', direction: 'asc' }])
+    query.mockClear()
+    // Fresh object identity, same value → no re-query.
+    expect(source.setParams({ sorts: [{ key: 'team', direction: 'asc' }] })).toBe(false)
+    expect(query).not.toHaveBeenCalled()
+    // Order matters: swapping the list is a real change.
+    source.setParams({
+      sorts: [
+        { key: 'age', direction: 'desc' },
+        { key: 'team', direction: 'asc' },
+      ],
+    })
+    expect(query).toHaveBeenCalledTimes(1)
+    expect(query).toHaveBeenCalledWith({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      sorts: [
+        { key: 'age', direction: 'desc' },
+        { key: 'team', direction: 'asc' },
+      ],
+      filters: {},
+    })
+  })
+
+  it('multiSort: clearing sorts back to [] re-queries with no sorts and sort null', async () => {
+    const query = datasetQuery(25)
+    const source = createRemoteTableSource({ query })
+    source.setParams({ sorts: [{ key: 'team', direction: 'asc' }] })
+    query.mockClear()
+    source.setParams({ sorts: [] })
+    expect(query).toHaveBeenCalledTimes(1)
+    expect(query).toHaveBeenCalledWith({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      filters: {},
+    })
+  })
+
   it('same-value sort/filter with fresh object identity does not reset the page or re-query', async () => {
     // A controlled `sort`/`filters` prop recreated inline each render has a
     // fresh identity but an equal VALUE — it must be a no-op (no page reset

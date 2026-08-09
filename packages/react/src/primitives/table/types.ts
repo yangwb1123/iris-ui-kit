@@ -32,6 +32,22 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   /** Path inside the row to read the cell value from. Defaults to `key`. */
   dataIndex?: keyof Row | string
   sortable?: boolean
+  /** Sort by another field (vxe sort-by parity): the comparator reads this
+   * field instead of the column's own value. */
+  sortBy?: string
+  /** Force the sort type (vxe sort-type parity). Default `'auto'` (numbers
+   * compare numerically, everything else as strings). */
+  sortType?: 'number' | 'string' | 'auto'
+  /** Custom client-side filter (vxe filter-method parity). Return true to
+   * keep the row. Overrides the default case-insensitive substring match. */
+  filterMethod?: (value: unknown, row: Row, filterValue: string) => boolean
+  /** Single-select filter (vxe filter-multiple parity). The current filter
+   * UI is value-based (one value per column), so this is the default. */
+  filterMultiple?: boolean
+  /** Render the cell value as HTML (vxe type=html parity). Opt-in only —
+   * the value is injected with `dangerouslySetInnerHTML`; ensure the content
+   * is trusted to avoid XSS. */
+  html?: boolean
   width?: number | string
   /** Minimum width (px) when resizing. Default 60. */
   minWidth?: number

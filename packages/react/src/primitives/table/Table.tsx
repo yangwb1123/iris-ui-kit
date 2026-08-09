@@ -21,7 +21,6 @@ import { useStore } from '../../useStore'
 import {
   createCellEdit,
   createSortable,
-  filterSort,
   parseCsv,
   validateEditRulesAsync,
   type SortableRect,
@@ -163,6 +162,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onSortChange,
   striped = false,
   size,
+  seqStartIndex = 1,
+  seqMethod,
+  currentRowKey,
+  onCurrentRowChange,
+  beforeCurrentRowChange,
+  currentColumnKey,
+  onCurrentColumnChange,
+  beforeCurrentColumnChange,
   showHeader = true,
   footerData,
   rowClassName,
@@ -578,6 +585,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
     onCellClick?.({ row, column: col, rowIndex: idx, columnIndex: ci })
   }
 
+  const setCurrentColumn = (col: IrisTableColumn<Row>): void => {
+    if (onCurrentColumnChange && beforeCurrentColumnChange?.(col.key) !== false) {
+      onCurrentColumnChange(col.key)
+    }
+  }
+
   // Single mode toggles off / replaces, multiple toggles inclusion — both are
   // the model's `toggle` semantics for the row's key.
   const toggleRow = (row: Row) => {
@@ -613,18 +626,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!filters) return sortedData
     const active = Object.entries(filters).filter(([, v]) => v != null && v !== '')
     if (active.length === 0) return sortedData
-    const filterColumns = displayColumns.map((c) => ({
-      ...(c as object),
-      getValue: (row: Row) => (row as Record<string, unknown>)[c.key],
-    }))
-    return filterSort(
-      sortedData,
-      filterColumns as import('@iris-ui-kit/core').DataViewColumn<Row>[],
-      {
-        filters: Object.fromEntries(active),
-        sort: null,
-      },
-    ) as Row[]
+    return sortedData.filter((row) =>
+      active.every(([key, value]) => {
+        const col = displayColumns.find((c) => c.key === key)
+        if (!col) return true
+        const raw = getCellValue(row, col)
+        if (col.filterMethod) return col.filterMethod(raw, row, value)
+        return String(raw ?? '')
+          .toLowerCase()
+          .includes(value.toLowerCase())
+      }),
+    )
   }, [sortedData, filters, displayColumns])
   const bodyData = flatTree ? flatTree.map((t) => t.row) : filteredData
 
@@ -869,7 +881,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
         aria-posinset={treeMeta ? treeMeta.posInset : undefined}
         data-iris-table-row={String(k ?? idx)}
         data-iris-table-row-selected={selected ? 'true' : undefined}
-        onClick={() => onRowClick?.(row, idx)}
+        data-iris-row-current={currentRowKey === k ? 'true' : undefined}
+        onClick={() => {
+          onRowClick?.(row, idx)
+          if (onCurrentRowChange && k != null) {
+            if (beforeCurrentRowChange?.(k, row) !== false) onCurrentRowChange(k, row)
+          }
+        }}
         className={rowClassName?.(row, idx)}
         style={{
           display: 'grid',
@@ -917,7 +935,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               userSelect: 'none',
             }}
           >
-            {idx + 1}
+            {seqMethod ? seqMethod({ rowIndex: idx, columnIndex: 0 }) : idx + seqStartIndex}
           </div>
         ) : null}
         {hasDetail ? (
@@ -1161,6 +1179,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 </>
               ) : col.render ? (
                 col.render(raw, row, idx)
+              ) : col.html ? (
+                <span
+                  // vxe type=html parity — opt-in; the caller guarantees the
+                  // content is trusted (XSS risk, matching the vxe docs warning).
+                  dangerouslySetInnerHTML={{ __html: String(raw ?? '') }}
+                />
               ) : (
                 (raw as React.ReactNode)
               )}
@@ -1545,10 +1569,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         : undefined
                   }
                   tabIndex={col.sortable ? 0 : undefined}
-                  onClick={col.sortable ? () => cycleSort(col) : undefined}
+                  onClick={
+                    col.sortable
+                      ? () => {
+                          cycleSort(col)
+                          setCurrentColumn(col)
+                        }
+                      : () => setCurrentColumn(col)
+                  }
                   onKeyDown={col.sortable ? (e) => onHeaderKeyDown(e, col) : undefined}
                   data-iris-table-header={col.key}
                   data-iris-table-pinned={col.pinned}
+                  data-iris-col-current={currentColumnKey === col.key ? 'true' : undefined}
                   data-iris-col-drag-active={colDragActive === col.key ? 'true' : undefined}
                   data-iris-col-drag-over={colDragOver === col.key ? 'true' : undefined}
                   onPointerDown={

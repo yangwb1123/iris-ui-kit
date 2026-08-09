@@ -30,6 +30,12 @@ export const TABLE_ROW_CSS = `
 [data-iris-table-row-selected="true"] {
   --iris-cell-bg: var(--iris-surface-selected);
 }
+[data-iris-row-current="true"] {
+  --iris-cell-bg: var(--iris-surface-selected);
+}
+[data-iris-col-current="true"] {
+  --iris-cell-bg: var(--iris-surface-selected);
+}
 /* Size presets (vxe-grid size parity: medium / small / mini). */
 [data-iris-table][data-size="small"] {
   --iris-cell-pad-y: 4px;

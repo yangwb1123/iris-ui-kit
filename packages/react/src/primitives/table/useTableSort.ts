@@ -69,7 +69,20 @@ export function useTableSort<Row extends Record<string, unknown>>(
     if (!col) return null
     const dir = sortState.direction === 'asc' ? 1 : -1
     const sorter =
-      col.sorter ?? ((a: Row, b: Row) => compareValues(getCellValue(a, col), getCellValue(b, col)))
+      col.sorter ??
+      ((a: Row, b: Row) => {
+        const key = (col.sortBy ?? col.dataIndex ?? col.key) as keyof Row
+        let va = a[key] as unknown
+        let vb = b[key] as unknown
+        if (col.sortType === 'number') {
+          va = Number(va)
+          vb = Number(vb)
+        } else if (col.sortType === 'string') {
+          va = String(va ?? '')
+          vb = String(vb ?? '')
+        }
+        return compareValues(va, vb)
+      })
     return (a, b) => sorter(a, b) * dir
   }, [leafColumns, sortState])
 
@@ -110,13 +123,4 @@ export function useTableSort<Row extends Record<string, unknown>>(
     sortComparator,
     sortedData,
   }
-}
-
-/** Get the value for a column from a row (handles dataIndex fallback). */
-function getCellValue<Row extends Record<string, unknown>>(
-  row: Row,
-  column: IrisTableColumn<Row>,
-): unknown {
-  const key = (column.dataIndex ?? column.key) as keyof Row
-  return row[key]
 }

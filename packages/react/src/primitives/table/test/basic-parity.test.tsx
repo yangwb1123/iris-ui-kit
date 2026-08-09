@@ -122,3 +122,129 @@ describe('IrisTable basic usage (vxe-grid 基础使用 parity)', () => {
     expect(row.style.gridTemplateColumns).toContain('60%')
   })
 })
+
+describe('IrisTable interaction extras (vxe 排序/筛选/高亮/seq/html parity)', () => {
+  it('sortBy sorts by another field', () => {
+    const byAge: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name', sortable: true, sortBy: 'age' },
+      { key: 'age', title: 'Age' },
+    ]
+    const data = [
+      { id: 1, name: 'A', age: 40 },
+      { id: 2, name: 'B', age: 10 },
+    ]
+    const { container } = render(
+      <IrisTable
+        columns={byAge}
+        data={data}
+        rowKey="id"
+        defaultSort={{ key: 'name', direction: 'asc' }}
+      />,
+    )
+    const cells = [...container.querySelectorAll('[data-iris-table-cell="name"]')].map(
+      (c) => c.textContent,
+    )
+    expect(cells).toEqual(['B', 'A'])
+  })
+
+  it('sortType=number compares numerically (string digits)', () => {
+    const num: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name', sortable: true, sortType: 'number' },
+      { key: 'age', title: 'Age' },
+    ]
+    const data = [
+      { id: 1, name: '9', age: 1 },
+      { id: 2, name: '10', age: 2 },
+    ]
+    const { container } = render(
+      <IrisTable
+        columns={num}
+        data={data}
+        rowKey="id"
+        defaultSort={{ key: 'name', direction: 'asc' }}
+      />,
+    )
+    const cells = [...container.querySelectorAll('[data-iris-table-cell="name"]')].map(
+      (c) => c.textContent,
+    )
+    expect(cells).toEqual(['9', '10'])
+  })
+
+  it('filterMethod custom predicate overrides substring match', () => {
+    const cols2: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name', filterMethod: (v, _r, f) => String(v).length > Number(f) },
+      { key: 'age', title: 'Age' },
+    ]
+    const data = [
+      { id: 1, name: 'ab', age: 1 },
+      { id: 2, name: 'abcdef', age: 2 },
+    ]
+    const { container } = render(
+      <IrisTable columns={cols2} data={data} rowKey="id" filters={{ name: '3' }} />,
+    )
+    const names = [...container.querySelectorAll('[data-iris-table-cell="name"]')].map(
+      (c) => c.textContent,
+    )
+    expect(names).toEqual(['abcdef'])
+  })
+
+  it('current row/column highlight + veto', () => {
+    const onCurrentRowChange = vi.fn()
+    const onCurrentColumnChange = vi.fn()
+    const { container } = render(
+      <IrisTable
+        columns={cols}
+        data={rows}
+        rowKey="id"
+        currentRowKey={1}
+        currentColumnKey="name"
+        onCurrentRowChange={onCurrentRowChange}
+        onCurrentColumnChange={onCurrentColumnChange}
+      />,
+    )
+    expect(
+      container
+        .querySelector('[data-iris-row-current="true"]')
+        ?.getAttribute('data-iris-table-row'),
+    ).toBe('1')
+    expect(
+      container
+        .querySelector('[data-iris-col-current="true"]')
+        ?.getAttribute('data-iris-table-header'),
+    ).toBe('name')
+    fireEvent.click(container.querySelector('[data-iris-table-row="2"]')!)
+    expect(onCurrentRowChange).toHaveBeenCalledWith(2, expect.any(Object))
+    fireEvent.click(container.querySelector('[data-iris-table-header="age"]')!)
+    expect(onCurrentColumnChange).toHaveBeenCalledWith('age')
+  })
+
+  it('seqStartIndex and seqMethod customize the sequence column', () => {
+    const { container } = render(
+      <IrisTable columns={cols} data={rows} rowKey="id" seq seqStartIndex={100} />,
+    )
+    const seqCells = [...container.querySelectorAll('[data-iris-table-cell="__seq"]')].map(
+      (c) => c.textContent,
+    )
+    expect(seqCells).toEqual(['100', '101'])
+    const { container: c2 } = render(
+      <IrisTable
+        columns={cols}
+        data={rows}
+        rowKey="id"
+        seq
+        seqMethod={({ rowIndex }) => `R${rowIndex + 1}`}
+      />,
+    )
+    expect(c2.querySelector('[data-iris-table-cell="__seq"]')?.textContent).toBe('R1')
+  })
+
+  it('html column renders trusted markup', () => {
+    const htmlCols: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name', html: true },
+      { key: 'age', title: 'Age' },
+    ]
+    const data = [{ id: 1, name: '<b>Bold</b>', age: 1 }]
+    const { container } = render(<IrisTable columns={htmlCols} data={data} rowKey="id" />)
+    expect(container.querySelector('[data-iris-table-cell="name"] b')?.textContent).toBe('Bold')
+  })
+})

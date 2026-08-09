@@ -26,6 +26,22 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   striped?: boolean
   /** Size preset (vxe-grid size parity): medium / small / mini. */
   size?: 'medium' | 'small' | 'mini'
+  /** First sequence number (vxe seq-config.startIndex parity). Default 1. */
+  seqStartIndex?: number
+  /** Custom sequence renderer (vxe seq-config.seqMethod parity). */
+  seqMethod?: (params: { rowIndex: number; columnIndex: number }) => string | number
+  /** Current (highlighted) row key (vxe row-config.isCurrent parity). */
+  currentRowKey?: string | number
+  /** Fired when the current row changes (row click). */
+  onCurrentRowChange?: (key: string | number, row: Row) => void
+  /** Veto a current-row change: return false to keep the previous row. */
+  beforeCurrentRowChange?: (key: string | number, row: Row) => boolean | void
+  /** Current (highlighted) column key (vxe column-config.isCurrent parity). */
+  currentColumnKey?: string
+  /** Fired when the current column changes (header click). */
+  onCurrentColumnChange?: (key: string) => void
+  /** Veto a current-column change: return false to keep the previous column. */
+  beforeCurrentColumnChange?: (key: string) => boolean | void
   /** Hide the header row(s) (vxe show-header parity). Default true. */
   showHeader?: boolean
   /**

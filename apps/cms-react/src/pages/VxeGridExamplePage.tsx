@@ -94,7 +94,11 @@ function remoteQuery(params: {
 }): Promise<{ rows: GridRow[]; total: number }> {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const rows = [...serverData]
+      let rows = [...serverData]
+      // 服务端筛选（formConfig/proxyConfig filters 对照）
+      const f = params.filters ?? {}
+      if (f.name) rows = rows.filter((r) => r.name.toLowerCase().includes(f.name.toLowerCase()))
+      if (f.role) rows = rows.filter((r) => r.role === f.role)
       if (params.sort) {
         const { key, direction } = params.sort
         const dir = direction === 'asc' ? 1 : -1
@@ -170,6 +174,17 @@ export function VxeGridExamplePage() {
           bordered
           rowKey="id"
           seq
+          toolbar={{
+            title: 'Server table',
+            onRefresh: () => {},
+            buttons: [
+              {
+                key: 'row-count',
+                label: `共 ${serverData.length} 条`,
+                onClick: () => {},
+              },
+            ],
+          }}
           proxyConfig={{
             query: remoteQuery,
             remoteSort: true,

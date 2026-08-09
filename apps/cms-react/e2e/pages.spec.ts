@@ -72,7 +72,7 @@ test('VxeGrid Example — official basic-usage grid parity', async ({ page }) =>
   // 行编辑标题 + 单元格点击进入编辑
   await expect(page.getByRole('heading', { name: '行编辑（Row editing）' })).toBeVisible()
   await page.getByText('Test1', { exact: true }).nth(1).click()
-  await expect(page.getByRole('textbox')).toBeVisible()
+  await expect(page.getByRole('row', { name: /Test1/ }).getByRole('textbox')).toBeVisible()
 })
 
 test('VxeGrid Example — proxyConfig server-side section', async ({ page }) => {
@@ -83,6 +83,28 @@ test('VxeGrid Example — proxyConfig server-side section', async ({ page }) => 
   ).toBeVisible()
   // 初始加载（模拟 400ms 延迟）后出现第一页数据
   await expect(page.getByText('Test1', { exact: true }).last()).toBeVisible({ timeout: 8000 })
-  // 远程分页：共 43 条 / 8 = 6 页
-  await expect(page.getByRole('button', { name: /6/ })).toBeVisible()
+  // 远程分页：共 43 条 / 8 = 6 页（限定服务端数据源区）
+  const proxySection = page.locator('section').filter({ hasText: '服务端数据源' })
+  await expect(
+    proxySection.locator('[data-iris-pagination-item]').filter({ hasText: '6' }).first(),
+  ).toBeVisible()
+})
+
+test('VxeGrid Example — formConfig search + toolbar buttons', async ({ page }) => {
+  await login(page)
+  await page.goto('/#vxe-example')
+  await expect(page.getByRole('heading', { name: '搜索表单（Search form）' })).toBeVisible()
+  // 表单字段
+  await expect(page.getByText('Name', { exact: true }).last()).toBeVisible()
+  // 自定义工具栏按钮（服务端数据源区）
+  await expect(page.getByRole('button', { name: /共 43 条/ })).toBeVisible()
+  // 搜索：输入 Name → 提交 → 远程查询带 filters（Test2 匹配 1 行）
+  // 搜索表（第 4 区）容器
+  const formSection = page.locator('section').filter({ hasText: '搜索表单' })
+  await page.getByPlaceholder('Test2').fill('Test2')
+  await page.getByRole('button', { name: '查询', exact: true }).click()
+  // 远程查询带 filters：仅 Test2 保留（加载完成后 Test2 可见）
+  await expect(formSection.getByText('Test2', { exact: true })).toBeVisible({ timeout: 8000 })
+  // 服务端筛选：Test1 不在当前结果
+  await expect(formSection.getByText('Test1', { exact: true })).toHaveCount(0)
 })

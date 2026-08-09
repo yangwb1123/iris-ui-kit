@@ -1483,7 +1483,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
             <button
               type="button"
               data-iris-table-toolbar-refresh=""
-              onClick={toolbar.onRefresh}
+              onClick={() => {
+                toolbar.onRefresh?.()
+                // proxy mode: the built-in refresh also re-queries (vxe parity)
+                if (proxyRef.current) proxyRef.current.refetch()
+              }}
               style={{
                 border: 'none',
                 background: 'transparent',

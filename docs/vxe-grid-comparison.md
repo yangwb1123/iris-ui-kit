@@ -89,6 +89,8 @@
 | 行操作     | insertRow/removeRow/setRow  | tableRef ✓（批 E，react）                                                            | 对齐（react；core table-rows 纯函数）      |
 | 勾选条件   | checkboxConfig.checkMethod  | checkMethod ✓（批 E，react）                                                         | 对齐（react；全选跳过禁用行）              |
 | 分页配置   | pagerConfig.pageSizes       | pagerConfig ✓（批 E，react）                                                         | 对齐（react；切换重置页码）                |
+| 单元格提示 | tooltipConfig               | tooltipConfig ✓（批 G，react）                                                       | 对齐（react；title 轻量模式）              |
+| 范围勾选   | checkboxConfig.isShiftKey   | shift 范围勾选 ✓（批 G，react）                                                      | 对齐（react；尊重 checkMethod）            |
 | 导入导出   | export/import               | exportCsv/Excel ✓                                                                    | 缺导入                                     |
 | 打印       | printConfig                 | —                                                                                    | 缺                                         |
 

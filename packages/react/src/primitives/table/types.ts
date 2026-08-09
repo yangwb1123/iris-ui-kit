@@ -25,6 +25,10 @@ export interface IrisTableSortState {
 export interface IrisTableColumn<Row = Record<string, unknown>> {
   key: string
   title: string
+  /** Icon/content rendered before the header title (vxe title-prefix parity). */
+  titlePrefix?: import('react').ReactNode
+  /** Icon/content rendered after the header title (vxe title-suffix parity). */
+  titleSuffix?: import('react').ReactNode
   /** Path inside the row to read the cell value from. Defaults to `key`. */
   dataIndex?: keyof Row | string
   sortable?: boolean

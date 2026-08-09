@@ -24,6 +24,51 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   defaultSort?: IrisTableSortState | null
   onSortChange?: (next: IrisTableSortState | null) => void
   striped?: boolean
+  /** Size preset (vxe-grid size parity): medium / small / mini. */
+  size?: 'medium' | 'small' | 'mini'
+  /** Hide the header row(s) (vxe show-header parity). Default true. */
+  showHeader?: boolean
+  /**
+   * Custom footer rows (vxe footer-data parity): rendered below the summary
+   * row, one grid row per entry; structure matches `data`.
+   */
+  footerData?: Row[]
+  /** Per-row class hook (vxe row-class-name parity). */
+  rowClassName?: (row: Row, rowIndex: number) => string
+  /** Per-cell class hook (vxe cell-class-name parity). */
+  cellClassName?: (
+    row: Row,
+    column: import('./types').IrisTableColumn<Row>,
+    rowIndex: number,
+  ) => string
+  /** Per-header-cell class hook (vxe header-cell-class-name parity). */
+  headerCellClassName?: (column: import('./types').IrisTableColumn<Row>) => string
+  /** Per-footer-cell class hook (vxe footer-cell-class-name parity). */
+  footerCellClassName?: (column: import('./types').IrisTableColumn<Row>, rowIndex: number) => string
+  /** Per-row inline style hook (vxe row-style parity). */
+  rowStyle?: (row: Row, rowIndex: number) => import('react').CSSProperties
+  /** Per-cell inline style hook (vxe cell-style parity). */
+  cellStyle?: (
+    row: Row,
+    column: import('./types').IrisTableColumn<Row>,
+    rowIndex: number,
+  ) => import('react').CSSProperties
+  /** Per-header-cell inline style hook (vxe header-cell-style parity). */
+  headerCellStyle?: (
+    column: import('./types').IrisTableColumn<Row>,
+  ) => import('react').CSSProperties
+  /** Per-footer-cell inline style hook (vxe footer-cell-style parity). */
+  footerCellStyle?: (
+    column: import('./types').IrisTableColumn<Row>,
+    rowIndex: number,
+  ) => import('react').CSSProperties
+  /** Cell click (vxe cell-click parity). Fired after internal handlers. */
+  onCellClick?: (params: {
+    row: Row
+    column: import('./types').IrisTableColumn<Row>
+    rowIndex: number
+    columnIndex: number
+  }) => void
   bordered?: boolean
   /** Enable column resizing (drag the header's trailing edge or focus + arrow keys). */
   resizableColumns?: boolean

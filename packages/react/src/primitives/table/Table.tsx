@@ -162,6 +162,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
   defaultSort,
   onSortChange,
   striped = false,
+  size,
+  showHeader = true,
+  footerData,
+  rowClassName,
+  cellClassName,
+  headerCellClassName,
+  footerCellClassName,
+  rowStyle,
+  cellStyle,
+  headerCellStyle,
+  footerCellStyle,
+  onCellClick,
   bordered = true,
   resizableColumns = false,
   columnWidths: columnWidthsProp,
@@ -545,6 +557,27 @@ export function IrisTable<Row extends Record<string, unknown>>({
     return (row as Record<string, unknown>)[rowKey] as string | number
   }
 
+  /**
+   * Unified cell click: preserves the internal edit/range behavior, then fires
+   * the user `onCellClick` (vxe cell-click parity) with full coordinates.
+   */
+  const handleCellClick = (
+    e: React.MouseEvent,
+    row: Row,
+    col: IrisTableColumn<Row>,
+    k: string | number | undefined,
+    idx: number,
+    ci: number,
+  ): void => {
+    if (cellRange) {
+      if (e.shiftKey) cellRangeCtrl.extendRange(idx, ci)
+      else cellRangeCtrl.startRange(idx, ci)
+    } else if (col.editable && editConfig?.trigger === 'click' && k != null) {
+      beginEdit(row, col, k, idx)
+    }
+    onCellClick?.({ row, column: col, rowIndex: idx, columnIndex: ci })
+  }
+
   // Single mode toggles off / replaces, multiple toggles inclusion — both are
   // the model's `toggle` semantics for the row's key.
   const toggleRow = (row: Row) => {
@@ -837,7 +870,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
         data-iris-table-row={String(k ?? idx)}
         data-iris-table-row-selected={selected ? 'true' : undefined}
         onClick={() => onRowClick?.(row, idx)}
-        style={{ display: 'grid', gridTemplateColumns, ...extraStyle }}
+        className={rowClassName?.(row, idx)}
+        style={{
+          display: 'grid',
+          gridTemplateColumns,
+          ...extraStyle,
+          ...(rowStyle?.(row, idx) ?? null),
+        }}
       >
         {rowDrag ? (
           <div
@@ -961,6 +1000,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               data-iris-table-pinned={col.pinned}
               data-editable={col.editable ? '' : undefined}
               data-editing={editing ? '' : undefined}
+              className={cellClassName?.(row, col, idx)}
               {...(keyboardNavigation
                 ? {
                     'data-grid-row': idx,
@@ -991,14 +1031,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 : null)}
               onDoubleClick={col.editable ? () => beginEdit(row, col, k, idx) : undefined}
               onClick={
-                cellRange
+                onCellClick
                   ? (e: React.MouseEvent) => {
-                      if (e.shiftKey) cellRangeCtrl.extendRange(idx, ci)
-                      else cellRangeCtrl.startRange(idx, ci)
+                      handleCellClick(e, row, col, k, idx, ci)
                     }
-                  : col.editable && editConfig?.trigger === 'click'
-                    ? () => beginEdit(row, col, k, idx)
-                    : undefined
+                  : cellRange
+                    ? (e: React.MouseEvent) => {
+                        if (e.shiftKey) cellRangeCtrl.extendRange(idx, ci)
+                        else cellRangeCtrl.startRange(idx, ci)
+                      }
+                    : col.editable && editConfig?.trigger === 'click'
+                      ? () => beginEdit(row, col, k, idx)
+                      : undefined
               }
               style={{
                 ...baseCellStyle,
@@ -1022,6 +1066,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 cursor: col.editable ? 'cell' : cellRange ? 'default' : undefined,
                 ...(editing ? { padding: '4px 8px' } : null),
                 ...pinnedStyle(col.key),
+                ...(cellStyle?.(row, col, idx) ?? null),
               }}
             >
               {treeMeta && ci === 0 ? (
@@ -1263,6 +1308,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         // grid/table role as before (treegrid implies managed cell focus).
         role={keyboardNavigation ? (treeMode ? 'treegrid' : 'grid') : 'table'}
         data-iris-table=""
+        data-size={size}
         data-printable={printable ? 'true' : undefined}
         data-bordered={bordered ? 'true' : undefined}
         data-striped={striped ? 'true' : undefined}
@@ -1312,7 +1358,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       >
         {/* Multi-level (grouped) header: a CSS grid of `headerMatrix.length` rows;
           each cell placed by its leaf-column span (colStart/colSpan) and row span. */}
-        {grouped && headerMatrix ? (
+        {showHeader && grouped && headerMatrix ? (
           <div
             role="row"
             data-iris-table-row="header"
@@ -1379,6 +1425,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     data-iris-table-header-group={isLeaf ? undefined : ''}
                     data-iris-col-drag-active={colDragActive === col.key ? 'true' : undefined}
                     data-iris-col-drag-over={colDragOver === col.key ? 'true' : undefined}
+                    className={headerCellClassName?.(col)}
                     onPointerDown={
                       columnDrag && isLeaf ? (e) => handleColDragPointerDown(e, col.key) : undefined
                     }
@@ -1406,9 +1453,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       cursor: sortable ? 'pointer' : 'default',
                       fontWeight: 600,
                       userSelect: sortable ? 'none' : 'auto',
+                      ...(headerCellStyle?.(col) ?? null),
                     }}
                   >
-                    <span>{col.title}</span>
+                    <span>
+                      {col.titlePrefix}
+                      {col.title}
+                      {col.titleSuffix}
+                    </span>
                     {sortable ? (
                       <span
                         aria-hidden="true"
@@ -1427,7 +1479,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               }),
             )}
           </div>
-        ) : (
+        ) : showHeader ? (
           /* Header row (flat) */
           <div
             role="row"
@@ -1502,6 +1554,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   onPointerDown={
                     columnDrag ? (e) => handleColDragPointerDown(e, col.key) : undefined
                   }
+                  className={headerCellClassName?.(col)}
                   data-sortable={col.sortable ? 'true' : undefined}
                   data-sort-direction={dir}
                   style={{
@@ -1518,6 +1571,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     cursor: col.sortable ? 'pointer' : 'default',
                     fontWeight: 600,
                     userSelect: col.sortable ? 'none' : 'auto',
+                    ...(headerCellStyle?.(col) ?? null),
                     ...(editConfig?.showAsterisk && col.editRules?.some((r) => r.required)
                       ? { '::after': undefined }
                       : {}),
@@ -1529,7 +1583,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       : null),
                   }}
                 >
-                  <span>{col.title}</span>
+                  <span>
+                    {col.titlePrefix}
+                    {col.title}
+                    {col.titleSuffix}
+                  </span>
                   {col.sortable ? (
                     <span
                       aria-hidden="true"
@@ -1557,7 +1615,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               )
             })}
           </div>
-        )}
+        ) : null}
 
         {/* Body — state precedence: error → loading → empty → rows. */}
         {error ? (
@@ -1675,6 +1733,56 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 </div>
               )
             })}
+          </div>
+        ) : null}
+
+        {/* Custom footer rows (vxe footer-data parity): one grid row per entry,
+          rendered below the summary row. */}
+        {!error && !loading && footerData && footerData.length > 0 ? (
+          <div data-iris-table-footer="" style={{ display: 'contents' }}>
+            {footerData.map((footerRow, fi) => (
+              <div
+                key={String((footerRow as Record<string, unknown>)[rowKey] ?? fi)}
+                role="row"
+                data-iris-table-row={`footer-${fi}`}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns,
+                  fontWeight: 600,
+                  background: 'var(--iris-surface)',
+                }}
+              >
+                {selectable !== 'none' ? (
+                  <div role="cell" data-iris-table-cell="__selection" style={baseCellStyle} />
+                ) : null}
+                {leafColumns.map((col, ci) => {
+                  if (visibleColSet && !visibleColSet.has(ci)) return null
+                  const value = getCellValue(footerRow, col)
+                  return (
+                    <div
+                      key={col.key}
+                      role="cell"
+                      data-iris-table-cell={col.key}
+                      data-iris-table-footer-cell=""
+                      className={footerCellClassName?.(col, fi)}
+                      style={{
+                        ...baseCellStyle,
+                        justifyContent:
+                          (col.align ?? (typeof value === 'number' ? 'right' : 'left')) === 'right'
+                            ? 'flex-end'
+                            : col.align === 'center'
+                              ? 'center'
+                              : 'flex-start',
+                        ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
+                        ...(footerCellStyle?.(col, fi) ?? null),
+                      }}
+                    >
+                      {String(value ?? '')}
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
           </div>
         ) : null}
       </div>

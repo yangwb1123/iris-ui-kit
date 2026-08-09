@@ -91,6 +91,9 @@
 | 分页配置   | pagerConfig.pageSizes       | pagerConfig ✓（批 E，react）                                                         | 对齐（react；切换重置页码）                |
 | 单元格提示 | tooltipConfig               | tooltipConfig ✓（批 G，react）                                                       | 对齐（react；title 轻量模式）              |
 | 范围勾选   | checkboxConfig.isShiftKey   | shift 范围勾选 ✓（批 G，react）                                                      | 对齐（react；尊重 checkMethod）            |
+| 下拉编辑   | edit-render: select         | editor: 'select' ✓（批 H，react）                                                    | 对齐（react；editOptions 原生 select）     |
+| 右键菜单   | @context-menu               | contextMenu ✓（批 H，react）                                                         | 对齐（react；虚拟锚点浮层 + 坐标定位）     |
+| 跨页选择   | checkboxConfig.reserve      | 默认保留 ✓（批 H，react）                                                            | 对齐（react；selection 独立于分页）        |
 | 导入导出   | export/import               | exportCsv/Excel ✓                                                                    | 缺导入                                     |
 | 打印       | printConfig                 | —                                                                                    | 缺                                         |
 

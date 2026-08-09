@@ -36445,6 +36445,12 @@
           "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. Truncation gating is not implemented — titles render on every cell regardless of `showAll` (documented simplification, kept simple and"
         },
         {
+          "name": "contextMenu",
+          "type": "{",
+          "optional": true,
+          "description": "Right-click context menu (vxe-grid contextMenu parity, batch H). Opens on body leaf cells only — header, seq, selection, expand, summary and footer cells never open it. The menu floats at the cursor (virtual anchor), closes on Escape / outside pointer-down / any scroll, and fires `onSelect` with the clicked item's key and the cell's grid coordinates."
+        },
+        {
           "name": "tableRef",
           "type": "MutableRefObject<IrisTableHandle<Row> | null>",
           "optional": true,
@@ -36924,6 +36930,12 @@
               "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. Truncation gating is not implemented — titles render on every cell regardless of `showAll` (documented simplification, kept simple and"
             },
             {
+              "name": "contextMenu",
+              "type": "{",
+              "optional": true,
+              "description": "Right-click context menu (vxe-grid contextMenu parity, batch H). Opens on body leaf cells only — header, seq, selection, expand, summary and footer cells never open it. The menu floats at the cursor (virtual anchor), closes on Escape / outside pointer-down / any scroll, and fires `onSelect` with the clicked item's key and the cell's grid coordinates."
+            },
+            {
               "name": "tableRef",
               "type": "MutableRefObject<IrisTableHandle<Row> | null>",
               "optional": true,
@@ -36985,6 +36997,7 @@
             "IrisTableCellEditEvent",
             "IrisTableColumn",
             "IrisTableColumnWidths",
+            "IrisTableContextMenuParams",
             "IrisTableEditor",
             "IrisTableFormConfig",
             "IrisTableFormField",
@@ -37598,7 +37611,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 80,
+        "propCount": 81,
         "eventCount": 14
       }
     },

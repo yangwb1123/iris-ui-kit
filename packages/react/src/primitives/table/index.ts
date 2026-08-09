@@ -3,6 +3,7 @@ export { type IrisTableFormConfig, type IrisTableHandle, type IrisTablePagerConf
 export {
   type IrisTableColumn,
   type IrisTableCellClickParams,
+  type IrisTableContextMenuParams,
   type IrisTableProxyQueryParams,
   type IrisTableSeqMethodParams,
   type IrisTableColumnWidths,

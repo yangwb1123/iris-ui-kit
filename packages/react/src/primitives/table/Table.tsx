@@ -52,6 +52,9 @@ const TABLE_ROW_CSS = `
 [data-iris-table-row-selected="true"] {
   --iris-cell-bg: var(--iris-surface-selected);
 }
+[data-iris-table-context-menu] [role="menuitem"]:hover:not(:disabled) {
+  background: var(--iris-surface-hover);
+}
 @media print {
   [data-iris-table-toolbar] {
     display: none !important;
@@ -66,7 +69,13 @@ const TABLE_ROW_CSS = `
 }
 `
 import { useTableSort } from './useTableSort'
-import type { IrisTableColumn, IrisTableColumnWidths, IrisTableSortDirection } from './types'
+import { TableContextMenu } from './ContextMenu'
+import type {
+  IrisTableColumn,
+  IrisTableColumnWidths,
+  IrisTableContextMenuParams,
+  IrisTableSortDirection,
+} from './types'
 
 export type { IrisTableProps, IrisTableProxyConfig } from './props'
 
@@ -234,6 +243,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   formConfig,
   toolbar,
   tooltipConfig,
+  contextMenu,
   printable = false,
   seq = false,
   spanMethod,
@@ -580,7 +590,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // whole draft/validate/coerce session lives in the framework-agnostic
   // createCellEdit controller (core); the adapter only bridges the editor
   // element and resolves the row/column context for the session callbacks.
-  const editorRef = React.useRef<HTMLInputElement | null>(null)
+  // Both the text/number <input> and the select editor focus through this ref
+  // (callback refs because a single union-typed ref can't bind to both tags).
+  const editorRef = React.useRef<HTMLInputElement | HTMLSelectElement | null>(null)
+  const setEditorRef = (el: HTMLInputElement | HTMLSelectElement | null): void => {
+    editorRef.current = el
+  }
   const onCellEditRef = React.useRef(onCellEdit)
   onCellEditRef.current = onCellEdit
   const editCtxRef = React.useRef<{ row: Row; col: IrisTableColumn<Row>; rowIndex: number } | null>(
@@ -588,6 +603,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
   )
   const cellId = (rowIdent: string | number, colKey: string): string => `${rowIdent}::${colKey}`
   const coerceValue = (col: IrisTableColumn<Row>, draft: unknown): unknown => {
+    // Select editors commit the option's TYPED value (vxe edit-render parity):
+    // a number option commits a number, a string option a string. Drafts that
+    // already carry the typed form (select onChange stores it) pass through;
+    // string drafts (e.g. the initial seed) resolve against editOptions by
+    // String(value) so validation and commit see the typed value.
+    if (col.editor === 'select') {
+      if (!col.editOptions) return String(draft)
+      if (typeof draft !== 'string') return draft
+      const opt = col.editOptions.find((o) => String(o.value) === draft)
+      return opt ? opt.value : draft
+    }
     const s = String(draft)
     if (col.editor !== 'number') return s
     return s === '' || Number.isNaN(Number(s))
@@ -788,6 +814,62 @@ export function IrisTable<Row extends Record<string, unknown>>({
   React.useEffect(() => {
     if (editingTarget !== null) editorRef.current?.focus()
   }, [editingTarget])
+
+  // ── Right-click context menu (vxe contextMenu parity, batch H) ────────
+  // Transient state: items + params are computed ONCE per open from the
+  // callback; the cursor coordinates live in a virtual floating anchor (a fake
+  // element whose getBoundingClientRect returns the zero-size cursor rect).
+  // Cross-page note: the selection model is created once in a ref and the
+  // proxy page change only calls setLiveData — nothing resets displaySelection,
+  // so selections survive page flips (vxe reserve semantics is our default;
+  // covered by the cross-page test in context-menu-select.test.tsx).
+  const [contextMenuState, setContextMenuState] = React.useState<{
+    open: boolean
+    items: Array<{ key: string; label: string; disabled?: boolean }>
+    params: IrisTableContextMenuParams<Row>
+  } | null>(null)
+  const contextAnchorRef = React.useRef<HTMLElement | null>(null)
+  // Remount token: useFloating's autoUpdate does not re-run when `open` stays
+  // true (a second right-click while the menu is open), so a fresh key forces
+  // the menu to recompute at the new cursor coordinates.
+  const [contextMenuSeq, setContextMenuSeq] = React.useState(0)
+  const closeContextMenu = React.useCallback(() => {
+    setContextMenuState((prev) => (prev ? { ...prev, open: false } : prev))
+  }, [])
+  const handleContextMenu = (
+    e: React.MouseEvent,
+    row: Row,
+    col: IrisTableColumn<Row>,
+    idx: number,
+    ci: number,
+  ): void => {
+    if (!contextMenu) return
+    e.preventDefault()
+    // Virtual anchor: zero-size rect at the cursor. The object is rebuilt per
+    // open (capturing this event's coordinates) and read by useFloating after
+    // the state update commits, so the panel always lands at the cursor.
+    contextAnchorRef.current = {
+      getBoundingClientRect: () => ({
+        left: e.clientX,
+        top: e.clientY,
+        right: e.clientX,
+        bottom: e.clientY,
+        width: 0,
+        height: 0,
+        x: e.clientX,
+        y: e.clientY,
+        toJSON() {},
+      }),
+    } as unknown as HTMLElement
+    const params: IrisTableContextMenuParams<Row> = {
+      row,
+      column: col,
+      rowIndex: idx,
+      columnIndex: ci,
+    }
+    setContextMenuState({ open: true, items: contextMenu.items(params), params })
+    setContextMenuSeq((s) => s + 1)
+  }
 
   const beginEdit = (
     row: Row,
@@ -1493,6 +1575,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   }
                 : null)}
               onDoubleClick={col.editable ? () => beginEdit(row, col, k, idx) : undefined}
+              onContextMenu={
+                contextMenu ? (e) => handleContextMenu(e, row, col, idx, ci) : undefined
+              }
               onClick={
                 onCellClick
                   ? (e: React.MouseEvent) => {
@@ -1574,59 +1659,130 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 </span>
               ) : null}
               {editing ? (
-                <>
-                  <input
-                    ref={editorRef}
-                    type={col.editor === 'number' ? 'number' : 'text'}
-                    value={String(cellEdit.getDraft() ?? '')}
-                    data-iris-table-editor=""
-                    aria-invalid={cellEdit.getError() ? 'true' : undefined}
-                    aria-describedby={
-                      cellEdit.getError() && validConfig?.showMessage !== false
-                        ? `${cellId(k, col.key)}-error`
-                        : undefined
-                    }
-                    onChange={(e) => cellEdit.setDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        commitEdit()
-                      } else if (e.key === 'Escape') {
-                        e.preventDefault()
-                        cancelEdit()
-                      }
-                    }}
-                    onBlur={() => commitEdit()}
-                    onClick={(e) => e.stopPropagation()}
-                    style={{
-                      width: '100%',
-                      border: `1px solid ${cellEdit.getError() ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
-                      borderRadius: 'var(--iris-radius-sm, 4px)',
-                      padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
-                      font: 'inherit',
-                      background: 'var(--iris-background)',
-                      color: 'var(--iris-foreground)',
-                      outline: 'none',
-                    }}
-                  />
-                  {/* validConfig.showMessage=false: validation still blocks the
+                // Const bindings let TS keep the select/options narrowing
+                // inside the nested JSX callbacks (a mutable `col` would lose
+                // it). A select editor with no editOptions falls back to the
+                // text input.
+                (() => {
+                  const isSelectEditor = col.editor === 'select' && col.editOptions !== undefined
+                  const selectOptions = isSelectEditor ? col.editOptions : undefined
+                  return (
+                    <>
+                      {isSelectEditor && selectOptions ? (
+                        // vxe edit-render select parity (batch H): a native
+                        // <select> commits the option's TYPED value (numbers stay
+                        // numbers). Value matches options by String(value); when
+                        // the current draft matches NO option, a synthetic option
+                        // preserves it so a plain blur never silently replaces
+                        // the cell value with the first option.
+                        <select
+                          ref={setEditorRef}
+                          value={String(cellEdit.getDraft() ?? '')}
+                          data-iris-table-editor=""
+                          data-iris-table-editor-select=""
+                          aria-invalid={cellEdit.getError() ? 'true' : undefined}
+                          aria-describedby={
+                            cellEdit.getError() && validConfig?.showMessage !== false
+                              ? `${cellId(k, col.key)}-error`
+                              : undefined
+                          }
+                          onChange={(e) => {
+                            const opt = selectOptions.find(
+                              (o) => String(o.value) === e.target.value,
+                            )
+                            cellEdit.setDraft(opt ? opt.value : e.target.value)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              commitEdit()
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault()
+                              cancelEdit()
+                            }
+                          }}
+                          onBlur={() => commitEdit()}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            width: '100%',
+                            border: `1px solid ${cellEdit.getError() ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
+                            borderRadius: 'var(--iris-radius-sm, 4px)',
+                            padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+                            font: 'inherit',
+                            background: 'var(--iris-background)',
+                            color: 'var(--iris-foreground)',
+                            outline: 'none',
+                          }}
+                        >
+                          {!selectOptions.some(
+                            (o) => String(o.value) === String(cellEdit.getDraft() ?? ''),
+                          ) ? (
+                            <option value={String(cellEdit.getDraft() ?? '')}>
+                              {String(cellEdit.getDraft() ?? '')}
+                            </option>
+                          ) : null}
+                          {selectOptions.map((o) => (
+                            <option key={String(o.value)} value={String(o.value)}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          ref={setEditorRef}
+                          type={col.editor === 'number' ? 'number' : 'text'}
+                          value={String(cellEdit.getDraft() ?? '')}
+                          data-iris-table-editor=""
+                          aria-invalid={cellEdit.getError() ? 'true' : undefined}
+                          aria-describedby={
+                            cellEdit.getError() && validConfig?.showMessage !== false
+                              ? `${cellId(k, col.key)}-error`
+                              : undefined
+                          }
+                          onChange={(e) => cellEdit.setDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              commitEdit()
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault()
+                              cancelEdit()
+                            }
+                          }}
+                          onBlur={() => commitEdit()}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            width: '100%',
+                            border: `1px solid ${cellEdit.getError() ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
+                            borderRadius: 'var(--iris-radius-sm, 4px)',
+                            padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+                            font: 'inherit',
+                            background: 'var(--iris-background)',
+                            color: 'var(--iris-foreground)',
+                            outline: 'none',
+                          }}
+                        />
+                      )}
+                      {/* validConfig.showMessage=false: validation still blocks the
                     commit and aria-invalid stays — only the message element is
                     skipped (vxe ValidConfig parity). */}
-                  {cellEdit.getError() && validConfig?.showMessage !== false ? (
-                    <div
-                      id={`${cellId(k, col.key)}-error`}
-                      role="alert"
-                      data-iris-table-editor-error=""
-                      style={{
-                        marginTop: 'var(--iris-space-xxs, 4px)',
-                        fontSize: 'var(--iris-font-size-xs, 12px)',
-                        color: 'var(--iris-danger)',
-                      }}
-                    >
-                      {cellEdit.getError()}
-                    </div>
-                  ) : null}
-                </>
+                      {cellEdit.getError() && validConfig?.showMessage !== false ? (
+                        <div
+                          id={`${cellId(k, col.key)}-error`}
+                          role="alert"
+                          data-iris-table-editor-error=""
+                          style={{
+                            marginTop: 'var(--iris-space-xxs, 4px)',
+                            fontSize: 'var(--iris-font-size-xs, 12px)',
+                            color: 'var(--iris-danger)',
+                          }}
+                        >
+                          {cellEdit.getError()}
+                        </div>
+                      ) : null}
+                    </>
+                  )
+                })()
               ) : col.render ? (
                 col.render(raw, row, idx)
               ) : col.html ? (
@@ -2393,6 +2549,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
         {/* Server-side pager (vxe-grid proxyConfig parity): driven by the
           controller's page/pageSize/total; page changes call setParams and
           proxyConfig.onPageChange. */}
+        {contextMenu && contextMenuState ? (
+          <TableContextMenu
+            key={contextMenuSeq}
+            open={contextMenuState.open}
+            anchorRef={contextAnchorRef}
+            items={contextMenuState.items}
+            params={contextMenuState.params}
+            onSelect={contextMenu.onSelect}
+            onClose={closeContextMenu}
+          />
+        ) : null}
         {proxy ? (
           <div
             data-iris-table-pager=""

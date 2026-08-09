@@ -3,7 +3,7 @@ export type IrisTableSortDirection = 'asc' | 'desc'
 /** Map of column key → current width in px (after any resizing). */
 export type IrisTableColumnWidths = Record<string, number>
 
-export type IrisTableEditor = 'text' | 'number'
+export type IrisTableEditor = 'text' | 'number' | 'select'
 
 /** Aggregation op for a column's summary/footer cell. */
 export type IrisTableAggregateOp = 'sum' | 'avg' | 'min' | 'max' | 'count'
@@ -81,6 +81,18 @@ export interface IrisTableCellClickParams<Row = Record<string, unknown>> {
   columnIndex: number
 }
 
+/**
+ * Coordinates delivered to `IrisTableProps.contextMenu` callbacks (vxe
+ * context-menu event params parity): the row/column under the cursor and its
+ * grid position.
+ */
+export interface IrisTableContextMenuParams<Row = Record<string, unknown>> {
+  row: Row
+  column: IrisTableColumn<Row>
+  rowIndex: number
+  columnIndex: number
+}
+
 export interface IrisTableColumn<Row = Record<string, unknown>> {
   key: string
   title: string
@@ -119,6 +131,15 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   editable?: boolean
   /** Editor kind. Default `'text'`. */
   editor?: IrisTableEditor
+  /**
+   * Options for the `'select'` editor (vxe edit-render options parity). A
+   * column with `editor: 'select'` renders a native `<select>` while editing;
+   * each option commits its TYPED value — a number option commits a number,
+   * a string option a string (matched by `String(value)`). When the current
+   * cell value matches no option, a synthetic option preserves it so a plain
+   * blur never silently replaces it.
+   */
+  editOptions?: Array<{ value: string | number; label: string }>
   /**
    * Validate a draft value before it commits. Return an error message to
    * REJECT the edit (the editor stays open, shows the message, and is marked

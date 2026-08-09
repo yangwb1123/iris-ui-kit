@@ -3,6 +3,7 @@ import type {
   IrisTableCellEditEvent,
   IrisTableColumn,
   IrisTableColumnWidths,
+  IrisTableContextMenuParams,
   IrisTableFormField,
   IrisTableRenderDetail,
   IrisTableRowExpandable,
@@ -289,6 +290,19 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * regardless of `showAll` (documented simplification, kept simple and
    * explicit). */
   tooltipConfig?: IrisTableTooltipConfig<Row>
+  /**
+   * Right-click context menu (vxe-grid contextMenu parity, batch H). Opens on
+   * body leaf cells only — header, seq, selection, expand, summary and footer
+   * cells never open it. The menu floats at the cursor (virtual anchor),
+   * closes on Escape / outside pointer-down / any scroll, and fires `onSelect`
+   * with the clicked item's key and the cell's grid coordinates.
+   */
+  contextMenu?: {
+    items: (
+      params: IrisTableContextMenuParams<Row>,
+    ) => Array<{ key: string; label: string; disabled?: boolean }>
+    onSelect: (key: string, params: IrisTableContextMenuParams<Row>) => void
+  }
   /** Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity). */
   tableRef?: MutableRefObject<IrisTableHandle<Row> | null>
   /** Fired after any internal row operation / edit write-back, with the new row list. */

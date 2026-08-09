@@ -82,3 +82,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-g-adapt.md [FAILED: task timed out]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-g-adapt.md
+
+## 2026-08-09 02:31:53 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-h-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-h-baseline.md
+
+## 2026-08-09 02:49:31 — stage 'adapt' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-h-adapt.md [FAILED: task timed out]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-h-adapt.md

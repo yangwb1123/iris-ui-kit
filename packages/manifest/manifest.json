@@ -36067,6 +36067,176 @@
           "optional": true
         },
         {
+          "name": "size",
+          "type": "'medium' | 'small' | 'mini'",
+          "optional": true,
+          "description": "Size preset (vxe-grid size parity): medium / small / mini.",
+          "enum": [
+            "medium",
+            "small",
+            "mini"
+          ]
+        },
+        {
+          "name": "seqStartIndex",
+          "type": "number",
+          "optional": true,
+          "description": "First sequence number (vxe seq-config.startIndex parity). Default 1."
+        },
+        {
+          "name": "seqMethod",
+          "type": "(params: { rowIndex: number; columnIndex: number }) => string | number",
+          "optional": true,
+          "description": "Custom sequence renderer (vxe seq-config.seqMethod parity)."
+        },
+        {
+          "name": "currentRowKey",
+          "type": "string | number",
+          "optional": true,
+          "description": "Current (highlighted) row key (vxe row-config.isCurrent parity)."
+        },
+        {
+          "name": "onCurrentRowChange",
+          "type": "(key: string | number, row: Row) => void",
+          "optional": true,
+          "description": "Fired when the current row changes (row click)."
+        },
+        {
+          "name": "beforeCurrentRowChange",
+          "type": "(key: string | number, row: Row) => boolean | void",
+          "optional": true,
+          "description": "Veto a current-row change: return false to keep the previous row."
+        },
+        {
+          "name": "currentColumnKey",
+          "type": "string",
+          "optional": true,
+          "description": "Current (highlighted) column key (vxe column-config.isCurrent parity)."
+        },
+        {
+          "name": "onCurrentColumnChange",
+          "type": "(key: string) => void",
+          "optional": true,
+          "description": "Fired when the current column changes (header click)."
+        },
+        {
+          "name": "beforeCurrentColumnChange",
+          "type": "(key: string) => boolean | void",
+          "optional": true,
+          "description": "Veto a current-column change: return false to keep the previous column."
+        },
+        {
+          "name": "showHeader",
+          "type": "boolean",
+          "optional": true,
+          "description": "Hide the header row(s) (vxe show-header parity). Default true."
+        },
+        {
+          "name": "footerData",
+          "type": "Row[]",
+          "optional": true,
+          "description": "Custom footer rows (vxe footer-data parity): rendered below the summary row, one grid row per entry; structure matches `data`."
+        },
+        {
+          "name": "rowClassName",
+          "type": "(row: Row, rowIndex: number) => string",
+          "optional": true,
+          "description": "Per-row class hook (vxe row-class-name parity)."
+        },
+        {
+          "name": "cellClassName",
+          "type": "(",
+          "optional": true,
+          "description": "Per-cell class hook (vxe cell-class-name parity)."
+        },
+        {
+          "name": "row",
+          "type": "Row",
+          "optional": false
+        },
+        {
+          "name": "column",
+          "type": "import('./types').IrisTableColumn<Row>",
+          "optional": false
+        },
+        {
+          "name": "rowIndex",
+          "type": "number",
+          "optional": false
+        },
+        {
+          "name": "headerCellClassName",
+          "type": "(column: import('./types').IrisTableColumn<Row>) => string",
+          "optional": true,
+          "description": "Per-header-cell class hook (vxe header-cell-class-name parity)."
+        },
+        {
+          "name": "footerCellClassName",
+          "type": "(column: import('./types').IrisTableColumn<Row>, rowIndex: number) => string",
+          "optional": true,
+          "description": "Per-footer-cell class hook (vxe footer-cell-class-name parity)."
+        },
+        {
+          "name": "rowStyle",
+          "type": "(row: Row, rowIndex: number) => import('react').CSSProperties",
+          "optional": true,
+          "description": "Per-row inline style hook (vxe row-style parity)."
+        },
+        {
+          "name": "cellStyle",
+          "type": "(",
+          "optional": true,
+          "description": "Per-cell inline style hook (vxe cell-style parity)."
+        },
+        {
+          "name": "row",
+          "type": "Row",
+          "optional": false
+        },
+        {
+          "name": "column",
+          "type": "import('./types').IrisTableColumn<Row>",
+          "optional": false
+        },
+        {
+          "name": "rowIndex",
+          "type": "number",
+          "optional": false
+        },
+        {
+          "name": "headerCellStyle",
+          "type": "(",
+          "optional": true,
+          "description": "Per-header-cell inline style hook (vxe header-cell-style parity)."
+        },
+        {
+          "name": "column",
+          "type": "import('./types').IrisTableColumn<Row>",
+          "optional": false
+        },
+        {
+          "name": "footerCellStyle",
+          "type": "(",
+          "optional": true,
+          "description": "Per-footer-cell inline style hook (vxe footer-cell-style parity)."
+        },
+        {
+          "name": "column",
+          "type": "import('./types').IrisTableColumn<Row>",
+          "optional": false
+        },
+        {
+          "name": "rowIndex",
+          "type": "number",
+          "optional": false
+        },
+        {
+          "name": "onCellClick",
+          "type": "(params: {",
+          "optional": true,
+          "description": "Cell click (vxe cell-click parity). Fired after internal handlers."
+        },
+        {
           "name": "bordered",
           "type": "boolean",
           "optional": true
@@ -36339,6 +36509,176 @@
               "optional": true
             },
             {
+              "name": "size",
+              "type": "'medium' | 'small' | 'mini'",
+              "optional": true,
+              "description": "Size preset (vxe-grid size parity): medium / small / mini.",
+              "enum": [
+                "medium",
+                "small",
+                "mini"
+              ]
+            },
+            {
+              "name": "seqStartIndex",
+              "type": "number",
+              "optional": true,
+              "description": "First sequence number (vxe seq-config.startIndex parity). Default 1."
+            },
+            {
+              "name": "seqMethod",
+              "type": "(params: { rowIndex: number; columnIndex: number }) => string | number",
+              "optional": true,
+              "description": "Custom sequence renderer (vxe seq-config.seqMethod parity)."
+            },
+            {
+              "name": "currentRowKey",
+              "type": "string | number",
+              "optional": true,
+              "description": "Current (highlighted) row key (vxe row-config.isCurrent parity)."
+            },
+            {
+              "name": "onCurrentRowChange",
+              "type": "(key: string | number, row: Row) => void",
+              "optional": true,
+              "description": "Fired when the current row changes (row click)."
+            },
+            {
+              "name": "beforeCurrentRowChange",
+              "type": "(key: string | number, row: Row) => boolean | void",
+              "optional": true,
+              "description": "Veto a current-row change: return false to keep the previous row."
+            },
+            {
+              "name": "currentColumnKey",
+              "type": "string",
+              "optional": true,
+              "description": "Current (highlighted) column key (vxe column-config.isCurrent parity)."
+            },
+            {
+              "name": "onCurrentColumnChange",
+              "type": "(key: string) => void",
+              "optional": true,
+              "description": "Fired when the current column changes (header click)."
+            },
+            {
+              "name": "beforeCurrentColumnChange",
+              "type": "(key: string) => boolean | void",
+              "optional": true,
+              "description": "Veto a current-column change: return false to keep the previous column."
+            },
+            {
+              "name": "showHeader",
+              "type": "boolean",
+              "optional": true,
+              "description": "Hide the header row(s) (vxe show-header parity). Default true."
+            },
+            {
+              "name": "footerData",
+              "type": "Row[]",
+              "optional": true,
+              "description": "Custom footer rows (vxe footer-data parity): rendered below the summary row, one grid row per entry; structure matches `data`."
+            },
+            {
+              "name": "rowClassName",
+              "type": "(row: Row, rowIndex: number) => string",
+              "optional": true,
+              "description": "Per-row class hook (vxe row-class-name parity)."
+            },
+            {
+              "name": "cellClassName",
+              "type": "(",
+              "optional": true,
+              "description": "Per-cell class hook (vxe cell-class-name parity)."
+            },
+            {
+              "name": "row",
+              "type": "Row",
+              "optional": false
+            },
+            {
+              "name": "column",
+              "type": "import('./types').IrisTableColumn<Row>",
+              "optional": false
+            },
+            {
+              "name": "rowIndex",
+              "type": "number",
+              "optional": false
+            },
+            {
+              "name": "headerCellClassName",
+              "type": "(column: import('./types').IrisTableColumn<Row>) => string",
+              "optional": true,
+              "description": "Per-header-cell class hook (vxe header-cell-class-name parity)."
+            },
+            {
+              "name": "footerCellClassName",
+              "type": "(column: import('./types').IrisTableColumn<Row>, rowIndex: number) => string",
+              "optional": true,
+              "description": "Per-footer-cell class hook (vxe footer-cell-class-name parity)."
+            },
+            {
+              "name": "rowStyle",
+              "type": "(row: Row, rowIndex: number) => import('react').CSSProperties",
+              "optional": true,
+              "description": "Per-row inline style hook (vxe row-style parity)."
+            },
+            {
+              "name": "cellStyle",
+              "type": "(",
+              "optional": true,
+              "description": "Per-cell inline style hook (vxe cell-style parity)."
+            },
+            {
+              "name": "row",
+              "type": "Row",
+              "optional": false
+            },
+            {
+              "name": "column",
+              "type": "import('./types').IrisTableColumn<Row>",
+              "optional": false
+            },
+            {
+              "name": "rowIndex",
+              "type": "number",
+              "optional": false
+            },
+            {
+              "name": "headerCellStyle",
+              "type": "(",
+              "optional": true,
+              "description": "Per-header-cell inline style hook (vxe header-cell-style parity)."
+            },
+            {
+              "name": "column",
+              "type": "import('./types').IrisTableColumn<Row>",
+              "optional": false
+            },
+            {
+              "name": "footerCellStyle",
+              "type": "(",
+              "optional": true,
+              "description": "Per-footer-cell inline style hook (vxe footer-cell-style parity)."
+            },
+            {
+              "name": "column",
+              "type": "import('./types').IrisTableColumn<Row>",
+              "optional": false
+            },
+            {
+              "name": "rowIndex",
+              "type": "number",
+              "optional": false
+            },
+            {
+              "name": "onCellClick",
+              "type": "(params: {",
+              "optional": true,
+              "description": "Cell click (vxe cell-click parity). Fired after internal handlers."
+            },
+            {
               "name": "bordered",
               "type": "boolean",
               "optional": true
@@ -36545,9 +36885,12 @@
             }
           ],
           "events": [
+            "onCellClick",
             "onCellEdit",
             "onColumnVisibilityChange",
             "onColumnWidthsChange",
+            "onCurrentColumnChange",
+            "onCurrentRowChange",
             "onExpandedRowsChange",
             "onFiltersChange",
             "onRetry",
@@ -37149,6 +37492,9 @@
       "events": [
         "onSelectionChange",
         "onSortChange",
+        "onCurrentRowChange",
+        "onCurrentColumnChange",
+        "onCellClick",
         "onColumnWidthsChange",
         "onRowClick",
         "onColumnVisibilityChange",
@@ -37163,8 +37509,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 46,
-        "eventCount": 9
+        "propCount": 75,
+        "eventCount": 12
       }
     },
     {

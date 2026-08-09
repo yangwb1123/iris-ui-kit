@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { existsSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /**
@@ -13,6 +15,27 @@ const src = (name: string) =>
 /** Resolve a workspace package's subpath entry (e.g. `core/undo`) to its source file. */
 const srcSubpath = (name: string, subpath: string) =>
   fileURLToPath(new URL(`../../packages/${name}/src/${subpath}.ts`, import.meta.url))
+
+/**
+ * Alias every group subpath of a package (`@iris-ui-kit/vue/form`, …) to its
+ * source entry. The bare alias below is a string PREFIX match, so without these
+ * entries first a deep import like `@iris-ui-kit/vue/provider` (used inside
+ * published plugin dist files) would resolve to `src/index.ts/provider` and
+ * fail to load. Mirrors the package's own `tsup` entry enumeration.
+ */
+function subpathAliases(pkg: string, bare: string): Record<string, string> {
+  const aliases: Record<string, string> = {}
+  const srcDir = fileURLToPath(new URL(`../../packages/${pkg}/src`, import.meta.url))
+  for (const dir of readdirSync(srcDir, { withFileTypes: true })) {
+    if (dir.isDirectory() && existsSync(join(srcDir, dir.name, 'index.ts'))) {
+      // Group dirs are directories (`src/provider/index.ts`), not bare files.
+      aliases[`${bare}/${dir.name}`] = fileURLToPath(
+        new URL(`../../packages/${pkg}/src/${dir.name}/index.ts`, import.meta.url),
+      )
+    }
+  }
+  return aliases
+}
 
 // In `serve` (dev) we alias to source; in `build` (and the `preview` that
 // serves it) we leave the aliases off so the app bundles the real published
@@ -38,6 +61,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui-kit/theme': src('theme'),
             '@iris-ui-kit/skins': src('skins'),
             '@iris-ui-kit/icons': src('icons'),
+            ...subpathAliases('vue', '@iris-ui-kit/vue'),
             '@iris-ui-kit/vue': src('vue'),
           },
         }

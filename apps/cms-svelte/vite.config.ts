@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { existsSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /** Resolve a workspace package to its TS source entry (dev runs from source). */
@@ -9,6 +11,27 @@ const src = (name: string) =>
 /** Resolve a workspace package's subpath entry (e.g. `core/undo`) to its source file. */
 const srcSubpath = (name: string, subpath: string) =>
   fileURLToPath(new URL(`../../packages/${name}/src/${subpath}.ts`, import.meta.url))
+
+/**
+ * Alias every group subpath of a package (`@iris-ui-kit/svelte/form`, …) to its
+ * source entry. The bare alias below is a string PREFIX match, so without these
+ * entries first a deep import like `@iris-ui-kit/svelte/provider` (used inside
+ * published plugin dist files) would resolve to `src/index.ts/provider` and
+ * fail to load. Group dirs are directories (`src/provider/index.ts`), not bare
+ * files — mirrors the package's own tsup entry enumeration.
+ */
+function subpathAliases(pkg: string, bare: string): Record<string, string> {
+  const aliases: Record<string, string> = {}
+  const srcDir = fileURLToPath(new URL(`../../packages/${pkg}/src`, import.meta.url))
+  for (const dir of readdirSync(srcDir, { withFileTypes: true })) {
+    if (dir.isDirectory() && existsSync(join(srcDir, dir.name, 'index.ts'))) {
+      aliases[`${bare}/${dir.name}`] = fileURLToPath(
+        new URL(`../../packages/${pkg}/src/${dir.name}/index.ts`, import.meta.url),
+      )
+    }
+  }
+  return aliases
+}
 
 // `serve` (dev) aliases @iris-ui-kit/* to source for instant HMR; `build`/`preview`
 // bundle the real published dist artifacts.
@@ -43,6 +66,7 @@ export default defineConfig(({ command }) => ({
             '@iris-ui-kit/skins': src('skins'),
             '@iris-ui-kit/icons': src('icons'),
             '@iris-ui-kit/svelte/form': srcSubpath('svelte', 'form/index'),
+            ...subpathAliases('svelte', '@iris-ui-kit/svelte'),
             '@iris-ui-kit/svelte': src('svelte'),
           },
         }

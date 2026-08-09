@@ -7,6 +7,7 @@ import type {
   IrisTableRenderDetail,
   IrisTableRowExpandable,
   IrisTableSortState,
+  IrisTableTooltipConfig,
   IrisTableValidConfig,
   IrisTableVirtualOptions,
 } from './types'
@@ -257,6 +258,12 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   columnVirtualization?: boolean
   /** Enable rectangular cell-range selection. */
   cellRange?: boolean
+  /** Shift-click checkbox range selection (vxe checkboxConfig `isShiftKey`
+   * parity, batch G): shift-clicking a row checkbox toggles every
+   * checkMethod-eligible row between the last-clicked anchor row and the
+   * target (in body order); a plain click just moves the anchor. The header
+   * select-all resets the anchor. Default false. */
+  checkboxRange?: boolean
   /** Empty state node (replaces the row body when `data` is empty). */
   emptyState?: ReactNode
   /** Show the loading state instead of rows. */
@@ -275,6 +282,13 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * the body; `loading`/`error` are driven by the proxy state.
    */
   proxyConfig?: IrisTableProxyConfig<Row>
+  /** Cell tooltips (vxe-grid tooltipConfig parity, title mode, batch G): a
+   * native `title` on every body cell, content from the callback or the raw
+   * cell value; editing cells are exempt and empty content drops the tooltip.
+   * Truncation gating is not implemented — titles render on every cell
+   * regardless of `showAll` (documented simplification, kept simple and
+   * explicit). */
+  tooltipConfig?: IrisTableTooltipConfig<Row>
   /** Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity). */
   tableRef?: MutableRefObject<IrisTableHandle<Row> | null>
   /** Fired after any internal row operation / edit write-back, with the new row list. */

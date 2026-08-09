@@ -72,3 +72,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-f-gate.md [ok]: Gate complete — batch F **PASS**: **Verdict:** `docs/vxe-grid/batch-f-review.md` = PASS (8/8 checklist green; findings all LOW non-blocking); Gate results: | Gate | Result |; Commits: - **`719617a0`** — `feat(table): vxe-grid 批 F——multiSort/validConfig/选择方法/expandAll（react only）` (16 files, +1040/−85); Final test counts: - **react: 1559 tests** (144 files) — up from 1528
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-f-gate.md
+
+## 2026-08-09 01:13:10 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-g-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-g-baseline.md
+
+## 2026-08-09 01:28:10 — stage 'adapt' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-g-adapt.md [FAILED: task timed out]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-g-adapt.md

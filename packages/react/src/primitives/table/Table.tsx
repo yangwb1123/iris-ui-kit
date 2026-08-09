@@ -233,6 +233,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   filters,
   formConfig,
   toolbar,
+  tooltipConfig,
   printable = false,
   seq = false,
   spanMethod,
@@ -244,6 +245,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   getSubRows,
   keyboardNavigation = false,
   cellRange = false,
+  checkboxRange = false,
   virtualScroll,
   columnVirtualization = false,
   emptyState,
@@ -392,6 +394,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     sortedData: localSortedData,
     multiSortState,
     cycleMultiSort,
+    multiSortComparator,
   } = useTableSort<Row>(liveData, {
     leafColumns,
     sort: sortProp,
@@ -536,6 +539,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const rebaseToProp = (): void => {
     if (selControlled) selModel.sync(selectionProp as Array<string | number>)
   }
+
+  // Checkbox range-selection anchor (vxe checkboxConfig isShiftKey parity,
+  // batch G): the row key of the last clicked row checkbox. Shift-click toggles
+  // every checkMethod-eligible row between the anchor and the target (in
+  // bodyData order); a plain click just moves the anchor. The header
+  // select-all resets it.
+  const checkboxAnchorRef = React.useRef<string | number | null>(null)
 
   // Expandable detail rows: a leading toggle column + a full-width detail panel,
   // driven by the framework-agnostic createExpansion (multiple-open).
@@ -887,11 +897,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
       if (selectable !== 'multi') return
       rebaseToProp()
       // vxe setAllCheckboxRow(true): select every checkMethod-eligible row of
-      // the current page (checkMethod rows are skipped, vxe parity).
+      // the current page (checkMethod rows are skipped, vxe parity) — UNIONED
+      // with the existing selection, so rows selected on an earlier proxy page
+      // (or a prior toggle) are kept instead of replaced.
       const keys = bodyData
         .map((row, i) => (checkMethod && !checkMethod(row, i) ? null : rowKeyOf(row)))
         .filter((k): k is string | number => k != null)
-      selModel.set(keys)
+      const existing = new Set(displaySelection)
+      selModel.set([...displaySelection, ...keys.filter((k) => !existing.has(k))])
     },
     toggleRowSelection: (key) => {
       if (selectable === 'none') return
@@ -914,26 +927,67 @@ export function IrisTable<Row extends Record<string, unknown>>({
     selModel.toggle(rowKeyOf(row))
   }
 
+  /**
+   * Shift-click checkbox range (vxe checkboxConfig isShiftKey parity): toggle
+   * every checkMethod-eligible row between the anchor and the target in
+   * bodyData order. An unknown anchor (e.g. the anchor row left the page in
+   * proxy mode) degrades to a single toggle of the target. Updates go through
+   * the model's per-key `toggle` (batch: one rebase against the controlled
+   * prop, then the toggles).
+   */
+  const toggleRowRange = (anchorKey: string | number, targetKey: string | number) => {
+    if (selectable !== 'multi') return
+    const anchorIdx = bodyData.findIndex((r) => rowKeyOf(r) === anchorKey)
+    const targetIdx = bodyData.findIndex((r) => rowKeyOf(r) === targetKey)
+    if (anchorIdx < 0 || targetIdx < 0) {
+      // Unknown anchor: fall back to a plain single toggle of the target
+      // (checkMethod still respected — a disabled row cannot be range-toggled).
+      if (targetIdx < 0 || (checkMethod && !checkMethod(bodyData[targetIdx]!, targetIdx))) return
+      rebaseToProp()
+      selModel.toggle(targetKey)
+      return
+    }
+    const from = Math.min(anchorIdx, targetIdx)
+    const to = Math.max(anchorIdx, targetIdx)
+    const keys: Array<string | number> = []
+    for (let i = from; i <= to; i += 1) {
+      const row = bodyData[i]!
+      if (checkMethod && !checkMethod(row, i)) continue
+      keys.push(rowKeyOf(row))
+    }
+    if (keys.length === 0) return
+    rebaseToProp()
+    for (const key of keys) selModel.toggle(key)
+  }
+
   // Tree mode (opt-in via getSubRows): flatten the data into the visible rows
   // honoring the (shared) expansion model. `bodyData` is the row list the body,
   // selection, and summary all operate on — identical to `sortedData` in flat
   // mode, so non-tree behavior is unchanged.
   const treeMode = getSubRows !== undefined
+  // Comparator for tree siblings: multi mode uses the chained multi comparator
+  // (batch G fix), single mode keeps its own — byte-identical to before.
+  const treeComparator = React.useMemo(
+    () => (multiSort ? multiSortComparator : sortComparator),
+    [multiSort, multiSortComparator, sortComparator],
+  )
   const flatTree = React.useMemo<Array<TreeRow<Row>> | null>(
     () =>
       treeMode
         ? flattenTree<Row>(sortedData, {
             getKey: (r) => String(rowKeyOf(r)),
             // With an active sort, sort each level's children by the same
-            // comparator so the whole tree reorders hierarchically.
-            getChildren: sortComparator
-              ? withSortedChildren((r) => getSubRows!(r), sortComparator)
+            // comparator so the whole tree reorders hierarchically (multi mode
+            // passes the chained multi comparator so child ties resolve by the
+            // secondary columns too).
+            getChildren: treeComparator
+              ? withSortedChildren((r) => getSubRows!(r), treeComparator)
               : (r) => getSubRows!(r),
             isExpanded: (k) => expandedKeys.includes(k),
           })
         : null,
     // Recompute on data / expansion / accessor / sort change (rowKeyOf reads `rowKey`).
-    [treeMode, sortedData, getSubRows, expandedKeys, rowKey, sortComparator],
+    [treeMode, sortedData, getSubRows, expandedKeys, rowKey, treeComparator],
   )
   // Client-side filters (vxe filterConfig parity, local mode): core filterSort
   // applied to the sorted data before paging/virtualizing (flat mode). With
@@ -972,7 +1026,6 @@ export function IrisTable<Row extends Record<string, unknown>>({
   React.useEffect(() => {
     if (!expandAll || !treeMode || expandAllSeededRef.current) return
     if (sortedData.length === 0) return
-    expandAllSeededRef.current = true
     const keys: string[] = []
     const collect = (rows: Row[]): void => {
       for (const row of rows) {
@@ -984,11 +1037,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
       }
     }
     collect(sortedData)
-    if (keys.length > 0) expansion.merge(keys)
+    // Burn the one-shot only when there was something to seed: a proxy page
+    // without parent rows (e.g. the first page of a paged tree) must not
+    // consume the seed — a later page that does contain parents still seeds.
+    if (keys.length === 0) return
+    expandAllSeededRef.current = true
+    expansion.merge(keys)
   }, [expandAll, treeMode, sortedData, getSubRows, expansion, rowKey])
 
   const toggleAll = () => {
     if (selectable !== 'multi') return
+    // The header select-all is the range-selection escape hatch: any
+    // subsequent shift-click starts a fresh range from the next clicked row.
+    checkboxAnchorRef.current = null
     rebaseToProp()
     const keys = bodyData
       .map((row, i) => (checkMethod && !checkMethod(row, i) ? null : rowKeyOf(row)))
@@ -1207,6 +1268,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
   const borderStyle = bordered ? '1px solid var(--iris-border)' : 'none'
 
+  // Cell tooltips (vxe tooltipConfig parity, title mode, batch G): a native
+  // `title` on every body cell — content from the callback or the raw cell
+  // value; editing cells are exempt, and empty content drops the tooltip (vxe
+  // empty-content parity). Truncation gating is not implemented: titles render
+  // on every cell regardless of `showAll` (documented simplification — cheap
+  // and explicit).
+  const cellTooltip = (row: Row, col: IrisTableColumn<Row>): string | undefined => {
+    if (!tooltipConfig) return undefined
+    const content = tooltipConfig.content
+      ? tooltipConfig.content(row, col)
+      : String(getCellValue(row, col) ?? '')
+    return content === '' ? undefined : content
+  }
+
   // Each row is its own CSS grid (sharing `gridTemplateColumns`) rather than the
   // root being one grid — this keeps columns aligned while letting the virtual
   // scroller absolutely-position rows. `extraStyle` lets the virtual window set
@@ -1331,6 +1406,24 @@ export function IrisTable<Row extends Record<string, unknown>>({
           <div
             role="cell"
             data-iris-table-cell="__selection"
+            onClick={
+              checkboxRange
+                ? (e: React.MouseEvent) => {
+                    // vxe checkboxConfig isShiftKey parity: shift-click toggles
+                    // the whole range between the anchor and this row. The
+                    // label forwards a second click to the <input> —
+                    // preventDefault on the original click cancels the
+                    // forwarded one AND the single-toggle change event, so the
+                    // target row is not toggled twice (the range covers it).
+                    if (e.shiftKey && checkboxAnchorRef.current !== null) {
+                      e.preventDefault()
+                      toggleRowRange(checkboxAnchorRef.current, k)
+                    }
+                    // Always move the anchor — even without shift.
+                    checkboxAnchorRef.current = k ?? null
+                  }
+                : undefined
+            }
             style={{
               ...baseCellStyle,
               justifyContent: 'center',
@@ -1369,6 +1462,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               data-iris-table-pinned={col.pinned}
               data-editable={col.editable ? '' : undefined}
               data-editing={editing ? '' : undefined}
+              title={editing ? undefined : cellTooltip(row, col)}
               className={cellClassName?.(row, col, idx)}
               {...(keyboardNavigation
                 ? {

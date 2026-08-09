@@ -40,6 +40,10 @@ export interface UseTableSortResult<Row> {
   sortComparator: ((a: Row, b: Row) => number) | null
   /** Sorted data using the active comparator. Falls back to the original data. */
   sortedData: Row[]
+  /** Multi-column comparator (multiSort mode): the per-column comparators
+   * chained in click order; null when the list is empty. Consumers that sort
+   * derived views (e.g. tree children) use this so multi mode stays consistent. */
+  multiSortComparator: ((a: Row, b: Row) => number) | null
   /** Current multi-column sort state (controlled if a `multiSortState` option was provided, else internal). */
   multiSortState: IrisTableSortState[]
   /** Cycle a column in multi mode: append asc → asc→desc → remove from the list. */
@@ -216,5 +220,6 @@ export function useTableSort<Row extends Record<string, unknown>>(
     sortedData,
     multiSortState,
     cycleMultiSort,
+    multiSortComparator,
   }
 }

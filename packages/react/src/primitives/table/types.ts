@@ -171,3 +171,25 @@ export type IrisTableRowExpandable<Row = Record<string, unknown>> = (
   row: Row,
   rowIndex: number,
 ) => boolean
+
+/**
+ * Cell tooltip configuration (vxe-grid tooltipConfig parity, title mode).
+ * Renders a native `title` on every body cell — no portal, no positioning.
+ * Empty content drops the tooltip (vxe empty-content parity); editing cells
+ * are exempt.
+ */
+export interface IrisTableTooltipConfig<Row = Record<string, unknown>> {
+  /**
+   * Render a tooltip on every body cell. Default true when `tooltipConfig` is
+   * set. Truncation-based gating (vxe `showAll: false`) is not implemented —
+   * cells always carry the `title` (documented simplification: detecting a
+   * truncated cell cheaply isn't possible without layout measurement).
+   * `false` is accepted for API parity and behaves identically this batch.
+   */
+  showAll?: boolean
+  /**
+   * Custom tooltip text for a cell. Defaults to the raw cell value. Returning
+   * an empty string drops the tooltip (vxe empty-content parity).
+   */
+  content?: (row: Row, column: IrisTableColumn<Row>) => string
+}

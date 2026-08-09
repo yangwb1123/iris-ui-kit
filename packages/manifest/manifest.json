@@ -36391,6 +36391,12 @@
           "description": "Enable rectangular cell-range selection."
         },
         {
+          "name": "checkboxRange",
+          "type": "boolean",
+          "optional": true,
+          "description": "parity, batch G): shift-clicking a row checkbox toggles every checkMethod-eligible row between the last-clicked anchor row and the target (in body order); a plain click just moves the anchor. The header"
+        },
+        {
           "name": "emptyState",
           "type": "ReactNode",
           "optional": true,
@@ -36431,6 +36437,12 @@
           "type": "IrisTableProxyConfig<Row>",
           "optional": true,
           "description": "Server-side data proxy (vxe-grid proxyConfig parity, query slice). When set, rows come from the proxy `query` (paged) and a pager renders below the body; `loading`/`error` are driven by the proxy state."
+        },
+        {
+          "name": "tooltipConfig",
+          "type": "IrisTableTooltipConfig<Row>",
+          "optional": true,
+          "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. Truncation gating is not implemented — titles render on every cell regardless of `showAll` (documented simplification, kept simple and"
         },
         {
           "name": "tableRef",
@@ -36858,6 +36870,12 @@
               "description": "Enable rectangular cell-range selection."
             },
             {
+              "name": "checkboxRange",
+              "type": "boolean",
+              "optional": true,
+              "description": "parity, batch G): shift-clicking a row checkbox toggles every checkMethod-eligible row between the last-clicked anchor row and the target (in body order); a plain click just moves the anchor. The header"
+            },
+            {
               "name": "emptyState",
               "type": "ReactNode",
               "optional": true,
@@ -36898,6 +36916,12 @@
               "type": "IrisTableProxyConfig<Row>",
               "optional": true,
               "description": "Server-side data proxy (vxe-grid proxyConfig parity, query slice). When set, rows come from the proxy `query` (paged) and a pager renders below the body; `loading`/`error` are driven by the proxy state."
+            },
+            {
+              "name": "tooltipConfig",
+              "type": "IrisTableTooltipConfig<Row>",
+              "optional": true,
+              "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. Truncation gating is not implemented — titles render on every cell regardless of `showAll` (documented simplification, kept simple and"
             },
             {
               "name": "tableRef",
@@ -36973,6 +36997,7 @@
             "IrisTableSeqMethodParams",
             "IrisTableSortDirection",
             "IrisTableSortState",
+            "IrisTableTooltipConfig",
             "IrisTableValidConfig",
             "IrisTableVirtualOptions"
           ]
@@ -37573,7 +37598,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 78,
+        "propCount": 80,
         "eventCount": 14
       }
     },

@@ -17,3 +17,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-c-review.md [ok]: Verdict: **FAIL** (gates green, 2 real defects): **Verification commands — all pass:**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-c-review.md
+
+## 2026-08-08 19:11:59 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-c-gate.md [ok]: Fixes applied (all review defects, implementation + regression tests): | # | Defect | Fix |; Gate results: - **Turbo `test typecheck lint build --concurrency=2`: 180/180 tasks pass**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-c-gate.md

@@ -85,16 +85,24 @@
 | 导入导出   | export/import               | exportCsv/Excel ✓           | 缺导入                                |
 | 打印       | printConfig                 | —                           | 缺                                    |
 
-## 构建路线（逐步）
+## 构建状态（2026-08 完成，react only）
 
-- **批 1（编辑核心）**：core `createEditRules` 规则引擎（required/min/max/type/
-  pattern/validator 异步/多规则合并）+ IrisTable `editConfig`（trigger click/dblclick/
-  manual、mode cell/row、autoClear、showAsterisk）+ 列 `editRules` ——四框架
-- **批 2（组合接口）**：IrisTable 组合接口（virtual/resizable 已 prop 化——
-  文档化 + 补 rowDrag 组合 createSortable、undo 组合 createUndo）
-- **批 3（高级列能力）**：seq 序号列、spanMethod 合并单元格、columnDrag 列拖拽
-- **批 4（工具栏/筛选）**：toolbarConfig、filterConfig、列显隐设置
-- **批 5（导入/打印）**：importConfig、printConfig
+| 批   | 内容                                                                     | 状态      |
+| ---- | ------------------------------------------------------------------------ | --------- |
+| 批 1 | editRules 规则集 + editConfig（required/min/max/type/pattern/validator） | ✅ 四框架 |
+| 批 2 | rowDrag（createSortable 组合）+ useTableUndo（createUndoStack 组合）     | ✅ react  |
+| 批 3 | seq 序号列 + spanMethod 合并 + columnDrag 列拖拽                         | ✅ react  |
+| 批 4 | columnVisibility 列显隐 + filters 筛选（core filterSort）+ toolbar       | ✅ react  |
+| 批 5 | parseCsv 导入（工具栏按钮）+ printable 打印样式                          | ✅ react  |
+
+react 1502 tests · core 1199 tests · 180/180 turbo · 审计 0
+
+## 组合接口说明
+
+- **外部能力**（resizable/movable/sortable/clickOutside/hotkey）→ `IrisCompose` 拼接
+- **内部能力**（virtual/multiple/rowDrag/columnDrag/undo/编辑）→ Table prop / hook 组合
+  （均基于 core 控制器：createVirtualizer/createSelectionModel/createSortable/
+  createUndoStack/createCellEdit/createEditRules）
 
 ## 决策
 

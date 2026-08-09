@@ -15,6 +15,7 @@ import { IrisTable, type IrisTableColumn } from '@iris-ui-kit/react'
  *   columns[{sortable}]    → columns[].sortable
  *   editConfig/trigger     → editConfig={{ trigger: 'click' }}
  *   editRules              → columns[].editRules
+ *   proxyConfig            → proxyConfig={{ query, remoteSort, pageSize }}
  */
 
 interface GridRow {
@@ -66,6 +67,48 @@ const editColumns: IrisTableColumn<GridRow>[] = [
   { key: 'address', title: 'Address', editable: true },
 ]
 
+/** 服务端数据集（43 条，跨 6 页）。 */
+const serverData: GridRow[] = Array.from({ length: 43 }, (_, i) => {
+  const n = i + 1
+  const roles = ['Develop', 'Test', 'PM', 'Designer']
+  return {
+    id: 10000 + n,
+    name: `Test${n}`,
+    role: roles[i % roles.length]!,
+    sex: n % 2 === 0 ? 'Women' : 'Man',
+    age: 20 + (n % 25),
+    address: ['test abc', 'Guangzhou', 'Shanghai', 'Beijing'][i % 4]!,
+  }
+})
+
+/**
+ * 模拟远程查询（vxe-grid proxyConfig.ajax.query 对照）：400ms 延迟 +
+ * 服务端排序 + 分页切片。真实场景这里换成 HTTP 请求即可。
+ */
+function remoteQuery(params: {
+  page: number
+  pageSize: number
+  sort: { key: string; direction: 'asc' | 'desc' } | null
+  filters: Record<string, string>
+}): Promise<{ rows: GridRow[]; total: number }> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const rows = [...serverData]
+      if (params.sort) {
+        const { key, direction } = params.sort
+        const dir = direction === 'asc' ? 1 : -1
+        rows.sort((a, b) => {
+          const va = a[key] ?? ''
+          const vb = b[key] ?? ''
+          return (va < vb ? -1 : va > vb ? 1 : 0) * dir
+        })
+      }
+      const start = (params.page - 1) * params.pageSize
+      resolve({ rows: rows.slice(start, start + params.pageSize), total: rows.length })
+    }, 400)
+  })
+}
+
 export function VxeGridExamplePage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 960 }}>
@@ -97,7 +140,7 @@ export function VxeGridExamplePage() {
           }}
         >
           官方示例对照：editConfig（trigger: click）+ editRules（required / type / min /
-          max）——点击单元格进入编辑
+          max）——点击单元格进入编辑；提交后数据自动回写保留（无需父组件更新）
         </p>
         <IrisTable
           bordered
@@ -105,6 +148,33 @@ export function VxeGridExamplePage() {
           editConfig={{ trigger: 'click' }}
           columns={editColumns}
           data={tableData}
+        />
+      </section>
+
+      <section>
+        <h2 style={{ margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }}>
+          服务端数据源（Server-side data source）
+        </h2>
+        <p
+          style={{
+            margin: '0 0 12px',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
+            color: 'var(--iris-muted)',
+          }}
+        >
+          官方示例对照：proxyConfig（autoLoad / remoteSort / 分页）——43 条数据、 每页 8
+          条；点击表头排序或翻页都会重新请求（模拟 400ms 延迟展示 loading），远程模式不做本地排序
+        </p>
+        <IrisTable
+          bordered
+          rowKey="id"
+          seq
+          proxyConfig={{
+            query: remoteQuery,
+            remoteSort: true,
+            pageSize: 8,
+          }}
+          columns={columns}
         />
       </section>
     </div>

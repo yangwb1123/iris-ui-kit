@@ -43,7 +43,8 @@ export interface IrisTableProxyConfig<Row extends Record<string, unknown>> {
 /** Public input surface for the React table adapter. */
 export interface IrisTableProps<Row extends Record<string, unknown> = Record<string, unknown>> {
   columns: IrisTableColumn<Row>[]
-  data: Row[]
+  /** Table data. Optional when `proxyConfig` is set (server-side source). */
+  data?: Row[]
   /** Field to use as the row key. */
   rowKey?: string
   /** Selection mode. */

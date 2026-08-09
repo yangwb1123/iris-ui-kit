@@ -74,3 +74,15 @@ test('VxeGrid Example — official basic-usage grid parity', async ({ page }) =>
   await page.getByText('Test1', { exact: true }).nth(1).click()
   await expect(page.getByRole('textbox')).toBeVisible()
 })
+
+test('VxeGrid Example — proxyConfig server-side section', async ({ page }) => {
+  await login(page)
+  await page.goto('/#vxe-example')
+  await expect(
+    page.getByRole('heading', { name: '服务端数据源（Server-side data source）' }),
+  ).toBeVisible()
+  // 初始加载（模拟 400ms 延迟）后出现第一页数据
+  await expect(page.getByText('Test1', { exact: true }).last()).toBeVisible({ timeout: 8000 })
+  // 远程分页：共 43 条 / 8 = 6 页
+  await expect(page.getByRole('button', { name: /6/ })).toBeVisible()
+})

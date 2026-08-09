@@ -24,6 +24,7 @@ describe('React CMS workspace bridge', () => {
       'realtime',
       'pro-table',
       'documentation',
+      'vxe-example',
     ])
     expect(leaves.every((key) => dedicatedPluginRoutes.has(key) || isCmsPageRoute(key))).toBe(true)
     expect(leaves).toContain('audit-log')

@@ -53,3 +53,24 @@ test('Users page — shows table with data', async ({ page }) => {
   const rows = table.getByRole('row')
   await expect(rows).not.toHaveCount(0)
 })
+
+test('VxeGrid Example — official basic-usage grid parity', async ({ page }) => {
+  await login(page)
+  await page.goto('/#vxe-example')
+
+  await expect(
+    page.getByRole('heading', { name: 'vxe-grid 基础用法（Basic usage）' }),
+  ).toBeVisible()
+  // 官方数据 6 行（两个表各一份，用 first）
+  await expect(page.getByText('Test1', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('Test6', { exact: true }).first()).toBeVisible()
+  // seq 序号列
+  await expect(page.getByText('1', { exact: true }).first()).toBeVisible()
+  // 排序可点（Name 表头）
+  const nameHeader = page.getByRole('columnheader', { name: /Name/ })
+  await expect(nameHeader.first()).toBeVisible()
+  // 行编辑标题 + 单元格点击进入编辑
+  await expect(page.getByRole('heading', { name: '行编辑（Row editing）' })).toBeVisible()
+  await page.getByText('Test1', { exact: true }).nth(1).click()
+  await expect(page.getByRole('textbox')).toBeVisible()
+})

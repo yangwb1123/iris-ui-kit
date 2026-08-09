@@ -22,6 +22,7 @@ import {
   createCellEdit,
   createSortable,
   parseCsv,
+  setCellValue,
   validateEditRulesAsync,
   type SortableRect,
 } from '@iris-ui-kit/core'
@@ -253,13 +254,25 @@ export function IrisTable<Row extends Record<string, unknown>>({
     [grouped, displayColumns],
   )
 
+  // Editable write-back (vxe-grid parity): the table owns a live copy of the
+  // data so committed edits survive WITHOUT the parent re-feeding `data`.
+  // External `data` reference changes still win (controlled mode).
+  const [liveData, setLiveData] = React.useState<Row[]>(data ?? [])
+  const externalDataRef = React.useRef(data)
+  React.useEffect(() => {
+    if (data !== externalDataRef.current) {
+      externalDataRef.current = data
+      setLiveData(data ?? [])
+    }
+  }, [data])
+
   // Sort state managed by useTableSort hook (controlled/uncontrolled, comparator, sorted data).
   const {
     sortState: sort,
     cycleSort,
     sortComparator,
     sortedData,
-  } = useTableSort<Row>(data ?? [], {
+  } = useTableSort<Row>(liveData, {
     leafColumns,
     sort: sortProp,
     defaultSort,
@@ -378,6 +391,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
           if (!ctx) return
           const oldValue = getCellValue(ctx.row, ctx.col)
           if (value !== oldValue) {
+            // Write the committed value back into the live data so the edit
+            // survives without the parent re-feeding `data` (controlled mode
+            // overrides via the data-reference sync above).
+            const k = rowKeyOf(ctx.row)
+            if (k != null) {
+              setLiveData((prev) => {
+                const next = setCellValue(prev, rowKey, k, ctx.col.key, value)
+                externalDataRef.current = next
+                return next
+              })
+            }
             onCellEditRef.current?.({
               row: ctx.row,
               column: ctx.col,

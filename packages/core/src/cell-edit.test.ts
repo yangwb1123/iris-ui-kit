@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createCellEdit, type CellEditState } from './cell-edit'
+import { createCellEdit, setCellValue, type CellEditState } from './cell-edit'
 
 describe('createCellEdit', () => {
   it('starts idle', () => {
@@ -111,5 +111,23 @@ describe('createCellEdit draft session (advancement)', () => {
     expect(ce.getEditing()).toBeNull()
     expect(ce.getDraft()).toBe('')
     expect(ce.getError()).toBeNull()
+  })
+})
+
+describe('setCellValue (edit write-back)', () => {
+  it('replaces the matching row immutably', () => {
+    const rows = [
+      { id: 1, name: 'a' },
+      { id: 2, name: 'b' },
+    ]
+    const next = setCellValue(rows, 'id', 2, 'name', 'B')
+    expect(next[1]?.name).toBe('B')
+    expect(next[0]).toBe(rows[0])
+    expect(rows[1]?.name).toBe('b')
+  })
+
+  it('missing key leaves rows untouched', () => {
+    const rows = [{ id: 1, name: 'a' }]
+    expect(setCellValue(rows, 'id', 99, 'name', 'x')).toBe(rows)
   })
 })

@@ -248,3 +248,48 @@ describe('IrisTable interaction extras (vxe 排序/筛选/高亮/seq/html parity
     expect(container.querySelector('[data-iris-table-cell="name"] b')?.textContent).toBe('Bold')
   })
 })
+
+describe('IrisTable edit write-back (vxe-grid 编辑数据回写)', () => {
+  it('committed edit survives WITHOUT parent re-feeding data', () => {
+    const editable: IrisTableColumn<Row>[] = [{ key: 'name', title: 'Name', editable: true }]
+    const data = [{ id: 1, name: 'Alice' }]
+    const { container } = render(
+      <IrisTable columns={editable} data={data} rowKey="id" editConfig={{ trigger: 'click' }} />,
+    )
+    // 编辑
+    fireEvent.click(container.querySelector('[data-iris-table-cell="name"]')!)
+    const input = container.querySelector('input') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'Alicia' } })
+    fireEvent.blur(input)
+    // 提交后单元格显示新值（没有父组件更新 data！）
+    expect(container.querySelector('[data-iris-table-cell="name"]')?.textContent).toBe('Alicia')
+    // 原始数据未被改动（不可变）
+    expect(data[0]?.name).toBe('Alice')
+  })
+
+  it('external data reference change still wins (controlled)', () => {
+    const editable: IrisTableColumn<Row>[] = [{ key: 'name', title: 'Name', editable: true }]
+    const { container, rerender } = render(
+      <IrisTable
+        columns={editable}
+        data={[{ id: 1, name: 'Alice' }]}
+        rowKey="id"
+        editConfig={{ trigger: 'click' }}
+      />,
+    )
+    fireEvent.click(container.querySelector('[data-iris-table-cell="name"]')!)
+    const input = container.querySelector('input') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'Alicia' } })
+    fireEvent.blur(input)
+    // 父组件接管：传新 data 引用 → 显示外部值
+    rerender(
+      <IrisTable
+        columns={editable}
+        data={[{ id: 1, name: 'FromParent' }]}
+        rowKey="id"
+        editConfig={{ trigger: 'click' }}
+      />,
+    )
+    expect(container.querySelector('[data-iris-table-cell="name"]')?.textContent).toBe('FromParent')
+  })
+})

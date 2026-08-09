@@ -161,3 +161,23 @@ export function createCellEdit(options: CreateCellEditOptions = {}): CellEdit {
     },
   }
 }
+
+/**
+ * Immutably set a cell value in a row list by row key (vxe-grid edit write-back
+ * parity). Returns a NEW array; the matching row object is replaced (other
+ * rows keep identity). Rows without the key (or missing key field) are
+ * returned untouched.
+ */
+export function setCellValue<Row extends Record<string, unknown>>(
+  rows: readonly Row[],
+  rowKeyField: string,
+  rowKeyValue: string | number,
+  columnKey: string,
+  value: unknown,
+): Row[] {
+  const index = rows.findIndex(
+    (row) => (row as Record<string, unknown>)[rowKeyField] === rowKeyValue,
+  )
+  if (index < 0) return rows as Row[]
+  return rows.map((row, i) => (i === index ? { ...row, [columnKey]: value } : row))
+}

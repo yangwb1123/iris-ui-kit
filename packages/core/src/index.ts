@@ -390,3 +390,4 @@ export {
   type EditRules,
 } from './edit-rules'
 export { createUndoStack, type UndoStack, type UndoStackOptions } from './undo'
+export { setCellValue } from './cell-edit'

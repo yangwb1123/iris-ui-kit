@@ -343,7 +343,7 @@ describe('@iris-ui-kit/react IrisSelect virtual listbox', () => {
 describe('@iris-ui-kit/react IrisSelect multiple', () => {
   it('multiple: toggles values into an array, keeps popover open', () => {
     const onChange = vi.fn()
-    const { getAllByRole } = render(
+    render(
       <IrisSelect
         multiple
         items={[
@@ -354,16 +354,18 @@ describe('@iris-ui-kit/react IrisSelect multiple', () => {
       />,
     )
     fireEvent.click(document.querySelector('[data-iris-select-trigger]')!)
-    fireEvent.click(getAllByRole('option')[0])
+    // DOM queries (not role queries): the popover is `visibility: hidden` until
+    // the first positioning cycle lands, and role queries exclude hidden nodes.
+    fireEvent.click(document.querySelectorAll('[role=option]')[0]!)
     expect(onChange).toHaveBeenCalledWith(['a'])
     // second pick appends
-    fireEvent.click(getAllByRole('option')[1])
+    fireEvent.click(document.querySelectorAll('[role=option]')[1]!)
     expect(onChange).toHaveBeenLastCalledWith(['a', 'b'])
   })
 
   it('multiple: clicking the selected option removes it', () => {
     const onChange = vi.fn()
-    const { getAllByRole } = render(
+    render(
       <IrisSelect
         multiple
         value={['a']}
@@ -372,7 +374,7 @@ describe('@iris-ui-kit/react IrisSelect multiple', () => {
       />,
     )
     fireEvent.click(document.querySelector('[data-iris-select-trigger]')!)
-    fireEvent.click(getAllByRole('option')[0])
+    fireEvent.click(document.querySelectorAll('[role=option]')[0]!)
     expect(onChange).toHaveBeenCalledWith([])
   })
 

@@ -230,3 +230,75 @@ describe('IrisTable groupBy (batch M)', () => {
     expect(container.querySelector('[data-iris-group-value]')!.textContent).toBe('QA')
   })
 })
+
+describe('IrisTable virtual tree + handle methods (批 M 补充)', () => {
+  const treeRows: Row[] = [
+    { id: 1, name: 'Root1', role: 'Develop', score: 100 },
+    { id: 2, name: 'Root2', role: 'QA', score: 50 },
+  ]
+
+  it('virtual tree renders expanded nodes with caret + indent', () => {
+    const getSubRows = (r: Row): Row[] | undefined =>
+      r.id === 1
+        ? [
+            { id: 11, name: 'Child1', role: 'Develop', score: 10 },
+            { id: 12, name: 'Child2', role: 'QA', score: 20 },
+          ]
+        : undefined
+    const { container } = render(
+      <IrisTable
+        columns={[{ key: 'name', title: 'Name' }]}
+        data={treeRows}
+        rowKey="id"
+        getSubRows={getSubRows}
+        virtualScroll={{ itemHeight: 32, height: 200 }}
+      />,
+    )
+    // 展开 Root1
+    const toggle = container.querySelector('[data-iris-table-tree-toggle]')!
+    fireEvent.click(toggle)
+    expect(container.textContent).toContain('Child1')
+    expect(container.textContent).toContain('Child2')
+  })
+
+  it('lazy + virtual: caret loads children in virtual mode', () => {
+    const lazyLoad = vi.fn((_row: Row, load: (children: Row[]) => void) => {
+      setTimeout(() => load([{ id: 21, name: 'LazyChild', role: 'QA', score: 5 }]), 0)
+    })
+    const { container } = render(
+      <IrisTable
+        columns={[{ key: 'name', title: 'Name' }]}
+        data={[{ id: 1, name: 'Root1', role: 'Develop', score: 100 }]}
+        rowKey="id"
+        lazyLoad={lazyLoad}
+        virtualScroll={{ itemHeight: 32, height: 200 }}
+      />,
+    )
+    const toggle = container.querySelector('[data-iris-table-tree-toggle]')!
+    fireEvent.click(toggle)
+    expect(lazyLoad).toHaveBeenCalled()
+  })
+
+  it('handle getData returns live rows copy; getSelection returns keys', () => {
+    const ref = { current: null as IrisTableHandle<Row> | null }
+    const { container } = render(
+      <IrisTable
+        columns={[{ key: 'name', title: 'Name' }]}
+        data={[{ id: 1, name: 'Alice', role: 'Develop', score: 100 }]}
+        rowKey="id"
+        selectable="multi"
+        tableRef={ref}
+      />,
+    )
+    // 选中一行
+    const box = container.querySelector('[data-iris-table-row="1"] input[type=checkbox]')!
+    fireEvent.click(box)
+    expect(ref.current?.getSelection()).toEqual([1])
+    const data = ref.current?.getData()
+    expect(data).toHaveLength(1)
+    expect(data![0]!.name).toBe('Alice')
+    // 返回值是副本
+    data!.pop()
+    expect(ref.current?.getData()).toHaveLength(1)
+  })
+})

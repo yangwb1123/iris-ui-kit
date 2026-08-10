@@ -55,6 +55,7 @@ export const IrisMenu = defineComponent({
       triggerRef: ref(null),
       contentRef: ref(null),
       contentId: useId(),
+      treeId: useId(),
       placement: props.placement,
       offset: props.offset,
       closeRoot,

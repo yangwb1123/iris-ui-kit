@@ -7,6 +7,8 @@ export interface MenuContext {
   triggerRef: Ref<HTMLElement | null>
   contentRef: Ref<HTMLElement | null>
   contentId: string
+  /** Root menu's unique id — shared by every nested submenu surface. */
+  treeId: string
   placement: Placement
   offset: number
   /** The root menu's "close everything" call — propagates to submenus. */

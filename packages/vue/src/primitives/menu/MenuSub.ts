@@ -4,6 +4,7 @@ import {
   defineComponent,
   h,
   inject,
+  nextTick,
   onScopeDispose,
   provide,
   ref,
@@ -14,6 +15,7 @@ import { useFloating } from '../floating/useFloating'
 import { MenuContextKey } from './context'
 
 const HOVER_OPEN_DELAY = 100
+const HOVER_CLOSE_DELAY = 150
 
 /**
  * Nested submenu. Renders its own trigger (as a `[role="menuitem"]` inside
@@ -54,6 +56,10 @@ export const IrisMenuSub = defineComponent({
     const triggerRef = ref<HTMLElement | null>(null)
     const contentRef = ref<HTMLElement | null>(null)
     let openTimer: ReturnType<typeof setTimeout> | null = null
+    let closeTimer: ReturnType<typeof setTimeout> | null = null
+    // B3: only keyboard-opened submenus move focus (hover/click must not).
+    let focusOnOpen = false
+    let keyboardManaged = false
 
     const clearTimer = () => {
       if (openTimer) {
@@ -61,16 +67,37 @@ export const IrisMenuSub = defineComponent({
         openTimer = null
       }
     }
+    const clearCloseTimer = () => {
+      if (closeTimer) {
+        clearTimeout(closeTimer)
+        closeTimer = null
+      }
+    }
 
     const scheduleOpen = () => {
       clearTimer()
+      clearCloseTimer()
       openTimer = setTimeout(() => {
         open.value = true
         openTimer = null
       }, HOVER_OPEN_DELAY)
     }
 
-    onScopeDispose(clearTimer)
+    const scheduleClose = () => {
+      clearTimer()
+      clearCloseTimer()
+      closeTimer = setTimeout(() => {
+        closeTimer = null
+        // Pointer-driven close: keyboard focus management is done.
+        keyboardManaged = false
+        open.value = false
+      }, HOVER_CLOSE_DELAY)
+    }
+
+    onScopeDispose(() => {
+      clearTimer()
+      clearCloseTimer()
+    })
 
     const { floatingStyles } = useFloating({
       anchor: triggerRef,
@@ -89,36 +116,69 @@ export const IrisMenuSub = defineComponent({
       triggerRef,
       contentRef,
       contentId: '',
+      treeId: parentCtx.treeId,
       placement: 'right-start',
       offset: 0,
       closeRoot: parentCtx.closeRoot,
     })
 
     const onTriggerPointerEnter = () => scheduleOpen()
-    const onTriggerPointerLeave = () => clearTimer()
+    // B2: leaving the trigger (or the content) closes the submenu after a
+    // short grace period — moving from trigger into content cancels it.
+    const onTriggerPointerLeave = () => scheduleClose()
     const onTriggerClick = (event: MouseEvent) => {
       if (event.defaultPrevented) return
       clearTimer()
+      clearCloseTimer()
+      keyboardManaged = false
       open.value = !open.value
     }
     const onTriggerKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowRight' || event.key === 'Enter' || event.key === ' ') {
+      if (
+        event.key === 'ArrowRight' ||
+        event.key === 'ArrowDown' ||
+        event.key === 'Enter' ||
+        event.key === ' '
+      ) {
+        // B4: ArrowDown opens the submenu like ArrowRight; stopPropagation
+        // keeps the root content from treating it as root-level navigation.
         event.preventDefault()
-        open.value = true
+        event.stopPropagation()
+        focusOnOpen = true
+        keyboardManaged = true
+        if (open.value) {
+          // Already open (e.g. hover-opened): the open-watcher won't re-fire
+          // (value unchanged) — move focus into the content right away and
+          // consume the flag so a later pointer open can't steal focus (B3).
+          focusOnOpen = false
+          focusFirstItem()
+        } else {
+          open.value = true
+        }
       } else if (event.key === 'ArrowLeft') {
         event.preventDefault()
+        event.stopPropagation()
         open.value = false
       }
     }
 
-    watch(open, async (next) => {
+    /** Keyboard-opened submenus move focus to the first item (B3: pointer
+     * opens must not steal focus). */
+    const focusFirstItem = (): void => {
+      void nextTick(() => {
+        contentRef.value?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
+      })
+    }
+
+    watch(open, (next) => {
       if (next) {
-        // Focus first item in submenu.
-        await new Promise((r) => setTimeout(r, 0))
-        const first = contentRef.value?.querySelector<HTMLElement>('[role="menuitem"]')
-        first?.focus()
-      } else {
-        // Return focus to this submenu's trigger.
+        // B3: hover/click opens must not steal focus from the pointer path.
+        if (!focusOnOpen) return
+        focusOnOpen = false
+        focusFirstItem()
+      } else if (keyboardManaged) {
+        // Return focus to this submenu's trigger only when keyboard-managed.
+        keyboardManaged = false
         triggerRef.value?.focus?.()
       }
     })
@@ -207,9 +267,16 @@ export const IrisMenuSub = defineComponent({
               role: 'menu',
               tabindex: -1,
               'data-iris-menu-sub': '',
+              // B1: tag the surface with the root menu's tree id so the root
+              // dismiss ignores pointerdown inside teleported submenus.
+              'data-iris-menu-tree': parentCtx.treeId,
               'data-state': 'open',
               onKeydown: onContentKeyDown,
-              onPointerenter: clearTimer,
+              onPointerenter: () => {
+                clearTimer()
+                clearCloseTimer()
+              },
+              onPointerleave: scheduleClose,
               style: {
                 ...floatingStyles.value,
                 background: 'var(--iris-surface-floating)',

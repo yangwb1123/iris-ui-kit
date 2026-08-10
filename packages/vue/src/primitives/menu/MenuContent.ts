@@ -42,6 +42,13 @@ export const IrisMenuContent = defineComponent({
     useDismiss({
       enabled: ctx.open,
       exclude: [ctx.triggerRef, innerRef],
+      // B1: nested submenu surfaces (teleported to body) belong to this menu
+      // tree — pointerdown inside them must not dismiss the root. `Element`
+      // (not `HTMLElement`) so SVG icons inside teleported items also match.
+      excludePredicate: (target) =>
+        target instanceof Element
+          ? !!target.closest(`[data-iris-menu-tree="${ctx.treeId}"]`)
+          : false,
       onDismiss: () => ctx.setOpen(false),
     })
 

@@ -171,28 +171,39 @@ const CSS = `
   opacity: 0.75;
 }
 
-:where(.iris-nav-menu-group--depth-0 > .iris-nav-menu-children) {
+/* Vertical branches stay in the DOM and animate height via the grid-rows
+   trick (0fr → 1fr); the inner wrapper provides the overflow clipping so the
+   transition is a smooth accordion without a max-height cap. */
+:where(.iris-nav-menu--vertical .iris-nav-menu-group > .iris-nav-menu-children) {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 200ms ease,
+    opacity 150ms ease,
+    visibility 0s linear 200ms;
+}
+
+:where(.iris-nav-menu--vertical .iris-nav-menu-group > .iris-nav-menu-children > .iris-nav-menu-children-inner) {
+  overflow: hidden;
+  min-height: 0;
+}
+
+:where(.iris-nav-menu--vertical .iris-nav-menu-group[data-open='true'] > .iris-nav-menu-children) {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 200ms ease,
+    opacity 150ms ease;
+}
+
+/* Flyout popups (horizontal mode + the collapsed rail) share the popup chrome
+   and are hard-hidden when closed (no height animation needed). */
+:where(.iris-nav-menu--horizontal .iris-nav-menu-group > .iris-nav-menu-children),
+:where(.iris-nav-menu--collapsed .iris-nav-menu-group > .iris-nav-menu-children) {
   display: none;
-}
-
-:where(.iris-nav-menu-group--depth-1 > .iris-nav-menu-children),
-:where(.iris-nav-menu-group--depth-2 > .iris-nav-menu-children),
-:where(.iris-nav-menu-group--depth-3 > .iris-nav-menu-children),
-:where(.iris-nav-menu-group--depth-4 > .iris-nav-menu-children),
-:where(.iris-nav-menu-group--depth-5 > .iris-nav-menu-children),
-:where(.iris-nav-menu-group--depth-6 > .iris-nav-menu-children),
-:where(.iris-nav-menu-group--depth-7 > .iris-nav-menu-children),
-:where(.iris-nav-menu-group--depth-8 > .iris-nav-menu-children),
-:where(.iris-nav-menu-group--depth-9 > .iris-nav-menu-children),
-:where(.iris-nav-menu-group > .iris-nav-menu-children) {
-  display: none;
-}
-
-:where(.iris-nav-menu-group[data-open='true'] > .iris-nav-menu-children) {
-  display: block;
-}
-
-:where(.iris-nav-menu--horizontal .iris-nav-menu-group > .iris-nav-menu-children) {
   position: absolute;
   min-width: 220px;
   padding: var(--iris-space-xs, 8px);
@@ -202,13 +213,26 @@ const CSS = `
   box-shadow: var(--iris-shadow-md);
 }
 
+:where(.iris-nav-menu--horizontal .iris-nav-menu-group[data-open='true'] > .iris-nav-menu-children),
+:where(.iris-nav-menu--collapsed .iris-nav-menu-group[data-open='true'] > .iris-nav-menu-children) {
+  display: block;
+}
+
 :where(.iris-nav-menu--horizontal .iris-nav-menu-group[data-depth='0'] > .iris-nav-menu-children) {
   inset-block-start: 100%;
   inset-inline-start: 0;
   z-index: 60;
 }
 
-:where(.iris-nav-menu--horizontal .iris-nav-menu-group[data-depth]:not([data-depth='0']) > .iris-nav-menu-children) {
+/* A9: the collapsed rail popup opens to the right of the icon. */
+:where(.iris-nav-menu--collapsed .iris-nav-menu-group[data-depth='0'] > .iris-nav-menu-children) {
+  inset-block-start: 0;
+  inset-inline-start: 100%;
+  z-index: 60;
+}
+
+:where(.iris-nav-menu--horizontal .iris-nav-menu-group[data-depth]:not([data-depth='0']) > .iris-nav-menu-children),
+:where(.iris-nav-menu--collapsed .iris-nav-menu-group[data-depth]:not([data-depth='0']) > .iris-nav-menu-children) {
   inset-block-start: 0;
   inset-inline-start: 100%;
   z-index: 61;
@@ -224,8 +248,18 @@ const CSS = `
   padding-inline: var(--iris-nav-item-padding-inline);
 }
 
+/* A9: the collapsed rail stays centered even though rows carry data-depth
+   (the vertical indent rules would otherwise win the specificity tie). */
+:where(.iris-nav-menu--collapsed .iris-nav-menu-item[data-depth]) {
+  justify-content: center;
+  padding-inline: var(--iris-nav-item-padding-inline);
+}
+
 @media (prefers-reduced-motion: reduce) {
   :where(.iris-nav-menu-arrow) {
+    transition: none;
+  }
+  :where(.iris-nav-menu--vertical .iris-nav-menu-group > .iris-nav-menu-children) {
     transition: none;
   }
 }

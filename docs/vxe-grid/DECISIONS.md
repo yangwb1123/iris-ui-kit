@@ -122,3 +122,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-j-review.md [ok]: Summary: **PASS** — all gates green (1618/1618 tests, typecheck 0, lint 0 errors with the 1 complexity warning confirmed pre-exis
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-j-review.md
+
+## 2026-08-10 01:29:47 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-j-gate.md [ok]: Report: **Commit:** `ef799c15` — `feat(table): vxe-grid 批 J——树形懒加载/批量删除/Tab 编辑导航（react only）`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-j-gate.md

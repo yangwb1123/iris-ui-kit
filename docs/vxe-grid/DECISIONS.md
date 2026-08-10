@@ -182,3 +182,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-m-review.md [ok]: Summary: **Verification:** react suite 1656/1656 (12 new tests) · tsc clean · eslint 0 errors · `gen:manifest` byte-identical · c
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-m-review.md
+
+## 2026-08-10 04:31:29 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-m-gate.md [ok]: Summary: **Verdict:** PASS — but with 1 MEDIUM finding, so I applied the concrete fix first: group summary rows in `groupPlan.map
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-m-gate.md

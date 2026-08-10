@@ -82,6 +82,10 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   updateRow: (key: string | number, patch: Partial<Row>) => void
   /** Re-fetch the current page (proxy mode). */
   refetch: () => void
+  /** Snapshot (copy) of the current live row list (vxe getTableData parity). */
+  getData: () => Row[]
+  /** Current selection keys (vxe getCheckboxRecords parity). */
+  getSelection: () => Array<string | number>
   /** Clear every selected row (vxe clearCheckboxRow parity). */
   clearSelection: () => void
   /** Select every checkMethod-eligible row of the current page (vxe

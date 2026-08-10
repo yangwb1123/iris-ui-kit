@@ -92,6 +92,11 @@
 | 分页配置     | pagerConfig.pageSizes       | pagerConfig ✓（批 E，react）                                                                        | 对齐（react；切换重置页码）                                                        |
 | 单元格提示   | tooltipConfig               | tooltipConfig ✓（批 G，react）                                                                      | 对齐（react；title 轻量模式）                                                      |
 | 单元格链接   | —（自定义渲染/插槽实现）    | column.link ✓（批 L，react）                                                                        | 对齐（react；render > html > link > formatter > raw，_blank→rel=noreferrer）       |
+| 分组统计     | group 行小计                | groupBy ✓（批 M，react）                                                                            | 对齐（react；core groupRows + 组内合计）                                           |
+| 批量操作     | 工具栏批量按钮              | toolbar.batch ✓（批 M，react）                                                                      | 对齐（react；选择非空时显示）                                                      |
+| 列宽自适应   | width: 'auto'               | auto ✓（批 M，react）                                                                               | 对齐（react；minmax(max-content)）                                                 |
+| 虚拟树       | 树 + 虚拟滚动               | 内建 ✓（批 M 验证）                                                                                 | 对齐（react；flatTree 扁平 + treeMeta）                                            |
+| 表格方法     | getTableData/getCheckbox    | getData/getSelection ✓（批 M）                                                                      | 对齐（react；handle 快照 + 副本）                                                  |
 | 范围勾选     | checkboxConfig.isShiftKey   | shift 范围勾选 ✓（批 G，react）                                                                     | 对齐（react；尊重 checkMethod）                                                    |
 | 下拉编辑     | edit-render: select         | editor: 'select' ✓（批 H，react）                                                                   | 对齐（react；editOptions 原生 select）                                             |
 | 右键菜单     | @context-menu               | contextMenu ✓（批 H，react）                                                                        | 对齐（react；虚拟锚点浮层 + 坐标定位）                                             |

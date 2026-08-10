@@ -1555,6 +1555,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
     refetch: () => {
       proxyRef.current?.refetch()
     },
+    getData: () => [...(externalDataRef.current ?? [])],
+    getSelection: () => [...displaySelectionRef.current],
     // ── Selection methods (vxe clearCheckboxRow / setAllCheckboxRow(true) /
     // toggleCheckboxRow parity, batch F) ───────────────────────────────────
     clearSelection: () => {
@@ -1633,7 +1635,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // honoring the (shared) expansion model. `bodyData` is the row list the body,
   // selection, and summary all operate on — identical to `sortedData` in flat
   // mode, so non-tree behavior is unchanged.
-  const treeMode = getSubRows !== undefined
+  const treeMode = getSubRows !== undefined || lazyLoad !== undefined
   // Lazy tree (vxe lazyLoad parity, batch J): children are fetched on first
   // expand. The loaded map lives in a ref (read by `getChildren`, which wins
   // over `getSubRows`); the loading SET is React state because it drives the
@@ -1646,7 +1648,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // fetch was in flight — stale children must never re-seed the cleared cache.
   const lazyEpochRef = React.useRef(0)
   const lazyChildrenOf = (row: Row): readonly Row[] | undefined =>
-    lazyChildrenRef.current.get(String(rowKeyOf(row))) ?? getSubRows!(row)
+    lazyChildrenRef.current.get(String(rowKeyOf(row))) ?? getSubRows?.(row)
   // Comparator for tree siblings: multi mode uses the chained multi comparator
   // (batch G fix), single mode keeps its own — byte-identical to before.
   const treeComparator = React.useMemo(
@@ -1752,7 +1754,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const keys: string[] = []
     const collect = (rows: Row[]): void => {
       for (const row of rows) {
-        const children = getSubRows!(row)
+        const children = getSubRows?.(row)
         if (children && children.length > 0) {
           keys.push(String((row as Record<string, unknown>)[rowKey] as string | number))
           collect(children)

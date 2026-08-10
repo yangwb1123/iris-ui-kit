@@ -202,3 +202,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-n-review.md [ok]: Summary: **Verification run:** react typecheck ✅ clean · 1673 tests/152 files ✅ (14 new) · lint ✅ 0 errors (1 pre-existing comple
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-n-review.md
+
+## 2026-08-10 07:59:16 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-n-gate.md [ok]: 批 N Gate — PASS ✅: **Review verdict:** PASS（1 MINOR / 4 INFO，均非阻塞）; Full repo gate: - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks**（135 cached）✅; Doc update (`docs/vxe-grid-comparison.md`): - 现状对比表新增/更新 4 行，标记 **react 完成**：; Commit: ```; Final test counts: | Scope | Tests | Files |
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-n-gate.md

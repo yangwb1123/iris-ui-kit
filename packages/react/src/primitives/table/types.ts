@@ -3,7 +3,20 @@ export type IrisTableSortDirection = 'asc' | 'desc'
 /** Map of column key → current width in px (after any resizing). */
 export type IrisTableColumnWidths = Record<string, number>
 
-export type IrisTableEditor = 'text' | 'number' | 'select'
+export type IrisTableEditor = 'text' | 'number' | 'select' | 'textarea'
+
+/** One checkbox option of a filterable column's filter panel (vxe filter-option parity). */
+export interface IrisTableFilterOption {
+  value: string
+  label: string
+}
+
+/**
+ * Per-column checked filter sets (vxe filter-multiple parity): column key →
+ * values OR-matched against the raw `String(value)` of each row. Controlled
+ * through `IrisTableProps.filterValues` / `onFilterValuesChange`.
+ */
+export type IrisTableFilterValues = Record<string, string[]>
 
 /** Aggregation op for a column's summary/footer cell. */
 export type IrisTableAggregateOp = 'sum' | 'avg' | 'min' | 'max' | 'count'
@@ -173,6 +186,16 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   sorter?: (a: Row, b: Row) => number
   /** Custom render for cell content. */
   render?: (value: unknown, row: Row, rowIndex: number) => import('react').ReactNode
+  /** Format a cell's value for display (vxe formatter parity, batch I). Applied AFTER
+   * `render`/`html` and BEFORE the raw value; sorting, filtering, editing and summary
+   * keep reading the RAW value. The tooltip defaults to the formatted text when it is
+   * a string. */
+  formatter?: (value: unknown, row: Row) => import('react').ReactNode
+  /** Show a header filter trigger + checkbox panel (vxe filterConfig parity, batch I).
+   * Filtering OR-matches the raw `String(value)` against the checked set. */
+  filterable?: boolean
+  /** Checkbox options for the filter panel; a column without options can't filter. */
+  filterOptions?: IrisTableFilterOption[]
 }
 
 export interface IrisTableCellEditEvent<Row = Record<string, unknown>> {

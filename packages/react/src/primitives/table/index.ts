@@ -18,6 +18,8 @@ export {
   type IrisTableFormField,
   type IrisTableValidConfig,
   type IrisTableTooltipConfig,
+  type IrisTableFilterOption,
+  type IrisTableFilterValues,
 } from './types'
 export { exportCsv, downloadCsv } from './exportCsv'
 export { exportExcel, downloadExcel } from './exportExcel'

@@ -70,6 +70,7 @@ const TABLE_ROW_CSS = `
 `
 import { useTableSort } from './useTableSort'
 import { TableContextMenu } from './ContextMenu'
+import { TableFilterPanel } from './FilterPanel'
 import type {
   IrisTableColumn,
   IrisTableColumnWidths,
@@ -180,6 +181,22 @@ function getCellValue<Row extends Record<string, unknown>>(
 }
 
 /**
+ * Batch I: fold the checked filter sets into the query filter map as
+ * comma-joined strings (vxe filter-multiple remote serialization parity).
+ * Keys with an empty checked set are left untouched.
+ */
+function mergeFilterValues(
+  filters: Record<string, string>,
+  filterValues: Record<string, string[]>,
+): Record<string, string> {
+  const next: Record<string, string> = { ...filters }
+  for (const [key, values] of Object.entries(filterValues)) {
+    if (values.length > 0) next[key] = values.join(',')
+  }
+  return next
+}
+
+/**
  * Data-driven table. Renders as a CSS-grid layout (no native `<table>`) so it
  * can support future virtual scroll / column resize uniformly. Wires ARIA
  * roles (`table` / `row` / `columnheader` / `cell`) for screen readers.
@@ -240,6 +257,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   columnVisibility,
   onColumnVisibilityChange,
   filters,
+  filterValues,
+  onFilterValuesChange,
   formConfig,
   toolbar,
   tooltipConfig,
@@ -325,7 +344,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         pageSize: proxyConfig?.pageSize ?? 10,
         sort: remoteSort ? ((sortProp !== undefined ? sortProp : defaultSort) ?? null) : null,
         sorts: remoteSort && multiSort ? (multiSortStateProp ?? defaultMultiSort ?? []) : undefined,
-        filters: remoteFilter ? (filters ?? {}) : {},
+        filters: remoteFilter ? mergeFilterValues(filters ?? {}, filterValues ?? {}) : {},
       },
     })
   const proxyRef = React.useRef<RemoteTableSource<Row> | null>(null)
@@ -470,6 +489,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const setFormValue = (key: string, value: string): void => {
     setFormDraft((prev) => (prev[key] === value ? prev : { ...prev, [key]: value }))
   }
+  // Batch I: the proxy receives the text filters PLUS the comma-joined checked
+  // filter sets, merged into ONE map (vxe filter-multiple remote serialization).
+  const mergedProxyFilters = (form: Record<string, string>): Record<string, string> =>
+    mergeFilterValues(mergeFormFilters(filters ?? {}, form), filterValues ?? {})
   const handleFormSubmit = (e: React.FormEvent): void => {
     e.preventDefault()
     const values = buildFormValues(formConfig?.fields, formDraft)
@@ -478,7 +501,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // Proxy mode: the server owns filtering — merge the form values into the
     // controller filters (page resets to 1 in core applyParams, vxe behavior).
     if (proxy) {
-      proxyRef.current?.setParams({ filters: mergeFormFilters(filters ?? {}, values), page: 1 })
+      proxyRef.current?.setParams({ filters: mergedProxyFilters(values), page: 1 })
     }
   }
   const handleFormReset = (e: React.FormEvent): void => {
@@ -494,7 +517,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // refetch only in that no-op case (no double request when it changed).
       if (
         proxyRef.current?.setParams({
-          filters: mergeFormFilters(filters ?? {}, values),
+          filters: mergedProxyFilters(values),
           page: 1,
         }) === false
       ) {
@@ -510,8 +533,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // the form state declarations (formApplied is referenced in the deps).
   React.useEffect(() => {
     if (!proxy || !remoteFilter) return
-    proxyRef.current?.setParams({ filters: mergeFormFilters(filters ?? {}, formApplied) })
-  }, [proxy, remoteFilter, filters, formApplied])
+    proxyRef.current?.setParams({ filters: mergedProxyFilters(formApplied) })
+  }, [proxy, remoteFilter, filters, filterValues, formApplied])
 
   // Row-selection logic (single/multiple toggle, dedup, select-all,
   // controlled/uncontrolled) is single-sourced in the core model; keys are the
@@ -592,8 +615,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // element and resolves the row/column context for the session callbacks.
   // Both the text/number <input> and the select editor focus through this ref
   // (callback refs because a single union-typed ref can't bind to both tags).
-  const editorRef = React.useRef<HTMLInputElement | HTMLSelectElement | null>(null)
-  const setEditorRef = (el: HTMLInputElement | HTMLSelectElement | null): void => {
+  const editorRef = React.useRef<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(
+    null,
+  )
+  const setEditorRef = (
+    el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null,
+  ): void => {
     editorRef.current = el
   }
   const onCellEditRef = React.useRef(onCellEdit)
@@ -836,6 +863,35 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const closeContextMenu = React.useCallback(() => {
     setContextMenuState((prev) => (prev ? { ...prev, open: false } : prev))
   }, [])
+  // ── Header filter panel (vxe filterConfig parity, batch I) ─────────────
+  // One panel at a time, keyed by the column whose trigger was clicked. The
+  // anchor is the trigger BUTTON itself (a real DOM node), captured at click
+  // time; the seq token remounts the panel per open so its draft checkbox
+  // state always re-seeds from the applied `filterValues`.
+  const [filterPanelState, setFilterPanelState] = React.useState<{
+    open: boolean
+    colKey: string
+  } | null>(null)
+  const filterAnchorRef = React.useRef<HTMLButtonElement | null>(null)
+  const [filterPanelSeq, setFilterPanelSeq] = React.useState(0)
+  const closeFilterPanel = React.useCallback(() => {
+    setFilterPanelState((prev) => (prev ? { ...prev, open: false } : prev))
+  }, [])
+  const openFilterPanel = (e: React.MouseEvent<HTMLButtonElement>, colKey: string): void => {
+    // Never let the trigger click reach the header cell (which would sort).
+    e.stopPropagation()
+    filterAnchorRef.current = e.currentTarget
+    setFilterPanelState({ open: true, colKey })
+    setFilterPanelSeq((s) => s + 1)
+  }
+  const applyFilterValues = (colKey: string, values: string[]): void => {
+    onFilterValuesChange?.({ ...(filterValues ?? {}), [colKey]: values })
+  }
+  const clearFilterValues = (colKey: string): void => {
+    const next = { ...(filterValues ?? {}) }
+    delete next[colKey]
+    onFilterValuesChange?.(next)
+  }
   const handleContextMenu = (
     e: React.MouseEvent,
     row: Row,
@@ -1083,9 +1139,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
       ? (filters ?? {})
       : mergeFormFilters(filters ?? {}, formApplied)
     const active = Object.entries(merged).filter(([, v]) => v != null && v !== '')
-    if (active.length === 0) return sortedData
-    return sortedData.filter((row) =>
-      active.every(([key, value]) => {
+    // Batch I: per-column checked sets OR-match the raw String(value); a set
+    // applies only when non-empty. AND-ed with the text channel below.
+    const checkedEntries = Object.entries(filterValues ?? {}).filter(
+      ([, values]) => values.length > 0,
+    )
+    if (active.length === 0 && checkedEntries.length === 0) return sortedData
+    return sortedData.filter((row) => {
+      const textOk = active.every(([key, value]) => {
         const col = displayColumns.find((c) => c.key === key)
         if (!col) return true
         const raw = getCellValue(row, col)
@@ -1093,9 +1154,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
         return String(raw ?? '')
           .toLowerCase()
           .includes(value.toLowerCase())
-      }),
-    )
-  }, [sortedData, filters, formApplied, displayColumns, remoteFilter, proxy])
+      })
+      const setsOk = checkedEntries.every(([key, values]) => {
+        const col = displayColumns.find((c) => c.key === key)
+        if (!col) return true
+        return values.includes(String(getCellValue(row, col) ?? ''))
+      })
+      return textOk && setsOk
+    })
+  }, [sortedData, filters, formApplied, displayColumns, remoteFilter, proxy, filterValues])
   const bodyData = flatTree ? flatTree.map((t) => t.row) : filteredData
 
   // expandAll parity (vxe expand-config.expandAll — one-shot at init): seed the
@@ -1358,10 +1425,52 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // and explicit).
   const cellTooltip = (row: Row, col: IrisTableColumn<Row>): string | undefined => {
     if (!tooltipConfig) return undefined
+    const raw = getCellValue(row, col)
     const content = tooltipConfig.content
       ? tooltipConfig.content(row, col)
-      : String(getCellValue(row, col) ?? '')
+      : col.formatter
+        ? (() => {
+            const formatted = col.formatter(raw, row)
+            return typeof formatted === 'string' ? formatted : String(raw ?? '')
+          })()
+        : String(raw ?? '')
     return content === '' ? undefined : content
+  }
+
+  // Header filter trigger (vxe filterConfig parity, batch I): a small icon
+  // button at the end of the title; active (--iris-primary) when the column
+  // has a non-empty checked set. stopPropagation keeps it from sorting.
+  const renderFilterTrigger = (col: IrisTableColumn<Row>, leaf: boolean): React.ReactNode => {
+    if (!leaf || !col.filterable) return null
+    const active = (filterValues?.[col.key]?.length ?? 0) > 0
+    return (
+      <button
+        type="button"
+        data-iris-filter-trigger={col.key}
+        aria-label={t('table.filter')}
+        aria-haspopup="true"
+        aria-expanded={
+          filterPanelState?.open === true && filterPanelState.colKey === col.key
+            ? 'true'
+            : undefined
+        }
+        data-iris-filter-active={active ? 'true' : undefined}
+        onClick={(e) => openFilterPanel(e, col.key)}
+        onKeyDown={(e) => e.stopPropagation()}
+        style={{
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          padding: 0,
+          marginInlineStart: 'var(--iris-space-xxs, 4px)',
+          fontSize: 'var(--iris-font-size-xs, 12px)',
+          lineHeight: 1,
+          color: active ? 'var(--iris-primary)' : 'var(--iris-muted)',
+        }}
+      >
+        ⏷
+      </button>
+    )
   }
 
   // Each row is its own CSS grid (sharing `gridTemplateColumns`) rather than the
@@ -1727,6 +1836,46 @@ export function IrisTable<Row extends Record<string, unknown>>({
                             </option>
                           ))}
                         </select>
+                      ) : col.editor === 'textarea' ? (
+                        // vxe edit-render textarea parity (batch I): Enter
+                        // commits, Shift+Enter inserts a newline, Escape
+                        // cancels — same commit/aria surface as the text editor.
+                        <textarea
+                          ref={setEditorRef}
+                          rows={3}
+                          value={String(cellEdit.getDraft() ?? '')}
+                          data-iris-table-editor=""
+                          data-iris-table-editor-textarea=""
+                          aria-invalid={cellEdit.getError() ? 'true' : undefined}
+                          aria-describedby={
+                            cellEdit.getError() && validConfig?.showMessage !== false
+                              ? `${cellId(k, col.key)}-error`
+                              : undefined
+                          }
+                          onChange={(e) => cellEdit.setDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault()
+                              commitEdit()
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault()
+                              cancelEdit()
+                            }
+                          }}
+                          onBlur={() => commitEdit()}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            width: '100%',
+                            border: `1px solid ${cellEdit.getError() ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
+                            borderRadius: 'var(--iris-radius-sm, 4px)',
+                            padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+                            font: 'inherit',
+                            background: 'var(--iris-background)',
+                            color: 'var(--iris-foreground)',
+                            outline: 'none',
+                            resize: 'none',
+                          }}
+                        />
                       ) : (
                         <input
                           ref={setEditorRef}
@@ -1791,6 +1940,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   // content is trusted (XSS risk, matching the vxe docs warning).
                   dangerouslySetInnerHTML={{ __html: String(raw ?? '') }}
                 />
+              ) : col.formatter ? (
+                // vxe formatter parity (batch I): display-only — sorting,
+                // filtering, editing and summary all read the raw value.
+                col.formatter(raw, row)
               ) : (
                 (raw as React.ReactNode)
               )}
@@ -2192,6 +2345,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         {dir === 'asc' ? '↑' : dir === 'desc' ? '↓' : '↕'}
                       </span>
                     ) : null}
+                    {renderFilterTrigger(col, isLeaf)}
                     {/* Multi mode: non-primary sort columns show their click-order
                       sequence number (vxe sort-config sequence parity). */}
                     {multiSort && multiIdx > 0 ? (
@@ -2344,6 +2498,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       {dir === 'asc' ? '↑' : dir === 'desc' ? '↓' : '↕'}
                     </span>
                   ) : null}
+                  {renderFilterTrigger(col, true)}
                   {/* Multi mode: non-primary sort columns show their click-order
                     sequence number (vxe sort-config sequence parity). */}
                   {multiSort && multiIdx > 0 ? (
@@ -2560,6 +2715,26 @@ export function IrisTable<Row extends Record<string, unknown>>({
             onClose={closeContextMenu}
           />
         ) : null}
+        {filterPanelState
+          ? (() => {
+              const fcol = displayColumns.find((c) => c.key === filterPanelState.colKey)
+              if (!fcol || !fcol.filterable) return null
+              return (
+                <TableFilterPanel
+                  key={filterPanelSeq}
+                  open={filterPanelState.open}
+                  anchorRef={filterAnchorRef}
+                  columnKey={fcol.key}
+                  options={fcol.filterOptions ?? []}
+                  initialChecked={filterValues?.[fcol.key] ?? []}
+                  onApply={applyFilterValues}
+                  onClear={clearFilterValues}
+                  onClose={closeFilterPanel}
+                  t={t}
+                />
+              )
+            })()
+          : null}
         {proxy ? (
           <div
             data-iris-table-pager=""

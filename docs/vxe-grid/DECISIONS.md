@@ -92,3 +92,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-h-adapt.md [FAILED: task timed out]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-h-adapt.md
+
+## 2026-08-09 14:27:26 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-i-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-i-baseline.md
+
+## 2026-08-09 14:39:40 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-i-adapt.md [ok]: Batch I — implemented ✅; Files changed (6 source + 2 new): | File | Change |; Verification: - `--filter @iris-ui-kit/react typecheck` ✅ (clean); Test coverage (task list): - **formatter**: formatted cell + tooltip; sort order unchanged by formatter; `render` wins over formatter; editing read; Unfinished: None — all three features + tests complete. Two documented decisions: `filterValues` is controlled-only (no internal sta
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-i-adapt.md
+
+## 2026-08-09 14:46:29 — stage 'review' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-i-review.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-i-review.md

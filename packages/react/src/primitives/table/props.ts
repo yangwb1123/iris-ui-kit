@@ -185,6 +185,15 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   filters?: Record<string, string>
   /** Fired when a filter value changes (parent owns the map). */
   onFiltersChange?: (next: Record<string, string>) => void
+  /**
+   * Per-column checked filter sets (vxe filter-multiple parity, batch I):
+   * column key → values OR-matched against the raw `String(value)` of each
+   * row. Controlled — updates flow through `onFilterValuesChange`; without a
+   * handler the map is read-only (same pattern as `filters`).
+   */
+  filterValues?: import('./types').IrisTableFilterValues
+  /** Fired when the filter panel confirms or clears a column's checked set. */
+  onFilterValuesChange?: (next: import('./types').IrisTableFilterValues) => void
   /** Search form (vxe-grid formConfig parity). */
   formConfig?: IrisTableFormConfig
   /** Toolbar (vxe-grid toolbarConfig parity, minimal built-ins). */

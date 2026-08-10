@@ -36369,6 +36369,18 @@
           "description": "Fired when a filter value changes (parent owns the map)."
         },
         {
+          "name": "filterValues",
+          "type": "import('./types').IrisTableFilterValues",
+          "optional": true,
+          "description": "Per-column checked filter sets (vxe filter-multiple parity, batch I): column key → values OR-matched against the raw `String(value)` of each row. Controlled — updates flow through `onFilterValuesChange`; without a handler the map is read-only (same pattern as `filters`)."
+        },
+        {
+          "name": "onFilterValuesChange",
+          "type": "(next: import('./types').IrisTableFilterValues) => void",
+          "optional": true,
+          "description": "Fired when the filter panel confirms or clears a column's checked set."
+        },
+        {
           "name": "formConfig",
           "type": "IrisTableFormConfig",
           "optional": true,
@@ -36854,6 +36866,18 @@
               "description": "Fired when a filter value changes (parent owns the map)."
             },
             {
+              "name": "filterValues",
+              "type": "import('./types').IrisTableFilterValues",
+              "optional": true,
+              "description": "Per-column checked filter sets (vxe filter-multiple parity, batch I): column key → values OR-matched against the raw `String(value)` of each row. Controlled — updates flow through `onFilterValuesChange`; without a handler the map is read-only (same pattern as `filters`)."
+            },
+            {
+              "name": "onFilterValuesChange",
+              "type": "(next: import('./types').IrisTableFilterValues) => void",
+              "optional": true,
+              "description": "Fired when the filter panel confirms or clears a column's checked set."
+            },
+            {
               "name": "formConfig",
               "type": "IrisTableFormConfig",
               "optional": true,
@@ -37076,6 +37100,7 @@
             "onCurrentRowChange",
             "onDataChange",
             "onExpandedRowsChange",
+            "onFilterValuesChange",
             "onFiltersChange",
             "onMultiSortChange",
             "onRetry",
@@ -37096,6 +37121,8 @@
             "IrisTableColumnWidths",
             "IrisTableContextMenuParams",
             "IrisTableEditor",
+            "IrisTableFilterOption",
+            "IrisTableFilterValues",
             "IrisTableFormConfig",
             "IrisTableFormField",
             "IrisTableHandle",
@@ -37702,6 +37729,7 @@
         "onRowClick",
         "onColumnVisibilityChange",
         "onFiltersChange",
+        "onFilterValuesChange",
         "onCellEdit",
         "onExpandedRowsChange",
         "onRetry",
@@ -37713,8 +37741,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 81,
-        "eventCount": 14
+        "propCount": 83,
+        "eventCount": 15
       }
     },
     {
@@ -39785,6 +39813,14 @@
           "name": "position",
           "type": "IrisToastPosition",
           "optional": true,
+          "enum": [
+            "top-left",
+            "top-right",
+            "top-center",
+            "bottom-left",
+            "bottom-right",
+            "bottom-center"
+          ],
           "default": "top-right"
         },
         {
@@ -39808,6 +39844,14 @@
               "name": "position",
               "type": "IrisToastPosition",
               "optional": true,
+              "enum": [
+                "top-left",
+                "top-right",
+                "top-center",
+                "bottom-left",
+                "bottom-right",
+                "bottom-center"
+              ],
               "default": "top-right"
             },
             {
@@ -39836,7 +39880,15 @@
               "name": "position",
               "type": "IrisToastPosition",
               "optional": true,
-              "default": "top-right"
+              "default": "top-right",
+              "enum": [
+                "top-left",
+                "top-right",
+                "top-center",
+                "bottom-left",
+                "bottom-right",
+                "bottom-center"
+              ]
             },
             {
               "name": "teleport",
@@ -39866,7 +39918,15 @@
             {
               "name": "position",
               "type": "IrisToastPosition",
-              "optional": true
+              "optional": true,
+              "enum": [
+                "top-left",
+                "top-right",
+                "top-center",
+                "bottom-left",
+                "bottom-right",
+                "bottom-center"
+              ]
             },
             {
               "name": "portalTarget",

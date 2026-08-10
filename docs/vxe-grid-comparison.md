@@ -94,6 +94,9 @@
 | 下拉编辑   | edit-render: select         | editor: 'select' ✓（批 H，react）                                                    | 对齐（react；editOptions 原生 select）     |
 | 右键菜单   | @context-menu               | contextMenu ✓（批 H，react）                                                         | 对齐（react；虚拟锚点浮层 + 坐标定位）     |
 | 跨页选择   | checkboxConfig.reserve      | 默认保留 ✓（批 H，react）                                                            | 对齐（react；selection 独立于分页）        |
+| 筛选面板   | filter 面板多选             | filterValues ✓（批 I，react）                                                        | 对齐（react；checkbox 面板 + OR 匹配）     |
+| 多行编辑   | edit-render: textarea       | editor: 'textarea' ✓（批 I，react）                                                  | 对齐（react；Shift+Enter 换行）            |
+| 列格式化   | formatter                   | formatter ✓（批 I，react）                                                           | 对齐（react；仅显示层，排序/编辑不受影响） |
 | 导入导出   | export/import               | exportCsv/Excel ✓                                                                    | 缺导入                                     |
 | 打印       | printConfig                 | —                                                                                    | 缺                                         |
 

@@ -118,7 +118,7 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@floating-ui/dom": "^1.7.6",
+    "@floating-ui/dom": "^1.8.0",
     "@iris-ui-kit/core": "0.2.0",
     "@iris-ui-kit/icons": "0.2.0",
     "@iris-ui-kit/skins": "0.1.0",

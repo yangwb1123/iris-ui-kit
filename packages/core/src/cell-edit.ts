@@ -77,6 +77,12 @@ export function createCellEdit(options: CreateCellEditOptions = {}): CellEdit {
     validated: undefined,
   })
 
+  // Monotonic session generation (batch K review fix): bumped on start/cancel/
+  // commit so an in-flight async commit can detect it was cancelled or
+  // superseded while its validation promise was pending — Escape during an
+  // async-pending commit must NOT write the value back ("Escape cancels all").
+  let sessionGen = 0
+
   const validateDraft = (
     draft: unknown,
     target: CellEditTarget,
@@ -86,7 +92,9 @@ export function createCellEdit(options: CreateCellEditOptions = {}): CellEdit {
   }
 
   const commitAsync = async (draft: unknown, target: CellEditTarget): Promise<boolean> => {
+    const gen = ++sessionGen
     const error = (await validateDraft(draft, target)) as string | null | undefined
+    if (gen !== sessionGen) return false // cancelled / restarted / superseded
     if (error) {
       store.setState((prev) => ({ ...prev, error }))
       return false
@@ -109,6 +117,7 @@ export function createCellEdit(options: CreateCellEditOptions = {}): CellEdit {
     getValidated: () => store.getState().validated,
 
     startEdit(rowKey, columnKey, initialDraft = '') {
+      sessionGen++ // a new session supersedes any pending async commit
       const target = { rowKey, columnKey }
       const err = validateDraft(initialDraft, target)
       store.setState({
@@ -137,6 +146,7 @@ export function createCellEdit(options: CreateCellEditOptions = {}): CellEdit {
     },
 
     cancelEdit() {
+      sessionGen++ // drop any in-flight async commit (Escape cancels all)
       store.setState({ editing: null, draft: '', error: null, validated: undefined })
     },
 
@@ -155,6 +165,7 @@ export function createCellEdit(options: CreateCellEditOptions = {}): CellEdit {
         return false
       }
       const coerced = options.coerce ? options.coerce(draft, target) : draft
+      sessionGen++ // a landed commit supersedes any pending async commit
       options.onCommit?.(target, coerced)
       store.setState({ editing: null, draft: '', error: null, validated: coerced })
       return true

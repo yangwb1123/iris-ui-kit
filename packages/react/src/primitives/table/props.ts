@@ -244,6 +244,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
     showAsterisk?: boolean
     /** Drop the draft when opening another cell without committing. */
     autoClear?: boolean
+    /** Edit mode (vxe editConfig.mode parity, batch K): `'cell'` (default) edits one cell at a time; `'row'` opens every editable column of the clicked row together — Enter/blur commits THAT column, Escape cancels the whole row, clicking another row commits the current row's open editors first. */
+    mode?: 'cell' | 'row'
   }
   /** Edit-validation presentation (vxe-grid ValidConfig parity). */
   validConfig?: IrisTableValidConfig

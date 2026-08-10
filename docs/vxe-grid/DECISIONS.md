@@ -127,3 +127,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-j-gate.md [ok]: Report: **Commit:** `ef799c15` — `feat(table): vxe-grid 批 J——树形懒加载/批量删除/Tab 编辑导航（react only）`
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-j-gate.md
+
+## 2026-08-10 01:46:02 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-k-baseline.md [ok]: What the baseline contains: **Code evidence (verified against current sources):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-k-baseline.md
+
+## 2026-08-10 02:24:30 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-k-adapt.md [ok]: Report: **Files changed (3 modified + 1 new test, ≤5):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-k-adapt.md
+
+## 2026-08-10 02:36:26 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-k-review.md [ok]: Verdict: **FAIL** — 2 verified functional races + 1 gate failure: **Verification run:** 1626/1626 react tests (incl. 8 new row-mode/M1/M2 tests) ✓ · typecheck ✓ · lint 0 errors (1 pre-ex
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-k-review.md

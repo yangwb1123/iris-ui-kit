@@ -66,41 +66,42 @@
 
 ## iris-ui 现状对比
 
-| 类别         | vxe-grid                    | iris-ui IrisTable                                                                    | 差距                                          |
-| ------------ | --------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------- |
-| 编辑         | editConfig+editRules 规则集 | editable 列 + validate 回调 + validConfig.showMessage（批 F）                        | 缺规则集/click 激活/row 模式/状态图标         |
-| 选择         | checkbox/radio              | selectable multi ✓ + 方法 selectAll/toggleRowSelection/clearSelection（批 F，react） | 缺 radio 单列                                 |
-| 虚拟         | virtualX/virtualY           | virtualScroll ✓                                                                      | 基本对齐                                      |
-| 列宽         | resizableConfig             | resizableColumns ✓                                                                   | 对齐                                          |
-| 列拖拽       | columnDragConfig            | —                                                                                    | 缺                                            |
-| 行拖拽       | rowDragConfig               | IrisSortable（外部）                                                                 | 可组合                                        |
-| 序号列       | seqConfig                   | —                                                                                    | 缺                                            |
-| 合并单元格   | spanMethod                  | —                                                                                    | 缺                                            |
-| 排序         | sortConfig 多列             | sort 单列 + multiSort 多列 ✓（批 F，react）                                          | 对齐（react；点击序/原地切换/代理 sorts）     |
-| 筛选         | filterConfig                | —                                                                                    | 缺                                            |
-| 展开行       | expandConfig                | expandable ✓ + expandAll ✓（批 F，react）                                            | 对齐（react；一次首屏数据种子）               |
-| 树形         | treeConfig                  | tree ✓ + lazyLoad ✓（批 J，react）                                                   | 对齐（react；仅无子行 caret、加载后展开缓存） |
-| 汇总         | footerMethod                | summary ✓                                                                            | 对齐                                          |
-| 撤销         | undoRedoHistory             | core undo（外部）                                                                    | 可组合                                        |
-| 工具栏       | toolbarConfig               | —                                                                                    | 缺                                            |
-| 搜索表单     | formConfig                  | 外部组件                                                                             | 可组合                                        |
-| 数据代理     | proxyConfig                 | proxyConfig ✓（批 C，react）                                                         | 对齐（react，core 控制器）                    |
-| 搜索表单     | formConfig                  | formConfig ✓（批 D，react）                                                          | 对齐（react；远程合并 filters + 本地过滤）    |
-| 行操作       | insertRow/removeRow/setRow  | tableRef ✓（批 E，react）                                                            | 对齐（react；core table-rows 纯函数）         |
-| 批量删除     | removeRows（多行）          | removeRows ✓（批 J，react）                                                          | 对齐（react；单次 onDataChange + 选择剪枝）   |
-| 勾选条件     | checkboxConfig.checkMethod  | checkMethod ✓（批 E，react）                                                         | 对齐（react；全选跳过禁用行）                 |
-| 分页配置     | pagerConfig.pageSizes       | pagerConfig ✓（批 E，react）                                                         | 对齐（react；切换重置页码）                   |
-| 单元格提示   | tooltipConfig               | tooltipConfig ✓（批 G，react）                                                       | 对齐（react；title 轻量模式）                 |
-| 范围勾选     | checkboxConfig.isShiftKey   | shift 范围勾选 ✓（批 G，react）                                                      | 对齐（react；尊重 checkMethod）               |
-| 下拉编辑     | edit-render: select         | editor: 'select' ✓（批 H，react）                                                    | 对齐（react；editOptions 原生 select）        |
-| 右键菜单     | @context-menu               | contextMenu ✓（批 H，react）                                                         | 对齐（react；虚拟锚点浮层 + 坐标定位）        |
-| 跨页选择     | checkboxConfig.reserve      | 默认保留 ✓（批 H，react）                                                            | 对齐（react；selection 独立于分页）           |
-| 筛选面板     | filter 面板多选             | filterValues ✓（批 I，react）                                                        | 对齐（react；checkbox 面板 + OR 匹配）        |
-| 多行编辑     | edit-render: textarea       | editor: 'textarea' ✓（批 I，react）                                                  | 对齐（react；Shift+Enter 换行）               |
-| 列格式化     | formatter                   | formatter ✓（批 I，react）                                                           | 对齐（react；仅显示层，排序/编辑不受影响）    |
-| Tab 编辑导航 | keyboardConfig              | Tab/Shift+Tab 编辑导航 ✓（批 J，react）                                              | 对齐（react；提交后移动，跳过不可编辑列）     |
-| 导入导出     | export/import               | exportCsv/Excel ✓                                                                    | 缺导入                                        |
-| 打印         | printConfig                 | —                                                                                    | 缺                                            |
+| 类别         | vxe-grid                    | iris-ui IrisTable                                                                                   | 差距                                                                               |
+| ------------ | --------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 编辑         | editConfig+editRules 规则集 | editable 列 + validate 回调 + validConfig.showMessage（批 F）+ editConfig.mode='row'（批 K，react） | 缺规则集/click 激活/状态图标                                                       |
+| 选择         | checkbox/radio              | selectable multi ✓ + 方法 selectAll/toggleRowSelection/clearSelection（批 F，react）                | 缺 radio 单列                                                                      |
+| 虚拟         | virtualX/virtualY           | virtualScroll ✓                                                                                     | 基本对齐                                                                           |
+| 列宽         | resizableConfig             | resizableColumns ✓                                                                                  | 对齐                                                                               |
+| 列拖拽       | columnDragConfig            | —                                                                                                   | 缺                                                                                 |
+| 行拖拽       | rowDragConfig               | IrisSortable（外部）                                                                                | 可组合                                                                             |
+| 序号列       | seqConfig                   | —                                                                                                   | 缺                                                                                 |
+| 合并单元格   | spanMethod                  | —                                                                                                   | 缺                                                                                 |
+| 排序         | sortConfig 多列             | sort 单列 + multiSort 多列 ✓（批 F，react）                                                         | 对齐（react；点击序/原地切换/代理 sorts）                                          |
+| 筛选         | filterConfig                | —                                                                                                   | 缺                                                                                 |
+| 展开行       | expandConfig                | expandable ✓ + expandAll ✓（批 F，react）                                                           | 对齐（react；一次首屏数据种子）                                                    |
+| 树形         | treeConfig                  | tree ✓ + lazyLoad ✓（批 J+K，react）                                                                | 对齐（react；仅无子行 caret、加载后展开缓存、刷新清缓存+epoch 防陈旧回填）         |
+| 汇总         | footerMethod                | summary ✓                                                                                           | 对齐                                                                               |
+| 撤销         | undoRedoHistory             | core undo（外部）                                                                                   | 可组合                                                                             |
+| 工具栏       | toolbarConfig               | —                                                                                                   | 缺                                                                                 |
+| 搜索表单     | formConfig                  | 外部组件                                                                                            | 可组合                                                                             |
+| 数据代理     | proxyConfig                 | proxyConfig ✓（批 C，react）                                                                        | 对齐（react，core 控制器）                                                         |
+| 搜索表单     | formConfig                  | formConfig ✓（批 D，react）                                                                         | 对齐（react；远程合并 filters + 本地过滤）                                         |
+| 行操作       | insertRow/removeRow/setRow  | tableRef ✓（批 E，react）                                                                           | 对齐（react；core table-rows 纯函数）                                              |
+| 批量删除     | removeRows（多行）          | removeRows ✓（批 J，react）                                                                         | 对齐（react；单次 onDataChange + 选择剪枝）                                        |
+| 勾选条件     | checkboxConfig.checkMethod  | checkMethod ✓（批 E，react）                                                                        | 对齐（react；全选跳过禁用行）                                                      |
+| 分页配置     | pagerConfig.pageSizes       | pagerConfig ✓（批 E，react）                                                                        | 对齐（react；切换重置页码）                                                        |
+| 单元格提示   | tooltipConfig               | tooltipConfig ✓（批 G，react）                                                                      | 对齐（react；title 轻量模式）                                                      |
+| 范围勾选     | checkboxConfig.isShiftKey   | shift 范围勾选 ✓（批 G，react）                                                                     | 对齐（react；尊重 checkMethod）                                                    |
+| 下拉编辑     | edit-render: select         | editor: 'select' ✓（批 H，react）                                                                   | 对齐（react；editOptions 原生 select）                                             |
+| 右键菜单     | @context-menu               | contextMenu ✓（批 H，react）                                                                        | 对齐（react；虚拟锚点浮层 + 坐标定位）                                             |
+| 跨页选择     | checkboxConfig.reserve      | 默认保留 ✓（批 H，react）                                                                           | 对齐（react；selection 独立于分页）                                                |
+| 筛选面板     | filter 面板多选             | filterValues ✓（批 I，react）                                                                       | 对齐（react；checkbox 面板 + OR 匹配）                                             |
+| 多行编辑     | edit-render: textarea       | editor: 'textarea' ✓（批 I，react）                                                                 | 对齐（react；Shift+Enter 换行）                                                    |
+| 列格式化     | formatter                   | formatter ✓（批 I，react）                                                                          | 对齐（react；仅显示层，排序/编辑不受影响）                                         |
+| Tab 编辑导航 | keyboardConfig              | Tab/Shift+Tab 编辑导航 ✓（批 J+K，react；异步校验延期落焦）                                         | 对齐（react；提交后移动，跳过不可编辑列，异步校验成功落焦/失败停留/Escape 取消）   |
+| 行编辑模式   | editConfig.mode: row        | editConfig.mode='row' ✓（批 K，react）                                                              | 对齐（react；点击整行开编辑、逐列 Enter/blur 提交、Escape 整行取消、行切换先提交） |
+| 导入导出     | export/import               | exportCsv/Excel ✓                                                                                   | 缺导入                                                                             |
+| 打印         | printConfig                 | —                                                                                                   | 缺                                                                                 |
 
 ## 构建状态（2026-08 完成，react only）
 
@@ -114,8 +115,9 @@
 | 批 C | proxyConfig 服务端数据源（remoteSort/remoteFilter/分页/autoLoad/编辑回写）                                        | ✅ react  |
 | 批 F | multiSort 多列排序 + validConfig.showMessage + 选择方法（selectAll/toggleRowSelection/clearSelection）+ expandAll | ✅ react  |
 | 批 J | 树形懒加载（lazyLoad）+ removeRows 批量删除 + Tab 编辑导航                                                        | ✅ react  |
+| 批 K | editConfig.mode='row' 行编辑模式 + Tab 异步校验修复 + 懒加载缓存刷新修复                                          | ✅ react  |
 
-react 1618 tests · core 1245 tests · 180/180 turbo · 审计 0
+react 1629 tests · core 1249 tests · 180/180 turbo · 审计 0
 
 ## 组合接口说明
 

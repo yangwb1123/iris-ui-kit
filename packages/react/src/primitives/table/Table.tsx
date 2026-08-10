@@ -35,6 +35,7 @@ import {
   setCellValue,
   updateRowInList,
   validateEditRulesAsync,
+  type CellEdit,
   type RemoteTableSource,
   type RemoteTableSourceState,
   type SortableRect,
@@ -50,6 +51,11 @@ const TABLE_ROW_CSS = `
   --iris-cell-bg: var(--iris-surface-hover);
 }
 [data-iris-table-row-selected="true"] {
+  --iris-cell-bg: var(--iris-surface-selected);
+}
+/* Row edit mode (batch K): the row whose editors are open gets the same
+   token-driven highlight as the selected/current row. */
+[data-iris-table-row][data-iris-row-editing="true"] {
   --iris-cell-bg: var(--iris-surface-selected);
 }
 [data-iris-table-context-menu] [role="menuitem"]:hover:not(:disabled) {
@@ -89,6 +95,213 @@ import type {
 } from './types'
 
 export type { IrisTableProps, IrisTableProxyConfig } from './props'
+
+interface EditorSurfaceProps<Row extends Record<string, unknown>> {
+  /** The edit session driving this editor (cell mode: the singleton; row
+   *  mode: that column's own session). */
+  session: CellEdit
+  col: IrisTableColumn<Row>
+  /** aria-describedby id of the validation error message. */
+  errorId: string
+  /** validConfig.showMessage !== false — skip only the message element. */
+  showError: boolean
+  /** Callback ref so the parent can focus the editor (stable per column). */
+  registerRef: (el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null) => void
+  onTab: (e: React.KeyboardEvent, dir: 1 | -1) => void
+  onCommit: () => void
+  onCancel: () => void
+  /** Row edit mode: bumped to (re)focus this editor; cell mode focuses via
+   *  the singleton editingTarget effect instead (always 0 here). */
+  focusToken: number
+  /** Row edit mode: fired when the session goes idle (committed) so the
+   *  parent can close just this column's editor. */
+  onSessionIdle?: () => void
+}
+
+/**
+ * Shared inline-editor surface for cell AND row edit modes (batch K).
+ * Subscribes to the session's core store so draft/error changes re-render
+ * just the editor; the three editor branches (text/number input, select,
+ * textarea) are the pre-batch-K UI, just parameterized by the session. Enter
+ * commits THAT column (per-cell commit), Escape cancels (the whole row in
+ * row mode), blur commits the column, Tab moves between editable columns.
+ */
+function EditorSurface<Row extends Record<string, unknown>>({
+  session,
+  col,
+  errorId,
+  showError,
+  registerRef,
+  onTab,
+  onCommit,
+  onCancel,
+  focusToken,
+  onSessionIdle,
+}: EditorSurfaceProps<Row>): React.ReactElement {
+  const state = useStore(session.store)
+  const ref = React.useRef<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(null)
+  React.useEffect(() => {
+    if (focusToken > 0) ref.current?.focus()
+  }, [focusToken])
+  // A committed session goes idle (editing cleared) — close this column's
+  // editor (row mode keeps the rest of the row's editors open).
+  React.useEffect(() => {
+    if (state.editing === null) onSessionIdle?.()
+  }, [state.editing, onSessionIdle])
+  const setRef = (el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null): void => {
+    ref.current = el
+    registerRef(el)
+  }
+  // Const bindings let TS keep the select/options narrowing inside the nested
+  // JSX callbacks (a mutable `col` would lose it). A select editor with no
+  // editOptions falls back to the text input.
+  const isSelectEditor = col.editor === 'select' && col.editOptions !== undefined
+  const selectOptions = isSelectEditor ? col.editOptions : undefined
+  const draft = String(state.draft ?? '')
+  const error = state.error
+  return (
+    <>
+      {isSelectEditor && selectOptions ? (
+        // vxe edit-render select parity (batch H): a native <select> commits
+        // the option's TYPED value (numbers stay numbers). Value matches
+        // options by String(value); when the current draft matches NO option,
+        // a synthetic option preserves it so a plain blur never silently
+        // replaces the cell value with the first option.
+        <select
+          ref={setRef}
+          value={draft}
+          data-iris-table-editor=""
+          data-iris-table-editor-select=""
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={error && showError ? errorId : undefined}
+          onChange={(e) => {
+            const opt = selectOptions.find((o) => String(o.value) === e.target.value)
+            session.setDraft(opt ? opt.value : e.target.value)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Tab') {
+              onTab(e, e.shiftKey ? -1 : 1)
+            } else if (e.key === 'Enter') {
+              e.preventDefault()
+              onCommit()
+            } else if (e.key === 'Escape') {
+              e.preventDefault()
+              onCancel()
+            }
+          }}
+          onBlur={() => onCommit()}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: '100%',
+            border: `1px solid ${error ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
+            borderRadius: 'var(--iris-radius-sm, 4px)',
+            padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+            font: 'inherit',
+            background: 'var(--iris-background)',
+            color: 'var(--iris-foreground)',
+            outline: 'none',
+          }}
+        >
+          {!selectOptions.some((o) => String(o.value) === draft) ? (
+            <option value={draft}>{draft}</option>
+          ) : null}
+          {selectOptions.map((o) => (
+            <option key={String(o.value)} value={String(o.value)}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      ) : col.editor === 'textarea' ? (
+        // vxe edit-render textarea parity (batch I): Enter commits, Shift+Enter
+        // inserts a newline, Escape cancels — same commit/aria surface.
+        <textarea
+          ref={setRef}
+          rows={3}
+          value={draft}
+          data-iris-table-editor=""
+          data-iris-table-editor-textarea=""
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={error && showError ? errorId : undefined}
+          onChange={(e) => session.setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Tab') {
+              onTab(e, e.shiftKey ? -1 : 1)
+            } else if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              onCommit()
+            } else if (e.key === 'Escape') {
+              e.preventDefault()
+              onCancel()
+            }
+          }}
+          onBlur={() => onCommit()}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: '100%',
+            border: `1px solid ${error ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
+            borderRadius: 'var(--iris-radius-sm, 4px)',
+            padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+            font: 'inherit',
+            background: 'var(--iris-background)',
+            color: 'var(--iris-foreground)',
+            outline: 'none',
+            resize: 'none',
+          }}
+        />
+      ) : (
+        <input
+          ref={setRef}
+          type={col.editor === 'number' ? 'number' : 'text'}
+          value={draft}
+          data-iris-table-editor=""
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={error && showError ? errorId : undefined}
+          onChange={(e) => session.setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Tab') {
+              onTab(e, e.shiftKey ? -1 : 1)
+            } else if (e.key === 'Enter') {
+              e.preventDefault()
+              onCommit()
+            } else if (e.key === 'Escape') {
+              e.preventDefault()
+              onCancel()
+            }
+          }}
+          onBlur={() => onCommit()}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: '100%',
+            border: `1px solid ${error ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
+            borderRadius: 'var(--iris-radius-sm, 4px)',
+            padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+            font: 'inherit',
+            background: 'var(--iris-background)',
+            color: 'var(--iris-foreground)',
+            outline: 'none',
+          }}
+        />
+      )}
+      {/* validConfig.showMessage=false: validation still blocks the commit and
+      aria-invalid stays — only the message element is skipped (vxe ValidConfig
+      parity). */}
+      {error && showError ? (
+        <div
+          id={errorId}
+          role="alert"
+          data-iris-table-editor-error=""
+          style={{
+            marginTop: 'var(--iris-space-xxs, 4px)',
+            fontSize: 'var(--iris-font-size-xs, 12px)',
+            color: 'var(--iris-danger)',
+          }}
+        >
+          {error}
+        </div>
+      ) : null}
+    </>
+  )
+}
 
 const RESIZE_STEP = 16
 const SELECTION_COL_WIDTH = 40
@@ -412,6 +625,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // local edit write-backs until the next refetch replaces them.
   const [liveData, setLiveData] = React.useState<Row[]>(data ?? [])
   const externalDataRef = React.useRef(data)
+  // Latest live row list (batch K): row-edit sessions resolve the CURRENT row
+  // object by key at commit time, so editing several columns of one row never
+  // writes a stale row back (column A's commit updates the row, column B's
+  // commit must see it).
+  const liveDataRef = React.useRef<Row[]>(liveData)
+  liveDataRef.current = liveData
   // Reference of the LAST data the parent actually fed us (updated only by
   // this effect). Internal write-backs (edit commit / row ops) update
   // `externalDataRef` but NOT this, so the effect can distinguish "parent fed
@@ -423,6 +642,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
       lastExternalRef.current = next
       externalDataRef.current = next
       setLiveData(next ?? [])
+      // Batch K (M2): a NEW data source reference means the parent re-fed the
+      // data (or the proxy page changed) — cached lazy-tree children belong to
+      // the previous rows. Drop the cache AND the in-flight loading set so
+      // fresh `getSubRows` children render and lazy keys reload on the next
+      // expand. Internal write-backs (edit commits / row ops) never reach this
+      // effect (lastExternalRef only moves here), so they keep the cache.
+      // The epoch bump invalidates any in-flight lazyLoad callback (review fix).
+      lazyChildrenRef.current = new Map()
+      setLazyLoading(new Set())
+      lazyEpochRef.current += 1
     }
   }, [proxy, proxyState, data])
 
@@ -643,8 +872,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const editCtxRef = React.useRef<{ row: Row; col: IrisTableColumn<Row>; rowIndex: number } | null>(
     null,
   )
+  // Batch K (M1): Tab-navigation intent stashed while an async validation
+  // commit is in flight (commitEdit returns false for a pending Promise). The
+  // settle-observer effect performs the navigation when the commit lands, and
+  // drops it when validation fails or the session is cancelled instead.
+  const pendingNavRef = React.useRef<{
+    dir: 1 | -1
+    row: Row
+    col: IrisTableColumn<Row>
+    k: string | number
+    idx: number
+  } | null>(null)
   const cellId = (rowIdent: string | number, colKey: string): string => `${rowIdent}::${colKey}`
-  const coerceValue = (col: IrisTableColumn<Row>, draft: unknown): unknown => {
+  const coerceValueFor = (row: Row, col: IrisTableColumn<Row>, draft: unknown): unknown => {
     // Select editors commit the option's TYPED value (vxe edit-render parity):
     // a number option commits a number, a string option a string. Drafts that
     // already carry the typed form (select onChange stores it) pass through;
@@ -658,9 +898,40 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
     const s = String(draft)
     if (col.editor !== 'number') return s
-    return s === '' || Number.isNaN(Number(s))
-      ? getCellValue(editCtxRef.current!.row, col)
-      : Number(s)
+    return s === '' || Number.isNaN(Number(s)) ? getCellValue(row, col) : Number(s)
+  }
+  const coerceValue = (col: IrisTableColumn<Row>, draft: unknown): unknown =>
+    coerceValueFor(editCtxRef.current!.row, col, draft)
+  /** Current row object for a row key (row edit mode resolves at commit time). */
+  const currentRowFor = (rowIdent: string | number): Row | undefined =>
+    liveDataRef.current.find((r) => rowKeyOf(r) === rowIdent)
+  /** Shared commit write-back for cell AND row edit sessions (batch K): the
+   *  live data update + onCellEdit fire, skipping no-op commits. `ctx.row` is
+   *  the CURRENT row object (row sessions resolve it by key). */
+  const commitValue = (
+    ctx: { row: Row; col: IrisTableColumn<Row>; rowIndex: number },
+    value: unknown,
+  ): void => {
+    const oldValue = getCellValue(ctx.row, ctx.col)
+    if (value === oldValue) return
+    // Write the committed value back into the live data so the edit survives
+    // without the parent re-feeding `data` (controlled mode overrides via the
+    // data-reference sync above).
+    const k = rowKeyOf(ctx.row)
+    if (k != null) {
+      setLiveData((prev) => {
+        const next = setCellValue(prev, rowKey, k, ctx.col.key, value)
+        externalDataRef.current = next
+        return next
+      })
+    }
+    onCellEditRef.current?.({
+      row: ctx.row,
+      column: ctx.col,
+      oldValue,
+      newValue: value,
+      rowIndex: ctx.rowIndex,
+    })
   }
   const cellEdit = React.useMemo(
     () =>
@@ -688,33 +959,190 @@ export function IrisTable<Row extends Record<string, unknown>>({
         onCommit: (_target, value) => {
           const ctx = editCtxRef.current
           if (!ctx) return
-          const oldValue = getCellValue(ctx.row, ctx.col)
-          if (value !== oldValue) {
-            // Write the committed value back into the live data so the edit
-            // survives without the parent re-feeding `data` (controlled mode
-            // overrides via the data-reference sync above).
-            const k = rowKeyOf(ctx.row)
-            if (k != null) {
-              setLiveData((prev) => {
-                const next = setCellValue(prev, rowKey, k, ctx.col.key, value)
-                externalDataRef.current = next
-                return next
-              })
-            }
-            onCellEditRef.current?.({
-              row: ctx.row,
-              column: ctx.col,
-              oldValue,
-              newValue: value,
-              rowIndex: ctx.rowIndex,
-            })
-          }
+          commitValue(ctx, value)
         },
       }),
     [],
   )
   const editTarget = useStore(cellEdit.store)
   const editingTarget = editTarget.editing
+  // Row edit mode (vxe editConfig.mode parity, batch K): `'row'` opens one
+  // session per editable column of the clicked row (see beginRowEdit); the
+  // default `'cell'` keeps the singleton one-cell-at-a-time behavior.
+  const rowMode = editConfig?.mode === 'row'
+
+  // ── Row edit mode (vxe editConfig.mode='row' parity, batch K) ────────────
+  // One CellEdit session per editable column of the clicked row, each with its
+  // own draft/validate/commit through the existing core machinery. Sessions
+  // live in a state Map keyed by cellId (so the cell render reacts); the
+  // EditorSurface per open column subscribes to its session store and reports
+  // back when the session goes idle (committed) so just THAT column's editor
+  // closes — row mode commits per cell, never the whole row at once.
+  const [rowSessions, setRowSessions] = React.useState<Map<string, CellEdit>>(new Map())
+  const [rowEditing, setRowEditing] = React.useState<{ k: string | number; idx: number } | null>(
+    null,
+  )
+  // Focus token for row editors: beginRowEdit / Tab / reopen bump the seq of
+  // the target column; the EditorSurface focuses when its token is current.
+  const [rowFocus, setRowFocus] = React.useState<{ colKey: string; seq: number }>({
+    colKey: '',
+    seq: 0,
+  })
+  const rowEditorRefs = React.useRef<
+    Map<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  >(new Map())
+  const rowSessionsRef = React.useRef(rowSessions)
+  rowSessionsRef.current = rowSessions
+  const focusRowEditor = React.useCallback((colKey: string) => {
+    setRowFocus((prev) => ({ colKey, seq: prev.seq + 1 }))
+  }, [])
+  // Stable per-column ref registrar (a changing callback ref would detach/
+  // reattach the DOM node and drop focus on every table re-render).
+  const registerRowEditorRef = React.useCallback((colKey: string) => {
+    return (el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null): void => {
+      if (el) rowEditorRefs.current.set(colKey, el)
+      else rowEditorRefs.current.delete(colKey)
+    }
+  }, [])
+  const createRowSession = (
+    rowIdent: string | number,
+    col: IrisTableColumn<Row>,
+    rowIndex: number,
+  ): CellEdit =>
+    createCellEdit({
+      validate: (draft) => {
+        const row = currentRowFor(rowIdent)
+        if (!row) return null
+        if (col.editRules && col.editRules.length > 0) {
+          return validateEditRulesAsync(col.editRules, draft, row).then((r) =>
+            r.valid ? null : (r.messages[0] ?? null),
+          )
+        }
+        if (col.validate) return col.validate(coerceValueFor(row, col, draft), row) ?? null
+        return null
+      },
+      coerce: (draft) => {
+        const row = currentRowFor(rowIdent)
+        return row ? coerceValueFor(row, col, draft) : draft
+      },
+      onCommit: (_target, value) => {
+        const row = currentRowFor(rowIdent)
+        if (row) commitValue({ row, col, rowIndex }, value)
+      },
+    })
+  const beginRowEdit = (row: Row, rowIndex: number, focusColKey?: string): void => {
+    const k = rowKeyOf(row)
+    if (k == null) return
+    const editableCols = leafColumns.filter((c) => c.editable)
+    if (editableCols.length === 0) return
+    pendingNavRef.current = null
+    rowEditorRefs.current = new Map()
+    const sessions = new Map<string, CellEdit>()
+    for (const col of editableCols) {
+      const id = cellId(k, col.key)
+      const session = createRowSession(k, col, rowIndex)
+      const current = getCellValue(row, col)
+      session.startEdit(id, col.key, current == null ? '' : String(current))
+      sessions.set(id, session)
+    }
+    setRowSessions(sessions)
+    setRowEditing({ k, idx: rowIndex })
+    // Focus the clicked column's editor when it exists, else the first
+    // editable column (the editors mount on the next render).
+    const focusKey =
+      focusColKey && editableCols.some((c) => c.key === focusColKey)
+        ? focusColKey
+        : editableCols[0]!.key
+    focusRowEditor(focusKey)
+  }
+  /** Escape: cancel EVERY open session of the row (the whole row, vxe parity). */
+  const cancelRowEdit = (): void => {
+    for (const s of rowSessionsRef.current.values()) s.cancelEdit()
+    pendingNavRef.current = null
+    setRowSessions(new Map())
+    setRowEditing(null)
+  }
+  /** Clicking another row (or starting a new row): commit each open session;
+   *  a SYNC validation failure keeps the row open with the error visible.
+   *  Async-validating sessions commit in the background and land whenever
+   *  they resolve (per-cell commit, vxe row mode parity). */
+  const switchRowEdit = (row: Row, rowIndex: number, focusColKey?: string): void => {
+    if (rowEditing !== null) {
+      for (const [, s] of rowSessionsRef.current) {
+        s.commitEdit()
+        if (s.getError() !== null) return
+      }
+    }
+    beginRowEdit(row, rowIndex, focusColKey)
+  }
+  /** Tab between the row's editors: commit THAT column, focus the next
+   *  editable one. Sync failure stays on the editor with the error; async
+   *  commits stay pending and land in the background (the error, if any,
+   *  appears on the source column). */
+  const moveRowEditOnTab = (
+    e: React.KeyboardEvent,
+    dir: 1 | -1,
+    col: IrisTableColumn<Row>,
+  ): void => {
+    if (e.key !== 'Tab') return
+    e.preventDefault()
+    const editing = rowEditing
+    const id = editing ? cellId(editing.k, col.key) : ''
+    const session = rowSessionsRef.current.get(id)
+    if (session) {
+      session.commitEdit()
+      if (session.getError() !== null) return
+    }
+    const start = leafColumns.indexOf(col)
+    for (let i = start + dir; i >= 0 && i < leafColumns.length; i += dir) {
+      const nextCol = leafColumns[i]!
+      if (!nextCol.editable) continue
+      focusRowEditor(nextCol.key)
+      return
+    }
+  }
+  /** A row session went idle (committed) — close just that column's editor.
+   *  The last-session close is derived from STATE below (rowSessions becomes
+   *  empty) rather than from the ref here, because batched commits (Enter in
+   *  two editors in one event loop) fire both idle callbacks before the parent
+   *  re-renders — the ref would still count 2 sessions and the row would never
+   *  leave edit mode. */
+  const onRowSessionIdle = (id: string): void => {
+    setRowSessions((prev) => {
+      if (!prev.has(id)) return prev
+      const next = new Map(prev)
+      next.delete(id)
+      return next
+    })
+  }
+  // All open sessions committed → the row leaves edit mode (click re-opens).
+  React.useEffect(() => {
+    if (rowEditing !== null && rowSessions.size === 0) setRowEditing(null)
+  }, [rowSessions, rowEditing])
+
+  // Batch K (M1): async-commit settle observer for Tab navigation. When the
+  // Tab handler stashes pendingNavRef (the commit runs async validation), this
+  // effect performs the navigation once the commit lands: editing cleared +
+  // validated set → move to the next editable column; error set → validation
+  // failed, stay in the cell with the error visible; editing cleared without a
+  // validated value → the session was cancelled, drop the intent.
+  React.useEffect(() => {
+    const nav = pendingNavRef.current
+    if (!nav) return
+    if (editTarget.editing !== null) {
+      if (editTarget.error !== null) pendingNavRef.current = null
+      return
+    }
+    pendingNavRef.current = null
+    if (editTarget.validated === undefined) return
+    const start = leafColumns.indexOf(nav.col)
+    for (let i = start + nav.dir; i >= 0 && i < leafColumns.length; i += nav.dir) {
+      const nextCol = leafColumns[i]
+      if (!nextCol.editable) continue
+      beginEdit(nav.row, nextCol, nav.k, nav.idx)
+      return
+    }
+  }, [editTarget])
   // ── Row drag-sort (composed over core createSortable) ──────────────────
   // One controller + container-level pointer handling; each row renders a
   // drag handle that seeds the press. Drop targets are collected on first
@@ -949,6 +1377,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
     rowIndex: number,
   ) => {
     if (!col.editable) return
+    // Any manual start supersedes a stashed Tab-navigation intent (M1).
+    pendingNavRef.current = null
     editCtxRef.current = { row, col, rowIndex }
     const current = getCellValue(row, col)
     cellEdit.startEdit(cellId(rowIdent, col.key), col.key, current == null ? '' : String(current))
@@ -965,11 +1395,27 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // the previous one (`leafColumns` render order). A validation failure keeps
   // the cell (commit returns false). With no editable neighbor the edit is
   // committed and the default Tab behavior moves focus away (no preventDefault).
+  // Batch K (M1): editRules columns validate through an async Promise, so
+  // commitEdit returns false immediately and the commit lands later — stash
+  // the Tab intent and let the settle-observer effect perform the navigation
+  // when validation passes (or drop it when it fails, staying with the error).
   const moveEditOnTab = (e: React.KeyboardEvent, dir: 1 | -1): void => {
     if (e.key !== 'Tab') return
     const ctx = editCtxRef.current
     if (!ctx) return
-    if (!commitEdit()) {
+    if (ctx.col.editRules && ctx.col.editRules.length > 0) {
+      e.preventDefault()
+      pendingNavRef.current = {
+        dir,
+        row: ctx.row,
+        col: ctx.col,
+        k: rowKeyOf(ctx.row),
+        idx: ctx.rowIndex,
+      }
+      cellEdit.commitEdit()
+      return
+    }
+    if (!cellEdit.commitEdit()) {
       e.preventDefault()
       return
     }
@@ -1015,7 +1461,30 @@ export function IrisTable<Row extends Record<string, unknown>>({
     idx: number,
     ci: number,
   ): void => {
-    if (cellRange) {
+    if (rowMode && k != null) {
+      // vxe editConfig.mode='row' parity (batch K): a click on any cell of a
+      // row that has editable columns opens every editable column's editor;
+      // clicking a DIFFERENT row first commits the current row's open editors
+      // (vxe click-elsewhere-commits). Editors stopPropagation, so
+      // interactions inside an editor never reach here. A click on a column
+      // that was already committed (session closed) reopens just that column.
+      if (rowEditing?.k === k) {
+        const id = cellId(k, col.key)
+        if (col.editable && !rowSessionsRef.current.has(id)) {
+          const session = createRowSession(k, col, idx)
+          const current = getCellValue(row, col)
+          session.startEdit(id, col.key, current == null ? '' : String(current))
+          setRowSessions((prev) => {
+            const next = new Map(prev)
+            next.set(id, session)
+            return next
+          })
+          focusRowEditor(col.key)
+        }
+      } else {
+        switchRowEdit(row, idx, col.key)
+      }
+    } else if (cellRange) {
       if (e.shiftKey) cellRangeCtrl.extendRange(idx, ci)
       else cellRangeCtrl.startRange(idx, ci)
     } else if (col.editable && editConfig?.trigger === 'click' && k != null) {
@@ -1170,6 +1639,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // caret render (spinner) on both transitions.
   const lazyChildrenRef = React.useRef<Map<string, Row[]>>(new Map())
   const [lazyLoading, setLazyLoading] = React.useState<Set<string>>(new Set())
+  // Batch K review fix (M2 race): bumped whenever the data source reference
+  // changes (cache + loading set cleared). A lazy-load callback captures the
+  // epoch at call time and drops its result if a refresh happened while the
+  // fetch was in flight — stale children must never re-seed the cleared cache.
+  const lazyEpochRef = React.useRef(0)
   const lazyChildrenOf = (row: Row): readonly Row[] | undefined =>
     lazyChildrenRef.current.get(String(rowKeyOf(row))) ?? getSubRows!(row)
   // Comparator for tree siblings: multi mode uses the chained multi comparator
@@ -1567,6 +2041,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         aria-posinset={treeMeta ? treeMeta.posInset : undefined}
         data-iris-table-row={String(k ?? idx)}
         data-iris-table-row-selected={selected ? 'true' : undefined}
+        data-iris-row-editing={rowMode && rowEditing?.k === k ? 'true' : undefined}
         data-iris-row-current={currentRowKey === k ? 'true' : undefined}
         onClick={() => {
           onRowClick?.(row, idx)
@@ -1714,7 +2189,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
             for (let c = 1; c < colspan; c++) spanOccupyRef.current.add(`${idx}:${ci + c}`)
           }
           const raw = getCellValue(row, col)
-          const editing = cellEdit.isEditing(cellId(k, col.key), col.key)
+          const editing = rowMode
+            ? rowSessions.has(cellId(k, col.key))
+            : cellEdit.isEditing(cellId(k, col.key), col.key)
           return (
             <div
               key={col.key}
@@ -1753,12 +2230,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     },
                   }
                 : null)}
-              onDoubleClick={col.editable ? () => beginEdit(row, col, k, idx) : undefined}
+              onDoubleClick={
+                rowMode
+                  ? k != null
+                    ? () => switchRowEdit(row, idx, col.key)
+                    : undefined
+                  : col.editable
+                    ? () => beginEdit(row, col, k, idx)
+                    : undefined
+              }
               onContextMenu={
                 contextMenu ? (e) => handleContextMenu(e, row, col, idx, ci) : undefined
               }
               onClick={
-                onCellClick
+                onCellClick || rowMode
                   ? (e: React.MouseEvent) => {
                       handleCellClick(e, row, col, k, idx, ci)
                     }
@@ -1834,7 +2319,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
                             return next
                           })
                         try {
+                          const epoch = lazyEpochRef.current
                           lazyLoad!(row, (children) => {
+                            // Stale fetch: the data source changed while this
+                            // load was in flight — drop the result so the
+                            // cleared cache is not re-seeded (and do NOT clear
+                            // the loading flag, which may belong to a newer
+                            // fetch of the same key).
+                            if (epoch !== lazyEpochRef.current) return
                             lazyChildrenRef.current.set(treeMeta.key, children)
                             if (children && children.length > 0) {
                               expansion.toggle(treeMeta.key)
@@ -1865,176 +2357,39 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 </span>
               ) : null}
               {editing ? (
-                // Const bindings let TS keep the select/options narrowing
-                // inside the nested JSX callbacks (a mutable `col` would lose
-                // it). A select editor with no editOptions falls back to the
-                // text input.
-                (() => {
-                  const isSelectEditor = col.editor === 'select' && col.editOptions !== undefined
-                  const selectOptions = isSelectEditor ? col.editOptions : undefined
-                  return (
-                    <>
-                      {isSelectEditor && selectOptions ? (
-                        // vxe edit-render select parity (batch H): a native
-                        // <select> commits the option's TYPED value (numbers stay
-                        // numbers). Value matches options by String(value); when
-                        // the current draft matches NO option, a synthetic option
-                        // preserves it so a plain blur never silently replaces
-                        // the cell value with the first option.
-                        <select
-                          ref={setEditorRef}
-                          value={String(cellEdit.getDraft() ?? '')}
-                          data-iris-table-editor=""
-                          data-iris-table-editor-select=""
-                          aria-invalid={cellEdit.getError() ? 'true' : undefined}
-                          aria-describedby={
-                            cellEdit.getError() && validConfig?.showMessage !== false
-                              ? `${cellId(k, col.key)}-error`
-                              : undefined
-                          }
-                          onChange={(e) => {
-                            const opt = selectOptions.find(
-                              (o) => String(o.value) === e.target.value,
-                            )
-                            cellEdit.setDraft(opt ? opt.value : e.target.value)
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Tab') {
-                              moveEditOnTab(e, e.shiftKey ? -1 : 1)
-                            } else if (e.key === 'Enter') {
-                              e.preventDefault()
-                              commitEdit()
-                            } else if (e.key === 'Escape') {
-                              e.preventDefault()
-                              cancelEdit()
-                            }
-                          }}
-                          onBlur={() => commitEdit()}
-                          onClick={(e) => e.stopPropagation()}
-                          style={{
-                            width: '100%',
-                            border: `1px solid ${cellEdit.getError() ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
-                            borderRadius: 'var(--iris-radius-sm, 4px)',
-                            padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
-                            font: 'inherit',
-                            background: 'var(--iris-background)',
-                            color: 'var(--iris-foreground)',
-                            outline: 'none',
-                          }}
-                        >
-                          {!selectOptions.some(
-                            (o) => String(o.value) === String(cellEdit.getDraft() ?? ''),
-                          ) ? (
-                            <option value={String(cellEdit.getDraft() ?? '')}>
-                              {String(cellEdit.getDraft() ?? '')}
-                            </option>
-                          ) : null}
-                          {selectOptions.map((o) => (
-                            <option key={String(o.value)} value={String(o.value)}>
-                              {o.label}
-                            </option>
-                          ))}
-                        </select>
-                      ) : col.editor === 'textarea' ? (
-                        // vxe edit-render textarea parity (batch I): Enter
-                        // commits, Shift+Enter inserts a newline, Escape
-                        // cancels — same commit/aria surface as the text editor.
-                        <textarea
-                          ref={setEditorRef}
-                          rows={3}
-                          value={String(cellEdit.getDraft() ?? '')}
-                          data-iris-table-editor=""
-                          data-iris-table-editor-textarea=""
-                          aria-invalid={cellEdit.getError() ? 'true' : undefined}
-                          aria-describedby={
-                            cellEdit.getError() && validConfig?.showMessage !== false
-                              ? `${cellId(k, col.key)}-error`
-                              : undefined
-                          }
-                          onChange={(e) => cellEdit.setDraft(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Tab') {
-                              moveEditOnTab(e, e.shiftKey ? -1 : 1)
-                            } else if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault()
-                              commitEdit()
-                            } else if (e.key === 'Escape') {
-                              e.preventDefault()
-                              cancelEdit()
-                            }
-                          }}
-                          onBlur={() => commitEdit()}
-                          onClick={(e) => e.stopPropagation()}
-                          style={{
-                            width: '100%',
-                            border: `1px solid ${cellEdit.getError() ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
-                            borderRadius: 'var(--iris-radius-sm, 4px)',
-                            padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
-                            font: 'inherit',
-                            background: 'var(--iris-background)',
-                            color: 'var(--iris-foreground)',
-                            outline: 'none',
-                            resize: 'none',
-                          }}
-                        />
-                      ) : (
-                        <input
-                          ref={setEditorRef}
-                          type={col.editor === 'number' ? 'number' : 'text'}
-                          value={String(cellEdit.getDraft() ?? '')}
-                          data-iris-table-editor=""
-                          aria-invalid={cellEdit.getError() ? 'true' : undefined}
-                          aria-describedby={
-                            cellEdit.getError() && validConfig?.showMessage !== false
-                              ? `${cellId(k, col.key)}-error`
-                              : undefined
-                          }
-                          onChange={(e) => cellEdit.setDraft(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Tab') {
-                              moveEditOnTab(e, e.shiftKey ? -1 : 1)
-                            } else if (e.key === 'Enter') {
-                              e.preventDefault()
-                              commitEdit()
-                            } else if (e.key === 'Escape') {
-                              e.preventDefault()
-                              cancelEdit()
-                            }
-                          }}
-                          onBlur={() => commitEdit()}
-                          onClick={(e) => e.stopPropagation()}
-                          style={{
-                            width: '100%',
-                            border: `1px solid ${cellEdit.getError() ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
-                            borderRadius: 'var(--iris-radius-sm, 4px)',
-                            padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
-                            font: 'inherit',
-                            background: 'var(--iris-background)',
-                            color: 'var(--iris-foreground)',
-                            outline: 'none',
-                          }}
-                        />
-                      )}
-                      {/* validConfig.showMessage=false: validation still blocks the
-                    commit and aria-invalid stays — only the message element is
-                    skipped (vxe ValidConfig parity). */}
-                      {cellEdit.getError() && validConfig?.showMessage !== false ? (
-                        <div
-                          id={`${cellId(k, col.key)}-error`}
-                          role="alert"
-                          data-iris-table-editor-error=""
-                          style={{
-                            marginTop: 'var(--iris-space-xxs, 4px)',
-                            fontSize: 'var(--iris-font-size-xs, 12px)',
-                            color: 'var(--iris-danger)',
-                          }}
-                        >
-                          {cellEdit.getError()}
-                        </div>
-                      ) : null}
-                    </>
-                  )
-                })()
+                rowMode ? (
+                  (() => {
+                    const session = rowSessions.get(cellId(k, col.key))!
+                    const id = cellId(k, col.key)
+                    return (
+                      <EditorSurface
+                        session={session}
+                        col={col}
+                        errorId={`${id}-error`}
+                        showError={validConfig?.showMessage !== false}
+                        registerRef={registerRowEditorRef(col.key)}
+                        onTab={(e, dir) => moveRowEditOnTab(e, dir, col)}
+                        onCommit={() => session.commitEdit()}
+                        onCancel={cancelRowEdit}
+                        onSessionIdle={() => onRowSessionIdle(id)}
+                        focusToken={rowFocus.colKey === col.key ? rowFocus.seq : 0}
+                      />
+                    )
+                  })()
+                ) : (
+                  <EditorSurface
+                    session={cellEdit}
+                    col={col}
+                    errorId={`${cellId(k, col.key)}-error`}
+                    showError={validConfig?.showMessage !== false}
+                    registerRef={setEditorRef}
+                    onTab={moveEditOnTab}
+                    onCommit={commitEdit}
+                    onCancel={cancelEdit}
+                    onSessionIdle={undefined}
+                    focusToken={0}
+                  />
+                )
               ) : col.render ? (
                 col.render(raw, row, idx)
               ) : col.html ? (

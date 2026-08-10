@@ -112,6 +112,56 @@ describe('createCellEdit draft session (advancement)', () => {
     expect(ce.getDraft()).toBe('')
     expect(ce.getError()).toBeNull()
   })
+
+  it('cancelEdit during a pending async commit drops the commit (no write-back)', async () => {
+    const commit = vi.fn()
+    const ce = createCellEdit({
+      validate: () => Promise.resolve(null),
+      coerce: (d) => String(d).toUpperCase(),
+      onCommit: commit,
+    })
+    ce.startEdit('r1', 'c1', 'x')
+    // Async validation: commitEdit returns false, the commit is in flight.
+    expect(ce.commitEdit()).toBe(false)
+    // Escape while the validation promise is pending.
+    ce.cancelEdit()
+    expect(ce.getEditing()).toBeNull()
+    // The pending commit must NOT land after cancel.
+    await Promise.resolve()
+    expect(commit).not.toHaveBeenCalled()
+    expect(ce.getValidated()).toBeUndefined()
+  })
+
+  it('a new startEdit supersedes a pending async commit of the previous session', async () => {
+    const commit = vi.fn()
+    const ce = createCellEdit({
+      validate: () => Promise.resolve(null),
+      onCommit: commit,
+    })
+    ce.startEdit('r1', 'c1', 'x')
+    expect(ce.commitEdit()).toBe(false)
+    // User moves to another cell before the validation settles.
+    ce.startEdit('r1', 'c2', 'y')
+    await Promise.resolve()
+    expect(commit).not.toHaveBeenCalled()
+    expect(ce.getEditing()).toEqual({ rowKey: 'r1', columnKey: 'c2' })
+  })
+
+  it('a second async commit supersedes the first (one write-back)', async () => {
+    const commit = vi.fn()
+    const ce = createCellEdit({
+      validate: () => Promise.resolve(null),
+      onCommit: commit,
+    })
+    ce.startEdit('r1', 'c1', 'x')
+    expect(ce.commitEdit()).toBe(false)
+    // A second commit before the first settles (e.g. double Tab) must not
+    // double-write — the newer commit supersedes the older one.
+    expect(ce.commitEdit()).toBe(false)
+    await Promise.resolve()
+    expect(commit).toHaveBeenCalledTimes(1)
+    expect(commit).toHaveBeenCalledWith({ rowKey: 'r1', columnKey: 'c1' }, 'x')
+  })
 })
 
 describe('setCellValue (edit write-back)', () => {

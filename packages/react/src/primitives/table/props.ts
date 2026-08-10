@@ -1,9 +1,11 @@
 import type { CSSProperties, MutableRefObject, ReactNode } from 'react'
 import type {
   IrisTableCellEditEvent,
+  IrisTableAlign,
   IrisTableColumn,
   IrisTableColumnWidths,
   IrisTableContextMenuParams,
+  IrisTableFooterMethodParams,
   IrisTableFormField,
   IrisTableRenderDetail,
   IrisTableRowExpandable,
@@ -152,6 +154,21 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * row, one grid row per entry; structure matches `data`.
    */
   footerData?: Row[]
+  /**
+   * Custom footer rows (vxe footer-method parity, batch N): when present,
+   * REPLACES the summary op row with one grid row per returned entry — cell
+   * value = `entry[col.key]` — with the same row styling as the summary row;
+   * `footerData` still renders below. `columns` = leaf columns, `data` = the
+   * full (sorted + filtered) body rows.
+   */
+  footerMethod?: (params: IrisTableFooterMethodParams<Row>) => Row[]
+  /** Header cell alignment (vxe header-align parity): `headerAlign` wins over
+   * the column's `align`, then 'left'. Applies to flat + grouped headers. */
+  headerAlign?: IrisTableAlign
+  /** Footer/summary cell alignment (vxe footer-align parity): `footerAlign`
+   * wins over the column's `align`. Applies to summary, footer-method and
+   * footer-data cells. */
+  footerAlign?: IrisTableAlign
   /** Per-row class hook (vxe row-class-name parity). */
   rowClassName?: (row: Row, rowIndex: number) => string
   /** Per-cell class hook (vxe cell-class-name parity). */
@@ -338,6 +355,15 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   checkMethod?: (row: Row, rowIndex: number) => boolean
   /** Pager options (vxe-grid pagerConfig parity). */
   pagerConfig?: IrisTablePagerConfig
+  /** Fixed height (vxe-grid height parity, batch N): makes the root a vertical
+   * scroll container with a sticky header row. Number → px; string → CSS length. */
+  height?: number | string
+  /** Minimum height of the fixed-height container (with `height`/`maxHeight`). */
+  minHeight?: number | string
+  /** Maximum height of the fixed-height container (with `height`/`minHeight`). */
+  maxHeight?: number | string
+  /** Highlight rows on hover (vxe highlight-hover-row parity, batch N). Default true. */
+  highlightHoverRow?: boolean
   style?: CSSProperties
   className?: string
 }

@@ -1,0 +1,10 @@
+Baseline written to `/home/u1/iris-ui/docs/vxe-grid/batch-n-baseline.md` (288 lines). No source files modified — `git status` shows only the new doc.
+
+**Verified against current sources:**
+
+- **Root container** (`Table.tsx:2879-2928`): no height handling today; `overflow: columnVirtualization ? 'auto' : 'hidden'`; the column-virtualization path already proves the root-as-scroller pattern.
+- **Header** is a direct grid child of the root (flat `:3074`, grouped `:2930`) — a `position: sticky; top: 0` rule on `[data-iris-fixed-height] > [data-iris-table-row="header"]` works with zero restructure; z-index must exceed body pinned cells (zIndex 1 via `pinnedStyle` `:1839`). Grouped header path (`:3022`) ignores `col.align` entirely today.
+- **Summary row** (`renderSummaryRow` `:2560-2601`): cells have **no** justifyContent (flex-start default); `footerAlign ?? col.align` is a new default for right-aligned columns; same renderer serves per-group summaries (batch M). Render condition at `:3318` gains `&& !footerMethod`; footerData block `:3322-3367` slots below the new footerMethod rows.
+- **Hover CSS** lives in Table.tsx's own injected `TABLE_ROW_CSS` (`:50-73`, id `iris-table-row-styles`); `styles.ts` has a _different_ copy consumed only by dormant TableHeader/Body/Row — flagged so nobody edits the wrong file. No-hover = static selector change `[data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover` gated by an attr (singleton stylesheet never re-injected).
+
+**Design** covers all four props (height/min/max → root style + `data-iris-fixed-height` + sticky header; headerAlign/footerAlign with a `justifyFor` helper wired into flat+grouped header and summary+footerData cells; footerMethod replacing the summary op path, vxe `columns`/`data` params = `leafColumns`/`bodyData`; highlightHoverRow default true, attr-suppressed). File map: props.ts +7, types.ts +2 (align alias + footerMethod params), Table.tsx ~+55, new batch test file. 6 open questions (group-summary × footerMethod, empty-data footer, height × virtualScroll nesting, pager-in-scroller, borderTop per multi-row footer).

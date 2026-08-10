@@ -48,7 +48,7 @@ import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import type { IrisTableHandle, IrisTableProps, IrisTableProxyConfig } from './props'
 
 const TABLE_ROW_CSS = `
-[data-iris-table] [role="row"]:hover {
+[data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover {
   --iris-cell-bg: var(--iris-surface-hover);
 }
 [data-iris-table-row-selected="true"] {
@@ -61,6 +61,15 @@ const TABLE_ROW_CSS = `
 }
 [data-iris-table-context-menu] [role="menuitem"]:hover:not(:disabled) {
   background: var(--iris-surface-hover);
+}
+/* Fixed height (batch N): the root becomes the scroll container; the header
+   row (flat AND grouped variants both carry data-iris-table-row="header") stays
+   visible with a sticky position. z-index 2 keeps it above pinned body cells
+   (zIndex 1 via pinnedStyle). */
+[data-iris-table-fixed-height] [data-iris-table-row="header"] {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 /* Lazy tree loading caret (batch J): keyframes can't be inline, so they live
    in the singleton stylesheet; opacity + spin use token-driven values. */
@@ -94,6 +103,15 @@ import type {
   IrisTableContextMenuParams,
   IrisTableSortDirection,
 } from './types'
+
+/** Map a vxe-style cell alignment to a flex `justifyContent` value. */
+const justifyFor = (
+  align: 'left' | 'center' | 'right' | undefined,
+  fallback: 'left' | 'right' = 'left',
+): 'flex-start' | 'center' | 'flex-end' => {
+  const resolved = align ?? fallback
+  return resolved === 'right' ? 'flex-end' : resolved === 'center' ? 'center' : 'flex-start'
+}
 
 export type { IrisTableProps, IrisTableProxyConfig } from './props'
 
@@ -454,6 +472,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
   beforeCurrentColumnChange,
   showHeader = true,
   footerData,
+  footerMethod,
+  headerAlign,
+  footerAlign,
+  highlightHoverRow = true,
+  height,
+  minHeight,
+  maxHeight,
   rowClassName,
   cellClassName,
   headerCellClassName,
@@ -2588,7 +2613,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
             role="cell"
             data-iris-table-cell={col.key}
             data-iris-table-summary-cell={op ? '' : undefined}
-            style={{ ...baseCellStyle, ...pinnedStyle(col.key) }}
+            style={{
+              ...baseCellStyle,
+              justifyContent: justifyFor(footerAlign ?? col.align),
+              ...pinnedStyle(col.key),
+            }}
           >
             {op != null && value != null
               ? col.renderSummary
@@ -2604,6 +2633,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // Batch-M toolbar action: read once so the closure below stays narrowed
   // (no non-null assertions needed).
   const batchAction = toolbar?.batch
+  // Fixed height (batch N): any of height/min/max makes the root a vertical
+  // scroll container; the injected stylesheet pins the header row.
+  const fixedHeight = height !== undefined || minHeight !== undefined || maxHeight !== undefined
   // Virtual body items: always typed as plan entries (rows wrapped with their
   // ORIGINAL bodyData index) so the `kind` discriminant narrows cleanly — a
   // generic `Row` type param defeats `'kind' in` narrowing.
@@ -2882,6 +2914,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
         data-bordered={bordered ? 'true' : undefined}
         data-striped={striped ? 'true' : undefined}
         data-column-virtualized={columnVirtualization ? 'true' : undefined}
+        data-iris-table-fixed-height={fixedHeight ? 'true' : undefined}
+        data-iris-no-hover={highlightHoverRow ? undefined : 'true'}
         className={className}
         onKeyDown={
           keyboardNavigation || cellRange
@@ -2921,7 +2955,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
           border: borderStyle,
           borderRadius: 'var(--iris-radius-md, 6px)',
           // Column virtualization turns the table into a horizontal scroll container.
-          overflow: columnVirtualization ? 'auto' : 'hidden',
+          overflow: fixedHeight ? 'auto' : columnVirtualization ? 'auto' : 'hidden',
+          ...(fixedHeight ? { height, maxHeight, minHeight } : null),
           ...style,
         }}
       >
@@ -3019,7 +3054,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       gridColumn: `${lead + cell.colStart} / span ${cell.colSpan}`,
                       gridRow: `${cell.level + 1} / span ${cell.rowSpan}`,
                       ...baseCellStyle,
-                      justifyContent: isLeaf ? 'flex-start' : 'center',
+                      justifyContent: isLeaf
+                        ? justifyFor(headerAlign ?? col.align ?? 'left')
+                        : justifyFor(headerAlign ?? 'center'),
                       background: 'var(--iris-surface)',
                       borderBottom: borderStyle,
                       borderInlineEnd: isLeaf ? 'none' : borderStyle,
@@ -3159,12 +3196,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   style={{
                     ...baseCellStyle,
                     ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
-                    justifyContent:
-                      col.align === 'right'
-                        ? 'flex-end'
-                        : col.align === 'center'
-                          ? 'center'
-                          : 'flex-start',
+                    justifyContent: justifyFor(headerAlign ?? col.align ?? 'left'),
                     background: 'var(--iris-surface)',
                     borderBottom: borderStyle,
                     cursor: col.sortable ? 'pointer' : 'default',
@@ -3315,8 +3347,59 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
         {/* Summary / footer row: each column with a `summary` op aggregates over
           the full sorted dataset (the core `aggregate` material). */}
-        {!tableError && !tableLoading && bodyData.length > 0 && leafColumns.some((c) => c.summary)
+        {!tableError &&
+        !tableLoading &&
+        bodyData.length > 0 &&
+        !footerMethod &&
+        leafColumns.some((c) => c.summary)
           ? renderSummaryRow(bodyData)
+          : null}
+
+        {/* Custom footer rows (vxe footer-method parity, batch N): when
+          present, REPLACES the summary op path with one grid row per returned
+          entry (cell value = entry[col.key]), same row styling as the summary
+          row; `footerData` still renders below. */}
+        {!tableError && !tableLoading && bodyData.length > 0 && footerMethod
+          ? footerMethod({ columns: leafColumns, data: bodyData }).map((footerRow, fi) => (
+              <div
+                key={String((footerRow as Record<string, unknown>)[rowKey] ?? fi)}
+                role="row"
+                data-iris-table-row="summary"
+                data-iris-table-footer-method-row={String(fi)}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns,
+                  fontWeight: 600,
+                  borderTop: fi === 0 ? '2px solid var(--iris-border)' : borderStyle,
+                  background: 'var(--iris-surface)',
+                }}
+              >
+                {selectable !== 'none' ? (
+                  <div role="cell" data-iris-table-cell="__selection" style={baseCellStyle} />
+                ) : null}
+                {leafColumns.map((col, ci) => {
+                  if (visibleColSet && !visibleColSet.has(ci)) return null
+                  const value = getCellValue(footerRow, col)
+                  return (
+                    <div
+                      key={col.key}
+                      role="cell"
+                      data-iris-table-cell={col.key}
+                      data-iris-table-footer-method-cell=""
+                      className={footerCellClassName?.(col, fi)}
+                      style={{
+                        ...baseCellStyle,
+                        justifyContent: justifyFor(footerAlign ?? col.align),
+                        ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
+                        ...(footerCellStyle?.(col, fi) ?? null),
+                      }}
+                    >
+                      {String(value ?? '')}
+                    </div>
+                  )
+                })}
+              </div>
+            ))
           : null}
 
         {/* Custom footer rows (vxe footer-data parity): one grid row per entry,
@@ -3350,12 +3433,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       className={footerCellClassName?.(col, fi)}
                       style={{
                         ...baseCellStyle,
-                        justifyContent:
-                          (col.align ?? (typeof value === 'number' ? 'right' : 'left')) === 'right'
-                            ? 'flex-end'
-                            : col.align === 'center'
-                              ? 'center'
-                              : 'flex-start',
+                        justifyContent: justifyFor(
+                          footerAlign ??
+                            col.align ??
+                            (typeof value === 'number' ? 'right' : 'left'),
+                        ),
                         ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
                         ...(footerCellStyle?.(col, fi) ?? null),
                       }}

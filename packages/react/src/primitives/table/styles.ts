@@ -24,7 +24,7 @@ export const BASE_CELL_STYLE: React.CSSProperties = {
 export const borderStyle = (bordered: boolean): string =>
   bordered ? '1px solid var(--iris-border)' : 'none'
 export const TABLE_ROW_CSS = `
-[data-iris-table] [role="row"]:hover {
+[data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover {
   --iris-cell-bg: var(--iris-surface-hover);
 }
 [data-iris-table-row-selected="true"] {
@@ -35,6 +35,15 @@ export const TABLE_ROW_CSS = `
 }
 [data-iris-col-current="true"] {
   --iris-cell-bg: var(--iris-surface-selected);
+}
+/* Fixed height (batch N): the root becomes the scroll container; the header
+   row (flat AND grouped variants both carry data-iris-table-row="header") stays
+   visible with a sticky position. z-index 2 keeps it above pinned body cells
+   (zIndex 1 via pinnedStyle). */
+[data-iris-table-fixed-height] [data-iris-table-row="header"] {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 /* Size presets (vxe-grid size parity: medium / small / mini). */
 [data-iris-table][data-size="small"] {

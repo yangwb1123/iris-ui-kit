@@ -187,3 +187,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-m-gate.md [ok]: Summary: **Verdict:** PASS — but with 1 MEDIUM finding, so I applied the concrete fix first: group summary rows in `groupPlan.map
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-m-gate.md
+
+## 2026-08-10 07:34:31 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-n-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-n-baseline.md
+
+## 2026-08-10 07:47:38 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-n-adapt.md [ok]: Report: iris-ui vxe-grid batch N (height + header/footer align + footerMethod + hover highlight): | File | Change |; Files changed (5 source + 1 test; core untouched, React-only, additive): | File | Change |; Design decisions: - Sticky header: `[data-iris-table-fixed-height] [data-iris-table-row="header"] { position: sticky; top: 0; z-index: 2 }; Verification: - ✅ `pnpm --filter @iris-ui-kit/react typecheck` — clean; Unfinished / open items (baseline's 6 questions, resolved): 1. **group-summary × footerMethod**: footerMethod replaces only the _global_ summary row; per-group summaries (batch M g
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-n-adapt.md
+
+## 2026-08-10 07:54:32 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-n-review.md [ok]: Summary: **Verification run:** react typecheck ✅ clean · 1673 tests/152 files ✅ (14 new) · lint ✅ 0 errors (1 pre-existing comple
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-n-review.md

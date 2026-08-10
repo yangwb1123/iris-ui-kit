@@ -9,6 +9,8 @@ export {
   type IrisTableColumnWidths,
   type IrisTableEditor,
   type IrisTableAggregateOp,
+  type IrisTableAlign,
+  type IrisTableFooterMethodParams,
   type IrisTableCellEditEvent,
   type IrisTableVirtualOptions,
   type IrisTableRenderDetail,

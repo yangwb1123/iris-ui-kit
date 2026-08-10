@@ -36258,6 +36258,33 @@
           "description": "Custom footer rows (vxe footer-data parity): rendered below the summary row, one grid row per entry; structure matches `data`."
         },
         {
+          "name": "footerMethod",
+          "type": "(params: IrisTableFooterMethodParams<Row>) => Row[]",
+          "optional": true,
+          "description": "Custom footer rows (vxe footer-method parity, batch N): when present, REPLACES the summary op row with one grid row per returned entry — cell value = `entry[col.key]` — with the same row styling as the summary row; `footerData` still renders below. `columns` = leaf columns, `data` = the full (sorted + filtered) body rows."
+        },
+        {
+          "name": "headerAlign",
+          "type": "IrisTableAlign",
+          "optional": true,
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ]
+        },
+        {
+          "name": "footerAlign",
+          "type": "IrisTableAlign",
+          "optional": true,
+          "description": "wins over the column's `align`. Applies to summary, footer-method and",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ]
+        },
+        {
           "name": "rowClassName",
           "type": "(row: Row, rowIndex: number) => string",
           "optional": true,
@@ -36590,6 +36617,29 @@
           "description": "Pager options (vxe-grid pagerConfig parity)."
         },
         {
+          "name": "height",
+          "type": "number | string",
+          "optional": true
+        },
+        {
+          "name": "minHeight",
+          "type": "number | string",
+          "optional": true,
+          "description": "Minimum height of the fixed-height container (with `height`/`maxHeight`)."
+        },
+        {
+          "name": "maxHeight",
+          "type": "number | string",
+          "optional": true,
+          "description": "Maximum height of the fixed-height container (with `height`/`minHeight`)."
+        },
+        {
+          "name": "highlightHoverRow",
+          "type": "boolean",
+          "optional": true,
+          "description": "Highlight rows on hover (vxe highlight-hover-row parity, batch N). Default true."
+        },
+        {
           "name": "style",
           "type": "CSSProperties",
           "optional": true
@@ -36759,6 +36809,33 @@
               "type": "Row[]",
               "optional": true,
               "description": "Custom footer rows (vxe footer-data parity): rendered below the summary row, one grid row per entry; structure matches `data`."
+            },
+            {
+              "name": "footerMethod",
+              "type": "(params: IrisTableFooterMethodParams<Row>) => Row[]",
+              "optional": true,
+              "description": "Custom footer rows (vxe footer-method parity, batch N): when present, REPLACES the summary op row with one grid row per returned entry — cell value = `entry[col.key]` — with the same row styling as the summary row; `footerData` still renders below. `columns` = leaf columns, `data` = the full (sorted + filtered) body rows."
+            },
+            {
+              "name": "headerAlign",
+              "type": "IrisTableAlign",
+              "optional": true,
+              "enum": [
+                "left",
+                "center",
+                "right"
+              ]
+            },
+            {
+              "name": "footerAlign",
+              "type": "IrisTableAlign",
+              "optional": true,
+              "description": "wins over the column's `align`. Applies to summary, footer-method and",
+              "enum": [
+                "left",
+                "center",
+                "right"
+              ]
             },
             {
               "name": "rowClassName",
@@ -37093,6 +37170,29 @@
               "description": "Pager options (vxe-grid pagerConfig parity)."
             },
             {
+              "name": "height",
+              "type": "number | string",
+              "optional": true
+            },
+            {
+              "name": "minHeight",
+              "type": "number | string",
+              "optional": true,
+              "description": "Minimum height of the fixed-height container (with `height`/`maxHeight`)."
+            },
+            {
+              "name": "maxHeight",
+              "type": "number | string",
+              "optional": true,
+              "description": "Maximum height of the fixed-height container (with `height`/`minHeight`)."
+            },
+            {
+              "name": "highlightHoverRow",
+              "type": "boolean",
+              "optional": true,
+              "description": "Highlight rows on hover (vxe highlight-hover-row parity, batch N). Default true."
+            },
+            {
               "name": "style",
               "type": "CSSProperties",
               "optional": true
@@ -37127,6 +37227,7 @@
           ],
           "publicTypes": [
             "IrisTableAggregateOp",
+            "IrisTableAlign",
             "IrisTableCellClickParams",
             "IrisTableCellEditEvent",
             "IrisTableColumn",
@@ -37135,6 +37236,7 @@
             "IrisTableEditor",
             "IrisTableFilterOption",
             "IrisTableFilterValues",
+            "IrisTableFooterMethodParams",
             "IrisTableFormConfig",
             "IrisTableFormField",
             "IrisTableHandle",
@@ -37753,7 +37855,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 84,
+        "propCount": 91,
         "eventCount": 15
       }
     },

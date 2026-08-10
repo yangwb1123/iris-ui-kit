@@ -21,6 +21,9 @@ export type IrisTableFilterValues = Record<string, string[]>
 /** Aggregation op for a column's summary/footer cell. */
 export type IrisTableAggregateOp = 'sum' | 'avg' | 'min' | 'max' | 'count'
 
+/** Horizontal cell alignment (vxe align / header-align / footer-align parity). */
+export type IrisTableAlign = 'left' | 'center' | 'right'
+
 export interface IrisTableVirtualOptions {
   /** Per-row height in px (uniform). */
   itemHeight: number
@@ -215,6 +218,14 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    * the plan.
    */
   groupBy?: boolean
+}
+
+/** Params delivered to `IrisTableProps.footerMethod` (vxe footer-method parity). */
+export interface IrisTableFooterMethodParams<Row = Record<string, unknown>> {
+  /** Leaf columns of the table (grouped headers flattened). */
+  columns: IrisTableColumn<Row>[]
+  /** Full body rows (sorted + filtered). */
+  data: Row[]
 }
 
 export interface IrisTableCellEditEvent<Row = Record<string, unknown>> {

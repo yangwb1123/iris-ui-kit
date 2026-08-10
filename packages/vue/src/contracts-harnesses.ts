@@ -67,6 +67,8 @@ export function driverFor(container: HTMLElement, unmount: () => void = () => {}
         } else {
           el.dispatchEvent(new Event(`pointer${event}`, { bubbles: true, cancelable: true }))
         }
+        // 兼容监听 mouseenter/mouseleave 的组件（onMouseEnter 语义）
+        el.dispatchEvent(new MouseEvent(`mouse${event}`, { bubbles: true, cancelable: true }))
       }
     },
     type: (selector, index, text) => {

@@ -283,6 +283,7 @@ export function IrisList<T = unknown>({
               data-iris-list-index={index}
               data-iris-list-item=""
               data-state={selected ? 'selected' : active ? 'active' : 'idle'}
+              data-hovered={hoveredIndex === index ? 'true' : 'false'}
               onMouseEnter={() => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex((current) => (current === index ? -1 : current))}
               onClick={item.disabled ? undefined : () => select(item)}

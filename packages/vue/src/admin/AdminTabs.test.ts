@@ -82,6 +82,53 @@ describe('IrisAdminTabs', () => {
     expect(w.emitted('change')).toBeTruthy()
   })
 
+  it('× on a non-active tab restores focus to the active label', async () => {
+    const nav = createTabsNav()
+    nav.open({ key: 'a', title: 'A' })
+    nav.open({ key: 'b', title: 'B' })
+    nav.open({ key: 'c', title: 'C' }) // active = c
+    const w = mount(IrisAdminTabs, { props: { nav }, attachTo: document.body })
+    await w.findAll('[data-iris-tab-close]')[0]!.trigger('click') // close A
+    await w.vm.$nextTick()
+    expect(nav.getState().tabs.map((x) => x.key)).toEqual(['b', 'c'])
+    expect(nav.getState().activeKey).toBe('c')
+    expect(document.activeElement).toBe(w.find('[data-iris-tab-label][data-key="c"]').element)
+    w.unmount()
+  })
+
+  it('× on the active tab restores focus to the new active label', async () => {
+    const nav = createTabsNav()
+    nav.open({ key: 'a', title: 'A' })
+    nav.open({ key: 'b', title: 'B' })
+    nav.open({ key: 'c', title: 'C' }) // active = c
+    const w = mount(IrisAdminTabs, { props: { nav }, attachTo: document.body })
+    await w.findAll('[data-iris-tab-close]')[2]!.trigger('click') // close C
+    await w.vm.$nextTick()
+    expect(nav.getState().tabs.map((x) => x.key)).toEqual(['a', 'b'])
+    expect(nav.getState().activeKey).toBe('b')
+    expect(document.activeElement).toBe(w.find('[data-iris-tab-label][data-key="b"]').element)
+    w.unmount()
+  })
+
+  it('roving keyboard nav stays reachable after a mouse close', async () => {
+    const nav = createTabsNav()
+    nav.open({ key: 'a', title: 'A' })
+    nav.open({ key: 'b', title: 'B' })
+    nav.open({ key: 'c', title: 'C' }) // active = c
+    const w = mount(IrisAdminTabs, { props: { nav }, attachTo: document.body })
+    await w.findAll('[data-iris-tab-close]')[2]!.trigger('click') // close C → active = b
+    await w.vm.$nextTick()
+    expect(document.activeElement).toBe(w.find('[data-iris-tab-label][data-key="b"]').element)
+    // keydown must originate from the focused element and bubble to the tablist
+    document.activeElement!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+    )
+    await w.vm.$nextTick()
+    expect(nav.getState().activeKey).toBe('a') // wraps b → a
+    expect(w.emitted('change')!.at(-1)).toEqual(['a'])
+    w.unmount()
+  })
+
   it('Delete closes the focused tab', async () => {
     const nav = createTabsNav()
     nav.open({ key: 'a', title: 'A' })

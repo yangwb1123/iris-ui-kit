@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { usePaginatedResource } from './usePaginatedResource'
 import type { PageQuery, PageResult } from '@iris-ui-kit/core'
@@ -57,5 +57,54 @@ describe('@iris-ui-kit/vue usePaginatedResource', () => {
     await flushPromises()
     expect(wrapper.find('.page').text()).toBe('2')
     expect(wrapper.find('.count').text()).toBe('10')
+  })
+
+  it('uses the latest fetcher from a ref for page loads', async () => {
+    // AC2: reactive ref(fetcher) — every page load (goToPage AND refresh)
+    // must use the fresh closure, still receiving the PageQuery; stale
+    // closures are never re-invoked.
+    const first = vi.fn(async () => ({ items: [1], total: 1 }))
+    const second = vi.fn(async () => ({ items: [2], total: 1 }))
+    const third = vi.fn(async () => ({ items: [3], total: 1 }))
+    const fetcherRef = ref(first)
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          const p = usePaginatedResource(fetcherRef, { pageSize: 10 })
+          return () =>
+            h('div', null, [
+              h('span', { class: 'items' }, p.items.value.join(',')),
+              h('button', { class: 'page1', onClick: () => void p.goToPage(1) }, 'page1'),
+              h('button', { class: 'refresh', onClick: () => void p.refresh() }, 'refresh'),
+            ])
+        },
+      }),
+    )
+    // (1) first page load through the initial closure, receiving the PageQuery.
+    await wrapper.find('.page1').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.items').text()).toBe('1')
+    expect(first).toHaveBeenCalledTimes(1)
+    expect(first).toHaveBeenLastCalledWith({ page: 1, pageSize: 10 })
+
+    // (2) ref swap → goToPage uses the fresh closure.
+    fetcherRef.value = second
+    await wrapper.find('.page1').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.items').text()).toBe('2')
+    expect(second).toHaveBeenCalledTimes(1)
+    expect(second).toHaveBeenLastCalledWith({ page: 1, pageSize: 10 })
+
+    // (3) ref swap → refresh() replays through the fresh closure too.
+    fetcherRef.value = third
+    await wrapper.find('.refresh').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.items').text()).toBe('3')
+    expect(third).toHaveBeenCalledTimes(1)
+
+    // totals — no stale re-invocation on any path.
+    expect(first).toHaveBeenCalledTimes(1)
+    expect(second).toHaveBeenCalledTimes(1)
+    expect(third).toHaveBeenCalledTimes(1)
   })
 })

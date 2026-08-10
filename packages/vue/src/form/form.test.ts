@@ -1,9 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
+import { defineComponent, h, nextTick, type ComputedRef, type Ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
+import type { FormState } from '@iris-ui-kit/core'
 import { IrisForm } from './Form'
 import { useForm } from './useForm'
 import { useField } from './useField'
+import { useFieldArray } from './useFieldArray'
 
 const NameField = defineComponent({
   setup() {
@@ -118,6 +120,93 @@ describe('@iris-ui-kit/vue useForm / useField', () => {
     expect(() => mount(Bad)).toThrow(/within an <IrisForm>/)
     spy.mockRestore()
     errSpy.mockRestore()
+  })
+
+  it('typing in one field does not re-render another field (per-field slice subscriptions)', async () => {
+    let rendersA = 0
+    let rendersB = 0
+    let formApi!: ReturnType<typeof useForm<{ name: string; email: string }>>
+
+    const FieldA = defineComponent({
+      setup() {
+        const field = useField<string>('name')
+        return () => {
+          rendersA++
+          return h('input', {
+            'aria-label': 'a',
+            value: field.value.value,
+            onInput: (e: Event) => field.setValue((e.target as HTMLInputElement).value),
+          })
+        }
+      },
+    })
+    const FieldB = defineComponent({
+      setup() {
+        const field = useField<string>('email')
+        return () => {
+          rendersB++
+          return h('input', {
+            'aria-label': 'b',
+            value: field.value.value,
+            onInput: (e: Event) => field.setValue((e.target as HTMLInputElement).value),
+          })
+        }
+      },
+    })
+
+    // Harness render reads NO reactive form state — it cannot propagate its own
+    // re-renders to the fields (children re-render only on their own deps).
+    const Harness = defineComponent({
+      setup() {
+        const form = useForm({ initialValues: { name: '', email: '' } })
+        formApi = form
+        return () => h(IrisForm, { form: form.form }, { default: () => [h(FieldA), h(FieldB)] })
+      },
+    })
+    const wrapper = mount(Harness)
+    await nextTick()
+    expect(rendersA).toBe(1)
+    expect(rendersB).toBe(1)
+
+    // Type into field B first — A must not re-render (the symmetric half).
+    await wrapper.find('input[aria-label="b"]').setValue('b@x.com')
+    await nextTick()
+    expect(rendersA).toBe(1)
+    expect(rendersB).toBe(2)
+    const rendersBBeforeTypingA = rendersB
+
+    // Type into field A — B's render must NOT be re-invoked by A's keystroke
+    // (only B's own slice moved); A itself re-renders (sanity).
+    await wrapper.find('input[aria-label="a"]').setValue('ann')
+    await nextTick()
+    expect(rendersA).toBe(2)
+    expect(rendersB).toBe(rendersBBeforeTypingA)
+
+    // B's value stays current in the DOM and in the store.
+    expect(
+      (wrapper.find<HTMLInputElement>('input[aria-label="b"]').element as HTMLInputElement).value,
+    ).toBe('b@x.com')
+    expect(formApi.form.getState().values.email).toBe('b@x.com')
+  })
+
+  it('exposes the published member types unchanged (compile-time pins)', () => {
+    // Type-level indexing (runtime no-ops): pins the published d.ts contract so
+    // a future edit that breaks assignability fails both `typecheck` and `test`.
+    expectTypeOf<
+      ReturnType<typeof useForm<{ name: string; email: string }>>['state']
+    >().toEqualTypeOf<Ref<FormState<{ name: string; email: string }>>>()
+    expectTypeOf<ReturnType<typeof useField<string>>['value']>().toEqualTypeOf<
+      ComputedRef<string>
+    >()
+    expectTypeOf<ReturnType<typeof useField<string>>['error']>().toEqualTypeOf<
+      ComputedRef<string | undefined>
+    >()
+    expectTypeOf<ReturnType<typeof useField<string>>['touched']>().toEqualTypeOf<
+      ComputedRef<boolean>
+    >()
+    expectTypeOf<ReturnType<typeof useFieldArray<string>>['fields']>().toEqualTypeOf<
+      ComputedRef<string[]>
+    >()
   })
 })
 

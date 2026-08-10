@@ -45,4 +45,61 @@ describe('SkinProvider / useSkin (Vue)', () => {
     wrapper.unmount()
     expect(document.documentElement.getAttribute('data-iris-skin')).toBeNull()
   })
+
+  it('re-applies the skin to the new target on target swap (parity with react/solid/svelte)', async () => {
+    const engine = createSkinEngine({ skins: [brand], default: 'light' })
+    const el1 = document.createElement('div')
+    const el2 = document.createElement('div')
+    document.body.append(el1, el2)
+    try {
+      const wrapper = mount(SkinProvider, {
+        props: { engine, target: el1 },
+        slots: { default: () => h(Probe) },
+      })
+      expect(el1.getAttribute('data-iris-skin')).toBe('light')
+      expect(el1.style.getPropertyValue('--iris-primary')).not.toBe('')
+
+      await wrapper.setProps({ target: el2 })
+      // old target reverted, new target applied
+      expect(el1.getAttribute('data-iris-skin')).toBeNull()
+      expect(el1.style.getPropertyValue('--iris-primary')).toBe('')
+      expect(el2.getAttribute('data-iris-skin')).toBe('light')
+      expect(el2.style.getPropertyValue('--iris-primary')).not.toBe('')
+
+      // setSkin after a swap lands on the new target, old target stays clean
+      await wrapper.get('[data-testid="b"]').trigger('click')
+      expect(el2.getAttribute('data-iris-skin')).toBe('brand')
+      expect(el2.style.getPropertyValue('--iris-primary')).toBe('#abc')
+      expect(el1.getAttribute('data-iris-skin')).toBeNull()
+      expect(el1.style.getPropertyValue('--iris-primary')).toBe('')
+      wrapper.unmount()
+    } finally {
+      el1.remove()
+      el2.remove()
+    }
+  })
+
+  it('reverts the post-swap target on unmount', async () => {
+    const engine = createSkinEngine({ skins: [brand], default: 'brand' })
+    const el1 = document.createElement('div')
+    const el2 = document.createElement('div')
+    document.body.append(el1, el2)
+    try {
+      const wrapper = mount(SkinProvider, {
+        props: { engine, target: el1 },
+        slots: { default: () => h('span') },
+      })
+      await wrapper.setProps({ target: el2 })
+      expect(el2.getAttribute('data-iris-skin')).toBe('brand')
+
+      wrapper.unmount()
+      // the post-swap element is reverted, the original stays clean
+      expect(el2.getAttribute('data-iris-skin')).toBeNull()
+      expect(el2.style.getPropertyValue('--iris-primary')).toBe('')
+      expect(el1.getAttribute('data-iris-skin')).toBeNull()
+    } finally {
+      el1.remove()
+      el2.remove()
+    }
+  })
 })

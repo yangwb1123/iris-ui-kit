@@ -47,6 +47,7 @@ import {
   tableColumnResizeScenario,
   formScenario,
   listKeyboardScenario,
+  listHoverScenario,
   type ContractDriver,
 } from '@iris-ui-kit/core/contracts'
 import {
@@ -345,7 +346,11 @@ function driverFor(container: HTMLElement, unmount: () => void = () => {}): Cont
     },
     pointer: (selector, index, event) => {
       const el = at(selector, index)
-      if (el) fireEvent(el, new MouseEvent(`pointer${event}`, { bubbles: true }))
+      if (el) {
+        fireEvent(el, new MouseEvent(`pointer${event}`, { bubbles: true }))
+        // 兼容监听 mouseenter/mouseleave 的组件
+        fireEvent(el, new MouseEvent(`mouse${event}`, { bubbles: true }))
+      }
     },
     dblclick: (selector, index) => {
       const el = at(selector, index)
@@ -832,6 +837,19 @@ describe('@iris-ui-kit/solid — cross-framework behavior contracts', () => {
       />
     ))
     await runContract(listKeyboardScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared List hover contract', async () => {
+    const { container } = render(() => (
+      <IrisList
+        items={[
+          { value: 'a', label: 'Alpha' },
+          { value: 'b', label: 'Bravo' },
+          { value: 'c', label: 'Charlie' },
+        ]}
+      />
+    ))
+    await runContract(listHoverScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Form contract', async () => {

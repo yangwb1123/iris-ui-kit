@@ -284,4 +284,51 @@ describe('IrisTree data states', () => {
     expect(w.find('[data-iris-tree-state]').exists()).toBe(false)
     expect(w.find('[data-iris-tree-item]').exists()).toBe(true)
   })
+
+  it('keeps nodes mounted during revalidate (SWR) with aria-busy', () => {
+    const w = mount(IrisTree, {
+      props: { nodes: [{ id: 'a', label: 'A' }], loading: true },
+    })
+    expect(w.find('[data-iris-tree-state]').exists()).toBe(false)
+    expect(w.findAll('[data-iris-tree-item]').length).toBe(1)
+    expect(w.find('[role=tree]').attributes('aria-busy')).toBe('true')
+  })
+
+  it('keeps nodes mounted when revalidate also errors (stale-while-revalidate)', () => {
+    const w = mount(IrisTree, {
+      props: { nodes: [{ id: 'a', label: 'A' }], loading: true, error: true },
+    })
+    expect(w.find('[data-iris-tree-state]').exists()).toBe(false)
+    expect(w.findAll('[data-iris-tree-item]').length).toBe(1)
+    expect(w.find('[role=tree]').attributes('aria-busy')).toBe('true')
+  })
+
+  it('aria-busy tracks props.loading on the root, not the resolved state', async () => {
+    const w = mount(IrisTree, { props: { nodes: [{ id: 'a', label: 'A' }] } })
+    expect(w.find('[role=tree]').attributes('aria-busy')).toBeUndefined()
+    await w.setProps({ loading: true })
+    expect(w.find('[role=tree]').attributes('aria-busy')).toBe('true')
+    // Empty nodes + loading still renders the state node (byte-identical
+    // precedence), but the busy flag now also covers the error-over-loading case.
+    await w.setProps({ nodes: [], loading: true })
+    expect(w.find('[data-iris-tree-state]').attributes('data-iris-tree-state')).toBe('loading')
+    await w.setProps({ loading: true, error: true })
+    expect(w.find('[data-iris-tree-state]').attributes('data-iris-tree-state')).toBe('error')
+    expect(w.find('[role=tree]').attributes('aria-busy')).toBe('true')
+  })
+
+  it('keeps keyboard navigation live during revalidate', async () => {
+    const w = mount(IrisTree, {
+      props: {
+        nodes: [
+          { id: 'a', label: 'A' },
+          { id: 'b', label: 'B' },
+        ],
+        loading: true,
+      },
+    })
+    await w.findAll('[data-iris-tree-item]')[0]!.trigger('keydown', { key: 'ArrowDown' })
+    await nextTick()
+    expect(w.findAll('[data-iris-tree-item]')[1]!.attributes('tabindex')).toBe('0')
+  })
 })

@@ -30,7 +30,7 @@
 
 ## 2026-08-08 20:43:08 — stage 'adapt' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-d-adapt.md [ok]: Report; Files changed (10 source/test files + 2 docs): **Core-side (4 files + 1 test; framework-free invariant holds — `grep "from '(react|vue|solid|svelte)'" packages/core/sr; Test counts: - **Core: 1230/1230 passed (80 files)** — 13 new; Deviations from the baseline design: 1. **`IrisTableFormField<Row>`generic dropped** → plain interface: repo's`noUnusedLocals` makes an unused type param a
+- task /home/u1/iris-ui/docs/vxe-grid/batch-d-adapt.md [ok]: Report; Files changed (10 source/test files + 2 docs): **Core-side (4 files + 1 test; framework-free invariant holds — `grep "from '(react|vue|solid|svelte)'" packages/core/sr; Test counts: - **Core: 1230/1230 passed (80 files)** — 13 new; Deviations from the baseline design: 1. **`IrisTableFormField<Row>`generic dropped\*\* → plain interface: repo's`noUnusedLocals` makes an unused type param a
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-d-adapt.md
 
 ## 2026-08-08 20:51:31 — stage 'review' — PASS

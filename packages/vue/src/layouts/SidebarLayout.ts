@@ -35,12 +35,16 @@ export const IrisSidebarLayout = defineComponent({
     )
 
     // Sync controlled prop changes into internal state on first run so a later
-    // detach to uncontrolled mode preserves the last-known value.
+    // detach to uncontrolled mode preserves the last-known value. `immediate`
+    // fires the watcher on mount; the `value !== undefined` guard keeps the
+    // first run a no-op for pure-uncontrolled mounts so `defaultCollapsed`
+    // stays untouched.
     watch(
       () => props.collapsed,
       (value) => {
         if (value !== undefined) internalCollapsed.value = value
       },
+      { immediate: true },
     )
 
     const setCollapsed = (value: boolean) => {

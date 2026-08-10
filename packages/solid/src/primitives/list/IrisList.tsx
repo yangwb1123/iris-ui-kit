@@ -1,4 +1,4 @@
-import { createEffect, For, mergeProps, Show, splitProps, type JSX } from 'solid-js'
+import { createEffect, createSignal, For, mergeProps, Show, splitProps, type JSX } from 'solid-js'
 import { createSelectionModel, createKeyboardNav, type KeyboardNavAction } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
@@ -57,6 +57,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
   ])
 
   const { t } = useI18n()
+  const [hoveredIndex, setHoveredIndex] = createSignal(-1)
   const { state, isContent, stateProps } = useDataState(() => ({
     loading: local.loading,
     error: local.error,
@@ -192,6 +193,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
                 data-iris-list-index={i}
                 data-iris-list-item=""
                 data-state={selected() ? 'selected' : active() ? 'active' : 'idle'}
+                data-hovered={hoveredIndex() === i ? 'true' : 'false'}
                 onClick={() => {
                   if (!item.disabled) {
                     nav.focus(i)
@@ -199,6 +201,8 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
                   }
                 }}
                 onFocus={() => nav.focus(i)}
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex((current) => (current === i ? -1 : current))}
                 style={{
                   display: 'flex',
                   'align-items': 'center',
@@ -210,9 +214,11 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
                   'font-size': 'var(--iris-font-size-md, 14px)',
                   background: selected()
                     ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
-                    : active()
+                    : hoveredIndex() === i
                       ? 'var(--iris-surface-hover)'
-                      : 'transparent',
+                      : active()
+                        ? 'var(--iris-surface-hover)'
+                        : 'transparent',
                   color: 'var(--iris-foreground)',
                   'font-weight': selected() ? '600' : '400',
                   outline: 'none',

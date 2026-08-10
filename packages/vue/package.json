@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/vue",
-  "version": "0.2.21",
+  "version": "0.2.25",
   "description": "Vue 3.5 adapter for Iris UI — full component set",
   "license": "MIT",
   "type": "module",
@@ -119,11 +119,11 @@
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.6",
-    "@iris-ui-kit/core": "workspace:*",
-    "@iris-ui-kit/icons": "workspace:*",
-    "@iris-ui-kit/skins": "workspace:*",
-    "@iris-ui-kit/theme": "workspace:*",
-    "@iris-ui-kit/tokens": "workspace:*"
+    "@iris-ui-kit/core": "0.2.0",
+    "@iris-ui-kit/icons": "0.2.0",
+    "@iris-ui-kit/skins": "0.1.0",
+    "@iris-ui-kit/theme": "0.2.0",
+    "@iris-ui-kit/tokens": "0.2.0"
   },
   "peerDependencies": {
     "vue": "^3.5.0"

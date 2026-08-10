@@ -1,4 +1,4 @@
-import { defineComponent, h, onBeforeUnmount, type PropType } from 'vue'
+import { defineComponent, h, onBeforeUnmount, watch, type PropType } from 'vue'
 import { createLongPress } from '@iris-ui-kit/core'
 
 /**
@@ -35,13 +35,13 @@ export const IrisLongPress = defineComponent({
     longpress: () => true,
   },
   setup(props, { slots, emit }) {
-    const ctrl = createLongPress({
-      holdDelay: props.holdDelay,
-      onLongPress: () => {
-        props.onLongPress?.()
-        emit('longpress')
-      },
-    })
+    const fire = () => {
+      props.onLongPress?.()
+      emit('longpress')
+    }
+    // `let`, not `const`: reassigned on holdDelay change; closures (handlers,
+    // unmount hook) read the CURRENT binding.
+    let ctrl = createLongPress({ holdDelay: props.holdDelay, onLongPress: fire })
 
     const onPointerDown = () => {
       if (props.disabled) return
@@ -53,6 +53,30 @@ export const IrisLongPress = defineComponent({
     const onPointerLeave = () => {
       ctrl.cancel()
     }
+    // Touch scroll / system gesture: the pointer is removed from the active
+    // set without pointerup — send CANCEL so the pending hold never fires.
+    const onPointerCancel = () => {
+      ctrl.cancel()
+    }
+
+    // holdDelay prop changes re-arm the timer with the new value.
+    watch(
+      () => props.holdDelay,
+      (holdDelay) => {
+        const wasPressing = ctrl.state() === 'pressing'
+        ctrl.cancel() // clears the pending after-timer (machine exit cancels pending)
+        ctrl = createLongPress({ holdDelay, onLongPress: fire })
+        if (wasPressing) ctrl.press() // re-arm with the new delay
+      },
+    )
+
+    // disabled flipping true mid-hold aborts the pending gesture.
+    watch(
+      () => props.disabled,
+      (disabled) => {
+        if (disabled) ctrl.cancel()
+      },
+    )
 
     onBeforeUnmount(() => ctrl.cancel())
 
@@ -65,6 +89,7 @@ export const IrisLongPress = defineComponent({
           onPointerdown: onPointerDown,
           onPointerup: onPointerUp,
           onPointerleave: onPointerLeave,
+          onPointercancel: onPointerCancel,
         },
         slots.default?.(),
       )

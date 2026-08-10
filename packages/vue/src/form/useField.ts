@@ -1,6 +1,7 @@
-import { computed, onBeforeUnmount, ref, type ComputedRef, type Ref } from 'vue'
-import { formatPath, getByPath, type FormState, type FormValues } from '@iris-ui-kit/core'
+import { computed, type ComputedRef } from 'vue'
+import { formatPath, getByPath, parsePath } from '@iris-ui-kit/core'
 import { useFormContext } from './context'
+import { useStoreSelector } from '../useStore'
 
 export interface FieldBindProps {
   modelValue: unknown
@@ -35,23 +36,36 @@ export interface UseFieldReturn<T> {
  */
 export function useField<T = unknown>(name: string): UseFieldReturn<T> {
   const form = useFormContext()
-  const state = ref(form.getState()) as Ref<FormState<FormValues>>
-  const unsubscribe = form.subscribe((next) => {
-    state.value = next
-  })
-  onBeforeUnmount(unsubscribe)
 
   // Canonical key for per-field state lookups (a flat key maps to itself).
   const key = formatPath(name)
-  const value = computed(() => getByPath(state.value.values, name) as T)
-  const error = computed(() => state.value.errors[key])
+  // Hoisted once — selectors run on every store emission (core `subscribeWith`).
+  const segments = parsePath(name)
+
+  // Four narrow per-field slices, each Object.is-gated by core `subscribeWith`.
+  // Core writes use structural sharing (`setByPath`, per-key flag spread-copies),
+  // so an unrelated keystroke does NOT move these refs and this field's computeds
+  // do not invalidate (previously a whole-form deep `ref` re-ran every field's
+  // computeds on every emission). Selectors are allocation-free by construction.
+  const valueSlice = useStoreSelector(form.store, (s) => getByPath(s.values, segments) as T)
+  const errorSlice = useStoreSelector(form.store, (s) => s.errors[key])
+  const touchedSlice = useStoreSelector(form.store, (s) => Boolean(s.touched[key]))
+  const dirtySlice = useStoreSelector(form.store, (s) => Boolean(s.dirty[key]))
+
+  // computed wrappers keep the published ComputedRef<T> member types exactly as
+  // declared (a bare shallow ref is not assignable to ComputedRef in Vue 3.4+),
+  // and each computed invalidates only when its own slice actually moves.
+  const value = computed(() => valueSlice.value)
+  const error = computed(() => errorSlice.value)
+  const touched = computed(() => touchedSlice.value)
+  const dirty = computed(() => dirtySlice.value)
 
   return {
     name,
     value,
     error,
-    touched: computed(() => Boolean(state.value.touched[key])),
-    dirty: computed(() => Boolean(state.value.dirty[key])),
+    touched,
+    dirty,
     setValue: (next) => form.setFieldValue(name, next as never),
     setTouched: (touched = true) => form.setFieldTouched(name, touched),
     fieldProps: computed(() => ({

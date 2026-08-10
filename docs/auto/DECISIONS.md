@@ -12,3 +12,18 @@
 
 - task .pi-batch/sverp/gate.md [ok]: Gatekeeper Verification: **1. Ownership — ✅ confirmed library defect**
 - evidence: .pi-batch/sverp/gate.md
+
+## 2026-08-07 13:14:02 — stage 'diagnose' — PASS
+
+- task .pi-batch/sverp/diagnose.md [ok]: Ownership determination: **缺陷属于 iris-ui 组件库**（四个框架的 `useUndoStack` bridge 层 + core 无通知机制的设计缺口），**不是 sverpweb-stable 业务逻辑**。sverpweb-stable 当前 mai; 缺陷组 (1)：raw `stack` 直接变更绕过 `sync()` —— 四框架全部存在（vue 0.2.19 亦未修复）; 根因: 四个 bridge 都把 core 的裸可变 stack 原样返回，只包装了返回对象里的 `push/undo/redo/clear` 函数，没有包装 `stack` 本身：; 复现路径（sverpweb-stable 任何消费方）: ```ts; 期望 vs 实际: | | 期望 | 实际 |
+- evidence: .pi-batch/sverp/diagnose.md
+
+## 2026-08-07 13:17:39 — stage 'fix' — PASS
+
+- task .pi-batch/sverp/fix.md [ok]: Change Report: **Ownership:** Library defect in iris-ui (not routed to sverpweb) → implemented. The vue package already carried the 组 (; Files & symbols: **1. `packages/vue/src/undo/useUndoStack.ts`** (modified); Regression tests — `packages/vue/src/undo/useUndoStack.test.ts` (3 new, 11 → 14): 1. **"regression: raw stack direct mutations keep reactive state in sync"** — held-reference consumer pattern (`const s ; Command results: | Command | Result |; Discipline checks: - Only `packages/vue/src/\*\*`touched: git shows exactly`M packages/vue/src/undo/useUndoStack.ts`+`M packages/vue/src/
+- evidence: .pi-batch/sverp/fix.md
+
+## 2026-08-07 13:19:43 — stage 'gate' — PASS (gate verdict: PASS)
+
+- task .pi-batch/sverp/gate.md [ok]
+- evidence: .pi-batch/sverp/gate.md

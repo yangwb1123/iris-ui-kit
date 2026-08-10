@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 // @vitest-environment node
 //
 // Server-side rendering smoke harness (ROADMAP #1, Vue side — mirrors
@@ -15,8 +15,10 @@ import { describe, it, expect } from 'vitest'
 //   3. ARIA associations (`for` / `aria-describedby`) survive SSR with matching
 //      ids, so screen-reader wiring is intact before hydration.
 import { describe, expect, it } from 'vitest'
-import { createSSRApp, h, type VNode } from 'vue'
+import { createSSRApp, defineComponent, h, type VNode } from 'vue'
 import { renderToString } from '@vue/server-renderer'
+
+import { useDataSource, type UseDataSource } from './data/useDataSource'
 
 import {
   IrisButton,
@@ -158,5 +160,24 @@ describe('@iris-ui-kit/vue SSR', () => {
     const describedBy = html.match(/aria-describedby="([^"]+)"/)?.[1]
     expect(describedBy).toBeTruthy()
     expect(html).toContain(`id="${describedBy}"`)
+  })
+
+  it('useDataSource: server render never fetches; empty state renders', async () => {
+    const fetcher = vi.fn(async () => ({ rows: [{ id: 1 }], total: 1 }))
+    let ds!: UseDataSource<{ id: number }>
+    const Comp = defineComponent({
+      setup() {
+        ds = useDataSource({ fetcher, immediate: true, pageSize: 10 })
+        return () => h('div', { 'data-iris-ds-ssr': '' }, String(ds.state.value.rows.length))
+      },
+    })
+    const html = await renderToString(createSSRApp(Comp))
+    // onMounted never runs server-side → the bridge must not fetch during SSR.
+    expect(fetcher).not.toHaveBeenCalled()
+    expect(html.length).toBeGreaterThan(0)
+    expect(html).toContain('data-iris-ds-ssr')
+    // Empty-state row count renders (synchronous seed, SSR-safe).
+    expect(html).toContain('>0<')
+    expect(ds.state.value.rows).toEqual([])
   })
 })

@@ -43,6 +43,7 @@ export { dataSourceScenario } from './scenarios/data-source'
 export { dataSourceAsyncScenario } from './scenarios/data-source-async'
 export { dataSourceResilientScenario } from './scenarios/data-source-resilient'
 export { listKeyboardScenario } from './scenarios/list-keyboard'
+export { listHoverScenario } from './scenarios/list-hover'
 export type {
   ContractScenario,
   ContractStep,

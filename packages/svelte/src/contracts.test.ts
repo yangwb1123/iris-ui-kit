@@ -45,6 +45,7 @@ import {
   splitButtonScenario,
   formScenario,
   listKeyboardScenario,
+  listHoverScenario,
   tableCellEditScenario,
   tableColumnResizeScenario,
   type ContractDriver,
@@ -111,6 +112,13 @@ function driverFor(container: HTMLElement, unmount: () => void = () => {}): Cont
       })
       Object.defineProperty(ev, 'pointerType', { value: 'mouse' })
       await fireEvent(el, ev)
+      // 兼容监听 mouseenter/mouseleave 的组件
+      await fireEvent(
+        el,
+        new MouseEvent(eventType === 'enter' ? 'mouseenter' : 'mouseleave', {
+          bubbles: true,
+        }),
+      )
     },
     flush: async () => {
       // Sync scenarios settle with a single flushSync(). Async ops resolve on the
@@ -566,5 +574,18 @@ describe('@iris-ui-kit/svelte — cross-framework behavior contracts', () => {
       },
     })
     await runContract(listKeyboardScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared List hover contract', async () => {
+    const { container } = render(IrisList, {
+      props: {
+        items: [
+          { value: 'a', label: 'Alpha' },
+          { value: 'b', label: 'Bravo' },
+          { value: 'c', label: 'Charlie' },
+        ],
+      },
+    })
+    await runContract(listHoverScenario, driverFor(container), expect)
   })
 })

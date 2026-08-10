@@ -45,6 +45,7 @@ import {
   bannerScenario,
   formScenario,
   listKeyboardScenario,
+  listHoverScenario,
   tableCellEditScenario,
   tableColumnResizeScenario,
 } from '@iris-ui-kit/core/contracts'
@@ -527,6 +528,22 @@ describe('@iris-ui-kit/vue — cross-framework behavior contracts', () => {
     await nextTick()
     await nextTick()
     await runContract(dataSourceAsyncScenario, driverFor(wrapper.element as HTMLElement), expect)
+  })
+
+  it('satisfies the shared List hover contract', async () => {
+    const el = makeHost()
+    mount(IrisList, {
+      attachTo: el,
+      props: {
+        items: [
+          { value: 'a', label: 'Alpha' },
+          { value: 'b', label: 'Bravo' },
+          { value: 'c', label: 'Charlie' },
+        ],
+      },
+    })
+    await nextTick()
+    await runContract(listHoverScenario, driverFor(el), expect)
   })
 
   it('satisfies the shared resilient DataSource contract', async () => {

@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref, type ComputedRef, type Ref } from 'vue'
+import { computed, type ComputedRef, type Ref } from 'vue'
 import {
   createFormStore,
   type FieldErrors,
@@ -8,6 +8,7 @@ import {
   type FormStore,
   type FormValues,
 } from '@iris-ui-kit/core'
+import { useStore } from '../useStore'
 
 export interface UseFormReturn<V extends FormValues> {
   /** The form store — pass to `<IrisForm :form="...">`. */
@@ -35,18 +36,23 @@ export interface UseFormReturn<V extends FormValues> {
 
 /**
  * Vue binding for the framework-agnostic form engine. Creates the store in
- * `setup()` (runs once) and bridges it into Vue reactivity via a `ref` updated
- * on each store change, cleaned up on unmount. Because `setup` runs once,
+ * `setup()` (runs once) and bridges it into Vue reactivity via `useStore` (a
+ * shallow snapshot ref updated on each store change, detached on scope
+ * dispose). Because `setup` runs once,
  * `onSubmit` / `validate` closures stay live against reactive state — no
  * stale-callback handling is needed (unlike the React adapter).
  */
 export function useForm<V extends FormValues>(config: FormConfig<V>): UseFormReturn<V> {
   const form = createFormStore(config)
-  const state = ref(form.getState()) as Ref<FormState<V>>
-  const unsubscribe = form.subscribe((next) => {
-    state.value = next
-  })
-  onBeforeUnmount(unsubscribe)
+
+  // Whole-state bridge via the shared `useStore` (shallow, detached on scope
+  // dispose — identical to the old `onBeforeUnmount` for setup-scope consumers,
+  // and correct for nested scopes too). The published `state: Ref<FormState<V>>`
+  // type is unchanged (R5); the runtime is a shallow snapshot — the store is the
+  // only write path (it always was), so this localized cast is type-only. The
+  // per-field narrowing payoff comes from `useField` / `useFieldArray`; the
+  // form-level computeds below are whole-form aggregates by design.
+  const state = useStore(form.store) as unknown as Ref<FormState<V>>
 
   return {
     form,

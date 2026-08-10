@@ -1,4 +1,4 @@
-import { defineComponent, h, ref, type PropType } from 'vue'
+import { computed, defineComponent, h, ref, watch, type PropType } from 'vue'
 import { IrisSidebarLayout } from '../layouts/SidebarLayout'
 import { IrisHeaderLayout } from '../layouts/HeaderLayout'
 import { IrisDashboardGrid, IrisDashboardCard } from '../layouts/DashboardGrid'
@@ -38,13 +38,37 @@ export const IrisDashboardTemplate = defineComponent({
     /** Cards to render in the main grid. Skip to use the `default` slot only. */
     cards: { type: Array as PropType<IrisDashboardCardSpec[]>, default: () => [] },
     defaultCollapsed: { type: Boolean, default: false },
+    /**
+     * Controlled collapsed state. When unset (`undefined`), the component
+     * manages its own state seeded from `defaultCollapsed`; when set, this
+     * value takes precedence and changes are re-emitted via
+     * `update:collapsed` (`v-model:collapsed`).
+     */
+    collapsed: { type: Boolean, default: undefined },
   },
   emits: {
     'update:activeId': (_id: string) => true,
     'update:collapsed': (_value: boolean) => true,
   },
   setup(props, { attrs, slots, emit }) {
-    const collapsed = ref(props.defaultCollapsed)
+    const isControlled = computed(() => props.collapsed !== undefined)
+    const internalCollapsed = ref(props.defaultCollapsed)
+    const collapsed = computed(() =>
+      isControlled.value ? Boolean(props.collapsed) : internalCollapsed.value,
+    )
+
+    // Sync controlled prop changes into internal state on first run so a later
+    // detach to uncontrolled mode preserves the last-known value (mirrors
+    // IrisSidebarLayout). `immediate` fires the watcher on mount; the
+    // `value !== undefined` guard keeps the first run a no-op for
+    // pure-uncontrolled mounts so `defaultCollapsed` stays untouched.
+    watch(
+      () => props.collapsed,
+      (value) => {
+        if (value !== undefined) internalCollapsed.value = value
+      },
+      { immediate: true },
+    )
 
     const onSelectNav = (id: string) => {
       emit('update:activeId', id)
@@ -69,7 +93,7 @@ export const IrisDashboardTemplate = defineComponent({
           {
             collapsed: collapsed.value,
             'onUpdate:collapsed': (v: boolean) => {
-              collapsed.value = v
+              if (!isControlled.value) internalCollapsed.value = v
               emit('update:collapsed', v)
             },
             width: 240,

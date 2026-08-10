@@ -112,6 +112,7 @@ export function IrisCascader({
   const [open, setOpen] = React.useState(false)
   const [activePath, setActivePath] = React.useState<string[]>(defaultValue)
   const [focused, setFocused] = React.useState(false)
+  const [hoveredValue, setHoveredValue] = React.useState<string | null>(null)
 
   const columns = buildColumns(options, activePath)
   const labels = pathLabels(options, currentValue)
@@ -168,6 +169,8 @@ export function IrisCascader({
         data-iris-cascader-option=""
         data-value={node.value}
         onClick={() => selectOption(ci, node)}
+        onMouseEnter={() => setHoveredValue(node.value)}
+        onMouseLeave={() => setHoveredValue((current) => (current === node.value ? null : current))}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -178,7 +181,10 @@ export function IrisCascader({
           borderRadius: 'var(--iris-radius-sm, 4px)',
           cursor: node.disabled ? 'not-allowed' : 'pointer',
           color: node.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
-          background: isActive ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))' : 'transparent',
+          background:
+            isActive || hoveredValue === node.value
+              ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+              : 'transparent',
           ...(virtual ? { height: '100%', boxSizing: 'border-box' } : null),
         }}
       >

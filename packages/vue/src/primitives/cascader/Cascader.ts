@@ -89,6 +89,7 @@ export const IrisCascader = defineComponent({
     const open = ref(false)
     const focused = ref(false)
     const activePath = ref<string[]>([...props.modelValue])
+    const hoveredValue = ref<string | null>(null)
     let rootEl: HTMLElement | null = null
 
     const toggleOpen = () => {
@@ -141,6 +142,12 @@ export const IrisCascader = defineComponent({
             'data-iris-cascader-option': '',
             'data-value': node.value,
             onClick: () => selectOption(ci, node),
+            onMouseenter: () => {
+              hoveredValue.value = node.value
+            },
+            onMouseleave: () => {
+              if (hoveredValue.value === node.value) hoveredValue.value = null
+            },
             style: {
               display: 'flex',
               alignItems: 'center',
@@ -151,9 +158,10 @@ export const IrisCascader = defineComponent({
               borderRadius: 'var(--iris-radius-sm, 4px)',
               cursor: node.disabled ? 'not-allowed' : 'pointer',
               color: node.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
-              background: isActive
-                ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-                : 'transparent',
+              background:
+                isActive || hoveredValue.value === node.value
+                  ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+                  : 'transparent',
               ...(props.virtual ? { height: '100%', boxSizing: 'border-box' } : null),
             },
           },

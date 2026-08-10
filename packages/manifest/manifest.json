@@ -354,6 +354,12 @@
               "type": "boolean",
               "optional": true,
               "default": "false"
+            },
+            {
+              "name": "collapsible",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             }
           ],
           "events": [
@@ -2543,6 +2549,12 @@
               "type": "string",
               "optional": true,
               "default": ""
+            },
+            {
+              "name": "closable",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             },
             {
               "name": "open",
@@ -5504,6 +5516,12 @@
               "optional": true
             },
             {
+              "name": "weekStartsOn",
+              "type": "number",
+              "optional": true,
+              "default": "0"
+            },
+            {
               "name": "locale",
               "type": "string",
               "optional": true
@@ -6958,6 +6976,11 @@
             },
             {
               "name": "ariaDescribedby",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "ariaLabel",
               "type": "string",
               "optional": true
             },
@@ -8552,6 +8575,12 @@
                 "md",
                 "lg"
               ]
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             },
             {
               "name": "emptyText",
@@ -10863,6 +10892,11 @@
               "type": "boolean",
               "optional": true,
               "default": "false"
+            },
+            {
+              "name": "collapsed",
+              "type": "boolean",
+              "optional": true
             }
           ],
           "events": [
@@ -14843,6 +14877,12 @@
               "type": "boolean",
               "optional": true,
               "default": "false"
+            },
+            {
+              "name": "keepOpen",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             }
           ],
           "events": [
@@ -16240,6 +16280,7 @@
           ],
           "events": [
             "accept",
+            "reject",
             "update:modelValue"
           ],
           "slots": [
@@ -18111,6 +18152,12 @@
               "type": "number | string",
               "optional": true,
               "default": "auto"
+            },
+            {
+              "name": "sticky",
+              "type": "boolean",
+              "optional": true,
+              "default": "true"
             }
           ],
           "events": [],
@@ -18629,6 +18676,12 @@
               "name": "i18n",
               "type": "I18n",
               "optional": true
+            },
+            {
+              "name": "autoDirection",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             },
             {
               "name": "directionTarget",
@@ -20483,6 +20536,11 @@
               "optional": false
             },
             {
+              "name": "modelValue",
+              "type": "unknown",
+              "optional": true
+            },
+            {
               "name": "multi",
               "type": "boolean",
               "optional": true,
@@ -21167,6 +21225,12 @@
         "vue": {
           "source": "native",
           "props": [
+            {
+              "name": "holdDelay",
+              "type": "number",
+              "optional": true,
+              "default": "500"
+            },
             {
               "name": "onLongPress",
               "type": "() =",
@@ -22081,6 +22145,12 @@
               "type": "number",
               "optional": true,
               "default": "3"
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             },
             {
               "name": "id",
@@ -25079,6 +25149,16 @@
               "type": "number",
               "optional": true,
               "default": "6"
+            },
+            {
+              "name": "type",
+              "type": "IrisOtpInputType",
+              "optional": true,
+              "default": "numeric",
+              "enum": [
+                "numeric",
+                "alphanumeric"
+              ]
             },
             {
               "name": "mask",
@@ -28313,6 +28393,11 @@
               "optional": true
             },
             {
+              "name": "defaultValue",
+              "type": "string | number | boolean | null",
+              "optional": true
+            },
+            {
               "name": "name",
               "type": "string",
               "optional": true
@@ -31480,6 +31565,12 @@
               "name": "teleport",
               "type": "false | HTMLElement | string",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             }
           ],
           "events": [
@@ -34330,6 +34421,12 @@
               "type": "boolean",
               "optional": true,
               "default": "false"
+            },
+            {
+              "name": "inline",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             }
           ],
           "events": [],
@@ -37118,6 +37215,11 @@
               "optional": true
             },
             {
+              "name": "getSubRows",
+              "type": "(row: Record<string, unknown>) =",
+              "optional": true
+            },
+            {
               "name": "treeSelectionCascade",
               "type": "boolean",
               "optional": true,
@@ -37773,6 +37875,12 @@
               "type": "boolean",
               "optional": true,
               "default": "false"
+            },
+            {
+              "name": "lazy",
+              "type": "boolean",
+              "optional": true,
+              "default": "true"
             }
           ],
           "events": [
@@ -38860,6 +38968,12 @@
               "default": "3"
             },
             {
+              "name": "autosize",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "maxRows",
               "type": "number",
               "optional": true,
@@ -39671,14 +39785,6 @@
           "name": "position",
           "type": "IrisToastPosition",
           "optional": true,
-          "enum": [
-            "top-left",
-            "top-right",
-            "top-center",
-            "bottom-left",
-            "bottom-right",
-            "bottom-center"
-          ],
           "default": "top-right"
         },
         {
@@ -39702,14 +39808,6 @@
               "name": "position",
               "type": "IrisToastPosition",
               "optional": true,
-              "enum": [
-                "top-left",
-                "top-right",
-                "top-center",
-                "bottom-left",
-                "bottom-right",
-                "bottom-center"
-              ],
               "default": "top-right"
             },
             {
@@ -39738,15 +39836,7 @@
               "name": "position",
               "type": "IrisToastPosition",
               "optional": true,
-              "default": "top-right",
-              "enum": [
-                "top-left",
-                "top-right",
-                "top-center",
-                "bottom-left",
-                "bottom-right",
-                "bottom-center"
-              ]
+              "default": "top-right"
             },
             {
               "name": "teleport",
@@ -39776,15 +39866,7 @@
             {
               "name": "position",
               "type": "IrisToastPosition",
-              "optional": true,
-              "enum": [
-                "top-left",
-                "top-right",
-                "top-center",
-                "bottom-left",
-                "bottom-right",
-                "bottom-center"
-              ]
+              "optional": true
             },
             {
               "name": "portalTarget",
@@ -40758,6 +40840,18 @@
               "type": "number",
               "optional": true,
               "default": "6"
+            },
+            {
+              "name": "openDelay",
+              "type": "number",
+              "optional": true,
+              "default": "600"
+            },
+            {
+              "name": "closeDelay",
+              "type": "number",
+              "optional": true,
+              "default": "0"
             },
             {
               "name": "teleport",
@@ -41820,6 +41914,12 @@
               ]
             },
             {
+              "name": "checkable",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "defaultChecked",
               "type": "string[]",
               "optional": true
@@ -42733,6 +42833,17 @@
               "optional": false
             },
             {
+              "name": "itemHeight",
+              "type": "number | ((index: number) =",
+              "optional": false
+            },
+            {
+              "name": "estimatedItemHeight",
+              "type": "number",
+              "optional": true,
+              "default": "40"
+            },
+            {
               "name": "height",
               "type": "number | string",
               "optional": true,
@@ -43148,6 +43259,11 @@
         "vue": {
           "source": "native",
           "props": [
+            {
+              "name": "content",
+              "type": "string",
+              "optional": false
+            },
             {
               "name": "rotate",
               "type": "number",

@@ -26,6 +26,36 @@ describe('IrisSidebarLayout', () => {
     expect(wrapper.attributes('data-collapsed')).toBe('')
   })
 
+  it('seeds internal state on first controlled run so detach keeps the last-known value', async () => {
+    const collapsed = ref(true)
+    const Harness = defineComponent({
+      setup() {
+        return () =>
+          h(
+            IrisSidebarLayout,
+            {
+              defaultCollapsed: false,
+              collapsed: collapsed.value,
+              collapsedWidth: 60,
+              'onUpdate:collapsed': (v: boolean) => (collapsed.value = v),
+            },
+            { sidebar: () => 'x' },
+          )
+      },
+    })
+    const wrapper = mount(Harness)
+    expect(wrapper.attributes('data-collapsed')).toBe('')
+    expect(wrapper.find('[data-iris-sidebar]').attributes('style')).toContain('60px')
+
+    // Detach to uncontrolled mode — the sidebar must stay collapsed at the
+    // last-known width instead of falling back to the expanded default.
+    collapsed.value = undefined
+    await new Promise((r) => setTimeout(r, 0))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.attributes('data-collapsed')).toBe('')
+    expect(wrapper.find('[data-iris-sidebar]').attributes('style')).toContain('60px')
+  })
+
   it('controlled `collapsed` prop drives the state', async () => {
     const collapsed = ref(false)
     const Harness = defineComponent({

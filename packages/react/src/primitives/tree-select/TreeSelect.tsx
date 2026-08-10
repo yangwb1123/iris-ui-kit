@@ -83,6 +83,7 @@ export function IrisTreeSelect({
   const [open, setOpen] = React.useState(false)
   const [expanded, setExpanded] = React.useState<Set<string>>(() => new Set(defaultExpanded ?? []))
   const [focused, setFocused] = React.useState(false)
+  const [hoveredValue, setHoveredValue] = React.useState<string | null>(null)
 
   const selected = currentValue ? findNode(options, currentValue) : undefined
 
@@ -132,6 +133,10 @@ export function IrisTreeSelect({
           style={{ listStyle: 'none' }}
         >
           <div
+            onMouseEnter={() => setHoveredValue(node.value)}
+            onMouseLeave={() =>
+              setHoveredValue((current) => (current === node.value ? null : current))
+            }
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -140,9 +145,10 @@ export function IrisTreeSelect({
               paddingInlineEnd: 'var(--iris-space-xs, 8px)',
               paddingBlock: 4,
               borderRadius: 'var(--iris-radius-sm, 4px)',
-              background: isSelected
-                ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-                : 'transparent',
+              background:
+                isSelected || hoveredValue === node.value
+                  ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+                  : 'transparent',
             }}
           >
             {hasChildren ? (

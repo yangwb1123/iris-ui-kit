@@ -1,0 +1,30 @@
+Everything passes. Final summary:
+
+## Report — vxe-grid Batch O (clipboard copy/paste + find & replace)
+
+### Files changed (4 source + 1 new test)
+
+| File                                                                           | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/react/src/primitives/table/props.ts`                                 | `clipConfig?: { copy?: boolean; paste?: boolean }` + `fnr?: boolean`, both single-line with docs (additive, default off)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `packages/react/src/primitives/table/Table.tsx`                                | +430 lines: TSV serializer + clipboard helpers (host handler → `navigator.clipboard` → textarea+`execCommand`, no-op-safe in jsdom); window-capture keydown for Ctrl/Cmd+C/V (requires live `cellRange`, guards inputs/editors); paste via one batched `commitRowList`, overflow ignored; fnr state/matching/step/replace/replace-all (batch commit), match+active cell attrs + token-driven highlighting (`fnrCellStyle` helper), `scrollIntoView` effect (guarded), fnr bar JSX between toolbar and root with `data-iris-fnr-*` attrs, Ctrl+F/Esc window handlers (editing guard via `data-iris-table-editor`) |
+| `packages/core/src/i18n.ts`                                                    | 5 en keys: `fnr.find/replace/replaceAll/next/prev`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `packages/plugin-locale-zh/src/core/index.ts`                                  | 5 zh translations (guard test requires full coverage)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `packages/react/src/primitives/table/clip-fnr.test.tsx` (new, 283 lines ≤ 500) | 14 tests: copy TSV exact (incl. formula neutralization, no-range no-op, no-clipConfig no-op), paste writes through `onDataChange` + overflow ignored + no-range no-op, fnr open/highlight/Enter+Shift+Enter wrap, empty query clears, replace recomputes matches, replace-all single commit, Esc closes+clears, no-fnr no-op, editor-open guard                                                                                                                                                                                                                                                                  |
+
+### Verification (all pass)
+
+- `--filter @iris-ui-kit/react typecheck` ✅
+- `--filter @iris-ui-kit/react test` ✅ 1687/1687 (14 new in clip-fnr; core 1249 ✅, plugin-locale-zh 6 ✅, manifest 69 ✅)
+- `--filter @iris-ui-kit/react lint` ✅ **0 errors** (1 pre-existing complexity warning class — component grew 143→151; cell-render arrow restored to baseline by extracting `fnrCellStyle`)
+- `iris-ui-spec.py --mode all --json` → **0 violations** (tokens-only CSS)
+- Prettier clean; manifest scanner single-line hygiene satisfied; no new named types (inline literals — nothing to export from `index.ts`); no dist/tgz/manifest.json touched
+
+### Documented limitations
+
+- Paste writes string values (numeric cells become strings), one `onDataChange` per paste/replace-all batch
+- TSV copy: cell text containing `\t`/`\n` breaks row shape (neutralize formula only, same as core `toCsv`)
+- Matching is flat-mode (bodyData) only; virtualization may skip highlighting off-screen cells (matches list stays complete)
+- `clipConfig` without `cellRange` never copies/pastes (requires a live range, per spec)
+
+Unfinished: none from the spec — all 3 test groups (copy/paste/fnr) implemented and green.

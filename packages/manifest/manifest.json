@@ -36533,6 +36533,18 @@
           "description": "Enable rectangular cell-range selection."
         },
         {
+          "name": "clipConfig",
+          "type": "{ copy?: boolean; paste?: boolean }",
+          "optional": true,
+          "description": "Clipboard batch (vxe-grid clipboard-config parity, batch O): Ctrl/Cmd+C copies the selected cell range as TSV; Ctrl/Cmd+V pastes TSV text into the range anchor onward (overflow beyond the last row/col is ignored). Requires `cellRange` to have a live selected range; additive — default off."
+        },
+        {
+          "name": "fnr",
+          "type": "boolean",
+          "optional": true,
+          "description": "Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off."
+        },
+        {
           "name": "checkboxRange",
           "type": "boolean",
           "optional": true,
@@ -37084,6 +37096,18 @@
               "type": "boolean",
               "optional": true,
               "description": "Enable rectangular cell-range selection."
+            },
+            {
+              "name": "clipConfig",
+              "type": "{ copy?: boolean; paste?: boolean }",
+              "optional": true,
+              "description": "Clipboard batch (vxe-grid clipboard-config parity, batch O): Ctrl/Cmd+C copies the selected cell range as TSV; Ctrl/Cmd+V pastes TSV text into the range anchor onward (overflow beyond the last row/col is ignored). Requires `cellRange` to have a live selected range; additive — default off."
+            },
+            {
+              "name": "fnr",
+              "type": "boolean",
+              "optional": true,
+              "description": "Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off."
             },
             {
               "name": "checkboxRange",
@@ -37855,7 +37879,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 91,
+        "propCount": 93,
         "eventCount": 15
       }
     },

@@ -14,6 +14,7 @@ import {
   seedFormValues,
   withSortedChildren,
   nextGridCell,
+  type CellRange,
   type CellRangeController,
   type ExpansionModel,
   type GridNavKey,
@@ -27,6 +28,7 @@ import { IrisFormField } from '../form-field/FormField'
 import { IrisButton } from '../button/Button'
 import { useStore } from '../../useStore'
 import {
+  copyText,
   createCellEdit,
   createRemoteTableSource,
   createSortable,
@@ -422,6 +424,106 @@ function getCellValue<Row extends Record<string, unknown>>(
   return row[key]
 }
 
+// ── Clipboard batch O (clipConfig): TSV serialization + safe clipboard ──
+// Cell text for the copy TSV: null → '', numbers verbatim (a typed number
+// cannot carry a formula payload), everything else gets the same OWASP
+// formula neutralization as core `toCsv` (a leading = + - @ tab CR is quoted
+// so spreadsheets import it as literal text). Cell text containing \t or \n
+// is a documented limitation of the newline/tab-delimited TSV shape.
+const TSV_FORMULA_LEAD = /^[=+\-@\t\r]/
+function tsvCell(value: unknown): string {
+  if (value == null) return ''
+  const text = String(value)
+  if (typeof value === 'number' && Number.isFinite(value)) return text
+  return TSV_FORMULA_LEAD.test(text) ? `'${text}` : text
+}
+
+/** Read clipboard text; null when unavailable or denied (jsdom: no-op). */
+async function readClipboardText(): Promise<string | null> {
+  const nav = navigator as Navigator & { clipboard?: { readText?: () => Promise<string> } }
+  if (!nav.clipboard?.readText) return null
+  try {
+    return await nav.clipboard.readText()
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Write clipboard text — best-effort, ordered: registered host handler
+ * (core `copyText`) → `navigator.clipboard.writeText` → hidden-textarea
+ * `execCommand('copy')` fallback. In test environments without a clipboard
+ * stub every step no-ops safely (never throws).
+ */
+async function writeClipboardText(text: string): Promise<void> {
+  if (await copyText(text)) return
+  const nav = navigator as Navigator & { clipboard?: { writeText?: (t: string) => Promise<void> } }
+  if (nav.clipboard?.writeText) {
+    try {
+      await nav.clipboard.writeText(text)
+      return
+    } catch {
+      /* permission denied — fall through to the legacy path */
+    }
+  }
+  const ta = document.createElement('textarea')
+  ta.value = text
+  ta.setAttribute('readonly', '')
+  ta.style.position = 'fixed'
+  ta.style.opacity = '0'
+  document.body.appendChild(ta)
+  ta.select()
+  try {
+    document.execCommand('copy')
+  } catch {
+    /* no-op */
+  }
+  ta.remove()
+}
+
+/** Case-insensitive replace of every occurrence (fnr replace / replace-all). */
+function replaceAllOccurrences(text: string, query: string, replacement: string): string {
+  if (query === '') return text
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  // Function replacement keeps `$` patterns in the replacement literal.
+  return text.replace(new RegExp(escaped, 'gi'), () => replacement)
+}
+
+/**
+ * Cell background/color for fnr highlighting, folded into the cell style:
+ * active match → primary fill, any match → surface-selected, otherwise the
+ * pre-existing range/striped logic. Token-driven only (no raw colors).
+ */
+function fnrCellStyle(
+  fnrActive: boolean,
+  fnrMatched: boolean,
+  rangeSelected: boolean,
+  stripedRow: boolean,
+): React.CSSProperties {
+  return {
+    background: fnrActive
+      ? 'var(--iris-primary, #6366f1)'
+      : fnrMatched || rangeSelected
+        ? 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
+        : stripedRow
+          ? 'var(--iris-surface)'
+          : 'transparent',
+    ...(fnrActive ? { color: 'var(--iris-primary-foreground, #fff)' } : null),
+  }
+}
+
+/** Shared inline style for the fnr bar buttons (token-driven only). */
+const FNR_BUTTON_STYLE: React.CSSProperties = {
+  border: '1px solid var(--iris-border)',
+  borderRadius: 'var(--iris-radius-md, 6px)',
+  background: 'var(--iris-surface)',
+  color: 'var(--iris-foreground)',
+  cursor: 'pointer',
+  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+  fontSize: 'var(--iris-font-size-sm, 13px)',
+  fontFamily: 'inherit',
+}
+
 /**
  * Batch I: fold the checked filter sets into the query filter map as
  * comma-joined strings (vxe filter-multiple remote serialization parity).
@@ -524,6 +626,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   lazyLoad,
   keyboardNavigation = false,
   cellRange = false,
+  clipConfig,
+  fnr = false,
   checkboxRange = false,
   virtualScroll,
   columnVirtualization = false,
@@ -1967,6 +2071,232 @@ export function IrisTable<Row extends Record<string, unknown>>({
     cellRangeCtrl.extendRange(nextRow, nextCol)
   }
 
+  // ── Clipboard batch O (clipConfig): Ctrl/Cmd+C copies the selected range as
+  // TSV; Ctrl/Cmd+V pastes TSV text into the range anchor onward (overflow
+  // beyond the last row/col ignored). Window capture so the shortcuts work
+  // from any focus inside the table; both require `cellRange` to have a live
+  // range — additive, no range means no-op.
+  const liveBodyRef = React.useRef(bodyData)
+  liveBodyRef.current = bodyData
+  const liveLeafRef = React.useRef(leafColumns)
+  liveLeafRef.current = leafColumns
+
+  const buildRangeTsv = React.useCallback((range: CellRange): string => {
+    const body = liveBodyRef.current
+    const cols = liveLeafRef.current
+    const lines: string[] = []
+    for (let r = range.start.row; r <= range.end.row; r += 1) {
+      const row = body[r]
+      const cells: string[] = []
+      for (let c = range.start.col; c <= range.end.col; c += 1) {
+        const col = cols[c]
+        cells.push(row && col ? tsvCell(getCellValue(row, col)) : '')
+      }
+      lines.push(cells.join('\t'))
+    }
+    return lines.join('\n')
+  }, [])
+
+  const pasteIntoRange = React.useCallback(
+    async (range: CellRange): Promise<void> => {
+      if (!rowKey) return
+      const text = await readClipboardText()
+      if (text == null) return
+      const body = liveBodyRef.current
+      const cols = liveLeafRef.current
+      if (body.length === 0 || cols.length === 0) return
+      // Line i / cell j of the clipboard lands at (anchor.row + i, anchor.col + j);
+      // cells beyond the last row/col are ignored. One batched commitRowList.
+      const byKey = new Map<string | number, Record<string, string>>()
+      const lines = text.split(/\r?\n/)
+      for (let i = 0; i < lines.length; i += 1) {
+        const rowIdx = range.start.row + i
+        if (rowIdx >= body.length) break
+        const row = body[rowIdx]!
+        const cells = lines[i]!.split('\t')
+        for (let j = 0; j < cells.length; j += 1) {
+          const colIdx = range.start.col + j
+          if (colIdx >= cols.length) break
+          const k = rowKeyOf(row)
+          if (k == null) continue
+          const prev = byKey.get(k)
+          byKey.set(k, { ...prev, [cols[colIdx]!.key]: cells[j]! })
+        }
+      }
+      if (byKey.size === 0) return
+      const keyField = rowKey
+      const next = (externalDataRef.current ?? []).map((r) => {
+        const k = (r as Record<string, unknown>)[keyField]
+        const patch = k != null ? byKey.get(k as string | number) : undefined
+        return patch ? { ...r, ...patch } : r
+      })
+      commitRowList(next)
+    },
+    [rowKey, commitRowList],
+  )
+
+  React.useEffect(() => {
+    if (!clipConfig) return
+    const onKey = (e: KeyboardEvent): void => {
+      // Never hijack keys outside the table or on text inputs (editors, the
+      // fnr bar, external fields) or select editors.
+      const target = e.target as HTMLElement | null
+      if (target && !rootRef.current?.contains(target)) return
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.dataset.irisTableEditor !== undefined)
+      )
+        return
+      const mod = e.ctrlKey || e.metaKey
+      const key = e.key.toLowerCase()
+      if (!mod || (key !== 'c' && key !== 'v')) return
+      const range = cellRangeCtrl.getRange()
+      if (!range) return
+      if (key === 'c') {
+        if (clipConfig.copy === false) return
+        e.preventDefault()
+        void writeClipboardText(buildRangeTsv(range))
+      } else {
+        if (clipConfig.paste === false) return
+        e.preventDefault()
+        void pasteIntoRange(range)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [clipConfig, cellRangeCtrl, buildRangeTsv, pasteIntoRange])
+
+  // ── Find & replace (batch O: fnr) — Ctrl/Cmd+F opens the bar (when not
+  // editing); matches highlight over bodyData in flat mode (case-insensitive
+  // substring of each cell text); Enter/Shift+Enter step; replace/replace-all
+  // write back through commitRowList; highlights clear when the bar closes or
+  // the query empties. ──
+  const [fnrOpen, setFnrOpen] = React.useState(false)
+  const [fnrQuery, setFnrQuery] = React.useState('')
+  const [fnrReplace, setFnrReplace] = React.useState('')
+  const [fnrActive, setFnrActive] = React.useState(0)
+  const fnrFindRef = React.useRef<HTMLInputElement | null>(null)
+
+  const fnrMatches = React.useMemo(() => {
+    if (!fnr || !fnrOpen || fnrQuery === '') return [] as Array<{ row: number; col: number }>
+    const q = fnrQuery.toLowerCase()
+    const out: Array<{ row: number; col: number }> = []
+    bodyData.forEach((row, r) => {
+      leafColumns.forEach((col, c) => {
+        const v = getCellValue(row, col)
+        if (v != null && String(v).toLowerCase().includes(q)) out.push({ row: r, col: c })
+      })
+    })
+    return out
+  }, [fnr, fnrOpen, fnrQuery, bodyData, leafColumns])
+
+  const fnrActiveIndex = Math.min(fnrActive, Math.max(fnrMatches.length - 1, 0))
+  const fnrActiveMatch = fnrMatches.length > 0 ? fnrMatches[fnrActiveIndex]! : null
+  const fnrActiveKey = fnrActiveMatch ? `${fnrActiveMatch.row}:${fnrActiveMatch.col}` : null
+  const fnrMatchSet = React.useMemo(
+    () => new Set(fnrMatches.map((m) => `${m.row}:${m.col}`)),
+    [fnrMatches],
+  )
+  const fnrHighlighting = fnrOpen && fnrQuery !== '' && fnrMatches.length > 0
+
+  // Opening the bar / editing the query resets the active match to the first.
+  React.useEffect(() => {
+    setFnrActive(0)
+  }, [fnrOpen, fnrQuery])
+
+  // Keep the find input focused while the bar is open.
+  React.useEffect(() => {
+    if (fnr && fnrOpen) fnrFindRef.current?.focus()
+  }, [fnr, fnrOpen])
+
+  // Keep the ACTIVE match in view (guarded for jsdom, which lacks scrollIntoView).
+  React.useEffect(() => {
+    if (!fnrOpen || !fnrActiveKey) return
+    const el = rootRef.current?.querySelector<HTMLElement>('[data-iris-fnr-active="true"]')
+    el?.scrollIntoView?.({ block: 'nearest' })
+  }, [fnrOpen, fnrActiveKey])
+
+  // Ctrl/Cmd+F opens the bar; Escape closes it. Both work from any focus
+  // inside the table (window capture); editors keep their own shortcuts.
+  React.useEffect(() => {
+    if (!fnr) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') {
+        setFnrOpen(false)
+        return
+      }
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'f') return
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.dataset.irisTableEditor !== undefined || target.closest('[data-iris-fnr-bar]'))
+      )
+        return
+      e.preventDefault()
+      setFnrOpen(true)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [fnr])
+
+  // Step the active match by ±1 (wraps). Empty match list is a no-op.
+  const stepFnrMatch = (delta: number): void => {
+    if (fnrMatches.length === 0) return
+    setFnrActive((a) => (a + delta + fnrMatches.length) % fnrMatches.length)
+  }
+
+  // Replace the ACTIVE match (every occurrence in that cell, case-insensitive)
+  // — one commitRowList per replaced cell.
+  const replaceFnrActive = (): void => {
+    const m = fnrActiveMatch
+    if (!m) return
+    const rows = externalDataRef.current ?? []
+    if (!rowKey || rows.length === 0) return
+    const col = liveLeafRef.current[m.col]
+    const row = liveBodyRef.current[m.row]
+    if (!col || !row) return
+    const current = getCellValue(row, col)
+    const text = current == null ? '' : String(current)
+    const nextText = replaceAllOccurrences(text, fnrQuery, fnrReplace)
+    if (nextText === text) return
+    const k = rowKeyOf(row)
+    if (k == null) return
+    commitRowList(rows.map((r) => (rowKeyOf(r) === k ? { ...r, [col.key]: nextText } : r)))
+  }
+
+  // Replace EVERY match — one batched commitRowList (all cells in one pass).
+  const replaceAllFnrMatches = (): void => {
+    const rows = externalDataRef.current ?? []
+    if (!rowKey || rows.length === 0 || fnrMatches.length === 0) return
+    const body = liveBodyRef.current
+    const cols = liveLeafRef.current
+    const byKey = new Map<string | number, Record<string, string>>()
+    for (const m of fnrMatches) {
+      const row = body[m.row]
+      const col = cols[m.col]
+      if (!row || !col) continue
+      const current = getCellValue(row, col)
+      const text = current == null ? '' : String(current)
+      const nextText = replaceAllOccurrences(text, fnrQuery, fnrReplace)
+      if (nextText === text) continue
+      const k = rowKeyOf(row)
+      if (k == null) continue
+      const prev = byKey.get(k)
+      byKey.set(k, { ...prev, [col.key]: nextText })
+    }
+    if (byKey.size === 0) return
+    const keyField = rowKey
+    commitRowList(
+      rows.map((r) => {
+        const k = (r as Record<string, unknown>)[keyField]
+        const patch = k != null ? byKey.get(k as string | number) : undefined
+        return patch ? { ...r, ...patch } : r
+      }),
+    )
+  }
+
   const resolvedColWidths = React.useMemo(
     () =>
       leafColumns.map(
@@ -2258,6 +2588,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
           const editing = rowMode
             ? rowSessions.has(cellId(k, col.key))
             : cellEdit.isEditing(cellId(k, col.key), col.key)
+          const fnrCellKey = `${idx}:${ci}`
+          const fnrCellActive = fnrActiveKey === fnrCellKey
+          const fnrCellMatched = fnrMatchSet.has(fnrCellKey)
           return (
             <div
               key={col.key}
@@ -2294,6 +2627,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         cellRangeCtrl.startRange(idx, ci)
                       }
                     },
+                  }
+                : null)}
+              {...(fnrHighlighting
+                ? {
+                    'data-iris-fnr-match': fnrCellMatched ? 'true' : undefined,
+                    'data-iris-fnr-active': fnrCellActive ? 'true' : undefined,
                   }
                 : null)}
               onDoubleClick={
@@ -2334,12 +2673,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     : col.align === 'center'
                       ? 'center'
                       : 'flex-start',
-                background:
-                  cellRange && isInRange(idx, ci)
-                    ? 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
-                    : striped && idx % 2 === 1
-                      ? 'var(--iris-surface)'
-                      : 'transparent',
+                ...fnrCellStyle(
+                  fnrCellActive,
+                  fnrCellMatched,
+                  cellRange && isInRange(idx, ci),
+                  striped && idx % 2 === 1,
+                ),
                 borderBottom: borderStyle,
                 cursor: col.editable ? 'cell' : cellRange ? 'default' : undefined,
                 ...(editing ? { padding: '4px 8px' } : null),
@@ -2901,6 +3240,97 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 </button>
               ))
             : null}
+        </div>
+      ) : null}
+      {fnr && fnrOpen ? (
+        <div
+          data-iris-fnr-bar=""
+          onKeyDown={(e) => {
+            // Only the find input steps matches; Enter in the replace input
+            // keeps its default (insert line break) and buttons stay clickable.
+            const target = e.target as HTMLElement | null
+            if (target?.dataset.irisFnrFind === undefined) return
+            if (e.key !== 'Enter') return
+            e.preventDefault()
+            stepFnrMatch(e.shiftKey ? -1 : 1)
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--iris-space-xs, 8px)',
+            padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+            border: '1px solid var(--iris-border)',
+            borderBottom: 'none',
+            background: 'var(--iris-surface)',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
+          }}
+        >
+          <IrisInput
+            ref={fnrFindRef}
+            data-iris-fnr-find=""
+            value={fnrQuery}
+            onChange={(e) => setFnrQuery(e.target.value)}
+            placeholder={t('fnr.find')}
+            aria-label={t('fnr.find')}
+            style={{ width: 180 }}
+          />
+          <IrisInput
+            data-iris-fnr-replace=""
+            value={fnrReplace}
+            onChange={(e) => setFnrReplace(e.target.value)}
+            placeholder={t('fnr.replace')}
+            aria-label={t('fnr.replace')}
+            style={{ width: 180 }}
+          />
+          <button
+            type="button"
+            data-iris-fnr-prev=""
+            onClick={() => stepFnrMatch(-1)}
+            aria-label={t('fnr.prev')}
+            title={t('fnr.prev')}
+            style={FNR_BUTTON_STYLE}
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            data-iris-fnr-next=""
+            onClick={() => stepFnrMatch(1)}
+            aria-label={t('fnr.next')}
+            title={t('fnr.next')}
+            style={FNR_BUTTON_STYLE}
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            data-iris-fnr-replace-btn=""
+            onClick={replaceFnrActive}
+            style={FNR_BUTTON_STYLE}
+          >
+            {t('fnr.replace')}
+          </button>
+          <button
+            type="button"
+            data-iris-fnr-replace-all=""
+            onClick={replaceAllFnrMatches}
+            style={FNR_BUTTON_STYLE}
+          >
+            {t('fnr.replaceAll')}
+          </button>
+          <button
+            type="button"
+            data-iris-fnr-close=""
+            onClick={() => setFnrOpen(false)}
+            aria-label={t('dialog.close')}
+            title={t('dialog.close')}
+            style={FNR_BUTTON_STYLE}
+          >
+            ×
+          </button>
+          <span data-iris-fnr-count="" style={{ color: 'var(--iris-muted)' }}>
+            {fnrMatches.length > 0 ? `${fnrActiveIndex + 1}/${fnrMatches.length}` : '0/0'}
+          </span>
         </div>
       ) : null}
       <div

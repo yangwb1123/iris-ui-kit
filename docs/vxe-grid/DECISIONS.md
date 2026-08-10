@@ -207,3 +207,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-n-gate.md [ok]: 批 N Gate — PASS ✅: **Review verdict:** PASS（1 MINOR / 4 INFO，均非阻塞）; Full repo gate: - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks**（135 cached）✅; Doc update (`docs/vxe-grid-comparison.md`): - 现状对比表新增/更新 4 行，标记 **react 完成**：; Commit: ```; Final test counts: | Scope | Tests | Files |
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-n-gate.md
+
+## 2026-08-10 08:08:47 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-o-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-o-baseline.md
+
+## 2026-08-10 08:31:03 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-o-adapt.md [ok]: Report — vxe-grid Batch O (clipboard copy/paste + find & replace); Files changed (4 source + 1 new test): | File | Change |; Verification (all pass): - `--filter @iris-ui-kit/react typecheck` ✅; Documented limitations: - Paste writes string values (numeric cells become strings), one `onDataChange` per paste/replace-all batch
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-o-adapt.md
+
+## 2026-08-10 08:41:39 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-o-review.md [ok]: Summary: **Verification run:** react typecheck ✅ · react tests 1687/1687 (14 new) ✅ · core 1249 ✅ · plugin-locale-zh 6 ✅ (zh guar
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-o-review.md

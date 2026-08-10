@@ -303,6 +303,10 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   columnVirtualization?: boolean
   /** Enable rectangular cell-range selection. */
   cellRange?: boolean
+  /** Clipboard batch (vxe-grid clipboard-config parity, batch O): Ctrl/Cmd+C copies the selected cell range as TSV; Ctrl/Cmd+V pastes TSV text into the range anchor onward (overflow beyond the last row/col is ignored). Requires `cellRange` to have a live selected range; additive — default off. */
+  clipConfig?: { copy?: boolean; paste?: boolean }
+  /** Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off. */
+  fnr?: boolean
   /** Shift-click checkbox range selection (vxe checkboxConfig `isShiftKey`
    * parity, batch G): shift-clicking a row checkbox toggles every
    * checkMethod-eligible row between the last-clicked anchor row and the

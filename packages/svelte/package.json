@@ -122,10 +122,10 @@
   "devDependencies": {
     "@sveltejs/package": "^2.3.7",
     "@sveltejs/vite-plugin-svelte": "^4.0.4",
-    "@testing-library/svelte": "^5.2.6",
-    "jsdom": "^25.0.1",
+    "@testing-library/svelte": "^5.4.2",
+    "jsdom": "^30.0.1",
     "svelte": "^5.16.0",
-    "svelte-check": "^4.1.1",
+    "svelte-check": "^4.7.5",
     "vite": "^6.4.3"
   },
   "repository": {

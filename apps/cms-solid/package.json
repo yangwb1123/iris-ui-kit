@@ -25,6 +25,6 @@
   "devDependencies": {
     "@playwright/test": "^1.49.1",
     "vite": "^6.4.3",
-    "vite-plugin-solid": "^2.11.0"
+    "vite-plugin-solid": "^2.11.14"
   }
 }

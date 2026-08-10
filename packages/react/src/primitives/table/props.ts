@@ -72,6 +72,8 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   insertRow: (row: Row, index?: number) => void
   /** Remove the row with `key`; its selection is pruned. */
   removeRow: (key: string | number) => void
+  /** Batch-remove several rows by key (vxe removeRows parity): missing keys are silent no-ops, selection is pruned, one onDataChange fires. */
+  removeRows: (keys: Array<string | number>) => void
   /** Patch the row with `key` ({ ...row, ...patch }). */
   updateRow: (key: string | number, patch: Partial<Row>) => void
   /** Re-fetch the current page (proxy mode). */
@@ -260,6 +262,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   onExpandedRowsChange?: (keys: Array<string | number>) => void
   /** Read a row's child rows to render the table as a tree. */
   getSubRows?: (row: Row) => Row[] | undefined
+  /** Lazy tree (vxe lazyLoad parity): a row with no `getSubRows` children still renders a caret; the first expand calls this and `load` resolves the children (expanding the row). */
+  lazyLoad?: (row: Row, load: (children: Row[]) => void) => void
   /** Enable WAI-ARIA grid keyboard navigation. */
   keyboardNavigation?: boolean
   /** Enable virtual scrolling for the body. */

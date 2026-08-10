@@ -36476,6 +36476,12 @@
           "description": "Read a row's child rows to render the table as a tree."
         },
         {
+          "name": "lazyLoad",
+          "type": "(row: Row, load: (children: Row[]) => void) => void",
+          "optional": true,
+          "description": "Lazy tree (vxe lazyLoad parity): a row with no `getSubRows` children still renders a caret; the first expand calls this and `load` resolves the children (expanding the row)."
+        },
+        {
           "name": "keyboardNavigation",
           "type": "boolean",
           "optional": true,
@@ -36971,6 +36977,12 @@
               "type": "(row: Row) => Row[] | undefined",
               "optional": true,
               "description": "Read a row's child rows to render the table as a tree."
+            },
+            {
+              "name": "lazyLoad",
+              "type": "(row: Row, load: (children: Row[]) => void) => void",
+              "optional": true,
+              "description": "Lazy tree (vxe lazyLoad parity): a row with no `getSubRows` children still renders a caret; the first expand calls this and `load` resolves the children (expanding the row)."
             },
             {
               "name": "keyboardNavigation",
@@ -37741,7 +37753,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 83,
+        "propCount": 84,
         "eventCount": 15
       }
     },

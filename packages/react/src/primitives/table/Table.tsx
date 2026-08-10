@@ -55,6 +55,16 @@ const TABLE_ROW_CSS = `
 [data-iris-table-context-menu] [role="menuitem"]:hover:not(:disabled) {
   background: var(--iris-surface-hover);
 }
+/* Lazy tree loading caret (batch J): keyframes can't be inline, so they live
+   in the singleton stylesheet; opacity + spin use token-driven values. */
+@keyframes iris-table-caret-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+[data-iris-table-tree-toggle][data-iris-tree-loading] {
+  opacity: 0.55;
+  animation: iris-table-caret-spin 900ms linear infinite;
+}
 @media print {
   [data-iris-table-toolbar] {
     display: none !important;
@@ -272,6 +282,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   expandAll = false,
   onExpandedRowsChange,
   getSubRows,
+  lazyLoad,
   keyboardNavigation = false,
   cellRange = false,
   checkboxRange = false,
@@ -566,6 +577,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // change no longer sees the row flip optimistically. Uncontrolled renders from
   // the model store as before.
   const displaySelection = selControlled ? (selectionProp as Array<string | number>) : selection
+  // Handle methods run against the MOUNT-time closure (tableRef is assigned once), so
+  // a selection snapshot would go stale — mirror the latest value for them instead.
+  const displaySelectionRef = React.useRef(displaySelection)
+  displaySelectionRef.current = displaySelection
   // Re-base the model on the controlled prop before a toggle so the emitted next
   // value is computed against what the parent actually holds (not a prior,
   // possibly-rejected, optimistic value).
@@ -941,8 +956,31 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const cancelEdit = () => {
     cellEdit.cancelEdit()
   }
-  const commitEdit = () => {
-    cellEdit.commitEdit()
+  const commitEdit = (): boolean => {
+    return cellEdit.commitEdit()
+  }
+
+  // Tab edit navigation (vxe editConfig parity, batch J): Tab commits the
+  // current cell and opens the NEXT editable column of the same row, Shift+Tab
+  // the previous one (`leafColumns` render order). A validation failure keeps
+  // the cell (commit returns false). With no editable neighbor the edit is
+  // committed and the default Tab behavior moves focus away (no preventDefault).
+  const moveEditOnTab = (e: React.KeyboardEvent, dir: 1 | -1): void => {
+    if (e.key !== 'Tab') return
+    const ctx = editCtxRef.current
+    if (!ctx) return
+    if (!commitEdit()) {
+      e.preventDefault()
+      return
+    }
+    const start = leafColumns.indexOf(ctx.col)
+    for (let i = start + dir; i >= 0 && i < leafColumns.length; i += dir) {
+      const nextCol = leafColumns[i]!
+      if (!nextCol.editable) continue
+      e.preventDefault()
+      beginEdit(ctx.row, nextCol, rowKeyOf(ctx.row), ctx.rowIndex)
+      return
+    }
   }
 
   const onHeaderKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, col: IrisTableColumn<Row>) => {
@@ -1011,12 +1049,35 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const rows = externalDataRef.current ?? []
       const next = removeRowFromList(rows, rowKey, key)
       if (next !== rows) {
-        if (displaySelection.includes(key)) {
+        if (displaySelectionRef.current.includes(key)) {
           rebaseToProp()
           selModel.toggle(key)
         }
         commitRowList(next)
       }
+    },
+    removeRows: (keys) => {
+      // Batch remove (vxe removeRows parity, batch J): compose the core helper
+      // per key, skipping missing ones; prune the selection of the keys that
+      // were ACTUALLY removed; commit + onDataChange exactly once.
+      let rows = externalDataRef.current ?? []
+      const removed = new Set<string | number>()
+      for (const key of keys) {
+        const next = removeRowFromList(rows, rowKey, key)
+        if (next !== rows) {
+          removed.add(key)
+          rows = next
+        }
+      }
+      if (removed.size === 0) return
+      const selectedNow = displaySelectionRef.current
+      if (selectable !== 'none' && selectedNow.some((k) => removed.has(k))) {
+        rebaseToProp()
+        for (const key of removed) {
+          if (selectedNow.includes(key)) selModel.toggle(key)
+        }
+      }
+      commitRowList(rows)
     },
     updateRow: (key, patch) => {
       commitRowList(updateRowInList(externalDataRef.current ?? [], rowKey, key, patch))
@@ -1103,6 +1164,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // selection, and summary all operate on — identical to `sortedData` in flat
   // mode, so non-tree behavior is unchanged.
   const treeMode = getSubRows !== undefined
+  // Lazy tree (vxe lazyLoad parity, batch J): children are fetched on first
+  // expand. The loaded map lives in a ref (read by `getChildren`, which wins
+  // over `getSubRows`); the loading SET is React state because it drives the
+  // caret render (spinner) on both transitions.
+  const lazyChildrenRef = React.useRef<Map<string, Row[]>>(new Map())
+  const [lazyLoading, setLazyLoading] = React.useState<Set<string>>(new Set())
+  const lazyChildrenOf = (row: Row): readonly Row[] | undefined =>
+    lazyChildrenRef.current.get(String(rowKeyOf(row))) ?? getSubRows!(row)
   // Comparator for tree siblings: multi mode uses the chained multi comparator
   // (batch G fix), single mode keeps its own — byte-identical to before.
   const treeComparator = React.useMemo(
@@ -1117,15 +1186,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
             // With an active sort, sort each level's children by the same
             // comparator so the whole tree reorders hierarchically (multi mode
             // passes the chained multi comparator so child ties resolve by the
-            // secondary columns too).
+            // secondary columns too). Lazy-loaded children win over `getSubRows`
+            // and still participate in the same sorting.
             getChildren: treeComparator
-              ? withSortedChildren((r) => getSubRows!(r), treeComparator)
-              : (r) => getSubRows!(r),
+              ? withSortedChildren(lazyChildrenOf, treeComparator)
+              : lazyChildrenOf,
             isExpanded: (k) => expandedKeys.includes(k),
           })
         : null,
     // Recompute on data / expansion / accessor / sort change (rowKeyOf reads `rowKey`).
-    [treeMode, sortedData, getSubRows, expandedKeys, rowKey, treeComparator],
+    [treeMode, sortedData, getSubRows, expandedKeys, rowKey, treeComparator, lazyLoading],
   )
   // Client-side filters (vxe filterConfig parity, local mode): core filterSort
   // applied to the sorted data before paging/virtualizing (flat mode). With
@@ -1736,17 +1806,44 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     paddingLeft: treeMeta.depth * 16,
                   }}
                 >
-                  {treeMeta.hasChildren ? (
+                  {treeMeta.hasChildren ||
+                  (lazyLoad !== undefined && !lazyChildrenRef.current.has(treeMeta.key)) ? (
                     <button
                       type="button"
                       data-iris-table-tree-toggle=""
+                      data-iris-tree-loading={lazyLoading.has(treeMeta.key) ? '' : undefined}
                       aria-expanded={treeMeta.expanded}
                       aria-label={t(
                         treeMeta.expanded ? 'treeSelect.collapse' : 'treeSelect.expand',
                       )}
                       onClick={(e) => {
                         e.stopPropagation()
-                        expansion.toggle(treeMeta.key)
+                        if (treeMeta.hasChildren) {
+                          expansion.toggle(treeMeta.key)
+                          return
+                        }
+                        // Lazy leaf: first expand fetches the children. Loading
+                        // is tracked in state (drives the spinner caret); a
+                        // throwing load stays retryable (the key is not cached).
+                        if (lazyLoading.has(treeMeta.key)) return
+                        setLazyLoading((prev) => new Set(prev).add(treeMeta.key))
+                        const clearLoading = () =>
+                          setLazyLoading((prev) => {
+                            const next = new Set(prev)
+                            next.delete(treeMeta.key)
+                            return next
+                          })
+                        try {
+                          lazyLoad!(row, (children) => {
+                            lazyChildrenRef.current.set(treeMeta.key, children)
+                            if (children && children.length > 0) {
+                              expansion.toggle(treeMeta.key)
+                            }
+                            clearLoading()
+                          })
+                        } catch {
+                          clearLoading()
+                        }
                       }}
                       style={{
                         border: 'none',
@@ -1802,7 +1899,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                             cellEdit.setDraft(opt ? opt.value : e.target.value)
                           }}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Tab') {
+                              moveEditOnTab(e, e.shiftKey ? -1 : 1)
+                            } else if (e.key === 'Enter') {
                               e.preventDefault()
                               commitEdit()
                             } else if (e.key === 'Escape') {
@@ -1854,7 +1953,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                           }
                           onChange={(e) => cellEdit.setDraft(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
+                            if (e.key === 'Tab') {
+                              moveEditOnTab(e, e.shiftKey ? -1 : 1)
+                            } else if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault()
                               commitEdit()
                             } else if (e.key === 'Escape') {
@@ -1890,7 +1991,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                           }
                           onChange={(e) => cellEdit.setDraft(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Tab') {
+                              moveEditOnTab(e, e.shiftKey ? -1 : 1)
+                            } else if (e.key === 'Enter') {
                               e.preventDefault()
                               commitEdit()
                             } else if (e.key === 'Escape') {

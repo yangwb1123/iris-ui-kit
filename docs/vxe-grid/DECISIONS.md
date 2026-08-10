@@ -107,3 +107,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-i-review.md [FAILED: agent exited 1]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-i-review.md
+
+## 2026-08-10 00:50:46 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-j-baseline.md [ok]: Key findings baked in: **Code evidence** (all read-only):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-j-baseline.md
+
+## 2026-08-10 01:16:01 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-j-adapt.md [ok]: Report: **Files changed (3 source/test + 2 runner bookkeeping docs):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-j-adapt.md
+
+## 2026-08-10 01:24:39 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-j-review.md [ok]: Summary: **PASS** — all gates green (1618/1618 tests, typecheck 0, lint 0 errors with the 1 complexity warning confirmed pre-exis
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-j-review.md

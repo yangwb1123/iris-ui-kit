@@ -2096,7 +2096,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
               userSelect: 'none',
             }}
           >
-            {seqMethod ? seqMethod({ rowIndex: idx, columnIndex: 0 }) : idx + seqStartIndex}
+            {seqMethod
+              ? seqMethod({ rowIndex: idx, columnIndex: 0 })
+              : proxy && proxyConfig?.seq && seq
+                ? (proxyState.params.page - 1) * proxyState.params.pageSize + idx + 1
+                : idx + seqStartIndex}
           </div>
         ) : null}
         {hasDetail ? (
@@ -2398,6 +2402,30 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   // content is trusted (XSS risk, matching the vxe docs warning).
                   dangerouslySetInnerHTML={{ __html: String(raw ?? '') }}
                 />
+              ) : col.link ? (
+                (() => {
+                  // vxe cell link parity (batch L): wraps the formatted/raw text
+                  // in an anchor; null/undefined falls through to formatter/raw.
+                  const link = col.link(raw, row)
+                  if (!link) {
+                    return col.formatter ? col.formatter(raw, row) : (raw as React.ReactNode)
+                  }
+                  const href = typeof link === 'string' ? link : link.href
+                  const label = typeof link === 'string' ? undefined : link.label
+                  const target = typeof link === 'string' ? undefined : link.target
+                  return (
+                    <a
+                      data-iris-table-link=""
+                      href={href}
+                      target={target}
+                      rel={target === '_blank' ? 'noreferrer' : undefined}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {label ??
+                        (col.formatter ? col.formatter(raw, row) : (raw as React.ReactNode))}
+                    </a>
+                  )
+                })()
               ) : col.formatter ? (
                 // vxe formatter parity (batch I): display-only — sorting,
                 // filtering, editing and summary all read the raw value.
@@ -2534,6 +2562,24 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 ⇪
               </button>
             </>
+          ) : null}
+          {toolbar.onExport ? (
+            <button
+              type="button"
+              data-iris-table-toolbar-export=""
+              onClick={() => toolbar.onExport?.()}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+              }}
+              aria-label={t('table.export')}
+              title={t('table.export')}
+            >
+              ⇩
+            </button>
           ) : null}
           {toolbar.columnSettings && columnVisibility ? (
             <>

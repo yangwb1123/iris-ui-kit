@@ -37,6 +37,10 @@ export interface IrisTableProxyConfig<Row extends Record<string, unknown>> {
   pageSize?: number
   /** Initial page (1-based). Default 1. */
   defaultPage?: number
+  /** Cumulative sequence numbers across pages (batch L): with the table `seq`
+   * prop, the seq cell renders `(page - 1) * pageSize + rowIndex + 1` instead of
+   * `rowIndex + seqStartIndex` (seqStartIndex ignored). `seqMethod` still wins. */
+  seq?: boolean
   /** Fired when the page changes. */
   onPageChange?: (page: number, pageSize: number) => void
 }
@@ -207,6 +211,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
     columnSettings?: boolean
     /** Enable the CSV import button. Receives parsed rows (header → keys). */
     onImport?: (rows: Record<string, unknown>[]) => void
+    /** Fired by the export button (vxe toolbar export parity, batch L). */
+    onExport?: () => void
     /** Custom action buttons rendered after the built-ins (vxe toolbar buttons parity). */
     buttons?: Array<{ key: string; label: string; onClick: () => void; icon?: string }>
   }

@@ -132,6 +132,14 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    * the value is injected with `dangerouslySetInnerHTML`; ensure the content
    * is trusted to avoid XSS. */
   html?: boolean
+  /** Render the cell value as a link (vxe... no direct parity, batch L): return
+   * `{ href, label?, target? }` or a plain href string; `null`/`undefined` falls
+   * through to the formatter/raw value. The anchor text is `label` when given,
+   * otherwise the formatted (or raw) text; `target: '_blank'` adds `rel="noreferrer"`. */
+  link?: (
+    value: unknown,
+    row: Row,
+  ) => { href: string; label?: string; target?: string } | string | null
   width?: number | string
   /** Minimum width (px) when resizing. Default 60. */
   minWidth?: number

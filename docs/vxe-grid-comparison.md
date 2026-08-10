@@ -74,7 +74,7 @@
 | 列宽         | resizableConfig             | resizableColumns ✓                                                                                  | 对齐                                                                               |
 | 列拖拽       | columnDragConfig            | —                                                                                                   | 缺                                                                                 |
 | 行拖拽       | rowDragConfig               | IrisSortable（外部）                                                                                | 可组合                                                                             |
-| 序号列       | seqConfig                   | —                                                                                                   | 缺                                                                                 |
+| 序号列       | seqConfig                   | seq ✓ + proxy 累计序号（批 L，react）                                                               | 缺                                                                                 |
 | 合并单元格   | spanMethod                  | —                                                                                                   | 缺                                                                                 |
 | 排序         | sortConfig 多列             | sort 单列 + multiSort 多列 ✓（批 F，react）                                                         | 对齐（react；点击序/原地切换/代理 sorts）                                          |
 | 筛选         | filterConfig                | —                                                                                                   | 缺                                                                                 |
@@ -82,7 +82,7 @@
 | 树形         | treeConfig                  | tree ✓ + lazyLoad ✓（批 J+K，react）                                                                | 对齐（react；仅无子行 caret、加载后展开缓存、刷新清缓存+epoch 防陈旧回填）         |
 | 汇总         | footerMethod                | summary ✓                                                                                           | 对齐                                                                               |
 | 撤销         | undoRedoHistory             | core undo（外部）                                                                                   | 可组合                                                                             |
-| 工具栏       | toolbarConfig               | —                                                                                                   | 缺                                                                                 |
+| 工具栏       | toolbarConfig               | refresh/import/export/custom ✓（批 L，react）                                                       | 缺                                                                                 |
 | 搜索表单     | formConfig                  | 外部组件                                                                                            | 可组合                                                                             |
 | 数据代理     | proxyConfig                 | proxyConfig ✓（批 C，react）                                                                        | 对齐（react，core 控制器）                                                         |
 | 搜索表单     | formConfig                  | formConfig ✓（批 D，react）                                                                         | 对齐（react；远程合并 filters + 本地过滤）                                         |
@@ -91,6 +91,7 @@
 | 勾选条件     | checkboxConfig.checkMethod  | checkMethod ✓（批 E，react）                                                                        | 对齐（react；全选跳过禁用行）                                                      |
 | 分页配置     | pagerConfig.pageSizes       | pagerConfig ✓（批 E，react）                                                                        | 对齐（react；切换重置页码）                                                        |
 | 单元格提示   | tooltipConfig               | tooltipConfig ✓（批 G，react）                                                                      | 对齐（react；title 轻量模式）                                                      |
+| 单元格链接   | —（自定义渲染/插槽实现）    | column.link ✓（批 L，react）                                                                        | 对齐（react；render > html > link > formatter > raw，_blank→rel=noreferrer）       |
 | 范围勾选     | checkboxConfig.isShiftKey   | shift 范围勾选 ✓（批 G，react）                                                                     | 对齐（react；尊重 checkMethod）                                                    |
 | 下拉编辑     | edit-render: select         | editor: 'select' ✓（批 H，react）                                                                   | 对齐（react；editOptions 原生 select）                                             |
 | 右键菜单     | @context-menu               | contextMenu ✓（批 H，react）                                                                        | 对齐（react；虚拟锚点浮层 + 坐标定位）                                             |
@@ -116,8 +117,9 @@
 | 批 F | multiSort 多列排序 + validConfig.showMessage + 选择方法（selectAll/toggleRowSelection/clearSelection）+ expandAll | ✅ react  |
 | 批 J | 树形懒加载（lazyLoad）+ removeRows 批量删除 + Tab 编辑导航                                                        | ✅ react  |
 | 批 K | editConfig.mode='row' 行编辑模式 + Tab 异步校验修复 + 懒加载缓存刷新修复                                          | ✅ react  |
+| 批 L | proxy 累计序号 + 工具栏导出按钮 + 列 link 单元格链接                                                              | ✅ react  |
 
-react 1629 tests · core 1249 tests · 180/180 turbo · 审计 0
+react 1644 tests · core 1249 tests · 180/180 turbo · 审计 0
 
 ## 组合接口说明
 

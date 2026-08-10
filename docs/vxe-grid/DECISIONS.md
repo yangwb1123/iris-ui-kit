@@ -147,3 +147,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-k-gate.md [ok]: Batch K gate — PASS after fixes: **Verdict was FAIL** (2 MEDIUM races + 1 LOW format). The previous gate attempt had already applied the fixes but timed ; Fixes verified (already in worktree, confirmed correct): 1. **MEDIUM — stale lazy children re-seed** (`Table.tsx`): `lazyEpochRef` bump in the data-ref sync effect (clears cache; Full gate results: - **turbo test typecheck lint build**: **180/180 tasks passed** (concurrency=2); Comparison doc: `docs/vxe-grid-comparison.md`: 编辑 gap updated (row 模式 done), 树形 → 批 J+K (刷新清缓存 + epoch 防陈旧回填), Tab 编辑导航 → 批 J+K (异步校验延期落; Commit: `2563a2856845bdd89051414030db1b28e0be036c` — `feat(table): vxe-grid 批 K——row 编辑模式 + Tab 异步校验/懒加载缓存修复（react only）` (10 fi
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-k-gate.md
+
+## 2026-08-10 03:12:44 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-l-baseline.md [ok]: What the baseline contains: **Code evidence (verified against current sources):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-l-baseline.md
+
+## 2026-08-10 03:22:46 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-l-adapt.md [ok]: Report — vxe-grid Batch L (proxy seq + toolbar export + cell link): **Files changed (6, all required by spec):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-l-adapt.md
+
+## 2026-08-10 03:31:16 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-l-review.md [ok]: Summary: **Verification run:**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-l-review.md

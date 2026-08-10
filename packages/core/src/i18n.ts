@@ -109,6 +109,7 @@ export const defaultMessages: I18nMessages = {
   'table.refresh': 'Refresh',
   'table.columnSettings': 'Column settings',
   'table.import': 'Import CSV',
+  'table.export': 'Export',
   'table.formSubmit': 'Search',
   'table.formReset': 'Reset',
   'table.filterConfirm': 'Confirm',

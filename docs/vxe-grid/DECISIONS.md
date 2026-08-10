@@ -142,3 +142,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-k-review.md [ok]: Verdict: **FAIL** — 2 verified functional races + 1 gate failure: **Verification run:** 1626/1626 react tests (incl. 8 new row-mode/M1/M2 tests) ✓ · typecheck ✓ · lint 0 errors (1 pre-ex
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-k-review.md
+
+## 2026-08-10 03:00:14 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-k-gate.md [ok]: Batch K gate — PASS after fixes: **Verdict was FAIL** (2 MEDIUM races + 1 LOW format). The previous gate attempt had already applied the fixes but timed ; Fixes verified (already in worktree, confirmed correct): 1. **MEDIUM — stale lazy children re-seed** (`Table.tsx`): `lazyEpochRef` bump in the data-ref sync effect (clears cache; Full gate results: - **turbo test typecheck lint build**: **180/180 tasks passed** (concurrency=2); Comparison doc: `docs/vxe-grid-comparison.md`: 编辑 gap updated (row 模式 done), 树形 → 批 J+K (刷新清缓存 + epoch 防陈旧回填), Tab 编辑导航 → 批 J+K (异步校验延期落; Commit: `2563a2856845bdd89051414030db1b28e0be036c` — `feat(table): vxe-grid 批 K——row 编辑模式 + Tab 异步校验/懒加载缓存修复（react only）` (10 fi
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-k-gate.md

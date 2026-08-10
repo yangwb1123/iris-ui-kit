@@ -162,3 +162,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-l-review.md [ok]: Summary: **Verification run:**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-l-review.md
+
+## 2026-08-10 03:39:10 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-l-gate.md [ok]: Summary: **Verdict:** PASS (`docs/vxe-grid/batch-l-review.md`, 2 LOW findings accepted, no source changes needed).
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-l-gate.md

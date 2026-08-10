@@ -222,3 +222,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-o-review.md [ok]: Summary: **Verification run:** react typecheck ✅ · react tests 1687/1687 (14 new) ✅ · core 1249 ✅ · plugin-locale-zh 6 ✅ (zh guar
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-o-review.md
+
+## 2026-08-10 08:51:07 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-o-gate.md [ok]: 批 O Gate — PASS ✅: **Review verdict was FAIL**（1 MAJOR + 3 MINOR + 4 INFO）→ 全部修复后全门通过。; 修复内容（按 review 逐条）: 1. **MAJOR（gate-blocking）** — manifest 未重生成 → `pnpm gen:manifest` 重生成，diff 恰为 2 个新 prop（`clipConfig`/`fnr`，propCount 91→; 全仓门: - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks** ✅; 提交: | Commit | Message |; 最终测试计数: | Scope | Tests | Files |
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-o-gate.md

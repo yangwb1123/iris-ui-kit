@@ -9,6 +9,7 @@ import {
   createSelectionModel,
   flattenLeafColumns,
   flattenTree,
+  groupRows,
   mergeFormFilters,
   seedFormValues,
   withSortedChildren,
@@ -1709,6 +1710,35 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }, [sortedData, filters, formApplied, displayColumns, remoteFilter, proxy, filterValues])
   const bodyData = flatTree ? flatTree.map((t) => t.row) : filteredData
 
+  // Batch M: row grouping (vxe group-config parity) — a render-time
+  // composition over `bodyData` (after sort + filter), groups in
+  // first-appearance order. TREE MODE is never grouped: group headers would
+  // fight the tree's depth/expansion semantics (fail-closed, documented). In
+  // proxy mode grouping applies per loaded page. Only the FIRST `groupBy`
+  // column drives the plan. Each row entry keeps its ORIGINAL bodyData index
+  // so seq/striped/span/checkMethod semantics are untouched. A per-group
+  // summary entry is appended when any leaf column has a `summary` op (same
+  // aggregate ops as the footer, computed over the group's rows).
+  type BodyPlanEntry =
+    | { kind: 'group-header'; groupKey: string; count: number }
+    | { kind: 'row'; row: Row; rowIndex: number }
+    | { kind: 'group-summary'; groupKey: string; rows: Row[] }
+  const groupCol = leafColumns.find((c) => c.groupBy)
+  const groupPlan = React.useMemo<BodyPlanEntry[] | null>(() => {
+    if (!groupCol || treeMode) return null
+    const groups = groupRows(bodyData, (row) => String(getCellValue(row, groupCol)))
+    const indexOf = new Map<Row, number>()
+    bodyData.forEach((r, i) => indexOf.set(r, i))
+    const plan: BodyPlanEntry[] = []
+    const hasSummary = leafColumns.some((c) => c.summary)
+    for (const g of groups) {
+      plan.push({ kind: 'group-header', groupKey: g.key, count: g.rows.length })
+      for (const row of g.rows) plan.push({ kind: 'row', row, rowIndex: indexOf.get(row) ?? 0 })
+      if (hasSummary) plan.push({ kind: 'group-summary', groupKey: g.key, rows: g.rows })
+    }
+    return plan
+  }, [groupCol, bodyData, treeMode, leafColumns])
+
   // expandAll parity (vxe expand-config.expandAll — one-shot at init): seed the
   // expansion model with every tree key that HAS children, walked from the top
   // of `sortedData` (not the flattened rows — the flat tree is DERIVED from the
@@ -1767,6 +1797,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const override = columnWidths[col.key]
       if (override != null) widths.push(`${override}px`)
       else if (typeof col.width === 'number') widths.push(`${col.width}px`)
+      // Batch M: `width: 'auto'` sizes the track to its widest cell content
+      // (vxe width=auto parity). Pinned offsets / column virtualization keep
+      // the DEFAULT_PINNED_WIDTH (140) approximation — they need a number
+      // (documented limitation).
+      else if (col.width === 'auto') widths.push('minmax(max-content, max-content)')
       else if (typeof col.width === 'string') widths.push(col.width)
       else widths.push('minmax(0, 1fr)')
     }
@@ -2440,6 +2475,139 @@ export function IrisTable<Row extends Record<string, unknown>>({
     )
   }
 
+  // Batch-M group header row (vxe group-config parity): spans every grid
+  // track (`gridColumn: 1 / -1`), shows the group value + row count. In the
+  // virtual path `extraStyle` fills the fixed-height slot.
+  const renderGroupHeader = (
+    entry: { groupKey: string; count: number },
+    extraStyle?: React.CSSProperties,
+  ): React.ReactElement => (
+    <div
+      key={`group:${entry.groupKey}`}
+      role="row"
+      data-iris-group-row=""
+      data-iris-group-key={entry.groupKey}
+      style={{
+        display: 'grid',
+        gridTemplateColumns,
+        background: 'var(--iris-surface)',
+        borderBottom: borderStyle,
+        fontWeight: 600,
+        ...extraStyle,
+      }}
+    >
+      <div
+        role="cell"
+        data-iris-group-cell=""
+        style={{
+          gridColumn: '1 / -1',
+          padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--iris-space-xs, 8px)',
+          fontSize: 'var(--iris-font-size-sm, 13px)',
+          color: 'var(--iris-foreground)',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        <span data-iris-group-value="">{entry.groupKey}</span>
+        <span
+          data-iris-group-count=""
+          style={{ color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-xs, 12px)' }}
+        >
+          ({entry.count})
+        </span>
+      </div>
+    </div>
+  )
+
+  // One body entry (data row or its detail wrap), grouped or not: keeps the
+  // row's ORIGINAL bodyData index so seq/striped/span/checkMethod semantics
+  // are identical to the ungrouped map.
+  const renderBodyEntry = (row: Row, idx: number): React.ReactNode => {
+    if (spanMethod && idx === 0) spanOccupyRef.current.clear()
+    const main = renderRow(row, idx, undefined, flatTree?.[idx])
+    if (!hasDetail || !isRowExpandable(row, idx) || !expandedKeys.includes(String(rowKeyOf(row))))
+      return main
+    // Full-width detail panel beneath the row (spans all grid tracks).
+    return (
+      <React.Fragment key={`${String(rowKeyOf(row) ?? idx)}::wrap`}>
+        {main}
+        <div
+          role="row"
+          data-iris-table-row-detail={String(rowKeyOf(row) ?? idx)}
+          style={{ display: 'grid', gridTemplateColumns }}
+        >
+          <div
+            role="cell"
+            data-iris-table-detail-cell=""
+            style={{ gridColumn: '1 / -1', padding: '8px 12px', borderBottom: borderStyle }}
+          >
+            {renderDetail!(row, idx)}
+          </div>
+        </div>
+      </React.Fragment>
+    )
+  }
+
+  // Summary row material (global footer + per-group footers, batch M): the
+  // same `aggregate` ops as before, computed over the passed rows. A group
+  // summary carries `data-iris-group-summary`; the global footer does not.
+  const renderSummaryRow = (
+    rows: Row[],
+    groupKey?: string,
+    extraStyle?: React.CSSProperties,
+  ): React.ReactElement => (
+    <div
+      role="row"
+      data-iris-table-row="summary"
+      data-iris-group-summary={groupKey !== undefined ? groupKey : undefined}
+      style={{
+        display: 'grid',
+        gridTemplateColumns,
+        fontWeight: 600,
+        borderTop: '2px solid var(--iris-border)',
+        background: 'var(--iris-surface)',
+        ...extraStyle,
+      }}
+    >
+      {selectable !== 'none' ? (
+        <div role="cell" data-iris-table-cell="__selection" style={baseCellStyle} />
+      ) : null}
+      {leafColumns.map((col, ci) => {
+        if (visibleColSet && !visibleColSet.has(ci)) return null
+        const op = col.summary
+        const value = op ? aggregate(rows, (r) => getCellValue(r, col), op) : null
+        return (
+          <div
+            key={col.key}
+            role="cell"
+            data-iris-table-cell={col.key}
+            data-iris-table-summary-cell={op ? '' : undefined}
+            style={{ ...baseCellStyle, ...pinnedStyle(col.key) }}
+          >
+            {op != null && value != null
+              ? col.renderSummary
+                ? col.renderSummary(value, rows)
+                : String(value)
+              : null}
+          </div>
+        )
+      })}
+    </div>
+  )
+
+  // Batch-M toolbar action: read once so the closure below stays narrowed
+  // (no non-null assertions needed).
+  const batchAction = toolbar?.batch
+  // Virtual body items: always typed as plan entries (rows wrapped with their
+  // ORIGINAL bodyData index) so the `kind` discriminant narrows cleanly — a
+  // generic `Row` type param defeats `'kind' in` narrowing.
+  const virtualItems: BodyPlanEntry[] =
+    groupPlan ?? bodyData.map((row, rowIndex) => ({ kind: 'row' as const, row, rowIndex }))
+
   return (
     <>
       {formConfig ? (
@@ -2639,6 +2807,34 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 </div>
               ) : null}
             </>
+          ) : null}
+          {selectable === 'multi' && displaySelection.length > 0 && batchAction ? (
+            <button
+              type="button"
+              data-iris-table-toolbar-batch=""
+              onClick={() => batchAction.onClick([...displaySelection])}
+              style={{
+                border: 'none',
+                cursor: 'pointer',
+                background: 'var(--iris-primary)',
+                color: 'var(--iris-primary-foreground)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 'var(--iris-space-xxs, 4px)',
+                padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                borderRadius: 'var(--iris-radius-sm, 4px)',
+              }}
+              aria-label={batchAction.label}
+              title={batchAction.label}
+            >
+              {batchAction.icon ? (
+                <span aria-hidden="true" style={{ fontSize: 'var(--iris-font-size-sm, 13px)' }}>
+                  {batchAction.icon}
+                </span>
+              ) : null}
+              {batchAction.label}
+            </button>
           ) : null}
           {toolbar.buttons && toolbar.buttons.length > 0
             ? toolbar.buttons.map((btn) => (
@@ -3073,87 +3269,53 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // `sortedData` in flat mode); `flatTree?.[idx]` supplies each row's tree
           // meta (depth + toggle), with `idx` the absolute row index from the scroller.
           <IrisVirtualScroll
-            items={bodyData}
+            items={virtualItems}
             itemHeight={virtualScroll.itemHeight}
             height={virtualScroll.height}
             buffer={virtualScroll.buffer}
-            keyOf={(row) => rowKeyOf(row)}
-            renderItem={(row, idx) => renderRow(row, idx, { height: '100%' }, flatTree?.[idx])}
+            keyOf={(item) =>
+              item.kind === 'group-header'
+                ? `group:${item.groupKey}`
+                : item.kind === 'group-summary'
+                  ? `group-summary:${item.groupKey}`
+                  : String(rowKeyOf(item.row))
+            }
+            renderItem={(item) =>
+              item.kind === 'group-header'
+                ? renderGroupHeader(item, { height: '100%' })
+                : item.kind === 'group-summary'
+                  ? renderSummaryRow(item.rows, item.groupKey, { height: '100%' })
+                  : renderRow(
+                      item.row,
+                      item.rowIndex,
+                      { height: '100%' },
+                      flatTree?.[item.rowIndex],
+                    )
+            }
           />
-        ) : (
-          bodyData.map((row, idx) => {
-            if (spanMethod && idx === 0) spanOccupyRef.current.clear()
-            const main = renderRow(row, idx, undefined, flatTree?.[idx])
-            if (
-              !hasDetail ||
-              !isRowExpandable(row, idx) ||
-              !expandedKeys.includes(String(rowKeyOf(row)))
-            )
-              return main
-            // Full-width detail panel beneath the row (spans all grid tracks).
-            return (
-              <React.Fragment key={`${String(rowKeyOf(row) ?? idx)}::wrap`}>
-                {main}
-                <div
-                  role="row"
-                  data-iris-table-row-detail={String(rowKeyOf(row) ?? idx)}
-                  style={{ display: 'grid', gridTemplateColumns }}
-                >
-                  <div
-                    role="cell"
-                    data-iris-table-detail-cell=""
-                    style={{ gridColumn: '1 / -1', padding: '8px 12px', borderBottom: borderStyle }}
-                  >
-                    {renderDetail!(row, idx)}
-                  </div>
-                </div>
-              </React.Fragment>
-            )
+        ) : groupPlan ? (
+          // Batch M: grouped body — for each group a full-width header row, the
+          // group's rows (existing render path, original bodyData indices), then
+          // a per-group summary row when any column has a `summary` op.
+          groupPlan.map((entry) => {
+            if (entry.kind === 'group-header') return renderGroupHeader(entry)
+            if (entry.kind === 'group-summary')
+              return (
+                <React.Fragment key={`group-summary:${entry.groupKey}`}>
+                  {renderSummaryRow(entry.rows, entry.groupKey)}
+                </React.Fragment>
+              )
+            return renderBodyEntry(entry.row, entry.rowIndex)
           })
+        ) : (
+          bodyData.map((row, idx) => renderBodyEntry(row, idx))
         )}
 
         {/* Summary / footer row: each column with a `summary` op aggregates over
           the full sorted dataset (the core `aggregate` material). */}
-        {!tableError &&
-        !tableLoading &&
-        bodyData.length > 0 &&
-        leafColumns.some((c) => c.summary) ? (
-          <div
-            role="row"
-            data-iris-table-row="summary"
-            style={{
-              display: 'grid',
-              gridTemplateColumns,
-              fontWeight: 600,
-              borderTop: '2px solid var(--iris-border)',
-              background: 'var(--iris-surface)',
-            }}
-          >
-            {selectable !== 'none' ? (
-              <div role="cell" data-iris-table-cell="__selection" style={baseCellStyle} />
-            ) : null}
-            {leafColumns.map((col, ci) => {
-              if (visibleColSet && !visibleColSet.has(ci)) return null
-              const op = col.summary
-              const value = op ? aggregate(bodyData, (r) => getCellValue(r, col), op) : null
-              return (
-                <div
-                  key={col.key}
-                  role="cell"
-                  data-iris-table-cell={col.key}
-                  data-iris-table-summary-cell={op ? '' : undefined}
-                  style={{ ...baseCellStyle, ...pinnedStyle(col.key) }}
-                >
-                  {op != null && value != null
-                    ? col.renderSummary
-                      ? col.renderSummary(value, bodyData)
-                      : String(value)
-                    : null}
-                </div>
-              )
-            })}
-          </div>
-        ) : null}
+        {!tableError && !tableLoading && bodyData.length > 0 && leafColumns.some((c) => c.summary)
+          ? renderSummaryRow(bodyData)
+          : null}
 
         {/* Custom footer rows (vxe footer-data parity): one grid row per entry,
           rendered below the summary row. */}

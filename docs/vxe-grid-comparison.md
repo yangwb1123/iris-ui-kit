@@ -71,7 +71,7 @@
 | 编辑         | editConfig+editRules 规则集 | editable 列 + validate 回调 + validConfig.showMessage（批 F）+ editConfig.mode='row'（批 K，react） | 缺规则集/click 激活/状态图标                                                       |
 | 选择         | checkbox/radio              | selectable multi ✓ + 方法 selectAll/toggleRowSelection/clearSelection（批 F，react）                | 缺 radio 单列                                                                      |
 | 虚拟         | virtualX/virtualY           | virtualScroll ✓                                                                                     | 基本对齐                                                                           |
-| 列宽         | resizableConfig             | resizableColumns ✓                                                                                  | 对齐                                                                               |
+| 列宽         | resizableConfig             | resizableColumns ✓ + width:'auto' 自适应（批 M，react）                                             | 对齐                                                                               |
 | 列拖拽       | columnDragConfig            | —                                                                                                   | 缺                                                                                 |
 | 行拖拽       | rowDragConfig               | IrisSortable（外部）                                                                                | 可组合                                                                             |
 | 序号列       | seqConfig                   | seq ✓ + proxy 累计序号（批 L，react）                                                               | 缺                                                                                 |
@@ -80,9 +80,9 @@
 | 筛选         | filterConfig                | —                                                                                                   | 缺                                                                                 |
 | 展开行       | expandConfig                | expandable ✓ + expandAll ✓（批 F，react）                                                           | 对齐（react；一次首屏数据种子）                                                    |
 | 树形         | treeConfig                  | tree ✓ + lazyLoad ✓（批 J+K，react）                                                                | 对齐（react；仅无子行 caret、加载后展开缓存、刷新清缓存+epoch 防陈旧回填）         |
-| 汇总         | footerMethod                | summary ✓                                                                                           | 对齐                                                                               |
+| 汇总         | footerMethod                | summary ✓ + 分组汇总（批 M，react；groupBy 组内汇总 + 全局 footer 同 aggregate ops）                | 对齐                                                                               |
 | 撤销         | undoRedoHistory             | core undo（外部）                                                                                   | 可组合                                                                             |
-| 工具栏       | toolbarConfig               | refresh/import/export/custom ✓（批 L，react）                                                       | 缺                                                                                 |
+| 工具栏       | toolbarConfig               | refresh/import/export/custom ✓（批 L）+ toolbar.batch 批量按钮（批 M，react）                       | 缺                                                                                 |
 | 搜索表单     | formConfig                  | 外部组件                                                                                            | 可组合                                                                             |
 | 数据代理     | proxyConfig                 | proxyConfig ✓（批 C，react）                                                                        | 对齐（react，core 控制器）                                                         |
 | 搜索表单     | formConfig                  | formConfig ✓（批 D，react）                                                                         | 对齐（react；远程合并 filters + 本地过滤）                                         |
@@ -118,8 +118,9 @@
 | 批 J | 树形懒加载（lazyLoad）+ removeRows 批量删除 + Tab 编辑导航                                                        | ✅ react  |
 | 批 K | editConfig.mode='row' 行编辑模式 + Tab 异步校验修复 + 懒加载缓存刷新修复                                          | ✅ react  |
 | 批 L | proxy 累计序号 + 工具栏导出按钮 + 列 link 单元格链接                                                              | ✅ react  |
+| 批 M | 行分组（groupBy 组头 + 组内汇总）+ 工具栏批量按钮 + 列宽 auto 自适应                                              | ✅ react  |
 
-react 1644 tests · core 1249 tests · 180/180 turbo · 审计 0
+react 1656 tests · core 1249 tests · 180/180 turbo · 审计 0
 
 ## 组合接口说明
 

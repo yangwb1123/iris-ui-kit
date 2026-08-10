@@ -167,3 +167,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-l-gate.md [ok]: Summary: **Verdict:** PASS (`docs/vxe-grid/batch-l-review.md`, 2 LOW findings accepted, no source changes needed).
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-l-gate.md
+
+## 2026-08-10 03:51:07 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-m-baseline.md [ok]: What I verified against current sources: - **Data pipeline** — `bodyData` (`Table.tsx:1710`) = flatTree rows or `filteredData` (sort → filter → group is the natu; Design (additive, react-only): - **a)** `groupBy?: boolean` on the column — `groupPlan` memo over `bodyData` (first-appearance order) feeding both body
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-m-baseline.md
+
+## 2026-08-10 04:10:22 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-m-adapt.md [ok]: Report: **Files changed (4 + tests = 5):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-m-adapt.md
+
+## 2026-08-10 04:21:43 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-m-review.md [ok]: Summary: **Verification:** react suite 1656/1656 (12 new tests) · tsc clean · eslint 0 errors · `gen:manifest` byte-identical · c
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-m-review.md

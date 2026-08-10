@@ -204,6 +204,17 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   filterable?: boolean
   /** Checkbox options for the filter panel; a column without options can't filter. */
   filterOptions?: IrisTableFilterOption[]
+  /**
+   * Group the body by this column's value (vxe group-config parity, batch M):
+   * a group header row per distinct value (first-appearance order,
+   * `data-iris-group-row`) showing the value + count, then that group's rows,
+   * then a per-group summary row (`data-iris-group-summary`, same `summary`
+   * ops as the footer computed over the group's rows) when any column has a
+   * `summary` op. Flat mode only — tree mode ignores grouping (fail-closed);
+   * proxy mode groups per loaded page. Only the first `groupBy` column drives
+   * the plan.
+   */
+  groupBy?: boolean
 }
 
 export interface IrisTableCellEditEvent<Row = Record<string, unknown>> {

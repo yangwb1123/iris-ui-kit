@@ -215,6 +215,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
     onExport?: () => void
     /** Custom action buttons rendered after the built-ins (vxe toolbar buttons parity). */
     buttons?: Array<{ key: string; label: string; onClick: () => void; icon?: string }>
+    /** Batch action (vxe toolbar batch parity, batch M): a primary button rendered after the built-ins while `selectable === 'multi'` and rows are selected; receives the current selection keys. */
+    batch?: { label: string; onClick: (keys: Array<string | number>) => void; icon?: string }
   }
   /** Render with print-friendly styles (hides the toolbar, keeps rows). */
   printable?: boolean

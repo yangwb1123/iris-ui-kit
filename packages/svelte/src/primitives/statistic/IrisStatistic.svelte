@@ -4,13 +4,22 @@
   type StatisticSize = 'sm' | 'md' | 'lg'
   type StatisticTrend = 'up' | 'down' | 'neutral'
 
-  const VALUE_FONT: Record<StatisticSize, number> = { sm: 20, md: 28, lg: 36 }
+  const VALUE_FONT: Record<StatisticSize, string> = {
+    sm: 'var(--iris-font-size-2xl, 20px)',
+    md: 'var(--iris-font-size-3xl, 24px)',
+    lg: 'var(--iris-font-size-4xl, 30px)',
+  }
   const TREND_COLOR: Record<StatisticTrend, string> = {
-    up: 'var(--iris-success, #16a34a)',
+    up: 'var(--iris-success, #10b981)',
     down: 'var(--iris-danger)',
     neutral: 'var(--iris-muted)',
   }
   const TREND_ARROW: Record<StatisticTrend, string> = { up: '▲', down: '▼', neutral: '' }
+  const TREND_TONE: Record<string, string> = {
+    success: 'var(--iris-success, #10b981)',
+    danger: 'var(--iris-danger)',
+    neutral: 'var(--iris-muted)',
+  }
 
   let {
     label = undefined as string | number | undefined,
@@ -20,6 +29,7 @@
     description = undefined as string | number | undefined,
     trend = undefined as StatisticTrend | undefined,
     trendValue = undefined as string | number | undefined,
+    trendTone = undefined as 'success' | 'danger' | 'neutral' | undefined,
     size = 'md' as StatisticSize,
     style,
     ...rest
@@ -39,7 +49,10 @@
   )}
 >
   {#if label != null}
-    <div data-iris-statistic-label style="font-size: 13px; color: var(--iris-muted)">
+    <div
+      data-iris-statistic-label
+      style="font-size: var(--iris-font-size-sm, 13px); color: var(--iris-muted)"
+    >
       {String(label)}
     </div>
   {/if}
@@ -58,8 +71,10 @@
   {#if trend != null || trendValue != null}
     <div
       data-iris-statistic-trend
-      style="display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: {trend
-        ? TREND_COLOR[trend]
+      style="display: inline-flex; align-items: center; gap: var(--iris-space-xxs, 4px); font-size: var(--iris-font-size-sm, 13px); color: {trend
+        ? trendTone
+          ? TREND_TONE[trendTone]
+          : TREND_COLOR[trend]
         : 'var(--iris-muted)'}"
     >
       {#if trend && TREND_ARROW[trend]}
@@ -71,7 +86,10 @@
     </div>
   {/if}
   {#if description != null}
-    <div data-iris-statistic-desc style="font-size: 12px; color: var(--iris-muted)">
+    <div
+      data-iris-statistic-desc
+      style="font-size: var(--iris-font-size-xs, 12px); color: var(--iris-muted)"
+    >
       {String(description)}
     </div>
   {/if}

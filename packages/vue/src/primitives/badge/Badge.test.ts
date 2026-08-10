@@ -39,7 +39,7 @@ describe('IrisBadge', () => {
     const w = mount(IrisBadge, { props: { variant: 'solid', tone: 'success' } })
     const style = w.attributes('style') ?? ''
     expect(style).toContain('--iris-success')
-    expect(style).toContain('--iris-primary-foreground')
+    expect(style).toContain('--iris-success-foreground')
   })
 
   it('outline variant has transparent background + colored border', () => {
@@ -59,7 +59,7 @@ describe('IrisBadge', () => {
   it('sm size shrinks padding + font', () => {
     const w = mount(IrisBadge, { props: { size: 'sm' } })
     const style = w.attributes('style') ?? ''
-    expect(style).toContain('font-size: 11px')
+    expect(style).toContain('font-size: var(--iris-font-size-xs, 12px)')
   })
 
   it('preserves consumer-provided style', () => {

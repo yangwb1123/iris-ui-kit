@@ -27,6 +27,7 @@ import {
   type GridNavKey,
   type TreeSelectionNode,
   type TreeRow,
+  validateEditRulesAsync,
 } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 import { IrisCheckbox } from '../checkbox/Checkbox'
@@ -104,11 +105,20 @@ export const IrisTable = defineComponent({
     },
     data: {
       type: Array as PropType<Array<Record<string, unknown>>>,
-      required: true,
+      required: false,
+      default: undefined,
     },
     rowKey: { type: String, default: 'id' },
     ...tableControlProps,
     striped: { type: Boolean, default: false },
+    editConfig: {
+      type: Object as PropType<{
+        trigger?: 'click' | 'dblclick' | 'manual'
+        showAsterisk?: boolean
+        autoClear?: boolean
+      }>,
+      default: undefined,
+    },
     bordered: { type: Boolean, default: true },
     /** Enable per-column resize handles. Combine with `v-model:columnWidths` for persistence. */
     resizableColumns: { type: Boolean, default: false },
@@ -126,6 +136,7 @@ export const IrisTable = defineComponent({
     loading: { type: Boolean, default: false },
     /** Show the error state instead of rows (takes precedence over loading). */
     error: { type: Boolean, default: false },
+    onRetry: { type: Function as PropType<(() => void) | undefined>, default: undefined },
     /** Render only the horizontally-visible columns (+ pinned + overscan) for wide tables. */
     columnVirtualization: { type: Boolean, default: false },
     /**
@@ -195,6 +206,19 @@ export const IrisTable = defineComponent({
     expandedRowsChange: (_keys: Array<string | number>) => true,
   },
   setup(props, { slots, attrs, emit }) {
+    if (typeof document !== 'undefined' && !document.getElementById('iris-table-row-styles')) {
+      const style = document.createElement('style')
+      style.id = 'iris-table-row-styles'
+      style.textContent = `
+[data-iris-table] [role="row"]:hover {
+  --iris-cell-bg: var(--iris-surface-hover);
+}
+[data-iris-table-row-selected="true"] {
+  --iris-cell-bg: var(--iris-surface-selected);
+}
+`
+      document.head.appendChild(style)
+    }
     const { t } = useI18n()
 
     // -------- Multi-level (grouped) headers --------
@@ -457,6 +481,18 @@ export const IrisTable = defineComponent({
             ? oldValue
             : Number(draft)
           : draft
+      // Declarative editRules run async (may contain async validators); the
+      // legacy validate callback stays sync.
+      if (column.editRules && column.editRules.length > 0) {
+        validateEditRulesAsync(column.editRules, draft, row).then((r) => {
+          if (!r.valid) {
+            editError.value = r.messages[0] ?? null
+            return
+          }
+          finishCommit(row, column, rowIndex, oldValue, newValue)
+        })
+        return
+      }
       // A column validator can reject the draft: keep the editor open, surface the
       // message, and skip the commit until the value is valid (or the user cancels).
       if (column.validate) {
@@ -466,6 +502,21 @@ export const IrisTable = defineComponent({
           return
         }
       }
+      finishCommit(row, column, rowIndex, oldValue, newValue)
+      editError.value = null
+      editingCellId.value = null
+      if (newValue !== oldValue) {
+        emit('cellEdit', { row, column, oldValue, newValue, rowIndex })
+      }
+    }
+
+    const finishCommit = (
+      row: Record<string, unknown>,
+      column: IrisTableColumn,
+      rowIndex: number,
+      oldValue: unknown,
+      newValue: unknown,
+    ) => {
       editError.value = null
       editingCellId.value = null
       if (newValue !== oldValue) {
@@ -519,9 +570,9 @@ export const IrisTable = defineComponent({
           style: {
             display: 'inline-flex',
             flexDirection: 'column',
-            marginInlineStart: '4px',
+            marginInlineStart: 'var(--iris-space-xxs, 4px)',
             lineHeight: '0.6',
-            fontSize: '8px',
+            fontSize: 'var(--iris-font-size-xs, 12px)',
             color,
           },
         },
@@ -775,23 +826,40 @@ export const IrisTable = defineComponent({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '8px',
+                  padding: '8px 12px',
                   background: 'var(--iris-surface)',
                   borderBottom: '1px solid var(--iris-border)',
                 },
               },
               props.selectable === 'multi'
                 ? [
-                    h(IrisCheckbox, {
-                      modelValue: allSelected.value
-                        ? true
-                        : someSelected.value
-                          ? 'indeterminate'
-                          : false,
-                      size: 'sm',
-                      ariaLabel: t('table.selectAll'),
-                      'onUpdate:modelValue': toggleAll,
-                    }),
+                    [
+                      h(IrisCheckbox, {
+                        modelValue: allSelected.value
+                          ? true
+                          : someSelected.value
+                            ? 'indeterminate'
+                            : false,
+                        size: 'sm',
+                        ariaLabel: t('table.selectAll'),
+                        'onUpdate:modelValue': toggleAll,
+                      }),
+                      props.selection && props.selection.length > 0
+                        ? h(
+                            'span',
+                            {
+                              'data-iris-table-selected-count': '',
+                              style: {
+                                marginInlineStart: 'var(--iris-space-xs, 8px)',
+                                fontSize: 'var(--iris-font-size-sm, 13px)',
+                                color: 'var(--iris-muted)',
+                                whiteSpace: 'nowrap',
+                              },
+                            },
+                            t('table.selectedCount', { count: String(props.selection.length) }),
+                          )
+                        : null,
+                    ],
                   ]
                 : '',
             ),
@@ -840,7 +908,7 @@ export const IrisTable = defineComponent({
                     background: 'var(--iris-surface)',
                     borderBottom: '1px solid var(--iris-border)',
                     fontWeight: '600',
-                    fontSize: '13px',
+                    fontSize: 'var(--iris-font-size-md, 14px)',
                     color: 'var(--iris-foreground)',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
@@ -898,7 +966,7 @@ export const IrisTable = defineComponent({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '8px',
+                padding: '8px 12px',
                 background: 'var(--iris-surface)',
                 borderBottom: '1px solid var(--iris-border)',
               },
@@ -987,7 +1055,7 @@ export const IrisTable = defineComponent({
                 background: 'var(--iris-surface)',
                 borderBottom: '1px solid var(--iris-border)',
                 fontWeight: '600',
-                fontSize: '13px',
+                fontSize: 'var(--iris-font-size-md, 14px)',
                 color: 'var(--iris-foreground)',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -1050,7 +1118,7 @@ export const IrisTable = defineComponent({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '8px',
+                  padding: '8px 12px',
                   borderBottom: '1px solid var(--iris-border)',
                 },
               },
@@ -1095,7 +1163,7 @@ export const IrisTable = defineComponent({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '8px',
+                  padding: '8px 12px',
                   borderBottom: '1px solid var(--iris-border)',
                 },
               },
@@ -1150,12 +1218,12 @@ export const IrisTable = defineComponent({
                 width: '100%',
                 border: `1px solid ${error ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
                 borderRadius: 'var(--iris-radius-sm)',
-                padding: '4px 6px',
+                padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
                 font: 'inherit',
                 background: 'var(--iris-background)',
                 color: 'var(--iris-foreground)',
                 outline: 'none',
-                boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.18)',
+                boxShadow: '0 0 0 3px color-mix(in srgb, var(--iris-primary) 18%, transparent)',
               },
             })
             content = error
@@ -1168,8 +1236,8 @@ export const IrisTable = defineComponent({
                       role: 'alert',
                       'data-iris-table-editor-error': '',
                       style: {
-                        marginTop: '2px',
-                        fontSize: '12px',
+                        marginTop: 'var(--iris-space-xxs, 4px)',
+                        fontSize: 'var(--iris-font-size-xs, 12px)',
                         color: 'var(--iris-danger)',
                       },
                     },
@@ -1286,14 +1354,21 @@ export const IrisTable = defineComponent({
                     }
                   : {}),
                 onDblclick: col.editable ? () => beginEdit(row, col, id) : undefined,
+                onClick:
+                  col.editable && props.editConfig?.trigger === 'click'
+                    ? () => beginEdit(row, col, id)
+                    : undefined,
                 style: {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent:
                     align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start',
-                  padding: isEditing ? '4px' : '8px var(--iris-padding-md)',
+                  background: 'var(--iris-cell-bg, transparent)',
+                  padding: isEditing
+                    ? 'var(--iris-space-xxs, 4px)'
+                    : 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
                   borderBottom: '1px solid var(--iris-border)',
-                  fontSize: '14px',
+                  fontSize: 'var(--iris-font-size-md, 14px)',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -1329,11 +1404,7 @@ export const IrisTable = defineComponent({
             style: {
               display: 'grid',
               gridTemplateColumns: gridTemplate.value,
-              background: selected
-                ? 'var(--iris-surface-hover)'
-                : props.striped && index % 2 === 1
-                  ? 'var(--iris-surface)'
-                  : 'transparent',
+              background: selected ? 'var(--iris-surface-hover)' : 'transparent',
               transition: 'background-color 120ms ease',
               cursor: 'default',
               ...style,
@@ -1353,11 +1424,33 @@ export const IrisTable = defineComponent({
       let bodyNode: VNode
       // Precedence: error → loading → empty → rows.
       if (props.error) {
-        bodyNode = h(
-          'div',
-          { role: 'row', 'data-iris-table-row': 'error', style: stateRowStyle },
-          slots.error ? slots.error() : t('table.error'),
-        )
+        bodyNode = h('div', { role: 'row', 'data-iris-table-row': 'error', style: stateRowStyle }, [
+          h(
+            'span',
+            { style: { marginInlineEnd: props.onRetry ? 'var(--iris-space-sm, 12px)' : '0px' } },
+            slots.error ? slots.error() : t('table.error'),
+          ),
+          props.onRetry
+            ? h(
+                'button',
+                {
+                  type: 'button',
+                  'data-iris-table-retry': '',
+                  onClick: props.onRetry,
+                  style: {
+                    border: '1px solid var(--iris-border)',
+                    background: 'var(--iris-surface)',
+                    color: 'var(--iris-foreground)',
+                    borderRadius: 'var(--iris-radius-sm, 4px)',
+                    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                    fontSize: 'var(--iris-font-size-sm, 13px)',
+                    cursor: 'pointer',
+                  },
+                },
+                t('table.retry'),
+              )
+            : null,
+        ])
       } else if (props.loading) {
         bodyNode = h(
           'div',
@@ -1470,7 +1563,7 @@ export const IrisTable = defineComponent({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '8px',
+                padding: '8px 12px',
               },
             }),
           )
@@ -1502,8 +1595,8 @@ export const IrisTable = defineComponent({
                   alignItems: 'center',
                   justifyContent:
                     align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start',
-                  padding: '8px var(--iris-padding-md)',
-                  fontSize: '14px',
+                  padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+                  fontSize: 'var(--iris-font-size-md, 14px)',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -1560,6 +1653,7 @@ export const IrisTable = defineComponent({
           style: {
             background: 'var(--iris-background)',
             color: 'var(--iris-foreground)',
+            fontSize: 'var(--iris-font-size-md, 14px)',
             border: props.bordered ? '1px solid var(--iris-border)' : 'none',
             borderRadius: 'var(--iris-radius-md)',
             // Column virtualization turns the table into a horizontal scroll container.

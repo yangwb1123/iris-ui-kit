@@ -78,7 +78,7 @@
     return styleToString({
       display: 'flex',
       'align-items': 'center',
-      gap: '10px',
+      gap: 'var(--iris-space-sm, 12px)',
       width: orientation === 'horizontal' && opts.depth === 0 ? 'auto' : '100%',
       'box-sizing': 'border-box',
       border: 'none',
@@ -195,7 +195,7 @@
       {#if node.badge !== undefined && node.badge !== ''}
         <span
           data-iris-nav-badge
-          style="margin-inline-start: auto; font-size: 11px; line-height: 1; padding: 2px 6px; border-radius: 999px; background: var(--iris-danger, #e5484d); color: #fff"
+          style="margin-inline-start: auto; font-size: var(--iris-font-size-xs, 12px); line-height: 1; padding: var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px); border-radius: 999px; background: var(--iris-danger, #ef4444); color: var(--iris-primary-foreground, #fff)"
         >
           {String(node.badge)}
         </span>
@@ -285,7 +285,7 @@
   style:display="flex"
   style:flex-direction={orientation === 'horizontal' ? 'row' : 'column'}
   style:align-items={orientation === 'horizontal' ? 'center' : undefined}
-  style:gap="2px"
+  style:gap="var(--iris-space-xxs, 4px)"
 >
   {#each tree as node (node.key)}
     {#if collapsed}{@render collapsedItem(node)}{:else}{@render navItem(node, 0)}{/if}

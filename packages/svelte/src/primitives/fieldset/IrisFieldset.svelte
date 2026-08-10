@@ -29,7 +29,7 @@
   {#if legendSnippet || legend != null}
     <legend
       data-iris-fieldset-legend
-      style="padding:0 6px; font-size:14px; font-weight:600; color:var(--iris-foreground);"
+      style="padding:0 var(--iris-space-xs, 8px); font-size:var(--iris-font-size-md, 14px); font-weight:600; color:var(--iris-foreground);"
     >
       {#if legendSnippet}
         {@render legendSnippet()}
@@ -41,7 +41,7 @@
   {#if hint != null}
     <div
       data-iris-fieldset-hint
-      style="font-size:12px; color:var(--iris-muted); margin-block-end:8px;"
+      style="font-size:var(--iris-font-size-xs, 12px); color:var(--iris-muted); margin-block-end:var(--iris-space-xs, 8px);"
     >
       {hint}
     </div>

@@ -102,8 +102,8 @@
     onclick={toggle}
     style:display="inline-flex"
     style:align-items="center"
-    style:gap="6px"
-    style:padding="6px 12px"
+    style:gap="var(--iris-space-xs, 8px)"
+    style:padding="var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)"
     style:background="var(--iris-background)"
     style:color={value ? 'var(--iris-foreground)' : 'var(--iris-muted)'}
     style:border={`1px solid ${invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`}

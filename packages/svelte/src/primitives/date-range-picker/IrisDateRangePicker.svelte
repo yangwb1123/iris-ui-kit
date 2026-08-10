@@ -110,7 +110,7 @@
     aria-label={t('dateRangePicker.start')}
     {disabled}
     onclick={() => openPicker('start')}
-    style:padding="6px 12px"
+    style:padding="var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)"
     style:background="var(--iris-background)"
     style:color={value.start ? 'var(--iris-foreground)' : 'var(--iris-muted)'}
     style:border={`1px solid ${invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`}
@@ -131,7 +131,7 @@
     aria-label={t('dateRangePicker.end')}
     {disabled}
     onclick={() => openPicker('end')}
-    style:padding="6px 12px"
+    style:padding="var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)"
     style:background="var(--iris-background)"
     style:color={value.end ? 'var(--iris-foreground)' : 'var(--iris-muted)'}
     style:border={`1px solid ${invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`}

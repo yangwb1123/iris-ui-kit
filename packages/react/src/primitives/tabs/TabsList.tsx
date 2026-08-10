@@ -29,7 +29,7 @@ export const IrisTabsList = React.forwardRef<HTMLDivElement, IrisTabsListProps>(
         style={{
           display: 'flex',
           flexDirection: ctx.orientation === 'horizontal' ? 'row' : 'column',
-          gap: 2,
+          gap: 'var(--iris-space-xxs, 4px)',
           borderBottom: ctx.orientation === 'horizontal' ? '1px solid var(--iris-border)' : 'none',
           borderInlineEnd: ctx.orientation === 'vertical' ? '1px solid var(--iris-border)' : 'none',
           ...style,

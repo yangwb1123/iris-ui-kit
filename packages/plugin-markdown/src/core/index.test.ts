@@ -275,6 +275,7 @@ describe('markdownPlugin', () => {
   it('registers markdown tokens', () => {
     const { tokens } = runPlugins([markdownPlugin])
     expect(tokens['--iris-md-font']).toBe(markdownTokens['--iris-md-font'])
-    expect(tokens['--iris-md-code-bg']).toBe(markdownTokens['--iris-md-code-bg'])
+    // No render-layer consumer → no dead registration (§6c).
+    expect(tokens['--iris-md-code-bg']).toBeUndefined()
   })
 })

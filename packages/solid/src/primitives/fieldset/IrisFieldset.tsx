@@ -43,8 +43,8 @@ export function IrisFieldset(props: IrisFieldsetProps): JSX.Element {
         <legend
           data-iris-fieldset-legend=""
           style={{
-            padding: '0 6px',
-            'font-size': '14px',
+            padding: '0 var(--iris-padding-sm, 6px)',
+            'font-size': 'var(--iris-font-size-md, 14px)',
             'font-weight': '600',
             color: 'var(--iris-foreground)',
           }}
@@ -55,7 +55,11 @@ export function IrisFieldset(props: IrisFieldsetProps): JSX.Element {
       <Show when={local.hint != null}>
         <div
           data-iris-fieldset-hint=""
-          style={{ 'font-size': '12px', color: 'var(--iris-muted)', 'margin-block-end': '8px' }}
+          style={{
+            'font-size': 'var(--iris-font-size-xs, 12px)',
+            color: 'var(--iris-muted)',
+            'margin-block-end': '8px',
+          }}
         >
           {local.hint}
         </div>

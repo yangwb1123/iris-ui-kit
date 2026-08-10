@@ -7,9 +7,18 @@
   type CopyButtonSize = 'sm' | 'md' | 'lg'
 
   const SIZE_MAP: Record<CopyButtonSize, { padding: string; fontSize: string }> = {
-    sm: { padding: '4px 8px', fontSize: '12px' },
-    md: { padding: '6px 12px', fontSize: '14px' },
-    lg: { padding: '8px 16px', fontSize: '16px' },
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+    },
+    md: {
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-md, 16px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+    },
   }
 
   let {
@@ -73,11 +82,11 @@
   data-copied={copied ? 'true' : undefined}
   {disabled}
   onclick={copy}
-  style="display:inline-flex; align-items:center; gap:6px; padding:{sz.padding}; font-size:{sz.fontSize}; font-family:inherit; border:1px solid var(--iris-border); border-radius:var(--iris-radius-md,6px); background:{copied
-    ? 'var(--iris-success,#16a34a)'
-    : 'var(--iris-surface)'}; color:{copied ? '#fff' : 'var(--iris-foreground)'}; cursor:{disabled
-    ? 'not-allowed'
-    : 'pointer'}; opacity:{disabled
+  style="display:inline-flex; align-items:center; gap:var(--iris-space-xs, 8px); padding:{sz.padding}; font-size:{sz.fontSize}; font-family:inherit; border:1px solid var(--iris-border); border-radius:var(--iris-radius-md,6px); background:{copied
+    ? 'var(--iris-success,#10b981)'
+    : 'var(--iris-surface)'}; color:{copied
+    ? 'var(--iris-primary-foreground, #fff)'
+    : 'var(--iris-foreground)'}; cursor:{disabled ? 'not-allowed' : 'pointer'}; opacity:{disabled
     ? '0.6'
     : '1'}; transition:background-color 120ms ease,color 120ms ease;{style ? ' ' + style : ''}"
 >

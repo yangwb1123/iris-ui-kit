@@ -24,6 +24,7 @@ import {
   type GridNavKey,
   type HeaderCell,
   type TreeRow,
+  validateEditRulesAsync,
 } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
@@ -139,6 +140,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       resizableColumns: false,
       keyboardNavigation: false,
       cellRange: false,
+      editConfig: undefined as
+        | { trigger?: 'click' | 'dblclick' | 'manual'; showAsterisk?: boolean; autoClear?: boolean }
+        | undefined,
       columnVirtualization: false,
     },
     props,
@@ -348,6 +352,17 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           ? oldValue
           : Number(draft)
         : draft
+    // Declarative editRules run async (may contain async validators).
+    if (column.editRules && column.editRules.length > 0) {
+      void validateEditRulesAsync(column.editRules, draft, row).then((r) => {
+        if (!r.valid) {
+          setEditError(r.messages[0] ?? null)
+          return
+        }
+        finishCommit(row, column, rowIndex, oldValue, newValue)
+      })
+      return
+    }
     // A column validator can reject the draft: keep the editor open, surface the
     // message, and skip the commit until the value is valid (or the user cancels).
     if (column.validate) {
@@ -357,6 +372,16 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         return
       }
     }
+    finishCommit(row, column, rowIndex, oldValue, newValue)
+  }
+
+  const finishCommit = (
+    row: Row,
+    column: IrisTableColumn<Row>,
+    rowIndex: number,
+    oldValue: unknown,
+    newValue: unknown,
+  ): void => {
     setEditError(null)
     setEditingCellId(null)
     if (newValue !== oldValue) {
@@ -476,6 +501,21 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     (hasDetail() ? 1 : 0) + (merged.selectable !== 'none' ? 2 : 1) + i
 
   onMount(() => {
+    if (typeof document === 'undefined') return
+    if (document.getElementById('iris-table-row-styles')) return
+    const style = document.createElement('style')
+    style.id = 'iris-table-row-styles'
+    style.textContent = `
+[data-iris-table] [role="row"]:hover {
+  --iris-row-bg: var(--iris-surface-hover);
+}
+[data-iris-table-row-selected="true"] {
+  --iris-row-bg: var(--iris-surface-selected);
+}
+`
+    document.head.appendChild(style)
+  })
+  onMount(() => {
     if (!merged.columnVirtualization || !rootRef) return
     const el = rootRef
     const measure = (): void => {
@@ -521,7 +561,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           'flex-direction': 'column',
           'margin-inline-start': '4px',
           'line-height': '0.6',
-          'font-size': '8px',
+          'font-size': 'var(--iris-font-size-xs, 12px)',
           color: isActive ? 'var(--iris-primary)' : 'var(--iris-muted)',
         }}
       >
@@ -569,10 +609,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           display: 'grid',
           'grid-template-columns': gridTemplate(),
           background: selected()
-            ? 'var(--iris-surface-hover)'
+            ? 'var(--iris-surface-selected)'
             : merged.striped && index % 2 === 1
               ? 'var(--iris-surface)'
-              : 'transparent',
+              : 'var(--iris-row-bg, transparent)',
           transition: 'background-color 120ms ease',
           cursor: 'default',
         }}
@@ -681,21 +721,24 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                             cellRangeCtrl.startRange(index, colIndex)
                           }
                         }
-                      : undefined
+                      : col.editable && merged.editConfig?.trigger === 'click'
+                        ? () => beginEdit(row, col, id)
+                        : undefined
                   }
                   onDblClick={col.editable ? () => beginEdit(row, col, id) : undefined}
                   style={{
                     display: 'flex',
                     'align-items': 'center',
                     'justify-content':
-                      col.align === 'right'
+                      (col.align ??
+                        (typeof getCellValue(row, col) === 'number' ? 'right' : 'left')) === 'right'
                         ? 'flex-end'
                         : col.align === 'center'
                           ? 'center'
                           : 'flex-start',
                     padding: isEditing() ? '4px' : '8px var(--iris-padding-md)',
                     'border-bottom': '1px solid var(--iris-border)',
-                    'font-size': '14px',
+                    'font-size': 'var(--iris-font-size-md, 14px)',
                     'white-space': 'nowrap',
                     overflow: 'hidden',
                     'text-overflow': 'ellipsis',
@@ -791,7 +834,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                             editError() ? 'var(--iris-danger)' : 'var(--iris-primary)'
                           }`,
                           'border-radius': 'var(--iris-radius-sm)',
-                          padding: '4px 6px',
+                          padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
                           font: 'inherit',
                           background: 'var(--iris-background)',
                           color: 'var(--iris-foreground)',
@@ -805,7 +848,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                           data-iris-table-editor-error=""
                           style={{
                             'margin-top': '2px',
-                            'font-size': '12px',
+                            'font-size': 'var(--iris-font-size-xs, 12px)',
                             color: 'var(--iris-danger)',
                           }}
                         >
@@ -895,6 +938,19 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                   onChange={toggleAll}
                   aria-label={t('table.selectAll')}
                 />
+                <Show when={props.selection && props.selection.length > 0}>
+                  <span
+                    data-iris-table-selected-count=""
+                    style={{
+                      'margin-inline-start': 'var(--iris-space-xs, 8px)',
+                      'font-size': 'var(--iris-font-size-sm, 13px)',
+                      color: 'var(--iris-muted)',
+                      'white-space': 'nowrap',
+                    }}
+                  >
+                    {t('table.selectedCount', { count: String(props.selection!.length) })}
+                  </span>
+                </Show>
               </Show>
             </div>
           </Show>
@@ -933,7 +989,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                     background: 'var(--iris-surface)',
                     'border-bottom': '1px solid var(--iris-border)',
                     'font-weight': '600',
-                    'font-size': '13px',
+                    'font-size': 'var(--iris-font-size-sm, 13px)',
                     color: 'var(--iris-foreground)',
                     'white-space': 'nowrap',
                     overflow: 'hidden',
@@ -995,6 +1051,19 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                   onChange={toggleAll}
                   aria-label={t('table.selectAll')}
                 />
+                <Show when={props.selection && props.selection.length > 0}>
+                  <span
+                    data-iris-table-selected-count=""
+                    style={{
+                      'margin-inline-start': 'var(--iris-space-xs, 8px)',
+                      'font-size': 'var(--iris-font-size-sm, 13px)',
+                      color: 'var(--iris-muted)',
+                      'white-space': 'nowrap',
+                    }}
+                  >
+                    {t('table.selectedCount', { count: String(props.selection!.length) })}
+                  </span>
+                </Show>
               </Show>
             </div>
           </Show>
@@ -1030,7 +1099,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                       background: 'var(--iris-surface)',
                       'border-bottom': '1px solid var(--iris-border)',
                       'font-weight': '600',
-                      'font-size': '13px',
+                      'font-size': 'var(--iris-font-size-sm, 13px)',
                       color: 'var(--iris-foreground)',
                       'white-space': 'nowrap',
                       overflow: 'hidden',
@@ -1082,7 +1151,31 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             }
           >
             <div role="row" data-iris-table-row="error" style={stateRowStyle}>
-              {props.errorState ?? t('table.error')}
+              <span
+                style={{
+                  'margin-inline-end': props.onRetry ? 'var(--iris-space-sm, 12px)' : '0px',
+                }}
+              >
+                {props.errorState ?? t('table.error')}
+              </span>
+              <Show when={props.onRetry}>
+                <button
+                  type="button"
+                  data-iris-table-retry=""
+                  onClick={props.onRetry}
+                  style={{
+                    border: '1px solid var(--iris-border)',
+                    background: 'var(--iris-surface)',
+                    color: 'var(--iris-foreground)',
+                    'border-radius': 'var(--iris-radius-sm, 4px)',
+                    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                    'font-size': 'var(--iris-font-size-sm, 13px)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('table.retry')}
+                </button>
+              </Show>
             </div>
           </Show>
         }
@@ -1221,7 +1314,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                             : 'flex-start',
                       padding: '8px var(--iris-padding-md)',
                       'border-bottom': '1px solid var(--iris-border)',
-                      'font-size': '14px',
+                      'font-size': 'var(--iris-font-size-md, 14px)',
                       'white-space': 'nowrap',
                       overflow: 'hidden',
                       'text-overflow': 'ellipsis',

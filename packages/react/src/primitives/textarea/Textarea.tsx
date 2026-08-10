@@ -3,9 +3,15 @@ import * as React from 'react'
 export type IrisTextareaSize = 'sm' | 'md' | 'lg'
 
 const SIZE_MAP: Record<IrisTextareaSize, { padding: string; fontSize: string }> = {
-  sm: { padding: '6px 8px', fontSize: '12px' },
-  md: { padding: '8px 12px', fontSize: '14px' },
-  lg: { padding: '10px 12px', fontSize: '16px' },
+  sm: {
+    padding: 'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+  },
+  md: { padding: '8px 12px', fontSize: 'var(--iris-font-size-md, 14px)' },
+  lg: {
+    padding: 'var(--iris-space-sm, 12px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+  },
 }
 
 export interface IrisTextareaProps extends Omit<
@@ -72,7 +78,7 @@ export const IrisTextarea = React.forwardRef<HTMLTextAreaElement, IrisTextareaPr
         ? 'var(--iris-primary)'
         : 'var(--iris-border)'
     const boxShadow = focused
-      ? `0 0 0 3px ${invalid ? 'rgba(239, 68, 68, 0.18)' : 'rgba(99, 102, 241, 0.18)'}`
+      ? `0 0 0 3px ${invalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
       : 'none'
 
     const wrapperStyle: React.CSSProperties = {

@@ -39,7 +39,7 @@
   let dragRects: SortableRect[] = []
 
   const boardStyle = $derived(
-    `display:flex;gap:var(--iris-kanban-gap, 16px);align-items:flex-start;overflow-x:auto;${style}`,
+    `display:flex;gap:var(--iris-kanban-gap,var(--iris-space-md,16px));align-items:flex-start;overflow-x:auto;${style}`,
   )
 
   function atLimit(col: KanbanColumn): boolean {
@@ -109,7 +109,7 @@
       'width:var(--iris-kanban-col-width,280px);flex-shrink:0;display:flex;flex-direction:column;gap:8px'
     const over =
       sortableState.activeId && sortableState.overId === col.id && !limited
-        ? ';outline:2px solid var(--iris-primary,#2563eb);outline-offset:2px'
+        ? ';outline:2px solid var(--iris-primary,#6366f1);outline-offset:2px'
         : ''
     return base + over
   }
@@ -136,16 +136,16 @@
       <!-- Column header -->
       <div
         data-iris-kanban-col-header
-        style="display:flex;align-items:center;gap:6px;font-weight:600"
+        style="display:flex;align-items:center;gap:var(--iris-space-xs,8px);font-weight:600"
       >
         <span>{col.title}</span>
-        <span data-iris-kanban-count style="font-size:0.8em;color:var(--iris-muted,#6b7280)"
+        <span data-iris-kanban-count style="font-size:0.8em;color:var(--iris-muted,#64748b)"
           >{colCount(col)}</span
         >
         {#if limited}
           <span
             data-iris-kanban-wip-badge
-            style="font-size:0.7em;background:var(--iris-warning,#f59e0b);color:#fff;border-radius:4px;padding:1px 5px"
+            style="font-size:0.7em;background:var(--iris-warning,#f59e0b);color:var(--iris-warning-foreground,#451a03);border-radius:4px;padding:var(--iris-space-xxs,4px) var(--iris-padding-sm,6px)"
             >WIP</span
           >
         {/if}
@@ -156,7 +156,7 @@
         <div
           data-iris-kanban-card={card.id}
           draggable="true"
-          style="background:var(--iris-kanban-card-bg,#fff);border:1px solid var(--iris-border,#e5e7eb);border-radius:6px;padding:8px 10px;cursor:grab;display:flex;flex-direction:column;gap:4px;touch-action:none"
+          style="background:var(--iris-kanban-card-bg,var(--iris-surface,#f8fafc));border:1px solid var(--iris-border,#e2e8f0);border-radius:6px;padding:var(--iris-space-xs,8px) var(--iris-space-sm,12px);cursor:grab;display:flex;flex-direction:column;gap:4px;touch-action:none"
           ondragstart={(e) => {
             dragCardId = card.id
             if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
@@ -173,7 +173,7 @@
           {#if card.description}
             <span
               data-iris-kanban-card-desc
-              style="font-size:0.85em;color:var(--iris-muted,#6b7280)">{card.description}</span
+              style="font-size:0.85em;color:var(--iris-muted,#64748b)">{card.description}</span
             >
           {/if}
           {#if card.tags && card.tags.length > 0}
@@ -181,7 +181,7 @@
               {#each card.tags as tag (tag)}
                 <span
                   data-iris-kanban-tag
-                  style="font-size:0.75em;background:var(--iris-primary-subtle,#eff6ff);color:var(--iris-primary,#2563eb);border-radius:4px;padding:1px 5px"
+                  style="font-size:0.75em;background:var(--iris-primary-subtle,#eff6ff);color:var(--iris-primary,#6366f1);border-radius:4px;padding:var(--iris-space-xxs,4px) var(--iris-padding-sm,6px)"
                   >{tag}</span
                 >
               {/each}

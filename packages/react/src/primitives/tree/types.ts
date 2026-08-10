@@ -19,3 +19,18 @@ export interface IrisTreeNode {
 }
 
 export type IrisTreeSelectionMode = 'none' | 'single' | 'multi'
+
+/**
+ * Opt-in windowed rendering for {@link IrisTree}. Mirrors
+ * `IrisTableVirtualOptions`. Tree rows are uniform height (padding 4px +
+ * line-height of `--iris-font-size-md`); `itemHeight` must be ≥ the rendered
+ * row height for the active font.
+ */
+export interface IrisTreeVirtualOptions {
+  /** Per-row height in px (uniform). */
+  itemHeight: number
+  /** Viewport height. Number → px; string → CSS length passed through. */
+  height: number | string
+  /** Extra rows rendered above and below the viewport (default 4). */
+  buffer?: number
+}

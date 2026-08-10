@@ -94,6 +94,10 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
   const [x, setX] = React.useState(0)
   const [y, setY] = React.useState(0)
   const [finalPlacement, setFinalPlacement] = React.useState<Placement>(placement)
+  // True once the first positioning cycle lands. Until then the panel stays
+  // `visibility: hidden` so it never flashes at the viewport origin (0,0)
+  // before its real coordinates arrive.
+  const [positioned, setPositioned] = React.useState(false)
   const [arrowX, setArrowX] = React.useState<number | undefined>()
   const [arrowY, setArrowY] = React.useState<number | undefined>()
 
@@ -146,6 +150,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     if (token !== epochRef.current) return
     setX(result.x)
     setY(result.y)
+    setPositioned(true)
     setFinalPlacement(result.placement)
     const arrowData = result.middlewareData.arrow as { x?: number; y?: number } | undefined
     setArrowX(arrowData?.x)
@@ -157,6 +162,8 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     const a = anchor.current
     const f = floating.current
     if (!a || !f) return
+    // Fresh open → hide until the first computePosition cycle completes.
+    setPositioned(false)
     const cleanup = autoUpdate(a, f, () => {
       void update()
     })
@@ -174,8 +181,12 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
       left: 0,
       transform: `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`,
       width: 'max-content',
+      // Hidden until the first positioning cycle lands — prevents a flash at
+      // the viewport origin. `visibility` (not `display:none`) keeps the panel
+      // measurable so Floating UI can compute its real coordinates.
+      visibility: positioned ? undefined : 'hidden',
     }),
-    [strategy, x, y],
+    [strategy, x, y, positioned],
   )
 
   const OPPOSITE: Record<string, 'top' | 'right' | 'bottom' | 'left'> = {

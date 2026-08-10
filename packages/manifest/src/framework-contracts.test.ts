@@ -170,9 +170,9 @@ describe('critical native component contracts', () => {
 
     for (const framework of ALL_FRAMEWORKS) {
       const api = contract('IrisTable', framework)
+      // `data` became optional when proxyConfig (server-side source) landed.
       expect(api.props.filter((prop) => !prop.optional).map((prop) => prop.name)).toEqual([
         'columns',
-        'data',
       ])
       expect(api.events).toEqual(expect.arrayContaining(expectedEvents[framework]))
       expect(api.publicTypes).toEqual(expect.arrayContaining(requiredTypes))

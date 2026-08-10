@@ -8,7 +8,7 @@
   "engines": {
     "node": "^20.9.0 || >=22.0.0"
   },
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@10.34.5",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --filter=playground --filter=playground-react",
@@ -83,7 +83,7 @@
     "svelte": "^5.16.0",
     "svelte-eslint-parser": "^1.8.0",
     "ts-prune": "^0.10.3",
-    "tsup": "^8.3.5",
+    "tsup": "^8.5.0",
     "turbo": "^2.3.3",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.18.0",
@@ -96,35 +96,11 @@
       "prettier --write"
     ]
   },
-  "pnpm": {
-    "overrides": {
-      "@babel/core@7.29.0": "7.29.7",
-      "@hono/node-server@1.19.14": "2.0.12",
-      "body-parser@2.2.2": "2.3.0",
-      "brace-expansion@1.1.14": "5.0.8",
-      "brace-expansion@2.1.0": "5.0.8",
-      "brace-expansion@5.0.6": "5.0.8",
-      "cookie@0.6.0": "0.7.2",
-      "electron-builder-squirrel-windows@25.1.8": "26.15.3",
-      "esbuild@0.27.7": "0.28.1",
-      "fast-uri@3.1.2": "3.1.4",
-      "form-data@4.0.5": "4.0.6",
-      "h3@1.15.3": "1.15.11",
-      "hono@4.12.24": "4.12.27",
-      "js-yaml@3.14.2": "3.15.0",
-      "js-yaml@4.1.1": "4.3.0",
-      "postcss@8.4.31": "8.5.18",
-      "postcss@8.5.15": "8.5.18",
-      "sharp@0.34.5": "0.35.0",
-      "shell-quote@1.8.4": "1.9.0",
-      "svgo@4.0.1": "4.0.2",
-      "tar@7.5.16": "7.5.21",
-      "undici@7.27.2": "7.28.0",
-      "vite@5.4.21": "6.4.3",
-      "ws@8.20.1": "8.21.0"
-    },
-    "patchedDependencies": {
-      "brace-expansion@5.0.8": "patches/brace-expansion@5.0.8.patch"
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "10.34.5",
+      "onFail": "ignore"
     }
   }
 }

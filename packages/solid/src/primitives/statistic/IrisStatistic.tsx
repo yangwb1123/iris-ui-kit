@@ -2,14 +2,24 @@ import { mergeProps, Show, splitProps, type JSX } from 'solid-js'
 
 export type IrisStatisticSize = 'sm' | 'md' | 'lg'
 export type IrisStatisticTrend = 'up' | 'down' | 'neutral'
+export type IrisStatisticTone = 'success' | 'danger' | 'neutral'
 
-const VALUE_FONT: Record<IrisStatisticSize, number> = { sm: 20, md: 28, lg: 36 }
+const VALUE_FONT: Record<IrisStatisticSize, string> = {
+  sm: 'var(--iris-font-size-2xl, 20px)',
+  md: 'var(--iris-font-size-3xl, 24px)',
+  lg: 'var(--iris-font-size-4xl, 30px)',
+}
 const TREND_COLOR: Record<IrisStatisticTrend, string> = {
-  up: 'var(--iris-success, #16a34a)',
+  up: 'var(--iris-success, #10b981)',
   down: 'var(--iris-danger)',
   neutral: 'var(--iris-muted)',
 }
 const TREND_ARROW: Record<IrisStatisticTrend, string> = { up: '▲', down: '▼', neutral: '' }
+const TREND_TONE: Record<IrisStatisticTone, string> = {
+  success: 'var(--iris-success, #10b981)',
+  danger: 'var(--iris-danger)',
+  neutral: 'var(--iris-muted)',
+}
 
 export interface IrisStatisticProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'prefix'> {
   label?: string | number
@@ -18,6 +28,7 @@ export interface IrisStatisticProps extends Omit<JSX.HTMLAttributes<HTMLDivEleme
   suffix?: string | number
   description?: string | number
   trend?: IrisStatisticTrend
+  trendTone?: IrisStatisticTone
   trendValue?: string | number
   size?: IrisStatisticSize
 }
@@ -35,6 +46,7 @@ export function IrisStatistic(props: IrisStatisticProps): JSX.Element {
     'suffix',
     'description',
     'trend',
+    'trendTone',
     'trendValue',
     'size',
     'style',
@@ -57,7 +69,7 @@ export function IrisStatistic(props: IrisStatisticProps): JSX.Element {
       <Show when={local.label != null}>
         <div
           data-iris-statistic-label=""
-          style={{ 'font-size': '13px', color: 'var(--iris-muted)' }}
+          style={{ 'font-size': 'var(--iris-font-size-sm, 13px)', color: 'var(--iris-muted)' }}
         >
           {String(local.label)}
         </div>
@@ -93,8 +105,12 @@ export function IrisStatistic(props: IrisStatisticProps): JSX.Element {
             display: 'inline-flex',
             'align-items': 'center',
             gap: '4px',
-            'font-size': '13px',
-            color: local.trend ? TREND_COLOR[local.trend] : 'var(--iris-muted)',
+            'font-size': 'var(--iris-font-size-sm, 13px)',
+            color: local.trend
+              ? local.trendTone
+                ? TREND_TONE[local.trendTone]
+                : TREND_COLOR[local.trend]
+              : 'var(--iris-muted)',
           }}
         >
           <Show when={local.trend && TREND_ARROW[local.trend]}>
@@ -108,7 +124,7 @@ export function IrisStatistic(props: IrisStatisticProps): JSX.Element {
       <Show when={local.description != null}>
         <div
           data-iris-statistic-desc=""
-          style={{ 'font-size': '12px', color: 'var(--iris-muted)' }}
+          style={{ 'font-size': 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-muted)' }}
         >
           {String(local.description)}
         </div>

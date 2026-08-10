@@ -13,9 +13,21 @@ export interface IrisSplitButtonAction {
 
 const SIZE_MAP: Record<IrisSplitButtonSize, { padding: string; fontSize: string; height: string }> =
   {
-    sm: { padding: '4px 10px', fontSize: '12px', height: '28px' },
-    md: { padding: '6px 14px', fontSize: '14px', height: '34px' },
-    lg: { padding: '8px 18px', fontSize: '16px', height: '40px' },
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      height: '28px',
+    },
+    md: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-md, 16px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      height: '34px',
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-lg, 20px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      height: '40px',
+    },
   }
 
 /**
@@ -123,9 +135,9 @@ export const IrisSplitButton = defineComponent({
                   props.variant === 'primary'
                     ? '1px solid rgba(255,255,255,0.3)'
                     : '1px solid var(--iris-border)',
-                padding: '0 8px',
+                padding: '0 var(--iris-space-xs, 8px)',
                 minHeight: sz.height,
-                fontSize: '10px',
+                fontSize: 'var(--iris-font-size-xs, 12px)',
                 borderStartEndRadius: 'var(--iris-radius-md, 6px)',
                 borderEndEndRadius: 'var(--iris-radius-md, 6px)',
                 cursor: props.disabled ? 'not-allowed' : 'pointer',
@@ -160,7 +172,7 @@ export const IrisSplitButton = defineComponent({
                 background: 'var(--iris-background)',
                 border: '1px solid var(--iris-border)',
                 borderRadius: 'var(--iris-radius-md, 6px)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                boxShadow: 'var(--iris-shadow-lg)',
               },
             },
             props.actions!.map((a) =>
@@ -174,8 +186,8 @@ export const IrisSplitButton = defineComponent({
                   'data-key': a.key,
                   onClick: () => select(a),
                   style: {
-                    padding: '6px 10px',
-                    fontSize: '14px',
+                    padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+                    fontSize: 'var(--iris-font-size-md, 14px)',
                     borderRadius: 'var(--iris-radius-sm, 4px)',
                     cursor: a.disabled ? 'not-allowed' : 'pointer',
                     color: a.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',

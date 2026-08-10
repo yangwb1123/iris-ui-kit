@@ -104,7 +104,7 @@ export const IrisAnchor = defineComponent({
                     color: isActive ? 'var(--iris-primary)' : 'var(--iris-foreground)',
                     fontWeight: isActive ? '600' : '400',
                     textDecoration: 'none',
-                    fontSize: '14px',
+                    fontSize: 'var(--iris-font-size-md, 14px)',
                   },
                 },
                 item.title,

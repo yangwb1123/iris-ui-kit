@@ -45,7 +45,8 @@
   )
   const labelStyle = $derived(
     styleToString({
-      'font-size': size === 'sm' ? '12px' : '14px',
+      'font-size':
+        size === 'sm' ? 'var(--iris-font-size-xs, 12px)' : 'var(--iris-font-size-md, 14px)',
       'font-weight': 500,
       color: error ? 'var(--iris-danger)' : 'var(--iris-foreground)',
       display: 'inline-flex',
@@ -73,7 +74,11 @@
   {/if}
   {@render children?.()}
   {#if hint && !error}
-    <div id={hintId} data-iris-form-field-hint style="font-size: 12px; color: var(--iris-muted)">
+    <div
+      id={hintId}
+      data-iris-form-field-hint
+      style="font-size: var(--iris-font-size-xs, 12px); color: var(--iris-muted)"
+    >
       {hint}
     </div>
   {/if}
@@ -82,7 +87,7 @@
       id={errorId}
       data-iris-form-field-error
       role="alert"
-      style="font-size: 12px; color: var(--iris-danger)"
+      style="font-size: var(--iris-font-size-xs, 12px); color: var(--iris-danger)"
     >
       {error}
     </div>

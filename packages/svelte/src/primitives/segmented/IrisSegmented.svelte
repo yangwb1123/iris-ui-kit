@@ -10,9 +10,21 @@
   type SegmentedSize = 'sm' | 'md' | 'lg'
 
   const SIZE_MAP: Record<SegmentedSize, { padding: string; fontSize: string; height: string }> = {
-    sm: { padding: '2px 8px', fontSize: '12px', height: '24px' },
-    md: { padding: '4px 12px', fontSize: '14px', height: '30px' },
-    lg: { padding: '6px 16px', fontSize: '16px', height: '36px' },
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      height: '24px',
+    },
+    md: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      height: '30px',
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-md, 16px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      height: '36px',
+    },
   }
 
   function normalize(options: Array<IrisSegmentedOption | string>): IrisSegmentedOption[] {
@@ -143,7 +155,7 @@
   onkeydown={onKeyDown}
   style="display:{block ? 'flex' : 'inline-flex'}; {block
     ? 'width:100%;'
-    : ''} gap:2px; padding:2px; background:var(--iris-surface); border-radius:var(--iris-radius-md,6px); opacity:{disabled
+    : ''} gap:var(--iris-space-xxs, 4px); padding:var(--iris-space-xxs, 4px); background:var(--iris-surface); border-radius:var(--iris-radius-md,6px); opacity:{disabled
     ? '0.6'
     : '1'};{style ? ' ' + style : ''}"
 >

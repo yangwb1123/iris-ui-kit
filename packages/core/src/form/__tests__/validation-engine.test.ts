@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createValidationEngine } from '../../form'
+import { createValidationEngine, type FieldErrors } from '../../form'
 
 describe('createValidationEngine — integration', () => {
   it('returns undefined when no validator is registered for the field', async () => {
@@ -285,5 +285,66 @@ describe('createValidationEngine — validateForm', () => {
       { x: '' },
     )
     expect(errors).toEqual({})
+  })
+
+  it('drops a stale whole-form result when a newer pass supersedes it', async () => {
+    const gates: Array<(e: FieldErrors<{ serverKey: string }>) => void> = []
+    const engine = createValidationEngine(
+      {},
+      true,
+      0,
+      { onValidating: () => {}, onError: () => {} },
+      () => ({ serverKey: '' }),
+    )
+    // `serverKey` has no per-field validator — it can only reach the result
+    // map through the whole-form `config.validate` path.
+    const p1 = engine.validateForm(
+      {},
+      { serverKey: 'v1' },
+      {
+        validate: () =>
+          new Promise<FieldErrors<{ serverKey: string }>>((resolve) => {
+            gates.push(resolve)
+          }),
+      },
+    )
+    const p2 = engine.validateForm(
+      {},
+      { serverKey: 'v2' },
+      { validate: () => Promise.resolve({ serverKey: 'E2' }) },
+    )
+    // Let both passes reach their config.validate before resolving.
+    await Promise.resolve()
+    gates[0]!({ serverKey: 'E1-stale' })
+    const [r1, r2] = await Promise.all([p1, p2])
+    // The stale whole-form result is never merged into the returned map.
+    expect(r1.serverKey).toBeUndefined()
+    expect(r2).toEqual({ serverKey: 'E2' })
+  })
+
+  it('invalidateAll drops an in-flight whole-form result', async () => {
+    let resolveStale!: (e: FieldErrors<{ serverKey: string }>) => void
+    const engine = createValidationEngine(
+      {},
+      true,
+      0,
+      { onValidating: () => {}, onError: () => {} },
+      () => ({ serverKey: '' }),
+    )
+    const p = engine.validateForm(
+      {},
+      { serverKey: 'v1' },
+      {
+        validate: () =>
+          new Promise<FieldErrors<{ serverKey: string }>>((resolve) => {
+            resolveStale = resolve
+          }),
+      },
+    )
+    await Promise.resolve() // let the pass reach config.validate
+    engine.invalidateAll()
+    resolveStale({ serverKey: 'E' })
+    const result = await p
+    expect(result.serverKey).toBeUndefined()
   })
 })

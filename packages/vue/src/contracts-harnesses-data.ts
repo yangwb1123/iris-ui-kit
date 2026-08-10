@@ -2,7 +2,10 @@ import { defineComponent, h } from 'vue'
 import {
   createSyncClientDataSource,
   createClientDataSource,
+  filterSort,
+  paginate,
   type DataViewColumn,
+  type DataSourceQuery,
 } from '@iris-ui-kit/core'
 import { useDataSource } from './data/useDataSource'
 
@@ -100,6 +103,80 @@ export const DataSourceAsyncHarness = defineComponent({
           'data-iris-ds-meta': '',
           'data-hasmore': String(ds.state.value.hasMore),
           'data-loading': String(ds.state.value.loading),
+          'data-fetches': String(getFetches()),
+        }),
+        ...ds.state.value.rows.map((r) => h('div', { key: r.id, 'data-iris-ds-row': '' }, r.name)),
+      ])
+  },
+})
+
+/**
+ * Resilient-contract dataset: 3 rows, paged mode, pageSize 10, TTL 60s. The
+ * fetcher reads a MUTABLE backing store and returns per-row COPIES (never
+ * aliasing it), so the rename mutation becomes visible ONLY through a real
+ * re-fetch — and `data-fetches` proves cache hits (reload within TTL) vs.
+ * genuine network reads (multiSort key change, post-mutate invalidation).
+ * Identical ×4 harness.
+ */
+const dsResilientData: DsRow[] = [
+  { id: 1, name: 'Charlie', age: 30 },
+  { id: 2, name: 'Alice', age: 25 },
+  { id: 3, name: 'Bob', age: 35 },
+]
+
+function makeResilientFetcher() {
+  const backing: DsRow[] = dsResilientData.map((r) => ({ ...r }))
+  let fetches = 0
+  const fetcher = (q: DataSourceQuery) => {
+    const processed = filterSort(backing, dsColumns, {
+      filters: q.filters,
+      sort: q.sort,
+      multiSort: q.multiSort,
+      filterRules: q.filterRules,
+    })
+    fetches += 1
+    return {
+      rows: paginate(processed, q.page, q.pageSize).map((r) => ({ ...r })),
+      total: processed.length,
+    }
+  }
+  const renameFirst = () => {
+    backing[0] = { ...backing[0]!, name: `${backing[0]!.name}!` }
+  }
+  return { fetcher, getFetches: () => fetches, renameFirst }
+}
+
+export const DataSourceResilientHarness = defineComponent({
+  name: 'DataSourceResilientHarness',
+  setup() {
+    const { fetcher, getFetches, renameFirst } = makeResilientFetcher()
+    const ds = useDataSource<DsRow>({ fetcher, pageSize: 10, resilient: { ttlMs: 60000 } })
+    return () =>
+      h('div', null, [
+        h('button', { 'data-iris-ds-reload': '', onClick: () => void ds.reload() }, 'reload'),
+        h(
+          'button',
+          {
+            'data-iris-ds-multisort-a': '',
+            onClick: () => ds.setMultiSort([{ key: 'age', direction: 'asc' }]),
+          },
+          'sortAge',
+        ),
+        h(
+          'button',
+          {
+            'data-iris-ds-multisort-b': '',
+            onClick: () => ds.setMultiSort([{ key: 'name', direction: 'desc' }]),
+          },
+          'sortName',
+        ),
+        h(
+          'button',
+          { 'data-iris-ds-mutate': '', onClick: () => void ds.mutate(async () => renameFirst()) },
+          'mutate',
+        ),
+        h('div', {
+          'data-iris-ds-meta': '',
           'data-fetches': String(getFetches()),
         }),
         ...ds.state.value.rows.map((r) => h('div', { key: r.id, 'data-iris-ds-row': '' }, r.name)),

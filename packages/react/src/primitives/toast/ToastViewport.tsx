@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { installFloatingAnimations, ANIM_TOAST } from '../../floating/animations'
 import { createPortal } from 'react-dom'
 import { createAutoDismiss, type AutoDismiss } from '@iris-ui-kit/core'
 import {
@@ -23,7 +24,7 @@ const VARIANT_BORDER: Record<IrisToastVariant, string> = {
   success: 'var(--iris-success)',
   danger: 'var(--iris-danger)',
   warning: 'var(--iris-warning)',
-  info: 'var(--iris-primary)',
+  info: 'var(--iris-info)',
 }
 
 const VARIANT_ACCENT: Record<IrisToastVariant, string> = {
@@ -31,13 +32,13 @@ const VARIANT_ACCENT: Record<IrisToastVariant, string> = {
   success: 'var(--iris-success)',
   danger: 'var(--iris-danger)',
   warning: 'var(--iris-warning)',
-  info: 'var(--iris-primary)',
+  info: 'var(--iris-info)',
 }
 
 function positionStyle(position: IrisToastPosition): React.CSSProperties {
   const base: React.CSSProperties = {
     position: 'fixed',
-    zIndex: 1400,
+    zIndex: 'var(--iris-z-toast, 1400)',
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--iris-gap-md, 12px)',
@@ -92,6 +93,7 @@ export function IrisToastViewport({
   style,
   ...rest
 }: IrisToastViewportProps): React.ReactElement | null {
+  installFloatingAnimations()
   const { t } = useI18n()
   const allToasts = React.useSyncExternalStore(subscribeToasts, getToasts, () => [] as IrisToast[])
 
@@ -226,15 +228,16 @@ export function IrisToastViewport({
               display: 'flex',
               alignItems: 'flex-start',
               gap: 'var(--iris-gap-md, 12px)',
-              background: 'var(--iris-surface)',
+              background: 'var(--iris-surface-floating)',
+              animation: ANIM_TOAST,
               color: 'var(--iris-foreground)',
               border: `1px solid ${VARIANT_BORDER[toast.variant]}`,
               borderInlineStart: `4px solid ${VARIANT_ACCENT[toast.variant]}`,
               borderRadius: 'var(--iris-radius-md, 6px)',
               padding: 'var(--iris-padding-md, 12px)',
-              boxShadow: '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
+              boxShadow: 'var(--iris-shadow-lg)',
               minWidth: 280,
-              fontSize: 14,
+              fontSize: 'var(--iris-font-size-md, 14px)',
             }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -243,8 +246,8 @@ export function IrisToastViewport({
                 <div
                   style={{
                     color: 'var(--iris-muted)',
-                    fontSize: 13,
-                    marginTop: 2,
+                    fontSize: 'var(--iris-font-size-sm, 13px)',
+                    marginTop: 'var(--iris-space-xxs, 4px)',
                   }}
                 >
                   {toast.description}
@@ -265,7 +268,7 @@ export function IrisToastViewport({
                   fontWeight: 600,
                   cursor: 'pointer',
                   padding: '4px 8px',
-                  fontSize: 13,
+                  fontSize: 'var(--iris-font-size-sm, 13px)',
                   fontFamily: 'inherit',
                 }}
               >
@@ -284,7 +287,7 @@ export function IrisToastViewport({
                 color: 'var(--iris-muted)',
                 lineHeight: 1,
                 fontFamily: 'inherit',
-                fontSize: 16,
+                fontSize: 'var(--iris-font-size-lg, 16px)',
               }}
             >
               ×

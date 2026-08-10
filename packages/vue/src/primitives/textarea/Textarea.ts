@@ -42,9 +42,21 @@ export const IrisTextarea = defineComponent({
         IrisTextareaSize,
         { padding: string; fontSize: string; lineHeight: string }
       > = {
-        sm: { padding: '6px var(--iris-padding-sm)', fontSize: '12px', lineHeight: '1.5' },
-        md: { padding: '8px var(--iris-padding-md)', fontSize: '14px', lineHeight: '1.5' },
-        lg: { padding: '10px var(--iris-padding-md)', fontSize: '16px', lineHeight: '1.5' },
+        sm: {
+          padding: 'var(--iris-space-xs, 8px) var(--iris-padding-sm)',
+          fontSize: 'var(--iris-font-size-xs, 12px)',
+          lineHeight: '1.5',
+        },
+        md: {
+          padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+          fontSize: 'var(--iris-font-size-md, 14px)',
+          lineHeight: '1.5',
+        },
+        lg: {
+          padding: 'var(--iris-space-sm, 12px) var(--iris-padding-md)',
+          fontSize: 'var(--iris-font-size-lg, 16px)',
+          lineHeight: '1.5',
+        },
       }
       return map[props.size]
     })
@@ -56,7 +68,7 @@ export const IrisTextarea = defineComponent({
           ? 'var(--iris-primary)'
           : 'var(--iris-border)'
       const boxShadow = focused.value
-        ? `0 0 0 3px ${props.invalid ? 'rgba(239, 68, 68, 0.18)' : 'rgba(99, 102, 241, 0.18)'}`
+        ? `0 0 0 3px ${props.invalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
         : 'none'
       return {
         display: 'flex',

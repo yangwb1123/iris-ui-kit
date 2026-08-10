@@ -268,7 +268,7 @@ describe('IrisTree data states', () => {
     const w = mount(IrisTree, { props: { nodes: [] } })
     const node = w.find('[data-iris-tree-state]')
     expect(node.attributes('data-iris-tree-state')).toBe('empty')
-    expect(node.text()).toBe('No items')
+    expect(node.text()).toBe('No items to display')
   })
 
   it('shows loading with aria-busy; error takes precedence', async () => {

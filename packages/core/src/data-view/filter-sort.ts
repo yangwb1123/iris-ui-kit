@@ -78,7 +78,9 @@ function matchesRule(value: unknown, rule: FilterRule): boolean {
 
 /**
  * Filter then sort the full row set (no pagination). Substring `filters` and
- * typed `filterRules` are both applied (a row must satisfy all). Sorting uses
+ * typed `filterRules` are both applied (a row must satisfy all), except for
+ * columns with `filterable: false` — their terms are skipped, row kept.
+ * Sorting uses
  * `sort` (single column) or, when that is null, `multiSort` (most-significant
  * first); each column uses its `sorter` or {@link compareValues}.
  */
@@ -99,14 +101,14 @@ export function filterSort<Row>(
       (row) =>
         activeFilters.every(([key, value]) => {
           const col = colOf(key)
-          if (!col) return true
+          if (!col || col.filterable === false) return true
           return String(col.getValue(row) ?? '')
             .toLowerCase()
             .includes(value.toLowerCase())
         }) &&
         rules.every((rule) => {
           const col = colOf(rule.key)
-          if (!col) return true
+          if (!col || col.filterable === false) return true
           return matchesRule(col.getValue(row), rule)
         }),
     )

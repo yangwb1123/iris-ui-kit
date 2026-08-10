@@ -111,7 +111,7 @@ export function createDashboard(config: DashboardConfig): DashboardStore {
 
 /** CSS custom properties the dashboard reads; overridable by the host theme. */
 export const dashboardTokens: Record<string, string> = {
-  '--iris-dashboard-gap': 'var(--iris-gap-md)',
+  '--iris-dashboard-gap': 'var(--iris-gap-lg)',
   '--iris-dashboard-widget-bg': 'var(--iris-surface)',
   '--iris-dashboard-widget-radius': 'var(--iris-radius-md)',
 }

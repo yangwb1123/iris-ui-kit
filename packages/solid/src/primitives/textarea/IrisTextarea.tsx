@@ -4,9 +4,15 @@ import type { Size } from '@iris-ui-kit/core'
 export type IrisTextareaSize = Size
 
 const SIZE_STYLES: Record<IrisTextareaSize, { padding: string; fontSize: string }> = {
-  sm: { padding: '6px var(--iris-padding-sm, 8px)', fontSize: '12px' },
-  md: { padding: '8px var(--iris-padding-md, 12px)', fontSize: '14px' },
-  lg: { padding: '10px var(--iris-padding-md, 12px)', fontSize: '16px' },
+  sm: {
+    padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-sm, 6px)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+  },
+  md: { padding: '8px var(--iris-padding-md, 12px)', fontSize: 'var(--iris-font-size-md, 14px)' },
+  lg: {
+    padding: 'var(--iris-space-sm, 12px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+  },
 }
 
 export interface IrisTextareaProps {
@@ -88,7 +94,7 @@ export function IrisTextarea(props: IrisTextareaProps): JSX.Element {
 
   const boxShadow = (): string =>
     focused()
-      ? `0 0 0 3px ${local.invalid ? 'rgba(239,68,68,0.18)' : 'rgba(99,102,241,0.18)'}`
+      ? `0 0 0 3px ${local.invalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
       : 'none'
 
   const wrapperStyle = (): JSX.CSSProperties => ({

@@ -1,5 +1,14 @@
 # @iris-ui-kit/plugin-admin
 
+## 2.0.1
+
+### Patch Changes
+
+- @iris-ui-kit/react@0.2.2
+- @iris-ui-kit/solid@0.2.2
+- @iris-ui-kit/svelte@0.2.2
+- @iris-ui-kit/vue@0.2.21
+
 ## 2.0.0
 
 ### Minor Changes

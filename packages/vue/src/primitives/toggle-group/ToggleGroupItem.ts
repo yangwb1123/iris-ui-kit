@@ -97,7 +97,7 @@ export const IrisToggleGroupItem = defineComponent({
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '6px',
+            gap: 'var(--iris-space-xs, 8px)',
             padding: SIZE_PADDING[size],
             fontSize: SIZE_FONT[size],
             fontFamily: 'inherit',

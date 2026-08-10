@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
+  import type { Snippet } from 'svelte'
+  type RowSnippet = Snippet<[Record<string, unknown>]>
   import {
     aggregate,
     buildHeaderMatrix,
@@ -13,6 +16,7 @@
     nextGridCell,
     type GridNavKey,
     type TreeRow,
+    validateEditRulesAsync,
   } from '@iris-ui-kit/core'
   import { toStore } from '../../useStore'
   import { useI18n } from '../../i18n'
@@ -37,6 +41,7 @@
     emptyState,
     loadingState,
     errorState,
+    onRetry = undefined as (() => void) | undefined,
     virtualScroll,
     columnVirtualization = false,
     resizableColumns = false,
@@ -331,7 +336,7 @@
 
   // Base per-cell style shared by the summary cells (mirrors the body cell base).
   const summaryCellStyle = (col: IrisTableColumn): string =>
-    `display: flex; align-items: center; justify-content: ${col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: 8px var(--iris-padding-md, 12px); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis`
+    `display: flex; align-items: center; justify-content: ${col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'}; padding: 8px var(--iris-padding-md, 12px); font-size: var(--iris-font-size-md, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis`
 
   const gridTemplate = $derived(() => {
     const parts: string[] = []
@@ -378,6 +383,17 @@
           ? oldValue
           : Number(draft)
         : draft
+    // Declarative editRules run async (may contain async validators).
+    if (column.editRules && column.editRules.length > 0) {
+      void validateEditRulesAsync(column.editRules, draft, row).then((r: { valid: boolean; messages: string[] }) => {
+        if (!r.valid) {
+          editError = r.messages[0] ?? null
+          return
+        }
+        finishCommit(row, column, rowIndex, oldValue, newValue)
+      })
+      return
+    }
     // A column validator can reject the draft: keep the editor open, surface the
     // message, and skip the commit until the value is valid (or the user cancels).
     if (column.validate) {
@@ -387,6 +403,16 @@
         return
       }
     }
+    finishCommit(row, column, rowIndex, oldValue, newValue)
+  }
+
+  function finishCommit(
+    row: Record<string, unknown>,
+    column: IrisTableColumn,
+    rowIndex: number,
+    oldValue: unknown,
+    newValue: unknown,
+  ): void {
     editError = null
     editingCellId = null
     if (newValue !== oldValue) {
@@ -561,6 +587,21 @@
   // across all four flat/tree × detail combinations). When `virtualScroll` is
   // unset this is false, so the non-virtual body path renders unchanged.
   const useVirtual = $derived(virtualScroll != null && !(treeMode && hasDetail))
+  onMount(() => {
+    if (typeof document === 'undefined') return
+    if (document.getElementById('iris-table-row-styles')) return
+    const style = document.createElement('style')
+    style.id = 'iris-table-row-styles'
+    style.textContent = `
+[data-iris-table] [role="row"]:hover {
+  --iris-row-bg: var(--iris-surface-hover);
+}
+[data-iris-table-row-selected="true"] {
+  --iris-row-bg: var(--iris-surface-selected);
+}
+`
+    document.head.appendChild(style)
+  })
 </script>
 
 <div
@@ -609,6 +650,14 @@
               onchange={toggleAll}
               aria-label={t('table.selectAll')}
             />
+            {#if selection && selection.length > 0}
+              <span
+                data-iris-table-selected-count=""
+                style="margin-inline-start: var(--iris-space-xs, 8px); font-size: var(--iris-font-size-sm, 13px); color: var(--iris-muted); white-space: nowrap"
+              >
+                {t('table.selectedCount', { count: String(selection.length) })}
+              </span>
+            {/if}
           {/if}
         </div>
       {/if}
@@ -645,13 +694,13 @@
               ? 'pointer'
               : 'default'}; user-select: {sortable
               ? 'none'
-              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: 13px; color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-sm, 13px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
           >
             {col.title}
             {#if sortable}
               <span
                 aria-hidden="true"
-                style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: 8px; color: {effectiveSort?.key ===
+                style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: var(--iris-font-size-xs, 12px); color: {effectiveSort?.key ===
                 col.key
                   ? 'var(--iris-primary)'
                   : 'var(--iris-muted)'}"
@@ -700,6 +749,14 @@
               onchange={toggleAll}
               aria-label={t('table.selectAll')}
             />
+            {#if selection && selection.length > 0}
+              <span
+                data-iris-table-selected-count=""
+                style="margin-inline-start: var(--iris-space-xs, 8px); font-size: var(--iris-font-size-sm, 13px); color: var(--iris-muted); white-space: nowrap"
+              >
+                {t('table.selectedCount', { count: String(selection.length) })}
+              </span>
+            {/if}
           {/if}
         </div>
       {/if}
@@ -731,13 +788,13 @@
               ? 'pointer'
               : 'default'}; user-select: {col.sortable
               ? 'none'
-              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: 13px; color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-sm, 13px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
           >
             {col.title}
             {#if col.sortable}
               <span
                 aria-hidden="true"
-                style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: 8px; color: {effectiveSort?.key ===
+                style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: var(--iris-font-size-xs, 12px); color: {effectiveSort?.key ===
                 col.key
                   ? 'var(--iris-primary)'
                   : 'var(--iris-muted)'}"
@@ -787,7 +844,19 @@
   <!-- Body -->
   {#if error}
     <div role="row" data-iris-table-row="error" style={stateRowStyle}>
-      {#if errorState}{@render errorState()}{:else}{t('table.error')}{/if}
+      <span style="margin-inline-end: {onRetry ? 'var(--iris-space-sm, 12px)' : '0px'}">
+        {#if errorState}{@render errorState()}{:else}{t('table.error')}{/if}
+      </span>
+      {#if onRetry}
+        <button
+          type="button"
+          data-iris-table-retry=""
+          onclick={onRetry}
+          style="border: 1px solid var(--iris-border); background: var(--iris-surface); color: var(--iris-foreground); border-radius: var(--iris-radius-sm, 4px); padding: var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px); font-size: var(--iris-font-size-sm, 13px); cursor: pointer"
+        >
+          {t('table.retry')}
+        </button>
+      {/if}
     </div>
   {:else if loading}
     <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>
@@ -875,10 +944,10 @@
       style="display: grid; grid-template-columns: {gridTemplate()};{fillHeight
         ? ' height: 100%;'
         : ''} background: {selected
-        ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+        ? 'var(--iris-surface-selected)'
         : striped && index % 2 === 1
           ? 'var(--iris-surface)'
-          : 'transparent'}; transition: background-color 120ms ease; cursor: default"
+          : 'var(--iris-row-bg, transparent)'}; transition: background-color var(--iris-transition-fast, 150ms) ease; cursor: default"
     >
       {#if hasDetail}
         <div
@@ -956,7 +1025,8 @@
                 }
               : undefined}
             ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}
-            style="display: flex; align-items: center; justify-content: {col.align === 'right'
+            style="display: flex; align-items: center; justify-content: {(col.align ??
+              (typeof getCellValue(row, col) === 'number' ? 'right' : 'left')) === 'right'
               ? 'flex-end'
               : col.align === 'center'
                 ? 'center'
@@ -964,10 +1034,10 @@
               ? ` grid-column-start: ${colTrack(ci)};`
               : ''} padding: {isEditing
               ? '4px'
-              : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable
+              : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: var(--iris-font-size-md, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable
               ? 'cell'
               : 'default'}{cellRange && isInRange(index, ci)
-              ? '; background: var(--iris-surface-selected, rgba(99,102,241,0.12))'
+              ? '; background: var(--iris-surface-selected, color-mix(in srgb, var(--iris-primary) 12%, transparent))'
               : ''}"
           >
             {#if treeMeta && ci === 0}
@@ -1018,18 +1088,20 @@
                 onclick={(e) => e.stopPropagation()}
                 style="width: 100%; border: 1px solid {editError
                   ? 'var(--iris-danger)'
-                  : 'var(--iris-primary)'}; border-radius: var(--iris-radius-sm, 4px); padding: 4px 6px; font: inherit; background: var(--iris-background); color: var(--iris-foreground); outline: none"
+                  : 'var(--iris-primary)'}; border-radius: var(--iris-radius-sm, 4px); padding: var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px); font: inherit; background: var(--iris-background); color: var(--iris-foreground); outline: none"
               />
               {#if editError}
                 <div
                   id={`${cellId(id, col.key)}-error`}
                   role="alert"
                   data-iris-table-editor-error
-                  style="margin-top: 2px; font-size: 12px; color: var(--iris-danger)"
+                  style="margin-top: var(--iris-space-xxs, 4px); font-size: var(--iris-font-size-xs, 12px); color: var(--iris-danger)"
                 >
                   {editError}
                 </div>
               {/if}
+            {:else if col.render}
+              {@render (col.render(getCellValue(row, col), row) as RowSnippet)(row)}
             {:else}
               {String(getCellValue(row, col) ?? '')}
             {/if}

@@ -21,7 +21,7 @@ describe('IrisMenu', () => {
   })
 
   it('shows menu content on trigger click', () => {
-    const { getByText, queryByRole } = render(() => (
+    const { getByText } = render(() => (
       <IrisMenu>
         <IrisMenuTrigger>Open Menu</IrisMenuTrigger>
         <IrisMenuContent portalTarget={false}>
@@ -30,15 +30,15 @@ describe('IrisMenu', () => {
         </IrisMenuContent>
       </IrisMenu>
     ))
-    expect(queryByRole('menu')).toBeNull()
+    expect(document.querySelector('[role=menu]')).toBeNull()
     fireEvent.click(getByText('Open Menu'))
-    expect(queryByRole('menu')).not.toBeNull()
+    expect(document.querySelector('[role=menu]')).not.toBeNull()
     expect(getByText('Item 1')).toBeTruthy()
     expect(getByText('Item 2')).toBeTruthy()
   })
 
   it('closes menu when IrisMenuItem is clicked', () => {
-    const { getByText, queryByRole } = render(() => (
+    const { getByText } = render(() => (
       <IrisMenu>
         <IrisMenuTrigger>Open</IrisMenuTrigger>
         <IrisMenuContent portalTarget={false}>
@@ -47,8 +47,8 @@ describe('IrisMenu', () => {
       </IrisMenu>
     ))
     fireEvent.click(getByText('Open'))
-    expect(queryByRole('menu')).not.toBeNull()
+    expect(document.querySelector('[role=menu]')).not.toBeNull()
     fireEvent.click(getByText('Action'))
-    expect(queryByRole('menu')).toBeNull()
+    expect(document.querySelector('[role=menu]')).toBeNull()
   })
 })

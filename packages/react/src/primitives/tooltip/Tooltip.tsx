@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { installFloatingAnimations, ANIM_TOOLTIP } from '../../floating/animations'
 import { createPortal } from 'react-dom'
 import { createHoverIntent, type Placement } from '@iris-ui-kit/core'
 import { useFloating } from '../../floating/useFloating'
@@ -45,6 +46,7 @@ export function IrisTooltip({
   children,
   ...rest
 }: IrisTooltipProps): React.ReactElement | null {
+  installFloatingAnimations()
   const triggerRef = React.useRef<HTMLElement | null>(null)
   const floatingRef = React.useRef<HTMLElement | null>(null)
   const tooltipId = React.useId()
@@ -122,13 +124,14 @@ export function IrisTooltip({
         ...floatingStyles,
         background: 'var(--iris-foreground)',
         color: 'var(--iris-background)',
+        animation: ANIM_TOOLTIP,
         padding: '4px 8px',
         borderRadius: 'var(--iris-radius-sm, 4px)',
-        fontSize: '12px',
+        fontSize: 'var(--iris-font-size-xs, 12px)',
         lineHeight: 1.4,
         maxWidth: '240px',
         pointerEvents: 'none',
-        zIndex: 1100,
+        zIndex: 'var(--iris-z-tooltip, 1100)',
       }}
     >
       {content}

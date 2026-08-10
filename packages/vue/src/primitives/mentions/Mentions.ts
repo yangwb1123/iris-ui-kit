@@ -1,4 +1,15 @@
-import { computed, defineComponent, h, nextTick, ref, useId, type PropType } from 'vue'
+import {
+  computed,
+  defineComponent,
+  h,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  useId,
+  watchEffect,
+  type PropType,
+} from 'vue'
+import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui-kit/core'
 
 export interface IrisMentionOption {
   label: string
@@ -25,8 +36,8 @@ function detect(text: string, caret: number, prefix: string): Active | null {
 const TEXTAREA_STYLE: Record<string, string> = {
   boxSizing: 'border-box',
   width: '100%',
-  padding: '8px 12px',
-  fontSize: '14px',
+  padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+  fontSize: 'var(--iris-font-size-md, 14px)',
   fontFamily: 'inherit',
   color: 'var(--iris-foreground)',
   background: 'var(--iris-background)',
@@ -50,8 +61,13 @@ const LIST_STYLE: Record<string, string> = {
   background: 'var(--iris-background)',
   border: '1px solid var(--iris-border)',
   borderRadius: 'var(--iris-radius-md, 6px)',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+  boxShadow: 'var(--iris-shadow-lg)',
 }
+
+/** Listbox maxHeight — the virtualizer's viewport (px). */
+const LISTBOX_MAX_HEIGHT = 200
+/** Fixed per-option row height (px) — estimate, never measured. */
+const ROW_HEIGHT = 32
 
 /**
  * Mentions: a textarea that opens an autocomplete listbox when the user types
@@ -71,6 +87,13 @@ export const IrisMentions = defineComponent({
     disabled: { type: Boolean, default: false },
     invalid: { type: Boolean, default: false },
     rows: { type: Number, default: 3 },
+    /**
+     * Opt-in windowed rendering of the suggestion listbox via the core
+     * virtualizer. When true, only the visible window (+ buffer) of options is
+     * rendered; keyboard navigation scrolls the active option into view and
+     * every keystroke re-anchors the window to the top. Default false.
+     */
+    virtual: { type: Boolean, default: false },
     id: { type: String, default: undefined },
     ariaDescribedby: { type: String, default: undefined },
   },
@@ -94,6 +117,76 @@ export const IrisMentions = defineComponent({
         : [],
     )
     const open = computed(() => active.value !== null && filtered.value.length > 0)
+
+    // Virtualized listbox (opt-in): one controller per mount (created lazily
+    // inside the effect, then retained), reactive inputs read through
+    // closures so the instance (scroll offset + keyed cache) survives
+    // re-renders — the IrisCombobox precedent.
+    const listboxRef = ref<HTMLUListElement | null>(null)
+    const vstate = ref<VirtualizerState>({
+      items: [],
+      offsetBefore: 0,
+      totalSize: 0,
+      startIndex: 0,
+      endIndex: -1,
+    })
+    let v: Virtualizer | null = null
+    let unsub: (() => void) | null = null
+    let lastText: string | undefined
+    let lastActiveIndex = 0
+    // flush 'pre': count lands before every render → the first windowed frame
+    // is never stale. Single sync covering per-keystroke re-anchor to 0 (a
+    // keystroke always resets activeIndex), shrink clamp (external options
+    // swaps) and active-option visibility (keyboard/mouse). Wheel scrolling
+    // drives setScroll directly via the scroll handler, so it moves the window
+    // freely — it does not change activeIndex.
+    watchEffect(() => {
+      if (!props.virtual) return
+      if (!v) {
+        v = createVirtualizer({
+          count: 0,
+          estimateSize: () => ROW_HEIGHT,
+          getItemKey: (i) => filtered.value[i]?.value ?? i,
+          viewportSize: LISTBOX_MAX_HEIGHT,
+          buffer: 4,
+        })
+        vstate.value = v.getState()
+        unsub = v.subscribe((s) => {
+          vstate.value = s
+        })
+      }
+      const list = filtered.value
+      v.setCount(list.length)
+      // Read up-front so `activeIndex` is tracked by this watcher in EVERY run
+      // — the re-anchor branch below returns early, and Vue re-collects
+      // dependencies per run (an untracked activeIndex would freeze keyboard
+      // navigation until the next text change).
+      const idx = activeIndex.value
+      if (props.modelValue !== lastText) {
+        lastText = props.modelValue
+        lastActiveIndex = 0
+        v.setScroll(0)
+        const el = listboxRef.value
+        if (el) el.scrollTop = 0
+        return
+      }
+      const el = listboxRef.value
+      if (el) {
+        const max = Math.max(0, v.totalSize() - LISTBOX_MAX_HEIGHT)
+        if (el.scrollTop > max) el.scrollTop = max
+      }
+      if (idx !== lastActiveIndex) {
+        lastActiveIndex = idx
+        if (idx >= 0 && idx < list.length && el) {
+          const top = el.scrollTop
+          const start = idx * ROW_HEIGHT
+          if (start < top || start + ROW_HEIGHT > top + LISTBOX_MAX_HEIGHT) {
+            el.scrollTop = v.scrollToIndex(idx, start < top ? 'start' : 'end')
+          }
+        }
+      }
+    })
+    onBeforeUnmount(() => unsub?.())
 
     const onInput = (e: Event) => {
       const ta = e.target as HTMLTextAreaElement
@@ -148,6 +241,7 @@ export const IrisMentions = defineComponent({
 
     return () => {
       const activeId = open.value ? `${reactId}-opt-${activeIndex.value}` : undefined
+      const list = filtered.value
       return h(
         'div',
         {
@@ -192,37 +286,95 @@ export const IrisMentions = defineComponent({
                   id: listboxId,
                   role: 'listbox',
                   'data-iris-mentions-listbox': '',
+                  ref: (el: unknown) => {
+                    listboxRef.value = (el ?? null) as HTMLUListElement | null
+                  },
+                  onScroll: (e: Event) => {
+                    v?.setScroll((e.currentTarget as HTMLElement).scrollTop)
+                  },
                   style: LIST_STYLE,
                 },
-                filtered.value.map((opt, i) =>
-                  h(
-                    'li',
-                    {
-                      key: opt.value,
-                      id: `${reactId}-opt-${i}`,
-                      role: 'option',
-                      'aria-selected': i === activeIndex.value ? 'true' : 'false',
-                      'data-iris-mentions-option': '',
-                      'data-value': opt.value,
-                      onMousedown: (e: MouseEvent) => e.preventDefault(),
-                      onMouseenter: () => {
-                        activeIndex.value = i
-                      },
-                      onClick: () => insert(opt),
-                      style: {
-                        padding: '6px 10px',
-                        fontSize: '14px',
-                        borderRadius: 'var(--iris-radius-sm, 4px)',
-                        cursor: 'pointer',
-                        background:
-                          i === activeIndex.value
-                            ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-                            : 'transparent',
-                      },
-                    },
-                    opt.label,
-                  ),
-                ),
+                props.virtual && v && vstate.value.items.length > 0
+                  ? [
+                      h('li', {
+                        role: 'presentation',
+                        'aria-hidden': 'true',
+                        'data-iris-mentions-spacer': '',
+                        'data-iris-mentions-spacer-type': 'top',
+                        style: { height: `${vstate.value.offsetBefore}px` },
+                      }),
+                      ...vstate.value.items.map((item) => {
+                        const opt = list[item.index]
+                        if (!opt) return null
+                        const isActive = item.index === activeIndex.value
+                        return h(
+                          'li',
+                          {
+                            key: opt.value,
+                            id: `${reactId}-opt-${item.index}`,
+                            role: 'option',
+                            'aria-selected': isActive ? 'true' : 'false',
+                            'aria-setsize': list.length,
+                            'aria-posinset': item.index + 1,
+                            'data-iris-mentions-option': '',
+                            'data-value': opt.value,
+                            onMousedown: (e: MouseEvent) => e.preventDefault(),
+                            onMouseenter: () => {
+                              activeIndex.value = item.index
+                            },
+                            onClick: () => insert(opt),
+                            style: {
+                              padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+                              fontSize: 'var(--iris-font-size-md, 14px)',
+                              borderRadius: 'var(--iris-radius-sm, 4px)',
+                              cursor: 'pointer',
+                              background: isActive
+                                ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+                                : 'transparent',
+                            },
+                          },
+                          opt.label,
+                        )
+                      }),
+                      h('li', {
+                        role: 'presentation',
+                        'aria-hidden': 'true',
+                        'data-iris-mentions-spacer': '',
+                        'data-iris-mentions-spacer-type': 'bottom',
+                        style: {
+                          height: `${vstate.value.totalSize - vstate.value.offsetBefore - vstate.value.items.length * ROW_HEIGHT}px`,
+                        },
+                      }),
+                    ]
+                  : list.map((opt, i) =>
+                      h(
+                        'li',
+                        {
+                          key: opt.value,
+                          id: `${reactId}-opt-${i}`,
+                          role: 'option',
+                          'aria-selected': i === activeIndex.value ? 'true' : 'false',
+                          'data-iris-mentions-option': '',
+                          'data-value': opt.value,
+                          onMousedown: (e: MouseEvent) => e.preventDefault(),
+                          onMouseenter: () => {
+                            activeIndex.value = i
+                          },
+                          onClick: () => insert(opt),
+                          style: {
+                            padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+                            fontSize: 'var(--iris-font-size-md, 14px)',
+                            borderRadius: 'var(--iris-radius-sm, 4px)',
+                            cursor: 'pointer',
+                            background:
+                              i === activeIndex.value
+                                ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+                                : 'transparent',
+                          },
+                        },
+                        opt.label,
+                      ),
+                    ),
               )
             : null,
         ],

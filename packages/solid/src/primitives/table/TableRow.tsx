@@ -265,7 +265,7 @@ export function TableRow<Row extends Record<string, unknown>>(
                     width: '100%',
                     border: `1px solid ${props.editError() ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
                     'border-radius': 'var(--iris-radius-sm, 4px)',
-                    padding: '4px 6px',
+                    padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
                     font: 'inherit',
                     background: 'var(--iris-background)',
                     color: 'var(--iris-foreground)',
@@ -279,7 +279,7 @@ export function TableRow<Row extends Record<string, unknown>>(
                     data-iris-table-editor-error=""
                     style={{
                       'margin-top': '2px',
-                      'font-size': '12px',
+                      'font-size': 'var(--iris-font-size-xs, 12px)',
                       color: 'var(--iris-danger)',
                     }}
                   >

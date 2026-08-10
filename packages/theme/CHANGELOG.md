@@ -1,5 +1,31 @@
 # @iris-ui-kit/theme
 
+## 0.3.0
+
+### Minor Changes
+
+- 267713a: **美学打磨（aesthetic review P1-P15）**
+  - 新增 token：`surface.floating`（浮层层级，dark 脱离卡片）、`success.foreground` / `danger.foreground` / `info.foreground`（语义色前景 ink，dark 深墨 AA）
+  - `info` 色相 `#3b82f6 → #0ea5e9`（light）/ `#60a5fa → #38bdf8`（dark）——与 primary 拉开色相，语义不再像"坏掉的 primary"
+  - `radius.sm` 2 → 4（软化微家族）
+  - 阴影双层分层（light /0.05+/0.06 系，dark /0.2+/0.4）
+  - `letter.spacing.tight` -0.01 → -0.02em（display 标题）、`wide` 0.02 → 0.04em（label）
+  - 浮层入场动效（CSS 变量 + prefers-reduced-motion 归零）、全局 focus-visible ring、Card padding/阴影对齐、Button hover color-mix、Table row hover/selected、Statistic 值 token 化（20/24/30）、Badge sm 12px、Switch 150ms 同步、EmptyState 图标容器、z-index token 化
+
+- a5a34d9: **设计系统刻度补全 + 全仓 token 统一**
+  - 新增 font.size 完整刻度（xs/sm/md/base/lg/xl/2xl/3xl/4xl = 12/13/14/15/16/18/20/24/30）+ font.weight / line.height / letter.spacing 家族
+  - 新增 space.xxs~5xl 4pt 间距刻度 + control.height.sm/md/lg（28/34/40）
+  - 新增 shadow.xl（浮层大阴影）、on.color、warning.foreground（彩色表面前景对比度纪律）
+  - **注意**：`iris.font.size.md` 15px → 14px、`iris.font.size.lg` 18px → 16px（消费面仅 drawer/charts，属刻度统一的一部分）
+  - 全仓组件样式迁移为 var(--iris-\*) 驱动（589 处违规归零：裸字号/魔法间距/fallback 漂移/硬编码阴影）
+  - 插件注册 token 恢复嵌套 var 消费（宿主可覆盖）
+
+### Patch Changes
+
+- Updated dependencies [267713a]
+- Updated dependencies [a5a34d9]
+  - @iris-ui-kit/tokens@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

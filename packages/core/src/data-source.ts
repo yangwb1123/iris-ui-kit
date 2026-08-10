@@ -91,9 +91,28 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
 
   let epoch = 0
   let inFlight: AbortController | null = null
+  // Unique-key counter for queries whose FilterRule.value is not JSON-serializable
+  // (functions, cyclic objects, …): such a query can't share the cache, so each
+  // call gets a fresh key — caching degrades to pass-through instead of throwing
+  // mid-fetch (the key is only ever used as a Map key, never sent anywhere).
+  let nonSerializableKey = 0
 
-  const cacheKey = (query: DataSourceQuery): string =>
-    JSON.stringify({ page: query.page, ps: query.pageSize, s: query.sort, f: query.filters })
+  const cacheKey = (query: DataSourceQuery): string => {
+    try {
+      // Fixed literal order — `ms`/`fr` complete the key so multiSort and
+      // filterRules queries never collide with the initial page or each other.
+      return JSON.stringify({
+        page: query.page,
+        ps: query.pageSize,
+        s: query.sort,
+        f: query.filters,
+        ms: query.multiSort,
+        fr: query.filterRules,
+      })
+    } catch {
+      return `non-serializable:${++nonSerializableKey}`
+    }
+  }
 
   const buildQuery = (overridePage?: number): DataSourceQuery => {
     const s = store.getState()
@@ -180,6 +199,24 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
     return fetchPage({ append: false, page: 1 })
   }
 
+  /**
+   * A successful mutation changes server state, so every cached query result is
+   * stale. Two layers:
+   *  - `invalidateAll()` marks all entries stale — SWR-serving readers still
+   *    see data but re-fetch on their next read;
+   *  - `remove(currentKey)` drops the CURRENT query's entry entirely. Its epoch
+   *    bump orphans a pre-mutation in-flight fetch whose settle would otherwise
+   *    re-fresh the entry with pre-mutation data — and the post-mutate `load()`
+   *    would then short-circuit on that fresh entry, serving pre-mutation rows.
+   * Only called on SUCCESS: on failure the server state is unchanged, so the
+   * cache keeps serving the data it legitimately holds.
+   */
+  const invalidateAfterMutation = (): void => {
+    if (!resilient) return
+    resilient.cache.invalidateAll()
+    resilient.cache.remove(cacheKey(buildQuery()))
+  }
+
   const controller: DataSourceController<T> = {
     store,
     selection,
@@ -256,6 +293,7 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
           throw error
         }
       }
+      invalidateAfterMutation()
       if (!options?.skipReload) await controller.load()
     },
     async mutateRow(rowKey, action, options) {
@@ -285,6 +323,7 @@ export function createDataSource<T>(config: DataSourceConfig<T>): DataSourceCont
         }
       }
       store.setState((s) => ({ ...s, pendingRows: s.pendingRows.filter((k) => k !== rowKey) }))
+      invalidateAfterMutation()
       if (!options?.skipReload) await controller.load()
     },
     outbox: outbox ?? undefined,

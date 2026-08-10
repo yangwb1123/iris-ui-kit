@@ -16,7 +16,7 @@ const ARROW_BTN: Record<string, string> = {
   background: 'var(--iris-background)',
   color: 'var(--iris-foreground)',
   cursor: 'pointer',
-  fontSize: '18px',
+  fontSize: 'var(--iris-font-size-xl, 18px)',
   lineHeight: '1',
 }
 
@@ -227,7 +227,7 @@ export const IrisCarousel = defineComponent({
                   style: {
                     display: 'flex',
                     justifyContent: 'center',
-                    gap: '6px',
+                    gap: 'var(--iris-space-xs, 8px)',
                     marginBlockStart: '8px',
                   },
                 },

@@ -32,7 +32,9 @@ describe('IrisGauge', () => {
 
   it('respects the min/max range', () => {
     const w = mount(IrisGauge, { props: { value: 5, min: 0, max: 10 } })
-    expect(label(w).text()).toBe('50%')
+    // 非 0-100 范围显示原始值（诚实表达）
+    expect(label(w).text()).toBe('5')
+    expect(meter(w).attributes('aria-valuetext')).toContain('50%')
   })
 
   it('showValue=false hides the label; status sets the data attr', () => {

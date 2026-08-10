@@ -113,12 +113,12 @@ export const IrisAdminTabs = defineComponent({
           style: {
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: 'var(--iris-space-xs, 8px)',
             border: 'none',
             background: 'transparent',
             color: 'inherit',
             font: 'inherit',
-            fontSize: '13px',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
             cursor: 'pointer',
             padding: '0',
           },
@@ -174,7 +174,8 @@ export const IrisAdminTabs = defineComponent({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '4px',
-            padding: '5px 8px 5px 10px',
+            padding:
+              'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px) var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
             borderRadius: 'var(--iris-radius-md, 6px)',
             border: `1px solid ${active ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
             background: active ? 'var(--iris-primary)' : 'var(--iris-surface)',
@@ -194,28 +195,23 @@ export const IrisAdminTabs = defineComponent({
         default: () => [
           h(
             IrisDropdownTrigger,
-            { 'aria-label': tr('admin.tabActions') },
             {
-              default: () =>
-                h(
-                  'span',
-                  {
-                    'data-iris-tab-actions': '',
-                    style: {
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: 'var(--iris-radius-md, 6px)',
-                      border: '1px solid var(--iris-border)',
-                      background: 'var(--iris-surface)',
-                      color: 'var(--iris-foreground)',
-                      cursor: 'pointer',
-                    },
-                  },
-                  [h(IrisIcon, { name: 'more-horizontal', size: 16 })],
-                ),
+              'aria-label': tr('admin.tabActions'),
+              style: {
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '28px',
+                height: '28px',
+                borderRadius: 'var(--iris-radius-md, 6px)',
+                border: '1px solid var(--iris-border)',
+                background: 'var(--iris-surface)',
+                color: 'var(--iris-foreground)',
+                cursor: 'pointer',
+              },
+            },
+            {
+              default: () => h(IrisIcon, { name: 'more-horizontal', size: 16 }),
             },
           ),
           h(IrisDropdownMenu, null, {
@@ -245,8 +241,8 @@ export const IrisAdminTabs = defineComponent({
           style: {
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            padding: '6px 10px',
+            gap: 'var(--iris-space-xs, 8px)',
+            padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
             borderBottom: '1px solid var(--iris-border)',
             background: 'var(--iris-background)',
             ...((attrs.style as Record<string, string> | undefined) ?? {}),
@@ -276,7 +272,7 @@ export const IrisAdminTabs = defineComponent({
                   orientation: 'horizontal',
                   style: {
                     alignItems: 'center',
-                    gap: '6px',
+                    gap: 'var(--iris-space-xs, 8px)',
                     width: 'max-content',
                   },
                 },

@@ -82,7 +82,7 @@
 
 <div
   data-iris-admin-data-page={page.key}
-  style="display:flex;flex-direction:column;gap:var(--iris-gap-md)"
+  style="display:flex;flex-direction:column;gap:var(--iris-admin-page-gap,var(--iris-gap-md))"
 >
   <div style="display:flex;align-items:center;flex-wrap:wrap;gap:var(--iris-gap-sm)">
     {#if page.title}<h2 data-iris-admin-page-title="">{page.title}</h2>{/if}

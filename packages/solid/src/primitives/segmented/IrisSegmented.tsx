@@ -16,9 +16,17 @@ export interface IrisSegmentedOption {
 }
 
 const SIZE_MAP: Record<IrisSegmentedSize, { padding: string; fontSize: string; height: string }> = {
-  sm: { padding: '2px 8px', fontSize: '12px', height: '24px' },
-  md: { padding: '4px 12px', fontSize: '14px', height: '30px' },
-  lg: { padding: '6px 16px', fontSize: '16px', height: '36px' },
+  sm: {
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    height: '24px',
+  },
+  md: { padding: '4px 12px', fontSize: 'var(--iris-font-size-md, 14px)', height: '30px' },
+  lg: {
+    padding: 'var(--iris-padding-sm, 6px) var(--iris-space-md, 16px)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    height: '36px',
+  },
 }
 
 function normalize(options: Array<IrisSegmentedOption | string>): IrisSegmentedOption[] {
@@ -161,8 +169,8 @@ export function IrisSegmented(props: IrisSegmentedProps): JSX.Element {
       style={{
         display: local.block ? 'flex' : 'inline-flex',
         width: local.block ? '100%' : undefined,
-        gap: '2px',
-        padding: '2px',
+        gap: 'var(--iris-space-xxs, 4px)',
+        padding: 'var(--iris-space-xxs, 4px)',
         background: 'var(--iris-surface, var(--iris-muted, #f4f4f4))',
         'border-radius': 'var(--iris-radius-md, 6px)',
         opacity: local.disabled ? 0.6 : 1,
@@ -205,7 +213,7 @@ export function IrisSegmented(props: IrisSegmentedProps): JSX.Element {
                 cursor: local.disabled || opt.disabled ? 'not-allowed' : 'pointer',
                 background: selected() ? 'var(--iris-background)' : 'transparent',
                 color: selected() ? 'var(--iris-foreground)' : 'var(--iris-muted)',
-                'box-shadow': selected() ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+                'box-shadow': selected() ? 'var(--iris-shadow-sm)' : 'none',
                 'font-weight': selected() ? '600' : '400',
                 transition: 'background-color 120ms ease, color 120ms ease',
                 'white-space': 'nowrap',

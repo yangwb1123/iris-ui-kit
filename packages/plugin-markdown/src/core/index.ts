@@ -468,7 +468,6 @@ export function markdownToNodes(md: string): MarkdownNode[] {
 /** CSS custom properties the markdown renderer reads; overridable by the host theme. */
 export const markdownTokens: Record<string, string> = {
   '--iris-md-font': 'var(--iris-font-family)',
-  '--iris-md-code-bg': 'var(--iris-surface-hover)',
 }
 
 // ---------------------------------------------------------------------------

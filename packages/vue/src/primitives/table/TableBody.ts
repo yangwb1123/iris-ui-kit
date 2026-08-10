@@ -153,7 +153,7 @@ function renderRow(
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '8px',
+            padding: '8px 12px',
             borderBottom: '1px solid var(--iris-border)',
           },
         },
@@ -200,7 +200,7 @@ function renderRow(
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '8px',
+            padding: '8px 12px',
             borderBottom: '1px solid var(--iris-border)',
           },
         },
@@ -281,9 +281,12 @@ function renderRow(
             display: 'flex',
             alignItems: 'center',
             justifyContent: flexAlign(col.align),
-            padding: isEditing ? '4px' : '8px var(--iris-padding-md)',
+            background: 'var(--iris-cell-bg, transparent)',
+            padding: isEditing
+              ? 'var(--iris-space-xxs, 4px)'
+              : 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
             borderBottom: '1px solid var(--iris-border)',
-            fontSize: '14px',
+            fontSize: 'var(--iris-font-size-md, 14px)',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -316,11 +319,7 @@ function renderRow(
       style: {
         display: 'grid',
         gridTemplateColumns: state.gridTemplate.value,
-        background: selected
-          ? 'var(--iris-surface-hover)'
-          : props.striped && index % 2 === 1
-            ? 'var(--iris-surface)'
-            : 'transparent',
+        background: selected ? 'var(--iris-surface-hover)' : 'transparent',
         transition: 'background-color 120ms ease',
         cursor: 'default',
         ...extraStyle,
@@ -367,7 +366,7 @@ function renderEditingCell(
       width: '100%',
       border: `1px solid ${error ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
       borderRadius: 'var(--iris-radius-sm)',
-      padding: '4px 6px',
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
       font: 'inherit',
       background: 'var(--iris-background)',
       color: 'var(--iris-foreground)',
@@ -383,7 +382,11 @@ function renderEditingCell(
             id: `${editCellId}-error`,
             role: 'alert',
             'data-iris-table-editor-error': '',
-            style: { marginTop: '2px', fontSize: '12px', color: 'var(--iris-danger)' },
+            style: {
+              marginTop: 'var(--iris-space-xxs, 4px)',
+              fontSize: 'var(--iris-font-size-xs, 12px)',
+              color: 'var(--iris-danger)',
+            },
           },
           error,
         ),
@@ -457,7 +460,12 @@ export function renderSummaryRow(
         key: '__selection',
         role: 'cell',
         'data-iris-table-cell': '__selection',
-        style: { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px' },
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '8px 12px',
+        },
       }),
     )
   }
@@ -479,8 +487,8 @@ export function renderSummaryRow(
             display: 'flex',
             alignItems: 'center',
             justifyContent: flexAlign(col.align),
-            padding: '8px var(--iris-padding-md)',
-            fontSize: '14px',
+            padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md)',
+            fontSize: 'var(--iris-font-size-md, 14px)',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',

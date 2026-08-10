@@ -27,6 +27,11 @@ const stackStyle: JSX.CSSProperties = {
   gap: 'var(--iris-gap-md)',
 }
 
+const pageStackStyle: JSX.CSSProperties = {
+  ...stackStyle,
+  gap: 'var(--iris-admin-page-gap, var(--iris-gap-md))',
+}
+
 const rowStyle: JSX.CSSProperties = {
   display: 'flex',
   'align-items': 'center',
@@ -166,7 +171,7 @@ export function AdminDataPageView(props: AdminDataPageViewProps): JSX.Element {
   }
 
   return (
-    <div data-iris-admin-data-page={props.page.key} style={stackStyle}>
+    <div data-iris-admin-data-page={props.page.key} style={pageStackStyle}>
       <div style={rowStyle}>
         <Show when={props.page.title}>
           <h2 data-iris-admin-page-title="">{props.page.title}</h2>

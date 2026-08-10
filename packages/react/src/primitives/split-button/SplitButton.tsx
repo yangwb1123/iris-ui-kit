@@ -23,11 +23,23 @@ export interface IrisSplitButtonProps {
   className?: string
 }
 
-const SIZE_MAP: Record<IrisSplitButtonSize, { padding: string; fontSize: number; height: number }> =
+const SIZE_MAP: Record<IrisSplitButtonSize, { padding: string; fontSize: string; height: number }> =
   {
-    sm: { padding: '4px 10px', fontSize: 12, height: 28 },
-    md: { padding: '6px 14px', fontSize: 14, height: 34 },
-    lg: { padding: '8px 18px', fontSize: 16, height: 40 },
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      height: 28,
+    },
+    md: {
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-space-md, 16px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      height: 34,
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-lg, 20px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      height: 40,
+    },
   }
 
 /**
@@ -74,7 +86,7 @@ export function IrisSplitButton({
     variant === 'primary'
       ? {
           background: 'var(--iris-primary)',
-          color: '#fff',
+          color: 'var(--iris-primary-foreground, #fff)',
           border: '1px solid var(--iris-primary)',
         }
       : {
@@ -135,7 +147,7 @@ export function IrisSplitButton({
                 : '1px solid var(--iris-border)',
             padding: '0 8px',
             minHeight: sz.height,
-            fontSize: 10,
+            fontSize: 'var(--iris-font-size-xs, 12px)',
             borderStartEndRadius: 'var(--iris-radius-md, 6px)',
             borderEndEndRadius: 'var(--iris-radius-md, 6px)',
             cursor: disabled ? 'not-allowed' : 'pointer',
@@ -165,7 +177,7 @@ export function IrisSplitButton({
             background: 'var(--iris-background)',
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-md, 6px)',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            boxShadow: 'var(--iris-shadow-lg)',
           }}
         >
           {actions!.map((a) => (
@@ -177,8 +189,8 @@ export function IrisSplitButton({
               data-key={a.key}
               onClick={() => select(a)}
               style={{
-                padding: '6px 10px',
-                fontSize: 14,
+                padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
                 borderRadius: 'var(--iris-radius-sm, 4px)',
                 cursor: a.disabled ? 'not-allowed' : 'pointer',
                 color: a.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',

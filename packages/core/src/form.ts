@@ -331,6 +331,18 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
   }
   const isCurrent = (name: string, token: number): boolean => tokens.get(name) === token
 
+  // Form-level monotonic token: guards the whole-form `config.validate`
+  // result. Any values write (or a newer validateForm pass) invalidates an
+  // in-flight whole-form check, so a stale result can never resurrect cleared
+  // errors (the unguarded merge) or clobber a newer pass's error map (the
+  // wholesale replace). Separate counter on purpose — a reserved key in the
+  // per-field map would collide with a user field name. `validateField`
+  // deliberately does NOT bump it: a blur re-validation of unchanged values
+  // must not discard a still-valid whole-form result.
+  let formToken = 0
+  const bumpFormToken = (): number => ++formToken
+  const isFormCurrent = (token: number): boolean => formToken === token
+
   const writeError = (name: string, error: string | undefined): void => {
     store.setState((s) => {
       if (error) {
@@ -409,6 +421,9 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
   const validateForm: FormStore<V>['validateForm'] = async () => {
     store.setState((s) => ({ ...s, isValidating: true }))
     try {
+      // Capture the form token at pass start — a newer pass bumps it
+      // immediately, superseding this one's whole-form result.
+      const formTokenAtStart = bumpFormToken()
       const values = store.getState().values
       // Reserve every token before starting concurrent validation so this
       // form-wide pass supersedes any older per-field run.
@@ -433,6 +448,13 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
         const formErrors = await config.validate(values)
         nextErrors = { ...nextErrors, ...formErrors }
       }
+      // One stale check covers both holes: the awaited config.validate above
+      // means a stale form-level result never reaches the merge, and a
+      // superseded per-field-only pass never clobbers a newer map via the
+      // wholesale replace. Mirrors the per-field stale contract (a superseded
+      // pass returns the current map, writes nothing; `finally` still clears
+      // isValidating).
+      if (!isFormCurrent(formTokenAtStart)) return store.getState().errors
       store.setState((s) => ({ ...s, errors: nextErrors }))
       return nextErrors
     } finally {
@@ -489,6 +511,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
         valueBuffer.delete(key)
         if (value === undefined && !valueBuffer.has(key)) return
         // Write buffered value to the store
+        bumpFormToken()
         store.setState((s) => ({
           ...s,
           values: setByPath(s.values, key, value),
@@ -521,6 +544,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
       return
     }
     // Immediate: write to the store directly (original behavior)
+    bumpFormToken()
     store.setState((s) => ({
       ...s,
       // Structural-sharing set along the touched path only (a flat key reduces
@@ -549,6 +573,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
 
   const setValues: FormStore<V>['setValues'] = (values) => {
     const keys = Object.keys(values) as Key<V>[]
+    bumpFormToken()
     store.setState((s) => {
       const nextValues = { ...s.values }
       const nextDirty = { ...s.dirty }
@@ -717,6 +742,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
   const reset: FormStore<V>['reset'] = (nextInitialValues) => {
     if (nextInitialValues) initialValues = parse({ ...nextInitialValues })
     tokens.clear()
+    bumpFormToken()
     // Also clear undo history on reset — new initial values, fresh timeline.
     history.length = 0
     historyIdx = -1
@@ -773,11 +799,13 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
     undo: () => {
       if (historyIdx <= 0) return
       historyIdx -= 1
+      bumpFormToken()
       store.setState((s) => ({ ...s, values: JSON.parse(history[historyIdx]!) }))
     },
     redo: () => {
       if (historyIdx >= history.length - 1) return
       historyIdx += 1
+      bumpFormToken()
       store.setState((s) => ({ ...s, values: JSON.parse(history[historyIdx]!) }))
     },
     canUndo: () => historyIdx > 0,
@@ -814,6 +842,7 @@ export function createFormStore<V extends FormValues>(config: FormConfig<V>): Fo
         // Only mark dirty if the hydrated value differs from the initial
         if (!Object.is(v, initialValues[key])) nextDirty[key] = true
       }
+      bumpFormToken()
       store.setState({
         ...s,
         values: nextValues,

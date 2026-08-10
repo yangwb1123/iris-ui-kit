@@ -130,8 +130,11 @@ const activeCacheKey = computed(() => {
       </IrisButton>
 
       <IrisDropdown>
-        <IrisDropdownTrigger aria-label="Account">
-          <span style="display: inline-flex; cursor: pointer">
+        <IrisDropdownTrigger
+          aria-label="Account"
+          style="border: none; background: transparent; cursor: pointer; padding: 0"
+        >
+          <span style="display: inline-flex">
             <IrisAvatar :name="authStore.getState().session?.username ?? 'User'" :size="32" />
           </span>
         </IrisDropdownTrigger>

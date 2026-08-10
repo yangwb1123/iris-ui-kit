@@ -93,7 +93,7 @@
         e.stopPropagation()
         handleClose()
       }}
-      style="position: absolute; inset-block-start: 16px; inset-inline-end: 16px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,0.5); color: #fff; font-size: 22px; line-height: 1; cursor: pointer"
+      style="position: absolute; inset-block-start: 16px; inset-inline-end: 16px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(0, 0, 0, 0.5); color: var(--iris-primary-foreground, #fff); font-size: var(--iris-font-size-2xl, 20px); line-height: 1; cursor: pointer"
     >
       ×
     </button>

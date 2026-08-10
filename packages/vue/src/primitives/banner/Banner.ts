@@ -4,7 +4,7 @@ import { useI18n } from '../../i18n'
 export type IrisBannerTone = 'info' | 'success' | 'warning' | 'danger' | 'neutral'
 
 const TONE_TO_VAR: Record<IrisBannerTone, string> = {
-  info: '--iris-primary',
+  info: '--iris-info',
   success: '--iris-success',
   warning: '--iris-warning',
   danger: '--iris-danger',
@@ -124,8 +124,8 @@ export const IrisBanner = defineComponent({
                     border: 'none',
                     cursor: 'pointer',
                     color: 'var(--iris-muted)',
-                    fontSize: '16px',
-                    padding: '0 4px',
+                    fontSize: 'var(--iris-font-size-lg, 16px)',
+                    padding: '0 var(--iris-space-xxs, 4px)',
                     lineHeight: '1',
                     flexShrink: '0',
                   },

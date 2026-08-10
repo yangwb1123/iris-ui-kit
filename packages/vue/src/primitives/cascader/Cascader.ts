@@ -1,5 +1,6 @@
-import { defineComponent, h, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
+import { defineComponent, h, onBeforeUnmount, onMounted, ref, type PropType, type VNode } from 'vue'
 import { useI18n } from '../../i18n'
+import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 
 export type IrisCascaderSize = 'sm' | 'md' | 'lg'
 
@@ -12,10 +13,29 @@ export interface IrisCascaderNode {
 
 const SIZE_MAP: Record<IrisCascaderSize, { padding: string; fontSize: string; minHeight: string }> =
   {
-    sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
-    md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
-    lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      minHeight: '28px',
+    },
+    md: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      minHeight: '34px',
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      minHeight: '40px',
+    },
   }
+
+/** Matches the current `maxHeight: 240` of a column. */
+const CASCADER_COLUMN_VIEWPORT = 240
+/** Fixed row heights, aligned with SIZE_MAP minHeights so rows never clip. */
+const CASCADER_ROW_HEIGHT: Record<IrisCascaderSize, number> = { sm: 28, md: 34, lg: 40 }
+/** Extra rows rendered above and below the visible window. */
+const CASCADER_VIRTUAL_BUFFER = 4
 
 function pathLabels(options: IrisCascaderNode[], path: string[]): string[] {
   const labels: string[] = []
@@ -57,6 +77,7 @@ export const IrisCascader = defineComponent({
     invalid: { type: Boolean, default: false },
     separator: { type: String, default: ' / ' },
     size: { type: String as PropType<IrisCascaderSize>, default: 'md' },
+    virtual: { type: Boolean, default: false },
     id: { type: String, default: undefined },
     ariaDescribedby: { type: String, default: undefined },
   },
@@ -103,6 +124,70 @@ export const IrisCascader = defineComponent({
         : focused.value || open.value
           ? 'var(--iris-primary)'
           : 'var(--iris-border)'
+
+      // Shared option renderer — used by BOTH the plain and the virtual column
+      // paths so the a11y attribute surface is structurally identical. When
+      // virtual, the virtualizer pins each row's height, so the option fills
+      // the row (height 100% + border-box keeps the padding inside it).
+      const renderOption = (ci: number, node: IrisCascaderNode): VNode => {
+        const isActive = activePath.value[ci] === node.value
+        const hasChildren = !!node.children && node.children.length > 0
+        return h(
+          'li',
+          {
+            key: node.value,
+            role: 'option',
+            'aria-selected': isActive ? 'true' : 'false',
+            'aria-disabled': node.disabled ? 'true' : undefined,
+            'data-iris-cascader-option': '',
+            'data-value': node.value,
+            onClick: () => selectOption(ci, node),
+            onMouseenter: () => {
+              hoveredValue.value = node.value
+            },
+            onMouseleave: () => {
+              if (hoveredValue.value === node.value) hoveredValue.value = null
+            },
+            style: {
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+              padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
+              fontSize: sz.fontSize,
+              borderRadius: 'var(--iris-radius-sm, 4px)',
+              cursor: node.disabled ? 'not-allowed' : 'pointer',
+              color: node.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
+              background:
+                isActive || hoveredValue.value === node.value
+                  ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+                  : 'transparent',
+              ...(props.virtual ? { height: '100%', boxSizing: 'border-box' } : null),
+            },
+          },
+          [
+            h('span', node.label),
+            hasChildren
+              ? h(
+                  'span',
+                  {
+                    'aria-hidden': 'true',
+                    style: {
+                      color: 'var(--iris-muted)',
+                      fontSize: 'var(--iris-font-size-xs, 12px)',
+                    },
+                  },
+                  '›',
+                )
+              : null,
+          ],
+        )
+      }
+
+      const columnStyle = (ci: number): Record<string, string | undefined> => ({
+        minWidth: '140px',
+        borderInlineStart: ci > 0 ? '1px solid var(--iris-border)' : undefined,
+      })
 
       return h(
         'div',
@@ -179,7 +264,10 @@ export const IrisCascader = defineComponent({
               ),
               h(
                 'span',
-                { 'aria-hidden': 'true', style: { color: 'var(--iris-muted)', fontSize: '10px' } },
+                {
+                  'aria-hidden': 'true',
+                  style: { color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-xs, 12px)' },
+                },
                 '▾',
               ),
             ],
@@ -199,79 +287,49 @@ export const IrisCascader = defineComponent({
                     background: 'var(--iris-background)',
                     border: '1px solid var(--iris-border)',
                     borderRadius: 'var(--iris-radius-md, 6px)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    boxShadow: 'var(--iris-shadow-lg)',
                     overflow: 'hidden',
                   },
                 },
                 columns.map((col, ci) =>
-                  h(
-                    'ul',
-                    {
-                      key: ci,
-                      role: 'listbox',
-                      'data-iris-cascader-column': '',
-                      'data-level': ci,
-                      style: {
-                        listStyle: 'none',
-                        margin: '0',
-                        padding: '4px',
-                        minWidth: '140px',
-                        maxHeight: '240px',
-                        overflowY: 'auto',
-                        borderInlineStart: ci > 0 ? '1px solid var(--iris-border)' : undefined,
-                      },
-                    },
-                    col.map((node) => {
-                      const isActive = activePath.value[ci] === node.value
-                      const hasChildren = !!node.children && node.children.length > 0
-                      return h(
-                        'li',
+                  props.virtual
+                    ? h(
+                        IrisVirtualScroll,
                         {
-                          key: node.value,
-                          role: 'option',
-                          'aria-selected': isActive ? 'true' : 'false',
-                          'aria-disabled': node.disabled ? 'true' : undefined,
-                          'data-iris-cascader-option': '',
-                          'data-value': node.value,
-                          onClick: () => selectOption(ci, node),
-                          onMouseenter: () => {
-                            hoveredValue.value = node.value
-                          },
-                          onMouseleave: () => {
-                            if (hoveredValue.value === node.value) hoveredValue.value = null
-                          },
+                          key: ci,
+                          items: col,
+                          itemHeight: CASCADER_ROW_HEIGHT[props.size],
+                          height: CASCADER_COLUMN_VIEWPORT,
+                          buffer: CASCADER_VIRTUAL_BUFFER,
+                          keyOf: (item: unknown) => (item as IrisCascaderNode).value,
+                          role: 'listbox',
+                          'data-iris-cascader-column': '',
+                          'data-level': ci,
+                          style: columnStyle(ci),
+                        },
+                        {
+                          item: ({ item }: { item: unknown }) =>
+                            renderOption(ci, item as IrisCascaderNode),
+                        },
+                      )
+                    : h(
+                        'ul',
+                        {
+                          key: ci,
+                          role: 'listbox',
+                          'data-iris-cascader-column': '',
+                          'data-level': ci,
                           style: {
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: '8px',
-                            padding: '6px 10px',
-                            fontSize: sz.fontSize,
-                            borderRadius: 'var(--iris-radius-sm, 4px)',
-                            cursor: node.disabled ? 'not-allowed' : 'pointer',
-                            color: node.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
-                            background:
-                              isActive || hoveredValue.value === node.value
-                                ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-                                : 'transparent',
+                            listStyle: 'none',
+                            margin: '0',
+                            padding: '4px',
+                            ...columnStyle(ci),
+                            maxHeight: '240px',
+                            overflowY: 'auto',
                           },
                         },
-                        [
-                          h('span', node.label),
-                          hasChildren
-                            ? h(
-                                'span',
-                                {
-                                  'aria-hidden': 'true',
-                                  style: { color: 'var(--iris-muted)', fontSize: '10px' },
-                                },
-                                '›',
-                              )
-                            : null,
-                        ],
-                      )
-                    }),
-                  ),
+                        col.map((node) => renderOption(ci, node)),
+                      ),
                 ),
               )
             : null,

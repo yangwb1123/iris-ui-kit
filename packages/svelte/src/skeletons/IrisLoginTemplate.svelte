@@ -86,7 +86,7 @@
         <div
           data-iris-login-error
           role="alert"
-          style:padding="10px 14px"
+          style:padding="var(--iris-space-sm, 12px) var(--iris-space-md, 16px)"
           style:margin-bottom="16px"
           style:background="color-mix(in srgb, var(--iris-danger) 12%, transparent)"
           style:color="var(--iris-danger)"
@@ -188,7 +188,7 @@
           data-iris-login-submit
           disabled={loading}
           style:width="100%"
-          style:padding="10px 16px"
+          style:padding="var(--iris-space-sm, 12px) var(--iris-space-md, 16px)"
           style:background="var(--iris-primary)"
           style:color="var(--iris-primary-foreground, #fff)"
           style:border="none"

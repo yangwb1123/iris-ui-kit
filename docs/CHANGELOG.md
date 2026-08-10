@@ -180,3 +180,37 @@
 ## Earlier
 
 See `ROADMAP.md` history + git log for R1–R86 (ROADMAP v2 fully implemented) and the plugin/CLI/eslint/MCP expansion.
+
+- **2026-08-07 — 设计系统统一升级（ai-batch-runner 高维 UI 流水线驱动）。**
+  用 ai-batch-runner 的多维 UI 审计体系（hex/spacing/shadow/font 四维机械
+  门禁 + ui/visual 对抗审查 + VERDICT 裁决门）把全仓推到"统一、产品完成度
+  高"：589 处设计违规归零（裸字号 303 / 魔法间距 103 / fallback 漂移 91 /
+  硬编码阴影 60 / 未知 token 17 / 裸 hex 15）。tokens 包补全产品级刻度
+  （font.size 9 档 + weight/line-height/letter-spacing、space 4pt 刻度 +
+  control.height、shadow.xl、on.color/warning.foreground）；四框架组件样式
+  100% 由 --iris-\* 驱动；插件孤儿 token 恢复嵌套 var 消费。Gate 第一轮
+  FAIL 反馈全部落实（审计脚本多值/数字解析升级、对比度回归修复、arch
+  baseline 更新）。视觉验证（Playwright 像素对比）：Solid 与 React 渲染
+  一致，Vue/Svelte 差异归因 CMS 应用层组件选择（手写 table vs IrisTable），
+  并修复 vue NavMenu 10px 漂移。新增长期资产：iris-ui-spec.py 机械门禁 +
+  visual-parity.spec.ts 像素门禁（4 框架分发）。全仓 180/180 turbo 绿。
+
+- **2026-08-07 — 设计智能评审全部可执行项落地 + 四框架视觉门禁正式化。**
+  评审（design-intelligence 6 维度）落实 18 项：Button danger variant、
+  Select 空状态/界高/选中项软化（subtle bg + checkmark）、Table 选中计数/
+  错误态 Retry/数字列右对齐、Card hover、Button :active 微交互、Gauge
+  诚实值（非 0-100 显示原始值）、Statistic trendTone、Badge solid 对比度
+  （AA）、info tone 统一、focus ring color-mix、backdrop token、空态文案
+  教学化。视觉门禁正式化：visual-parity.spec.ts 四框架分发（solid/svelte
+  0.02 硬门、vue 0.05 回归门——2.8% 已知渲染基线，>5% 视为回归），四框架
+  light/dark 全 PASS。剩余唯一记录项：Gauge 阈值映射（显式 status 保持，
+  组件注释给出消费方推导建议）。180/180 turbo 绿，审计 0 违规。
+
+- **2026-08-07 — 美学评审（P1-P15）全部落地。** ai-batch-runner 美学评审
+  （色彩和谐/排版/节奏/形态/动效五维）产出 15 项改进并全部实现：Badge
+  语义色前景（dark 深墨 AA）、surface.floating 浮层层级（dark 浮层脱离
+  卡片）、四浮层入场动效（reduced-motion 归零）、全局 focus ring、
+  Card padding/阴影对齐、Button hover color-mix、Table row hover/selected、
+  Statistic 值 token 化、Switch 动效同步、info 色相 sky、radius 软化
+  2→4、EmptyState 图标容器、skeleton 圆角。视觉基线重建后四框架 parity
+  全 PASS；180/180 turbo + 审计 0。

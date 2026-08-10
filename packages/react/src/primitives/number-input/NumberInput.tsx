@@ -7,9 +7,13 @@ const SIZE_MAP: Record<
   IrisNumberInputSize,
   { padding: string; fontSize: string; minHeight: string }
 > = {
-  sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
-  md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
-  lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
+  sm: { padding: '4px 8px', fontSize: 'var(--iris-font-size-xs, 12px)', minHeight: '28px' },
+  md: {
+    padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+    minHeight: '34px',
+  },
+  lg: { padding: '8px 12px', fontSize: 'var(--iris-font-size-lg, 16px)', minHeight: '40px' },
 }
 
 function decimalsOf(step: number): number {
@@ -154,7 +158,7 @@ export const IrisNumberInput = React.forwardRef<HTMLInputElement, IrisNumberInpu
         ? 'var(--iris-primary)'
         : 'var(--iris-border)'
     const boxShadow = focused
-      ? `0 0 0 3px ${invalid ? 'rgba(239, 68, 68, 0.18)' : 'rgba(99, 102, 241, 0.18)'}`
+      ? `0 0 0 3px ${invalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
       : 'none'
 
     const atMin = current !== null && current !== undefined && current <= min

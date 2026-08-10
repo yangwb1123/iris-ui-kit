@@ -84,7 +84,7 @@
   data-state={isActive ? 'on' : 'off'}
   onclick={handleClick}
   onkeydown={handleKeyDown}
-  style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: {SIZE_PADDING[
+  style="display: inline-flex; align-items: center; justify-content: center; gap: var(--iris-space-xs, 8px); padding: {SIZE_PADDING[
     ctx.size
   ]}; font-size: {SIZE_FONT[
     ctx.size

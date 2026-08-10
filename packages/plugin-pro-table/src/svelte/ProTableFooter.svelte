@@ -26,7 +26,7 @@
     {#each activeFilters as key (key)}
       {@const title = columns.get(key)?.title ?? key}
       <span
-        style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.125rem 0.5rem;background:var(--iris-pro-table-chip-bg);border-radius:9999px;"
+        style="display:inline-flex;align-items:center;gap:0.25rem;padding:var(--iris-space-xxs,4px) var(--iris-space-xs,8px);background:var(--iris-pro-table-chip-bg,var(--iris-surface-hover,#f1f5f9));border-radius:9999px;"
       >
         {title}: "{state.filters[key]}"
         <button

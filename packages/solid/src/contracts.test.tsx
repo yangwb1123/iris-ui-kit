@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { createSignal, For } from 'solid-js'
+import { createSignal, createMemo, For } from 'solid-js'
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import {
   runContract,
@@ -22,10 +22,12 @@ import {
   tableExpandScenario,
   treeScenario,
   calendarScenario,
+  calendarNavScenario,
   tagInputScenario,
   otpInputScenario,
   dataSourceScenario,
   dataSourceAsyncScenario,
+  dataSourceResilientScenario,
   dialogScenario,
   overlayFocusScenario,
   overlayDestroyScenario,
@@ -51,7 +53,10 @@ import {
 import {
   createSyncClientDataSource,
   createClientDataSource,
+  filterSort,
+  paginate,
   type DataViewColumn,
+  type DataSourceQuery,
 } from '@iris-ui-kit/core'
 import {
   IrisTabs,
@@ -200,6 +205,73 @@ function DataSourceAsyncHarness() {
         data-loading={String(ds.state().loading)}
         data-fetches={String(fetches())}
       />
+      <For each={ds.state().rows}>{(r) => <div data-iris-ds-row>{r.name}</div>}</For>
+    </div>
+  )
+}
+
+/**
+ * Resilient-contract dataset: 3 rows, paged mode, pageSize 10, TTL 60s. The
+ * fetcher reads a MUTABLE backing store and returns per-row COPIES (never
+ * aliasing it), so the rename mutation becomes visible ONLY through a real
+ * re-fetch — and `data-fetches` proves cache hits (reload within TTL) vs.
+ * genuine network reads (multiSort key change, post-mutate invalidation).
+ * Identical ×4 harness.
+ */
+const dsResilientData: DsRow[] = [
+  { id: 1, name: 'Charlie', age: 30 },
+  { id: 2, name: 'Alice', age: 25 },
+  { id: 3, name: 'Bob', age: 35 },
+]
+
+function DataSourceResilientHarness() {
+  const [fetches, setFetches] = createSignal(0)
+  // createMemo with no reactive reads → the backing store is created ONCE, not
+  // per render: the engine captures the first-render fetcher, whose closure
+  // must keep reading the SAME array the rename mutation writes.
+  const backing = createMemo(() => dsResilientData.map((r) => ({ ...r })))
+  const fetcher = (q: DataSourceQuery) => {
+    const processed = filterSort(backing(), dsColumns, {
+      filters: q.filters,
+      sort: q.sort,
+      multiSort: q.multiSort,
+      filterRules: q.filterRules,
+    })
+    setFetches((n) => n + 1)
+    return {
+      rows: paginate(processed, q.page, q.pageSize).map((r) => ({ ...r })),
+      total: processed.length,
+    }
+  }
+  const renameFirst = () => {
+    backing()[0] = { ...backing()[0]!, name: `${backing()[0]!.name}!` }
+  }
+  const ds = useDataSource<DsRow>({
+    fetcher,
+    pageSize: 10,
+    resilient: { ttlMs: 60000 },
+  })
+  return (
+    <div>
+      <button data-iris-ds-reload onClick={() => void ds.reload()}>
+        reload
+      </button>
+      <button
+        data-iris-ds-multisort-a
+        onClick={() => ds.setMultiSort([{ key: 'age', direction: 'asc' }])}
+      >
+        sortAge
+      </button>
+      <button
+        data-iris-ds-multisort-b
+        onClick={() => ds.setMultiSort([{ key: 'name', direction: 'desc' }])}
+      >
+        sortName
+      </button>
+      <button data-iris-ds-mutate onClick={() => void ds.mutate(async () => renameFirst())}>
+        mutate
+      </button>
+      <div data-iris-ds-meta data-fetches={String(fetches())} />
       <For each={ds.state().rows}>{(r) => <div data-iris-ds-row>{r.name}</div>}</For>
     </div>
   )
@@ -546,6 +618,19 @@ describe('@iris-ui-kit/solid — cross-framework behavior contracts', () => {
     await runContract(calendarScenario, driverFor(container), expect)
   })
 
+  it('satisfies the shared Calendar keyboard-roving contract', async () => {
+    const { container } = render(() => (
+      <IrisCalendar
+        value={new Date(2024, 5, 10)}
+        defaultMonth={new Date(2024, 5, 1)}
+        min={new Date(2024, 5, 10)}
+        max={new Date(2024, 6, 20)}
+        locale="en-US"
+      />
+    ))
+    await runContract(calendarNavScenario, driverFor(container), expect)
+  })
+
   it('satisfies the shared TagInput contract', async () => {
     const { container } = render(() => (
       <IrisTagInput defaultValue={['Alpha', 'Bravo', 'Charlie']} />
@@ -566,6 +651,11 @@ describe('@iris-ui-kit/solid — cross-framework behavior contracts', () => {
   it('satisfies the shared async DataSource contract', async () => {
     const { container } = render(() => <DataSourceAsyncHarness />)
     await runContract(dataSourceAsyncScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared resilient DataSource contract', async () => {
+    const { container } = render(() => <DataSourceResilientHarness />)
+    await runContract(dataSourceResilientScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Dialog contract', async () => {

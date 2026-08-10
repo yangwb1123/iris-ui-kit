@@ -4,7 +4,7 @@ import { useI18n } from '../../i18n'
 export type IrisAlertTone = 'info' | 'success' | 'warning' | 'danger'
 
 const TONE_TO_VAR: Record<IrisAlertTone, string> = {
-  info: '--iris-primary',
+  info: '--iris-info',
   success: '--iris-success',
   warning: '--iris-warning',
   danger: '--iris-danger',
@@ -107,7 +107,7 @@ export function IrisAlert(props: IrisAlertProps): JSX.Element {
               border: 'none',
               cursor: 'pointer',
               color: 'var(--iris-muted)',
-              'font-size': '16px',
+              'font-size': 'var(--iris-font-size-lg, 16px)',
               padding: '0',
               'line-height': '1',
               'flex-shrink': '0',

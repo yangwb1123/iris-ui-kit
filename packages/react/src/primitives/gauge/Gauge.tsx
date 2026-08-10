@@ -9,6 +9,11 @@ export interface IrisGaugeProps {
   /** Diameter in px. */
   size?: number
   strokeWidth?: number
+  /**
+   * Semantic status — drives the stroke color. Explicit by design (honesty
+   * preserved): for threshold-based decision support, derive it yourself,
+   * e.g. `status={value > 80 ? 'danger' : value > 60 ? 'warning' : 'success'}`.
+   */
   status?: IrisGaugeStatus
   showValue?: boolean
   /** Custom center label given the value and rounded percent. */
@@ -20,7 +25,7 @@ export interface IrisGaugeProps {
 
 const COLOR: Record<IrisGaugeStatus, string> = {
   default: 'var(--iris-primary)',
-  success: 'var(--iris-success, #16a34a)',
+  success: 'var(--iris-success, #10b981)',
   danger: 'var(--iris-danger)',
   warning: 'var(--iris-warning, #f59e0b)',
 }
@@ -64,7 +69,7 @@ export function IrisGauge({
       aria-valuenow={value}
       aria-valuemin={min}
       aria-valuemax={max}
-      aria-valuetext={`${percent}%`}
+      aria-valuetext={min === 0 && max === 100 ? `${percent}%` : `${value} (${percent}%)`}
       aria-label={ariaLabel}
       className={className}
       {...rest}
@@ -105,7 +110,11 @@ export function IrisGauge({
             fontVariantNumeric: 'tabular-nums',
           }}
         >
-          {format ? format(value, percent) : `${percent}%`}
+          {format
+            ? format(value, percent)
+            : min === 0 && max === 100
+              ? `${percent}%`
+              : String(value)}
         </div>
       ) : null}
     </div>

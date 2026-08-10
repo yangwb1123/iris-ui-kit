@@ -2,14 +2,24 @@ import { defineComponent, h, type PropType } from 'vue'
 
 export type IrisStatisticSize = 'sm' | 'md' | 'lg'
 export type IrisStatisticTrend = 'up' | 'down' | 'neutral'
+export type IrisStatisticTone = 'success' | 'danger' | 'neutral'
 
-const VALUE_FONT: Record<IrisStatisticSize, number> = { sm: 20, md: 28, lg: 36 }
+const VALUE_FONT: Record<IrisStatisticSize, string> = {
+  sm: 'var(--iris-font-size-2xl, 20px)',
+  md: 'var(--iris-font-size-3xl, 24px)',
+  lg: 'var(--iris-font-size-4xl, 30px)',
+}
 const TREND_COLOR: Record<IrisStatisticTrend, string> = {
-  up: 'var(--iris-success, #16a34a)',
+  up: 'var(--iris-success, #10b981)',
   down: 'var(--iris-danger)',
   neutral: 'var(--iris-muted)',
 }
 const TREND_ARROW: Record<IrisStatisticTrend, string> = { up: '▲', down: '▼', neutral: '' }
+const TREND_TONE: Record<IrisStatisticTone, string> = {
+  success: 'var(--iris-success, #10b981)',
+  danger: 'var(--iris-danger)',
+  neutral: 'var(--iris-muted)',
+}
 
 /**
  * Compact statistic / KPI display: a label, a prominent value (with optional
@@ -27,6 +37,7 @@ export const IrisStatistic = defineComponent({
     description: { type: [String, Number], default: undefined },
     trend: { type: String as PropType<IrisStatisticTrend>, default: undefined },
     trendValue: { type: [String, Number], default: undefined },
+    trendTone: { type: String as PropType<IrisStatisticTone>, default: undefined },
     size: { type: String as PropType<IrisStatisticSize>, default: 'md' },
   },
   setup(props, { attrs }) {
@@ -51,7 +62,7 @@ export const IrisStatistic = defineComponent({
                 'div',
                 {
                   'data-iris-statistic-label': '',
-                  style: { fontSize: '13px', color: 'var(--iris-muted)' },
+                  style: { fontSize: 'var(--iris-font-size-sm, 13px)', color: 'var(--iris-muted)' },
                 },
                 String(props.label),
               )
@@ -97,8 +108,12 @@ export const IrisStatistic = defineComponent({
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '4px',
-                    fontSize: '13px',
-                    color: props.trend ? TREND_COLOR[props.trend] : 'var(--iris-muted)',
+                    fontSize: 'var(--iris-font-size-sm, 13px)',
+                    color: props.trend
+                      ? props.trendTone
+                        ? TREND_TONE[props.trendTone]
+                        : TREND_COLOR[props.trend]
+                      : 'var(--iris-muted)',
                   },
                 },
                 [
@@ -116,7 +131,7 @@ export const IrisStatistic = defineComponent({
                 'div',
                 {
                   'data-iris-statistic-desc': '',
-                  style: { fontSize: '12px', color: 'var(--iris-muted)' },
+                  style: { fontSize: 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-muted)' },
                 },
                 String(props.description),
               )

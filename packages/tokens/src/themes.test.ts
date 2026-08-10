@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { lightTheme, darkTheme } from './index'
-import { ALL_TOKEN_NAMES, COLOR_TOKENS, SPACING_TOKENS, RADII_TOKENS } from './tokens'
+import {
+  ALL_TOKEN_NAMES,
+  COLOR_TOKENS,
+  SPACING_TOKENS,
+  RADII_TOKENS,
+  SHADOW_TOKENS,
+  ZINDEX_TOKENS,
+  TRANSITION_TOKENS,
+} from './tokens'
 
 describe('lightTheme', () => {
   it('has all required color tokens', () => {
@@ -67,7 +75,12 @@ describe('darkTheme', () => {
 describe('theme token lists', () => {
   it('ALL_TOKEN_NAMES includes all token categories', () => {
     expect(ALL_TOKEN_NAMES.length).toBe(
-      COLOR_TOKENS.length + SPACING_TOKENS.length + RADII_TOKENS.length + 3 + 8 + 5,
+      COLOR_TOKENS.length +
+        SPACING_TOKENS.length +
+        RADII_TOKENS.length +
+        SHADOW_TOKENS.length +
+        ZINDEX_TOKENS.length +
+        TRANSITION_TOKENS.length,
     )
   })
 })

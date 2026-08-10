@@ -1,6 +1,6 @@
 {
   "name": "ssr-next",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "description": "Next.js App Router smoke app — the canonical SSR/RSC-compat proof for @iris-ui-kit/react (ROADMAP v3 R14)",
   "scripts": {
@@ -17,7 +17,7 @@
     "@iris-ui-kit/react": "workspace:*",
     "@iris-ui-kit/theme": "workspace:*",
     "@iris-ui-kit/tokens": "workspace:*",
-    "next": "15.5.21",
+    "next": "^15.5.23",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

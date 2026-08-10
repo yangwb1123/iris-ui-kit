@@ -50,7 +50,7 @@ export {
 
 /** CSS custom properties the admin app reads; overridable by the host theme. */
 export const adminTokens: Record<string, string> = {
-  '--iris-admin-page-gap': 'var(--iris-gap-lg)',
+  '--iris-admin-page-gap': 'var(--iris-gap-md)',
 }
 
 const adminI18nMessages = Object.fromEntries(

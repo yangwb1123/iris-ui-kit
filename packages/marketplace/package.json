@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/marketplace",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Safe runtime marketplace for Iris UI skins, fonts, page blueprints, and view presets",
   "license": "MIT",
   "type": "module",

@@ -72,7 +72,7 @@ export function clampWidth(col: IrisTableColumn, w: number): number {
 export function summaryCellStyle(col: IrisTableColumn): string {
   const align =
     col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'
-  return `display: flex; align-items: center; justify-content: ${align}; padding: 8px var(--iris-padding-md, 12px); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis`
+  return `display: flex; align-items: center; justify-content: ${align}; padding: 8px var(--iris-padding-md, 12px); font-size: var(--iris-font-size-md, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis`
 }
 
 export function buildGridTemplate(

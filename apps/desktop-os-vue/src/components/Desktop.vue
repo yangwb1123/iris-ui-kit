@@ -32,7 +32,10 @@ const menu = ref<{ x: number; y: number } | null>(null)
 // Desktop menu: one "Use {label}" per OS skin, then Display settings + Refresh.
 const desktopMenuItems = computed<MenuItem[]>(() => [
   ...OS_ORDER.map(
-    (id): MenuItem => ({ label: `Use ${CHROMES[id].label}`, onClick: () => setOs(id) }),
+    (id): MenuItem => ({
+      label: `Use ${CHROMES[id].label}`,
+      onClick: () => setOs(id),
+    }),
   ),
   { separator: true },
   { label: 'Display settings', onClick: () => launchApp('settings') },

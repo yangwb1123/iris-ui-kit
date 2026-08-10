@@ -7,8 +7,8 @@
   const PADDING_MAP: Record<CardPadding, string> = {
     none: '0',
     sm: '12px',
-    md: 'var(--iris-padding-md, 16px)',
-    lg: '24px',
+    md: 'var(--iris-padding-lg, 20px)',
+    lg: 'var(--iris-space-xl, 24px)',
   }
 
   let {
@@ -33,8 +33,7 @@
       transition: hover ? 'transform 160ms ease, box-shadow 160ms ease' : 'none',
     }
     const v = variant as CardVariant
-    if (v === 'elevated')
-      return { ...base, 'box-shadow': '0 1px 2px rgba(0,0,0,.05), 0 4px 12px rgba(0,0,0,.06)' }
+    if (v === 'elevated') return { ...base, 'box-shadow': 'var(--iris-shadow-md)' }
     if (v === 'outline') return { ...base, border: '1px solid var(--iris-border)' }
     // subtle
     return { ...base, background: 'var(--iris-surface)' }
@@ -73,3 +72,10 @@
     </div>
   {/if}
 </div>
+
+<style>
+  [data-iris-card-hover='true']:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--iris-shadow-lg);
+  }
+</style>

@@ -25,7 +25,9 @@ describe('IrisTable state contracts', () => {
     loading.unmount()
 
     const error = render(TableStateContractHarness, { props: { kind: 'error' } })
-    expect(error.container.querySelector('[data-iris-table-row="error"]')?.textContent).toBe('Boom')
+    expect(
+      error.container.querySelector('[data-iris-table-row="error"]')?.textContent?.trim(),
+    ).toBe('Boom')
   })
 
   it('seeds uncontrolled selection and sorting from defaults', () => {

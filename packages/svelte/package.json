@@ -1,6 +1,6 @@
 {
   "name": "@iris-ui-kit/svelte",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Svelte 5 adapter for Iris UI — thin bridges over @iris-ui-kit/core",
   "license": "MIT",
   "type": "module",
@@ -126,7 +126,7 @@
     "jsdom": "^25.0.1",
     "svelte": "^5.16.0",
     "svelte-check": "^4.1.1",
-    "vite": "^5.4.11"
+    "vite": "^6.4.3"
   },
   "repository": {
     "type": "git",

@@ -19,6 +19,10 @@ const stackStyle = {
   flexDirection: 'column',
   gap: 'var(--iris-gap-md)',
 } as const
+const pageStackStyle = {
+  ...stackStyle,
+  gap: 'var(--iris-admin-page-gap, var(--iris-gap-md))',
+} as const
 const rowStyle = {
   display: 'flex',
   alignItems: 'center',
@@ -147,7 +151,7 @@ export const AdminDataPageView = defineComponent({
         'div',
         {
           'data-iris-admin-data-page': props.page.key,
-          style: stackStyle,
+          style: pageStackStyle,
         },
         [
           h('div', { style: rowStyle }, [

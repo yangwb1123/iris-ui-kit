@@ -72,3 +72,30 @@ Manifest 与文档参考生成物均已通过生成前后内容一致性检查�
 2. QRCode：需要真实编码器与可扫描性验证，当前按明确决定跳过。
 3. ROADMAP v3 架构级方向：例如新框架适配器、可变高度虚拟化、进一步做厚
    状态机或代码生成，须维护者选择后再投入。
+
+## 2026-08-07 设计系统统一迭代（ai-batch-runner 驱动）
+
+- tokens 补全产品级刻度：font.size 9 档（xs~~4xl）+ weight/line-height/
+  letter-spacing；space.xxs~~5xl 4pt 刻度 + control.height；shadow.xl；
+  on.color / warning.foreground（对比度纪律）；font.size.md 15→14、
+  lg 18→16（消费面仅 drawer/charts）。
+- 全仓 589 处设计违规归零（裸字号/魔法间距/fallback 漂移/硬编码阴影/
+  未知 token/裸 hex），组件样式 100% token 驱动。
+- 四框架视觉验证：Solid/Svelte 与 React 像素一致（<2%）；Vue 2.8%
+  为框架渲染本质差异（border 1px 抗锯齿），记录已知基线。9 处组件库
+  跨框架漂移修复（root font-size/表头字号/selection 列 padding/striped
+  位置/AdminTabs trigger/NavMenu active 特异性/Shell trigger/svelte
+  render 支持/NavMenu padding）。
+- Vue/Svelte CMS UsersPage 迁移 IrisTable（对齐 react/solid）。
+- 新增长期资产：iris-ui-spec.py 机械门禁、visual-parity.spec.ts 像素
+  门禁（4 框架分发）、docs/requirements/REQUIREMENTS-BASELINE.md。
+
+## 2026-08-07 设计智能评审修复批
+
+- 评审产出 docs/ui-audit/design-intelligence.md（6 维度 + component-spec）。
+- 落实 12 项 [MECHANICAL]：info tone 统一、focus ring color-mix、
+  backdrop token、Card hover、Select 界高、Button :active、Statistic
+  trendTone、Gauge 诚实值、Badge solid 对比度、数字列右对齐、Table
+  错误态重试按钮（onRetry）、Button danger variant。
+- 剩余 [JUDGMENT] 项（Table 选中计数/Select 选中项软化/空态文案/
+  Gauge 阈值映射）记录在评审报告，待维护者决策。

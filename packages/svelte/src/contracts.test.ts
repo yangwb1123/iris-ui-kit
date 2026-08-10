@@ -22,6 +22,7 @@ import {
   tableExpandScenario,
   treeScenario,
   calendarScenario,
+  calendarNavScenario,
   comboboxScenario,
   toastScenario,
   copyButtonScenario,
@@ -34,6 +35,7 @@ import {
   overlayDestroyScenario,
   dataSourceScenario,
   dataSourceAsyncScenario,
+  dataSourceResilientScenario,
   drawerScenario,
   dropdownScenario,
   tooltipScenario,
@@ -68,6 +70,7 @@ import IrisSplitButton from './primitives/split-button/IrisSplitButton.svelte'
 import IrisList from './primitives/list/IrisList.svelte'
 import DataSourceContractHarness from './DataSourceContractHarness.svelte'
 import DataSourceAsyncContractHarness from './DataSourceAsyncContractHarness.svelte'
+import DataSourceResilientContractHarness from './DataSourceResilientContractHarness.svelte'
 import DialogContractHarness from './DialogContractHarness.svelte'
 import OverlayFocusContractHarness from './OverlayFocusContractHarness.svelte'
 import OverlayDestroyContractHarness from './OverlayDestroyContractHarness.svelte'
@@ -324,6 +327,16 @@ describe('@iris-ui-kit/svelte — cross-framework behavior contracts', () => {
     await runContract(calendarScenario, driverFor(container), expect)
   })
 
+  it('satisfies the shared Calendar keyboard-roving contract', async () => {
+    const { container } = render(CalendarContractHarness, {
+      initialValue: new Date(2024, 5, 10),
+      min: new Date(2024, 5, 10),
+      max: new Date(2024, 6, 20),
+      locale: 'en-US',
+    })
+    await runContract(calendarNavScenario, driverFor(container), expect)
+  })
+
   it('satisfies the shared TagInput contract', async () => {
     // Lives in the shared ContractsHarness: IrisTagInput renders no
     // role="slider"/role="spinbutton" element, so its three
@@ -420,6 +433,16 @@ describe('@iris-ui-kit/svelte — cross-framework behavior contracts', () => {
     // microtask rounds + re-flushes so each async write settles before assertions.
     const { container } = render(DataSourceAsyncContractHarness)
     await runContract(dataSourceAsyncScenario, driverFor(container), expect)
+  })
+
+  it('satisfies the shared resilient DataSource contract', async () => {
+    // Dedicated resilient harness: paged engine with `resilient: { ttlMs: 60_000 }`
+    // over a MUTABLE backing store (fetcher returns per-row copies, so a rename
+    // is visible only after a real re-fetch). `data-fetches` (fetcher
+    // invocations) proves reload-within-TTL is a cache hit, multiSort changes
+    // produce distinct cache keys, and a successful mutate auto-invalidates.
+    const { container } = render(DataSourceResilientContractHarness)
+    await runContract(dataSourceResilientScenario, driverFor(container), expect)
   })
 
   it('satisfies the shared Drawer contract', async () => {

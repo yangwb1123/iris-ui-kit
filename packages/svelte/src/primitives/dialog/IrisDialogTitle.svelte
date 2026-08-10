@@ -22,7 +22,7 @@
   {...rest}
   id={ctx.titleId}
   data-iris-dialog-title
-  style="margin: 0 0 var(--iris-gap-md, 12px) 0; font-size: 18px; font-weight: 600;{(rest.style as string)
+  style="margin: 0 0 var(--iris-gap-md, 12px) 0; font-size: var(--iris-font-size-xl, 18px); font-weight: 600;{(rest.style as string)
     ? ' ' + (rest.style as string)
     : ''}"
 >

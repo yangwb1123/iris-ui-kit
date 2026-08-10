@@ -52,7 +52,7 @@ const LIST_STATE_STYLE: React.CSSProperties = {
   padding: '12px',
   textAlign: 'center',
   color: 'var(--iris-muted)',
-  fontSize: 14,
+  fontSize: 'var(--iris-font-size-md, 14px)',
 }
 
 /**
@@ -242,8 +242,10 @@ export function IrisList<T = unknown>({
         padding: 'var(--iris-padding-sm, 4px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 2,
+        gap: 'var(--iris-space-xxs, 4px)',
         outline: 'none',
+        maxHeight: 240,
+        overflowY: 'auto',
         ...style,
       }}
     >
@@ -255,19 +257,20 @@ export function IrisList<T = unknown>({
             display: 'flex',
             alignItems: 'center',
             gap: 'var(--iris-gap-sm, 6px)',
-            padding: '6px var(--iris-padding-md, 12px)',
+            padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
             borderRadius: 'var(--iris-radius-sm, 4px)',
             cursor: item.disabled ? 'not-allowed' : 'pointer',
             opacity: item.disabled ? 0.5 : 1,
-            fontSize: 14,
+            fontSize: 'var(--iris-font-size-md, 14px)',
             background: selected
-              ? 'var(--iris-primary)'
+              ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
               : hoveredIndex === index
                 ? 'var(--iris-surface-hover)'
                 : active
                   ? 'var(--iris-surface-hover)'
                   : 'transparent',
-            color: selected ? 'var(--iris-primary-foreground, #fff)' : 'var(--iris-foreground)',
+            color: 'var(--iris-foreground)',
+            fontWeight: selected ? 600 : 400,
             outline: 'none',
           }
           return (
@@ -287,9 +290,26 @@ export function IrisList<T = unknown>({
               onFocus={() => nav.focus(index)}
               style={baseStyle}
             >
-              {renderItem
-                ? renderItem(item, { selected, active, index })
-                : (item.label ?? String(item.value))}
+              <span style={{ flex: 1, minWidth: 0 }}>
+                {renderItem
+                  ? renderItem(item, { selected, active, index })
+                  : (item.label ?? String(item.value))}
+              </span>
+              {selected ? (
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--iris-primary)"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              ) : null}
             </li>
           )
         })

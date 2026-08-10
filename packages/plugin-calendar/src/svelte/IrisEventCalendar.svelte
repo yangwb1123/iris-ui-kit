@@ -67,13 +67,13 @@
   <!-- 7-column grid -->
   <div
     data-iris-event-cal-grid
-    style="display:grid;grid-template-columns:repeat(7,1fr);gap:var(--iris-cal-grid-gap,1px)"
+    style="display:grid;grid-template-columns:repeat(7,1fr);gap:var(--iris-cal-grid-gap,var(--iris-space-xxs,4px))"
   >
     <!-- Weekday headers -->
     {#each getWeekdayNames(0) as name (name)}
       <div
         data-iris-event-cal-weekday
-        style="text-align:center;font-weight:600;font-size:0.75em;padding:4px 0;color:var(--iris-muted,#6b7280)"
+        style="text-align:center;font-weight:600;font-size:0.75em;padding:4px 0;color:var(--iris-muted,#64748b)"
       >
         {name}
       </div>
@@ -87,11 +87,11 @@
       {@const dayEvents = eventsForDate(iso)}
       <div
         data-iris-event-cal-day={iso}
-        style="min-height:64px;padding:4px;border:1px solid var(--iris-border,#e5e7eb);border-radius:4px;cursor:{isCurrentMonth
+        style="min-height:64px;padding:4px;border:1px solid var(--iris-border,#e2e8f0);border-radius:4px;cursor:{isCurrentMonth
           ? 'pointer'
           : 'default'};opacity:{isCurrentMonth
           ? '1'
-          : '0.4'};background:transparent;display:flex;flex-direction:column;gap:2px"
+          : '0.4'};background:transparent;display:flex;flex-direction:column;gap:var(--iris-space-xxs,4px)"
         onclick={() => {
           if (isCurrentMonth) config.onDateClick?.(iso)
         }}
@@ -102,8 +102,10 @@
           style="align-self:flex-start;font-size:0.8em;font-weight:{isToday
             ? '700'
             : '400'};background:{isToday
-            ? 'var(--iris-cal-today-bg,#6366f1)'
-            : 'transparent'};color:{isToday ? '#fff' : 'inherit'};border-radius:{isToday
+            ? 'var(--iris-cal-today-bg,var(--iris-primary,#6366f1))'
+            : 'transparent'};color:{isToday
+            ? 'var(--iris-primary-foreground,#fff)'
+            : 'inherit'};border-radius:{isToday
             ? '50%'
             : '0'};width:22px;height:22px;display:flex;align-items:center;justify-content:center"
           >{date.getDate()}</span
@@ -117,8 +119,8 @@
             style="font-size:0.7em;background:{event.color
               ? event.color
               : 'var(--iris-cal-event-bg,rgba(99,102,241,0.15))'};color:{event.color
-              ? '#fff'
-              : 'var(--iris-primary,#6366f1)'};border-radius:3px;padding:1px 4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;display:block"
+              ? 'var(--iris-on-color,#ffffff)'
+              : 'var(--iris-primary,#6366f1)'};border-radius:4px;padding:var(--iris-space-xxs,4px) 4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;display:block"
             onclick={(e) => {
               e.stopPropagation()
               config.onEventClick?.(event)

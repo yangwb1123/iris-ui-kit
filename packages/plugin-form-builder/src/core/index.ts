@@ -300,10 +300,9 @@ export function createFormBuilder(schema: FormSchema, config: FormBuilderConfig 
 
 /** CSS custom properties the form builder reads; overridable by the host theme. */
 export const formBuilderTokens: Record<string, string> = {
-  '--iris-form-gap': 'var(--iris-gap-md)',
+  '--iris-form-gap': 'var(--iris-gap-lg)',
   '--iris-form-label': 'var(--iris-foreground)',
   '--iris-form-error': 'var(--iris-danger)',
-  '--iris-form-border': 'var(--iris-border)',
 }
 
 /**

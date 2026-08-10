@@ -3,7 +3,7 @@
 
   const COLOR: Record<GaugeStatus, string> = {
     default: 'var(--iris-primary)',
-    success: 'var(--iris-success, #16a34a)',
+    success: 'var(--iris-success, #10b981)',
     danger: 'var(--iris-danger)',
     warning: 'var(--iris-warning, #f59e0b)',
   }
@@ -14,6 +14,7 @@
     max = 100,
     size = 120,
     strokeWidth = 10,
+    /** Semantic status (explicit by design; derive thresholds in the consumer). */
     status = 'default',
     showValue = true,
     format,
@@ -55,7 +56,7 @@
   aria-valuenow={value}
   aria-valuemin={min}
   aria-valuemax={max}
-  aria-valuetext="{percent}%"
+  aria-valuetext={min === 0 && max === 100 ? `${percent}%` : `${value} (${percent}%)`}
   aria-label={ariaLabel}
   style="position:relative; display:inline-block; width:{size}px;{style ? ' ' + style : ''}"
 >
@@ -86,7 +87,7 @@
         size * 0.18,
       )}px; font-weight:600; color:var(--iris-foreground); font-variant-numeric:tabular-nums;"
     >
-      {format ? format(value, percent) : `${percent}%`}
+      {format ? format(value, percent) : min === 0 && max === 100 ? `${percent}%` : String(value)}
     </div>
   {/if}
 </div>

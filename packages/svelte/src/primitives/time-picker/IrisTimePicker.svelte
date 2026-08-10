@@ -140,8 +140,8 @@
   }
 
   const fieldStyle =
-    'width:48px;height:34px;padding:4px 6px;background:var(--iris-background);color:var(--iris-foreground);' +
-    'border-radius:var(--iris-radius-sm, 4px);font-size:15px;font-family:inherit;text-align:center;outline:none;'
+    'width:48px;height:34px;padding:var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px);background:var(--iris-background);color:var(--iris-foreground);' +
+    'border-radius:var(--iris-radius-sm, 4px);font-size:var(--iris-font-size-base, 15px);font-family:inherit;text-align:center;outline:none;'
   const borderColor = $derived(invalid ? 'var(--iris-danger)' : 'var(--iris-border)')
 </script>
 
@@ -168,7 +168,10 @@
     onkeydown={onHoursKey}
     style="{fieldStyle}border:1px solid {borderColor};"
   />
-  <span aria-hidden="true" style="color:var(--iris-muted);font-size:15px;">:</span>
+  <span
+    aria-hidden="true"
+    style="color:var(--iris-muted);font-size:var(--iris-font-size-base, 15px);">:</span
+  >
   <input
     type="number"
     inputmode="numeric"
@@ -192,7 +195,8 @@
       onclick={toggleMeridiem}
       style="height:34px;padding:4px 8px;background:var(--iris-background);color:var(--iris-foreground);border:1px solid var(--iris-border);border-radius:var(--iris-radius-sm, 4px);cursor:{disabled
         ? 'not-allowed'
-        : 'pointer'};font-size:13px;font-family:inherit;font-weight:600;">{meridiem}</button
+        : 'pointer'};font-size:var(--iris-font-size-sm, 13px);font-family:inherit;font-weight:600;"
+      >{meridiem}</button
     >
   {/if}
 </div>

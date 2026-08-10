@@ -6,6 +6,7 @@ import {
   mergeProps,
   onCleanup,
   onMount,
+  splitProps,
   untrack,
   type JSX,
 } from 'solid-js'
@@ -43,6 +44,8 @@ export interface IrisVirtualScrollProps<T = unknown> {
   style?: JSX.CSSProperties
   /** Imperative handle setter (parity with the React `ref`). */
   ref?: (handle: IrisVirtualScrollHandle) => void
+  /** Additional attributes (e.g. `role`, `data-*`) forwarded to the scroll container. */
+  [key: string]: unknown
 }
 
 /**
@@ -60,6 +63,21 @@ export interface IrisVirtualScrollProps<T = unknown> {
  */
 export function IrisVirtualScroll<T = unknown>(props: IrisVirtualScrollProps<T>): JSX.Element {
   const merged = mergeProps({ buffer: 4, height: 400, estimatedItemHeight: 40 }, props)
+
+  // Extra attributes (role, data-*, …) forwarded to the scroll container.
+  const [, rest] = splitProps(merged, [
+    'items',
+    'itemHeight',
+    'estimatedItemHeight',
+    'height',
+    'buffer',
+    'keyOf',
+    'renderItem',
+    'onScroll',
+    'onRangeChange',
+    'style',
+    'ref',
+  ])
 
   const [scrollTop, setScrollTop] = createSignal(0)
   const [viewportHeight, setViewportHeight] = createSignal(
@@ -331,6 +349,7 @@ export function IrisVirtualScroll<T = unknown>(props: IrisVirtualScrollProps<T>)
 
   return (
     <div
+      {...rest}
       ref={viewportRef}
       data-iris-virtual-scroll=""
       onScroll={onScroll}

@@ -10,7 +10,8 @@ import type {
 /** Public input surface for the Svelte table adapter. */
 export interface IrisTableProps {
   columns: IrisTableColumn[]
-  data: Array<Record<string, unknown>>
+  /** Table data. Optional (server-side sources may omit it). */
+  data?: Array<Record<string, unknown>>
   rowKey?: string
   selectable?: 'none' | 'single' | 'multi'
   selection?: Array<string | number>
@@ -24,6 +25,8 @@ export interface IrisTableProps {
   emptyState?: Snippet
   loadingState?: Snippet
   errorState?: Snippet
+  /** Fired by the built-in Retry button in the error state row. */
+  onRetry?: () => void
   virtualScroll?: IrisTableVirtualOptions
   /** Render only horizontally-visible columns plus pinned columns and overscan. */
   columnVirtualization?: boolean

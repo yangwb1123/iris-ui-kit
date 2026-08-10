@@ -1,13 +1,17 @@
 import {
   createSignal,
   createMemo,
+  createEffect,
   createUniqueId,
   mergeProps,
+  onCleanup,
   splitProps,
   Show,
   For,
+  untrack,
   type JSX,
 } from 'solid-js'
+import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui-kit/core'
 
 export interface IrisMentionOption {
   label: string
@@ -18,6 +22,11 @@ interface Active {
   start: number
   query: string
 }
+
+/** Listbox maxHeight — the virtualizer's viewport (px). */
+const LISTBOX_MAX_HEIGHT = 200
+/** Fixed per-option row height (px) — estimate, never measured. */
+const ROW_HEIGHT = 32
 
 function detect(text: string, caret: number, prefix: string): Active | null {
   let i = caret - 1
@@ -41,6 +50,13 @@ export interface IrisMentionsProps {
   rows?: number
   id?: string
   onChange?: (value: string) => void
+  /**
+   * Opt-in windowed rendering of the suggestion listbox via the core
+   * virtualizer. When true, only the visible window (+ buffer) of options is
+   * rendered; keyboard navigation scrolls the active option into view and
+   * every keystroke re-anchors the window to the top. Default false.
+   */
+  virtual?: boolean
 }
 
 /**
@@ -57,6 +73,7 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
       disabled: false,
       invalid: false,
       rows: 3,
+      virtual: false,
     },
     props,
   )
@@ -71,6 +88,7 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
     'rows',
     'id',
     'onChange',
+    'virtual',
   ])
 
   const [internalValue, setInternalValue] = createSignal(local.defaultValue)
@@ -93,6 +111,100 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
 
   const isOpen = (): boolean => active() !== null && filtered().length > 0
   const activeId = (): string | undefined => (isOpen() ? `${baseId}-opt-${activeIdx()}` : undefined)
+
+  // Virtualized listbox (opt-in): one controller per mount (created lazily,
+  // then retained), reactive inputs read untracked through closures so the
+  // instance (scroll offset + keyed cache) survives re-renders — the
+  // IrisCombobox precedent.
+  let vInstance: Virtualizer | null = null
+  const virtualizer = createMemo<Virtualizer | null>(() => {
+    if (!local.virtual) return null
+    return untrack(() => {
+      if (!vInstance) {
+        vInstance = createVirtualizer({
+          count: 0,
+          estimateSize: () => ROW_HEIGHT,
+          getItemKey: (i) => filtered()[i]?.value ?? i,
+          viewportSize: LISTBOX_MAX_HEIGHT,
+          buffer: 4,
+        })
+      }
+      return vInstance
+    })
+  })
+  const [vstate, setVstate] = createSignal<VirtualizerState>({
+    items: [],
+    offsetBefore: 0,
+    totalSize: 0,
+    startIndex: 0,
+    endIndex: -1,
+  })
+  createEffect(() => {
+    const v = virtualizer()
+    if (!v) return
+    setVstate(() => v.getState())
+    const unsub = v.subscribe((next) => setVstate(() => next))
+    onCleanup(unsub)
+  })
+  let lastText: string | undefined
+  let lastActiveIndex = 0
+  let listboxEl: HTMLUListElement | undefined
+  // Single sync covering every listbox mutation: count push + per-keystroke
+  // re-anchor to 0 (a keystroke always resets activeIdx), shrink clamp
+  // (external options swaps) and active-option visibility (keyboard/mouse).
+  // Wheel scrolling drives setScroll via the scroll handler, so it moves the
+  // window freely — it does not change activeIdx.
+  createEffect(() => {
+    const v = virtualizer()
+    if (!v) return
+    const list = filtered()
+    v.setCount(list.length)
+    const text = currentValue()
+    // Read up-front so `activeIdx` is tracked by this effect in EVERY run —
+    // the re-anchor branch below returns early, and Solid re-collects
+    // dependencies per run (an untracked activeIdx would freeze keyboard
+    // navigation until the next text change).
+    const idx = activeIdx()
+    if (text !== lastText) {
+      lastText = text
+      lastActiveIndex = 0
+      v.setScroll(0)
+      if (listboxEl) listboxEl.scrollTop = 0
+      return
+    }
+    const el = listboxEl
+    if (el) {
+      const max = Math.max(0, v.totalSize() - LISTBOX_MAX_HEIGHT)
+      if (el.scrollTop > max) el.scrollTop = max
+    }
+    if (idx !== lastActiveIndex) {
+      lastActiveIndex = idx
+      if (idx >= 0 && idx < list.length && el) {
+        const top = el.scrollTop
+        const start = idx * ROW_HEIGHT
+        if (start < top || start + ROW_HEIGHT > top + LISTBOX_MAX_HEIGHT) {
+          el.scrollTop = v.scrollToIndex(idx, start < top ? 'start' : 'end')
+        }
+      }
+    }
+  })
+  // Windowed options (stale-window guard: skip indices missing from `filtered`).
+  // Wrapper objects are cached per index so For's identity-keyed reconciliation
+  // reuses DOM when the window shifts.
+  const windowCache = new Map<number, { opt: IrisMentionOption; index: number }>()
+  const windowed = createMemo(() => {
+    const list = filtered()
+    const out: { opt: IrisMentionOption; index: number }[] = []
+    for (const item of vstate().items) {
+      const opt = list[item.index]
+      if (!opt) continue
+      const prev = windowCache.get(item.index)
+      const w = prev && prev.opt === opt ? prev : { opt, index: item.index }
+      windowCache.set(item.index, w)
+      out.push(w)
+    }
+    return out
+  })
 
   const updateValue = (v: string) => {
     if (local.value === undefined) setInternalValue(v)
@@ -159,7 +271,7 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
           'box-sizing': 'border-box',
           width: '100%',
           padding: '8px 12px',
-          'font-size': '14px',
+          'font-size': 'var(--iris-font-size-md, 14px)',
           'font-family': 'inherit',
           color: 'var(--iris-foreground)',
           background: 'var(--iris-background)',
@@ -172,8 +284,12 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
       <Show when={active() && filtered().length > 0}>
         <ul
           id={listboxId}
+          ref={listboxEl}
           data-iris-mentions-list=""
           role="listbox"
+          onScroll={(e) => {
+            vInstance?.setScroll(e.currentTarget.scrollTop)
+          }}
           style={{
             position: 'absolute',
             left: '0',
@@ -189,37 +305,89 @@ export function IrisMentions(props: IrisMentionsProps): JSX.Element {
             background: 'var(--iris-background)',
             border: '1px solid var(--iris-border)',
             'border-radius': 'var(--iris-radius-md, 6px)',
-            'box-shadow': '0 8px 24px rgba(0,0,0,0.12)',
+            'box-shadow': 'var(--iris-shadow-lg)',
           }}
         >
-          <For each={filtered()}>
-            {(opt, i) => (
-              <li
-                id={`${baseId}-opt-${i()}`}
-                role="option"
-                aria-selected={i() === activeIdx()}
-                data-iris-mentions-item={opt.value}
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  pickOption(opt)
-                }}
-                onMouseEnter={() => setActiveIdx(i())}
-                style={{
-                  padding: '7px 10px',
-                  'border-radius': 'var(--iris-radius-sm, 4px)',
-                  cursor: 'pointer',
-                  'font-size': '14px',
-                  background: i() === activeIdx() ? 'var(--iris-primary)' : 'transparent',
-                  color:
-                    i() === activeIdx()
-                      ? 'var(--iris-primary-foreground, #fff)'
-                      : 'var(--iris-foreground)',
-                }}
-              >
-                {opt.label}
-              </li>
-            )}
-          </For>
+          <Show
+            when={virtualizer() !== null}
+            fallback={
+              <For each={filtered()}>
+                {(opt, i) => (
+                  <li
+                    id={`${baseId}-opt-${i()}`}
+                    role="option"
+                    aria-selected={i() === activeIdx()}
+                    data-iris-mentions-item={opt.value}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      pickOption(opt)
+                    }}
+                    onMouseEnter={() => setActiveIdx(i())}
+                    style={{
+                      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+                      'border-radius': 'var(--iris-radius-sm, 4px)',
+                      cursor: 'pointer',
+                      'font-size': 'var(--iris-font-size-md, 14px)',
+                      background: i() === activeIdx() ? 'var(--iris-primary)' : 'transparent',
+                      color:
+                        i() === activeIdx()
+                          ? 'var(--iris-primary-foreground, #fff)'
+                          : 'var(--iris-foreground)',
+                    }}
+                  >
+                    {opt.label}
+                  </li>
+                )}
+              </For>
+            }
+          >
+            <li
+              role="presentation"
+              aria-hidden="true"
+              data-iris-mentions-spacer=""
+              data-iris-mentions-spacer-type="top"
+              style={{ height: `${vstate().offsetBefore}px` }}
+            />
+            <For each={windowed()}>
+              {(w) => (
+                <li
+                  id={`${baseId}-opt-${w.index}`}
+                  role="option"
+                  aria-selected={w.index === activeIdx()}
+                  aria-setsize={filtered().length}
+                  aria-posinset={w.index + 1}
+                  data-iris-mentions-item={w.opt.value}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    pickOption(w.opt)
+                  }}
+                  onMouseEnter={() => setActiveIdx(w.index)}
+                  style={{
+                    padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+                    'border-radius': 'var(--iris-radius-sm, 4px)',
+                    cursor: 'pointer',
+                    'font-size': 'var(--iris-font-size-md, 14px)',
+                    background: w.index === activeIdx() ? 'var(--iris-primary)' : 'transparent',
+                    color:
+                      w.index === activeIdx()
+                        ? 'var(--iris-primary-foreground, #fff)'
+                        : 'var(--iris-foreground)',
+                  }}
+                >
+                  {w.opt.label}
+                </li>
+              )}
+            </For>
+            <li
+              role="presentation"
+              aria-hidden="true"
+              data-iris-mentions-spacer=""
+              data-iris-mentions-spacer-type="bottom"
+              style={{
+                height: `${vstate().totalSize - vstate().offsetBefore - vstate().items.length * ROW_HEIGHT}px`,
+              }}
+            />
+          </Show>
         </ul>
       </Show>
     </div>

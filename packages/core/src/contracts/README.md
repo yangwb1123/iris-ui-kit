@@ -151,6 +151,12 @@ the gotchas that unblocked them aren't relearned:
   for Svelte, interleave `flushSync()` + `tick()`) so a resolved fetch settles
   before assertions — the sync scenarios are unaffected (the extra awaits are
   no-ops when nothing async is pending).
+- **Resilient data-source caching** — a third sibling
+  (`dataSourceResilientScenario`) drives the `resilient` option (`ttlMs: 60_000`)
+  over a mutable-backing harness whose fetcher returns per-row copies: a reload
+  within the TTL is a cache hit (fetch counter unmoved), `multiSort` changes
+  produce distinct cache keys (the sort re-fetches), and a successful `mutate`
+  auto-invalidates (the post-mutate reload serves the NEW row value).
 
 ## Boundaries
 
@@ -164,7 +170,7 @@ the gotchas that unblocked them aren't relearned:
 
 ## Coverage at a glance
 
-**42 scenarios across 34 component/behavior surfaces**, every one replayed on all four
+**43 scenarios across 34 component/behavior surfaces**, every one replayed on all four
 adapters (React / Vue / Solid / Svelte):
 
 - **Form controls** — tabs, switch, checkbox, accordion, segmented, toggle-group
@@ -181,10 +187,12 @@ adapters (React / Vue / Solid / Svelte):
 - **Overlay lifecycle** — modal focus leave/restore plus real on-body portal
   cleanup on adapter unmount.
 - **Data engine** — the `useDataSource` bridge over `createDataSource`, both the
-  **sync** happy-path (`load` / `setSort` / `setFilter` / `clearFilters`) and the
+  **sync** happy-path (`load` / `setSort` / `setFilter` / `clearFilters`), the
   **async** contract (`dataSourceAsyncScenario`: infinite `loadMore` append,
   optimistic `mutate` commit + rollback, `reload` re-fetch, via an injectable-
-  latency fetcher).
+  latency fetcher), and the **resilient** contract
+  (`dataSourceResilientScenario`: TTL cache hit, multiSort-specific keys,
+  mutate auto-invalidation).
 
 Two guards keep this honest:
 

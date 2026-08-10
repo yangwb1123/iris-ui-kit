@@ -49,9 +49,21 @@
   let textareaEl = $state<HTMLTextAreaElement | undefined>(undefined)
 
   const SIZE_MAP: Record<Size, { padding: string; fontSize: string; lineHeight: string }> = {
-    sm: { padding: '6px var(--iris-padding-sm, 8px)', fontSize: '12px', lineHeight: '1.5' },
-    md: { padding: '8px var(--iris-padding-md, 12px)', fontSize: '14px', lineHeight: '1.5' },
-    lg: { padding: '10px var(--iris-padding-md, 12px)', fontSize: '16px', lineHeight: '1.5' },
+    sm: {
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      lineHeight: '1.5',
+    },
+    md: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      lineHeight: '1.5',
+    },
+    lg: {
+      padding: 'var(--iris-space-sm, 12px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      lineHeight: '1.5',
+    },
   }
 
   const wrapperStyle = $derived.by(() => {
@@ -61,7 +73,7 @@
         ? 'var(--iris-primary)'
         : 'var(--iris-border)'
     const boxShadow = focused
-      ? `0 0 0 3px ${invalid ? 'rgba(239, 68, 68, 0.18)' : 'rgba(99, 102, 241, 0.18)'}`
+      ? `0 0 0 3px ${invalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
       : 'none'
     const s = SIZE_MAP[size]
     return styleToString({
@@ -140,7 +152,7 @@
   {#if maxLength !== undefined}
     <span
       data-iris-textarea-counter
-      style="position: absolute; bottom: 4px; right: 8px; font-size: 11px; color: var(--iris-muted); pointer-events: none;"
+      style="position: absolute; bottom: 4px; right: 8px; font-size: var(--iris-font-size-xs, 12px); color: var(--iris-muted); pointer-events: none;"
     >
       {(value ?? '').length}/{maxLength}
     </span>

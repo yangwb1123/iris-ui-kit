@@ -24,9 +24,21 @@ const SIZE_STYLES: Record<
   IrisNumberInputSize,
   { padding: string; fontSize: string; minHeight: string }
 > = {
-  sm: { padding: '4px var(--iris-padding-sm, 8px)', fontSize: '12px', minHeight: '28px' },
-  md: { padding: '6px var(--iris-padding-md, 12px)', fontSize: '14px', minHeight: '34px' },
-  lg: { padding: '8px var(--iris-padding-md, 12px)', fontSize: '16px', minHeight: '40px' },
+  sm: {
+    padding: '4px var(--iris-padding-sm, 8px)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+    minHeight: '28px',
+  },
+  md: {
+    padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+    minHeight: '34px',
+  },
+  lg: {
+    padding: '8px var(--iris-padding-md, 12px)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+    minHeight: '40px',
+  },
 }
 
 export interface IrisNumberInputProps {
@@ -168,7 +180,7 @@ export function IrisNumberInput(props: IrisNumberInputProps): JSX.Element {
 
   const boxShadow = (): string =>
     focused()
-      ? `0 0 0 3px ${local.invalid ? 'rgba(239,68,68,0.18)' : 'rgba(99,102,241,0.18)'}`
+      ? `0 0 0 3px ${local.invalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
       : 'none'
 
   const wrapperStyle = (): JSX.CSSProperties => ({

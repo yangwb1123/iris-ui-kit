@@ -99,7 +99,7 @@ export function IrisSwitch(props: IrisSwitchProps): JSX.Element {
           height: dim().height,
           background: value() ? 'var(--iris-primary)' : 'var(--iris-border)',
           'border-radius': '999px',
-          transition: 'background-color 120ms ease',
+          transition: 'background-color var(--iris-transition-fast, 150ms) ease',
           cursor: local.disabled ? 'not-allowed' : 'pointer',
           opacity: local.disabled ? 0.6 : 1,
           'vertical-align': 'middle',
@@ -115,8 +115,8 @@ export function IrisSwitch(props: IrisSwitchProps): JSX.Element {
             height: dim().thumb,
             background: 'var(--iris-background)',
             'border-radius': '999px',
-            transition: 'left 140ms ease',
-            'box-shadow': '0 1px 3px rgba(0,0,0,0.18)',
+            transition: 'left var(--iris-transition-fast, 150ms) ease',
+            'box-shadow': 'var(--iris-shadow-sm)',
           }}
         />
       </span>

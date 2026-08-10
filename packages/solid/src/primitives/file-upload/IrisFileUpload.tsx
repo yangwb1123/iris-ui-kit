@@ -194,7 +194,7 @@ export function IrisFileUpload(props: IrisFileUploadProps): JSX.Element {
           width: '1px',
           height: '1px',
           padding: '0',
-          margin: '-1px',
+          margin: 'calc(-1px)',
           overflow: 'hidden',
           clip: 'rect(0,0,0,0)',
           'white-space': 'nowrap',
@@ -217,7 +217,7 @@ export function IrisFileUpload(props: IrisFileUploadProps): JSX.Element {
           'flex-direction': 'column',
           'align-items': 'center',
           'justify-content': 'center',
-          gap: '6px',
+          gap: 'var(--iris-space-xs, 8px)',
           padding: 'var(--iris-padding-lg, 20px)',
           border: `2px dashed ${dragOver() ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
           'border-radius': 'var(--iris-radius-md, 6px)',
@@ -230,11 +230,18 @@ export function IrisFileUpload(props: IrisFileUploadProps): JSX.Element {
           ...((typeof local.style === 'object' ? local.style : {}) as JSX.CSSProperties),
         }}
       >
-        <div data-iris-file-upload-label="" style={{ 'font-size': '14px', 'font-weight': '500' }}>
+        <div
+          data-iris-file-upload-label=""
+          style={{ 'font-size': 'var(--iris-font-size-md, 14px)', 'font-weight': '500' }}
+        >
           {local.label ?? t('fileUpload.label')}
         </div>
         <Show when={local.accept}>
-          <div style={{ 'font-size': '12px', color: 'var(--iris-muted)' }}>{local.accept}</div>
+          <div
+            style={{ 'font-size': 'var(--iris-font-size-xs, 12px)', color: 'var(--iris-muted)' }}
+          >
+            {local.accept}
+          </div>
         </Show>
       </div>
       <Show when={current().length > 0}>
@@ -257,15 +264,20 @@ export function IrisFileUpload(props: IrisFileUploadProps): JSX.Element {
                   display: 'flex',
                   'align-items': 'center',
                   gap: '8px',
-                  padding: '6px 10px',
+                  padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
                   background: 'var(--iris-surface)',
                   border: '1px solid var(--iris-border)',
                   'border-radius': 'var(--iris-radius-sm, 4px)',
-                  'font-size': '13px',
+                  'font-size': 'var(--iris-font-size-sm, 13px)',
                 }}
               >
                 <span style={{ flex: '1', 'min-width': '0' }}>{item.name}</span>
-                <span style={{ color: 'var(--iris-muted)', 'font-size': '12px' }}>
+                <span
+                  style={{
+                    color: 'var(--iris-muted)',
+                    'font-size': 'var(--iris-font-size-xs, 12px)',
+                  }}
+                >
                   {formatBytes(item.size)}
                 </span>
                 <button
@@ -281,7 +293,7 @@ export function IrisFileUpload(props: IrisFileUploadProps): JSX.Element {
                     border: 'none',
                     color: 'var(--iris-muted)',
                     cursor: local.disabled ? 'not-allowed' : 'pointer',
-                    'font-size': '16px',
+                    'font-size': 'var(--iris-font-size-lg, 16px)',
                     'line-height': '1',
                     padding: '0 4px',
                   }}

@@ -14,18 +14,41 @@ export const COLOR_TOKENS = [
   'iris.primary.foreground',
   'iris.accent',
   'iris.danger',
+  'iris.danger.foreground',
   'iris.danger.subtle',
   'iris.success',
+  'iris.success.foreground',
   'iris.warning',
+  'iris.warning.foreground',
   'iris.info',
+  'iris.info.foreground',
+  'iris.on.color',
   'iris.muted.subtle',
   'iris.surface.selected',
+  'iris.surface.floating',
   'iris.primary.ghost',
+  'iris.backdrop',
   'iris.font.family',
   'iris.font.mono',
+  'iris.font.size.xs',
   'iris.font.size.sm',
   'iris.font.size.md',
+  'iris.font.size.base',
   'iris.font.size.lg',
+  'iris.font.size.xl',
+  'iris.font.size.2xl',
+  'iris.font.size.3xl',
+  'iris.font.size.4xl',
+  'iris.font.weight.regular',
+  'iris.font.weight.medium',
+  'iris.font.weight.semibold',
+  'iris.font.weight.bold',
+  'iris.font.line.height.sm',
+  'iris.font.line.height.md',
+  'iris.font.line.height.lg',
+  'iris.font.letter.spacing.tight',
+  'iris.font.letter.spacing.normal',
+  'iris.font.letter.spacing.wide',
 ] as const
 
 export const SPACING_TOKENS = [
@@ -37,11 +60,29 @@ export const SPACING_TOKENS = [
   'iris.padding.lg',
   'iris.masonry.gap',
   'iris.breadcrumb.gap',
+  'iris.space.xxs',
+  'iris.space.xs',
+  'iris.space.sm',
+  'iris.space.md',
+  'iris.space.lg',
+  'iris.space.xl',
+  'iris.space.2xl',
+  'iris.space.3xl',
+  'iris.space.4xl',
+  'iris.space.5xl',
+  'iris.control.height.sm',
+  'iris.control.height.md',
+  'iris.control.height.lg',
 ] as const
 
 export const RADII_TOKENS = ['iris.radius.sm', 'iris.radius.md', 'iris.radius.lg'] as const
 
-export const SHADOW_TOKENS = ['iris.shadow.sm', 'iris.shadow.md', 'iris.shadow.lg'] as const
+export const SHADOW_TOKENS = [
+  'iris.shadow.sm',
+  'iris.shadow.md',
+  'iris.shadow.lg',
+  'iris.shadow.xl',
+] as const
 
 export const ZINDEX_TOKENS = [
   'iris.z.dropdown',

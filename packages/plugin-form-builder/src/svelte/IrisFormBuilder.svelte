@@ -55,7 +55,9 @@
 
   $effect(() => form.subscribe((s) => (formState = s)))
 
-  const gridStyle = $derived(`display:grid;gap:var(--iris-form-gap, 16px);${style}`)
+  const gridStyle = $derived(
+    `display:grid;gap:var(--iris-form-gap,var(--iris-space-md,16px));${style}`,
+  )
 </script>
 
 <form

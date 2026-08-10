@@ -62,14 +62,14 @@ export const IrisMenuItem = React.forwardRef<HTMLDivElement, IrisMenuItemProps>(
           display: 'flex',
           alignItems: 'center',
           gap: 'var(--iris-gap-sm, 6px)',
-          padding: '6px var(--iris-padding-md, 12px)',
+          padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
           borderRadius: 'var(--iris-radius-sm, 4px)',
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.5 : 1,
           background: hovered && !disabled ? 'var(--iris-surface-hover)' : 'transparent',
           color: 'inherit',
-          outline: 'none',
-          fontSize: 14,
+
+          fontSize: 'var(--iris-font-size-md, 14px)',
           transition: 'background-color 80ms ease',
           ...style,
         }}

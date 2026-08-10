@@ -95,12 +95,12 @@
 
   function cellOutline(cellId: string): string {
     return sortableState.activeId && sortableState.overId === cellId
-      ? ';outline:2px dashed var(--iris-primary,#2563eb);outline-offset:-2px'
+      ? ';outline:2px dashed var(--iris-primary,#6366f1);outline-offset:-2px'
       : ''
   }
 
   const boardStyle = $derived(
-    `display:grid;grid-template-columns:repeat(${dashboardState.columns},1fr);gap:var(--iris-dashboard-gap,16px);position:relative;${style}`,
+    `display:grid;grid-template-columns:repeat(${dashboardState.columns},1fr);gap:var(--iris-dashboard-gap,var(--iris-space-md,16px));position:relative;${style}`,
   )
 
   function rows(): number {
@@ -147,7 +147,7 @@
     {@const contentKey = dashboardContentKey(w)}
     <div
       data-iris-dashboard-widget={w.id}
-      style="grid-column:{w.col}/span {w.colSpan};grid-row:{w.row}/span {w.rowSpan};background:var(--iris-dashboard-widget-bg,#fff);border:1px solid var(--iris-border,#e5e7eb);border-radius:var(--iris-dashboard-widget-radius,8px);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1"
+      style="grid-column:{w.col}/span {w.colSpan};grid-row:{w.row}/span {w.rowSpan};background:var(--iris-dashboard-widget-bg,var(--iris-surface,#f8fafc));border:1px solid var(--iris-border,#e2e8f0);border-radius:var(--iris-dashboard-widget-radius,6px);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1"
     >
       <!-- Widget header with drag handle -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -156,7 +156,7 @@
         role="button"
         tabindex="0"
         draggable="true"
-        style="display:flex;align-items:center;gap:6px;padding:8px 12px;cursor:grab;border-bottom:1px solid var(--iris-border,#e5e7eb);font-weight:600;user-select:none;touch-action:none"
+        style="display:flex;align-items:center;gap:var(--iris-space-xs,8px);padding:8px 12px;cursor:grab;border-bottom:1px solid var(--iris-border,#e2e8f0);font-weight:600;user-select:none;touch-action:none"
         ondragstart={(e) => {
           dragWidgetId = w.id
           if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
@@ -172,7 +172,7 @@
         <span
           data-iris-dashboard-drag-handle
           aria-hidden="true"
-          style="font-size:1rem;line-height:1;color:var(--iris-muted,#9ca3af)">⠿</span
+          style="font-size:1rem;line-height:1;color:var(--iris-muted,#64748b)">⠿</span
         >
         <span data-iris-dashboard-widget-title={w.id}>{w.title}</span>
       </div>

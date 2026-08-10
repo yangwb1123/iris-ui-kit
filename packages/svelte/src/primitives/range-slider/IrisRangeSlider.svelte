@@ -157,14 +157,18 @@
   data-iris-range-slider
   data-disabled={disabled ? '' : undefined}
   style={mergeStyle(
-    styleToString({ position: 'relative', width: '100%', padding: '14px 8px' }),
+    styleToString({
+      position: 'relative',
+      width: '100%',
+      padding: 'var(--iris-space-md, 16px) var(--iris-space-xs, 8px)',
+    }),
     style,
   )}
 >
   <div
     bind:this={trackEl}
     data-iris-range-slider-track
-    style="position: relative; height: 4px; background: var(--iris-border, #e5e7eb); border-radius: var(--iris-radius-sm, 4px);"
+    style="position: relative; height: 4px; background: var(--iris-border, #e2e8f0); border-radius: var(--iris-radius-sm, 4px);"
   >
     <!-- Range fill -->
     <div

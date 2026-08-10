@@ -12,7 +12,7 @@ export const STATE_ROW_STYLE: React.CSSProperties = {
 }
 
 export const BASE_CELL_STYLE: React.CSSProperties = {
-  padding: '8px 12px',
+  padding: 'var(--iris-cell-pad-y, 8px) 12px',
   display: 'flex',
   alignItems: 'center',
   minWidth: 0,
@@ -23,3 +23,26 @@ export const BASE_CELL_STYLE: React.CSSProperties = {
 
 export const borderStyle = (bordered: boolean): string =>
   bordered ? '1px solid var(--iris-border)' : 'none'
+export const TABLE_ROW_CSS = `
+[data-iris-table] [role="row"]:hover {
+  --iris-cell-bg: var(--iris-surface-hover);
+}
+[data-iris-table-row-selected="true"] {
+  --iris-cell-bg: var(--iris-surface-selected);
+}
+[data-iris-row-current="true"] {
+  --iris-cell-bg: var(--iris-surface-selected);
+}
+[data-iris-col-current="true"] {
+  --iris-cell-bg: var(--iris-surface-selected);
+}
+/* Size presets (vxe-grid size parity: medium / small / mini). */
+[data-iris-table][data-size="small"] {
+  --iris-cell-pad-y: 4px;
+  font-size: var(--iris-font-size-sm, 13px);
+}
+[data-iris-table][data-size="mini"] {
+  --iris-cell-pad-y: 2px;
+  font-size: var(--iris-font-size-xs, 12px);
+}
+`

@@ -1,13 +1,29 @@
-import { mergeProps, Show, splitProps, type JSX } from 'solid-js'
+import { mergeProps, onMount, Show, splitProps, type JSX } from 'solid-js'
 
+const STYLE_ID = 'iris-card-styles'
+let installed = false
+function installCardStyles() {
+  if (installed || typeof document === 'undefined') return
+  installed = true
+  if (document.getElementById(STYLE_ID)) return
+  const style = document.createElement('style')
+  style.id = STYLE_ID
+  style.textContent = `
+[data-iris-card-hover="true"]:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--iris-shadow-lg);
+}
+`
+  document.head.appendChild(style)
+}
 export type IrisCardVariant = 'elevated' | 'outline' | 'subtle'
 export type IrisCardPadding = 'none' | 'sm' | 'md' | 'lg'
 
 const PADDING_MAP: Record<IrisCardPadding, string> = {
   none: '0',
   sm: '12px',
-  md: 'var(--iris-padding-md, 16px)',
-  lg: '24px',
+  md: 'var(--iris-padding-lg, 20px)',
+  lg: 'var(--iris-space-xl, 24px)',
 }
 
 export interface IrisCardProps extends JSX.HTMLAttributes<HTMLDivElement> {
@@ -29,8 +45,7 @@ function containerStyle(variant: IrisCardVariant, hover: boolean): JSX.CSSProper
     overflow: 'hidden',
     transition: hover ? 'transform 160ms ease, box-shadow 160ms ease' : 'none',
   }
-  if (variant === 'elevated')
-    return { ...base, 'box-shadow': '0 1px 2px rgba(0,0,0,.05), 0 4px 12px rgba(0,0,0,.06)' }
+  if (variant === 'elevated') return { ...base, 'box-shadow': 'var(--iris-shadow-md)' }
   if (variant === 'outline') return { ...base, border: '1px solid var(--iris-border)' }
   return { ...base, background: 'var(--iris-surface)' }
 }
@@ -56,6 +71,7 @@ export function IrisCard(props: IrisCardProps): JSX.Element {
 
   const sectionPadding = () => PADDING_MAP[local.padding]
 
+  onMount(installCardStyles)
   return (
     <div
       {...rest}

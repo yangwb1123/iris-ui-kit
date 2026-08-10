@@ -3,7 +3,7 @@ import { defineComponent, h, type PropType } from 'vue'
 export type IrisResultStatus = 'success' | 'error' | 'info' | 'warning'
 
 const STATUS: Record<IrisResultStatus, { color: string; glyph: string }> = {
-  success: { color: 'var(--iris-success, #16a34a)', glyph: '✓' },
+  success: { color: 'var(--iris-success, #10b981)', glyph: '✓' },
   error: { color: 'var(--iris-danger)', glyph: '✕' },
   info: { color: 'var(--iris-info, #0ea5e9)', glyph: 'i' },
   warning: { color: 'var(--iris-warning, #f59e0b)', glyph: '!' },
@@ -39,9 +39,9 @@ export const IrisResult = defineComponent({
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '30px',
+              fontSize: 'var(--iris-font-size-4xl, 30px)',
               fontWeight: '700',
-              color: '#fff',
+              color: 'var(--iris-primary-foreground, #fff)',
               background: s.color,
               marginBlockEnd: '8px',
             },
@@ -53,7 +53,11 @@ export const IrisResult = defineComponent({
               'div',
               {
                 'data-iris-result-title': '',
-                style: { fontSize: '20px', fontWeight: '600', color: 'var(--iris-foreground)' },
+                style: {
+                  fontSize: 'var(--iris-font-size-2xl, 20px)',
+                  fontWeight: '600',
+                  color: 'var(--iris-foreground)',
+                },
               },
               props.title,
             )
@@ -63,7 +67,11 @@ export const IrisResult = defineComponent({
               'div',
               {
                 'data-iris-result-subtitle': '',
-                style: { fontSize: '14px', color: 'var(--iris-muted)', maxWidth: '480px' },
+                style: {
+                  fontSize: 'var(--iris-font-size-md, 14px)',
+                  color: 'var(--iris-muted)',
+                  maxWidth: '480px',
+                },
               },
               props.subtitle,
             )

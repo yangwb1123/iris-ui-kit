@@ -80,11 +80,11 @@ export const IrisBreadcrumb = defineComponent({
             style: {
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: 'var(--iris-space-xs, 8px)',
               margin: '0',
               padding: '0',
               listStyle: 'none',
-              fontSize: '14px',
+              fontSize: 'var(--iris-font-size-md, 14px)',
             },
           },
           items,

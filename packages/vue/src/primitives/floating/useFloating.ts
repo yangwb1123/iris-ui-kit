@@ -94,6 +94,9 @@ export interface UseFloatingReturn {
 export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
   const x = ref(0)
   const y = ref(0)
+  // True once the first positioning cycle lands. Until then the panel stays
+  // `visibility: hidden` so it never flashes at the viewport origin (0,0).
+  const positioned = ref(false)
   const strategy = ref<Strategy>(options.strategy ?? 'absolute')
   const finalPlacement = ref<Placement>(options.placement ?? 'bottom')
   const arrowX = ref<number | undefined>()
@@ -146,6 +149,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     if (token !== epoch) return
     x.value = result.x
     y.value = result.y
+    positioned.value = true
     finalPlacement.value = result.placement
     const arrowData = result.middlewareData.arrow as { x?: number; y?: number } | undefined
     arrowX.value = arrowData?.x
@@ -159,6 +163,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
       cleanupAutoUpdate = null
       epoch++
       if (isOpen && anchorEl && floatingEl) {
+        positioned.value = false
         cleanupAutoUpdate = autoUpdate(anchorEl, floatingEl, () => {
           void update()
         })
@@ -195,6 +200,10 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     left: '0',
     transform: `translate3d(${Math.round(x.value)}px, ${Math.round(y.value)}px, 0)`,
     width: 'max-content',
+    // Hidden until the first positioning cycle lands — prevents a flash at
+    // the viewport origin. visibility (not display:none) keeps the panel
+    // measurable so Floating UI can compute its real coordinates.
+    visibility: positioned.value ? 'visible' : 'hidden',
   }))
 
   return { x, y, strategy, finalPlacement, floatingStyles, update, arrowX, arrowY, arrowSide }

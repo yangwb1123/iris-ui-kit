@@ -97,7 +97,10 @@ export function Desktop(): JSX.Element {
 
   const desktopMenuItems = (): MenuItem[] => [
     ...OS_ORDER.map(
-      (id): MenuItem => ({ label: `Use ${CHROMES[id].label}`, onClick: () => setOs(id) }),
+      (id): MenuItem => ({
+        label: `Use ${CHROMES[id].label}`,
+        onClick: () => setOs(id),
+      }),
     ),
     { separator: true },
     { label: 'Display settings', onClick: () => launch('settings') },

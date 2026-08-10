@@ -4,7 +4,7 @@ export type IrisGaugeStatus = 'default' | 'success' | 'danger' | 'warning'
 
 const COLOR: Record<IrisGaugeStatus, string> = {
   default: 'var(--iris-primary)',
-  success: 'var(--iris-success, #16a34a)',
+  success: 'var(--iris-success, #10b981)',
   danger: 'var(--iris-danger)',
   warning: 'var(--iris-warning, #f59e0b)',
 }
@@ -24,6 +24,7 @@ export const IrisGauge = defineComponent({
     /** Diameter in px. */
     size: { type: Number, default: 120 },
     strokeWidth: { type: Number, default: 10 },
+    /** Semantic status (explicit by design; derive thresholds in the consumer). */
     status: { type: String as PropType<IrisGaugeStatus>, default: 'default' },
     showValue: { type: Boolean, default: true },
     /** Custom center label given the value and rounded percent. */
@@ -55,7 +56,8 @@ export const IrisGauge = defineComponent({
           'aria-valuenow': props.value,
           'aria-valuemin': props.min,
           'aria-valuemax': props.max,
-          'aria-valuetext': `${percent}%`,
+          'aria-valuetext':
+            props.min === 0 && props.max === 100 ? `${percent}%` : `${props.value} (${percent}%)`,
           'aria-label': props.ariaLabel,
           style: {
             position: 'relative',
@@ -111,7 +113,11 @@ export const IrisGauge = defineComponent({
                     fontVariantNumeric: 'tabular-nums',
                   },
                 },
-                props.format ? props.format(props.value, percent) : `${percent}%`,
+                props.format
+                  ? props.format(props.value, percent)
+                  : props.min === 0 && props.max === 100
+                    ? `${percent}%`
+                    : String(props.value),
               )
             : null,
         ],

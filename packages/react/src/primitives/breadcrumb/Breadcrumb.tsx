@@ -31,11 +31,11 @@ export const IrisBreadcrumb = React.forwardRef<HTMLElement, IrisBreadcrumbProps>
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 'var(--iris-space-xs, 8px)',
             margin: 0,
             padding: 0,
             listStyle: 'none',
-            fontSize: 14,
+            fontSize: 'var(--iris-font-size-md, 14px)',
           }}
         >
           {flat.map((child, i) => {

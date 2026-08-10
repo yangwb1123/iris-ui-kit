@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import { createSignal } from 'solid-js'
 import { render, cleanup, fireEvent } from '@solidjs/testing-library'
 import { IrisSelect } from './IrisSelect'
 
@@ -148,5 +149,132 @@ describe('IrisSelect', () => {
       fireEvent.keyDown(trigger, { key: 'Escape' })
       expect(container.querySelector('[data-iris-select-listbox]')).toBeNull()
     })
+  })
+})
+
+describe('IrisSelect virtual listbox', () => {
+  const makeItems = (n: number): { value: number; label: string }[] =>
+    Array.from({ length: n }, (_, i) => ({ value: i, label: `Option ${i}` }))
+  const ROW_HEIGHT = 36
+
+  const listbox = (c: HTMLElement) => c.querySelector('[data-iris-select-listbox]') as HTMLElement
+  const optionEls = (c: HTMLElement) =>
+    Array.from(c.querySelectorAll('[data-iris-select-option]')) as HTMLElement[]
+  const spacerEls = (c: HTMLElement) =>
+    Array.from(c.querySelectorAll('[data-iris-select-spacer]')) as HTMLElement[]
+  const posinsets = (c: HTMLElement) =>
+    optionEls(c).map((o) => parseInt(o.getAttribute('aria-posinset')!, 10))
+
+  it('A1: virtual off (default) — all options, no spacers', () => {
+    const { container } = render(() => <IrisSelect items={items} portalTarget={false} />)
+    fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+    expect(optionEls(container).length).toBe(3)
+    expect(spacerEls(container).length).toBe(0)
+  })
+
+  it('A1: small list with virtual — total window, spacer sum invariant', () => {
+    const { container } = render(() => <IrisSelect items={items} virtual portalTarget={false} />)
+    fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+    expect(optionEls(container).length).toBe(3)
+    const sp = spacerEls(container)
+    expect(sp.length).toBe(2)
+    expect(sp[0]!.getAttribute('data-iris-select-spacer-type')).toBe('top')
+    expect(sp[1]!.getAttribute('data-iris-select-spacer-type')).toBe('bottom')
+    expect(sp[0]!.getAttribute('role')).toBe('presentation')
+    expect(
+      parseFloat(sp[0]!.style.height) +
+        optionEls(container).length * ROW_HEIGHT +
+        parseFloat(sp[1]!.style.height),
+    ).toBe(3 * ROW_HEIGHT)
+    expect(optionEls(container)[0]!.getAttribute('aria-setsize')).toBe('3')
+    expect(optionEls(container)[0]!.getAttribute('aria-posinset')).toBe('1')
+  })
+
+  it('A2: 10k options — only the window (+ buffer) is rendered, spacer invariant', () => {
+    const { container } = render(() => (
+      <IrisSelect items={makeItems(10_000)} virtual portalTarget={false} />
+    ))
+    fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+    const rendered = optionEls(container)
+    expect(rendered.length).toBeGreaterThanOrEqual(1)
+    expect(rendered.length).toBeLessThan(60)
+    expect(rendered[0]!.getAttribute('aria-posinset')).toBe('1')
+    const sp = spacerEls(container)
+    expect(parseFloat(sp[0]!.style.height)).toBe(0)
+    expect(
+      parseFloat(sp[0]!.style.height) +
+        rendered.length * ROW_HEIGHT +
+        parseFloat(sp[1]!.style.height),
+    ).toBe(360_000)
+  })
+
+  it('A2: items shrink re-windows and clamps scroll to 0', () => {
+    const [items, setItems] = createSignal<{ value: number; label: string }[]>(makeItems(10_000))
+    const { container } = render(() => <IrisSelect items={items()} virtual portalTarget={false} />)
+    fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+    const lb = listbox(container)
+    lb.scrollTop = 1000
+    fireEvent.scroll(lb)
+    expect(posinsets(container)[0]!).toBeGreaterThan(1)
+    setItems(() => makeItems(3))
+    expect(lb.scrollTop).toBe(0)
+    expect(optionEls(container)[0]!.getAttribute('aria-posinset')).toBe('1')
+  })
+
+  it('A3: open with value at index 9999 — scrolls the active option into view', () => {
+    const { container } = render(() => (
+      <IrisSelect items={makeItems(10_000)} value={9999} virtual portalTarget={false} />
+    ))
+    fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+    expect(listbox(container).scrollTop).toBe(359_760)
+    const deep = optionEls(container).find((o) => o.getAttribute('aria-posinset') === '10000')
+    expect(deep).not.toBeNull()
+  })
+
+  it('A3: ArrowDown-open keeps Solid semantics (active = next, not anchored)', () => {
+    const { container } = render(() => (
+      <IrisSelect items={makeItems(10_000)} virtual portalTarget={false} />
+    ))
+    const trigger = container.querySelector('[data-iris-select-trigger]')!
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+    expect(listbox(container)).not.toBeNull()
+    expect(listbox(container).scrollTop).toBe(0)
+    // nav moved 0→1 on the opening keypress — the open-anchor must not clobber
+    fireEvent.keyDown(trigger, { key: 'Enter' })
+    expect(container.querySelector('[data-iris-select-trigger]')?.textContent).toContain('Option 1')
+  })
+
+  it('A4: End scrolls the last option into view (maxScroll)', () => {
+    const { container } = render(() => (
+      <IrisSelect items={makeItems(10_000)} virtual portalTarget={false} />
+    ))
+    fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+    const trigger = container.querySelector('[data-iris-select-trigger]')!
+    fireEvent.keyDown(trigger, { key: 'End' })
+    expect(listbox(container).scrollTop).toBe(359_760)
+    expect(optionEls(container).some((o) => o.getAttribute('aria-posinset') === '10000')).toBe(true)
+  })
+
+  it('A4: wheel scroll drives the window — nav then re-scrolls', () => {
+    const { container } = render(() => (
+      <IrisSelect items={makeItems(10_000)} virtual portalTarget={false} />
+    ))
+    fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+    const lb = listbox(container)
+    lb.scrollTop = 1000
+    fireEvent.scroll(lb)
+    expect(posinsets(container)[0]).toBe(24) // floor((1000 − 4×36)/36) + 1
+    const trigger = container.querySelector('[data-iris-select-trigger]')!
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+    expect(listbox(container).scrollTop).toBe(36)
+  })
+
+  it('A5: empty state with virtual — no options, no spacers', () => {
+    const { container } = render(() => <IrisSelect items={[]} virtual portalTarget={false} />)
+    fireEvent.click(container.querySelector('[data-iris-select-trigger]')!)
+    expect(listbox(container)).not.toBeNull()
+    expect(optionEls(container).length).toBe(0)
+    expect(spacerEls(container).length).toBe(0)
+    expect(container.querySelector('[data-iris-select-empty]')).not.toBeNull()
   })
 })

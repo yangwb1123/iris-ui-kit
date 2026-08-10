@@ -42,6 +42,11 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    */
   validate?: (value: unknown, row: Row) => string | null | undefined
   /**
+   * Declarative edit rules (vxe-grid editRules parity) — required/min/max/
+   * type/pattern/validator (sync or async). Runs before `validate`.
+   */
+  editRules?: import('@iris-ui-kit/core').EditRule<Row>[]
+  /**
    * Aggregate this column in the table's summary/footer row. Any column with a
    * `summary` op makes the footer row appear; columns without one render blank.
    */

@@ -5,7 +5,7 @@
 
   const VARIANT_COLOR: Record<TimelineVariant, string> = {
     default: 'var(--iris-primary)',
-    success: 'var(--iris-success, #16a34a)',
+    success: 'var(--iris-success, #10b981)',
     warning: 'var(--iris-warning, #f59e0b)',
     danger: 'var(--iris-danger)',
     info: 'var(--iris-info, #0ea5e9)',
@@ -62,7 +62,10 @@
           {@render itemSnippet({ item, index: i })}
         {:else}
           {#if item.time != null}
-            <div data-iris-timeline-time style="font-size:12px; color:var(--iris-muted);">
+            <div
+              data-iris-timeline-time
+              style="font-size:var(--iris-font-size-xs, 12px); color:var(--iris-muted);"
+            >
               {item.time}
             </div>
           {/if}
@@ -72,7 +75,10 @@
             </div>
           {/if}
           {#if item.description != null}
-            <div data-iris-timeline-desc style="font-size:14px; color:var(--iris-foreground);">
+            <div
+              data-iris-timeline-desc
+              style="font-size:var(--iris-font-size-md, 14px); color:var(--iris-foreground);"
+            >
               {item.description}
             </div>
           {/if}

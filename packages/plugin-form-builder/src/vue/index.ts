@@ -317,7 +317,7 @@ export const IrisFormBuilder = defineComponent({
         'form',
         {
           'data-iris-form-builder': '',
-          style: { display: 'grid', gap: 'var(--iris-form-gap, 16px)' },
+          style: { display: 'grid', gap: 'var(--iris-form-gap, var(--iris-space-md, 16px))' },
           novalidate: true,
           onSubmit: (e: Event) => {
             e.preventDefault()

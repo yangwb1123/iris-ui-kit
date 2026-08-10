@@ -199,3 +199,224 @@ describe('IrisSelect', () => {
     })
   })
 })
+
+describe('IrisSelect virtual listbox', () => {
+  let host: HTMLDivElement
+  beforeEach(() => {
+    host = document.createElement('div')
+    document.body.appendChild(host)
+  })
+  afterEach(() => {
+    host.remove()
+  })
+
+  const makeItems = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ value: i, label: `Option ${i}` }))
+  const ROW_HEIGHT = 36
+  const listboxEl = (w: ReturnType<typeof mount>) =>
+    w.element.querySelector('[role="listbox"]') as HTMLElement
+  const opts = (w: ReturnType<typeof mount>) =>
+    Array.from(w.element.querySelectorAll('[role="option"]')) as HTMLElement[]
+  const spacers = (w: ReturnType<typeof mount>) =>
+    Array.from(w.element.querySelectorAll('[data-iris-select-spacer]')) as HTMLElement[]
+  const indexOf = (el: HTMLElement) => parseInt(el.getAttribute('data-iris-list-index') ?? '-1', 10)
+
+  it('A1: virtual off (default) — all options, no spacers', async () => {
+    const wrapper = mount(IrisSelect, {
+      props: { items, modelValue: null, teleport: false },
+      attachTo: host,
+    })
+    await wrapper.find('[data-iris-select-trigger]').trigger('click')
+    await nextTick()
+    expect(opts(wrapper).length).toBe(3)
+    expect(spacers(wrapper).length).toBe(0)
+  })
+
+  it('A1: small list with virtual — total window, spacer sum invariant', async () => {
+    const wrapper = mount(IrisSelect, {
+      props: { items, modelValue: null, virtual: true, teleport: false },
+      attachTo: host,
+    })
+    await wrapper.find('[data-iris-select-trigger]').trigger('click')
+    await nextTick()
+    await nextTick()
+    expect(opts(wrapper).length).toBe(3)
+    const sp = spacers(wrapper)
+    expect(sp.length).toBe(2)
+    expect(sp[0]!.getAttribute('data-iris-select-spacer-type')).toBe('top')
+    expect(sp[1]!.getAttribute('data-iris-select-spacer-type')).toBe('bottom')
+    expect(sp[0]!.getAttribute('role')).toBe('presentation')
+    expect(
+      parseFloat(sp[0]!.style.height) +
+        opts(wrapper).length * ROW_HEIGHT +
+        parseFloat(sp[1]!.style.height),
+    ).toBe(3 * ROW_HEIGHT)
+    expect(opts(wrapper)[0]!.getAttribute('aria-setsize')).toBe('3')
+    expect(opts(wrapper)[0]!.getAttribute('aria-posinset')).toBe('1')
+    expect(opts(wrapper)[2]!.getAttribute('aria-posinset')).toBe('3')
+  })
+
+  it('A2: 10k options — only the window (+ buffer) is rendered, spacer invariant', async () => {
+    const wrapper = mount(IrisSelect, {
+      props: { items: makeItems(10_000), modelValue: null, virtual: true, teleport: false },
+      attachTo: host,
+    })
+    await wrapper.find('[data-iris-select-trigger]').trigger('click')
+    await nextTick()
+    await nextTick()
+    const rendered = opts(wrapper)
+    expect(rendered.length).toBeGreaterThanOrEqual(1)
+    expect(rendered.length).toBeLessThan(60)
+    expect(indexOf(rendered[0]!)).toBe(0)
+    for (let i = 1; i < rendered.length; i++) {
+      expect(indexOf(rendered[i]!)).toBe(indexOf(rendered[i - 1]!) + 1)
+    }
+    const sp = spacers(wrapper)
+    expect(parseFloat(sp[0]!.style.height)).toBe(0)
+    expect(
+      parseFloat(sp[0]!.style.height) +
+        rendered.length * ROW_HEIGHT +
+        parseFloat(sp[1]!.style.height),
+    ).toBe(360_000)
+  })
+
+  it('A2: items shrink re-windows and clamps scroll to 0', async () => {
+    const wrapper = mount(IrisSelect, {
+      props: { items: makeItems(10_000), modelValue: null, virtual: true, teleport: false },
+      attachTo: host,
+    })
+    await wrapper.find('[data-iris-select-trigger]').trigger('click')
+    await nextTick()
+    await nextTick()
+    const lb = listboxEl(wrapper)
+    lb.scrollTop = 1000
+    lb.dispatchEvent(new Event('scroll'))
+    await nextTick()
+    expect(indexOf(opts(wrapper)[0]!)).toBeGreaterThan(0)
+    await wrapper.setProps({ items: makeItems(3) })
+    await nextTick()
+    await nextTick()
+    expect(lb.scrollTop).toBe(0)
+    expect(indexOf(opts(wrapper)[0]!)).toBe(0)
+  })
+
+  it('A3: open with value at index 9999 — scrolls the active option into view', async () => {
+    const wrapper = mount(IrisSelect, {
+      props: {
+        items: makeItems(10_000),
+        modelValue: 9999,
+        virtual: true,
+        teleport: false,
+      },
+      attachTo: host,
+    })
+    await wrapper.find('[data-iris-select-trigger]').trigger('click')
+    await nextTick()
+    await nextTick()
+    await nextTick()
+    const lb = listboxEl(wrapper)
+    expect(lb.scrollTop).toBe(359_760)
+    const deep = wrapper.element.querySelector('[data-iris-list-index="9999"]') as HTMLElement
+    expect(deep).not.toBeNull()
+    expect(deep.getAttribute('aria-posinset')).toBe('10000')
+    expect(deep.getAttribute('tabindex')).toBe('0')
+  })
+
+  it('A3: reopen after a deep session with no value resets to top', async () => {
+    const wrapper = mount(IrisSelect, {
+      props: {
+        items: makeItems(10_000),
+        modelValue: 9999,
+        virtual: true,
+        teleport: false,
+      },
+      attachTo: host,
+    })
+    await wrapper.find('[data-iris-select-trigger]').trigger('click')
+    await nextTick()
+    await nextTick()
+    expect(listboxEl(wrapper).scrollTop).toBe(359_760)
+    await wrapper.find('[data-iris-select-trigger]').trigger('click') // close
+    await nextTick()
+    expect(wrapper.element.querySelector('[role="listbox"]')).toBeNull()
+    await wrapper.setProps({ modelValue: null })
+    await wrapper.find('[data-iris-select-trigger]').trigger('click') // reopen
+    await nextTick()
+    await nextTick()
+    expect(listboxEl(wrapper).scrollTop).toBe(0)
+    expect(indexOf(opts(wrapper)[0]!)).toBe(0)
+  })
+
+  it('A4: End scrolls the last option into view (maxScroll)', async () => {
+    const wrapper = mount(IrisSelect, {
+      props: { items: makeItems(10_000), modelValue: null, virtual: true, teleport: false },
+      attachTo: host,
+    })
+    await wrapper.find('[data-iris-select-trigger]').trigger('click')
+    await nextTick()
+    await nextTick()
+    listboxEl(wrapper).dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
+    await nextTick()
+    await nextTick()
+    expect(listboxEl(wrapper).scrollTop).toBe(359_760)
+    const last = wrapper.element.querySelector('[data-iris-list-index="9999"]') as HTMLElement
+    expect(last).not.toBeNull()
+    expect(last.getAttribute('tabindex')).toBe('0')
+  })
+
+  it('A4: wheel scroll drives the window — nav then re-scrolls', async () => {
+    const wrapper = mount(IrisSelect, {
+      props: { items: makeItems(10_000), modelValue: null, virtual: true, teleport: false },
+      attachTo: host,
+    })
+    await wrapper.find('[data-iris-select-trigger]').trigger('click')
+    await nextTick()
+    await nextTick()
+    const lb = listboxEl(wrapper)
+    lb.scrollTop = 1000
+    lb.dispatchEvent(new Event('scroll'))
+    await nextTick()
+    expect(indexOf(opts(wrapper)[0]!)).toBe(23) // floor((1000 − 4×36)/36)
+    lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    await nextTick()
+    await nextTick()
+    expect(listboxEl(wrapper).scrollTop).toBe(36)
+  })
+
+  it('A5: empty state with virtual — no options, no spacers', async () => {
+    const wrapper = mount(IrisSelect, {
+      props: { items: [], modelValue: null, virtual: true, teleport: false },
+      attachTo: host,
+    })
+    await wrapper.find('[data-iris-select-trigger]').trigger('click')
+    await nextTick()
+    await nextTick()
+    expect(opts(wrapper).length).toBe(0)
+    expect(spacers(wrapper).length).toBe(0)
+    expect(wrapper.element.querySelector('[data-iris-list-state="empty"]')).not.toBeNull()
+  })
+
+  it('A5: disabled options render and ignore clicks in both modes', async () => {
+    const wrapper = mount(IrisSelect, {
+      props: {
+        items: [
+          { value: 'a', label: 'Apple' },
+          { value: 'b', label: 'Banana', disabled: true },
+          { value: 'c', label: 'Cherry' },
+        ],
+        modelValue: null,
+        virtual: true,
+        teleport: false,
+      },
+      attachTo: host,
+    })
+    await wrapper.find('[data-iris-select-trigger]').trigger('click')
+    await nextTick()
+    await nextTick()
+    const disabled = opts(wrapper).find((o) => o.getAttribute('aria-disabled') === 'true')
+    expect(disabled).toBeDefined()
+    await wrapper.findAll('[role="option"]')[1]!.trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(wrapper.element.querySelector('[role="listbox"]')).not.toBeNull()
+  })
+})

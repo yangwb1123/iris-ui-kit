@@ -92,9 +92,9 @@ export function IrisDivider(props: IrisDividerProps): JSX.Element {
             gap: '8px',
             margin: `${SPACING_MAP[local.spacing]} 0`,
             color: 'var(--iris-muted)',
-            'font-size': '12px',
+            'font-size': 'var(--iris-font-size-xs, 12px)',
             'text-transform': 'uppercase',
-            'letter-spacing': '0.04em',
+            'letter-spacing': 'var(--iris-letter-spacing-wide, 0.04em)',
             ...((local.style as JSX.CSSProperties) ?? {}),
           }}
         >

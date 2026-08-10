@@ -47,7 +47,7 @@
         data-iris-descriptions-label
         style={styleToString({
           margin: '0',
-          'font-size': '13px',
+          'font-size': 'var(--iris-font-size-sm, 13px)',
           'font-weight': '500',
           color: 'var(--iris-muted)',
           padding: pad,
@@ -68,7 +68,7 @@
         data-iris-descriptions-value
         style={styleToString({
           margin: '0',
-          'font-size': '14px',
+          'font-size': 'var(--iris-font-size-md, 14px)',
           color: 'var(--iris-foreground)',
           padding: pad,
           ...(bordered && i >= columns
@@ -94,7 +94,7 @@
           data-iris-descriptions-label
           style={styleToString({
             margin: '0',
-            'font-size': '13px',
+            'font-size': 'var(--iris-font-size-sm, 13px)',
             'font-weight': '500',
             color: 'var(--iris-muted)',
             padding: pad,
@@ -107,7 +107,7 @@
           data-iris-descriptions-value
           style={styleToString({
             margin: '0',
-            'font-size': '14px',
+            'font-size': 'var(--iris-font-size-md, 14px)',
             color: 'var(--iris-foreground)',
             padding: pad,
           })}

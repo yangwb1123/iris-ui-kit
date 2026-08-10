@@ -148,8 +148,8 @@ export function TableHeader<Row extends Record<string, unknown>>({
                     aria-hidden="true"
                     data-iris-table-sort-indicator=""
                     style={{
-                      marginInlineStart: 6,
-                      fontSize: 11,
+                      marginInlineStart: 'var(--iris-space-xs, 8px)',
+                      fontSize: 'var(--iris-font-size-xs, 12px)',
                       color: dir ? 'var(--iris-primary)' : 'var(--iris-muted)',
                     }}
                   >
@@ -252,8 +252,8 @@ export function TableHeader<Row extends Record<string, unknown>>({
                 aria-hidden="true"
                 data-iris-table-sort-indicator=""
                 style={{
-                  marginInlineStart: 6,
-                  fontSize: 11,
+                  marginInlineStart: 'var(--iris-space-xs, 8px)',
+                  fontSize: 'var(--iris-font-size-xs, 12px)',
                   color: dir ? 'var(--iris-primary)' : 'var(--iris-muted)',
                 }}
               >

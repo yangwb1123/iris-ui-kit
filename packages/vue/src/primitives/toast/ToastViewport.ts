@@ -1,3 +1,4 @@
+import { installFloatingAnimations, ANIM_TOAST } from '../floating/animations'
 import {
   Teleport,
   defineComponent,
@@ -32,7 +33,7 @@ const VARIANT_BORDER: Record<IrisToastVariant, string> = {
   success: 'var(--iris-success)',
   danger: 'var(--iris-danger)',
   warning: 'var(--iris-warning)',
-  info: 'var(--iris-primary)',
+  info: 'var(--iris-info)',
 }
 
 const VARIANT_ACCENT: Record<IrisToastVariant, string> = {
@@ -40,7 +41,7 @@ const VARIANT_ACCENT: Record<IrisToastVariant, string> = {
   success: 'var(--iris-success)',
   danger: 'var(--iris-danger)',
   warning: 'var(--iris-warning)',
-  info: 'var(--iris-primary)',
+  info: 'var(--iris-info)',
 }
 
 /** Horizontal swipe distance (px) past which a release dismisses the toast. */
@@ -74,6 +75,7 @@ export const IrisToastViewport = defineComponent({
     max: { type: Number, default: 5 },
   },
   setup(props, { attrs }) {
+    installFloatingAnimations()
     const { t } = useI18n()
     const toasts = ref<IrisToast[]>(getToasts())
     const hovered = ref(false)
@@ -256,15 +258,16 @@ export const IrisToastViewport = defineComponent({
             display: 'flex',
             alignItems: 'flex-start',
             gap: 'var(--iris-gap-md)',
-            background: 'var(--iris-surface)',
+            background: 'var(--iris-surface-floating)',
+            animation: ANIM_TOAST,
             color: 'var(--iris-foreground)',
             border: `1px solid ${VARIANT_BORDER[toast.variant]}`,
             borderInlineStart: `4px solid ${VARIANT_ACCENT[toast.variant]}`,
             borderRadius: 'var(--iris-radius-md)',
             padding: 'var(--iris-padding-md)',
-            boxShadow: '0 8px 24px -8px rgba(0, 0, 0, 0.16), 0 4px 8px -2px rgba(0, 0, 0, 0.08)',
+            boxShadow: 'var(--iris-shadow-lg)',
             minWidth: '280px',
-            fontSize: '14px',
+            fontSize: 'var(--iris-font-size-md, 14px)',
           },
         },
         [
@@ -273,7 +276,13 @@ export const IrisToastViewport = defineComponent({
             toast.description &&
               h(
                 'div',
-                { style: { color: 'var(--iris-muted)', fontSize: '13px', marginTop: '2px' } },
+                {
+                  style: {
+                    color: 'var(--iris-muted)',
+                    fontSize: 'var(--iris-font-size-sm, 13px)',
+                    marginTop: 'var(--iris-space-xxs, 4px)',
+                  },
+                },
                 toast.description,
               ),
           ]),
@@ -292,8 +301,8 @@ export const IrisToastViewport = defineComponent({
                   color: VARIANT_ACCENT[toast.variant],
                   fontWeight: '600',
                   cursor: 'pointer',
-                  padding: '4px 8px',
-                  fontSize: '13px',
+                  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                  fontSize: 'var(--iris-font-size-sm, 13px)',
                   fontFamily: 'inherit',
                 },
               },
@@ -309,11 +318,11 @@ export const IrisToastViewport = defineComponent({
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
-                padding: '4px',
+                padding: 'var(--iris-space-xxs, 4px)',
                 color: 'var(--iris-muted)',
                 lineHeight: '1',
                 fontFamily: 'inherit',
-                fontSize: '16px',
+                fontSize: 'var(--iris-font-size-lg, 16px)',
               },
             },
             '×',

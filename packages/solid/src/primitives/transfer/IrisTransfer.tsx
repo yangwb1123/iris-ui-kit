@@ -2,11 +2,25 @@ import { createSignal, createMemo, mergeProps, splitProps, Show, For, type JSX }
 import { createSelectionModel } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
+import { IrisVirtualScroll } from '../virtual-scroll/IrisVirtualScroll'
 
 export interface IrisTransferItem {
   label: string
   value: string
   disabled?: boolean
+}
+
+/** Opt-in windowed rendering of a pane's list (mirrors `IrisTableVirtualOptions`). */
+export interface IrisTransferVirtualOptions {
+  /** Per-item height in px (uniform). */
+  itemHeight: number
+  /**
+   * Viewport height. Number → px; string → CSS length. Defaults to the pane's
+   * intrinsic list height (200px).
+   */
+  height?: number | string
+  /** Extra rows rendered above and below the viewport. */
+  buffer?: number
 }
 
 export interface IrisTransferProps {
@@ -16,6 +30,11 @@ export interface IrisTransferProps {
   titles?: [string, string]
   searchable?: boolean
   disabled?: boolean
+  /**
+   * Opt-in windowed rendering of both pane lists via the core virtualizer
+   * (10k+ options stay smooth). Off by default — the plain path is unchanged.
+   */
+  virtual?: IrisTransferVirtualOptions
   onChange?: (values: string[]) => void
 }
 
@@ -41,6 +60,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
     'titles',
     'searchable',
     'disabled',
+    'virtual',
     'onChange',
   ])
 
@@ -131,6 +151,90 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
     'min-width': '160px',
   }
 
+  // Shared row renderer: `<li>` in the plain ul, `<div>` inside the virtual
+  // scroller's div wrapper (an `li` there would be invalid HTML).
+  const renderRow = (
+    item: IrisTransferItem,
+    Tag: 'li' | 'div',
+    side: 'source' | 'target',
+    checked: () => string[],
+  ) => {
+    const inner = (
+      <>
+        <input
+          type="checkbox"
+          checked={checked().includes(item.value)}
+          disabled={item.disabled || local.disabled || undefined}
+          onChange={() => {
+            if (!item.disabled && !local.disabled) toggleCheck(side, item.value)
+          }}
+          onClick={(e) => e.stopPropagation()}
+        />
+        <span
+          style={{
+            'font-size': 'var(--iris-font-size-md, 14px)',
+            color: 'var(--iris-foreground)',
+          }}
+        >
+          {item.label}
+        </span>
+      </>
+    )
+    const rowStyle: JSX.CSSProperties = {
+      display: 'flex',
+      'align-items': 'center',
+      gap: '8px',
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px)',
+      'border-radius': 'var(--iris-radius-sm, 4px)',
+      cursor: item.disabled || local.disabled ? 'not-allowed' : 'pointer',
+      opacity: item.disabled ? '0.5' : '1',
+    }
+    // Solid compiles dynamic string tags to createComponent, so the wrapper is
+    // spelled out for both tags — identical props, `<li>` vs `<div>` only.
+    return Tag === 'li' ? (
+      <li
+        role="option"
+        aria-selected={checked().includes(item.value)}
+        data-iris-transfer-item={`${side}-${item.value}`}
+        style={rowStyle}
+        onClick={() => {
+          if (item.disabled || local.disabled) return
+          toggleCheck(side, item.value)
+        }}
+      >
+        {inner}
+      </li>
+    ) : (
+      <div
+        role="option"
+        aria-selected={checked().includes(item.value)}
+        data-iris-transfer-item={`${side}-${item.value}`}
+        style={rowStyle}
+        onClick={() => {
+          if (item.disabled || local.disabled) return
+          toggleCheck(side, item.value)
+        }}
+      >
+        {inner}
+      </div>
+    )
+  }
+  const listStyle: JSX.CSSProperties = {
+    'list-style': 'none',
+    margin: '0',
+    padding: '4px',
+    flex: '1',
+    'overflow-y': 'auto',
+    'max-height': '200px',
+  }
+  const virtualHeight = (): number | string => local.virtual?.height ?? 200
+  // CSS-length form of the pane height for the scroller's `max-height` (a
+  // number is px; strings pass through).
+  const virtualHeightCss = (): string => {
+    const v = virtualHeight()
+    return typeof v === 'number' ? `${v}px` : v
+  }
+
   const renderPanel = (
     side: 'source' | 'target',
     items: () => IrisTransferItem[],
@@ -147,7 +251,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
           gap: '8px',
           padding: '8px 12px',
           'border-bottom': '1px solid var(--iris-border)',
-          'font-size': '13px',
+          'font-size': 'var(--iris-font-size-sm, 13px)',
           'font-weight': '600',
           color: 'var(--iris-foreground)',
         }}
@@ -169,7 +273,12 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
         </span>
       </div>
       <Show when={local.searchable}>
-        <div style={{ padding: '6px 8px', 'border-bottom': '1px solid var(--iris-border)' }}>
+        <div
+          style={{
+            padding: 'var(--iris-padding-sm, 6px) var(--iris-space-xs, 8px)',
+            'border-bottom': '1px solid var(--iris-border)',
+          }}
+        >
           <input
             type="text"
             placeholder={t('transfer.search')}
@@ -181,7 +290,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
               background: 'transparent',
               border: '1px solid var(--iris-border)',
               'border-radius': 'var(--iris-radius-sm, 4px)',
-              'font-size': '13px',
+              'font-size': 'var(--iris-font-size-sm, 13px)',
               color: 'var(--iris-foreground)',
               'box-sizing': 'border-box',
               outline: 'none',
@@ -189,54 +298,30 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
           />
         </div>
       </Show>
-      <ul
-        role="listbox"
-        aria-multiselectable="true"
-        style={{
-          'list-style': 'none',
-          margin: '0',
-          padding: '4px',
-          flex: '1',
-          'overflow-y': 'auto',
-          'max-height': '200px',
-        }}
+      <Show
+        when={local.virtual && items().length > 0}
+        fallback={
+          <ul role="listbox" aria-multiselectable="true" style={listStyle}>
+            <For each={items()}>{(item) => renderRow(item, 'li', side, checked)}</For>
+          </ul>
+        }
       >
-        <For each={items()}>
-          {(item) => (
-            <li
-              role="option"
-              aria-selected={checked().includes(item.value)}
-              data-iris-transfer-item={`${side}-${item.value}`}
-              style={{
-                display: 'flex',
-                'align-items': 'center',
-                gap: '8px',
-                padding: '6px 8px',
-                'border-radius': 'var(--iris-radius-sm, 4px)',
-                cursor: item.disabled || local.disabled ? 'not-allowed' : 'pointer',
-                opacity: item.disabled ? '0.5' : '1',
-              }}
-              onClick={() => {
-                if (item.disabled || local.disabled) return
-                toggleCheck(side, item.value)
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={checked().includes(item.value)}
-                disabled={item.disabled || local.disabled || undefined}
-                onChange={() => {
-                  if (!item.disabled && !local.disabled) toggleCheck(side, item.value)
-                }}
-                onClick={(e) => e.stopPropagation()}
-              />
-              <span style={{ 'font-size': '14px', color: 'var(--iris-foreground)' }}>
-                {item.label}
-              </span>
-            </li>
-          )}
-        </For>
-      </ul>
+        <IrisVirtualScroll
+          items={items()}
+          itemHeight={local.virtual!.itemHeight}
+          height={virtualHeight()}
+          buffer={local.virtual!.buffer}
+          keyOf={(o) => o.value}
+          role="listbox"
+          aria-multiselectable={true}
+          style={{
+            flex: '1',
+            'max-height': virtualHeightCss(),
+            'box-sizing': 'content-box',
+          }}
+          renderItem={(item) => renderRow(item, 'div', side, checked)}
+        />
+      </Show>
     </div>
   )
 
@@ -252,7 +337,7 @@ export function IrisTransfer(props: IrisTransferProps): JSX.Element {
     border: 'none',
     'border-radius': 'var(--iris-radius-sm, 4px)',
     cursor: 'pointer',
-    'font-size': '14px',
+    'font-size': 'var(--iris-font-size-md, 14px)',
   }
 
   return (

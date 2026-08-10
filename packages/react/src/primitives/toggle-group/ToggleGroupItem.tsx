@@ -87,7 +87,7 @@ export const IrisToggleGroupItem = React.forwardRef<HTMLButtonElement, IrisToggl
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 6,
+          gap: 'var(--iris-space-xs, 8px)',
           padding: SIZE_PADDING[ctx.size],
           fontSize: SIZE_FONT[ctx.size],
           fontFamily: 'inherit',

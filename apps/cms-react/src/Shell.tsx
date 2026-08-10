@@ -39,6 +39,7 @@ import { FormBuilderPage } from './pages/FormBuilderPage'
 import { RealtimePage } from './pages/RealtimePage'
 import { ProTablePage } from './pages/ProTablePage'
 import { MarkdownPage } from './pages/MarkdownPage'
+import { VxeGridExamplePage } from './pages/VxeGridExamplePage'
 
 const pages: Record<string, ComponentType> = {
   dashboard: DashboardPage,
@@ -48,6 +49,7 @@ const pages: Record<string, ComponentType> = {
   realtime: RealtimePage,
   'pro-table': ProTablePage,
   documentation: MarkdownPage,
+  'vxe-example': VxeGridExamplePage,
 }
 
 function PageHost({ routeKey }: { routeKey: string }) {

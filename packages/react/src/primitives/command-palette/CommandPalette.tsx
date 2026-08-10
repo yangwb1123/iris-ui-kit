@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useI18n } from '../../i18n'
 import { useBodyScrollLock } from '../../modal-utils/useBodyScrollLock'
 import { useFocusTrap } from '../../modal-utils/useFocusTrap'
+import { IrisVirtualScroll, type IrisVirtualScrollHandle } from '../virtual-scroll/VirtualScroll'
 import { defaultFilter, type IrisCommandItem } from './types'
 
 export interface IrisCommandPaletteProps extends Omit<
@@ -18,9 +19,25 @@ export interface IrisCommandPaletteProps extends Omit<
   /** Custom filter; default is a tolerant subsequence/fuzzy match. */
   filter?: (query: string, item: IrisCommandItem) => number | null
   onSelect?: (item: IrisCommandItem) => void
+  /**
+   * Opt-in windowed rendering of the results list via the core virtualizer.
+   * When true, only the visible window (+ buffer) of rows is rendered and
+   * keyboard navigation scrolls the active row into view. Default false —
+   * the plain list renders bit-for-bit as before.
+   */
+  virtual?: boolean
 }
 
 type Row = { kind: 'header'; label: string } | { kind: 'item'; item: IrisCommandItem }
+
+// Fixed per-row heights (px) — MUST track the row style blocks below:
+// header = 12px font × ~1.4 line-height + 2×6px padding ≈ 28px;
+// item = 14px font × ~1.4 + 2×8px padding ≈ 36px. Rows are single-line, so
+// these are exact and content-independent.
+const COMMAND_HEADER_HEIGHT = 28
+const COMMAND_ITEM_HEIGHT = 36
+/** Extra rows rendered above/below the viewport (matches Combobox/Cascader). */
+const COMMAND_VIRTUAL_BUFFER = 4
 
 /**
  * Command palette: searchable, keyboard-driven action launcher. Built on the
@@ -36,6 +53,7 @@ export function IrisCommandPalette({
   emptyText,
   filter = defaultFilter,
   onSelect,
+  virtual = false,
   style,
   ...rest
 }: IrisCommandPaletteProps): React.ReactElement | null {
@@ -79,6 +97,42 @@ export function IrisCommandPalette({
     })
     return out
   }, [groupedFlat])
+
+  // Flat → enabled-index map. Replaces the previous O(n²) `findIndex` per
+  // rendered row (the virtual path also needs it per windowed row).
+  const enabledIdxByFlat = React.useMemo(() => {
+    const m = new Map<number, number>()
+    itemRows.forEach((r, idx) => m.set(r.flat, idx))
+    return m
+  }, [itemRows])
+
+  // Per-kind row height, memoized on the filtered rows so its identity changes
+  // only when the filter result changes (no remeasure churn per keystroke).
+  const rowHeight = React.useCallback(
+    (flat: number) =>
+      groupedFlat[flat]?.kind === 'header' ? COMMAND_HEADER_HEIGHT : COMMAND_ITEM_HEIGHT,
+    [groupedFlat],
+  )
+
+  // Reproduces today's index-based header keys (`g-${label}-${i}`) exactly —
+  // a different formula would remount rows on every filter keystroke. Feeds
+  // both the virtualizer's keyed cache and React reconciliation.
+  const rowKey = React.useCallback(
+    (row: Row, flat: number) => (row.kind === 'header' ? `g-${row.label}-${flat}` : row.item.id),
+    [],
+  )
+
+  const vsRef = React.useRef<IrisVirtualScrollHandle | null>(null)
+
+  // Scroll the active row into view whenever navigation moves it — arrow
+  // keys, wrap-around, query reset, hover — one effect covers every mutation
+  // path. Core clamps to the scrollable range, so out-of-range targets
+  // (list shrinks below the active row) are safe no-ops.
+  React.useLayoutEffect(() => {
+    if (!virtual) return
+    const target = itemRows[activeIndex]
+    if (target) vsRef.current?.scrollToIndex(target.flat)
+  }, [virtual, activeIndex, itemRows])
 
   // Reset filter + active row whenever (re)opened.
   React.useEffect(() => {
@@ -180,7 +234,7 @@ export function IrisCommandPalette({
           color: 'var(--iris-foreground)',
           border: '1px solid var(--iris-border)',
           borderRadius: 'var(--iris-radius-lg, 8px)',
-          boxShadow: '0 20px 40px -12px rgba(0,0,0,0.25)',
+          boxShadow: 'var(--iris-shadow-xl)',
           overflow: 'hidden',
           ...style,
         }}
@@ -195,11 +249,11 @@ export function IrisCommandPalette({
             onChange={(e) => setQuery(e.target.value)}
             style={{
               width: '100%',
-              padding: '8px 10px',
+              padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              fontSize: 16,
+              fontSize: 'var(--iris-font-size-lg, 16px)',
               fontFamily: 'inherit',
               color: 'inherit',
             }}
@@ -209,92 +263,42 @@ export function IrisCommandPalette({
           role="listbox"
           aria-label={t('commandPalette.commands')}
           data-iris-command-palette-list=""
-          style={{ listStyle: 'none', margin: 0, padding: 4, overflow: 'auto', flex: 1 }}
+          style={{
+            listStyle: 'none',
+            margin: 0,
+            padding: 4,
+            // Virtual: the inner scroll root is the scroller — flipping this
+            // off prevents a double scrollbar. Plain: unchanged.
+            overflow: virtual ? 'hidden' : 'auto',
+            flex: 1,
+          }}
         >
           {groupedFlat.length === 0 ? (
             <li
               data-iris-command-palette-empty=""
-              style={{ padding: 20, textAlign: 'center', color: 'var(--iris-muted)', fontSize: 13 }}
+              style={{
+                padding: 20,
+                textAlign: 'center',
+                color: 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-sm, 13px)',
+              }}
             >
               {resolvedEmptyText}
             </li>
+          ) : virtual ? (
+            <IrisVirtualScroll
+              ref={vsRef}
+              items={groupedFlat}
+              itemHeight={rowHeight}
+              height="100%"
+              buffer={COMMAND_VIRTUAL_BUFFER}
+              keyOf={rowKey}
+              renderItem={(row, flat) => renderRow(row, flat, undefined)}
+            />
           ) : (
-            groupedFlat.map((row, i) => {
-              if (row.kind === 'header') {
-                return (
-                  <li
-                    key={`g-${row.label}-${i}`}
-                    data-iris-command-palette-group=""
-                    style={{
-                      padding: '6px 12px',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                      color: 'var(--iris-muted)',
-                    }}
-                  >
-                    {row.label}
-                  </li>
-                )
-              }
-              const item = row.item
-              const enabledIdx = itemRows.findIndex((r) => r.flat === i)
-              const isActive = enabledIdx === activeIndex
-              return (
-                <li
-                  key={item.id}
-                  role="option"
-                  aria-selected={isActive ? 'true' : 'false'}
-                  aria-disabled={item.disabled ? 'true' : undefined}
-                  data-iris-command-palette-item={item.id}
-                  data-state={isActive ? 'active' : item.disabled ? 'disabled' : 'idle'}
-                  onClick={() => {
-                    if (item.disabled) return
-                    setActiveIndex(enabledIdx)
-                    runItem(item)
-                  }}
-                  onMouseEnter={() => {
-                    if (!item.disabled) setActiveIndex(enabledIdx)
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '8px 12px',
-                    borderRadius: 'var(--iris-radius-sm, 4px)',
-                    cursor: item.disabled ? 'not-allowed' : 'pointer',
-                    opacity: item.disabled ? 0.5 : 1,
-                    background: isActive ? 'var(--iris-surface-hover)' : 'transparent',
-                    color: 'inherit',
-                    fontSize: 14,
-                  }}
-                >
-                  {item.icon ? (
-                    <span aria-hidden="true" style={{ width: 20, textAlign: 'center' }}>
-                      {item.icon}
-                    </span>
-                  ) : null}
-                  <span style={{ flex: 1, minWidth: 0 }}>{item.label}</span>
-                  {item.shortcut ? (
-                    <span
-                      data-iris-command-palette-shortcut=""
-                      style={{
-                        fontSize: 11,
-                        padding: '2px 6px',
-                        background: 'var(--iris-background)',
-                        border: '1px solid var(--iris-border)',
-                        borderRadius: 'var(--iris-radius-sm, 4px)',
-                        color: 'var(--iris-muted)',
-                        fontFamily: 'monospace',
-                      }}
-                    >
-                      {item.shortcut}
-                    </span>
-                  ) : null}
-                </li>
-              )
-            })
+            groupedFlat.map((row, i) =>
+              renderRow(row, i, row.kind === 'header' ? `g-${row.label}-${i}` : row.item.id),
+            )
           )}
         </ul>
       </div>
@@ -302,4 +306,84 @@ export function IrisCommandPalette({
   )
 
   return createPortal(node, document.body)
+
+  // Shared row renderer — same li markup for the plain map and the virtual
+  // window. In virtual mode the key lives on IrisVirtualScroll's wrapper div
+  // (fed from `rowKey`); here it is passed through untouched.
+  function renderRow(row: Row, flat: number, key: string | number | undefined): React.ReactElement {
+    if (row.kind === 'header') {
+      return (
+        <li
+          key={key}
+          data-iris-command-palette-group=""
+          style={{
+            padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+            fontSize: 'var(--iris-font-size-xs, 12px)',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: 'var(--iris-letter-spacing-wide, 0.04em)',
+            color: 'var(--iris-muted)',
+          }}
+        >
+          {row.label}
+        </li>
+      )
+    }
+    const item = row.item
+    const enabledIdx = enabledIdxByFlat.get(flat) ?? -1
+    const isActive = enabledIdx === activeIndex
+    return (
+      <li
+        key={key}
+        role="option"
+        aria-selected={isActive ? 'true' : 'false'}
+        aria-disabled={item.disabled ? 'true' : undefined}
+        data-iris-command-palette-item={item.id}
+        data-state={isActive ? 'active' : item.disabled ? 'disabled' : 'idle'}
+        onClick={() => {
+          if (item.disabled) return
+          setActiveIndex(enabledIdx)
+          runItem(item)
+        }}
+        onMouseEnter={() => {
+          if (!item.disabled) setActiveIndex(enabledIdx)
+        }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--iris-space-sm, 12px)',
+          padding: '8px 12px',
+          borderRadius: 'var(--iris-radius-sm, 4px)',
+          cursor: item.disabled ? 'not-allowed' : 'pointer',
+          opacity: item.disabled ? 0.5 : 1,
+          background: isActive ? 'var(--iris-surface-hover)' : 'transparent',
+          color: 'inherit',
+          fontSize: 'var(--iris-font-size-md, 14px)',
+        }}
+      >
+        {item.icon ? (
+          <span aria-hidden="true" style={{ width: 20, textAlign: 'center' }}>
+            {item.icon}
+          </span>
+        ) : null}
+        <span style={{ flex: 1, minWidth: 0 }}>{item.label}</span>
+        {item.shortcut ? (
+          <span
+            data-iris-command-palette-shortcut=""
+            style={{
+              fontSize: 'var(--iris-font-size-xs, 12px)',
+              padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+              background: 'var(--iris-background)',
+              border: '1px solid var(--iris-border)',
+              borderRadius: 'var(--iris-radius-sm, 4px)',
+              color: 'var(--iris-muted)',
+              fontFamily: 'monospace',
+            }}
+          >
+            {item.shortcut}
+          </span>
+        ) : null}
+      </li>
+    )
+  }
 }

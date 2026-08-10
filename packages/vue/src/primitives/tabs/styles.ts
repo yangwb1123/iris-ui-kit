@@ -3,7 +3,7 @@ const STYLE_ID = 'iris-tabs-styles'
 const CSS = `
 :where(.iris-tabs-list) {
   display: flex;
-  gap: 2px;
+  gap: var(--iris-space-xxs, 4px);
 }
 :where(.iris-tabs-list[data-orientation="horizontal"]) {
   flex-direction: row;
@@ -14,8 +14,8 @@ const CSS = `
   border-inline-end: 1px solid var(--iris-border);
 }
 :where(.iris-tabs-trigger) {
-  padding: 8px var(--iris-padding-md);
-  font-size: 14px;
+  padding: var(--iris-space-xs, 8px) var(--iris-padding-md);
+  font-size: var(--iris-font-size-md, 14px);
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
@@ -27,11 +27,11 @@ const CSS = `
   transition: color 120ms ease, border-color 120ms ease;
 }
 :where(.iris-tabs-trigger[data-orientation="horizontal"]) {
-  margin-bottom: -1px;
+  margin-bottom: calc(-1px);
   border-bottom: 2px solid transparent;
 }
 :where(.iris-tabs-trigger[data-orientation="vertical"]) {
-  margin-inline-end: -1px;
+  margin-inline-end: calc(-1px);
   border-inline-end: 2px solid transparent;
 }
 :where(.iris-tabs-trigger[data-state="active"]) {

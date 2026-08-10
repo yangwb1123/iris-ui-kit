@@ -149,7 +149,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
         padding: 'var(--iris-padding-sm, 4px)',
         display: 'flex',
         'flex-direction': 'column',
-        gap: '2px',
+        gap: 'var(--iris-space-xxs, 4px)',
         outline: 'none',
         ...((local.style as JSX.CSSProperties) ?? {}),
       }}
@@ -167,7 +167,7 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
               padding: '12px',
               'text-align': 'center',
               color: 'var(--iris-muted)',
-              'font-size': '14px',
+              'font-size': 'var(--iris-font-size-md, 14px)',
             }}
           >
             {state() === 'error'
@@ -207,24 +207,42 @@ export function IrisList<T = unknown>(props: IrisListProps<T>): JSX.Element {
                   display: 'flex',
                   'align-items': 'center',
                   gap: 'var(--iris-gap-sm, 6px)',
-                  padding: '6px var(--iris-padding-md, 12px)',
+                  padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
                   'border-radius': 'var(--iris-radius-sm, 4px)',
                   cursor: item.disabled ? 'not-allowed' : 'pointer',
                   opacity: item.disabled ? '0.5' : '1',
-                  'font-size': '14px',
+                  'font-size': 'var(--iris-font-size-md, 14px)',
                   background: selected()
-                    ? 'var(--iris-primary)'
+                    ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
                     : hoveredIndex() === i
                       ? 'var(--iris-surface-hover)'
                       : active()
                         ? 'var(--iris-surface-hover)'
                         : 'transparent',
-                  color: selected() ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
+                  color: 'var(--iris-foreground)',
+                  'font-weight': selected() ? '600' : '400',
                   outline: 'none',
                 }}
               >
-                <Show when={local.renderItem} fallback={<>{item.label ?? String(item.value)}</>}>
-                  {local.renderItem!(item, selected())}
+                <span style={{ flex: '1', 'min-width': '0' }}>
+                  <Show when={local.renderItem} fallback={<>{item.label ?? String(item.value)}</>}>
+                    {local.renderItem!(item, selected())}
+                  </Show>
+                </span>
+                <Show when={selected()}>
+                  <svg
+                    aria-hidden="true"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--iris-primary)"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
                 </Show>
               </li>
             )

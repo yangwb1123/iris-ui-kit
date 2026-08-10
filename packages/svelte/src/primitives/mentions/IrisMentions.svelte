@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { generateId } from '@iris-ui-kit/core'
+  import {
+    createVirtualizer,
+    generateId,
+    type Virtualizer,
+    type VirtualizerState,
+  } from '@iris-ui-kit/core'
 
   export interface IrisMentionOption {
     label: string
@@ -22,6 +27,13 @@
     rows?: number
     id?: string
     onValueChange?: (value: string) => void
+    /**
+     * Opt-in windowed rendering of the suggestion listbox via the core
+     * virtualizer. When true, only the visible window (+ buffer) of options is
+     * rendered; keyboard navigation scrolls the active option into view and
+     * every keystroke re-anchors the window to the top. Default false.
+     */
+    virtual?: boolean
     style?: string
     class?: string
   }
@@ -35,6 +47,7 @@
     disabled = false,
     invalid = false,
     rows = 3,
+    virtual = false,
     id,
     onValueChange,
     style,
@@ -70,14 +83,95 @@
     return null
   }
 
-  const filtered = $derived(() => {
+  const filtered = $derived.by(() => {
     if (!active) return []
     const q = active.query.toLowerCase()
     return options.filter((o) => o.label.toLowerCase().includes(q))
   })
 
-  const open = $derived(active !== null && filtered().length > 0)
+  const open = $derived(active !== null && filtered.length > 0)
   const activeId = $derived(open ? `${baseId}-opt-${activeIndex}` : undefined)
+
+  /** Listbox maxHeight — the virtualizer's viewport (px). */
+  const LISTBOX_MAX_HEIGHT = 200
+  /** Fixed per-option row height (px) — estimate, never measured. */
+  const ROW_HEIGHT = 32
+
+  // Virtualized listbox (opt-in): one controller per mount, built lazily in
+  // the first effect; reactive inputs are read live through closures so the
+  // instance (scroll offset + keyed cache) survives re-renders — the
+  // IrisCombobox precedent.
+  let virtualizer: Virtualizer | null = $state(null)
+  let unsub: (() => void) | null = null
+  let vstate = $state<VirtualizerState>({
+    items: [],
+    offsetBefore: 0,
+    totalSize: 0,
+    startIndex: 0,
+    endIndex: -1,
+  })
+  let listboxEl = $state<HTMLUListElement | undefined>(undefined)
+  // Change detectors: a text change means a keystroke (activeIndex resets to
+  // 0 — re-anchor the window); an activeIndex change means keyboard/mouse
+  // navigation (keep the option visible). Wheel scrolling changes neither.
+  let lastText: string | undefined
+  let lastActiveIndex = 0
+
+  // Single sync covering every listbox mutation: count push + per-keystroke
+  // re-anchor to 0, shrink clamp (external options swaps) and active-option
+  // visibility (keyboard arrows / mouse hover).
+  $effect(() => {
+    if (!virtual) return
+    if (!virtualizer) {
+      virtualizer = createVirtualizer({
+        count: 0,
+        estimateSize: () => ROW_HEIGHT,
+        // `filtered` is a cached $derived.by value — O(1) per lookup. (The
+        // function form would re-run the 10k filter on every one of the
+        // virtualizer's per-item key lookups during tree rebuilds.)
+        getItemKey: (i) => filtered[i]?.value ?? i,
+        viewportSize: LISTBOX_MAX_HEIGHT,
+        buffer: 4,
+      })
+      vstate = virtualizer.getState()
+      unsub = virtualizer.subscribe((s) => {
+        vstate = s
+      })
+    }
+    const list = filtered
+    virtualizer.setCount(list.length)
+    // Read up-front so `activeIndex` is tracked by this effect in EVERY run —
+    // the re-anchor branch below returns early, and Svelte rebuilds the
+    // effect's dependency set per run (an untracked activeIndex would freeze
+    // keyboard navigation until the next text change).
+    const idx = activeIndex
+    if (text !== lastText) {
+      lastText = text
+      lastActiveIndex = 0
+      virtualizer.setScroll(0)
+      if (listboxEl) listboxEl.scrollTop = 0
+      return
+    }
+    const el = listboxEl
+    if (el) {
+      const max = Math.max(0, virtualizer.totalSize() - LISTBOX_MAX_HEIGHT)
+      if (el.scrollTop > max) el.scrollTop = max
+    }
+    if (idx !== lastActiveIndex) {
+      lastActiveIndex = idx
+      if (idx >= 0 && idx < list.length && el) {
+        const top = el.scrollTop
+        const start = idx * ROW_HEIGHT
+        if (start < top || start + ROW_HEIGHT > top + LISTBOX_MAX_HEIGHT) {
+          el.scrollTop = virtualizer.scrollToIndex(idx, start < top ? 'start' : 'end')
+        }
+      }
+    }
+  })
+  $effect(() => () => {
+    unsub?.()
+    unsub = null
+  })
 
   function onInput(e: Event) {
     const ta = e.target as HTMLTextAreaElement
@@ -91,7 +185,7 @@
 
   function onKeyDown(e: KeyboardEvent) {
     if (!open) return
-    const list = filtered()
+    const list = filtered
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
@@ -155,7 +249,7 @@
     style:box-sizing="border-box"
     style:width="100%"
     style:padding="8px 12px"
-    style:font-size="14px"
+    style:font-size="var(--iris-font-size-md, 14px)"
     style:font-family="inherit"
     style:color="var(--iris-foreground)"
     style:background={invalid ? 'var(--iris-background)' : 'var(--iris-background)'}
@@ -169,8 +263,12 @@
   {#if open}
     <ul
       id={listboxId}
+      bind:this={listboxEl}
       data-iris-mentions-list
       role="listbox"
+      onscroll={(e) => {
+        virtualizer?.setScroll(e.currentTarget.scrollTop)
+      }}
       style:position="absolute"
       style:left="0"
       style:top="100%"
@@ -187,33 +285,85 @@
       style:background="var(--iris-background)"
       style:border="1px solid var(--iris-border)"
       style:border-radius="var(--iris-radius-md, 6px)"
-      style:box-shadow="0 8px 24px rgba(0,0,0,0.12)"
+      style:box-shadow="var(--iris-shadow-lg)"
     >
-      {#each filtered() as opt, i (opt.value)}
+      {#if virtual && virtualizer}
+        {@const list = filtered}
         <li
-          id={`${baseId}-opt-${i}`}
-          role="option"
-          aria-selected={i === activeIndex}
-          data-iris-mentions-item
-          data-state={i === activeIndex ? 'active' : 'idle'}
-          onmousedown={(event) => event.preventDefault()}
-          onclick={() => selectOption(opt)}
-          onkeydown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault()
-              selectOption(opt)
-            }
-          }}
-          style:padding="6px 12px"
-          style:cursor="pointer"
-          style:font-size="14px"
-          style:border-radius="var(--iris-radius-sm, 4px)"
-          style:background={i === activeIndex ? 'var(--iris-surface-hover)' : 'transparent'}
-          style:color="var(--iris-foreground)"
-        >
-          {opt.label}
-        </li>
-      {/each}
+          role="presentation"
+          aria-hidden="true"
+          data-iris-mentions-spacer
+          data-iris-mentions-spacer-type="top"
+          style="height: {vstate.offsetBefore}px"
+        ></li>
+        {#each vstate.items as item (item.key)}
+          {@const opt = list[item.index]}
+          {#if opt}
+            <li
+              id={`${baseId}-opt-${item.index}`}
+              role="option"
+              aria-selected={item.index === activeIndex ? 'true' : 'false'}
+              aria-setsize={list.length}
+              aria-posinset={item.index + 1}
+              data-iris-mentions-item
+              data-state={item.index === activeIndex ? 'active' : 'idle'}
+              onmousedown={(event) => event.preventDefault()}
+              onclick={() => selectOption(opt)}
+              onkeydown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  selectOption(opt)
+                }
+              }}
+              style:padding="var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)"
+              style:cursor="pointer"
+              style:font-size="var(--iris-font-size-md, 14px)"
+              style:border-radius="var(--iris-radius-sm, 4px)"
+              style:background={item.index === activeIndex
+                ? 'var(--iris-surface-hover)'
+                : 'transparent'}
+              style:color="var(--iris-foreground)"
+            >
+              {opt.label}
+            </li>
+          {/if}
+        {/each}
+        <li
+          role="presentation"
+          aria-hidden="true"
+          data-iris-mentions-spacer
+          data-iris-mentions-spacer-type="bottom"
+          style="height: {vstate.totalSize -
+            vstate.offsetBefore -
+            vstate.items.length * ROW_HEIGHT}px"
+        ></li>
+      {:else}
+        {#each filtered as opt, i (opt.value)}
+          <li
+            id={`${baseId}-opt-${i}`}
+            role="option"
+            aria-selected={i === activeIndex}
+            data-iris-mentions-item
+            data-state={i === activeIndex ? 'active' : 'idle'}
+            onmousedown={(event) => event.preventDefault()}
+            onclick={() => selectOption(opt)}
+            onkeydown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                selectOption(opt)
+              }
+            }}
+            style:padding="var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)"
+            style:cursor="pointer"
+            style:font-size="var(--iris-font-size-md, 14px)"
+            style:border-radius="var(--iris-radius-sm, 4px)"
+            style:background={i === activeIndex ? 'var(--iris-surface-hover)' : 'transparent'}
+            style:color="var(--iris-foreground)"
+          >
+            {opt.label}
+          </li>
+        {/each}
+      {/if}
     </ul>
   {/if}
 </div>

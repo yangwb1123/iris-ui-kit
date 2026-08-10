@@ -17,9 +17,18 @@ import { installButtonStyles } from './styles'
 type StyleMap = Record<string, string>
 
 const SIZE_STYLES: Record<IrisButtonSize, StyleMap> = {
-  sm: { padding: 'var(--iris-padding-sm) var(--iris-padding-md)', fontSize: '12px' },
-  md: { padding: 'var(--iris-padding-sm) var(--iris-padding-lg)', fontSize: '14px' },
-  lg: { padding: 'var(--iris-padding-md) var(--iris-padding-lg)', fontSize: '16px' },
+  sm: {
+    padding: 'var(--iris-padding-sm) var(--iris-padding-md)',
+    fontSize: 'var(--iris-font-size-xs, 12px)',
+  },
+  md: {
+    padding: 'var(--iris-padding-sm) var(--iris-padding-lg)',
+    fontSize: 'var(--iris-font-size-md, 14px)',
+  },
+  lg: {
+    padding: 'var(--iris-padding-md) var(--iris-padding-lg)',
+    fontSize: 'var(--iris-font-size-lg, 16px)',
+  },
 }
 
 const VARIANT_STYLES: Record<IrisButtonVariant, StyleMap> = {
@@ -43,6 +52,11 @@ const VARIANT_STYLES: Record<IrisButtonVariant, StyleMap> = {
     color: 'var(--iris-primary)',
     border: '1px solid transparent',
     textDecoration: 'none',
+  },
+  danger: {
+    background: 'var(--iris-danger)',
+    color: 'var(--iris-on-color, #ffffff)',
+    border: '1px solid var(--iris-danger)',
   },
 }
 

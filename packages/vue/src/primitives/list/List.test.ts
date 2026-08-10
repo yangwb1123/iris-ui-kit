@@ -156,7 +156,7 @@ describe('IrisList data states', () => {
     const node = w.find('[data-iris-list-state]')
     expect(node.exists()).toBe(true)
     expect(node.attributes('data-iris-list-state')).toBe('empty')
-    expect(node.text()).toBe('No items')
+    expect(node.text()).toBe('No items to display')
   })
 
   it('shows loading over empty, with aria-busy on the listbox', () => {

@@ -61,7 +61,7 @@
   }
 
   const VISUAL =
-    'background: var(--iris-surface); color: var(--iris-foreground); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-md, 8px); box-shadow: 0 8px 24px -8px rgba(0,0,0,0.16); min-width: 160px; outline: none; z-index: 1000'
+    'background: var(--iris-surface-floating); animation: var(--iris-anim-popover); color: var(--iris-foreground); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-md, 8px); box-shadow: var(--iris-shadow-lg); min-width: 160px; outline: none; z-index: var(--iris-z-popover, 1000)'
   const mergedStyle = $derived(`${floating.floatingStyles}; ${VISUAL}${style ? '; ' + style : ''}`)
 </script>
 

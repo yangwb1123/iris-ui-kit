@@ -5,9 +5,21 @@
 
   const SIZE_MAP: Record<IrisInputSize, { padding: string; fontSize: string; minHeight: string }> =
     {
-      sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
-      md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
-      lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
+      sm: {
+        padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+        fontSize: 'var(--iris-font-size-xs, 12px)',
+        minHeight: '28px',
+      },
+      md: {
+        padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+        fontSize: 'var(--iris-font-size-md, 14px)',
+        minHeight: '34px',
+      },
+      lg: {
+        padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md, 12px)',
+        fontSize: 'var(--iris-font-size-lg, 16px)',
+        minHeight: '40px',
+      },
     }
 
   let {
@@ -39,7 +51,7 @@
     styleToString({
       display: 'inline-flex',
       'align-items': 'center',
-      gap: '6px',
+      gap: 'var(--iris-space-xs, 8px)',
       background: 'var(--iris-background)',
       color: 'var(--iris-foreground)',
       border: `1px solid ${borderColor}`,
@@ -48,7 +60,7 @@
       opacity: rest.disabled ? 0.6 : 1,
       transition: 'border-color 120ms ease, box-shadow 120ms ease',
       'box-shadow': focused
-        ? `0 0 0 3px ${isInvalid ? 'rgba(239, 68, 68, 0.18)' : 'rgba(99, 102, 241, 0.18)'}`
+        ? `0 0 0 3px ${isInvalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
         : 'none',
       padding: sizeStyle.padding,
       'min-height': sizeStyle.minHeight,

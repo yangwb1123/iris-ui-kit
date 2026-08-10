@@ -30,6 +30,11 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    */
   validate?: (value: unknown, row: Row) => string | null | undefined
   /**
+   * Declarative edit rules (vxe-grid editRules parity) — required/min/max/
+   * type/pattern/validator (sync or async). Runs before `validate`.
+   */
+  editRules?: import('@iris-ui-kit/core').EditRule<Row>[]
+  /**
    * Aggregate this column in the table's summary/footer row. Any column with a
    * `summary` op makes the footer row appear; columns without one render blank.
    */
@@ -39,6 +44,12 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    * rows it was computed over; defaults to the number's string form.
    */
   renderSummary?: (value: number, rows: Row[]) => unknown
+  /**
+   * Custom cell renderer (framework-native Svelte snippet). Receives the raw
+   * cell value and the row; return a snippet rendered in place of the plain
+   * value. Parity with React `render` / Vue `cell.{key}` slots.
+   */
+  render?: (value: unknown, row: Row) => unknown
   /**
    * Child columns. A column WITH children is a header GROUP (not a data column);
    * its leaf descendants render the body. Additive: when absent the table is

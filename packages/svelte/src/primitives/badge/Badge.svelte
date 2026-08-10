@@ -21,14 +21,23 @@
       'font-weight': 500,
       'line-height': 1,
       'white-space': 'nowrap',
-      'font-size': size === 'sm' ? '11px' : '12px',
+      'font-size': 'var(--iris-font-size-xs, 12px)',
       padding: size === 'sm' ? '2px 6px' : '3px 8px',
     }
     if (variant === 'solid')
       return styleToString({
         ...base,
         background: v,
-        color: 'var(--iris-primary-foreground, #fff)',
+        color:
+          tone === 'warning'
+            ? 'var(--iris-warning-foreground, #451a03)'
+            : tone === 'primary'
+              ? 'var(--iris-primary-foreground, #fff)'
+              : tone === 'success'
+                ? 'var(--iris-success-foreground, #0f172a)'
+                : tone === 'danger'
+                  ? 'var(--iris-danger-foreground, #0f172a)'
+                  : 'var(--iris-foreground, #0f172a)',
         border: '1px solid transparent',
       })
     if (variant === 'outline')

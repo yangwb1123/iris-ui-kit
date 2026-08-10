@@ -165,7 +165,7 @@
       padding: 'var(--iris-padding-sm)',
       display: 'flex',
       'flex-direction': 'column',
-      gap: '2px',
+      gap: 'var(--iris-space-xxs, 4px)',
       outline: 'none',
     }),
   )
@@ -180,19 +180,20 @@
       display: 'flex',
       'align-items': 'center',
       gap: 'var(--iris-gap-sm)',
-      padding: '6px var(--iris-padding-md)',
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md)',
       'border-radius': 'var(--iris-radius-sm)',
       cursor: disabled ? 'not-allowed' : 'pointer',
       opacity: disabled ? '0.5' : '1',
-      'font-size': '14px',
+      'font-size': 'var(--iris-font-size-md, 14px)',
       background: selected
-        ? 'var(--iris-primary)'
+        ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
         : hovered
           ? 'var(--iris-surface-hover)'
           : active
             ? 'var(--iris-surface-hover)'
             : 'transparent',
-      color: selected ? 'var(--iris-primary-foreground)' : 'var(--iris-foreground)',
+      color: 'var(--iris-foreground)',
+      'font-weight': selected ? '600' : '400',
       outline: 'none',
     })
   }
@@ -214,7 +215,7 @@
       role="presentation"
       data-iris-list-state={dataState}
       aria-live="polite"
-      style="list-style: none; padding: 12px; text-align: center; color: var(--iris-muted); font-size: 14px"
+      style="list-style: none; padding: 12px; text-align: center; color: var(--iris-muted); font-size: var(--iris-font-size-md, 14px)"
     >
       {#if dataState === 'error'}
         {#if errorState}{@render errorState()}{:else}{t('list.error')}{/if}
@@ -255,8 +256,25 @@
         }}
         style={itemStyle(selected, active, hoveredIndex === index, item.disabled)}
       >
-        {#if renderItem}{@render renderItem(item, { selected, active, index })}
-        {:else}{item.label ?? String(item.value)}{/if}
+        <span style="flex: 1; min-width: 0">
+          {#if renderItem}{@render renderItem(item, { selected, active, index })}
+          {:else}{item.label ?? String(item.value)}{/if}
+        </span>
+        {#if selected}
+          <svg
+            aria-hidden="true"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--iris-primary)"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        {/if}
       </li>
     {/each}
   {/if}

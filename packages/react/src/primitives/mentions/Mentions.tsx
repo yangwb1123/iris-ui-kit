@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { createVirtualizer, type Virtualizer } from '@iris-ui-kit/core'
 
 export interface IrisMentionOption {
   label: string
@@ -16,6 +17,13 @@ export interface IrisMentionsProps {
   disabled?: boolean
   invalid?: boolean
   rows?: number
+  /**
+   * Opt-in windowed rendering of the suggestion listbox via the core
+   * virtualizer. When true, only the visible window (+ buffer) of options is
+   * rendered; keyboard navigation scrolls the active option into view and
+   * every keystroke re-anchors the window to the top. Default false.
+   */
+  virtual?: boolean
   /** id forwarded to the textarea. Set by `IrisFormField`. */
   id?: string
   ariaDescribedby?: string
@@ -27,6 +35,11 @@ interface Active {
   start: number
   query: string
 }
+
+/** Listbox maxHeight — the virtualizer's viewport (px). */
+const LISTBOX_MAX_HEIGHT = 200
+/** Fixed per-option row height (px) — mirrors the option padding + font size (estimate, never measured). */
+const ROW_HEIGHT = 32
 
 /** Find an active mention token (prefix at start/after-space, no inner spaces). */
 function detect(text: string, caret: number, prefix: string): Active | null {
@@ -60,6 +73,7 @@ export function IrisMentions({
   disabled = false,
   invalid = false,
   rows = 3,
+  virtual = false,
   id,
   ariaDescribedby,
   style,
@@ -83,6 +97,67 @@ export function IrisMentions({
     ? options.filter((o) => o.label.toLowerCase().includes(active.query.toLowerCase()))
     : []
   const open = active !== null && filtered.length > 0
+
+  // Virtualized listbox (opt-in): one controller per mount, reactive inputs
+  // read through refs so the instance (scroll offset + keyed cache) survives
+  // renders — the same instance-preservation pattern as IrisCombobox.
+  const filteredRef = React.useRef(filtered)
+  filteredRef.current = filtered
+  const virtualizer = React.useMemo<Virtualizer>(
+    () =>
+      createVirtualizer({
+        count: 0,
+        estimateSize: () => ROW_HEIGHT,
+        getItemKey: (i) => filteredRef.current[i]?.value ?? i,
+        viewportSize: LISTBOX_MAX_HEIGHT,
+        buffer: 4,
+      }),
+    [],
+  )
+  const vstate = React.useSyncExternalStore(virtualizer.subscribe, virtualizer.getState)
+  const [listScrollTop, setListScrollTop] = React.useState(0)
+  const listboxRef = React.useRef<HTMLUListElement | null>(null)
+  // Change detectors for the layout-phase sync (below): a text change means a
+  // keystroke (activeIndex resets to 0 — re-anchor the window to the top); an
+  // activeIndex change means keyboard/mouse navigation (keep it visible).
+  const lastTextRef = React.useRef<string | undefined>(undefined)
+  const lastActiveIndexRef = React.useRef(0)
+
+  // Single layout-phase sync covering every listbox mutation: count push +
+  // per-keystroke re-anchor to 0, shrink clamp (external `options` swaps), and
+  // active-option visibility (keyboard arrows / mouse hover). Runs pre-paint,
+  // never during render; wheel scrolling moves the window freely because it
+  // does not change `activeIndex`.
+  React.useLayoutEffect(() => {
+    if (!virtual || !open) return
+    const el = listboxRef.current
+    virtualizer.setCount(filtered.length)
+    if (lastTextRef.current !== text) {
+      lastTextRef.current = text
+      lastActiveIndexRef.current = 0
+      virtualizer.setScroll(0)
+      if (el) el.scrollTop = 0
+      setListScrollTop(0)
+      return
+    }
+    virtualizer.setScroll(listScrollTop)
+    if (el) {
+      const max = Math.max(0, virtualizer.totalSize() - LISTBOX_MAX_HEIGHT)
+      if (el.scrollTop > max) el.scrollTop = max
+    }
+    if (activeIndex !== lastActiveIndexRef.current) {
+      lastActiveIndexRef.current = activeIndex
+      if (activeIndex >= 0 && activeIndex < filtered.length && el) {
+        const top = el.scrollTop
+        const start = activeIndex * ROW_HEIGHT
+        if (start < top || start + ROW_HEIGHT > top + LISTBOX_MAX_HEIGHT) {
+          const target = virtualizer.scrollToIndex(activeIndex, start < top ? 'start' : 'end')
+          el.scrollTop = target
+          setListScrollTop(target)
+        }
+      }
+    }
+  }, [virtual, open, text, filtered.length, activeIndex, listScrollTop])
 
   const setText = (next: string) => {
     if (!isControlled) setInternal(next)
@@ -172,7 +247,7 @@ export function IrisMentions({
           boxSizing: 'border-box',
           width: '100%',
           padding: '8px 12px',
-          fontSize: 14,
+          fontSize: 'var(--iris-font-size-md, 14px)',
           fontFamily: 'inherit',
           color: 'var(--iris-foreground)',
           background: 'var(--iris-background)',
@@ -185,8 +260,13 @@ export function IrisMentions({
       {open ? (
         <ul
           id={listboxId}
+          ref={listboxRef}
           role="listbox"
           data-iris-mentions-listbox=""
+          onScroll={(e) => {
+            if (!virtual) return
+            setListScrollTop(e.currentTarget.scrollTop)
+          }}
           style={{
             position: 'absolute',
             insetInlineStart: 0,
@@ -202,34 +282,86 @@ export function IrisMentions({
             background: 'var(--iris-background)',
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-md, 6px)',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            boxShadow: 'var(--iris-shadow-lg)',
           }}
         >
-          {filtered.map((opt, i) => (
-            <li
-              key={opt.value}
-              id={`${reactId}-opt-${i}`}
-              role="option"
-              aria-selected={i === activeIndex}
-              data-iris-mentions-option=""
-              data-value={opt.value}
-              onMouseDown={(e) => e.preventDefault()}
-              onMouseEnter={() => setActiveIndex(i)}
-              onClick={() => insert(opt)}
-              style={{
-                padding: '6px 10px',
-                fontSize: 14,
-                borderRadius: 'var(--iris-radius-sm, 4px)',
-                cursor: 'pointer',
-                background:
-                  i === activeIndex
-                    ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-                    : 'transparent',
-              }}
-            >
-              {opt.label}
-            </li>
-          ))}
+          {virtual ? (
+            <>
+              <li
+                role="presentation"
+                aria-hidden="true"
+                data-iris-mentions-spacer=""
+                data-iris-mentions-spacer-type="top"
+                style={{ height: vstate.offsetBefore }}
+              />
+              {vstate.items.map((item) => {
+                const opt = filtered[item.index]
+                if (!opt) return null
+                const isActive = item.index === activeIndex
+                return (
+                  <li
+                    key={opt.value}
+                    id={`${reactId}-opt-${item.index}`}
+                    role="option"
+                    aria-selected={isActive}
+                    aria-setsize={filtered.length}
+                    aria-posinset={item.index + 1}
+                    data-iris-mentions-option=""
+                    data-value={opt.value}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseEnter={() => setActiveIndex(item.index)}
+                    onClick={() => insert(opt)}
+                    style={{
+                      padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+                      fontSize: 'var(--iris-font-size-md, 14px)',
+                      borderRadius: 'var(--iris-radius-sm, 4px)',
+                      cursor: 'pointer',
+                      background: isActive
+                        ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+                        : 'transparent',
+                    }}
+                  >
+                    {opt.label}
+                  </li>
+                )
+              })}
+              <li
+                role="presentation"
+                aria-hidden="true"
+                data-iris-mentions-spacer=""
+                data-iris-mentions-spacer-type="bottom"
+                style={{
+                  height: vstate.totalSize - vstate.offsetBefore - vstate.items.length * ROW_HEIGHT,
+                }}
+              />
+            </>
+          ) : (
+            filtered.map((opt, i) => (
+              <li
+                key={opt.value}
+                id={`${reactId}-opt-${i}`}
+                role="option"
+                aria-selected={i === activeIndex}
+                data-iris-mentions-option=""
+                data-value={opt.value}
+                onMouseDown={(e) => e.preventDefault()}
+                onMouseEnter={() => setActiveIndex(i)}
+                onClick={() => insert(opt)}
+                style={{
+                  padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+                  fontSize: 'var(--iris-font-size-md, 14px)',
+                  borderRadius: 'var(--iris-radius-sm, 4px)',
+                  cursor: 'pointer',
+                  background:
+                    i === activeIndex
+                      ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+                      : 'transparent',
+                }}
+              >
+                {opt.label}
+              </li>
+            ))
+          )}
         </ul>
       ) : null}
     </div>

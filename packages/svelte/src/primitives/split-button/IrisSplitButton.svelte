@@ -44,9 +44,21 @@
     IrisSplitButtonSize,
     { padding: string; fontSize: string; height: string }
   > = {
-    sm: { padding: '4px 10px', fontSize: '12px', height: '28px' },
-    md: { padding: '6px 14px', fontSize: '14px', height: '34px' },
-    lg: { padding: '8px 18px', fontSize: '16px', height: '40px' },
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      height: '28px',
+    },
+    md: {
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-space-md, 16px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      height: '34px',
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-lg, 20px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      height: '40px',
+    },
   }
 
   const sz = $derived(SIZE_MAP[size])
@@ -55,7 +67,7 @@
     isPrimary
       ? {
           background: 'var(--iris-primary)',
-          color: '#fff',
+          color: 'var(--iris-primary-foreground, #fff)',
           border: '1px solid var(--iris-primary)',
         }
       : {
@@ -139,7 +151,7 @@
       onclick={handleChevronClick}
       style="background: {colors.background}; color: {colors.color}; border-inline-start: {isPrimary
         ? '1px solid rgba(255,255,255,0.3)'
-        : '1px solid var(--iris-border)'}; border-top: {colors.border}; border-right: {colors.border}; border-bottom: {colors.border}; padding: 0 8px; min-height: {sz.height}; font-size: 10px; border-start-end-radius: var(--iris-radius-md, 6px); border-end-end-radius: var(--iris-radius-md, 6px); cursor: {disabled
+        : '1px solid var(--iris-border)'}; border-top: {colors.border}; border-right: {colors.border}; border-bottom: {colors.border}; padding: 0 8px; min-height: {sz.height}; font-size: var(--iris-font-size-xs, 12px); border-start-end-radius: var(--iris-radius-md, 6px); border-end-end-radius: var(--iris-radius-md, 6px); cursor: {disabled
         ? 'not-allowed'
         : 'pointer'}; opacity: {disabled ? '0.6' : '1'}; display: inline-flex; align-items: center"
     >
@@ -163,7 +175,7 @@
             data-iris-split-button-item
             data-key={action.key}
             onclick={() => selectAction(action)}
-            style="box-sizing: border-box; width: 100%; border: 0; background: transparent; text-align: start; padding: 6px 10px; font-size: 14px; border-radius: var(--iris-radius-sm, 4px); cursor: {action.disabled
+            style="box-sizing: border-box; width: 100%; border: 0; background: transparent; text-align: start; padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); font-size: var(--iris-font-size-md, 14px); border-radius: var(--iris-radius-sm, 4px); cursor: {action.disabled
               ? 'not-allowed'
               : 'pointer'}; color: {action.disabled
               ? 'var(--iris-muted)'

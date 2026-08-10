@@ -5,6 +5,7 @@ import { useBodyScrollLock } from '../../modal-utils/useBodyScrollLock'
 import { useFocusTrap } from '../../modal-utils/useFocusTrap'
 import { IrisSlot } from '../slot/Slot'
 import { useDialogContext } from './context'
+import { installFloatingAnimations, ANIM_DIALOG } from '../../floating/animations'
 
 export interface IrisDialogContentProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
@@ -45,6 +46,7 @@ export const IrisDialogContent = React.forwardRef<HTMLDivElement, IrisDialogCont
       },
       [ctx, forwardedRef],
     )
+    installFloatingAnimations()
 
     useBodyScrollLock(ctx.open)
     useFocusTrap({
@@ -84,8 +86,8 @@ export const IrisDialogContent = React.forwardRef<HTMLDivElement, IrisDialogCont
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 1200,
+          background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
+          zIndex: 'var(--iris-z-modal, 1200)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -104,12 +106,13 @@ export const IrisDialogContent = React.forwardRef<HTMLDivElement, IrisDialogCont
           data-state="open"
           onPointerDown={handleContentPointerDown}
           style={{
-            background: 'var(--iris-surface)',
+            background: 'var(--iris-surface-floating)',
             color: 'var(--iris-foreground)',
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-lg, 8px)',
+            animation: ANIM_DIALOG,
             padding: 'var(--iris-padding-lg, 20px)',
-            boxShadow: '0 24px 48px -16px rgba(0,0,0,0.32), 0 8px 16px -4px rgba(0,0,0,0.16)',
+            boxShadow: 'var(--iris-shadow-xl)',
             maxWidth: '90vw',
             maxHeight: '85vh',
             overflow: 'auto',
@@ -148,7 +151,7 @@ export const IrisDialogTitle = React.forwardRef<HTMLElement, IrisDialogTitleProp
         id: ctx.titleId,
         style: {
           margin: '0 0 var(--iris-gap-md, 12px) 0',
-          fontSize: '18px',
+          fontSize: 'var(--iris-font-size-xl, 18px)',
           fontWeight: 600,
           ...style,
         },
@@ -179,7 +182,7 @@ export const IrisDialogDescription = React.forwardRef<HTMLElement, IrisDialogDes
         style: {
           margin: '0 0 var(--iris-gap-lg, 16px) 0',
           color: 'var(--iris-muted)',
-          fontSize: '14px',
+          fontSize: 'var(--iris-font-size-md, 14px)',
           ...style,
         },
       },

@@ -52,7 +52,11 @@ export function IrisFormBuilder(props: IrisFormBuilderProps) {
       <form
         data-iris-form-builder=""
         class={props.class}
-        style={{ display: 'grid', gap: 'var(--iris-form-gap, 16px)', ...props.style }}
+        style={{
+          display: 'grid',
+          gap: 'var(--iris-form-gap, var(--iris-space-md, 16px))',
+          ...props.style,
+        }}
         onSubmit={(e) => {
           e.preventDefault()
           void form.handleSubmit()

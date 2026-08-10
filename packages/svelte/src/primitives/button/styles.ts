@@ -9,9 +9,18 @@ import type { IrisButtonSize, IrisButtonVariant } from './types'
 const STYLE_ID = 'iris-button-styles'
 
 const SIZE_STYLES: Record<IrisButtonSize, Record<string, string>> = {
-  sm: { padding: 'var(--iris-padding-sm) var(--iris-padding-md)', 'font-size': '12px' },
-  md: { padding: 'var(--iris-padding-sm) var(--iris-padding-lg)', 'font-size': '14px' },
-  lg: { padding: 'var(--iris-padding-md) var(--iris-padding-lg)', 'font-size': '16px' },
+  sm: {
+    padding: 'var(--iris-padding-sm) var(--iris-padding-md)',
+    'font-size': 'var(--iris-font-size-xs, 12px)',
+  },
+  md: {
+    padding: 'var(--iris-padding-sm) var(--iris-padding-lg)',
+    'font-size': 'var(--iris-font-size-md, 14px)',
+  },
+  lg: {
+    padding: 'var(--iris-padding-md) var(--iris-padding-lg)',
+    'font-size': 'var(--iris-font-size-lg, 16px)',
+  },
 }
 
 const VARIANT_STYLES: Record<IrisButtonVariant, Record<string, string>> = {
@@ -35,6 +44,11 @@ const VARIANT_STYLES: Record<IrisButtonVariant, Record<string, string>> = {
     color: 'var(--iris-primary)',
     border: '1px solid transparent',
     'text-decoration': 'none',
+  },
+  danger: {
+    background: 'var(--iris-danger)',
+    color: 'var(--iris-on-color, #ffffff)',
+    border: '1px solid var(--iris-danger)',
   },
 }
 
@@ -80,7 +94,10 @@ const CSS = `
   opacity: 0.6;
 }
 .iris-button[data-iris-button-variant="solid"]:not([disabled]):not([aria-busy="true"]):hover {
-  filter: brightness(1.08);
+  background: color-mix(in srgb, var(--iris-danger) 92%, var(--iris-surface));
+}
+.iris-button:not([disabled]):not([aria-busy="true"]):active {
+  transform: scale(0.98);
 }
 .iris-button[data-iris-button-variant="outline"]:not([disabled]):not([aria-busy="true"]):hover,
 .iris-button[data-iris-button-variant="ghost"]:not([disabled]):not([aria-busy="true"]):hover {

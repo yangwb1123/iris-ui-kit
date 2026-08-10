@@ -1,8 +1,10 @@
 import { createGroupedView, type GroupedViewConfig, type GroupedViewState } from '@iris-ui-kit/core'
 import type { DataViewColumn } from '@iris-ui-kit/core'
 
-export interface UseGroupedView<Row, K = string> {
+export interface UseGroupedView<Row, K extends string | number = string> {
   store: ReturnType<typeof createGroupedView<Row, K>>['store']
+  /** The composed expansion model (multiple-open) — bridge it like a Svelte Table: `useStore(expansion.store)`. */
+  expansion: ReturnType<typeof createGroupedView<Row, K>>['expansion']
   setRows: (rows: readonly Row[], columns?: readonly DataViewColumn<Row>[]) => void
   toggleGroup: (key: K) => void
   expandGroup: (key: K) => void
@@ -20,7 +22,7 @@ export interface UseGroupedView<Row, K = string> {
  * and returns the controller plus the reactive `state`. A `.svelte.ts` runes
  * module: call it from a component (runes need a reactive owner).
  */
-export function useGroupedView<Row, K = string>(
+export function useGroupedView<Row, K extends string | number = string>(
   config: GroupedViewConfig<Row, K>,
 ): UseGroupedView<Row, K> {
   // svelte-ignore state_referenced_locally — construct the controller once.
@@ -37,6 +39,7 @@ export function useGroupedView<Row, K = string>(
 
   return {
     store: controller.store,
+    expansion: controller.expansion,
     setRows: (rows, columns) => controller.setRows(rows, columns),
     toggleGroup: (key) => controller.toggleGroup(key),
     expandGroup: (key) => controller.expandGroup(key),

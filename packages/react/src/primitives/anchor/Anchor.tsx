@@ -116,7 +116,7 @@ export function IrisAnchor({
                   color: isActive ? 'var(--iris-primary)' : 'var(--iris-foreground)',
                   fontWeight: isActive ? 600 : 400,
                   textDecoration: 'none',
-                  fontSize: 14,
+                  fontSize: 'var(--iris-font-size-md, 14px)',
                 }}
               >
                 {item.title}

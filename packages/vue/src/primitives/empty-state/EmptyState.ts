@@ -43,7 +43,19 @@ export const IrisEmptyState = defineComponent({
                 'div',
                 {
                   'data-iris-empty-state-icon': '',
-                  style: { color: 'var(--iris-muted)', fontSize: '32px', lineHeight: '1' },
+                  style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: 'var(--iris-radius-lg, 12px)',
+                    background: 'var(--iris-surface)',
+                    color: 'var(--iris-muted)',
+                    opacity: '0.9',
+                    fontSize: 'var(--iris-font-size-2xl, 20px)',
+                    lineHeight: '1',
+                  },
                 },
                 icon,
               )
@@ -53,7 +65,7 @@ export const IrisEmptyState = defineComponent({
                 'div',
                 {
                   'data-iris-empty-state-title': '',
-                  style: { fontWeight: '600', fontSize: '16px' },
+                  style: { fontWeight: '600', fontSize: 'var(--iris-font-size-lg, 16px)' },
                 },
                 titleNode,
               )
@@ -63,7 +75,11 @@ export const IrisEmptyState = defineComponent({
                 'div',
                 {
                   'data-iris-empty-state-description': '',
-                  style: { color: 'var(--iris-muted)', fontSize: '14px', maxWidth: '380px' },
+                  style: {
+                    color: 'var(--iris-muted)',
+                    fontSize: 'var(--iris-font-size-md, 14px)',
+                    maxWidth: '380px',
+                  },
                 },
                 descNode,
               )

@@ -1,4 +1,14 @@
-import { computed, defineComponent, h, ref, useId, type PropType } from 'vue'
+import {
+  computed,
+  defineComponent,
+  h,
+  onBeforeUnmount,
+  ref,
+  useId,
+  watchEffect,
+  type PropType,
+} from 'vue'
+import { createVirtualizer, type Virtualizer, type VirtualizerState } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
 
 export type IrisComboboxSize = 'sm' | 'md' | 'lg'
@@ -11,10 +21,27 @@ export interface IrisComboboxOption {
 
 const SIZE_MAP: Record<IrisComboboxSize, { padding: string; fontSize: string; minHeight: string }> =
   {
-    sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
-    md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
-    lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      minHeight: '28px',
+    },
+    md: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      minHeight: '34px',
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      minHeight: '40px',
+    },
   }
+
+/** Listbox maxHeight — the virtualizer's viewport (px). */
+const LISTBOX_MAX_HEIGHT = 240
+/** Fixed per-option row height (px) — mirrors SIZE_MAP minHeight (estimate, never measured). */
+const ROW_HEIGHT: Record<IrisComboboxSize, number> = { sm: 28, md: 34, lg: 40 }
 
 /**
  * Filterable single-select (searchable select): a text input that type-ahead
@@ -33,6 +60,12 @@ export const IrisCombobox = defineComponent({
     disabled: { type: Boolean, default: false },
     invalid: { type: Boolean, default: false },
     size: { type: String as PropType<IrisComboboxSize>, default: 'md' },
+    /**
+     * Opt-in windowed rendering of the listbox via the core virtualizer.
+     * When true, only the visible window (+ buffer) of options is rendered;
+     * keyboard navigation scrolls the active option into view. Default false.
+     */
+    virtual: { type: Boolean, default: false },
     /** Text shown when no option matches the query. Defaults to the i18n value. */
     emptyText: { type: String, default: undefined },
     /** Allow committing free text that matches no option: Enter/blur emits
@@ -70,10 +103,63 @@ export const IrisCombobox = defineComponent({
         : props.options
     })
 
+    // Virtualized listbox (opt-in): one controller per mount, reactive inputs
+    // read live through closures so the instance (scroll offset + keyed cache)
+    // survives re-renders — the IrisVirtualScroll instance-preservation pattern.
+    const listboxRef = ref<HTMLUListElement | null>(null)
+    const vstate = ref<VirtualizerState>({
+      items: [],
+      offsetBefore: 0,
+      totalSize: 0,
+      startIndex: 0,
+      endIndex: -1,
+    })
+    let v: Virtualizer | null = null
+    let unsub: (() => void) | null = null
+    // flush 'pre': count lands before every render → the first windowed frame
+    // is never stale. setScroll is driven by the DOM scroll handler (below).
+    watchEffect(() => {
+      if (!props.virtual) return
+      if (!v) {
+        v = createVirtualizer({
+          count: 0,
+          estimateSize: () => ROW_HEIGHT[props.size],
+          getItemKey: (i) => filtered.value[i]?.value ?? i,
+          viewportSize: LISTBOX_MAX_HEIGHT,
+          buffer: 4,
+        })
+        vstate.value = v.getState()
+        unsub = v.subscribe((s) => {
+          vstate.value = s
+        })
+      }
+      v.setCount(filtered.value.length)
+      const el = listboxRef.value
+      if (el) {
+        const max = Math.max(0, v.totalSize() - LISTBOX_MAX_HEIGHT)
+        if (el.scrollTop > max) el.scrollTop = max
+      }
+    })
+    onBeforeUnmount(() => unsub?.())
+
+    // Scroll the active option into view ('auto' semantics: no-op when already
+    // fully inside the viewport). Estimates are constant and never measured, so
+    // `start = index × rowHeight` is exact.
+    const ensureVisible = (index: number) => {
+      if (!props.virtual || !v || index < 0 || index >= filtered.value.length) return
+      const el = listboxRef.value
+      if (!el) return
+      const top = el.scrollTop
+      const start = index * ROW_HEIGHT[props.size]
+      if (start >= top && start + ROW_HEIGHT[props.size] <= top + LISTBOX_MAX_HEIGHT) return
+      el.scrollTop = v.scrollToIndex(index, start < top ? 'start' : 'end')
+    }
+
     const close = () => {
       open.value = false
       filtering.value = false
       activeIndex.value = -1
+      v?.setScroll(0)
     }
 
     const selectOption = (opt: IrisComboboxOption) => {
@@ -109,10 +195,16 @@ export const IrisCombobox = defineComponent({
           activeIndex.value = 0
           return
         }
-        activeIndex.value = Math.min(list.length - 1, activeIndex.value + 1)
+        const next = Math.min(list.length - 1, activeIndex.value + 1)
+        activeIndex.value = next
+        ensureVisible(next)
       } else if (event.key === 'ArrowUp') {
         event.preventDefault()
-        if (open.value) activeIndex.value = Math.max(0, activeIndex.value - 1)
+        if (open.value) {
+          const next = Math.max(0, activeIndex.value - 1)
+          activeIndex.value = next
+          ensureVisible(next)
+        }
       } else if (event.key === 'Enter') {
         if (open.value && activeIndex.value >= 0 && list[activeIndex.value]) {
           event.preventDefault()
@@ -130,11 +222,14 @@ export const IrisCombobox = defineComponent({
         if (open.value) {
           event.preventDefault()
           activeIndex.value = 0
+          ensureVisible(0)
         }
       } else if (event.key === 'End') {
         if (open.value) {
           event.preventDefault()
-          activeIndex.value = list.length - 1
+          const next = list.length - 1
+          activeIndex.value = next
+          ensureVisible(next)
         }
       }
     }
@@ -221,7 +316,7 @@ export const IrisCombobox = defineComponent({
               outline: 'none',
               opacity: props.disabled ? '0.6' : '1',
               boxShadow: focused.value
-                ? `0 0 0 3px ${props.invalid ? 'rgba(239, 68, 68, 0.18)' : 'rgba(99, 102, 241, 0.18)'}`
+                ? `0 0 0 3px ${props.invalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
                 : 'none',
               transition: 'border-color 120ms ease, box-shadow 120ms ease',
             },
@@ -233,6 +328,12 @@ export const IrisCombobox = defineComponent({
                   id: listboxId,
                   role: 'listbox',
                   'data-iris-combobox-listbox': '',
+                  ref: (el: unknown) => {
+                    listboxRef.value = (el ?? null) as HTMLUListElement | null
+                  },
+                  onScroll: (e: Event) => {
+                    v?.setScroll((e.currentTarget as HTMLElement).scrollTop)
+                  },
                   style: {
                     position: 'absolute',
                     insetInlineStart: '0',
@@ -248,7 +349,7 @@ export const IrisCombobox = defineComponent({
                     background: 'var(--iris-background)',
                     border: '1px solid var(--iris-border)',
                     borderRadius: 'var(--iris-radius-md, 6px)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    boxShadow: 'var(--iris-shadow-lg)',
                   },
                 },
                 list.length === 0
@@ -259,7 +360,7 @@ export const IrisCombobox = defineComponent({
                           'data-iris-combobox-empty': '',
                           'aria-disabled': 'true',
                           style: {
-                            padding: '6px 10px',
+                            padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
                             color: 'var(--iris-muted)',
                             fontSize: sz.fontSize,
                           },
@@ -267,39 +368,97 @@ export const IrisCombobox = defineComponent({
                         resolvedEmpty,
                       ),
                     ]
-                  : list.map((opt, i) => {
-                      const isActive = i === activeIndex.value
-                      const isSelected = opt.value === props.modelValue
-                      return h(
-                        'li',
-                        {
-                          key: opt.value,
-                          id: optionId(i),
-                          role: 'option',
-                          'aria-selected': isSelected ? 'true' : 'false',
-                          'aria-disabled': opt.disabled ? 'true' : undefined,
-                          'data-iris-combobox-option': '',
-                          'data-active': isActive ? 'true' : undefined,
-                          onMousedown: (e: MouseEvent) => e.preventDefault(),
-                          onMouseenter: () => {
-                            activeIndex.value = i
-                          },
-                          onClick: () => selectOption(opt),
+                  : props.virtual && v && vstate.value.items.length > 0
+                    ? [
+                        h('li', {
+                          role: 'presentation',
+                          'aria-hidden': 'true',
+                          'data-iris-combobox-spacer': '',
+                          'data-iris-combobox-spacer-type': 'top',
+                          style: { height: `${vstate.value.offsetBefore}px` },
+                        }),
+                        ...vstate.value.items.map((item) => {
+                          const opt = list[item.index]
+                          if (!opt) return null
+                          const isActive = item.index === activeIndex.value
+                          const isSelected = opt.value === props.modelValue
+                          return h(
+                            'li',
+                            {
+                              key: opt.value,
+                              id: optionId(item.index),
+                              role: 'option',
+                              'aria-selected': isSelected ? 'true' : 'false',
+                              'aria-disabled': opt.disabled ? 'true' : undefined,
+                              'aria-setsize': list.length,
+                              'aria-posinset': item.index + 1,
+                              'data-iris-combobox-option': '',
+                              'data-active': isActive ? 'true' : undefined,
+                              onMousedown: (e: MouseEvent) => e.preventDefault(),
+                              onMouseenter: () => {
+                                activeIndex.value = item.index
+                              },
+                              onClick: () => selectOption(opt),
+                              style: {
+                                padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
+                                fontSize: sz.fontSize,
+                                borderRadius: 'var(--iris-radius-sm, 4px)',
+                                cursor: opt.disabled ? 'not-allowed' : 'pointer',
+                                color: opt.disabled
+                                  ? 'var(--iris-muted)'
+                                  : 'var(--iris-foreground)',
+                                background: isActive
+                                  ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+                                  : 'transparent',
+                                fontWeight: isSelected ? '600' : '400',
+                              },
+                            },
+                            opt.label,
+                          )
+                        }),
+                        h('li', {
+                          role: 'presentation',
+                          'aria-hidden': 'true',
+                          'data-iris-combobox-spacer': '',
+                          'data-iris-combobox-spacer-type': 'bottom',
                           style: {
-                            padding: '6px 10px',
-                            fontSize: sz.fontSize,
-                            borderRadius: 'var(--iris-radius-sm, 4px)',
-                            cursor: opt.disabled ? 'not-allowed' : 'pointer',
-                            color: opt.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
-                            background: isActive
-                              ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-                              : 'transparent',
-                            fontWeight: isSelected ? '600' : '400',
+                            height: `${vstate.value.totalSize - vstate.value.offsetBefore - vstate.value.items.length * ROW_HEIGHT[props.size]}px`,
                           },
-                        },
-                        opt.label,
-                      )
-                    }),
+                        }),
+                      ]
+                    : list.map((opt, i) => {
+                        const isActive = i === activeIndex.value
+                        const isSelected = opt.value === props.modelValue
+                        return h(
+                          'li',
+                          {
+                            key: opt.value,
+                            id: optionId(i),
+                            role: 'option',
+                            'aria-selected': isSelected ? 'true' : 'false',
+                            'aria-disabled': opt.disabled ? 'true' : undefined,
+                            'data-iris-combobox-option': '',
+                            'data-active': isActive ? 'true' : undefined,
+                            onMousedown: (e: MouseEvent) => e.preventDefault(),
+                            onMouseenter: () => {
+                              activeIndex.value = i
+                            },
+                            onClick: () => selectOption(opt),
+                            style: {
+                              padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
+                              fontSize: sz.fontSize,
+                              borderRadius: 'var(--iris-radius-sm, 4px)',
+                              cursor: opt.disabled ? 'not-allowed' : 'pointer',
+                              color: opt.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
+                              background: isActive
+                                ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+                                : 'transparent',
+                              fontWeight: isSelected ? '600' : '400',
+                            },
+                          },
+                          opt.label,
+                        )
+                      }),
               )
             : null,
         ],

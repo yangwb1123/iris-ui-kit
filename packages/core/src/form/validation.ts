@@ -85,6 +85,16 @@ export function createValidationEngine<V extends FormValues>(
 
   const isCurrent = (name: string, token: number): boolean => tokens.get(name) === token
 
+  // Form-level monotonic token: guards the whole-form `config.validate`
+  // result (the unguarded Object.assign below). A newer validateForm pass or
+  // `invalidateAll` bumps it, so a stale whole-form result is never merged
+  // in. Separate counter on purpose — a reserved key in the per-field map
+  // would collide with a user field name. `validateField` deliberately does
+  // NOT bump it.
+  let formToken = 0
+  const bumpFormToken = (): number => ++formToken
+  const isFormCurrent = (token: number): boolean => formToken === token
+
   const toErrorMessage = (err: unknown): string =>
     err instanceof Error ? err.message : String(err)
 
@@ -148,6 +158,9 @@ export function createValidationEngine<V extends FormValues>(
   return {
     validateField,
     async validateForm(vals, values, config) {
+      // Capture the form token at pass start — a newer pass (or
+      // invalidateAll) bumps it, superseding this one's whole-form result.
+      const formTokenAtStart = bumpFormToken()
       const names = Object.keys(vals) as Key<V>[]
       const tokenById = new Map<Key<V>, number>()
       for (const name of names) tokenById.set(name, nextToken(name))
@@ -166,12 +179,21 @@ export function createValidationEngine<V extends FormValues>(
       }
       if (config?.validate) {
         const formErrors = await config.validate(values)
+        // Stale whole-form result — computed against values a newer pass
+        // (or invalidateAll) superseded. Skip the merge; the per-field
+        // entries above are already individually guarded.
+        if (!isFormCurrent(formTokenAtStart)) return nextErrors
         Object.assign(nextErrors, formErrors)
       }
       return nextErrors
     },
     isCurrent: (name) => isCurrent(name, tokens.get(name) ?? 0),
-    invalidateAll: () => tokens.clear(),
+    invalidateAll: () => {
+      tokens.clear()
+      // Also drop any in-flight whole-form result: a cleared per-field map
+      // cannot invalidate it, but the form token can.
+      bumpFormToken()
+    },
     scheduleValidate,
     scheduleValidateWith,
   }

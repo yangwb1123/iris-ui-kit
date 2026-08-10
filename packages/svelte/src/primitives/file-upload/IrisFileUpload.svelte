@@ -156,7 +156,7 @@
       'flex-direction': 'column',
       'align-items': 'center',
       'justify-content': 'center',
-      gap: '6px',
+      gap: 'var(--iris-space-xs, 8px)',
       padding: 'var(--iris-padding-lg, 20px)',
       border: `2px dashed ${dragOver ? 'var(--iris-primary)' : 'var(--iris-border)'}`,
       'border-radius': 'var(--iris-radius-md, 6px)',
@@ -189,7 +189,7 @@
     {disabled}
     data-iris-file-upload-input
     onchange={handleInputChange}
-    style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;"
+    style="position: absolute; width: 1px; height: 1px; padding: 0; margin: calc(var(--iris-space-xxs, 4px) / -4); overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;"
   />
   <!-- Drop zone -->
   <div
@@ -227,11 +227,16 @@
     }}
     style={zoneStyle}
   >
-    <div data-iris-file-upload-label style="font-size: 14px; font-weight: 500;">
+    <div
+      data-iris-file-upload-label
+      style="font-size: var(--iris-font-size-md, 14px); font-weight: 500;"
+    >
       {resolvedLabel}
     </div>
     {#if accept}
-      <div style="font-size: 12px; color: var(--iris-muted);">{accept}</div>
+      <div style="font-size: var(--iris-font-size-xs, 12px); color: var(--iris-muted);">
+        {accept}
+      </div>
     {/if}
   </div>
   <!-- File list -->
@@ -243,10 +248,12 @@
       {#each current as item, idx (item.name + '-' + idx)}
         <li
           data-iris-file-upload-item
-          style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--iris-surface); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-sm, 4px); font-size: 13px;"
+          style="display: flex; align-items: center; gap: var(--iris-space-xs, 8px); padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); background: var(--iris-surface); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-sm, 4px); font-size: var(--iris-font-size-sm, 13px);"
         >
           <span style="flex: 1; min-width: 0;">{item.name}</span>
-          <span style="color: var(--iris-muted); font-size: 12px;">{formatBytes(item.size)}</span>
+          <span style="color: var(--iris-muted); font-size: var(--iris-font-size-xs, 12px);"
+            >{formatBytes(item.size)}</span
+          >
           <button
             type="button"
             aria-label={t('fileUpload.remove', { name: item.name })}
@@ -257,7 +264,8 @@
             }}
             style="background: transparent; border: none; color: var(--iris-muted); cursor: {disabled
               ? 'not-allowed'
-              : 'pointer'}; font-size: 16px; line-height: 1; padding: 0 4px;">×</button
+              : 'pointer'}; font-size: var(--iris-font-size-lg, 16px); line-height: 1; padding: 0 var(--iris-space-xxs, 4px);"
+            >×</button
           >
         </li>
       {/each}

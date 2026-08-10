@@ -11,4 +11,5 @@ export const menus: NavNode[] = [
   { key: 'realtime', title: 'Realtime', icon: 'clock', order: 8 },
   { key: 'pro-table', title: 'Pro Table', icon: 'table', order: 9 },
   { key: 'documentation', title: 'Documentation', icon: 'file', order: 10 },
+  { key: 'vxe-example', title: 'VxeGrid Example', icon: 'table', order: 11 },
 ]

@@ -33,6 +33,12 @@ export interface IrisVirtualScrollProps<T = unknown> {
   onRangeChange?: (range: { start: number; end: number }) => void
   style?: React.CSSProperties
   className?: string
+  /** ARIA role for the scroll container (e.g. "listbox"). Forwarded to the root. */
+  role?: string
+  /** Tab order for the scroll container (roving-tabindex hosts pass -1). */
+  tabIndex?: number
+  /** Keydown handler on the scroll container (keydowns from focused rows bubble). */
+  onKeyDown?: React.KeyboardEventHandler<HTMLDivElement>
 }
 
 /**
@@ -61,6 +67,9 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
     onRangeChange,
     style,
     className,
+    role,
+    tabIndex,
+    onKeyDown,
     ...rest
   }: IrisVirtualScrollProps<T>,
   forwardedRef: React.Ref<IrisVirtualScrollHandle>,
@@ -338,8 +347,11 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
     <div
       ref={viewportRef}
       data-iris-virtual-scroll=""
+      role={role}
       className={className}
       onScroll={handleScroll}
+      tabIndex={tabIndex}
+      onKeyDown={onKeyDown}
       {...rest}
       style={containerStyle}
     >

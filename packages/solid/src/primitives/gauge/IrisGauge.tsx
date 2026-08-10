@@ -4,7 +4,7 @@ export type IrisGaugeStatus = 'default' | 'success' | 'danger' | 'warning'
 
 const COLOR: Record<IrisGaugeStatus, string> = {
   default: 'var(--iris-primary)',
-  success: 'var(--iris-success, #16a34a)',
+  success: 'var(--iris-success, #10b981)',
   danger: 'var(--iris-danger)',
   warning: 'var(--iris-warning, #f59e0b)',
 }
@@ -16,6 +16,7 @@ export interface IrisGaugeProps {
   /** Diameter in px */
   size?: number
   strokeWidth?: number
+  /** Semantic status (explicit by design; derive thresholds in the consumer, e.g. value > 80 ? 'danger' : 'success'). */
   status?: IrisGaugeStatus
   showValue?: boolean
   format?: (value: number, percent: number) => string
@@ -72,7 +73,9 @@ export function IrisGauge(props: IrisGaugeProps): JSX.Element {
       aria-valuenow={local.value}
       aria-valuemin={local.min}
       aria-valuemax={local.max}
-      aria-valuetext={`${percent()}%`}
+      aria-valuetext={
+        local.min === 0 && local.max === 100 ? `${percent()}%` : `${local.value} (${percent()}%)`
+      }
       aria-label={local.ariaLabel}
       style={{
         position: 'relative',
@@ -121,7 +124,11 @@ export function IrisGauge(props: IrisGaugeProps): JSX.Element {
             'font-variant-numeric': 'tabular-nums',
           }}
         >
-          {local.format ? local.format(local.value, percent()) : `${percent()}%`}
+          {local.format
+            ? local.format(local.value, percent())
+            : local.min === 0 && local.max === 100
+              ? `${percent()}%`
+              : String(local.value)}
         </div>
       )}
     </div>

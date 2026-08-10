@@ -31,6 +31,11 @@ export type KeyboardNavAction =
   | { type: 'go-to-parent' }
   | { type: 'typeahead'; target: number }
   | { type: 'noop' }
+  /** Open the popover. `target` = typeahead match index to land on (already
+   *  emitted to the store); absent = open and let the adapter's open-reset
+   *  anchor to the selected/first-enabled item. Produced by
+   *  `handleClosedKeyDown` (the closed-trigger half of the combobox pattern). */
+  | { type: 'open'; target?: number }
 
 // ─── Config ─────────────────────────────────────────────────────────────────
 
@@ -72,6 +77,21 @@ export interface KeyboardNavController {
   get index(): number
   /** Handle a keyboard event. Returns the action the adapter should perform. */
   handleKeyDown(event: { key: string; preventDefault(): void }): KeyboardNavAction
+  /**
+   * Closed-trigger key handling (combobox pattern, trigger half). Call only
+   * while the popover is closed (open state is adapter-owned).
+   *
+   * Keymap:
+   *   - `ArrowDown`            → `{ type: 'open' }`                    (preventDefault)
+   *   - printable (typeahead)  → `{ type: 'open', target: N }` on match,
+   *                              `{ type: 'open' }` on no match        (preventDefault)
+   *   - everything else        → `{ type: 'noop' }`                    (NO preventDefault —
+   *                              preserves native Space/Enter button activation)
+   *
+   * Shares the controller's typeahead buffer + active index with the open
+   * listbox; the match (if any) is emitted to `store` before returning.
+   */
+  handleClosedKeyDown(event: { key: string; preventDefault(): void }): KeyboardNavAction
   /** Move by `delta` (+1 for down, -1 for up), skipping disabled. */
   move(delta: number): void
   /** Jump to the first enabled item. */
@@ -348,6 +368,32 @@ export function createKeyboardNav(config: KeyboardNavConfig): KeyboardNavControl
         default:
           return { type: 'noop' }
       }
+    },
+
+    handleClosedKeyDown(event: { key: string; preventDefault(): void }): KeyboardNavAction {
+      const cur = safeIndex()
+      const { key } = event
+
+      // Typeahead on the closed trigger: same buffer + match semantics as the
+      // open listbox (REQ-2); a match is emitted to the store before returning.
+      if (isTypeaheadActive(key)) {
+        event.preventDefault()
+        const match = handleTypeahead(key, cur)
+        return match.type === 'typeahead'
+          ? { type: 'open', target: match.target }
+          : { type: 'open' }
+      }
+
+      if (key === 'ArrowDown') {
+        event.preventDefault()
+        // Index deliberately untouched — the adapter's open-reset anchors focus
+        // to the selected/first-enabled item.
+        return { type: 'open' }
+      }
+
+      // NO preventDefault: Space/Enter must keep activating the native button
+      // (click-toggle) — a regression invisible to jsdom keydown tests.
+      return { type: 'noop' }
     },
   }
 

@@ -4,7 +4,7 @@ export type IrisProgressCircleStatus = 'default' | 'success' | 'danger' | 'warni
 
 const COLOR: Record<IrisProgressCircleStatus, string> = {
   default: 'var(--iris-primary)',
-  success: 'var(--iris-success, #16a34a)',
+  success: 'var(--iris-success, #10b981)',
   danger: 'var(--iris-danger)',
   warning: 'var(--iris-warning, #f59e0b)',
 }

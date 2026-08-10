@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, fireEvent, cleanup } from '@solidjs/testing-library'
-import { IrisCascader } from './IrisCascader'
+import { IrisCascader, type IrisCascaderNode } from './IrisCascader'
 
 afterEach(cleanup)
 
@@ -31,6 +31,13 @@ function getOptions(container: HTMLElement, col: number = 0): HTMLElement[] {
     container.querySelectorAll(`[data-iris-cascader-column="${col}"] [data-iris-cascader-option]`),
   )
 }
+
+// Large fixtures for the opt-in virtual path (10k options per column).
+const BIG: IrisCascaderNode[] = Array.from({ length: 10_000 }, (_, i) => ({
+  label: `O${i}`,
+  value: `v${i}`,
+}))
+const DEEP: IrisCascaderNode[] = [{ label: 'root', value: 'r', children: BIG }]
 
 describe('IrisCascader', () => {
   it('renders without crashing', () => {
@@ -158,6 +165,113 @@ describe('IrisCascader', () => {
     it('does not crash with no options prop', () => {
       const { container } = render(() => <IrisCascader />)
       expect(container.querySelector('[data-iris-cascader]')).not.toBeNull()
+    })
+  })
+
+  describe('virtual prop (opt-in windowing)', () => {
+    it('windows a large column instead of rendering every option (bounded DOM)', () => {
+      const { container } = render(() => <IrisCascader options={BIG} virtual />)
+      fireEvent.click(triggerEl(container))
+      // jsdom collapses clientHeight to 0 after measure — the bound holds in
+      // every phase (12 seeded / 4 collapsed options).
+      expect(container.querySelectorAll('[data-iris-cascader-option]').length).toBeLessThanOrEqual(
+        20,
+      )
+      const spacer = container.querySelector('[data-iris-virtual-spacer]') as HTMLElement
+      expect(spacer.style.height).toBe('340000px') // 10_000 × 34
+    })
+
+    it('scrolling moves the window (clientHeight mocked)', async () => {
+      const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight')
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+        configurable: true,
+        get: () => 240,
+      })
+      try {
+        const { container } = render(() => <IrisCascader options={BIG} virtual />)
+        fireEvent.click(triggerEl(container))
+        const scroller = container.querySelector('[data-iris-virtual-scroll]') as HTMLElement
+        const firstIndex = () =>
+          Number(
+            scroller
+              .querySelector('[data-iris-virtual-index]')
+              ?.getAttribute('data-iris-virtual-index'),
+          )
+        expect(firstIndex()).toBe(0)
+        Object.defineProperty(scroller, 'scrollTop', {
+          value: 1700, // 34 × 50
+          writable: true,
+          configurable: true,
+        })
+        fireEvent.scroll(scroller)
+        await new Promise<void>((r) => requestAnimationFrame(() => r()))
+        expect(firstIndex()).toBeGreaterThanOrEqual(40)
+      } finally {
+        if (descriptor) Object.defineProperty(HTMLElement.prototype, 'clientHeight', descriptor)
+        else delete (HTMLElement.prototype as { clientHeight?: unknown }).clientHeight
+      }
+    })
+
+    it('deep path: windowed columns stay clickable after scrolling', async () => {
+      const onChange = vi.fn()
+      const { container } = render(() => (
+        <IrisCascader options={DEEP} virtual onChange={onChange} />
+      ))
+      fireEvent.click(triggerEl(container))
+      const root = container.querySelector('[data-iris-cascader-option="r"]') as HTMLElement
+      fireEvent.click(root)
+      const scrollers = container.querySelectorAll('[data-iris-virtual-scroll]')
+      expect(scrollers.length).toBe(2) // one virtualizer per open column
+      const scroller = scrollers[1] as HTMLElement
+      Object.defineProperty(scroller, 'scrollTop', {
+        value: 9999 * 34,
+        writable: true,
+        configurable: true,
+      })
+      fireEvent.scroll(scroller)
+      await new Promise<void>((r) => requestAnimationFrame(() => r()))
+      const leaf = container.querySelector('[data-iris-cascader-option="v9999"]') as HTMLElement
+      expect(leaf).not.toBeNull()
+      fireEvent.click(leaf)
+      expect(onChange).toHaveBeenCalledWith(['r', 'v9999'])
+      expect(dropdownEl(container)).toBeNull()
+    })
+
+    it('default-off renders every option (no virtualizer in DOM)', () => {
+      const { container } = render(() => <IrisCascader options={BIG} />)
+      fireEvent.click(triggerEl(container))
+      expect(container.querySelectorAll('[data-iris-cascader-option]').length).toBe(10_000)
+      expect(container.querySelector('[data-iris-virtual-scroll]')).toBeNull()
+    })
+
+    it('a11y parity: virtual container carries the same surface as the plain listbox', () => {
+      const small: IrisCascaderNode[] = [
+        { label: 'A', value: 'a', children: [{ label: 'A1', value: 'a1' }] },
+        { label: 'B', value: 'b' },
+      ]
+      const plain = render(() => <IrisCascader options={small} />)
+      fireEvent.click(triggerEl(plain.container))
+      const plainCol = plain.container.querySelector('[data-iris-cascader-column="0"]')!
+      const plainOpt = plainCol.querySelector('[data-iris-cascader-option]')!
+      expect(plainCol.getAttribute('role')).toBe('listbox')
+      expect(plainOpt.getAttribute('role')).toBe('option')
+      expect(plainOpt.getAttribute('aria-selected')).toBe('false')
+      cleanup()
+      const virt = render(() => <IrisCascader options={small} virtual />)
+      fireEvent.click(triggerEl(virt.container))
+      const virtCol = virt.container.querySelector('[data-iris-cascader-column="0"]')!
+      const virtOpt = virtCol.querySelector('[data-iris-cascader-option]')!
+      expect(virtCol.getAttribute('role')).toBe('listbox')
+      expect(virtOpt.getAttribute('role')).toBe('option')
+      expect(virtOpt.getAttribute('aria-selected')).toBe('false')
+    })
+
+    it('virtual with empty options renders the dropdown without crashing', () => {
+      const { container } = render(() => <IrisCascader options={[]} virtual />)
+      fireEvent.click(triggerEl(container))
+      expect(dropdownEl(container)).not.toBeNull()
+      expect(container.querySelectorAll('[data-iris-cascader-column]').length).toBe(1)
+      expect(container.querySelectorAll('[data-iris-cascader-option]').length).toBe(0)
     })
   })
 })

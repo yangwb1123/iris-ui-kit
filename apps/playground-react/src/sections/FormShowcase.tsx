@@ -101,7 +101,7 @@ export function FormShowcase() {
         <IrisFormField label="Pick a fruit">
           <IrisSelect
             value={pick}
-            onValueChange={setPick}
+            onValueChange={(v) => setPick(v as string)}
             items={[
               { value: 'apple', label: 'Apple' },
               { value: 'banana', label: 'Banana' },

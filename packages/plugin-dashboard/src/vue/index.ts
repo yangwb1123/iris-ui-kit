@@ -139,7 +139,7 @@ export const IrisDashboard = defineComponent({
                 // Live drop highlight for the touch/pen pointer path.
                 outline:
                   ss.activeId && ss.overId === cellId
-                    ? '2px dashed var(--iris-primary, #2563eb)'
+                    ? '2px dashed var(--iris-primary, #6366f1)'
                     : undefined,
                 outlineOffset: '-2px',
               },
@@ -169,10 +169,10 @@ export const IrisDashboard = defineComponent({
             style: {
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: 'var(--iris-space-xs, 8px)',
               padding: '8px 12px',
               cursor: 'grab',
-              borderBottom: '1px solid var(--iris-border, #e5e7eb)',
+              borderBottom: '1px solid var(--iris-border, #e2e8f0)',
               fontWeight: 600,
               userSelect: 'none',
               // Let the pointer path own touch gestures on the drag handle.
@@ -199,7 +199,7 @@ export const IrisDashboard = defineComponent({
                 style: {
                   fontSize: '1rem',
                   lineHeight: '1',
-                  color: 'var(--iris-muted, #9ca3af)',
+                  color: 'var(--iris-muted, #64748b)',
                 },
               },
               '⠿',
@@ -228,9 +228,9 @@ export const IrisDashboard = defineComponent({
             style: {
               gridColumn: `${widget.col} / span ${widget.colSpan}`,
               gridRow: `${widget.row} / span ${widget.rowSpan}`,
-              background: 'var(--iris-dashboard-widget-bg, #fff)',
-              border: '1px solid var(--iris-border, #e5e7eb)',
-              borderRadius: 'var(--iris-dashboard-widget-radius, 8px)',
+              background: 'var(--iris-dashboard-widget-bg, var(--iris-surface, #f8fafc))',
+              border: '1px solid var(--iris-border, #e2e8f0)',
+              borderRadius: 'var(--iris-dashboard-widget-radius, 6px)',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
@@ -250,7 +250,7 @@ export const IrisDashboard = defineComponent({
           style: {
             display: 'grid',
             gridTemplateColumns: `repeat(${columns}, 1fr)`,
-            gap: 'var(--iris-dashboard-gap, 16px)',
+            gap: 'var(--iris-dashboard-gap, var(--iris-space-md, 16px))',
             position: 'relative',
             ...props.style,
           },

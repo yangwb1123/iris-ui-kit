@@ -5,7 +5,6 @@ import {
   createNotificationCenter,
   notificationsPlugin,
   notificationMessages,
-  notificationTokens,
 } from './index'
 
 describe('createNotificationCenter', () => {
@@ -51,7 +50,8 @@ describe('createNotificationCenter', () => {
     const c = createNotificationCenter({ initial: [{ title: 'Welcome' }] })
     expect(c.getState().items).toHaveLength(1)
     const { tokens, messages } = runPlugins([notificationsPlugin])
-    expect(tokens['--iris-notification-gap']).toBe(notificationTokens['--iris-notification-gap'])
+    // No render-layer consumer → no dead registration (§6c).
+    expect(tokens['--iris-notification-gap']).toBeUndefined()
     expect(messages['en-US']).toEqual(notificationMessages)
   })
 

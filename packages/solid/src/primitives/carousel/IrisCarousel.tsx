@@ -118,7 +118,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
     background: 'var(--iris-background)',
     color: 'var(--iris-foreground)',
     cursor: 'pointer',
-    'font-size': '18px',
+    'font-size': 'var(--iris-font-size-xl, 18px)',
   }
 
   return (
@@ -211,7 +211,7 @@ export function IrisCarousel(props: IrisCarouselProps): JSX.Element {
             left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex',
-            gap: '6px',
+            gap: 'var(--iris-space-xs, 8px)',
             'z-index': '2',
           }}
         >

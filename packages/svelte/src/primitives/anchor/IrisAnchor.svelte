@@ -87,7 +87,8 @@
             ? 'var(--iris-primary)'
             : 'var(--iris-foreground)'}; font-weight: {isActive
             ? '600'
-            : '400'}; text-decoration: none; font-size: 14px;">{item.title}</a
+            : '400'}; text-decoration: none; font-size: var(--iris-font-size-md, 14px);"
+          >{item.title}</a
         >
       </li>
     {/each}

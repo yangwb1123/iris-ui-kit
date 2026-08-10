@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { useI18n } from '../../i18n'
+import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 
 export type IrisCascaderSize = 'sm' | 'md' | 'lg'
 
@@ -22,6 +23,12 @@ export interface IrisCascaderProps {
   /** Separator between path labels in the trigger. */
   separator?: string
   size?: IrisCascaderSize
+  /**
+   * Opt-in: window each open column with the core virtualizer instead of
+   * rendering every option. Fixed deterministic sizing (viewport 240px, row
+   * height per size, buffer 4). Default false — no behavior change.
+   */
+  virtual?: boolean
   id?: string
   ariaDescribedby?: string
   style?: React.CSSProperties
@@ -30,10 +37,21 @@ export interface IrisCascaderProps {
 
 const SIZE_MAP: Record<IrisCascaderSize, { padding: string; fontSize: string; minHeight: string }> =
   {
-    sm: { padding: '4px 8px', fontSize: '12px', minHeight: '28px' },
-    md: { padding: '6px 12px', fontSize: '14px', minHeight: '34px' },
-    lg: { padding: '8px 12px', fontSize: '16px', minHeight: '40px' },
+    sm: { padding: '4px 8px', fontSize: 'var(--iris-font-size-xs, 12px)', minHeight: '28px' },
+    md: {
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      minHeight: '34px',
+    },
+    lg: { padding: '8px 12px', fontSize: 'var(--iris-font-size-lg, 16px)', minHeight: '40px' },
   }
+
+/** Matches the current `maxHeight: 240` of a column. */
+const CASCADER_COLUMN_VIEWPORT = 240
+/** Fixed row heights, aligned with SIZE_MAP minHeights so rows never clip. */
+const CASCADER_ROW_HEIGHT: Record<IrisCascaderSize, number> = { sm: 28, md: 34, lg: 40 }
+/** Extra rows rendered above and below the visible window. */
+const CASCADER_VIRTUAL_BUFFER = 4
 
 /** Labels along a value path (stops at the first missing node). */
 function pathLabels(options: IrisCascaderNode[], path: string[]): string[] {
@@ -79,6 +97,7 @@ export function IrisCascader({
   invalid = false,
   separator = ' / ',
   size = 'md',
+  virtual = false,
   id,
   ariaDescribedby,
   style,
@@ -134,6 +153,62 @@ export function IrisCascader({
       ? 'var(--iris-primary)'
       : 'var(--iris-border)'
 
+  // Shared option renderer — used by BOTH the plain and the virtual column
+  // paths so the a11y attribute surface is structurally identical. When
+  // virtual, the virtualizer pins each row's height, so the option fills the
+  // row (height 100% + border-box keeps the padding inside the pinned height).
+  const renderOption = (node: IrisCascaderNode, ci: number): React.ReactElement => {
+    const isActive = activePath[ci] === node.value
+    const hasChildren = !!node.children && node.children.length > 0
+    return (
+      <li
+        key={node.value}
+        role="option"
+        aria-selected={isActive}
+        aria-disabled={node.disabled ? 'true' : undefined}
+        data-iris-cascader-option=""
+        data-value={node.value}
+        onClick={() => selectOption(ci, node)}
+        onMouseEnter={() => setHoveredValue(node.value)}
+        onMouseLeave={() => setHoveredValue((current) => (current === node.value ? null : current))}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+          padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+          fontSize: sz.fontSize,
+          borderRadius: 'var(--iris-radius-sm, 4px)',
+          cursor: node.disabled ? 'not-allowed' : 'pointer',
+          color: node.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
+          background:
+            isActive || hoveredValue === node.value
+              ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
+              : 'transparent',
+          ...(virtual ? { height: '100%', boxSizing: 'border-box' } : null),
+        }}
+      >
+        <span>{node.label}</span>
+        {hasChildren ? (
+          <span
+            aria-hidden="true"
+            style={{
+              color: 'var(--iris-muted)',
+              fontSize: 'var(--iris-font-size-xs, 12px)',
+            }}
+          >
+            ›
+          </span>
+        ) : null}
+      </li>
+    )
+  }
+
+  const columnStyle = (ci: number): React.CSSProperties => ({
+    minWidth: 140,
+    borderInlineStart: ci > 0 ? '1px solid var(--iris-border)' : undefined,
+  })
+
   return (
     <div
       ref={rootRef}
@@ -188,7 +263,10 @@ export function IrisCascader({
         <span data-iris-cascader-value="">
           {labels.length ? labels.join(separator) : (placeholder ?? t('select.placeholder'))}
         </span>
-        <span aria-hidden="true" style={{ color: 'var(--iris-muted)', fontSize: 10 }}>
+        <span
+          aria-hidden="true"
+          style={{ color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-xs, 12px)' }}
+        >
           ▾
         </span>
       </button>
@@ -205,69 +283,47 @@ export function IrisCascader({
             background: 'var(--iris-background)',
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-md, 6px)',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            boxShadow: 'var(--iris-shadow-lg)',
             overflow: 'hidden',
           }}
         >
-          {columns.map((col, ci) => (
-            <ul
-              key={ci}
-              role="listbox"
-              data-iris-cascader-column=""
-              data-level={ci}
-              style={{
-                listStyle: 'none',
-                margin: 0,
-                padding: 4,
-                minWidth: 140,
-                maxHeight: 240,
-                overflowY: 'auto',
-                borderInlineStart: ci > 0 ? '1px solid var(--iris-border)' : undefined,
-              }}
-            >
-              {col.map((node) => {
-                const isActive = activePath[ci] === node.value
-                const hasChildren = !!node.children && node.children.length > 0
-                return (
-                  <li
-                    key={node.value}
-                    role="option"
-                    aria-selected={isActive}
-                    aria-disabled={node.disabled ? 'true' : undefined}
-                    data-iris-cascader-option=""
-                    data-value={node.value}
-                    onClick={() => selectOption(ci, node)}
-                    onMouseEnter={() => setHoveredValue(node.value)}
-                    onMouseLeave={() =>
-                      setHoveredValue((current) => (current === node.value ? null : current))
-                    }
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 8,
-                      padding: '6px 10px',
-                      fontSize: sz.fontSize,
-                      borderRadius: 'var(--iris-radius-sm, 4px)',
-                      cursor: node.disabled ? 'not-allowed' : 'pointer',
-                      color: node.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
-                      background:
-                        isActive || hoveredValue === node.value
-                          ? 'var(--iris-surface-hover, rgba(99,102,241,0.1))'
-                          : 'transparent',
-                    }}
-                  >
-                    <span>{node.label}</span>
-                    {hasChildren ? (
-                      <span aria-hidden="true" style={{ color: 'var(--iris-muted)', fontSize: 10 }}>
-                        ›
-                      </span>
-                    ) : null}
-                  </li>
-                )
-              })}
-            </ul>
-          ))}
+          {columns.map((col, ci) => {
+            if (!virtual) {
+              return (
+                <ul
+                  key={ci}
+                  role="listbox"
+                  data-iris-cascader-column=""
+                  data-level={ci}
+                  style={{
+                    listStyle: 'none',
+                    margin: 0,
+                    padding: 4,
+                    ...columnStyle(ci),
+                    maxHeight: CASCADER_COLUMN_VIEWPORT,
+                    overflowY: 'auto',
+                  }}
+                >
+                  {col.map((node) => renderOption(node, ci))}
+                </ul>
+              )
+            }
+            return (
+              <IrisVirtualScroll
+                key={ci}
+                items={col}
+                itemHeight={CASCADER_ROW_HEIGHT[size]}
+                height={CASCADER_COLUMN_VIEWPORT}
+                buffer={CASCADER_VIRTUAL_BUFFER}
+                keyOf={(node: IrisCascaderNode) => node.value}
+                renderItem={(node: IrisCascaderNode) => renderOption(node, ci)}
+                role="listbox"
+                data-iris-cascader-column=""
+                data-level={ci}
+                style={columnStyle(ci)}
+              />
+            )
+          })}
         </div>
       ) : null}
     </div>

@@ -79,9 +79,9 @@ export function IrisDivider({
         gap: 8,
         margin: `${SPACING_MAP[spacing]} 0`,
         color: 'var(--iris-muted)',
-        fontSize: 12,
+        fontSize: 'var(--iris-font-size-xs, 12px)',
         textTransform: 'uppercase',
-        letterSpacing: '0.04em',
+        letterSpacing: 'var(--iris-letter-spacing-wide, 0.04em)',
         ...style,
       }}
     >

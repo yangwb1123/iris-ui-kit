@@ -149,13 +149,13 @@ export function IrisTimePicker(props: IrisTimePickerProps): JSX.Element {
 
   const inputStyle: JSX.CSSProperties = {
     width: '48px',
-    padding: '4px 6px',
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
     'text-align': 'center',
     background: 'var(--iris-surface)',
     border: `1px solid ${local.invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
     'border-radius': 'var(--iris-radius-sm, 4px)',
     color: 'var(--iris-foreground)',
-    'font-size': '14px',
+    'font-size': 'var(--iris-font-size-md, 14px)',
     'font-family': 'inherit',
   }
 
@@ -205,7 +205,7 @@ export function IrisTimePicker(props: IrisTimePickerProps): JSX.Element {
             border: '1px solid var(--iris-border)',
             'border-radius': 'var(--iris-radius-sm, 4px)',
             color: 'var(--iris-foreground)',
-            'font-size': '13px',
+            'font-size': 'var(--iris-font-size-sm, 13px)',
             cursor: local.disabled ? 'not-allowed' : 'pointer',
             'font-family': 'inherit',
           }}

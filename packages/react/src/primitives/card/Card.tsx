@@ -1,13 +1,30 @@
 import * as React from 'react'
 
+const STYLE_ID = 'iris-card-styles'
+let installed = false
+function installCardStyles() {
+  if (installed || typeof document === 'undefined') return
+  installed = true
+  if (document.getElementById(STYLE_ID)) return
+  const style = document.createElement('style')
+  style.id = STYLE_ID
+  style.textContent = `
+[data-iris-card-hover="true"]:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--iris-shadow-lg);
+}
+`
+  document.head.appendChild(style)
+}
+
 export type IrisCardVariant = 'elevated' | 'outline' | 'subtle'
 export type IrisCardPadding = 'none' | 'sm' | 'md' | 'lg'
 
 const PADDING_MAP: Record<IrisCardPadding, string> = {
   none: '0',
   sm: '12px',
-  md: 'var(--iris-padding-md, 16px)',
-  lg: '24px',
+  md: 'var(--iris-padding-lg, 20px)',
+  lg: 'var(--iris-space-xl, 24px)',
 }
 
 function variantStyle(variant: IrisCardVariant): React.CSSProperties {
@@ -21,7 +38,7 @@ function variantStyle(variant: IrisCardVariant): React.CSSProperties {
   }
   switch (variant) {
     case 'elevated':
-      return { ...base, boxShadow: '0 1px 2px rgba(0,0,0,.05), 0 4px 12px rgba(0,0,0,.06)' }
+      return { ...base, boxShadow: 'var(--iris-shadow-md)' }
     case 'outline':
       return { ...base, border: '1px solid var(--iris-border)' }
     case 'subtle':
@@ -62,6 +79,10 @@ export function IrisCard({
     transition: hover ? 'transform 160ms ease, box-shadow 160ms ease' : 'none',
     ...style,
   }
+
+  React.useEffect(() => {
+    installCardStyles()
+  }, [])
 
   return (
     <div

@@ -94,7 +94,10 @@
   style="display:flex; flex-direction:column; gap:4px;{style ? ' ' + style : ''}"
 >
   {#if title != null}
-    <div data-iris-countdown-title style="font-size:13px; color:var(--iris-muted);">
+    <div
+      data-iris-countdown-title
+      style="font-size:var(--iris-font-size-sm, 13px); color:var(--iris-muted);"
+    >
       {String(title)}
     </div>
   {/if}

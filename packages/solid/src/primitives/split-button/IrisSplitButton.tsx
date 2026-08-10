@@ -13,9 +13,21 @@ export interface IrisSplitButtonAction {
 
 const SIZE_MAP: Record<IrisSplitButtonSize, { padding: string; fontSize: string; height: string }> =
   {
-    sm: { padding: '4px 10px', fontSize: '12px', height: '28px' },
-    md: { padding: '6px 14px', fontSize: '14px', height: '34px' },
-    lg: { padding: '8px 18px', fontSize: '16px', height: '40px' },
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      height: '28px',
+    },
+    md: {
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-space-md, 16px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      height: '34px',
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-space-lg, 20px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      height: '40px',
+    },
   }
 
 export interface IrisSplitButtonProps {
@@ -77,7 +89,7 @@ export function IrisSplitButton(props: IrisSplitButtonProps): JSX.Element {
     merged.variant === 'primary'
       ? {
           background: 'var(--iris-primary)',
-          color: '#fff',
+          color: 'var(--iris-primary-foreground, #fff)',
           border: '1px solid var(--iris-primary)',
         }
       : {
@@ -139,7 +151,7 @@ export function IrisSplitButton(props: IrisSplitButtonProps): JSX.Element {
                 : '1px solid var(--iris-border)',
             padding: '0 8px',
             'min-height': sz().height,
-            'font-size': '10px',
+            'font-size': 'var(--iris-font-size-xs, 12px)',
             'border-start-end-radius': 'var(--iris-radius-md, 6px)',
             'border-end-end-radius': 'var(--iris-radius-md, 6px)',
             cursor: merged.disabled ? 'not-allowed' : 'pointer',
@@ -169,7 +181,7 @@ export function IrisSplitButton(props: IrisSplitButtonProps): JSX.Element {
             background: 'var(--iris-background)',
             border: '1px solid var(--iris-border)',
             'border-radius': 'var(--iris-radius-md, 6px)',
-            'box-shadow': '0 8px 24px rgba(0,0,0,0.12)',
+            'box-shadow': 'var(--iris-shadow-lg)',
           }}
         >
           <For each={merged.actions}>
@@ -181,8 +193,8 @@ export function IrisSplitButton(props: IrisSplitButtonProps): JSX.Element {
                 data-key={a.key}
                 onClick={() => select(a)}
                 style={{
-                  padding: '6px 10px',
-                  'font-size': '14px',
+                  padding: 'var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px)',
+                  'font-size': 'var(--iris-font-size-md, 14px)',
                   'border-radius': 'var(--iris-radius-sm, 4px)',
                   cursor: a.disabled ? 'not-allowed' : 'pointer',
                   color: a.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',

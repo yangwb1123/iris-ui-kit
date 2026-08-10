@@ -75,7 +75,7 @@ export function IrisEventCalendar(props: IrisEventCalendarProps) {
         style={{
           display: 'grid',
           'grid-template-columns': 'repeat(7, 1fr)',
-          gap: 'var(--iris-cal-grid-gap, 1px)',
+          gap: 'var(--iris-cal-grid-gap, var(--iris-space-xxs, 4px))',
         }}
       >
         {/* Weekday headers */}
@@ -88,7 +88,7 @@ export function IrisEventCalendar(props: IrisEventCalendarProps) {
                 'font-weight': '600',
                 'font-size': '0.75em',
                 padding: '4px 0',
-                color: 'var(--iris-muted, #6b7280)',
+                color: 'var(--iris-muted, #64748b)',
               }}
             >
               {name}
@@ -116,14 +116,14 @@ export function IrisEventCalendar(props: IrisEventCalendarProps) {
                 style={{
                   'min-height': '64px',
                   padding: '4px',
-                  border: '1px solid var(--iris-border, #e5e7eb)',
+                  border: '1px solid var(--iris-border, #e2e8f0)',
                   'border-radius': '4px',
                   cursor: isCurrentMonth ? 'pointer' : 'default',
                   opacity: isCurrentMonth ? '1' : '0.4',
                   background: 'transparent',
                   display: 'flex',
                   'flex-direction': 'column',
-                  gap: '2px',
+                  gap: 'var(--iris-space-xxs, 4px)',
                 }}
                 onClick={() => {
                   if (isCurrentMonth) props.config.onDateClick?.(iso)
@@ -136,8 +136,10 @@ export function IrisEventCalendar(props: IrisEventCalendarProps) {
                     'align-self': 'flex-start',
                     'font-size': '0.8em',
                     'font-weight': isToday ? '700' : '400',
-                    background: isToday ? 'var(--iris-cal-today-bg, #6366f1)' : 'transparent',
-                    color: isToday ? '#fff' : 'inherit',
+                    background: isToday
+                      ? 'var(--iris-cal-today-bg, var(--iris-primary, #6366f1))'
+                      : 'transparent',
+                    color: isToday ? 'var(--iris-primary-foreground, #fff)' : 'inherit',
                     'border-radius': isToday ? '50%' : '0',
                     width: '22px',
                     height: '22px',
@@ -160,9 +162,11 @@ export function IrisEventCalendar(props: IrisEventCalendarProps) {
                         background: event.color
                           ? event.color
                           : 'var(--iris-cal-event-bg, rgba(99,102,241,0.15))',
-                        color: event.color ? '#fff' : 'var(--iris-primary, #6366f1)',
-                        'border-radius': '3px',
-                        padding: '1px 4px',
+                        color: event.color
+                          ? 'var(--iris-on-color, #ffffff)'
+                          : 'var(--iris-primary, #6366f1)',
+                        'border-radius': '4px',
+                        padding: 'var(--iris-space-xxs, 4px) 4px',
                         overflow: 'hidden',
                         'white-space': 'nowrap',
                         'text-overflow': 'ellipsis',

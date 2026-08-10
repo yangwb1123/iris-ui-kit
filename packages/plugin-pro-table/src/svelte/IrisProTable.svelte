@@ -211,7 +211,7 @@
                       sortableState.activeId &&
                       sortableState.overId === col.key &&
                       sortableState.activeId !== col.key
-                        ? 'outline:2px solid var(--iris-primary, #2563eb);outline-offset:-2px;'
+                        ? 'outline:2px solid var(--iris-primary, #6366f1);outline-offset:-2px;'
                         : ''
                     }${pinnedStyle(col)}`}
                     colspan={cell.colSpan}
@@ -312,7 +312,7 @@
                   sortableState.activeId &&
                   sortableState.overId === c.key &&
                   sortableState.activeId !== c.key
-                    ? 'outline:2px solid var(--iris-primary, #2563eb);outline-offset:-2px;'
+                    ? 'outline:2px solid var(--iris-primary, #6366f1);outline-offset:-2px;'
                     : ''
                 }${pinnedStyle(c)}`}
                 data-sortable={c.sortable ? '' : undefined}
@@ -440,7 +440,12 @@
   {#snippet rowMarkup(row: Row)}
     {@const key = store.rowKeyOf(row)}
     {@const treeRow = treeRowMap.get(key) ?? null}
-    <tr data-selected={store.isSelected(key) ? '' : undefined}>
+    <tr
+      data-selected={store.isSelected(key) ? '' : undefined}
+      style={store.isSelected(key)
+        ? 'background:var(--iris-pro-table-selected-bg,var(--iris-surface-selected,#eef2ff))'
+        : ''}
+    >
       <td style={treeRow ? `padding-inline-start:${treeRow.depth * 24}px` : ''}>
         {#if treeRow?.hasChildren}
           <span

@@ -32,6 +32,10 @@ function items(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll('[data-iris-cascader-item]'))
 }
 
+// Large fixtures for the opt-in virtual path (10k options per column).
+const BIG = Array.from({ length: 10_000 }, (_, i) => ({ label: `O${i}`, value: `v${i}` }))
+const DEEP = [{ label: 'root', value: 'r', children: BIG }]
+
 describe('IrisCascader (svelte)', () => {
   it('renders a trigger button', () => {
     const { container } = render(IrisCascader, { props: { options } })
@@ -162,6 +166,116 @@ describe('IrisCascader (svelte)', () => {
       const { container } = render(IrisCascader, { props: { options: [] } })
       await openDropdown(container)
       expect(dropdownEl(container)).toBeTruthy()
+    })
+  })
+
+  describe('virtual prop (opt-in windowing)', () => {
+    it('windows a large column instead of rendering every option (bounded DOM)', async () => {
+      const { container } = render(IrisCascader, { props: { options: BIG, virtual: true } })
+      await openDropdown(container)
+      // The svelte bridge keeps the numeric viewport (240) when jsdom reports
+      // clientHeight 0 — window is 12 options either way; the bound holds.
+      expect(container.querySelectorAll('[data-iris-cascader-item]').length).toBeLessThanOrEqual(20)
+      const spacer = container.querySelector('[data-iris-virtual-spacer]') as HTMLElement
+      expect(spacer.style.height).toBe('340000px') // 10_000 × 34
+    })
+
+    it('scrolling moves the window (clientHeight mocked)', async () => {
+      const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight')
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+        configurable: true,
+        get: () => 240,
+      })
+      try {
+        const { container } = render(IrisCascader, { props: { options: BIG, virtual: true } })
+        await openDropdown(container)
+        const scroller = container.querySelector('[data-iris-virtual-scroll]') as HTMLElement
+        const firstIndex = () =>
+          Number(
+            scroller
+              .querySelector('[data-iris-virtual-index]')
+              ?.getAttribute('data-iris-virtual-index'),
+          )
+        expect(firstIndex()).toBe(0)
+        Object.defineProperty(scroller, 'scrollTop', {
+          value: 1700, // 34 × 50
+          writable: true,
+          configurable: true,
+        })
+        await fireEvent.scroll(scroller)
+        await new Promise((r) => requestAnimationFrame(() => r()))
+        flushSync()
+        expect(firstIndex()).toBeGreaterThanOrEqual(40)
+      } finally {
+        if (descriptor) Object.defineProperty(HTMLElement.prototype, 'clientHeight', descriptor)
+        else delete (HTMLElement.prototype as { clientHeight?: unknown }).clientHeight
+      }
+    })
+
+    it('deep path: windowed columns stay clickable after scrolling', async () => {
+      const onValueChange = vi.fn()
+      const { container } = render(IrisCascader, {
+        props: { options: DEEP, virtual: true, onValueChange },
+      })
+      await openDropdown(container)
+      await fireEvent.click(items(container)[0]!) // root
+      flushSync()
+      const scrollers = container.querySelectorAll('[data-iris-virtual-scroll]')
+      expect(scrollers.length).toBe(2) // one virtualizer per open column
+      const scroller = scrollers[1] as HTMLElement
+      Object.defineProperty(scroller, 'scrollTop', {
+        value: 9999 * 34,
+        writable: true,
+        configurable: true,
+      })
+      await fireEvent.scroll(scroller)
+      await new Promise((r) => requestAnimationFrame(() => r()))
+      flushSync()
+      const leaf = Array.from(container.querySelectorAll('[data-iris-cascader-item]')).find(
+        (el) => el.textContent?.trim() === 'O9999',
+      ) as HTMLElement
+      expect(leaf).toBeTruthy()
+      await fireEvent.click(leaf)
+      flushSync()
+      expect(onValueChange).toHaveBeenCalledWith(['r', 'v9999'])
+      expect(dropdownEl(container)).toBeFalsy()
+    })
+
+    it('default-off renders every option (no virtualizer in DOM)', async () => {
+      const { container } = render(IrisCascader, { props: { options: BIG } })
+      await openDropdown(container)
+      expect(container.querySelectorAll('[data-iris-cascader-item]').length).toBe(10_000)
+      expect(container.querySelector('[data-iris-virtual-scroll]')).toBeNull()
+    }, 30_000)
+
+    it('a11y parity: virtual container carries the same surface as the plain listbox', async () => {
+      const small = [
+        { label: 'A', value: 'a', children: [{ label: 'A1', value: 'a1' }] },
+        { label: 'B', value: 'b' },
+      ]
+      const plain = render(IrisCascader, { props: { options: small } })
+      await openDropdown(plain.container)
+      const plainCol = plain.container.querySelector('[role="listbox"]')!
+      const plainOpt = plainCol.querySelector('[data-iris-cascader-item]')!
+      expect(plainCol.getAttribute('aria-label')).toBeTruthy()
+      expect(plainOpt.getAttribute('role')).toBe('option')
+      expect(plainOpt.getAttribute('aria-selected')).toBe('false')
+      plain.unmount()
+      const virt = render(IrisCascader, { props: { options: small, virtual: true } })
+      await openDropdown(virt.container)
+      const virtCol = virt.container.querySelector('[role="listbox"]')!
+      const virtOpt = virtCol.querySelector('[data-iris-cascader-item]')!
+      expect(virtCol.getAttribute('aria-label')).toBeTruthy()
+      expect(virtOpt.getAttribute('role')).toBe('option')
+      expect(virtOpt.getAttribute('aria-selected')).toBe('false')
+    })
+
+    it('virtual with empty options renders the dropdown without crashing', async () => {
+      const { container } = render(IrisCascader, { props: { options: [], virtual: true } })
+      await openDropdown(container)
+      expect(dropdownEl(container)).toBeTruthy()
+      expect(container.querySelectorAll('[role="listbox"]').length).toBe(1)
+      expect(container.querySelectorAll('[data-iris-cascader-item]').length).toBe(0)
     })
   })
 })

@@ -63,7 +63,7 @@ describe('@iris-ui-kit/svelte IrisInput', () => {
     ).toBe('sm')
     const lg = render(IrisInput, { props: { size: 'lg' } })
     expect(lg.container.querySelector('[data-iris-input]')!.getAttribute('style')).toContain(
-      'font-size: 16px',
+      'font-size: var(--iris-font-size-lg, 16px)',
     )
   })
 

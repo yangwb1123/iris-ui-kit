@@ -51,9 +51,10 @@
   // Desktop right-click menu: switch OS skin, open Display settings, or refresh
   // (just dismiss). Mirrors React's `Desktop.tsx` `desktopMenuItems`.
   const desktopMenuItems = $derived<MenuItem[]>([
-    ...OS_ORDER.map(
-      (id): MenuItem => ({ label: `Use ${CHROMES[id].label}`, onClick: () => osCtx.setOs(id) }),
-    ),
+    ...OS_ORDER.map((id): MenuItem => ({
+      label: `Use ${CHROMES[id].label}`,
+      onClick: () => osCtx.setOs(id),
+    })),
     { separator: true },
     { label: 'Display settings', onClick: () => open('settings') },
     { label: 'Refresh', onClick: () => (menu = null) },

@@ -352,9 +352,9 @@ export function useTableState(props: IrisTableSetupProps, emit: IrisTableEmit): 
         style: {
           display: 'inline-flex',
           flexDirection: 'column',
-          marginInlineStart: '4px',
+          marginInlineStart: 'var(--iris-space-xxs, 4px)',
           lineHeight: '0.6',
-          fontSize: '8px',
+          fontSize: 'var(--iris-font-size-xs, 12px)',
           color: isActive ? 'var(--iris-primary)' : 'var(--iris-muted)',
         },
       },

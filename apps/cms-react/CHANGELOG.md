@@ -1,5 +1,15 @@
 # cms-react
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [267713a]
+- Updated dependencies [a5a34d9]
+  - @iris-ui-kit/tokens@0.3.0
+  - @iris-ui-kit/react@0.2.2
+  - @iris-ui-kit/plugin-form-builder@2.0.1
+
 ## 0.0.2
 
 ### Patch Changes

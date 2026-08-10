@@ -141,7 +141,7 @@
     data-iris-tooltip
     data-state="open"
     data-placement={placement}
-    style="{floating.floatingStyles}; background: var(--iris-foreground); color: var(--iris-background); padding: 4px 8px; border-radius: var(--iris-radius-sm, 4px); font-size: 12px; line-height: 1.4; max-width: 240px; pointer-events: none; z-index: 1100; {rest.style ??
+    style="{floating.floatingStyles}; background: var(--iris-foreground); color: var(--iris-background); animation: var(--iris-anim-tooltip); padding: 4px 8px; border-radius: var(--iris-radius-sm, 4px); font-size: var(--iris-font-size-xs, 12px); line-height: 1.4; max-width: 240px; pointer-events: none; z-index: var(--iris-z-tooltip, 1100); {rest.style ??
       ''}"
   >
     {#if contentSlot}

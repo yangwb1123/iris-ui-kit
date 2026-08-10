@@ -238,4 +238,69 @@ describe('@iris-ui-kit/vue IrisCalendar', () => {
     const cells = wrap.findAll('[data-iris-calendar-day]')
     expect(cells.every((c) => (c.element as HTMLButtonElement).disabled)).toBe(true)
   })
+
+  describe('grid roving semantics (sunk to core createCalendarNav)', () => {
+    // The seeded `modelValue` is also the roving focus; on that cell `selected`
+    // wins over `focused` in data-state, so focus is asserted via `tabindex`.
+    const bounds = {
+      defaultMonth: new Date(2024, 5, 1),
+      min: new Date(2024, 5, 10),
+      max: new Date(2024, 6, 20),
+      locale: 'en-US',
+    }
+    const key = async (wrap: ReturnType<typeof mount>, k: string) => {
+      await wrap.find('[data-iris-calendar-grid]').trigger('keydown', { key: k })
+      await nextTick()
+    }
+
+    it('ArrowRight at a row end stays (no wrap, no month flip)', async () => {
+      const wrap = mount(IrisCalendar, {
+        props: { modelValue: new Date(2024, 5, 15), ...bounds },
+      })
+      await key(wrap, 'ArrowRight')
+      expect(wrap.find('[data-iris-calendar-day-iso="2024-06-15"]').attributes('tabindex')).toBe(
+        '0',
+      )
+      expect(wrap.find('[data-iris-calendar-day-iso="2024-06-16"]').attributes('tabindex')).toBe(
+        '-1',
+      )
+      expect(wrap.find('[data-iris-calendar-title]').text()).toMatch(/June 2024/)
+    })
+
+    it('ArrowLeft blocked by a disabled cell stays', async () => {
+      const wrap = mount(IrisCalendar, {
+        props: { modelValue: new Date(2024, 5, 10), ...bounds },
+      })
+      await key(wrap, 'ArrowLeft')
+      expect(wrap.find('[data-iris-calendar-day-iso="2024-06-10"]').attributes('tabindex')).toBe(
+        '0',
+      )
+      expect(wrap.find('[data-iris-calendar-day-iso="2024-06-11"]').attributes('tabindex')).toBe(
+        '-1',
+      )
+    })
+
+    it('Home skips disabled cells to the nearest enabled row start', async () => {
+      const wrap = mount(IrisCalendar, {
+        props: { modelValue: new Date(2024, 5, 11), ...bounds },
+      })
+      await key(wrap, 'Home')
+      expect(wrap.find('[data-iris-calendar-day-iso="2024-06-10"]').attributes('tabindex')).toBe(
+        '0',
+      )
+    })
+
+    it('ArrowUp skips a fully-disabled column segment (stays, no clamp-jump)', async () => {
+      const wrap = mount(IrisCalendar, {
+        props: { modelValue: new Date(2024, 5, 12), ...bounds },
+      })
+      await key(wrap, 'ArrowUp')
+      expect(wrap.find('[data-iris-calendar-day-iso="2024-06-12"]').attributes('tabindex')).toBe(
+        '0',
+      )
+      expect(wrap.find('[data-iris-calendar-day-iso="2024-06-10"]').attributes('tabindex')).toBe(
+        '-1',
+      )
+    })
+  })
 })

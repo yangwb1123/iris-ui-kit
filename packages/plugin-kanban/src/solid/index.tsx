@@ -100,7 +100,7 @@ export function IrisKanban(props: IrisKanbanProps) {
       class={props.class}
       style={{
         display: 'flex',
-        gap: 'var(--iris-kanban-gap, 16px)',
+        gap: 'var(--iris-kanban-gap, var(--iris-space-md, 16px))',
         'align-items': 'flex-start',
         'overflow-x': 'auto',
         ...props.style,
@@ -124,7 +124,7 @@ export function IrisKanban(props: IrisKanbanProps) {
                 // Live drop highlight for the touch/pen pointer path.
                 outline:
                   sortableState().activeId && sortableState().overId === col.id && !atLimit()
-                    ? '2px solid var(--iris-primary, #2563eb)'
+                    ? '2px solid var(--iris-primary, #6366f1)'
                     : undefined,
                 'outline-offset': '2px',
               }}
@@ -146,14 +146,14 @@ export function IrisKanban(props: IrisKanbanProps) {
                 style={{
                   display: 'flex',
                   'align-items': 'center',
-                  gap: '6px',
+                  gap: 'var(--iris-space-xs, 8px)',
                   'font-weight': '600',
                 }}
               >
                 <span>{col.title}</span>
                 <span
                   data-iris-kanban-count=""
-                  style={{ 'font-size': '0.8em', color: 'var(--iris-muted, #6b7280)' }}
+                  style={{ 'font-size': '0.8em', color: 'var(--iris-muted, #64748b)' }}
                 >
                   {col.limit !== undefined
                     ? `${kanbanState().columns.find((c) => c.id === col.id)!.cards.length}/${col.limit}`
@@ -165,9 +165,9 @@ export function IrisKanban(props: IrisKanbanProps) {
                     style={{
                       'font-size': '0.7em',
                       background: 'var(--iris-warning, #f59e0b)',
-                      color: '#fff',
+                      color: 'var(--iris-warning-foreground, #451a03)',
                       'border-radius': '4px',
-                      padding: '1px 5px',
+                      padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
                     }}
                   >
                     WIP
@@ -182,10 +182,10 @@ export function IrisKanban(props: IrisKanbanProps) {
                     data-iris-kanban-card={card.id}
                     draggable={true}
                     style={{
-                      background: 'var(--iris-kanban-card-bg, #fff)',
-                      border: '1px solid var(--iris-border, #e5e7eb)',
+                      background: 'var(--iris-kanban-card-bg, var(--iris-surface, #f8fafc))',
+                      border: '1px solid var(--iris-border, #e2e8f0)',
                       'border-radius': '6px',
-                      padding: '8px 10px',
+                      padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
                       cursor: 'grab',
                       display: 'flex',
                       'flex-direction': 'column',
@@ -212,7 +212,7 @@ export function IrisKanban(props: IrisKanbanProps) {
                     <Show when={card.description}>
                       <span
                         data-iris-kanban-card-desc=""
-                        style={{ 'font-size': '0.85em', color: 'var(--iris-muted, #6b7280)' }}
+                        style={{ 'font-size': '0.85em', color: 'var(--iris-muted, #64748b)' }}
                       >
                         {card.description}
                       </span>
@@ -229,9 +229,9 @@ export function IrisKanban(props: IrisKanbanProps) {
                               style={{
                                 'font-size': '0.75em',
                                 background: 'var(--iris-primary-subtle, #eff6ff)',
-                                color: 'var(--iris-primary, #2563eb)',
+                                color: 'var(--iris-primary, #6366f1)',
                                 'border-radius': '4px',
-                                padding: '1px 5px',
+                                padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
                               }}
                             >
                               {tag}

@@ -1,8 +1,8 @@
 import * as React from 'react'
+import { createCalendarNav } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { useStore } from '../../useStore'
 import {
-  addDays,
-  addMonths,
   buildMonthMatrix,
   clampDate,
   endOfMonth,
@@ -60,18 +60,30 @@ export function IrisCalendar({
   const selectedValue = isControlled ? (valueProp as Date | null) : internal
 
   const initialMonth = defaultMonth ?? selectedValue ?? new Date()
-  const [visibleMonth, setVisibleMonth] = React.useState<Date>(startOfMonth(initialMonth))
-  const [focusDate, setFocusDate] = React.useState<Date>(
-    clampDate(selectedValue ?? new Date(), min, max),
+  // Keyboard roving lives in the core `createCalendarNav` controller; this
+  // adapter only renders and bridges. Options are captured at creation (the
+  // resource-controller precedent): min/max/weekStartsOn changes require a
+  // remount — documented limitation.
+  const nav = React.useMemo(
+    () =>
+      createCalendarNav({
+        initialMonth: startOfMonth(initialMonth),
+        initialFocusDate: clampDate(selectedValue ?? new Date(), min, max),
+        weekStartsOn,
+        min,
+        max,
+      }),
+    [],
   )
+  const { visibleMonth, focusDate } = useStore(nav.store)
 
   // Sync visible month if value moves to a different month.
   React.useEffect(() => {
-    if (selectedValue && !isSameMonth(selectedValue, visibleMonth)) {
-      setVisibleMonth(startOfMonth(selectedValue))
-      setFocusDate(clampDate(selectedValue, min, max))
+    if (selectedValue && !isSameMonth(selectedValue, nav.getVisibleMonth())) {
+      nav.setVisibleMonth(startOfMonth(selectedValue))
+      nav.setFocusDate(clampDate(selectedValue, min, max))
     }
-  }, [selectedValue, visibleMonth, min, max])
+  }, [selectedValue, nav, min, max])
 
   const matrix = React.useMemo(
     () => buildMonthMatrix(visibleMonth, weekStartsOn),
@@ -100,14 +112,6 @@ export function IrisCalendar({
     onValueChange?.(next)
   }
 
-  const moveFocus = (delta: number) => {
-    const next = clampDate(addDays(focusDate, delta), min, max)
-    setFocusDate(next)
-    if (!isSameMonth(next, visibleMonth)) {
-      setVisibleMonth(startOfMonth(next))
-    }
-  }
-
   const selectDate = (date: Date) => {
     if (disabled) return
     if (isOutOfRange(date, min, max)) return
@@ -115,50 +119,13 @@ export function IrisCalendar({
   }
 
   const onGridKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    switch (event.key) {
-      case 'ArrowLeft':
-        event.preventDefault()
-        moveFocus(-1)
-        break
-      case 'ArrowRight':
-        event.preventDefault()
-        moveFocus(1)
-        break
-      case 'ArrowUp':
-        event.preventDefault()
-        moveFocus(-7)
-        break
-      case 'ArrowDown':
-        event.preventDefault()
-        moveFocus(7)
-        break
-      case 'Home': {
-        event.preventDefault()
-        const offset = (focusDate.getDay() - weekStartsOn + 7) % 7
-        moveFocus(-offset)
-        break
-      }
-      case 'End': {
-        event.preventDefault()
-        const offset = (focusDate.getDay() - weekStartsOn + 7) % 7
-        moveFocus(6 - offset)
-        break
-      }
-      case 'PageUp':
-        event.preventDefault()
-        setVisibleMonth((m) => addMonths(m, -1))
-        setFocusDate((d) => clampDate(addMonths(d, -1), min, max))
-        break
-      case 'PageDown':
-        event.preventDefault()
-        setVisibleMonth((m) => addMonths(m, 1))
-        setFocusDate((d) => clampDate(addMonths(d, 1), min, max))
-        break
-      case 'Enter':
-      case ' ':
-        event.preventDefault()
-        selectDate(focusDate)
-        break
+    if (nav.handleKey(event.key)) {
+      event.preventDefault()
+      return
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      selectDate(focusDate)
     }
   }
 
@@ -213,7 +180,7 @@ export function IrisCalendar({
           aria-label={t('calendar.previousMonth')}
           data-iris-calendar-prev=""
           disabled={prevDisabled || undefined}
-          onClick={() => setVisibleMonth((m) => addMonths(m, -1))}
+          onClick={() => nav.goToMonth(-1)}
           style={{
             ...navButtonStyle,
             opacity: prevDisabled ? 0.4 : 1,
@@ -225,7 +192,7 @@ export function IrisCalendar({
         <div
           data-iris-calendar-title=""
           aria-live="polite"
-          style={{ fontWeight: 600, fontSize: 14 }}
+          style={{ fontWeight: 600, fontSize: 'var(--iris-font-size-md, 14px)' }}
         >
           {title}
         </div>
@@ -234,7 +201,7 @@ export function IrisCalendar({
           aria-label={t('calendar.nextMonth')}
           data-iris-calendar-next=""
           disabled={nextDisabled || undefined}
-          onClick={() => setVisibleMonth((m) => addMonths(m, 1))}
+          onClick={() => nav.goToMonth(1)}
           style={{
             ...navButtonStyle,
             opacity: nextDisabled ? 0.4 : 1,
@@ -250,14 +217,14 @@ export function IrisCalendar({
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-          gap: 2,
-          fontSize: 12,
+          gap: 'var(--iris-space-xxs, 4px)',
+          fontSize: 'var(--iris-font-size-xs, 12px)',
           color: 'var(--iris-muted)',
           textAlign: 'center',
         }}
       >
         {weekdays.map((name) => (
-          <div key={name} role="columnheader" style={{ padding: '2px 0' }}>
+          <div key={name} role="columnheader" style={{ padding: 'var(--iris-space-xxs, 4px) 0' }}>
             {name}
           </div>
         ))}
@@ -270,7 +237,7 @@ export function IrisCalendar({
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-          gap: 2,
+          gap: 'var(--iris-space-xxs, 4px)',
         }}
       >
         {matrix.map((week, wi) => (
@@ -307,10 +274,10 @@ export function IrisCalendar({
                   data-outside-month={!inMonth ? 'true' : undefined}
                   disabled={isDisabled || undefined}
                   onClick={() => {
-                    setFocusDate(date)
+                    nav.setFocusDate(date)
                     selectDate(date)
                   }}
-                  onFocus={() => setFocusDate(date)}
+                  onFocus={() => nav.setFocusDate(date)}
                   style={{
                     height: 32,
                     display: 'inline-flex',
@@ -330,7 +297,7 @@ export function IrisCalendar({
                     borderRadius: 'var(--iris-radius-sm, 4px)',
                     cursor: isDisabled ? 'not-allowed' : 'pointer',
                     opacity: isDisabled ? 0.45 : 1,
-                    fontSize: 13,
+                    fontSize: 'var(--iris-font-size-sm, 13px)',
                     fontFamily: 'inherit',
                     outline: 'none',
                   }}

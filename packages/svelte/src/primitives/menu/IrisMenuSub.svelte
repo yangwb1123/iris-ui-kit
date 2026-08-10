@@ -207,7 +207,7 @@
     data-iris-menu-sub-content
     onpointerenter={clearTimer}
     onkeydown={onContentKeyDown}
-    style="{floating.floatingStyles}; background: var(--iris-surface); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-sm, 4px); box-shadow: 0 8px 24px -8px rgba(0,0,0,0.16); min-width: 140px; z-index: 1001; outline: none"
+    style="{floating.floatingStyles}; background: var(--iris-surface-floating); border: 1px solid var(--iris-border); border-radius: var(--iris-radius-md, 6px); padding: var(--iris-padding-sm, 4px); box-shadow: var(--iris-shadow-lg); min-width: 140px; z-index: 1001; outline: none"
   >
     {@render children?.()}
   </div>

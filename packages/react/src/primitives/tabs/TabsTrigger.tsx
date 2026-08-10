@@ -110,13 +110,13 @@ export const IrisTabsTrigger = React.forwardRef<HTMLElement, IrisTabsTriggerProp
         disabled={isDisabled ? true : undefined}
         style={{
           padding: '8px var(--iris-padding-md, 12px)',
-          fontSize: 14,
+          fontSize: 'var(--iris-font-size-md, 14px)',
           fontWeight: 500,
           fontFamily: 'inherit',
           cursor: isDisabled ? 'not-allowed' : 'pointer',
           opacity: isDisabled ? 0.5 : 1,
           border: 'none',
-          outline: 'none',
+
           background: 'transparent',
           color: isActive ? 'var(--iris-primary)' : 'var(--iris-muted)',
           marginBottom: horizontal ? -1 : undefined,

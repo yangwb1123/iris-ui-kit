@@ -139,9 +139,9 @@ function IrisTreeNodeItem(nodeProps: {
               <span
                 data-iris-tree-loading=""
                 style={{
-                  'font-size': '10px',
+                  'font-size': 'var(--iris-font-size-xs, 12px)',
                   'user-select': 'none',
-                  color: 'var(--iris-muted, #888)',
+                  color: 'var(--iris-muted, #64748b)',
                 }}
               >
                 ⟳
@@ -151,7 +151,7 @@ function IrisTreeNodeItem(nodeProps: {
             <span
               data-iris-tree-expand=""
               style={{
-                'font-size': '10px',
+                'font-size': 'var(--iris-font-size-xs, 12px)',
                 transition: 'transform 150ms',
                 transform: nodeProps.expanded() ? 'rotate(90deg)' : 'none',
                 'user-select': 'none',
@@ -178,16 +178,18 @@ function IrisTreeNodeItem(nodeProps: {
             }}
           />
         </Show>
-        <span style={{ 'font-size': '14px', color: 'var(--iris-foreground)' }}>
+        <span
+          style={{ 'font-size': 'var(--iris-font-size-md, 14px)', color: 'var(--iris-foreground)' }}
+        >
           {nodeProps.node.label}
         </span>
         <Show when={nodeProps.errored}>
           <span
             data-iris-tree-error=""
             style={{
-              'font-size': '10px',
+              'font-size': 'var(--iris-font-size-xs, 12px)',
               'margin-left': '4px',
-              color: 'var(--iris-danger, #e53e3e)',
+              color: 'var(--iris-danger, #ef4444)',
             }}
           >
             !
@@ -513,7 +515,7 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
           padding: '12px',
           'text-align': 'center',
           color: 'var(--iris-muted)',
-          'font-size': '14px',
+          'font-size': 'var(--iris-font-size-md, 14px)',
         }}
       >
         {local.errorState ?? t('tree.error')}
@@ -528,7 +530,7 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
           padding: '12px',
           'text-align': 'center',
           color: 'var(--iris-muted)',
-          'font-size': '14px',
+          'font-size': 'var(--iris-font-size-md, 14px)',
         }}
       >
         {local.loadingState ?? t('tree.loading')}
@@ -543,7 +545,7 @@ export function IrisTree(props: IrisTreeProps): JSX.Element {
           padding: '12px',
           'text-align': 'center',
           color: 'var(--iris-muted)',
-          'font-size': '14px',
+          'font-size': 'var(--iris-font-size-md, 14px)',
         }}
       >
         {local.emptyState ?? t('tree.empty')}

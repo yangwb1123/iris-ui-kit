@@ -5,9 +5,9 @@ export type IrisOtpInputSize = 'sm' | 'md' | 'lg'
 export type IrisOtpInputType = 'numeric' | 'alphanumeric'
 
 const SIZE_MAP: Record<IrisOtpInputSize, { box: string; height: string; fontSize: string }> = {
-  sm: { box: '32px', height: '36px', fontSize: '14px' },
-  md: { box: '38px', height: '44px', fontSize: '18px' },
-  lg: { box: '44px', height: '52px', fontSize: '20px' },
+  sm: { box: '32px', height: '36px', fontSize: 'var(--iris-font-size-md, 14px)' },
+  md: { box: '38px', height: '44px', fontSize: 'var(--iris-font-size-xl, 18px)' },
+  lg: { box: '44px', height: '52px', fontSize: 'var(--iris-font-size-2xl, 20px)' },
 }
 
 const PATTERNS: Record<IrisOtpInputType, RegExp> = {
@@ -224,7 +224,7 @@ export function IrisOtpInput(props: IrisOtpInputProps): JSX.Element {
                 outline: 'none',
                 opacity: local.disabled ? 0.6 : 1,
                 'box-shadow': isFocused()
-                  ? `0 0 0 3px ${local.invalid ? 'rgba(239,68,68,0.18)' : 'rgba(99,102,241,0.18)'}`
+                  ? `0 0 0 3px ${local.invalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
                   : 'none',
                 transition: 'border-color 120ms ease, box-shadow 120ms ease',
               }}

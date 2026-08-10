@@ -53,9 +53,21 @@
   let rawText = $state<string>(value === null || value === undefined ? '' : String(value))
 
   const SIZE_MAP: Record<Size, { padding: string; fontSize: string; minHeight: string }> = {
-    sm: { padding: '4px var(--iris-padding-sm, 8px)', fontSize: '12px', minHeight: '28px' },
-    md: { padding: '6px var(--iris-padding-md, 12px)', fontSize: '14px', minHeight: '34px' },
-    lg: { padding: '8px var(--iris-padding-md, 12px)', fontSize: '16px', minHeight: '40px' },
+    sm: {
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+      fontSize: 'var(--iris-font-size-xs, 12px)',
+      minHeight: '28px',
+    },
+    md: {
+      padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+      minHeight: '34px',
+    },
+    lg: {
+      padding: 'var(--iris-space-xs, 8px) var(--iris-padding-md, 12px)',
+      fontSize: 'var(--iris-font-size-lg, 16px)',
+      minHeight: '40px',
+    },
   }
 
   function decimalsOf(s: number): number {
@@ -81,7 +93,7 @@
         ? 'var(--iris-primary)'
         : 'var(--iris-border)'
     const boxShadow = focused
-      ? `0 0 0 3px ${invalid ? 'rgba(239, 68, 68, 0.18)' : 'rgba(99, 102, 241, 0.18)'}`
+      ? `0 0 0 3px ${invalid ? 'color-mix(in srgb, var(--iris-danger) 18%, transparent)' : 'color-mix(in srgb, var(--iris-primary) 18%, transparent)'}`
       : 'none'
     const s = SIZE_MAP[size]
     return styleToString({

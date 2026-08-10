@@ -81,12 +81,12 @@ export function IrisDatePicker(props: IrisDatePickerProps): JSX.Element {
           display: 'inline-flex',
           'align-items': 'center',
           gap: '8px',
-          padding: '6px 12px',
+          padding: 'var(--iris-padding-sm, 6px) var(--iris-padding-md, 12px)',
           background: 'var(--iris-surface)',
           border: `1px solid ${local.invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
           'border-radius': 'var(--iris-radius-md, 6px)',
           color: display() ? 'var(--iris-foreground)' : 'var(--iris-muted)',
-          'font-size': '14px',
+          'font-size': 'var(--iris-font-size-md, 14px)',
           'font-family': 'inherit',
           cursor: local.disabled ? 'not-allowed' : 'pointer',
           opacity: local.disabled ? '0.5' : '1',
@@ -96,7 +96,7 @@ export function IrisDatePicker(props: IrisDatePickerProps): JSX.Element {
         <span style={{ flex: '1', 'text-align': 'start' }}>
           {display() || (local.placeholder ?? t('datePicker.placeholder'))}
         </span>
-        <span aria-hidden="true" style={{ 'font-size': '16px' }}>
+        <span aria-hidden="true" style={{ 'font-size': 'var(--iris-font-size-lg, 16px)' }}>
           📅
         </span>
       </button>
@@ -111,7 +111,7 @@ export function IrisDatePicker(props: IrisDatePickerProps): JSX.Element {
             left: '0',
             'z-index': '100',
             'margin-top': '4px',
-            'box-shadow': '0 4px 16px rgba(0,0,0,0.12)',
+            'box-shadow': 'var(--iris-shadow-lg)',
             'border-radius': 'var(--iris-radius-md, 6px)',
           }}
           onMouseDown={(e) => e.preventDefault()}

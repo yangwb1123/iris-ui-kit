@@ -131,6 +131,7 @@ export {
   toCsv,
   toJson,
   toHtml,
+  parseCsv,
   type TableExportColumn,
   type SpreadsheetXmlOptions,
   type TableHtmlOptions,
@@ -203,6 +204,12 @@ export {
   type GridNavKey,
   type GridNavOptions,
 } from './roving'
+export {
+  createCalendarNav,
+  type CalendarNav,
+  type CalendarNavState,
+  type CreateCalendarNavOptions,
+} from './calendar-nav'
 export {
   flattenLeafColumns,
   buildHeaderMatrix,
@@ -316,6 +323,15 @@ export {
   type MutateOptions,
 } from './resource'
 export {
+  createRemoteTableSource,
+  type RemoteTableSource,
+  type RemoteTableSourceOptions,
+  type RemoteTableSourceState,
+  type RemoteTableParams,
+} from './remote-table'
+export { buildFormValues, mergeFormFilters, seedFormValues } from './table-form'
+export { insertRowInList, removeRowFromList, updateRowInList } from './table-rows'
+export {
   createTabsNav,
   isClosable,
   type TabsNav,
@@ -370,3 +386,17 @@ export * from './event-bus'
 export * from './circuit-breaker'
 export * from './rate-limiter'
 export * from './resilient-fetcher'
+export {
+  composeFeatures,
+  hasComposableFeatures,
+  COMPOSE_ORDER,
+  type ComposableFeature,
+} from './compose'
+export {
+  validateEditRules,
+  validateEditRulesAsync,
+  type EditRule,
+  type EditRules,
+} from './edit-rules'
+export { createUndoStack, type UndoStack, type UndoStackOptions } from './undo'
+export { setCellValue } from './cell-edit'

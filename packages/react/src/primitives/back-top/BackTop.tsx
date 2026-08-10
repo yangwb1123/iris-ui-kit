@@ -93,11 +93,11 @@ export function IrisBackTop({
         background: 'var(--iris-surface, var(--iris-background))',
         color: 'var(--iris-foreground)',
         cursor: 'pointer',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        boxShadow: 'var(--iris-shadow-md)',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: 18,
+        fontSize: 'var(--iris-font-size-xl, 18px)',
         ...style,
       }}
     >

@@ -99,7 +99,7 @@ export function IrisCountdown(props: IrisCountdownProps): JSX.Element {
       {local.title != null && (
         <div
           data-iris-countdown-title=""
-          style={{ 'font-size': '13px', color: 'var(--iris-muted)' }}
+          style={{ 'font-size': 'var(--iris-font-size-sm, 13px)', color: 'var(--iris-muted)' }}
         >
           {String(local.title)}
         </div>

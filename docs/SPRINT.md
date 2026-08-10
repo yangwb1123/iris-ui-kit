@@ -57,3 +57,22 @@ Svelte 目标 83/83、全包 855/855 + SSR 31/31。
 - 四套 CMS 保持真实页面实现，四套 SSR reference 保持多路由生产证明。
 - 文档记录实际通过结果，不记录估算或旧会话数字。
 - 不执行首次 npm 发布；该动作留给维护者授权。
+
+## 2026-08-07 设计系统统一与设计智能收口
+
+- token 刻度补全 + 589 设计违规归零 + 四框架视觉一致（solid/svelte
+  像素级；vue 2.8% 已知基线，0.05 回归门）。
+- 设计智能评审 18 项全部落地（Button danger/Select 空态+界高+软化/
+  Table 计数+重试+数字右对齐/Card hover/对比度/backdrop/info tone/
+  focus ring/Gauge 诚实值/Statistic trendTone/空态文案）。
+- 门禁：180/180 turbo、审计 0 违规、visual-parity 四框架 PASS、
+  format/arch/token 全绿。
+- 记录项：Gauge 阈值映射（显式 status，注释已给建议）。
+
+## 2026-08-08 迭代记录（react 适配器，未提交）
+
+- `IrisTree` 新增 opt-in `virtual?: IrisTreeVirtualOptions`（窗口化扁平节点
+  列表）：零 core 改动，复用 `createVirtualizer` + `IrisVirtualScroll` 桥；
+  键盘导航滚动到活动行 + 焦点跟随（rAF 重查、过期链丢弃）；不传 `virtual`
+  与之前逐字节一致。react 包 1478/1478 测试 + typecheck/lint/build 全绿。
+- 门禁状态以实际跑通为准：本条目记录迭代内容，不预宣称整仓门。

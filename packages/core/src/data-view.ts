@@ -44,7 +44,12 @@ export interface DataViewColumn<Row> {
   key: string
   /** Read the cell value from a row. */
   getValue: (row: Row) => unknown
-  /** Participates in substring filtering when a filter for this key is set. */
+  /**
+   * Filter participation. Only an explicit `false` opts the column out: its
+   * terms are skipped by BOTH substring `filters` and typed `filterRules` (the
+   * row is kept, exactly like a filter on an unknown key). `undefined`/`true`
+   * keep the column filterable. Sorting is never gated by this flag.
+   */
   filterable?: boolean
   /** Custom comparator; defaults to {@link compareValues} on the cell values. */
   sorter?: (a: Row, b: Row) => number
@@ -142,7 +147,9 @@ function matchesRule(value: unknown, rule: FilterRule): boolean {
 
 /**
  * Filter then sort the full row set (no pagination). Substring `filters` and
- * typed `filterRules` are both applied (a row must satisfy all). Sorting uses
+ * typed `filterRules` are both applied (a row must satisfy all), except for
+ * columns with `filterable: false` — their terms are skipped, row kept.
+ * Sorting uses
  * `sort` (single column) or, when that is null, `multiSort` (most-significant
  * first); each column uses its `sorter` or {@link compareValues}.
  */
@@ -165,14 +172,14 @@ export function filterSort<Row>(
       (row) =>
         activeFilters.every(([key, value]) => {
           const col = colOf(key)
-          if (!col) return true
+          if (!col || col.filterable === false) return true
           return String(col.getValue(row) ?? '')
             .toLowerCase()
             .includes(value.toLowerCase())
         }) &&
         rules.every((rule) => {
           const col = colOf(rule.key)
-          if (!col) return true
+          if (!col || col.filterable === false) return true
           return matchesRule(col.getValue(row), rule)
         }),
     )

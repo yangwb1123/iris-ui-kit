@@ -42,7 +42,7 @@ export function IrisDescriptions({
 
   const labelStyle: React.CSSProperties = {
     margin: 0,
-    fontSize: 13,
+    fontSize: 'var(--iris-font-size-sm, 13px)',
     fontWeight: 500,
     color: 'var(--iris-muted)',
     padding: pad,
@@ -50,7 +50,7 @@ export function IrisDescriptions({
   }
   const valueStyle: React.CSSProperties = {
     margin: 0,
-    fontSize: 14,
+    fontSize: 'var(--iris-font-size-md, 14px)',
     color: 'var(--iris-foreground)',
     padding: pad,
   }

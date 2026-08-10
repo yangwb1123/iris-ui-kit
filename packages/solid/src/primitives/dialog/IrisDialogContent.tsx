@@ -1,4 +1,5 @@
 import { createEffect, onCleanup, splitProps, Show, type JSX } from 'solid-js'
+import { installFloatingAnimations, ANIM_DIALOG } from '../../floating/animations'
 import { Portal, Dynamic } from 'solid-js/web'
 import { useBodyScrollLock } from '../../modal-utils/useBodyScrollLock'
 import { useFocusTrap } from '../../modal-utils/useFocusTrap'
@@ -47,6 +48,7 @@ export function IrisDialogContent(props: IrisDialogContentProps): JSX.Element {
   }
 
   createEffect(() => {
+    installFloatingAnimations()
     if (typeof document === 'undefined') return
     if (ctx.open()) {
       document.addEventListener('keydown', onKeyDown)
@@ -77,8 +79,8 @@ export function IrisDialogContent(props: IrisDialogContentProps): JSX.Element {
       style={{
         position: 'fixed',
         inset: '0',
-        background: 'rgba(0, 0, 0, 0.5)',
-        'z-index': 1200,
+        background: 'var(--iris-backdrop, rgba(0, 0, 0, 0.5))',
+        'z-index': 'var(--iris-z-modal, 1200)',
         display: 'flex',
         'align-items': 'center',
         'justify-content': 'center',
@@ -97,12 +99,13 @@ export function IrisDialogContent(props: IrisDialogContentProps): JSX.Element {
         data-state="open"
         onPointerDown={onContentPointerDown}
         style={{
-          background: 'var(--iris-surface)',
+          background: 'var(--iris-surface-floating)',
+          animation: ANIM_DIALOG,
           color: 'var(--iris-foreground)',
           border: '1px solid var(--iris-border)',
           'border-radius': 'var(--iris-radius-lg)',
           padding: 'var(--iris-padding-lg)',
-          'box-shadow': '0 24px 48px -16px rgba(0,0,0,0.32), 0 8px 16px -4px rgba(0,0,0,0.16)',
+          'box-shadow': 'var(--iris-shadow-xl)',
           'max-width': '90vw',
           'max-height': '85vh',
           overflow: 'auto',
@@ -142,7 +145,7 @@ export function IrisDialogTitle(props: IrisDialogTitleProps): JSX.Element {
       id={ctx.titleId}
       style={{
         margin: '0 0 var(--iris-gap-md) 0',
-        'font-size': '18px',
+        'font-size': 'var(--iris-font-size-xl, 18px)',
         'font-weight': '600',
         ...((style as JSX.CSSProperties) ?? {}),
       }}
@@ -167,7 +170,7 @@ export function IrisDialogDescription(props: IrisDialogDescriptionProps): JSX.El
       style={{
         margin: '0 0 var(--iris-gap-lg) 0',
         color: 'var(--iris-muted)',
-        'font-size': '14px',
+        'font-size': 'var(--iris-font-size-md, 14px)',
         ...((style as JSX.CSSProperties) ?? {}),
       }}
     />

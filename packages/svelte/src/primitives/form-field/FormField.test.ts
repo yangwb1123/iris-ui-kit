@@ -80,7 +80,7 @@ describe('@iris-ui-kit/svelte IrisFormField', () => {
   it('size="sm" affects label font-size', () => {
     const { container } = render(FormFieldPropsHarness, { props: { label: 'X', size: 'sm' } })
     const label = container.querySelector('label[data-iris-form-field-label]') as HTMLLabelElement
-    expect(label.getAttribute('style')).toContain('font-size: 12px')
+    expect(label.getAttribute('style')).toContain('font-size: var(--iris-font-size-xs, 12px)')
   })
 
   it('label color flips to danger when error present', () => {

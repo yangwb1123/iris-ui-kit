@@ -13,7 +13,7 @@ export interface IrisTimelineItem {
 
 const VARIANT_COLOR: Record<IrisTimelineVariant, string> = {
   default: 'var(--iris-primary)',
-  success: 'var(--iris-success, #16a34a)',
+  success: 'var(--iris-success, #10b981)',
   warning: 'var(--iris-warning, #f59e0b)',
   danger: 'var(--iris-danger)',
   info: 'var(--iris-info, #0ea5e9)',
@@ -96,7 +96,10 @@ export function IrisTimeline(props: IrisTimelineProps): JSX.Element {
                 {item.time != null && (
                   <div
                     data-iris-timeline-time=""
-                    style={{ 'font-size': '12px', color: 'var(--iris-muted)' }}
+                    style={{
+                      'font-size': 'var(--iris-font-size-xs, 12px)',
+                      color: 'var(--iris-muted)',
+                    }}
                   >
                     {item.time}
                   </div>
@@ -112,7 +115,10 @@ export function IrisTimeline(props: IrisTimelineProps): JSX.Element {
                 {item.description != null && (
                   <div
                     data-iris-timeline-desc=""
-                    style={{ 'font-size': '14px', color: 'var(--iris-foreground)' }}
+                    style={{
+                      'font-size': 'var(--iris-font-size-md, 14px)',
+                      color: 'var(--iris-foreground)',
+                    }}
                   >
                     {item.description}
                   </div>

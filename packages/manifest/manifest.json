@@ -48,9 +48,10 @@
   "groups": [
     {
       "group": "behaviors",
-      "count": 6,
+      "count": 7,
       "components": [
         "IrisClickOutside",
+        "IrisCompose",
         "IrisHotkey",
         "IrisLongPress",
         "IrisMovable",
@@ -4911,7 +4912,8 @@
             "solid",
             "outline",
             "ghost",
-            "link"
+            "link",
+            "danger"
           ],
           "default": "solid"
         },
@@ -4993,7 +4995,8 @@
                 "solid",
                 "outline",
                 "ghost",
-                "link"
+                "link",
+                "danger"
               ],
               "default": "solid"
             },
@@ -5089,7 +5092,8 @@
                 "solid",
                 "outline",
                 "ghost",
-                "link"
+                "link",
+                "danger"
               ]
             },
             {
@@ -5158,7 +5162,8 @@
                 "solid",
                 "outline",
                 "ghost",
-                "link"
+                "link",
+                "danger"
               ]
             },
             {
@@ -5248,7 +5253,8 @@
                 "solid",
                 "outline",
                 "ghost",
-                "link"
+                "link",
+                "danger"
               ],
               "default": "solid"
             },
@@ -6444,6 +6450,13 @@
           "default": "md"
         },
         {
+          "name": "virtual",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in: window each open column with the core virtualizer instead of rendering every option. Fixed deterministic sizing (viewport 240px, row height per size, buffer 4). Default false — no behavior change.",
+          "default": "false"
+        },
+        {
           "name": "id",
           "type": "string",
           "optional": true
@@ -6525,6 +6538,13 @@
               "default": "md"
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in: window each open column with the core virtualizer instead of rendering every option. Fixed deterministic sizing (viewport 240px, row height per size, buffer 4). Default false — no behavior change.",
+              "default": "false"
+            },
+            {
               "name": "id",
               "type": "string",
               "optional": true
@@ -6603,6 +6623,12 @@
               ]
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "id",
               "type": "string",
               "optional": true
@@ -6664,6 +6690,12 @@
               "name": "onChange",
               "type": "(path: string[]) => void",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in: window each open column with the core virtualizer instead of rendering every option. Fixed deterministic sizing (viewport 240px, row height 34px, buffer 4). Default false — no behavior change."
             },
             {
               "name": "id",
@@ -6728,6 +6760,13 @@
               "default": "md"
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in: window each open column with the core virtualizer instead of rendering every option. Fixed deterministic sizing (viewport 240px, row height per size, buffer 4). Default false — no behavior change.",
+              "default": "false"
+            },
+            {
               "name": "id",
               "type": "string",
               "optional": true
@@ -6762,7 +6801,7 @@
         "onValueChange"
       ],
       "quality": {
-        "propCount": 13,
+        "propCount": 14,
         "eventCount": 1
       }
     },
@@ -8386,6 +8425,13 @@
           "name": "className",
           "type": "string",
           "optional": true
+        },
+        {
+          "name": "virtual",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false.",
+          "default": "false"
         }
       ],
       "frameworkContracts": {
@@ -8469,6 +8515,13 @@
               "name": "className",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false.",
+              "default": "false"
             }
           ],
           "events": [
@@ -8522,6 +8575,12 @@
                 "md",
                 "lg"
               ]
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             },
             {
               "name": "emptyText",
@@ -8610,6 +8669,12 @@
               "optional": true
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false."
+            },
+            {
               "name": "style",
               "type": "JSX.CSSProperties",
               "optional": true
@@ -8683,6 +8748,13 @@
               "optional": true
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false.",
+              "default": "false"
+            },
+            {
               "name": "style",
               "type": "string",
               "optional": true
@@ -8702,7 +8774,7 @@
         "onValueChange"
       ],
       "quality": {
-        "propCount": 13,
+        "propCount": 14,
         "eventCount": 1
       }
     },
@@ -8762,6 +8834,13 @@
           "name": "onSelect",
           "type": "(item: IrisCommandItem) => void",
           "optional": true
+        },
+        {
+          "name": "virtual",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in windowed rendering of the results list via the core virtualizer. When true, only the visible window (+ buffer) of rows is rendered and keyboard navigation scrolls the active row into view. Default false — the plain list renders bit-for-bit as before.",
+          "default": "false"
         }
       ],
       "frameworkContracts": {
@@ -8805,6 +8884,13 @@
               "name": "onSelect",
               "type": "(item: IrisCommandItem) => void",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the results list via the core virtualizer. When true, only the visible window (+ buffer) of rows is rendered and keyboard navigation scrolls the active row into view. Default false — the plain list renders bit-for-bit as before.",
+              "default": "false"
             }
           ],
           "events": [
@@ -8960,8 +9046,255 @@
         "onSelect"
       ],
       "quality": {
-        "propCount": 7,
+        "propCount": 8,
         "eventCount": 2
+      }
+    },
+    {
+      "name": "IrisCompose",
+      "group": "behaviors",
+      "layer": "behavior",
+      "frameworks": [
+        "react",
+        "solid",
+        "svelte",
+        "vue"
+      ],
+      "importFrom": {
+        "react": "@iris-ui-kit/react",
+        "solid": "@iris-ui-kit/solid",
+        "svelte": "@iris-ui-kit/svelte",
+        "vue": "@iris-ui-kit/vue"
+      },
+      "props": [
+        {
+          "name": "resizable",
+          "type": "IrisResizableProps",
+          "optional": true,
+          "description": "Resizable wrapper config (enables 8-direction resize)."
+        },
+        {
+          "name": "movable",
+          "type": "IrisMovableProps",
+          "optional": true,
+          "description": "Movable wrapper config (drag positioning)."
+        },
+        {
+          "name": "sortable",
+          "type": "IrisSortableProps",
+          "optional": true,
+          "description": "Sortable wrapper config (drag reorder of children)."
+        },
+        {
+          "name": "clickOutside",
+          "type": "IrisClickOutsideProps",
+          "optional": true,
+          "description": "Click-outside detection."
+        },
+        {
+          "name": "hotkey",
+          "type": "IrisHotkeyProps",
+          "optional": true,
+          "description": "Global keyboard shortcut binding."
+        },
+        {
+          "name": "children",
+          "type": "React.ReactNode",
+          "optional": true
+        },
+        {
+          "name": "className",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "style",
+          "type": "React.CSSProperties",
+          "optional": true
+        }
+      ],
+      "frameworkContracts": {
+        "react": {
+          "source": "native",
+          "props": [
+            {
+              "name": "resizable",
+              "type": "IrisResizableProps",
+              "optional": true,
+              "description": "Resizable wrapper config (enables 8-direction resize)."
+            },
+            {
+              "name": "movable",
+              "type": "IrisMovableProps",
+              "optional": true,
+              "description": "Movable wrapper config (drag positioning)."
+            },
+            {
+              "name": "sortable",
+              "type": "IrisSortableProps",
+              "optional": true,
+              "description": "Sortable wrapper config (drag reorder of children)."
+            },
+            {
+              "name": "clickOutside",
+              "type": "IrisClickOutsideProps",
+              "optional": true,
+              "description": "Click-outside detection."
+            },
+            {
+              "name": "hotkey",
+              "type": "IrisHotkeyProps",
+              "optional": true,
+              "description": "Global keyboard shortcut binding."
+            },
+            {
+              "name": "children",
+              "type": "React.ReactNode",
+              "optional": true
+            },
+            {
+              "name": "className",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "style",
+              "type": "React.CSSProperties",
+              "optional": true
+            }
+          ],
+          "events": [],
+          "slots": [
+            "default"
+          ],
+          "publicTypes": [
+            "IrisComposeProps"
+          ]
+        },
+        "vue": {
+          "source": "native",
+          "props": [
+            {
+              "name": "resizable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "movable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "sortable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "clickOutside",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "hotkey",
+              "type": "Record<string, unknown>",
+              "optional": true
+            }
+          ],
+          "events": [],
+          "slots": [
+            "default"
+          ],
+          "publicTypes": []
+        },
+        "solid": {
+          "source": "native",
+          "props": [
+            {
+              "name": "resizable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "movable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "sortable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "clickOutside",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "hotkey",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "children",
+              "type": "import('solid-js').JSX.Element",
+              "optional": true
+            }
+          ],
+          "events": [],
+          "slots": [
+            "default"
+          ],
+          "publicTypes": [
+            "IrisComposeProps"
+          ]
+        },
+        "svelte": {
+          "source": "native",
+          "props": [
+            {
+              "name": "resizable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "movable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "sortable",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "clickOutside",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "hotkey",
+              "type": "Record<string, unknown>",
+              "optional": true
+            },
+            {
+              "name": "children",
+              "type": "import('svelte').Snippet",
+              "optional": false
+            }
+          ],
+          "events": [],
+          "slots": [
+            "default"
+          ],
+          "publicTypes": []
+        }
+      },
+      "slots": [
+        "default"
+      ],
+      "quality": {
+        "propCount": 8,
+        "eventCount": 0
       }
     },
     {
@@ -17085,6 +17418,7 @@
           "name": "status",
           "type": "IrisGaugeStatus",
           "optional": true,
+          "description": "Semantic status — drives the stroke color. Explicit by design (honesty preserved): for threshold-based decision support, derive it yourself, e.g. `status={value > 80 ? 'danger' : value > 60 ? 'warning' : 'success'}`.",
           "enum": [
             "default",
             "success",
@@ -17159,6 +17493,7 @@
               "name": "status",
               "type": "IrisGaugeStatus",
               "optional": true,
+              "description": "Semantic status — drives the stroke color. Explicit by design (honesty preserved): for threshold-based decision support, derive it yourself, e.g. `status={value > 80 ? 'danger' : value > 60 ? 'warning' : 'success'}`.",
               "enum": [
                 "default",
                 "success",
@@ -17304,6 +17639,7 @@
               "name": "status",
               "type": "IrisGaugeStatus",
               "optional": true,
+              "description": "Semantic status (explicit by design; derive thresholds in the consumer, e.g. value > 80 ? 'danger' : 'success').",
               "enum": [
                 "default",
                 "success",
@@ -17385,8 +17721,7 @@
                 "success",
                 "danger",
                 "warning"
-              ],
-              "default": "default"
+              ]
             },
             {
               "name": "showValue",
@@ -21648,6 +21983,13 @@
           "default": "3"
         },
         {
+          "name": "virtual",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in windowed rendering of the suggestion listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view and every keystroke re-anchors the window to the top. Default false.",
+          "default": "false"
+        },
+        {
           "name": "id",
           "type": "string",
           "optional": true,
@@ -21725,6 +22067,13 @@
               "default": "3"
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the suggestion listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view and every keystroke re-anchors the window to the top. Default false.",
+              "default": "false"
+            },
+            {
               "name": "id",
               "type": "string",
               "optional": true,
@@ -21798,6 +22147,12 @@
               "default": "3"
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
               "name": "id",
               "type": "string",
               "optional": true
@@ -21866,6 +22221,12 @@
               "name": "onChange",
               "type": "(value: string) => void",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the suggestion listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view and every keystroke re-anchors the window to the top. Default false."
             }
           ],
           "events": [
@@ -21935,6 +22296,13 @@
               "optional": true
             },
             {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the suggestion listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view and every keystroke re-anchors the window to the top. Default false.",
+              "default": "false"
+            },
+            {
               "name": "style",
               "type": "string",
               "optional": true
@@ -21956,7 +22324,7 @@
         "onValueChange"
       ],
       "quality": {
-        "propCount": 13,
+        "propCount": 14,
         "eventCount": 1
       }
     },
@@ -30921,18 +31289,26 @@
         },
         {
           "name": "value",
-          "type": "T",
-          "optional": true
+          "type": "T | T[]",
+          "optional": true,
+          "description": "Single value, or an array when `multiple`."
         },
         {
           "name": "defaultValue",
-          "type": "T",
+          "type": "T | T[]",
           "optional": true
         },
         {
           "name": "onValueChange",
-          "type": "(value: T) => void",
+          "type": "(value: T | T[]) => void",
           "optional": true
+        },
+        {
+          "name": "multiple",
+          "type": "boolean",
+          "optional": true,
+          "description": "Allow selecting multiple options (values become arrays).",
+          "default": "false"
         },
         {
           "name": "placeholder",
@@ -30982,9 +31358,8 @@
         },
         {
           "name": "renderTrigger",
-          "type": "(state: { value: T | undefined; label: string; open: boolean }) => React.ReactNode",
-          "optional": true,
-          "description": "Custom render for the trigger button. Receives current label + open state."
+          "type": "(state: IrisSelectTriggerState<T>) => React.ReactNode",
+          "optional": true
         },
         {
           "name": "style",
@@ -30995,6 +31370,13 @@
           "name": "className",
           "type": "string",
           "optional": true
+        },
+        {
+          "name": "virtual",
+          "type": "boolean",
+          "optional": true,
+          "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false.",
+          "default": "false"
         }
       ],
       "frameworkContracts": {
@@ -31008,18 +31390,26 @@
             },
             {
               "name": "value",
-              "type": "T",
-              "optional": true
+              "type": "T | T[]",
+              "optional": true,
+              "description": "Single value, or an array when `multiple`."
             },
             {
               "name": "defaultValue",
-              "type": "T",
+              "type": "T | T[]",
               "optional": true
             },
             {
               "name": "onValueChange",
-              "type": "(value: T) => void",
+              "type": "(value: T | T[]) => void",
               "optional": true
+            },
+            {
+              "name": "multiple",
+              "type": "boolean",
+              "optional": true,
+              "description": "Allow selecting multiple options (values become arrays).",
+              "default": "false"
             },
             {
               "name": "placeholder",
@@ -31069,9 +31459,8 @@
             },
             {
               "name": "renderTrigger",
-              "type": "(state: { value: T | undefined; label: string; open: boolean }) => React.ReactNode",
-              "optional": true,
-              "description": "Custom render for the trigger button. Receives current label + open state."
+              "type": "(state: IrisSelectTriggerState<T>) => React.ReactNode",
+              "optional": true
             },
             {
               "name": "style",
@@ -31082,6 +31471,13 @@
               "name": "className",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false.",
+              "default": "false"
             }
           ],
           "events": [
@@ -31093,7 +31489,8 @@
           "publicTypes": [
             "IrisSelectItem",
             "IrisSelectProps",
-            "IrisSelectSize"
+            "IrisSelectSize",
+            "IrisSelectTriggerState"
           ]
         },
         "vue": {
@@ -31108,6 +31505,12 @@
               "name": "modelValue",
               "type": "unknown",
               "optional": true
+            },
+            {
+              "name": "multiple",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             },
             {
               "name": "defaultValue",
@@ -31162,6 +31565,12 @@
               "name": "teleport",
               "type": "false | HTMLElement | string",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
             }
           ],
           "events": [
@@ -31184,6 +31593,12 @@
               "name": "items",
               "type": "IrisSelectItem<T>[]",
               "optional": false
+            },
+            {
+              "name": "multiple",
+              "type": "boolean",
+              "optional": true,
+              "description": "Allow multiple selection (value becomes an array)."
             },
             {
               "name": "value",
@@ -31256,6 +31671,12 @@
               "name": "style",
               "type": "JSX.CSSProperties",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false."
             }
           ],
           "events": [
@@ -31346,6 +31767,13 @@
               "name": "style",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "boolean",
+              "optional": true,
+              "description": "Opt-in windowed rendering of the listbox via the core virtualizer. When true, only the visible window (+ buffer) of options is rendered; keyboard navigation scrolls the active option into view. Default false.",
+              "default": "false"
             }
           ],
           "events": [
@@ -31366,7 +31794,7 @@
         "renderTrigger"
       ],
       "quality": {
-        "propCount": 14,
+        "propCount": 16,
         "eventCount": 1
       }
     },
@@ -34522,6 +34950,17 @@
           "description": "Trend magnitude text (e.g. \"12%\")."
         },
         {
+          "name": "trendTone",
+          "type": "IrisStatisticTone",
+          "optional": true,
+          "description": "Override the trend arrow color (defaults to direction semantics: up=success, down=danger). Use for cost/risk KPIs where \"up\" is bad.",
+          "enum": [
+            "success",
+            "danger",
+            "neutral"
+          ]
+        },
+        {
           "name": "size",
           "type": "IrisStatisticSize",
           "optional": true,
@@ -34590,6 +35029,17 @@
               "type": "React.ReactNode",
               "optional": true,
               "description": "Trend magnitude text (e.g. \"12%\")."
+            },
+            {
+              "name": "trendTone",
+              "type": "IrisStatisticTone",
+              "optional": true,
+              "description": "Override the trend arrow color (defaults to direction semantics: up=success, down=danger). Use for cost/risk KPIs where \"up\" is bad.",
+              "enum": [
+                "success",
+                "danger",
+                "neutral"
+              ]
             },
             {
               "name": "size",
@@ -34673,6 +35123,16 @@
               "optional": true
             },
             {
+              "name": "trendTone",
+              "type": "IrisStatisticTone",
+              "optional": true,
+              "enum": [
+                "success",
+                "danger",
+                "neutral"
+              ]
+            },
+            {
               "name": "size",
               "type": "IrisStatisticSize",
               "optional": true,
@@ -34726,6 +35186,16 @@
               "enum": [
                 "up",
                 "down",
+                "neutral"
+              ]
+            },
+            {
+              "name": "trendTone",
+              "type": "IrisStatisticTone",
+              "optional": true,
+              "enum": [
+                "success",
+                "danger",
                 "neutral"
               ]
             },
@@ -34792,6 +35262,11 @@
               "optional": true
             },
             {
+              "name": "trendTone",
+              "type": "unknown",
+              "optional": true
+            },
+            {
               "name": "size",
               "type": "unknown",
               "optional": true
@@ -34816,7 +35291,7 @@
         "trendValue"
       ],
       "quality": {
-        "propCount": 10,
+        "propCount": 11,
         "eventCount": 0
       }
     },
@@ -35634,7 +36109,8 @@
         {
           "name": "data",
           "type": "Row[]",
-          "optional": false
+          "optional": true,
+          "description": "Table data. Optional when `proxyConfig` is set (server-side source)."
         },
         {
           "name": "rowKey",
@@ -35684,9 +36160,156 @@
           "optional": true
         },
         {
+          "name": "multiSort",
+          "type": "boolean",
+          "optional": true
+        },
+        {
+          "name": "multiSortState",
+          "type": "IrisTableSortState[]",
+          "optional": true,
+          "description": "Controlled multi-column sort state (multiSort mode)."
+        },
+        {
+          "name": "defaultMultiSort",
+          "type": "IrisTableSortState[]",
+          "optional": true,
+          "description": "Default multi-column sort (multiSort mode, uncontrolled)."
+        },
+        {
+          "name": "onMultiSortChange",
+          "type": "(next: IrisTableSortState[]) => void",
+          "optional": true
+        },
+        {
           "name": "striped",
           "type": "boolean",
           "optional": true
+        },
+        {
+          "name": "size",
+          "type": "'medium' | 'small' | 'mini'",
+          "optional": true,
+          "description": "Size preset (vxe-grid size parity): medium / small / mini.",
+          "enum": [
+            "medium",
+            "small",
+            "mini"
+          ]
+        },
+        {
+          "name": "seqStartIndex",
+          "type": "number",
+          "optional": true,
+          "description": "First sequence number (vxe seq-config.startIndex parity). Default 1."
+        },
+        {
+          "name": "seqMethod",
+          "type": "(params: import('./types').IrisTableSeqMethodParams) => string | number",
+          "optional": true,
+          "description": "Custom sequence renderer (vxe seq-config.seqMethod parity)."
+        },
+        {
+          "name": "currentRowKey",
+          "type": "string | number",
+          "optional": true,
+          "description": "Current (highlighted) row key (vxe row-config.isCurrent parity)."
+        },
+        {
+          "name": "onCurrentRowChange",
+          "type": "(key: string | number, row: Row) => void",
+          "optional": true,
+          "description": "Fired when the current row changes (row click)."
+        },
+        {
+          "name": "beforeCurrentRowChange",
+          "type": "(key: string | number, row: Row) => boolean | void",
+          "optional": true,
+          "description": "Veto a current-row change: return false to keep the previous row."
+        },
+        {
+          "name": "currentColumnKey",
+          "type": "string",
+          "optional": true,
+          "description": "Current (highlighted) column key (vxe column-config.isCurrent parity)."
+        },
+        {
+          "name": "onCurrentColumnChange",
+          "type": "(key: string) => void",
+          "optional": true,
+          "description": "Fired when the current column changes (header click)."
+        },
+        {
+          "name": "beforeCurrentColumnChange",
+          "type": "(key: string) => boolean | void",
+          "optional": true,
+          "description": "Veto a current-column change: return false to keep the previous column."
+        },
+        {
+          "name": "showHeader",
+          "type": "boolean",
+          "optional": true,
+          "description": "Hide the header row(s) (vxe show-header parity). Default true."
+        },
+        {
+          "name": "footerData",
+          "type": "Row[]",
+          "optional": true,
+          "description": "Custom footer rows (vxe footer-data parity): rendered below the summary row, one grid row per entry; structure matches `data`."
+        },
+        {
+          "name": "rowClassName",
+          "type": "(row: Row, rowIndex: number) => string",
+          "optional": true,
+          "description": "Per-row class hook (vxe row-class-name parity)."
+        },
+        {
+          "name": "cellClassName",
+          "type": "(row: Row, column: IrisTableColumn<Row>, rowIndex: number) => string",
+          "optional": true,
+          "description": "Per-cell class hook (vxe cell-class-name parity)."
+        },
+        {
+          "name": "headerCellClassName",
+          "type": "(column: IrisTableColumn<Row>) => string",
+          "optional": true,
+          "description": "Per-header-cell class hook (vxe header-cell-class-name parity)."
+        },
+        {
+          "name": "footerCellClassName",
+          "type": "(column: IrisTableColumn<Row>, rowIndex: number) => string",
+          "optional": true,
+          "description": "Per-footer-cell class hook (vxe footer-cell-class-name parity)."
+        },
+        {
+          "name": "rowStyle",
+          "type": "(row: Row, rowIndex: number) => CSSProperties",
+          "optional": true,
+          "description": "Per-row inline style hook (vxe row-style parity)."
+        },
+        {
+          "name": "cellStyle",
+          "type": "(row: Row, column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties",
+          "optional": true,
+          "description": "Per-cell inline style hook (vxe cell-style parity)."
+        },
+        {
+          "name": "headerCellStyle",
+          "type": "(column: IrisTableColumn<Row>) => CSSProperties",
+          "optional": true,
+          "description": "Per-header-cell inline style hook (vxe header-cell-style parity)."
+        },
+        {
+          "name": "footerCellStyle",
+          "type": "(column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties",
+          "optional": true,
+          "description": "Per-footer-cell inline style hook (vxe footer-cell-style parity)."
+        },
+        {
+          "name": "onCellClick",
+          "type": "(params: import('./types').IrisTableCellClickParams<Row>) => void",
+          "optional": true,
+          "description": "Cell click (vxe cell-click parity). Fired after internal handlers."
         },
         {
           "name": "bordered",
@@ -35722,10 +36345,87 @@
           "description": "Called when a data row is clicked. Interactive child controls stop propagation."
         },
         {
+          "name": "columnVisibility",
+          "type": "Record<string, boolean>",
+          "optional": true,
+          "description": "Column visibility (vxe-grid columnConfig.visible parity). Map of column key → visible (default true). Hidden columns are not rendered."
+        },
+        {
+          "name": "onColumnVisibilityChange",
+          "type": "(next: Record<string, boolean>) => void",
+          "optional": true,
+          "description": "Fired when visibility changes (parent owns the map)."
+        },
+        {
+          "name": "filters",
+          "type": "Record<string, string>",
+          "optional": true,
+          "description": "Client-side filters (vxe-grid filterConfig parity, local mode). Map of column key → filter text; rows are filtered with the core filterSort material (substring, case-insensitive)."
+        },
+        {
+          "name": "onFiltersChange",
+          "type": "(next: Record<string, string>) => void",
+          "optional": true,
+          "description": "Fired when a filter value changes (parent owns the map)."
+        },
+        {
+          "name": "formConfig",
+          "type": "IrisTableFormConfig",
+          "optional": true,
+          "description": "Search form (vxe-grid formConfig parity)."
+        },
+        {
+          "name": "toolbar",
+          "type": "{",
+          "optional": true,
+          "description": "Toolbar (vxe-grid toolbarConfig parity, minimal built-ins)."
+        },
+        {
+          "name": "printable",
+          "type": "boolean",
+          "optional": true,
+          "description": "Render with print-friendly styles (hides the toolbar, keeps rows)."
+        },
+        {
+          "name": "columnDrag",
+          "type": "{",
+          "optional": true,
+          "description": "Column drag-sort (vxe-grid columnDragConfig parity). Reorders leaf columns on drop; parent owns columns (pass the reordered array back)."
+        },
+        {
+          "name": "seq",
+          "type": "boolean",
+          "optional": true,
+          "description": "Render a leading sequence-number column (vxe-grid seqConfig parity)."
+        },
+        {
+          "name": "spanMethod",
+          "type": "(params: {",
+          "optional": true,
+          "description": "Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }` for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make the cell span adjacent cells (the spanned cells are skipped)."
+        },
+        {
+          "name": "rowDrag",
+          "type": "{",
+          "optional": true,
+          "description": "Row drag-sort configuration (composed over core createSortable)."
+        },
+        {
+          "name": "editConfig",
+          "type": "{",
+          "optional": true,
+          "description": "Inline-edit configuration (vxe-grid editConfig parity)."
+        },
+        {
+          "name": "validConfig",
+          "type": "IrisTableValidConfig",
+          "optional": true,
+          "description": "Edit-validation presentation (vxe-grid ValidConfig parity)."
+        },
+        {
           "name": "onCellEdit",
           "type": "(event: IrisTableCellEditEvent<Row>) => void",
-          "optional": true,
-          "description": "Called when an inline-editable cell is committed with a changed value."
+          "optional": true
         },
         {
           "name": "renderDetail",
@@ -35744,6 +36444,12 @@
           "type": "Array<string | number>",
           "optional": true,
           "description": "Initially-expanded row keys (uncontrolled). Shared by detail rows + tree rows."
+        },
+        {
+          "name": "expandAll",
+          "type": "boolean",
+          "optional": true,
+          "description": "expandAll parity). One-shot: seeds the expansion model with all tree keys"
         },
         {
           "name": "onExpandedRowsChange",
@@ -35782,6 +36488,12 @@
           "description": "Enable rectangular cell-range selection."
         },
         {
+          "name": "checkboxRange",
+          "type": "boolean",
+          "optional": true,
+          "description": "parity, batch G): shift-clicking a row checkbox toggles every checkMethod-eligible row between the last-clicked anchor row and the target (in body order); a plain click just moves the anchor. The header"
+        },
+        {
           "name": "emptyState",
           "type": "ReactNode",
           "optional": true,
@@ -35812,6 +36524,48 @@
           "description": "Custom error-state node."
         },
         {
+          "name": "onRetry",
+          "type": "() => void",
+          "optional": true,
+          "description": "Fired by the built-in Retry button in the error state row."
+        },
+        {
+          "name": "proxyConfig",
+          "type": "IrisTableProxyConfig<Row>",
+          "optional": true,
+          "description": "Server-side data proxy (vxe-grid proxyConfig parity, query slice). When set, rows come from the proxy `query` (paged) and a pager renders below the body; `loading`/`error` are driven by the proxy state."
+        },
+        {
+          "name": "tooltipConfig",
+          "type": "IrisTableTooltipConfig<Row>",
+          "optional": true,
+          "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. Truncation gating is not implemented — titles render on every cell regardless of `showAll` (documented simplification, kept simple and"
+        },
+        {
+          "name": "tableRef",
+          "type": "MutableRefObject<IrisTableHandle<Row> | null>",
+          "optional": true,
+          "description": "Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity)."
+        },
+        {
+          "name": "onDataChange",
+          "type": "(rows: Row[]) => void",
+          "optional": true,
+          "description": "Fired after any internal row operation / edit write-back, with the new row list."
+        },
+        {
+          "name": "checkMethod",
+          "type": "(row: Row, rowIndex: number) => boolean",
+          "optional": true,
+          "description": "Veto rows from selection (vxe-grid checkboxConfig.checkMethod parity)."
+        },
+        {
+          "name": "pagerConfig",
+          "type": "IrisTablePagerConfig",
+          "optional": true,
+          "description": "Pager options (vxe-grid pagerConfig parity)."
+        },
+        {
           "name": "style",
           "type": "CSSProperties",
           "optional": true
@@ -35834,7 +36588,8 @@
             {
               "name": "data",
               "type": "Row[]",
-              "optional": false
+              "optional": true,
+              "description": "Table data. Optional when `proxyConfig` is set (server-side source)."
             },
             {
               "name": "rowKey",
@@ -35884,9 +36639,156 @@
               "optional": true
             },
             {
+              "name": "multiSort",
+              "type": "boolean",
+              "optional": true
+            },
+            {
+              "name": "multiSortState",
+              "type": "IrisTableSortState[]",
+              "optional": true,
+              "description": "Controlled multi-column sort state (multiSort mode)."
+            },
+            {
+              "name": "defaultMultiSort",
+              "type": "IrisTableSortState[]",
+              "optional": true,
+              "description": "Default multi-column sort (multiSort mode, uncontrolled)."
+            },
+            {
+              "name": "onMultiSortChange",
+              "type": "(next: IrisTableSortState[]) => void",
+              "optional": true
+            },
+            {
               "name": "striped",
               "type": "boolean",
               "optional": true
+            },
+            {
+              "name": "size",
+              "type": "'medium' | 'small' | 'mini'",
+              "optional": true,
+              "description": "Size preset (vxe-grid size parity): medium / small / mini.",
+              "enum": [
+                "medium",
+                "small",
+                "mini"
+              ]
+            },
+            {
+              "name": "seqStartIndex",
+              "type": "number",
+              "optional": true,
+              "description": "First sequence number (vxe seq-config.startIndex parity). Default 1."
+            },
+            {
+              "name": "seqMethod",
+              "type": "(params: import('./types').IrisTableSeqMethodParams) => string | number",
+              "optional": true,
+              "description": "Custom sequence renderer (vxe seq-config.seqMethod parity)."
+            },
+            {
+              "name": "currentRowKey",
+              "type": "string | number",
+              "optional": true,
+              "description": "Current (highlighted) row key (vxe row-config.isCurrent parity)."
+            },
+            {
+              "name": "onCurrentRowChange",
+              "type": "(key: string | number, row: Row) => void",
+              "optional": true,
+              "description": "Fired when the current row changes (row click)."
+            },
+            {
+              "name": "beforeCurrentRowChange",
+              "type": "(key: string | number, row: Row) => boolean | void",
+              "optional": true,
+              "description": "Veto a current-row change: return false to keep the previous row."
+            },
+            {
+              "name": "currentColumnKey",
+              "type": "string",
+              "optional": true,
+              "description": "Current (highlighted) column key (vxe column-config.isCurrent parity)."
+            },
+            {
+              "name": "onCurrentColumnChange",
+              "type": "(key: string) => void",
+              "optional": true,
+              "description": "Fired when the current column changes (header click)."
+            },
+            {
+              "name": "beforeCurrentColumnChange",
+              "type": "(key: string) => boolean | void",
+              "optional": true,
+              "description": "Veto a current-column change: return false to keep the previous column."
+            },
+            {
+              "name": "showHeader",
+              "type": "boolean",
+              "optional": true,
+              "description": "Hide the header row(s) (vxe show-header parity). Default true."
+            },
+            {
+              "name": "footerData",
+              "type": "Row[]",
+              "optional": true,
+              "description": "Custom footer rows (vxe footer-data parity): rendered below the summary row, one grid row per entry; structure matches `data`."
+            },
+            {
+              "name": "rowClassName",
+              "type": "(row: Row, rowIndex: number) => string",
+              "optional": true,
+              "description": "Per-row class hook (vxe row-class-name parity)."
+            },
+            {
+              "name": "cellClassName",
+              "type": "(row: Row, column: IrisTableColumn<Row>, rowIndex: number) => string",
+              "optional": true,
+              "description": "Per-cell class hook (vxe cell-class-name parity)."
+            },
+            {
+              "name": "headerCellClassName",
+              "type": "(column: IrisTableColumn<Row>) => string",
+              "optional": true,
+              "description": "Per-header-cell class hook (vxe header-cell-class-name parity)."
+            },
+            {
+              "name": "footerCellClassName",
+              "type": "(column: IrisTableColumn<Row>, rowIndex: number) => string",
+              "optional": true,
+              "description": "Per-footer-cell class hook (vxe footer-cell-class-name parity)."
+            },
+            {
+              "name": "rowStyle",
+              "type": "(row: Row, rowIndex: number) => CSSProperties",
+              "optional": true,
+              "description": "Per-row inline style hook (vxe row-style parity)."
+            },
+            {
+              "name": "cellStyle",
+              "type": "(row: Row, column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties",
+              "optional": true,
+              "description": "Per-cell inline style hook (vxe cell-style parity)."
+            },
+            {
+              "name": "headerCellStyle",
+              "type": "(column: IrisTableColumn<Row>) => CSSProperties",
+              "optional": true,
+              "description": "Per-header-cell inline style hook (vxe header-cell-style parity)."
+            },
+            {
+              "name": "footerCellStyle",
+              "type": "(column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties",
+              "optional": true,
+              "description": "Per-footer-cell inline style hook (vxe footer-cell-style parity)."
+            },
+            {
+              "name": "onCellClick",
+              "type": "(params: import('./types').IrisTableCellClickParams<Row>) => void",
+              "optional": true,
+              "description": "Cell click (vxe cell-click parity). Fired after internal handlers."
             },
             {
               "name": "bordered",
@@ -35922,10 +36824,87 @@
               "description": "Called when a data row is clicked. Interactive child controls stop propagation."
             },
             {
+              "name": "columnVisibility",
+              "type": "Record<string, boolean>",
+              "optional": true,
+              "description": "Column visibility (vxe-grid columnConfig.visible parity). Map of column key → visible (default true). Hidden columns are not rendered."
+            },
+            {
+              "name": "onColumnVisibilityChange",
+              "type": "(next: Record<string, boolean>) => void",
+              "optional": true,
+              "description": "Fired when visibility changes (parent owns the map)."
+            },
+            {
+              "name": "filters",
+              "type": "Record<string, string>",
+              "optional": true,
+              "description": "Client-side filters (vxe-grid filterConfig parity, local mode). Map of column key → filter text; rows are filtered with the core filterSort material (substring, case-insensitive)."
+            },
+            {
+              "name": "onFiltersChange",
+              "type": "(next: Record<string, string>) => void",
+              "optional": true,
+              "description": "Fired when a filter value changes (parent owns the map)."
+            },
+            {
+              "name": "formConfig",
+              "type": "IrisTableFormConfig",
+              "optional": true,
+              "description": "Search form (vxe-grid formConfig parity)."
+            },
+            {
+              "name": "toolbar",
+              "type": "{",
+              "optional": true,
+              "description": "Toolbar (vxe-grid toolbarConfig parity, minimal built-ins)."
+            },
+            {
+              "name": "printable",
+              "type": "boolean",
+              "optional": true,
+              "description": "Render with print-friendly styles (hides the toolbar, keeps rows)."
+            },
+            {
+              "name": "columnDrag",
+              "type": "{",
+              "optional": true,
+              "description": "Column drag-sort (vxe-grid columnDragConfig parity). Reorders leaf columns on drop; parent owns columns (pass the reordered array back)."
+            },
+            {
+              "name": "seq",
+              "type": "boolean",
+              "optional": true,
+              "description": "Render a leading sequence-number column (vxe-grid seqConfig parity)."
+            },
+            {
+              "name": "spanMethod",
+              "type": "(params: {",
+              "optional": true,
+              "description": "Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }` for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make the cell span adjacent cells (the spanned cells are skipped)."
+            },
+            {
+              "name": "rowDrag",
+              "type": "{",
+              "optional": true,
+              "description": "Row drag-sort configuration (composed over core createSortable)."
+            },
+            {
+              "name": "editConfig",
+              "type": "{",
+              "optional": true,
+              "description": "Inline-edit configuration (vxe-grid editConfig parity)."
+            },
+            {
+              "name": "validConfig",
+              "type": "IrisTableValidConfig",
+              "optional": true,
+              "description": "Edit-validation presentation (vxe-grid ValidConfig parity)."
+            },
+            {
               "name": "onCellEdit",
               "type": "(event: IrisTableCellEditEvent<Row>) => void",
-              "optional": true,
-              "description": "Called when an inline-editable cell is committed with a changed value."
+              "optional": true
             },
             {
               "name": "renderDetail",
@@ -35944,6 +36923,12 @@
               "type": "Array<string | number>",
               "optional": true,
               "description": "Initially-expanded row keys (uncontrolled). Shared by detail rows + tree rows."
+            },
+            {
+              "name": "expandAll",
+              "type": "boolean",
+              "optional": true,
+              "description": "expandAll parity). One-shot: seeds the expansion model with all tree keys"
             },
             {
               "name": "onExpandedRowsChange",
@@ -35982,6 +36967,12 @@
               "description": "Enable rectangular cell-range selection."
             },
             {
+              "name": "checkboxRange",
+              "type": "boolean",
+              "optional": true,
+              "description": "parity, batch G): shift-clicking a row checkbox toggles every checkMethod-eligible row between the last-clicked anchor row and the target (in body order); a plain click just moves the anchor. The header"
+            },
+            {
               "name": "emptyState",
               "type": "ReactNode",
               "optional": true,
@@ -36012,6 +37003,48 @@
               "description": "Custom error-state node."
             },
             {
+              "name": "onRetry",
+              "type": "() => void",
+              "optional": true,
+              "description": "Fired by the built-in Retry button in the error state row."
+            },
+            {
+              "name": "proxyConfig",
+              "type": "IrisTableProxyConfig<Row>",
+              "optional": true,
+              "description": "Server-side data proxy (vxe-grid proxyConfig parity, query slice). When set, rows come from the proxy `query` (paged) and a pager renders below the body; `loading`/`error` are driven by the proxy state."
+            },
+            {
+              "name": "tooltipConfig",
+              "type": "IrisTableTooltipConfig<Row>",
+              "optional": true,
+              "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. Truncation gating is not implemented — titles render on every cell regardless of `showAll` (documented simplification, kept simple and"
+            },
+            {
+              "name": "tableRef",
+              "type": "MutableRefObject<IrisTableHandle<Row> | null>",
+              "optional": true,
+              "description": "Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity)."
+            },
+            {
+              "name": "onDataChange",
+              "type": "(rows: Row[]) => void",
+              "optional": true,
+              "description": "Fired after any internal row operation / edit write-back, with the new row list."
+            },
+            {
+              "name": "checkMethod",
+              "type": "(row: Row, rowIndex: number) => boolean",
+              "optional": true,
+              "description": "Veto rows from selection (vxe-grid checkboxConfig.checkMethod parity)."
+            },
+            {
+              "name": "pagerConfig",
+              "type": "IrisTablePagerConfig",
+              "optional": true,
+              "description": "Pager options (vxe-grid pagerConfig parity)."
+            },
+            {
               "name": "style",
               "type": "CSSProperties",
               "optional": true
@@ -36023,9 +37056,17 @@
             }
           ],
           "events": [
+            "onCellClick",
             "onCellEdit",
+            "onColumnVisibilityChange",
             "onColumnWidthsChange",
+            "onCurrentColumnChange",
+            "onCurrentRowChange",
+            "onDataChange",
             "onExpandedRowsChange",
+            "onFiltersChange",
+            "onMultiSortChange",
+            "onRetry",
             "onRowClick",
             "onSelectionChange",
             "onSortChange"
@@ -36037,15 +37078,24 @@
           ],
           "publicTypes": [
             "IrisTableAggregateOp",
+            "IrisTableCellClickParams",
             "IrisTableCellEditEvent",
             "IrisTableColumn",
             "IrisTableColumnWidths",
             "IrisTableEditor",
+            "IrisTableFormConfig",
+            "IrisTableFormField",
+            "IrisTableHandle",
+            "IrisTablePagerConfig",
             "IrisTableProps",
+            "IrisTableProxyQueryParams",
             "IrisTableRenderDetail",
             "IrisTableRowExpandable",
+            "IrisTableSeqMethodParams",
             "IrisTableSortDirection",
             "IrisTableSortState",
+            "IrisTableTooltipConfig",
+            "IrisTableValidConfig",
             "IrisTableVirtualOptions"
           ]
         },
@@ -36060,7 +37110,7 @@
             {
               "name": "data",
               "type": "Array<Record<string, unknown>>",
-              "optional": false
+              "optional": true
             },
             {
               "name": "rowKey",
@@ -36073,6 +37123,11 @@
               "type": "boolean",
               "optional": true,
               "default": "false"
+            },
+            {
+              "name": "editConfig",
+              "type": "{ trigger?: 'click' | 'dblclick' | 'manual' showAsterisk?: boolean autoClear?: boolean }",
+              "optional": true
             },
             {
               "name": "bordered",
@@ -36107,6 +37162,11 @@
               "type": "boolean",
               "optional": true,
               "default": "false"
+            },
+            {
+              "name": "onRetry",
+              "type": "(() =",
+              "optional": true
             },
             {
               "name": "columnVirtualization",
@@ -36156,6 +37216,7 @@
           "events": [
             "cellEdit",
             "expandedRowsChange",
+            "onRetry",
             "rowClick",
             "rowDblclick",
             "update:columnWidths",
@@ -36192,7 +37253,8 @@
             {
               "name": "data",
               "type": "Row[]",
-              "optional": false
+              "optional": true,
+              "description": "Table data. Optional (server-side sources may omit it)."
             },
             {
               "name": "rowKey",
@@ -36273,6 +37335,12 @@
               "name": "errorState",
               "type": "JSX.Element",
               "optional": true
+            },
+            {
+              "name": "onRetry",
+              "type": "() => void",
+              "optional": true,
+              "description": "Fired by the built-in Retry button in the error state row."
             },
             {
               "name": "resizableColumns",
@@ -36362,6 +37430,7 @@
             "onCellEdit",
             "onColumnWidthsChange",
             "onExpandedRowsChange",
+            "onRetry",
             "onRowClick",
             "onSelectionChange",
             "onSortChange"
@@ -36396,7 +37465,8 @@
             {
               "name": "data",
               "type": "Array<Record<string, unknown>>",
-              "optional": false
+              "optional": true,
+              "description": "Table data. Optional (server-side sources may omit it)."
             },
             {
               "name": "rowKey",
@@ -36473,6 +37543,12 @@
               "name": "errorState",
               "type": "Snippet",
               "optional": true
+            },
+            {
+              "name": "onRetry",
+              "type": "() => void",
+              "optional": true,
+              "description": "Fired by the built-in Retry button in the error state row."
             },
             {
               "name": "virtualScroll",
@@ -36577,6 +37653,7 @@
             "onCellEdit",
             "onColumnWidthsChange",
             "onExpandedRowsChange",
+            "onRetry",
             "onRowClick",
             "onUpdateSelection",
             "onUpdateSort"
@@ -36604,10 +37681,18 @@
       "events": [
         "onSelectionChange",
         "onSortChange",
+        "onMultiSortChange",
+        "onCurrentRowChange",
+        "onCurrentColumnChange",
+        "onCellClick",
         "onColumnWidthsChange",
         "onRowClick",
+        "onColumnVisibilityChange",
+        "onFiltersChange",
         "onCellEdit",
-        "onExpandedRowsChange"
+        "onExpandedRowsChange",
+        "onRetry",
+        "onDataChange"
       ],
       "slots": [
         "emptyState",
@@ -36615,8 +37700,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 34,
-        "eventCount": 6
+        "propCount": 80,
+        "eventCount": 14
       }
     },
     {
@@ -38687,6 +39772,14 @@
           "name": "position",
           "type": "IrisToastPosition",
           "optional": true,
+          "enum": [
+            "top-left",
+            "top-right",
+            "top-center",
+            "bottom-left",
+            "bottom-right",
+            "bottom-center"
+          ],
           "default": "top-right"
         },
         {
@@ -38710,6 +39803,14 @@
               "name": "position",
               "type": "IrisToastPosition",
               "optional": true,
+              "enum": [
+                "top-left",
+                "top-right",
+                "top-center",
+                "bottom-left",
+                "bottom-right",
+                "bottom-center"
+              ],
               "default": "top-right"
             },
             {
@@ -38738,7 +39839,15 @@
               "name": "position",
               "type": "IrisToastPosition",
               "optional": true,
-              "default": "top-right"
+              "default": "top-right",
+              "enum": [
+                "top-left",
+                "top-right",
+                "top-center",
+                "bottom-left",
+                "bottom-right",
+                "bottom-center"
+              ]
             },
             {
               "name": "teleport",
@@ -38768,7 +39877,15 @@
             {
               "name": "position",
               "type": "IrisToastPosition",
-              "optional": true
+              "optional": true,
+              "enum": [
+                "top-left",
+                "top-right",
+                "top-center",
+                "bottom-left",
+                "bottom-right",
+                "bottom-center"
+              ]
             },
             {
               "name": "portalTarget",
@@ -38801,6 +39918,14 @@
               "name": "position",
               "type": "IrisToastPosition",
               "optional": true,
+              "enum": [
+                "top-left",
+                "top-right",
+                "top-center",
+                "bottom-left",
+                "bottom-right",
+                "bottom-center"
+              ],
               "default": "top-right"
             },
             {
@@ -40225,6 +41350,12 @@
           "default": "false"
         },
         {
+          "name": "virtual",
+          "type": "IrisTransferVirtualOptions",
+          "optional": true,
+          "description": "Opt-in windowed rendering of both pane lists via the core virtualizer (10k+ options stay smooth). Off by default — the plain path is unchanged."
+        },
+        {
           "name": "style",
           "type": "React.CSSProperties",
           "optional": true
@@ -40280,6 +41411,12 @@
               "default": "false"
             },
             {
+              "name": "virtual",
+              "type": "IrisTransferVirtualOptions",
+              "optional": true,
+              "description": "Opt-in windowed rendering of both pane lists via the core virtualizer (10k+ options stay smooth). Off by default — the plain path is unchanged."
+            },
+            {
               "name": "style",
               "type": "React.CSSProperties",
               "optional": true
@@ -40298,7 +41435,8 @@
           ],
           "publicTypes": [
             "IrisTransferItem",
-            "IrisTransferProps"
+            "IrisTransferProps",
+            "IrisTransferVirtualOptions"
           ]
         },
         "vue": {
@@ -40330,6 +41468,11 @@
               "type": "boolean",
               "optional": true,
               "default": "false"
+            },
+            {
+              "name": "virtual",
+              "type": "IrisTransferVirtualOptions",
+              "optional": true
             }
           ],
           "events": [
@@ -40337,7 +41480,8 @@
           ],
           "slots": [],
           "publicTypes": [
-            "IrisTransferItem"
+            "IrisTransferItem",
+            "IrisTransferVirtualOptions"
           ]
         },
         "solid": {
@@ -40374,6 +41518,12 @@
               "optional": true
             },
             {
+              "name": "virtual",
+              "type": "IrisTransferVirtualOptions",
+              "optional": true,
+              "description": "Opt-in windowed rendering of both pane lists via the core virtualizer (10k+ options stay smooth). Off by default — the plain path is unchanged."
+            },
+            {
               "name": "onChange",
               "type": "(values: string[]) => void",
               "optional": true
@@ -40385,7 +41535,8 @@
           "slots": [],
           "publicTypes": [
             "IrisTransferItem",
-            "IrisTransferProps"
+            "IrisTransferProps",
+            "IrisTransferVirtualOptions"
           ]
         },
         "svelte": {
@@ -40419,6 +41570,12 @@
               "default": "false"
             },
             {
+              "name": "virtual",
+              "type": "IrisTransferVirtualOptions",
+              "optional": true,
+              "description": "Opt-in windowed rendering of both pane lists via the core virtualizer (10k+ options stay smooth). Off by default — the plain path is unchanged."
+            },
+            {
               "name": "onValueChange",
               "type": "(values: string[]) => void",
               "optional": true
@@ -40439,7 +41596,8 @@
           ],
           "slots": [],
           "publicTypes": [
-            "IrisTransferItem"
+            "IrisTransferItem",
+            "IrisTransferVirtualOptions"
           ]
         }
       },
@@ -40450,7 +41608,7 @@
         "titles"
       ],
       "quality": {
-        "propCount": 9,
+        "propCount": 10,
         "eventCount": 1
       }
     },
@@ -40584,6 +41742,12 @@
           "name": "className",
           "type": "string",
           "optional": true
+        },
+        {
+          "name": "virtual",
+          "type": "IrisTreeVirtualOptions",
+          "optional": true,
+          "description": "Opt-in windowed rendering: only the visible window + buffer of `treeitem` rows is mounted, via `IrisVirtualScroll` / the core `createVirtualizer`. Keyboard navigation scrolls the active row into view. Default off."
         }
       ],
       "frameworkContracts": {
@@ -40701,6 +41865,12 @@
               "name": "className",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "virtual",
+              "type": "IrisTreeVirtualOptions",
+              "optional": true,
+              "description": "Opt-in windowed rendering: only the visible window + buffer of `treeitem` rows is mounted, via `IrisVirtualScroll` / the core `createVirtualizer`. Keyboard navigation scrolls the active row into view. Default off."
             }
           ],
           "events": [
@@ -40719,7 +41889,8 @@
             "IrisTreeSelectNode",
             "IrisTreeSelectProps",
             "IrisTreeSelectSize",
-            "IrisTreeSelectionMode"
+            "IrisTreeSelectionMode",
+            "IrisTreeVirtualOptions"
           ]
         },
         "vue": {
@@ -41072,7 +42243,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 19,
+        "propCount": 20,
         "eventCount": 3
       }
     },
@@ -41551,6 +42722,24 @@
           "name": "className",
           "type": "string",
           "optional": true
+        },
+        {
+          "name": "role",
+          "type": "string",
+          "optional": true,
+          "description": "ARIA role for the scroll container (e.g. \"listbox\"). Forwarded to the root."
+        },
+        {
+          "name": "tabIndex",
+          "type": "number",
+          "optional": true,
+          "description": "Tab order for the scroll container (roving-tabindex hosts pass -1)."
+        },
+        {
+          "name": "onKeyDown",
+          "type": "React.KeyboardEventHandler<HTMLDivElement>",
+          "optional": true,
+          "description": "Keydown handler on the scroll container (keydowns from focused rows bubble)."
         }
       ],
       "frameworkContracts": {
@@ -41620,9 +42809,28 @@
               "name": "className",
               "type": "string",
               "optional": true
+            },
+            {
+              "name": "role",
+              "type": "string",
+              "optional": true,
+              "description": "ARIA role for the scroll container (e.g. \"listbox\"). Forwarded to the root."
+            },
+            {
+              "name": "tabIndex",
+              "type": "number",
+              "optional": true,
+              "description": "Tab order for the scroll container (roving-tabindex hosts pass -1)."
+            },
+            {
+              "name": "onKeyDown",
+              "type": "React.KeyboardEventHandler<HTMLDivElement>",
+              "optional": true,
+              "description": "Keydown handler on the scroll container (keydowns from focused rows bubble)."
             }
           ],
           "events": [
+            "onKeyDown",
             "onRangeChange",
             "onScroll"
           ],
@@ -41834,14 +43042,15 @@
       },
       "events": [
         "onScroll",
-        "onRangeChange"
+        "onRangeChange",
+        "onKeyDown"
       ],
       "slots": [
         "renderItem"
       ],
       "quality": {
-        "propCount": 11,
-        "eventCount": 2
+        "propCount": 14,
+        "eventCount": 3
       }
     },
     {
@@ -42237,18 +43446,41 @@
       "iris.primary.foreground",
       "iris.accent",
       "iris.danger",
+      "iris.danger.foreground",
       "iris.danger.subtle",
       "iris.success",
+      "iris.success.foreground",
       "iris.warning",
+      "iris.warning.foreground",
       "iris.info",
+      "iris.info.foreground",
+      "iris.on.color",
       "iris.muted.subtle",
       "iris.surface.selected",
+      "iris.surface.floating",
       "iris.primary.ghost",
+      "iris.backdrop",
       "iris.font.family",
       "iris.font.mono",
+      "iris.font.size.xs",
       "iris.font.size.sm",
       "iris.font.size.md",
-      "iris.font.size.lg"
+      "iris.font.size.base",
+      "iris.font.size.lg",
+      "iris.font.size.xl",
+      "iris.font.size.2xl",
+      "iris.font.size.3xl",
+      "iris.font.size.4xl",
+      "iris.font.weight.regular",
+      "iris.font.weight.medium",
+      "iris.font.weight.semibold",
+      "iris.font.weight.bold",
+      "iris.font.line.height.sm",
+      "iris.font.line.height.md",
+      "iris.font.line.height.lg",
+      "iris.font.letter.spacing.tight",
+      "iris.font.letter.spacing.normal",
+      "iris.font.letter.spacing.wide"
     ],
     "spacing": [
       "iris.gap.sm",
@@ -42258,7 +43490,20 @@
       "iris.padding.md",
       "iris.padding.lg",
       "iris.masonry.gap",
-      "iris.breadcrumb.gap"
+      "iris.breadcrumb.gap",
+      "iris.space.xxs",
+      "iris.space.xs",
+      "iris.space.sm",
+      "iris.space.md",
+      "iris.space.lg",
+      "iris.space.xl",
+      "iris.space.2xl",
+      "iris.space.3xl",
+      "iris.space.4xl",
+      "iris.space.5xl",
+      "iris.control.height.sm",
+      "iris.control.height.md",
+      "iris.control.height.lg"
     ],
     "radii": [
       "iris.radius.sm",
@@ -42268,7 +43513,8 @@
     "shadows": [
       "iris.shadow.sm",
       "iris.shadow.md",
-      "iris.shadow.lg"
+      "iris.shadow.lg",
+      "iris.shadow.xl"
     ],
     "zIndex": [
       "iris.z.dropdown",
@@ -42298,18 +43544,41 @@
       "iris.primary.foreground",
       "iris.accent",
       "iris.danger",
+      "iris.danger.foreground",
       "iris.danger.subtle",
       "iris.success",
+      "iris.success.foreground",
       "iris.warning",
+      "iris.warning.foreground",
       "iris.info",
+      "iris.info.foreground",
+      "iris.on.color",
       "iris.muted.subtle",
       "iris.surface.selected",
+      "iris.surface.floating",
       "iris.primary.ghost",
+      "iris.backdrop",
       "iris.font.family",
       "iris.font.mono",
+      "iris.font.size.xs",
       "iris.font.size.sm",
       "iris.font.size.md",
+      "iris.font.size.base",
       "iris.font.size.lg",
+      "iris.font.size.xl",
+      "iris.font.size.2xl",
+      "iris.font.size.3xl",
+      "iris.font.size.4xl",
+      "iris.font.weight.regular",
+      "iris.font.weight.medium",
+      "iris.font.weight.semibold",
+      "iris.font.weight.bold",
+      "iris.font.line.height.sm",
+      "iris.font.line.height.md",
+      "iris.font.line.height.lg",
+      "iris.font.letter.spacing.tight",
+      "iris.font.letter.spacing.normal",
+      "iris.font.letter.spacing.wide",
       "iris.gap.sm",
       "iris.gap.md",
       "iris.gap.lg",
@@ -42318,12 +43587,26 @@
       "iris.padding.lg",
       "iris.masonry.gap",
       "iris.breadcrumb.gap",
+      "iris.space.xxs",
+      "iris.space.xs",
+      "iris.space.sm",
+      "iris.space.md",
+      "iris.space.lg",
+      "iris.space.xl",
+      "iris.space.2xl",
+      "iris.space.3xl",
+      "iris.space.4xl",
+      "iris.space.5xl",
+      "iris.control.height.sm",
+      "iris.control.height.md",
+      "iris.control.height.lg",
       "iris.radius.sm",
       "iris.radius.md",
       "iris.radius.lg",
       "iris.shadow.sm",
       "iris.shadow.md",
       "iris.shadow.lg",
+      "iris.shadow.xl",
       "iris.z.dropdown",
       "iris.z.sticky",
       "iris.z.fixed",
@@ -42340,13 +43623,13 @@
     ]
   },
   "stats": {
-    "total": 154,
-    "full": 154,
+    "total": 155,
+    "full": 155,
     "byFramework": {
-      "react": 154,
-      "vue": 154,
-      "solid": 154,
-      "svelte": 154
+      "react": 155,
+      "vue": 155,
+      "solid": 155,
+      "svelte": 155
     }
   }
 }

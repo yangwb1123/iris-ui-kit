@@ -139,12 +139,12 @@ export function IrisTimePicker({
   const fieldStyle: React.CSSProperties = {
     width: 48,
     height: 34,
-    padding: '4px 6px',
+    padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
     background: 'var(--iris-background)',
     color: 'var(--iris-foreground)',
     border: `1px solid ${invalid ? 'var(--iris-danger)' : 'var(--iris-border)'}`,
     borderRadius: 'var(--iris-radius-sm, 4px)',
-    fontSize: 15,
+    fontSize: 'var(--iris-font-size-md, 14px)',
     fontFamily: 'inherit',
     textAlign: 'center',
     outline: 'none',
@@ -179,7 +179,10 @@ export function IrisTimePicker({
         onKeyDown={onHoursKey}
         style={fieldStyle}
       />
-      <span aria-hidden="true" style={{ color: 'var(--iris-muted)', fontSize: 15 }}>
+      <span
+        aria-hidden="true"
+        style={{ color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-md, 14px)' }}
+      >
         :
       </span>
       <input
@@ -211,7 +214,7 @@ export function IrisTimePicker({
             border: '1px solid var(--iris-border)',
             borderRadius: 'var(--iris-radius-sm, 4px)',
             cursor: disabled ? 'not-allowed' : 'pointer',
-            fontSize: 13,
+            fontSize: 'var(--iris-font-size-sm, 13px)',
             fontFamily: 'inherit',
             fontWeight: 600,
           }}

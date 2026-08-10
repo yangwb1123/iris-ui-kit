@@ -64,6 +64,9 @@ export interface UseFloatingReturn {
 export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
   let x = $state(0)
   let y = $state(0)
+  // True once the first positioning cycle lands. Until then the panel stays
+  // `visibility: hidden` so it never flashes at the viewport origin (0,0).
+  let positioned = $state(false)
   let finalPlacement = $state<Placement>('bottom')
   let arrowX = $state<number | undefined>(undefined)
   let arrowY = $state<number | undefined>(undefined)
@@ -118,6 +121,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     const a = options.anchor()
     const f = options.floating()
     if (!a || !f) return
+    positioned = false
     const placement = readOption(options.placement) ?? 'bottom'
     const strategy = readOption(options.strategy) ?? 'absolute'
     // Build while the effect is collecting dependencies so getter-backed
@@ -134,6 +138,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
         if (token !== epoch) return
         x = result.x
         y = result.y
+        positioned = true
         finalPlacement = result.placement
         const arrowData = result.middlewareData.arrow as { x?: number; y?: number } | undefined
         arrowX = arrowData?.x
@@ -153,7 +158,7 @@ export function useFloating(options: UseFloatingOptions): UseFloatingReturn {
     },
     get floatingStyles() {
       const strategy = readOption(options.strategy) ?? 'absolute'
-      return `position: ${strategy}; top: 0; left: 0; transform: translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0); width: max-content`
+      return `position: ${strategy}; top: 0; left: 0; transform: translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0); width: max-content; visibility: ${positioned ? 'visible' : 'hidden'}`
     },
     get arrowX() {
       return arrowX

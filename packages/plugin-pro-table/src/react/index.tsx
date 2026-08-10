@@ -11,6 +11,7 @@ import {
   type ProTableViewOptions,
 } from '../core'
 import { useColumnViewport } from './useColumnViewport'
+const SBG = 'var(--iris-pro-table-selected-bg, var(--iris-surface-selected, #eef2ff))'
 
 export type { ProTableColumn, ProTableStore, ProTableLabels } from '../core'
 
@@ -137,9 +138,10 @@ export function IrisProTable<Row extends Record<string, unknown>>({
   const renderRow = (row: Row): React.ReactElement => {
     const key = store.rowKeyOf(row)
     const treeRow = treeRowMap?.get(key)
+    const sel = !!store.isSelected(key)
     const depth = treeRow?.depth ?? 0
     return (
-      <tr key={key} data-selected={store.isSelected(key) ? '' : undefined}>
+      <tr key={key} style={sel ? { background: SBG } : undefined}>
         <td style={{ paddingInlineStart: `${depth * 24}px` }}>
           {treeRow?.hasChildren ? (
             <span
@@ -267,7 +269,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
                       sortableState.activeId &&
                       sortableState.overId === col.key &&
                       sortableState.activeId !== col.key
-                        ? '2px solid var(--iris-primary, #2563eb)'
+                        ? '2px solid var(--iris-primary, #6366f1)'
                         : undefined,
                     outlineOffset: -2,
                     ...pinnedStyle(col),
@@ -448,7 +450,7 @@ export function IrisProTable<Row extends Record<string, unknown>>({
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.25rem',
-                    padding: '0.125rem 0.5rem',
+                    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
                     background: 'var(--iris-pro-table-chip-bg)',
                     borderRadius: '9999px',
                   }}

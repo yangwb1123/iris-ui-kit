@@ -81,8 +81,8 @@ export const IrisLoginTemplate = defineComponent({
                 background: 'var(--iris-surface)',
                 border: '1px solid var(--iris-border)',
                 borderRadius: 'var(--iris-radius-lg, 8px)',
-                padding: '32px',
-                boxShadow: '0 6px 20px -8px rgba(0, 0, 0, 0.16)',
+                padding: 'var(--iris-space-2xl, 32px)',
+                boxShadow: 'var(--iris-shadow-lg)',
               },
             },
             [
@@ -94,8 +94,8 @@ export const IrisLoginTemplate = defineComponent({
                         'h1',
                         {
                           style: {
-                            margin: '0 0 4px 0',
-                            fontSize: '22px',
+                            margin: '0 0 var(--iris-space-xxs, 4px) 0',
+                            fontSize: 'var(--iris-font-size-2xl, 20px)',
                             fontWeight: '700',
                           },
                         },
@@ -108,7 +108,7 @@ export const IrisLoginTemplate = defineComponent({
                               style: {
                                 margin: '0',
                                 color: 'var(--iris-muted)',
-                                fontSize: '14px',
+                                fontSize: 'var(--iris-font-size-md, 14px)',
                               },
                             },
                             props.description,

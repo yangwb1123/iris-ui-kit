@@ -30,7 +30,7 @@
   {@render children?.()}
   <span
     data-iris-ribbon-badge
-    style="position: absolute; inset-block-start: 8px; background: {bg}; color: #fff; padding: 2px 10px; font-size: 12px; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.2); white-space: nowrap; {sideStyle}"
+    style="position: absolute; inset-block-start: 8px; background: {bg}; color: var(--iris-primary-foreground, #fff); padding: var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px); font-size: var(--iris-font-size-xs, 12px); font-weight: 600; box-shadow: var(--iris-shadow-sm); white-space: nowrap; {sideStyle}"
   >
     {String(text)}
   </span>

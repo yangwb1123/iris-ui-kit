@@ -426,3 +426,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-x-baseline.md [ok]: Batch X adapt — vue table proxyConfig/formConfig/multiSort/toolbar parity (vue only, additive). Controller logic all in core (createRemoteTableSource / seedFormValues / buildFormValues / mergeFormFilters); vue bridge wires only. 27 new tests. Deferred to batch Y: pageSizes, onImport, columnSettings, seq, zoom, date fields, layout variants (see batch-x-adapt.md handoff).
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-x-adapt.md
+
+## 2026-08-11 04:59:20 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-x-adapt.md [ok]: Batch X complete: **Note on provenance:** the previous batch-X attempt timed out leaving a nearly-complete, unverified implementation in t; Files changed (2 commits, 4 non-test source files + 2 test files + manifest + docs): | File | Change |; Verification (all pass, on committed state): - `typecheck` ✓ · `test` **1496/1496** (147 files, +27) ✓ · `lint` **0 errors, 0 warnings** ✓ (previous attempt's comple; Batch Y handoff (in `batch-x-adapt.md`): 1. **`pageSizes`** (pagerConfig parity) — pager is page-only; documented in code
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-x-adapt.md
+
+## 2026-08-11 05:13:19 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-x-review.md [ok]: Verdict: **PASS** (1 medium finding recommended before merge): **Gates (all on committed state):** vue typecheck ✓ · test **1496/1496** ✓ · lint 0/0 ✓ · `check:manifest` zero drift (6
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-x-review.md

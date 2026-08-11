@@ -159,6 +159,51 @@ describe('IrisTable multiSort (vxe sort-config.multiple parity, batch X)', () =>
     })
   })
 
+  it('controlled `multiSortState` prop change re-queries with the full sort list', async () => {
+    // A parent driving v-model:multiSortState must push the new list to the
+    // server (review finding: Vue previously only pushed on internal clicks).
+    const query = vi.fn(async (_params: IrisTableProxyQueryParams) => ({
+      rows: [rows[0]],
+      total: 3,
+    }))
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns,
+        data: [],
+        rowKey: 'id',
+        multiSort: true,
+        multiSortState: [{ key: 'name', direction: 'asc' }],
+        proxyConfig: { query, remoteSort: true },
+      },
+      attachTo: host,
+    })
+    await settle()
+    expect(query).toHaveBeenLastCalledWith({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      sorts: [{ key: 'name', direction: 'asc' }],
+      filters: {},
+    })
+    await wrapper.setProps({
+      multiSortState: [
+        { key: 'name', direction: 'asc' },
+        { key: 'age', direction: 'desc' },
+      ],
+    })
+    await settle()
+    expect(query).toHaveBeenLastCalledWith({
+      page: 1,
+      pageSize: 10,
+      sort: null,
+      sorts: [
+        { key: 'name', direction: 'asc' },
+        { key: 'age', direction: 'desc' },
+      ],
+      filters: {},
+    })
+  })
+
   it('defaultMultiSort seeds the uncontrolled multi sort on mount', () => {
     const wrapper = mount(IrisTable, {
       props: {

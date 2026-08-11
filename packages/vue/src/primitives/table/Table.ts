@@ -154,6 +154,10 @@ export function useTableProxy<Row extends Record<string, unknown>>(
     params: { page: 1, pageSize: 10, sort: null, filters: {} },
   })
   let unsubscribe: (() => void) | null = null
+  // SSR/hydration: the first fetch is kicked from onMounted (like the React
+  // adapter's effect) so renderToString never runs the user query and the
+  // server HTML (initial state) hydrates with the client's first render.
+  let mounted = false
 
   const attach = (ctrl: RemoteTableSource<Row>): void => {
     unsubscribe?.()
@@ -209,13 +213,26 @@ export function useTableProxy<Row extends Record<string, unknown>>(
         },
       })
       attach(ctrl)
-      if (config.autoLoad !== false) void ctrl.request()
+      // The auto-load kick only fires post-mount: never during renderToString
+      // (server HTML stays on the initial state, hydrating cleanly) and never
+      // during setup on the client (the loading row appears after mount, like
+      // the React adapter's effect). `mounted` is set in onMounted below.
+      if (mounted && config.autoLoad !== false) void ctrl.request()
     },
     { immediate: true },
   )
 
   onScopeDispose(() => {
     detach()
+  })
+
+  // First fetch after the component is attached (client-only, like an effect)
+  // — a proxyConfig that was present at setup loads here; one that arrives
+  // later loads from the presence watch above (mounted is already true).
+  onMounted(() => {
+    mounted = true
+    const config = cfg.value
+    if (config && proxy.value && config.autoLoad !== false) void proxy.value.request()
   })
 
   // Proxy rows feed a local editable copy; a new page/refetch reference
@@ -511,6 +528,20 @@ export const IrisTable = defineComponent({
     })
     // remoteSort parity: the server owns the ordering — never re-sort locally.
     const sortedData = computed(() => (remoteSort.value ? tableData.value : sortedRows.value))
+    // remoteSort parity: hand the sort state to the server. Header clicks are
+    // pushed via the onSortChange/onMultiSortChange wrappers above; these
+    // watches cover controlled `sort`/`multiSortState` prop updates from the
+    // parent (core setParams dedupes unchanged params, so the click path does
+    // not double-request — React effect parity). In multiSort mode the
+    // single-column channel is inert — the multi watch below owns the sync.
+    watch([internalSort, () => props.multiSort, remoteSort, () => proxyCtrl.proxy.value], () => {
+      if (!proxyCtrl.proxy.value || !remoteSort.value || props.multiSort) return
+      proxyCtrl.setParams({ sort: internalSort.value })
+    })
+    watch([multiSortState, () => props.multiSort, remoteSort, () => proxyCtrl.proxy.value], () => {
+      if (!proxyCtrl.proxy.value || !remoteSort.value || !props.multiSort) return
+      proxyCtrl.setParams({ sorts: multiSortState.value })
+    })
 
     // -------- Search form (vxe-grid formConfig parity) --------
     // Draft/applied two-state: keystrokes only touch the DRAFT (never trigger a
@@ -663,10 +694,17 @@ export const IrisTable = defineComponent({
     // Local-mode form filtering (vxe formConfig parity, local): applied form
     // values filter rows client-side (substring, case-insensitive) before the
     // body renders — the Vue table's first filter stage. Remote-filter tables
-    // never hide rows locally (the server owns filtering).
+    // never hide rows locally (the server owns filtering). In proxy mode the
+    // server owns form filtering too (the applied values were pushed via
+    // setParams), so the loaded page is filtered only by the `filters` prop —
+    // which Vue has not shipped yet, hence none locally (React parity, batch C
+    // behavior). Local mode merges the form over the empty base map.
     const filteredData = computed(() => {
       if (remoteFilter.value) return sortedData.value
-      const active = Object.entries(formApplied.value).filter(([, v]) => v != null && v !== '')
+      const merged: Record<string, string> = proxyCtrl.proxy.value
+        ? {}
+        : mergeFormFilters({}, formApplied.value)
+      const active = Object.entries(merged).filter(([, v]) => v != null && v !== '')
       if (active.length === 0) return sortedData.value
       return sortedData.value.filter((row) =>
         active.every(([key, value]) => {

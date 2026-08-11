@@ -71,6 +71,9 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch X)', () => {
       props: { columns, data: [], rowKey: 'id', proxyConfig: { query } },
       attachTo: host,
     })
+    // The first fetch kicks from onMounted (React effect parity) — the
+    // loading row appears after the mount tick, not on the first render.
+    await nextTick()
     expect(wrapper.find('[data-iris-table-row="loading"]').exists()).toBe(true)
     d.resolve({ rows: [rows[0]], total: 1 })
     await settle()
@@ -201,6 +204,58 @@ describe('IrisTable proxyConfig (vxe-grid proxyConfig parity, batch X)', () => {
     expect(query).toHaveBeenCalledTimes(1)
     // Sorted client-side (Bob, Alice, Charlie → Alice, Bob, Charlie).
     expect(nameCells(wrapper)).toEqual(['Alice', 'Bob', 'Charlie'])
+  })
+
+  it('controlled `sort` prop change re-queries with the new sort and resets to page 1', async () => {
+    // A parent driving v-model:sort with remoteSort must re-query (review
+    // finding: Vue previously only pushed on internal state change — the
+    // header indicator and server rows diverged). Sort changes reset the page
+    // to 1, vxe behavior.
+    const query = vi.fn(async () => ({ rows: [rows[0]], total: 25 }))
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns,
+        data: [],
+        rowKey: 'id',
+        sort: { key: 'name', direction: 'asc' },
+        proxyConfig: { query, remoteSort: true },
+      },
+      attachTo: host,
+    })
+    await settle()
+    expect(query).toHaveBeenCalledTimes(1)
+    await wrapper.find('[data-iris-pagination-item="next"]').trigger('click')
+    await settle()
+    expect(query).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }))
+    await wrapper.setProps({ sort: { key: 'name', direction: 'desc' } })
+    await settle()
+    expect(query).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, sort: { key: 'name', direction: 'desc' } }),
+    )
+  })
+
+  it('same-value controlled sort with fresh identity does not re-query or reset the page', async () => {
+    // The parent re-renders with a NEW inline sort object of the SAME value:
+    // core setParams dedupes — no re-query, page stays on 2 (React parity).
+    const query = vi.fn(async () => ({ rows: [rows[0]], total: 25 }))
+    const wrapper = mount(IrisTable, {
+      props: {
+        columns,
+        data: [],
+        rowKey: 'id',
+        sort: { key: 'name', direction: 'asc' },
+        proxyConfig: { query, remoteSort: true },
+      },
+      attachTo: host,
+    })
+    await settle()
+    expect(query).toHaveBeenCalledTimes(1)
+    await wrapper.find('[data-iris-pagination-item="next"]').trigger('click')
+    await settle()
+    expect(query).toHaveBeenCalledTimes(2)
+    await wrapper.setProps({ sort: { key: 'name', direction: 'asc' } })
+    await settle()
+    expect(query).toHaveBeenCalledTimes(2)
   })
 
   it('proxyConfig arriving after the first render still auto-loads', async () => {

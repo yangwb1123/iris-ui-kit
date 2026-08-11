@@ -250,6 +250,16 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
     /** Batch action (vxe toolbar batch parity, batch M): a primary button rendered after the built-ins while `selectable === 'multi'` and rows are selected; receives the current selection keys. */
     batch?: { label: string; onClick: (keys: Array<string | number>) => void; icon?: string }
   }
+  /** Zoom overlay (vxe toolbar zoom parity, batch U): when `showButton`, the
+   * toolbar renders a toggle (⛶ when not zoomed, ✕ when zoomed) that pins the
+   * table root as a fullscreen overlay (fixed, inset 0, popover z-index);
+   * Esc exits. Local state — no parent props needed. */
+  zoomConfig?: { showButton?: boolean }
+  /** Section layouts (vxe-grid layouts parity, batch U, suppression-only):
+   * `form`/`toolbar` `'hidden'` skips that section (the config stays
+   * accepted); `pager` `'hidden'` skips the proxy pager. Defaults render
+   * every section exactly as before. */
+  layouts?: { form?: 'top' | 'hidden'; toolbar?: 'top' | 'hidden'; pager?: 'bottom' | 'hidden' }
   /** Render with print-friendly styles (hides the toolbar, keeps rows). */
   printable?: boolean
   /**

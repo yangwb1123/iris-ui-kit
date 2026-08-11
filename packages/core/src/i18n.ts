@@ -118,6 +118,8 @@ export const defaultMessages: I18nMessages = {
   'table.filterClear': 'Clear',
   'table.filter': 'Filter',
   'table.total': 'Total {total}',
+  'table.zoomIn': 'Zoom in',
+  'table.zoomOut': 'Zoom out',
   'fnr.find': 'Find',
   'fnr.replace': 'Replace',
   'fnr.replaceAll': 'Replace all',

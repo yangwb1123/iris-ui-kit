@@ -1,0 +1,12 @@
+Baseline written to `/home/u1/iris-ui/docs/vxe-grid/batch-u-baseline.md` (252 lines). No source files modified — `git status` shows only the new doc.
+
+**Verified against current sources:**
+
+- **Toolbar** (`Table.tsx:3821-4118`): built-in order title → spacer → refresh → import → export → columnSettings (`3909`) → batch (`4072`) → custom buttons; zoom button slots after columnSettings. Renders only when `toolbar` prop is present.
+- **Root** (`Table.tsx:4231-4297`): `ref={rootRef}`, `data-iris-table=""`, style chain ends `zIndex`-then-`...style`; `fixedHeight` (`3624`) gates sticky header + `overflow: auto`; `--iris-z-popover, 1000` is the established overlay token.
+- **displayColumns** (`778-786`): the single choke point feeding leafColumns/headerMatrix/filter-panel — visibleMethod filters here, top-level scope mirroring `columnVisibility`.
+- **Section positions**: form (`3772`) + toolbar (`3821`) are fragment siblings above the root; pager (`4750`) is the root's last child — so the default `layouts` shape matches current behavior exactly (suppression-only).
+- **vxe ref** (`/tmp/vxe-ref/packages/grid/src/grid.ts`, `toolbar/src/toolbar.ts`): zoom = toolbar circle button (fullscreen/minimize icon swap, `vxe.toolbar.zoomIn/zoomOut`) → grid `isZMax` → table `height: 100%` + raised z-index, `escRestore` defaults true; `layouts` = LayoutKey array, default `[['Form'], ['Toolbar','Top','Table','Bottom','Pager']]`; `visibleMethod` is actually **row-level** in vxe (checkbox/radio configs, cell.ts:702/825) — the task's correction to a per-column no-arg predicate is documented with the rationale.
+- **i18n**: en `packages/core/src/i18n.ts:102-120`, zh `packages/plugin-locale-zh/src/core/index.ts:46-61` — neither has zoom keys; +2 each proposed.
+
+**Design summary**: `zoomConfig?: { showButton?: boolean }` (toolbar button `data-iris-table-zoom`, ⛶/✕, local `zoomed` state, root gets `data-iris-table-zoomed` + `position: fixed; inset: 0; z-index: var(--iris-z-popover, 1000); background: var(--iris-surface); height: 100%` applied after `...style`, `fixedHeight` +zoomed, window-Esc exits, no body scroll lock); `layouts?: { form/toolbar: 'top'|'hidden'; pager: 'bottom'|'hidden' }` (suppression-only); `IrisTableColumn.visibleMethod?: () => boolean` (ANDed with columnVisibility in the displayColumns memo, once per render). File map: props.ts +2, types.ts +1, Table.tsx ~+45, 2 i18n files, new test file ~15 tests. 5 open questions (zoom border, no-toolbar entry, reorder scope, grouped leaves, popup z-index collision).

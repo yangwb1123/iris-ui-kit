@@ -132,6 +132,23 @@ const TABLE_ROW_CSS = `
 [data-iris-scrollbar-thin="true"] [data-iris-virtual-scroll]::-webkit-scrollbar-thumb:hover {
   background: var(--iris-primary);
 }
+/* Zoom overlay (batch U, vxe toolbar zoom parity): position: fixed pins
+   the root as a fullscreen overlay — viewport inset, popover z-index,
+   surface background, its own scroll. The root itself is a plain block
+   (each ROW is its own CSS grid), so the internal grid layout is untouched
+   — the rows keep their shared gridTemplateColumns and the sticky-header /
+   scroll machinery engages via the inline height: 100%. Caveats: the
+   form/toolbar/pager sections are fragment siblings OUTSIDE the root and
+   stay in place above the overlay; a caller-supplied inline position /
+   z-index in style would override this rule (inline wins over the
+   stylesheet) — only height: 100% is forced inline while zoomed. */
+[data-iris-table][data-iris-table-zoomed] {
+  position: fixed;
+  inset: 0;
+  z-index: var(--iris-z-popover, 1000);
+  background: var(--iris-surface);
+  overflow: auto;
+}
 `
 import { useTableSort } from './useTableSort'
 import { TableContextMenu } from './ContextMenu'
@@ -703,6 +720,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onFilterValuesChange,
   formConfig,
   toolbar,
+  zoomConfig,
+  layouts,
   tooltipConfig,
   headerTooltipConfig,
   footerTooltipConfig,
@@ -776,8 +795,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }, [safeColumns, columnOrder, columnOrderIndex])
 
   const displayColumns = React.useMemo(() => {
-    if (!columnVisibility) return orderedColumns
-    return orderedColumns.filter((c) => columnVisibility[c.key] !== false)
+    let cols = orderedColumns
+    if (columnVisibility) cols = cols.filter((c) => columnVisibility[c.key] !== false)
+    // Batch U (vxe column visibleMethod parity): a per-column no-arg
+    // predicate evaluated in this memo — at most once per render. `false`
+    // HIDES the column and WINS over `columnVisibility: true` (a column
+    // whose own predicate vetoes itself must not render); absent / `true`
+    // keeps it. Filtering is reference-preserving when nothing uses it.
+    if (cols.some((c) => c.visibleMethod)) {
+      cols = cols.filter((c) => (c.visibleMethod ? c.visibleMethod() !== false : true))
+    }
+    return cols
   }, [orderedColumns, columnVisibility])
 
   // Multi-level (grouped) headers: a column with `children` forms a header group. The BODY always renders the leaf columns; only the header gains extra rows.
@@ -1520,6 +1548,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // independent coordinate spaces).
   const footerOccupyRef = React.useRef<Set<string>>(new Set())
   const [columnSettingsOpen, setColumnSettingsOpen] = React.useState(false)
+  // Batch U (vxe toolbar zoom parity): local zoom state — the toolbar toggle
+  // flips it, the injected stylesheet pins the root fixed, Esc exits. The
+  // window listener lives only while zoomed (no global hook otherwise).
+  const [zoomed, setZoomed] = React.useState(false)
+  React.useEffect(() => {
+    if (!zoomed) return
+    const onWindowKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setZoomed(false)
+    }
+    window.addEventListener('keydown', onWindowKey)
+    return () => window.removeEventListener('keydown', onWindowKey)
+  }, [zoomed])
   const importFileRef = React.useRef<HTMLInputElement | null>(null)
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -3621,11 +3661,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // scroll container; the injected stylesheet pins the header row. Batch Q:
   // `autoResize` with a positive measure engages the same machinery so the
   // auto-filled root scrolls/sticks exactly like an explicit-height table.
+  // Batch U zoom: the zoomed overlay is its own viewport (fixed + inset 0 +
+  // overflow auto) — the sticky header + scroll machinery engage exactly
+  // like an explicit height.
   const fixedHeight =
     height !== undefined ||
     minHeight !== undefined ||
     maxHeight !== undefined ||
-    ((autoResize || syncResize) && autoSize !== null)
+    ((autoResize || syncResize) && autoSize !== null) ||
+    zoomed
   // Virtual body items: always typed as plan entries (rows wrapped with their
   // ORIGINAL bodyData index) so the `kind` discriminant narrows cleanly — a
   // generic `Row` type param defeats `'kind' in` narrowing.
@@ -3767,7 +3811,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   return (
     <>
-      {formConfig ? (
+      {formConfig && layouts?.form !== 'hidden' ? (
         <form
           data-iris-table-form=""
           onSubmit={handleFormSubmit}
@@ -3816,7 +3860,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           </div>
         </form>
       ) : null}
-      {toolbar ? (
+      {toolbar && layouts?.toolbar !== 'hidden' ? (
         <div
           data-iris-table-toolbar=""
           style={{
@@ -4094,6 +4138,24 @@ export function IrisTable<Row extends Record<string, unknown>>({
               {batchAction.label}
             </button>
           ) : null}
+          {zoomConfig?.showButton ? (
+            <button
+              type="button"
+              data-iris-table-zoom=""
+              onClick={() => setZoomed((v) => !v)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: zoomed ? 'var(--iris-foreground)' : 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+              }}
+              aria-label={zoomed ? t('table.zoomOut') : t('table.zoomIn')}
+              title={zoomed ? t('table.zoomOut') : t('table.zoomIn')}
+            >
+              {zoomed ? '✕' : '⛶'}
+            </button>
+          ) : null}
           {toolbar.buttons && toolbar.buttons.length > 0
             ? toolbar.buttons.map((btn) => (
                 <button
@@ -4230,6 +4292,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         data-striped={striped ? 'true' : undefined}
         data-column-virtualized={columnVirtualization ? 'true' : undefined}
         data-iris-table-fixed-height={fixedHeight ? 'true' : undefined}
+        data-iris-table-zoomed={zoomed ? 'true' : undefined}
         data-iris-scrollbar-thin={scrollbarConfig?.theme === 'thin' ? 'true' : undefined}
         data-iris-auto-resize={autoResize ? 'true' : undefined}
         data-iris-no-hover={highlightHoverRow ? undefined : 'true'}
@@ -4291,6 +4354,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // `...style` — a caller-provided style can still override.
           ...(zIndex !== undefined ? { position: 'relative', zIndex } : null),
           ...style,
+          // Batch U zoom (vxe toolbar zoom parity): the stylesheet pins the
+          // root fixed (data-iris-table-zoomed); the inline height: 100%
+          // keeps the fixed-height machinery engaged so the sticky header
+          // and the overlay scroll work exactly like an explicit-height
+          // table. After `...style` — zoom wins over caller heights.
+          ...(zoomed ? { height: '100%' } : null),
         }}
       >
         {/* Multi-level (grouped) header: a CSS grid of `headerMatrix.length` rows;
@@ -4745,7 +4814,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               )
             })()
           : null}
-        {proxy ? (
+        {proxy && layouts?.pager !== 'hidden' ? (
           <div
             data-iris-table-pager=""
             style={{

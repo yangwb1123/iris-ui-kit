@@ -339,3 +339,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-t-gate.md [ok]: 批 T Gate — PASS ✅: **Review verdict**: PASS（4 × LOW 非阻塞）; Gate fixes applied: 1. lint 阻断 `no-useless-escape` 裸转义; 2. **toggleRowExpand 事件陈旧闭包（F2）** — 改 `expansion.isExpanded` 活读模型索引（第二次调用仍上报旧状态）; 3. 测试断言 jsdom/nwsapi 引号选择器改为属性扫描; Full gate results: 180/180 turbo · react 1779/1779（+24 新）· lint 0 errors · audit 0 · manifest up-to-date; Docs: comparison doc 标记 radio 单列/showTotal/handle 方法/事件 4 行 ✅ + 批 T 构建行 + 总数（react 1779 · core 1249 · 7380 total）; 移除 scratch-debug.test.tsx 调试废码; Commit: **`f6f7b209`** — `feat(table): vxe-grid 批 T——表格方法/事件补齐/radio 列/分页总数（react only）`
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-t-gate.md
+
+## 2026-08-10 23:02:33 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-u-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-u-baseline.md
+
+## 2026-08-11 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-u-baseline.md [ok]: 批 U 完成（final batch）：zoomConfig 缩放全屏（工具栏 ⛶/✕ + TABLE_ROW_CSS fixed 覆盖层 token-only + Esc 退出 + fixedHeight 联动 + inline height 100% 置于 ...style 后）· layouts 节布局（form/toolbar/pager hidden 仅抑制，默认逐节不变）· visibleMethod 列可见谓词（displayColumns memo 每渲染至多一次；false 优先于 columnVisibility true；顶层列作用域同 columnVisibility，分组叶子不consult——文档化）。5 个基线开放问题全数裁决：zoom 无 toolbar 无入口（vxe parity，toggle 在工具栏）；grouped leaves 不 consult（与 columnVisibility 同作用域）；可见性 veto 优先；zh zoomOut=退出放大（显式退出语义）。props.ts 483/500 未超限。测试 19 新（zoom-layouts-visiblemethod.test.tsx 326 行 ≤500）。验证：react 1798/1798 · core 1249/1249 · zh 6/6 · typecheck ✓ · lint 0 errors（1 既有 complexity warning）· spec 0 violations · manifest 再生成（155 components 基线不变，react IrisTable props 115→117）。Docs: comparison doc 工具栏行补 zoom + 新增布局行 + 批 U 构建行 + 总数（react 1798 · core 1249 · 7399 total）；core dist 重建（git-ignored，i18n 键随构建进 react 测试解析）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-u-adapt.md

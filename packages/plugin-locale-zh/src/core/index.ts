@@ -59,6 +59,8 @@ export const zhCNMessages: Record<string, string> = {
   'table.filterClear': '清除',
   'table.filter': '筛选',
   'table.total': '共 {total} 条',
+  'table.zoomIn': '放大',
+  'table.zoomOut': '退出放大',
   'fnr.find': '查找',
   'fnr.replace': '替换',
   'fnr.replaceAll': '全部替换',

@@ -36474,6 +36474,18 @@
           "description": "Toolbar (vxe-grid toolbarConfig parity, minimal built-ins)."
         },
         {
+          "name": "zoomConfig",
+          "type": "{ showButton?: boolean }",
+          "optional": true,
+          "description": "toolbar renders a toggle (⛶ when not zoomed, ✕ when zoomed) that pins the table root as a fullscreen overlay (fixed, inset 0, popover z-index);"
+        },
+        {
+          "name": "layouts",
+          "type": "{ form?: 'top' | 'hidden'; toolbar?: 'top' | 'hidden'; pager?: 'bottom' | 'hidden' }",
+          "optional": true,
+          "description": "`form`/`toolbar` `'hidden'` skips that section (the config stays accepted); `pager` `'hidden'` skips the proxy pager. Defaults render"
+        },
+        {
           "name": "printable",
           "type": "boolean",
           "optional": true,
@@ -37169,6 +37181,18 @@
               "type": "{",
               "optional": true,
               "description": "Toolbar (vxe-grid toolbarConfig parity, minimal built-ins)."
+            },
+            {
+              "name": "zoomConfig",
+              "type": "{ showButton?: boolean }",
+              "optional": true,
+              "description": "toolbar renders a toggle (⛶ when not zoomed, ✕ when zoomed) that pins the table root as a fullscreen overlay (fixed, inset 0, popover z-index);"
+            },
+            {
+              "name": "layouts",
+              "type": "{ form?: 'top' | 'hidden'; toolbar?: 'top' | 'hidden'; pager?: 'bottom' | 'hidden' }",
+              "optional": true,
+              "description": "`form`/`toolbar` `'hidden'` skips that section (the config stays accepted); `pager` `'hidden'` skips the proxy pager. Defaults render"
             },
             {
               "name": "printable",
@@ -38163,7 +38187,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 115,
+        "propCount": 117,
         "eventCount": 21
       }
     },

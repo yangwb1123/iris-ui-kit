@@ -228,6 +228,13 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    * the plan.
    */
   groupBy?: boolean
+  /** Hide this column entirely (vxe column visibleMethod parity, batch U): a
+   * predicate evaluated in the display-columns memo (at most once per
+   * render); `false` hides the column even when `columnVisibility` says
+   * visible (the column's own veto wins). Absent / `true` keeps it. Scope
+   * mirrors `columnVisibility`: top-level columns only — a grouped column's
+   * leaf `visibleMethod` is not consulted (same documented simplification). */
+  visibleMethod?: () => boolean
 }
 
 /** Params delivered to `IrisTableProps.footerMethod` (vxe footer-method parity). */

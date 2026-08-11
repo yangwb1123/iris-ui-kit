@@ -509,3 +509,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-aa-review.md [ok]: Verdict: **PASS** (1 medium finding, 3 low/info): **Gates — all green:** solid typecheck ✅ · lint 0 errors ✅ · tests 939+34 (parity-aa 23/23) ✅ · `pnpm audit` ✅ · `check:
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aa-review.md
+
+## 2026-08-11 10:05:09 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aa-gate.md [ok]: 批 AA Gate — PASS ✅: **Review verdict**: PASS (1 medium finding + 3 low/info). Applied the medium finding's concrete fix, plus a manifest-gat
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aa-gate.md

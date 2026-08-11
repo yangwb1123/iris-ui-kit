@@ -282,3 +282,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-r-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-r-baseline.md
+
+## 2026-08-10 17:41:07 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-r-adapt.md [ok]: Report: **Files changed (5, all additive, React-only, core untouched):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-r-adapt.md
+
+## 2026-08-10 17:55:46 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-r-review.md [ok]: Summary: **Verification run:** react test 1738/1738 ✓ · typecheck ✓ · lint 0 errors ✓ · build ✓ · audit 0 vulnerabilities ✓ · che
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-r-review.md

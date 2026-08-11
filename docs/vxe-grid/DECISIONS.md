@@ -337,5 +337,5 @@
 
 ## 2026-08-11 — stage 'gate' — PASS
 
-- task /home/u1/iris-ui/docs/vxe-grid/batch-t-gate.md [ok]: 批 T Gate — PASS ✅: **Review verdict**: PASS（4 × LOW 非阻塞）; Gate fixes applied: 1. lint 阻断 `no-useless-escape` 裸转义; 2. **toggleRowExpand 事件陈旧闭包（F2）** — 改 `expansion.isExpanded` 活读模型索引（第二次调用仍上报旧状态）; 3. 测试断言 jsdom/nwsapi 引号选择器改为属性扫描; Full gate results: 180/180 turbo · react 1779/1779（+24 新）· lint 0 errors · audit 0 · manifest up-to-date; Docs: comparison doc 标记 radio 单列/showTotal/handle 方法/事件 4 行 ✅ + 批 T 构建行 + 总数（react 1779 · core 1249 · 7380 total）; 移除 scratch-debug.test.tsx 调试废码; Commit: **`<HASH>`** — `feat(table): vxe-grid 批 T——表格方法/事件补齐/radio 列/分页总数（react only）`
+- task /home/u1/iris-ui/docs/vxe-grid/batch-t-gate.md [ok]: 批 T Gate — PASS ✅: **Review verdict**: PASS（4 × LOW 非阻塞）; Gate fixes applied: 1. lint 阻断 `no-useless-escape` 裸转义; 2. **toggleRowExpand 事件陈旧闭包（F2）** — 改 `expansion.isExpanded` 活读模型索引（第二次调用仍上报旧状态）; 3. 测试断言 jsdom/nwsapi 引号选择器改为属性扫描; Full gate results: 180/180 turbo · react 1779/1779（+24 新）· lint 0 errors · audit 0 · manifest up-to-date; Docs: comparison doc 标记 radio 单列/showTotal/handle 方法/事件 4 行 ✅ + 批 T 构建行 + 总数（react 1779 · core 1249 · 7380 total）; 移除 scratch-debug.test.tsx 调试废码; Commit: **`f6f7b209`** — `feat(table): vxe-grid 批 T——表格方法/事件补齐/radio 列/分页总数（react only）`
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-t-gate.md

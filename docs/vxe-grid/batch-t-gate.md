@@ -14,19 +14,19 @@ F1（`CSS.escape` + 属性迭代回退）与 F2 主体（事件触发 + `rowExpa
 
 ### Full gate results
 
-| 门                                                    | 结果                                                                                         |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `turbo run test typecheck lint build --concurrency=2` | **180/180 tasks**（4m05s）                                                                   |
-| React tests                                           | **1778/1778**（原 1754 + 24 新）· typecheck 0 · lint 0 errors（1 个既有 complexity warning） |
-| `pnpm audit`                                          | **0 vulnerabilities**                                                                        |
-| `gen:manifest` + `check:manifest`                     | 155 组件 × 4 框架对齐（86 tokens），up-to-date ✅                                            |
+| 门                                                    | 结果                                                                                                           |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `turbo run test typecheck lint build --concurrency=2` | **180/180 tasks**（复跑验证，exit 0）                                                                          |
+| React tests                                           | **1779/1779**（158 files，含批 T 新文件 24 tests）· typecheck 0 · lint 0 errors（1 个既有 complexity warning） |
+| `pnpm audit`                                          | **0 vulnerabilities**                                                                                          |
+| `gen:manifest` + `check:manifest`                     | 155 组件 × 4 框架对齐（86 tokens），up-to-date ✅                                                              |
 
 ### Docs
 
-- **comparison doc**：`选择`（radio 单列）、`分页配置`（showTotal 总数）、`表格方法`（scrollToRow/toggleRowExpand/clearSort/clearFilter/setCurrentRow/setCurrentColumn）、新增 `事件` 行（cellDblClick/rowDblClick/headerClick/expand）均标记 ✅（react）；批 T 构建行；总数刷新（react 1778 · core 1249 · 7354 total）
+- **comparison doc**：`选择`（radio 单列）、`分页配置`（showTotal 总数）、`表格方法`（scrollToRow/toggleRowExpand/clearSort/clearFilter/setCurrentRow/setCurrentColumn）、新增 `事件` 行（cellDblClick/rowDblClick/headerClick/expand）均标记 ✅（react）；批 T 构建行；总数刷新（react 1779 · core 1249 · 7380 total）
 - DECISIONS.md 追加 gate 条目（含 commit 哈希）
 - 移除 adapt 遗留的 `scratch-debug.test.tsx`（调试废码，非交付物）
 
 ### Commit
 
-**`<commit-hash>`** — `feat(table): vxe-grid 批 T——表格方法/事件补齐/radio 列/分页总数（react only）`
+**`f6f7b209`** — `feat(table): vxe-grid 批 T——表格方法/事件补齐/radio 列/分页总数（react only）`

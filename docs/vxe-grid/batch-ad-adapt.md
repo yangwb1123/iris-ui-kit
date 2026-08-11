@@ -1,112 +1,34 @@
-# vxe-grid batch AD — solid adapter parity (interaction round follow-up)
-
-Status: the batch-AB interaction surface (columnDrag/rowDrag, row edit mode,
-contextMenu, filterValues, tableRef) landed in `8f40aaac`; this batch closes
-the two outstanding in-scope items — the **handed-off `lazyLoad` tree
-feature** (baseline §2f, react batch-J design) and the **row-mode session
-liveness guard** (review hardening) — plus the required `parity-ad` test
-file and gates. Solid-only; core/react/vue/svelte untouched.
+Done. Committed as `6754d32f`.
 
 ## Report
 
-### Files changed (source, exactly 4) + tests
+**Key finding from the baseline**: the batch-AB interaction surface (rowDrag/columnDrag, row edit mode, contextMenu, filterValues, tableRef) **already landed** in `8f40aaac` with parity-ab tests, and the AB review's 2 MEDIUM + 2 LOW findings were already addressed in that commit (verified: rowMode-first click path, dblclick re-begins the row, proxy page-change clears `localRows`, epoch guards on pending async commits). The one genuinely outstanding in-scope feature was **lazyLoad** (in scope per baseline §2f since solid has `getSubRows` tree support; handed off).
 
-| File                                                     | Change                                                                                           |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `packages/solid/src/primitives/table/types.ts`           | +1 named exported type `IrisTableLazyLoad<Row>` (named function type, manifest-scanner friendly) |
-| `packages/solid/src/primitives/table/props.ts`           | +`lazyLoad?: IrisTableLazyLoad<Row>` (single-line function prop)                                 |
-| `packages/solid/src/primitives/table/index.ts`           | re-exports `IrisTableLazyLoad`                                                                   |
-| `packages/solid/src/primitives/table/IrisTable.tsx`      | lazyLoad machinery + row-mode session liveness guard (+~130 net; additive)                       |
-| `packages/solid/src/primitives/table/parity-ad.test.tsx` | **new — 486 lines, 15 tests** (≤500 ✓)                                                           |
+### Files changed (4 source + tests)
 
-Plus required artifacts: regenerated `packages/manifest/manifest.json` +
-`llms.txt` (155 components, 4×155 aligned; solid contract gains
-`lazyLoad?` + `IrisTableLazyLoad`), `docs/vxe-grid/batch-ad-adapt.md`
-(evidence).
+| File                                                     | Change                                                                                                                                                                                                      |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/solid/src/primitives/table/types.ts`           | +`IrisTableLazyLoad` named type                                                                                                                                                                             |
+| `packages/solid/src/primitives/table/props.ts`           | +`lazyLoad?` (single-line prop)                                                                                                                                                                             |
+| `packages/solid/src/primitives/table/index.ts`           | re-export `IrisTableLazyLoad`                                                                                                                                                                               |
+| `packages/solid/src/primitives/table/IrisTable.tsx`      | lazyLoad machinery (epoch + reactive loading set + closure cache winning over `getSubRows` + spinner caret + stale-fetch drop) + row-mode session liveness guard (blur-after-close double-commit hardening) |
+| `packages/solid/src/primitives/table/parity-ad.test.tsx` | **new — 486 lines / 15 tests** (≤500 ✓)                                                                                                                                                                     |
+| `manifest.json`/`llms.txt`                               | regenerated (155 comps, 4×155; solid contract gains `lazyLoad?` + `IrisTableLazyLoad`)                                                                                                                      |
 
-### 1. lazyLoad (vxe lazyLoad parity, react batch-J port) — NEW
+### Tests added (15)
 
-- `treeMode()` now true with `lazyLoad` alone (role `treegrid`, virtual-scroll
-  windowing, tree indent all light up without `getSubRows`).
-- Loaded children live in a **plain closure Map** (keyed by `rowId`, wins over
-  `getSubRows` via `lazyChildrenOf`); the **loading set is a signal** (drives
-  the caret spinner on both transitions); a **monotonic epoch** bumps when the
-  data source reference changes (cache + loading cleared wholesale) so a stale
-  fetch's result never re-seeds a cleared cache and never clears a newer
-  fetch's loading flag (react batch-K M2 parity).
-- `flatTree` re-walks when `lazyLoading()` changes (react's
-  lazyLoading-in-deps parity — the cache map is not reactive); lazy children
-  still participate in hierarchical sorting (`withSortedChildren`).
-- A row with no children and nothing cached renders a lazy caret
-  (`data-iris-table-tree-toggle`, `aria-expanded="false"`); first expand calls
-  `lazyLoad(row, load)` — success caches + expands (firing the tree-expand
-  channel via `expansion.toggle`) + clears loading; resolving with `[]` drops
-  the caret (plain leaf); a **throwing load stays retryable** (key not
-  cached); a stale resolution is dropped without touching the loading flag.
-- Caret spinner: `data-iris-tree-loading` attr + token-driven
-  `iris-table-caret-spin` keyframes in the injected singleton stylesheet
-  (`#iris-table-row-styles`; `--iris-*` only — spec gate clean).
-- Resolved children are themselves uncached lazy leaves (caret parity with
-  react) — covered by test.
+lazyLoad ×5 (caret + first-expand/expand + cache reuse · pending spinner + empty resolve drops caret · throwing load retryable · data-source change drops stale result (epoch) · lazy cache wins over `getSubRows`) · rowDrag/columnDrag reorder ×2 · row mode (all editors open + Escape cancels; Enter-then-blur commits exactly once) ×2 · contextMenu (cursor anchor + onSelect; Esc closes + header excluded) ×2 · filter panel (OR-match + clear; remote comma-join) ×2 · tableRef (loadData no query / reloadData / proxy info; clearSort + clearFilter) ×2.
 
-### 2. Row-mode session liveness guard (review hardening)
+### Counts
 
-`commitRowSession` now returns early when the session is no longer in the
-session Map. The editor's `onBlur` can fire **after** the session left the map
-(input unmount on close/cancel — Escape-then-blur, Enter-then-blur in real
-browsers), which would otherwise start a FRESH commit on the stale session
-object (double `onCellEdit` / write-back after Escape). jsdom does not fire
-blur on removal, so the guard is defensive browser hardening; the
-supersede-epoch path it protects is regression-tested via
-Enter-then-blur-on-mounted-input (exactly one commit).
+- typecheck **0 errors** · lint **0 errors** · tests **974 unit + 34 SSR all pass** (128 files) · build ✓ · prettier ✓ · manifest tests 69 ✓
+- `iris-ui-spec.py --mode all --json` → **0 violations**
+- CSS: only `--iris-*` tokens (spinner keyframes token-driven in the singleton stylesheet)
 
-### Tests added (15, one new file)
+### Handoff list
 
-- **lazyLoad (5)**: caret + first-expand loads/expands + cache reuse (no
-  second call) · pending spinner + resolve-`[]` drops the caret · throwing
-  load stays retryable · data-source change drops stale in-flight result
-  (epoch) then fresh row loads · lazily loaded key wins over `getSubRows`
-  while other rows keep `getSubRows` children.
-- **rowDrag/columnDrag (2)**: reorder through the handle reporting
-  `onReorder` + `onDataChange`; tap cancels · column reorder on drop; tap
-  does not.
-- **row edit mode (2)**: click opens every editable column; Escape cancels
-  the whole row without committing · Enter-then-blur on an async-validated
-  column commits exactly once (epoch supersede), other column stays open.
-- **contextMenu (2)**: opens at the cursor (portaled, translate3d at
-  clientX/Y); item click fires `onSelect` + closes · Escape closes; header
-  right-click never opens.
-- **filter panel (2)**: check + confirm OR-match; checking the second option
-  widens; clear removes immediately · remoteFilter comma-joins the checked
-  sets into the query `filters`.
-- **tableRef (2)**: `loadData` no query + `onDataChange` + `reloadData`
-  re-queries + `getProxyInfo` · `clearSort` resets the sort channel +
-  `clearFilter` resets both filter channels.
-
-### Verification (all green)
-
-- `pnpm --filter @iris-ui-kit/solid typecheck` — **0 errors**
-- `pnpm --filter @iris-ui-kit/solid test` — **128 files / 974 tests + 34
-  hydration** pass (15 new parity-ad)
-- `pnpm --filter @iris-ui-kit/solid lint` — **0 errors**
-- `pnpm --filter @iris-ui-kit/solid build` ✓ · prettier ✓ ·
-  `@iris-ui-kit/manifest` tests 69 ✓
-- `iris-ui-spec.py --mode all --json` — **0 violations**
-- `pnpm gen:manifest` — 155 components, 4×155 aligned; solid contract
-  extracts `lazyLoad?` + `IrisTableLazyLoad` cleanly
-
-### Handoff list (next batch)
-
-1. **svelte interaction round** — svelte still lacks filterValues/filter
-   panel, contextMenu, rowDrag/columnDrag, editConfig row mode, lazyLoad,
-   tableRef (the AC baseline handoff items 1–2); react/solid now define the
-   reference semantics for all of them.
-2. `editConfig.showAsterisk` — declared in types but not rendered in any
-   adapter (react's handling is a style-only no-op); confirm vxe semantics or
-   drop from the type.
-3. `trigger: 'manual'` — unwired in both adapters; needs vxe manual-trigger
-   semantics (grid methods) before adding.
-4. `editor: 'select'` row-mode editors — row sessions (and cell mode) are
-   text/number only.
-5. Handle scope — solid exposes the 6 proxy/reset methods; react also has
-   row/view ops (additive growth per batch; IrisTable.tsx is ~3250 lines).
+1. **Svelte interaction round** — svelte still lacks filterValues/filter panel, contextMenu, rowDrag/columnDrag, row edit mode, lazyLoad, tableRef (AC baseline handoff); react/solid now define reference semantics.
+2. `editConfig.showAsterisk` — declared but unrendered in all adapters (react's is a style-only no-op); confirm vxe semantics or drop the type field.
+3. `trigger: 'manual'` — unwired in react + solid; needs vxe manual-trigger (grid methods) semantics first.
+4. `editor: 'select'` row-mode editors — row sessions are text/number only.
+5. Handle scope — solid exposes the 6 proxy/reset methods; react also has row/view ops (additive growth per batch; `IrisTable.tsx` ~3250 lines).

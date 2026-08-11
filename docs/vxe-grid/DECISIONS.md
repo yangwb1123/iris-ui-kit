@@ -564,3 +564,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ad-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ad-baseline.md
+
+## 2026-08-11 12:37:57 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ad-adapt.md [ok]: Report: **Key finding from the baseline**: the batch-AB interaction surface (rowDrag/columnDrag, row edit mode, contextMenu, fil; Files changed (4 source + tests): | File | Change |; Tests added (15): lazyLoad ×5 (caret + first-expand/expand + cache reuse · pending spinner + empty resolve drops caret · throwing load ret; Counts: - typecheck **0 errors** · lint **0 errors** · tests **974 unit + 34 SSR all pass** (128 files) · build ✓ · prettier ✓ ·; Handoff list: 1. **Svelte interaction round** — svelte still lacks filterValues/filter panel, contextMenu, rowDrag/columnDrag, row edi
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ad-adapt.md
+
+## 2026-08-11 12:46:10 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ad-review.md [ok]: Verification (all green): - **solid typecheck** 0 errors · **lint** 0 errors · **tests** 974 unit + 34 SSR (128 files) · parity-ad 15/15 · parity-; Checklist findings: 1. **drag** — threshold/closest-center/reorder/grouped-header-gating/cleanup all match react; **LOW-1**: solid's column-
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ad-review.md

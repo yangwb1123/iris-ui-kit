@@ -37801,15 +37801,59 @@
               "name": "toolbar",
               "type": "IrisTableToolbarConfig",
               "optional": true
+            },
+            {
+              "name": "columnVisibility",
+              "type": "IrisTableColumnVisibility",
+              "optional": true
+            },
+            {
+              "name": "filters",
+              "type": "Record<string, string>",
+              "optional": true
+            },
+            {
+              "name": "seq",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "seqStartIndex",
+              "type": "number",
+              "optional": true,
+              "default": "1"
+            },
+            {
+              "name": "spanMethod",
+              "type": "(params: IrisTableSpanMethodParams) =",
+              "optional": true
+            },
+            {
+              "name": "columnDrag",
+              "type": "IrisTableColumnDrag",
+              "optional": true
+            },
+            {
+              "name": "rowDrag",
+              "type": "IrisTableRowDrag",
+              "optional": true
+            },
+            {
+              "name": "onDataChange",
+              "type": "(rows: Array<Record<string, unknown>>) =",
+              "optional": true
             }
           ],
           "events": [
             "cellEdit",
             "expandedRowsChange",
             "multiSortChange",
+            "onDataChange",
             "onRetry",
             "rowClick",
             "rowDblclick",
+            "update:columnVisibility",
             "update:columnWidths",
             "update:multiSortState",
             "update:selection",
@@ -37824,17 +37868,24 @@
             "IrisTableAggregateOp",
             "IrisTableCellEditEvent",
             "IrisTableColumn",
+            "IrisTableColumnDrag",
+            "IrisTableColumnVisibility",
             "IrisTableColumnWidths",
             "IrisTableEditor",
+            "IrisTableExpose",
             "IrisTableFormConfig",
             "IrisTableFormField",
             "IrisTableProps",
             "IrisTableProxyConfig",
+            "IrisTableProxyInfo",
             "IrisTableProxyQueryParams",
             "IrisTableRenderDetail",
+            "IrisTableRowDrag",
             "IrisTableRowExpandable",
             "IrisTableSortDirection",
             "IrisTableSortState",
+            "IrisTableSpan",
+            "IrisTableSpanMethodParams",
             "IrisTableToolbarBatch",
             "IrisTableToolbarButton",
             "IrisTableToolbarConfig",

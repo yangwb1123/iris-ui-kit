@@ -192,3 +192,51 @@ export interface IrisTableVirtualOptions {
 
 /** Map of column key → current width in px (after any resizing). */
 export type IrisTableColumnWidths = Record<string, number>
+
+/** Column visibility map (vxe columnConfig.visible parity): column key → visible. Default true. */
+export type IrisTableColumnVisibility = Record<string, boolean>
+
+/** Params delivered to `IrisTableProps.spanMethod` (vxe span-method parity). */
+export interface IrisTableSpanMethodParams {
+  /** 0-based row index over the body rows. */
+  rowIndex: number
+  /** 0-based leaf-column index (seq / selection / drag tracks excluded). */
+  columnIndex: number
+}
+
+/** Span result returned by `IrisTableProps.spanMethod` (vxe span-method parity): both dimensions default to 1; values > 1 make the cell span adjacent cells, which then render null. */
+export interface IrisTableSpan {
+  rowspan?: number
+  colspan?: number
+}
+
+/** Column drag-sort (vxe columnDragConfig parity). Reorders leaf columns on drop; the parent owns columns (pass the reordered array back). Grouped headers are NOT supported (documented simplification). */
+export interface IrisTableColumnDrag<Row = Record<string, unknown>> {
+  /** Called with the reordered column array after a drop. */
+  onReorder: (columns: IrisTableColumn<Row>[]) => void
+}
+
+/** Row drag-sort (vxe rowDragConfig parity). Renders a drag handle per row; a drop reorders the table's LOCAL rows and reports through `onDataChange` (plus this callback, React parity). */
+export interface IrisTableRowDrag<Row = Record<string, unknown>> {
+  /** Called with the reordered row array after a drop. */
+  onReorder: (rows: Row[]) => void
+}
+
+/** Snapshot returned by `IrisTableExpose.getProxyInfo` (vxe getProxyInfo parity). */
+export interface IrisTableProxyInfo {
+  page: number
+  pageSize: number
+  total: number
+}
+
+/** Imperative handle exposed by IrisTable (vxe loadData/reloadData/commitProxy/getProxyInfo parity, batch Y). */
+export interface IrisTableExpose<Row = Record<string, unknown>> {
+  /** Replace the live row list WITHOUT a query (vxe loadData parity): writes the local rows ref (proxy liveData / local override) and fires `onDataChange`. In proxy mode the controller's total/page stay unchanged until the next query. */
+  loadData: (rows: Row[]) => void
+  /** Re-fetch the current page (vxe reloadData parity — alias of the proxy refetch). */
+  reloadData: () => void
+  /** Merge params into the proxy query and fire the request (vxe commitProxy parity). */
+  commitProxy: (overrides: Partial<IrisTableProxyQueryParams>) => void
+  /** Proxy state snapshot: page/pageSize/total; null without a proxy (vxe getProxyInfo parity). */
+  getProxyInfo: () => IrisTableProxyInfo | null
+}

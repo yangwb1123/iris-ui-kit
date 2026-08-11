@@ -441,3 +441,16 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-x-gate.md [ok]: 批 X Gate — PASS ✅（commit `5d63bffe`）: **Review verdict: PASS**（1 MEDIUM recommended before merge + 2 LOW）→ all three concrete findings fixed, 4 regression tes; 全仓门结果: | 门 | 结果 |; 文档: - `docs/vxe-grid-comparison.md`：排序/工具栏/数据代理/搜索表单四行标记 **✅ vue**（react+vue 对齐）；构建状态表新增批 X 行；新增「**vue 剩余缺口（批 Y 起）**」清单（批 2–; Commit: **`5d63bffe`** — `feat(table): vxe-grid 批 X——vue 适配器功能对齐（proxyConfig/formConfig/multiSort/工具栏扩展）`（9 files, +294/−76；工作树干
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-x-gate.md
+
+## 2026-08-11 05:47:55 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-y-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-y-baseline.md
+
+## 2026-08-11 06:40:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-y-baseline.md [ok]: Batch Y complete — vue parity round 2 (columnVisibility / filters / seq / spanMethod / columnDrag / rowDrag / expose proxy methods). The prior attempt left a nearly-complete unverified implementation in the working tree (types + Table.ts, no tests, no expose wiring); this attempt finished it: wired the container pointer handlers (onPointermove/onPointerup/onPointerleave, React parity), added `expose` (setup ctx) with loadData/reloadData/commitProxy/getProxyInfo bridging the batch-X proxy controller (useTableProxy), extracted `resolveSpan` + lead-cell builders to keep the render/renderRow complexity under the lint budget (0 errors, 0 warnings), and wrote parity-y.test.ts (10 tests, 385 lines).
+  - Files changed: packages/vue/src/primitives/table/{Table.ts,types.ts,index.ts,parity-y.test.ts} + manifest (gen:manifest) + docs/vxe-grid/DECISIONS.md.
+  - Verification: typecheck ✓ · test 1510/1510 ✓ · lint 0/0 ✓ · spec 0 violations ✓ · check:manifest + check:docs-reference up-to-date ✓.
+  - Batch Z handoff: filterValues OR-match, col.filterMethod, seqMethod, proxy cumulative seq, columnOrder/toolbar column panel (fires the declared `update:columnVisibility` emit), footer spans, and the pre-existing React-side manifest props truncation for inline-object props (spanMethod/columnDrag/rowDrag — vue frameworkContracts parse correctly).
+- evidence: (adapt commit; report in docs/vxe-grid/batch-y-adapt.md)

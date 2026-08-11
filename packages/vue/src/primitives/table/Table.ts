@@ -25,6 +25,7 @@ import {
   createExpansion,
   createRemoteTableSource,
   createSelectionModel,
+  createSortable,
   createTreeSelection,
   flattenLeafColumns,
   flattenTree,
@@ -38,6 +39,8 @@ import {
   type RemoteTableParams,
   type RemoteTableSource,
   type RemoteTableSourceState,
+  type SortableRect,
+  type SortableState,
   type TreeSelectionNode,
   type TreeRow,
 } from '@iris-ui-kit/core'
@@ -55,13 +58,19 @@ import { useTableSort } from './useTableSort'
 import type {
   IrisTableCellEditEvent,
   IrisTableColumn,
+  IrisTableColumnDrag,
+  IrisTableColumnVisibility,
   IrisTableColumnWidths,
+  IrisTableExpose,
   IrisTableFormConfig,
   IrisTableProxyConfig,
   IrisTableRenderDetail,
+  IrisTableRowDrag,
   IrisTableRowExpandable,
   IrisTableSortDirection,
   IrisTableSortState,
+  IrisTableSpan,
+  IrisTableSpanMethodParams,
   IrisTableToolbarConfig,
   IrisTableVirtualOptions,
 } from './types'
@@ -76,9 +85,39 @@ function getCellValue<Row extends Record<string, unknown>>(
 
 const SELECTION_COL_WIDTH = 40
 const EXPAND_COL_WIDTH = 40
+const SEQ_COL_WIDTH = 40
+const DRAG_COL_WIDTH = 40
 const DEFAULT_COL_WIDTH = 140
 const DEFAULT_MIN_WIDTH = 60
 const RESIZE_STEP = 16
+
+/**
+ * spanMethod (vxe span-method parity, batch Y): resolve the span for one body
+ * cell against the per-render-pass occupy set (cleared once per body render
+ * pass, React parity). Returns null when the cell is covered by an earlier
+ * spanning cell — the caller skips it; otherwise the covered cells are marked
+ * so they render null too.
+ */
+function resolveSpan(
+  occupy: Set<string>,
+  rowIndex: number,
+  columnIndex: number,
+  method: ((params: IrisTableSpanMethodParams) => IrisTableSpan | null) | undefined,
+): { rowspan: number; colspan: number } | null {
+  if (!method) return { rowspan: 1, colspan: 1 }
+  const key = `${rowIndex}:${columnIndex}`
+  if (occupy.has(key)) return null
+  const span = method({ rowIndex, columnIndex })
+  const rowspan = span?.rowspan ?? 1
+  const colspan = span?.colspan ?? 1
+  if (rowspan > 1) {
+    for (let r = 1; r < rowspan; r += 1) occupy.add(`${rowIndex + r}:${columnIndex}`)
+  }
+  if (colspan > 1) {
+    for (let c = 1; c < colspan; c += 1) occupy.add(`${rowIndex}:${columnIndex + c}`)
+  }
+  return { rowspan, colspan }
+}
 
 function resolveInitialWidth(col: IrisTableColumn): number {
   if (typeof col.width === 'number') return col.width
@@ -420,6 +459,48 @@ export const IrisTable = defineComponent({
       type: Object as PropType<IrisTableToolbarConfig>,
       default: undefined,
     },
+    /**
+     * Column visibility (vxe columnConfig.visible parity). Map of column key
+     * → visible (default true); `false` hides the column from every render
+     * path (header / body / summary). Controlled: parent owns the map.
+     */
+    columnVisibility: {
+      type: Object as PropType<IrisTableColumnVisibility>,
+      default: undefined,
+    },
+    /** Client-side filters (vxe filterConfig parity, local mode): column key → filter text; rows filtered with substring, case-insensitive matching ('' entries ignored). Combines with `formConfig` values when both exist (AND). */
+    filters: {
+      type: Object as PropType<Record<string, string>>,
+      default: undefined,
+    },
+    /** Render a leading sequence-number column (vxe seqConfig parity). */
+    seq: { type: Boolean, default: false },
+    /** First sequence number (vxe seq-config.startIndex parity). Default 1. */
+    seqStartIndex: { type: Number, default: 1 },
+    /**
+     * Cell merge (vxe spanMethod parity): return `{ rowspan, colspan }` for a
+     * cell at (rowIndex, columnIndex); both default 1. Values > 1 make the
+     * cell span adjacent cells (the spanned cells are skipped).
+     */
+    spanMethod: {
+      type: Function as PropType<(params: IrisTableSpanMethodParams) => IrisTableSpan | null>,
+      default: undefined,
+    },
+    /** Column drag-sort (vxe columnDragConfig parity). Reorders leaf columns on drop; the parent owns columns (pass the reordered array back). Grouped headers are NOT supported (documented simplification). */
+    columnDrag: {
+      type: Object as PropType<IrisTableColumnDrag>,
+      default: undefined,
+    },
+    /** Row drag-sort (vxe rowDragConfig parity). Renders a drag handle per row; a drop reorders the table's LOCAL rows and reports through `onDataChange`. */
+    rowDrag: {
+      type: Object as PropType<IrisTableRowDrag>,
+      default: undefined,
+    },
+    /** Fired after any internal row operation / row-drag reorder / loadData, with the new row list (vxe-grid data-change parity). */
+    onDataChange: {
+      type: Function as PropType<(rows: Array<Record<string, unknown>>) => void>,
+      default: undefined,
+    },
   },
   emits: {
     'update:selection': (_value: Array<string | number>) => true,
@@ -427,12 +508,14 @@ export const IrisTable = defineComponent({
     'update:multiSortState': (_value: IrisTableSortState[]) => true,
     multiSortChange: (_value: IrisTableSortState[]) => true,
     'update:columnWidths': (_value: IrisTableColumnWidths) => true,
+    /** Controlled columnVisibility channel (parent owns the map). */
+    'update:columnVisibility': (_value: IrisTableColumnVisibility) => true,
     rowClick: (_row: Record<string, unknown>, _index: number) => true,
     rowDblclick: (_row: Record<string, unknown>, _index: number) => true,
     cellEdit: (_payload: IrisTableCellEditEvent<Record<string, unknown>>) => true,
     expandedRowsChange: (_keys: Array<string | number>) => true,
   },
-  setup(props, { slots, attrs, emit }) {
+  setup(props, { slots, attrs, emit, expose }) {
     if (typeof document !== 'undefined' && !document.getElementById('iris-table-row-styles')) {
       const style = document.createElement('style')
       style.id = 'iris-table-row-styles'
@@ -453,11 +536,26 @@ export const IrisTable = defineComponent({
     // descendants; the leaves drive the body. When nothing is grouped,
     // `leafColumns` is the original `columns` (same reference) so every
     // body-affecting iteration stays byte-identical to the flat path.
-    const grouped = computed(() => props.columns.some((c) => c.children && c.children.length > 0))
-    const leafColumns = computed(() =>
-      grouped.value ? flattenLeafColumns(props.columns) : props.columns,
+    //
+    // Batch Y: columnVisibility (vxe columnConfig.visible parity) filters
+    // top-level columns out of every render path (header / body / summary) —
+    // the flat header loop consumes `leafColumns` below. Reference-preserving:
+    // without the prop `displayColumns` IS `props.columns`, so all existing
+    // paths stay byte-identical.
+    const displayColumns = computed<IrisTableColumn<Record<string, unknown>>[]>(() => {
+      const vis = props.columnVisibility
+      if (!vis) return props.columns
+      return props.columns.filter((c) => vis[c.key] !== false)
+    })
+    const grouped = computed(() =>
+      displayColumns.value.some((c) => c.children && c.children.length > 0),
     )
-    const headerMatrix = computed(() => (grouped.value ? buildHeaderMatrix(props.columns) : null))
+    const leafColumns = computed(() =>
+      grouped.value ? flattenLeafColumns(displayColumns.value) : displayColumns.value,
+    )
+    const headerMatrix = computed(() =>
+      grouped.value ? buildHeaderMatrix(displayColumns.value) : null,
+    )
 
     // -------- Server-side proxy (vxe-grid proxyConfig parity, query slice) --------
     // The controller lives in the useTableProxy composable — created ONCE per
@@ -493,8 +591,23 @@ export const IrisTable = defineComponent({
     // Proxy rows feed the table through a local editable copy (liveData): in
     // proxy mode `data` is ignored; committed edits write through to the copy
     // until the next refetch replaces it (React liveData parity).
+    //
+    // Batch Y: `localRowsOverride` gives LOCAL mode the same mutable row list
+    // the proxy has (Vue has no mutable data store — React's liveData state
+    // seeds from `data`). rowDrag reorders and the exposed `loadData` write
+    // through it; a parent re-feed of `data` (new reference) clears the
+    // override so the controlled prop wins again (React effect parity).
+    const localRowsOverride = ref<Array<Record<string, unknown>> | null>(null)
+    watch(
+      () => props.data,
+      () => {
+        if (localRowsOverride.value !== null) localRowsOverride.value = null
+      },
+    )
     const tableData = computed(() =>
-      proxyCtrl.proxy.value ? proxyCtrl.liveData.value : (props.data ?? []),
+      proxyCtrl.proxy.value
+        ? proxyCtrl.liveData.value
+        : (localRowsOverride.value ?? props.data ?? []),
     )
 
     // -------- Sort (useTableSort composable) --------
@@ -593,14 +706,17 @@ export const IrisTable = defineComponent({
         }
       }
     }
-    // remoteFilter parity: hand the applied filter map to the server and never
-    // hide rows client-side (vxe proxyConfig.filter). Live after the form state
-    // so `formApplied` is referenced; setParams dedupes unchanged filters.
+    // remoteFilter parity: hand the applied filter map (filters prop + form
+    // values, form wins) to the server and never hide rows client-side (vxe
+    // proxyConfig.filter). Live after the form state so `formApplied` is
+    // referenced; setParams dedupes unchanged filters.
     watch(
-      formApplied,
-      (applied) => {
+      [formApplied, () => props.filters],
+      () => {
         if (proxyCtrl.proxy.value && remoteFilter.value) {
-          proxyCtrl.setParams({ filters: mergeFormFilters({}, applied) })
+          proxyCtrl.setParams({
+            filters: mergeFormFilters(props.filters ?? {}, formApplied.value),
+          })
         }
       },
       { immediate: true },
@@ -691,24 +807,25 @@ export const IrisTable = defineComponent({
           })
         : null,
     )
-    // Local-mode form filtering (vxe formConfig parity, local): applied form
-    // values filter rows client-side (substring, case-insensitive) before the
-    // body renders — the Vue table's first filter stage. Remote-filter tables
-    // never hide rows locally (the server owns filtering). In proxy mode the
-    // server owns form filtering too (the applied values were pushed via
-    // setParams), so the loaded page is filtered only by the `filters` prop —
-    // which Vue has not shipped yet, hence none locally (React parity, batch C
-    // behavior). Local mode merges the form over the empty base map.
+    // Local-mode filtering (vxe filterConfig + formConfig parity, local): the
+    // `filters` prop and the applied form values merge (form wins, neither
+    // input is mutated) and rows match substring, case-insensitive over
+    // displayColumns ('' entries ignored) — batch X semantics, extended with
+    // the `filters` prop. Remote-filter tables never hide rows locally (the
+    // server owns filtering — the merged map was pushed via setParams below).
+    // In proxy mode the server owns form filtering too (the applied values
+    // were pushed via setParams), so only the prop map filters the loaded page
+    // (React parity, batch C behavior).
     const filteredData = computed(() => {
       if (remoteFilter.value) return sortedData.value
       const merged: Record<string, string> = proxyCtrl.proxy.value
-        ? {}
-        : mergeFormFilters({}, formApplied.value)
+        ? (props.filters ?? {})
+        : mergeFormFilters(props.filters ?? {}, formApplied.value)
       const active = Object.entries(merged).filter(([, v]) => v != null && v !== '')
       if (active.length === 0) return sortedData.value
       return sortedData.value.filter((row) =>
         active.every(([key, value]) => {
-          const col = leafColumns.value.find((c) => c.key === key)
+          const col = displayColumns.value.find((c) => c.key === key)
           if (!col) return true
           return String(getCellValue(row, col) ?? '')
             .toLowerCase()
@@ -1014,9 +1131,19 @@ export const IrisTable = defineComponent({
       )
     }
 
-    /** Build the grid-template-columns string for the current widths. */
+    /** Build the grid-template-columns string for the current widths. Batch Y:
+     * rowDrag / seq render EXPLICIT leading tracks (deliberate deviation from
+     * React's auto-placement — deterministic alignment in every combination,
+     * including columnVirtualization and grouped headers). */
+    const leadTrackCount = (): number =>
+      (props.rowDrag ? 1 : 0) +
+      (props.seq ? 1 : 0) +
+      (hasDetail.value ? 1 : 0) +
+      (props.selectable !== 'none' ? 1 : 0)
     const gridTemplate = computed(() => {
       const parts: string[] = []
+      if (props.rowDrag) parts.push(`${DRAG_COL_WIDTH}px`)
+      if (props.seq) parts.push(`${SEQ_COL_WIDTH}px`)
       if (hasDetail.value) parts.push(`${EXPAND_COL_WIDTH}px`)
       if (props.selectable !== 'none') parts.push(`${SELECTION_COL_WIDTH}px`)
       for (const col of leafColumns.value) {
@@ -1112,8 +1239,7 @@ export const IrisTable = defineComponent({
     // -------- Column virtualization (opt-in) --------
     const scrollLeft = ref(0)
     const viewportWidth = ref(0)
-    const colTrack = (i: number): number =>
-      (hasDetail.value ? 1 : 0) + (props.selectable !== 'none' ? 2 : 1) + i
+    const colTrack = (i: number): number => leadTrackCount() + 1 + i
 
     if (typeof ResizeObserver !== 'undefined') {
       let ro: ResizeObserver | null = null
@@ -1158,6 +1284,8 @@ export const IrisTable = defineComponent({
       const widthOf = (col: IrisTableColumn) =>
         effectiveWidths.value[col.key] ?? resolveInitialWidth(col)
       let left =
+        (props.rowDrag ? DRAG_COL_WIDTH : 0) +
+        (props.seq ? SEQ_COL_WIDTH : 0) +
         (hasDetail.value ? EXPAND_COL_WIDTH : 0) +
         (props.selectable !== 'none' ? SELECTION_COL_WIDTH : 0)
       for (const col of leafColumns.value) {
@@ -1220,6 +1348,164 @@ export const IrisTable = defineComponent({
         },
       })
     }
+
+    // -------- Row/column drag-sort (vxe rowDragConfig/columnDragConfig
+    // parity, batch Y) --------
+    // Both reorders are composed over the core `createSortable` controller
+    // (press → threshold → moveOver by closestCenter over ref-synced rects →
+    // end → commit) with container-level pointer handling — the same bridge
+    // the React adapter uses. The controllers own only `{ activeId, overId }`;
+    // the adapter owns the DOM (collecting rects, feeding pointer coords).
+    const rowDragCtrl = createSortable()
+    const rowDragState = shallowRef<SortableState>(rowDragCtrl.getState())
+    onBeforeUnmount(
+      rowDragCtrl.subscribe((s) => {
+        rowDragState.value = s
+      }),
+    )
+    const colDragCtrl = createSortable()
+    const colDragState = shallowRef<SortableState>(colDragCtrl.getState())
+    onBeforeUnmount(
+      colDragCtrl.subscribe((s) => {
+        colDragState.value = s
+      }),
+    )
+    const rowRectsRef = ref<SortableRect[]>([])
+    const colRectsRef = ref<SortableRect[]>([])
+
+    const handleRowDragPointerDown = (e: PointerEvent, rowId: string): void => {
+      if (!props.rowDrag || e.button !== 0) return
+      e.preventDefault()
+      rowDragCtrl.press(rowId, e.clientX, e.clientY)
+    }
+    const handleRowDragPointerMove = (e: PointerEvent): void => {
+      if (!props.rowDrag) return
+      if (rowDragCtrl.isPending()) {
+        const started = rowDragCtrl.tryStart(e.clientX, e.clientY)
+        if (started) {
+          // Drop targets are collected once, at the moment the drag crosses
+          // the threshold (rects are captured then reused). Each drag handle
+          // carries its row's id as the attribute VALUE.
+          const rects: SortableRect[] = []
+          rootRef.value?.querySelectorAll('[data-iris-row-drag-handle]').forEach((el) => {
+            const r = (el as HTMLElement).getBoundingClientRect()
+            const id = (el as HTMLElement).getAttribute('data-iris-row-drag-handle')
+            if (id) rects.push({ id, left: r.left, top: r.top, width: r.width, height: r.height })
+          })
+          rowRectsRef.value = rects
+        }
+      }
+      if (rowDragCtrl.getState().activeId !== null) {
+        rowDragCtrl.moveOver({ x: e.clientX, y: e.clientY }, rowRectsRef.value)
+      }
+    }
+    const handleRowDragPointerUp = (): void => {
+      if (!props.rowDrag) return
+      if (rowDragCtrl.isPending()) {
+        rowDragCtrl.cancel()
+        return
+      }
+      const { activeId, overId } = rowDragCtrl.end()
+      if (activeId !== null && overId !== null && activeId !== overId) {
+        const rows = [...bodyData.value] as Array<Record<string, unknown>>
+        const from = rows.findIndex((r, i) => String(rowId(r, i)) === activeId)
+        const to = rows.findIndex((r, i) => String(rowId(r, i)) === overId)
+        if (from >= 0 && to >= 0 && from !== to) {
+          const [moved] = rows.splice(from, 1)
+          rows.splice(to, 0, moved)
+          // Reorder through the LOCAL rows ref (proxy liveData / local
+          // override) so the table renders the new order immediately, then
+          // report through onDataChange + the config callback (React parity).
+          if (proxyCtrl.proxy.value) proxyCtrl.liveData.value = rows
+          else localRowsOverride.value = rows
+          props.onDataChange?.(rows)
+          props.rowDrag.onReorder(rows)
+        }
+      }
+      rowRectsRef.value = []
+    }
+    const handleRowDragPointerLeave = (): void => {
+      if (props.rowDrag && rowDragCtrl.getState().activeId !== null) {
+        rowDragCtrl.cancel()
+      }
+    }
+
+    const handleColDragPointerDown = (e: PointerEvent, colKey: string): void => {
+      if (!props.columnDrag || e.button !== 0) return
+      e.preventDefault()
+      e.stopPropagation()
+      colDragCtrl.press(colKey, e.clientX, e.clientY)
+    }
+    const handleColDragPointerMove = (e: PointerEvent): void => {
+      if (!props.columnDrag) return
+      if (colDragCtrl.isPending()) {
+        const started = colDragCtrl.tryStart(e.clientX, e.clientY)
+        if (started) {
+          const rects: SortableRect[] = []
+          rootRef.value?.querySelectorAll('[data-iris-table-header]').forEach((el) => {
+            const r = (el as HTMLElement).getBoundingClientRect()
+            const id = (el as HTMLElement).getAttribute('data-iris-table-header')
+            if (id) rects.push({ id, left: r.left, top: r.top, width: r.width, height: r.height })
+          })
+          colRectsRef.value = rects
+        }
+      }
+      if (colDragCtrl.getState().activeId !== null) {
+        colDragCtrl.moveOver({ x: e.clientX, y: e.clientY }, colRectsRef.value)
+      }
+    }
+    const handleColDragPointerUp = (): void => {
+      if (!props.columnDrag) return
+      if (colDragCtrl.isPending()) {
+        colDragCtrl.cancel()
+        return
+      }
+      const { activeId, overId } = colDragCtrl.end()
+      if (activeId !== null && overId !== null && activeId !== overId) {
+        const next = [...leafColumns.value]
+        const from = next.findIndex((c) => c.key === activeId)
+        const to = next.findIndex((c) => c.key === overId)
+        if (from >= 0 && to >= 0 && from !== to) {
+          const [moved] = next.splice(from, 1)
+          next.splice(to, 0, moved)
+          props.columnDrag.onReorder(next as IrisTableColumn<Record<string, unknown>>[])
+        }
+      }
+      colRectsRef.value = []
+    }
+
+    // -------- spanMethod (vxe span-method parity, batch Y) --------
+    // Occupied-set skip across rows: the set is cleared once per body render
+    // pass and marks the cells a spanning cell covers (React parity). Plain
+    // (non-reactive) Set — mutated only during render.
+    const spanOccupy = new Set<string>()
+
+    // -------- Imperative proxy methods (vxe loadData/reloadData/commitProxy/
+    // getProxyInfo parity, batch Y) --------
+    // Bridge the batch-X proxy controller (createRemoteTableSource): loadData
+    // writes the live row list WITHOUT a query (proxy liveData / local-mode
+    // override, React commitRowList parity — fires onDataChange), reloadData
+    // re-fetches the current page, commitProxy merges params and re-requests,
+    // getProxyInfo snapshots the controller state (null without a proxy).
+    const tableExpose: IrisTableExpose<Record<string, unknown>> = {
+      loadData: (rows) => {
+        if (proxyCtrl.proxy.value) proxyCtrl.liveData.value = rows
+        else localRowsOverride.value = rows
+        props.onDataChange?.(rows)
+      },
+      reloadData: () => {
+        void proxyCtrl.refetch()
+      },
+      commitProxy: (overrides) => {
+        proxyCtrl.setParams(overrides)
+      },
+      getProxyInfo: () => {
+        if (!proxyCtrl.proxy.value) return null
+        const s = proxyCtrl.state.value
+        return { page: s.params.page, pageSize: s.params.pageSize, total: s.total }
+      },
+    }
+    expose(tableExpose)
 
     // -------- Section builders (vxe-grid formConfig / toolbarConfig / pager
     // parity, batch X) --------
@@ -1506,6 +1792,108 @@ export const IrisTable = defineComponent({
     return () => {
       const showSelection = props.selectable !== 'none'
       const showDetail = hasDetail.value
+      const showDrag = props.rowDrag !== undefined
+      const showSeq = props.seq === true
+      // spanMethod occupy set: cleared once per body render pass (React
+      // parity), marked by the spanning cells as they render. Unconditional
+      // clear — the set is only mutated under a spanMethod guard, so clearing
+      // an unused set costs nothing.
+      spanOccupy.clear()
+
+      // Lead placeholder cells (batch Y): seq / drag render EXPLICIT leading
+      // tracks (deliberate deviation from React's CSS auto-placement —
+      // deterministic alignment in every combination, including
+      // columnVirtualization and grouped headers), so the flat header and
+      // summary rows render matching placeholders. `data-iris-table-header`
+      // carries the drag-target id; drops onto placeholders are no-ops (their
+      // keys never match a real column).
+      const leadFlatHeaderCells = (): VNode[] => {
+        const cells: VNode[] = []
+        if (showDrag) {
+          cells.push(
+            h('div', {
+              role: 'columnheader',
+              key: '__drag__',
+              'data-iris-table-header': '__drag',
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px',
+                background: 'var(--iris-surface)',
+                borderBottom: '1px solid var(--iris-border)',
+              },
+            }),
+          )
+        }
+        if (showSeq) {
+          cells.push(
+            h('div', {
+              role: 'columnheader',
+              key: '__seq__',
+              'data-iris-table-header': '__seq',
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px',
+                background: 'var(--iris-surface)',
+                borderBottom: '1px solid var(--iris-border)',
+              },
+            }),
+          )
+        }
+        return cells
+      }
+      const leadSummaryCells = (): VNode[] => {
+        const cells: VNode[] = []
+        if (showDrag) {
+          cells.push(
+            h('div', {
+              key: '__drag',
+              role: 'cell',
+              'data-iris-table-cell': '__drag',
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px 12px',
+              },
+            }),
+          )
+        }
+        if (showSeq) {
+          cells.push(
+            h('div', {
+              key: '__seq',
+              role: 'cell',
+              'data-iris-table-cell': '__seq',
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px 12px',
+              },
+            }),
+          )
+        }
+        if (showSelection) {
+          cells.push(
+            h('div', {
+              key: '__selection',
+              role: 'cell',
+              'data-iris-table-cell': '__selection',
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px 12px',
+              },
+            }),
+          )
+        }
+        return cells
+      }
 
       // -------- Grouped (multi-level) header --------
       // When any column carries `children`, render the header as a CSS grid of
@@ -1514,14 +1902,38 @@ export const IrisTable = defineComponent({
       // behavior; group cells are spanning labels. The single-row (flat) header
       // below is rendered unchanged otherwise.
       const buildGroupedHeader = (matrix: NonNullable<typeof headerMatrix.value>): VNode => {
-        const lead = (showDetail ? 1 : 0) + (showSelection ? 1 : 0)
+        const lead =
+          (showDrag ? 1 : 0) + (showSeq ? 1 : 0) + (showDetail ? 1 : 0) + (showSelection ? 1 : 0)
         const cells: VNode[] = []
+        if (showDrag) {
+          cells.push(
+            h('div', {
+              key: '__drag__',
+              role: 'columnheader',
+              'data-iris-table-header': '__drag',
+              style: { gridColumn: '1', gridRow: '1 / -1' },
+            }),
+          )
+        }
+        if (showSeq) {
+          cells.push(
+            h('div', {
+              key: '__seq__',
+              role: 'columnheader',
+              'data-iris-table-header': '__seq',
+              style: { gridColumn: showDrag ? '2' : '1', gridRow: '1 / -1' },
+            }),
+          )
+        }
         if (showDetail) {
           cells.push(
             h('div', {
               key: '__expand__',
               role: 'columnheader',
-              style: { gridColumn: '1', gridRow: '1 / -1' },
+              style: {
+                gridColumn: `${(showDrag ? 1 : 0) + (showSeq ? 1 : 0) + 1}`,
+                gridRow: '1 / -1',
+              },
             }),
           )
         }
@@ -1534,7 +1946,7 @@ export const IrisTable = defineComponent({
                 role: 'columnheader',
                 'data-iris-table-header': '',
                 style: {
-                  gridColumn: showDetail ? '2' : '1',
+                  gridColumn: `${(showDrag ? 1 : 0) + (showSeq ? 1 : 0) + (showDetail ? 1 : 0) + 1}`,
                   gridRow: '1 / -1',
                   display: 'flex',
                   alignItems: 'center',
@@ -1644,7 +2056,7 @@ export const IrisTable = defineComponent({
         )
       }
 
-      const headerCells: VNode[] = []
+      const headerCells: VNode[] = leadFlatHeaderCells()
       if (showDetail) {
         headerCells.push(
           h('div', {
@@ -1695,8 +2107,8 @@ export const IrisTable = defineComponent({
           ),
         )
       }
-      for (let ci = 0; ci < props.columns.length; ci += 1) {
-        const col = props.columns[ci]
+      for (let ci = 0; ci < leafColumns.value.length; ci += 1) {
+        const col = leafColumns.value[ci]
         if (visibleColSet.value && !visibleColSet.value.has(ci)) continue
         const align = col.align ?? 'left'
         const headerSlot = slots[`header.${col.key}`]
@@ -1749,6 +2161,18 @@ export const IrisTable = defineComponent({
               role: 'columnheader',
               'data-iris-table-header': col.key,
               'data-iris-table-pinned': col.pinned,
+              // Column drag-sort (vxe columnDragConfig parity, batch Y): the
+              // header cell is the press target; grouped headers are NOT
+              // supported (documented simplification — the reorder maps leaf
+              // columns back to the parent, which a group column cannot do).
+              'data-iris-col-drag-active':
+                props.columnDrag && colDragState.value.activeId === col.key ? 'true' : undefined,
+              'data-iris-col-drag-over':
+                props.columnDrag && colDragState.value.overId === col.key ? 'true' : undefined,
+              onPointerdown:
+                props.columnDrag && !grouped.value
+                  ? (e: PointerEvent) => handleColDragPointerDown(e, col.key)
+                  : undefined,
               onClick: () => onHeaderClick(col),
               style: {
                 position: 'relative',
@@ -1804,6 +2228,73 @@ export const IrisTable = defineComponent({
         const id = rowId(row, index)
         const selected = isSelected(id)
         const cells: VNode[] = []
+        if (showDrag) {
+          const rowDragActive = rowDragState.value.activeId === String(id)
+          const rowDragOver = rowDragState.value.overId === String(id)
+          cells.push(
+            h(
+              'div',
+              {
+                key: '__drag',
+                role: 'cell',
+                'data-iris-table-cell': '__drag',
+                // The drag handle carries the row's id as its attribute VALUE
+                // (rect collection for closestCenter reads it back).
+                'data-iris-row-drag-handle': String(id),
+                'data-iris-row-drag-active': rowDragActive ? 'true' : undefined,
+                'data-iris-row-drag-over': rowDragOver ? 'true' : undefined,
+                onPointerdown: (e: PointerEvent) => handleRowDragPointerDown(e, String(id)),
+                onClick: (e: MouseEvent) => e.stopPropagation(),
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px 12px',
+                  borderBottom: '1px solid var(--iris-border)',
+                  cursor: 'grab',
+                  color: 'var(--iris-muted)',
+                  background: rowDragActive
+                    ? 'var(--iris-surface-hover)'
+                    : rowDragOver
+                      ? 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
+                      : 'transparent',
+                },
+              },
+              [
+                h(
+                  'span',
+                  {
+                    'aria-hidden': 'true',
+                    style: { fontSize: 'var(--iris-font-size-sm, 13px)' },
+                  },
+                  '⠿',
+                ),
+              ],
+            ),
+          )
+        }
+        if (showSeq) {
+          cells.push(
+            h(
+              'div',
+              {
+                key: '__seq',
+                role: 'cell',
+                'data-iris-table-cell': '__seq',
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px 12px',
+                  borderBottom: '1px solid var(--iris-border)',
+                  color: 'var(--iris-muted)',
+                  userSelect: 'none',
+                },
+              },
+              String(index + props.seqStartIndex),
+            ),
+          )
+        }
         if (showDetail) {
           const rowExpandable = isRowExpandable(row, index)
           const isExpanded = expandedKeys.value.includes(String(id))
@@ -1882,6 +2373,13 @@ export const IrisTable = defineComponent({
         for (let ci = 0; ci < leafColumns.value.length; ci += 1) {
           const col = leafColumns.value[ci]
           if (visibleColSet.value && !visibleColSet.value.has(ci)) continue
+          // spanMethod (vxe span-method parity, batch Y): the occupy set is
+          // cleared once per body render pass; spanning cells mark the cells
+          // they cover, which then render null (React parity).
+          const span = resolveSpan(spanOccupy, index, ci, props.spanMethod)
+          if (span === null) continue
+          const rowspan = span.rowspan
+          const colspan = span.colspan
           const align = col.align ?? 'left'
           const cellSlot = slots[`cell.${col.key}`]
           const isEditing = editingCellId.value === cellId(id, col.key)
@@ -2077,6 +2575,8 @@ export const IrisTable = defineComponent({
                     ? { background: 'var(--iris-surface-selected, rgba(99,102,241,0.12))' }
                     : {}),
                   ...(visibleColSet.value ? { gridColumnStart: String(colTrack(ci)) } : {}),
+                  ...(colspan > 1 ? { gridColumnEnd: `span ${colspan}` } : {}),
+                  ...(rowspan > 1 ? { gridRowEnd: `span ${rowspan}` } : {}),
                   ...pinnedStyle(col.key),
                 },
               },
@@ -2252,22 +2752,7 @@ export const IrisTable = defineComponent({
         bodyData.value.length > 0 &&
         leafColumns.value.some((c) => c.summary)
       ) {
-        const summaryCells: VNode[] = []
-        if (showSelection) {
-          summaryCells.push(
-            h('div', {
-              key: '__selection',
-              role: 'cell',
-              'data-iris-table-cell': '__selection',
-              style: {
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '8px 12px',
-              },
-            }),
-          )
-        }
+        const summaryCells: VNode[] = leadSummaryCells()
         for (let ci = 0; ci < leafColumns.value.length; ci += 1) {
           const col = leafColumns.value[ci]
           if (visibleColSet.value && !visibleColSet.value.has(ci)) continue
@@ -2356,6 +2841,24 @@ export const IrisTable = defineComponent({
                   scrollLeft.value = (e.currentTarget as HTMLElement).scrollLeft
                 }
               : undefined,
+            // Row/column drag-sort (batch Y): container-level pointer handling
+            // for both reorders (React parity) — press happens on the row
+            // handle / header cell, move/up resolve at the container.
+            onPointermove:
+              props.rowDrag || props.columnDrag
+                ? (e: PointerEvent) => {
+                    handleRowDragPointerMove(e)
+                    handleColDragPointerMove(e)
+                  }
+                : undefined,
+            onPointerup:
+              props.rowDrag || props.columnDrag
+                ? () => {
+                    handleRowDragPointerUp()
+                    handleColDragPointerUp()
+                  }
+                : undefined,
+            onPointerleave: props.rowDrag ? handleRowDragPointerLeave : undefined,
             style: {
               background: 'var(--iris-background)',
               color: 'var(--iris-foreground)',

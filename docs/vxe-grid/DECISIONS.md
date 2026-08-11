@@ -314,3 +314,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-s-review.md [ok]: Verification (all run): - `react test` **1750/1750** ✅ · typecheck ✅ · lint **0 errors** (1 pre-existing complexity warning) ✅; Check results: 1. **columnOrder** — correct: unknown keys ignored, deduped stable sort, unnamed keys keep relative order after ordered ; Findings (3 × LOW, non-blocking): 1. **A11y regression** — `Table.tsx:3889-3897`: checkbox has no accessible name (old menu used `<label>`), title not cli
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-s-review.md
+
+## 2026-08-10 20:11:33 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-s-gate.md [ok]: 批 S Gate — PASS ✅: **Review verdict**: PASS（3 × LOW 非阻塞发现，已全部按评审处方修复）; Review fixes applied: 1. **A11y 回归** — 面板 checkbox 行包进 `<label>`（恢复无障碍名 + 标题可点击切换）; Full gate results: | 门 | 结果 |; Docs: - **comparison doc**：文首新增「最终覆盖总结」——vxe `tableProps` ~90 项全部覆盖（react）；`customConfig` 行标记 ✅（react）；批 S 构建行；总数刷新（react 1754; Commit: **`5b8e12ce`** — `feat(table): vxe-grid 批 S——customConfig 自定义列面板（react only，功能面全覆盖）`（6 files, +318/−77；工作树干净）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-s-gate.md

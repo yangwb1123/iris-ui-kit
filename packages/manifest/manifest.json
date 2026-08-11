@@ -37678,6 +37678,22 @@
               "default": "id"
             },
             {
+              "name": "multiSort",
+              "type": "boolean",
+              "optional": true,
+              "default": "false"
+            },
+            {
+              "name": "multiSortState",
+              "type": "IrisTableSortState[]",
+              "optional": true
+            },
+            {
+              "name": "defaultMultiSort",
+              "type": "IrisTableSortState[]",
+              "optional": true
+            },
+            {
               "name": "striped",
               "type": "boolean",
               "optional": true,
@@ -37770,15 +37786,32 @@
               "type": "boolean",
               "optional": true,
               "default": "false"
+            },
+            {
+              "name": "proxyConfig",
+              "type": "IrisTableProxyConfig<Record<string, unknown>>",
+              "optional": true
+            },
+            {
+              "name": "formConfig",
+              "type": "IrisTableFormConfig",
+              "optional": true
+            },
+            {
+              "name": "toolbar",
+              "type": "IrisTableToolbarConfig",
+              "optional": true
             }
           ],
           "events": [
             "cellEdit",
             "expandedRowsChange",
+            "multiSortChange",
             "onRetry",
             "rowClick",
             "rowDblclick",
             "update:columnWidths",
+            "update:multiSortState",
             "update:selection",
             "update:sort"
           ],
@@ -37793,11 +37826,18 @@
             "IrisTableColumn",
             "IrisTableColumnWidths",
             "IrisTableEditor",
+            "IrisTableFormConfig",
+            "IrisTableFormField",
             "IrisTableProps",
+            "IrisTableProxyConfig",
+            "IrisTableProxyQueryParams",
             "IrisTableRenderDetail",
             "IrisTableRowExpandable",
             "IrisTableSortDirection",
             "IrisTableSortState",
+            "IrisTableToolbarBatch",
+            "IrisTableToolbarButton",
+            "IrisTableToolbarConfig",
             "IrisTableVirtualOptions"
           ]
         },

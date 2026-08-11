@@ -5,33 +5,50 @@ import {
   nextTick,
   onBeforeUnmount,
   onMounted,
+  onScopeDispose,
   ref,
   shallowRef,
+  toValue,
   watch,
+  type ComputedRef,
+  type MaybeRefOrGetter,
   type PropType,
+  type Ref,
   type VNode,
 } from 'vue'
 import {
   aggregate,
+  buildFormValues,
   buildHeaderMatrix,
   computeVirtualRange,
   createCellRange,
   createExpansion,
+  createRemoteTableSource,
   createSelectionModel,
   createTreeSelection,
   flattenLeafColumns,
   flattenTree,
-  withSortedChildren,
+  mergeFormFilters,
   nextGridCell,
+  seedFormValues,
+  validateEditRulesAsync,
+  withSortedChildren,
   type CellRangeState,
   type GridNavKey,
+  type RemoteTableParams,
+  type RemoteTableSource,
+  type RemoteTableSourceState,
   type TreeSelectionNode,
   type TreeRow,
-  validateEditRulesAsync,
 } from '@iris-ui-kit/core'
 import { useI18n } from '../../i18n'
+import { IrisButton } from '../button/Button'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useDrag } from '../drag/useDrag'
+import { IrisFormField } from '../form-field/FormField'
+import { IrisInput } from '../input/Input'
+import { IrisPagination } from '../pagination/Pagination'
+import { IrisSelect } from '../select/Select'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import { tableControlProps } from './controlProps'
 import { useTableSort } from './useTableSort'
@@ -39,10 +56,13 @@ import type {
   IrisTableCellEditEvent,
   IrisTableColumn,
   IrisTableColumnWidths,
+  IrisTableFormConfig,
+  IrisTableProxyConfig,
   IrisTableRenderDetail,
   IrisTableRowExpandable,
   IrisTableSortDirection,
   IrisTableSortState,
+  IrisTableToolbarConfig,
   IrisTableVirtualOptions,
 } from './types'
 
@@ -67,6 +87,161 @@ function resolveInitialWidth(col: IrisTableColumn): number {
     if (m) return Number(m[1])
   }
   return DEFAULT_COL_WIDTH
+}
+
+export interface UseTableProxyOptions<Row extends Record<string, unknown>> {
+  proxyConfig: MaybeRefOrGetter<IrisTableProxyConfig<Row> | undefined>
+  /** Whether sort changes re-query the server (proxyConfig.remoteSort). */
+  remoteSort?: MaybeRefOrGetter<boolean>
+  /** Whether filter changes re-query the server (proxyConfig.remoteFilter). */
+  remoteFilter?: MaybeRefOrGetter<boolean>
+  /** Multi-column sort mode (seeds the `sorts` channel of the initial params). */
+  multiSort?: MaybeRefOrGetter<boolean | undefined>
+  /** Controlled single-column sort state (initial params seed). */
+  sort?: MaybeRefOrGetter<IrisTableSortState | null | undefined>
+  defaultSort?: IrisTableSortState | null
+  /** Controlled multi-column sort state (initial params seed). */
+  multiSortState?: MaybeRefOrGetter<IrisTableSortState[] | undefined>
+  defaultMultiSort?: IrisTableSortState[] | undefined
+}
+
+export interface UseTableProxyResult<Row extends Record<string, unknown>> {
+  /** Controller instance, or null while no proxyConfig is present. */
+  proxy: ComputedRef<RemoteTableSource<Row> | null>
+  /** Live controller state (rows / total / loading / error / params). */
+  state: ComputedRef<RemoteTableSourceState<Row>>
+  /** Proxy rows → local editable copy: edit write-back sticks until the next
+   * refetch replaces it (React liveData parity). */
+  liveData: Ref<Row[]>
+  /** Merge partial params and re-request (sort/filter value changes reset the
+   * page to 1, vxe behavior). Returns false when nothing changed. */
+  setParams: (partial: Partial<RemoteTableParams>) => boolean
+  /** Re-fetch the current page (retry / refresh). */
+  refetch: () => Promise<void>
+}
+
+/**
+ * Bridges the core `createRemoteTableSource` controller into Vue reactivity for
+ * the table's proxyConfig surface (vxe-grid proxyConfig parity, query slice).
+ * The controller is created ONCE per proxy PRESENCE — an inline proxyConfig
+ * object with a fresh identity each render never destroys/recreates it — and is
+ * torn down when the proxy disappears or the setup scope disposes, so a late
+ * response never writes back to a dead instance. State flows controller →
+ * shallowRef via store subscribe: the same bridge pattern as the selection /
+ * expansion / cell-range bridges.
+ */
+export function useTableProxy<Row extends Record<string, unknown>>(
+  options: UseTableProxyOptions<Row>,
+): UseTableProxyResult<Row> {
+  const cfg = computed(() => toValue(options.proxyConfig))
+  // The latest query closure is read at request time, so a parent that swaps
+  // the query never leaves a stale closure behind.
+  const queryRef = ref<IrisTableProxyConfig<Row>['query'] | undefined>(undefined)
+  watch(
+    () => cfg.value?.query,
+    (query) => {
+      queryRef.value = query
+    },
+    { immediate: true },
+  )
+
+  const proxy = shallowRef<RemoteTableSource<Row> | null>(null)
+  const state = shallowRef<RemoteTableSourceState<Row>>({
+    data: [],
+    total: 0,
+    loading: false,
+    error: null,
+    params: { page: 1, pageSize: 10, sort: null, filters: {} },
+  })
+  let unsubscribe: (() => void) | null = null
+
+  const attach = (ctrl: RemoteTableSource<Row>): void => {
+    unsubscribe?.()
+    proxy.value = ctrl
+    state.value = ctrl.getState()
+    unsubscribe = ctrl.subscribe((s) => {
+      state.value = s
+    })
+  }
+
+  const detach = (): void => {
+    unsubscribe?.()
+    unsubscribe = null
+    proxy.value?.destroy()
+    proxy.value = null
+    state.value = {
+      data: [],
+      total: 0,
+      loading: false,
+      error: null,
+      params: { page: 1, pageSize: 10, sort: null, filters: {} },
+    }
+  }
+
+  // Keyed on proxy PRESENCE (not identity): a proxyConfig that arrives after
+  // the first render still auto-loads, and an inline-object proxyConfig does
+  // not destroy/recreate the controller on every change.
+  watch(
+    () => cfg.value === undefined,
+    (absent) => {
+      if (absent) {
+        detach()
+        return
+      }
+      if (proxy.value) return
+      const config = cfg.value!
+      const remoteSort = toValue(options.remoteSort) === true
+      const multiSort = toValue(options.multiSort) === true
+      const ctrl = createRemoteTableSource<Row>({
+        // The latest query closure is read at request time (see queryRef).
+        query: (params) => queryRef.value!(params),
+        // Kicked below — never fire a fetch during setup.
+        autoLoad: false,
+        initialParams: {
+          page: config.defaultPage ?? 1,
+          pageSize: config.pageSize ?? 10,
+          sort: remoteSort ? (toValue(options.sort) ?? options.defaultSort ?? null) : null,
+          sorts:
+            remoteSort && multiSort
+              ? (toValue(options.multiSortState) ?? options.defaultMultiSort ?? [])
+              : undefined,
+          filters: {},
+        },
+      })
+      attach(ctrl)
+      if (config.autoLoad !== false) void ctrl.request()
+    },
+    { immediate: true },
+  )
+
+  onScopeDispose(() => {
+    detach()
+  })
+
+  // Proxy rows feed a local editable copy; a new page/refetch reference
+  // replaces it wholesale (edits survive until then, React liveData parity).
+  const liveData = shallowRef<Row[]>([])
+  watch(
+    state,
+    (s) => {
+      liveData.value = s.data
+    },
+    { immediate: true },
+  )
+
+  return {
+    proxy: computed(() => proxy.value),
+    state: computed(() => state.value),
+    liveData,
+    setParams: (partial) => {
+      if (!proxy.value) return false
+      return proxy.value.setParams(partial)
+    },
+    refetch: () => {
+      if (!proxy.value) return Promise.resolve()
+      return proxy.value.refetch()
+    },
+  }
 }
 
 /**
@@ -110,6 +285,19 @@ export const IrisTable = defineComponent({
     },
     rowKey: { type: String, default: 'id' },
     ...tableControlProps,
+    /** Multi-column sort (vxe sort-config.multiple parity): header clicks
+     * append/cycle columns in click order instead of replacing. Default false. */
+    multiSort: { type: Boolean, default: false },
+    /** Controlled multi-column sort state (multiSort mode). */
+    multiSortState: {
+      type: Array as PropType<IrisTableSortState[]>,
+      default: undefined,
+    },
+    /** Default multi-column sort (multiSort mode, uncontrolled). */
+    defaultMultiSort: {
+      type: Array as PropType<IrisTableSortState[]>,
+      default: undefined,
+    },
     striped: { type: Boolean, default: false },
     editConfig: {
       type: Object as PropType<{
@@ -195,10 +383,32 @@ export const IrisTable = defineComponent({
      * Ignored outside tree mode and for non-multi selection.
      */
     treeSelectionCascade: { type: Boolean, default: false },
+    /**
+     * Server-side data proxy (vxe-grid proxyConfig parity, query slice). When
+     * set, `data` is ignored: rows come from `query` (paged), the table renders
+     * a pager below the body, and inline-edit write-back keeps working on a
+     * local copy until the next refetch.
+     */
+    proxyConfig: {
+      type: Object as PropType<IrisTableProxyConfig<Record<string, unknown>>>,
+      default: undefined,
+    },
+    /** Search form (vxe-grid formConfig parity). */
+    formConfig: {
+      type: Object as PropType<IrisTableFormConfig>,
+      default: undefined,
+    },
+    /** Toolbar (vxe-grid toolbarConfig parity, minimal built-ins). */
+    toolbar: {
+      type: Object as PropType<IrisTableToolbarConfig>,
+      default: undefined,
+    },
   },
   emits: {
     'update:selection': (_value: Array<string | number>) => true,
     'update:sort': (_value: IrisTableSortState | null) => true,
+    'update:multiSortState': (_value: IrisTableSortState[]) => true,
+    multiSortChange: (_value: IrisTableSortState[]) => true,
     'update:columnWidths': (_value: IrisTableColumnWidths) => true,
     rowClick: (_row: Record<string, unknown>, _index: number) => true,
     rowDblclick: (_row: Record<string, unknown>, _index: number) => true,
@@ -232,20 +442,137 @@ export const IrisTable = defineComponent({
     )
     const headerMatrix = computed(() => (grouped.value ? buildHeaderMatrix(props.columns) : null))
 
+    // -------- Server-side proxy (vxe-grid proxyConfig parity, query slice) --------
+    // The controller lives in the useTableProxy composable — created ONCE per
+    // proxy PRESENCE (an inline proxyConfig object with a fresh identity each
+    // render never destroys/recreates it) and torn down on scope dispose. The
+    // bridge only maps controller state → refs and routes sort/filter/page
+    // events back to setParams; paging / latest-wins / dedupe all live in core.
+    const remoteSort = computed(() => props.proxyConfig?.remoteSort === true)
+    const remoteFilter = computed(() => props.proxyConfig?.remoteFilter === true)
+    const proxyCtrl = useTableProxy<Record<string, unknown>>({
+      proxyConfig: () => props.proxyConfig,
+      remoteSort,
+      remoteFilter,
+      multiSort: () => props.multiSort,
+      sort: () => props.sort as IrisTableSortState | null | undefined,
+      defaultSort: props.defaultSort,
+      multiSortState: () => props.multiSortState,
+      defaultMultiSort: props.defaultMultiSort,
+    })
+    // Proxy mode drives the table's loading/error UI from the controller state
+    // (reusing the existing loading/error prop rendering below).
+    const tableLoading = computed(() =>
+      proxyCtrl.proxy.value ? proxyCtrl.state.value.loading : props.loading,
+    )
+    const tableError = computed(() =>
+      proxyCtrl.proxy.value ? proxyCtrl.state.value.error !== null : props.error,
+    )
+    const handleRetry = (): void => {
+      if (proxyCtrl.proxy.value) void proxyCtrl.proxy.value.refetch()
+      props.onRetry?.()
+    }
+    const retry = computed(() => (proxyCtrl.proxy.value ? handleRetry : props.onRetry))
+    // Proxy rows feed the table through a local editable copy (liveData): in
+    // proxy mode `data` is ignored; committed edits write through to the copy
+    // until the next refetch replaces it (React liveData parity).
+    const tableData = computed(() =>
+      proxyCtrl.proxy.value ? proxyCtrl.liveData.value : (props.data ?? []),
+    )
+
     // -------- Sort (useTableSort composable) --------
     const {
       sortState: internalSort,
       cycleSort,
       sortComparator,
       sortedData: sortedRows,
-    } = useTableSort<Record<string, unknown>>(
-      computed(() => props.data ?? []),
-      {
-        leafColumns,
-        sort: computed(() => props.sort as IrisTableSortState | null | undefined),
-        defaultSort: props.defaultSort,
-        onSortChange: (next) => emit('update:sort', next),
+      multiSortState,
+      cycleMultiSort,
+    } = useTableSort<Record<string, unknown>>(tableData, {
+      leafColumns,
+      sort: computed(() => props.sort as IrisTableSortState | null | undefined),
+      defaultSort: props.defaultSort,
+      onSortChange: (next) => {
+        emit('update:sort', next)
+        // remoteSort parity: sort changes re-query the server (page resets
+        // to 1 in the core controller, vxe behavior).
+        if (remoteSort.value) proxyCtrl.setParams({ sort: next })
       },
+      multiSort: () => props.multiSort,
+      multiSortState: () => props.multiSortState,
+      defaultMultiSort: props.defaultMultiSort,
+      onMultiSortChange: (next) => {
+        emit('update:multiSortState', next)
+        emit('multiSortChange', next)
+        // remoteSort parity (multi mode): the FULL sort list re-queries the
+        // server; the single `sort` param stays the single-column channel.
+        if (remoteSort.value) proxyCtrl.setParams({ sorts: next })
+      },
+    })
+    // remoteSort parity: the server owns the ordering — never re-sort locally.
+    const sortedData = computed(() => (remoteSort.value ? tableData.value : sortedRows.value))
+
+    // -------- Search form (vxe-grid formConfig parity) --------
+    // Draft/applied two-state: keystrokes only touch the DRAFT (never trigger a
+    // query); submit/reset promote the built values into the APPLIED filters.
+    // The draft is seeded from field defaultValue and re-seeded only when the
+    // field set (or a default) actually changes, so an inline formConfig object
+    // with a fresh identity each render never wipes user input.
+    const formDraft = ref<Record<string, string>>({})
+    const formApplied = ref<Record<string, string>>({})
+    const formFieldSignature = computed(() =>
+      (props.formConfig?.fields ?? [])
+        .map((f) => `${f.key}=${f.defaultValue ?? ''}`)
+        .join('\u0000'),
+    )
+    watch(
+      formFieldSignature,
+      () => {
+        formDraft.value = seedFormValues(props.formConfig?.fields)
+        formApplied.value = {}
+      },
+      { immediate: true },
+    )
+    const setFormValue = (key: string, value: string): void => {
+      if (formDraft.value[key] === value) return
+      formDraft.value = { ...formDraft.value, [key]: value }
+    }
+    const handleFormSubmit = (): void => {
+      const values = buildFormValues(props.formConfig?.fields, formDraft.value)
+      props.formConfig?.onSearch?.(values)
+      formApplied.value = values
+      // Proxy mode: the server owns filtering — merge the form values into the
+      // controller filters (page resets to 1 in core applyParams, vxe behavior).
+      if (proxyCtrl.proxy.value) {
+        proxyCtrl.setParams({ filters: mergeFormFilters({}, values), page: 1 })
+      }
+    }
+    const handleFormReset = (): void => {
+      const defaults = seedFormValues(props.formConfig?.fields)
+      formDraft.value = defaults
+      const values = buildFormValues(props.formConfig?.fields, defaults)
+      formApplied.value = values
+      props.formConfig?.onReset?.(values)
+      if (proxyCtrl.proxy.value) {
+        // setParams returns false when the merged params are unchanged (e.g.
+        // filters already cleared) — a reset must still re-query, so force a
+        // refetch only in that no-op case (no double request when it changed).
+        if (!proxyCtrl.setParams({ filters: mergeFormFilters({}, values), page: 1 })) {
+          void proxyCtrl.refetch()
+        }
+      }
+    }
+    // remoteFilter parity: hand the applied filter map to the server and never
+    // hide rows client-side (vxe proxyConfig.filter). Live after the form state
+    // so `formApplied` is referenced; setParams dedupes unchanged filters.
+    watch(
+      formApplied,
+      (applied) => {
+        if (proxyCtrl.proxy.value && remoteFilter.value) {
+          proxyCtrl.setParams({ filters: mergeFormFilters({}, applied) })
+        }
+      },
+      { immediate: true },
     )
 
     // -------- Selection (single-sourced via core createSelectionModel) --------
@@ -322,7 +649,7 @@ export const IrisTable = defineComponent({
     const treeMode = computed(() => props.getSubRows !== undefined)
     const flatTree = computed<Array<TreeRow<Record<string, unknown>>> | null>(() =>
       treeMode.value
-        ? flattenTree(sortedRows.value, {
+        ? flattenTree(sortedData.value, {
             getKey: (r) => String(r[props.rowKey]),
             // With an active sort, sort each level's children by the same
             // comparator so the whole tree reorders hierarchically.
@@ -333,8 +660,26 @@ export const IrisTable = defineComponent({
           })
         : null,
     )
+    // Local-mode form filtering (vxe formConfig parity, local): applied form
+    // values filter rows client-side (substring, case-insensitive) before the
+    // body renders — the Vue table's first filter stage. Remote-filter tables
+    // never hide rows locally (the server owns filtering).
+    const filteredData = computed(() => {
+      if (remoteFilter.value) return sortedData.value
+      const active = Object.entries(formApplied.value).filter(([, v]) => v != null && v !== '')
+      if (active.length === 0) return sortedData.value
+      return sortedData.value.filter((row) =>
+        active.every(([key, value]) => {
+          const col = leafColumns.value.find((c) => c.key === key)
+          if (!col) return true
+          return String(getCellValue(row, col) ?? '')
+            .toLowerCase()
+            .includes(value.toLowerCase())
+        }),
+      )
+    })
     const bodyData = computed(() =>
-      flatTree.value ? flatTree.value.map((t) => t.row) : sortedRows.value,
+      flatTree.value ? flatTree.value.map((t) => t.row) : filteredData.value,
     )
 
     const cascadingTreeSelection = computed(
@@ -358,7 +703,7 @@ export const IrisTable = defineComponent({
           if (children && children.length > 0) walk(children, key)
         }
       }
-      walk(sortedRows.value)
+      walk(sortedData.value)
       return nodes
     })
     const compactTreeSelectionSeed = (keys: Array<string | number>): Array<string | number> => {
@@ -521,6 +866,22 @@ export const IrisTable = defineComponent({
       editingCellId.value = null
       if (newValue !== oldValue) {
         emit('cellEdit', { row, column, oldValue, newValue, rowIndex })
+        // Proxy write-back (React liveData parity): committed edits update the
+        // local copy until the next refetch replaces it (a new page / refetch
+        // reference swaps liveRows wholesale).
+        if (proxyCtrl.proxy.value) {
+          const id = rowId(row, rowIndex)
+          const idx = proxyCtrl.liveData.value.findIndex((r, i) => rowId(r, i) === id)
+          if (idx >= 0) {
+            const key = (column.dataIndex ?? column.key) as string
+            const next = { ...proxyCtrl.liveData.value[idx], [key]: newValue }
+            proxyCtrl.liveData.value = [
+              ...proxyCtrl.liveData.value.slice(0, idx),
+              next,
+              ...proxyCtrl.liveData.value.slice(idx + 1),
+            ]
+          }
+        }
       }
     }
 
@@ -554,12 +915,44 @@ export const IrisTable = defineComponent({
     }
 
     const onHeaderClick = (column: IrisTableColumn) => {
-      cycleSort(column)
+      // Multi mode appends/cycles/removes columns; single mode replaces.
+      if (props.multiSort) cycleMultiSort(column)
+      else cycleSort(column)
+    }
+
+    /** Multi mode: click-order sequence badge on non-primary sort columns (vxe
+     * sort-config sequence parity). */
+    const multiSortSeq = (col: IrisTableColumn): VNode | null => {
+      if (!props.multiSort) return null
+      const idx = multiSortState.value.findIndex((s) => s.key === col.key)
+      if (idx <= 0) return null
+      return h(
+        'span',
+        {
+          'data-iris-sort-seq': '',
+          style: {
+            marginInlineStart: 'var(--iris-space-xxs, 4px)',
+            fontSize: 'var(--iris-font-size-xs, 12px)',
+            color: 'var(--iris-muted)',
+          },
+        },
+        String(idx + 1),
+      )
+    }
+
+    const ariaSortFor = (col: IrisTableColumn): 'ascending' | 'descending' | 'none' | undefined => {
+      const state = props.multiSort
+        ? (multiSortState.value.find((s) => s.key === col.key) ?? null)
+        : internalSort.value
+      if (state?.key === col.key) return state.direction === 'asc' ? 'ascending' : 'descending'
+      return col.sortable ? 'none' : undefined
     }
 
     const sortIndicator = (col: IrisTableColumn): VNode | null => {
       if (!col.sortable) return null
-      const state = internalSort.value
+      const state = props.multiSort
+        ? (multiSortState.value.find((s) => s.key === col.key) ?? null)
+        : internalSort.value
       const isActive = state?.key === col.key
       const direction: IrisTableSortDirection | null = isActive ? state!.direction : null
       const color = isActive ? 'var(--iris-primary)' : 'var(--iris-muted)'
@@ -790,6 +1183,288 @@ export const IrisTable = defineComponent({
       })
     }
 
+    // -------- Section builders (vxe-grid formConfig / toolbarConfig / pager
+    // parity, batch X) --------
+    // The search form and toolbar render ABOVE the table root; the pager
+    // renders BELOW the body — fragment siblings around the root (like React).
+    // All are opt-in and additive: no config renders nothing, so the root stays
+    // byte-identical to the pre-batch-X single-div structure. Extracted from
+    // render so its lint complexity stays within the adapter budget.
+    const toolbarBtnStyle = {
+      border: 'none',
+      background: 'transparent',
+      cursor: 'pointer',
+      color: 'var(--iris-muted)',
+      fontSize: 'var(--iris-font-size-md, 14px)',
+    }
+
+    const buildFormSection = (): VNode | null => {
+      const fc = props.formConfig
+      if (!fc) return null
+      return h(
+        'form',
+        {
+          'data-iris-table-form': '',
+          onSubmit: (e: Event) => {
+            e.preventDefault()
+            handleFormSubmit()
+          },
+          onReset: (e: Event) => {
+            e.preventDefault()
+            handleFormReset()
+          },
+          style: {
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+            gap: 'var(--iris-space-sm, 12px)',
+            padding: 'var(--iris-space-sm, 12px)',
+            border: '1px solid var(--iris-border)',
+            borderBottom: 'none',
+            background: 'var(--iris-surface)',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
+          },
+        },
+        [
+          ...fc.fields.map((field) =>
+            h(
+              'div',
+              {
+                key: field.key,
+                'data-iris-table-form-field': field.key,
+                style: { minWidth: 180 },
+              },
+              [
+                h(
+                  IrisFormField,
+                  { label: field.label, size: 'sm' },
+                  {
+                    default: () =>
+                      field.type === 'select'
+                        ? h(IrisSelect, {
+                            items: (field.options ?? []).map((o) => ({
+                              value: o.value,
+                              label: o.label,
+                            })),
+                            modelValue: formDraft.value[field.key] ?? '',
+                            placeholder: field.placeholder ?? t('select.placeholder'),
+                            size: 'sm',
+                            'onUpdate:modelValue': (v: unknown) =>
+                              setFormValue(field.key, String(v ?? '')),
+                          })
+                        : h(IrisInput, {
+                            modelValue: formDraft.value[field.key] ?? '',
+                            placeholder: field.placeholder,
+                            size: 'sm',
+                            'onUpdate:modelValue': (v: string | number) =>
+                              setFormValue(field.key, String(v ?? '')),
+                          }),
+                  },
+                ),
+              ],
+            ),
+          ),
+          h('div', { style: { display: 'flex', gap: 'var(--iris-space-xs, 8px)' } }, [
+            h(
+              IrisButton,
+              { type: 'submit', size: 'sm', 'data-iris-table-form-submit': '' },
+              { default: () => fc.submitText ?? t('table.formSubmit') },
+            ),
+            h(
+              IrisButton,
+              {
+                type: 'reset',
+                variant: 'outline',
+                size: 'sm',
+                'data-iris-table-form-reset': '',
+              },
+              { default: () => fc.resetText ?? t('table.formReset') },
+            ),
+          ]),
+        ],
+      )
+    }
+
+    const buildToolbarSection = (): VNode | null => {
+      const tb = props.toolbar
+      if (!tb) return null
+      const toolChildren: VNode[] = []
+      if (tb.title) {
+        toolChildren.push(
+          h('span', { style: { fontWeight: 600, color: 'var(--iris-foreground)' } }, tb.title),
+        )
+      }
+      toolChildren.push(h('div', { style: { flex: '1' } }))
+      if (tb.onRefresh) {
+        toolChildren.push(
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-iris-table-toolbar-refresh': '',
+              'aria-label': t('table.refresh'),
+              title: t('table.refresh'),
+              onClick: () => {
+                tb.onRefresh?.()
+                // proxy mode: the built-in refresh also re-queries (vxe parity)
+                void proxyCtrl.refetch()
+              },
+              style: toolbarBtnStyle,
+            },
+            '↻',
+          ),
+        )
+      }
+      if (tb.onExport) {
+        toolChildren.push(
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-iris-table-toolbar-export': '',
+              'aria-label': t('table.export'),
+              title: t('table.export'),
+              onClick: () => tb.onExport?.(),
+              style: toolbarBtnStyle,
+            },
+            '⇩',
+          ),
+        )
+      }
+      if (tb.batch && props.selectable === 'multi' && displaySelection.value.length > 0) {
+        toolChildren.push(
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-iris-table-toolbar-batch': '',
+              'aria-label': tb.batch.label,
+              title: tb.batch.label,
+              onClick: () => tb.batch!.onClick([...displaySelection.value]),
+              style: {
+                border: 'none',
+                cursor: 'pointer',
+                background: 'var(--iris-primary)',
+                color: 'var(--iris-primary-foreground)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 'var(--iris-space-xxs, 4px)',
+                padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                borderRadius: 'var(--iris-radius-sm, 4px)',
+              },
+            },
+            [
+              tb.batch.icon
+                ? h(
+                    'span',
+                    {
+                      'aria-hidden': 'true',
+                      style: { fontSize: 'var(--iris-font-size-sm, 13px)' },
+                    },
+                    tb.batch.icon,
+                  )
+                : null,
+              tb.batch.label,
+            ],
+          ),
+        )
+      }
+      if (tb.buttons && tb.buttons.length > 0) {
+        for (const btn of tb.buttons) {
+          toolChildren.push(
+            h(
+              'button',
+              {
+                key: btn.key,
+                type: 'button',
+                'data-iris-table-toolbar-button': btn.key,
+                [`data-iris-table-toolbar-button-${btn.key}`]: '',
+                'aria-label': btn.label,
+                title: btn.label,
+                onClick: btn.onClick,
+                style: {
+                  ...toolbarBtnStyle,
+                  color: 'var(--iris-foreground)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 'var(--iris-space-xxs, 4px)',
+                  padding: '0 var(--iris-space-xxs, 4px)',
+                },
+              },
+              [
+                btn.icon
+                  ? h(
+                      'span',
+                      {
+                        'aria-hidden': 'true',
+                        style: { fontSize: 'var(--iris-font-size-sm, 13px)' },
+                      },
+                      btn.icon,
+                    )
+                  : null,
+                btn.label,
+              ],
+            ),
+          )
+        }
+      }
+      return h(
+        'div',
+        {
+          'data-iris-table-toolbar': '',
+          style: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--iris-space-sm, 12px)',
+            padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+            border: '1px solid var(--iris-border)',
+            borderBottom: 'none',
+            borderTopLeftRadius: 'var(--iris-radius-md, 6px)',
+            borderTopRightRadius: 'var(--iris-radius-md, 6px)',
+            background: 'var(--iris-surface)',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
+          },
+        },
+        toolChildren,
+      )
+    }
+
+    // Server-side pager (vxe-grid proxyConfig parity): driven by the
+    // controller's page/pageSize/total; page changes call setParams and
+    // proxyConfig.onPageChange. pageSizes is NOT part of batch X (documented
+    // as deferred — the pager is page-only).
+    const buildPagerSection = (): VNode | null => {
+      if (!proxyCtrl.proxy.value) return null
+      const st = proxyCtrl.state.value
+      return h(
+        'div',
+        {
+          'data-iris-table-pager': '',
+          style: {
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+            borderTop: '1px solid var(--iris-border)',
+            background: 'var(--iris-surface)',
+          },
+        },
+        [
+          h(IrisPagination, {
+            modelValue: st.params.page,
+            total: st.total,
+            pageSize: st.params.pageSize,
+            size: 'sm',
+            'onUpdate:modelValue': (page: number) => {
+              proxyCtrl.setParams({ page })
+              props.proxyConfig?.onPageChange?.(page, proxyCtrl.state.value.params.pageSize)
+            },
+          }),
+        ],
+      )
+    }
+
     return () => {
       const showSelection = props.selectable !== 'none'
       const showDetail = hasDetail.value
@@ -883,13 +1558,7 @@ export const IrisTable = defineComponent({
                   'data-iris-table-header-group': isLeaf ? undefined : '',
                   'aria-colspan': cell.colSpan,
                   onClick: sortable ? () => onHeaderClick(col) : undefined,
-                  'aria-sort': sortable
-                    ? internalSort.value?.key === col.key
-                      ? internalSort.value.direction === 'asc'
-                        ? 'ascending'
-                        : 'descending'
-                      : 'none'
-                    : undefined,
+                  'aria-sort': sortable ? ariaSortFor(col) : undefined,
                   style: {
                     gridColumn: `${lead + cell.colStart} / span ${cell.colSpan}`,
                     gridRow: `${cell.level + 1} / span ${cell.rowSpan}`,
@@ -915,7 +1584,7 @@ export const IrisTable = defineComponent({
                     textOverflow: 'ellipsis',
                   },
                 },
-                [title, sortable ? sortIndicator(col) : null],
+                [title, sortable ? sortIndicator(col) : null, multiSortSeq(col)],
               ),
             )
           }
@@ -1065,16 +1734,9 @@ export const IrisTable = defineComponent({
                   ? { ...pinnedStyle(col.key), background: 'var(--iris-surface)' }
                   : {}),
               },
-              'aria-sort':
-                internalSort.value?.key === col.key
-                  ? internalSort.value.direction === 'asc'
-                    ? 'ascending'
-                    : 'descending'
-                  : col.sortable
-                    ? 'none'
-                    : undefined,
+              'aria-sort': ariaSortFor(col),
             },
-            [title, sortIndicator(col), handle],
+            [title, sortIndicator(col), multiSortSeq(col), handle],
           ),
         )
       }
@@ -1423,20 +2085,20 @@ export const IrisTable = defineComponent({
 
       let bodyNode: VNode
       // Precedence: error → loading → empty → rows.
-      if (props.error) {
+      if (tableError.value) {
         bodyNode = h('div', { role: 'row', 'data-iris-table-row': 'error', style: stateRowStyle }, [
           h(
             'span',
             { style: { marginInlineEnd: props.onRetry ? 'var(--iris-space-sm, 12px)' : '0px' } },
             slots.error ? slots.error() : t('table.error'),
           ),
-          props.onRetry
+          retry.value
             ? h(
                 'button',
                 {
                   type: 'button',
                   'data-iris-table-retry': '',
-                  onClick: props.onRetry,
+                  onClick: retry.value,
                   style: {
                     border: '1px solid var(--iris-border)',
                     background: 'var(--iris-surface)',
@@ -1451,7 +2113,7 @@ export const IrisTable = defineComponent({
               )
             : null,
         ])
-      } else if (props.loading) {
+      } else if (tableLoading.value) {
         bodyNode = h(
           'div',
           {
@@ -1547,8 +2209,8 @@ export const IrisTable = defineComponent({
       // footer appears only when there is data and at least one column opts in.
       let summaryRow: VNode | null = null
       if (
-        !props.error &&
-        !props.loading &&
+        !tableError.value &&
+        !tableLoading.value &&
         bodyData.value.length > 0 &&
         leafColumns.value.some((c) => c.summary)
       ) {
@@ -1625,44 +2287,52 @@ export const IrisTable = defineComponent({
         )
       }
 
-      return h(
-        'div',
-        {
-          ...attrs,
-          ref: (el: unknown) => {
-            rootRef.value = (el ?? null) as HTMLElement | null
-          },
-          // A keyboard-navigable hierarchical table is a `treegrid`; otherwise the
-          // grid/table role as before (treegrid implies managed cell focus).
-          role: props.keyboardNavigation ? (treeMode.value ? 'treegrid' : 'grid') : 'table',
-          'data-iris-table': '',
-          'data-virtual': props.virtualScroll ? '' : undefined,
-          'data-column-virtualized': props.columnVirtualization ? 'true' : undefined,
-          onKeydown:
-            props.keyboardNavigation || props.cellRange
-              ? (e: KeyboardEvent) => {
-                  if (props.keyboardNavigation) handleGridKey(e)
-                  if (props.cellRange) handleCellRangeKey(e)
+      // Section nodes: form + toolbar render ABOVE the table root, pager BELOW
+      // the body. Without any section the table div IS the single root —
+      // byte-identical to the pre-batch-X structure.
+      const rootNodes = [
+        buildFormSection(),
+        buildToolbarSection(),
+        h(
+          'div',
+          {
+            ...attrs,
+            ref: (el: unknown) => {
+              rootRef.value = (el ?? null) as HTMLElement | null
+            },
+            // A keyboard-navigable hierarchical table is a `treegrid`; otherwise the
+            // grid/table role as before (treegrid implies managed cell focus).
+            role: props.keyboardNavigation ? (treeMode.value ? 'treegrid' : 'grid') : 'table',
+            'data-iris-table': '',
+            'data-virtual': props.virtualScroll ? '' : undefined,
+            'data-column-virtualized': props.columnVirtualization ? 'true' : undefined,
+            onKeydown:
+              props.keyboardNavigation || props.cellRange
+                ? (e: KeyboardEvent) => {
+                    if (props.keyboardNavigation) handleGridKey(e)
+                    if (props.cellRange) handleCellRangeKey(e)
+                  }
+                : undefined,
+            onScroll: props.columnVirtualization
+              ? (e: Event) => {
+                  scrollLeft.value = (e.currentTarget as HTMLElement).scrollLeft
                 }
               : undefined,
-          onScroll: props.columnVirtualization
-            ? (e: Event) => {
-                scrollLeft.value = (e.currentTarget as HTMLElement).scrollLeft
-              }
-            : undefined,
-          style: {
-            background: 'var(--iris-background)',
-            color: 'var(--iris-foreground)',
-            fontSize: 'var(--iris-font-size-md, 14px)',
-            border: props.bordered ? '1px solid var(--iris-border)' : 'none',
-            borderRadius: 'var(--iris-radius-md)',
-            // Column virtualization turns the table into a horizontal scroll container.
-            overflow: props.columnVirtualization ? 'auto' : 'hidden',
-            ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            style: {
+              background: 'var(--iris-background)',
+              color: 'var(--iris-foreground)',
+              fontSize: 'var(--iris-font-size-md, 14px)',
+              border: props.bordered ? '1px solid var(--iris-border)' : 'none',
+              borderRadius: 'var(--iris-radius-md)',
+              // Column virtualization turns the table into a horizontal scroll container.
+              overflow: props.columnVirtualization ? 'auto' : 'hidden',
+              ...((attrs.style as Record<string, string> | undefined) ?? {}),
+            },
           },
-        },
-        [headerRow, bodyNode, summaryRow],
-      )
+          [headerRow, bodyNode, summaryRow, buildPagerSection()],
+        ),
+      ].filter((n): n is VNode => n !== null)
+      return rootNodes.length === 1 ? rootNodes[0] : rootNodes
     }
   },
 })

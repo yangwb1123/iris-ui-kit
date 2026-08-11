@@ -26,6 +26,8 @@ export {
   type IrisTableSpan,
   type IrisTableFilterOption,
   type IrisTableFilterValues,
+  type IrisTableScrollbarConfig,
+  type IrisTableEditDirtyConfig,
 } from './types'
 export { exportCsv, downloadCsv } from './exportCsv'
 export { exportExcel, downloadExcel } from './exportExcel'

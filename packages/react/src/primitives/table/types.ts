@@ -316,3 +316,15 @@ export interface IrisTableFooterSpanParams<Row = Record<string, unknown>> {
 export type IrisTableFooterSpanMethod<Row = Record<string, unknown>> = (
   params: IrisTableFooterSpanParams<Row>,
 ) => IrisTableSpan | null
+
+/** vxe-grid scrollbarConfig parity (batch Q): `theme: 'thin'` renders 6px
+ * webkit scrollbars + Firefox `scrollbar-width: thin` on the root (and its
+ * virtual-scroll descendant) via `data-iris-scrollbar-thin`. */
+export type IrisTableScrollbarConfig = { theme?: 'default' | 'thin' }
+
+/** vxe-grid editDirtyConfig parity (batch Q): a committed cell whose value
+ * differs from its pre-edit original renders a primary dot
+ * (`data-iris-cell-dirty`); committing the original value clears it.
+ * `indicator: false` suppresses the dot (tracking stays); `className: true`
+ * also adds an `iris-table-cell-dirty` class for custom styling. */
+export type IrisTableEditDirtyConfig = { indicator?: boolean; className?: boolean }

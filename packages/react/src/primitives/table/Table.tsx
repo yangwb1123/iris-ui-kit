@@ -95,6 +95,42 @@ const TABLE_ROW_CSS = `
     box-shadow: var(--iris-shadow-none, none) !important;
   }
 }
+/* Dirty-cell dot (batch Q, vxe editDirtyConfig parity): a small primary dot
+   at the cell's inline-end corner marks a committed cell whose value differs
+   from its pre-edit original; the cell itself gets position: relative from
+   the render so the dot anchors to it. Logical inset-inline-end mirrors the
+   dot in RTL instead of pinning it to the physical right edge. */
+[data-iris-cell-dirty]::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  inset-inline-end: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--iris-primary);
+}
+/* Thin scrollbars (batch Q, vxe scrollbarConfig parity): 6px webkit
+   scrollbars + Firefox scrollbar-width; covers the root scroller and the
+   virtual-scroll descendant. */
+[data-iris-scrollbar-thin="true"],
+[data-iris-scrollbar-thin="true"] [data-iris-virtual-scroll] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--iris-border) transparent;
+}
+[data-iris-scrollbar-thin="true"]::-webkit-scrollbar,
+[data-iris-scrollbar-thin="true"] [data-iris-virtual-scroll]::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+[data-iris-scrollbar-thin="true"]::-webkit-scrollbar-thumb,
+[data-iris-scrollbar-thin="true"] [data-iris-virtual-scroll]::-webkit-scrollbar-thumb {
+  background: var(--iris-border);
+}
+[data-iris-scrollbar-thin="true"]::-webkit-scrollbar-thumb:hover,
+[data-iris-scrollbar-thin="true"] [data-iris-virtual-scroll]::-webkit-scrollbar-thumb:hover {
+  background: var(--iris-primary);
+}
 `
 import { useTableSort } from './useTableSort'
 import { TableContextMenu } from './ContextMenu'
@@ -103,6 +139,7 @@ import type {
   IrisTableColumn,
   IrisTableColumnWidths,
   IrisTableContextMenuParams,
+  IrisTableEditDirtyConfig,
   IrisTableSortDirection,
 } from './types'
 
@@ -113,6 +150,41 @@ const justifyFor = (
 ): 'flex-start' | 'center' | 'flex-end' => {
   const resolved = align ?? fallback
   return resolved === 'right' ? 'flex-end' : resolved === 'center' ? 'center' : 'flex-start'
+}
+
+/** Dirty-map key (batch Q): `${rowKeyVal}::${colKey}` — the same `::`
+ * delimiter as `cellId` so keys/colKeys containing `:` cannot collide
+ * (`a:b`/`c` vs `a`/`b:c`). */
+const dirtyKey = (rowIdent: string | number, colKey: string): string => `${rowIdent}::${colKey}`
+
+/** Per-cell dirty render state (batch Q, vxe editDirtyConfig parity): a
+ * committed cell whose value differs from its pre-edit original is dirty
+ * (tracked in the dirty map, keyed `${rowKeyVal}::${colKey}`). `indicator:
+ * false` suppresses the dot + relative positioning but keeps tracking;
+ * `className: true` adds an `iris-table-cell-dirty` class regardless.
+ * Module-level so the cell render's cyclomatic complexity stays flat (a
+ * call costs 0). */
+const dirtyCellState = (
+  config: IrisTableEditDirtyConfig | undefined,
+  map: ReadonlyMap<string, { original: unknown; current: unknown }> | null,
+  k: string | number | null,
+  colKey: string,
+): {
+  attr: string | undefined
+  dirtyClass: string | undefined
+  posStyle: React.CSSProperties | null
+} => {
+  if (config === undefined || k == null) {
+    return { attr: undefined, dirtyClass: undefined, posStyle: null }
+  }
+  const tracked = map !== null && map.has(dirtyKey(k, colKey))
+  const showDirty = tracked && config.indicator !== false
+  const withClass = tracked && config.className === true
+  return {
+    attr: showDirty ? 'true' : undefined,
+    dirtyClass: withClass ? 'iris-table-cell-dirty' : undefined,
+    posStyle: showDirty ? { position: 'relative' } : null,
+  }
 }
 
 export type { IrisTableProps, IrisTableProxyConfig } from './props'
@@ -583,6 +655,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   height,
   minHeight,
   maxHeight,
+  scrollbarConfig,
+  editDirtyConfig,
+  autoResize = false,
   rowClassName,
   cellClassName,
   headerCellClassName,
@@ -1009,6 +1084,43 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const editCtxRef = React.useRef<{ row: Row; col: IrisTableColumn<Row>; rowIndex: number } | null>(
     null,
   )
+  // Batch Q (vxe editDirtyConfig parity): committed cells whose value differs
+  // from their pre-edit original are tracked here, keyed
+  // `${rowKeyVal}::${colKey}` (same `::` delimiter as `cellId`). `original`
+  // is captured at the FIRST commit of a cell (the onCommit oldValue);
+  // `current` mirrors the latest committed value so a later commit only
+  // needs to compare against `original` to decide clean/dirty. Ref (not
+  // state): every commit already re-renders via the live-data write-back,
+  // so the render reads this map directly.
+  const dirtyCellsRef = React.useRef<Map<string, { original: unknown; current: unknown }>>(
+    new Map(),
+  )
+  // Dirty write-back for cell AND row edit modes (batch Q): first commit of a
+  // cell records its original and marks it dirty; a later commit that equals
+  // the original removes it (clean); any other commit keeps it dirty and
+  // refreshes the tracked current value.
+  const trackDirty = (
+    k: string | number,
+    colKey: string,
+    oldValue: unknown,
+    value: unknown,
+  ): void => {
+    if (!editDirtyConfig) return
+    const key = dirtyKey(k, colKey)
+    const tracked = dirtyCellsRef.current.get(key)
+    if (!tracked) dirtyCellsRef.current.set(key, { original: oldValue, current: value })
+    else if (value === tracked.original) dirtyCellsRef.current.delete(key)
+    else tracked.current = value
+  }
+  // Batch Q: dirty entries for a removed row are pruned so a later re-added
+  // row with the same key (insertRow / proxy refetch / paging back to a page
+  // with the same ids) starts clean instead of rendering phantom dirty dots.
+  const pruneDirtyFor = (rowIdent: string | number): void => {
+    const prefix = `${rowIdent}::`
+    for (const key of [...dirtyCellsRef.current.keys()]) {
+      if (key.startsWith(prefix)) dirtyCellsRef.current.delete(key)
+    }
+  }
   // Batch K (M1): Tab-navigation intent stashed while an async validation
   // commit is in flight (commitEdit returns false for a pending Promise). The
   // settle-observer effect performs the navigation when the commit lands, and
@@ -1051,10 +1163,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
   ): void => {
     const oldValue = getCellValue(ctx.row, ctx.col)
     if (value === oldValue) return
+    const k = rowKeyOf(ctx.row)
+    // Batch Q: dirty write-back for editDirtyConfig (cell AND row edit modes
+    // both funnel through here).
+    if (k != null) trackDirty(k, ctx.col.key, oldValue, value)
     // Write the committed value back into the live data so the edit survives
     // without the parent re-feeding `data` (controlled mode overrides via the
     // data-reference sync above).
-    const k = rowKeyOf(ctx.row)
     if (k != null) {
       setLiveData((prev) => {
         const next = setCellValue(prev, rowKey, k, ctx.col.key, value)
@@ -1663,6 +1778,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           rebaseToProp()
           selModel.toggle(key)
         }
+        pruneDirtyFor(key)
         commitRowList(next)
       }
     },
@@ -1680,6 +1796,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         }
       }
       if (removed.size === 0) return
+      for (const key of removed) pruneDirtyFor(key)
       const selectedNow = displaySelectionRef.current
       if (selectable !== 'none' && selectedNow.some((k) => removed.has(k))) {
         rebaseToProp()
@@ -1991,6 +2108,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const rootRef = React.useRef<HTMLDivElement | null>(null)
   const [scrollLeft, setScrollLeft] = React.useState(0)
   const [viewportWidth, setViewportWidth] = React.useState(0)
+  // Batch Q (vxe auto-resize parity): last measured root size; drives the
+  // inline height when `autoResize` is on and no explicit `height` is set.
+  const [autoSize, setAutoSize] = React.useState<{ width: number; height: number } | null>(null)
 
   // Cell-range selection (opt-in via `cellRange`). The controller lives in a
   // ref so it is never re-created; we bridge it to React via
@@ -2330,6 +2450,30 @@ export function IrisTable<Row extends Record<string, unknown>>({
     return () => ro.disconnect()
   }, [columnVirtualization])
 
+  // Auto-resize (batch Q, vxe-grid auto-resize parity): measure the root via
+  // ResizeObserver into `autoSize`. The measure never pins the root height —
+  // with no explicit `height` the root renders `height: 100%` (see the root
+  // render) so it fills AND tracks its parent instead of freezing at one
+  // measured px (the RO observes the root; a pinned root could never change
+  // size again, so later container growth would be missed). The measure only
+  // gates `fixedHeight`: once a positive size lands, the batch-N scroll
+  // machinery (sticky header, overflow) engages. When `height` IS set the
+  // explicit height wins (no visible change). jsdom/SSR have no
+  // ResizeObserver → no-op.
+  React.useEffect(() => {
+    if (!autoResize) return
+    const el = rootRef.current
+    if (!el) return
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      setAutoSize({ width: entry.contentRect.width, height: entry.contentRect.height })
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [autoResize])
+
   // Set of column indices to render: the visible window + overscan, always
   // unioned with pinned columns. `null` ⇒ render every column (feature off).
   const visibleColSet = React.useMemo(() => {
@@ -2635,6 +2779,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
           const editing = rowMode
             ? rowSessions.has(cellId(k, col.key))
             : cellEdit.isEditing(cellId(k, col.key), col.key)
+          // Batch Q (vxe editDirtyConfig parity): dirty flag + rendered
+          // marker for this cell (attr, class, relative positioning).
+          const dirtyInfo = dirtyCellState(editDirtyConfig, dirtyCellsRef.current, k, col.key)
           const fnrCellKey = `${idx}:${ci}`
           const fnrCellActive = fnrActiveKey === fnrCellKey
           const fnrCellMatched = fnrMatchSet.has(fnrCellKey)
@@ -2646,8 +2793,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
               data-iris-table-pinned={col.pinned}
               data-editable={col.editable ? '' : undefined}
               data-editing={editing ? '' : undefined}
+              data-iris-cell-dirty={dirtyInfo.attr}
               title={editing ? undefined : cellTooltip(row, col)}
-              className={cellClassName?.(row, col, idx)}
+              className={
+                [cellClassName?.(row, col, idx), dirtyInfo.dirtyClass].filter(Boolean).join(' ') ||
+                undefined
+              }
               {...(keyboardNavigation
                 ? {
                     'data-grid-row': idx,
@@ -2710,6 +2861,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               }
               style={{
                 ...baseCellStyle,
+                ...dirtyInfo.posStyle,
                 ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
                 ...(colspan > 1 ? { gridColumnEnd: `span ${colspan}` } : null),
                 ...(rowspan > 1 ? { gridRowEnd: `span ${rowspan}` } : null),
@@ -3062,8 +3214,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // (no non-null assertions needed).
   const batchAction = toolbar?.batch
   // Fixed height (batch N): any of height/min/max makes the root a vertical
-  // scroll container; the injected stylesheet pins the header row.
-  const fixedHeight = height !== undefined || minHeight !== undefined || maxHeight !== undefined
+  // scroll container; the injected stylesheet pins the header row. Batch Q:
+  // `autoResize` with a positive measure engages the same machinery so the
+  // auto-filled root scrolls/sticks exactly like an explicit-height table.
+  const fixedHeight =
+    height !== undefined ||
+    minHeight !== undefined ||
+    maxHeight !== undefined ||
+    (autoResize && autoSize !== null)
   // Virtual body items: always typed as plan entries (rows wrapped with their
   // ORIGINAL bodyData index) so the `kind` discriminant narrows cleanly — a
   // generic `Row` type param defeats `'kind' in` narrowing.
@@ -3595,6 +3753,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
         data-striped={striped ? 'true' : undefined}
         data-column-virtualized={columnVirtualization ? 'true' : undefined}
         data-iris-table-fixed-height={fixedHeight ? 'true' : undefined}
+        data-iris-scrollbar-thin={scrollbarConfig?.theme === 'thin' ? 'true' : undefined}
+        data-iris-auto-resize={autoResize ? 'true' : undefined}
         data-iris-no-hover={highlightHoverRow ? undefined : 'true'}
         className={className}
         onKeyDown={
@@ -3641,6 +3801,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // Column virtualization turns the table into a horizontal scroll container.
           overflow: fixedHeight ? 'auto' : columnVirtualization ? 'auto' : 'hidden',
           ...(fixedHeight ? { height, maxHeight, minHeight } : null),
+          // Batch Q (vxe auto-resize parity): with no explicit `height` the
+          // root uses `height: 100%` so it fills AND tracks its parent (a
+          // measured-px pin would freeze the root, and the RO observes the
+          // root — later container growth would never be seen). The measure
+          // still gates `fixedHeight` above, so the scroll machinery engages
+          // once a positive size lands. When `height` IS set the explicit
+          // height wins (no visible change).
+          ...(autoResize && height === undefined ? { height: '100%' } : null),
           ...style,
         }}
       >

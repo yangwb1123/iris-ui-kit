@@ -422,6 +422,26 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   minHeight?: number | string
   /** Maximum height of the fixed-height container (with `height`/`minHeight`). */
   maxHeight?: number | string
+  /** Thin scrollbars (vxe-grid scrollbarConfig parity, batch Q): when
+   * `theme: 'thin'`, the root and its virtual-scroll descendant get 6px
+   * webkit scrollbars plus Firefox `scrollbar-width: thin` via
+   * `data-iris-scrollbar-thin`. Default: browser scrollbars. */
+  scrollbarConfig?: { theme?: 'default' | 'thin' }
+  /** Dirty-cell tracking (vxe-grid editDirtyConfig parity, batch Q): a cell
+   * whose committed value differs from its pre-edit original renders a
+   * primary dot (`data-iris-cell-dirty`, cell gets `position: relative`);
+   * committing the original value clears it. `indicator: false` suppresses
+   * the dot (tracking stays); `className: true` also adds an
+   * `iris-table-cell-dirty` class for custom styling. */
+  editDirtyConfig?: { indicator?: boolean; className?: boolean }
+  /** Fill the parent (vxe-grid auto-resize parity, batch Q): a
+   * ResizeObserver measures the root and, when no explicit `height` is set,
+   * renders `height: 100%` so the table fills AND tracks its parent (the
+   * fixed-height scroll machinery engages after the first positive
+   * measure). When `height` IS set the measured size is kept internally and
+   * the explicit height wins (no visible change). Without ResizeObserver
+   * (jsdom/SSR) the scroll engagement is a no-op. Default false. */
+  autoResize?: boolean
   /** Highlight rows on hover (vxe highlight-hover-row parity, batch N). Default true. */
   highlightHoverRow?: boolean
   style?: CSSProperties

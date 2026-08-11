@@ -252,3 +252,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-p-gate.md [ok]: Review fixes: 1. **MAJOR – stale manifest**: `pnpm gen:manifest` regenerated; `check:manifest` now passes ("up to date"). Adds exactly; Gate results: - `turbo run test typecheck lint build` → **180/180 tasks**; Commits: - `2aa986cc` — `feat(table): vxe-grid 批 P——表头表尾合并/圆角内边距/合计精度/表头表尾提示（react only）`
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-p-gate.md
+
+## 2026-08-10 16:35:50 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-q-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-q-baseline.md
+
+## 2026-08-10 16:47:16 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-q-adapt.md [ok]: Implemented — vxe-grid batch Q (all 3 features): **Files changed (5 source + 1 test):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-q-adapt.md
+
+## 2026-08-10 16:58:44 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-q-review.md [ok]: Findings: **1. MAJOR — autoResize implements the exact approach the baseline explicitly rejected: measured-px inline height instea; Passed checks: - scrollbarConfig: attr only for `theme:'thin'`, defaults unchanged; webkit 6px + thumb `--iris-border`/hover `--iris-pr
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-q-review.md
+
+## 2026-08-11 00:47:16 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-q-gate.md [ok]: Review fixes: 1. **MAJOR — autoResize measured-px pin rejected**: height-not-set mode renders `height: 100%` (fills AND tracks the parent); RO measure only gates `fixedHeight`; 4 tests rewritten. 2. **MAJOR — stale manifest**: `pnpm gen:manifest` regenerated; `check:manifest` passes; 3 props + 2 types. 3. **MINOR — removeRow/removeRows prune dirty keys** (+1 regression test). 4. **MINOR — dirty key `::` delimiter** (matches cellId). 5. **MINOR — `iris-table-cell-dirty` class** (baseline spec). 6. **MINOR — `inset-inline-end`** logical property. Gate: `turbo run test typecheck lint build` → **180/180 tasks**; React tests **1722/1722**; core 1249; audit 0.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-q-gate.md

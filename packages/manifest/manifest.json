@@ -36688,6 +36688,24 @@
           "description": "Maximum height of the fixed-height container (with `height`/`minHeight`)."
         },
         {
+          "name": "scrollbarConfig",
+          "type": "{ theme?: 'default' | 'thin' }",
+          "optional": true,
+          "description": "`theme: 'thin'`, the root and its virtual-scroll descendant get 6px webkit scrollbars plus Firefox `scrollbar-width: thin` via"
+        },
+        {
+          "name": "editDirtyConfig",
+          "type": "{ indicator?: boolean; className?: boolean }",
+          "optional": true,
+          "description": "whose committed value differs from its pre-edit original renders a primary dot (`data-iris-cell-dirty`, cell gets `position: relative`); committing the original value clears it. `indicator: false` suppresses the dot (tracking stays); `className: true` also adds an"
+        },
+        {
+          "name": "autoResize",
+          "type": "boolean",
+          "optional": true,
+          "description": "ResizeObserver measures the root and, when no explicit `height` is set, renders `height: 100%` so the table fills AND tracks its parent (the fixed-height scroll machinery engages after the first positive measure). When `height` IS set the measured size is kept internally and the explicit height wins (no visible change). Without ResizeObserver"
+        },
+        {
           "name": "highlightHoverRow",
           "type": "boolean",
           "optional": true,
@@ -37295,6 +37313,24 @@
               "description": "Maximum height of the fixed-height container (with `height`/`minHeight`)."
             },
             {
+              "name": "scrollbarConfig",
+              "type": "{ theme?: 'default' | 'thin' }",
+              "optional": true,
+              "description": "`theme: 'thin'`, the root and its virtual-scroll descendant get 6px webkit scrollbars plus Firefox `scrollbar-width: thin` via"
+            },
+            {
+              "name": "editDirtyConfig",
+              "type": "{ indicator?: boolean; className?: boolean }",
+              "optional": true,
+              "description": "whose committed value differs from its pre-edit original renders a primary dot (`data-iris-cell-dirty`, cell gets `position: relative`); committing the original value clears it. `indicator: false` suppresses the dot (tracking stays); `className: true` also adds an"
+            },
+            {
+              "name": "autoResize",
+              "type": "boolean",
+              "optional": true,
+              "description": "ResizeObserver measures the root and, when no explicit `height` is set, renders `height: 100%` so the table fills AND tracks its parent (the fixed-height scroll machinery engages after the first positive measure). When `height` IS set the measured size is kept internally and the explicit height wins (no visible change). Without ResizeObserver"
+            },
+            {
               "name": "highlightHoverRow",
               "type": "boolean",
               "optional": true,
@@ -37341,6 +37377,7 @@
             "IrisTableColumn",
             "IrisTableColumnWidths",
             "IrisTableContextMenuParams",
+            "IrisTableEditDirtyConfig",
             "IrisTableEditor",
             "IrisTableFilterOption",
             "IrisTableFilterValues",
@@ -37356,6 +37393,7 @@
             "IrisTableProxyQueryParams",
             "IrisTableRenderDetail",
             "IrisTableRowExpandable",
+            "IrisTableScrollbarConfig",
             "IrisTableSeqMethodParams",
             "IrisTableSortDirection",
             "IrisTableSortState",
@@ -37967,7 +38005,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 100,
+        "propCount": 103,
         "eventCount": 15
       }
     },

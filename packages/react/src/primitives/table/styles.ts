@@ -54,4 +54,40 @@ export const TABLE_ROW_CSS = `
   --iris-cell-pad-y: 2px;
   font-size: var(--iris-font-size-xs, 12px);
 }
+/* Dirty-cell dot (batch Q, vxe editDirtyConfig parity): a small primary dot
+   at the cell's inline-end corner marks a committed cell whose value differs
+   from its pre-edit original; the cell itself gets position: relative from
+   the render so the dot anchors to it. Logical inset-inline-end mirrors the
+   dot in RTL instead of pinning it to the physical right edge. */
+[data-iris-cell-dirty]::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  inset-inline-end: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--iris-primary);
+}
+/* Thin scrollbars (batch Q, vxe scrollbarConfig parity): 6px webkit
+   scrollbars + Firefox scrollbar-width; covers the root scroller and the
+   virtual-scroll descendant. */
+[data-iris-scrollbar-thin="true"],
+[data-iris-scrollbar-thin="true"] [data-iris-virtual-scroll] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--iris-border) transparent;
+}
+[data-iris-scrollbar-thin="true"]::-webkit-scrollbar,
+[data-iris-scrollbar-thin="true"] [data-iris-virtual-scroll]::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+[data-iris-scrollbar-thin="true"]::-webkit-scrollbar-thumb,
+[data-iris-scrollbar-thin="true"] [data-iris-virtual-scroll]::-webkit-scrollbar-thumb {
+  background: var(--iris-border);
+}
+[data-iris-scrollbar-thin="true"]::-webkit-scrollbar-thumb:hover,
+[data-iris-scrollbar-thin="true"] [data-iris-virtual-scroll]::-webkit-scrollbar-thumb:hover {
+  background: var(--iris-primary);
+}
 `

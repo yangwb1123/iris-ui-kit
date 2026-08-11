@@ -90,6 +90,87 @@ describe('IrisTable handle view methods (vxe getFilteredData parity + current-vi
       'Name,Age\nCharlie,25\nAlice,32\nBob,28\nAlicia,41',
     )
   })
+
+  // F1 regression (review): tableRef is assigned ONCE on mount, so handle
+  // methods run against the mount-time closure — post-mount prop changes must
+  // still be visible through the per-render ref mirrors.
+  it('getFilteredData is fresh after a post-mount filters rerender', () => {
+    const r = tableRef()
+    const view = render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        rowKey="id"
+        filters={{ name: 'ali' }}
+        tableRef={r}
+      />,
+    )
+    act(() => {})
+    expect(r.current!.getFilteredData()).toEqual([rows[1], rows[3]])
+    view.rerender(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        rowKey="id"
+        filters={{ name: 'bob' }}
+        tableRef={r}
+      />,
+    )
+    act(() => {})
+    expect(r.current!.getFilteredData()).toEqual([rows[2]])
+  })
+
+  it('getFilteredData is fresh after a post-mount data shrink', () => {
+    const r = tableRef()
+    const view = render(<IrisTable columns={baseColumns} data={rows} rowKey="id" tableRef={r} />)
+    expect(r.current!.getFilteredData()).toEqual(rows)
+    view.rerender(
+      <IrisTable columns={baseColumns} data={rows.slice(0, 2)} rowKey="id" tableRef={r} />,
+    )
+    act(() => {})
+    expect(r.current!.getFilteredData()).toEqual([rows[0], rows[1]])
+  })
+
+  it('exportCurrentViewCsv honors post-mount columnVisibility changes', () => {
+    const r = tableRef()
+    const view = render(<IrisTable columns={baseColumns} data={rows} rowKey="id" tableRef={r} />)
+    expect(r.current!.exportCurrentViewCsv()).toBe(
+      'Name,Age\nCharlie,25\nAlice,32\nBob,28\nAlicia,41',
+    )
+    view.rerender(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        rowKey="id"
+        columnVisibility={{ age: false }}
+        tableRef={r}
+      />,
+    )
+    act(() => {})
+    // Age is hidden post-mount: the export must no longer emit it.
+    expect(r.current!.exportCurrentViewCsv()).toBe('Name\nCharlie\nAlice\nBob\nAlicia')
+  })
+
+  // F2 regression (review): grouped mode must export the LEAF columns — group
+  // parents carry no dataIndex, so exporting them would lose all row data.
+  it('exportCurrentViewCsv emits leaf data in grouped mode', () => {
+    const r = tableRef()
+    const groupedColumns: IrisTableColumn<Row>[] = [
+      {
+        key: 'identity',
+        title: 'Identity',
+        children: [
+          { key: 'name', title: 'Name' },
+          { key: 'age', title: 'Age' },
+        ],
+      },
+    ]
+    render(<IrisTable columns={groupedColumns} data={rows} rowKey="id" tableRef={r} />)
+    act(() => {})
+    expect(r.current!.exportCurrentViewCsv()).toBe(
+      'Name,Age\nCharlie,25\nAlice,32\nBob,28\nAlicia,41',
+    )
+  })
 })
 
 describe('IrisTable showHeaderOverflow (vxe parity, batch W)', () => {

@@ -829,6 +829,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     () => (grouped ? flattenLeafColumns(displayColumns) : displayColumns),
     [grouped, displayColumns],
   )
+  // Batch W: the view handle methods (getFilteredData / exportCurrentViewCsv)
+  // run against the mount-time handle, so mirror the latest visible LEAF
+  // columns per render (same pattern as liveDataRef / displaySelectionRef
+  // below). In flat mode leafColumns is reference-identical to
+  // displayColumns; in grouped mode it carries the data-bearing leaves.
+  const viewColumnsRef = React.useRef(leafColumns)
+  viewColumnsRef.current = leafColumns
   const headerMatrix = React.useMemo(
     () => (grouped ? buildHeaderMatrix(displayColumns) : null),
     [grouped, displayColumns],
@@ -2112,11 +2119,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
     getData: () => [...(externalDataRef.current ?? [])],
     // ── View methods (vxe getFilteredData parity + current-view export,
     // batch W) ────────────────────────────────────────────────────────────
-    // The handle object is re-created every render, so these close over the
-    // LATEST filteredData / displayColumns memos (filters, sort, column
-    // visibility all current at call time).
-    getFilteredData: () => [...filteredData],
-    exportCurrentViewCsv: () => exportCsv([...filteredData], displayColumns),
+    // The handle is assigned to tableRef ONCE on mount (effect below), so
+    // methods run against the mount-time closure — read the per-render ref
+    // mirrors (filteredDataRef / viewColumnsRef, set above) instead of the
+    // render's memo values, which would go stale after any rerender.
+    // viewColumnsRef holds leafColumns: flat mode is reference-identical to
+    // displayColumns (zero flat regression) and grouped mode carries the
+    // data-bearing leaves, so the CSV keeps leaf data in both modes.
+    getFilteredData: () => [...filteredDataRef.current],
+    exportCurrentViewCsv: () => exportCsv([...filteredDataRef.current], viewColumnsRef.current),
     getSelection: () => [...displaySelectionRef.current],
     // ── Selection methods (vxe clearCheckboxRow / setAllCheckboxRow(true) /
     // toggleCheckboxRow parity, batch F) ───────────────────────────────────
@@ -2371,6 +2382,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
       return textOk && setsOk
     })
   }, [sortedData, filters, formApplied, displayColumns, remoteFilter, proxy, filterValues])
+  // Batch W: mirror the latest filtered rows for the mount-time handle
+  // (getFilteredData / exportCurrentViewCsv must see post-rerender state,
+  // not the mount render's memo).
+  const filteredDataRef = React.useRef(filteredData)
+  filteredDataRef.current = filteredData
   const bodyData = flatTree ? flatTree.map((t) => t.row) : filteredData
 
   // Batch M: row grouping (vxe group-config parity) — a render-time

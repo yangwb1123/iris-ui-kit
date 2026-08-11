@@ -401,3 +401,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-w-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-w-baseline.md
+
+## 2026-08-11 01:47:12 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-w-adapt.md [ok]: Report: **Commits:**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-w-adapt.md
+
+## 2026-08-11 01:59:19 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-w-review.md [ok]: Verdict: **FAIL** — written to `docs/vxe-grid/batch-w-review.md`: No source files modified (scratch verification test removed; the two dirty docs pre-date my review).; Verification results: | Command | Result |; Findings: **F1 — HIGH — stale after mount** (`Table.tsx:2118-2119`, root cause `2216-2220`): `tableRef.current` is assigned **once; Checklist: 1. getFilteredData fresh+copy — **FAIL** (F1; copy semantics correct)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-w-review.md

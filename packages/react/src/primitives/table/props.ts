@@ -8,6 +8,7 @@ import type {
   IrisTableCustomConfig,
   IrisTableFooterMethodParams,
   IrisTableFormField,
+  IrisTableHandle,
   IrisTableRenderDetail,
   IrisTableRowExpandable,
   IrisTableSortState,

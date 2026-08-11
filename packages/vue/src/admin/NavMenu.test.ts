@@ -118,6 +118,24 @@ describe('IrisNavMenu', () => {
     expect(disabled.classes()).not.toContain('is-hovered')
   })
 
+  it('active item stays active and gains is-hovered on hover (active-hover feedback)', async () => {
+    const w = mount(IrisNavMenu, {
+      props: { items, activeKey: 'dash' },
+    })
+    const active = w.find('[data-key="dash"]')
+    expect(active.attributes('data-active')).toBe('true')
+
+    await active.trigger('mouseenter')
+    // hover 类照常加上；data-active 保持——CSS 规则
+    // [data-active=true]:hover 提供加深背景（styles.ts）
+    expect(active.classes()).toContain('is-hovered')
+    expect(active.attributes('data-active')).toBe('true')
+
+    await active.trigger('mouseleave')
+    expect(active.classes()).not.toContain('is-hovered')
+    expect(active.attributes('data-active')).toBe('true')
+  })
+
   it('renders a badge for a leaf with badge', async () => {
     const w = mount(IrisNavMenu, { props: { items, activeKey: 'users' } })
     expect(w.find('[data-iris-nav-badge]').text()).toBe('3')

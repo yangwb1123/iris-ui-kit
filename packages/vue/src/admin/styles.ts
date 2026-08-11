@@ -7,6 +7,7 @@ const CSS = `
   --iris-nav-item-padding-block: 8px;
   --iris-nav-item-border-radius: var(--iris-radius-md, 6px);
   --iris-nav-item-hover: var(--iris-surface-hover, var(--iris-surface));
+  --iris-nav-item-active-hover: color-mix(in srgb, var(--iris-primary) 88%, black);
   --iris-nav-item-height: 34px;
   display: flex;
   flex-direction: column;
@@ -110,6 +111,13 @@ const CSS = `
   background: var(--iris-primary);
   color: var(--iris-primary-foreground, #fff);
   font-weight: 600;
+}
+
+/* active 项的 hover 反馈：primary 加深变体（皮肤可用
+   --iris-nav-item-active-hover 覆盖）；特异度高于 :hover/:where 规则 */
+.iris-nav-menu-item[data-active='true']:hover,
+.iris-nav-menu-item[data-active='true'].is-hovered:not([disabled], .is-disabled) {
+  background: var(--iris-nav-item-active-hover, color-mix(in srgb, var(--iris-primary) 88%, black));
 }
 
 :where(.iris-nav-menu-item[data-active-trail='true']) {

@@ -247,3 +247,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-p-review.md [ok]: Verification run: - React tests **1705/1705** ✅ · typecheck 0 errors ✅ · lint 0 errors (1 pre-existing complexity warning) ✅; Findings: 1. **MAJOR (gate-blocking)** — manifest stale: `check:manifest` fails; regen adds exactly the 7 new props (IrisTable rea
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-p-review.md
+
+## 2026-08-10 16:22:57 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-p-gate.md [ok]: Review fixes: 1. **MAJOR – stale manifest**: `pnpm gen:manifest` regenerated; `check:manifest` now passes ("up to date"). Adds exactly; Gate results: - `turbo run test typecheck lint build` → **180/180 tasks**; Commits: - `2aa986cc` — `feat(table): vxe-grid 批 P——表头表尾合并/圆角内边距/合计精度/表头表尾提示（react only）`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-p-gate.md

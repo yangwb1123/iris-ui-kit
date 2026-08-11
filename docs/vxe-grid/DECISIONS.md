@@ -277,3 +277,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-q-gate.md [ok]: Review fixes applied: 1. **MAJOR — autoResize measured-px pin rejected**: height-not-set mode now renders `height: 100%` on the root (fills AN; Gate results: - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks** (react package re-verified after prettier fo; Commit: **`018f6d64`** — `feat(table): vxe-grid 批 Q——自动尺寸/滚动条配置/编辑脏标记（react only）`
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-q-gate.md
+
+## 2026-08-10 17:22:46 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-r-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-r-baseline.md

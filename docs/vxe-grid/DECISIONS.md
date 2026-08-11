@@ -436,3 +436,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-x-review.md [ok]: Verdict: **PASS** (1 medium finding recommended before merge): **Gates (all on committed state):** vue typecheck ✓ · test **1496/1496** ✓ · lint 0/0 ✓ · `check:manifest` zero drift (6
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-x-review.md
+
+## 2026-08-11 05:31:30 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-x-gate.md [ok]: 批 X Gate — PASS ✅（commit `5d63bffe`）: **Review verdict: PASS**（1 MEDIUM recommended before merge + 2 LOW）→ all three concrete findings fixed, 4 regression tes; 全仓门结果: | 门 | 结果 |; 文档: - `docs/vxe-grid-comparison.md`：排序/工具栏/数据代理/搜索表单四行标记 **✅ vue**（react+vue 对齐）；构建状态表新增批 X 行；新增「**vue 剩余缺口（批 Y 起）**」清单（批 2–; Commit: **`5d63bffe`** — `feat(table): vxe-grid 批 X——vue 适配器功能对齐（proxyConfig/formConfig/multiSort/工具栏扩展）`（9 files, +294/−76；工作树干
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-x-gate.md

@@ -416,3 +416,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-w-gate.md [ok]: ✅ Batch W gate — PASS (review was FAIL, fixes applied): **Verdict:** `batch-w-review.md` → FAIL with concrete fixes. Applied both:
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-w-gate.md
+
+## 2026-08-11 04:10:28 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-x-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-x-baseline.md
+
+## 2026-08-11 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-x-baseline.md [ok]: Batch X adapt — vue table proxyConfig/formConfig/multiSort/toolbar parity (vue only, additive). Controller logic all in core (createRemoteTableSource / seedFormValues / buildFormValues / mergeFormFilters); vue bridge wires only. 27 new tests. Deferred to batch Y: pageSizes, onImport, columnSettings, seq, zoom, date fields, layout variants (see batch-x-adapt.md handoff).
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-x-adapt.md

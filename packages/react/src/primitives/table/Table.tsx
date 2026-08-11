@@ -691,6 +691,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   columnDrag,
   columnVisibility,
   onColumnVisibilityChange,
+  columnOrder,
+  onColumnOrderChange,
   filters,
   filterValues,
   onFilterValuesChange,
@@ -743,10 +745,33 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const safeColumns = React.useMemo(() => columns ?? [], [columns])
   // Column visibility (vxe columnConfig.visible parity): filter hidden
   // columns out of every render path (header, body, summary).
+  //
+  // Column order (vxe customConfig parity, batch S): a controlled key list
+  // that reorders the rendered stack. Keys not named in the order keep their
+  // relative position AFTER the ordered ones; unknown order keys are
+  // ignored. Reference-preserving: without the prop the result IS
+  // `safeColumns` (byte-identical with the pre-order render path). Grouped
+  // tables address top-level columns only.
+  const columnOrderIndex = React.useMemo(() => {
+    const map = new Map<string, number>()
+    columnOrder?.forEach((key, i) => {
+      if (!map.has(key)) map.set(key, i)
+    })
+    return map
+  }, [columnOrder])
+
+  const orderedColumns = React.useMemo(() => {
+    if (!columnOrder || columnOrder.length === 0) return safeColumns
+    const ordered = safeColumns.filter((c) => columnOrderIndex.has(c.key))
+    const rest = safeColumns.filter((c) => !columnOrderIndex.has(c.key))
+    ordered.sort((a, b) => columnOrderIndex.get(a.key)! - columnOrderIndex.get(b.key)!)
+    return [...ordered, ...rest]
+  }, [safeColumns, columnOrder, columnOrderIndex])
+
   const displayColumns = React.useMemo(() => {
-    if (!columnVisibility) return safeColumns
-    return safeColumns.filter((c) => columnVisibility[c.key] !== false)
-  }, [safeColumns, columnVisibility])
+    if (!columnVisibility) return orderedColumns
+    return orderedColumns.filter((c) => columnVisibility[c.key] !== false)
+  }, [orderedColumns, columnVisibility])
 
   // Multi-level (grouped) headers: a column with `children` forms a header group. The BODY always renders the leaf columns; only the header gains extra rows.
 
@@ -1508,6 +1533,107 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const next = { ...(columnVisibility ?? {}) }
     next[key] = !(columnVisibility?.[key] !== false)
     onColumnVisibilityChange?.(next)
+  }
+  // ── Custom column panel (vxe customConfig parity, batch S) ─────────────
+  // The toolbar button opens the full panel in place of the old checkbox
+  // menu: a search box (display-only), a drag-sort list over a local draft
+  // order (cloned from the rowDrag createSortable composition — same
+  // press/tryStart/moveOver/end flow), live visibility toggles, and footer
+  // buttons. Confirm commits the draft through `onColumnOrderChange` and
+  // closes; reset restores the visibility snapshot taken at FIRST open and
+  // clears the order (`undefined` → parent drops `columnOrder`); Esc closes
+  // without applying.
+  const customDragCtrl = React.useMemo(() => createSortable(), [])
+  const customDragState = useStore(customDragCtrl)
+  const customRectsRef = React.useRef<SortableRect[]>([])
+  const customDragActiveId = customDragState.activeId
+  const customDragOverId = customDragState.overId
+  const [customSearch, setCustomSearch] = React.useState('')
+  const [draftOrder, setDraftOrder] = React.useState<string[]>([])
+  const visibilitySnapshotRef = React.useRef<Record<string, boolean> | null>(null)
+
+  // Panel rows: the draft order mapped back to columns, filtered by search.
+  const customPanelColumns = React.useMemo(() => {
+    const byKey = new Map(safeColumns.map((c) => [c.key, c]))
+    const q = customSearch.trim().toLowerCase()
+    const cols = draftOrder
+      .map((key) => byKey.get(key))
+      .filter((c): c is IrisTableColumn<Row> => c !== undefined)
+    if (!q) return cols
+    return cols.filter((c) => (c.title ?? c.key).toLowerCase().includes(q))
+  }, [draftOrder, safeColumns, customSearch])
+
+  const toggleColumnSettings = () => {
+    if (columnSettingsOpen) {
+      setColumnSettingsOpen(false)
+      return
+    }
+    setColumnSettingsOpen(true)
+    setCustomSearch('')
+    setDraftOrder(orderedColumns.map((c) => c.key))
+    if (visibilitySnapshotRef.current === null) {
+      visibilitySnapshotRef.current = { ...(columnVisibility ?? {}) }
+    }
+  }
+
+  const handleCustomDragPointerDown = (e: React.PointerEvent, colKey: string) => {
+    if (e.button !== 0) return
+    e.preventDefault()
+    customDragCtrl.press(colKey, e.clientX, e.clientY)
+  }
+
+  const handleCustomDragPointerMove = (e: React.PointerEvent) => {
+    if (customDragCtrl.isPending()) {
+      const started = customDragCtrl.tryStart(e.clientX, e.clientY)
+      if (started) {
+        const rects: SortableRect[] = []
+        // The panel lives in the toolbar, OUTSIDE the rootRef div — collect
+        // from the panel element itself (e.currentTarget is the panel).
+        ;(e.currentTarget as HTMLElement)
+          .querySelectorAll('[data-iris-table-column-settings-row]')
+          .forEach((el) => {
+            const r = (el as HTMLElement).getBoundingClientRect()
+            const id = (el as HTMLElement).getAttribute('data-iris-table-column-settings-row')
+            if (id) rects.push({ id, left: r.left, top: r.top, width: r.width, height: r.height })
+          })
+        customRectsRef.current = rects
+      }
+    }
+    if (customDragCtrl.getState().activeId !== null) {
+      customDragCtrl.moveOver({ x: e.clientX, y: e.clientY }, customRectsRef.current)
+    }
+  }
+
+  const handleCustomDragPointerUp = () => {
+    if (customDragCtrl.isPending()) {
+      customDragCtrl.cancel()
+      return
+    }
+    const { activeId, overId } = customDragCtrl.end()
+    if (activeId !== null && overId !== null && activeId !== overId) {
+      setDraftOrder((prev) => {
+        const from = prev.indexOf(activeId)
+        const to = prev.indexOf(overId)
+        if (from < 0 || to < 0 || from === to) return prev
+        const next = [...prev]
+        const [moved] = next.splice(from, 1)
+        next.splice(to, 0, moved)
+        return next
+      })
+    }
+    customRectsRef.current = []
+  }
+
+  const handleCustomConfirm = () => {
+    setColumnSettingsOpen(false)
+    onColumnOrderChange?.(draftOrder)
+  }
+
+  const handleCustomReset = () => {
+    onColumnVisibilityChange?.({ ...(visibilitySnapshotRef.current ?? {}) })
+    onColumnOrderChange?.(undefined)
+    setDraftOrder(safeColumns.map((c) => c.key))
+    setCustomSearch('')
   }
   const rowDragActiveId = rowDragState.activeId
   const rowDragOverId = rowDragState.overId
@@ -3657,7 +3783,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               <button
                 type="button"
                 data-iris-table-toolbar-columns=""
-                onClick={() => setColumnSettingsOpen((v) => !v)}
+                onClick={toggleColumnSettings}
                 style={{
                   border: 'none',
                   background: 'transparent',
@@ -3673,6 +3799,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
               {columnSettingsOpen ? (
                 <div
                   data-iris-table-column-settings=""
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      e.stopPropagation()
+                      setColumnSettingsOpen(false)
+                    }
+                  }}
+                  onPointerMove={handleCustomDragPointerMove}
+                  onPointerUp={handleCustomDragPointerUp}
                   style={{
                     position: 'absolute',
                     right: 0,
@@ -3683,30 +3817,114 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     borderRadius: 'var(--iris-radius-md, 6px)',
                     boxShadow: 'var(--iris-shadow-lg)',
                     padding: 'var(--iris-space-xs, 8px)',
-                    minWidth: 160,
+                    minWidth: 200,
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 'var(--iris-space-xxs, 4px)',
+                    gap: 'var(--iris-space-xs, 8px)',
                   }}
                 >
-                  {safeColumns.map((col) => (
-                    <label
-                      key={col.key}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--iris-space-xs, 8px)',
-                        cursor: 'pointer',
-                      }}
+                  <input
+                    type="text"
+                    data-iris-table-column-settings-search=""
+                    aria-label={t('table.customConfig.search')}
+                    placeholder={t('table.customConfig.search')}
+                    value={customSearch}
+                    onChange={(e) => setCustomSearch(e.target.value)}
+                    style={{
+                      border: '1px solid var(--iris-border)',
+                      borderRadius: 'var(--iris-radius-sm, 4px)',
+                      background: 'var(--iris-surface)',
+                      color: 'var(--iris-foreground)',
+                      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                      fontSize: 'var(--iris-font-size-sm, 13px)',
+                      outline: 'none',
+                    }}
+                  />
+                  <div
+                    data-iris-table-column-settings-list=""
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 'var(--iris-space-xxs, 4px)',
+                      maxHeight: 240,
+                      overflowY: 'auto',
+                    }}
+                  >
+                    {customPanelColumns.map((col) => (
+                      <div
+                        key={col.key}
+                        data-iris-table-column-settings-row={col.key}
+                        data-iris-column-settings-drag-active={
+                          customDragActiveId === col.key ? 'true' : undefined
+                        }
+                        data-iris-column-settings-drag-over={
+                          customDragOverId === col.key ? 'true' : undefined
+                        }
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 'var(--iris-space-xs, 8px)',
+                          cursor: 'pointer',
+                          padding: 'var(--iris-space-xxs, 4px)',
+                          borderRadius: 'var(--iris-radius-sm, 4px)',
+                          background:
+                            customDragActiveId === col.key
+                              ? 'var(--iris-surface-hover)'
+                              : customDragOverId === col.key
+                                ? 'var(--iris-surface-selected, rgba(99, 102, 241, 0.12))'
+                                : 'transparent',
+                        }}
+                      >
+                        <span
+                          data-iris-table-column-settings-handle=""
+                          aria-hidden="true"
+                          onPointerDown={(e) => handleCustomDragPointerDown(e, col.key)}
+                          style={{
+                            cursor: 'grab',
+                            color: 'var(--iris-muted)',
+                            fontSize: 'var(--iris-font-size-sm, 13px)',
+                            userSelect: 'none',
+                          }}
+                        >
+                          ⠿
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={columnVisibility?.[col.key] !== false}
+                          onChange={() => toggleColumnVisibility(col.key)}
+                        />
+                        <span style={{ color: 'var(--iris-foreground)' }}>
+                          {col.title ?? col.key}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: 'var(--iris-space-xs, 8px)',
+                      borderTop: '1px solid var(--iris-border)',
+                      paddingTop: 'var(--iris-space-xs, 8px)',
+                    }}
+                  >
+                    <IrisButton
+                      size="sm"
+                      variant="outline"
+                      data-iris-table-column-settings-reset=""
+                      onClick={handleCustomReset}
                     >
-                      <input
-                        type="checkbox"
-                        checked={columnVisibility[col.key] !== false}
-                        onChange={() => toggleColumnVisibility(col.key)}
-                      />
-                      {col.title ?? col.key}
-                    </label>
-                  ))}
+                      {toolbar.customConfig?.resetText ?? t('table.customConfig.reset')}
+                    </IrisButton>
+                    <IrisButton
+                      size="sm"
+                      variant="solid"
+                      data-iris-table-column-settings-confirm=""
+                      onClick={handleCustomConfirm}
+                    >
+                      {t('table.filterConfirm')}
+                    </IrisButton>
+                  </div>
                 </div>
               ) : null}
             </>

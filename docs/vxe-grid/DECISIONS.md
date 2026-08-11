@@ -292,3 +292,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-r-review.md [ok]: Summary: **Verification run:** react test 1738/1738 ✓ · typecheck ✓ · lint 0 errors ✓ · build ✓ · audit 0 vulnerabilities ✓ · che
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-r-review.md
+
+## 2026-08-10 18:55:08 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-s-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-s-baseline.md

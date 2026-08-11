@@ -4,6 +4,7 @@ export {
   type IrisTableColumn,
   type IrisTableCellClickParams,
   type IrisTableContextMenuParams,
+  type IrisTableCustomConfig,
   type IrisTableProxyQueryParams,
   type IrisTableSeqMethodParams,
   type IrisTableColumnWidths,

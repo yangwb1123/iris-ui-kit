@@ -49,6 +49,8 @@ export const zhCNMessages: Record<string, string> = {
   'table.retry': '重试',
   'table.refresh': '刷新',
   'table.columnSettings': '列设置',
+  'table.customConfig.search': '搜索列',
+  'table.customConfig.reset': '重置',
   'table.import': '导入 CSV',
   'table.export': '导出',
   'table.formSubmit': '查询',

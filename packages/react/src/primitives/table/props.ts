@@ -5,6 +5,7 @@ import type {
   IrisTableColumn,
   IrisTableColumnWidths,
   IrisTableContextMenuParams,
+  IrisTableCustomConfig,
   IrisTableFooterMethodParams,
   IrisTableFormField,
   IrisTableRenderDetail,
@@ -20,9 +21,8 @@ import type {
 
 /**
  * vxe-grid proxyConfig parity — the server-side data proxy (query slice).
- * When set, `data` is ignored: rows come from `query` (paged), and the table
- * renders a pager below the body. Edit write-back keeps working — committed
- * edits update the live rows locally until the next refetch replaces them.
+ * When set, `data` is ignored: rows come from `query` (paged), the table
+ * renders a pager below the body, and edit write-back keeps working.
  */
 export interface IrisTableProxyConfig<Row extends Record<string, unknown>> {
   /**
@@ -52,9 +52,8 @@ export interface IrisTableProxyConfig<Row extends Record<string, unknown>> {
 
 /**
  * Search-form configuration (vxe-grid formConfig parity). Renders a field row
- * above the toolbar (or the table root). Submit merges the values into the
- * table filters: client-side via the existing `filteredData` path, or into the
- * proxy query (`setParams({ filters, page: 1 })`) when `proxyConfig` is set.
+ * above the toolbar; submit merges values into the filters (client-side or
+ * through the proxy query when `proxyConfig` is set).
  */
 export interface IrisTableFormConfig {
   fields: IrisTableFormField[]
@@ -69,12 +68,10 @@ export interface IrisTableFormConfig {
 }
 
 /**
- * Imperative row operations (vxe-grid insert/remove/setRow parity, simplified
- * to key addressing). Assigned to `tableRef.current` on mount; every op
- * applies a core pure helper to the live row list, commits through the same
- * write-back channel as cell edits, and fires `onDataChange` with the new
- * list. Not-found keys are silent no-ops (the core helpers return the
- * original reference).
+ * Imperative row operations (vxe-grid insert/remove/setRow parity, key
+ * addressing). Assigned to `tableRef.current` on mount; every op applies a
+ * core pure helper, commits through the cell-edit write-back channel and
+ * fires `onDataChange`. Missing keys are silent no-ops.
  */
 export interface IrisTableHandle<Row extends Record<string, unknown> = Record<string, unknown>> {
   /** Insert a row at `index` (default: end). A missing `rowKeyField` value gets an auto id. */
@@ -236,7 +233,6 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   onColumnWidthsChange?: (next: IrisTableColumnWidths) => void
   /** Called when a data row is clicked. Interactive child controls stop propagation. */
   onRowClick?: (row: Row, rowIndex: number) => void
-  /** Called when an inline-editable cell is committed with a changed value. */
   /**
    * Column visibility (vxe-grid columnConfig.visible parity). Map of
    * column key → visible (default true). Hidden columns are not rendered.
@@ -244,20 +240,15 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   columnVisibility?: Record<string, boolean>
   /** Fired when visibility changes (parent owns the map). */
   onColumnVisibilityChange?: (next: Record<string, boolean>) => void
-  /**
-   * Client-side filters (vxe-grid filterConfig parity, local mode). Map of
-   * column key → filter text; rows are filtered with the core filterSort
-   * material (substring, case-insensitive).
-   */
+  /** Controlled column order (vxe customConfig parity): the panel's drag list reorders these keys; unnamed keys follow in source order, unknown keys ignored. Top-level columns only. */
+  columnOrder?: string[]
+  /** Fired when the panel confirms a new order. `undefined` clears the order (parent drops `columnOrder`). */
+  onColumnOrderChange?: (order: string[] | undefined) => void
+  /** Client-side filters (vxe-grid filterConfig parity, local mode): column key → filter text; rows filtered with the core filterSort material (substring, case-insensitive). */
   filters?: Record<string, string>
   /** Fired when a filter value changes (parent owns the map). */
   onFiltersChange?: (next: Record<string, string>) => void
-  /**
-   * Per-column checked filter sets (vxe filter-multiple parity, batch I):
-   * column key → values OR-matched against the raw `String(value)` of each
-   * row. Controlled — updates flow through `onFilterValuesChange`; without a
-   * handler the map is read-only (same pattern as `filters`).
-   */
+  /** Per-column checked filter sets (vxe filter-multiple parity): column key → values OR-matched against the raw `String(value)` of each row. Controlled via `onFilterValuesChange`; without a handler read-only. */
   filterValues?: import('./types').IrisTableFilterValues
   /** Fired when the filter panel confirms or clears a column's checked set. */
   onFilterValuesChange?: (next: import('./types').IrisTableFilterValues) => void
@@ -270,6 +261,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
     onRefresh?: () => void
     /** Show the column-visibility toggle button. */
     columnSettings?: boolean
+    /** Custom column panel options (vxe customConfig parity): the columnSettings button opens the full panel (search + drag reorder + visibility toggles + reset) instead of the plain checkbox menu. */
+    customConfig?: IrisTableCustomConfig
     /** Enable the CSV import button. Receives parsed rows (header → keys). */
     onImport?: (rows: Record<string, unknown>[]) => void
     /** Fired by the export button (vxe toolbar export parity, batch L). */

@@ -36408,10 +36408,22 @@
           "description": "Fired when visibility changes (parent owns the map)."
         },
         {
+          "name": "columnOrder",
+          "type": "string[]",
+          "optional": true,
+          "description": "Controlled column order (vxe customConfig parity): the panel's drag list reorders these keys; unnamed keys follow in source order, unknown keys ignored. Top-level columns only."
+        },
+        {
+          "name": "onColumnOrderChange",
+          "type": "(order: string[] | undefined) => void",
+          "optional": true,
+          "description": "Fired when the panel confirms a new order. `undefined` clears the order (parent drops `columnOrder`)."
+        },
+        {
           "name": "filters",
           "type": "Record<string, string>",
           "optional": true,
-          "description": "Client-side filters (vxe-grid filterConfig parity, local mode). Map of column key → filter text; rows are filtered with the core filterSort material (substring, case-insensitive)."
+          "description": "Client-side filters (vxe-grid filterConfig parity, local mode): column key → filter text; rows filtered with the core filterSort material (substring, case-insensitive)."
         },
         {
           "name": "onFiltersChange",
@@ -36423,7 +36435,7 @@
           "name": "filterValues",
           "type": "import('./types').IrisTableFilterValues",
           "optional": true,
-          "description": "Per-column checked filter sets (vxe filter-multiple parity, batch I): column key → values OR-matched against the raw `String(value)` of each row. Controlled — updates flow through `onFilterValuesChange`; without a handler the map is read-only (same pattern as `filters`)."
+          "description": "Per-column checked filter sets (vxe filter-multiple parity): column key → values OR-matched against the raw `String(value)` of each row. Controlled via `onFilterValuesChange`; without a handler read-only."
         },
         {
           "name": "onFilterValuesChange",
@@ -37063,10 +37075,22 @@
               "description": "Fired when visibility changes (parent owns the map)."
             },
             {
+              "name": "columnOrder",
+              "type": "string[]",
+              "optional": true,
+              "description": "Controlled column order (vxe customConfig parity): the panel's drag list reorders these keys; unnamed keys follow in source order, unknown keys ignored. Top-level columns only."
+            },
+            {
+              "name": "onColumnOrderChange",
+              "type": "(order: string[] | undefined) => void",
+              "optional": true,
+              "description": "Fired when the panel confirms a new order. `undefined` clears the order (parent drops `columnOrder`)."
+            },
+            {
               "name": "filters",
               "type": "Record<string, string>",
               "optional": true,
-              "description": "Client-side filters (vxe-grid filterConfig parity, local mode). Map of column key → filter text; rows are filtered with the core filterSort material (substring, case-insensitive)."
+              "description": "Client-side filters (vxe-grid filterConfig parity, local mode): column key → filter text; rows filtered with the core filterSort material (substring, case-insensitive)."
             },
             {
               "name": "onFiltersChange",
@@ -37078,7 +37102,7 @@
               "name": "filterValues",
               "type": "import('./types').IrisTableFilterValues",
               "optional": true,
-              "description": "Per-column checked filter sets (vxe filter-multiple parity, batch I): column key → values OR-matched against the raw `String(value)` of each row. Controlled — updates flow through `onFilterValuesChange`; without a handler the map is read-only (same pattern as `filters`)."
+              "description": "Per-column checked filter sets (vxe filter-multiple parity): column key → values OR-matched against the raw `String(value)` of each row. Controlled via `onFilterValuesChange`; without a handler read-only."
             },
             {
               "name": "onFilterValuesChange",
@@ -37410,6 +37434,7 @@
           "events": [
             "onCellClick",
             "onCellEdit",
+            "onColumnOrderChange",
             "onColumnVisibilityChange",
             "onColumnWidthsChange",
             "onCurrentColumnChange",
@@ -37437,6 +37462,7 @@
             "IrisTableColumn",
             "IrisTableColumnWidths",
             "IrisTableContextMenuParams",
+            "IrisTableCustomConfig",
             "IrisTableEditDirtyConfig",
             "IrisTableEditor",
             "IrisTableFilterOption",
@@ -38053,6 +38079,7 @@
         "onColumnWidthsChange",
         "onRowClick",
         "onColumnVisibilityChange",
+        "onColumnOrderChange",
         "onFiltersChange",
         "onFilterValuesChange",
         "onCellEdit",
@@ -38066,8 +38093,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 108,
-        "eventCount": 15
+        "propCount": 110,
+        "eventCount": 16
       }
     },
     {

@@ -3,6 +3,16 @@ export type IrisTableSortDirection = 'asc' | 'desc'
 /** Map of column key → current width in px (after any resizing). */
 export type IrisTableColumnWidths = Record<string, number>
 
+/**
+ * Custom column panel options (vxe-grid customConfig parity, batch S): the
+ * toolbar `columnSettings` button opens the full panel — search, drag reorder,
+ * visibility toggles and reset — in place of the plain checkbox menu.
+ */
+export interface IrisTableCustomConfig {
+  /** Reset button label; defaults to the i18n `table.customConfig.reset` key. */
+  resetText?: string
+}
+
 export type IrisTableEditor = 'text' | 'number' | 'select' | 'textarea'
 
 /** One checkbox option of a filterable column's filter panel (vxe filter-option parity). */

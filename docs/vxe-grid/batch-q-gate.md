@@ -1,26 +1,24 @@
 Gate complete. **Review verdict was FAIL → all 6 concrete fixes applied → full gate passed → committed.**
 
-## Review fixes
+## Review fixes applied
 
-1. **MAJOR – autoResize measured-px pin rejected**: height-not-set mode now renders `height: 100%` on the root (fills AND tracks the parent; the RO observes the root, so a px-pinned root could never re-fire on container growth). The RO measure only gates `fixedHeight` (sticky-header/overflow engagement after a positive measure). Height-set mode unchanged. The 4 autoResize tests rewritten to assert `height: 100%` + `data-iris-table-fixed-height` engagement instead of measured px.
-2. **MAJOR – stale manifest**: `pnpm gen:manifest` regenerated; `check:manifest` now passes ("up to date"). Adds exactly the 3 batch-Q props (`scrollbarConfig` / `editDirtyConfig` / `autoResize`) + 2 types (`IrisTableEditDirtyConfig` / `IrisTableScrollbarConfig`), react only; 155 components × 4 frameworks, `unavailable = 0`.
-3. **MINOR – stale dirty keys on row removal**: `removeRow` / `removeRows` now prune the removed rows' `::`-prefixed dirty-map entries, so a re-added key (insertRow / proxy refetch / paging back) renders clean — no phantom dirty dots. +1 regression test (commit → removeRow → insertRow same key → attr null).
-4. **MINOR – dirty key delimiter**: `${k}:${colKey}` → `${k}::${colKey}` (same `::` as `cellId`; `a:b`/`c` vs `a`/`b:c` can no longer collide). Centralized in a module-level `dirtyKey` helper.
-5. **MINOR – class name aligned to baseline**: `iris-cell-dirty` → `iris-table-cell-dirty` (JSDoc in types.ts/props.ts + test updated).
-6. **MINOR – logical property for RTL**: dirty dot `right: 4px` → `inset-inline-end: 4px` (live TABLE_ROW_CSS + styles.ts mirror); mirrors to the inline-start side in RTL.
+1. **MAJOR — autoResize measured-px pin rejected**: height-not-set mode now renders `height: 100%` on the root (fills AND tracks the parent; the RO observes the root, so a px-pinned root could never re-fire). The RO measure only gates `fixedHeight` (sticky/overflow engagement). 4 tests rewritten to assert `height: 100%` + `data-iris-table-fixed-height` engagement, not measured px.
+2. **MAJOR — stale manifest**: `pnpm gen:manifest` regenerated → `check:manifest` passes; diff adds exactly the 3 props + 2 types (`IrisTableEditDirtyConfig`/`IrisTableScrollbarConfig`).
+3. **MINOR — `removeRow`/`removeRows` prune dirty keys** (prefix-scan delete) + 1 new regression test (commit → removeRow → insertRow same key → clean).
+4. **MINOR — dirty key `::` delimiter** (matches `cellId`; centralized `dirtyKey` helper).
+5. **MINOR — `iris-table-cell-dirty` class** aligned to baseline (JSDoc + test updated).
+6. **MINOR — `inset-inline-end`** logical property for the dirty dot (live CSS + styles.ts mirror).
 
 ## Gate results
 
-- `turbo run test typecheck lint build` → **180/180 tasks**
-- React tests **1722/1722** (1721 + 1 new; 13 batch-Q tests total)
-- Core tests 1249/1249 (untouched)
+- `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks** (react package re-verified after prettier formatting)
+- **React tests 1722/1722** (155 files; 13 batch-Q tests incl. the new removeRow-prune test)
+- Core tests 1249/1249 (untouched, framework-free)
 - Typecheck 0 errors · lint 0 errors (1 pre-existing complexity warning)
-- `pnpm audit` → **0 vulnerabilities**
-- `check:manifest` passes; prettier clean (whole comparison table re-wrapped by prettier due to the new long rows)
-- Comparison doc updated: autoResize / scrollbarConfig / editDirtyConfig rows marked done (react) + 批 Q build row + totals refreshed
+- `pnpm audit` → **0 vulnerabilities** · `check:manifest` passes · prettier clean
 
 ## Commit
 
-- `HEAD` — `feat(table): vxe-grid 批 Q——自动尺寸/滚动条配置/编辑脏标记（react only）`
+**`018f6d64`** — `feat(table): vxe-grid 批 Q——自动尺寸/滚动条配置/编辑脏标记（react only）`
 
-Working tree clean.
+Working tree clean. Comparison doc updated: autoResize / scrollbarConfig / editDirtyConfig rows marked done (react) + 批 Q build row + totals refreshed (react 1722 · core 1249 · 7298 total).

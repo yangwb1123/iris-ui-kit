@@ -272,3 +272,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-q-gate.md [ok]: Review fixes: 1. **MAJOR — autoResize measured-px pin rejected**: height-not-set mode renders `height: 100%` (fills AND tracks the parent); RO measure only gates `fixedHeight`; 4 tests rewritten. 2. **MAJOR — stale manifest**: `pnpm gen:manifest` regenerated; `check:manifest` passes; 3 props + 2 types. 3. **MINOR — removeRow/removeRows prune dirty keys** (+1 regression test). 4. **MINOR — dirty key `::` delimiter** (matches cellId). 5. **MINOR — `iris-table-cell-dirty` class** (baseline spec). 6. **MINOR — `inset-inline-end`** logical property. Gate: `turbo run test typecheck lint build` → **180/180 tasks**; React tests **1722/1722**; core 1249; audit 0.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-q-gate.md
+
+## 2026-08-10 17:10:15 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-q-gate.md [ok]: Review fixes applied: 1. **MAJOR — autoResize measured-px pin rejected**: height-not-set mode now renders `height: 100%` on the root (fills AN; Gate results: - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks** (react package re-verified after prettier fo; Commit: **`018f6d64`** — `feat(table): vxe-grid 批 Q——自动尺寸/滚动条配置/编辑脏标记（react only）`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-q-gate.md

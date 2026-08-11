@@ -484,3 +484,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-z-review.md [ok]: 批 Z Gate — PASS ✅（commit `71fd9289`）: Review verdict PASS（1 Low + 观察项）→ Low 已修复（初始代理 params filters 逗号合并改按 remoteFilter 门控并合并文本 filters，React 对齐）。全仓门: turbo 180/180 · vue 1531/1531（+21）· react 1823 · core 1249 · audit 0 · manifest 155×4 零漂移。comparison doc: 批 Z 四行 + 批 Y 七项标记 ✅ vue，缺口清单刷新（solid/svelte 下一轮）。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-z-gate.md
+
+## 2026-08-11 08:54:38 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-z-gate.md [ok]: 批 Z Gate — PASS ✅: **Review verdict**: PASS (1 Low + observations). Applied the Low finding fix in `packages/vue/src/primitives/table/Table
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-z-gate.md

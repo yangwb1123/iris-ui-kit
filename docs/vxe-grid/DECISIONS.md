@@ -227,3 +227,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-o-gate.md [ok]: 批 O Gate — PASS ✅: **Review verdict was FAIL**（1 MAJOR + 3 MINOR + 4 INFO）→ 全部修复后全门通过。; 修复内容（按 review 逐条）: 1. **MAJOR（gate-blocking）** — manifest 未重生成 → `pnpm gen:manifest` 重生成，diff 恰为 2 个新 prop（`clipConfig`/`fnr`，propCount 91→; 全仓门: - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks** ✅; 提交: | Commit | Message |; 最终测试计数: | Scope | Tests | Files |
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-o-gate.md
+
+## 2026-08-10 15:47:06 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-p-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-p-baseline.md
+
+## 2026-08-10 16:20:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-p-adapt.md [ok]: Report: **Files changed (5 source + 1 new test ≤500 lines):** types.ts +4 types (IrisTableMergeCell/IrisTableSpan/IrisTableFooterSpanParams/IrisTableFooterSpanMethod) · props.ts +7 single-line scanner-clean props (mergeHeaderCells/footerSpanMethod/round/padding/aggregateAccuracy/headerTooltipConfig/footerTooltipConfig) · Table.tsx header merge occupy-skip + renderFooterStack (footerMethod → summary → footerData, own footerOccupyRef) + aggregateAccuracy rounding before renderSummary + header/footer title tooltips + round radius + --iris-cell-pad var · styles.ts BASE_CELL_STYLE var chain · index.ts exports; verification: react typecheck ✅ · react tests 1705/1705 (18 new) ✅ · lint 0 errors ✅ · iris-ui-spec 0 violations ✅ · prettier clean ✅; scanner hygiene: all 7 props captured with full types (verified via parsePropsBody)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-p-adapt.md
+
+## 2026-08-10 16:03:18 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-p-adapt.md [ok]: Report — vxe-grid Batch P (header merge + footer span + round/padding + accuracy + tooltips); Files changed (5 source + 1 new test; core untouched, additive only): | File | Change |; Verification (all pass): - `typecheck` ✅ · `test` **1705/1705** (+18) ✅ · `lint` **0 errors** (1 pre-existing complexity warning) ✅ · `iris-ui-sp; Design note (deviation from baseline literal text): The spec's literal 165-char inline `footerSpanMethod`type cannot survive Prettier (~80-char hug threshold for function-; Unfinished / documented: - Header`rowspan`is inert on the single flat header row (applied for parity, documented); grouped headers +`columnVir
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-p-adapt.md
+
+## 2026-08-10 16:13:02 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-p-review.md [ok]: Verification run: - React tests **1705/1705** ✅ · typecheck 0 errors ✅ · lint 0 errors (1 pre-existing complexity warning) ✅; Findings: 1. **MAJOR (gate-blocking)** — manifest stale: `check:manifest` fails; regen adds exactly the 7 new props (IrisTable rea
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-p-review.md

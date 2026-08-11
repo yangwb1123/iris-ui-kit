@@ -575,8 +575,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   showHeader = true,
   footerData,
   footerMethod,
+  footerSpanMethod,
   headerAlign,
   footerAlign,
+  aggregateAccuracy,
   highlightHoverRow = true,
   height,
   minHeight,
@@ -591,6 +593,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   footerCellStyle,
   onCellClick,
   bordered = true,
+  round = false,
+  padding,
   resizableColumns = false,
   columnWidths: columnWidthsProp,
   defaultColumnWidths,
@@ -613,10 +617,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
   formConfig,
   toolbar,
   tooltipConfig,
+  headerTooltipConfig,
+  footerTooltipConfig,
   contextMenu,
   printable = false,
   seq = false,
   spanMethod,
+  mergeHeaderCells,
   renderDetail,
   rowExpandable,
   defaultExpandedRowKeys,
@@ -1333,6 +1340,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const rowDragState = useStore(rowDragCtrl)
   const rowRectsRef = React.useRef<SortableRect[]>([])
   const spanOccupyRef = React.useRef<Set<string>>(new Set())
+  // Footer occupy set (batch P): footerSpanMethod spans use their own ref so
+  // body spanMethod keys never collide (the body and footer stacks are
+  // independent coordinate spaces).
+  const footerOccupyRef = React.useRef<Set<string>>(new Set())
   const [columnSettingsOpen, setColumnSettingsOpen] = React.useState(false)
   const importFileRef = React.useRef<HTMLInputElement | null>(null)
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2342,8 +2353,27 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // rendered cell lands in the right place even when earlier cells are skipped.
   const colTrack = (i: number): number => (hasDetail ? 1 : 0) + (selectable !== 'none' ? 2 : 1) + i
 
+  // Header merge (batch P, vxe mergeHeaderCells parity): entries keyed by
+  // leaf-column index, row 0 only (the flat header is a single row — rows > 0
+  // are ignored; grouped headers are not merged). `occupied` holds the covered
+  // "row:col" keys; `byCol` maps a merge origin cell to its span. Pure memo,
+  // so no render-order clear is needed (unlike the body's spanOccupyRef).
+  const headerMergePlan = React.useMemo(() => {
+    const byCol = new Map<number, { rowspan?: number; colspan?: number }>()
+    const occupied = new Set<string>()
+    for (const m of mergeHeaderCells ?? []) {
+      if (m.row !== 0) continue
+      byCol.set(m.col, { rowspan: m.rowspan, colspan: m.colspan })
+      const colspan = m.colspan ?? 1
+      const rowspan = m.rowspan ?? 1
+      for (let c = 1; c < colspan; c++) occupied.add(`0:${m.col + c}`)
+      for (let r = 1; r < rowspan; r++) occupied.add(`${r}:${m.col}`)
+    }
+    return { byCol, occupied }
+  }, [mergeHeaderCells])
+
   const baseCellStyle: React.CSSProperties = {
-    padding: '8px 12px',
+    padding: 'var(--iris-cell-pad, var(--iris-cell-pad-y, 8px) 12px)',
     display: 'flex',
     alignItems: 'center',
     minWidth: 0,
@@ -2371,6 +2401,23 @@ export function IrisTable<Row extends Record<string, unknown>>({
           })()
         : String(raw ?? '')
     return content === '' ? undefined : content
+  }
+
+  // Header cell tooltips (vxe header-tooltip-config parity, batch P): a
+  // native `title` on flat + grouped header cells; empty content drops the
+  // tooltip (same pattern as the body cellTooltip).
+  const headerTooltip = (col: IrisTableColumn<Row>): string | undefined => {
+    if (!headerTooltipConfig) return undefined
+    const content = headerTooltipConfig.content?.(col)
+    return content === '' || content == null ? undefined : content
+  }
+
+  // Footer cell tooltips (vxe footer-tooltip-config parity, batch P): a
+  // native `title` on summary / footer-method / footer-data cells.
+  const footerTooltip = (col: IrisTableColumn<Row>): string | undefined => {
+    if (!footerTooltipConfig) return undefined
+    const content = footerTooltipConfig.content?.(col)
+    return content === '' || content == null ? undefined : content
   }
 
   // Header filter trigger (vxe filterConfig parity, batch I): a small icon
@@ -2925,6 +2972,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     rows: Row[],
     groupKey?: string,
     extraStyle?: React.CSSProperties,
+    footerRowIndex?: number,
   ): React.ReactElement => (
     <div
       role="row"
@@ -2944,16 +2992,57 @@ export function IrisTable<Row extends Record<string, unknown>>({
       ) : null}
       {leafColumns.map((col, ci) => {
         if (visibleColSet && !visibleColSet.has(ci)) return null
+        // footerSpanMethod (batch P): same occupy-skip pattern as spanMethod;
+        // `footerRowIndex` is 0-based over the rendered footer stack. Only the
+        // global footer passes an index — group summaries are not spanned.
+        if (
+          footerRowIndex !== undefined &&
+          footerSpanMethod &&
+          footerOccupyRef.current.has(`${footerRowIndex}:${ci}`)
+        )
+          return null
+        const fspan =
+          footerRowIndex !== undefined && footerSpanMethod
+            ? footerSpanMethod({
+                rowIndex: footerRowIndex,
+                columnIndex: ci,
+                columns: leafColumns,
+                data: rows,
+              })
+            : null
+        // Footer rowspan is inert (review-fixed): each footer row is its own
+        // grid container, so `gridRowEnd` can never cover another row — and
+        // occupying later rows would make their cells silently disappear.
+        // Only colspan participates in the occupy-skip pattern.
+        const fColspan = fspan?.colspan ?? 1
+        if (footerRowIndex !== undefined && fColspan > 1) {
+          for (let c = 1; c < fColspan; c++)
+            footerOccupyRef.current.add(`${footerRowIndex}:${ci + c}`)
+        }
         const op = col.summary
-        const value = op ? aggregate(rows, (r) => getCellValue(r, col), op) : null
+        const rawValue = op ? aggregate(rows, (r) => getCellValue(r, col), op) : null
+        // aggregateAccuracy (batch P): the single rounding point for summary
+        // values (global + per-group) — finite numbers only, before
+        // `renderSummary` so custom renderers see the rounded value. Values
+        // outside 0–100 are ignored (toFixed RangeError guard).
+        const accuracy =
+          aggregateAccuracy !== undefined && aggregateAccuracy >= 0 && aggregateAccuracy <= 100
+            ? aggregateAccuracy
+            : undefined
+        const value =
+          rawValue != null && accuracy !== undefined && Number.isFinite(rawValue)
+            ? Number(rawValue.toFixed(accuracy))
+            : rawValue
         return (
           <div
             key={col.key}
             role="cell"
             data-iris-table-cell={col.key}
             data-iris-table-summary-cell={op ? '' : undefined}
+            title={footerTooltip(col)}
             style={{
               ...baseCellStyle,
+              ...(fColspan > 1 ? { gridColumnEnd: `span ${fColspan}` } : null),
               justifyContent: justifyFor(footerAlign ?? col.align),
               ...pinnedStyle(col.key),
             }}
@@ -2980,6 +3069,167 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // generic `Row` type param defeats `'kind' in` narrowing.
   const virtualItems: BodyPlanEntry[] =
     groupPlan ?? bodyData.map((row, rowIndex) => ({ kind: 'row' as const, row, rowIndex }))
+
+  // Footer stack (batch P): footerMethod rows → summary row → footerData rows
+  // — in that order, whichever render (footerMethod REPLACES the summary op
+  // row; footerData renders below, even with an empty body). footerSpanMethod
+  // receives a 0-based rowIndex over this rendered stack; spans share the
+  // occupy-skip pattern of spanMethod but use their own ref so body keys never
+  // collide. Group summary rows are not part of the stack.
+  const renderFooterStack = (): React.ReactNode => {
+    if (tableError || tableLoading) return null
+    if (footerSpanMethod) footerOccupyRef.current.clear()
+    const nodes: React.ReactNode[] = []
+    let fi = 0
+    if (bodyData.length > 0) {
+      const methodRows = footerMethod
+        ? footerMethod({ columns: leafColumns, data: bodyData })
+        : null
+      if (methodRows) {
+        for (const footerRow of methodRows) {
+          const rowIndex = fi
+          fi += 1
+          nodes.push(
+            <div
+              key={String((footerRow as Record<string, unknown>)[rowKey] ?? rowIndex)}
+              role="row"
+              data-iris-table-row="summary"
+              data-iris-table-footer-method-row={String(rowIndex)}
+              style={{
+                display: 'grid',
+                gridTemplateColumns,
+                fontWeight: 600,
+                borderTop: rowIndex === 0 ? '2px solid var(--iris-border)' : borderStyle,
+                background: 'var(--iris-surface)',
+              }}
+            >
+              {selectable !== 'none' ? (
+                <div role="cell" data-iris-table-cell="__selection" style={baseCellStyle} />
+              ) : null}
+              {leafColumns.map((col, ci) => {
+                if (visibleColSet && !visibleColSet.has(ci)) return null
+                if (footerSpanMethod && footerOccupyRef.current.has(`${rowIndex}:${ci}`))
+                  return null
+                const fspan = footerSpanMethod
+                  ? footerSpanMethod({
+                      rowIndex,
+                      columnIndex: ci,
+                      columns: leafColumns,
+                      data: bodyData,
+                    })
+                  : null
+                // Rowspan inert (review-fixed): see renderSummaryRow.
+                const fColspan = fspan?.colspan ?? 1
+                if (fColspan > 1) {
+                  for (let c = 1; c < fColspan; c++)
+                    footerOccupyRef.current.add(`${rowIndex}:${ci + c}`)
+                }
+                const value = getCellValue(footerRow, col)
+                return (
+                  <div
+                    key={col.key}
+                    role="cell"
+                    data-iris-table-cell={col.key}
+                    data-iris-table-footer-method-cell=""
+                    className={footerCellClassName?.(col, rowIndex)}
+                    title={footerTooltip(col)}
+                    style={{
+                      ...baseCellStyle,
+                      ...(fColspan > 1 ? { gridColumnEnd: `span ${fColspan}` } : null),
+                      justifyContent: justifyFor(footerAlign ?? col.align),
+                      ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
+                      ...(footerCellStyle?.(col, rowIndex) ?? null),
+                    }}
+                  >
+                    {String(value ?? '')}
+                  </div>
+                )
+              })}
+            </div>,
+          )
+        }
+      } else if (leafColumns.some((c) => c.summary)) {
+        const rowIndex = fi
+        fi += 1
+        nodes.push(
+          <React.Fragment key={`summary:${rowIndex}`}>
+            {renderSummaryRow(bodyData, undefined, undefined, rowIndex)}
+          </React.Fragment>,
+        )
+      }
+    }
+    if (footerData && footerData.length > 0) {
+      nodes.push(
+        <div key="iris-table-footer-data" data-iris-table-footer="" style={{ display: 'contents' }}>
+          {footerData.map((footerRow, fd) => {
+            const rowIndex = fi
+            fi += 1
+            return (
+              <div
+                key={String((footerRow as Record<string, unknown>)[rowKey] ?? fd)}
+                role="row"
+                data-iris-table-row={`footer-${fd}`}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns,
+                  fontWeight: 600,
+                  background: 'var(--iris-surface)',
+                }}
+              >
+                {selectable !== 'none' ? (
+                  <div role="cell" data-iris-table-cell="__selection" style={baseCellStyle} />
+                ) : null}
+                {leafColumns.map((col, ci) => {
+                  if (visibleColSet && !visibleColSet.has(ci)) return null
+                  if (footerSpanMethod && footerOccupyRef.current.has(`${rowIndex}:${ci}`))
+                    return null
+                  const fspan = footerSpanMethod
+                    ? footerSpanMethod({
+                        rowIndex,
+                        columnIndex: ci,
+                        columns: leafColumns,
+                        data: bodyData,
+                      })
+                    : null
+                  // Rowspan inert (review-fixed): see renderSummaryRow.
+                  const fColspan = fspan?.colspan ?? 1
+                  if (fColspan > 1) {
+                    for (let c = 1; c < fColspan; c++)
+                      footerOccupyRef.current.add(`${rowIndex}:${ci + c}`)
+                  }
+                  const value = getCellValue(footerRow, col)
+                  return (
+                    <div
+                      key={col.key}
+                      role="cell"
+                      data-iris-table-cell={col.key}
+                      data-iris-table-footer-cell=""
+                      className={footerCellClassName?.(col, fd)}
+                      title={footerTooltip(col)}
+                      style={{
+                        ...baseCellStyle,
+                        ...(fColspan > 1 ? { gridColumnEnd: `span ${fColspan}` } : null),
+                        justifyContent: justifyFor(
+                          footerAlign ??
+                            col.align ??
+                            (typeof value === 'number' ? 'right' : 'left'),
+                        ),
+                        ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
+                        ...(footerCellStyle?.(col, fd) ?? null),
+                      }}
+                    >
+                      {String(value ?? '')}
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>,
+      )
+    }
+    return nodes.length > 0 ? nodes : null
+  }
 
   return (
     <>
@@ -3383,7 +3633,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
           color: 'var(--iris-foreground)',
           fontSize: 'var(--iris-font-size-md, 14px)',
           border: borderStyle,
-          borderRadius: 'var(--iris-radius-md, 6px)',
+          borderRadius:
+            bordered && round ? 'var(--iris-radius-lg, 10px)' : 'var(--iris-radius-md, 6px)',
+          // Batch P: the `padding` prop overrides every cell's padding through
+          // the --iris-cell-pad var (BASE_CELL_STYLE fallback chain).
+          ...(padding ? ({ '--iris-cell-pad': padding } as React.CSSProperties) : null),
           // Column virtualization turns the table into a horizontal scroll container.
           overflow: fixedHeight ? 'auto' : columnVirtualization ? 'auto' : 'hidden',
           ...(fixedHeight ? { height, maxHeight, minHeight } : null),
@@ -3464,6 +3718,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     data-iris-col-drag-active={colDragActive === col.key ? 'true' : undefined}
                     data-iris-col-drag-over={colDragOver === col.key ? 'true' : undefined}
                     className={headerCellClassName?.(col)}
+                    title={headerTooltip(col)}
                     onPointerDown={
                       columnDrag && isLeaf ? (e) => handleColDragPointerDown(e, col.key) : undefined
                     }
@@ -3582,6 +3837,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
             ) : null}
             {displayColumns.map((col, ci) => {
               if (visibleColSet && !visibleColSet.has(ci)) return null
+              // Header merge (batch P): covered cells render null; a merge
+              // origin cell gets gridColumnEnd/gridRowEnd spans (row 0 only).
+              // Fail-closed under columnVirtualization (JSDoc parity): the
+              // visible-window track shift would misalign the spans.
+              const mergeActive = !!mergeHeaderCells && !columnVirtualization
+              if (mergeActive && headerMergePlan.occupied.has(`0:${ci}`)) return null
+              const mergedCell = mergeActive ? headerMergePlan.byCol.get(ci) : undefined
               const multiIdx = multiSort ? multiSortState.findIndex((s) => s.key === col.key) : -1
               const isSortKey = multiSort ? multiIdx >= 0 : sort?.key === col.key
               const dir: IrisTableSortDirection | undefined = isSortKey
@@ -3621,11 +3883,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     columnDrag ? (e) => handleColDragPointerDown(e, col.key) : undefined
                   }
                   className={headerCellClassName?.(col)}
+                  title={headerTooltip(col)}
                   data-sortable={col.sortable ? 'true' : undefined}
                   data-sort-direction={dir}
                   style={{
                     ...baseCellStyle,
                     ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
+                    ...(mergedCell && (mergedCell.colspan ?? 1) > 1
+                      ? { gridColumnEnd: `span ${mergedCell.colspan}` }
+                      : null),
+                    ...(mergedCell && (mergedCell.rowspan ?? 1) > 1
+                      ? { gridRowEnd: `span ${mergedCell.rowspan}` }
+                      : null),
                     justifyContent: justifyFor(headerAlign ?? col.align ?? 'left'),
                     background: 'var(--iris-surface)',
                     borderBottom: borderStyle,
@@ -3775,111 +4044,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
           bodyData.map((row, idx) => renderBodyEntry(row, idx))
         )}
 
-        {/* Summary / footer row: each column with a `summary` op aggregates over
-          the full sorted dataset (the core `aggregate` material). */}
-        {!tableError &&
-        !tableLoading &&
-        bodyData.length > 0 &&
-        !footerMethod &&
-        leafColumns.some((c) => c.summary)
-          ? renderSummaryRow(bodyData)
-          : null}
-
-        {/* Custom footer rows (vxe footer-method parity, batch N): when
-          present, REPLACES the summary op path with one grid row per returned
-          entry (cell value = entry[col.key]), same row styling as the summary
-          row; `footerData` still renders below. */}
-        {!tableError && !tableLoading && bodyData.length > 0 && footerMethod
-          ? footerMethod({ columns: leafColumns, data: bodyData }).map((footerRow, fi) => (
-              <div
-                key={String((footerRow as Record<string, unknown>)[rowKey] ?? fi)}
-                role="row"
-                data-iris-table-row="summary"
-                data-iris-table-footer-method-row={String(fi)}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns,
-                  fontWeight: 600,
-                  borderTop: fi === 0 ? '2px solid var(--iris-border)' : borderStyle,
-                  background: 'var(--iris-surface)',
-                }}
-              >
-                {selectable !== 'none' ? (
-                  <div role="cell" data-iris-table-cell="__selection" style={baseCellStyle} />
-                ) : null}
-                {leafColumns.map((col, ci) => {
-                  if (visibleColSet && !visibleColSet.has(ci)) return null
-                  const value = getCellValue(footerRow, col)
-                  return (
-                    <div
-                      key={col.key}
-                      role="cell"
-                      data-iris-table-cell={col.key}
-                      data-iris-table-footer-method-cell=""
-                      className={footerCellClassName?.(col, fi)}
-                      style={{
-                        ...baseCellStyle,
-                        justifyContent: justifyFor(footerAlign ?? col.align),
-                        ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
-                        ...(footerCellStyle?.(col, fi) ?? null),
-                      }}
-                    >
-                      {String(value ?? '')}
-                    </div>
-                  )
-                })}
-              </div>
-            ))
-          : null}
-
-        {/* Custom footer rows (vxe footer-data parity): one grid row per entry,
-          rendered below the summary row. */}
-        {!tableError && !tableLoading && footerData && footerData.length > 0 ? (
-          <div data-iris-table-footer="" style={{ display: 'contents' }}>
-            {footerData.map((footerRow, fi) => (
-              <div
-                key={String((footerRow as Record<string, unknown>)[rowKey] ?? fi)}
-                role="row"
-                data-iris-table-row={`footer-${fi}`}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns,
-                  fontWeight: 600,
-                  background: 'var(--iris-surface)',
-                }}
-              >
-                {selectable !== 'none' ? (
-                  <div role="cell" data-iris-table-cell="__selection" style={baseCellStyle} />
-                ) : null}
-                {leafColumns.map((col, ci) => {
-                  if (visibleColSet && !visibleColSet.has(ci)) return null
-                  const value = getCellValue(footerRow, col)
-                  return (
-                    <div
-                      key={col.key}
-                      role="cell"
-                      data-iris-table-cell={col.key}
-                      data-iris-table-footer-cell=""
-                      className={footerCellClassName?.(col, fi)}
-                      style={{
-                        ...baseCellStyle,
-                        justifyContent: justifyFor(
-                          footerAlign ??
-                            col.align ??
-                            (typeof value === 'number' ? 'right' : 'left'),
-                        ),
-                        ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
-                        ...(footerCellStyle?.(col, fi) ?? null),
-                      }}
-                    >
-                      {String(value ?? '')}
-                    </div>
-                  )
-                })}
-              </div>
-            ))}
-          </div>
-        ) : null}
+        {/* Footer stack (batch P): footerMethod rows → summary row →
+          footerData rows — whichever render, in that order; footerSpanMethod
+          spans across it with a stack-wide 0-based rowIndex. */}
+        {renderFooterStack()}
 
         {/* Server-side pager (vxe-grid proxyConfig parity): driven by the
           controller's page/pageSize/total; page changes call setParams and

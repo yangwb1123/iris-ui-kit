@@ -13,6 +13,8 @@ import type {
   IrisTableTooltipConfig,
   IrisTableValidConfig,
   IrisTableVirtualOptions,
+  IrisTableMergeCell,
+  IrisTableFooterSpanMethod,
 } from './types'
 
 /**
@@ -162,6 +164,20 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * full (sorted + filtered) body rows.
    */
   footerMethod?: (params: IrisTableFooterMethodParams<Row>) => Row[]
+  /**
+   * Footer cell merge (vxe footer-span-method parity, batch P): return
+   * `{ rowspan, colspan }` for a footer cell — both default 1. `colspan` > 1
+   * makes the cell span adjacent cells (the covered cells are skipped, same
+   * occupy pattern as `spanMethod`); `rowspan` is inert — each footer row is
+   * its own grid container, so `gridRowEnd` cannot cover another row and the
+   * later rows' cells must not disappear (mirrors `mergeHeaderCells`).
+   * Applies over the rendered footer stack
+   * in this order: footerMethod rows → summary row → footerData rows
+   * (whichever render); `rowIndex` is 0-based over that stack. `columns` =
+   * leaf columns, `data` = the full (sorted + filtered) body rows. Group
+   * summary rows are not part of the stack.
+   */
+  footerSpanMethod?: IrisTableFooterSpanMethod<Row>
   /** Header cell alignment (vxe header-align parity): `headerAlign` wins over
    * the column's `align`, then 'left'. Applies to flat + grouped headers. */
   headerAlign?: IrisTableAlign
@@ -169,6 +185,16 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * wins over the column's `align`. Applies to summary, footer-method and
    * footer-data cells. */
   footerAlign?: IrisTableAlign
+  /**
+   * Decimal places for summary/footer aggregate values (vxe
+   * aggregateAccuracyConfig parity, batch P): a finite numeric op result is
+   * rounded via `Number(value.toFixed(n))` at the single summary point
+   * (global + per-group summaries), before `renderSummary` — custom renderers
+   * see the rounded value. Non-finite results are left untouched. Values
+   * outside 0–100 (inclusive) are ignored — no rounding (`toFixed`
+   * RangeError guard). Default: no rounding.
+   */
+  aggregateAccuracy?: number
   /** Per-row class hook (vxe row-class-name parity). */
   rowClassName?: (row: Row, rowIndex: number) => string
   /** Per-cell class hook (vxe cell-class-name parity). */
@@ -188,6 +214,19 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   /** Cell click (vxe cell-click parity). Fired after internal handlers. */
   onCellClick?: (params: import('./types').IrisTableCellClickParams<Row>) => void
   bordered?: boolean
+  /**
+   * Rounded root corners (vxe-grid round parity, batch P): the root gets
+   * `border-radius: var(--iris-radius-lg, 10px)` when `bordered && round`;
+   * otherwise the default md radius applies.
+   */
+  round?: boolean
+  /**
+   * Cell padding override (vxe-grid deprecated `padding` parity, batch P):
+   * sets `--iris-cell-pad` on the root; every cell padding reads
+   * `var(--iris-cell-pad, var(--iris-cell-pad-y, 8px) 12px)`, so the size
+   * presets (small/mini) still win through `--iris-cell-pad-y`.
+   */
+  padding?: string
   /** Enable column resizing (drag the header's trailing edge or focus + arrow keys). */
   resizableColumns?: boolean
   /** Controlled per-column pixel widths, keyed by column `key`. */
@@ -260,6 +299,15 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
     rowIndex: number
     columnIndex: number
   }) => { rowspan?: number; colspan?: number } | null | undefined
+  /**
+   * Header merge (vxe-grid mergeHeaderCells parity, batch P): merge entries
+   * keyed by leaf-column index of the FLAT header row (`row` 0 only — rows
+   * > 0 are ignored). A merge cell renders with `gridColumnEnd: span
+   * colspan` / `gridRowEnd: span rowspan`; the covered cells render null.
+   * Grouped headers and `columnVirtualization` are not merged (documented
+   * simplification).
+   */
+  mergeHeaderCells?: IrisTableMergeCell[]
   /** Row drag-sort configuration (composed over core createSortable). */
   rowDrag?: {
     /** Reorder callback — receives the reordered row array (parent owns data). */
@@ -338,6 +386,14 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * regardless of `showAll` (documented simplification, kept simple and
    * explicit). */
   tooltipConfig?: IrisTableTooltipConfig<Row>
+  /** Header cell tooltips (vxe header-tooltip-config parity, batch P): a
+   * native `title` on flat + grouped header cells; empty content drops the
+   * tooltip. */
+  headerTooltipConfig?: { content?: (column: IrisTableColumn<Row>) => string }
+  /** Footer cell tooltips (vxe footer-tooltip-config parity, batch P): a
+   * native `title` on summary / footer-method / footer-data cells; empty
+   * content drops the tooltip. */
+  footerTooltipConfig?: { content?: (column: IrisTableColumn<Row>) => string }
   /**
    * Right-click context menu (vxe-grid contextMenu parity, batch H). Opens on
    * body leaf cells only — header, seq, selection, expand, summary and footer

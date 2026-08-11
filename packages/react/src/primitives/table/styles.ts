@@ -12,7 +12,7 @@ export const STATE_ROW_STYLE: React.CSSProperties = {
 }
 
 export const BASE_CELL_STYLE: React.CSSProperties = {
-  padding: 'var(--iris-cell-pad-y, 8px) 12px',
+  padding: 'var(--iris-cell-pad, var(--iris-cell-pad-y, 8px) 12px)',
   display: 'flex',
   alignItems: 'center',
   minWidth: 0,

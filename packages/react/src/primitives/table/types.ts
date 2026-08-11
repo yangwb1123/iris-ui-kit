@@ -267,3 +267,52 @@ export interface IrisTableTooltipConfig<Row = Record<string, unknown>> {
    */
   content?: (row: Row, column: IrisTableColumn<Row>) => string
 }
+
+/**
+ * One header-merge entry (vxe-grid mergeHeaderCells parity, batch P). The
+ * coordinate space is the FLAT header's leaf-column index: `row` 0 only —
+ * entries with `row` > 0 are ignored (the flat header is a single row), and
+ * grouped headers are NOT merged (documented simplification).
+ */
+export interface IrisTableMergeCell {
+  /** Header row index — only 0 is supported (flat header). */
+  row: number
+  /** Leaf-column index of the merged cell's origin. */
+  col: number
+  /** Columns spanned (gridColumnEnd); the covered cells render null. */
+  colspan?: number
+  /** Rows spanned (gridRowEnd); inert on the single flat header row. */
+  rowspan?: number
+}
+
+/**
+ * Span result shared by `spanMethod` and `footerSpanMethod` (vxe
+ * span-method / footer-span-method parity): both dimensions default to 1;
+ * values > 1 make the cell span adjacent cells, which then render null.
+ * Footer note: `rowspan` is inert in the footer stack (each footer row is
+ * its own grid container — see `footerSpanMethod`).
+ */
+export interface IrisTableSpan {
+  rowspan?: number
+  colspan?: number
+}
+
+/**
+ * Params delivered to `IrisTableProps.footerSpanMethod` (vxe
+ * footer-span-method parity, batch P).
+ */
+export interface IrisTableFooterSpanParams<Row = Record<string, unknown>> {
+  /** 0-based row index over the rendered footer stack (footerMethod rows →
+   * summary row → footerData rows, whichever render). */
+  rowIndex: number
+  columnIndex: number
+  /** Leaf columns of the table (grouped headers flattened). */
+  columns: IrisTableColumn<Row>[]
+  /** Full body rows (sorted + filtered). */
+  data: Row[]
+}
+
+/** Footer cell merge callback (vxe footer-span-method parity, batch P). */
+export type IrisTableFooterSpanMethod<Row = Record<string, unknown>> = (
+  params: IrisTableFooterSpanParams<Row>,
+) => IrisTableSpan | null

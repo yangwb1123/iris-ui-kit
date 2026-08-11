@@ -36264,6 +36264,12 @@
           "description": "Custom footer rows (vxe footer-method parity, batch N): when present, REPLACES the summary op row with one grid row per returned entry — cell value = `entry[col.key]` — with the same row styling as the summary row; `footerData` still renders below. `columns` = leaf columns, `data` = the full (sorted + filtered) body rows."
         },
         {
+          "name": "footerSpanMethod",
+          "type": "IrisTableFooterSpanMethod<Row>",
+          "optional": true,
+          "description": "Footer cell merge (vxe footer-span-method parity, batch P): return `{ rowspan, colspan }` for a footer cell — both default 1. `colspan` > 1 makes the cell span adjacent cells (the covered cells are skipped, same occupy pattern as `spanMethod`); `rowspan` is inert — each footer row is its own grid container, so `gridRowEnd` cannot cover another row and the later rows' cells must not disappear (mirrors `mergeHeaderCells`). Applies over the rendered footer stack in this order: footerMethod rows → summary row → footerData rows (whichever render); `rowIndex` is 0-based over that stack. `columns` = leaf columns, `data` = the full (sorted + filtered) body rows. Group summary rows are not part of the stack."
+        },
+        {
           "name": "headerAlign",
           "type": "IrisTableAlign",
           "optional": true,
@@ -36283,6 +36289,12 @@
             "center",
             "right"
           ]
+        },
+        {
+          "name": "aggregateAccuracy",
+          "type": "number",
+          "optional": true,
+          "description": "Decimal places for summary/footer aggregate values (vxe aggregateAccuracyConfig parity, batch P): a finite numeric op result is rounded via `Number(value.toFixed(n))` at the single summary point (global + per-group summaries), before `renderSummary` — custom renderers see the rounded value. Non-finite results are left untouched. Values outside 0–100 (inclusive) are ignored — no rounding (`toFixed` RangeError guard). Default: no rounding."
         },
         {
           "name": "rowClassName",
@@ -36342,6 +36354,18 @@
           "name": "bordered",
           "type": "boolean",
           "optional": true
+        },
+        {
+          "name": "round",
+          "type": "boolean",
+          "optional": true,
+          "description": "Rounded root corners (vxe-grid round parity, batch P): the root gets `border-radius: var(--iris-radius-lg, 10px)` when `bordered && round`; otherwise the default md radius applies."
+        },
+        {
+          "name": "padding",
+          "type": "string",
+          "optional": true,
+          "description": "Cell padding override (vxe-grid deprecated `padding` parity, batch P): sets `--iris-cell-pad` on the root; every cell padding reads `var(--iris-cell-pad, var(--iris-cell-pad-y, 8px) 12px)`, so the size presets (small/mini) still win through `--iris-cell-pad-y`."
         },
         {
           "name": "resizableColumns",
@@ -36442,6 +36466,12 @@
           "type": "(params: {",
           "optional": true,
           "description": "Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }` for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make the cell span adjacent cells (the spanned cells are skipped)."
+        },
+        {
+          "name": "mergeHeaderCells",
+          "type": "IrisTableMergeCell[]",
+          "optional": true,
+          "description": "Header merge (vxe-grid mergeHeaderCells parity, batch P): merge entries keyed by leaf-column index of the FLAT header row (`row` 0 only — rows > 0 are ignored). A merge cell renders with `gridColumnEnd: span colspan` / `gridRowEnd: span rowspan`; the covered cells render null. Grouped headers and `columnVirtualization` are not merged (documented simplification)."
         },
         {
           "name": "rowDrag",
@@ -36597,6 +36627,18 @@
           "type": "IrisTableTooltipConfig<Row>",
           "optional": true,
           "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. Truncation gating is not implemented — titles render on every cell regardless of `showAll` (documented simplification, kept simple and"
+        },
+        {
+          "name": "headerTooltipConfig",
+          "type": "{ content?: (column: IrisTableColumn<Row>) => string }",
+          "optional": true,
+          "description": "native `title` on flat + grouped header cells; empty content drops the"
+        },
+        {
+          "name": "footerTooltipConfig",
+          "type": "{ content?: (column: IrisTableColumn<Row>) => string }",
+          "optional": true,
+          "description": "native `title` on summary / footer-method / footer-data cells; empty"
         },
         {
           "name": "contextMenu",
@@ -36829,6 +36871,12 @@
               "description": "Custom footer rows (vxe footer-method parity, batch N): when present, REPLACES the summary op row with one grid row per returned entry — cell value = `entry[col.key]` — with the same row styling as the summary row; `footerData` still renders below. `columns` = leaf columns, `data` = the full (sorted + filtered) body rows."
             },
             {
+              "name": "footerSpanMethod",
+              "type": "IrisTableFooterSpanMethod<Row>",
+              "optional": true,
+              "description": "Footer cell merge (vxe footer-span-method parity, batch P): return `{ rowspan, colspan }` for a footer cell — both default 1. `colspan` > 1 makes the cell span adjacent cells (the covered cells are skipped, same occupy pattern as `spanMethod`); `rowspan` is inert — each footer row is its own grid container, so `gridRowEnd` cannot cover another row and the later rows' cells must not disappear (mirrors `mergeHeaderCells`). Applies over the rendered footer stack in this order: footerMethod rows → summary row → footerData rows (whichever render); `rowIndex` is 0-based over that stack. `columns` = leaf columns, `data` = the full (sorted + filtered) body rows. Group summary rows are not part of the stack."
+            },
+            {
               "name": "headerAlign",
               "type": "IrisTableAlign",
               "optional": true,
@@ -36848,6 +36896,12 @@
                 "center",
                 "right"
               ]
+            },
+            {
+              "name": "aggregateAccuracy",
+              "type": "number",
+              "optional": true,
+              "description": "Decimal places for summary/footer aggregate values (vxe aggregateAccuracyConfig parity, batch P): a finite numeric op result is rounded via `Number(value.toFixed(n))` at the single summary point (global + per-group summaries), before `renderSummary` — custom renderers see the rounded value. Non-finite results are left untouched. Values outside 0–100 (inclusive) are ignored — no rounding (`toFixed` RangeError guard). Default: no rounding."
             },
             {
               "name": "rowClassName",
@@ -36907,6 +36961,18 @@
               "name": "bordered",
               "type": "boolean",
               "optional": true
+            },
+            {
+              "name": "round",
+              "type": "boolean",
+              "optional": true,
+              "description": "Rounded root corners (vxe-grid round parity, batch P): the root gets `border-radius: var(--iris-radius-lg, 10px)` when `bordered && round`; otherwise the default md radius applies."
+            },
+            {
+              "name": "padding",
+              "type": "string",
+              "optional": true,
+              "description": "Cell padding override (vxe-grid deprecated `padding` parity, batch P): sets `--iris-cell-pad` on the root; every cell padding reads `var(--iris-cell-pad, var(--iris-cell-pad-y, 8px) 12px)`, so the size presets (small/mini) still win through `--iris-cell-pad-y`."
             },
             {
               "name": "resizableColumns",
@@ -37007,6 +37073,12 @@
               "type": "(params: {",
               "optional": true,
               "description": "Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }` for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make the cell span adjacent cells (the spanned cells are skipped)."
+            },
+            {
+              "name": "mergeHeaderCells",
+              "type": "IrisTableMergeCell[]",
+              "optional": true,
+              "description": "Header merge (vxe-grid mergeHeaderCells parity, batch P): merge entries keyed by leaf-column index of the FLAT header row (`row` 0 only — rows > 0 are ignored). A merge cell renders with `gridColumnEnd: span colspan` / `gridRowEnd: span rowspan`; the covered cells render null. Grouped headers and `columnVirtualization` are not merged (documented simplification)."
             },
             {
               "name": "rowDrag",
@@ -37164,6 +37236,18 @@
               "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. Truncation gating is not implemented — titles render on every cell regardless of `showAll` (documented simplification, kept simple and"
             },
             {
+              "name": "headerTooltipConfig",
+              "type": "{ content?: (column: IrisTableColumn<Row>) => string }",
+              "optional": true,
+              "description": "native `title` on flat + grouped header cells; empty content drops the"
+            },
+            {
+              "name": "footerTooltipConfig",
+              "type": "{ content?: (column: IrisTableColumn<Row>) => string }",
+              "optional": true,
+              "description": "native `title` on summary / footer-method / footer-data cells; empty"
+            },
+            {
               "name": "contextMenu",
               "type": "{",
               "optional": true,
@@ -37261,9 +37345,12 @@
             "IrisTableFilterOption",
             "IrisTableFilterValues",
             "IrisTableFooterMethodParams",
+            "IrisTableFooterSpanMethod",
+            "IrisTableFooterSpanParams",
             "IrisTableFormConfig",
             "IrisTableFormField",
             "IrisTableHandle",
+            "IrisTableMergeCell",
             "IrisTablePagerConfig",
             "IrisTableProps",
             "IrisTableProxyQueryParams",
@@ -37272,6 +37359,7 @@
             "IrisTableSeqMethodParams",
             "IrisTableSortDirection",
             "IrisTableSortState",
+            "IrisTableSpan",
             "IrisTableTooltipConfig",
             "IrisTableValidConfig",
             "IrisTableVirtualOptions"
@@ -37879,7 +37967,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 93,
+        "propCount": 100,
         "eventCount": 15
       }
     },

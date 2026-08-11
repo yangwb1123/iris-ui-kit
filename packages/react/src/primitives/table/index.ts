@@ -20,6 +20,10 @@ export {
   type IrisTableFormField,
   type IrisTableValidConfig,
   type IrisTableTooltipConfig,
+  type IrisTableMergeCell,
+  type IrisTableFooterSpanMethod,
+  type IrisTableFooterSpanParams,
+  type IrisTableSpan,
   type IrisTableFilterOption,
   type IrisTableFilterValues,
 } from './types'

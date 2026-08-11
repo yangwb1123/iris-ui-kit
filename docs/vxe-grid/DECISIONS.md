@@ -489,3 +489,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-z-gate.md [ok]: 批 Z Gate — PASS ✅: **Review verdict**: PASS (1 Low + observations). Applied the Low finding fix in `packages/vue/src/primitives/table/Table
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-z-gate.md
+
+## 2026-08-11 09:06:44 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aa-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aa-baseline.md
+
+## 2026-08-11 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aa-adapt.md [ok]: 批 AA — solid 适配器对齐（columnVisibility/filters/seq/spanMethod/proxyConfig/multiSort/formConfig/toolbar），core 零改动，react/vue/svelte 未触碰；4 源文件 + 492 行测试（23 用例）；typecheck/test/lint/prettier/spec(0)/manifest(155×4) 全绿。批 AB 接力：filterValues 面板、layouts.pager、settings 面板、spanMethod×columnVirtualization 窗口证明、孤儿 TableHeader/Body/Row 处置。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aa-adapt.md

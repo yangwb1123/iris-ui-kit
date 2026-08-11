@@ -4,6 +4,7 @@ import {
   createSignal,
   For,
   mergeProps,
+  on,
   onCleanup,
   onMount,
   Show,
@@ -11,18 +12,25 @@ import {
 } from 'solid-js'
 import {
   aggregate,
+  buildFormValues,
   buildHeaderMatrix,
+  compareValues,
   computeVirtualRange,
   createCellRange,
   createExpansion,
+  createRemoteTableSource,
   createSelectionModel,
   flattenLeafColumns,
   flattenTree,
+  mergeFormFilters,
   withSortedChildren,
   nextGridCell,
+  seedFormValues,
   type ExpansionModel,
   type GridNavKey,
   type HeaderCell,
+  type RemoteTableSource,
+  type RemoteTableSourceState,
   type TreeRow,
   validateEditRulesAsync,
 } from '@iris-ui-kit/core'
@@ -30,8 +38,13 @@ import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisVirtualScroll } from '../virtual-scroll/IrisVirtualScroll'
+import { IrisPagination } from '../pagination'
+import { IrisButton } from '../button'
+import { IrisFormField } from '../form-field'
+import { IrisInput } from '../input'
+import { IrisSelect } from '../select'
 import type { IrisTableProps } from './props'
-import type { IrisTableColumn, IrisTableColumnWidths } from './types'
+import type { IrisTableColumn, IrisTableColumnWidths, IrisTableSortState } from './types'
 import { useTableSort } from './useTableSort'
 
 export type { IrisTableProps } from './props'
@@ -39,6 +52,15 @@ export type { IrisTableProps } from './props'
 const DEFAULT_COL_WIDTH = 140
 const DEFAULT_MIN_WIDTH = 60
 const RESIZE_STEP = 16
+
+/** Null-proxy snapshot (a STABLE reference is required for the signal seed). */
+const EMPTY_PROXY_STATE: RemoteTableSourceState<never> = {
+  data: [],
+  total: 0,
+  loading: false,
+  error: null,
+  params: { page: 1, pageSize: 10, sort: null, filters: {} },
+}
 
 function resolveInitialWidth(col: IrisTableColumn<Record<string, unknown>>): number {
   if (typeof col.width === 'number') return col.width
@@ -144,23 +166,37 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         | { trigger?: 'click' | 'dblclick' | 'manual'; showAsterisk?: boolean; autoClear?: boolean }
         | undefined,
       columnVirtualization: false,
+      multiSort: false,
+      seq: false,
     },
     props,
   )
 
   const { t } = useI18n()
 
+  // ---- Column visibility (vxe columnConfig.visible parity) ----------------
+  // Filter hidden columns out of every render path (header, body, summary).
+  // Reference-preserving: without the prop the result IS `columns`, so the
+  // flat path is byte-identical with the pre-visibility render path.
+  const displayColumns = createMemo<IrisTableColumn<Row>[]>(() => {
+    const vis = props.columnVisibility
+    if (vis === undefined) return merged.columns
+    return merged.columns.filter((c) => vis[c.key] !== false)
+  })
+
   // ---- Multi-level (grouped) headers ----
   // A column with `children` forms a header GROUP spanning its leaf descendants;
   // the leaves drive the body. When nothing is grouped, `leafColumns` is the
-  // original `columns` (same reference → flat path is byte-identical) and
+  // original `displayColumns` (same reference → flat path is byte-identical) and
   // `headerMatrix` is null (the single-row header renders unchanged).
-  const grouped = createMemo(() => merged.columns.some((c) => c.children && c.children.length > 0))
+  const grouped = createMemo(() =>
+    displayColumns().some((c) => c.children && c.children.length > 0),
+  )
   const leafColumns = createMemo<IrisTableColumn<Row>[]>(() =>
-    grouped() ? flattenLeafColumns(merged.columns) : merged.columns,
+    grouped() ? flattenLeafColumns(displayColumns()) : displayColumns(),
   )
   const headerMatrix = createMemo<HeaderCell<IrisTableColumn<Row>>[][] | null>(() =>
-    grouped() ? buildHeaderMatrix(merged.columns) : null,
+    grouped() ? buildHeaderMatrix(displayColumns()) : null,
   )
 
   // ---- Column widths (opt-in resizing) ----
@@ -200,22 +236,252 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     merged.onColumnWidthsChange?.(next)
   }
 
+  // ---- Server-side proxy (vxe-grid proxyConfig parity, query slice) -------
+  // The controller lives in a plain closure variable created ONCE per proxy
+  // PRESENCE — an inline proxyConfig object with a fresh identity each render
+  // never destroys/recreates it — and is torn down when the proxy disappears
+  // or the component unmounts, so a late response never writes back to a dead
+  // instance. State flows controller → signal via store subscribe (the same
+  // bridge pattern as selection / expansion / cell-range). Effects never run
+  // during renderToString, so the first fetch is SSR-safe by construction.
+  const hasProxy = (): boolean => props.proxyConfig !== undefined
+  const remoteSort = (): boolean => props.proxyConfig?.remoteSort === true
+  const remoteFilter = (): boolean => props.proxyConfig?.remoteFilter === true
+  const proxyPresence = createMemo(() => hasProxy())
+  let proxy: RemoteTableSource<Row> | null = null
+  let proxyUnsub: (() => void) | null = null
+  const [proxyState, setProxyState] = createSignal<RemoteTableSourceState<Row>>(
+    EMPTY_PROXY_STATE as RemoteTableSourceState<Row>,
+  )
+  createEffect(
+    on(proxyPresence, (present) => {
+      if (!present) {
+        proxyUnsub?.()
+        proxyUnsub = null
+        proxy?.destroy()
+        proxy = null
+        setProxyState(EMPTY_PROXY_STATE as RemoteTableSourceState<Row>)
+        return
+      }
+      if (proxy) return
+      proxy = createRemoteTableSource<Row>({
+        // The latest query closure is read at request time, so a parent that
+        // swaps the query never leaves a stale closure behind.
+        query: (params) => props.proxyConfig!.query(params),
+        // Kicked below — never fire a fetch during render.
+        autoLoad: false,
+        initialParams: {
+          page: props.proxyConfig?.defaultPage ?? 1,
+          pageSize: props.proxyConfig?.pageSize ?? 10,
+          sort: remoteSort()
+            ? ((props.sort !== undefined ? props.sort : props.defaultSort) ?? null)
+            : null,
+          sorts:
+            remoteSort() && merged.multiSort
+              ? (props.multiSortState ?? props.defaultMultiSort ?? [])
+              : undefined,
+          filters: remoteFilter() ? mergeFormFilters(props.filters ?? {}, {}) : {},
+        },
+      })
+      setProxyState(proxy.getState())
+      proxyUnsub = proxy.subscribe((s) => setProxyState(s))
+      onCleanup(() => {
+        proxyUnsub?.()
+        proxyUnsub = null
+        proxy?.destroy()
+        proxy = null
+      })
+      if (props.proxyConfig?.autoLoad !== false) void proxy.request()
+    }),
+  )
+  // Proxy rows feed the table as the data source; a new page/refetch
+  // reference replaces them wholesale. Local edit write-backs (below) stick
+  // until then (React liveData parity).
+  const [proxyRows, setProxyRows] = createSignal<Row[]>([])
+  createEffect(() => {
+    setProxyRows(proxyState().data)
+  })
+  const baseData = createMemo<Row[]>(() => (hasProxy() ? proxyRows() : (props.data ?? [])))
+  // Proxy mode drives the table's loading/error UI from the controller state
+  // (reusing the existing loading/error props rendering below).
+  const tableLoading = createMemo<boolean>(() => {
+    const s = proxyState()
+    return hasProxy() ? s.loading : merged.loading
+  })
+  const tableError = createMemo<boolean>(() => {
+    const s = proxyState()
+    return hasProxy() ? s.error !== null : merged.error
+  })
+
+  // ---- Multi-column sort (vxe sort-config.multiple parity) ----------------
+  // Array order = click order (most-significant first). React parity: a
+  // column not in the list APPENDS asc; an existing column cycles
+  // asc → desc → REMOVE.
+  const multiControlled = (): boolean => props.multiSortState !== undefined
+  const [multiInternal, setMultiInternal] = createSignal<IrisTableSortState[]>(
+    props.defaultMultiSort ?? [],
+  )
+  const multiSortState = createMemo<IrisTableSortState[]>(() =>
+    multiControlled() ? (props.multiSortState ?? []) : multiInternal(),
+  )
+  const setMultiSort = (next: IrisTableSortState[]): void => {
+    if (!multiControlled()) setMultiInternal(next)
+    merged.onMultiSortChange?.(next)
+    // remoteSort parity (multi mode): the FULL sort list re-queries the
+    // server; the single `sort` param stays the single-column channel.
+    if (remoteSort()) proxy?.setParams({ sorts: next })
+  }
+  const multiSortComparator = createMemo<((a: Row, b: Row) => number) | null>(() => {
+    const list = multiSortState()
+    if (list.length === 0) return null
+    const colMap = new Map(leafColumns().map((c) => [c.key, c]))
+    const chain: Array<{ dir: number; sorter: (a: Row, b: Row) => number }> = []
+    for (const s of list) {
+      const col = colMap.get(s.key)
+      if (!col) continue
+      chain.push({
+        dir: s.direction === 'asc' ? 1 : -1,
+        sorter:
+          col.sorter ??
+          ((a: Row, b: Row) => compareValues(getCellValue(a, col), getCellValue(b, col))),
+      })
+    }
+    if (chain.length === 0) return null
+    return (a, b) => {
+      for (const step of chain) {
+        const cmp = step.sorter(a, b)
+        if (cmp !== 0) return cmp * step.dir
+      }
+      return 0
+    }
+  })
+  const cycleMultiSort = (col: IrisTableColumn<Row>): void => {
+    if (!col.sortable) return
+    const idx = multiSortState().findIndex((s) => s.key === col.key)
+    if (idx < 0) {
+      setMultiSort([...multiSortState(), { key: col.key, direction: 'asc' }])
+      return
+    }
+    const next = [...multiSortState()]
+    if (next[idx]!.direction === 'asc') {
+      next[idx] = { key: col.key, direction: 'desc' }
+      setMultiSort(next)
+      return
+    }
+    next.splice(idx, 1)
+    setMultiSort(next)
+  }
+
   // ---- Sort (useTableSort) ----
   const {
     sortState: effectiveSort,
     cycleSort,
     sortComparator,
-    sortedData: sortedRows,
-  } = useTableSort<Row>(() => merged.data ?? [], {
+    sortedData: singleSorted,
+  } = useTableSort<Row>(baseData, {
     leafColumns,
     sort: () => props.sort,
     defaultSort: props.defaultSort,
-    onSortChange: (next) => merged.onSortChange?.(next),
+    onSortChange: (next) => {
+      merged.onSortChange?.(next)
+      // remoteSort parity: sort changes re-query the server (page resets to 1
+      // in the core controller, vxe behavior).
+      if (remoteSort()) proxy?.setParams({ sort: next })
+    },
+  })
+  // remoteSort parity: the server owns the ordering — never re-sort locally.
+  // Multi mode uses the chained multi comparator exclusively (an empty list
+  // means unsorted); single mode keeps the single comparator.
+  const sortedRows = createMemo<Row[]>(() => {
+    if (remoteSort()) return baseData()
+    if (merged.multiSort) {
+      const compare = multiSortComparator()
+      if (!compare) return baseData()
+      return [...baseData()].sort(compare)
+    }
+    return singleSorted()
+  })
+  // Sortable header click: multi mode appends/cycles the list, single mode
+  // keeps the asc → desc → none cycle — both routed through one entry point.
+  const cycleHeaderSort = (col: IrisTableColumn<Row>): void => {
+    if (merged.multiSort) cycleMultiSort(col)
+    else cycleSort(col)
+  }
+  const handleHeaderClick = (column: IrisTableColumn<Row>): void => {
+    cycleHeaderSort(column)
+  }
+  // remoteSort parity: hand the active sort state to the server. Core
+  // setParams dedupes unchanged params, so the click path (pushed via the
+  // onSortChange / onMultiSortChange wrappers above) does not double-request.
+  createEffect(() => {
+    const present = proxyPresence()
+    const single = effectiveSort()
+    const multi = multiSortState()
+    if (!present || !remoteSort()) return
+    if (merged.multiSort) proxy?.setParams({ sorts: multi })
+    else proxy?.setParams({ sort: single ?? null })
   })
 
-  const handleHeaderClick = (column: IrisTableColumn<Row>): void => {
-    cycleSort(column)
+  // ---- Search form (vxe-grid formConfig parity) ---------------------------
+  // Draft/applied two-state: keystrokes only touch the DRAFT (never trigger a
+  // query); submit/reset promote the built values into the APPLIED filters.
+  // The draft is seeded from field defaultValue and re-seeded only when the
+  // field set (or a default) actually changes, so an inline formConfig object
+  // with a fresh identity each render never wipes user input.
+  const [formDraft, setFormDraft] = createSignal<Record<string, string>>(
+    seedFormValues(props.formConfig?.fields),
+  )
+  const [formApplied, setFormApplied] = createSignal<Record<string, string>>({})
+  const formFieldSignature = createMemo(() =>
+    (props.formConfig?.fields ?? []).map((f) => `${f.key}=${f.defaultValue ?? ''}`).join('\u0000'),
+  )
+  createEffect(() => {
+    // Re-seed only when the field signature actually changes.
+    formFieldSignature()
+    setFormDraft(seedFormValues(props.formConfig?.fields))
+    setFormApplied({})
+  })
+  const setFormValue = (key: string, value: string): void => {
+    setFormDraft((prev) => (prev[key] === value ? prev : { ...prev, [key]: value }))
   }
+  const mergedProxyFilters = (form: Record<string, string>): Record<string, string> =>
+    mergeFormFilters(props.filters ?? {}, form)
+  const handleFormSubmit = (e: Event): void => {
+    e.preventDefault()
+    const values = buildFormValues(props.formConfig?.fields, formDraft())
+    props.formConfig?.onSearch?.(values)
+    setFormApplied(values)
+    // Proxy mode: the server owns filtering — merge the form values into the
+    // controller filters (page resets to 1 in core applyParams, vxe behavior).
+    if (proxy) void proxy.setParams({ filters: mergedProxyFilters(values), page: 1 })
+  }
+  const handleFormReset = (e: Event): void => {
+    e.preventDefault()
+    const defaults = seedFormValues(props.formConfig?.fields)
+    setFormDraft(defaults)
+    const values = buildFormValues(props.formConfig?.fields, defaults)
+    setFormApplied(values)
+    props.formConfig?.onReset?.(values)
+    if (proxy) {
+      // setParams returns false when the merged params are unchanged (e.g.
+      // filters already cleared) — a reset must still re-query, so force a
+      // refetch only in that no-op case (no double request when it changed).
+      if (proxy.setParams({ filters: mergedProxyFilters(values), page: 1 }) === false) {
+        void proxy.refetch()
+      }
+    }
+  }
+  // remoteFilter parity: hand the filter map to the server and never hide
+  // rows client-side (vxe proxyConfig.filter). Form values are merged in so a
+  // later `filters` prop change from the parent does not silently drop the
+  // applied search. (Core setParams dedupes unchanged params.)
+  createEffect(() => {
+    const present = proxyPresence()
+    const f = props.filters
+    const applied = formApplied()
+    if (!present || !remoteFilter()) return
+    proxy?.setParams({ filters: mergeFormFilters(f ?? {}, applied) })
+  })
 
   const rowId = (row: Row, index: number): string | number => {
     const v = row[merged.rowKey]
@@ -243,11 +509,42 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   // honoring the (shared) expansion model. `bodyRows` is what the body, the
   // select-all set, and the summary aggregate over; in flat mode it is identical
   // to sortedRows() (each row carries no tree meta).
+  // ---- Client-side filters (vxe filterConfig parity, local mode) ---------
+  // Core substring semantics applied to the sorted data before tree flattening
+  // (flat mode). With remoteFilter the server owns filtering — rows are never
+  // hidden locally. The search form's applied values merge over the `filters`
+  // prop (form wins, neither input is mutated); in proxy mode the server owns
+  // form filtering, so only the prop map filters the loaded page. The result
+  // is reference-preserving when no filter is active.
+  const filteredData = createMemo<Row[]>(() => {
+    if (remoteFilter()) return sortedRows()
+    const mergedF = hasProxy()
+      ? (props.filters ?? {})
+      : mergeFormFilters(props.filters ?? {}, formApplied())
+    const active = Object.entries(mergedF).filter(([, v]) => v != null && v !== '')
+    if (active.length === 0) return sortedRows()
+    return sortedRows().filter((row) =>
+      active.every(([key, value]) => {
+        const col = displayColumns().find((c) => c.key === key)
+        if (!col) return true
+        const raw = getCellValue(row, col)
+        if (col.filterMethod) return col.filterMethod(raw, row, value)
+        return String(raw ?? '')
+          .toLowerCase()
+          .includes(value.toLowerCase())
+      }),
+    )
+  })
+  // Tree children sort by the same comparator as the roots: multi mode chains
+  // the multi comparator, single mode keeps the single one.
+  const treeComparator = createMemo(() =>
+    merged.multiSort ? multiSortComparator() : sortComparator(),
+  )
   const flatTree = createMemo<Array<TreeRow<Row>> | null>(() => {
     if (props.getSubRows === undefined) return null
     const keys = expandedKeys()
-    const compare = sortComparator()
-    return flattenTree<Row>(sortedRows(), {
+    const compare = treeComparator()
+    return flattenTree<Row>(filteredData(), {
       getKey: (r) => String(rowId(r, 0)),
       // With an active sort, sort each level's children by the same comparator
       // so the whole tree reorders hierarchically.
@@ -261,7 +558,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const bodyEntries = createMemo<Array<{ row: Row; meta: TreeRow<Row> | null }>>(() => {
     const ft = flatTree()
     if (ft) return ft.map((t) => ({ row: t.row, meta: t }))
-    return sortedRows().map((row) => ({ row, meta: null }))
+    return filteredData().map((row) => ({ row, meta: null }))
   })
   const bodyRows = createMemo<Row[]>(() => bodyEntries().map((e) => e.row))
 
@@ -386,6 +683,19 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     setEditingCellId(null)
     if (newValue !== oldValue) {
       merged.onCellEdit?.({ row, column, oldValue, newValue, rowIndex })
+      // Proxy mode: write the committed value into the local page copy so the
+      // edit survives without a refetch (React liveData parity); the next
+      // page/refetch replaces the copy wholesale.
+      if (proxy) {
+        const ident = rowId(row, rowIndex)
+        setProxyRows((prev) => {
+          const at = prev.findIndex((r, i) => rowId(r, i) === ident)
+          if (at < 0) return prev
+          const next = prev.slice()
+          next[at] = { ...next[at]!, [column.key]: newValue }
+          return next
+        })
+      }
     }
   }
 
@@ -475,8 +785,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   // ---- Grid template ----
   const SELECTION_COL_WIDTH = 40
   const EXPAND_COL_WIDTH = 40
+  const SEQ_COL_WIDTH = 60
   const gridTemplate = createMemo(() => {
     const parts: string[] = []
+    if (merged.seq) parts.push(`${SEQ_COL_WIDTH}px`)
     if (hasDetail()) parts.push(`${EXPAND_COL_WIDTH}px`)
     if (merged.selectable !== 'none') parts.push(`${SELECTION_COL_WIDTH}px`)
     for (const col of leafColumns()) {
@@ -495,10 +807,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const [scrollLeft, setScrollLeft] = createSignal(0)
   const [viewportWidth, setViewportWidth] = createSignal(0)
 
-  // 1-based grid track for a column index, after the optional detail + selection
-  // tracks, so a windowed cell lands in the right place.
+  // 1-based grid track for a column index, after the optional seq + detail +
+  // selection tracks, so a windowed cell lands in the right place.
   const colTrack = (i: number): number =>
-    (hasDetail() ? 1 : 0) + (merged.selectable !== 'none' ? 2 : 1) + i
+    (merged.seq ? 1 : 0) + (hasDetail() ? 1 : 0) + (merged.selectable !== 'none' ? 1 : 0) + 1 + i
 
   onMount(() => {
     if (typeof document === 'undefined') return
@@ -548,27 +860,84 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     return set
   })
 
+  // Active sort info for a column: multi mode reads the click-order list,
+  // single mode the single-column state.
+  const sortInfo = (
+    col: IrisTableColumn<Row>,
+  ): { isActive: boolean; dir: 'asc' | 'desc' | null } => {
+    const multiIdx = merged.multiSort ? multiSortState().findIndex((s) => s.key === col.key) : -1
+    const isActive = merged.multiSort ? multiIdx >= 0 : effectiveSort()?.key === col.key
+    const dir = isActive
+      ? merged.multiSort
+        ? multiSortState()[multiIdx]!.direction
+        : effectiveSort()!.direction
+      : null
+    return { isActive, dir }
+  }
+  const sortAria = (col: IrisTableColumn<Row>): 'none' | 'ascending' | 'descending' | undefined => {
+    const { isActive, dir } = sortInfo(col)
+    if (!isActive) return col.sortable ? 'none' : undefined
+    return dir === 'asc' ? 'ascending' : 'descending'
+  }
   const sortIndicator = (col: IrisTableColumn<Row>): JSX.Element => {
     if (!col.sortable) return <></>
-    const state = effectiveSort()
-    const isActive = state?.key === col.key
-    const direction = isActive ? state!.direction : null
+    const { isActive, dir } = sortInfo(col)
+    const multiIdx = merged.multiSort ? multiSortState().findIndex((s) => s.key === col.key) : -1
     return (
-      <span
-        aria-hidden="true"
-        style={{
-          display: 'inline-flex',
-          'flex-direction': 'column',
-          'margin-inline-start': '4px',
-          'line-height': '0.6',
-          'font-size': 'var(--iris-font-size-xs, 12px)',
-          color: isActive ? 'var(--iris-primary)' : 'var(--iris-muted)',
-        }}
-      >
-        <span style={{ opacity: direction === 'asc' ? '1' : '0.45' }}>▲</span>
-        <span style={{ opacity: direction === 'desc' ? '1' : '0.45' }}>▼</span>
-      </span>
+      <>
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'inline-flex',
+            'flex-direction': 'column',
+            'margin-inline-start': '4px',
+            'line-height': '0.6',
+            'font-size': 'var(--iris-font-size-xs, 12px)',
+            color: isActive ? 'var(--iris-primary)' : 'var(--iris-muted)',
+          }}
+        >
+          <span style={{ opacity: dir === 'asc' ? '1' : '0.45' }}>▲</span>
+          <span style={{ opacity: dir === 'desc' ? '1' : '0.45' }}>▼</span>
+        </span>
+        {/* Multi mode: non-primary sort columns show their click-order
+            sequence number (vxe sort-config sequence parity). */}
+        <Show when={merged.multiSort && multiIdx > 0}>
+          <span
+            data-iris-sort-seq=""
+            style={{
+              'margin-inline-start': 'var(--iris-space-xxs, 4px)',
+              'font-size': 'var(--iris-font-size-xs, 12px)',
+              color: 'var(--iris-muted)',
+            }}
+          >
+            {multiIdx + 1}
+          </span>
+        </Show>
+      </>
     )
+  }
+
+  const seqStartIndex = props.seqStartIndex ?? 1
+  const seqValue = (index: number): string | number => {
+    if (props.seqMethod) return props.seqMethod({ rowIndex: index, columnIndex: 0 })
+    if (proxy && props.proxyConfig?.seq && merged.seq) {
+      return (proxyState().params.page - 1) * proxyState().params.pageSize + index + 1
+    }
+    return index + seqStartIndex
+  }
+  // Span bookkeeping (vxe spanMethod parity): a per-pass occupied set rebuilt
+  // whenever bodyEntries gets a fresh reference (a new render pass), so Solid's
+  // <For> — which re-runs callbacks only for new entry identities — never
+  // accumulates stale coverage across passes.
+  const spanOccupy = new Set<string>()
+  let spanRowsRef: Array<{ row: Row; meta: TreeRow<Row> | null }> | undefined
+  const spanPass = (): void => {
+    if (props.spanMethod === undefined) return
+    const entries = bodyEntries()
+    if (spanRowsRef !== entries) {
+      spanOccupy.clear()
+      spanRowsRef = entries
+    }
   }
 
   const stateRowStyle: JSX.CSSProperties = {
@@ -588,6 +957,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   // index so indent + toggle render for windowed tree rows too.
   const renderRow = (row: Row, index: number, treeMeta: TreeRow<Row> | null): JSX.Element => {
     const id = rowId(row, index)
+    spanPass()
     const selected = (): boolean => isSelected(id)
     const expanded = (): boolean => expandedKeys().includes(String(id))
     const expandable = (): boolean => isRowExpandable(row, index)
@@ -617,6 +987,23 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           cursor: 'default',
         }}
       >
+        <Show when={merged.seq}>
+          <div
+            role="cell"
+            data-iris-table-cell="__seq"
+            style={{
+              display: 'flex',
+              'align-items': 'center',
+              'justify-content': 'center',
+              padding: '8px',
+              'border-bottom': '1px solid var(--iris-border)',
+              color: 'var(--iris-muted)',
+              'user-select': 'none',
+            }}
+          >
+            {seqValue(index)}
+          </div>
+        </Show>
         <Show when={hasDetail()}>
           <div
             role="cell"
@@ -691,6 +1078,25 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
               const set = visibleColSet()
               return !set || set.has(colIndex)
             }
+            // Cell merge (vxe spanMethod parity): the occupied set carries
+            // cells covered by an earlier rowspan/colspan origin — those cells
+            // render nothing. Origin cells with colspan > 1 extend their grid
+            // track; rowspan coverage only removes the covered cells (each row
+            // is its own grid container, so a row cannot span another row).
+            let colspan = 1
+            if (props.spanMethod && inWindow()) {
+              const spanKey = `${index}:${colIndex}`
+              if (spanOccupy.has(spanKey)) return <></>
+              const span = props.spanMethod({ rowIndex: index, columnIndex: colIndex })
+              const rowspan = span?.rowspan ?? 1
+              colspan = span?.colspan ?? 1
+              if (rowspan > 1) {
+                for (let r = 1; r < rowspan; r += 1) spanOccupy.add(`${index + r}:${colIndex}`)
+              }
+              if (colspan > 1) {
+                for (let c = 1; c < colspan; c += 1) spanOccupy.add(`${index}:${colIndex + c}`)
+              }
+            }
             return (
               <Show when={inWindow()}>
                 <div
@@ -748,6 +1154,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                         ? 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
                         : undefined,
                     ...(visibleColSet() ? { 'grid-column-start': String(colTrack(colIndex)) } : {}),
+                    ...(colspan > 1 ? { 'grid-column-end': `span ${colspan}` } : {}),
                   }}
                 >
                   <Show when={treeMeta && isFirstCol}>
@@ -867,235 +1274,332 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   }
 
   return (
-    <div
-      ref={rootRef}
-      // A keyboard-navigable hierarchical table is a `treegrid`; otherwise the
-      // grid/table role as before (treegrid implies managed cell focus).
-      role={merged.keyboardNavigation ? (treeMode() ? 'treegrid' : 'grid') : 'table'}
-      data-iris-table=""
-      data-column-virtualized={merged.columnVirtualization ? 'true' : undefined}
-      onKeyDown={
-        merged.keyboardNavigation || merged.cellRange
-          ? (e: KeyboardEvent) => {
-              if (merged.keyboardNavigation) handleGridKey(e)
-              if (merged.cellRange) handleCellRangeKey(e)
-            }
-          : undefined
-      }
-      onScroll={
-        merged.columnVirtualization
-          ? (e: Event) => setScrollLeft((e.currentTarget as HTMLElement).scrollLeft)
-          : undefined
-      }
-      style={{
-        background: 'var(--iris-background)',
-        color: 'var(--iris-foreground)',
-        border: merged.bordered ? '1px solid var(--iris-border)' : 'none',
-        'border-radius': 'var(--iris-radius-md)',
-        // Column virtualization turns the table into a horizontal scroll container.
-        overflow: merged.columnVirtualization ? 'auto' : 'hidden',
-        ...(merged.style ?? {}),
-      }}
-    >
-      {/* Multi-level (grouped) header: a CSS grid of `headerMatrix().length`
-          rows; each cell placed by its leaf-column span (colStart/colSpan) and
-          row span. Renders INSTEAD of the single-row header when grouped. */}
-      <Show when={grouped() && headerMatrix()}>
-        <div
-          role="row"
-          data-iris-table-row="header"
-          data-iris-table-header-grouped=""
+    <>
+      {/* Search form (vxe-grid formConfig parity). */}
+      <Show when={merged.formConfig}>
+        <form
+          data-iris-table-form=""
+          onSubmit={handleFormSubmit}
+          onReset={handleFormReset}
           style={{
-            display: 'grid',
-            'grid-template-columns': gridTemplate(),
-            'grid-template-rows': `repeat(${headerMatrix()!.length}, auto)`,
+            display: 'flex',
+            'flex-wrap': 'wrap',
+            'align-items': 'flex-end',
+            gap: 'var(--iris-space-sm, 12px)',
+            padding: 'var(--iris-space-sm, 12px)',
+            border: '1px solid var(--iris-border)',
+            'border-bottom': 'none',
+            background: 'var(--iris-surface)',
+            'font-size': 'var(--iris-font-size-sm, 13px)',
           }}
         >
-          <Show when={hasDetail()}>
-            <div role="columnheader" style={{ 'grid-column': '1', 'grid-row': '1 / -1' }} />
-          </Show>
-          <Show when={merged.selectable !== 'none'}>
-            <div
-              role="columnheader"
-              style={{
-                'grid-column': hasDetail() ? '2' : '1',
-                'grid-row': '1 / -1',
-                display: 'flex',
-                'align-items': 'center',
-                'justify-content': 'center',
-                padding: '8px',
-                background: 'var(--iris-surface)',
-                'border-bottom': '1px solid var(--iris-border)',
-              }}
-            >
-              <Show when={merged.selectable === 'multi'}>
-                <input
-                  type="checkbox"
-                  checked={allSelected()}
-                  ref={(el) => {
-                    if (el) el.indeterminate = someSelected()
-                  }}
-                  onChange={toggleAll}
-                  aria-label={t('table.selectAll')}
-                />
-                <Show when={props.selection && props.selection.length > 0}>
-                  <span
-                    data-iris-table-selected-count=""
-                    style={{
-                      'margin-inline-start': 'var(--iris-space-xs, 8px)',
-                      'font-size': 'var(--iris-font-size-sm, 13px)',
-                      color: 'var(--iris-muted)',
-                      'white-space': 'nowrap',
-                    }}
+          <For each={merged.formConfig!.fields}>
+            {(field) => (
+              <div data-iris-table-form-field={field.key} style={{ 'min-width': '180px' }}>
+                <IrisFormField label={field.label} size="sm">
+                  <Show
+                    when={field.type === 'select'}
+                    fallback={
+                      <IrisInput
+                        value={formDraft()[field.key] ?? ''}
+                        onInput={(e) =>
+                          setFormValue(field.key, (e.target as HTMLInputElement).value)
+                        }
+                        placeholder={field.placeholder}
+                        size="sm"
+                      />
+                    }
                   >
-                    {t('table.selectedCount', { count: String(props.selection!.length) })}
+                    <IrisSelect
+                      items={(field.options ?? []).map((o) => ({ value: o.value, label: o.label }))}
+                      value={formDraft()[field.key] ?? ''}
+                      onValueChange={(v) => setFormValue(field.key, String(v ?? ''))}
+                      placeholder={field.placeholder ?? t('select.placeholder')}
+                      size="sm"
+                    />
+                  </Show>
+                </IrisFormField>
+              </div>
+            )}
+          </For>
+          <div style={{ display: 'flex', gap: 'var(--iris-space-xs, 8px)' }}>
+            <IrisButton type="submit" size="sm" data-iris-table-form-submit="">
+              {merged.formConfig!.submitText ?? t('table.formSubmit')}
+            </IrisButton>
+            <IrisButton type="reset" variant="outline" size="sm" data-iris-table-form-reset="">
+              {merged.formConfig!.resetText ?? t('table.formReset')}
+            </IrisButton>
+          </div>
+        </form>
+      </Show>
+
+      {/* Toolbar (vxe-grid toolbarConfig parity, minimal built-ins). */}
+      <Show when={merged.toolbar}>
+        <div
+          data-iris-table-toolbar=""
+          style={{
+            display: 'flex',
+            'align-items': 'center',
+            gap: 'var(--iris-space-sm, 12px)',
+            padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+            border: '1px solid var(--iris-border)',
+            'border-bottom': 'none',
+            'border-top-left-radius': 'var(--iris-radius-md, 6px)',
+            'border-top-right-radius': 'var(--iris-radius-md, 6px)',
+            background: 'var(--iris-surface)',
+            'font-size': 'var(--iris-font-size-sm, 13px)',
+            position: 'relative',
+          }}
+        >
+          <Show when={merged.toolbar!.title}>
+            <span style={{ 'font-weight': 600, color: 'var(--iris-foreground)' }}>
+              {merged.toolbar!.title}
+            </span>
+          </Show>
+          <div style={{ flex: 1 }} />
+          <Show when={merged.toolbar!.onRefresh}>
+            <button
+              type="button"
+              data-iris-table-toolbar-refresh=""
+              onClick={() => {
+                merged.toolbar!.onRefresh?.()
+                // proxy mode: the built-in refresh also re-queries (vxe parity).
+                if (proxy) void proxy.refetch()
+              }}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: 'var(--iris-muted)',
+                'font-size': 'var(--iris-font-size-md, 14px)',
+              }}
+              aria-label={t('table.refresh')}
+              title={t('table.refresh')}
+            >
+              ↻
+            </button>
+          </Show>
+          <Show when={merged.toolbar!.onExport}>
+            <button
+              type="button"
+              data-iris-table-toolbar-export=""
+              onClick={() => merged.toolbar!.onExport?.()}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: 'var(--iris-muted)',
+                'font-size': 'var(--iris-font-size-md, 14px)',
+              }}
+              aria-label={t('table.export')}
+              title={t('table.export')}
+            >
+              ⇩
+            </button>
+          </Show>
+          <Show
+            when={
+              merged.selectable === 'multi' &&
+              displaySelection().length > 0 &&
+              merged.toolbar!.batch
+            }
+          >
+            <button
+              type="button"
+              data-iris-table-toolbar-batch=""
+              onClick={() => merged.toolbar!.batch!.onClick([...displaySelection()])}
+              style={{
+                border: 'none',
+                cursor: 'pointer',
+                background: 'var(--iris-primary)',
+                color: 'var(--iris-primary-foreground)',
+                'font-size': 'var(--iris-font-size-md, 14px)',
+                display: 'inline-flex',
+                'align-items': 'center',
+                gap: 'var(--iris-space-xxs, 4px)',
+                padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                'border-radius': 'var(--iris-radius-sm, 4px)',
+              }}
+              aria-label={merged.toolbar!.batch!.label}
+              title={merged.toolbar!.batch!.label}
+            >
+              <Show when={merged.toolbar!.batch!.icon}>
+                <span aria-hidden="true" style={{ 'font-size': 'var(--iris-font-size-sm, 13px)' }}>
+                  {merged.toolbar!.batch!.icon}
+                </span>
+              </Show>
+              {merged.toolbar!.batch!.label}
+            </button>
+          </Show>
+          <For each={merged.toolbar!.buttons ?? []}>
+            {(btn) => (
+              <button
+                type="button"
+                data-iris-table-toolbar-button={btn.key}
+                {...{ [`data-iris-table-toolbar-button-${btn.key}`]: '' }}
+                onClick={btn.onClick}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  color: 'var(--iris-foreground)',
+                  'font-size': 'var(--iris-font-size-md, 14px)',
+                  display: 'inline-flex',
+                  'align-items': 'center',
+                  gap: 'var(--iris-space-xxs, 4px)',
+                  padding: '0 var(--iris-space-xxs, 4px)',
+                }}
+                aria-label={btn.label}
+                title={btn.label}
+              >
+                <Show when={btn.icon}>
+                  <span
+                    aria-hidden="true"
+                    style={{ 'font-size': 'var(--iris-font-size-sm, 13px)' }}
+                  >
+                    {btn.icon}
                   </span>
                 </Show>
-              </Show>
-            </div>
-          </Show>
-          <For each={headerMatrix()!.flat()}>
-            {(cell) => {
-              const col = cell.column
-              const isLeaf = (): boolean => !col.children || col.children.length === 0
-              const sortable = (): boolean => isLeaf() && !!col.sortable
-              const lead = (hasDetail() ? 1 : 0) + (merged.selectable !== 'none' ? 1 : 0)
-              return (
-                <div
-                  role="columnheader"
-                  data-iris-table-header={col.key}
-                  data-iris-table-header-group={isLeaf() ? undefined : ''}
-                  aria-colspan={cell.colSpan}
-                  onClick={sortable() ? () => handleHeaderClick(col) : undefined}
-                  aria-sort={
-                    sortable()
-                      ? effectiveSort()?.key === col.key
-                        ? effectiveSort()!.direction === 'asc'
-                          ? 'ascending'
-                          : 'descending'
-                        : 'none'
-                      : undefined
-                  }
-                  style={{
-                    'grid-column': `${lead + cell.colStart} / span ${cell.colSpan}`,
-                    'grid-row': `${cell.level + 1} / span ${cell.rowSpan}`,
-                    position: 'relative',
-                    display: 'flex',
-                    'align-items': 'center',
-                    'justify-content': isLeaf() ? 'flex-start' : 'center',
-                    padding: '8px var(--iris-padding-md)',
-                    cursor: sortable() ? 'pointer' : 'default',
-                    'user-select': sortable() ? 'none' : 'auto',
-                    background: 'var(--iris-surface)',
-                    'border-bottom': '1px solid var(--iris-border)',
-                    'font-weight': '600',
-                    'font-size': 'var(--iris-font-size-sm, 13px)',
-                    color: 'var(--iris-foreground)',
-                    'white-space': 'nowrap',
-                    overflow: 'hidden',
-                    'text-overflow': 'ellipsis',
-                  }}
-                >
-                  {col.title}
-                  <Show when={sortable()}>{sortIndicator(col)}</Show>
-                </div>
-              )
-            }}
+                {btn.label}
+              </button>
+            )}
           </For>
         </div>
       </Show>
 
-      {/* Header (flat) — unchanged when not grouped. */}
-      <Show when={!grouped()}>
-        <div
-          role="row"
-          data-iris-table-header-row=""
-          style={{
-            display: 'grid',
-            'grid-template-columns': gridTemplate(),
-          }}
-        >
-          <Show when={hasDetail()}>
-            <div
-              role="columnheader"
-              data-iris-table-header="__expand"
-              style={{
-                display: 'flex',
-                'align-items': 'center',
-                'justify-content': 'center',
-                padding: '8px',
-                background: 'var(--iris-surface)',
-                'border-bottom': '1px solid var(--iris-border)',
-              }}
-            />
-          </Show>
-          <Show when={merged.selectable !== 'none'}>
-            <div
-              role="columnheader"
-              style={{
-                display: 'flex',
-                'align-items': 'center',
-                'justify-content': 'center',
-                padding: '8px',
-                background: 'var(--iris-surface)',
-                'border-bottom': '1px solid var(--iris-border)',
-              }}
-            >
-              <Show when={merged.selectable === 'multi'}>
-                <input
-                  type="checkbox"
-                  checked={allSelected()}
-                  ref={(el) => {
-                    if (el) el.indeterminate = someSelected()
-                  }}
-                  onChange={toggleAll}
-                  aria-label={t('table.selectAll')}
-                />
-                <Show when={props.selection && props.selection.length > 0}>
-                  <span
-                    data-iris-table-selected-count=""
-                    style={{
-                      'margin-inline-start': 'var(--iris-space-xs, 8px)',
-                      'font-size': 'var(--iris-font-size-sm, 13px)',
-                      color: 'var(--iris-muted)',
-                      'white-space': 'nowrap',
-                    }}
-                  >
-                    {t('table.selectedCount', { count: String(props.selection!.length) })}
-                  </span>
-                </Show>
-              </Show>
-            </div>
-          </Show>
-          <For each={merged.columns}>
-            {(col, colIndexAccessor) => {
-              const colIndex = colIndexAccessor()
-              // Column virtualization: skip headers outside the visible window
-              // (+ pinned); place rendered headers on their grid track.
-              const inWindow = (): boolean => {
-                const set = visibleColSet()
-                return !set || set.has(colIndex)
+      <div
+        ref={rootRef}
+        // A keyboard-navigable hierarchical table is a `treegrid`; otherwise the
+        // grid/table role as before (treegrid implies managed cell focus).
+        role={merged.keyboardNavigation ? (treeMode() ? 'treegrid' : 'grid') : 'table'}
+        data-iris-table=""
+        data-column-virtualized={merged.columnVirtualization ? 'true' : undefined}
+        onKeyDown={
+          merged.keyboardNavigation || merged.cellRange
+            ? (e: KeyboardEvent) => {
+                if (merged.keyboardNavigation) handleGridKey(e)
+                if (merged.cellRange) handleCellRangeKey(e)
               }
-              return (
-                <Show when={inWindow()}>
+            : undefined
+        }
+        onScroll={
+          merged.columnVirtualization
+            ? (e: Event) => setScrollLeft((e.currentTarget as HTMLElement).scrollLeft)
+            : undefined
+        }
+        style={{
+          background: 'var(--iris-background)',
+          color: 'var(--iris-foreground)',
+          border: merged.bordered ? '1px solid var(--iris-border)' : 'none',
+          'border-radius': 'var(--iris-radius-md)',
+          // Column virtualization turns the table into a horizontal scroll container.
+          overflow: merged.columnVirtualization ? 'auto' : 'hidden',
+          ...(merged.style ?? {}),
+        }}
+      >
+        {/* Multi-level (grouped) header: a CSS grid of `headerMatrix().length`
+          rows; each cell placed by its leaf-column span (colStart/colSpan) and
+          row span. Renders INSTEAD of the single-row header when grouped. */}
+        <Show when={grouped() && headerMatrix()}>
+          <div
+            role="row"
+            data-iris-table-row="header"
+            data-iris-table-header-grouped=""
+            style={{
+              display: 'grid',
+              'grid-template-columns': gridTemplate(),
+              'grid-template-rows': `repeat(${headerMatrix()!.length}, auto)`,
+            }}
+          >
+            <Show when={merged.seq}>
+              <div
+                role="columnheader"
+                data-iris-table-header="__seq"
+                style={{
+                  'grid-column': '1',
+                  'grid-row': '1 / -1',
+                  display: 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  padding: '8px',
+                  background: 'var(--iris-surface)',
+                  'border-bottom': '1px solid var(--iris-border)',
+                }}
+              />
+            </Show>
+            <Show when={hasDetail()}>
+              <div
+                role="columnheader"
+                style={{ 'grid-column': merged.seq ? '2' : '1', 'grid-row': '1 / -1' }}
+              />
+            </Show>
+            <Show when={merged.selectable !== 'none'}>
+              <div
+                role="columnheader"
+                style={{
+                  'grid-column': String((merged.seq ? 1 : 0) + (hasDetail() ? 2 : 1)),
+                  'grid-row': '1 / -1',
+                  display: 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  padding: '8px',
+                  background: 'var(--iris-surface)',
+                  'border-bottom': '1px solid var(--iris-border)',
+                }}
+              >
+                <Show when={merged.selectable === 'multi'}>
+                  <input
+                    type="checkbox"
+                    checked={allSelected()}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someSelected()
+                    }}
+                    onChange={toggleAll}
+                    aria-label={t('table.selectAll')}
+                  />
+                  <Show when={props.selection && props.selection.length > 0}>
+                    <span
+                      data-iris-table-selected-count=""
+                      style={{
+                        'margin-inline-start': 'var(--iris-space-xs, 8px)',
+                        'font-size': 'var(--iris-font-size-sm, 13px)',
+                        color: 'var(--iris-muted)',
+                        'white-space': 'nowrap',
+                      }}
+                    >
+                      {t('table.selectedCount', { count: String(props.selection!.length) })}
+                    </span>
+                  </Show>
+                </Show>
+              </div>
+            </Show>
+            <For each={headerMatrix()!.flat()}>
+              {(cell) => {
+                const col = cell.column
+                const isLeaf = (): boolean => !col.children || col.children.length === 0
+                const sortable = (): boolean => isLeaf() && !!col.sortable
+                const lead =
+                  (merged.seq ? 1 : 0) +
+                  (hasDetail() ? 1 : 0) +
+                  (merged.selectable !== 'none' ? 1 : 0)
+                return (
                   <div
                     role="columnheader"
                     data-iris-table-header={col.key}
-                    data-iris-table-pinned={col.pinned}
-                    onClick={() => handleHeaderClick(col)}
+                    data-iris-table-header-group={isLeaf() ? undefined : ''}
+                    aria-colspan={cell.colSpan}
+                    onClick={sortable() ? () => handleHeaderClick(col) : undefined}
+                    aria-sort={sortable() ? sortAria(col) : undefined}
                     style={{
+                      'grid-column': `${lead + cell.colStart} / span ${cell.colSpan}`,
+                      'grid-row': `${cell.level + 1} / span ${cell.rowSpan}`,
                       position: 'relative',
                       display: 'flex',
                       'align-items': 'center',
-                      'justify-content':
-                        col.align === 'right'
-                          ? 'flex-end'
-                          : col.align === 'center'
-                            ? 'center'
-                            : 'flex-start',
+                      'justify-content': isLeaf() ? 'flex-start' : 'center',
                       padding: '8px var(--iris-padding-md)',
-                      cursor: col.sortable ? 'pointer' : 'default',
-                      'user-select': col.sortable ? 'none' : 'auto',
+                      cursor: sortable() ? 'pointer' : 'default',
+                      'user-select': sortable() ? 'none' : 'auto',
                       background: 'var(--iris-surface)',
                       'border-bottom': '1px solid var(--iris-border)',
                       'font-weight': '600',
@@ -1104,237 +1608,432 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                       'white-space': 'nowrap',
                       overflow: 'hidden',
                       'text-overflow': 'ellipsis',
-                      ...(visibleColSet()
-                        ? { 'grid-column-start': String(colTrack(colIndex)) }
-                        : {}),
                     }}
-                    aria-sort={
-                      effectiveSort()?.key === col.key
-                        ? effectiveSort()!.direction === 'asc'
-                          ? 'ascending'
-                          : 'descending'
-                        : col.sortable
-                          ? 'none'
-                          : undefined
-                    }
                   >
                     {col.title}
-                    {sortIndicator(col)}
-                    <Show when={merged.resizableColumns}>
-                      <ColumnResizeHandle
-                        colKey={col.key}
-                        label={col.title}
-                        width={() => widthOf(col)}
-                        minWidth={col.minWidth ?? DEFAULT_MIN_WIDTH}
-                        maxWidth={col.maxWidth ?? Infinity}
-                        onResize={(key, w) => setColumnWidths({ ...effectiveWidths(), [key]: w })}
-                      />
-                    </Show>
+                    <Show when={sortable()}>{sortIndicator(col)}</Show>
                   </div>
-                </Show>
-              )
-            }}
-          </For>
-        </div>
-      </Show>
+                )
+              }}
+            </For>
+          </div>
+        </Show>
 
-      {/* Body */}
-      <Show
-        when={!merged.error && !merged.loading}
-        fallback={
-          <Show
-            when={merged.error}
-            fallback={
-              <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>
-                {props.loadingState ?? t('table.loading')}
-              </div>
-            }
+        {/* Header (flat) — unchanged when not grouped. */}
+        <Show when={!grouped()}>
+          <div
+            role="row"
+            data-iris-table-header-row=""
+            style={{
+              display: 'grid',
+              'grid-template-columns': gridTemplate(),
+            }}
           >
-            <div role="row" data-iris-table-row="error" style={stateRowStyle}>
-              <span
+            <Show when={merged.seq}>
+              <div
+                role="columnheader"
+                data-iris-table-header="__seq"
                 style={{
-                  'margin-inline-end': props.onRetry ? 'var(--iris-space-sm, 12px)' : '0px',
+                  display: 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  padding: '8px',
+                  background: 'var(--iris-surface)',
+                  'border-bottom': '1px solid var(--iris-border)',
+                }}
+              />
+            </Show>
+            <Show when={hasDetail()}>
+              <div
+                role="columnheader"
+                data-iris-table-header="__expand"
+                style={{
+                  display: 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  padding: '8px',
+                  background: 'var(--iris-surface)',
+                  'border-bottom': '1px solid var(--iris-border)',
+                }}
+              />
+            </Show>
+            <Show when={merged.selectable !== 'none'}>
+              <div
+                role="columnheader"
+                style={{
+                  display: 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  padding: '8px',
+                  background: 'var(--iris-surface)',
+                  'border-bottom': '1px solid var(--iris-border)',
                 }}
               >
-                {props.errorState ?? t('table.error')}
-              </span>
-              <Show when={props.onRetry}>
-                <button
-                  type="button"
-                  data-iris-table-retry=""
-                  onClick={props.onRetry}
+                <Show when={merged.selectable === 'multi'}>
+                  <input
+                    type="checkbox"
+                    checked={allSelected()}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someSelected()
+                    }}
+                    onChange={toggleAll}
+                    aria-label={t('table.selectAll')}
+                  />
+                  <Show when={props.selection && props.selection.length > 0}>
+                    <span
+                      data-iris-table-selected-count=""
+                      style={{
+                        'margin-inline-start': 'var(--iris-space-xs, 8px)',
+                        'font-size': 'var(--iris-font-size-sm, 13px)',
+                        color: 'var(--iris-muted)',
+                        'white-space': 'nowrap',
+                      }}
+                    >
+                      {t('table.selectedCount', { count: String(props.selection!.length) })}
+                    </span>
+                  </Show>
+                </Show>
+              </div>
+            </Show>
+            <For each={displayColumns()}>
+              {(col, colIndexAccessor) => {
+                const colIndex = colIndexAccessor()
+                // Column virtualization: skip headers outside the visible window
+                // (+ pinned); place rendered headers on their grid track.
+                const inWindow = (): boolean => {
+                  const set = visibleColSet()
+                  return !set || set.has(colIndex)
+                }
+                return (
+                  <Show when={inWindow()}>
+                    <div
+                      role="columnheader"
+                      data-iris-table-header={col.key}
+                      data-iris-table-pinned={col.pinned}
+                      onClick={() => handleHeaderClick(col)}
+                      style={{
+                        position: 'relative',
+                        display: 'flex',
+                        'align-items': 'center',
+                        'justify-content':
+                          col.align === 'right'
+                            ? 'flex-end'
+                            : col.align === 'center'
+                              ? 'center'
+                              : 'flex-start',
+                        padding: '8px var(--iris-padding-md)',
+                        cursor: col.sortable ? 'pointer' : 'default',
+                        'user-select': col.sortable ? 'none' : 'auto',
+                        background: 'var(--iris-surface)',
+                        'border-bottom': '1px solid var(--iris-border)',
+                        'font-weight': '600',
+                        'font-size': 'var(--iris-font-size-sm, 13px)',
+                        color: 'var(--iris-foreground)',
+                        'white-space': 'nowrap',
+                        overflow: 'hidden',
+                        'text-overflow': 'ellipsis',
+                        ...(visibleColSet()
+                          ? { 'grid-column-start': String(colTrack(colIndex)) }
+                          : {}),
+                      }}
+                      aria-sort={sortAria(col)}
+                    >
+                      {col.title}
+                      {sortIndicator(col)}
+                      <Show when={merged.resizableColumns}>
+                        <ColumnResizeHandle
+                          colKey={col.key}
+                          label={col.title}
+                          width={() => widthOf(col)}
+                          minWidth={col.minWidth ?? DEFAULT_MIN_WIDTH}
+                          maxWidth={col.maxWidth ?? Infinity}
+                          onResize={(key, w) => setColumnWidths({ ...effectiveWidths(), [key]: w })}
+                        />
+                      </Show>
+                    </div>
+                  </Show>
+                )
+              }}
+            </For>
+          </div>
+        </Show>
+
+        {/* Body */}
+        <Show
+          when={!tableError() && !tableLoading()}
+          fallback={
+            <Show
+              when={tableError()}
+              fallback={
+                <div
+                  role="row"
+                  aria-busy="true"
+                  data-iris-table-row="loading"
+                  style={stateRowStyle}
+                >
+                  {props.loadingState ?? t('table.loading')}
+                </div>
+              }
+            >
+              <div role="row" data-iris-table-row="error" style={stateRowStyle}>
+                <span
                   style={{
-                    border: '1px solid var(--iris-border)',
-                    background: 'var(--iris-surface)',
-                    color: 'var(--iris-foreground)',
-                    'border-radius': 'var(--iris-radius-sm, 4px)',
-                    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
-                    'font-size': 'var(--iris-font-size-sm, 13px)',
-                    cursor: 'pointer',
+                    'margin-inline-end': props.onRetry ? 'var(--iris-space-sm, 12px)' : '0px',
                   }}
                 >
-                  {t('table.retry')}
-                </button>
-              </Show>
-            </div>
-          </Show>
-        }
-      >
-        <Show
-          when={bodyRows().length > 0}
-          fallback={
-            <div role="row" data-iris-table-row="empty" style={stateRowStyle}>
-              {props.emptyState ?? t('table.empty')}
-            </div>
+                  {props.errorState ?? t('table.error')}
+                </span>
+                <Show when={props.onRetry || hasProxy()}>
+                  <button
+                    type="button"
+                    data-iris-table-retry=""
+                    onClick={() => {
+                      // Proxy mode: the built-in retry re-queries (vxe parity).
+                      if (proxy) void proxy.refetch()
+                      props.onRetry?.()
+                    }}
+                    style={{
+                      border: '1px solid var(--iris-border)',
+                      background: 'var(--iris-surface)',
+                      color: 'var(--iris-foreground)',
+                      'border-radius': 'var(--iris-radius-sm, 4px)',
+                      padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                      'font-size': 'var(--iris-font-size-sm, 13px)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {t('table.retry')}
+                  </button>
+                </Show>
+              </div>
+            </Show>
           }
         >
           <Show
-            when={merged.virtualScroll && (!treeMode() || !hasDetail())}
+            when={bodyRows().length > 0}
             fallback={
-              <div role="rowgroup" data-iris-table-body="">
-                <For each={bodyEntries()}>
-                  {(entry, indexAccessor) => {
-                    const row = entry.row
-                    const treeMeta = entry.meta
-                    const index = indexAccessor()
-                    const id = rowId(row, index)
-                    const expanded = (): boolean => expandedKeys().includes(String(id))
-                    const expandable = (): boolean => isRowExpandable(row, index)
-                    return (
-                      <>
-                        {renderRow(row, index, treeMeta)}
-                        {/* Full-width detail panel beneath an expanded, expandable
-                            row (spans all grid tracks). Only in the non-virtual path. */}
-                        <Show when={hasDetail() && expandable() && expanded()}>
-                          <div
-                            role="row"
-                            data-iris-table-row-detail={String(id)}
-                            style={{
-                              display: 'grid',
-                              'grid-template-columns': gridTemplate(),
-                            }}
-                          >
-                            <div
-                              role="cell"
-                              data-iris-table-detail-cell=""
-                              style={{
-                                'grid-column': '1 / -1',
-                                padding: '8px 12px',
-                                'border-bottom': '1px solid var(--iris-border)',
-                              }}
-                            >
-                              {props.renderDetail!(row, index)}
-                            </div>
-                          </div>
-                        </Show>
-                      </>
-                    )
-                  }}
-                </For>
+              <div role="row" data-iris-table-row="empty" style={stateRowStyle}>
+                {props.emptyState ?? t('table.empty')}
               </div>
             }
           >
-            {/* Virtualize flat mode, and tree mode too — tree rows are uniform
+            <Show
+              when={merged.virtualScroll && (!treeMode() || !hasDetail())}
+              fallback={
+                <div role="rowgroup" data-iris-table-body="">
+                  <For each={bodyEntries()}>
+                    {(entry, indexAccessor) => {
+                      const row = entry.row
+                      const treeMeta = entry.meta
+                      const index = indexAccessor()
+                      const id = rowId(row, index)
+                      const expanded = (): boolean => expandedKeys().includes(String(id))
+                      const expandable = (): boolean => isRowExpandable(row, index)
+                      return (
+                        <>
+                          {renderRow(row, index, treeMeta)}
+                          {/* Full-width detail panel beneath an expanded, expandable
+                            row (spans all grid tracks). Only in the non-virtual path. */}
+                          <Show when={hasDetail() && expandable() && expanded()}>
+                            <div
+                              role="row"
+                              data-iris-table-row-detail={String(id)}
+                              style={{
+                                display: 'grid',
+                                'grid-template-columns': gridTemplate(),
+                              }}
+                            >
+                              <div
+                                role="cell"
+                                data-iris-table-detail-cell=""
+                                style={{
+                                  'grid-column': '1 / -1',
+                                  padding: '8px 12px',
+                                  'border-bottom': '1px solid var(--iris-border)',
+                                }}
+                              >
+                                {props.renderDetail!(row, index)}
+                              </div>
+                            </div>
+                          </Show>
+                        </>
+                      )
+                    }}
+                  </For>
+                </div>
+              }
+            >
+              {/* Virtualize flat mode, and tree mode too — tree rows are uniform
                 height, so the only thing that bars it is variable-height detail
                 panels, hence the `!hasDetail()` guard. `bodyRows()` is the flattened
                 visible rows (= sortedRows() in flat mode); `flatTree()?.[idx]`
                 supplies each row's tree meta (depth + toggle), with `idx` the
                 absolute row index the scroller passes its render callback. */}
-            <IrisVirtualScroll
-              items={bodyRows()}
-              itemHeight={merged.virtualScroll!.itemHeight}
-              height={merged.virtualScroll!.height}
-              buffer={merged.virtualScroll!.buffer}
-              keyOf={(row, idx) => rowId(row, idx)}
-              renderItem={(row, idx) => renderRow(row, idx, flatTree()?.[idx] ?? null)}
-            />
+              <IrisVirtualScroll
+                items={bodyRows()}
+                itemHeight={merged.virtualScroll!.itemHeight}
+                height={merged.virtualScroll!.height}
+                buffer={merged.virtualScroll!.buffer}
+                keyOf={(row, idx) => rowId(row, idx)}
+                renderItem={(row, idx) => renderRow(row, idx, flatTree()?.[idx] ?? null)}
+              />
+            </Show>
           </Show>
         </Show>
-      </Show>
 
-      {/* Summary / footer row: each column with a `summary` op aggregates over
+        {/* Summary / footer row: each column with a `summary` op aggregates over
           the full sorted dataset (the core `aggregate` material). */}
-      <Show
-        when={
-          !merged.error &&
-          !merged.loading &&
-          bodyRows().length > 0 &&
-          leafColumns().some((c) => c.summary)
-        }
-      >
-        <div
-          role="row"
-          data-iris-table-row="summary"
-          style={{
-            display: 'grid',
-            'grid-template-columns': gridTemplate(),
-            'font-weight': '600',
-            'border-top': '2px solid var(--iris-border)',
-            background: 'var(--iris-surface)',
-          }}
+        <Show
+          when={
+            !tableError() &&
+            !tableLoading() &&
+            bodyRows().length > 0 &&
+            leafColumns().some((c) => c.summary)
+          }
         >
-          <Show when={merged.selectable !== 'none'}>
-            <div
-              role="cell"
-              data-iris-table-cell="__selection"
-              style={{
-                display: 'flex',
-                'align-items': 'center',
-                'justify-content': 'center',
-                padding: '8px',
-                'border-bottom': '1px solid var(--iris-border)',
-              }}
-            />
-          </Show>
-          <For each={leafColumns()}>
-            {(col, colIndexAccessor) => {
-              const colIndex = colIndexAccessor()
-              const op = col.summary
-              const value = op ? aggregate(bodyRows(), (r) => getCellValue(r, col), op) : null
-              // Column virtualization: skip summary cells outside the window
-              // (+ pinned); place rendered cells on their grid track.
-              const inWindow = (): boolean => {
-                const set = visibleColSet()
-                return !set || set.has(colIndex)
-              }
-              return (
-                <Show when={inWindow()}>
-                  <div
-                    role="cell"
-                    data-iris-table-cell={col.key}
-                    data-iris-table-summary-cell={op ? '' : undefined}
-                    style={{
-                      display: 'flex',
-                      'align-items': 'center',
-                      'justify-content':
-                        col.align === 'right'
-                          ? 'flex-end'
-                          : col.align === 'center'
-                            ? 'center'
-                            : 'flex-start',
-                      padding: '8px var(--iris-padding-md)',
-                      'border-bottom': '1px solid var(--iris-border)',
-                      'font-size': 'var(--iris-font-size-md, 14px)',
-                      'white-space': 'nowrap',
-                      overflow: 'hidden',
-                      'text-overflow': 'ellipsis',
-                      ...(visibleColSet()
-                        ? { 'grid-column-start': String(colTrack(colIndex)) }
-                        : {}),
-                    }}
-                  >
-                    <Show when={op != null && value != null}>
-                      <Show when={col.renderSummary} fallback={String(value)}>
-                        {col.renderSummary!(value!, bodyRows())}
-                      </Show>
-                    </Show>
-                  </div>
-                </Show>
-              )
+          <div
+            role="row"
+            data-iris-table-row="summary"
+            style={{
+              display: 'grid',
+              'grid-template-columns': gridTemplate(),
+              'font-weight': '600',
+              'border-top': '2px solid var(--iris-border)',
+              background: 'var(--iris-surface)',
             }}
-          </For>
-        </div>
-      </Show>
-    </div>
+          >
+            <Show when={merged.seq}>
+              <div
+                role="cell"
+                data-iris-table-cell="__seq"
+                style={{
+                  display: 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  padding: '8px',
+                  'border-bottom': '1px solid var(--iris-border)',
+                }}
+              />
+            </Show>
+            <Show when={merged.selectable !== 'none'}>
+              <div
+                role="cell"
+                data-iris-table-cell="__selection"
+                style={{
+                  display: 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  padding: '8px',
+                  'border-bottom': '1px solid var(--iris-border)',
+                }}
+              />
+            </Show>
+            <For each={leafColumns()}>
+              {(col, colIndexAccessor) => {
+                const colIndex = colIndexAccessor()
+                const op = col.summary
+                const value = op ? aggregate(bodyRows(), (r) => getCellValue(r, col), op) : null
+                // Column virtualization: skip summary cells outside the window
+                // (+ pinned); place rendered cells on their grid track.
+                const inWindow = (): boolean => {
+                  const set = visibleColSet()
+                  return !set || set.has(colIndex)
+                }
+                return (
+                  <Show when={inWindow()}>
+                    <div
+                      role="cell"
+                      data-iris-table-cell={col.key}
+                      data-iris-table-summary-cell={op ? '' : undefined}
+                      style={{
+                        display: 'flex',
+                        'align-items': 'center',
+                        'justify-content':
+                          col.align === 'right'
+                            ? 'flex-end'
+                            : col.align === 'center'
+                              ? 'center'
+                              : 'flex-start',
+                        padding: '8px var(--iris-padding-md)',
+                        'border-bottom': '1px solid var(--iris-border)',
+                        'font-size': 'var(--iris-font-size-md, 14px)',
+                        'white-space': 'nowrap',
+                        overflow: 'hidden',
+                        'text-overflow': 'ellipsis',
+                        ...(visibleColSet()
+                          ? { 'grid-column-start': String(colTrack(colIndex)) }
+                          : {}),
+                      }}
+                    >
+                      <Show when={op != null && value != null}>
+                        <Show when={col.renderSummary} fallback={String(value)}>
+                          {col.renderSummary!(value!, bodyRows())}
+                        </Show>
+                      </Show>
+                    </div>
+                  </Show>
+                )
+              }}
+            </For>
+          </div>
+        </Show>
+
+        {/* Server-side pager (vxe-grid proxyConfig parity): driven by the
+          controller's page/pageSize/total; page changes call setParams and
+          proxyConfig.onPageChange. */}
+        <Show when={hasProxy()}>
+          <div
+            data-iris-table-pager=""
+            style={{
+              display: 'flex',
+              'justify-content': 'flex-end',
+              'align-items': 'center',
+              padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+              'border-top': '1px solid var(--iris-border)',
+              background: 'var(--iris-surface)',
+            }}
+          >
+            <div
+              style={{ display: 'flex', 'align-items': 'center', gap: 'var(--iris-space-xs, 8px)' }}
+            >
+              <Show when={merged.pagerConfig?.showTotal}>
+                <span
+                  data-iris-table-total=""
+                  style={{ color: 'var(--iris-muted)', 'white-space': 'nowrap' }}
+                >
+                  {t('table.total', { total: proxyState().total })}
+                </span>
+              </Show>
+              <Show
+                when={merged.pagerConfig?.pageSizes && merged.pagerConfig!.pageSizes!.length > 0}
+              >
+                <IrisSelect
+                  items={(merged.pagerConfig?.pageSizes ?? []).map((s) => ({
+                    value: String(s),
+                    label: `${s} / ${t('table.page')}`,
+                  }))}
+                  value={String(proxyState().params.pageSize)}
+                  onValueChange={(v) => {
+                    const size = Number(v)
+                    proxy?.setParams({ pageSize: size, page: 1 })
+                    props.proxyConfig?.onPageChange?.(1, size)
+                  }}
+                  aria-label={t('table.pageSize')}
+                />
+              </Show>
+              <IrisPagination
+                total={proxyState().total}
+                pageSize={proxyState().params.pageSize}
+                page={proxyState().params.page}
+                onChange={(page) => {
+                  proxy?.setParams({ page })
+                  props.proxyConfig?.onPageChange?.(page, proxyState().params.pageSize)
+                }}
+              />
+            </div>
+          </div>
+        </Show>
+      </div>
+    </>
   )
 }

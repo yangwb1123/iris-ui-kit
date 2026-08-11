@@ -164,6 +164,9 @@ export interface UseTableProxyOptions<Row extends Record<string, unknown>> {
   /** Controlled multi-column sort state (initial params seed). */
   multiSortState?: MaybeRefOrGetter<IrisTableSortState[] | undefined>
   defaultMultiSort?: IrisTableSortState[] | undefined
+  /** Text filters prop (initial params seed): merged with the checked sets
+   * when remoteFilter is on (React parity). */
+  filters?: MaybeRefOrGetter<Record<string, string> | undefined>
   /**
    * Checked filter sets (batch Z): comma-joined into the initial query
    * `filters` map when remoteFilter is on (vxe filter-multiple remote
@@ -262,6 +265,7 @@ export function useTableProxy<Row extends Record<string, unknown>>(
       if (proxy.value) return
       const config = cfg.value!
       const remoteSort = toValue(options.remoteSort) === true
+      const remoteFilter = toValue(options.remoteFilter) === true
       const multiSort = toValue(options.multiSort) === true
       const ctrl = createRemoteTableSource<Row>({
         // The latest query closure is read at request time (see queryRef).
@@ -276,7 +280,9 @@ export function useTableProxy<Row extends Record<string, unknown>>(
             remoteSort && multiSort
               ? (toValue(options.multiSortState) ?? options.defaultMultiSort ?? [])
               : undefined,
-          filters: remoteSort ? mergeFilterValues({}, toValue(options.filterValues) ?? {}) : {},
+          filters: remoteFilter
+            ? mergeFilterValues(toValue(options.filters) ?? {}, toValue(options.filterValues) ?? {})
+            : {},
         },
       })
       attach(ctrl)
@@ -647,6 +653,7 @@ export const IrisTable = defineComponent({
       defaultSort: props.defaultSort,
       multiSortState: () => props.multiSortState,
       defaultMultiSort: props.defaultMultiSort,
+      filters: () => props.filters,
       filterValues: () => props.filterValues,
     })
     // Proxy mode drives the table's loading/error UI from the controller state

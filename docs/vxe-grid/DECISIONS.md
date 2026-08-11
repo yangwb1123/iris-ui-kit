@@ -469,3 +469,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-z-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-z-baseline.md
+
+## 2026-08-11 08:19:20 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-z-adapt.md [ok]: Report: **Situation**: A prior attempt timed out but left a near-complete implementation uncommitted. I audited it, fixed the re
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-z-adapt.md
+
+## 2026-08-11 08:38:03 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-z-review.md [ok]: Verdict: **PASS**: All requested gates verified green:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-z-review.md
+
+## 2026-08-11 08:53:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-z-review.md [ok]: 批 Z Gate — PASS ✅（commit `71fd9289`）: Review verdict PASS（1 Low + 观察项）→ Low 已修复（初始代理 params filters 逗号合并改按 remoteFilter 门控并合并文本 filters，React 对齐）。全仓门: turbo 180/180 · vue 1531/1531（+21）· react 1823 · core 1249 · audit 0 · manifest 155×4 零漂移。comparison doc: 批 Z 四行 + 批 Y 七项标记 ✅ vue，缺口清单刷新（solid/svelte 下一轮）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-z-gate.md

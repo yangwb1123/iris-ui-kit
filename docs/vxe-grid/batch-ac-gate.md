@@ -1,24 +1,25 @@
-Gate complete — verdict was **PASS** (2 low + 3 info), so: full gate → manifest → docs → commit.
+Gate complete. Working tree clean.
 
-## Summary
+## Report
 
-Review verdict `docs/vxe-grid/batch-ac-review.md`: **PASS** — svelte 核心批 (columnVisibility / filters / seq / spanMethod / proxyConfig / multiSort / formConfig / 工具栏扩展) all react/vue/solid-aligned, core untouched, additive-only. Findings LOW/INFO only (deferred `onColumnVisibilityChange` surface, `grouped` from `displayColumns` matching solid/vue, untested edge behaviors, docstring truncation, cosmetic grid deltas) — no fixes required.
+**Verdict**: PASS (2 low + 3 info — no fixes required, all deferred/informational)
 
-**Full gate**:
+**Full repo gate** (180 tasks, concurrency 2):
 
-| Check                           | Result                                                                                                                                  |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| turbo test/typecheck/lint/build | **180/180 tasks** ✅                                                                                                                    |
-| svelte                          | **916/916** (125 files) + **31/31** hydration ✅                                                                                        |
-| react / vue / solid / core      | 1823 / 1531 / 993 / 1249 ✅                                                                                                             |
-| audit:security                  | **0 vulnerabilities**                                                                                                                   |
-| audit:tokens                    | no new findings (exit-1 warnings pre-existing: `--iris-cell-pad*`/`--iris-shadow-none` from batch L/P react work; none from this batch) |
-| manifest                        | gen + check clean, **155 × 4** aligned                                                                                                  |
+| Check                                 | Result                                                                                           |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `turbo run test typecheck lint build` | **180/180 tasks** ✅ (2m26s)                                                                     |
+| svelte tests                          | **916/916** (125 files) + **31/31** hydration ✅ (incl. 17 new `parity-ac`)                      |
+| react / vue / solid / core            | 1823 / 1531 / 993 / 1249 ✅                                                                      |
+| `audit:security`                      | **0 vulnerabilities** ✅                                                                         |
+| `audit:tokens`                        | no new findings (exit-1 warnings are pre-existing react batch-L/P tokens — none from this batch) |
+| `gen:manifest` + `check:manifest`     | clean, **155 × 4** aligned, up to date ✅                                                        |
 
-**Docs**: `vxe-grid-comparison.md` — 批 AC rows (svelte: proxyConfig/formConfig/multiSort/列显隐/筛选/序号/合并/工具栏扩展) marked done (四框架 for 序号/合并/排序/筛选/工具栏/代理/表单 rows), summary paragraph + batch-table row (`✅ svelte`) added, gaps refreshed (**svelte 交互批 AD 为下一轮**), counts line now includes `svelte 916 tests + 31 hydration`.
+**Docs** (`docs/vxe-grid-comparison.md`):
 
-**Commit**:
+- Batch AC rows marked done (svelte): 序号列 / 合并单元格 / 排序 / 筛选 / 工具栏 / 数据代理 / 搜索表单 → `对齐（四框架）`; new summary paragraph + batch-table row `✅ svelte`
+- Gaps list refreshed: svelte 核心批 AC 已对齐，**交互批 AD 为下一轮**（rowDrag/columnDrag/行编辑模式/contextMenu/filterValues/代理方法）
+- Counts line: `svelte 916 tests + 31 hydration`
+- Gate report: `docs/vxe-grid/batch-ac-gate.md`
 
-- `feat(table): vxe-grid 批 AC——svelte 适配器功能对齐（核心批）` (worktree: 7 modified source/docs + 4 new batch files + regenerated manifest/llms.txt)
-
-Working tree clean after commit.
+**Commit**: `d221d215bb8362c68a550d3c6774bd5322c7c6f1` — `feat(table): vxe-grid 批 AC——svelte 适配器功能对齐（核心批）` (13 files, +1656/−243)

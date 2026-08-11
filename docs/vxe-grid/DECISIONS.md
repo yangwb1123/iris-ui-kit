@@ -554,3 +554,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ac-review.md [ok]: Review summary: **Verification (all green):**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ac-review.md
+
+## 2026-08-11 12:17:24 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ac-gate.md [ok]: Report: **Verdict**: PASS (2 low + 3 info — no fixes required, all deferred/informational)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ac-gate.md

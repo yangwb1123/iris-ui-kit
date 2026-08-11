@@ -454,3 +454,13 @@
   - Verification: typecheck ✓ · test 1510/1510 ✓ · lint 0/0 ✓ · spec 0 violations ✓ · check:manifest + check:docs-reference up-to-date ✓.
   - Batch Z handoff: filterValues OR-match, col.filterMethod, seqMethod, proxy cumulative seq, columnOrder/toolbar column panel (fires the declared `update:columnVisibility` emit), footer spans, and the pre-existing React-side manifest props truncation for inline-object props (spanMethod/columnDrag/rowDrag — vue frameworkContracts parse correctly).
 - evidence: (adapt commit; report in docs/vxe-grid/batch-y-adapt.md)
+
+## 2026-08-11 06:47:27 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-y-adapt.md [ok]: Report: **Situation**: Two prior adapt attempts timed out but left a nearly-complete implementation in the working tree. This se
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-y-adapt.md
+
+## 2026-08-11 07:12:54 — stage 'review' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-y-review.md [FAILED: agent binary not found]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-y-review.md

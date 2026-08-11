@@ -1,20 +1,26 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, untrack } from 'svelte'
   import type { Snippet } from 'svelte'
   type RowSnippet = Snippet<[Record<string, unknown>]>
   import {
     aggregate,
+    buildFormValues,
     buildHeaderMatrix,
     compareValues,
     computeVirtualRange,
     createCellRange,
+    createRemoteTableSource,
     createSelectionModel,
     createExpansion,
     flattenLeafColumns,
     flattenTree,
+    mergeFormFilters,
+    seedFormValues,
     withSortedChildren,
     nextGridCell,
     type GridNavKey,
+    type RemoteTableSource,
+    type RemoteTableSourceState,
     type TreeRow,
     validateEditRulesAsync,
   } from '@iris-ui-kit/core'
@@ -22,8 +28,90 @@
   import { useI18n } from '../../i18n'
   import { useDrag } from '../drag/useDrag.svelte'
   import IrisVirtualScroll from '../virtual-scroll/IrisVirtualScroll.svelte'
+  import IrisButton from '../button/IrisButton.svelte'
+  import IrisFormField from '../form-field/FormField.svelte'
+  import IrisInput from '../input/Input.svelte'
+  import IrisPagination from '../pagination/IrisPagination.svelte'
+  import IrisSelect from '../select/IrisSelect.svelte'
   import type { IrisTableProps } from './props'
   import type { IrisTableColumn, IrisTableSortState, IrisTableColumnWidths } from './types'
+
+  const EMPTY_PROXY_STATE: RemoteTableSourceState<Record<string, unknown>> = {
+    data: [],
+    total: 0,
+    loading: false,
+    error: null,
+    params: { page: 1, pageSize: 10, sort: null, filters: {} },
+  }
+
+  type SpanPlan = {
+    occupied: Set<string>
+    spans: Map<string, { rowspan: number; colspan: number }>
+  }
+
+  // Cell merge (vxe spanMethod parity): a pure pass over the full body grid
+  // computing which cells an earlier rowspan/colspan origin occupies and what
+  // span each origin cell claims. Rebuilt per reactive pass ($derived.by), so
+  // it stays correct across virtual-window boundaries (windowed cells just
+  // consult the plan) and needs no render-time ref mutation.
+  function buildSpanPlan(
+    rowCount: number,
+    colCount: number,
+    method: (params: {
+      rowIndex: number
+      columnIndex: number
+    }) => { rowspan?: number; colspan?: number } | null | undefined,
+  ): SpanPlan {
+    const occupied = new Set<string>()
+    const spans = new Map<string, { rowspan: number; colspan: number }>()
+    for (let r = 0; r < rowCount; r += 1) {
+      for (let c = 0; c < colCount; c += 1) {
+        const key = `${r}:${c}`
+        if (occupied.has(key)) continue
+        const span = method({ rowIndex: r, columnIndex: c })
+        const rowspan = span?.rowspan ?? 1
+        const colspan = span?.colspan ?? 1
+        if (rowspan > 1 || colspan > 1) {
+          spans.set(key, { rowspan, colspan })
+          for (let rr = 1; rr < rowspan; rr += 1) occupied.add(`${r + rr}:${c}`)
+          for (let cc = 1; cc < colspan; cc += 1) occupied.add(`${r}:${c + cc}`)
+        }
+      }
+    }
+    return { occupied, spans }
+  }
+
+  // Ordered multi-column comparator (vxe sort-config.multiple parity): the
+  // click-order list chains per-column comparators; the first non-zero
+  // comparison wins, ties fall through to the next column.
+  function createMultiSortComparator(
+    list: IrisTableSortState[],
+    leafCols: IrisTableColumn[],
+    getValue: (row: Record<string, unknown>, col: IrisTableColumn) => unknown,
+  ): ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null {
+    if (list.length === 0) return null
+    const colMap = new Map(leafCols.map((c) => [c.key, c]))
+    const chain: Array<{
+      dir: number
+      sorter: (a: Record<string, unknown>, b: Record<string, unknown>) => number
+    }> = []
+    for (const s of list) {
+      const col = colMap.get(s.key)
+      if (!col) continue
+      chain.push({
+        dir: s.direction === 'asc' ? 1 : -1,
+        sorter: col.sorter ?? ((a, b) => compareValues(getValue(a, col), getValue(b, col))),
+      })
+    }
+    if (chain.length === 0) return null
+    return (a, b) => {
+      for (const step of chain) {
+        const cmp = step.sorter(a, b)
+        if (cmp !== 0) return cmp * step.dir
+      }
+      return 0
+    }
+  }
 
   let {
     columns,
@@ -34,6 +122,20 @@
     defaultSelection,
     sort,
     defaultSort,
+    multiSort = false,
+    multiSortState,
+    defaultMultiSort,
+    onUpdateMultiSort,
+    seq = false,
+    seqStartIndex = 1,
+    seqMethod,
+    spanMethod,
+    columnVisibility,
+    filters,
+    formConfig,
+    toolbar,
+    proxyConfig,
+    pagerConfig,
     striped = false,
     bordered = true,
     loading = false,
@@ -83,18 +185,147 @@
     return row[key]
   }
 
+  // Column visibility (vxe columnConfig.visible parity): hidden columns are
+  // dropped from every render path (header, body, summary). Reference-
+  // preserving: without the prop the result IS `columns`, so the flat path is
+  // byte-identical with the pre-visibility render path.
+  const displayColumns = $derived(
+    columnVisibility !== undefined
+      ? columns.filter((c) => columnVisibility![c.key] !== false)
+      : columns,
+  )
+
   // Multi-level (grouped) headers: a column with `children` forms a header group.
   // The BODY always renders the leaf columns; only the header gains extra rows.
-  // When nothing is grouped, `leafColumns` is the original `columns` (same
+  // When nothing is grouped, `leafColumns` is the original `displayColumns` (same
   // reference) so the flat path is byte-identical.
-  const grouped = $derived(columns.some((c) => c.children && c.children.length > 0))
-  const leafColumns = $derived(grouped ? flattenLeafColumns(columns) : columns)
-  const headerMatrix = $derived(grouped ? buildHeaderMatrix(columns) : null)
+  const grouped = $derived(displayColumns.some((c) => c.children && c.children.length > 0))
+  const leafColumns = $derived(grouped ? flattenLeafColumns(displayColumns) : displayColumns)
+  const headerMatrix = $derived(grouped ? buildHeaderMatrix(displayColumns) : null)
 
   // Sort state
   // svelte-ignore state_referenced_locally — `defaultSort` is an initial seed.
   let internalSort = $state<IrisTableSortState | null>(defaultSort ?? null)
   const effectiveSort = $derived(sort !== undefined ? sort : internalSort)
+
+  // ---- Multi-column sort (vxe sort-config.multiple parity) ----------------
+  // Array order = click order (most-significant first). React parity: a
+  // column not in the list APPENDS asc; an existing column cycles
+  // asc → desc → REMOVE. Header badges show the click-order sequence.
+  const multiControlled = $derived(multiSortState !== undefined)
+  // svelte-ignore state_referenced_locally — seeded from defaultMultiSort; controlled syncs via the prop.
+  let multiInternal = $state<IrisTableSortState[]>(defaultMultiSort ?? [])
+  const effectiveMultiSort = $derived<IrisTableSortState[]>(
+    multiControlled ? (multiSortState ?? []) : multiInternal,
+  )
+  function setMultiSort(next: IrisTableSortState[]): void {
+    if (!multiControlled) multiInternal = next
+    onUpdateMultiSort?.(next)
+    // remoteSort parity (multi mode): the FULL sort list re-queries the
+    // server; the single `sort` param stays the single-column channel.
+    if (remoteSort) proxyRef?.setParams({ sorts: next })
+  }
+  const multiSortComparator = $derived<
+    () => ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null
+  >(() => createMultiSortComparator(effectiveMultiSort, leafColumns, getCellValue))
+  function cycleMultiSort(column: IrisTableColumn): void {
+    if (!column.sortable) return
+    const idx = effectiveMultiSort.findIndex((s) => s.key === column.key)
+    if (idx < 0) {
+      setMultiSort([...effectiveMultiSort, { key: column.key, direction: 'asc' }])
+      return
+    }
+    const next = [...effectiveMultiSort]
+    if (next[idx]!.direction === 'asc') {
+      next[idx] = { key: column.key, direction: 'desc' }
+      setMultiSort(next)
+      return
+    }
+    next.splice(idx, 1)
+    setMultiSort(next)
+  }
+
+  // ---- Server-side proxy (vxe-grid proxyConfig parity, query slice) -------
+  // The controller lives in a plain closure variable created ONCE per proxy
+  // PRESENCE — an inline proxyConfig object with a fresh identity each render
+  // never destroys/recreates it — and is torn down when the proxy disappears
+  // or the component unmounts, so a late response never writes back to a dead
+  // instance. State flows controller → $state via store subscribe (the same
+  // bridge pattern as selection / expansion / cell-range). Effects never run
+  // during renderToString, so the first fetch is SSR-safe by construction.
+  const hasProxy = $derived(proxyConfig !== undefined)
+  const remoteSort = $derived(proxyConfig?.remoteSort === true)
+  const remoteFilter = $derived(proxyConfig?.remoteFilter === true)
+  let proxyRef: RemoteTableSource<Record<string, unknown>> | null = null
+  let proxyUnsub: (() => void) | null = null
+  // `proxyState` naming (not `state`) keeps the AGENTS.md $state collision rule.
+  let proxyState = $state<RemoteTableSourceState<Record<string, unknown>>>(EMPTY_PROXY_STATE)
+  $effect(() => {
+    if (!hasProxy) {
+      proxyUnsub?.()
+      proxyUnsub = null
+      proxyRef?.destroy()
+      proxyRef = null
+      proxyRows = []
+      lastProxyDataRef = undefined
+      proxyState = EMPTY_PROXY_STATE
+      return
+    }
+    // Presence-keyed: `hasProxy` is the only tracked dependency — every prop
+    // read below is untracked so an inline proxyConfig (fresh identity per
+    // render) or a sort/filter prop change never destroys/recreates the
+    // controller (react hasProxy / vue cfg===undefined parity).
+    if (proxyRef) return
+    const source = untrack(() => {
+      const src = createRemoteTableSource<Record<string, unknown>>({
+        // The latest query closure is read at request time, so a parent that
+        // swaps the query never leaves a stale closure behind.
+        query: (params) => proxyConfig!.query(params),
+        // Kicked below — never fire a fetch during render.
+        autoLoad: false,
+        initialParams: {
+          page: proxyConfig?.defaultPage ?? 1,
+          pageSize: proxyConfig?.pageSize ?? 10,
+          sort: remoteSort ? ((sort !== undefined ? sort : defaultSort) ?? null) : null,
+          sorts: remoteSort && multiSort ? (multiSortState ?? defaultMultiSort ?? []) : undefined,
+          filters: remoteFilter ? (filters ?? {}) : {},
+        },
+      })
+      proxyRef = src
+      proxyState = src.getState()
+      proxyUnsub = src.subscribe((s) => {
+        proxyState = s
+      })
+      // autoLoad parity: kick the first request here (never during render).
+      if (proxyConfig?.autoLoad !== false) void src.request()
+      return src
+    })
+    return () => {
+      proxyUnsub?.()
+      proxyUnsub = null
+      source.destroy()
+      if (proxyRef === source) proxyRef = null
+      proxyRows = []
+      lastProxyDataRef = undefined
+      proxyState = EMPTY_PROXY_STATE
+    }
+  })
+  // Proxy rows feed the table as the data source; a new page/refetch
+  // reference replaces them wholesale. Local edit write-backs (below) stick
+  // until then (react liveData parity) — the reference guard only replaces
+  // when the proxy actually lands a NEW page array (a loading flip keeps the
+  // locally-edited copy on screen).
+  let proxyRows = $state<Array<Record<string, unknown>>>([])
+  let lastProxyDataRef: Array<Record<string, unknown>> | undefined
+  $effect(() => {
+    if (!hasProxy) return
+    const next = proxyState.data
+    if (next !== lastProxyDataRef) {
+      lastProxyDataRef = next
+      proxyRows = next
+    }
+  })
+  const baseData = $derived(hasProxy ? proxyRows : (data ?? []))
 
   // The active sort comparator (or null). Shared by the root-row sort AND the
   // tree-mode child sort so a sortable tree reorders siblings at every depth.
@@ -114,12 +345,137 @@
   })
 
   const sortedRows = $derived((): Array<Record<string, unknown>> => {
+    // remoteSort parity: the server owns the ordering — never re-sort locally.
+    // Multi mode uses the chained multi comparator exclusively (an empty list
+    // means unsorted); single mode keeps the single comparator.
+    if (remoteSort) return baseData
+    if (multiSort) {
+      const compare = multiSortComparator()
+      if (!compare) return baseData
+      return [...baseData].sort(compare)
+    }
     const compare = sortComparator()
-    if (!compare) return data ?? []
-    return [...(data ?? [])].sort(compare)
+    if (!compare) return baseData
+    return [...baseData].sort(compare)
+  })
+
+  // remoteSort parity: hand the active sort state to the server. Header
+  // clicks are pushed through the wrappers above (setMultiSort / the click
+  // handler); this effect covers controlled `sort`/`multiSortState` prop
+  // updates from the parent (core setParams dedupes unchanged params, so the
+  // click path does not double-request). In multiSort mode the single-column
+  // channel is inert — the multi channel owns the sync.
+  $effect(() => {
+    if (!hasProxy || !remoteSort) return
+    if (multiSort) proxyRef?.setParams({ sorts: effectiveMultiSort })
+    else proxyRef?.setParams({ sort: effectiveSort ?? null })
+  })
+
+  // ---- Search form (vxe-grid formConfig parity) ---------------------------
+  // Draft/applied two-state: keystrokes only touch the DRAFT (never trigger a
+  // query); submit/reset promote the built values into the APPLIED filters.
+  // svelte-ignore state_referenced_locally — initial seed only; re-seeding is keyed on the field signature below.
+  let formDraft = $state<Record<string, string>>(seedFormValues(formConfig?.fields))
+  let formApplied = $state<Record<string, string>>({})
+  // Field signature = key + default by VALUE, so re-seeding is keyed on the
+  // signature ($derived compares by value, not identity): an inline
+  // formConfig object with a fresh identity each render never wipes user
+  // input. The formConfig object itself is read untracked below.
+  const formFieldSignature = $derived(
+    (formConfig?.fields ?? []).map((f) => `${f.key}=${f.defaultValue ?? ''}`).join('\u0000'),
+  )
+  // svelte-ignore state_referenced_locally — the object is read untracked by
+  // design: re-seeding is keyed on the field signature only, so an inline
+  // formConfig identity never wipes user input.
+  let lastFormSignature: string | undefined
+  $effect(() => {
+    const cfg = untrack(() => formConfig)
+    const signature = formFieldSignature
+    // Keyed on the signature VALUE (the only tracked dependency): a fresh
+    // inline formConfig object per render never re-seeds.
+    if (signature === lastFormSignature) return
+    lastFormSignature = signature
+    formDraft = seedFormValues(cfg?.fields)
+    formApplied = {}
+  })
+  function setFormValue(key: string, value: string): void {
+    if (formDraft[key] === value) return
+    formDraft = { ...formDraft, [key]: value }
+  }
+  function handleFormSubmit(e: Event): void {
+    e.preventDefault()
+    const values = buildFormValues(formConfig?.fields, formDraft)
+    formConfig?.onSearch?.(values)
+    formApplied = values
+    // Proxy mode: the server owns filtering — merge the form values into the
+    // controller filters (page resets to 1 in core applyParams, vxe behavior).
+    if (proxyRef) {
+      void proxyRef.setParams({ filters: mergeFormFilters(filters ?? {}, values), page: 1 })
+    }
+  }
+  function handleFormReset(e: Event): void {
+    e.preventDefault()
+    const defaults = seedFormValues(formConfig?.fields)
+    formDraft = defaults
+    const values = buildFormValues(formConfig?.fields, defaults)
+    formApplied = values
+    formConfig?.onReset?.(values)
+    if (proxyRef) {
+      // setParams returns false when the merged params are unchanged (e.g.
+      // filters already cleared) — a reset must still re-query, so force a
+      // refetch only in that no-op case (no double request when it changed).
+      if (
+        proxyRef.setParams({
+          filters: mergeFormFilters(filters ?? {}, values),
+          page: 1,
+        }) === false
+      ) {
+        void proxyRef.refetch()
+      }
+    }
+  }
+  // remoteFilter parity: hand the filter map to the server and never hide
+  // rows client-side (vxe proxyConfig.filter). Form values are merged in so a
+  // later `filters` prop change from the parent does not silently drop the
+  // applied search. (Core setParams dedupes unchanged params.)
+  $effect(() => {
+    if (!hasProxy || !remoteFilter) return
+    proxyRef?.setParams({ filters: mergeFormFilters(filters ?? {}, formApplied) })
+  })
+
+  // Client-side filters (vxe filterConfig parity, local mode): substring
+  // filter over the sorted data before tree flattening (flat mode). With
+  // remoteFilter the server owns filtering — rows are never hidden locally.
+  // The search form's applied values merge over the `filters` prop (form wins,
+  // neither input is mutated); in proxy mode the server owns form filtering,
+  // so only the prop map filters the loaded page.
+  const filteredRows = $derived((): Array<Record<string, unknown>> => {
+    if (remoteFilter) return sortedRows()
+    const merged: Record<string, string> = hasProxy
+      ? (filters ?? {})
+      : mergeFormFilters(filters ?? {}, formApplied)
+    const active = Object.entries(merged).filter(([, v]) => v != null && v !== '')
+    if (active.length === 0) return sortedRows()
+    return sortedRows().filter((row) =>
+      active.every(([key, value]) => {
+        const col = displayColumns.find((c) => c.key === key)
+        if (!col) return true
+        const raw = getCellValue(row, col)
+        if (col.filterMethod) return col.filterMethod(raw, row, value)
+        return String(raw ?? '')
+          .toLowerCase()
+          .includes(value.toLowerCase())
+      }),
+    )
   })
 
   function handleHeaderClick(column: IrisTableColumn): void {
+    // Sortable header click: multi mode appends/cycles the click-order list,
+    // single mode keeps the asc → desc → none cycle.
+    if (multiSort) {
+      cycleMultiSort(column)
+      return
+    }
     if (!column.sortable) return
     const current = effectiveSort
     let next: IrisTableSortState | null
@@ -132,6 +488,9 @@
     }
     if (sort === undefined) internalSort = next
     onUpdateSort?.(next)
+    // remoteSort parity: sort changes re-query the server (page resets to 1
+    // in the core controller, vxe behavior).
+    if (remoteSort) proxyRef?.setParams({ sort: next })
   }
 
   function handleHeaderKeyDown(event: KeyboardEvent, column: IrisTableColumn): void {
@@ -209,20 +568,23 @@
   // mode, so non-tree behavior is unchanged. Each flat entry carries its
   // TreeRow meta (depth / hasChildren / expanded) for the first-cell indent.
   const treeMode = $derived(getSubRows !== undefined)
+  // Tree children sort by the same comparator as the roots: multi mode chains
+  // the multi comparator, single mode keeps the single one.
+  const treeComparator = $derived(() => (multiSort ? multiSortComparator() : sortComparator()))
   const flatTree = $derived<Array<TreeRow<Record<string, unknown>>> | null>(
     treeMode
-      ? flattenTree(sortedRows(), {
+      ? flattenTree(filteredRows(), {
           getKey: (r) => String(rowId(r, 0)),
           // With an active sort, sort each level's children by the same
           // comparator so the whole tree reorders hierarchically.
-          getChildren: sortComparator()
-            ? withSortedChildren((r) => getSubRows!(r), sortComparator()!)
+          getChildren: treeComparator()
+            ? withSortedChildren((r) => getSubRows!(r), treeComparator()!)
             : (r) => getSubRows!(r),
           isExpanded: (k) => $expandedKeys.includes(k),
         })
       : null,
   )
-  const bodyData = $derived(flatTree ? flatTree.map((tr) => tr.row) : sortedRows())
+  const bodyData = $derived(flatTree ? flatTree.map((tr) => tr.row) : filteredRows())
 
   const allRowIds = $derived(bodyData.map((r, i) => rowId(r, i)))
   const allSelected = $derived(
@@ -327,9 +689,9 @@
 
   const showSelection = $derived(selectable !== 'none')
 
-  // Leading non-data columns (detail toggle, selection) that offset the grouped
-  // header cells' grid placement.
-  const lead = $derived((hasDetail ? 1 : 0) + (showSelection ? 1 : 0))
+  // Leading non-data columns (seq, detail toggle, selection) that offset the
+  // grouped header cells' grid placement.
+  const lead = $derived((seq ? 1 : 0) + (hasDetail ? 1 : 0) + (showSelection ? 1 : 0))
 
   // Summary/footer row appears when any column declares a `summary` aggregate op.
   const hasSummary = $derived(leafColumns.some((c) => c.summary))
@@ -340,6 +702,7 @@
 
   const gridTemplate = $derived(() => {
     const parts: string[] = []
+    if (seq) parts.push('60px')
     if (hasDetail) parts.push('40px')
     if (showSelection) parts.push('40px')
     for (const col of leafColumns) {
@@ -385,13 +748,15 @@
         : draft
     // Declarative editRules run async (may contain async validators).
     if (column.editRules && column.editRules.length > 0) {
-      void validateEditRulesAsync(column.editRules, draft, row).then((r: { valid: boolean; messages: string[] }) => {
-        if (!r.valid) {
-          editError = r.messages[0] ?? null
-          return
-        }
-        finishCommit(row, column, rowIndex, oldValue, newValue)
-      })
+      void validateEditRulesAsync(column.editRules, draft, row).then(
+        (r: { valid: boolean; messages: string[] }) => {
+          if (!r.valid) {
+            editError = r.messages[0] ?? null
+            return
+          }
+          finishCommit(row, column, rowIndex, oldValue, newValue)
+        },
+      )
       return
     }
     // A column validator can reject the draft: keep the editor open, surface the
@@ -417,6 +782,15 @@
     editingCellId = null
     if (newValue !== oldValue) {
       onCellEdit?.({ row, column, oldValue, newValue, rowIndex })
+      // Proxy mode: write the committed value into the local page copy so the
+      // edit survives without a refetch (react liveData parity); the next
+      // page/refetch replaces the copy wholesale.
+      if (proxyRef) {
+        const ident = rowId(row, rowIndex)
+        proxyRows = proxyRows.map((r, i) =>
+          rowId(r, i) === ident ? { ...r, [column.key]: newValue } : r,
+        )
+      }
     }
   }
 
@@ -577,7 +951,48 @@
   // selection tracks), so a rendered cell lands in the right place even when
   // earlier cells are skipped.
   function colTrack(i: number): number {
-    return (hasDetail ? 1 : 0) + (showSelection ? 2 : 1) + i
+    return (seq ? 1 : 0) + (hasDetail ? 1 : 0) + (showSelection ? 2 : 1) + i
+  }
+
+  // Sequence numbers (vxe seqConfig parity): a leading read-only column whose
+  // value is rowIndex + seqStartIndex, or seqMethod's return, or — in proxy
+  // mode with proxyConfig.seq — cumulative across pages.
+  function seqValue(index: number): string | number {
+    if (seqMethod) return seqMethod({ rowIndex: index, columnIndex: 0 })
+    if (proxyRef && proxyConfig?.seq && seq) {
+      return (proxyState.params.page - 1) * proxyState.params.pageSize + index + 1
+    }
+    return index + seqStartIndex
+  }
+
+  // Span bookkeeping (vxe spanMethod parity): a pure per-pass plan over the
+  // full body grid, rebuilt reactively whenever the body rows, columns or
+  // spanMethod change — correct across virtual-window boundaries (windowed
+  // cells consult the same plan) and needs no render-time ref mutation.
+  const spanPlan = $derived.by<SpanPlan | null>(() => {
+    if (spanMethod === undefined) return null
+    return buildSpanPlan(bodyData.length, leafColumns.length, spanMethod)
+  })
+
+  // Active sort info for a column: multi mode reads the click-order list,
+  // single mode the single-column state.
+  function sortAria(col: IrisTableColumn): 'none' | 'ascending' | 'descending' | undefined {
+    if (multiSort) {
+      const idx = effectiveMultiSort.findIndex((s) => s.key === col.key)
+      if (idx < 0) return col.sortable ? 'none' : undefined
+      return effectiveMultiSort[idx]!.direction === 'asc' ? 'ascending' : 'descending'
+    }
+    if (effectiveSort?.key !== col.key) return col.sortable ? 'none' : undefined
+    return effectiveSort.direction === 'asc' ? 'ascending' : 'descending'
+  }
+
+  // Proxy mode drives the table's loading/error UI from the controller state
+  // (reusing the existing loading/error props rendering below).
+  const tableLoading = $derived(hasProxy ? proxyState.loading : loading)
+  const tableError = $derived(hasProxy ? proxyState.error !== null : error)
+  function handleRetry(): void {
+    if (proxyRef) void proxyRef.refetch()
+    onRetry?.()
   }
 
   // Virtualize flat mode, and tree mode too — tree rows are uniform height, so
@@ -604,6 +1019,146 @@
   })
 </script>
 
+{#snippet sortIndicator(col: IrisTableColumn)}
+  {@const multiIdx = multiSort ? effectiveMultiSort.findIndex((s) => s.key === col.key) : -1}
+  {@const isActive = multiSort ? multiIdx >= 0 : effectiveSort?.key === col.key}
+  {@const dir = isActive
+    ? multiSort
+      ? effectiveMultiSort[multiIdx]!.direction
+      : effectiveSort!.direction
+    : null}
+  {#if col.sortable}
+    <span
+      aria-hidden="true"
+      style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: var(--iris-font-size-xs, 12px); color: {isActive
+        ? 'var(--iris-primary)'
+        : 'var(--iris-muted)'}"
+    >
+      <span style="opacity: {dir === 'asc' ? '1' : '0.45'}">▲</span>
+      <span style="opacity: {dir === 'desc' ? '1' : '0.45'}">▼</span>
+    </span>
+    {#if multiSort && multiIdx > 0}
+      <span
+        data-iris-sort-seq=""
+        style="margin-inline-start: var(--iris-space-xxs, 4px); font-size: var(--iris-font-size-xs, 12px); color: var(--iris-muted)"
+        >{multiIdx + 1}</span
+      >
+    {/if}
+  {/if}
+{/snippet}
+
+<!-- Search form (vxe-grid formConfig parity). -->
+{#if formConfig}
+  <form
+    data-iris-table-form=""
+    onsubmit={handleFormSubmit}
+    onreset={handleFormReset}
+    style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--iris-space-sm, 12px); padding: var(--iris-space-sm, 12px); border: 1px solid var(--iris-border); border-bottom: none; background: var(--iris-surface); font-size: var(--iris-font-size-sm, 13px)"
+  >
+    {#each formConfig.fields as field}
+      <div data-iris-table-form-field={field.key} style="min-width: 180px">
+        <IrisFormField label={field.label} size="sm">
+          {#if field.type === 'select'}
+            <IrisSelect
+              items={(field.options ?? []).map((o) => ({ value: o.value, label: o.label }))}
+              value={formDraft[field.key] ?? ''}
+              onValueChange={(v) => setFormValue(field.key, String(v ?? ''))}
+              placeholder={field.placeholder ?? t('select.placeholder')}
+              size="sm"
+            />
+          {:else}
+            <IrisInput
+              value={formDraft[field.key] ?? ''}
+              oninput={(e) => setFormValue(field.key, (e.target as HTMLInputElement).value)}
+              placeholder={field.placeholder}
+              size="sm"
+            />
+          {/if}
+        </IrisFormField>
+      </div>
+    {/each}
+    <div style="display: flex; gap: var(--iris-space-xs, 8px)">
+      <IrisButton type="submit" size="sm" data-iris-table-form-submit="">
+        {formConfig.submitText ?? t('table.formSubmit')}
+      </IrisButton>
+      <IrisButton type="reset" variant="outline" size="sm" data-iris-table-form-reset="">
+        {formConfig.resetText ?? t('table.formReset')}
+      </IrisButton>
+    </div>
+  </form>
+{/if}
+
+<!-- Toolbar (vxe-grid toolbarConfig parity, minimal built-ins). -->
+{#if toolbar}
+  <div
+    data-iris-table-toolbar=""
+    style="display: flex; align-items: center; gap: var(--iris-space-sm, 12px); padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); border: 1px solid var(--iris-border); border-bottom: none; border-top-left-radius: var(--iris-radius-md, 6px); border-top-right-radius: var(--iris-radius-md, 6px); background: var(--iris-surface); font-size: var(--iris-font-size-sm, 13px); position: relative"
+  >
+    {#if toolbar.title}
+      <span style="font-weight: 600; color: var(--iris-foreground)">{toolbar.title}</span>
+    {/if}
+    <div style="flex: 1"></div>
+    {#if toolbar.onRefresh}
+      <button
+        type="button"
+        data-iris-table-toolbar-refresh=""
+        onclick={() => {
+          toolbar?.onRefresh?.()
+          // proxy mode: the built-in refresh also re-queries (vxe parity).
+          if (proxyRef) void proxyRef.refetch()
+        }}
+        style="border: none; background: transparent; cursor: pointer; color: var(--iris-muted); font-size: var(--iris-font-size-md, 14px)"
+        aria-label={t('table.refresh')}
+        title={t('table.refresh')}>↻</button
+      >
+    {/if}
+    {#if toolbar.onExport}
+      <button
+        type="button"
+        data-iris-table-toolbar-export=""
+        onclick={() => toolbar?.onExport?.()}
+        style="border: none; background: transparent; cursor: pointer; color: var(--iris-muted); font-size: var(--iris-font-size-md, 14px)"
+        aria-label={t('table.export')}
+        title={t('table.export')}>⇩</button
+      >
+    {/if}
+    {#if selectable === 'multi' && displaySelection.length > 0 && toolbar.batch}
+      <button
+        type="button"
+        data-iris-table-toolbar-batch=""
+        onclick={() => toolbar?.batch?.onClick([...displaySelection])}
+        style="border: none; cursor: pointer; background: var(--iris-primary); color: var(--iris-primary-foreground); font-size: var(--iris-font-size-md, 14px); display: inline-flex; align-items: center; gap: var(--iris-space-xxs, 4px); padding: var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px); border-radius: var(--iris-radius-sm, 4px)"
+        aria-label={toolbar.batch.label}
+        title={toolbar.batch.label}
+      >
+        {#if toolbar.batch.icon}
+          <span aria-hidden="true" style="font-size: var(--iris-font-size-sm, 13px)"
+            >{toolbar.batch.icon}</span
+          >
+        {/if}
+        {toolbar.batch.label}
+      </button>
+    {/if}
+    {#each toolbar.buttons ?? [] as btn}
+      <button
+        type="button"
+        data-iris-table-toolbar-button={btn.key}
+        onclick={btn.onClick}
+        style="border: none; background: transparent; cursor: pointer; color: var(--iris-foreground); font-size: var(--iris-font-size-md, 14px); display: inline-flex; align-items: center; gap: var(--iris-space-xxs, 4px); padding: 0 var(--iris-space-xxs, 4px)"
+        aria-label={btn.label}
+        title={btn.label}
+      >
+        {#if btn.icon}
+          <span aria-hidden="true" style="font-size: var(--iris-font-size-sm, 13px)"
+            >{btn.icon}</span
+          >
+        {/if}
+        {btn.label}
+      </button>
+    {/each}
+  </div>
+{/if}
+
 <div
   {...rest}
   bind:this={rootEl}
@@ -629,18 +1184,28 @@
       data-iris-table-header-grouped=""
       style="display: grid; grid-template-columns: {gridTemplate()}; grid-template-rows: repeat({headerMatrix.length}, auto)"
     >
+      {#if seq}
+        <div
+          role="columnheader"
+          data-iris-table-header="__seq"
+          style="grid-column: 1; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+        ></div>
+      {/if}
       {#if hasDetail}
         <div
           role="columnheader"
-          style="grid-column: 1; grid-row: 1 / -1; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+          style="grid-column: {seq
+            ? 2
+            : 1}; grid-row: 1 / -1; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
         ></div>
       {/if}
       {#if showSelection}
         <div
           role="columnheader"
-          style="grid-column: {hasDetail
-            ? 2
-            : 1}; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+          style="grid-column: {(seq ? 1 : 0) +
+            (hasDetail
+              ? 2
+              : 1)}; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
         >
           {#if selectable === 'multi'}
             <input
@@ -675,13 +1240,7 @@
             onclick={sortable ? () => handleHeaderClick(col) : undefined}
             onkeydown={sortable ? (event) => handleHeaderKeyDown(event, col) : undefined}
             tabindex={sortable ? 0 : undefined}
-            aria-sort={sortable
-              ? effectiveSort?.key === col.key
-                ? effectiveSort.direction === 'asc'
-                  ? 'ascending'
-                  : 'descending'
-                : 'none'
-              : undefined}
+            aria-sort={sortable ? sortAria(col) : undefined}
             style="position: relative; display: flex; align-items: center; justify-content: {isGroup
               ? 'center'
               : col.align === 'right'
@@ -697,28 +1256,7 @@
               : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-sm, 13px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
           >
             {col.title}
-            {#if sortable}
-              <span
-                aria-hidden="true"
-                style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: var(--iris-font-size-xs, 12px); color: {effectiveSort?.key ===
-                col.key
-                  ? 'var(--iris-primary)'
-                  : 'var(--iris-muted)'}"
-              >
-                <span
-                  style="opacity: {effectiveSort?.key === col.key &&
-                  effectiveSort.direction === 'asc'
-                    ? '1'
-                    : '0.45'}">▲</span
-                >
-                <span
-                  style="opacity: {effectiveSort?.key === col.key &&
-                  effectiveSort.direction === 'desc'
-                    ? '1'
-                    : '0.45'}">▼</span
-                >
-              </span>
-            {/if}
+            {@render sortIndicator(col)}
           </div>
         {/each}
       {/each}
@@ -729,6 +1267,13 @@
       data-iris-table-header-row
       style="display: grid; grid-template-columns: {gridTemplate()}"
     >
+      {#if seq}
+        <div
+          role="columnheader"
+          data-iris-table-header="__seq"
+          style="display: flex; align-items: center; justify-content: center; padding: 8px; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border)"
+        ></div>
+      {/if}
       {#if hasDetail}
         <div
           role="columnheader"
@@ -760,7 +1305,7 @@
           {/if}
         </div>
       {/if}
-      {#each columns as col, ci}
+      {#each displayColumns as col, ci}
         {#if !visibleColSet || visibleColSet.has(ci)}
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div
@@ -770,13 +1315,7 @@
             onclick={col.sortable ? () => handleHeaderClick(col) : undefined}
             onkeydown={col.sortable ? (event) => handleHeaderKeyDown(event, col) : undefined}
             tabindex={col.sortable ? 0 : undefined}
-            aria-sort={effectiveSort?.key === col.key
-              ? effectiveSort.direction === 'asc'
-                ? 'ascending'
-                : 'descending'
-              : col.sortable
-                ? 'none'
-                : undefined}
+            aria-sort={sortAria(col)}
             style="position: relative; display: flex; align-items: center; justify-content: {col.align ===
             'right'
               ? 'flex-end'
@@ -791,28 +1330,7 @@
               : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-sm, 13px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
           >
             {col.title}
-            {#if col.sortable}
-              <span
-                aria-hidden="true"
-                style="display: inline-flex; flex-direction: column; margin-inline-start: 4px; line-height: 0.6; font-size: var(--iris-font-size-xs, 12px); color: {effectiveSort?.key ===
-                col.key
-                  ? 'var(--iris-primary)'
-                  : 'var(--iris-muted)'}"
-              >
-                <span
-                  style="opacity: {effectiveSort?.key === col.key &&
-                  effectiveSort.direction === 'asc'
-                    ? '1'
-                    : '0.45'}">▲</span
-                >
-                <span
-                  style="opacity: {effectiveSort?.key === col.key &&
-                  effectiveSort.direction === 'desc'
-                    ? '1'
-                    : '0.45'}">▼</span
-                >
-              </span>
-            {/if}
+            {@render sortIndicator(col)}
             {#if resizableColumns}
               <!-- Draggable resize grip at the header's trailing edge. role=
                  "separator" + aria-orientation follow the WAI-ARIA window-
@@ -842,23 +1360,23 @@
   {/if}
 
   <!-- Body -->
-  {#if error}
+  {#if tableError}
     <div role="row" data-iris-table-row="error" style={stateRowStyle}>
-      <span style="margin-inline-end: {onRetry ? 'var(--iris-space-sm, 12px)' : '0px'}">
+      <span style="margin-inline-end: {onRetry || hasProxy ? 'var(--iris-space-sm, 12px)' : '0px'}">
         {#if errorState}{@render errorState()}{:else}{t('table.error')}{/if}
       </span>
-      {#if onRetry}
+      {#if onRetry || hasProxy}
         <button
           type="button"
           data-iris-table-retry=""
-          onclick={onRetry}
+          onclick={handleRetry}
           style="border: 1px solid var(--iris-border); background: var(--iris-surface); color: var(--iris-foreground); border-radius: var(--iris-radius-sm, 4px); padding: var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px); font-size: var(--iris-font-size-sm, 13px); cursor: pointer"
         >
           {t('table.retry')}
         </button>
       {/if}
     </div>
-  {:else if loading}
+  {:else if tableLoading}
     <div role="row" aria-busy="true" data-iris-table-row="loading" style={stateRowStyle}>
       {#if loadingState}{@render loadingState()}{:else}{t('table.loading')}{/if}
     </div>
@@ -949,6 +1467,15 @@
           ? 'var(--iris-surface)'
           : 'var(--iris-row-bg, transparent)'}; transition: background-color var(--iris-transition-fast, 150ms) ease; cursor: default"
     >
+      {#if seq}
+        <div
+          role="cell"
+          data-iris-table-cell="__seq"
+          style="display: flex; align-items: center; justify-content: center; padding: 8px; border-bottom: 1px solid var(--iris-border); color: var(--iris-muted); user-select: none"
+        >
+          {seqValue(index)}
+        </div>
+      {/if}
       {#if hasDetail}
         <div
           role="cell"
@@ -992,120 +1519,131 @@
       {/if}
       {#each leafColumns as col, ci}
         {#if !visibleColSet || visibleColSet.has(ci)}
+          {@const spanKey = `${index}:${ci}`}
+          {@const spanEntry = spanPlan?.spans.get(spanKey)}
+          {@const spanCovered = spanPlan ? spanPlan.occupied.has(spanKey) : false}
           {@const isEditing = editingCellId === cellId(id, col.key)}
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <div
-            role="cell"
-            data-iris-table-cell={col.key}
-            data-iris-table-pinned={col.pinned}
-            data-editable={col.editable ? '' : undefined}
-            data-editing={isEditing ? '' : undefined}
-            data-grid-row={keyboardNavigation ? index : undefined}
-            data-grid-col={keyboardNavigation ? ci : undefined}
-            data-iris-cell-row={cellRange ? index : undefined}
-            data-iris-cell-col={cellRange ? ci : undefined}
-            data-iris-cell-selected={cellRange && isInRange(index, ci) ? 'true' : undefined}
-            tabindex={keyboardNavigation ? cellTabIndex(index, ci) : undefined}
-            onfocus={keyboardNavigation ? () => (focusedCell = { row: index, col: ci }) : undefined}
-            onclick={cellRange
-              ? (e: MouseEvent) => {
-                  if (e.shiftKey) {
-                    cellRangeCtrl.extendRange(index, ci)
-                  } else {
-                    cellRangeCtrl.startRange(index, ci)
+          {#if !spanCovered}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <div
+              role="cell"
+              data-iris-table-cell={col.key}
+              data-iris-table-pinned={col.pinned}
+              data-editable={col.editable ? '' : undefined}
+              data-editing={isEditing ? '' : undefined}
+              data-grid-row={keyboardNavigation ? index : undefined}
+              data-grid-col={keyboardNavigation ? ci : undefined}
+              data-iris-cell-row={cellRange ? index : undefined}
+              data-iris-cell-col={cellRange ? ci : undefined}
+              data-iris-cell-selected={cellRange && isInRange(index, ci) ? 'true' : undefined}
+              tabindex={keyboardNavigation ? cellTabIndex(index, ci) : undefined}
+              onfocus={keyboardNavigation
+                ? () => (focusedCell = { row: index, col: ci })
+                : undefined}
+              onclick={cellRange
+                ? (e: MouseEvent) => {
+                    if (e.shiftKey) {
+                      cellRangeCtrl.extendRange(index, ci)
+                    } else {
+                      cellRangeCtrl.startRange(index, ci)
+                    }
                   }
-                }
-              : undefined}
-            onkeydown={cellRange
-              ? (event) => {
-                  if (event.key !== 'Enter' && event.key !== ' ') return
-                  event.preventDefault()
-                  if (event.shiftKey) cellRangeCtrl.extendRange(index, ci)
-                  else cellRangeCtrl.startRange(index, ci)
-                }
-              : undefined}
-            ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}
-            style="display: flex; align-items: center; justify-content: {(col.align ??
-              (typeof getCellValue(row, col) === 'number' ? 'right' : 'left')) === 'right'
-              ? 'flex-end'
-              : col.align === 'center'
-                ? 'center'
-                : 'flex-start'};{visibleColSet
-              ? ` grid-column-start: ${colTrack(ci)};`
-              : ''} padding: {isEditing
-              ? '4px'
-              : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: var(--iris-font-size-md, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable
-              ? 'cell'
-              : 'default'}{cellRange && isInRange(index, ci)
-              ? '; background: var(--iris-surface-selected, color-mix(in srgb, var(--iris-primary) 12%, transparent))'
-              : ''}"
-          >
-            {#if treeMeta && ci === 0}
-              <span
-                data-iris-table-tree-indent=""
-                style="display: inline-flex; align-items: center; flex: none; padding-left: {treeMeta.depth *
-                  16}px"
-              >
-                {#if treeMeta.hasChildren}
-                  <button
-                    type="button"
-                    data-iris-table-tree-toggle=""
-                    aria-expanded={treeMeta.expanded}
-                    aria-label={t(treeMeta.expanded ? 'treeSelect.collapse' : 'treeSelect.expand')}
-                    onclick={(e) => {
-                      e.stopPropagation()
-                      expansion.toggle(treeMeta.key)
-                    }}
-                    style="border: none; background: transparent; cursor: pointer; padding: 0; margin-right: 4px; font: inherit; color: var(--iris-foreground); transform: {treeMeta.expanded
-                      ? 'rotate(90deg)'
-                      : 'none'}; transition: transform 150ms">▶</button
-                  >
-                {:else}
-                  <span style="display: inline-block; width: 16px" aria-hidden="true"></span>
-                {/if}
-              </span>
-            {/if}
-            {#if isEditing}
-              <input
-                type={col.editor === 'number' ? 'number' : 'text'}
-                value={editingDraft}
-                data-iris-table-editor
-                aria-invalid={editError ? 'true' : undefined}
-                aria-describedby={editError ? `${cellId(id, col.key)}-error` : undefined}
-                oninput={(e) => {
-                  editingDraft = (e.target as HTMLInputElement).value
-                }}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    commitEdit(row, col, index)
-                  } else if (e.key === 'Escape') {
-                    e.preventDefault()
-                    cancelEdit()
+                : undefined}
+              onkeydown={cellRange
+                ? (event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return
+                    event.preventDefault()
+                    if (event.shiftKey) cellRangeCtrl.extendRange(index, ci)
+                    else cellRangeCtrl.startRange(index, ci)
                   }
-                }}
-                onblur={() => commitEdit(row, col, index)}
-                onclick={(e) => e.stopPropagation()}
-                style="width: 100%; border: 1px solid {editError
-                  ? 'var(--iris-danger)'
-                  : 'var(--iris-primary)'}; border-radius: var(--iris-radius-sm, 4px); padding: var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px); font: inherit; background: var(--iris-background); color: var(--iris-foreground); outline: none"
-              />
-              {#if editError}
-                <div
-                  id={`${cellId(id, col.key)}-error`}
-                  role="alert"
-                  data-iris-table-editor-error
-                  style="margin-top: var(--iris-space-xxs, 4px); font-size: var(--iris-font-size-xs, 12px); color: var(--iris-danger)"
+                : undefined}
+              ondblclick={col.editable ? () => beginEdit(row, col, id) : undefined}
+              style="display: flex; align-items: center; justify-content: {(col.align ??
+                (typeof getCellValue(row, col) === 'number' ? 'right' : 'left')) === 'right'
+                ? 'flex-end'
+                : col.align === 'center'
+                  ? 'center'
+                  : 'flex-start'};{visibleColSet
+                ? ` grid-column-start: ${colTrack(ci)};`
+                : ''}{spanEntry && spanEntry.colspan > 1
+                ? ` grid-column-end: span ${spanEntry.colspan};`
+                : ''} padding: {isEditing
+                ? '4px'
+                : '8px var(--iris-padding-md, 12px)'}; border-bottom: 1px solid var(--iris-border); font-size: var(--iris-font-size-md, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: {col.editable
+                ? 'cell'
+                : 'default'}{cellRange && isInRange(index, ci)
+                ? '; background: var(--iris-surface-selected, color-mix(in srgb, var(--iris-primary) 12%, transparent))'
+                : ''}"
+            >
+              {#if treeMeta && ci === 0}
+                <span
+                  data-iris-table-tree-indent=""
+                  style="display: inline-flex; align-items: center; flex: none; padding-left: {treeMeta.depth *
+                    16}px"
                 >
-                  {editError}
-                </div>
+                  {#if treeMeta.hasChildren}
+                    <button
+                      type="button"
+                      data-iris-table-tree-toggle=""
+                      aria-expanded={treeMeta.expanded}
+                      aria-label={t(
+                        treeMeta.expanded ? 'treeSelect.collapse' : 'treeSelect.expand',
+                      )}
+                      onclick={(e) => {
+                        e.stopPropagation()
+                        expansion.toggle(treeMeta.key)
+                      }}
+                      style="border: none; background: transparent; cursor: pointer; padding: 0; margin-right: 4px; font: inherit; color: var(--iris-foreground); transform: {treeMeta.expanded
+                        ? 'rotate(90deg)'
+                        : 'none'}; transition: transform 150ms">▶</button
+                    >
+                  {:else}
+                    <span style="display: inline-block; width: 16px" aria-hidden="true"></span>
+                  {/if}
+                </span>
               {/if}
-            {:else if col.render}
-              {@render (col.render(getCellValue(row, col), row) as RowSnippet)(row)}
-            {:else}
-              {String(getCellValue(row, col) ?? '')}
-            {/if}
-          </div>
+              {#if isEditing}
+                <input
+                  type={col.editor === 'number' ? 'number' : 'text'}
+                  value={editingDraft}
+                  data-iris-table-editor
+                  aria-invalid={editError ? 'true' : undefined}
+                  aria-describedby={editError ? `${cellId(id, col.key)}-error` : undefined}
+                  oninput={(e) => {
+                    editingDraft = (e.target as HTMLInputElement).value
+                  }}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      commitEdit(row, col, index)
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault()
+                      cancelEdit()
+                    }
+                  }}
+                  onblur={() => commitEdit(row, col, index)}
+                  onclick={(e) => e.stopPropagation()}
+                  style="width: 100%; border: 1px solid {editError
+                    ? 'var(--iris-danger)'
+                    : 'var(--iris-primary)'}; border-radius: var(--iris-radius-sm, 4px); padding: var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px); font: inherit; background: var(--iris-background); color: var(--iris-foreground); outline: none"
+                />
+                {#if editError}
+                  <div
+                    id={`${cellId(id, col.key)}-error`}
+                    role="alert"
+                    data-iris-table-editor-error
+                    style="margin-top: var(--iris-space-xxs, 4px); font-size: var(--iris-font-size-xs, 12px); color: var(--iris-danger)"
+                  >
+                    {editError}
+                  </div>
+                {/if}
+              {:else if col.render}
+                {@render (col.render(getCellValue(row, col), row) as RowSnippet)(row)}
+              {:else}
+                {String(getCellValue(row, col) ?? '')}
+              {/if}
+            </div>
+          {/if}
         {/if}
       {/each}
     </div>
@@ -1113,12 +1651,19 @@
 
   <!-- Summary / footer row: each column with a `summary` op aggregates over the
        full sorted dataset (the core `aggregate` material). -->
-  {#if !error && !loading && bodyData.length > 0 && hasSummary}
+  {#if !tableError && !tableLoading && bodyData.length > 0 && hasSummary}
     <div
       role="row"
       data-iris-table-row="summary"
       style="display: grid; grid-template-columns: {gridTemplate()}; font-weight: 600; border-top: 2px solid var(--iris-border); background: var(--iris-surface)"
     >
+      {#if seq}
+        <div
+          role="cell"
+          data-iris-table-cell="__seq"
+          style="display: flex; align-items: center; justify-content: center; padding: 8px; border-bottom: 1px solid var(--iris-border)"
+        ></div>
+      {/if}
       {#if showSelection}
         <div
           role="cell"
@@ -1144,6 +1689,48 @@
           </div>
         {/if}
       {/each}
+    </div>
+  {/if}
+
+  <!-- Server-side pager (vxe-grid proxyConfig parity): driven by the
+       controller's page/pageSize/total; page changes call setParams and
+       proxyConfig.onPageChange. -->
+  {#if hasProxy}
+    <div
+      data-iris-table-pager=""
+      style="display: flex; justify-content: flex-end; align-items: center; padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); border-top: 1px solid var(--iris-border); background: var(--iris-surface)"
+    >
+      <div style="display: flex; align-items: center; gap: var(--iris-space-xs, 8px)">
+        {#if pagerConfig?.showTotal}
+          <span data-iris-table-total="" style="color: var(--iris-muted); white-space: nowrap">
+            {t('table.total', { total: String(proxyState.total) })}
+          </span>
+        {/if}
+        {#if pagerConfig?.pageSizes && pagerConfig.pageSizes.length > 0}
+          <IrisSelect
+            items={(pagerConfig.pageSizes ?? []).map((s) => ({
+              value: String(s),
+              label: `${s} / ${t('table.page')}`,
+            }))}
+            value={String(proxyState.params.pageSize)}
+            onValueChange={(v) => {
+              const size = Number(v)
+              proxyRef?.setParams({ pageSize: size, page: 1 })
+              proxyConfig?.onPageChange?.(1, size)
+            }}
+            aria-label={t('table.pageSize')}
+          />
+        {/if}
+        <IrisPagination
+          total={proxyState.total}
+          pageSize={proxyState.params.pageSize}
+          value={proxyState.params.page}
+          onchange={(page) => {
+            proxyRef?.setParams({ page })
+            proxyConfig?.onPageChange?.(page, proxyState.params.pageSize)
+          }}
+        />
+      </div>
     </div>
   {/if}
 </div>

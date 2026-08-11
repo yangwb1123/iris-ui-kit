@@ -534,3 +534,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ab-gate.md [ok]: Summary: **Review fixes** (`packages/solid/src/primitives/table/IrisTable.tsx`):
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ab-gate.md
+
+## 2026-08-11 11:26:47 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ac-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ac-baseline.md
+
+## 2026-08-11 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ac-adapt.md [ok]: Svelte vxe-grid parity (core round): columnVisibility/filters/seq/seqStartIndex, spanMethod (occupied-set plan), proxyConfig (presence-keyed controller + svelte IrisPagination), multiSort (click-order chain), formConfig (draft/applied), toolbar. 4 source files + 1 test file (17 cases). Manifest hygiene: named IrisTableSpan/IrisTableProxyQueryResult keep function props single-line; svelte contract extracts clean, no bogus props. typecheck/lint 0 errors, 916+31 tests pass, spec 0 violations, manifest 155×4 regenerated. Handoff: filterValues panel + layouts → batch AD.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ac-adapt.md
+
+## 2026-08-11 12:00:11 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ac-adapt.md [ok]: Report: **Task**: svelte adapter vxe-grid batch AC parity (core round) — all 7 areas implemented, tested, verified.; Files changed (source, exactly 4) + tests: | File | Change |; Tests added (17, in one new file): columnVisibility hiding · substring filters (case-insensitive, empty-ignored, `filterMethod` override) · seq with `seqSt; Verification (all green): - `typecheck`— **0 errors** (5 warnings pre-existing in`IrisCompose.svelte`); Notable fixes during the round: - **Manifest scanner hygiene**: prettier had forced `spanMethod`/`query` multi-line, which the line-based scanner mis-pa
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ac-adapt.md
+
+## 2026-08-11 12:11:36 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ac-review.md [ok]: Review summary: **Verification (all green):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ac-review.md

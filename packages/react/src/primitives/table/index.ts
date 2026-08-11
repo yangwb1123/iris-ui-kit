@@ -21,6 +21,7 @@ export {
   type IrisTableValidConfig,
   type IrisTableTooltipConfig,
   type IrisTableMergeCell,
+  type IrisTableMergeFooterItem,
   type IrisTableFooterSpanMethod,
   type IrisTableFooterSpanParams,
   type IrisTableSpan,

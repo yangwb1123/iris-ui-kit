@@ -658,6 +658,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
   scrollbarConfig,
   editDirtyConfig,
   autoResize = false,
+  syncResize = false,
+  keepSource = false,
+  zIndex,
+  rowId,
+  mergeFooterItems,
   rowClassName,
   cellClassName,
   headerCellClassName,
@@ -835,7 +840,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // External `data` reference changes still win (controlled mode); in proxy
   // mode the source of truth is the proxy's loaded page — liveData holds
   // local edit write-backs until the next refetch replaces them.
-  const [liveData, setLiveData] = React.useState<Row[]>(data ?? [])
+  // keepSource (batch R, vxe-grid keepSource parity): seed liveData with a
+  // COPY of `data` so mutating the original array after mount cannot change
+  // the table. The table is immutable either way — it never mutates the rows
+  // it receives; keepSource just decouples the initial seed from the prop
+  // reference. Later controlled re-feeds (new `data` reference) keep the
+  // hand-off below unchanged.
+  const [liveData, setLiveData] = React.useState<Row[]>(
+    keepSource ? [...(data ?? [])] : (data ?? []),
+  )
   const externalDataRef = React.useRef(data)
   // Latest live row list (batch K): row-edit sessions resolve the CURRENT row
   // object by key at commit time, so editing several columns of one row never
@@ -1153,7 +1166,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     coerceValueFor(editCtxRef.current!.row, col, draft)
   /** Current row object for a row key (row edit mode resolves at commit time). */
   const currentRowFor = (rowIdent: string | number): Row | undefined =>
-    liveDataRef.current.find((r) => rowKeyOf(r) === rowIdent)
+    liveDataRef.current.find((r, i) => rowKeyOf(r, i) === rowIdent)
   /** Shared commit write-back for cell AND row edit sessions (batch K): the
    *  live data update + onCellEdit fire, skipping no-op commits. `ctx.row` is
    *  the CURRENT row object (row sessions resolve it by key). */
@@ -1163,7 +1176,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   ): void => {
     const oldValue = getCellValue(ctx.row, ctx.col)
     if (value === oldValue) return
-    const k = rowKeyOf(ctx.row)
+    const k = rowKeyOf(ctx.row, ctx.rowIndex)
     // Batch Q: dirty write-back for editDirtyConfig (cell AND row edit modes
     // both funnel through here).
     if (k != null) trackDirty(k, ctx.col.key, oldValue, value)
@@ -1173,8 +1186,21 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (k != null) {
       setLiveData((prev) => {
         const next = setCellValue(prev, rowKey, k, ctx.col.key, value)
-        externalDataRef.current = next
-        return next
+        if (next !== prev) {
+          externalDataRef.current = next
+          return next
+        }
+        // rowId rows (batch R): the key lives outside the `rowKey` field, so
+        // the field lookup above cannot find the row — locate it by the
+        // computed key instead. Without `rowId` this path is unreachable
+        // (field rows always resolve above), keeping behavior byte-identical.
+        if (!rowId) return prev
+        const at = prev.findIndex((r, i) => rowKeyOf(r, i) === k)
+        if (at < 0) return prev
+        const viaId = prev.slice()
+        viaId[at] = { ...viaId[at]!, [ctx.col.key]: value }
+        externalDataRef.current = viaId
+        return viaId
       })
     }
     onCellEditRef.current?.({
@@ -1283,7 +1309,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       },
     })
   const beginRowEdit = (row: Row, rowIndex: number, focusColKey?: string): void => {
-    const k = rowKeyOf(row)
+    const k = rowKeyOf(row, rowIndex)
     if (k == null) return
     const editableCols = leafColumns.filter((c) => c.editable)
     if (editableCols.length === 0) return
@@ -1520,8 +1546,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const { activeId, overId } = rowDragCtrl.end()
     if (activeId !== null && overId !== null && activeId !== overId) {
       const rows = [...bodyData] as Row[]
-      const from = rows.findIndex((r) => String(rowKeyOf(r)) === activeId)
-      const to = rows.findIndex((r) => String(rowKeyOf(r)) === overId)
+      const from = rows.findIndex((r, i) => String(rowKeyOf(r, i)) === activeId)
+      const to = rows.findIndex((r, i) => String(rowKeyOf(r, i)) === overId)
       if (from >= 0 && to >= 0 && from !== to) {
         const [moved] = rows.splice(from, 1)
         rows.splice(to, 0, moved)
@@ -1665,7 +1691,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         dir,
         row: ctx.row,
         col: ctx.col,
-        k: rowKeyOf(ctx.row),
+        k: rowKeyOf(ctx.row, ctx.rowIndex),
         idx: ctx.rowIndex,
       }
       cellEdit.commitEdit()
@@ -1680,7 +1706,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const nextCol = leafColumns[i]!
       if (!nextCol.editable) continue
       e.preventDefault()
-      beginEdit(ctx.row, nextCol, rowKeyOf(ctx.row), ctx.rowIndex)
+      beginEdit(ctx.row, nextCol, rowKeyOf(ctx.row, ctx.rowIndex), ctx.rowIndex)
       return
     }
   }
@@ -1701,8 +1727,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
     else cycleSort(col)
   }
 
-  const rowKeyOf = (row: Row): string | number => {
-    return (row as Record<string, unknown>)[rowKey] as string | number
+  const rowKeyOf = (row: Row, rowIndex?: number): string | number => {
+    // Batch R (vxe-grid deprecated string `rowId` parity, re-typed as a
+    // function): the `rowKey` field wins; `rowId` supplies the key for rows
+    // lacking the field; the call-site index fallback (`k ?? idx`) stays for
+    // callers without an index. Without `rowId`, `rowKeyOf(row, i)` returns
+    // `row[rowKey] ?? i` — byte-identical to the old `rowKeyOf(row)` plus
+    // the `?? i` at call sites (additive guard).
+    const v = (row as Record<string, unknown>)[rowKey]
+    if (v != null) return v as string | number
+    if (rowIndex === undefined) return undefined as unknown as string | number
+    return (rowId?.(row, rowIndex) ?? rowIndex) as string | number
   }
 
   /**
@@ -1829,7 +1864,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // with the existing selection, so rows selected on an earlier proxy page
       // (or a prior toggle) are kept instead of replaced.
       const keys = bodyData
-        .map((row, i) => (checkMethod && !checkMethod(row, i) ? null : rowKeyOf(row)))
+        .map((row, i) => (checkMethod && !checkMethod(row, i) ? null : rowKeyOf(row, i)))
         .filter((k): k is string | number => k != null)
       const existing = new Set(displaySelection)
       selModel.set([...displaySelection, ...keys.filter((k) => !existing.has(k))])
@@ -1852,7 +1887,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (selectable === 'none') return
     if (idx != null && checkMethod && !checkMethod(row, idx)) return
     rebaseToProp()
-    selModel.toggle(rowKeyOf(row))
+    selModel.toggle(rowKeyOf(row, idx))
   }
 
   /**
@@ -1865,8 +1900,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
    */
   const toggleRowRange = (anchorKey: string | number, targetKey: string | number) => {
     if (selectable !== 'multi') return
-    const anchorIdx = bodyData.findIndex((r) => rowKeyOf(r) === anchorKey)
-    const targetIdx = bodyData.findIndex((r) => rowKeyOf(r) === targetKey)
+    const anchorIdx = bodyData.findIndex((r, i) => rowKeyOf(r, i) === anchorKey)
+    const targetIdx = bodyData.findIndex((r, i) => rowKeyOf(r, i) === targetKey)
     if (anchorIdx < 0 || targetIdx < 0) {
       // Unknown anchor: fall back to a plain single toggle of the target
       // (checkMethod still respected — a disabled row cannot be range-toggled).
@@ -1881,7 +1916,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     for (let i = from; i <= to; i += 1) {
       const row = bodyData[i]!
       if (checkMethod && !checkMethod(row, i)) continue
-      keys.push(rowKeyOf(row))
+      keys.push(rowKeyOf(row, i))
     }
     if (keys.length === 0) return
     rebaseToProp()
@@ -1904,8 +1939,31 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // epoch at call time and drops its result if a refresh happened while the
   // fetch was in flight — stale children must never re-seed the cleared cache.
   const lazyEpochRef = React.useRef(0)
-  const lazyChildrenOf = (row: Row): readonly Row[] | undefined =>
-    lazyChildrenRef.current.get(String(rowKeyOf(row))) ?? getSubRows?.(row)
+  // Tree keys (batch R): flattenTree's getKey receives only the row, so with
+  // `rowId` the sibling index is precomputed here in the same walk order as
+  // flattenTree (forEach index per level) and the flatten's getKey reads this
+  // map — rowId applies to tree rows too. Null without `rowId` → getKey falls
+  // back to `String(rowKeyOf(row))`, exactly as before (additive guard).
+  // `lazyLoading` in deps re-walks after a lazy load lands (the ref map
+  // itself is not reactive).
+  const treeKeyMap = React.useMemo<Map<Row, string> | null>(() => {
+    if (!rowId) return null
+    const map = new Map<Row, string>()
+    const walk = (rows: readonly Row[]): void => {
+      rows.forEach((r, i) => {
+        const key = String(rowKeyOf(r, i))
+        map.set(r, key)
+        const children = lazyChildrenRef.current.get(key) ?? getSubRows?.(r)
+        if (children && children.length > 0) walk(children)
+      })
+    }
+    walk(sortedData)
+    return map
+  }, [rowId, sortedData, getSubRows, lazyLoading])
+  const lazyChildrenOf = (row: Row): readonly Row[] | undefined => {
+    const key = treeKeyMap?.get(row) ?? String(rowKeyOf(row))
+    return lazyChildrenRef.current.get(key) ?? getSubRows?.(row)
+  }
   // Comparator for tree siblings: multi mode uses the chained multi comparator
   // (batch G fix), single mode keeps its own — byte-identical to before.
   const treeComparator = React.useMemo(
@@ -1916,7 +1974,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     () =>
       treeMode
         ? flattenTree<Row>(sortedData, {
-            getKey: (r) => String(rowKeyOf(r)),
+            getKey: (r) => treeKeyMap?.get(r) ?? String(rowKeyOf(r)),
             // With an active sort, sort each level's children by the same
             // comparator so the whole tree reorders hierarchically (multi mode
             // passes the chained multi comparator so child ties resolve by the
@@ -1929,7 +1987,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
           })
         : null,
     // Recompute on data / expansion / accessor / sort change (rowKeyOf reads `rowKey`).
-    [treeMode, sortedData, getSubRows, expandedKeys, rowKey, treeComparator, lazyLoading],
+    [
+      treeMode,
+      sortedData,
+      getSubRows,
+      expandedKeys,
+      rowKey,
+      rowId,
+      treeKeyMap,
+      treeComparator,
+      lazyLoading,
+    ],
   )
   // Client-side filters (vxe filterConfig parity, local mode): core filterSort
   // applied to the sorted data before paging/virtualizing (flat mode). With
@@ -2010,13 +2078,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (sortedData.length === 0) return
     const keys: string[] = []
     const collect = (rows: Row[]): void => {
-      for (const row of rows) {
+      rows.forEach((row, i) => {
         const children = getSubRows?.(row)
         if (children && children.length > 0) {
-          keys.push(String((row as Record<string, unknown>)[rowKey] as string | number))
+          // Batch R: seeded keys must match flattenTree's keys — use the
+          // shared rowKeyOf (rowId-aware) with the sibling index, not the raw
+          // field (rowId rows have no field value).
+          keys.push(String(rowKeyOf(row, i)))
           collect(children)
         }
-      }
+      })
     }
     collect(sortedData)
     // Burn the one-shot only when there was something to seed: a proxy page
@@ -2034,12 +2105,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
     checkboxAnchorRef.current = null
     rebaseToProp()
     const keys = bodyData
-      .map((row, i) => (checkMethod && !checkMethod(row, i) ? null : rowKeyOf(row)))
+      .map((row, i) => (checkMethod && !checkMethod(row, i) ? null : rowKeyOf(row, i)))
       .filter((k): k is string | number => k != null)
     selModel.toggleAll(keys)
   }
 
-  const allKeys = bodyData.map(rowKeyOf)
+  const allKeys = bodyData.map((row, i) => rowKeyOf(row, i))
   const allSelected =
     selectable === 'multi' &&
     (selControlled
@@ -2450,6 +2521,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
     return () => ro.disconnect()
   }, [columnVirtualization])
 
+  // Root measure (batch R): the single size read shared by autoResize's
+  // ResizeObserver and syncResize's data-change effect — syncResize literally
+  // re-runs the same measure autoResize would.
+  const measureRoot = React.useCallback(() => {
+    const el = rootRef.current
+    if (!el) return
+    setAutoSize({ width: el.clientWidth, height: el.clientHeight })
+  }, [])
+
   // Auto-resize (batch Q, vxe-grid auto-resize parity): measure the root via
   // ResizeObserver into `autoSize`. The measure never pins the root height —
   // with no explicit `height` the root renders `height: 100%` (see the root
@@ -2465,14 +2545,38 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const el = rootRef.current
     if (!el) return
     if (typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (!entry) return
-      setAutoSize({ width: entry.contentRect.width, height: entry.contentRect.height })
-    })
+    const ro = new ResizeObserver(() => measureRoot())
     ro.observe(el)
     return () => ro.disconnect()
-  }, [autoResize])
+  }, [autoResize, measureRoot])
+
+  // Sync-resize (batch R, vxe-grid syncResize parity): with `autoResize` off
+  // and NO explicit `height`, re-run the same root measure whenever
+  // content-affecting inputs change (data / loading / error / footerData /
+  // size / bordered) and when the document becomes visible again — so the
+  // fixed-height machinery tracks content-driven size changes without a
+  // ResizeObserver. Application rules mirror `autoResize`: with `height` set
+  // the explicit height wins and the effect does nothing.
+  React.useEffect(() => {
+    if (!syncResize || autoResize || height !== undefined) return
+    measureRoot()
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') measureRoot()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [
+    data,
+    loading,
+    error,
+    footerData,
+    size,
+    bordered,
+    syncResize,
+    autoResize,
+    height,
+    measureRoot,
+  ])
 
   // Set of column indices to render: the visible window + overscan, always
   // unioned with pinned columns. `null` ⇒ render every column (feature off).
@@ -2610,7 +2714,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     extraStyle?: React.CSSProperties,
     treeMeta?: TreeRow<Row>,
   ): React.ReactElement => {
-    const k = rowKeyOf(row)
+    const k = rowKeyOf(row, idx)
     const selected = displaySelection.includes(k)
     return (
       <div
@@ -3094,15 +3198,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const renderBodyEntry = (row: Row, idx: number): React.ReactNode => {
     if (spanMethod && idx === 0) spanOccupyRef.current.clear()
     const main = renderRow(row, idx, undefined, flatTree?.[idx])
-    if (!hasDetail || !isRowExpandable(row, idx) || !expandedKeys.includes(String(rowKeyOf(row))))
+    if (
+      !hasDetail ||
+      !isRowExpandable(row, idx) ||
+      !expandedKeys.includes(String(rowKeyOf(row, idx)))
+    )
       return main
     // Full-width detail panel beneath the row (spans all grid tracks).
     return (
-      <React.Fragment key={`${String(rowKeyOf(row) ?? idx)}::wrap`}>
+      <React.Fragment key={`${String(rowKeyOf(row, idx))}::wrap`}>
         {main}
         <div
           role="row"
-          data-iris-table-row-detail={String(rowKeyOf(row) ?? idx)}
+          data-iris-table-row-detail={String(rowKeyOf(row, idx))}
           style={{ display: 'grid', gridTemplateColumns }}
         >
           <div
@@ -3115,6 +3223,74 @@ export function IrisTable<Row extends Record<string, unknown>>({
         </div>
       </React.Fragment>
     )
+  }
+
+  // Footer merge plan (batch R, vxe-grid mergeFooterItems parity): declarative
+  // span entries in the SAME coordinate space as footerSpanMethod — `row` is
+  // the 0-based index over the rendered footer stack (footerMethod rows →
+  // summary row → footerData rows), `col` the leaf-column index; both start
+  // at 0. Unlike footerSpanMethod (whose spans build up during one render
+  // pass, so rowspan cannot cover other rows' cells), the entries are known
+  // up front — the covered cells of later footer rows render null too. The
+  // FUNCTION wins: when footerSpanMethod is provided, mergeFooterItems is
+  // ignored entirely. Entries outside the rendered stack never match → no-op.
+  const footerMergePlan = React.useMemo(() => {
+    if (footerSpanMethod || !mergeFooterItems || mergeFooterItems.length === 0) return null
+    const byCell = new Map<string, { rowspan?: number; colspan?: number }>()
+    const occupied = new Set<string>()
+    for (const m of mergeFooterItems) {
+      if (m.row < 0 || m.col < 0) continue
+      const key = `${m.row}:${m.col}`
+      if (byCell.has(key)) continue
+      byCell.set(key, { rowspan: m.rowspan, colspan: m.colspan })
+      const colspan = m.colspan ?? 1
+      const rowspan = m.rowspan ?? 1
+      for (let r = 0; r < rowspan; r++)
+        for (let c = 0; c < colspan; c++) {
+          if (r === 0 && c === 0) continue
+          occupied.add(`${m.row + r}:${m.col + c}`)
+        }
+    }
+    return { byCell, occupied }
+  }, [mergeFooterItems, footerSpanMethod])
+
+  // Footer cell span state shared by every footer path (summary /
+  // footer-method / footer-data). footerSpanMethod (function) wins over
+  // mergeFooterItems when both are provided. `skipped` cells render null;
+  // `spanStyle` carries the grid spans — gridRowEnd cannot cross the per-row
+  // grid containers, so mergeFooterItems rowspan covers cells purely through
+  // the occupied set (the origin cell still gets its span styles).
+  const footerCellSpan = (
+    rowIndex: number,
+    ci: number,
+  ): { skipped: boolean; colspan: number; spanStyle: React.CSSProperties | null } => {
+    if (footerSpanMethod && footerOccupyRef.current.has(`${rowIndex}:${ci}`))
+      return { skipped: true, colspan: 1, spanStyle: null }
+    if (footerMergePlan && footerMergePlan.occupied.has(`${rowIndex}:${ci}`))
+      return { skipped: true, colspan: 1, spanStyle: null }
+    const fspan = footerSpanMethod
+      ? footerSpanMethod({ rowIndex, columnIndex: ci, columns: leafColumns, data: bodyData })
+      : null
+    const mergeSpan = footerMergePlan?.byCell.get(`${rowIndex}:${ci}`)
+    const colspan = footerSpanMethod ? (fspan?.colspan ?? 1) : (mergeSpan?.colspan ?? 1)
+    if (footerSpanMethod && colspan > 1) {
+      for (let c = 1; c < colspan; c++) footerOccupyRef.current.add(`${rowIndex}:${ci + c}`)
+    }
+    const spanStyle = footerSpanMethod
+      ? colspan > 1
+        ? { gridColumnEnd: `span ${colspan}` }
+        : null
+      : mergeSpan
+        ? {
+            ...(mergeSpan.colspan && mergeSpan.colspan > 1
+              ? { gridColumnEnd: `span ${mergeSpan.colspan}` }
+              : null),
+            ...(mergeSpan.rowspan && mergeSpan.rowspan > 1
+              ? { gridRowEnd: `span ${mergeSpan.rowspan}` }
+              : null),
+          }
+        : null
+    return { skipped: false, colspan, spanStyle }
   }
 
   // Summary row material (global footer + per-group footers, batch M): the
@@ -3144,33 +3320,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
       ) : null}
       {leafColumns.map((col, ci) => {
         if (visibleColSet && !visibleColSet.has(ci)) return null
-        // footerSpanMethod (batch P): same occupy-skip pattern as spanMethod;
-        // `footerRowIndex` is 0-based over the rendered footer stack. Only the
-        // global footer passes an index — group summaries are not spanned.
-        if (
-          footerRowIndex !== undefined &&
-          footerSpanMethod &&
-          footerOccupyRef.current.has(`${footerRowIndex}:${ci}`)
-        )
-          return null
-        const fspan =
-          footerRowIndex !== undefined && footerSpanMethod
-            ? footerSpanMethod({
-                rowIndex: footerRowIndex,
-                columnIndex: ci,
-                columns: leafColumns,
-                data: rows,
-              })
-            : null
-        // Footer rowspan is inert (review-fixed): each footer row is its own
-        // grid container, so `gridRowEnd` can never cover another row — and
-        // occupying later rows would make their cells silently disappear.
-        // Only colspan participates in the occupy-skip pattern.
-        const fColspan = fspan?.colspan ?? 1
-        if (footerRowIndex !== undefined && fColspan > 1) {
-          for (let c = 1; c < fColspan; c++)
-            footerOccupyRef.current.add(`${footerRowIndex}:${ci + c}`)
-        }
+        // footerSpanMethod (batch P) / mergeFooterItems (batch R): the same
+        // occupy-skip pattern; `footerRowIndex` is 0-based over the rendered
+        // footer stack. Only the global footer passes an index — group
+        // summaries are not spanned/merged.
+        const fspanState = footerRowIndex !== undefined ? footerCellSpan(footerRowIndex, ci) : null
+        if (fspanState?.skipped) return null
         const op = col.summary
         const rawValue = op ? aggregate(rows, (r) => getCellValue(r, col), op) : null
         // aggregateAccuracy (batch P): the single rounding point for summary
@@ -3194,7 +3349,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             title={footerTooltip(col)}
             style={{
               ...baseCellStyle,
-              ...(fColspan > 1 ? { gridColumnEnd: `span ${fColspan}` } : null),
+              ...(fspanState?.spanStyle ?? null),
               justifyContent: justifyFor(footerAlign ?? col.align),
               ...pinnedStyle(col.key),
             }}
@@ -3221,7 +3376,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     height !== undefined ||
     minHeight !== undefined ||
     maxHeight !== undefined ||
-    (autoResize && autoSize !== null)
+    ((autoResize || syncResize) && autoSize !== null)
   // Virtual body items: always typed as plan entries (rows wrapped with their
   // ORIGINAL bodyData index) so the `kind` discriminant narrows cleanly — a
   // generic `Row` type param defeats `'kind' in` narrowing.
@@ -3266,22 +3421,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
               ) : null}
               {leafColumns.map((col, ci) => {
                 if (visibleColSet && !visibleColSet.has(ci)) return null
-                if (footerSpanMethod && footerOccupyRef.current.has(`${rowIndex}:${ci}`))
-                  return null
-                const fspan = footerSpanMethod
-                  ? footerSpanMethod({
-                      rowIndex,
-                      columnIndex: ci,
-                      columns: leafColumns,
-                      data: bodyData,
-                    })
-                  : null
-                // Rowspan inert (review-fixed): see renderSummaryRow.
-                const fColspan = fspan?.colspan ?? 1
-                if (fColspan > 1) {
-                  for (let c = 1; c < fColspan; c++)
-                    footerOccupyRef.current.add(`${rowIndex}:${ci + c}`)
-                }
+                const fspanState = footerCellSpan(rowIndex, ci)
+                if (fspanState.skipped) return null
                 const value = getCellValue(footerRow, col)
                 return (
                   <div
@@ -3293,7 +3434,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     title={footerTooltip(col)}
                     style={{
                       ...baseCellStyle,
-                      ...(fColspan > 1 ? { gridColumnEnd: `span ${fColspan}` } : null),
+                      ...(fspanState.spanStyle ?? null),
                       justifyContent: justifyFor(footerAlign ?? col.align),
                       ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
                       ...(footerCellStyle?.(col, rowIndex) ?? null),
@@ -3339,22 +3480,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 ) : null}
                 {leafColumns.map((col, ci) => {
                   if (visibleColSet && !visibleColSet.has(ci)) return null
-                  if (footerSpanMethod && footerOccupyRef.current.has(`${rowIndex}:${ci}`))
-                    return null
-                  const fspan = footerSpanMethod
-                    ? footerSpanMethod({
-                        rowIndex,
-                        columnIndex: ci,
-                        columns: leafColumns,
-                        data: bodyData,
-                      })
-                    : null
-                  // Rowspan inert (review-fixed): see renderSummaryRow.
-                  const fColspan = fspan?.colspan ?? 1
-                  if (fColspan > 1) {
-                    for (let c = 1; c < fColspan; c++)
-                      footerOccupyRef.current.add(`${rowIndex}:${ci + c}`)
-                  }
+                  const fspanState = footerCellSpan(rowIndex, ci)
+                  if (fspanState.skipped) return null
                   const value = getCellValue(footerRow, col)
                   return (
                     <div
@@ -3366,7 +3493,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       title={footerTooltip(col)}
                       style={{
                         ...baseCellStyle,
-                        ...(fColspan > 1 ? { gridColumnEnd: `span ${fColspan}` } : null),
+                        ...(fspanState.spanStyle ?? null),
                         justifyContent: justifyFor(
                           footerAlign ??
                             col.align ??
@@ -3808,7 +3935,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // still gates `fixedHeight` above, so the scroll machinery engages
           // once a positive size lands. When `height` IS set the explicit
           // height wins (no visible change).
-          ...(autoResize && height === undefined ? { height: '100%' } : null),
+          ...((autoResize || syncResize) && height === undefined ? { height: '100%' } : null),
+          // Batch R (vxe-grid zIndex parity): CSS z-index is inert on static
+          // elements, so `position: relative` rides along. Rendered before
+          // `...style` — a caller-provided style can still override.
+          ...(zIndex !== undefined ? { position: 'relative', zIndex } : null),
           ...style,
         }}
       >
@@ -4179,7 +4310,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 ? `group:${item.groupKey}`
                 : item.kind === 'group-summary'
                   ? `group-summary:${item.groupKey}`
-                  : String(rowKeyOf(item.row))
+                  : String(rowKeyOf(item.row, item.rowIndex))
             }
             renderItem={(item) =>
               item.kind === 'group-header'

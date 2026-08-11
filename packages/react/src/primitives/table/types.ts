@@ -328,3 +328,23 @@ export type IrisTableScrollbarConfig = { theme?: 'default' | 'thin' }
  * `indicator: false` suppresses the dot (tracking stays); `className: true`
  * also adds an `iris-table-cell-dirty` class for custom styling. */
 export type IrisTableEditDirtyConfig = { indicator?: boolean; className?: boolean }
+
+/**
+ * One footer-merge entry (vxe-grid mergeFooterItems parity, batch R). The
+ * coordinate space matches `footerSpanMethod`: `row` is the 0-based index
+ * over the rendered footer stack (footerMethod rows → summary row →
+ * footerData rows, whichever render) and `col` the leaf-column index — both
+ * start at 0. The function (`footerSpanMethod`) wins when both are provided.
+ */
+export interface IrisTableMergeFooterItem {
+  /** 0-based footer-stack row index (footerMethod rows → summary row → footerData rows). */
+  row: number
+  /** Leaf-column index of the merged cell's origin. */
+  col: number
+  /** Columns spanned (gridColumnEnd); the covered cells render null. */
+  colspan?: number
+  /** Rows spanned — the covered cells of later footer rows render null
+   * (each footer row is its own grid container, so `gridRowEnd` itself
+   * cannot cross rows; the covering happens through the occupied set). */
+  rowspan?: number
+}

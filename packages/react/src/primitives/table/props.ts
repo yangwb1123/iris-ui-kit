@@ -14,6 +14,7 @@ import type {
   IrisTableValidConfig,
   IrisTableVirtualOptions,
   IrisTableMergeCell,
+  IrisTableMergeFooterItem,
   IrisTableFooterSpanMethod,
 } from './types'
 
@@ -308,6 +309,27 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * simplification).
    */
   mergeHeaderCells?: IrisTableMergeCell[]
+  /**
+   * Footer merge (vxe-grid mergeFooterItems parity, batch R): declarative
+   * span entries in the SAME coordinate space as `footerSpanMethod` — `row`
+   * is the 0-based index over the rendered footer stack (footerMethod rows →
+   * summary row → footerData rows, whichever render) and `col` the
+   * leaf-column index; both start at 0. A merge cell renders `gridColumnEnd:
+   * span colspan` / `gridRowEnd: span rowspan`; the covered cells render
+   * null — rowspan covers cells in LATER footer rows (unlike
+   * `footerSpanMethod`, whose spans cannot, see its doc). The function wins:
+   * when `footerSpanMethod` is provided, `mergeFooterItems` is ignored.
+   * Entries outside the rendered stack are no-ops.
+   */
+  mergeFooterItems?: IrisTableMergeFooterItem[]
+  /**
+   * Row key fallback (vxe-grid deprecated string `rowId` parity, re-typed as
+   * a function, batch R): when a row lacks the `rowKey` field, this callback
+   * supplies the row's key — used by selection, expansion, dirty tracking,
+   * editing and tree flattening. `rowKey` wins over `rowId`; without either,
+   * the row index is used at index-bearing call sites (unchanged). The
+   * imperative handle's row ops still address rows by the `rowKey` field. */
+  rowId?: (row: Row, rowIndex: number) => string | number
   /** Row drag-sort configuration (composed over core createSortable). */
   rowDrag?: {
     /** Reorder callback — receives the reordered row array (parent owns data). */
@@ -442,6 +464,30 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * the explicit height wins (no visible change). Without ResizeObserver
    * (jsdom/SSR) the scroll engagement is a no-op. Default false. */
   autoResize?: boolean
+  /**
+   * Re-measure on content changes (vxe-grid syncResize parity, batch R):
+   * when true, `autoResize` is off and NO explicit `height` is set, an
+   * effect keyed on data / loading / error / footerData / size / bordered
+   * runs the SAME root measure autoResize uses (plus on
+   * `visibilitychange`), so the fixed-height machinery tracks
+   * content-driven size changes without a ResizeObserver. Same application
+   * rules as `autoResize`: with `height` set the explicit height wins and
+   * the effect does nothing. Default false. */
+  syncResize?: boolean
+  /**
+   * Seed the live row list with a COPY of `data` (vxe-grid keepSource
+   * parity, batch R): `liveData` initializes to `[...data]` instead of the
+   * `data` reference, so mutating the original array after mount cannot
+   * change the table. The table is immutable either way — it never mutates
+   * the rows it receives; `keepSource` just decouples the initial seed.
+   * Later controlled re-feeds (new `data` reference) keep the hand-off. */
+  keepSource?: boolean
+  /**
+   * Root stacking (vxe-grid zIndex parity, batch R): sets `z-index` on the
+   * root with `position: relative` (CSS z-index is inert on static
+   * elements). Rendered before `style` — a caller-provided style can still
+   * override. */
+  zIndex?: number
   /** Highlight rows on hover (vxe highlight-hover-row parity, batch N). Default true. */
   highlightHoverRow?: boolean
   style?: CSSProperties

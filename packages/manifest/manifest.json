@@ -36474,6 +36474,18 @@
           "description": "Header merge (vxe-grid mergeHeaderCells parity, batch P): merge entries keyed by leaf-column index of the FLAT header row (`row` 0 only — rows > 0 are ignored). A merge cell renders with `gridColumnEnd: span colspan` / `gridRowEnd: span rowspan`; the covered cells render null. Grouped headers and `columnVirtualization` are not merged (documented simplification)."
         },
         {
+          "name": "mergeFooterItems",
+          "type": "IrisTableMergeFooterItem[]",
+          "optional": true,
+          "description": "Footer merge (vxe-grid mergeFooterItems parity, batch R): declarative span entries in the SAME coordinate space as `footerSpanMethod` — `row` is the 0-based index over the rendered footer stack (footerMethod rows → summary row → footerData rows, whichever render) and `col` the leaf-column index; both start at 0. A merge cell renders `gridColumnEnd: span colspan` / `gridRowEnd: span rowspan`; the covered cells render null — rowspan covers cells in LATER footer rows (unlike `footerSpanMethod`, whose spans cannot, see its doc). The function wins: when `footerSpanMethod` is provided, `mergeFooterItems` is ignored. Entries outside the rendered stack are no-ops."
+        },
+        {
+          "name": "rowId",
+          "type": "(row: Row, rowIndex: number) => string | number",
+          "optional": true,
+          "description": "Row key fallback (vxe-grid deprecated string `rowId` parity, re-typed as a function, batch R): when a row lacks the `rowKey` field, this callback supplies the row's key — used by selection, expansion, dirty tracking, editing and tree flattening. `rowKey` wins over `rowId`; without either, the row index is used at index-bearing call sites (unchanged). The"
+        },
+        {
           "name": "rowDrag",
           "type": "{",
           "optional": true,
@@ -36704,6 +36716,24 @@
           "type": "boolean",
           "optional": true,
           "description": "ResizeObserver measures the root and, when no explicit `height` is set, renders `height: 100%` so the table fills AND tracks its parent (the fixed-height scroll machinery engages after the first positive measure). When `height` IS set the measured size is kept internally and the explicit height wins (no visible change). Without ResizeObserver"
+        },
+        {
+          "name": "syncResize",
+          "type": "boolean",
+          "optional": true,
+          "description": "Re-measure on content changes (vxe-grid syncResize parity, batch R): when true, `autoResize` is off and NO explicit `height` is set, an effect keyed on data / loading / error / footerData / size / bordered runs the SAME root measure autoResize uses (plus on `visibilitychange`), so the fixed-height machinery tracks content-driven size changes without a ResizeObserver. Same application rules as `autoResize`: with `height` set the explicit height wins and"
+        },
+        {
+          "name": "keepSource",
+          "type": "boolean",
+          "optional": true,
+          "description": "Seed the live row list with a COPY of `data` (vxe-grid keepSource parity, batch R): `liveData` initializes to `[...data]` instead of the `data` reference, so mutating the original array after mount cannot change the table. The table is immutable either way — it never mutates the rows it receives; `keepSource` just decouples the initial seed."
+        },
+        {
+          "name": "zIndex",
+          "type": "number",
+          "optional": true,
+          "description": "Root stacking (vxe-grid zIndex parity, batch R): sets `z-index` on the root with `position: relative` (CSS z-index is inert on static elements). Rendered before `style` — a caller-provided style can still"
         },
         {
           "name": "highlightHoverRow",
@@ -37099,6 +37129,18 @@
               "description": "Header merge (vxe-grid mergeHeaderCells parity, batch P): merge entries keyed by leaf-column index of the FLAT header row (`row` 0 only — rows > 0 are ignored). A merge cell renders with `gridColumnEnd: span colspan` / `gridRowEnd: span rowspan`; the covered cells render null. Grouped headers and `columnVirtualization` are not merged (documented simplification)."
             },
             {
+              "name": "mergeFooterItems",
+              "type": "IrisTableMergeFooterItem[]",
+              "optional": true,
+              "description": "Footer merge (vxe-grid mergeFooterItems parity, batch R): declarative span entries in the SAME coordinate space as `footerSpanMethod` — `row` is the 0-based index over the rendered footer stack (footerMethod rows → summary row → footerData rows, whichever render) and `col` the leaf-column index; both start at 0. A merge cell renders `gridColumnEnd: span colspan` / `gridRowEnd: span rowspan`; the covered cells render null — rowspan covers cells in LATER footer rows (unlike `footerSpanMethod`, whose spans cannot, see its doc). The function wins: when `footerSpanMethod` is provided, `mergeFooterItems` is ignored. Entries outside the rendered stack are no-ops."
+            },
+            {
+              "name": "rowId",
+              "type": "(row: Row, rowIndex: number) => string | number",
+              "optional": true,
+              "description": "Row key fallback (vxe-grid deprecated string `rowId` parity, re-typed as a function, batch R): when a row lacks the `rowKey` field, this callback supplies the row's key — used by selection, expansion, dirty tracking, editing and tree flattening. `rowKey` wins over `rowId`; without either, the row index is used at index-bearing call sites (unchanged). The"
+            },
+            {
               "name": "rowDrag",
               "type": "{",
               "optional": true,
@@ -37331,6 +37373,24 @@
               "description": "ResizeObserver measures the root and, when no explicit `height` is set, renders `height: 100%` so the table fills AND tracks its parent (the fixed-height scroll machinery engages after the first positive measure). When `height` IS set the measured size is kept internally and the explicit height wins (no visible change). Without ResizeObserver"
             },
             {
+              "name": "syncResize",
+              "type": "boolean",
+              "optional": true,
+              "description": "Re-measure on content changes (vxe-grid syncResize parity, batch R): when true, `autoResize` is off and NO explicit `height` is set, an effect keyed on data / loading / error / footerData / size / bordered runs the SAME root measure autoResize uses (plus on `visibilitychange`), so the fixed-height machinery tracks content-driven size changes without a ResizeObserver. Same application rules as `autoResize`: with `height` set the explicit height wins and"
+            },
+            {
+              "name": "keepSource",
+              "type": "boolean",
+              "optional": true,
+              "description": "Seed the live row list with a COPY of `data` (vxe-grid keepSource parity, batch R): `liveData` initializes to `[...data]` instead of the `data` reference, so mutating the original array after mount cannot change the table. The table is immutable either way — it never mutates the rows it receives; `keepSource` just decouples the initial seed."
+            },
+            {
+              "name": "zIndex",
+              "type": "number",
+              "optional": true,
+              "description": "Root stacking (vxe-grid zIndex parity, batch R): sets `z-index` on the root with `position: relative` (CSS z-index is inert on static elements). Rendered before `style` — a caller-provided style can still"
+            },
+            {
               "name": "highlightHoverRow",
               "type": "boolean",
               "optional": true,
@@ -37388,6 +37448,7 @@
             "IrisTableFormField",
             "IrisTableHandle",
             "IrisTableMergeCell",
+            "IrisTableMergeFooterItem",
             "IrisTablePagerConfig",
             "IrisTableProps",
             "IrisTableProxyQueryParams",
@@ -38005,7 +38066,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 103,
+        "propCount": 108,
         "eventCount": 15
       }
     },

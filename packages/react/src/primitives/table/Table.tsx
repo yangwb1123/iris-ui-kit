@@ -1732,8 +1732,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // function): the `rowKey` field wins; `rowId` supplies the key for rows
     // lacking the field; the call-site index fallback (`k ?? idx`) stays for
     // callers without an index. Without `rowId`, `rowKeyOf(row, i)` returns
-    // `row[rowKey] ?? i` — byte-identical to the old `rowKeyOf(row)` plus
-    // the `?? i` at call sites (additive guard).
+    // `row[rowKey] ?? i` — identical to the old `rowKeyOf(row)` plus `?? i`
+    // at index-bearing call sites; non-index-bearing sites (flattenTree
+    // getKey) keep the old `row[rowKey]` result (undefined for keyless
+    // rows), so the additive guard holds per call site.
     const v = (row as Record<string, unknown>)[rowKey]
     if (v != null) return v as string | number
     if (rowIndex === undefined) return undefined as unknown as string | number
@@ -2078,13 +2080,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (sortedData.length === 0) return
     const keys: string[] = []
     const collect = (rows: Row[]): void => {
-      rows.forEach((row, i) => {
+      rows.forEach((row) => {
         const children = getSubRows?.(row)
         if (children && children.length > 0) {
-          // Batch R: seeded keys must match flattenTree's keys — use the
-          // shared rowKeyOf (rowId-aware) with the sibling index, not the raw
-          // field (rowId rows have no field value).
-          keys.push(String(rowKeyOf(row, i)))
+          // Batch R: seeded keys must match flattenTree's getKey EXACTLY —
+          // treeKeyMap (rowId-aware, sibling index) when present, else the
+          // plain field key (keyless rows fall back to undefined, as before
+          // the rowId slot existed — index keys would never match).
+          keys.push(String(treeKeyMap?.get(row) ?? rowKeyOf(row)))
           collect(children)
         }
       })
@@ -3229,27 +3232,26 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // span entries in the SAME coordinate space as footerSpanMethod — `row` is
   // the 0-based index over the rendered footer stack (footerMethod rows →
   // summary row → footerData rows), `col` the leaf-column index; both start
-  // at 0. Unlike footerSpanMethod (whose spans build up during one render
-  // pass, so rowspan cannot cover other rows' cells), the entries are known
-  // up front — the covered cells of later footer rows render null too. The
-  // FUNCTION wins: when footerSpanMethod is provided, mergeFooterItems is
-  // ignored entirely. Entries outside the rendered stack never match → no-op.
+  // at 0. `rowspan` is INERT (review fix, mirrors footerSpanMethod/header
+  // rowspan): each footer row is its own grid container, so a span can never
+  // cover later rows — only the SAME row's right-hand cells are marked
+  // occupied (colspan). The FUNCTION wins: when footerSpanMethod is
+  // provided, mergeFooterItems is ignored entirely. Entries outside the
+  // rendered stack never match → no-op.
   const footerMergePlan = React.useMemo(() => {
     if (footerSpanMethod || !mergeFooterItems || mergeFooterItems.length === 0) return null
-    const byCell = new Map<string, { rowspan?: number; colspan?: number }>()
+    const byCell = new Map<string, { colspan?: number }>()
     const occupied = new Set<string>()
     for (const m of mergeFooterItems) {
       if (m.row < 0 || m.col < 0) continue
       const key = `${m.row}:${m.col}`
       if (byCell.has(key)) continue
-      byCell.set(key, { rowspan: m.rowspan, colspan: m.colspan })
+      byCell.set(key, { colspan: m.colspan })
       const colspan = m.colspan ?? 1
-      const rowspan = m.rowspan ?? 1
-      for (let r = 0; r < rowspan; r++)
-        for (let c = 0; c < colspan; c++) {
-          if (r === 0 && c === 0) continue
-          occupied.add(`${m.row + r}:${m.col + c}`)
-        }
+      // Inert rowspan: covered cells of LATER rows keep their own data (a
+      // null would let the remaining cells auto-place into earlier tracks);
+      // only same-row colspan cells to the right are covered.
+      for (let c = 1; c < colspan; c++) occupied.add(`${m.row}:${m.col + c}`)
     }
     return { byCell, occupied }
   }, [mergeFooterItems, footerSpanMethod])
@@ -3257,9 +3259,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // Footer cell span state shared by every footer path (summary /
   // footer-method / footer-data). footerSpanMethod (function) wins over
   // mergeFooterItems when both are provided. `skipped` cells render null;
-  // `spanStyle` carries the grid spans — gridRowEnd cannot cross the per-row
-  // grid containers, so mergeFooterItems rowspan covers cells purely through
-  // the occupied set (the origin cell still gets its span styles).
+  // `spanStyle` carries the grid span — gridRowEnd cannot cross the per-row
+  // grid containers, so rowspan (from either source) is inert: no span
+  // styles, no occupy-marking of later rows' cells.
   const footerCellSpan = (
     rowIndex: number,
     ci: number,
@@ -3280,15 +3282,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
       ? colspan > 1
         ? { gridColumnEnd: `span ${colspan}` }
         : null
-      : mergeSpan
-        ? {
-            ...(mergeSpan.colspan && mergeSpan.colspan > 1
-              ? { gridColumnEnd: `span ${mergeSpan.colspan}` }
-              : null),
-            ...(mergeSpan.rowspan && mergeSpan.rowspan > 1
-              ? { gridRowEnd: `span ${mergeSpan.rowspan}` }
-              : null),
-          }
+      : mergeSpan && mergeSpan.colspan && mergeSpan.colspan > 1
+        ? { gridColumnEnd: `span ${mergeSpan.colspan}` }
         : null
     return { skipped: false, colspan, spanStyle }
   }

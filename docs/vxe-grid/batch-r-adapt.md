@@ -10,7 +10,7 @@ All committed, working tree clean. Batch R complete.
 | `packages/react/src/primitives/table/props.ts`            | +5 props: `zIndex`, `syncResize`, `keepSource`, `rowId` (single-line fn type), `mergeFooterItems` (named interface)                                                                      |
 | `packages/react/src/primitives/table/Table.tsx`           | +131 net lines: destructure, liveData seed, `rowKeyOf(row, idx)`, tree key map, shared `measureRoot` + syncResize effect, `footerMergePlan` + shared `footerCellSpan` helper, root style |
 | `packages/react/src/primitives/table/index.ts`            | export `IrisTableMergeFooterItem`                                                                                                                                                        |
-| `packages/react/src/primitives/table/final-gaps.test.tsx` | new, 329 lines, 19 tests                                                                                                                                                                 |
+| `packages/react/src/primitives/table/final-gaps.test.tsx` | new, 329 lines, 16 tests                                                                                                                                                                 |
 
 **Implementation notes:**
 
@@ -22,7 +22,7 @@ All committed, working tree clean. Batch R complete.
 
 **Verification (all green):**
 
-- typecheck ✓ · test **1738/1738** (155 files; 19 new tests) ✓ · lint **0 errors** (1 pre-existing complexity warning, 150→157) ✓
+- typecheck ✓ · test **1738/1738** (156 files — incl. one pre-existing untracked debug test file, removed in the gate fix; 16 new tests) ✓ · lint **0 errors** (1 pre-existing complexity warning, 150→157) ✓
 - spec checker **0 violations** ✓ · prettier ✓
 - `pnpm gen:manifest` **run and committed** (manifest 155 components; all 5 props extracted; fixed scanner issue — `/** text` JSDoc first line was dropped, rewrote to multi-line format so descriptions are complete)
 

@@ -218,6 +218,28 @@ describe('@iris-ui-kit/react IrisTable rowId (batch R)', () => {
     expect(document.querySelector('[data-iris-table-row="child"]')).not.toBeNull()
     expect(document.querySelector('[data-iris-table-row="root"]')).not.toBeNull()
   })
+
+  it('expandAll seeds keyless tree parents with flattenTree keys, not indices', () => {
+    // Keyless rows (no rowKey field, no rowId): flattenTree getKey falls
+    // back to `String(rowKeyOf(row))` → "undefined" for every keyless row.
+    // The expandAll seed MUST use the same expression — index keys (batch R
+    // regression) would never match flattenTree's, breaking the additive
+    // guard. (Children of fully-keyless rows stay invisible regardless —
+    // flattenTree's seen-guard collides on the shared key, pre-existing
+    // degenerate behavior.)
+    const onExpanded = vi.fn()
+    render(
+      <IrisTable
+        columns={cols}
+        data={[{ name: 'root' }]}
+        rowKey="id"
+        getSubRows={(row) => (row.name === 'root' ? [{ name: 'child' }] : undefined)}
+        expandAll
+        onExpandedRowsChange={onExpanded}
+      />,
+    )
+    expect(onExpanded).toHaveBeenCalledWith(['undefined'])
+  })
 })
 
 describe('@iris-ui-kit/react IrisTable mergeFooterItems (batch R)', () => {
@@ -243,7 +265,7 @@ describe('@iris-ui-kit/react IrisTable mergeFooterItems (batch R)', () => {
     expect(footerCell('c')).not.toBeNull()
   })
 
-  it('rowspan covers the same column of the next footer row', () => {
+  it('rowspan is inert — covered cells of later rows keep their data', () => {
     const two = [
       { id: 9, name: 'Total', a: 'Total', b: 'X' },
       { id: 10, name: 'Sub', a: 'Sub', b: 'Y' },
@@ -256,12 +278,23 @@ describe('@iris-ui-kit/react IrisTable mergeFooterItems (batch R)', () => {
         mergeFooterItems={[{ row: 0, col: 0, rowspan: 2 }]}
       />,
     )
-    expect(footerCell('a')!.style.gridRowEnd).toBe('span 2')
-    // Row 1 col 0 is covered → null; row 1 col 1 still renders.
-    expect(
+    // Inert rowspan (review fix): each footer row is its own grid container,
+    // so no gridRowEnd span — and the covered cell of row 1 renders its own
+    // data (a null would auto-place the remaining cells into earlier tracks,
+    // putting data under the wrong columns).
+    expect(footerCell('a')!.style.gridRowEnd).toBe('')
+    const aCells = Array.from(
       document.querySelectorAll('[data-iris-table-footer-cell][data-iris-table-cell="a"]'),
-    ).toHaveLength(1)
-    expect(footerCell('b')).not.toBeNull()
+    )
+    expect(aCells).toHaveLength(2)
+    expect(aCells[0]!.textContent).toBe('Total')
+    expect(aCells[1]!.textContent).toBe('Sub')
+    const bCells = Array.from(
+      document.querySelectorAll('[data-iris-table-footer-cell][data-iris-table-cell="b"]'),
+    )
+    expect(bCells).toHaveLength(2)
+    expect(bCells[0]!.textContent).toBe('X')
+    expect(bCells[1]!.textContent).toBe('Y')
   })
 
   it('applies to the summary row path (renderSummaryRow)', () => {

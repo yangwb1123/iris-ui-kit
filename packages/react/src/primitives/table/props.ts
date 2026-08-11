@@ -315,11 +315,12 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * is the 0-based index over the rendered footer stack (footerMethod rows →
    * summary row → footerData rows, whichever render) and `col` the
    * leaf-column index; both start at 0. A merge cell renders `gridColumnEnd:
-   * span colspan` / `gridRowEnd: span rowspan`; the covered cells render
-   * null — rowspan covers cells in LATER footer rows (unlike
-   * `footerSpanMethod`, whose spans cannot, see its doc). The function wins:
-   * when `footerSpanMethod` is provided, `mergeFooterItems` is ignored.
-   * Entries outside the rendered stack are no-ops.
+   * span colspan`; the covered cells of the same row render null. `rowspan`
+   * is inert (each footer row is its own grid container — covered cells of
+   * later rows keep their own data; mirrors `footerSpanMethod`'s rowspan).
+   * The function wins: when `footerSpanMethod` is provided,
+   * `mergeFooterItems` is ignored. Entries outside the rendered stack are
+   * no-ops.
    */
   mergeFooterItems?: IrisTableMergeFooterItem[]
   /**
@@ -328,7 +329,9 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * supplies the row's key — used by selection, expansion, dirty tracking,
    * editing and tree flattening. `rowKey` wins over `rowId`; without either,
    * the row index is used at index-bearing call sites (unchanged). The
-   * imperative handle's row ops still address rows by the `rowKey` field. */
+   * imperative handle's row ops, clipboard paste and find&replace write-backs
+   * still address rows by the `rowKey` field only (keyless rows are skipped
+   * there). */
   rowId?: (row: Row, rowIndex: number) => string | number
   /** Row drag-sort configuration (composed over core createSortable). */
   rowDrag?: {

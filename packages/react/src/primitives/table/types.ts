@@ -341,10 +341,10 @@ export interface IrisTableMergeFooterItem {
   row: number
   /** Leaf-column index of the merged cell's origin. */
   col: number
-  /** Columns spanned (gridColumnEnd); the covered cells render null. */
+  /** Columns spanned (gridColumnEnd); the covered cells of the same row render null. */
   colspan?: number
-  /** Rows spanned — the covered cells of later footer rows render null
-   * (each footer row is its own grid container, so `gridRowEnd` itself
-   * cannot cross rows; the covering happens through the occupied set). */
+  /** Rows spanned — INERT (each footer row is its own grid container, so
+   * `gridRowEnd` cannot cross rows): covered cells of later rows keep their
+   * own data, like `footerSpanMethod`'s rowspan. */
   rowspan?: number
 }

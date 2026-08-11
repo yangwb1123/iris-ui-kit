@@ -529,3 +529,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ab-review.md [ok]: What passed: - **Verification**: solid typecheck/lint 0 errors, 953+34 tests pass (13 new `parity-ab`), build ✓, `check:manifest` ✓ (; Key findings: 1. **MEDIUM** `IrisTable.tsx:1120-1126/1164-1167` — Escape during a pending **async** (editRules) row-mode commit still
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ab-review.md
+
+## 2026-08-11 11:13:06 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ab-gate.md [ok]: Summary: **Review fixes** (`packages/solid/src/primitives/table/IrisTable.tsx`):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ab-gate.md

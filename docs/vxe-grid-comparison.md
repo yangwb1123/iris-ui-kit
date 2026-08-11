@@ -86,6 +86,11 @@
 | 树形          | treeConfig                                | tree ✓ + lazyLoad ✓（批 J+K，react）                                                                                                                                                                                             | 对齐（react；仅无子行 caret、加载后展开缓存、刷新清缓存+epoch 防陈旧回填）                                      |
 | 汇总          | footerMethod                              | summary ✓ + footerMethod ✓（批 N，react）+ 分组汇总（批 M，react；groupBy 组内汇总 + 全局 footer 同 aggregate ops，footerMethod 替换全局 summary 行）                                                                            | 对齐                                                                                                            |
 | 表尾合并      | footerSpanMethod                          | footerSpanMethod ✓（批 P，react；footerMethod 行→summary 行→footerData 行栈式 rowIndex，colspan 覆盖跳过 + gridColumnEnd，rowspan 惰性——每行独立 grid 容器）                                                                     | 对齐                                                                                                            |
+| 表尾合并配置  | mergeFooterItems                          | mergeFooterItems ✓（批 R，react；与 footerSpanMethod 同坐标系的声明式合并，colspan 覆盖 + gridColumnEnd，rowspan 惰性——每行独立 grid 容器，函数优先，越界条目 no-op）                                                            | 对齐（react）                                                                                                   |
+| 层级          | zIndex                                    | zIndex ✓（批 R，react；仅设置时生效，`position: relative` 搭车，置于 `...style` 之前调用方覆盖优先）                                                                                                                             | 对齐（react）                                                                                                   |
+| 自适应同步    | syncResize                                | syncResize ✓（批 R，react；autoResize 关闭时共享 measureRoot，数据/状态变化 + visibilitychange 重测）                                                                                                                            | 对齐（react）                                                                                                   |
+| 数据源保持    | keepSource                                | keepSource ✓（批 R，react；挂载时浅拷贝种子，后续 re-feed 保持受控交接，表格两侧均不可变）                                                                                                                                       | 对齐（react）                                                                                                   |
+| 行键回退      | rowId                                     | rowId ✓（批 R，react；rowKey > rowId > 索引，选择/编辑/脏标记/树拍平同一键空间，无 rowId 时逐调用点字节一致）                                                                                                                    | 对齐（react；vxe 弃用 string 型，函数化）                                                                       |
 | 撤销          | undoRedoHistory                           | core undo（外部）                                                                                                                                                                                                                | 可组合                                                                                                          |
 | 工具栏        | toolbarConfig                             | refresh/import/export/custom ✓（批 L）+ toolbar.batch 批量按钮（批 M，react）                                                                                                                                                    | 缺                                                                                                              |
 | 搜索表单      | formConfig                                | 外部组件                                                                                                                                                                                                                         | 可组合                                                                                                          |
@@ -124,25 +129,32 @@
 
 ## 构建状态（2026-08 完成，react only）
 
-| 批   | 内容                                                                                                                                                                         | 状态      |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| 批 1 | editRules 规则集 + editConfig（required/min/max/type/pattern/validator）                                                                                                     | ✅ 四框架 |
-| 批 2 | rowDrag（createSortable 组合）+ useTableUndo（createUndoStack 组合）                                                                                                         | ✅ react  |
-| 批 3 | seq 序号列 + spanMethod 合并 + columnDrag 列拖拽                                                                                                                             | ✅ react  |
-| 批 4 | columnVisibility 列显隐 + filters 筛选（core filterSort）+ toolbar                                                                                                           | ✅ react  |
-| 批 5 | parseCsv 导入（工具栏按钮）+ printable 打印样式                                                                                                                              | ✅ react  |
-| 批 C | proxyConfig 服务端数据源（remoteSort/remoteFilter/分页/autoLoad/编辑回写）                                                                                                   | ✅ react  |
-| 批 F | multiSort 多列排序 + validConfig.showMessage + 选择方法（selectAll/toggleRowSelection/clearSelection）+ expandAll                                                            | ✅ react  |
-| 批 J | 树形懒加载（lazyLoad）+ removeRows 批量删除 + Tab 编辑导航                                                                                                                   | ✅ react  |
-| 批 K | editConfig.mode='row' 行编辑模式 + Tab 异步校验修复 + 懒加载缓存刷新修复                                                                                                     | ✅ react  |
-| 批 L | proxy 累计序号 + 工具栏导出按钮 + 列 link 单元格链接                                                                                                                         | ✅ react  |
-| 批 M | 行分组（groupBy 组头 + 组内汇总）+ 工具栏批量按钮 + 列宽 auto 自适应                                                                                                         | ✅ react  |
-| 批 N | 表格高度（height/minHeight/maxHeight + sticky 表头）+ 表头/表尾对齐 + footerMethod 汇总方法 + 悬停高亮                                                                       | ✅ react  |
-| 批 O | 范围复制（clipConfig，Ctrl+C/V TSV 导出/粘贴回写）+ 查找替换（fnr，Ctrl+F 查找条 + 高亮 + 替换）                                                                             | ✅ react  |
-| 批 P | mergeHeaderCells 表头合并 + footerSpanMethod 表尾合并 + round/padding 圆角内边距 + aggregateAccuracy 合计精度 + header/footer 表头表尾提示                                   | ✅ react  |
-| 批 Q | autoResize 自适应高度 + scrollbarConfig 滚动条配置 + editDirtyConfig 编辑脏标记（review 修复：height:100% 追踪父容器、脏键 `::` 分隔 + 移除剪枝、逻辑属性 inset-inline-end） | ✅ react  |
+| 批   | 内容                                                                                                                                                                                         | 状态      |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| 批 1 | editRules 规则集 + editConfig（required/min/max/type/pattern/validator）                                                                                                                     | ✅ 四框架 |
+| 批 2 | rowDrag（createSortable 组合）+ useTableUndo（createUndoStack 组合）                                                                                                                         | ✅ react  |
+| 批 3 | seq 序号列 + spanMethod 合并 + columnDrag 列拖拽                                                                                                                                             | ✅ react  |
+| 批 4 | columnVisibility 列显隐 + filters 筛选（core filterSort）+ toolbar                                                                                                                           | ✅ react  |
+| 批 5 | parseCsv 导入（工具栏按钮）+ printable 打印样式                                                                                                                                              | ✅ react  |
+| 批 C | proxyConfig 服务端数据源（remoteSort/remoteFilter/分页/autoLoad/编辑回写）                                                                                                                   | ✅ react  |
+| 批 F | multiSort 多列排序 + validConfig.showMessage + 选择方法（selectAll/toggleRowSelection/clearSelection）+ expandAll                                                                            | ✅ react  |
+| 批 J | 树形懒加载（lazyLoad）+ removeRows 批量删除 + Tab 编辑导航                                                                                                                                   | ✅ react  |
+| 批 K | editConfig.mode='row' 行编辑模式 + Tab 异步校验修复 + 懒加载缓存刷新修复                                                                                                                     | ✅ react  |
+| 批 L | proxy 累计序号 + 工具栏导出按钮 + 列 link 单元格链接                                                                                                                                         | ✅ react  |
+| 批 M | 行分组（groupBy 组头 + 组内汇总）+ 工具栏批量按钮 + 列宽 auto 自适应                                                                                                                         | ✅ react  |
+| 批 N | 表格高度（height/minHeight/maxHeight + sticky 表头）+ 表头/表尾对齐 + footerMethod 汇总方法 + 悬停高亮                                                                                       | ✅ react  |
+| 批 O | 范围复制（clipConfig，Ctrl+C/V TSV 导出/粘贴回写）+ 查找替换（fnr，Ctrl+F 查找条 + 高亮 + 替换）                                                                                             | ✅ react  |
+| 批 P | mergeHeaderCells 表头合并 + footerSpanMethod 表尾合并 + round/padding 圆角内边距 + aggregateAccuracy 合计精度 + header/footer 表头表尾提示                                                   | ✅ react  |
+| 批 Q | autoResize 自适应高度 + scrollbarConfig 滚动条配置 + editDirtyConfig 编辑脏标记（review 修复：height:100% 追踪父容器、脏键 `::` 分隔 + 移除剪枝、逻辑属性 inset-inline-end）                 | ✅ react  |
+| 批 R | zIndex + syncResize 自适应同步 + keepSource 数据源保持 + rowId 行键回退 + mergeFooterItems 表尾合并配置（review 修复：rowspan 惰性——覆盖格保留轨道、expandAll seed 与 flattenTree key 对齐） | ✅ react  |
 
-react 1722 tests · core 1249 tests · 7298 total · 180/180 turbo · 审计 0
+react 1739 tests · core 1249 tests · 7315 total · 180/180 turbo · 审计 0
+
+## vxe-tableProps 覆盖总结（react）
+
+- **VxeTableProps 全部覆盖**（编辑/选择/虚拟/列宽/排序/筛选/展开/树/汇总/合并/剪贴板/查找替换/提示/高度/滚动条/脏标记 …）。
+- **VxeGridProps（批 R 补齐）**：zIndex / syncResize / keepSource / rowId / mergeFooterItems 全部 ✓（react）。
+- **剩余缺口：仅 `customConfig`（列自定义渲染 slots）**——已立项（批 S baseline），其余无缺口。
 
 ## 组合接口说明
 

@@ -38217,6 +38217,12 @@
               "description": "Return a row's children to enable tree mode."
             },
             {
+              "name": "lazyLoad",
+              "type": "IrisTableLazyLoad<Row>",
+              "optional": true,
+              "description": "Lazy tree (vxe lazyLoad parity): a row with no children still renders a caret; the first expand calls this and `load` resolves the children (expanding the row)."
+            },
+            {
               "name": "keyboardNavigation",
               "type": "boolean",
               "optional": true
@@ -38275,6 +38281,7 @@
             "IrisTableFormConfig",
             "IrisTableFormField",
             "IrisTableHandle",
+            "IrisTableLazyLoad",
             "IrisTablePagerConfig",
             "IrisTableProps",
             "IrisTableProxyConfig",

@@ -228,6 +228,18 @@ export interface IrisTableFilterOption {
  */
 export type IrisTableFilterValues = Record<string, string[]>
 
+/**
+ * Lazy tree loader (vxe-grid lazyLoad parity, batch J): called on the first
+ * expand of a row that has no `getSubRows` children — `load` resolves the
+ * children (caching them and expanding the row). A throwing load stays
+ * retryable (the key is not cached); a stale resolution after the data
+ * source changed is dropped.
+ */
+export type IrisTableLazyLoad<Row extends Record<string, unknown> = Record<string, unknown>> = (
+  row: Row,
+  load: (children: Row[]) => void,
+) => void
+
 /** One right-click menu entry (vxe MenuFirstOption code/name/disabled parity). */
 export interface IrisTableContextMenuItem {
   key: string

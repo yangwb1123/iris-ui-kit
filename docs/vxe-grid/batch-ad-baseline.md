@@ -1,0 +1,10 @@
+Baseline written to `/home/u1/iris-ui/docs/vxe-grid/batch-ab-baseline.md` (339 lines). Only change in git — no source files touched.
+
+**Key findings baked in:**
+
+1. **Path note**: the prompt's `packages/svelte/src/primitives/table/` + `packages/svelte/src/floating/useFloating.ts` are typos — the solid table lives at `packages/solid/src/primitives/table/` and the floating module at `packages/solid/src/floating/useFloating.ts` (svelte's is `useFloating.svelte.ts`, a separate port). Documented in §1.4.
+2. **Edit machinery**: solid had `editRules` + `editConfig` from batch 1 (`b49bf5c6`, four-framework mirror of core `edit-rules.ts`), but the solid edit path is **bespoke** (signals + `cellEditGen` epoch) — it does NOT bridge core `createCellEdit` like react. Row mode extends it with per-column `RowCellSession` (own draft/error signals + gen). Gap: `showAsterisk` declared but not rendered.
+3. **Tree support**: solid HAS `getSubRows` + `flattenTree` → lazyLoad is **in scope** per the task condition, but the adapt batch handed it off (react batch-J epoch + reactive loading set design fully documented in §2f for pickup).
+4. **Batch AB already landed** (`8f40aaac`): all 6 other features verified shipped — columnDrag (leaf-only, grouped untouched), rowDrag (local rows signal + `onDataChange` + `onReorder`, drag track in 5 grid sites), row edit mode, contextMenu (virtual anchor; fresh object identity replaces react's seq remount token), filterValues (keyed `<Show>` remount re-seeds draft; OR-match; remote comma-join), tableRef (6 methods, mount-time closure stays fresh via getter props).
+5. **React reference semantics captured** with the solid deltas: rects collected once on threshold, container-level pointer handlers, session-idle-derived row exit, capture-phase scroll close, portal to body.
+6. **Tests**: parity-ab.test.tsx (13) + parity-ab-rowedit.test.tsx (8) enumerated case-by-case; 7 open questions/handoff items (lazyLoad, showAsterisk, manual trigger, layouts, rowDrag×tree, select editor, handle scope/file budget).

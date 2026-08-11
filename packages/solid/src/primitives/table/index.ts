@@ -28,4 +28,5 @@ export type {
   IrisTableContextMenuParams,
   IrisTableEditConfig,
   IrisTableHandle,
+  IrisTableLazyLoad,
 } from './types'

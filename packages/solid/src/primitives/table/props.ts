@@ -9,6 +9,7 @@ import type {
   IrisTableFilterValues,
   IrisTableFormConfig,
   IrisTableHandle,
+  IrisTableLazyLoad,
   IrisTablePagerConfig,
   IrisTableProxyConfig,
   IrisTableRenderDetail,
@@ -141,6 +142,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   onExpandedRowsChange?: (keys: Array<string | number>) => void
   /** Return a row's children to enable tree mode. */
   getSubRows?: (row: Row) => Row[] | undefined
+  /** Lazy tree (vxe lazyLoad parity): a row with no children still renders a caret; the first expand calls this and `load` resolves the children (expanding the row). */
+  lazyLoad?: IrisTableLazyLoad<Row>
   keyboardNavigation?: boolean
   cellRange?: boolean
   virtualScroll?: IrisTableVirtualOptions

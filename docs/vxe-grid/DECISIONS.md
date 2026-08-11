@@ -559,3 +559,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ac-gate.md [ok]: Report: **Verdict**: PASS (2 low + 3 info — no fixes required, all deferred/informational)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ac-gate.md
+
+## 2026-08-11 12:23:15 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ad-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ad-baseline.md

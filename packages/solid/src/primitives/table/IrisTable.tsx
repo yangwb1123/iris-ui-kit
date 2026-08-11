@@ -902,17 +902,47 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const treeComparator = createMemo(() =>
     merged.multiSort ? multiSortComparator() : sortComparator(),
   )
+  // ---- Lazy tree (vxe lazyLoad parity, batch J) ---------------------------
+  // Children are fetched on first expand: `lazyLoad(row, load)`. The loaded
+  // cache (plain closure, wins over `getSubRows`) drives flattenTree; the
+  // loading SET is a signal because it drives the caret spinner on both
+  // transitions (the cache map itself is not reactive).
+  const lazyTree = (): boolean => props.lazyLoad !== undefined
+  const [lazyLoading, setLazyLoading] = createSignal<Set<string>>(new Set())
+  let lazyChildren = new Map<string, Row[]>()
+  // Monotonic epoch, bumped whenever the data source reference changes (cache
+  // + loading cleared wholesale): a stale fetch's result must never re-seed a
+  // cleared cache, and must not clear a newer fetch's loading flag. Solid has
+  // no re-render staleness, but the async callback closure still needs the
+  // guard (react batch-K M2 parity).
+  let lazyEpoch = 0
+  let lastLazySourceRef: Row[] | undefined
+  createEffect(() => {
+    const source = hasProxy() ? proxyState().data : props.data
+    if (source !== lastLazySourceRef) {
+      lastLazySourceRef = source
+      lazyEpoch++
+      lazyChildren = new Map()
+      setLazyLoading(new Set<string>())
+    }
+  })
+  const lazyChildrenOf = (row: Row): Row[] | undefined => {
+    const key = String(rowId(row, 0))
+    return lazyChildren.get(key) ?? props.getSubRows?.(row)
+  }
   const flatTree = createMemo<Array<TreeRow<Row>> | null>(() => {
-    if (props.getSubRows === undefined) return null
+    if (props.getSubRows === undefined && !lazyTree()) return null
     const keys = expandedKeys()
     const compare = treeComparator()
+    // `lazyLoading` drives a re-walk when a lazy load lands (the ref-style
+    // cache map is not reactive — react's lazyLoading-in-deps parity).
+    lazyLoading()
     return flattenTree<Row>(filteredData(), {
       getKey: (r) => String(rowId(r, 0)),
       // With an active sort, sort each level's children by the same comparator
-      // so the whole tree reorders hierarchically.
-      getChildren: compare
-        ? withSortedChildren((r: Row) => props.getSubRows!(r), compare)
-        : (r) => props.getSubRows!(r),
+      // so the whole tree reorders hierarchically. Lazy-loaded children win
+      // over `getSubRows` and still participate in the same sorting.
+      getChildren: compare ? withSortedChildren(lazyChildrenOf, compare) : lazyChildrenOf,
       isExpanded: (k) => keys.includes(k),
     })
   })
@@ -1108,6 +1138,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   ): boolean => {
     const col = session.col
     const rowIndex = session.rowIndex
+    const id = `${rowIdent}::${col.key}`
+    // Liveness guard (batch AD, browser-blur hardening): a committed or
+    // cancelled session must never re-commit. The editor's onBlur can fire
+    // AFTER the session left the map (input unmount on close/cancel — e.g.
+    // Escape-then-blur, Enter-then-blur in real browsers), which would
+    // otherwise start a FRESH commit on the stale session object (double
+    // onCellEdit / write-back after Escape).
+    if (!rowSessions().has(id)) return true
     const oldValue = getCellValue(row, col)
     const draftValue = session.draft()
     const newValue =
@@ -1116,7 +1154,6 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           ? oldValue
           : Number(draftValue)
         : draftValue
-    const id = `${rowIdent}::${col.key}`
     const close = (): void => {
       setRowSessions((prev) => {
         if (!prev.has(id)) return prev
@@ -1668,6 +1705,17 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
 [data-iris-table-row][data-iris-row-editing="true"] {
   --iris-row-bg: var(--iris-surface-selected);
 }
+/* Lazy tree loading caret (vxe lazyLoad parity, batch J): keyframes can't
+   be inline, so they live in the singleton stylesheet; opacity + spin use
+   token-driven values. */
+@keyframes iris-table-caret-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+[data-iris-table-tree-toggle][data-iris-tree-loading] {
+  opacity: 0.55;
+  animation: iris-table-caret-spin 900ms linear infinite;
+}
 [data-iris-table-context-menu] [role="menuitem"]:hover:not(:disabled) {
   background: var(--iris-surface-hover);
 }
@@ -1801,7 +1849,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   // Tree mode is opt-in via getSubRows. The virtual-scroll path windows flat AND
   // tree rows (uniform height) — only variable-height detail panels bar it, hence
   // the `!hasDetail()` guard below.
-  const treeMode = (): boolean => props.getSubRows !== undefined
+  const treeMode = (): boolean => props.getSubRows !== undefined || props.lazyLoad !== undefined
 
   // Single source of truth for a body row's main `<div>`. The non-virtual body
   // wraps it with a detail panel; the virtual scroller renders it directly,
@@ -2072,10 +2120,70 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                       <Show
                         when={treeMeta!.hasChildren}
                         fallback={
-                          <span
-                            aria-hidden="true"
-                            style={{ display: 'inline-block', width: '16px' }}
-                          />
+                          lazyTree() && !lazyChildren.has(treeMeta!.key) ? (
+                            <button
+                              type="button"
+                              data-iris-table-tree-toggle=""
+                              data-iris-tree-loading={
+                                lazyLoading().has(treeMeta!.key) ? '' : undefined
+                              }
+                              aria-expanded="false"
+                              aria-label={t('treeSelect.expand')}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const key = treeMeta!.key
+                                if (lazyLoading().has(key)) return
+                                // First expand fetches the children: loading is
+                                // tracked in the signal (drives the spinner
+                                // caret); a throwing load stays retryable (the
+                                // key is not cached).
+                                setLazyLoading((prev) => new Set(prev).add(key))
+                                const clearLoading = (): void => {
+                                  setLazyLoading((prev) => {
+                                    const next = new Set(prev)
+                                    next.delete(key)
+                                    return next
+                                  })
+                                }
+                                try {
+                                  const epoch = lazyEpoch
+                                  props.lazyLoad!(row, (children) => {
+                                    // Stale fetch: the data source changed while
+                                    // this load was in flight — drop the result
+                                    // (and do NOT clear the loading flag, which
+                                    // may belong to a newer fetch of the same
+                                    // key).
+                                    if (epoch !== lazyEpoch) return
+                                    lazyChildren.set(key, children)
+                                    if (children && children.length > 0) {
+                                      expansion.toggle(key)
+                                    }
+                                    clearLoading()
+                                  })
+                                } catch {
+                                  clearLoading()
+                                }
+                              }}
+                              style={{
+                                border: 'none',
+                                background: 'transparent',
+                                cursor: 'pointer',
+                                padding: '0',
+                                'margin-right': '4px',
+                                font: 'inherit',
+                                color: 'var(--iris-foreground)',
+                                transform: 'none',
+                                transition: 'transform 150ms',
+                              }}
+                            >
+                              ▶
+                            </button>
+                          ) : (
+                            <span
+                              aria-hidden="true"
+                              style={{ display: 'inline-block', width: '16px' }}
+                            />
+                          )
                         }
                       >
                         <button

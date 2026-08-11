@@ -221,7 +221,7 @@ describe('IrisTable custom column panel (vxe customConfig parity)', () => {
     expect(container.querySelector('[data-iris-table-column-settings]')).toBeNull()
   })
 
-  it('reset restores the first-open visibility snapshot, clears the order and re-seeds the draft', () => {
+  it('reset restores the visibility snapshot taken at open, clears the order and re-seeds the draft', () => {
     const onVis = vi.fn()
     const onOrder = vi.fn()
     const { container } = render(
@@ -250,6 +250,129 @@ describe('IrisTable custom column panel (vxe customConfig parity)', () => {
         el.getAttribute('data-iris-table-column-settings-row'),
       ),
     ).toEqual(['a', 'b', 'c'])
+  })
+
+  it('reset snapshots visibility per open — a parent-side change between opens is what reset restores', () => {
+    const onVis = vi.fn()
+    const onOrder = vi.fn()
+    const Harness = ({ vis }: { vis: Record<string, boolean> }) => (
+      <IrisTable
+        columns={columns}
+        data={rows}
+        rowKey="id"
+        toolbar={{ columnSettings: true }}
+        columnVisibility={vis}
+        onColumnVisibilityChange={onVis}
+        onColumnOrderChange={onOrder}
+      />
+    )
+    const { container, rerender } = render(<Harness vis={{ b: false }} />)
+    openPanel(container)
+    // Close without resetting.
+    fireEvent.click(container.querySelector('[data-iris-table-toolbar-columns]')!)
+    // Parent-side visibility drift between opens (e.g. column pinned off elsewhere).
+    rerender(<Harness vis={{ b: false, c: false }} />)
+    const panel = openPanel(container)
+    fireEvent.click(panel.querySelector('[data-iris-table-column-settings-reset]')!)
+    // Restores the snapshot from THIS open ({ c: false } included), not the first one.
+    expect(onVis).toHaveBeenLastCalledWith({ b: false, c: false })
+    expect(onOrder).toHaveBeenLastCalledWith(undefined)
+  })
+
+  it('checkbox rows are labelled — clicking the column title toggles visibility', () => {
+    const onVis = vi.fn()
+    const { container } = render(
+      <IrisTable
+        columns={columns}
+        data={rows}
+        rowKey="id"
+        toolbar={{ columnSettings: true }}
+        columnVisibility={{}}
+        onColumnVisibilityChange={onVis}
+      />,
+    )
+    const panel = openPanel(container)
+    const firstRow = panel.querySelector('[data-iris-table-column-settings-row]')!
+    const checkbox = firstRow.querySelector('input[type="checkbox"]')!
+    // Checkbox is wrapped in a <label> carrying the column title → accessible
+    // name via label association (regression: the old menu used <label>).
+    const label = checkbox.closest('label')!
+    expect(label.textContent).toBe('A')
+    expect(
+      label.contains(firstRow.querySelector('[data-iris-table-column-settings-handle]')!),
+    ).toBe(false)
+    // Clicking the title text (not the box) toggles too.
+    fireEvent.click(label)
+    expect(onVis).toHaveBeenLastCalledWith({ a: false })
+  })
+
+  it('a pointerup on window (outside the panel) still completes the drag — no stuck activeId', () => {
+    const onOrder = vi.fn()
+    const { container } = render(
+      <IrisTable
+        columns={columns}
+        data={rows}
+        rowKey="id"
+        toolbar={{ columnSettings: true }}
+        columnVisibility={{}}
+        onColumnVisibilityChange={vi.fn()}
+        onColumnOrderChange={onOrder}
+      />,
+    )
+    const panel = openPanel(container)
+    stubRowRects(panel)
+    const rowEls = [...panel.querySelectorAll('[data-iris-table-column-settings-row]')]
+    act(() => {
+      rowEls[0]!
+        .querySelector('[data-iris-table-column-settings-handle]')!
+        .dispatchEvent(makePointer('pointerdown', { button: 0, clientX: 10, clientY: 10 }))
+      panel.dispatchEvent(makePointer('pointermove', { clientX: 12, clientY: 14 }))
+      panel.dispatchEvent(makePointer('pointermove', { clientX: 12, clientY: 100 }))
+      // Release happens OUTSIDE the panel — window-level listener must end it.
+      window.dispatchEvent(new Event('pointerup'))
+    })
+    expect(
+      [...panel.querySelectorAll('[data-iris-table-column-settings-row]')].map((el) =>
+        el.getAttribute('data-iris-table-column-settings-row'),
+      ),
+    ).toEqual(['b', 'c', 'a'])
+    fireEvent.click(panel.querySelector('[data-iris-table-column-settings-confirm]')!)
+    expect(onOrder).toHaveBeenCalledWith(['b', 'c', 'a'])
+  })
+
+  it('a pointercancel on window cancels the drag instead of committing it', () => {
+    const onOrder = vi.fn()
+    const { container } = render(
+      <IrisTable
+        columns={columns}
+        data={rows}
+        rowKey="id"
+        toolbar={{ columnSettings: true }}
+        columnVisibility={{}}
+        onColumnVisibilityChange={vi.fn()}
+        onColumnOrderChange={onOrder}
+      />,
+    )
+    const panel = openPanel(container)
+    stubRowRects(panel)
+    const rowEls = [...panel.querySelectorAll('[data-iris-table-column-settings-row]')]
+    act(() => {
+      rowEls[0]!
+        .querySelector('[data-iris-table-column-settings-handle]')!
+        .dispatchEvent(makePointer('pointerdown', { button: 0, clientX: 10, clientY: 10 }))
+      panel.dispatchEvent(makePointer('pointermove', { clientX: 12, clientY: 14 }))
+      panel.dispatchEvent(makePointer('pointermove', { clientX: 12, clientY: 100 }))
+      window.dispatchEvent(new Event('pointercancel'))
+    })
+    // Drag discarded: no reorder, no stuck active row highlight.
+    expect(
+      [...panel.querySelectorAll('[data-iris-table-column-settings-row]')].map((el) =>
+        el.getAttribute('data-iris-table-column-settings-row'),
+      ),
+    ).toEqual(['a', 'b', 'c'])
+    expect(panel.querySelector('[data-iris-column-settings-drag-active]')).toBeNull()
+    fireEvent.click(panel.querySelector('[data-iris-table-column-settings-confirm]')!)
+    expect(onOrder).toHaveBeenCalledWith(['a', 'b', 'c'])
   })
 
   it('Esc closes the panel without applying the draft', () => {

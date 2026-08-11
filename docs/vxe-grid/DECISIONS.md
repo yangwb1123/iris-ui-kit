@@ -1,3 +1,10 @@
+## 2026-08-11 20:10:00 — stage 'gate' — PASS (batch S)
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-s-gate.md [ok]: Review fixes (3 × LOW applied): 1. **A11y** — panel checkbox rows wrapped in `<label>` (title click toggles, accessible name restored). 2. **Reset snapshot per open** — `visibilitySnapshotRef` is re-snapshotted on EVERY open (was first-open-only); reset restores the state as of the last open, matching the baseline's `onColumnVisibilityChange({})` semantics without clobbering parent-side visibility changes; +1 regression test. 3. **Stuck drag** — window-level `pointerup`/`pointercancel` listeners while the panel is open end/cancel the custom drag even when released outside the ~200px panel; +2 regression tests.
+- gate: `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks**; React tests **1754/1754**; audit 0; gen:manifest + check:manifest up-to-date.
+- commit: `16acf053`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-s-review.md
+
 ## 2026-08-08 18:30:18 — stage 'baseline' — PASS
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-c-baseline.md [ok]: Summary of findings: **vxe-grid semantics (from grid.d.ts):**
@@ -297,3 +304,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-s-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-s-baseline.md
+
+## 2026-08-10 19:56:07 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-s-adapt.md [ok]: Report: **Commit `cbd790fc`** — `feat(table): vxe-grid 批 S——自定义列面板（搜索/拖拽排序/可见性切换/重置，react only）` — 11 files, +632/−55.; Files changed: | File | Change |; Verification (all pass): - `pnpm --filter @iris-ui-kit/react typecheck` ✓ (also core + plugin-locale-zh); Cleanup from the timed-out prior attempt: - Removed 5 debug `console.log` lines from the drag handlers; deleted junk `scratch-trace.test.tsx`.; Unfinished: - None in scope. Documented simplifications (per baseline): search is display-only, drag edits a draft committed on conf
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-s-adapt.md
+
+## 2026-08-10 20:02:15 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-s-review.md [ok]: Verification (all run): - `react test` **1750/1750** ✅ · typecheck ✅ · lint **0 errors** (1 pre-existing complexity warning) ✅; Check results: 1. **columnOrder** — correct: unknown keys ignored, deduped stable sort, unnamed keys keep relative order after ordered ; Findings (3 × LOW, non-blocking): 1. **A11y regression** — `Table.tsx:3889-3897`: checkbox has no accessible name (old menu used `<label>`), title not cli
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-s-review.md

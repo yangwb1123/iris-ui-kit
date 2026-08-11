@@ -1571,9 +1571,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
     setColumnSettingsOpen(true)
     setCustomSearch('')
     setDraftOrder(orderedColumns.map((c) => c.key))
-    if (visibilitySnapshotRef.current === null) {
-      visibilitySnapshotRef.current = { ...(columnVisibility ?? {}) }
-    }
+    // Re-snapshot visibility on EVERY open so reset always restores the
+    // state as of the last open (parent-side visibility changes included,
+    // per the batch-S baseline's `onColumnVisibilityChange({})` semantics
+    // — see docs/vxe-grid/DECISIONS.md).
+    visibilitySnapshotRef.current = { ...(columnVisibility ?? {}) }
   }
 
   const handleCustomDragPointerDown = (e: React.PointerEvent, colKey: string) => {
@@ -1604,7 +1606,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
   }
 
-  const handleCustomDragPointerUp = () => {
+  const handleCustomDragPointerUp = React.useCallback(() => {
     if (customDragCtrl.isPending()) {
       customDragCtrl.cancel()
       return
@@ -1622,7 +1624,26 @@ export function IrisTable<Row extends Record<string, unknown>>({
       })
     }
     customRectsRef.current = []
-  }
+  }, [])
+
+  // Window-level release: the panel is only ~200px wide, so a pointerup or
+  // pointercancel anywhere outside it (or outside the panel's pointer
+  // handlers entirely) must never leave the custom drag stuck in activeId.
+  React.useEffect(() => {
+    if (!columnSettingsOpen) return
+    window.addEventListener('pointerup', handleCustomDragPointerUp)
+    const handleCustomDragCancel = () => {
+      if (customDragCtrl.isPending() || customDragCtrl.getState().activeId !== null) {
+        customDragCtrl.cancel()
+      }
+      customRectsRef.current = []
+    }
+    window.addEventListener('pointercancel', handleCustomDragCancel)
+    return () => {
+      window.removeEventListener('pointerup', handleCustomDragPointerUp)
+      window.removeEventListener('pointercancel', handleCustomDragCancel)
+    }
+  }, [columnSettingsOpen, handleCustomDragPointerUp])
 
   const handleCustomConfirm = () => {
     setColumnSettingsOpen(false)
@@ -3888,14 +3909,23 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         >
                           ⠿
                         </span>
-                        <input
-                          type="checkbox"
-                          checked={columnVisibility?.[col.key] !== false}
-                          onChange={() => toggleColumnVisibility(col.key)}
-                        />
-                        <span style={{ color: 'var(--iris-foreground)' }}>
+                        <label
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'var(--iris-space-xs, 8px)',
+                            cursor: 'pointer',
+                            flex: 1,
+                            color: 'var(--iris-foreground)',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={columnVisibility?.[col.key] !== false}
+                            onChange={() => toggleColumnVisibility(col.key)}
+                          />
                           {col.title ?? col.key}
-                        </span>
+                        </label>
                       </div>
                     ))}
                   </div>

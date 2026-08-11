@@ -464,3 +464,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-y-review.md [FAILED: agent binary not found]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-y-review.md
+
+## 2026-08-11 07:40:22 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-z-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-z-baseline.md

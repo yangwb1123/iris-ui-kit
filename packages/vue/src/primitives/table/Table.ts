@@ -8,6 +8,7 @@ import {
   onScopeDispose,
   ref,
   shallowRef,
+  Teleport,
   toValue,
   watch,
   type ComputedRef,
@@ -48,6 +49,8 @@ import { useI18n } from '../../i18n'
 import { IrisButton } from '../button/Button'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { useDrag } from '../drag/useDrag'
+import { useDismiss } from '../floating/useDismiss'
+import { useFloating } from '../floating/useFloating'
 import { IrisFormField } from '../form-field/FormField'
 import { IrisInput } from '../input/Input'
 import { IrisPagination } from '../pagination/Pagination'
@@ -61,7 +64,10 @@ import type {
   IrisTableColumnDrag,
   IrisTableColumnVisibility,
   IrisTableColumnWidths,
+  IrisTableContextMenuConfig,
+  IrisTableContextMenuParams,
   IrisTableExpose,
+  IrisTableFilterValues,
   IrisTableFormConfig,
   IrisTableProxyConfig,
   IrisTableRenderDetail,
@@ -81,6 +87,22 @@ function getCellValue<Row extends Record<string, unknown>>(
 ): unknown {
   const key = (column.dataIndex ?? column.key) as keyof Row
   return row[key]
+}
+
+/**
+ * Fold the checked filter sets into the query filter map as comma-joined
+ * strings (vxe filter-multiple remote serialization parity, batch Z). Keys
+ * with an empty checked set are left untouched.
+ */
+function mergeFilterValues(
+  filters: Record<string, string>,
+  filterValues: Record<string, string[]>,
+): Record<string, string> {
+  const next: Record<string, string> = { ...filters }
+  for (const [key, values] of Object.entries(filterValues)) {
+    if (values.length > 0) next[key] = values.join(',')
+  }
+  return next
 }
 
 const SELECTION_COL_WIDTH = 40
@@ -142,6 +164,12 @@ export interface UseTableProxyOptions<Row extends Record<string, unknown>> {
   /** Controlled multi-column sort state (initial params seed). */
   multiSortState?: MaybeRefOrGetter<IrisTableSortState[] | undefined>
   defaultMultiSort?: IrisTableSortState[] | undefined
+  /**
+   * Checked filter sets (batch Z): comma-joined into the initial query
+   * `filters` map when remoteFilter is on (vxe filter-multiple remote
+   * serialization parity, React parity).
+   */
+  filterValues?: MaybeRefOrGetter<IrisTableFilterValues | undefined>
 }
 
 export interface UseTableProxyResult<Row extends Record<string, unknown>> {
@@ -248,7 +276,7 @@ export function useTableProxy<Row extends Record<string, unknown>>(
             remoteSort && multiSort
               ? (toValue(options.multiSortState) ?? options.defaultMultiSort ?? [])
               : undefined,
-          filters: {},
+          filters: remoteSort ? mergeFilterValues({}, toValue(options.filterValues) ?? {}) : {},
         },
       })
       attach(ctrl)
@@ -360,6 +388,8 @@ export const IrisTable = defineComponent({
         trigger?: 'click' | 'dblclick' | 'manual'
         showAsterisk?: boolean
         autoClear?: boolean
+        /** Edit mode (vxe editConfig.mode parity, batch Z): `'cell'` (default) edits one cell at a time; `'row'` opens every editable column of the clicked row together — Enter/blur commits THAT column, Escape cancels the whole row, clicking another row commits the current row's open editors first. */
+        mode?: 'cell' | 'row'
       }>,
       default: undefined,
     },
@@ -473,6 +503,49 @@ export const IrisTable = defineComponent({
       type: Object as PropType<Record<string, string>>,
       default: undefined,
     },
+    /**
+     * Per-column checked filter sets (vxe filter-multiple parity, batch Z):
+     * column key → values OR-matched against the raw `String(value)` of each
+     * row (AND-ed with the text `filters` channel). Controlled through
+     * `filterValues` / `onFilterValuesChange`. Remote-filter tables serialize
+     * each non-empty set into the proxy query filters as a comma-joined string.
+     */
+    filterValues: {
+      type: Object as PropType<IrisTableFilterValues>,
+      default: undefined,
+    },
+    /** Controlled `filterValues` channel (parent owns the map). */
+    onFilterValuesChange: {
+      type: Function as PropType<(next: IrisTableFilterValues) => void>,
+      default: undefined,
+    },
+    /**
+     * Right-click context menu (vxe-grid contextMenu parity, batch Z). Opens
+     * on body leaf cells only — header, seq, selection, expand, summary and
+     * footer cells never open it. The menu floats at the cursor (virtual
+     * anchor), closes on Escape / outside pointer-down / any scroll, and fires
+     * `onSelect` with the clicked item's key and the cell's grid coordinates.
+     */
+    contextMenu: {
+      type: Object as PropType<IrisTableContextMenuConfig<Record<string, unknown>>>,
+      default: undefined,
+    },
+    /**
+     * Lazy tree (vxe lazyLoad parity, batch Z): a row with no `getSubRows`
+     * children still renders a caret; the first expand calls this and `load`
+     * resolves the children (expanding the row). Loaded children win over
+     * `getSubRows`; a new data source reference (parent re-feed or proxy page
+     * swap) drops the cache so lazy rows reload on the next expand.
+     */
+    lazyLoad: {
+      type: Function as PropType<
+        (
+          row: Record<string, unknown>,
+          load: (children: Array<Record<string, unknown>>) => void,
+        ) => void
+      >,
+      default: undefined,
+    },
     /** Render a leading sequence-number column (vxe seqConfig parity). */
     seq: { type: Boolean, default: false },
     /** First sequence number (vxe seq-config.startIndex parity). Default 1. */
@@ -574,6 +647,7 @@ export const IrisTable = defineComponent({
       defaultSort: props.defaultSort,
       multiSortState: () => props.multiSortState,
       defaultMultiSort: props.defaultMultiSort,
+      filterValues: () => props.filterValues,
     })
     // Proxy mode drives the table's loading/error UI from the controller state
     // (reusing the existing loading/error prop rendering below).
@@ -681,6 +755,11 @@ export const IrisTable = defineComponent({
       if (formDraft.value[key] === value) return
       formDraft.value = { ...formDraft.value, [key]: value }
     }
+    // Batch Z: the proxy receives the text filters PLUS the comma-joined
+    // checked filter sets, merged into ONE map (vxe filter-multiple remote
+    // serialization parity, React parity).
+    const mergedProxyFilters = (form: Record<string, string>): Record<string, string> =>
+      mergeFilterValues(mergeFormFilters(props.filters ?? {}, form), props.filterValues ?? {})
     const handleFormSubmit = (): void => {
       const values = buildFormValues(props.formConfig?.fields, formDraft.value)
       props.formConfig?.onSearch?.(values)
@@ -688,7 +767,7 @@ export const IrisTable = defineComponent({
       // Proxy mode: the server owns filtering — merge the form values into the
       // controller filters (page resets to 1 in core applyParams, vxe behavior).
       if (proxyCtrl.proxy.value) {
-        proxyCtrl.setParams({ filters: mergeFormFilters({}, values), page: 1 })
+        proxyCtrl.setParams({ filters: mergedProxyFilters(values), page: 1 })
       }
     }
     const handleFormReset = (): void => {
@@ -701,21 +780,22 @@ export const IrisTable = defineComponent({
         // setParams returns false when the merged params are unchanged (e.g.
         // filters already cleared) — a reset must still re-query, so force a
         // refetch only in that no-op case (no double request when it changed).
-        if (!proxyCtrl.setParams({ filters: mergeFormFilters({}, values), page: 1 })) {
+        if (!proxyCtrl.setParams({ filters: mergedProxyFilters(values), page: 1 })) {
           void proxyCtrl.refetch()
         }
       }
     }
     // remoteFilter parity: hand the applied filter map (filters prop + form
-    // values, form wins) to the server and never hide rows client-side (vxe
-    // proxyConfig.filter). Live after the form state so `formApplied` is
-    // referenced; setParams dedupes unchanged filters.
+    // values, form wins; + comma-joined checked sets, batch Z) to the server
+    // and never hide rows client-side (vxe proxyConfig.filter). Live after the
+    // form state so `formApplied` is referenced; setParams dedupes unchanged
+    // filters.
     watch(
-      [formApplied, () => props.filters],
+      [formApplied, () => props.filters, () => props.filterValues],
       () => {
         if (proxyCtrl.proxy.value && remoteFilter.value) {
           proxyCtrl.setParams({
-            filters: mergeFormFilters(props.filters ?? {}, formApplied.value),
+            filters: mergedProxyFilters(formApplied.value),
           })
         }
       },
@@ -787,22 +867,52 @@ export const IrisTable = defineComponent({
       return index
     }
 
-    // -------- Tree rows (opt-in via getSubRows) --------
+    // -------- Tree rows (opt-in via getSubRows / lazyLoad) --------
     // Flatten the nested data into the visible rows honoring the (shared)
     // expansion model. `bodyData` is the row list the body, select-all, and
     // summary all operate on — identical to `sortedRows` in flat mode, so
     // non-tree behavior is byte-identical. Tree mode is mutually exclusive with
     // detail rows and is gated off the virtual-scroll path.
-    const treeMode = computed(() => props.getSubRows !== undefined)
+    const treeMode = computed(() => props.getSubRows !== undefined || props.lazyLoad !== undefined)
+    // Lazy tree (vxe lazyLoad parity, batch Z): children are fetched on first
+    // expand. The loaded map wins over `getSubRows`; the loading SET drives the
+    // caret render on both transitions. Both are reactive refs (the deep map
+    // mutation re-walks flatTree; a new data source reference drops them —
+    // React M2 parity).
+    const lazyChildren = ref<Map<string, Array<Record<string, unknown>>>>(new Map())
+    const lazyLoading = ref<Set<string>>(new Set())
+    // Bumped whenever the data source reference changes (cache + loading set
+    // cleared). A lazy-load callback captures the epoch at call time and drops
+    // its result if a refresh happened while the fetch was in flight — stale
+    // children must never re-seed the cleared cache (React M2 parity).
+    let lazyEpoch = 0
+    // The source refs (not the live copy) drive the cache lifecycle: internal
+    // write-backs (edit commits / rowDrag / loadData) replace the live rows,
+    // not the source arrays, so they keep the cache (React parity).
+    watch(
+      () => (proxyCtrl.proxy.value ? proxyCtrl.state.value.data : props.data),
+      () => {
+        lazyChildren.value = new Map()
+        lazyLoading.value = new Set()
+        lazyEpoch += 1
+      },
+    )
+    const lazyChildrenOf = (
+      row: Record<string, unknown>,
+    ): Array<Record<string, unknown>> | undefined => {
+      const key = String(row[props.rowKey])
+      return lazyChildren.value.get(key) ?? props.getSubRows?.(row)
+    }
     const flatTree = computed<Array<TreeRow<Record<string, unknown>>> | null>(() =>
       treeMode.value
         ? flattenTree(sortedData.value, {
             getKey: (r) => String(r[props.rowKey]),
             // With an active sort, sort each level's children by the same
-            // comparator so the whole tree reorders hierarchically.
+            // comparator so the whole tree reorders hierarchically. Lazy-loaded
+            // children win over `getSubRows` and still participate.
             getChildren: sortComparator.value
-              ? withSortedChildren((r) => props.getSubRows!(r), sortComparator.value)
-              : (r) => props.getSubRows!(r),
+              ? withSortedChildren(lazyChildrenOf, sortComparator.value)
+              : lazyChildrenOf,
             isExpanded: (k) => expandedKeys.value.includes(k),
           })
         : null,
@@ -822,16 +932,27 @@ export const IrisTable = defineComponent({
         ? (props.filters ?? {})
         : mergeFormFilters(props.filters ?? {}, formApplied.value)
       const active = Object.entries(merged).filter(([, v]) => v != null && v !== '')
-      if (active.length === 0) return sortedData.value
-      return sortedData.value.filter((row) =>
-        active.every(([key, value]) => {
+      // Batch Z: per-column checked sets OR-match the raw String(value); a set
+      // applies only when non-empty. AND-ed with the text channel below.
+      const checkedEntries = Object.entries(props.filterValues ?? {}).filter(
+        ([, values]) => values.length > 0,
+      )
+      if (active.length === 0 && checkedEntries.length === 0) return sortedData.value
+      return sortedData.value.filter((row) => {
+        const textOk = active.every(([key, value]) => {
           const col = displayColumns.value.find((c) => c.key === key)
           if (!col) return true
           return String(getCellValue(row, col) ?? '')
             .toLowerCase()
             .includes(value.toLowerCase())
-        }),
-      )
+        })
+        const setsOk = checkedEntries.every(([key, values]) => {
+          const col = displayColumns.value.find((c) => c.key === key)
+          if (!col) return true
+          return values.includes(String(getCellValue(row, col) ?? ''))
+        })
+        return textOk && setsOk
+      })
     })
     const bodyData = computed(() =>
       flatTree.value ? flatTree.value.map((t) => t.row) : filteredData.value,
@@ -1010,6 +1131,34 @@ export const IrisTable = defineComponent({
       }
     }
 
+    /** Shared write-back for a committed value (both edit modes, batch Z):
+     * emits `cellEdit` and patches the proxy live copy (React liveData
+     * parity — committed edits survive until the next refetch replaces the
+     * list wholesale). */
+    const writeCellValue = (
+      row: Record<string, unknown>,
+      column: IrisTableColumn,
+      rowIndex: number,
+      oldValue: unknown,
+      newValue: unknown,
+    ) => {
+      if (newValue === oldValue) return
+      emit('cellEdit', { row, column, oldValue, newValue, rowIndex })
+      if (proxyCtrl.proxy.value) {
+        const id = rowId(row, rowIndex)
+        const idx = proxyCtrl.liveData.value.findIndex((r, i) => rowId(r, i) === id)
+        if (idx >= 0) {
+          const key = (column.dataIndex ?? column.key) as string
+          const next = { ...proxyCtrl.liveData.value[idx], [key]: newValue }
+          proxyCtrl.liveData.value = [
+            ...proxyCtrl.liveData.value.slice(0, idx),
+            next,
+            ...proxyCtrl.liveData.value.slice(idx + 1),
+          ]
+        }
+      }
+    }
+
     const finishCommit = (
       row: Record<string, unknown>,
       column: IrisTableColumn,
@@ -1019,31 +1168,373 @@ export const IrisTable = defineComponent({
     ) => {
       editError.value = null
       editingCellId.value = null
-      if (newValue !== oldValue) {
-        emit('cellEdit', { row, column, oldValue, newValue, rowIndex })
-        // Proxy write-back (React liveData parity): committed edits update the
-        // local copy until the next refetch replaces it (a new page / refetch
-        // reference swaps liveRows wholesale).
-        if (proxyCtrl.proxy.value) {
-          const id = rowId(row, rowIndex)
-          const idx = proxyCtrl.liveData.value.findIndex((r, i) => rowId(r, i) === id)
-          if (idx >= 0) {
-            const key = (column.dataIndex ?? column.key) as string
-            const next = { ...proxyCtrl.liveData.value[idx], [key]: newValue }
-            proxyCtrl.liveData.value = [
-              ...proxyCtrl.liveData.value.slice(0, idx),
-              next,
-              ...proxyCtrl.liveData.value.slice(idx + 1),
-            ]
-          }
-        }
-      }
+      writeCellValue(row, column, rowIndex, oldValue, newValue)
     }
 
     const cancelEdit = () => {
       editError.value = null
       editingCellId.value = null
     }
+
+    // -------- Row edit mode (vxe editConfig.mode='row' parity, batch Z) --------
+    // Extends the bespoke single-session cell machinery above into a reactive
+    // session MAP keyed by cellId — one `{ draft, error }` per editable column
+    // of the clicked row, sharing the same commit core (`writeCellValue`). Cell
+    // mode stays byte-identical; row mode commits PER CELL (Enter/blur closes
+    // just that column), never the whole row at once — Escape cancels the whole
+    // row, clicking another row commits the current row's open editors first
+    // (React parity). Drafts/errors live in the map (deep-reactive), so the
+    // per-cell editor render reads its own session.
+    const rowMode = computed(() => props.editConfig?.mode === 'row')
+    interface RowEditSession {
+      draft: string
+      error: string | null
+    }
+    const rowSessions = ref<Map<string, RowEditSession>>(new Map())
+    const rowEditing = ref<{ k: string | number; idx: number } | null>(null)
+    // Per-column editor inputs (focus targets for beginRowEdit / reopen).
+    const rowEditorRefs = new Map<string, HTMLInputElement | null>()
+
+    /** Resolve the CURRENT row object by key (a committed column's write-back
+     * replaces the proxy live row, so later commits must see the fresh object). */
+    const currentRowFor = (k: string | number): Record<string, unknown> | undefined =>
+      bodyData.value.find((r, i) => rowId(r, i) === k)
+
+    const beginRowEdit = (
+      row: Record<string, unknown>,
+      rowIndex: number,
+      focusColKey?: string,
+    ): void => {
+      const k = rowId(row, rowIndex)
+      const editableCols = leafColumns.value.filter((c) => c.editable)
+      if (editableCols.length === 0) return
+      const sessions = new Map<string, RowEditSession>()
+      for (const col of editableCols) {
+        const current = getCellValue(row, col)
+        sessions.set(cellId(k, col.key), {
+          draft: current == null ? '' : String(current),
+          error: null,
+        })
+      }
+      rowSessions.value = sessions
+      rowEditing.value = { k, idx: rowIndex }
+      // Focus the clicked column's editor when it exists, else the first
+      // editable column (the editors mount on the next render).
+      const focusKey =
+        focusColKey && editableCols.some((c) => c.key === focusColKey)
+          ? focusColKey
+          : editableCols[0]!.key
+      void nextTick(() => rowEditorRefs.get(focusKey)?.focus())
+    }
+
+    /** Commit ONE open session of the row (Enter/blur on that column).
+     * Async editRules validate in the background; a row cancelled (Escape)
+     * while the validation is in flight drops the commit (the session is
+     * gone) — React M1 parity. */
+    const commitRowSession = (
+      k: string | number,
+      column: IrisTableColumn,
+      rowIndex: number,
+      id: string,
+    ): void => {
+      const session = rowSessions.value.get(id)
+      if (!session) return
+      const row = currentRowFor(k)
+      if (!row) return
+      const oldValue = getCellValue(row, column)
+      const draft = session.draft
+      const newValue =
+        column.editor === 'number'
+          ? draft === '' || Number.isNaN(Number(draft))
+            ? oldValue
+            : Number(draft)
+          : draft
+      if (column.editRules && column.editRules.length > 0) {
+        validateEditRulesAsync(column.editRules, draft, row).then((r) => {
+          if (!rowSessions.value.has(id)) return
+          if (!r.valid) {
+            const s = rowSessions.value.get(id)
+            if (s) s.error = r.messages[0] ?? null
+            return
+          }
+          finishRowCommit(row, column, rowIndex, oldValue, newValue, id)
+        })
+        return
+      }
+      if (column.validate) {
+        const error = column.validate(newValue, row)
+        if (error) {
+          const s = rowSessions.value.get(id)
+          if (s) s.error = error
+          return
+        }
+      }
+      finishRowCommit(row, column, rowIndex, oldValue, newValue, id)
+    }
+
+    const finishRowCommit = (
+      row: Record<string, unknown>,
+      column: IrisTableColumn,
+      rowIndex: number,
+      oldValue: unknown,
+      newValue: unknown,
+      id: string,
+    ): void => {
+      rowSessions.value.delete(id)
+      // All open sessions committed → the row leaves edit mode (click re-opens).
+      if (rowSessions.value.size === 0) rowEditing.value = null
+      writeCellValue(row, column, rowIndex, oldValue, newValue)
+    }
+
+    /** Escape: cancel EVERY open session of the row (the whole row, vxe parity). */
+    const cancelRowEdit = (): void => {
+      rowSessions.value = new Map()
+      rowEditing.value = null
+    }
+
+    /** Clicking another row (or starting a new row): commit each open session;
+     * a SYNC validation failure keeps the row open with the error visible.
+     * Async-validating sessions commit in the background and land whenever
+     * they resolve (per-cell commit, vxe row mode parity). */
+    const switchRowEdit = (
+      row: Record<string, unknown>,
+      rowIndex: number,
+      focusColKey?: string,
+    ): void => {
+      const editing = rowEditing.value
+      if (editing !== null) {
+        for (const [id] of rowSessions.value) {
+          const colKey = id.slice(id.indexOf('::') + 2)
+          const col = leafColumns.value.find((c) => c.key === colKey)
+          if (!col) continue
+          commitRowSession(editing.k, col, editing.idx, id)
+          if (rowSessions.value.get(id)?.error != null) return
+        }
+      }
+      beginRowEdit(row, rowIndex, focusColKey)
+    }
+
+    /** Row-mode cell click (vxe editConfig.mode='row' parity): a click on any
+     * cell of a row that has editable columns opens every editable column's
+     * editor; clicking a DIFFERENT row first commits the current row's open
+     * editors (vxe click-elsewhere-commits). Editors stopPropagation, so
+     * interactions inside an editor never reach here. A click on a column that
+     * was already committed (session closed) reopens just that column. */
+    const handleRowModeCellClick = (
+      row: Record<string, unknown>,
+      col: IrisTableColumn,
+      index: number,
+      k: string | number,
+    ): void => {
+      if (rowEditing.value?.k === k) {
+        const id = cellId(k, col.key)
+        if (col.editable && !rowSessions.value.has(id)) {
+          const current = getCellValue(row, col)
+          rowSessions.value.set(id, {
+            draft: current == null ? '' : String(current),
+            error: null,
+          })
+          void nextTick(() => rowEditorRefs.get(col.key)?.focus())
+        }
+      } else {
+        switchRowEdit(row, index, col.key)
+      }
+    }
+
+    /** Shared editor input styling (both modes, batch Z) — extracted so the
+     * per-mode builders below stay read-only views over their state slots. */
+    const editorInputStyle = (error: string | null): Record<string, string> => ({
+      width: '100%',
+      border: `1px solid ${error ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
+      borderRadius: 'var(--iris-radius-sm)',
+      padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+      font: 'inherit',
+      background: 'var(--iris-background)',
+      color: 'var(--iris-foreground)',
+      outline: 'none',
+      boxShadow: '0 0 0 3px color-mix(in srgb, var(--iris-primary) 18%, transparent)',
+    })
+
+    const editorErrorVNode = (editCellId: string, error: string): VNode =>
+      h(
+        'div',
+        {
+          id: `${editCellId}-error`,
+          role: 'alert',
+          'data-iris-table-editor-error': '',
+          style: {
+            marginTop: 'var(--iris-space-xxs, 4px)',
+            fontSize: 'var(--iris-font-size-xs, 12px)',
+            color: 'var(--iris-danger)',
+          },
+        },
+        error,
+      )
+
+    /** Row-mode editor content: reads its session from the row session MAP.
+     * Enter/blur commit THAT session; Escape cancels the whole row. */
+    const buildRowSessionContent = (
+      col: IrisTableColumn,
+      index: number,
+      k: string | number,
+      editCellId: string,
+      session: RowEditSession,
+    ): VNode | VNode[] => {
+      const error = session.error
+      const input = h('input', {
+        ref: (el: unknown) => {
+          rowEditorRefs.set(col.key, (el ?? null) as HTMLInputElement | null)
+        },
+        type: col.editor === 'number' ? 'number' : 'text',
+        value: session.draft,
+        'data-iris-table-editor': '',
+        'aria-invalid': error ? 'true' : undefined,
+        'aria-describedby': error ? `${editCellId}-error` : undefined,
+        onInput: (e: Event) => {
+          session.draft = (e.target as HTMLInputElement).value
+        },
+        onKeydown: (e: KeyboardEvent) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commitRowSession(k, col, index, editCellId)
+          } else if (e.key === 'Escape') {
+            e.preventDefault()
+            cancelRowEdit()
+          }
+        },
+        onBlur: () => commitRowSession(k, col, index, editCellId),
+        onClick: (e: MouseEvent) => e.stopPropagation(),
+        onDblclick: (e: MouseEvent) => e.stopPropagation(),
+        style: editorInputStyle(error),
+      })
+      return error ? [input, editorErrorVNode(editCellId, error)] : input
+    }
+
+    /** Cell-mode editor content (singleton refs, byte-identical to the
+     * pre-batch-Z path). */
+    const buildCellEditContent = (
+      row: Record<string, unknown>,
+      col: IrisTableColumn,
+      index: number,
+      editCellId: string,
+    ): VNode | VNode[] => {
+      const error = editError.value
+      const input = h('input', {
+        ref: (el: unknown) => {
+          editorInputRef.value = (el ?? null) as HTMLInputElement | null
+        },
+        type: col.editor === 'number' ? 'number' : 'text',
+        value: editingDraft.value,
+        'data-iris-table-editor': '',
+        'aria-invalid': error ? 'true' : undefined,
+        'aria-describedby': error ? `${editCellId}-error` : undefined,
+        onInput: (e: Event) => {
+          editingDraft.value = (e.target as HTMLInputElement).value
+        },
+        onKeydown: (e: KeyboardEvent) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commitEdit(row, col, index)
+          } else if (e.key === 'Escape') {
+            e.preventDefault()
+            cancelEdit()
+          }
+        },
+        onBlur: () => commitEdit(row, col, index),
+        onClick: (e: MouseEvent) => e.stopPropagation(),
+        onDblclick: (e: MouseEvent) => e.stopPropagation(),
+        style: editorInputStyle(error),
+      })
+      return error ? [input, editorErrorVNode(editCellId, error)] : input
+    }
+
+    /** Tree caret (vxe tree lazyLoad parity, batch Z): parents toggle the
+     * shared expansion model; childless rows with a lazyLoad configured show a
+     * caret that fetches children on first expand. Loading is tracked in the
+     * `lazyLoading` set (drives `data-iris-tree-loading`); a throwing load
+     * stays retryable; a stale fetch whose data source epoch moved is dropped
+     * so the cleared cache is never re-seeded (React M2 parity). */
+    const buildTreeIndent = (
+      treeMeta: TreeRow<Record<string, unknown>>,
+      row: Record<string, unknown>,
+    ): VNode =>
+      h(
+        'span',
+        {
+          'data-iris-table-tree-indent': '',
+          style: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            flex: 'none',
+            paddingLeft: `${treeMeta.depth * 16}px`,
+          },
+        },
+        treeMeta.hasChildren ||
+          (props.lazyLoad !== undefined && !lazyChildren.value.has(treeMeta.key))
+          ? [
+              h(
+                'button',
+                {
+                  type: 'button',
+                  'data-iris-table-tree-toggle': '',
+                  'data-iris-tree-loading': lazyLoading.value.has(treeMeta.key) ? '' : undefined,
+                  'aria-expanded': treeMeta.expanded ? 'true' : 'false',
+                  'aria-label': t(treeMeta.expanded ? 'treeSelect.collapse' : 'treeSelect.expand'),
+                  onClick: (e: MouseEvent) => {
+                    e.stopPropagation()
+                    if (treeMeta.hasChildren) {
+                      expansion.toggle(treeMeta.key)
+                      return
+                    }
+                    // Lazy leaf: first expand fetches the children; a second
+                    // click while loading is a no-op (no double fetch).
+                    if (lazyLoading.value.has(treeMeta.key)) return
+                    lazyLoading.value = new Set(lazyLoading.value).add(treeMeta.key)
+                    const clearLoading = () => {
+                      const next = new Set(lazyLoading.value)
+                      next.delete(treeMeta.key)
+                      lazyLoading.value = next
+                    }
+                    try {
+                      const epoch = lazyEpoch
+                      props.lazyLoad!(row, (children) => {
+                        // Stale fetch: the data source changed while this load
+                        // was in flight — drop the result so the cleared cache
+                        // is not re-seeded (and keep the loading flag, which
+                        // may belong to a newer fetch of the same key).
+                        if (epoch !== lazyEpoch) return
+                        lazyChildren.value.set(treeMeta.key, children)
+                        if (children && children.length > 0) {
+                          expansion.toggle(treeMeta.key)
+                        }
+                        clearLoading()
+                      })
+                    } catch {
+                      clearLoading()
+                    }
+                  },
+                  style: {
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    padding: '0',
+                    marginRight: '4px',
+                    font: 'inherit',
+                    color: 'var(--iris-foreground)',
+                    transform: treeMeta.expanded ? 'rotate(90deg)' : 'none',
+                    transition: 'transform 150ms',
+                  },
+                },
+                '▶',
+              ),
+            ]
+          : [
+              h('span', {
+                'aria-hidden': 'true',
+                style: { display: 'inline-block', width: '16px' },
+              }),
+            ],
+      )
 
     // -------- Column widths --------
     const internalWidths = ref<IrisTableColumnWidths>({})
@@ -1128,6 +1619,42 @@ export const IrisTable = defineComponent({
           h('span', { style: { opacity: direction === 'asc' ? '1' : '0.45' } }, '▲'),
           h('span', { style: { opacity: direction === 'desc' ? '1' : '0.45' } }, '▼'),
         ],
+      )
+    }
+
+    /** Header filter trigger (vxe filterConfig parity, batch Z): a small icon
+     * button at the end of the title; active (--iris-primary) when the column
+     * has a non-empty checked set. stopPropagation keeps it from sorting.
+     * Leaf-only — group headers never carry a trigger (React parity). */
+    const renderFilterTrigger = (col: IrisTableColumn, leaf: boolean): VNode | null => {
+      if (!leaf || !col.filterable) return null
+      const active = (props.filterValues?.[col.key]?.length ?? 0) > 0
+      return h(
+        'button',
+        {
+          type: 'button',
+          'data-iris-filter-trigger': col.key,
+          'aria-label': t('table.filter'),
+          'aria-haspopup': 'true',
+          'aria-expanded':
+            filterPanelState.value?.open === true && filterPanelState.value.colKey === col.key
+              ? 'true'
+              : undefined,
+          'data-iris-filter-active': active ? 'true' : undefined,
+          onClick: (e: MouseEvent) => openFilterPanel(e, col.key),
+          onKeydown: (e: KeyboardEvent) => e.stopPropagation(),
+          style: {
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
+            padding: '0',
+            marginInlineStart: 'var(--iris-space-xxs, 4px)',
+            fontSize: 'var(--iris-font-size-xs, 12px)',
+            lineHeight: '1',
+            color: active ? 'var(--iris-primary)' : 'var(--iris-muted)',
+          },
+        },
+        '⏷',
       )
     }
 
@@ -1789,6 +2316,312 @@ export const IrisTable = defineComponent({
       )
     }
 
+    // -------- Right-click context menu (vxe contextMenu parity, batch Z) --------
+    // Transient state: items + params are computed ONCE per open from the
+    // callback; the cursor coordinates live in a virtual floating anchor (a
+    // fake element whose getBoundingClientRect returns the zero-size cursor
+    // rect). useFloating's watch unwraps the anchor ref, so re-assigning the
+    // fake anchor on a right-click while the menu is open repositions it at
+    // the new cursor — no remount token needed (React uses a seq key for the
+    // same reason). Dismissal: Escape + outside pointer-down (useDismiss) and
+    // any scroll (capture-phase document listener). Teleported to body so the
+    // table's overflow clipping never cuts it.
+    const contextMenuState = ref<{
+      open: boolean
+      items: Array<{ key: string; label: string; disabled?: boolean }>
+      params: IrisTableContextMenuParams<Record<string, unknown>>
+    } | null>(null)
+    const contextAnchorRef = ref<HTMLElement | null>(null)
+    const contextMenuRef = ref<HTMLElement | null>(null)
+    const closeContextMenu = (): void => {
+      if (contextMenuState.value) contextMenuState.value.open = false
+    }
+    const handleContextMenu = (
+      e: MouseEvent,
+      row: Record<string, unknown>,
+      col: IrisTableColumn,
+      idx: number,
+      ci: number,
+    ): void => {
+      if (!props.contextMenu) return
+      e.preventDefault()
+      contextAnchorRef.value = {
+        getBoundingClientRect: () => ({
+          left: e.clientX,
+          top: e.clientY,
+          right: e.clientX,
+          bottom: e.clientY,
+          width: 0,
+          height: 0,
+          x: e.clientX,
+          y: e.clientY,
+          toJSON() {},
+        }),
+      } as unknown as HTMLElement
+      const params: IrisTableContextMenuParams<Record<string, unknown>> = {
+        row,
+        column: col,
+        rowIndex: idx,
+        columnIndex: ci,
+      }
+      contextMenuState.value = { open: true, items: props.contextMenu.items(params), params }
+    }
+    const contextMenuOpen = computed(() => contextMenuState.value?.open === true)
+    const { floatingStyles: contextMenuStyles } = useFloating({
+      anchor: contextAnchorRef,
+      floating: contextMenuRef,
+      open: contextMenuOpen,
+      placement: 'bottom-start',
+      // Cursor-anchored menu, vxe parity: with a zero-size anchor at the
+      // viewport edge, flip/shift would clamp the coordinates away from the
+      // cursor (React parity — deliberately disabled).
+      flip: false,
+      shift: false,
+    })
+    useDismiss({
+      enabled: contextMenuOpen,
+      exclude: [contextMenuRef],
+      onDismiss: closeContextMenu,
+    })
+    // Scroll anywhere closes the menu. Capture phase so scrolling inside any
+    // nested scroll container (or the table itself) also counts.
+    watch(contextMenuOpen, (open) => {
+      if (typeof document === 'undefined') return
+      if (open) document.addEventListener('scroll', closeContextMenu, true)
+      else document.removeEventListener('scroll', closeContextMenu, true)
+    })
+    onScopeDispose(() => {
+      if (typeof document === 'undefined') return
+      document.removeEventListener('scroll', closeContextMenu, true)
+    })
+
+    const buildContextMenuSection = (): VNode | null => {
+      const st = contextMenuState.value
+      if (!st || !st.open) return null
+      const node = h(
+        'div',
+        {
+          ref: (el: unknown) => {
+            contextMenuRef.value = (el ?? null) as HTMLElement | null
+          },
+          role: 'menu',
+          'data-iris-table-context-menu': '',
+          style: {
+            ...contextMenuStyles.value,
+            zIndex: 'var(--iris-z-popover, 1000)',
+            background: 'var(--iris-surface-floating, var(--iris-surface))',
+            color: 'var(--iris-foreground)',
+            border: '1px solid var(--iris-border)',
+            borderRadius: 'var(--iris-radius-md, 6px)',
+            boxShadow: 'var(--iris-shadow-lg)',
+            padding: 'var(--iris-space-xxs, 4px)',
+            minWidth: '160px',
+            display: 'flex',
+            flexDirection: 'column',
+          },
+        },
+        st.items.map((item) =>
+          h(
+            'button',
+            {
+              key: item.key,
+              type: 'button',
+              role: 'menuitem',
+              'data-iris-table-context-menu-item': item.key,
+              disabled: item.disabled,
+              'aria-disabled': item.disabled ? 'true' : undefined,
+              onClick: () => {
+                props.contextMenu!.onSelect(item.key, st.params)
+                closeContextMenu()
+              },
+              style: {
+                border: 'none',
+                background: 'transparent',
+                cursor: item.disabled ? 'default' : 'pointer',
+                color: item.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
+                font: 'inherit',
+                textAlign: 'start',
+                padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+                borderRadius: 'var(--iris-radius-sm, 4px)',
+              },
+            },
+            item.label,
+          ),
+        ),
+      )
+      return h(Teleport, { to: 'body' }, [node])
+    }
+
+    // -------- Header filter panel (vxe filterConfig parity, batch Z) --------
+    // One panel at a time, keyed by the column whose trigger was clicked. The
+    // anchor is the trigger BUTTON itself (a real DOM node), captured at click
+    // time. Opening re-seeds the draft from the applied `filterValues`;
+    // 确认 (confirm) applies the draft, 清除 (clear) applies an empty set
+    // immediately, and any dismissal discards the draft.
+    const filterPanelState = ref<{ open: boolean; colKey: string } | null>(null)
+    const filterAnchorRef = ref<HTMLButtonElement | null>(null)
+    const filterPanelRef = ref<HTMLElement | null>(null)
+    const filterDraft = ref<string[]>([])
+    const closeFilterPanel = (): void => {
+      if (filterPanelState.value) filterPanelState.value.open = false
+    }
+    const openFilterPanel = (e: MouseEvent, colKey: string): void => {
+      // Never let the trigger click reach the header cell (which would sort).
+      e.stopPropagation()
+      filterAnchorRef.value = e.currentTarget as HTMLButtonElement
+      filterDraft.value = [...(props.filterValues?.[colKey] ?? [])]
+      filterPanelState.value = { open: true, colKey }
+    }
+    const filterPanelOpen = computed(() => filterPanelState.value?.open === true)
+    const { floatingStyles: filterPanelStyles } = useFloating({
+      anchor: filterAnchorRef,
+      floating: filterPanelRef,
+      open: filterPanelOpen,
+      placement: 'bottom-start',
+    })
+    useDismiss({
+      enabled: filterPanelOpen,
+      exclude: [filterPanelRef, filterAnchorRef],
+      onDismiss: closeFilterPanel,
+    })
+    watch(filterPanelOpen, (open) => {
+      if (typeof document === 'undefined') return
+      if (open) document.addEventListener('scroll', closeFilterPanel, true)
+      else document.removeEventListener('scroll', closeFilterPanel, true)
+    })
+    onScopeDispose(() => {
+      if (typeof document === 'undefined') return
+      document.removeEventListener('scroll', closeFilterPanel, true)
+    })
+    const applyFilterValues = (colKey: string, values: string[]): void => {
+      props.onFilterValuesChange?.({ ...(props.filterValues ?? {}), [colKey]: values })
+    }
+    const clearFilterValues = (colKey: string): void => {
+      const next = { ...(props.filterValues ?? {}) }
+      delete next[colKey]
+      props.onFilterValuesChange?.(next)
+    }
+    const toggleFilterDraft = (value: string): void => {
+      filterDraft.value = filterDraft.value.includes(value)
+        ? filterDraft.value.filter((v) => v !== value)
+        : [...filterDraft.value, value]
+    }
+
+    const buildFilterPanelSection = (): VNode | null => {
+      const st = filterPanelState.value
+      if (!st || !st.open) return null
+      const col = displayColumns.value.find((c) => c.key === st.colKey)
+      if (!col || !col.filterable) return null
+      const options = col.filterOptions ?? []
+      const node = h(
+        'div',
+        {
+          ref: (el: unknown) => {
+            filterPanelRef.value = (el ?? null) as HTMLElement | null
+          },
+          role: 'dialog',
+          'aria-label': t('table.filter'),
+          'data-iris-table-filter-panel': '',
+          'data-iris-table-filter-column': st.colKey,
+          style: {
+            ...filterPanelStyles.value,
+            zIndex: 'var(--iris-z-popover, 1000)',
+            background: 'var(--iris-surface-floating, var(--iris-surface))',
+            color: 'var(--iris-foreground)',
+            border: '1px solid var(--iris-border)',
+            borderRadius: 'var(--iris-radius-md, 6px)',
+            boxShadow: 'var(--iris-shadow-lg)',
+            padding: 'var(--iris-space-sm, 12px)',
+            minWidth: '180px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--iris-space-xxs, 4px)',
+          },
+        },
+        [
+          ...options.map((opt) =>
+            h(
+              'div',
+              {
+                key: opt.value,
+                'data-iris-filter-option': opt.value,
+                style: { display: 'flex', alignItems: 'center' },
+              },
+              [
+                h(
+                  IrisCheckbox,
+                  {
+                    modelValue: filterDraft.value.includes(opt.value),
+                    size: 'sm',
+                    'onUpdate:modelValue': () => toggleFilterDraft(opt.value),
+                  },
+                  { default: () => opt.label },
+                ),
+              ],
+            ),
+          ),
+          h(
+            'div',
+            {
+              style: {
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: 'var(--iris-space-xs, 8px)',
+                marginTop: 'var(--iris-space-xs, 8px)',
+              },
+            },
+            [
+              h(
+                'button',
+                {
+                  type: 'button',
+                  'data-iris-filter-clear': '',
+                  onClick: () => {
+                    clearFilterValues(st.colKey)
+                    closeFilterPanel()
+                  },
+                  style: {
+                    border: '1px solid var(--iris-border)',
+                    background: 'transparent',
+                    color: 'var(--iris-foreground)',
+                    cursor: 'pointer',
+                    font: 'inherit',
+                    fontSize: 'var(--iris-font-size-sm, 13px)',
+                    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+                    borderRadius: 'var(--iris-radius-sm, 4px)',
+                  },
+                },
+                t('table.filterClear'),
+              ),
+              h(
+                'button',
+                {
+                  type: 'button',
+                  'data-iris-filter-confirm': '',
+                  onClick: () => {
+                    applyFilterValues(st.colKey, filterDraft.value)
+                    closeFilterPanel()
+                  },
+                  style: {
+                    border: '1px solid var(--iris-primary)',
+                    background: 'var(--iris-primary)',
+                    color: 'var(--iris-primary-foreground, #fff)',
+                    cursor: 'pointer',
+                    font: 'inherit',
+                    fontSize: 'var(--iris-font-size-sm, 13px)',
+                    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+                    borderRadius: 'var(--iris-radius-sm, 4px)',
+                  },
+                },
+                t('table.filterConfirm'),
+              ),
+            ],
+          ),
+        ],
+      )
+      return h(Teleport, { to: 'body' }, [node])
+    }
+
     return () => {
       const showSelection = props.selectable !== 'none'
       const showDetail = hasDetail.value
@@ -2034,7 +2867,12 @@ export const IrisTable = defineComponent({
                     textOverflow: 'ellipsis',
                   },
                 },
-                [title, sortable ? sortIndicator(col) : null, multiSortSeq(col)],
+                [
+                  title,
+                  sortable ? sortIndicator(col) : null,
+                  multiSortSeq(col),
+                  renderFilterTrigger(col, isLeaf),
+                ],
               ),
             )
           }
@@ -2198,7 +3036,7 @@ export const IrisTable = defineComponent({
               },
               'aria-sort': ariaSortFor(col),
             },
-            [title, sortIndicator(col), multiSortSeq(col), handle],
+            [title, sortIndicator(col), multiSortSeq(col), renderFilterTrigger(col, true), handle],
           ),
         )
       }
@@ -2382,67 +3220,27 @@ export const IrisTable = defineComponent({
           const colspan = span.colspan
           const align = col.align ?? 'left'
           const cellSlot = slots[`cell.${col.key}`]
-          const isEditing = editingCellId.value === cellId(id, col.key)
+          // Batch Z row mode: the cell is part of an open row-edit session map
+          // (per editable column) — cell mode keeps the singleton refs.
+          const isRowEditing =
+            rowMode.value &&
+            rowEditing.value !== null &&
+            rowEditing.value.k === id &&
+            rowSessions.value.has(cellId(id, col.key))
+          const isEditing = isRowEditing || editingCellId.value === cellId(id, col.key)
 
           let content: unknown
           if (isEditing) {
             const editCellId = cellId(id, col.key)
-            const error = editError.value
-            const input = h('input', {
-              ref: (el: unknown) => {
-                editorInputRef.value = (el ?? null) as HTMLInputElement | null
-              },
-              type: col.editor === 'number' ? 'number' : 'text',
-              value: editingDraft.value,
-              'data-iris-table-editor': '',
-              'aria-invalid': error ? 'true' : undefined,
-              'aria-describedby': error ? `${editCellId}-error` : undefined,
-              onInput: (e: Event) => {
-                editingDraft.value = (e.target as HTMLInputElement).value
-              },
-              onKeydown: (e: KeyboardEvent) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  commitEdit(row, col, index)
-                } else if (e.key === 'Escape') {
-                  e.preventDefault()
-                  cancelEdit()
-                }
-              },
-              onBlur: () => commitEdit(row, col, index),
-              onClick: (e: MouseEvent) => e.stopPropagation(),
-              onDblclick: (e: MouseEvent) => e.stopPropagation(),
-              style: {
-                width: '100%',
-                border: `1px solid ${error ? 'var(--iris-danger)' : 'var(--iris-primary)'}`,
-                borderRadius: 'var(--iris-radius-sm)',
-                padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
-                font: 'inherit',
-                background: 'var(--iris-background)',
-                color: 'var(--iris-foreground)',
-                outline: 'none',
-                boxShadow: '0 0 0 3px color-mix(in srgb, var(--iris-primary) 18%, transparent)',
-              },
-            })
-            content = error
-              ? [
-                  input,
-                  h(
-                    'div',
-                    {
-                      id: `${editCellId}-error`,
-                      role: 'alert',
-                      'data-iris-table-editor-error': '',
-                      style: {
-                        marginTop: 'var(--iris-space-xxs, 4px)',
-                        fontSize: 'var(--iris-font-size-xs, 12px)',
-                        color: 'var(--iris-danger)',
-                      },
-                    },
-                    error,
-                  ),
-                ]
-              : input
+            content = isRowEditing
+              ? buildRowSessionContent(
+                  col,
+                  index,
+                  id,
+                  editCellId,
+                  rowSessions.value.get(editCellId)!,
+                )
+              : buildCellEditContent(row, col, index, editCellId)
           } else {
             content =
               cellSlot?.({ row, index, value: getCellValue(row, col) }) ??
@@ -2453,56 +3251,7 @@ export const IrisTable = defineComponent({
           // holds an expand/collapse toggle (parents) or a fixed-width spacer
           // (leaves, so they align). Renders before the cell's content.
           const treeIndent: VNode | null =
-            treeMeta && ci === 0
-              ? h(
-                  'span',
-                  {
-                    'data-iris-table-tree-indent': '',
-                    style: {
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      flex: 'none',
-                      paddingLeft: `${treeMeta.depth * 16}px`,
-                    },
-                  },
-                  treeMeta.hasChildren
-                    ? [
-                        h(
-                          'button',
-                          {
-                            type: 'button',
-                            'data-iris-table-tree-toggle': '',
-                            'aria-expanded': treeMeta.expanded ? 'true' : 'false',
-                            'aria-label': t(
-                              treeMeta.expanded ? 'treeSelect.collapse' : 'treeSelect.expand',
-                            ),
-                            onClick: (e: MouseEvent) => {
-                              e.stopPropagation()
-                              expansion.toggle(treeMeta.key)
-                            },
-                            style: {
-                              border: 'none',
-                              background: 'transparent',
-                              cursor: 'pointer',
-                              padding: '0',
-                              marginRight: '4px',
-                              font: 'inherit',
-                              color: 'var(--iris-foreground)',
-                              transform: treeMeta.expanded ? 'rotate(90deg)' : 'none',
-                              transition: 'transform 150ms',
-                            },
-                          },
-                          '▶',
-                        ),
-                      ]
-                    : [
-                        h('span', {
-                          'aria-hidden': 'true',
-                          style: { display: 'inline-block', width: '16px' },
-                        }),
-                      ],
-                )
-              : null
+            treeMeta && ci === 0 ? buildTreeIndent(treeMeta, row) : null
 
           const cellChildren: VNode | VNode[] | string = treeIndent
             ? [treeIndent, ...(Array.isArray(content) ? content : [content as VNode | string])]
@@ -2551,11 +3300,19 @@ export const IrisTable = defineComponent({
                       },
                     }
                   : {}),
-                onDblclick: col.editable ? () => beginEdit(row, col, id) : undefined,
-                onClick:
-                  col.editable && props.editConfig?.trigger === 'click'
+                onDblclick: rowMode.value
+                  ? () => switchRowEdit(row, index, col.key)
+                  : col.editable
                     ? () => beginEdit(row, col, id)
                     : undefined,
+                onClick: rowMode.value
+                  ? () => handleRowModeCellClick(row, col, index, id)
+                  : col.editable && props.editConfig?.trigger === 'click'
+                    ? () => beginEdit(row, col, id)
+                    : undefined,
+                onContextmenu: props.contextMenu
+                  ? (e: MouseEvent) => handleContextMenu(e, row, col, index, ci)
+                  : undefined,
                 style: {
                   display: 'flex',
                   alignItems: 'center',
@@ -2598,6 +3355,8 @@ export const IrisTable = defineComponent({
             'aria-setsize': treeMeta ? treeMeta.setSize : undefined,
             'aria-posinset': treeMeta ? treeMeta.posInset : undefined,
             'data-iris-table-row': '',
+            'data-iris-row-editing':
+              rowMode.value && rowEditing.value?.k === id ? 'true' : undefined,
             'data-state': selected ? 'selected' : undefined,
             onClick: () => emit('rowClick', row, index),
             onDblclick: () => emit('rowDblclick', row, index),
@@ -2872,6 +3631,8 @@ export const IrisTable = defineComponent({
           },
           [headerRow, bodyNode, summaryRow, buildPagerSection()],
         ),
+        buildContextMenuSection(),
+        buildFilterPanelSection(),
       ].filter((n): n is VNode => n !== null)
       return rootNodes.length === 1 ? rootNodes[0] : rootNodes
     }

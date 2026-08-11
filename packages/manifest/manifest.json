@@ -37701,7 +37701,7 @@
             },
             {
               "name": "editConfig",
-              "type": "{ trigger?: 'click' | 'dblclick' | 'manual' showAsterisk?: boolean autoClear?: boolean }",
+              "type": "{ trigger?: 'click' | 'dblclick' | 'manual' showAsterisk?: boolean autoClear?: boolean /** Edit mode (vxe editConfig.mode parity, batch Z): `'cell'` (default) edits one cell at a time; `'row'` opens every editable column of the clicked row together — Enter/blur commits THAT column, Escape cancels the whole row, clicking another row commits the current row's open editors first. */ mode?: 'cell' | 'row' }",
               "optional": true
             },
             {
@@ -37813,6 +37813,26 @@
               "optional": true
             },
             {
+              "name": "filterValues",
+              "type": "IrisTableFilterValues",
+              "optional": true
+            },
+            {
+              "name": "onFilterValuesChange",
+              "type": "(next: IrisTableFilterValues) =",
+              "optional": true
+            },
+            {
+              "name": "contextMenu",
+              "type": "IrisTableContextMenuConfig<Record<string, unknown>>",
+              "optional": true
+            },
+            {
+              "name": "lazyLoad",
+              "type": "( row: Record<string, unknown>, load: (children: Array<Record<string, unknown>>) =",
+              "optional": true
+            },
+            {
               "name": "seq",
               "type": "boolean",
               "optional": true,
@@ -37850,6 +37870,7 @@
             "expandedRowsChange",
             "multiSortChange",
             "onDataChange",
+            "onFilterValuesChange",
             "onRetry",
             "rowClick",
             "rowDblclick",
@@ -37871,8 +37892,12 @@
             "IrisTableColumnDrag",
             "IrisTableColumnVisibility",
             "IrisTableColumnWidths",
+            "IrisTableContextMenuConfig",
+            "IrisTableContextMenuParams",
             "IrisTableEditor",
             "IrisTableExpose",
+            "IrisTableFilterOption",
+            "IrisTableFilterValues",
             "IrisTableFormConfig",
             "IrisTableFormField",
             "IrisTableProps",

@@ -103,6 +103,45 @@ export type IrisTableEditor = 'text' | 'number'
 /** Aggregation op for a column's summary/footer cell. */
 export type IrisTableAggregateOp = 'sum' | 'avg' | 'min' | 'max' | 'count'
 
+/** One checkbox option of a filterable column's filter panel (vxe filter-option parity). */
+export interface IrisTableFilterOption {
+  value: string
+  label: string
+}
+
+/**
+ * Per-column checked filter sets (vxe filter-multiple parity): column key →
+ * values OR-matched against the raw `String(value)` of each row. Controlled
+ * through `IrisTableProps.filterValues` / `onFilterValuesChange`.
+ */
+export type IrisTableFilterValues = Record<string, string[]>
+
+/**
+ * Coordinates delivered to `IrisTableProps.contextMenu` callbacks (vxe
+ * context-menu event params parity): the row/column under the cursor and its
+ * grid position.
+ */
+export interface IrisTableContextMenuParams<Row = Record<string, unknown>> {
+  row: Row
+  column: IrisTableColumn<Row>
+  rowIndex: number
+  columnIndex: number
+}
+
+/**
+ * Right-click context menu (vxe-grid contextMenu parity). Opens on body leaf
+ * cells only — header, seq, selection, expand, summary and footer cells never
+ * open it. The menu floats at the cursor (virtual anchor), closes on Escape /
+ * outside pointer-down / any scroll, and fires `onSelect` with the clicked
+ * item's key and the cell's grid coordinates.
+ */
+export interface IrisTableContextMenuConfig<Row = Record<string, unknown>> {
+  items: (
+    params: IrisTableContextMenuParams<Row>,
+  ) => Array<{ key: string; label: string; disabled?: boolean }>
+  onSelect: (key: string, params: IrisTableContextMenuParams<Row>) => void
+}
+
 export interface IrisTableColumn<Row = Record<string, unknown>> {
   /** Stable unique column identifier; used for slot names and sort state. */
   key: string
@@ -112,6 +151,10 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   dataIndex?: keyof Row | string
   /** Allow sorting by this column. */
   sortable?: boolean
+  /** Show a header filter trigger + checkbox panel (vxe filterConfig parity). Filtering OR-matches the raw `String(value)` against the checked set. */
+  filterable?: boolean
+  /** Checkbox options for the filter panel; a column without options can't filter. */
+  filterOptions?: IrisTableFilterOption[]
   /** Initial width (px or CSS length). */
   width?: number | string
   /** Minimum width when resizing. Default 60. */

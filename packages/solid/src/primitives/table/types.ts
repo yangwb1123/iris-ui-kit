@@ -26,6 +26,11 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   sortable?: boolean
   /** Custom client-side filter (vxe filter-method parity). Return true to keep the row. Overrides the default case-insensitive substring match. */
   filterMethod?: (value: unknown, row: Row, filterValue: string) => boolean
+  /** Show a header filter trigger + checkbox panel (vxe filterConfig parity).
+   * Filtering OR-matches the raw `String(value)` against the checked set. */
+  filterable?: boolean
+  /** Checkbox options for the filter panel; a column without options can't filter. */
+  filterOptions?: IrisTableFilterOption[]
   width?: number | string
   minWidth?: number
   maxWidth?: number
@@ -208,6 +213,76 @@ export interface IrisTableToolbarConfig {
   buttons?: IrisTableToolbarButton[]
   /** Batch action rendered while rows are selected (vxe toolbar batch parity). */
   batch?: IrisTableToolbarBatch
+}
+
+/** One checkbox option of a filterable column's filter panel (vxe filter-option parity). */
+export interface IrisTableFilterOption {
+  value: string
+  label: string
+}
+
+/**
+ * Per-column checked filter sets (vxe filter-multiple parity): column key →
+ * values OR-matched against the raw `String(value)` of each row. Controlled
+ * through `IrisTableProps.filterValues` / `onFilterValuesChange`.
+ */
+export type IrisTableFilterValues = Record<string, string[]>
+
+/** One right-click menu entry (vxe MenuFirstOption code/name/disabled parity). */
+export interface IrisTableContextMenuItem {
+  key: string
+  label: string
+  disabled?: boolean
+}
+
+/**
+ * Coordinates delivered to `IrisTableProps.contextMenu` callbacks (vxe
+ * context-menu event params parity): the row/column under the cursor and its
+ * grid position.
+ */
+export interface IrisTableContextMenuParams<Row = Record<string, unknown>> {
+  row: Row
+  column: IrisTableColumn<Row>
+  rowIndex: number
+  columnIndex: number
+}
+
+/** Inline-edit configuration (vxe-grid editConfig parity). */
+export interface IrisTableEditConfig {
+  /** What opens the editor. Default `'dblclick'`. */
+  trigger?: 'click' | 'dblclick' | 'manual'
+  /** Show a required asterisk next to headers of columns with rules. */
+  showAsterisk?: boolean
+  /** Drop the draft when opening another cell without committing. */
+  autoClear?: boolean
+  /** Edit mode (vxe editConfig.mode parity): `'cell'` (default) edits one cell
+   * at a time; `'row'` opens every editable column of the clicked row together
+   * — Enter/blur commits THAT column, Escape cancels the whole row, clicking
+   * another row commits the current row's open editors first. */
+  mode?: 'cell' | 'row'
+}
+
+/**
+ * Imperative handle (vxe-grid proxy/view parity). Assigned to
+ * `tableRef.current` on mount; every method runs against mount-time closures
+ * that read the LATEST state (Solid props are getters, the proxy controller is
+ * captured by reference), so no stale snapshot is possible.
+ */
+export interface IrisTableHandle<Row extends Record<string, unknown> = Record<string, unknown>> {
+  /** Replace the live row list without a query (vxe loadData parity): fires
+   * onDataChange; in proxy mode the proxy state total/page stays unchanged
+   * until the next query replaces the page. */
+  loadData: (rows: Row[]) => void
+  /** Re-fetch the current page (vxe reloadData parity). Proxy mode only. */
+  reloadData: () => void
+  /** Merge params into the proxy query and fire the request (vxe commitProxy parity). */
+  commitProxy: (overrides: Partial<IrisTableProxyQueryParams>) => void
+  /** Proxy state snapshot (vxe getProxyInfo parity): page/pageSize/total; null without a proxy. */
+  getProxyInfo: () => { page: number; pageSize: number; total: number } | null
+  /** Clear the active sort (vxe clearSort parity) — single and multi channels. */
+  clearSort: () => void
+  /** Clear every filter channel (vxe clearFilter parity): text filters + checked sets. */
+  clearFilter: () => void
 }
 
 import type { JSX } from 'solid-js'

@@ -22,4 +22,10 @@ export type {
   IrisTableToolbarConfig,
   IrisTableToolbarButton,
   IrisTableToolbarBatch,
+  IrisTableFilterOption,
+  IrisTableFilterValues,
+  IrisTableContextMenuItem,
+  IrisTableContextMenuParams,
+  IrisTableEditConfig,
+  IrisTableHandle,
 } from './types'

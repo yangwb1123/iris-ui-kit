@@ -514,3 +514,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-aa-gate.md [ok]: 批 AA Gate — PASS ✅: **Review verdict**: PASS (1 medium finding + 3 low/info). Applied the medium finding's concrete fix, plus a manifest-gat
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aa-gate.md
+
+## 2026-08-11 10:13:35 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ab-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ab-baseline.md
+
+## 2026-08-11 10:37:42 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ab-adapt.md [ok]: Report: **Files changed** (4 source + 1 test + generated):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ab-adapt.md
+
+## 2026-08-11 10:49:03 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ab-review.md [ok]: What passed: - **Verification**: solid typecheck/lint 0 errors, 953+34 tests pass (13 new `parity-ab`), build ✓, `check:manifest` ✓ (; Key findings: 1. **MEDIUM** `IrisTable.tsx:1120-1126/1164-1167` — Escape during a pending **async** (editRules) row-mode commit still
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ab-review.md

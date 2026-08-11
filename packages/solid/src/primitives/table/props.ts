@@ -3,7 +3,12 @@ import type {
   IrisTableCellEditEvent,
   IrisTableColumn,
   IrisTableColumnWidths,
+  IrisTableContextMenuItem,
+  IrisTableContextMenuParams,
+  IrisTableEditConfig,
+  IrisTableFilterValues,
   IrisTableFormConfig,
+  IrisTableHandle,
   IrisTablePagerConfig,
   IrisTableProxyConfig,
   IrisTableRenderDetail,
@@ -61,6 +66,12 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   filters?: Record<string, string>
   /** Fired when a filter value changes (parent owns the map). */
   onFiltersChange?: (next: Record<string, string>) => void
+  /** Per-column checked filter sets (vxe filter-multiple parity): column key →
+   * values OR-matched against the raw `String(value)` of each row. Controlled
+   * via `onFilterValuesChange`; without a handler read-only. */
+  filterValues?: IrisTableFilterValues
+  /** Fired when the filter panel confirms or clears a column's checked set. */
+  onFilterValuesChange?: (next: IrisTableFilterValues) => void
   /** Search form (vxe-grid formConfig parity). */
   formConfig?: IrisTableFormConfig
   /** Toolbar (vxe-grid toolbarConfig parity, minimal built-ins). */
@@ -80,6 +91,42 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   errorState?: JSX.Element
   /** Fired by the built-in Retry button in the error state row. */
   onRetry?: () => void
+  /**
+   * Row drag-sort (composed over core createSortable, vxe-grid rowDragConfig
+   * parity). Renders a leading drag handle per row; dropping past the press
+   * threshold reorders the local row list and reports it through BOTH
+   * `onReorder` and `onDataChange` (parent owns the canonical data).
+   */
+  rowDrag?: {
+    /** Reorder callback — receives the reordered row array. */
+    onReorder: (rows: Row[]) => void
+  }
+  /**
+   * Column drag-sort (vxe-grid columnDragConfig parity). Reorders leaf
+   * columns on drop; parent owns columns (pass the reordered array back).
+   * Grouped header groups are never draggable (leaves only).
+   */
+  columnDrag?: {
+    /** Called with the reordered column array after a drop. */
+    onReorder: (columns: IrisTableColumn<Row>[]) => void
+  }
+  /** Inline-edit configuration (vxe-grid editConfig parity). */
+  editConfig?: IrisTableEditConfig
+  /**
+   * Right-click context menu (vxe-grid contextMenu parity). Opens on body
+   * leaf cells only — header, seq, selection, expand, summary and footer
+   * cells never open it. The menu floats at the cursor (virtual anchor),
+   * closes on Escape / outside pointer-down / any scroll, and fires
+   * `onSelect` with the clicked item's key and the cell's grid coordinates.
+   */
+  contextMenu?: {
+    items: (params: IrisTableContextMenuParams<Row>) => IrisTableContextMenuItem[]
+    onSelect: (key: string, params: IrisTableContextMenuParams<Row>) => void
+  }
+  /** Imperative handle for proxy/view ops (vxe loadData/reloadData/commitProxy/getProxyInfo/clearSort/clearFilter parity). */
+  tableRef?: { current: IrisTableHandle<Row> | null }
+  /** Fired after an internal row-list write (rowDrag reorder / loadData) with the new row list. */
+  onDataChange?: (rows: Row[]) => void
   /** Enable column resizing. */
   resizableColumns?: boolean
   columnWidths?: IrisTableColumnWidths

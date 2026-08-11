@@ -38046,6 +38046,18 @@
               "description": "Fired when a filter value changes (parent owns the map)."
             },
             {
+              "name": "filterValues",
+              "type": "IrisTableFilterValues",
+              "optional": true,
+              "description": "values OR-matched against the raw `String(value)` of each row. Controlled"
+            },
+            {
+              "name": "onFilterValuesChange",
+              "type": "(next: IrisTableFilterValues) => void",
+              "optional": true,
+              "description": "Fired when the filter panel confirms or clears a column's checked set."
+            },
+            {
               "name": "formConfig",
               "type": "IrisTableFormConfig",
               "optional": true,
@@ -38109,6 +38121,42 @@
               "type": "() => void",
               "optional": true,
               "description": "Fired by the built-in Retry button in the error state row."
+            },
+            {
+              "name": "rowDrag",
+              "type": "{",
+              "optional": true,
+              "description": "Row drag-sort (composed over core createSortable, vxe-grid rowDragConfig parity). Renders a leading drag handle per row; dropping past the press threshold reorders the local row list and reports it through BOTH `onReorder` and `onDataChange` (parent owns the canonical data)."
+            },
+            {
+              "name": "columnDrag",
+              "type": "{",
+              "optional": true,
+              "description": "Column drag-sort (vxe-grid columnDragConfig parity). Reorders leaf columns on drop; parent owns columns (pass the reordered array back). Grouped header groups are never draggable (leaves only)."
+            },
+            {
+              "name": "editConfig",
+              "type": "IrisTableEditConfig",
+              "optional": true,
+              "description": "Inline-edit configuration (vxe-grid editConfig parity)."
+            },
+            {
+              "name": "contextMenu",
+              "type": "{",
+              "optional": true,
+              "description": "Right-click context menu (vxe-grid contextMenu parity). Opens on body leaf cells only — header, seq, selection, expand, summary and footer cells never open it. The menu floats at the cursor (virtual anchor), closes on Escape / outside pointer-down / any scroll, and fires `onSelect` with the clicked item's key and the cell's grid coordinates."
+            },
+            {
+              "name": "tableRef",
+              "type": "{ current: IrisTableHandle<Row> | null }",
+              "optional": true,
+              "description": "Imperative handle for proxy/view ops (vxe loadData/reloadData/commitProxy/getProxyInfo/clearSort/clearFilter parity)."
+            },
+            {
+              "name": "onDataChange",
+              "type": "(rows: Row[]) => void",
+              "optional": true,
+              "description": "Fired after an internal row-list write (rowDrag reorder / loadData) with the new row list."
             },
             {
               "name": "resizableColumns",
@@ -38198,7 +38246,9 @@
             "onCellEdit",
             "onColumnVisibilityChange",
             "onColumnWidthsChange",
+            "onDataChange",
             "onExpandedRowsChange",
+            "onFilterValuesChange",
             "onFiltersChange",
             "onMultiSortChange",
             "onRetry",
@@ -38216,9 +38266,15 @@
             "IrisTableCellEditEvent",
             "IrisTableColumn",
             "IrisTableColumnWidths",
+            "IrisTableContextMenuItem",
+            "IrisTableContextMenuParams",
+            "IrisTableEditConfig",
             "IrisTableEditor",
+            "IrisTableFilterOption",
+            "IrisTableFilterValues",
             "IrisTableFormConfig",
             "IrisTableFormField",
+            "IrisTableHandle",
             "IrisTablePagerConfig",
             "IrisTableProps",
             "IrisTableProxyConfig",

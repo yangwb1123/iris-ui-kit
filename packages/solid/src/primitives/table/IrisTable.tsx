@@ -8,8 +8,10 @@ import {
   onCleanup,
   onMount,
   Show,
+  type Accessor,
   type JSX,
 } from 'solid-js'
+import { Portal } from 'solid-js/web'
 import {
   aggregate,
   buildFormValues,
@@ -20,6 +22,7 @@ import {
   createExpansion,
   createRemoteTableSource,
   createSelectionModel,
+  createSortable,
   flattenLeafColumns,
   flattenTree,
   mergeFormFilters,
@@ -31,12 +34,15 @@ import {
   type HeaderCell,
   type RemoteTableSource,
   type RemoteTableSourceState,
+  type SortableRect,
   type TreeRow,
   validateEditRulesAsync,
 } from '@iris-ui-kit/core'
 import { useStore } from '../../useStore'
 import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
+import { useFloating } from '../../floating/useFloating'
+import { useDismiss } from '../../floating/useDismiss'
 import { IrisVirtualScroll } from '../virtual-scroll/IrisVirtualScroll'
 import { IrisPagination } from '../pagination'
 import { IrisButton } from '../button'
@@ -44,7 +50,14 @@ import { IrisFormField } from '../form-field'
 import { IrisInput } from '../input'
 import { IrisSelect } from '../select'
 import type { IrisTableProps } from './props'
-import type { IrisTableColumn, IrisTableColumnWidths, IrisTableSortState } from './types'
+import type {
+  IrisTableColumn,
+  IrisTableColumnWidths,
+  IrisTableContextMenuItem,
+  IrisTableContextMenuParams,
+  IrisTableFilterOption,
+  IrisTableSortState,
+} from './types'
 import { useTableSort } from './useTableSort'
 
 export type { IrisTableProps } from './props'
@@ -52,6 +65,295 @@ export type { IrisTableProps } from './props'
 const DEFAULT_COL_WIDTH = 140
 const DEFAULT_MIN_WIDTH = 60
 const RESIZE_STEP = 16
+const DRAG_COL_WIDTH = 40
+
+/**
+ * Fold the checked filter sets into the query filter map as comma-joined
+ * strings (vxe filter-multiple remote serialization parity). Keys with an
+ * empty checked set are left untouched.
+ */
+function mergeFilterValues(
+  filters: Record<string, string>,
+  filterValues: Record<string, string[]>,
+): Record<string, string> {
+  const next = { ...filters }
+  for (const [key, values] of Object.entries(filterValues)) {
+    if (values.length > 0) next[key] = values.join(',')
+  }
+  return next
+}
+
+/** One open row-edit session (vxe editConfig.mode='row' parity): its own
+ * draft/error pair, resolved at commit time against the current row. */
+interface RowCellSession<Row extends Record<string, unknown>> {
+  col: IrisTableColumn<Row>
+  rowIndex: number
+  draft: Accessor<string>
+  error: Accessor<string | null>
+  setDraft: (value: string) => void
+  setError: (value: string | null) => void
+  /** Monotonic session epoch (core `sessionGen` parity, batch AB fix): bumped
+   * on cancel/commit so an in-flight async (editRules) commit can detect it
+   * was cancelled or superseded while its validation promise was pending. */
+  gen: number
+}
+
+/**
+ * Floating right-click menu for `IrisTable` (vxe-grid contextMenu parity).
+ * Self-drawn with the same building blocks `IrisMenuContent` uses —
+ * `useFloating` + `useDismiss` — because the anchor is a VIRTUAL element at
+ * the cursor (zero-size rect), so the menu's top-left lands exactly on the
+ * cursor (flip/shift disabled deliberately). Dismissal: Escape, outside
+ * pointer-down, and any scroll (capture-phase document listener — nested
+ * scrollers count too). Portaled to `document.body` so the table's `overflow`
+ * clipping never cuts it.
+ */
+function TableContextMenu<Row extends Record<string, unknown>>(props: {
+  open: boolean
+  /** Virtual anchor accessor: a fake element whose getBoundingClientRect
+   * returns the zero-size cursor rect (fresh identity per open). */
+  anchor: Accessor<HTMLElement | null>
+  items: IrisTableContextMenuItem[]
+  params: IrisTableContextMenuParams<Row>
+  onSelect: (key: string, params: IrisTableContextMenuParams<Row>) => void
+  onClose: () => void
+}): JSX.Element {
+  const [menuEl, setMenuEl] = createSignal<HTMLDivElement | null>(null)
+
+  const { floatingStyles } = useFloating({
+    anchor: props.anchor,
+    floating: menuEl,
+    open: () => props.open,
+    placement: 'bottom-start',
+    flip: false,
+    shift: false,
+  })
+
+  useDismiss({
+    enabled: () => props.open,
+    exclude: [menuEl],
+    onDismiss: props.onClose,
+  })
+
+  // Scroll anywhere closes the menu. Capture phase so scrolling inside any
+  // nested scroll container (or the table itself) also counts.
+  createEffect(() => {
+    if (!props.open || typeof document === 'undefined') return
+    const onScroll = (): void => props.onClose()
+    document.addEventListener('scroll', onScroll, true)
+    onCleanup(() => document.removeEventListener('scroll', onScroll, true))
+  })
+
+  return (
+    <Show when={props.open}>
+      <Portal>
+        <div
+          ref={setMenuEl}
+          role="menu"
+          data-iris-table-context-menu=""
+          style={{
+            ...floatingStyles(),
+            'z-index': 'var(--iris-z-popover, 1000)',
+            background: 'var(--iris-surface-floating, var(--iris-surface))',
+            color: 'var(--iris-foreground)',
+            border: '1px solid var(--iris-border)',
+            'border-radius': 'var(--iris-radius-md, 6px)',
+            'box-shadow': 'var(--iris-shadow-lg)',
+            padding: 'var(--iris-padding-sm, 4px)',
+            'min-width': '160px',
+            display: 'flex',
+            'flex-direction': 'column',
+          }}
+        >
+          <For each={props.items}>
+            {(item) => (
+              <button
+                type="button"
+                role="menuitem"
+                data-iris-table-context-menu-item={item.key}
+                disabled={item.disabled}
+                aria-disabled={item.disabled ? 'true' : undefined}
+                onClick={() => {
+                  props.onSelect(item.key, props.params)
+                  props.onClose()
+                }}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: item.disabled ? 'default' : 'pointer',
+                  color: item.disabled ? 'var(--iris-muted)' : 'var(--iris-foreground)',
+                  font: 'inherit',
+                  'text-align': 'start',
+                  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+                  'border-radius': 'var(--iris-radius-sm, 4px)',
+                }}
+              >
+                {item.label}
+              </button>
+            )}
+          </For>
+        </div>
+      </Portal>
+    </Show>
+  )
+}
+
+/**
+ * Header filter panel for `IrisTable` (vxe-grid filterConfig parity).
+ * Anchored to the real trigger button (`placement: bottom-start`), dismissed
+ * via Escape / outside pointer-down / any scroll, portaled to body. Draft
+ * semantics: checking options edits a local draft; 确认 (confirm) writes it
+ * through `onApply`, 清除 (clear) writes an empty set immediately, and any
+ * dismissal discards the draft. The parent renders this inside a KEYED Show
+ * per open, so `initialChecked` always re-seeds from the applied `filterValues`.
+ */
+function TableFilterPanel(props: {
+  open: boolean
+  anchor: Accessor<HTMLButtonElement | null>
+  columnKey: string
+  options: IrisTableFilterOption[]
+  /** Checked values when the panel opened (seeded once; draft semantics). */
+  initialChecked: string[]
+  /** Confirm writes the draft (and closes). */
+  onApply: (columnKey: string, values: string[]) => void
+  /** Clear applies an empty set immediately (and closes). */
+  onClear: (columnKey: string) => void
+  onClose: () => void
+  t: (key: string) => string
+}): JSX.Element {
+  const [panelEl, setPanelEl] = createSignal<HTMLDivElement | null>(null)
+  const [checked, setChecked] = createSignal<string[]>(props.initialChecked)
+
+  const { floatingStyles } = useFloating({
+    anchor: props.anchor,
+    floating: panelEl,
+    open: () => props.open,
+    placement: 'bottom-start',
+  })
+
+  useDismiss({
+    enabled: () => props.open,
+    exclude: [panelEl, props.anchor],
+    onDismiss: props.onClose,
+  })
+
+  // Scroll anywhere closes the panel (capture phase — nested scrollers too).
+  createEffect(() => {
+    if (!props.open || typeof document === 'undefined') return
+    const onScroll = (): void => props.onClose()
+    document.addEventListener('scroll', onScroll, true)
+    onCleanup(() => document.removeEventListener('scroll', onScroll, true))
+  })
+
+  const toggle = (value: string): void => {
+    setChecked((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
+    )
+  }
+
+  return (
+    <Show when={props.open}>
+      <Portal>
+        <div
+          ref={setPanelEl}
+          role="dialog"
+          aria-label={props.t('table.filter')}
+          data-iris-table-filter-panel=""
+          data-iris-table-filter-column={props.columnKey}
+          style={{
+            ...floatingStyles(),
+            'z-index': 'var(--iris-z-popover, 1000)',
+            background: 'var(--iris-surface-floating, var(--iris-surface))',
+            color: 'var(--iris-foreground)',
+            border: '1px solid var(--iris-border)',
+            'border-radius': 'var(--iris-radius-md, 6px)',
+            'box-shadow': 'var(--iris-shadow-lg)',
+            padding: 'var(--iris-space-sm, 12px)',
+            'min-width': '180px',
+            display: 'flex',
+            'flex-direction': 'column',
+            gap: 'var(--iris-space-xxs, 4px)',
+          }}
+        >
+          <For each={props.options}>
+            {(opt) => (
+              <div
+                data-iris-filter-option={opt.value}
+                style={{ display: 'flex', 'align-items': 'center' }}
+              >
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    'align-items': 'center',
+                    gap: 'var(--iris-space-xxs, 4px)',
+                    cursor: 'pointer',
+                    'font-size': 'var(--iris-font-size-sm, 13px)',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked().includes(opt.value)}
+                    onChange={() => toggle(opt.value)}
+                  />
+                  {opt.label}
+                </label>
+              </div>
+            )}
+          </For>
+          <div
+            style={{
+              display: 'flex',
+              'justify-content': 'flex-end',
+              gap: 'var(--iris-space-xs, 8px)',
+              'margin-top': 'var(--iris-space-xs, 8px)',
+            }}
+          >
+            <button
+              type="button"
+              data-iris-filter-clear=""
+              onClick={() => {
+                props.onClear(props.columnKey)
+                props.onClose()
+              }}
+              style={{
+                border: '1px solid var(--iris-border)',
+                background: 'transparent',
+                color: 'var(--iris-foreground)',
+                cursor: 'pointer',
+                font: 'inherit',
+                'font-size': 'var(--iris-font-size-sm, 13px)',
+                padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+                'border-radius': 'var(--iris-radius-sm, 4px)',
+              }}
+            >
+              {props.t('table.filterClear')}
+            </button>
+            <button
+              type="button"
+              data-iris-filter-confirm=""
+              onClick={() => {
+                props.onApply(props.columnKey, checked())
+                props.onClose()
+              }}
+              style={{
+                border: '1px solid var(--iris-primary)',
+                background: 'var(--iris-primary)',
+                color: 'var(--iris-primary-foreground, #fff)',
+                cursor: 'pointer',
+                font: 'inherit',
+                'font-size': 'var(--iris-font-size-sm, 13px)',
+                padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+                'border-radius': 'var(--iris-radius-sm, 4px)',
+              }}
+            >
+              {props.t('table.filterConfirm')}
+            </button>
+          </div>
+        </div>
+      </Portal>
+    </Show>
+  )
+}
 
 /** Null-proxy snapshot (a STABLE reference is required for the signal seed). */
 const EMPTY_PROXY_STATE: RemoteTableSourceState<never> = {
@@ -162,9 +464,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       resizableColumns: false,
       keyboardNavigation: false,
       cellRange: false,
-      editConfig: undefined as
-        | { trigger?: 'click' | 'dblclick' | 'manual'; showAsterisk?: boolean; autoClear?: boolean }
-        | undefined,
+      editConfig: undefined as import('./types').IrisTableEditConfig | undefined,
       columnVirtualization: false,
       multiSort: false,
       seq: false,
@@ -280,7 +580,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             remoteSort() && merged.multiSort
               ? (props.multiSortState ?? props.defaultMultiSort ?? [])
               : undefined,
-          filters: remoteFilter() ? mergeFormFilters(props.filters ?? {}, {}) : {},
+          filters: remoteFilter()
+            ? mergeFilterValues(mergeFormFilters(props.filters ?? {}, {}), props.filterValues ?? {})
+            : {},
         },
       })
       setProxyState(proxy.getState())
@@ -301,7 +603,43 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   createEffect(() => {
     setProxyRows(proxyState().data)
   })
-  const baseData = createMemo<Row[]>(() => (hasProxy() ? proxyRows() : (props.data ?? [])))
+  // ---- Local row-list override (rowDrag reorder / loadData) ---------------
+  // A local signal holding rows the table renders INSTEAD of the prop/proxy
+  // source. A controlled `data` re-feed (NEW reference) clears the override so
+  // the prop wins again (vue batch-Y parity); the same-reference case keeps
+  // the local rows. In proxy mode the override also clears on reloadData so a
+  // refetch replaces the page wholesale.
+  const [localRows, setLocalRows] = createSignal<Row[] | null>(null)
+  createEffect(
+    on(
+      () => props.data,
+      () => {
+        // Runs only when the parent re-feeds `data` with a NEW reference — the
+        // callback's localRows() read must NOT re-trigger this effect (it lives
+        // inside the `on` source-scoped callback), or loadData would clear its
+        // own override.
+        if (localRows() !== null) setLocalRows(null)
+      },
+    ),
+  )
+  // A NEW proxy query result reference replaces the page wholesale — drop any
+  // local override (loadData / rowDrag reorder) so the table renders the fresh
+  // page (vue proxy liveData parity; batch AB fix): a pager page change must
+  // never leave stale rows on screen while the pager shows the new page. The
+  // engine only swaps `data` on a landed fetch, so loading flips never clear.
+  let lastProxyDataRef: Row[] | undefined
+  createEffect(() => {
+    const data = proxyState().data
+    if (data !== lastProxyDataRef) {
+      lastProxyDataRef = data
+      if (localRows() !== null) setLocalRows(null)
+    }
+  })
+  const baseData = createMemo<Row[]>(() => {
+    if (localRows() !== null) return localRows()!
+    if (hasProxy()) return proxyRows()
+    return props.data ?? []
+  })
   // Proxy mode drives the table's loading/error UI from the controller state
   // (reusing the existing loading/error props rendering below).
   const tableLoading = createMemo<boolean>(() => {
@@ -376,6 +714,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const {
     sortState: effectiveSort,
     cycleSort,
+    setSort,
     sortComparator,
     sortedData: singleSorted,
   } = useTableSort<Row>(baseData, {
@@ -453,7 +792,12 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     setFormApplied(values)
     // Proxy mode: the server owns filtering — merge the form values into the
     // controller filters (page resets to 1 in core applyParams, vxe behavior).
-    if (proxy) void proxy.setParams({ filters: mergedProxyFilters(values), page: 1 })
+    if (proxy) {
+      void proxy.setParams({
+        filters: mergeFilterValues(mergedProxyFilters(values), props.filterValues ?? {}),
+        page: 1,
+      })
+    }
   }
   const handleFormReset = (e: Event): void => {
     e.preventDefault()
@@ -466,7 +810,12 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       // setParams returns false when the merged params are unchanged (e.g.
       // filters already cleared) — a reset must still re-query, so force a
       // refetch only in that no-op case (no double request when it changed).
-      if (proxy.setParams({ filters: mergedProxyFilters(values), page: 1 }) === false) {
+      if (
+        proxy.setParams({
+          filters: mergeFilterValues(mergedProxyFilters(values), props.filterValues ?? {}),
+          page: 1,
+        }) === false
+      ) {
         void proxy.refetch()
       }
     }
@@ -480,7 +829,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     const f = props.filters
     const applied = formApplied()
     if (!present || !remoteFilter()) return
-    proxy?.setParams({ filters: mergeFormFilters(f ?? {}, applied) })
+    proxy?.setParams({
+      filters: mergeFilterValues(mergeFormFilters(f ?? {}, applied), props.filterValues ?? {}),
+    })
   })
 
   const rowId = (row: Row, index: number): string | number => {
@@ -522,9 +873,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
       ? (props.filters ?? {})
       : mergeFormFilters(props.filters ?? {}, formApplied())
     const active = Object.entries(mergedF).filter(([, v]) => v != null && v !== '')
-    if (active.length === 0) return sortedRows()
-    return sortedRows().filter((row) =>
-      active.every(([key, value]) => {
+    // Batch AB: per-column checked sets OR-match the raw String(value); a set
+    // applies only when non-empty. AND-ed with the text channel below.
+    const checkedEntries = Object.entries(props.filterValues ?? {}).filter(
+      ([, values]) => values.length > 0,
+    )
+    if (active.length === 0 && checkedEntries.length === 0) return sortedRows()
+    return sortedRows().filter((row) => {
+      const textOk = active.every(([key, value]) => {
         const col = displayColumns().find((c) => c.key === key)
         if (!col) return true
         const raw = getCellValue(row, col)
@@ -532,8 +888,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         return String(raw ?? '')
           .toLowerCase()
           .includes(value.toLowerCase())
-      }),
-    )
+      })
+      const setsOk = checkedEntries.every(([key, values]) => {
+        const col = displayColumns().find((c) => c.key === key)
+        if (!col) return true
+        return values.includes(String(getCellValue(row, col) ?? ''))
+      })
+      return textOk && setsOk
+    })
   })
   // Tree children sort by the same comparator as the roots: multi mode chains
   // the multi comparator, single mode keeps the single one.
@@ -630,9 +992,15 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const [editingCellId, setEditingCellId] = createSignal<string | null>(null)
   const [editingDraft, setEditingDraft] = createSignal('')
   const [editError, setEditError] = createSignal<string | null>(null)
+  // Monotonic cell-edit epoch (core `sessionGen` parity, batch AB fix): bumped
+  // on start/cancel/commit so an in-flight async (editRules) commit can detect
+  // it was cancelled or superseded while its validation promise was pending —
+  // Escape during an async-pending commit must NOT write the value back.
+  let cellEditGen = 0
 
   const beginEdit = (row: Row, column: IrisTableColumn<Row>, rowIdent: string | number): void => {
     if (!column.editable) return
+    cellEditGen++ // a new session supersedes any pending async commit
     setEditingCellId(`${rowIdent}::${column.key}`)
     const current = getCellValue(row, column)
     setEditingDraft(current == null ? '' : String(current))
@@ -651,7 +1019,9 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         : draft
     // Declarative editRules run async (may contain async validators).
     if (column.editRules && column.editRules.length > 0) {
+      const gen = ++cellEditGen
       void validateEditRulesAsync(column.editRules, draft, row).then((r) => {
+        if (gen !== cellEditGen) return // cancelled / superseded while pending
         if (!r.valid) {
           setEditError(r.messages[0] ?? null)
           return
@@ -679,6 +1049,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     oldValue: unknown,
     newValue: unknown,
   ): void => {
+    cellEditGen++ // a landed commit supersedes any pending async commit
     setEditError(null)
     setEditingCellId(null)
     if (newValue !== oldValue) {
@@ -700,9 +1071,471 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   }
 
   const cancelEdit = (): void => {
+    cellEditGen++ // drop any in-flight async commit (Escape cancels all)
     setEditError(null)
     setEditingCellId(null)
   }
+
+  // ---- Row edit mode (vxe editConfig.mode='row' parity) -------------------
+  // One session per editable column of the clicked row, each with its own
+  // draft/error pair through the same bespoke machinery cell mode uses. The
+  // session Map is a signal so the cell render reacts; sessions live in plain
+  // closures (their own signals) and are dropped wholesale on cancel.
+  const rowMode = (): boolean => merged.editConfig?.mode === 'row'
+  const [rowEditing, setRowEditing] = createSignal<{ k: string | number; idx: number } | null>(null)
+  const [rowSessions, setRowSessions] = createSignal<Map<string, RowCellSession<Row>>>(new Map())
+  const rowEditorRefs = new Map<string, HTMLInputElement>()
+
+  const createRowSession = (
+    row: Row,
+    col: IrisTableColumn<Row>,
+    rowIndex: number,
+  ): RowCellSession<Row> => {
+    const current = getCellValue(row, col)
+    const [draft, setDraft] = createSignal<string>(current == null ? '' : String(current))
+    const [error, setError] = createSignal<string | null>(null)
+    return { col, rowIndex, draft, error, setDraft, setError, gen: 0 }
+  }
+
+  // Commit ONE column's session: validate (editRules async → in-flight),
+  // write back, then close just that editor (per-cell commit — the rest of
+  // the row stays open). Returns false only on a SYNC validation failure
+  // (keeps the row open with the error visible).
+  const commitRowSession = (
+    session: RowCellSession<Row>,
+    row: Row,
+    rowIdent: string | number,
+  ): boolean => {
+    const col = session.col
+    const rowIndex = session.rowIndex
+    const oldValue = getCellValue(row, col)
+    const draftValue = session.draft()
+    const newValue =
+      col.editor === 'number'
+        ? draftValue === '' || Number.isNaN(Number(draftValue))
+          ? oldValue
+          : Number(draftValue)
+        : draftValue
+    const id = `${rowIdent}::${col.key}`
+    const close = (): void => {
+      setRowSessions((prev) => {
+        if (!prev.has(id)) return prev
+        const next = new Map(prev)
+        next.delete(id)
+        return next
+      })
+    }
+    const finish = (): void => {
+      session.setError(null)
+      close()
+      if (newValue !== oldValue) {
+        merged.onCellEdit?.({ row, column: col, oldValue, newValue, rowIndex })
+        // Proxy mode: write the committed value into the local page copy so the
+        // edit survives without a refetch; the next page/refetch replaces it.
+        if (proxy) {
+          setProxyRows((prev) => {
+            const at = prev.findIndex((r, i) => rowId(r, i) === rowIdent)
+            if (at < 0) return prev
+            const next = prev.slice()
+            next[at] = { ...next[at]!, [col.key]: newValue }
+            return next
+          })
+        }
+      }
+    }
+    if (col.editRules && col.editRules.length > 0) {
+      const gen = ++session.gen
+      void validateEditRulesAsync(col.editRules, draftValue, row).then((r) => {
+        if (gen !== session.gen) return // cancelled / superseded while pending
+        if (!r.valid) {
+          session.setError(r.messages[0] ?? null)
+          return
+        }
+        finish()
+      })
+      return true
+    }
+    if (col.validate) {
+      const error = col.validate(newValue, row)
+      if (error) {
+        session.setError(error)
+        return false
+      }
+    }
+    session.gen++ // a landed commit supersedes any pending async commit
+    finish()
+    return true
+  }
+
+  const focusRowEditor = (colKey: string): void => {
+    queueMicrotask(() => rowEditorRefs.get(colKey)?.focus())
+  }
+
+  const beginRowEdit = (row: Row, rowIndex: number, focusColKey?: string): void => {
+    const k = rowId(row, rowIndex)
+    const editableCols = leafColumns().filter((c) => c.editable)
+    if (editableCols.length === 0) return
+    const sessions = new Map<string, RowCellSession<Row>>()
+    for (const col of editableCols) {
+      sessions.set(`${k}::${col.key}`, createRowSession(row, col, rowIndex))
+    }
+    setRowSessions(sessions)
+    setRowEditing({ k, idx: rowIndex })
+    // Focus the clicked column's editor when it exists, else the first
+    // editable column (the editors mount on the next render).
+    const focusKey =
+      focusColKey && editableCols.some((c) => c.key === focusColKey)
+        ? focusColKey
+        : editableCols[0]!.key
+    focusRowEditor(focusKey)
+  }
+
+  /** Escape: cancel EVERY open session of the row (the whole row, vxe parity). */
+  const cancelRowEdit = (): void => {
+    // Drop any in-flight async commit: Escape cancels the WHOLE row, and a
+    // pending validation must NOT write back (core `sessionGen` parity).
+    for (const s of rowSessions().values()) s.gen++
+    setRowSessions(new Map())
+    setRowEditing(null)
+  }
+
+  /** Clicking another row (or starting a new row): commit each open session;
+   *  a SYNC validation failure keeps the row open with the error visible.
+   *  Async-validating sessions commit in the background and land whenever
+   *  they resolve (per-cell commit, vxe row mode parity). */
+  const switchRowEdit = (row: Row, rowIndex: number, focusColKey?: string): void => {
+    const cur = rowEditing()
+    if (cur !== null) {
+      for (const session of rowSessions().values()) {
+        const currentRow = bodyRows().find((r, i) => rowId(r, i) === cur.k) ?? row
+        if (!commitRowSession(session, currentRow, cur.k)) return
+      }
+    }
+    beginRowEdit(row, rowIndex, focusColKey)
+  }
+
+  // All open sessions committed → the row leaves edit mode (click re-opens).
+  createEffect(() => {
+    const cur = rowEditing()
+    if (cur !== null && rowSessions().size === 0) setRowEditing(null)
+  })
+
+  /** A row-mode cell click: same row reopens a committed column; a different
+   *  row commits the current row's open editors first (vxe
+   *  click-elsewhere-commits parity). */
+  const handleRowCellClick = (
+    row: Row,
+    col: IrisTableColumn<Row>,
+    rowIndex: number,
+    k: string | number,
+  ): void => {
+    if (rowEditing()?.k === k) {
+      const id = `${k}::${col.key}`
+      if (col.editable && !rowSessions().has(id)) {
+        const session = createRowSession(row, col, rowIndex)
+        setRowSessions((prev) => {
+          const next = new Map(prev)
+          next.set(id, session)
+          return next
+        })
+        focusRowEditor(col.key)
+      }
+    } else {
+      switchRowEdit(row, rowIndex, col.key)
+    }
+  }
+
+  /** Tab between the row's editors: commit THAT column, focus the next
+   *  editable one. Sync failure stays on the editor with the error. */
+  const handleRowTab = (
+    row: Row,
+    col: IrisTableColumn<Row>,
+    session: RowCellSession<Row>,
+    rowIdent: string | number,
+    dir: 1 | -1,
+  ): void => {
+    if (!commitRowSession(session, row, rowIdent)) return
+    const cols = leafColumns()
+    const start = cols.indexOf(col)
+    for (let i = start + dir; i >= 0 && i < cols.length; i += dir) {
+      const nextCol = cols[i]!
+      if (!nextCol.editable) continue
+      focusRowEditor(nextCol.key)
+      return
+    }
+  }
+
+  // ---- Row drag-sort (composed over core createSortable) ------------------
+  // One controller + container-level pointer handling; each row renders a
+  // drag handle that seeds the press. Drop targets are collected on first
+  // movement past the threshold (rects are captured once, then reused).
+  const rowDragCtrl = createSortable()
+  const rowDragState = useStore(rowDragCtrl)
+  const rowDragActive = (): string | null => rowDragState().activeId
+  const rowDragOver = (): string | null => rowDragState().overId
+  const rowRects: SortableRect[] = []
+
+  const handleRowDragPointerDown = (e: PointerEvent, rowIdent: string): void => {
+    if (!merged.rowDrag || e.button !== 0) return
+    e.preventDefault()
+    rowDragCtrl.press(rowIdent, e.clientX, e.clientY)
+  }
+
+  const handleRowDragPointerMove = (e: PointerEvent): void => {
+    if (!merged.rowDrag) return
+    if (rowDragCtrl.isPending()) {
+      const started = rowDragCtrl.tryStart(e.clientX, e.clientY)
+      if (started) {
+        const rects: SortableRect[] = []
+        rootRef?.querySelectorAll('[data-iris-row-drag-handle]').forEach((el) => {
+          const r = (el as HTMLElement).getBoundingClientRect()
+          const id = (el as HTMLElement).getAttribute('data-iris-row-drag-handle')
+          if (id) rects.push({ id, left: r.left, top: r.top, width: r.width, height: r.height })
+        })
+        rowRects.length = 0
+        rowRects.push(...rects)
+      }
+    }
+    if (rowDragCtrl.getState().activeId !== null) {
+      rowDragCtrl.moveOver({ x: e.clientX, y: e.clientY }, rowRects)
+    }
+  }
+
+  const handleRowDragPointerUp = (): void => {
+    if (!merged.rowDrag) return
+    if (rowDragCtrl.isPending()) {
+      rowDragCtrl.cancel()
+      return
+    }
+    const { activeId, overId } = rowDragCtrl.end()
+    if (activeId !== null && overId !== null && activeId !== overId) {
+      const rows = [...bodyRows()] as Row[]
+      const from = rows.findIndex((r, i) => String(rowId(r, i)) === activeId)
+      const to = rows.findIndex((r, i) => String(rowId(r, i)) === overId)
+      if (from >= 0 && to >= 0 && from !== to) {
+        const [moved] = rows.splice(from, 1)
+        rows.splice(to, 0, moved)
+        // Local rows write-back: the reordered list feeds the table directly;
+        // the parent is notified through BOTH channels (vue batch-Y parity).
+        setLocalRows(rows)
+        merged.onDataChange?.(rows)
+        merged.rowDrag!.onReorder(rows)
+      }
+    }
+    rowRects.length = 0
+  }
+
+  const handleRowDragPointerLeave = (): void => {
+    if (merged.rowDrag && rowDragCtrl.getState().activeId !== null) {
+      rowDragCtrl.cancel()
+    }
+  }
+
+  // ---- Column drag-sort (composed over core createSortable) ---------------
+  const colDragCtrl = createSortable()
+  const colDragState = useStore(colDragCtrl)
+  const colDragActive = (): string | null => colDragState().activeId
+  const colDragOver = (): string | null => colDragState().overId
+  const colRects: SortableRect[] = []
+
+  const handleColDragPointerDown = (e: PointerEvent, colKey: string): void => {
+    if (!merged.columnDrag || e.button !== 0) return
+    e.preventDefault()
+    e.stopPropagation()
+    colDragCtrl.press(colKey, e.clientX, e.clientY)
+  }
+
+  const handleColDragPointerMove = (e: PointerEvent): void => {
+    if (!merged.columnDrag) return
+    if (colDragCtrl.isPending()) {
+      const started = colDragCtrl.tryStart(e.clientX, e.clientY)
+      if (started) {
+        const rects: SortableRect[] = []
+        rootRef?.querySelectorAll('[data-iris-table-header]').forEach((el) => {
+          const r = (el as HTMLElement).getBoundingClientRect()
+          const id = (el as HTMLElement).getAttribute('data-iris-table-header')
+          if (id) rects.push({ id, left: r.left, top: r.top, width: r.width, height: r.height })
+        })
+        colRects.length = 0
+        colRects.push(...rects)
+      }
+    }
+    if (colDragCtrl.getState().activeId !== null) {
+      colDragCtrl.moveOver({ x: e.clientX, y: e.clientY }, colRects)
+    }
+  }
+
+  const handleColDragPointerUp = (): void => {
+    if (!merged.columnDrag) return
+    if (colDragCtrl.isPending()) {
+      colDragCtrl.cancel()
+      return
+    }
+    const { activeId, overId } = colDragCtrl.end()
+    if (activeId !== null && overId !== null && activeId !== overId) {
+      const next = [...leafColumns()]
+      const from = next.findIndex((c) => c.key === activeId)
+      const to = next.findIndex((c) => c.key === overId)
+      if (from >= 0 && to >= 0 && from !== to) {
+        const [moved] = next.splice(from, 1)
+        next.splice(to, 0, moved)
+        merged.columnDrag!.onReorder(next as IrisTableColumn<Row>[])
+      }
+    }
+    colRects.length = 0
+  }
+
+  // ---- Right-click context menu (vxe contextMenu parity) ------------------
+  // Transient state: items + params are computed ONCE per open from the
+  // callback; the cursor coordinates live in a virtual floating anchor (a
+  // fake element whose getBoundingClientRect returns the zero-size cursor
+  // rect). Each open builds a FRESH anchor object, so the positioning effect
+  // re-runs on the new identity (no remount token needed).
+  const [contextMenuState, setContextMenuState] = createSignal<{
+    open: boolean
+    items: IrisTableContextMenuItem[]
+    params: IrisTableContextMenuParams<Row>
+  } | null>(null)
+  const [contextAnchor, setContextAnchor] = createSignal<HTMLElement | null>(null)
+  const closeContextMenu = (): void => {
+    setContextMenuState((prev) => (prev ? { ...prev, open: false } : prev))
+  }
+
+  // ---- Header filter panel (vxe filterConfig parity) ----------------------
+  // One panel at a time, keyed by the column whose trigger was clicked. The
+  // anchor is the trigger BUTTON itself (a real DOM node), captured at click
+  // time. The panel renders inside a keyed Show on the state object identity,
+  // so each open remounts it and the draft checkbox state re-seeds from the
+  // applied `filterValues`.
+  const [filterPanelState, setFilterPanelState] = createSignal<{
+    open: boolean
+    colKey: string
+  } | null>(null)
+  const [filterAnchor, setFilterAnchor] = createSignal<HTMLButtonElement | null>(null)
+  const closeFilterPanel = (): void => {
+    setFilterPanelState((prev) => (prev ? { ...prev, open: false } : prev))
+  }
+  const openFilterPanel = (e: MouseEvent, colKey: string): void => {
+    // Never let the trigger click reach the header cell (which would sort).
+    e.stopPropagation()
+    setFilterAnchor(e.currentTarget as HTMLButtonElement)
+    setFilterPanelState({ open: true, colKey })
+  }
+  const applyFilterValues = (colKey: string, values: string[]): void => {
+    merged.onFilterValuesChange?.({ ...(props.filterValues ?? {}), [colKey]: values })
+  }
+  const clearFilterValues = (colKey: string): void => {
+    const next = { ...(props.filterValues ?? {}) }
+    delete next[colKey]
+    merged.onFilterValuesChange?.(next)
+  }
+
+  const handleContextMenu = (
+    e: MouseEvent,
+    row: Row,
+    col: IrisTableColumn<Row>,
+    idx: number,
+    ci: number,
+  ): void => {
+    if (!merged.contextMenu) return
+    e.preventDefault()
+    // Virtual anchor: zero-size rect at the cursor. The object is rebuilt per
+    // open (capturing this event's coordinates) so the panel always lands at
+    // the cursor.
+    const virtualAnchor = {
+      getBoundingClientRect: () => ({
+        left: e.clientX,
+        top: e.clientY,
+        right: e.clientX,
+        bottom: e.clientY,
+        width: 0,
+        height: 0,
+        x: e.clientX,
+        y: e.clientY,
+        toJSON() {},
+      }),
+    } as unknown as HTMLElement
+    setContextAnchor(virtualAnchor)
+    const params: IrisTableContextMenuParams<Row> = {
+      row,
+      column: col,
+      rowIndex: idx,
+      columnIndex: ci,
+    }
+    setContextMenuState({ open: true, items: merged.contextMenu!.items(params), params })
+  }
+
+  // ---- Header filter trigger (vxe filterConfig parity) --------------------
+  // A small icon button at the end of the title; active (--iris-primary) when
+  // the column has a non-empty checked set. stopPropagation keeps it from
+  // sorting. Leaf headers only.
+  const renderFilterTrigger = (col: IrisTableColumn<Row>, leaf: boolean): JSX.Element => {
+    if (!leaf || !col.filterable) return <></>
+    const active = (props.filterValues?.[col.key]?.length ?? 0) > 0
+    return (
+      <button
+        type="button"
+        data-iris-filter-trigger={col.key}
+        aria-label={t('table.filter')}
+        aria-haspopup="true"
+        aria-expanded={
+          filterPanelState()?.open === true && filterPanelState()?.colKey === col.key
+            ? 'true'
+            : undefined
+        }
+        data-iris-filter-active={active ? 'true' : undefined}
+        onClick={(e) => openFilterPanel(e, col.key)}
+        onKeyDown={(e) => e.stopPropagation()}
+        style={{
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          padding: '0',
+          'margin-inline-start': 'var(--iris-space-xxs, 4px)',
+          'font-size': 'var(--iris-font-size-xs, 12px)',
+          'line-height': '1',
+          color: active ? 'var(--iris-primary)' : 'var(--iris-muted)',
+        }}
+      >
+        ⏷
+      </button>
+    )
+  }
+
+  // ---- Imperative handle (vxe loadData/reloadData/commitProxy/
+  // getProxyInfo/clearSort/clearFilter parity) -------------------------------
+  // Solid props are getters and the proxy controller is captured by
+  // reference, so the mount-time handle always reads the LATEST state.
+  const tableHandle = {
+    loadData: (rows: Row[]): void => {
+      setLocalRows(rows)
+      merged.onDataChange?.(rows)
+    },
+    reloadData: (): void => {
+      if (proxy) {
+        setLocalRows(null)
+        void proxy.refetch()
+      }
+    },
+    commitProxy: (overrides: Partial<import('./types').IrisTableProxyQueryParams>): void => {
+      proxy?.setParams(overrides)
+    },
+    getProxyInfo: (): { page: number; pageSize: number; total: number } | null => {
+      const s = proxy?.getState()
+      return s ? { page: s.params.page, pageSize: s.params.pageSize, total: s.total } : null
+    },
+    clearSort: (): void => {
+      if (merged.multiSort) setMultiSort([])
+      else setSort(null)
+    },
+    clearFilter: (): void => {
+      merged.onFiltersChange?.({})
+      merged.onFilterValuesChange?.({})
+    },
+  }
+  onMount(() => {
+    if (props.tableRef) props.tableRef.current = tableHandle
+  })
 
   // ---- Grid keyboard navigation (opt-in) ----
   // Roving cell focus over the data cells, driven by the framework-agnostic
@@ -788,6 +1621,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const SEQ_COL_WIDTH = 60
   const gridTemplate = createMemo(() => {
     const parts: string[] = []
+    if (merged.rowDrag) parts.push(`${DRAG_COL_WIDTH}px`)
     if (merged.seq) parts.push(`${SEQ_COL_WIDTH}px`)
     if (hasDetail()) parts.push(`${EXPAND_COL_WIDTH}px`)
     if (merged.selectable !== 'none') parts.push(`${SELECTION_COL_WIDTH}px`)
@@ -807,10 +1641,15 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   const [scrollLeft, setScrollLeft] = createSignal(0)
   const [viewportWidth, setViewportWidth] = createSignal(0)
 
-  // 1-based grid track for a column index, after the optional seq + detail +
-  // selection tracks, so a windowed cell lands in the right place.
+  // 1-based grid track for a column index, after the optional drag + seq +
+  // detail + selection tracks, so a windowed cell lands in the right place.
   const colTrack = (i: number): number =>
-    (merged.seq ? 1 : 0) + (hasDetail() ? 1 : 0) + (merged.selectable !== 'none' ? 1 : 0) + 1 + i
+    (merged.rowDrag ? 1 : 0) +
+    (merged.seq ? 1 : 0) +
+    (hasDetail() ? 1 : 0) +
+    (merged.selectable !== 'none' ? 1 : 0) +
+    1 +
+    i
 
   onMount(() => {
     if (typeof document === 'undefined') return
@@ -823,6 +1662,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
 }
 [data-iris-table-row-selected="true"] {
   --iris-row-bg: var(--iris-surface-selected);
+}
+/* Row edit mode (vxe editConfig.mode parity): the row whose editors are
+   open gets the same token-driven highlight as the selected row. */
+[data-iris-table-row][data-iris-row-editing="true"] {
+  --iris-row-bg: var(--iris-surface-selected);
+}
+[data-iris-table-context-menu] [role="menuitem"]:hover:not(:disabled) {
+  background: var(--iris-surface-hover);
 }
 `
     document.head.appendChild(style)
@@ -973,6 +1820,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         // `data-state` below stays as the styling hook.
         aria-selected={merged.selectable !== 'none' ? selected() : undefined}
         data-iris-table-row=""
+        data-iris-row-editing={rowMode() && rowEditing()?.k === id ? 'true' : undefined}
         data-state={selected() ? 'selected' : undefined}
         // Tree depth/position for screen readers (1-based); the toggle button
         // carries aria-expanded for the control itself.
@@ -992,6 +1840,39 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           cursor: 'default',
         }}
       >
+        {/* Row drag handle (vxe rowDragConfig parity): seeds the press; the
+          drag id rides on THIS cell (the empty `data-iris-table-row` attr
+          stays untouched) so rect collection can key by row id. */}
+        <Show when={merged.rowDrag}>
+          <div
+            role="cell"
+            data-iris-table-cell="__drag"
+            data-iris-row-drag-handle={String(id)}
+            data-iris-row-drag-active={rowDragActive() === String(id) ? 'true' : undefined}
+            data-iris-row-drag-over={rowDragOver() === String(id) ? 'true' : undefined}
+            onPointerDown={(e: PointerEvent) => handleRowDragPointerDown(e, String(id))}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              display: 'flex',
+              'align-items': 'center',
+              'justify-content': 'center',
+              padding: '8px',
+              'border-bottom': '1px solid var(--iris-border)',
+              cursor: 'grab',
+              color: 'var(--iris-muted)',
+              background:
+                rowDragActive() === String(id)
+                  ? 'var(--iris-surface-hover)'
+                  : rowDragOver() === String(id)
+                    ? 'var(--iris-surface-selected)'
+                    : 'transparent',
+            }}
+          >
+            <span aria-hidden="true" style={{ 'font-size': 'var(--iris-font-size-sm, 13px)' }}>
+              ⠿
+            </span>
+          </div>
+        </Show>
         <Show when={merged.seq}>
           <div
             role="cell"
@@ -1070,7 +1951,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         <For each={leafColumns()}>
           {(col, colIndexAccessor) => {
             const cid = `${id}::${col.key}`
-            const isEditing = (): boolean => editingCellId() === cid
+            const rowSession = (): RowCellSession<Row> | undefined =>
+              rowMode() ? rowSessions().get(cid) : undefined
+            const isEditing = (): boolean =>
+              rowMode() ? rowSession() !== undefined : editingCellId() === cid
             const isFirstCol = colIndexAccessor() === 0
             const colIndex = colIndexAccessor()
             const isFocused = (): boolean => {
@@ -1124,19 +2008,32 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                       : undefined
                   }
                   onClick={
-                    merged.cellRange
-                      ? (e: MouseEvent) => {
-                          if (e.shiftKey) {
-                            cellRangeCtrl.extendRange(index, colIndex)
-                          } else {
-                            cellRangeCtrl.startRange(index, colIndex)
+                    rowMode()
+                      ? () => handleRowCellClick(row, col, index, id)
+                      : merged.cellRange
+                        ? (e: MouseEvent) => {
+                            if (e.shiftKey) {
+                              cellRangeCtrl.extendRange(index, colIndex)
+                            } else {
+                              cellRangeCtrl.startRange(index, colIndex)
+                            }
                           }
-                        }
-                      : col.editable && merged.editConfig?.trigger === 'click'
+                        : col.editable && merged.editConfig?.trigger === 'click'
+                          ? () => beginEdit(row, col, id)
+                          : undefined
+                  }
+                  onDblClick={
+                    rowMode()
+                      ? () => switchRowEdit(row, index, col.key)
+                      : col.editable
                         ? () => beginEdit(row, col, id)
                         : undefined
                   }
-                  onDblClick={col.editable ? () => beginEdit(row, col, id) : undefined}
+                  onContextMenu={
+                    merged.contextMenu
+                      ? (e: MouseEvent) => handleContextMenu(e, row, col, index, colIndex)
+                      : undefined
+                  }
                   style={{
                     display: 'flex',
                     'align-items': 'center',
@@ -1221,53 +2118,123 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                       </Show>
                     }
                   >
-                    <>
-                      <input
-                        type={col.editor === 'number' ? 'number' : 'text'}
-                        value={editingDraft()}
-                        data-iris-table-editor=""
-                        aria-invalid={editError() ? 'true' : undefined}
-                        aria-describedby={editError() ? `${cid}-error` : undefined}
-                        onInput={(e) => setEditingDraft((e.target as HTMLInputElement).value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            commitEdit(row, col, index)
-                          } else if (e.key === 'Escape') {
-                            e.preventDefault()
-                            cancelEdit()
-                          }
-                        }}
-                        onBlur={() => commitEdit(row, col, index)}
-                        onClick={(e) => e.stopPropagation()}
-                        style={{
-                          width: '100%',
-                          border: `1px solid ${
-                            editError() ? 'var(--iris-danger)' : 'var(--iris-primary)'
-                          }`,
-                          'border-radius': 'var(--iris-radius-sm)',
-                          padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
-                          font: 'inherit',
-                          background: 'var(--iris-background)',
-                          color: 'var(--iris-foreground)',
-                          outline: 'none',
-                        }}
-                      />
-                      <Show when={editError()}>
-                        <div
-                          id={`${cid}-error`}
-                          role="alert"
-                          data-iris-table-editor-error=""
-                          style={{
-                            'margin-top': '2px',
-                            'font-size': 'var(--iris-font-size-xs, 12px)',
-                            color: 'var(--iris-danger)',
-                          }}
-                        >
-                          {editError()}
-                        </div>
-                      </Show>
-                    </>
+                    <Show
+                      when={rowSession()}
+                      // The singleton cell-mode editor is INLINE (NOT a hoisted
+                      // fragment): a `const cellEditor = (<>…</>)` compiles to an
+                      // eagerly-instantiated template in the DOM build — its
+                      // `<input>` hydration node has no server counterpart, so
+                      // SSR→hydrate mismatches. Inline JSX stays inside the
+                      // fallback getter (created only when this branch renders).
+                      fallback={
+                        <>
+                          <input
+                            type={col.editor === 'number' ? 'number' : 'text'}
+                            value={editingDraft()}
+                            data-iris-table-editor=""
+                            aria-invalid={editError() ? 'true' : undefined}
+                            aria-describedby={editError() ? `${cid}-error` : undefined}
+                            onInput={(e) => setEditingDraft((e.target as HTMLInputElement).value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                commitEdit(row, col, index)
+                              } else if (e.key === 'Escape') {
+                                e.preventDefault()
+                                cancelEdit()
+                              }
+                            }}
+                            onBlur={() => commitEdit(row, col, index)}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              width: '100%',
+                              border: `1px solid ${
+                                editError() ? 'var(--iris-danger)' : 'var(--iris-primary)'
+                              }`,
+                              'border-radius': 'var(--iris-radius-sm)',
+                              padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+                              font: 'inherit',
+                              background: 'var(--iris-background)',
+                              color: 'var(--iris-foreground)',
+                              outline: 'none',
+                            }}
+                          />
+                          <Show when={editError()}>
+                            <div
+                              id={`${cid}-error`}
+                              role="alert"
+                              data-iris-table-editor-error=""
+                              style={{
+                                'margin-top': '2px',
+                                'font-size': 'var(--iris-font-size-xs, 12px)',
+                                color: 'var(--iris-danger)',
+                              }}
+                            >
+                              {editError()}
+                            </div>
+                          </Show>
+                        </>
+                      }
+                    >
+                      {(session) => (
+                        <>
+                          <input
+                            ref={(el) => {
+                              if (el) rowEditorRefs.set(col.key, el)
+                              else rowEditorRefs.delete(col.key)
+                            }}
+                            type={col.editor === 'number' ? 'number' : 'text'}
+                            value={session().draft()}
+                            data-iris-table-editor=""
+                            aria-invalid={session().error() ? 'true' : undefined}
+                            aria-describedby={session().error() ? `${cid}-error` : undefined}
+                            onInput={(e) =>
+                              session().setDraft((e.currentTarget as HTMLInputElement).value)
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                commitRowSession(session(), row, id)
+                              } else if (e.key === 'Escape') {
+                                e.preventDefault()
+                                cancelRowEdit()
+                              } else if (e.key === 'Tab') {
+                                e.preventDefault()
+                                handleRowTab(row, col, session(), id, e.shiftKey ? -1 : 1)
+                              }
+                            }}
+                            onBlur={() => commitRowSession(session(), row, id)}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              width: '100%',
+                              border: `1px solid ${
+                                session().error() ? 'var(--iris-danger)' : 'var(--iris-primary)'
+                              }`,
+                              'border-radius': 'var(--iris-radius-sm)',
+                              padding: 'var(--iris-space-xxs, 4px) var(--iris-padding-sm, 6px)',
+                              font: 'inherit',
+                              background: 'var(--iris-background)',
+                              color: 'var(--iris-foreground)',
+                              outline: 'none',
+                            }}
+                          />
+                          <Show when={session().error()}>
+                            <div
+                              id={`${cid}-error`}
+                              role="alert"
+                              data-iris-table-editor-error=""
+                              style={{
+                                'margin-top': '2px',
+                                'font-size': 'var(--iris-font-size-xs, 12px)',
+                                color: 'var(--iris-danger)',
+                              }}
+                            >
+                              {session().error()}
+                            </div>
+                          </Show>
+                        </>
+                      )}
+                    </Show>
                   </Show>
                 </div>
               </Show>
@@ -1487,6 +2454,23 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
               }
             : undefined
         }
+        onPointerMove={
+          merged.rowDrag || merged.columnDrag
+            ? (e: PointerEvent) => {
+                handleRowDragPointerMove(e)
+                handleColDragPointerMove(e)
+              }
+            : undefined
+        }
+        onPointerUp={
+          merged.rowDrag || merged.columnDrag
+            ? () => {
+                handleRowDragPointerUp()
+                handleColDragPointerUp()
+              }
+            : undefined
+        }
+        onPointerLeave={merged.rowDrag ? handleRowDragPointerLeave : undefined}
         onScroll={
           merged.columnVirtualization
             ? (e: Event) => setScrollLeft((e.currentTarget as HTMLElement).scrollLeft)
@@ -1516,12 +2500,19 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
               'grid-template-rows': `repeat(${headerMatrix()!.length}, auto)`,
             }}
           >
+            <Show when={merged.rowDrag}>
+              <div
+                role="columnheader"
+                data-iris-table-header="__drag"
+                style={{ 'grid-column': '1', 'grid-row': '1 / -1' }}
+              />
+            </Show>
             <Show when={merged.seq}>
               <div
                 role="columnheader"
                 data-iris-table-header="__seq"
                 style={{
-                  'grid-column': '1',
+                  'grid-column': String((merged.rowDrag ? 1 : 0) + 1),
                   'grid-row': '1 / -1',
                   display: 'flex',
                   'align-items': 'center',
@@ -1535,14 +2526,19 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
             <Show when={hasDetail()}>
               <div
                 role="columnheader"
-                style={{ 'grid-column': merged.seq ? '2' : '1', 'grid-row': '1 / -1' }}
+                style={{
+                  'grid-column': String((merged.rowDrag ? 1 : 0) + (merged.seq ? 2 : 1)),
+                  'grid-row': '1 / -1',
+                }}
               />
             </Show>
             <Show when={merged.selectable !== 'none'}>
               <div
                 role="columnheader"
                 style={{
-                  'grid-column': String((merged.seq ? 1 : 0) + (hasDetail() ? 2 : 1)),
+                  'grid-column': String(
+                    (merged.rowDrag ? 1 : 0) + (merged.seq ? 1 : 0) + (hasDetail() ? 2 : 1),
+                  ),
                   'grid-row': '1 / -1',
                   display: 'flex',
                   'align-items': 'center',
@@ -1584,6 +2580,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                 const isLeaf = (): boolean => !col.children || col.children.length === 0
                 const sortable = (): boolean => isLeaf() && !!col.sortable
                 const lead =
+                  (merged.rowDrag ? 1 : 0) +
                   (merged.seq ? 1 : 0) +
                   (hasDetail() ? 1 : 0) +
                   (merged.selectable !== 'none' ? 1 : 0)
@@ -1592,7 +2589,14 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                     role="columnheader"
                     data-iris-table-header={col.key}
                     data-iris-table-header-group={isLeaf() ? undefined : ''}
+                    data-iris-col-drag-active={colDragActive() === col.key ? 'true' : undefined}
+                    data-iris-col-drag-over={colDragOver() === col.key ? 'true' : undefined}
                     aria-colspan={cell.colSpan}
+                    onPointerDown={
+                      merged.columnDrag && isLeaf()
+                        ? (e: PointerEvent) => handleColDragPointerDown(e, col.key)
+                        : undefined
+                    }
                     onClick={sortable() ? () => handleHeaderClick(col) : undefined}
                     aria-sort={sortable() ? sortAria(col) : undefined}
                     style={{
@@ -1617,6 +2621,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                   >
                     {col.title}
                     <Show when={sortable()}>{sortIndicator(col)}</Show>
+                    {renderFilterTrigger(col, isLeaf())}
                   </div>
                 )
               }}
@@ -1634,6 +2639,20 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
               'grid-template-columns': gridTemplate(),
             }}
           >
+            <Show when={merged.rowDrag}>
+              <div
+                role="columnheader"
+                data-iris-table-header="__drag"
+                style={{
+                  display: 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  padding: '8px',
+                  background: 'var(--iris-surface)',
+                  'border-bottom': '1px solid var(--iris-border)',
+                }}
+              />
+            </Show>
             <Show when={merged.seq}>
               <div
                 role="columnheader"
@@ -1715,6 +2734,13 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                       role="columnheader"
                       data-iris-table-header={col.key}
                       data-iris-table-pinned={col.pinned}
+                      data-iris-col-drag-active={colDragActive() === col.key ? 'true' : undefined}
+                      data-iris-col-drag-over={colDragOver() === col.key ? 'true' : undefined}
+                      onPointerDown={
+                        merged.columnDrag
+                          ? (e: PointerEvent) => handleColDragPointerDown(e, col.key)
+                          : undefined
+                      }
                       onClick={() => handleHeaderClick(col)}
                       style={{
                         position: 'relative',
@@ -1745,6 +2771,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                     >
                       {col.title}
                       {sortIndicator(col)}
+                      {renderFilterTrigger(col, true)}
                       <Show when={merged.resizableColumns}>
                         <ColumnResizeHandle
                           colKey={col.key}
@@ -1907,6 +2934,19 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
               background: 'var(--iris-surface)',
             }}
           >
+            <Show when={merged.rowDrag}>
+              <div
+                role="cell"
+                data-iris-table-cell="__drag"
+                style={{
+                  display: 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  padding: '8px',
+                  'border-bottom': '1px solid var(--iris-border)',
+                }}
+              />
+            </Show>
             <Show when={merged.seq}>
               <div
                 role="cell"
@@ -2039,6 +3079,44 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
           </div>
         </Show>
       </div>
+
+      {/* Right-click context menu (vxe contextMenu parity): portaled to body,
+        positioned at the cursor via the virtual anchor. */}
+      <Show when={contextMenuState()}>
+        {(state) => (
+          <TableContextMenu
+            open={state().open}
+            anchor={contextAnchor}
+            items={state().items}
+            params={state().params}
+            onSelect={(key, params) => merged.contextMenu?.onSelect(key, params)}
+            onClose={closeContextMenu}
+          />
+        )}
+      </Show>
+
+      {/* Header filter panel (vxe filterConfig parity): keyed Show on the
+        state object identity → each open remounts the panel so its draft
+        checkbox state re-seeds from the applied filterValues. */}
+      <Show when={filterPanelState()}>
+        {(state) => {
+          const fcol = displayColumns().find((c) => c.key === state().colKey)
+          if (!fcol || !fcol.filterable) return null
+          return (
+            <TableFilterPanel
+              open={state().open}
+              anchor={filterAnchor}
+              columnKey={fcol.key}
+              options={fcol.filterOptions ?? []}
+              initialChecked={props.filterValues?.[fcol.key] ?? []}
+              onApply={applyFilterValues}
+              onClear={clearFilterValues}
+              onClose={closeFilterPanel}
+              t={t}
+            />
+          )
+        }}
+      </Show>
     </>
   )
 }

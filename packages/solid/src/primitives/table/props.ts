@@ -10,7 +10,6 @@ import type {
   IrisTableRowExpandable,
   IrisTableSeqMethodParams,
   IrisTableSortState,
-  IrisTableSpanMethodParams,
   IrisTableToolbarConfig,
   IrisTableVirtualOptions,
 } from './types'
@@ -47,9 +46,10 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make
    * the cell span adjacent cells (the spanned cells are skipped).
    */
-  spanMethod?: (
-    params: IrisTableSpanMethodParams,
-  ) => { rowspan?: number; colspan?: number } | null | undefined
+  spanMethod?: (params: {
+    rowIndex: number
+    columnIndex: number
+  }) => { rowspan?: number; colspan?: number } | null | undefined
   /** Column visibility (vxe columnConfig.visible parity): map of column key →
    * visible (default true). Hidden columns are not rendered. */
   columnVisibility?: Record<string, boolean>

@@ -499,3 +499,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-aa-adapt.md [ok]: 批 AA — solid 适配器对齐（columnVisibility/filters/seq/spanMethod/proxyConfig/multiSort/formConfig/toolbar），core 零改动，react/vue/svelte 未触碰；4 源文件 + 492 行测试（23 用例）；typecheck/test/lint/prettier/spec(0)/manifest(155×4) 全绿。批 AB 接力：filterValues 面板、layouts.pager、settings 面板、spanMethod×columnVirtualization 窗口证明、孤儿 TableHeader/Body/Row 处置。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aa-adapt.md
+
+## 2026-08-11 09:39:44 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aa-adapt.md [ok]: Report: **Situation**: A prior attempt timed out but left a near-complete uncommitted implementation. I audited it end-to-end, f
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aa-adapt.md
+
+## 2026-08-11 09:54:00 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aa-review.md [ok]: Verdict: **PASS** (1 medium finding, 3 low/info): **Gates — all green:** solid typecheck ✅ · lint 0 errors ✅ · tests 939+34 (parity-aa 23/23) ✅ · `pnpm audit` ✅ · `check:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aa-review.md

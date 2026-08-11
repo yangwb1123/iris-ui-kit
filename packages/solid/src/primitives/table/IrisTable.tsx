@@ -928,15 +928,20 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   // Span bookkeeping (vxe spanMethod parity): a per-pass occupied set rebuilt
   // whenever bodyEntries gets a fresh reference (a new render pass), so Solid's
   // <For> — which re-runs callbacks only for new entry identities — never
-  // accumulates stale coverage across passes.
+  // accumulates stale coverage across passes. The rebuild is also keyed on the
+  // spanMethod identity: swapping the callback to a different function without
+  // a data change (same bodyEntries reference) must drop coverage left by the
+  // previous function, or cells it covered stay blank under the new one.
   const spanOccupy = new Set<string>()
   let spanRowsRef: Array<{ row: Row; meta: TreeRow<Row> | null }> | undefined
+  let spanMethodRef: NonNullable<IrisTableProps<Row>['spanMethod']> | undefined
   const spanPass = (): void => {
     if (props.spanMethod === undefined) return
     const entries = bodyEntries()
-    if (spanRowsRef !== entries) {
+    if (spanRowsRef !== entries || spanMethodRef !== props.spanMethod) {
       spanOccupy.clear()
       spanRowsRef = entries
+      spanMethodRef = props.spanMethod
     }
   }
 

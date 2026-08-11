@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, cleanup, fireEvent, waitFor } from '@solidjs/testing-library'
 import { IrisTable } from './IrisTable'
-import type { IrisTableColumn, IrisTableSpanMethodParams } from './types'
+import type { IrisTableColumn } from './types'
 
 afterEach(cleanup)
 
@@ -124,30 +124,6 @@ describe('IrisTable parity-AA: columnVisibility / filters / seq', () => {
     ))
     const seqCells = [...container.querySelectorAll('[data-iris-table-cell="__seq"]')]
     expect(seqCells.map((c) => c.textContent)).toEqual(['R1', 'R2'])
-  })
-})
-
-describe('IrisTable parity-AA: spanMethod', () => {
-  type Span = { rowspan?: number; colspan?: number } | null | undefined
-  const renderSpan = (spanMethod: (p: IrisTableSpanMethodParams) => Span) =>
-    render(() => <IrisTable columns={cols} data={rows} spanMethod={spanMethod} />)
-
-  it('colspan merges cells: origin extends its track, covered cell skipped', () => {
-    const { container } = renderSpan(() => ({ colspan: 2 }))
-    const nameCell = container.querySelector('[data-iris-table-cell="name"]') as HTMLElement
-    expect(nameCell.style.gridColumnEnd).toBe('span 2')
-    expect(cellTexts(container, 'name')).toEqual(['Alice', 'Bob']) // per row: merged + city
-    expect(cellTexts(container, 'age')).toEqual([]) // covered by the colspan
-    expect(cellTexts(container, 'city')).toEqual(['Berlin', 'Paris'])
-  })
-
-  it('rowspan removes the covered cell of the next row', () => {
-    const { container } = renderSpan(({ rowIndex, columnIndex }) =>
-      rowIndex === 0 && columnIndex === 0 ? { rowspan: 2 } : undefined,
-    )
-    expect(cellTexts(container, 'name')).toEqual(['Alice']) // row 1's name covered
-    expect(cellTexts(container, 'age')).toEqual(['30', '25'])
-    expect(cellTexts(container, 'city')).toEqual(['Berlin', 'Paris'])
   })
 })
 

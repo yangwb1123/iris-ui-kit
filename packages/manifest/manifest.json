@@ -38018,14 +38018,9 @@
             },
             {
               "name": "spanMethod",
-              "type": "(",
+              "type": "(params: {",
               "optional": true,
               "description": "Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }` for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make the cell span adjacent cells (the spanned cells are skipped)."
-            },
-            {
-              "name": "params",
-              "type": "IrisTableSpanMethodParams",
-              "optional": false
             },
             {
               "name": "columnVisibility",

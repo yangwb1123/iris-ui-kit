@@ -364,3 +364,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-u-gate.md [ok]: 批 U Gate — PASS ✅（功能移植收官）: **Review verdict**: PASS（1 MEDIUM + 1 LOW 有处方 + 1 INFO）; Review fixes applied: 1. **MEDIUM 缩放遮工具栏** — fixed 覆盖层画在工具栏之上、✕ 不可达：缩放时工具栏内联提升 `zIndex: calc(var(--iris-z-popover, 1000) + 1)`，stylesheet 注释同步更正; 2. **LOW zIndex prop 拆盖** — 缩放分支在 `...style` 之后强制内联 `position: fixed`（连同 height: 100%），调用方 style/zIndex 无法再拆盖; 3. **INFO 列面板两次 Esc** — 浮层随工具栏提升不再被遮挡，两次按键为预期行为，已文档化; Full gate results: 180/180 turbo（首轮 ssr-nuxt#typecheck 因 prepare/build 并发写 .nuxt 竞态失败一次，重跑通过）· react 1800/1800（+2 新）· core 1249 · lint 0 errors · audit 0 · manifest up-to-date（155×4）; Docs: comparison doc 文首收官声明（vxe-grid 功能面全部移植完成：tableProps ~90 项 + 方法 + 事件 + layouts/zoom/visibleMethod）+ 列能力清单补 visibleMethod + 批 U 行补 review 修复 + 总数 7401 + 有意跳过项新增两次 Esc; Commit: **`9e294599`** — `feat(table): vxe-grid 批 U——zoomConfig/layouts/visibleMethod（react only，功能移植收官）`
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-u-gate.md
+
+## 2026-08-10 23:44:59 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-u-gate.md [ok]: 批 U Gate — PASS ✅（功能移植收官）: **Review verdict**: PASS（3 非阻塞发现）→ 应用 2 个有处方的修复 + 1 个文档化 INFO：; 全仓门结果: | 门 | 结果 |; 文档: - **comparison doc**：文首「最终覆盖总结」改写为收官声明——**vxe-grid 功能面全部移植完成（react）**：tableProps ~90 项 + 方法 + 事件 + grid 特有 layouts/zoom/; Commit: **`4231f050`** — `feat(table): vxe-grid 批 U——zoomConfig/layouts/visibleMethod（react only，功能移植收官）`（7 files, +186/−95；工作树干
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-u-gate.md

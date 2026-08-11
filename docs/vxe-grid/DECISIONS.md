@@ -574,3 +574,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ad-review.md [ok]: Verification (all green): - **solid typecheck** 0 errors · **lint** 0 errors · **tests** 974 unit + 34 SSR (128 files) · parity-ad 15/15 · parity-; Checklist findings: 1. **drag** — threshold/closest-center/reorder/grouped-header-gating/cleanup all match react; **LOW-1**: solid's column-
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ad-review.md
+
+## 2026-08-11 12:51:34 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ad-gate.md [ok]: Verdict handling: `batch-ab-review.md` = **FAIL with concrete fixes** — but all four findings were already fixed and committed in `8f40aaa; Full gate results: - **`turbo run test typecheck lint build --concurrency=2`: 180/180 tasks ✅**; Commit: - **`e7315204`** — `feat(table): vxe-grid 批 AD——svelte 适配器功能对齐（交互批）` (3 files: DECISIONS.md, batch-ad-adapt.md, batch-ad
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ad-gate.md

@@ -349,3 +349,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-u-baseline.md [ok]: 批 U 完成（final batch）：zoomConfig 缩放全屏（工具栏 ⛶/✕ + TABLE_ROW_CSS fixed 覆盖层 token-only + Esc 退出 + fixedHeight 联动 + inline height 100% 置于 ...style 后）· layouts 节布局（form/toolbar/pager hidden 仅抑制，默认逐节不变）· visibleMethod 列可见谓词（displayColumns memo 每渲染至多一次；false 优先于 columnVisibility true；顶层列作用域同 columnVisibility，分组叶子不consult——文档化）。5 个基线开放问题全数裁决：zoom 无 toolbar 无入口（vxe parity，toggle 在工具栏）；grouped leaves 不 consult（与 columnVisibility 同作用域）；可见性 veto 优先；zh zoomOut=退出放大（显式退出语义）。props.ts 483/500 未超限。测试 19 新（zoom-layouts-visiblemethod.test.tsx 326 行 ≤500）。验证：react 1798/1798 · core 1249/1249 · zh 6/6 · typecheck ✓ · lint 0 errors（1 既有 complexity warning）· spec 0 violations · manifest 再生成（155 components 基线不变，react IrisTable props 115→117）。Docs: comparison doc 工具栏行补 zoom + 新增布局行 + 批 U 构建行 + 总数（react 1798 · core 1249 · 7399 total）；core dist 重建（git-ignored，i18n 键随构建进 react 测试解析）
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-u-adapt.md
+
+## 2026-08-10 23:23:40 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-u-adapt.md [ok]: Report: **Commit:** `23f4d836` — `feat(table): vxe-grid 批 U——zoom 缩放/layouts 布局/visibleMethod 列可见（react only，final batch）` (work; Files changed (12): | File | Change |; Decisions (documented in types.ts, stylesheet comment, adapt doc): - `visibleMethod() === false` **overrides** `columnVisibility: true`; scope mirrors columnVisibility (top-level only — g; Verification: - react typecheck ✓ · react tests **1798/1798** (159 files) · lint **0 errors** (1 pre-existing complexity warning, 161→
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-u-adapt.md
+
+## 2026-08-10 23:30:54 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-u-review.md [ok]: Checklist verification: | Item | Result |; Fresh verification: - React tests **1798/1798** (159 files, incl. 19 new) · typecheck ✅ · lint 0 errors (1 pre-existing complexity warning); Findings: 1. **MEDIUM** — `Table.tsx:145-151` + `3877`: while zoomed, the fixed root (z-index 1000, opaque bg) paints **above** th
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-u-review.md
+
+## 2026-08-11 — stage 'gate' — PASS (batch U)
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-u-gate.md [ok]: 批 U Gate — PASS ✅（功能移植收官）: **Review verdict**: PASS（1 MEDIUM + 1 LOW 有处方 + 1 INFO）; Review fixes applied: 1. **MEDIUM 缩放遮工具栏** — fixed 覆盖层画在工具栏之上、✕ 不可达：缩放时工具栏内联提升 `zIndex: calc(var(--iris-z-popover, 1000) + 1)`，stylesheet 注释同步更正; 2. **LOW zIndex prop 拆盖** — 缩放分支在 `...style` 之后强制内联 `position: fixed`（连同 height: 100%），调用方 style/zIndex 无法再拆盖; 3. **INFO 列面板两次 Esc** — 浮层随工具栏提升不再被遮挡，两次按键为预期行为，已文档化; Full gate results: 180/180 turbo（首轮 ssr-nuxt#typecheck 因 prepare/build 并发写 .nuxt 竞态失败一次，重跑通过）· react 1800/1800（+2 新）· core 1249 · lint 0 errors · audit 0 · manifest up-to-date（155×4）; Docs: comparison doc 文首收官声明（vxe-grid 功能面全部移植完成：tableProps ~90 项 + 方法 + 事件 + layouts/zoom/visibleMethod）+ 列能力清单补 visibleMethod + 批 U 行补 review 修复 + 总数 7401 + 有意跳过项新增两次 Esc; Commit: **`9e294599`** — `feat(table): vxe-grid 批 U——zoomConfig/layouts/visibleMethod（react only，功能移植收官）`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-u-gate.md

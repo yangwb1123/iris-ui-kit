@@ -146,6 +146,47 @@ describe('IrisTable zoomConfig (batch U)', () => {
     fireEvent.click(container.querySelector('[data-iris-table-zoom]')!)
     expect(root().getAttribute('data-iris-table-fixed-height')).toBe('true')
   })
+
+  it('while zoomed the toolbar is lifted above the overlay (✕ stays reachable)', () => {
+    const { container } = render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        rowKey="id"
+        toolbar={{ title: 'T' }}
+        zoomConfig={{ showButton: true }}
+      />,
+    )
+    const toolbar = container.querySelector('[data-iris-table-toolbar]') as HTMLElement
+    // Not zoomed: no lift (defaults unchanged).
+    expect(toolbar.style.zIndex).toBe('')
+    fireEvent.click(container.querySelector('[data-iris-table-zoom]')!)
+    expect(toolbar.style.zIndex).toBe('calc(var(--iris-z-popover, 1000) + 1)')
+    // The ✕ exit button is inside the lifted toolbar.
+    expect(container.querySelector('[data-iris-table-zoom]')?.textContent).toBe('✕')
+    fireEvent.click(container.querySelector('[data-iris-table-zoom]')!)
+    expect(toolbar.style.zIndex).toBe('')
+  })
+
+  it('zIndex prop cannot unpin the overlay while zoomed (position forced fixed)', () => {
+    const { container } = render(
+      <IrisTable
+        columns={baseColumns}
+        data={rows}
+        rowKey="id"
+        toolbar={{}}
+        zIndex={5}
+        zoomConfig={{ showButton: true }}
+      />,
+    )
+    // Not zoomed: the zIndex prop rides along as position: relative.
+    expect(root().style.position).toBe('relative')
+    expect(root().style.zIndex).toBe('5')
+    fireEvent.click(container.querySelector('[data-iris-table-zoom]')!)
+    // Zoomed: inline position: fixed wins over the prop's relative.
+    expect(root().style.position).toBe('fixed')
+    expect(root().style.zIndex).toBe('5')
+  })
 })
 
 // ── 2. Section layouts (vxe-grid layouts parity, batch U) ─────────────────

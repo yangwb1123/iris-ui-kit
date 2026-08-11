@@ -139,9 +139,11 @@ const TABLE_ROW_CSS = `
    — the rows keep their shared gridTemplateColumns and the sticky-header /
    scroll machinery engages via the inline height: 100%. Caveats: the
    form/toolbar/pager sections are fragment siblings OUTSIDE the root and
-   stay in place above the overlay; a caller-supplied inline position /
-   z-index in style would override this rule (inline wins over the
-   stylesheet) — only height: 100% is forced inline while zoomed. */
+   stay in place; while zoomed the toolbar is lifted above the overlay
+   (position relative + popover z-index + 1 inline, so its ✕ exit stays
+   reachable — vxe keeps its toolbar inside the zoomed root, same effect),
+   and position: fixed + height: 100% are forced inline so a caller-supplied
+   style or zIndex prop cannot unpin the overlay. */
 [data-iris-table][data-iris-table-zoomed] {
   position: fixed;
   inset: 0;
@@ -3875,6 +3877,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
             background: 'var(--iris-surface)',
             fontSize: 'var(--iris-font-size-sm, 13px)',
             position: 'relative',
+            // Batch U zoom: lift the toolbar above the fixed overlay while
+            // zoomed so the ✕ exit button stays reachable (vxe parity — vxe
+            // keeps its toolbar inside the zoomed root). The toolbar is a
+            // sibling rendered BEFORE the root, so without this the overlay
+            // (z-index popover) would paint on top of it.
+            ...(zoomed ? { zIndex: 'calc(var(--iris-z-popover, 1000) + 1)' } : null),
           }}
         >
           {toolbar.title ? (
@@ -4358,8 +4366,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // root fixed (data-iris-table-zoomed); the inline height: 100%
           // keeps the fixed-height machinery engaged so the sticky header
           // and the overlay scroll work exactly like an explicit-height
-          // table. After `...style` — zoom wins over caller heights.
-          ...(zoomed ? { height: '100%' } : null),
+          // table. position: fixed is forced inline AFTER `...style` so a
+          // caller style or the zIndex prop (position: relative) cannot
+          // unpin the overlay while zoomed. Zoom wins over caller heights.
+          ...(zoomed ? { height: '100%', position: 'fixed' } : null),
         }}
       >
         {/* Multi-level (grouped) header: a CSS grid of `headerMatrix.length` rows;

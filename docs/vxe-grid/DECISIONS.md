@@ -396,3 +396,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-v-gate.md [ok]: ✅ Batch V Gate — PASS: **Verdict:** `docs/vxe-grid/batch-v-review.md` → **PASS** (3 low findings F1/F2/F3, none blocking — no fix required per ; Full repo gate: | Step | Result |; Comparison doc: Batch V rows already marked done (committed with the adapt commit — verified in place, no further edit needed):; Commit: ```; Final test counts: - **react 1810/1810** (160 files) · **core 1249** · **7411 total** across all packages (vue 1469, solid 950, svelte 930,
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-v-gate.md
+
+## 2026-08-11 01:30:10 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-w-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-w-baseline.md

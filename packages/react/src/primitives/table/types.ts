@@ -423,6 +423,10 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   getProxyInfo: () => { page: number; pageSize: number; total: number } | null
   /** Snapshot (copy) of the current live row list (vxe getTableData parity). */
   getData: () => Row[]
+  /** Snapshot (copy) of the currently filtered + sorted rows (vxe getFilteredData parity, batch W): the filteredData memo value — the loaded page after local filters/sort (proxy mode: page after the prop `filters` merge), remoteFilter passes rows through unchanged. The handle object is re-created every render, so this always closes over the latest memo. */
+  getFilteredData: () => Row[]
+  /** Serialize the CURRENT filtered view as CSV (batch W): `exportCsv(getFilteredData(), displayColumns)` — hidden columns excluded (displayColumns drops columnVisibility/visibleMethod hides), formula injection neutralized; returns a plain string without BOM (caller downloads via `downloadCsv`). */
+  exportCurrentViewCsv: () => string
   /** Current selection keys (vxe getCheckboxRecords parity). */
   getSelection: () => Array<string | number>
   /** Clear every selected row (vxe clearCheckboxRow parity). */

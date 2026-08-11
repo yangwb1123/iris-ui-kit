@@ -36820,6 +36820,18 @@
           "description": "Highlight rows on hover (vxe highlight-hover-row parity, batch N). Default true."
         },
         {
+          "name": "showHeaderOverflow",
+          "type": "boolean",
+          "optional": true,
+          "description": "Header overflow (vxe showHeaderOverflow parity, batch W): when false, header cells switch to `whiteSpace: 'normal'` + `overflow: 'visible'` (text wraps instead of the ellipsis). Default true."
+        },
+        {
+          "name": "showFooterOverflow",
+          "type": "boolean",
+          "optional": true,
+          "description": "Footer overflow (vxe showFooterOverflow parity, batch W): when false, summary / footerMethod / footerData cells switch to `whiteSpace: 'normal'` + `overflow: 'visible'` (text wraps instead of the ellipsis). Default true."
+        },
+        {
           "name": "style",
           "type": "CSSProperties",
           "optional": true
@@ -37553,6 +37565,18 @@
               "description": "Highlight rows on hover (vxe highlight-hover-row parity, batch N). Default true."
             },
             {
+              "name": "showHeaderOverflow",
+              "type": "boolean",
+              "optional": true,
+              "description": "Header overflow (vxe showHeaderOverflow parity, batch W): when false, header cells switch to `whiteSpace: 'normal'` + `overflow: 'visible'` (text wraps instead of the ellipsis). Default true."
+            },
+            {
+              "name": "showFooterOverflow",
+              "type": "boolean",
+              "optional": true,
+              "description": "Footer overflow (vxe showFooterOverflow parity, batch W): when false, summary / footerMethod / footerData cells switch to `whiteSpace: 'normal'` + `overflow: 'visible'` (text wraps instead of the ellipsis). Default true."
+            },
+            {
               "name": "style",
               "type": "CSSProperties",
               "optional": true
@@ -38246,7 +38270,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 121,
+        "propCount": 123,
         "eventCount": 25
       }
     },

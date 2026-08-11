@@ -49,6 +49,7 @@ import { IrisPagination } from '../pagination'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import type { IrisTableProps, IrisTableProxyConfig } from './props'
 import type { IrisTableHandle } from './types'
+import { exportCsv } from './exportCsv'
 
 const TABLE_ROW_CSS = `
 [data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover {
@@ -673,6 +674,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   footerAlign,
   aggregateAccuracy,
   highlightHoverRow = true,
+  showHeaderOverflow = true,
+  showFooterOverflow = true,
   height,
   minHeight,
   maxHeight,
@@ -2107,6 +2110,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
       return s ? { page: s.params.page, pageSize: s.params.pageSize, total: s.total } : null
     },
     getData: () => [...(externalDataRef.current ?? [])],
+    // ── View methods (vxe getFilteredData parity + current-view export,
+    // batch W) ────────────────────────────────────────────────────────────
+    // The handle object is re-created every render, so these close over the
+    // LATEST filteredData / displayColumns memos (filters, sort, column
+    // visibility all current at call time).
+    getFilteredData: () => [...filteredData],
+    exportCurrentViewCsv: () => exportCsv([...filteredData], displayColumns),
     getSelection: () => [...displaySelectionRef.current],
     // ── Selection methods (vxe clearCheckboxRow / setAllCheckboxRow(true) /
     // toggleCheckboxRow parity, batch F) ───────────────────────────────────
@@ -2978,6 +2988,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   }
+  // Batch W (vxe showHeaderOverflow/showFooterOverflow parity): spread right
+  // after baseCellStyle so it beats the ellipsis base (user cell styles spread
+  // later still win, mirroring vxe's inline-over-class precedence).
+  const cellOverflowOverride = { whiteSpace: 'normal', overflow: 'visible' } as const
   const borderStyle = bordered ? '1px solid var(--iris-border)' : 'none'
 
   // Cell tooltips (vxe tooltipConfig parity, title mode, batch G): a native
@@ -3721,6 +3735,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             title={footerTooltip(col)}
             style={{
               ...baseCellStyle,
+              ...(showFooterOverflow ? null : cellOverflowOverride),
               ...(fspanState?.spanStyle ?? null),
               justifyContent: justifyFor(footerAlign ?? col.align),
               ...pinnedStyle(col.key),
@@ -3810,6 +3825,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     title={footerTooltip(col)}
                     style={{
                       ...baseCellStyle,
+                      ...(showFooterOverflow ? null : cellOverflowOverride),
                       ...(fspanState.spanStyle ?? null),
                       justifyContent: justifyFor(footerAlign ?? col.align),
                       ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
@@ -3869,6 +3885,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       title={footerTooltip(col)}
                       style={{
                         ...baseCellStyle,
+                        ...(showFooterOverflow ? null : cellOverflowOverride),
                         ...(fspanState.spanStyle ?? null),
                         justifyContent: justifyFor(
                           footerAlign ??
@@ -4562,6 +4579,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       gridColumn: `${lead + cell.colStart} / span ${cell.colSpan}`,
                       gridRow: `${cell.level + 1} / span ${cell.rowSpan}`,
                       ...baseCellStyle,
+                      ...(showHeaderOverflow ? null : cellOverflowOverride),
                       justifyContent: isLeaf
                         ? justifyFor(headerAlign ?? col.align ?? 'left')
                         : justifyFor(headerAlign ?? 'center'),
@@ -4716,6 +4734,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   data-sort-direction={dir}
                   style={{
                     ...baseCellStyle,
+                    ...(showHeaderOverflow ? null : cellOverflowOverride),
                     ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
                     ...(mergedCell && (mergedCell.colspan ?? 1) > 1
                       ? { gridColumnEnd: `span ${mergedCell.colspan}` }

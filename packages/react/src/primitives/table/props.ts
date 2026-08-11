@@ -489,6 +489,10 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   zIndex?: number
   /** Highlight rows on hover (vxe highlight-hover-row parity, batch N). Default true. */
   highlightHoverRow?: boolean
+  /** Header overflow (vxe showHeaderOverflow parity, batch W): when false, header cells switch to `whiteSpace: 'normal'` + `overflow: 'visible'` (text wraps instead of the ellipsis). Default true. */
+  showHeaderOverflow?: boolean
+  /** Footer overflow (vxe showFooterOverflow parity, batch W): when false, summary / footerMethod / footerData cells switch to `whiteSpace: 'normal'` + `overflow: 'visible'` (text wraps instead of the ellipsis). Default true. */
+  showFooterOverflow?: boolean
   style?: CSSProperties
   className?: string
 }

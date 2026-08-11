@@ -253,6 +253,36 @@ export interface IrisTableCellEditEvent<Row = Record<string, unknown>> {
   rowIndex: number
 }
 
+/** Params delivered to `IrisTableProps.onEditStart` (vxe edit-activated parity, batch V). */
+export interface IrisTableEditStartParams<Row = Record<string, unknown>> {
+  row: Row
+  column: IrisTableColumn<Row>
+  rowIndex: number
+}
+
+/**
+ * Params delivered to `IrisTableProps.onEditClosed` (vxe edit-closed parity,
+ * batch V). Cell mode only — row-edit sessions commit per column through
+ * their own stores and are not reported (documented simplification); an
+ * async-validating commit that lands after `commitEdit` returned is also not
+ * reported (the sync path fires with the committed value).
+ */
+export interface IrisTableEditClosedParams<Row = Record<string, unknown>> {
+  row: Row
+  column: IrisTableColumn<Row>
+  rowIndex: number
+  /** The committed value; undefined when the edit was cancelled. */
+  value?: unknown
+  /** true when the edit was cancelled (Escape) instead of committed. */
+  cancelled: boolean
+}
+
+/** Scroll coordinates delivered to `IrisTableProps.onScroll` (vxe scroll parity, batch V). */
+export interface IrisTableScrollParams {
+  scrollTop: number
+  scrollLeft: number
+}
+
 export type IrisTableRenderDetail<Row = Record<string, unknown>> = (
   row: Row,
   rowIndex: number,
@@ -383,6 +413,14 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   updateRow: (key: string | number, patch: Partial<Row>) => void
   /** Re-fetch the current page (proxy mode). */
   refetch: () => void
+  /** Replace the live row list (vxe loadData parity, batch V): fires onDataChange; in proxy mode the proxy state total stays unchanged until the next query (the core remote source has no setData — documented). */
+  loadData: (rows: Row[]) => void
+  /** Re-fetch the current page (vxe reloadData parity, batch V — alias of refetch). */
+  reloadData: () => void
+  /** Merge params into the proxy query and fire the request (vxe commitProxy parity, batch V). */
+  commitProxy: (overrides: Partial<IrisTableProxyQueryParams>) => void
+  /** Proxy state snapshot (vxe getProxyInfo parity, batch V): page/pageSize/total; null without a proxy. */
+  getProxyInfo: () => { page: number; pageSize: number; total: number } | null
   /** Snapshot (copy) of the current live row list (vxe getTableData parity). */
   getData: () => Row[]
   /** Current selection keys (vxe getCheckboxRecords parity). */

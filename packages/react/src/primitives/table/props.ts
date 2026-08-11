@@ -1,6 +1,9 @@
 import type { CSSProperties, MutableRefObject, ReactNode } from 'react'
 import type {
   IrisTableCellEditEvent,
+  IrisTableEditStartParams,
+  IrisTableEditClosedParams,
+  IrisTableScrollParams,
   IrisTableAlign,
   IrisTableColumn,
   IrisTableColumnWidths,
@@ -333,6 +336,14 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   /** Edit-validation presentation (vxe-grid ValidConfig parity). */
   validConfig?: IrisTableValidConfig
   onCellEdit?: (event: IrisTableCellEditEvent<Row>) => void
+  /** Edit start (vxe edit-activated parity, batch V): fired when an inline editor opens (cell double-click; cell mode only). */
+  onEditStart?: (params: IrisTableEditStartParams<Row>) => void
+  /** Edit close (vxe edit-closed parity, batch V): fired when an edit session ends — `cancelled: false` carries the committed value, `cancelled: true` when Escape discarded it. Cell mode only (see `IrisTableEditClosedParams`). */
+  onEditClosed?: (params: IrisTableEditClosedParams<Row>) => void
+  /** Header select-all toggle (additive — not in vxe's emits, batch V): fired with the PRE-toggle header state and the current selection keys. */
+  onSelectAllChange?: (state: boolean | 'indeterminate', selection: Array<string | number>) => void
+  /** Root scroll (vxe scroll parity, batch V): `{ scrollTop, scrollLeft }` of the root container; fires in column-virtualization mode and via a native listener otherwise (only meaningful with `height`, else overflow is hidden). */
+  onScroll?: (params: IrisTableScrollParams) => void
   /** Render an expandable detail panel beneath a row. */
   renderDetail?: IrisTableRenderDetail<Row>
   /** Which rows can expand a detail panel. */

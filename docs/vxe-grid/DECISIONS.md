@@ -369,3 +369,15 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-u-gate.md [ok]: 批 U Gate — PASS ✅（功能移植收官）: **Review verdict**: PASS（3 非阻塞发现）→ 应用 2 个有处方的修复 + 1 个文档化 INFO：; 全仓门结果: | 门 | 结果 |; 文档: - **comparison doc**：文首「最终覆盖总结」改写为收官声明——**vxe-grid 功能面全部移植完成（react）**：tableProps ~90 项 + 方法 + 事件 + grid 特有 layouts/zoom/; Commit: **`4231f050`** — `feat(table): vxe-grid 批 U——zoomConfig/layouts/visibleMethod（react only，功能移植收官）`（7 files, +186/−95；工作树干
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-u-gate.md
+
+## 2026-08-11 00:24:54 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-v-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-v-baseline.md
+
+## 2026-08-11 01:10:00 — stage 'adapt' — PASS (batch V)
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-v-baseline.md [ok]: 代理方法 + 事件批：**Commit:** `55b54fba` — `feat(table): vxe-grid 批 V——代理方法 loadData/reloadData/commitProxy/getProxyInfo + 事件 onEditStart/onEditClosed/onSelectAllChange/onScroll（react only）`（10 files, +583/−95）；Files changed (4 source + 1 test + docs + manifest)：types.ts（3 个具名参数接口 + 4 条单行 handle 类型）、props.ts（4 条单行事件 prop，495/500）、Table.tsx（~+93）、index.ts（类型再导出）；新测试 proxy-methods-events.test.tsx（272 行，10 tests）。
+- Decisions（类型文档化）：loadData 走 commitRowList 写回通道（fire onDataChange）；core remote source 无 setData → 代理 total 在下次 query 前不变（文档化）；reloadData = refetch 别名；commitProxy = setParams 合并重查；getProxyInfo = getState 快照（page/pageSize/total），无代理 null。onEditClosed 只报 cell 模式同步提交（行编辑会话按列独立 store 不报告、异步校验落盘不报告——文档化简化）；onSelectAllChange 报 pre-toggle 态 + 当前选择（vxe 无此 emit，增量）；onScroll 虚拟列模式扩展 JSX handler，非虚拟时原生监听（仅 height 固定时有意义）。
+- Verification: react typecheck ✓ · react tests **1810/1810**（160 files，含新 10）· lint **0 errors**（1 pre-existing complexity warning）· spec.py all **0 violations** · manifest 重新生成（react table 117→121 props、21→25 events，155 组件全框架对齐不变，diff 纯增量）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-v-baseline.md

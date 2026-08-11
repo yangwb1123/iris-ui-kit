@@ -704,6 +704,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onRowClick,
   onRowDblClick,
   onCellEdit,
+  onEditStart,
+  onEditClosed,
+  onSelectAllChange,
+  onScroll,
   tableRef,
   onDataChange,
   checkMethod,
@@ -1158,6 +1162,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
   const onCellEditRef = React.useRef(onCellEdit)
   onCellEditRef.current = onCellEdit
+  // Batch V: latest-closure refs for the new event props (mount-time handle
+  // methods and EditorSurface callbacks must never see a stale closure).
+  const onEditStartRef = React.useRef(onEditStart)
+  onEditStartRef.current = onEditStart
+  const onEditClosedRef = React.useRef(onEditClosed)
+  onEditClosedRef.current = onEditClosed
+  const onSelectAllChangeRef = React.useRef(onSelectAllChange)
+  onSelectAllChangeRef.current = onSelectAllChange
+  const onScrollRef = React.useRef(onScroll)
+  onScrollRef.current = onScroll
   const editCtxRef = React.useRef<{ row: Row; col: IrisTableColumn<Row>; rowIndex: number } | null>(
     null,
   )
@@ -1862,12 +1876,38 @@ export function IrisTable<Row extends Record<string, unknown>>({
     editCtxRef.current = { row, col, rowIndex }
     const current = getCellValue(row, col)
     cellEdit.startEdit(cellId(rowIdent, col.key), col.key, current == null ? '' : String(current))
+    // Batch V (vxe edit-activated parity): the session is open — report the
+    // cell coordinates (cell mode only).
+    onEditStartRef.current?.({ row, column: col, rowIndex })
   }
   const cancelEdit = () => {
     cellEdit.cancelEdit()
+    // Batch V (vxe edit-closed parity): the session ended without a commit.
+    const ctx = editCtxRef.current
+    if (ctx)
+      onEditClosedRef.current?.({
+        row: ctx.row,
+        column: ctx.col,
+        rowIndex: ctx.rowIndex,
+        cancelled: true,
+      })
   }
   const commitEdit = (): boolean => {
-    return cellEdit.commitEdit()
+    const ok = cellEdit.commitEdit()
+    if (ok) {
+      // Batch V (vxe edit-closed parity): committed — the store's validated
+      // slot holds the coerced committed value (getDraft is cleared).
+      const ctx = editCtxRef.current
+      if (ctx)
+        onEditClosedRef.current?.({
+          row: ctx.row,
+          column: ctx.col,
+          rowIndex: ctx.rowIndex,
+          value: cellEdit.getValidated(),
+          cancelled: false,
+        })
+    }
+    return ok
   }
 
   // Tab edit navigation (vxe editConfig parity, batch J): Tab commits the
@@ -1895,7 +1935,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       cellEdit.commitEdit()
       return
     }
-    if (!cellEdit.commitEdit()) {
+    if (!commitEdit()) {
       e.preventDefault()
       return
     }
@@ -2046,6 +2086,25 @@ export function IrisTable<Row extends Record<string, unknown>>({
     },
     refetch: () => {
       proxyRef.current?.refetch()
+    },
+    // ── Proxy methods (vxe loadData/reloadData/commitProxy/getProxyInfo
+    // parity, batch V) ────────────────────────────────────────────────────
+    loadData: (rows) => {
+      // loadData replaces the live row list through the write-back channel
+      // (fires onDataChange). The core remote table source has no setData,
+      // so the proxy state (total/page) stays unchanged until the next
+      // query replaces the page (documented in the handle type).
+      commitRowList(rows)
+    },
+    reloadData: () => {
+      proxyRef.current?.refetch()
+    },
+    commitProxy: (overrides) => {
+      proxyRef.current?.setParams(overrides)
+    },
+    getProxyInfo: () => {
+      const s = proxyRef.current?.getState()
+      return s ? { page: s.params.page, pageSize: s.params.pageSize, total: s.total } : null
     },
     getData: () => [...(externalDataRef.current ?? [])],
     getSelection: () => [...displaySelectionRef.current],
@@ -2375,6 +2434,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const keys = bodyData
       .map((row, i) => (checkMethod && !checkMethod(row, i) ? null : rowKeyOf(row, i)))
       .filter((k): k is string | number => k != null)
+    // Batch V (vxe has no select-all emit — additive): report the header
+    // checkbox's PRE-toggle state + the current selection snapshot.
+    onSelectAllChangeRef.current?.(allSelected ? true : someSelected ? 'indeterminate' : false, [
+      ...displaySelection,
+    ])
     selModel.toggleAll(keys)
   }
 
@@ -2788,6 +2852,23 @@ export function IrisTable<Row extends Record<string, unknown>>({
     ro.observe(el)
     return () => ro.disconnect()
   }, [columnVirtualization])
+
+  // Batch V (vxe scroll parity): without column virtualization the JSX
+  // onScroll handler above doesn't exist — attach a native listener instead
+  // (only meaningful with `height`/fixedHeight, else overflow stays hidden
+  // and no scroll events arrive). Presence-gated so an onScroll that arrives
+  // later still attaches; the latest closure is read via the ref.
+  const hasOnScroll = onScroll !== undefined
+  React.useEffect(() => {
+    if (columnVirtualization || !hasOnScroll) return
+    const root = rootRef.current
+    if (!root) return
+    const handler = () => {
+      onScrollRef.current?.({ scrollTop: root.scrollTop, scrollLeft: root.scrollLeft })
+    }
+    root.addEventListener('scroll', handler)
+    return () => root.removeEventListener('scroll', handler)
+  }, [columnVirtualization, hasOnScroll])
 
   // Root measure (batch R): the single size read shared by autoResize's
   // ResizeObserver and syncResize's data-change effect — syncResize literally
@@ -4332,7 +4413,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
         onPointerLeave={rowDrag ? handleRowDragPointerLeave : undefined}
         onScroll={
           columnVirtualization
-            ? (e) => setScrollLeft((e.currentTarget as HTMLDivElement).scrollLeft)
+            ? (e) => {
+                const el = e.currentTarget as HTMLDivElement
+                setScrollLeft(el.scrollLeft)
+                // Batch V (vxe scroll parity): extend the virtualization
+                // handler to also report the root scroll coordinates.
+                onScrollRef.current?.({ scrollTop: el.scrollTop, scrollLeft: el.scrollLeft })
+              }
             : undefined
         }
         {...rest}

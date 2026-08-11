@@ -36551,6 +36551,30 @@
           "optional": true
         },
         {
+          "name": "onEditStart",
+          "type": "(params: IrisTableEditStartParams<Row>) => void",
+          "optional": true,
+          "description": "Edit start (vxe edit-activated parity, batch V): fired when an inline editor opens (cell double-click; cell mode only)."
+        },
+        {
+          "name": "onEditClosed",
+          "type": "(params: IrisTableEditClosedParams<Row>) => void",
+          "optional": true,
+          "description": "Edit close (vxe edit-closed parity, batch V): fired when an edit session ends — `cancelled: false` carries the committed value, `cancelled: true` when Escape discarded it. Cell mode only (see `IrisTableEditClosedParams`)."
+        },
+        {
+          "name": "onSelectAllChange",
+          "type": "(state: boolean | 'indeterminate', selection: Array<string | number>) => void",
+          "optional": true,
+          "description": "Header select-all toggle (additive — not in vxe's emits, batch V): fired with the PRE-toggle header state and the current selection keys."
+        },
+        {
+          "name": "onScroll",
+          "type": "(params: IrisTableScrollParams) => void",
+          "optional": true,
+          "description": "Root scroll (vxe scroll parity, batch V): `{ scrollTop, scrollLeft }` of the root container; fires in column-virtualization mode and via a native listener otherwise (only meaningful with `height`, else overflow is hidden)."
+        },
+        {
           "name": "renderDetail",
           "type": "IrisTableRenderDetail<Row>",
           "optional": true,
@@ -37260,6 +37284,30 @@
               "optional": true
             },
             {
+              "name": "onEditStart",
+              "type": "(params: IrisTableEditStartParams<Row>) => void",
+              "optional": true,
+              "description": "Edit start (vxe edit-activated parity, batch V): fired when an inline editor opens (cell double-click; cell mode only)."
+            },
+            {
+              "name": "onEditClosed",
+              "type": "(params: IrisTableEditClosedParams<Row>) => void",
+              "optional": true,
+              "description": "Edit close (vxe edit-closed parity, batch V): fired when an edit session ends — `cancelled: false` carries the committed value, `cancelled: true` when Escape discarded it. Cell mode only (see `IrisTableEditClosedParams`)."
+            },
+            {
+              "name": "onSelectAllChange",
+              "type": "(state: boolean | 'indeterminate', selection: Array<string | number>) => void",
+              "optional": true,
+              "description": "Header select-all toggle (additive — not in vxe's emits, batch V): fired with the PRE-toggle header state and the current selection keys."
+            },
+            {
+              "name": "onScroll",
+              "type": "(params: IrisTableScrollParams) => void",
+              "optional": true,
+              "description": "Root scroll (vxe scroll parity, batch V): `{ scrollTop, scrollLeft }` of the root container; fires in column-virtualization mode and via a native listener otherwise (only meaningful with `height`, else overflow is hidden)."
+            },
+            {
               "name": "renderDetail",
               "type": "IrisTableRenderDetail<Row>",
               "optional": true,
@@ -37525,6 +37573,8 @@
             "onCurrentColumnChange",
             "onCurrentRowChange",
             "onDataChange",
+            "onEditClosed",
+            "onEditStart",
             "onExpandChange",
             "onExpandedRowsChange",
             "onFilterValuesChange",
@@ -37534,6 +37584,8 @@
             "onRetry",
             "onRowClick",
             "onRowDblClick",
+            "onScroll",
+            "onSelectAllChange",
             "onSelectionChange",
             "onSortChange",
             "onTreeExpandChange"
@@ -37552,7 +37604,9 @@
             "IrisTableColumnWidths",
             "IrisTableContextMenuParams",
             "IrisTableCustomConfig",
+            "IrisTableEditClosedParams",
             "IrisTableEditDirtyConfig",
+            "IrisTableEditStartParams",
             "IrisTableEditor",
             "IrisTableFilterOption",
             "IrisTableFilterValues",
@@ -37569,6 +37623,7 @@
             "IrisTableProxyQueryParams",
             "IrisTableRenderDetail",
             "IrisTableRowExpandable",
+            "IrisTableScrollParams",
             "IrisTableScrollbarConfig",
             "IrisTableSeqMethodParams",
             "IrisTableSortDirection",
@@ -38175,6 +38230,10 @@
         "onFiltersChange",
         "onFilterValuesChange",
         "onCellEdit",
+        "onEditStart",
+        "onEditClosed",
+        "onSelectAllChange",
+        "onScroll",
         "onExpandedRowsChange",
         "onExpandChange",
         "onTreeExpandChange",
@@ -38187,8 +38246,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 117,
-        "eventCount": 21
+        "propCount": 121,
+        "eventCount": 25
       }
     },
     {

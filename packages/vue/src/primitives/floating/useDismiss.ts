@@ -11,6 +11,12 @@ export interface UseDismissOptions {
   escape?: boolean
   /** Close on pointerdown outside the excluded elements. Default `true`. */
   outsidePointerDown?: boolean
+  /**
+   * Extra "inside" test for pointerdown targets — e.g. teleported sibling
+   * surfaces that belong to the same widget but live outside the excluded
+   * refs' DOM trees.
+   */
+  excludePredicate?: (target: EventTarget | null) => boolean
 }
 
 /**
@@ -38,6 +44,7 @@ export function useDismiss(options: UseDismissOptions): void {
   const onPointerDown = (event: PointerEvent) => {
     if (!options.enabled.value) return
     if (isExcluded(event.target)) return
+    if (options.excludePredicate?.(event.target)) return
     options.onDismiss()
   }
 

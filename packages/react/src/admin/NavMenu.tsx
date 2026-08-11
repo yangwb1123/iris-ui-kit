@@ -116,7 +116,9 @@ export function IrisNavMenu({
     border: 'none',
     borderRadius: 'var(--iris-radius-md, 6px)',
     background: opts.active
-      ? 'var(--iris-primary)'
+      ? opts.hovered && !opts.disabled
+        ? 'var(--iris-nav-item-active-hover, color-mix(in srgb, var(--iris-primary) 88%, black))'
+        : 'var(--iris-primary)'
       : opts.hovered && !opts.disabled
         ? 'var(--iris-surface-hover, var(--iris-surface))'
         : 'transparent',

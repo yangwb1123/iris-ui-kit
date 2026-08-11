@@ -116,6 +116,29 @@ describe('IrisNavMenu (react)', () => {
     expect(disabled!.style.background).toBe('transparent')
   })
 
+  it('active item gets an active-hover background on hover (not the plain hover token)', () => {
+    const { container } = render(
+      <IrisNavMenu
+        activeKey="active"
+        items={[
+          { key: 'active', title: 'Active' },
+          { key: 'other', title: 'Other' },
+        ]}
+      />,
+    )
+    const [active, other] = navItems(container)
+    expect(active!.style.background).toBe('var(--iris-primary)')
+    fireEvent.mouseEnter(active!)
+    // active + hover → active-hover 变体（primary 加深），而非普通 hover token
+    expect(active!.style.background).toBe(
+      'var(--iris-nav-item-active-hover, color-mix(in srgb, var(--iris-primary) 88%, black))',
+    )
+    fireEvent.mouseLeave(active!)
+    expect(active!.style.background).toBe('var(--iris-primary)')
+    fireEvent.mouseEnter(other!)
+    expect(other!.style.background).toBe('var(--iris-surface-hover, var(--iris-surface))')
+  })
+
   it('Arrow Down / Up / Home / End move focus between visible items', () => {
     const { container } = render(<IrisNavMenu items={items} />, {
       container: document.body.appendChild(document.createElement('div')),

@@ -358,3 +358,48 @@ export interface IrisTableMergeFooterItem {
    * own data, like `footerSpanMethod`'s rowspan. */
   rowspan?: number
 }
+
+/**
+ * Imperative row operations (vxe-grid insert/remove/setRow parity, key
+ * addressing). Assigned to `tableRef.current` on mount; every op applies a
+ * core pure helper, commits through the cell-edit write-back channel and
+ * fires `onDataChange`. Missing keys are silent no-ops.
+ */
+export interface IrisTableHandle<Row extends Record<string, unknown> = Record<string, unknown>> {
+  /** Insert a row at `index` (default: end). A missing `rowKeyField` value gets an auto id. */
+  insertRow: (row: Row, index?: number) => void
+  /** Remove the row with `key`; its selection is pruned. */
+  removeRow: (key: string | number) => void
+  /** Batch-remove several rows by key (vxe removeRows parity): missing keys are silent no-ops, selection is pruned, one onDataChange fires. */
+  removeRows: (keys: Array<string | number>) => void
+  /** Patch the row with `key` ({ ...row, ...patch }). */
+  updateRow: (key: string | number, patch: Partial<Row>) => void
+  /** Re-fetch the current page (proxy mode). */
+  refetch: () => void
+  /** Snapshot (copy) of the current live row list (vxe getTableData parity). */
+  getData: () => Row[]
+  /** Current selection keys (vxe getCheckboxRecords parity). */
+  getSelection: () => Array<string | number>
+  /** Clear every selected row (vxe clearCheckboxRow parity). */
+  clearSelection: () => void
+  /** Select every checkMethod-eligible row of the current page (vxe
+   * setAllCheckboxRow(true) parity — `checkMethod` rows are skipped). */
+  selectAll: () => void
+  /** Toggle a single row's selection by key (vxe toggleCheckboxRow parity —
+   * a direct toggle that bypasses `checkMethod`). */
+  toggleRowSelection: (key: string | number) => void
+  /** Scroll the row with `key` into view (vxe scrollToRow parity); no-op when the row is not rendered. */
+  scrollToRow: (key: string | number) => void
+  /** Toggle a row's expand state (vxe toggleRowExpand parity): tree mode toggles the caret, detail mode the panel; no-op for plain tables. */
+  toggleRowExpand: (key: string | number) => void
+  /** Clear the active sort (vxe clearSort parity) — single and multi channels. */
+  clearSort: () => void
+  /** Clear every filter channel (vxe clearFilter parity): text filters + checked sets. */
+  clearFilter: () => void
+  /** Set the current (highlighted) row (vxe setCurrentRow parity); no-op without onCurrentRowChange (or an unknown key). */
+  setCurrentRow: (key: string | number) => void
+  /** Set the current (highlighted) column (vxe setCurrentColumn parity); no-op without onCurrentColumnChange (or an unknown key). */
+  setCurrentColumn: (key: string) => void
+}
+
+/** Pager configuration (vxe-grid pagerConfig parity). */

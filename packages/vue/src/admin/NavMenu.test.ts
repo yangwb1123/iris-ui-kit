@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+/* eslint-disable @typescript-eslint/no-unused-vars -- 远端拆分移入的共享数据 */
+import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { IrisNavMenu } from './NavMenu'
 import type { NavNode } from '@iris-ui-kit/core'

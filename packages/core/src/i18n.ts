@@ -117,6 +117,7 @@ export const defaultMessages: I18nMessages = {
   'table.filterConfirm': 'Confirm',
   'table.filterClear': 'Clear',
   'table.filter': 'Filter',
+  'table.total': 'Total {total}',
   'fnr.find': 'Find',
   'fnr.replace': 'Replace',
   'fnr.replaceAll': 'Replace all',

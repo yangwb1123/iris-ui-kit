@@ -319,3 +319,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-s-gate.md [ok]: 批 S Gate — PASS ✅: **Review verdict**: PASS（3 × LOW 非阻塞发现，已全部按评审处方修复）; Review fixes applied: 1. **A11y 回归** — 面板 checkbox 行包进 `<label>`（恢复无障碍名 + 标题可点击切换）; Full gate results: | 门 | 结果 |; Docs: - **comparison doc**：文首新增「最终覆盖总结」——vxe `tableProps` ~90 项全部覆盖（react）；`customConfig` 行标记 ✅（react）；批 S 构建行；总数刷新（react 1754; Commit: **`5b8e12ce`** — `feat(table): vxe-grid 批 S——customConfig 自定义列面板（react only，功能面全覆盖）`（6 files, +318/−77；工作树干净）
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-s-gate.md
+
+## 2026-08-10 21:26:43 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-t-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-t-baseline.md
+
+## 2026-08-10 21:44:08 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-t-adapt.md [ok]: Summary: **Implemented (all four work items, react-only, additive):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-t-adapt.md
+
+## 2026-08-10 21:49:56 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-t-review.md [ok]: Verdict: PASS: Wrote `docs/vxe-grid/batch-t-review.md`. No files modified.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-t-review.md
+
+## 2026-08-11 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-t-gate.md [ok]: 批 T Gate — PASS ✅: **Review verdict**: PASS（4 × LOW 非阻塞）; Gate fixes applied: 1. lint 阻断 `no-useless-escape` 裸转义; 2. **toggleRowExpand 事件陈旧闭包（F2）** — 改 `expansion.isExpanded` 活读模型索引（第二次调用仍上报旧状态）; 3. 测试断言 jsdom/nwsapi 引号选择器改为属性扫描; Full gate results: 180/180 turbo · react 1779/1779（+24 新）· lint 0 errors · audit 0 · manifest up-to-date; Docs: comparison doc 标记 radio 单列/showTotal/handle 方法/事件 4 行 ✅ + 批 T 构建行 + 总数（react 1779 · core 1249 · 7380 total）; 移除 scratch-debug.test.tsx 调试废码; Commit: **`<HASH>`** — `feat(table): vxe-grid 批 T——表格方法/事件补齐/radio 列/分页总数（react only）`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-t-gate.md

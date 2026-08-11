@@ -36240,6 +36240,12 @@
           "description": "Fired when the current column changes (header click)."
         },
         {
+          "name": "onHeaderClick",
+          "type": "(column: IrisTableColumn<Row>) => void",
+          "optional": true,
+          "description": "Header cell click (vxe header-click parity). Fired after the sort toggle on sortable headers."
+        },
+        {
           "name": "beforeCurrentColumnChange",
           "type": "(key: string) => boolean | void",
           "optional": true,
@@ -36351,6 +36357,12 @@
           "description": "Cell click (vxe cell-click parity). Fired after internal handlers."
         },
         {
+          "name": "onCellDblClick",
+          "type": "(params: import('./types').IrisTableCellClickParams<Row>) => void",
+          "optional": true,
+          "description": "Cell double-click (vxe cell-dblclick parity). Fired AFTER the inline edit starts on editable columns; non-editable columns fire it too."
+        },
+        {
           "name": "bordered",
           "type": "boolean",
           "optional": true
@@ -36396,6 +36408,12 @@
           "description": "Called when a data row is clicked. Interactive child controls stop propagation."
         },
         {
+          "name": "onRowDblClick",
+          "type": "(row: Row, rowIndex: number) => void",
+          "optional": true,
+          "description": "Row double-click (vxe row-dblclick parity)."
+        },
+        {
           "name": "columnVisibility",
           "type": "Record<string, boolean>",
           "optional": true,
@@ -36429,7 +36447,7 @@
           "name": "onFiltersChange",
           "type": "(next: Record<string, string>) => void",
           "optional": true,
-          "description": "Fired when a filter value changes (parent owns the map)."
+          "description": "Fired when a filter value changes (parent owns the map). Batch T: this IS the text filter channel (vxe filter-change parity) — a separate `onFilterChange` prop was intentionally NOT added; checked sets use `onFilterValuesChange`."
         },
         {
           "name": "filterValues",
@@ -36549,6 +36567,18 @@
           "type": "(keys: Array<string | number>) => void",
           "optional": true,
           "description": "Notified with the expanded row keys whenever they change."
+        },
+        {
+          "name": "onExpandChange",
+          "type": "(row: Row, expanded: boolean) => void",
+          "optional": true,
+          "description": "Detail expand toggle (vxe toggle-row-expand parity): `expanded` is the NEW state after the toggle."
+        },
+        {
+          "name": "onTreeExpandChange",
+          "type": "(row: Row, expanded: boolean) => void",
+          "optional": true,
+          "description": "Tree expand toggle (vxe toggle-tree-expand parity): `expanded` is the NEW state after the toggle."
         },
         {
           "name": "getSubRows",
@@ -36907,6 +36937,12 @@
               "description": "Fired when the current column changes (header click)."
             },
             {
+              "name": "onHeaderClick",
+              "type": "(column: IrisTableColumn<Row>) => void",
+              "optional": true,
+              "description": "Header cell click (vxe header-click parity). Fired after the sort toggle on sortable headers."
+            },
+            {
               "name": "beforeCurrentColumnChange",
               "type": "(key: string) => boolean | void",
               "optional": true,
@@ -37018,6 +37054,12 @@
               "description": "Cell click (vxe cell-click parity). Fired after internal handlers."
             },
             {
+              "name": "onCellDblClick",
+              "type": "(params: import('./types').IrisTableCellClickParams<Row>) => void",
+              "optional": true,
+              "description": "Cell double-click (vxe cell-dblclick parity). Fired AFTER the inline edit starts on editable columns; non-editable columns fire it too."
+            },
+            {
               "name": "bordered",
               "type": "boolean",
               "optional": true
@@ -37063,6 +37105,12 @@
               "description": "Called when a data row is clicked. Interactive child controls stop propagation."
             },
             {
+              "name": "onRowDblClick",
+              "type": "(row: Row, rowIndex: number) => void",
+              "optional": true,
+              "description": "Row double-click (vxe row-dblclick parity)."
+            },
+            {
               "name": "columnVisibility",
               "type": "Record<string, boolean>",
               "optional": true,
@@ -37096,7 +37144,7 @@
               "name": "onFiltersChange",
               "type": "(next: Record<string, string>) => void",
               "optional": true,
-              "description": "Fired when a filter value changes (parent owns the map)."
+              "description": "Fired when a filter value changes (parent owns the map). Batch T: this IS the text filter channel (vxe filter-change parity) — a separate `onFilterChange` prop was intentionally NOT added; checked sets use `onFilterValuesChange`."
             },
             {
               "name": "filterValues",
@@ -37216,6 +37264,18 @@
               "type": "(keys: Array<string | number>) => void",
               "optional": true,
               "description": "Notified with the expanded row keys whenever they change."
+            },
+            {
+              "name": "onExpandChange",
+              "type": "(row: Row, expanded: boolean) => void",
+              "optional": true,
+              "description": "Detail expand toggle (vxe toggle-row-expand parity): `expanded` is the NEW state after the toggle."
+            },
+            {
+              "name": "onTreeExpandChange",
+              "type": "(row: Row, expanded: boolean) => void",
+              "optional": true,
+              "description": "Tree expand toggle (vxe toggle-tree-expand parity): `expanded` is the NEW state after the toggle."
             },
             {
               "name": "getSubRows",
@@ -37433,6 +37493,7 @@
           ],
           "events": [
             "onCellClick",
+            "onCellDblClick",
             "onCellEdit",
             "onColumnOrderChange",
             "onColumnVisibilityChange",
@@ -37440,14 +37501,18 @@
             "onCurrentColumnChange",
             "onCurrentRowChange",
             "onDataChange",
+            "onExpandChange",
             "onExpandedRowsChange",
             "onFilterValuesChange",
             "onFiltersChange",
+            "onHeaderClick",
             "onMultiSortChange",
             "onRetry",
             "onRowClick",
+            "onRowDblClick",
             "onSelectionChange",
-            "onSortChange"
+            "onSortChange",
+            "onTreeExpandChange"
           ],
           "slots": [
             "emptyState",
@@ -38075,15 +38140,20 @@
         "onMultiSortChange",
         "onCurrentRowChange",
         "onCurrentColumnChange",
+        "onHeaderClick",
         "onCellClick",
+        "onCellDblClick",
         "onColumnWidthsChange",
         "onRowClick",
+        "onRowDblClick",
         "onColumnVisibilityChange",
         "onColumnOrderChange",
         "onFiltersChange",
         "onFilterValuesChange",
         "onCellEdit",
         "onExpandedRowsChange",
+        "onExpandChange",
+        "onTreeExpandChange",
         "onRetry",
         "onDataChange"
       ],
@@ -38093,8 +38163,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 110,
-        "eventCount": 16
+        "propCount": 115,
+        "eventCount": 21
       }
     },
     {

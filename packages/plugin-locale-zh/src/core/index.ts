@@ -58,6 +58,7 @@ export const zhCNMessages: Record<string, string> = {
   'table.filterConfirm': '确定',
   'table.filterClear': '清除',
   'table.filter': '筛选',
+  'table.total': '共 {total} 条',
   'fnr.find': '查找',
   'fnr.replace': '替换',
   'fnr.replaceAll': '全部替换',

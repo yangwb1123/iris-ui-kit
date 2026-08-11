@@ -119,7 +119,9 @@ describe('IrisTable toolbar.batch (batch M)', () => {
         toolbar={{ batch: { label: 'Delete', onClick } }}
       />,
     )
-    fireEvent.click(container.querySelector('[data-iris-table-row="1"] input[type="checkbox"]')!)
+    // Single mode renders a native radio (batch T) — never a checkbox, so
+    // the batch toolbar stays hidden.
+    fireEvent.click(container.querySelector('[data-iris-table-row="1"] input[type="radio"]')!)
     expect(container.querySelector('[data-iris-table-toolbar-batch]')).toBeNull()
     expect(onClick).not.toHaveBeenCalled()
   })

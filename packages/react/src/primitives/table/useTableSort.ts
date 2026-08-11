@@ -48,6 +48,8 @@ export interface UseTableSortResult<Row> {
   multiSortState: IrisTableSortState[]
   /** Cycle a column in multi mode: append asc → asc→desc → remove from the list. */
   cycleMultiSort: (col: IrisTableColumn<Row>) => void
+  /** Directly set the multi-column sort list. */
+  setMultiSort: (next: IrisTableSortState[]) => void
 }
 
 /** Per-column comparator: `col.sorter` or a value-based default (honoring
@@ -221,5 +223,6 @@ export function useTableSort<Row extends Record<string, unknown>>(
     multiSortState,
     cycleMultiSort,
     multiSortComparator,
+    setMultiSort,
   }
 }

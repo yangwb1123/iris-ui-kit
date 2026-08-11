@@ -47,7 +47,8 @@ import { useI18n } from '../../i18n'
 import { useDrag } from '../drag/useDrag'
 import { IrisPagination } from '../pagination'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
-import type { IrisTableHandle, IrisTableProps, IrisTableProxyConfig } from './props'
+import type { IrisTableProps, IrisTableProxyConfig } from './props'
+import type { IrisTableHandle } from './types'
 
 const TABLE_ROW_CSS = `
 [data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover {
@@ -644,6 +645,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   currentColumnKey,
   onCurrentColumnChange,
   beforeCurrentColumnChange,
+  onHeaderClick,
   showHeader = true,
   footerData,
   footerMethod,
@@ -672,6 +674,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   headerCellStyle,
   footerCellStyle,
   onCellClick,
+  onCellDblClick,
   bordered = true,
   round = false,
   padding,
@@ -680,6 +683,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   defaultColumnWidths,
   onColumnWidthsChange,
   onRowClick,
+  onRowDblClick,
   onCellEdit,
   tableRef,
   onDataChange,
@@ -694,6 +698,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   columnOrder,
   onColumnOrderChange,
   filters,
+  onFiltersChange,
   filterValues,
   onFilterValuesChange,
   formConfig,
@@ -711,6 +716,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   defaultExpandedRowKeys,
   expandAll = false,
   onExpandedRowsChange,
+  onExpandChange,
+  onTreeExpandChange,
   getSubRows,
   lazyLoad,
   keyboardNavigation = false,
@@ -909,10 +916,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const {
     sortState: sort,
     cycleSort,
+    setSort,
     sortComparator,
     sortedData: localSortedData,
     multiSortState,
     cycleMultiSort,
+    setMultiSort,
     multiSortComparator,
   } = useTableSort<Row>(liveData, {
     leafColumns,
@@ -2024,6 +2033,73 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // vxe toggleCheckboxRow: a DIRECT toggle by key — bypasses checkMethod.
       selModel.toggle(key)
     },
+    // ── Imperative view methods (vxe-grid scrollToRow / toggleRowExpand /
+    // clearSort / clearFilter / setCurrentRow / setCurrentColumn parity, batch T)
+    scrollToRow: (key) => {
+      // The row DOM node is located via the same data attribute the row-drag
+      // path uses (flat, tree, grouped and virtual rows all carry it). Guarded
+      // for jsdom, which does not implement scrollIntoView. The selector is
+      // escaped for attribute values (a raw `"` in a key would otherwise make
+      // querySelector throw); jsdom lacks CSS.escape, so fall back to attribute
+      // iteration there.
+      const keyStr = String(key)
+      const root = rootRef.current
+      if (!root) return
+      const el =
+        typeof CSS !== 'undefined' && CSS.escape
+          ? root.querySelector<HTMLElement>(`[data-iris-table-row="${CSS.escape(keyStr)}"]`)
+          : Array.from(root.querySelectorAll<HTMLElement>('[data-iris-table-row]')).find(
+              (n) => n.getAttribute('data-iris-table-row') === keyStr,
+            )
+      el?.scrollIntoView?.({ block: 'nearest' })
+    },
+    toggleRowExpand: (key) => {
+      // Tree mode and detail mode share the single expansion model — both
+      // render toggles route through expansion.toggle. No-op for plain tables.
+      if (!treeMode && !hasDetail) return
+      const idx = liveDataRef.current.findIndex((r, i) => rowKeyOf(r, i) === key)
+      if (idx < 0) return
+      const row = liveDataRef.current[idx]
+      // Mirror the row-click path's gate: detail expansion respects rowExpandable.
+      if (hasDetail && !isRowExpandable(row, idx)) return
+      const keyStr = String(key)
+      // Live read via the model index: the handle runs against the MOUNT-time
+      // closure, so the render snapshot `expandedKeys` would go stale across
+      // toggles (second call would re-report the pre-first-toggle state).
+      // isExpanded matches the click path's `!expandedKeys.includes(...)`
+      // semantics against the SAME model.
+      const wasExpanded = expansion.isExpanded(keyStr)
+      expansion.toggle(keyStr)
+      // vxe toggle-row-expand parity: events fire with the NEW state, and the
+      // same channel as the corresponding render toggle (detail vs tree).
+      if (hasDetail) onExpandChange?.(row, !wasExpanded)
+      if (treeMode) onTreeExpandChange?.(row, !wasExpanded)
+    },
+    clearSort: () => {
+      // Multi mode owns the sort list; single mode the one-column state.
+      if (multiSort) setMultiSort([])
+      else setSort(null)
+    },
+    clearFilter: () => {
+      // Both filter channels are CONTROLLED (no internal mode — batch I), so
+      // the change handlers own the reset; without handlers the parent map
+      // stays untouched (read-only table, documented).
+      onFiltersChange?.({})
+      onFilterValuesChange?.({})
+    },
+    setCurrentRow: (key) => {
+      // Mirror the row-click path's veto guards: fire only when the row
+      // exists AND the handler is provided (no-op otherwise, documented).
+      const row = liveDataRef.current.find((r, i) => rowKeyOf(r, i) === key)
+      if (row !== undefined && onCurrentRowChange) {
+        if (beforeCurrentRowChange?.(key, row) !== false) onCurrentRowChange(key, row)
+      }
+    },
+    setCurrentColumn: (key) => {
+      // Mirror the header-click path (setCurrentColumn helper + veto guard).
+      const col = leafColumns.find((c) => c.key === key)
+      if (col) setCurrentColumn(col)
+    },
   }
   React.useEffect(() => {
     if (tableRef) tableRef.current = handleRef.current
@@ -2886,6 +2962,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
             if (beforeCurrentRowChange?.(k, row) !== false) onCurrentRowChange(k, row)
           }
         }}
+        onDoubleClick={() => {
+          onRowDblClick?.(row, idx)
+        }}
         className={rowClassName?.(row, idx)}
         style={{
           display: 'grid',
@@ -2962,6 +3041,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 onClick={(e) => {
                   e.stopPropagation()
                   expansion.toggle(String(k))
+                  // vxe toggle-row-expand parity: `expanded` is the NEW state.
+                  onExpandChange?.(row, !expandedKeys.includes(String(k)))
                 }}
                 style={{
                   border: 'none',
@@ -3008,12 +3089,28 @@ export function IrisTable<Row extends Record<string, unknown>>({
               borderBottom: borderStyle,
             }}
           >
-            <IrisCheckbox
-              checked={selected}
-              disabled={checkMethod ? !checkMethod(row, idx) : false}
-              onChange={() => toggleRow(row, idx)}
-              aria-label={t('table.selectRow', { key: String(k ?? idx) })}
-            />
+            {selectable === 'multi' ? (
+              <IrisCheckbox
+                checked={selected}
+                disabled={checkMethod ? !checkMethod(row, idx) : false}
+                onChange={() => toggleRow(row, idx)}
+                aria-label={t('table.selectRow', { key: String(k ?? idx) })}
+              />
+            ) : (
+              // Single mode renders a native radio circle (vxe type='radio'
+              // column parity): accent-color drives the checked ring via the
+              // primary token; same aria/disabled/onChange semantics as the
+              // checkbox; the header cell stays empty (unchanged).
+              <input
+                type="radio"
+                data-iris-table-radio=""
+                checked={selected}
+                disabled={checkMethod ? !checkMethod(row, idx) : false}
+                onChange={() => toggleRow(row, idx)}
+                aria-label={t('table.selectRow', { key: String(k ?? idx) })}
+                style={{ accentColor: 'var(--iris-primary)', margin: 0, cursor: 'pointer' }}
+              />
+            )}
           </div>
         ) : null}
         {leafColumns.map((col, ci) => {
@@ -3088,13 +3185,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   }
                 : null)}
               onDoubleClick={
-                rowMode
-                  ? k != null
-                    ? () => switchRowEdit(row, idx, col.key)
-                    : undefined
-                  : col.editable
-                    ? () => beginEdit(row, col, k, idx)
-                    : undefined
+                onCellDblClick || rowMode || col.editable
+                  ? () => {
+                      // Internal behavior first (vxe parity): row mode opens the
+                      // row editor, editable columns begin the cell edit — then
+                      // the informational event fires for EVERY column (batch T).
+                      if (rowMode) {
+                        if (k != null) switchRowEdit(row, idx, col.key)
+                      } else if (col.editable) {
+                        beginEdit(row, col, k, idx)
+                      }
+                      onCellDblClick?.({ row, column: col, rowIndex: idx, columnIndex: ci })
+                    }
+                  : undefined
               }
               onContextMenu={
                 contextMenu ? (e) => handleContextMenu(e, row, col, idx, ci) : undefined
@@ -3163,6 +3266,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         e.stopPropagation()
                         if (treeMeta.hasChildren) {
                           expansion.toggle(treeMeta.key)
+                          // vxe toggle-tree-expand parity: `expanded` is the NEW state.
+                          onTreeExpandChange?.(row, !treeMeta.expanded)
                           return
                         }
                         // Lazy leaf: first expand fetches the children. Loading
@@ -3188,6 +3293,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
                             lazyChildrenRef.current.set(treeMeta.key, children)
                             if (children && children.length > 0) {
                               expansion.toggle(treeMeta.key)
+                              // Lazy load resolved children: the row just expanded.
+                              onTreeExpandChange?.(row, true)
                             }
                             clearLoading()
                           })
@@ -4275,7 +4382,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
                           : undefined
                     }
                     tabIndex={sortable ? 0 : undefined}
-                    onClick={sortable ? () => cycleHeaderSort(col) : undefined}
+                    onClick={
+                      sortable
+                        ? () => {
+                            cycleHeaderSort(col)
+                            // vxe header-click parity: informational — after the sort toggle.
+                            onHeaderClick?.(col)
+                          }
+                        : () => onHeaderClick?.(col)
+                    }
                     onKeyDown={sortable ? (e) => onHeaderKeyDown(e, col) : undefined}
                     style={{
                       gridColumn: `${lead + cell.colStart} / span ${cell.colSpan}`,
@@ -4412,8 +4527,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       ? () => {
                           cycleHeaderSort(col)
                           setCurrentColumn(col)
+                          // vxe header-click parity: informational — after the sort toggle.
+                          onHeaderClick?.(col)
                         }
-                      : () => setCurrentColumn(col)
+                      : () => {
+                          setCurrentColumn(col)
+                          onHeaderClick?.(col)
+                        }
                   }
                   onKeyDown={col.sortable ? (e) => onHeaderKeyDown(e, col) : undefined}
                   data-iris-table-header={col.key}
@@ -4640,6 +4760,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
             <div
               style={{ display: 'flex', alignItems: 'center', gap: 'var(--iris-space-xs, 8px)' }}
             >
+              {pagerConfig?.showTotal ? (
+                <span
+                  data-iris-table-total=""
+                  style={{ color: 'var(--iris-muted)', whiteSpace: 'nowrap' }}
+                >
+                  {t('table.total', { total: proxyState.total })}
+                </span>
+              ) : null}
               {pagerConfig?.pageSizes && pagerConfig.pageSizes.length > 0 ? (
                 <IrisSelect
                   items={pagerConfig.pageSizes.map((s) => ({

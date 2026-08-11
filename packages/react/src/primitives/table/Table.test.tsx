@@ -149,13 +149,14 @@ describe('@iris-ui-kit/react IrisTable', () => {
         onSelectionChange={onChange}
       />,
     )
-    const checkboxes = Array.from(document.querySelectorAll('input[type=checkbox]'))
+    // Single mode renders a native radio per row (batch T, vxe type='radio').
+    const radios = Array.from(document.querySelectorAll('input[type=radio]'))
     act(() => {
-      fireEvent.click(checkboxes[0]!)
+      fireEvent.click(radios[0]!)
     })
     expect(onChange).toHaveBeenCalledWith([1])
     act(() => {
-      fireEvent.click(checkboxes[1]!)
+      fireEvent.click(radios[1]!)
     })
     expect(onChange).toHaveBeenCalledWith([2])
   })

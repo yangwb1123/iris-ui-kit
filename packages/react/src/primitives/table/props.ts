@@ -67,42 +67,13 @@ export interface IrisTableFormConfig {
   onReset?: (values: Record<string, string>) => void
 }
 
-/**
- * Imperative row operations (vxe-grid insert/remove/setRow parity, key
- * addressing). Assigned to `tableRef.current` on mount; every op applies a
- * core pure helper, commits through the cell-edit write-back channel and
- * fires `onDataChange`. Missing keys are silent no-ops.
- */
-export interface IrisTableHandle<Row extends Record<string, unknown> = Record<string, unknown>> {
-  /** Insert a row at `index` (default: end). A missing `rowKeyField` value gets an auto id. */
-  insertRow: (row: Row, index?: number) => void
-  /** Remove the row with `key`; its selection is pruned. */
-  removeRow: (key: string | number) => void
-  /** Batch-remove several rows by key (vxe removeRows parity): missing keys are silent no-ops, selection is pruned, one onDataChange fires. */
-  removeRows: (keys: Array<string | number>) => void
-  /** Patch the row with `key` ({ ...row, ...patch }). */
-  updateRow: (key: string | number, patch: Partial<Row>) => void
-  /** Re-fetch the current page (proxy mode). */
-  refetch: () => void
-  /** Snapshot (copy) of the current live row list (vxe getTableData parity). */
-  getData: () => Row[]
-  /** Current selection keys (vxe getCheckboxRecords parity). */
-  getSelection: () => Array<string | number>
-  /** Clear every selected row (vxe clearCheckboxRow parity). */
-  clearSelection: () => void
-  /** Select every checkMethod-eligible row of the current page (vxe
-   * setAllCheckboxRow(true) parity — `checkMethod` rows are skipped). */
-  selectAll: () => void
-  /** Toggle a single row's selection by key (vxe toggleCheckboxRow parity —
-   * a direct toggle that bypasses `checkMethod`). */
-  toggleRowSelection: (key: string | number) => void
-}
-
 /** Pager configuration (vxe-grid pagerConfig parity). */
 export interface IrisTablePagerConfig {
   /** Rows-per-page options rendered as a size selector next to the pager. A
    * change re-queries with the new size and resets the page to 1. */
   pageSizes?: number[]
+  /** Show the total-row count (i18n `table.total`) before the size selector (vxe pagerConfig.showTotal parity). */
+  showTotal?: boolean
 }
 
 /** Public input surface for the React table adapter. */
@@ -145,6 +116,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   currentColumnKey?: string
   /** Fired when the current column changes (header click). */
   onCurrentColumnChange?: (key: string) => void
+  /** Header cell click (vxe header-click parity). Fired after the sort toggle on sortable headers. */
+  onHeaderClick?: (column: IrisTableColumn<Row>) => void
   /** Veto a current-column change: return false to keep the previous column. */
   beforeCurrentColumnChange?: (key: string) => boolean | void
   /** Hide the header row(s) (vxe show-header parity). Default true. */
@@ -211,6 +184,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   footerCellStyle?: (column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties
   /** Cell click (vxe cell-click parity). Fired after internal handlers. */
   onCellClick?: (params: import('./types').IrisTableCellClickParams<Row>) => void
+  /** Cell double-click (vxe cell-dblclick parity). Fired AFTER the inline edit starts on editable columns; non-editable columns fire it too. */
+  onCellDblClick?: (params: import('./types').IrisTableCellClickParams<Row>) => void
   bordered?: boolean
   /**
    * Rounded root corners (vxe-grid round parity, batch P): the root gets
@@ -233,6 +208,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   onColumnWidthsChange?: (next: IrisTableColumnWidths) => void
   /** Called when a data row is clicked. Interactive child controls stop propagation. */
   onRowClick?: (row: Row, rowIndex: number) => void
+  /** Row double-click (vxe row-dblclick parity). */
+  onRowDblClick?: (row: Row, rowIndex: number) => void
   /**
    * Column visibility (vxe-grid columnConfig.visible parity). Map of
    * column key → visible (default true). Hidden columns are not rendered.
@@ -246,7 +223,7 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   onColumnOrderChange?: (order: string[] | undefined) => void
   /** Client-side filters (vxe-grid filterConfig parity, local mode): column key → filter text; rows filtered with the core filterSort material (substring, case-insensitive). */
   filters?: Record<string, string>
-  /** Fired when a filter value changes (parent owns the map). */
+  /** Fired when a filter value changes (parent owns the map). Batch T: this IS the text filter channel (vxe filter-change parity) — a separate `onFilterChange` prop was intentionally NOT added; checked sets use `onFilterValuesChange`. */
   onFiltersChange?: (next: Record<string, string>) => void
   /** Per-column checked filter sets (vxe filter-multiple parity): column key → values OR-matched against the raw `String(value)` of each row. Controlled via `onFilterValuesChange`; without a handler read-only. */
   filterValues?: import('./types').IrisTableFilterValues
@@ -357,6 +334,10 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   expandAll?: boolean
   /** Notified with the expanded row keys whenever they change. */
   onExpandedRowsChange?: (keys: Array<string | number>) => void
+  /** Detail expand toggle (vxe toggle-row-expand parity): `expanded` is the NEW state after the toggle. */
+  onExpandChange?: (row: Row, expanded: boolean) => void
+  /** Tree expand toggle (vxe toggle-tree-expand parity): `expanded` is the NEW state after the toggle. */
+  onTreeExpandChange?: (row: Row, expanded: boolean) => void
   /** Read a row's child rows to render the table as a tree. */
   getSubRows?: (row: Row) => Row[] | undefined
   /** Lazy tree (vxe lazyLoad parity): a row with no `getSubRows` children still renders a caret; the first expand calls this and `load` resolves the children (expanding the row). */

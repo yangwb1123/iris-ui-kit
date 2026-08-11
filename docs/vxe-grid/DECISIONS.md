@@ -381,3 +381,13 @@
 - Decisions（类型文档化）：loadData 走 commitRowList 写回通道（fire onDataChange）；core remote source 无 setData → 代理 total 在下次 query 前不变（文档化）；reloadData = refetch 别名；commitProxy = setParams 合并重查；getProxyInfo = getState 快照（page/pageSize/total），无代理 null。onEditClosed 只报 cell 模式同步提交（行编辑会话按列独立 store 不报告、异步校验落盘不报告——文档化简化）；onSelectAllChange 报 pre-toggle 态 + 当前选择（vxe 无此 emit，增量）；onScroll 虚拟列模式扩展 JSX handler，非虚拟时原生监听（仅 height 固定时有意义）。
 - Verification: react typecheck ✓ · react tests **1810/1810**（160 files，含新 10）· lint **0 errors**（1 pre-existing complexity warning）· spec.py all **0 violations** · manifest 重新生成（react table 117→121 props、21→25 events，155 组件全框架对齐不变，diff 纯增量）。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-v-baseline.md
+
+## 2026-08-11 00:57:04 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-v-adapt.md [ok]: Report: **Context:** The previous attempt at batch V had timed out mid-implementation, leaving a near-complete working tree. I r
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-v-adapt.md
+
+## 2026-08-11 01:09:09 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-v-review.md [ok]: Verdict: **PASS** — 3 low findings, none blocking: **Verification run:** react tests 1810/1810 (160 files) · typecheck 0 errors · lint 0 errors (1 pre-existing complexity
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-v-review.md

@@ -692,3 +692,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ai-review.md [ok]: Verdict: **FAIL** — review written to `docs/vxe-grid/batch-ai-review.md`: **Confirmed blocker (medium)** — sort "last-user-action-wins" is documented (baseline, adapt doc, code comment at `Table
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ai-review.md
+
+## 2026-08-12 01:36:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ai-gate.md [ok]: Gate complete — PASS: The review verdict was **FAIL** with one confirmed blocker; I applied the fix, reran the full gate, and committed.; Fix (review blocker #1, medium): `packages/react/src/primitives/table/Table.tsx` — the `querySort` memo now steps aside when the effective sort state is ; Full gate results: - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks** (5m11s); Final test counts: - **vitest total: 7664 passed, 0 failed** — react **1884** (query-input 7/7 incl. new takeover test, table 83/83), core ; Commits: - **`7d8f5b42`** — `feat(table): grid 批 AI——自然语言查询（iris AI 原生定位）` (5 files, +87/−67)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ai-gate.md

@@ -594,3 +594,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ae-review.md [ok]: Verdict: **PASS**: Full report: `docs/vxe-grid/batch-ae-review.md`; Verification run (all green): - **react**: 1828/1828 tests (incl. new `virtual-tree.test.tsx` 5/5 + 2 updated pins), typecheck 0 errors, lint 0 errors; Checklist: 1. **Virtual tree** ✓ — window derives from plan + clamped scrollTop; expansion flows `expandedKeys → plan → items.lengt; Findings (none blocking): 1. **P2** — fix is react-only; vue `TableBody.ts:52`/ solid`TableBody.tsx:115`/ svelte`IrisTable.svelte:1004` still
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ae-review.md
+
+## 2026-08-11 17:19:36 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ae-gate.md [ok]: Summary: **Verdict**: PASS (no blocking findings; 2 P2/P3 handoffs documented as交接项).; Full repo gate — all green: - **turbo `test typecheck lint build`**: `EXIT=0` — **180/180 tasks** (132 cached, 48 executed), 1m33s; Final test counts: | Suite | Tests |; Docs updated (`docs/vxe-grid-comparison.md`): - 最终覆盖总结: added **批 AE（虚拟树 + 四框架 example）** paragraph incl. handoffs (vue/solid/svelte 旧组合守卫 + 三端 example e2e); Commit: ```
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ae-gate.md

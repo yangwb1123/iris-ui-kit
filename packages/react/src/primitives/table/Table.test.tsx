@@ -1080,6 +1080,18 @@ describe('@iris-ui-kit/react exportExcel', () => {
     expect(xml).toContain('<Data ss:Type="String">Charlie</Data>')
     expect(xml).toContain('<Data ss:Type="Number">25</Data>')
   })
+
+  it('forwards headerStyle and columnWidths to the core serializer', () => {
+    const cols: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name' },
+      { key: 'age', title: 'Age' },
+    ]
+    const xml = exportExcel(rows, cols, { headerStyle: true, columnWidths: [12, 6] })
+    expect(xml).toContain('<Styles><Style ss:ID="Header"><Font ss:Bold="1"/></Style></Styles>')
+    expect(xml).toContain('<Cell ss:StyleID="Header"><Data ss:Type="String">Name</Data></Cell>')
+    expect(xml).toContain('<Column ss:Width="63"/>')
+    expect(xml).toContain('<Column ss:Width="31.5"/>')
+  })
 })
 
 describe('@iris-ui-kit/react IrisTable column virtualization', () => {

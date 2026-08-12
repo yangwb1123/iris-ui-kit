@@ -111,6 +111,17 @@ export function toHtml(
 export interface SpreadsheetXmlOptions {
   /** Worksheet tab name. Default `'Sheet1'`. */
   sheetName?: string
+  /**
+   * Emit a `<Styles>` block with a bold font and apply it to the header row
+   * cells (`ss:StyleID="Header"`). Default false (style-less output).
+   */
+  headerStyle?: boolean
+  /**
+   * Column widths in characters (Excel's display unit; converted to points at
+   * 5.25pt/char). Values are clamped to the column count; non-finite or
+   * non-positive entries are skipped (the column keeps its default width).
+   */
+  columnWidths?: number[]
 }
 
 function escapeXml(value: string): string {
@@ -122,18 +133,39 @@ function escapeXml(value: string): string {
     .replace(/'/g, '&apos;')
 }
 
-function cell(value: unknown): string {
-  if (value == null) return '<Cell><Data ss:Type="String"></Data></Cell>'
+function cell(value: unknown, styleId?: string): string {
+  const styleAttr = styleId ? ` ss:StyleID="${styleId}"` : ''
+  if (value == null) return `<Cell${styleAttr}><Data ss:Type="String"></Data></Cell>`
   const isNumber = typeof value === 'number' && Number.isFinite(value)
   const type = isNumber ? 'Number' : 'String'
   const text = isNumber ? String(value) : escapeXml(neutralizeFormula(String(value)))
-  return `<Cell><Data ss:Type="${type}">${text}</Data></Cell>`
+  return `<Cell${styleAttr}><Data ss:Type="${type}">${text}</Data></Cell>`
+}
+
+/**
+ * Serialize `columnWidths` (characters → points at 5.25pt/char) as
+ * `<Column ss:Width>` elements, clamped to the column count. Empty when the
+ * option is absent — style-less/width-less output stays byte-identical.
+ */
+function columnWidthsXml(widths: number[] | undefined, columnCount: number): string {
+  if (!widths) return ''
+  const cols: string[] = []
+  for (let i = 0; i < Math.min(widths.length, columnCount); i += 1) {
+    const chars = widths[i]
+    if (typeof chars === 'number' && Number.isFinite(chars) && chars > 0) {
+      const points = Math.round(chars * 5.25 * 100) / 100
+      cols.push(`<Column ss:Width="${points}"/>`)
+    }
+  }
+  return cols.join('')
 }
 
 /**
  * Serialize rows to a SpreadsheetML XML string. Column order sets field order;
  * values are read via `dataIndex` (falling back to `key`). Numeric cells get
- * `ss:Type="Number"` so Excel treats them as numbers, not text.
+ * `ss:Type="Number"` so Excel treats them as numbers, not text. Optional
+ * `headerStyle`/`columnWidths` add a bold header style and `<Column>` widths
+ * (see {@link SpreadsheetXmlOptions}).
  */
 export function toSpreadsheetXml(
   rows: readonly Record<string, unknown>[],
@@ -141,16 +173,22 @@ export function toSpreadsheetXml(
   options: SpreadsheetXmlOptions = {},
 ): string {
   const sheetName = escapeXml(options.sheetName ?? 'Sheet1')
-  const headerRow = `<Row>${columns.map((c) => cell(c.title)).join('')}</Row>`
+  const headerCell = (title: string) => cell(title, options.headerStyle ? 'Header' : undefined)
+  const headerRow = `<Row>${columns.map((c) => headerCell(c.title)).join('')}</Row>`
   const bodyRows = rows
     .map((row) => `<Row>${columns.map((c) => cell(row[c.dataIndex ?? c.key])).join('')}</Row>`)
     .join('')
+  const styles = options.headerStyle
+    ? '<Styles><Style ss:ID="Header"><Font ss:Bold="1"/></Style></Styles>'
+    : ''
+  const cols = columnWidthsXml(options.columnWidths, columns.length)
   return (
     '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<?mso-application progid="Excel.Sheet"?>\n' +
     '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' +
     ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' +
-    `<Worksheet ss:Name="${sheetName}"><Table>${headerRow}${bodyRows}</Table></Worksheet>` +
+    styles +
+    `<Worksheet ss:Name="${sheetName}"><Table>${cols}${headerRow}${bodyRows}</Table></Worksheet>` +
     '</Workbook>'
   )
 }

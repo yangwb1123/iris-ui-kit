@@ -706,7 +706,15 @@
     if (hasDetail) parts.push('40px')
     if (showSelection) parts.push('40px')
     for (const col of leafColumns) {
-      parts.push(`${effectiveWidths[col.key] ?? resolveInitialWidth(col)}px`)
+      const override = effectiveWidths[col.key]
+      // React parity (batch AF): width-less columns render `minmax(0, 1fr)`
+      // (fill the container) instead of the fixed 140px fallback; explicit
+      // widths, resized values and `width: 'auto'` keep their tracks.
+      if (override != null) parts.push(`${override}px`)
+      else if (typeof col.width === 'number') parts.push(`${col.width}px`)
+      else if (col.width === 'auto') parts.push('minmax(max-content, max-content)')
+      else if (typeof col.width === 'string') parts.push(col.width)
+      else parts.push('minmax(0, 1fr)')
     }
     return parts.join(' ')
   })
@@ -1167,7 +1175,7 @@
   data-column-virtualized={columnVirtualization ? 'true' : undefined}
   onkeydown={keyboardNavigation || cellRange ? handleRootKeyDown : undefined}
   onscroll={columnVirtualization ? handleRootScroll : undefined}
-  style="background: var(--iris-background); color: var(--iris-foreground); border: {bordered
+  style="background: var(--iris-background); color: var(--iris-foreground); font-size: var(--iris-font-size-md, 14px); border: {bordered
     ? '1px solid var(--iris-border)'
     : 'none'}; border-radius: var(--iris-radius-md, 6px); overflow: {columnVirtualization
     ? 'auto'
@@ -1253,7 +1261,7 @@
               ? 'pointer'
               : 'default'}; user-select: {sortable
               ? 'none'
-              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-sm, 13px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-md, 14px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
           >
             {col.title}
             {@render sortIndicator(col)}
@@ -1327,7 +1335,7 @@
               ? 'pointer'
               : 'default'}; user-select: {col.sortable
               ? 'none'
-              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-sm, 13px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+              : 'auto'}; background: var(--iris-surface); border-bottom: 1px solid var(--iris-border); font-weight: 600; font-size: var(--iris-font-size-md, 14px); color: var(--iris-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
           >
             {col.title}
             {@render sortIndicator(col)}
@@ -1471,7 +1479,7 @@
         <div
           role="cell"
           data-iris-table-cell="__seq"
-          style="display: flex; align-items: center; justify-content: center; padding: 8px; border-bottom: 1px solid var(--iris-border); color: var(--iris-muted); user-select: none"
+          style="display: flex; align-items: center; justify-content: center; padding: 8px; font-size: var(--iris-font-size-md, 14px); border-bottom: 1px solid var(--iris-border); color: var(--iris-muted); user-select: none"
         >
           {seqValue(index)}
         </div>
@@ -1480,7 +1488,7 @@
         <div
           role="cell"
           data-iris-table-cell="__expand"
-          style="display: flex; align-items: center; justify-content: center; padding: 8px; border-bottom: 1px solid var(--iris-border)"
+          style="display: flex; align-items: center; justify-content: center; padding: 8px; font-size: var(--iris-font-size-md, 14px); border-bottom: 1px solid var(--iris-border)"
         >
           {#if isRowExpandable(row, index)}
             <button

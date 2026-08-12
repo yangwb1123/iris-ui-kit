@@ -500,30 +500,16 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
   )
 
   // ---- Column widths (opt-in resizing) ----
-  // Uncontrolled widths live in `internalWidths`, seeded from each LEAF column's
-  // resolved width (a header-group column carries no body width; only its leaves
-  // do) plus any `defaultColumnWidths` override. Controlled tables render from
-  // the `columnWidths` prop. `effectiveWidths()` is the map the grid template +
-  // column virtualization read; in the off/unset case it still resolves to each
-  // column's natural width, so the rendered grid is unchanged from before.
+  // Uncontrolled widths live in `internalWidths`, seeded from `defaultColumnWidths`
+  // only (mirroring React's sparse `widthsInternal = defaultColumnWidths ?? {}`);
+  // width-less columns resolve through the `?? resolveInitialWidth` fallback in
+  // `widthOf`, so the map stays sparse (a resize emits just the touched keys,
+  // like React). Controlled tables render from the `columnWidths` prop.
+  // `effectiveWidths()` is the map the grid template + column virtualization
+  // read; in the off/unset case it still resolves to each column's natural
+  // width, so the rendered grid is unchanged from before.
   const [internalWidths, setInternalWidths] = createSignal<IrisTableColumnWidths>({
     ...(props.defaultColumnWidths ?? {}),
-  })
-  // Seed any not-yet-seen leaf column on column change (keeps existing entries,
-  // including user-resized + defaultColumnWidths values).
-  createEffect(() => {
-    const cols = leafColumns()
-    setInternalWidths((prev) => {
-      let changed = false
-      const seeded = { ...prev }
-      for (const col of cols) {
-        if (seeded[col.key] === undefined) {
-          seeded[col.key] = resolveInitialWidth(col as IrisTableColumn<Record<string, unknown>>)
-          changed = true
-        }
-      }
-      return changed ? seeded : prev
-    })
   })
   const widthsControlled = (): boolean => props.columnWidths !== undefined
   const effectiveWidths = (): IrisTableColumnWidths =>
@@ -1663,7 +1649,16 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
     if (hasDetail()) parts.push(`${EXPAND_COL_WIDTH}px`)
     if (merged.selectable !== 'none') parts.push(`${SELECTION_COL_WIDTH}px`)
     for (const col of leafColumns()) {
-      parts.push(`${widthOf(col)}px`)
+      const w = effectiveWidths()[col.key]
+      // React parity (batch AF): a width-less column renders `minmax(0, 1fr)`
+      // (fills the container); explicit widths, resized values and
+      // `width: 'auto'` keep their tracks. `widthOf` keeps the numeric
+      // `resolveInitialWidth` fallback for resize/virtualization math.
+      if (w != null) parts.push(`${w}px`)
+      else if (typeof col.width === 'number') parts.push(`${col.width}px`)
+      else if (col.width === 'auto') parts.push('minmax(max-content, max-content)')
+      else if (typeof col.width === 'string') parts.push(col.width)
+      else parts.push('minmax(0, 1fr)')
     }
     return parts.join(' ')
   })
@@ -2587,6 +2582,10 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
         style={{
           background: 'var(--iris-background)',
           color: 'var(--iris-foreground)',
+          // React parity (batch AF): the root pins the base table font so
+          // inherited contexts (seq/expand/drag/selection cells + headers)
+          // render md like React instead of the page's body size.
+          'font-size': 'var(--iris-font-size-md, 14px)',
           border: merged.bordered ? '1px solid var(--iris-border)' : 'none',
           'border-radius': 'var(--iris-radius-md)',
           // Column virtualization turns the table into a horizontal scroll container.
@@ -2720,7 +2719,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                       background: 'var(--iris-surface)',
                       'border-bottom': '1px solid var(--iris-border)',
                       'font-weight': '600',
-                      'font-size': 'var(--iris-font-size-sm, 13px)',
+                      'font-size': 'var(--iris-font-size-md, 14px)',
                       color: 'var(--iris-foreground)',
                       'white-space': 'nowrap',
                       overflow: 'hidden',
@@ -2866,7 +2865,7 @@ export function IrisTable<Row extends Record<string, unknown> = Record<string, u
                         background: 'var(--iris-surface)',
                         'border-bottom': '1px solid var(--iris-border)',
                         'font-weight': '600',
-                        'font-size': 'var(--iris-font-size-sm, 13px)',
+                        'font-size': 'var(--iris-font-size-md, 14px)',
                         color: 'var(--iris-foreground)',
                         'white-space': 'nowrap',
                         overflow: 'hidden',

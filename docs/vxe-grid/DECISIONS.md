@@ -599,3 +599,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ae-gate.md [ok]: Summary: **Verdict**: PASS (no blocking findings; 2 P2/P3 handoffs documented as交接项).; Full repo gate — all green: - **turbo `test typecheck lint build`**: `EXIT=0` — **180/180 tasks** (132 cached, 48 executed), 1m33s; Final test counts: | Suite | Tests |; Docs updated (`docs/vxe-grid-comparison.md`): - 最终覆盖总结: added **批 AE（虚拟树 + 四框架 example）** paragraph incl. handoffs (vue/solid/svelte 旧组合守卫 + 三端 example e2e); Commit: ```
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ae-gate.md
+
+## 2026-08-11 18:13:25 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-af-baseline.md [ok]: Key findings baked in: **E2E (per-framework plan):** The four-framework VxeGrid example pages already landed (batch AE, `69911b77`) — identical
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-af-baseline.md
+
+## 2026-08-12 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-af-adapt.md [ok]: 批 AF 完成：core toSpreadsheetXml 增 headerStyle/columnWidths（缺省字节不变，react exportExcel 已透传零改动）；vue/solid/svelte 新增 e2e/vxe-grid.spec.ts ×3（镜像 react，proxy 断言限定服务端数据源区，svelte 行编辑 dblclick）；四框架 visual-parity.spec.ts 加 vxe-{light,dark} + 8 张基线 PNG；react Table 表头补齐 rowDrag/seq track（parity 修复）。验证：core 1255 tests / react 1829 tests + typecheck + lint 0 errors / react e2e 3/3 / spec 0 violations / prettier 通过。三端新 spec 未本地实跑（webServer 不可靠，--list 编译验证），与既有 visual-parity 同模式按 app pnpm e2e 运行。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-af-adapt.md
+
+## 2026-08-11 18:45:33 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-af-adapt.md [ok]: Batch AF — complete: The previous session timed out mid-work; I audited every leftover change, fixed what was broken (7 files were not pretti; Files changed (23): **1. Excel styling (core, additive)**; Verification: | Gate | Result |; What is left: 1. The three new specs run per-app via `pnpm e2e` (same pattern as the pre-existing visual-parity specs; CI's mainline p
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-af-adapt.md
+
+## 2026-08-11 19:00:18 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-af-review.md [ok]: Verdict: FAIL — 1 blocking finding (P1): **What passes (all verified live):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-af-review.md

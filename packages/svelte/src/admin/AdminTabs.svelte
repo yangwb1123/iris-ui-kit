@@ -110,7 +110,7 @@
 
 <div
   data-iris-admin-tabs
-  style="display: flex; align-items: center; gap: var(--iris-space-xs, 8px); padding: var(--iris-space-xs, 8px) var(--iris-space-sm, 12px); border-bottom: 1px solid var(--iris-border); background: var(--iris-background)"
+  style="display: flex; align-items: center; gap: var(--iris-space-xs, 8px); padding: var(--iris-padding-sm, 6px) var(--iris-space-sm, 12px); border-bottom: 1px solid var(--iris-border); background: var(--iris-background)"
 >
   <!-- svelte-ignore a11y_interactive_supports_focus — WAI-ARIA tabs: roving tabindex lives on the tabs -->
   <div

@@ -112,16 +112,16 @@ function remoteQuery(
   })
 }
 
-const sectionStyle = {
+const sectionStyle: import('solid-js').JSX.CSSProperties = {
   display: 'flex',
-  flexDirection: 'column' as const,
+  'flex-direction': 'column',
   gap: '24px',
-  maxWidth: 960,
+  'max-width': '960px',
 }
-const h2Style = { margin: '0 0 4px', fontSize: 'var(--iris-font-size-lg, 16px)' }
+const h2Style = { margin: '0 0 4px', 'font-size': 'var(--iris-font-size-lg, 16px)' }
 const pStyle = {
   margin: '0 0 12px',
-  fontSize: 'var(--iris-font-size-sm, 13px)',
+  'font-size': 'var(--iris-font-size-sm, 13px)',
   color: 'var(--iris-muted)',
 }
 

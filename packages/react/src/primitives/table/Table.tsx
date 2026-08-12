@@ -420,6 +420,8 @@ function EditorSurface<Row extends Record<string, unknown>>({
 const RESIZE_STEP = 16
 const SELECTION_COL_WIDTH = 40
 const EXPAND_COL_WIDTH = 40
+const SEQ_COL_WIDTH = 60
+const DRAG_COL_WIDTH = 40
 const DEFAULT_PINNED_WIDTH = 140
 
 /** Shared style for the full-width empty / loading / error state rows. */
@@ -2483,6 +2485,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   const gridTemplateColumns = React.useMemo(() => {
     const widths: string[] = []
+    // Track order must match the row's cell order (rowDrag → seq → detail →
+    // selection → leaf columns); batch AF: seq/rowDrag tracks were missing,
+    // wrapping the last column onto a second line (react-only vs vue/solid/
+    // svelte which all emit these tracks — cross-framework parity fix).
+    if (rowDrag) widths.push(`${DRAG_COL_WIDTH}px`)
+    if (seq) widths.push(`${SEQ_COL_WIDTH}px`)
     if (hasDetail) widths.push(`${EXPAND_COL_WIDTH}px`)
     if (selectable !== 'none') widths.push('40px')
     for (const col of leafColumns) {
@@ -2498,7 +2506,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       else widths.push('minmax(0, 1fr)')
     }
     return widths.join(' ')
-  }, [leafColumns, selectable, columnWidths, hasDetail])
+  }, [leafColumns, selectable, columnWidths, hasDetail, seq, rowDrag])
 
   // Sticky offsets for pinned columns: each accumulates the resolved widths of
   // the pinned columns between it and its edge (plus the selection column on
@@ -2508,7 +2516,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const widthOf = (col: IrisTableColumn<Row>): number =>
       columnWidths[col.key] ?? (typeof col.width === 'number' ? col.width : DEFAULT_PINNED_WIDTH)
     let left =
-      (hasDetail ? EXPAND_COL_WIDTH : 0) + (selectable !== 'none' ? SELECTION_COL_WIDTH : 0)
+      (rowDrag ? DRAG_COL_WIDTH : 0) +
+      (seq ? SEQ_COL_WIDTH : 0) +
+      (hasDetail ? EXPAND_COL_WIDTH : 0) +
+      (selectable !== 'none' ? SELECTION_COL_WIDTH : 0)
     for (const col of leafColumns) {
       if (col.pinned === 'left') {
         map[col.key] = { side: 'left', offset: left }
@@ -2524,7 +2535,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       }
     }
     return map
-  }, [leafColumns, columnWidths, selectable])
+  }, [leafColumns, columnWidths, selectable, hasDetail, seq, rowDrag])
 
   const pinnedStyle = (key: string): React.CSSProperties | null => {
     const p = pinnedOffsets[key]
@@ -2976,9 +2987,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
     return set
   }, [columnVirtualization, leafColumns, scrollLeft, viewportWidth, resolvedColWidths])
 
-  // 1-based grid track for a column (after the optional selection track), so a
-  // rendered cell lands in the right place even when earlier cells are skipped.
-  const colTrack = (i: number): number => (hasDetail ? 1 : 0) + (selectable !== 'none' ? 2 : 1) + i
+  // 1-based grid track for a column (after the optional drag/seq/detail/
+  // selection tracks), so a rendered cell lands in the right place even when
+  // earlier cells are skipped. Order matches the row's cell order.
+  const colTrack = (i: number): number =>
+    (rowDrag ? 1 : 0) +
+    (seq ? 1 : 0) +
+    (hasDetail ? 1 : 0) +
+    (selectable !== 'none' ? 1 : 0) +
+    1 +
+    i
 
   // Header merge (batch P, vxe mergeHeaderCells parity): entries keyed by
   // leaf-column index, row 0 only (the flat header is a single row — rows > 0
@@ -4556,15 +4574,44 @@ export function IrisTable<Row extends Record<string, unknown>>({
               gridTemplateRows: `repeat(${headerMatrix.length}, auto)`,
             }}
           >
+            {rowDrag ? (
+              <div
+                role="columnheader"
+                data-iris-table-header="__drag"
+                style={{ gridColumn: '1', gridRow: '1 / -1' }}
+              />
+            ) : null}
+            {seq ? (
+              <div
+                role="columnheader"
+                data-iris-table-header="__seq"
+                style={{
+                  gridColumn: String((rowDrag ? 1 : 0) + 1),
+                  gridRow: '1 / -1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px',
+                  background: 'var(--iris-surface)',
+                  borderBottom: borderStyle,
+                }}
+              />
+            ) : null}
             {hasDetail ? (
-              <div role="columnheader" style={{ gridColumn: '1', gridRow: '1 / -1' }} />
+              <div
+                role="columnheader"
+                style={{
+                  gridColumn: String((rowDrag ? 1 : 0) + (seq ? 1 : 0) + 1),
+                  gridRow: '1 / -1',
+                }}
+              />
             ) : null}
             {selectable !== 'none' ? (
               <div
                 role="columnheader"
                 data-iris-table-header=""
                 style={{
-                  gridColumn: hasDetail ? '2' : '1',
+                  gridColumn: String((rowDrag ? 1 : 0) + (seq ? 1 : 0) + (hasDetail ? 2 : 1)),
                   gridRow: '1 / -1',
                   ...baseCellStyle,
                   background: 'var(--iris-surface)',
@@ -4607,7 +4654,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     ? multiSortState[multiIdx]!.direction
                     : sort?.direction
                   : undefined
-                const lead = (hasDetail ? 1 : 0) + (selectable !== 'none' ? 1 : 0)
+                const lead =
+                  (rowDrag ? 1 : 0) +
+                  (seq ? 1 : 0) +
+                  (hasDetail ? 1 : 0) +
+                  (selectable !== 'none' ? 1 : 0)
                 return (
                   <div
                     key={`${col.key}-${cell.level}`}
@@ -4704,6 +4755,29 @@ export function IrisTable<Row extends Record<string, unknown>>({
             data-iris-table-row="header"
             style={{ display: 'grid', gridTemplateColumns }}
           >
+            {rowDrag ? (
+              <div
+                role="columnheader"
+                data-iris-table-header="__drag"
+                style={{
+                  ...baseCellStyle,
+                  background: 'var(--iris-surface)',
+                  borderBottom: borderStyle,
+                }}
+              />
+            ) : null}
+            {seq ? (
+              <div
+                role="columnheader"
+                data-iris-table-header="__seq"
+                style={{
+                  ...baseCellStyle,
+                  background: 'var(--iris-surface)',
+                  borderBottom: borderStyle,
+                  justifyContent: 'center',
+                }}
+              />
+            ) : null}
             {hasDetail ? (
               <div
                 role="columnheader"

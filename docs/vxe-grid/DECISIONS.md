@@ -634,3 +634,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ag-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ag-baseline.md
+
+## 2026-08-11 22:50:31 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ag-adapt.md [ok]: 批 AG 完成报告: **实现（全部按 baseline 验证后的方案）**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ag-adapt.md
+
+## 2026-08-11 22:57:22 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ag-review.md [ok]: Summary: **Verified (all commands run against commit `7b4cd99d`):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ag-review.md
+
+## 2026-08-12 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ag-gate.md [ok]: 批 AG gate：review PASS（5 条 LOW/INFO 非阻断，无修复项）。全仓 gate：turbo 180/180（125 cached）· audit 0 · gen:manifest + check:manifest 155×4 / 86 tokens up-to-date 无 diff。react 1850/1850 实测（+21）；core 1255 / vue 1531 / solid 974+34 hydration / svelte 916+31 hydration（沿用 review 对同 commit 实测）。comparison.md 构建状态标题 + 测试计数行更新（react 1850 + manifest 通过）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ag-gate.md

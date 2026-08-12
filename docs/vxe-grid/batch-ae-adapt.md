@@ -1,52 +1,35 @@
-Done. Committed as `69911b77` (+ react fix commit `70912a6d`).
+All done. Working tree clean, 3 commits, all gates green.
 
-## Report
+## Report — batch AE complete
 
-Batch AE per `docs/vxe-grid/batch-ae-baseline.md`: virtual tree + detail mode for the react table, plus the four-framework vxe-grid example pages.
+### Commits
 
-**Key baseline findings confirmed**: tree×virtual already worked (guard permitted it, `flatTree` feeds `virtualItems`); the real bugs were (a) flat+detail+virtual silently DROPPED expanded detail panels, (b) tree+detail+virtual blocked entirely, (c) the virtualizer's re-clamp fixed the DOM scrollTop but not the `scrollTop` state — a deep-scroll collapse could show a blank window until the browser's scroll event synced.
+1. **`70912a6d`** `feat(table): vxe-grid 批 AE——虚拟树/详情行修复（react）+ 滚动收缩重钳制`
+2. **`69911b77`** `feat(cms): vxe-grid 批 AE——vue/solid/svelte 四框架示例页`
+3. **`fe56af31`** `chore: 批 AE 收尾（adapt 报告）` (`docs/vxe-grid/batch-ae-adapt.md`)
 
-**Design decisions (documented in source)**: detail rows occupy ONE virtual slot each at `itemHeight` — content taller than the slot scrolls inside the detail cell (`overflow: auto`), keeping the virtual body uniform-height; `BodyPlanEntry` gains `kind: 'detail'` entries keyed `${rowKey}::detail`; expansion toggles flow through `expandedKeys → plan → items.length`, and the virtualizer rebuilds on count change + re-clamps (no scroll reset needed).
+### 1. Virtual tree fix (react, 5 files)
 
-### Files changed — react fix + tests (commit 70912a6d, 5 files)
+- **Table.tsx**: guard `virtualScroll && (!treeMode || !hasDetail)` → `virtualScroll` (all 4 flat/tree×detail combos). `BodyPlanEntry` gains `kind: 'detail'`; `virtualItems` plan inserts one detail slot per expandable+expanded row at `itemHeight` (content taller than the slot scrolls **inside** the detail cell — documented); keys `::detail`-suffixed; new `renderDetailSlot`.
+- **VirtualScroll.tsx** (itemCount-change decision, documented in source): no scroll reset needed — the virtualizer rebuilds on `items.length` change, core re-clamps, and the re-clamp effect now **syncs the `scrollTop` state in a layout effect** (pre-paint, no blank frame) plus the fixed-mode window clamps stale scrollTop against the current total.
+- **Tests**: new `virtual-tree.test.tsx` (5 tests, 207 lines ≤500): flat unchanged · tree windowed with decoration · expand grows itemCount + preserves scroll; external collapse while scrolled deep re-clamps DOM **and** keeps window non-blank · detail slots (one per expanded row, expand/collapse ±1 slot) · tree+detail combo (previously blocked). Updated 2 stale pins in Table.test.tsx / advanced.test.tsx.
 
-| File                                                             | Change                                                                                                                                                                                                         |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/react/src/primitives/table/Table.tsx`                  | guard `virtualScroll && (!treeMode \|\| !hasDetail)` → `virtualScroll`; detail-aware `virtualItems` plan (`kind: 'detail'` slots); `::detail`-suffixed keys; `renderDetailSlot` (uniform slot, in-slot scroll) |
-| `packages/react/src/primitives/virtual-scroll/VirtualScroll.tsx` | re-clamp effect → `useLayoutEffect` + syncs `scrollTop` state (pre-paint, no blank frame); fixed-mode window clamps stale scrollTop against the current total                                                  |
-| `packages/react/src/primitives/table/virtual-tree.test.tsx`      | **new — 207 lines / 5 tests** (≤500 ✓)                                                                                                                                                                         |
-| `packages/react/src/primitives/table/Table.test.tsx`             | old "tree+detail NOT virtualized" pin → asserts virtualization                                                                                                                                                 |
-| `packages/react/src/primitives/table/test/advanced.test.tsx`     | second stale pin (same) → asserts virtualization                                                                                                                                                               |
+### 2. Four-framework examples (14 files)
 
-### Files changed — four-framework example pages (commit 69911b77, 14 files)
+- **New pages** in `apps/cms` (vue), `apps/cms-solid`, `apps/cms-svelte`: `VxeGridExamplePage` — 5 sections mirroring the react page (basic / row editing / server proxy / search form / row ops), self-contained inline data + `remoteQuery`.
+- Menu entry `vxe-example` (order 8) + Shell/PageHost registration in each app; menu-leaf contract tests allowlist the key.
+- Adaptation: `checkMethod`/`tableRef.insertRow` are **react-only** (verified by grep) → row ops use local reactive state, noted in comments.
 
-| File                                                                                              | Change                                                                                                                      |
-| ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `apps/cms/src/pages/VxeGridExamplePage.vue`                                                       | **new** — 5-section mirror (basic / row editing / server proxy / search form / row ops), inline server data + `remoteQuery` |
-| `apps/cms-solid/src/pages/VxeGridExamplePage.tsx`                                                 | **new** — same mirror in solid JSX (`createSignal` row ops)                                                                 |
-| `apps/cms-svelte/src/pages/VxeGridExamplePage.svelte`                                             | **new** — same mirror in svelte (`$state` row ops)                                                                          |
-| `apps/{cms,cms-solid,cms-svelte}/src/menus.ts`                                                    | + `{ key: 'vxe-example', title: 'VxeGrid Example', icon: 'table', order: 8 }`                                               |
-| `apps/cms/src/Shell.vue` · `apps/cms-solid/src/Shell.tsx` · `apps/cms-svelte/src/PageHost.svelte` | page map / route branch registration                                                                                        |
-| `apps/{cms,cms-solid,cms-svelte}/src/pages/WorkspacePage.test.ts(x)`                              | menu-leaf contract test allowlists `vxe-example` (mirrors react's `dedicatedPluginRoutes`)                                  |
-| `docs/vxe-grid/DECISIONS.md` · `batch-ae-baseline.md`                                             | batch-runner baseline log                                                                                                   |
+### Verification
 
-Adaptation notes: the react page's `checkMethod` is a **React-only prop** (absent in vue/solid/svelte — verified by grep across the three packages) → the Row ops section uses local reactive rows for insert/remove and documents the difference in a comment; `tableRef.insertRow` also react/solid-only, so vue/svelte keep row ops purely local.
-
-### Tests added (5)
-
-virtual + tree windowed (spacer = itemCount × itemHeight, tree decoration intact) · expand increases itemCount + scroll preserved; external collapse (table handle) while scrolled deep re-clamps DOM scrollTop AND keeps the window non-blank · virtual + renderDetail renders detail slots (one slot per expanded row, slot right after its row; expand/collapse adds/removes exactly one slot) · tree + detail combo (previously blocked) · flat virtual unchanged.
-
-### Counts
-
-- `@iris-ui-kit/react`: typecheck **0 errors** · lint **0 errors** (1 pre-existing complexity warning, unchanged) · tests **162 files / 1828 pass** (514 in table+virtual-scroll suites)
-- Apps: `cms` (vue) typecheck + build ✓ · `cms-solid` typecheck + build ✓ · `cms-svelte` typecheck (svelte-check 0/0) + build ✓ · app tests all pass
-- `pnpm gen:manifest` regenerated → **no diff** (no public contract changes; commit's 155 components unchanged)
+- react: typecheck ✓ · lint **0 errors** (pre-existing complexity warning unchanged) · **1828 tests pass**
+- apps: vue/solid/svelte typecheck ✓ + build ✓ + tests ✓ (e2e intentionally skipped for the new pages)
 - `iris-ui-spec.py --mode all --json` → **0 violations**
-- CSS: only `var(--iris-*)` tokens (no hex/Tailwind/CSS-in-JS added)
-- core untouched (framework-free ✓); no dist/tgz/node_modules/manifest.json hand-edits
+- `pnpm gen:manifest` → regenerated, **no diff** (no public-contract change; nothing to commit)
+- core untouched; only `--iris-*` tokens in added CSS; ≤4 react source files + tests
 
-### Handoff list
+### What is left (handoff in adapt doc)
 
-1. **Four-framework guard alignment**: vue (`TableBody.ts` L52) / solid (`TableBody.tsx` L115) / svelte (`IrisTable.svelte` L1004 `useVirtual`) still carry the byte-identical `!treeMode || !hasDetail` guard — flat+detail+virtual there still drops panels and tree+detail is blocked. React now defines the reference semantics (detail slots + in-slot scroll + re-clamp state sync); the other three adapters should mirror the react plan/keyOf/renderItem changes in a follow-up batch.
-2. **E2E for the new pages**: react has 3 vxe-example tests in `apps/cms-react/e2e/pages.spec.ts`; vue/solid/svelte pages are intentionally e2e-less this batch (CI runs the app e2e suites) — a follow-up can add `#vxe-example` navigations to each app's e2e.
-3. **Example parity nuance**: the react page's row-ops section demonstrates `checkMethod` + `tableRef.insertRow/removeRow` (react handle extras); vue/solid/svelte mirrors use local-state row ops — a cross-framework `checkMethod`/handle-parity batch would close the gap.
+1. **Four-framework guard alignment**: vue `TableBody.ts` L52 / solid `TableBody.tsx` L115 / svelte `IrisTable.svelte` `useVirtual` still carry the old guard — flat+detail+virtual drops panels and tree+detail stays blocked there; react now defines reference semantics for a follow-up batch.
+2. E2E `#vxe-example` navigation for vue/solid/svelte (react already has 3).
+3. Cross-framework `checkMethod`/handle parity (react-only today).

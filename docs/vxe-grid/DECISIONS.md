@@ -584,3 +584,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ae-baseline.md [ok]: Key findings from the investigation: **Virtual tree — mostly already works.** The guard `virtualScroll && (!treeMode || !hasDetail)` (Table.tsx L4861) alread
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ae-baseline.md
+
+## 2026-08-11 17:10:33 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ae-adapt.md [ok]: Report — batch AE complete: 1. **`70912a6d`** `feat(table): vxe-grid 批 AE——虚拟树/详情行修复（react）+ 滚动收缩重钳制`; Commits: 1. **`70912a6d`** `feat(table): vxe-grid 批 AE——虚拟树/详情行修复（react）+ 滚动收缩重钳制`; 1. Virtual tree fix (react, 5 files): - **Table.tsx**: guard `virtualScroll && (!treeMode || !hasDetail)` → `virtualScroll` (all 4 flat/tree×detail combos). `; 2. Four-framework examples (14 files): - **New pages** in `apps/cms`(vue),`apps/cms-solid`, `apps/cms-svelte`: `VxeGridExamplePage` — 5 sections mirroring th; Verification: - react: typecheck ✓ · lint **0 errors** (pre-existing complexity warning unchanged) · **1828 tests pass**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ae-adapt.md
+
+## 2026-08-11 17:15:22 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ae-review.md [ok]: Verdict: **PASS**: Full report: `docs/vxe-grid/batch-ae-review.md`; Verification run (all green): - **react**: 1828/1828 tests (incl. new `virtual-tree.test.tsx` 5/5 + 2 updated pins), typecheck 0 errors, lint 0 errors; Checklist: 1. **Virtual tree** ✓ — window derives from plan + clamped scrollTop; expansion flows `expandedKeys → plan → items.lengt; Findings (none blocking): 1. **P2** — fix is react-only; vue `TableBody.ts:52`/ solid`TableBody.tsx:115`/ svelte`IrisTable.svelte:1004` still
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ae-review.md

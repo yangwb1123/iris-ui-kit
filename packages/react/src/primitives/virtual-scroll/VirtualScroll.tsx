@@ -169,12 +169,17 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
   // window). Variable/auto: the controller's measured window (offset-tree walk).
   const range = React.useMemo(() => {
     if (variable) return { start: vstate.startIndex, end: vstate.endIndex + 1 }
-    const startRaw = Math.floor(scrollTop / Math.max(1, fixedHeight))
+    // Clamp the stale scrollTop against the CURRENT total: when items shrink
+    // mid-scroll (a tree node or detail panel collapsed while scrolled deep),
+    // the fixed window must not open past the last item — the re-clamp effect
+    // below then lands the DOM scrollTop (and the state) on the same bound.
+    const maxScroll = Math.max(0, totalHeight - viewportHeight)
+    const startRaw = Math.floor(Math.min(scrollTop, maxScroll) / Math.max(1, fixedHeight))
     const visibleCount = fixedHeight <= 0 ? 0 : Math.ceil(viewportHeight / fixedHeight)
     const start = Math.max(0, startRaw - buffer)
     const end = Math.min(items.length, startRaw + visibleCount + buffer)
     return { start, end }
-  }, [variable, vstate, scrollTop, viewportHeight, fixedHeight, buffer, items.length])
+  }, [variable, vstate, scrollTop, viewportHeight, fixedHeight, buffer, items.length, totalHeight])
 
   // Emit range change without firing onScroll's effect prematurely.
   const rangeRef = React.useRef(range)
@@ -269,12 +274,19 @@ export const IrisVirtualScroll = React.forwardRef(function IrisVirtualScroll<T>(
     }
   }
 
-  // Re-clamp scroll if items shrink past the visible region.
-  React.useEffect(() => {
+  // Re-clamp scroll when items shrink past the visible region: fix the DOM AND
+  // the scrollTop state — the fixed-mode window derives from state, so without
+  // the sync a deep-scroll collapse (tree expand collapse while far down the
+  // list) would render a blank window until the browser's scroll event caught
+  // up. A layout effect keeps the fix pre-paint (no blank frame).
+  React.useLayoutEffect(() => {
     const el = viewportRef.current
     if (!el) return
     const max = Math.max(0, totalHeight - viewportHeight)
-    if (el.scrollTop > max) el.scrollTop = max
+    if (el.scrollTop > max) {
+      el.scrollTop = max
+      setScrollTop(max)
+    }
   }, [items.length, totalHeight, viewportHeight])
 
   const scrollToIndex = React.useCallback(

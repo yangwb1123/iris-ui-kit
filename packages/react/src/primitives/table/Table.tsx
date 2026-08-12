@@ -2402,6 +2402,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
     | { kind: 'group-header'; groupKey: string; count: number }
     | { kind: 'row'; row: Row; rowIndex: number }
     | { kind: 'group-summary'; groupKey: string; rows: Row[] }
+    // One virtual slot per expanded detail panel (batch AE): a `detail` entry
+    // occupies a single itemHeight slot — content taller than the slot scrolls
+    // INSIDE the detail cell, so the virtualized body stays uniform-height.
+    | { kind: 'detail'; row: Row; rowIndex: number }
   const groupCol = leafColumns.find((c) => c.groupBy)
   const groupPlan = React.useMemo<BodyPlanEntry[] | null>(() => {
     if (!groupCol || treeMode) return null
@@ -3635,6 +3639,33 @@ export function IrisTable<Row extends Record<string, unknown>>({
     )
   }
 
+  // Detail panel as ONE virtual slot (batch AE): the panel fills its slot at
+  // itemHeight; content taller than the slot scrolls INSIDE the detail cell
+  // (overflow auto), so tree/detail virtual rows stay uniform-height and the
+  // closed-form fixed window stays exact. Only the virtual body renders this
+  // — the non-virtual path keeps renderBodyEntry's inline wrap above.
+  const renderDetailSlot = (row: Row, idx: number): React.ReactElement => (
+    <div
+      role="row"
+      data-iris-table-row-detail={String(rowKeyOf(row, idx))}
+      style={{ display: 'grid', gridTemplateColumns, height: '100%' }}
+    >
+      <div
+        role="cell"
+        data-iris-table-detail-cell=""
+        style={{
+          gridColumn: '1 / -1',
+          padding: '8px 12px',
+          borderBottom: borderStyle,
+          overflow: 'auto',
+          height: '100%',
+        }}
+      >
+        {renderDetail!(row, idx)}
+      </div>
+    </div>
+  )
+
   // Footer merge plan (batch R, vxe-grid mergeFooterItems parity): declarative
   // span entries in the SAME coordinate space as footerSpanMethod — `row` is
   // the 0-based index over the rendered footer stack (footerMethod rows →
@@ -3786,9 +3817,29 @@ export function IrisTable<Row extends Record<string, unknown>>({
     zoomed
   // Virtual body items: always typed as plan entries (rows wrapped with their
   // ORIGINAL bodyData index) so the `kind` discriminant narrows cleanly — a
-  // generic `Row` type param defeats `'kind' in` narrowing.
-  const virtualItems: BodyPlanEntry[] =
-    groupPlan ?? bodyData.map((row, rowIndex) => ({ kind: 'row' as const, row, rowIndex }))
+  // generic `Row` type param defeats `'kind' in` narrowing. In detail mode
+  // (batch AE) each expandable + expanded row contributes ONE extra `detail`
+  // slot right after its row — expansion toggles change `expandedKeys`, which
+  // flows into this plan and thus into `items.length` (the virtualizer rebuilds
+  // on count change and re-clamps, so the scroll stays sane on collapse).
+  const virtualItems = React.useMemo<BodyPlanEntry[]>(() => {
+    if (groupPlan) return groupPlan
+    // Only the virtual body consumes this plan (the non-virtual path renders
+    // detail wraps inline via renderBodyEntry); gate the detail slots on
+    // virtualScroll so plain detail tables keep the O(n) flat map.
+    if (!virtualScroll || !hasDetail) {
+      return bodyData.map((row, rowIndex) => ({ kind: 'row' as const, row, rowIndex }))
+    }
+    const plan: BodyPlanEntry[] = []
+    for (let i = 0; i < bodyData.length; i += 1) {
+      const row = bodyData[i]!
+      plan.push({ kind: 'row', row, rowIndex: i })
+      if (isRowExpandable(row, i) && expandedKeys.includes(String(rowKeyOf(row, i)))) {
+        plan.push({ kind: 'detail', row, rowIndex: i })
+      }
+    }
+    return plan
+  }, [groupPlan, virtualScroll, hasDetail, bodyData, expandedKeys, rowKeyOf, isRowExpandable])
 
   // Footer stack (batch P): footerMethod rows → summary row → footerData rows
   // — in that order, whichever render (footerMethod REPLACES the summary op
@@ -4858,12 +4909,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
           <div role="row" data-iris-table-row="empty" style={STATE_ROW_STYLE}>
             {emptyState ?? t('table.empty')}
           </div>
-        ) : virtualScroll && (!treeMode || !hasDetail) ? (
-          // Virtualize flat mode, and tree mode too — tree rows are uniform height,
-          // so the only thing that bars it is variable-height detail panels, hence
-          // the `!hasDetail` guard. `bodyData` is the flattened visible rows (=
-          // `sortedData` in flat mode); `flatTree?.[idx]` supplies each row's tree
-          // meta (depth + toggle), with `idx` the absolute row index from the scroller.
+        ) : virtualScroll ? (
+          // Virtualize flat, tree, detail AND tree+detail (batch AE): every
+          // virtual row occupies one uniform itemHeight slot — tree rows via
+          // the flattened `flatTree` meta, detail panels as `kind: 'detail'`
+          // plan entries (content taller than the slot scrolls inside the
+          // detail cell). `bodyData` is the flattened visible rows (=`sortedData`
+          // in flat mode); `flatTree?.[idx]` supplies each row's tree meta
+          // (depth + toggle), with `idx` the absolute row index from the
+          // scroller. Expansion toggles change `items.length`; the virtualizer
+          // rebuilds on count change and re-clamps the scroll (see
+          // IrisVirtualScroll's re-clamp effect).
           <IrisVirtualScroll
             items={virtualItems}
             itemHeight={virtualScroll.itemHeight}
@@ -4874,19 +4930,23 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 ? `group:${item.groupKey}`
                 : item.kind === 'group-summary'
                   ? `group-summary:${item.groupKey}`
-                  : String(rowKeyOf(item.row, item.rowIndex))
+                  : item.kind === 'detail'
+                    ? `${String(rowKeyOf(item.row, item.rowIndex))}::detail`
+                    : String(rowKeyOf(item.row, item.rowIndex))
             }
             renderItem={(item) =>
               item.kind === 'group-header'
                 ? renderGroupHeader(item, { height: '100%' })
                 : item.kind === 'group-summary'
                   ? renderSummaryRow(item.rows, item.groupKey, { height: '100%' })
-                  : renderRow(
-                      item.row,
-                      item.rowIndex,
-                      { height: '100%' },
-                      flatTree?.[item.rowIndex],
-                    )
+                  : item.kind === 'detail'
+                    ? renderDetailSlot(item.row, item.rowIndex)
+                    : renderRow(
+                        item.row,
+                        item.rowIndex,
+                        { height: '100%' },
+                        flatTree?.[item.rowIndex],
+                      )
             }
           />
         ) : groupPlan ? (

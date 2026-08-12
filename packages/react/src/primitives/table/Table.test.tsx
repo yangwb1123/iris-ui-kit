@@ -1017,7 +1017,7 @@ describe('@iris-ui-kit/react IrisTable virtual scroll', () => {
     expect(rowEls().length).toBeLessThan(41)
   })
 
-  it('does NOT virtualize tree mode when renderDetail is set (variable-height rows)', () => {
+  it('virtualizes tree mode with renderDetail (detail panels become virtual slots)', () => {
     const tree: Row[] = [{ id: 1, name: 'Root', age: 0, children: [{ id: 2, name: 'C', age: 1 }] }]
     render(
       <IrisTable
@@ -1025,10 +1025,14 @@ describe('@iris-ui-kit/react IrisTable virtual scroll', () => {
         data={tree}
         getSubRows={(r) => r.children as Row[] | undefined}
         renderDetail={(r) => <div>d{r.id}</div>}
+        defaultExpandedRowKeys={[1]}
         virtualScroll={{ itemHeight: 36, height: 200 }}
       />,
     )
-    expect(document.querySelector('[data-iris-virtual-scroll]')).toBeNull()
+    // Batch AE: tree+detail is no longer excluded — the virtual body renders
+    // the detail panel as one uniform slot per expanded row.
+    expect(document.querySelector('[data-iris-virtual-scroll]')).not.toBeNull()
+    expect(document.querySelector('[data-iris-table-row-detail]')).not.toBeNull()
   })
 })
 

@@ -118,6 +118,7 @@ export const defaultMessages: I18nMessages = {
   'table.filterClear': 'Clear',
   'table.filter': 'Filter',
   'table.total': 'Total {total}',
+  'table.queryPlaceholder': 'Natural-language filter, e.g. age > 25 and role = Test',
   'table.zoomIn': 'Zoom in',
   'table.zoomOut': 'Zoom out',
   'table.views.save': 'Save view',

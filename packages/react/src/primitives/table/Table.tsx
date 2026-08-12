@@ -4,6 +4,7 @@ import {
   buildFormValues,
   buildHeaderMatrix,
   computeVirtualRange,
+  compareValues,
   createCellRange,
   createExpansion,
   createSelectionModel,
@@ -11,6 +12,8 @@ import {
   flattenTree,
   groupRows,
   mergeFormFilters,
+  matchesRule,
+  parseTableQuery,
   seedFormValues,
   withSortedChildren,
   nextGridCell,
@@ -18,6 +21,7 @@ import {
   type CellRangeController,
   type ExpansionModel,
   type GridNavKey,
+  type ParsedTableQuery,
   type SelectionModel,
   type TreeRow,
 } from '@iris-ui-kit/core'
@@ -439,6 +443,15 @@ const STATE_ROW_STYLE: React.CSSProperties = {
   color: 'var(--iris-muted)',
 }
 
+/** Empty parse result shared by the query bar (STABLE reference). */
+const EMPTY_QUERY_PARSE: ParsedTableQuery = {
+  filters: {},
+  inValues: {},
+  rules: [],
+  sort: null,
+  error: null,
+}
+
 /** Null-proxy snapshot for useSyncExternalStore (a STABLE reference is required). */
 const EMPTY_PROXY_STATE: RemoteTableSourceState<never> = {
   data: [],
@@ -658,6 +671,26 @@ function mergeFilterValues(
 }
 
 /**
+ * Batch AI: fold a parsed query's substring (`=`/`contains`) and `in` channels
+ * into a filter map — `in` lists comma-join exactly like checked filter sets
+ * (vxe filter-multiple remote serialization parity). Typed relational rules
+ * have no text serialization and stay local-only (documented).
+ */
+function mergeQueryIntoFilters(
+  filters: Record<string, string>,
+  parsed: ParsedTableQuery,
+): Record<string, string> {
+  const next: Record<string, string> = { ...filters }
+  for (const [key, value] of Object.entries(parsed.filters)) {
+    if (value !== '') next[key] = value
+  }
+  for (const [key, values] of Object.entries(parsed.inValues)) {
+    if (values.length > 0) next[key] = values.join(',')
+  }
+  return next
+}
+
+/**
  * Data-driven table. Renders as a CSS-grid layout (no native `<table>`) so it
  * can support future virtual scroll / column resize uniformly. Wires ARIA
  * roles (`table` / `row` / `columnheader` / `cell`) for screen readers.
@@ -781,6 +814,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   persistState,
   views,
   onActiveViewChange,
+  query,
+  onQueryChange,
   columnVirtualization = false,
   emptyState,
   loading = false,
@@ -868,6 +903,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
     [grouped, displayColumns],
   )
 
+  // ── Batch AI: natural-language query (iris 独有, controlled-only) ────────
+  // The query string is parsed by the core parseTableQuery grammar against the
+  // leaf column keys (case-insensitive; the matched canonical key = the column
+  // key). Parse on every change; on a parse error the LAST VALID parse is kept
+  // (ref — same pattern as filteredDataRef) so the table keeps filtering by the
+  // previous query while the input shows the error hint below it.
+  const queryParsedRef = React.useRef<ParsedTableQuery>(EMPTY_QUERY_PARSE)
+  const [queryParsed, queryError] = React.useMemo(() => {
+    const fresh = parseTableQuery(query ?? '', { fields: leafColumns.map((c) => c.key) })
+    if (fresh.error === null) queryParsedRef.current = fresh
+    return [queryParsedRef.current, fresh.error] as const
+  }, [query, leafColumns])
+
   // ── Server-side proxy (vxe-grid proxyConfig parity, query slice) ────────
   // The controller lives in a ref and is created once; the unified core data
   // engine inside it owns paging / latest-wins / dedupe. The bridge only maps
@@ -888,7 +936,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
         pageSize: proxyConfig?.pageSize ?? 10,
         sort: remoteSort ? ((sortProp !== undefined ? sortProp : defaultSort) ?? null) : null,
         sorts: remoteSort && multiSort ? (multiSortStateProp ?? defaultMultiSort ?? []) : undefined,
-        filters: remoteFilter ? mergeFilterValues(filters ?? {}, filterValues ?? {}) : {},
+        // Batch AI: the parsed query's substring/in channels join the FIRST
+        // remote request so a mounted query does not double-fetch (the
+        // remoteFilter effect below covers subsequent changes).
+        filters: remoteFilter
+          ? mergeQueryIntoFilters(mergeFilterValues(filters ?? {}, filterValues ?? {}), queryParsed)
+          : {},
       },
     })
   const proxyRef = React.useRef<RemoteTableSource<Row> | null>(null)
@@ -1045,6 +1098,55 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // remoteSort parity: the server owns the ordering — never re-sort locally.
   const sortedData = remoteSort ? liveData : localSortedData
 
+  // Batch AI: the parsed `sort by` clause seeds the ordering ONLY while no sort
+  // prop is set (sort / defaultSort / multiSort / multiSortState / defaultMultiSort
+  // all absent) and the server does not own ordering (remoteSort). A user sort
+  // interaction or a parent sort prop takes over (last-user-action-wins). Local
+  // sorting only: the clause is never pushed to the proxy (documented).
+  const querySort = React.useMemo<IrisTableSortState | null>(() => {
+    if (
+      remoteSort ||
+      sortProp !== undefined ||
+      defaultSort !== undefined ||
+      multiSort ||
+      multiSortStateProp !== undefined ||
+      defaultMultiSort !== undefined ||
+      queryParsed.sort === null
+    ) {
+      return null
+    }
+    return queryParsed.sort
+  }, [
+    remoteSort,
+    sortProp,
+    defaultSort,
+    multiSort,
+    multiSortStateProp,
+    defaultMultiSort,
+    queryParsed,
+  ])
+  const querySortedData = React.useMemo(() => {
+    if (!querySort) return sortedData
+    const col = leafColumns.find((c) => c.key === querySort.key)
+    if (!col) return sortedData
+    const dir = querySort.direction === 'asc' ? 1 : -1
+    const sortByKey = (col.sortBy ?? col.dataIndex ?? col.key) as keyof Row
+    const cmp = (a: Row, b: Row): number => {
+      if (col.sorter) return col.sorter(a, b) * dir
+      let va: unknown = a[sortByKey]
+      let vb: unknown = b[sortByKey]
+      if (col.sortType === 'number') {
+        va = Number(va)
+        vb = Number(vb)
+      } else if (col.sortType === 'string') {
+        va = String(va ?? '')
+        vb = String(vb ?? '')
+      }
+      return compareValues(va, vb) * dir
+    }
+    return [...sortedData].sort(cmp)
+  }, [querySort, sortedData, leafColumns])
+
   // remoteSort parity: hand the sort state to the server. Header clicks are
   // pushed via the onSortChange wrapper above; this effect covers controlled
   // `sort` prop updates from the parent (core setParams dedupes unchanged
@@ -1089,8 +1191,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
   // Batch I: the proxy receives the text filters PLUS the comma-joined checked
   // filter sets, merged into ONE map (vxe filter-multiple remote serialization).
+  // Batch AI: the parsed query's substring/in channels join the same map.
   const mergedProxyFilters = (form: Record<string, string>): Record<string, string> =>
-    mergeFilterValues(mergeFormFilters(filters ?? {}, form), filterValues ?? {})
+    mergeQueryIntoFilters(
+      mergeFilterValues(mergeFormFilters(filters ?? {}, form), filterValues ?? {}),
+      queryParsed,
+    )
   const handleFormSubmit = (e: React.FormEvent): void => {
     e.preventDefault()
     const values = buildFormValues(formConfig?.fields, formDraft)
@@ -1132,7 +1238,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   React.useEffect(() => {
     if (!proxy || !remoteFilter) return
     proxyRef.current?.setParams({ filters: mergedProxyFilters(formApplied) })
-  }, [proxy, remoteFilter, filters, filterValues, formApplied])
+  }, [proxy, remoteFilter, filters, filterValues, formApplied, queryParsed])
 
   // Row-selection logic (single/multiple toggle, dedup, select-all,
   // controlled/uncontrolled) is single-sourced in the core model; keys are the
@@ -2565,18 +2671,37 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // neither input is mutated); in proxy mode the server owns form filtering,
   // so only the prop map filters the loaded page (batch C behavior preserved).
   const filteredData = React.useMemo(() => {
-    if (remoteFilter) return sortedData
+    if (remoteFilter) return querySortedData
     const merged: Record<string, string> = proxy
       ? (filters ?? {})
       : mergeFormFilters(filters ?? {}, formApplied)
+    // Batch AI: the parsed query's substring channel (`=`/`contains`) AND-merges
+    // over the prop/form filters — the query wins on key collision (last-typed
+    // wins, same as the form). In proxy mode without remoteFilter the loaded
+    // page is still filtered locally (batch C behavior preserved).
+    for (const [key, value] of Object.entries(queryParsed.filters)) {
+      if (value !== '') merged[key] = value
+    }
     const active = Object.entries(merged).filter(([, v]) => v != null && v !== '')
     // Batch I: per-column checked sets OR-match the raw String(value); a set
     // applies only when non-empty. AND-ed with the text channel below.
     const checkedEntries = Object.entries(filterValues ?? {}).filter(
       ([, values]) => values.length > 0,
     )
-    if (active.length === 0 && checkedEntries.length === 0) return sortedData
-    return sortedData.filter((row) => {
+    // Batch AI: the parsed `in` lists join the checked-set channel (OR-match
+    // against the raw String(value) — the same semantics as filterValues).
+    const queryInEntries = Object.entries(queryParsed.inValues).filter(
+      ([, values]) => values.length > 0,
+    )
+    if (
+      active.length === 0 &&
+      checkedEntries.length === 0 &&
+      queryInEntries.length === 0 &&
+      queryParsed.rules.length === 0
+    ) {
+      return querySortedData
+    }
+    return querySortedData.filter((row) => {
       const textOk = active.every(([key, value]) => {
         const col = displayColumns.find((c) => c.key === key)
         if (!col) return true
@@ -2591,9 +2716,30 @@ export function IrisTable<Row extends Record<string, unknown>>({
         if (!col) return true
         return values.includes(String(getCellValue(row, col) ?? ''))
       })
-      return textOk && setsOk
+      // Batch AI: query `in` lists (OR-match) + typed relational rules AND-ed
+      // with the channels above (core matchesRule = filterSort semantics).
+      const queryInOk = queryInEntries.every(([key, values]) => {
+        const col = displayColumns.find((c) => c.key === key)
+        if (!col) return true
+        return values.includes(String(getCellValue(row, col) ?? ''))
+      })
+      const rulesOk = queryParsed.rules.every((rule) => {
+        const col = displayColumns.find((c) => c.key === rule.key)
+        if (!col) return true
+        return matchesRule(getCellValue(row, col), rule)
+      })
+      return textOk && setsOk && queryInOk && rulesOk
     })
-  }, [sortedData, filters, formApplied, displayColumns, remoteFilter, proxy, filterValues])
+  }, [
+    querySortedData,
+    filters,
+    formApplied,
+    displayColumns,
+    remoteFilter,
+    proxy,
+    filterValues,
+    queryParsed,
+  ])
   // Batch W: mirror the latest filtered rows for the mount-time handle
   // (getFilteredData / exportCurrentViewCsv must see post-rerender state,
   // not the mount render's memo).
@@ -4364,7 +4510,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           </div>
         </form>
       ) : null}
-      {(toolbar || views) && layouts?.toolbar !== 'hidden' ? (
+      {(toolbar || views || query !== undefined) && layouts?.toolbar !== 'hidden' ? (
         <div
           data-iris-table-toolbar=""
           style={{
@@ -4391,6 +4537,50 @@ export function IrisTable<Row extends Record<string, unknown>>({
             <span style={{ fontWeight: 600, color: 'var(--iris-foreground)' }}>
               {toolbar?.title}
             </span>
+          ) : null}
+          {/* Batch AI: the natural-language query input renders after the title
+              (left side) whenever the controlled `query` prop is present. The
+              error hint (last-valid-parse keeps filtering) shows muted below. */}
+          {query !== undefined ? (
+            <div
+              style={{
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: 4,
+              }}
+            >
+              <input
+                data-iris-table-query-input=""
+                value={query}
+                onChange={(e) => onQueryChange?.(e.target.value)}
+                placeholder={t('table.queryPlaceholder')}
+                aria-label={t('table.queryPlaceholder')}
+                style={{
+                  border: '1px solid var(--iris-border)',
+                  borderRadius: 'var(--iris-radius-sm, 4px)',
+                  padding: '4px 8px',
+                  fontSize: 'var(--iris-font-size-sm, 13px)',
+                  color: 'var(--iris-foreground)',
+                  background: 'var(--iris-surface)',
+                  outline: 'none',
+                  width: 220,
+                }}
+              />
+              {queryError !== null ? (
+                <span
+                  data-iris-query-error=""
+                  style={{
+                    fontSize: 'var(--iris-font-size-xs, 12px)',
+                    color: 'var(--iris-muted)',
+                    maxWidth: 220,
+                  }}
+                >
+                  {queryError}
+                </span>
+              ) : null}
+            </div>
           ) : null}
           <div style={{ flex: 1 }} />
           {toolbar?.onRefresh ? (

@@ -1,0 +1,11 @@
+Baseline written: `/home/u1/iris-ui/docs/vxe-grid/batch-ai-baseline.md` (270 lines). No source files touched — `git status` shows only the new doc.
+
+**What the baseline establishes** (all verified against actual code):
+
+**a) Core `parseTableQuery`** — new `data-view/parse-query.ts` (grouped-view convention, re-exported from the `data-view.ts` barrel). Grammar fully documented: `field op value` with `= != > >= < <= contains in`, quoted values (single/double), `in (a, b, c)` → `inValues`, trailing `sort by field asc|desc`, case-insensitive fields, unknown field → error string (not throw), empty query → empty result. Two necessary signature extensions flagged for review: `rules?: FilterRule[]` (the task's 4-field shape can't carry the relational ops the grammar accepts — maps to existing `DataViewQuery.filterRules`) and `options.fields` (unknown-field validation needs the known key set; the bridge always passes leaf column keys). OR semantics per task: same-field `=` OR folds into `inValues`, cross-field OR → AND; same-field `contains` OR → parse error (fail closed — can't express per-value substring OR in existing channels).
+
+**b) React bridge** — `query`/`onQueryChange` props, controlled-only (batch AG/AH discipline). Key facts baked in: the react `filteredData` memo does _not_ use core `filterSort` (hand-rolled text + checked-set channels), so the bridge merges into three additive paths — `=`/`contains` → text channel, `in` → `filterValues` channel (local OR-match; proxy comma-join via the existing `mergeFilterValues` at L651), and typed rules → a new AND-ed memo path reusing core `matchesRule` (needs a private→public export). Parse on every change (memo) + last-valid-parse ref (same `filteredDataRef` pattern) — errors show a muted `data-iris-query-error` hint and the table keeps the last valid parse. Sort clause seeds only when `sort`/`defaultSort`/`multiSort` are all absent, with last-user-action-wins reseeding.
+
+**c) i18n** — `table.queryPlaceholder` en in core `defaultMessages`, zh in `plugin-locale-zh` `zhCNMessages` ('自然语言筛选，如 age > 25 and role = Test' exactly as specified).
+
+File map: 3 new files, 6 edits, ~33 new tests (21 core + 12 react), comparison-doc row — all additive; existing filter/sort behavior is byte-identical without the `query` prop. 7 open questions resolved by fiat (flagged for review).

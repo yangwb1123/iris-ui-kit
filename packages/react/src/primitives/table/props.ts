@@ -128,26 +128,9 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * row, one grid row per entry; structure matches `data`.
    */
   footerData?: Row[]
-  /**
-   * Custom footer rows (vxe footer-method parity, batch N): when present,
-   * REPLACES the summary op row with one grid row per returned entry — cell
-   * value = `entry[col.key]` — with the same row styling as the summary row;
-   * `footerData` still renders below. `columns` = leaf columns, `data` = the
-   * full (sorted + filtered) body rows.
-   */
+  /** Custom footer rows (vxe footer-method parity, batch N): one grid row per returned entry, cell value = `entry[col.key]`, same styling as the summary row; `footerData` renders below. `columns` = leaf columns, `data` = full filtered rows. */
   footerMethod?: (params: IrisTableFooterMethodParams<Row>) => Row[]
-  /**
-   * Footer cell merge (vxe footer-span-method parity, batch P): return
-   * `{ rowspan, colspan }` for a footer cell — both default 1. `colspan` > 1
-   * makes the cell span adjacent cells (the covered cells are skipped, same
-   * occupy pattern as `spanMethod`); `rowspan` is inert — each footer row is
-   * its own grid container, so `gridRowEnd` cannot cover another row and the
-   * later rows' cells must not disappear (mirrors `mergeHeaderCells`).
-   * Applies over the rendered footer stack in this order: footerMethod rows →
-   * summary row → footerData rows (whichever render); `rowIndex` is 0-based over that stack. `columns` =
-   * leaf columns, `data` = the full (sorted + filtered) body rows. Group
-   * summary rows are not part of the stack.
-   */
+  /** Footer cell merge (vxe footer-span-method parity, batch P): `colspan` > 1 spans adjacent cells (covered cells skipped, same occupy pattern as `spanMethod`); `rowspan` inert (each footer row is its own grid container). Applies over the footer stack in order: footerMethod rows → summary row → footerData rows; `rowIndex` is 0-based over that stack, `columns` = leaf columns, `data` = full filtered body rows. Group summary rows are not part of the stack. */
   footerSpanMethod?: IrisTableFooterSpanMethod<Row>
   /** Header cell alignment (vxe header-align parity): `headerAlign` wins over
    * the column's `align`, then 'left'. Applies to flat + grouped headers. */
@@ -369,6 +352,15 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   views?: import('./types').IrisTableViewConfig
   /** Fired when the active view changes (select / save / delete clears null). */
   onActiveViewChange?: (key: string | null) => void
+  /** Natural-language query (iris 独有): controlled string parsed by core
+   * `parseTableQuery` (`age > 25 and role in (Test, PM) sort by name asc`);
+   * the toolbar query input shows while present, parsed filters AND-merge
+   * (`=`/`contains` → substring, `in` → filterValues OR-match, relational →
+   * rules); `sort by` seeds only with no sort prop set; proxy comma-joins
+   * substring/in into the remote filter map. Controlled-only. */
+  query?: string
+  /** Fired on every keystroke (parent owns the string). */
+  onQueryChange?: (next: string) => void
   /** Render only the horizontally-visible columns plus pinned columns and overscan. */
   columnVirtualization?: boolean
   /** Enable rectangular cell-range selection. */

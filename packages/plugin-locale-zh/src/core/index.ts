@@ -59,6 +59,7 @@ export const zhCNMessages: Record<string, string> = {
   'table.filterClear': '清除',
   'table.filter': '筛选',
   'table.total': '共 {total} 条',
+  'table.queryPlaceholder': '自然语言筛选，如 age > 25 and role = Test',
   'table.zoomIn': '放大',
   'table.zoomOut': '退出放大',
   'table.views.save': '保存视图',

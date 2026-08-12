@@ -677,3 +677,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ah-gate.md [ok]: Review verdict: FAIL → fixes applied: | # | Finding | Fix |; Gate results (all green): - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks** (4m24s); Final test counts (forced fresh run): - **vitest total: 7621 passed, 0 failed** — react **1877** (table suite 549/549, +4 regression), core 1255, vue 1531, so; Commit: `f62a1fe06b9f65b93c71e68a4c73eaa23e50d568` — `feat(table): grid 批 AH——命名视图预设 + 区域浮动工具栏（iris 独有）` (13 files, +215/−47, am
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ah-gate.md
+
+## 2026-08-12 00:45:12 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ai-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ai-baseline.md

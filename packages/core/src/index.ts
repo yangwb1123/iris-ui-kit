@@ -155,6 +155,7 @@ export {
   cycleSort,
   filterSort,
   createMemoizedFilterSort,
+  matchesRule,
   debounce,
   aggregate,
   summarize,
@@ -181,6 +182,7 @@ export {
   type GroupedViewState,
   type GroupedViewStore,
 } from './data-view'
+export { parseTableQuery, type ParseTableQueryOptions, type ParsedTableQuery } from './query-parser'
 export {
   createSelectionModel,
   type SelectionModel,

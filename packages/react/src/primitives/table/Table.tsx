@@ -1100,13 +1100,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   // Batch AI: the parsed `sort by` clause seeds the ordering ONLY while no sort
   // prop is set (sort / defaultSort / multiSort / multiSortState / defaultMultiSort
-  // all absent) and the server does not own ordering (remoteSort). A user sort
-  // interaction or a parent sort prop takes over (last-user-action-wins). Local
-  // sorting only: the clause is never pushed to the proxy (documented).
+  // all absent), the internal uncontrolled sort state is untouched (sort === null,
+  // i.e. no header click yet) and the server does not own ordering (remoteSort). A
+  // user sort interaction or a parent sort prop takes over (last-user-action-wins);
+  // the effective `sort` state (controlled value or internal click) wins over the
+  // clause whenever it is non-null. Local sorting only: the clause is never pushed
+  // to the proxy (documented).
   const querySort = React.useMemo<IrisTableSortState | null>(() => {
     if (
       remoteSort ||
       sortProp !== undefined ||
+      sort !== null ||
       defaultSort !== undefined ||
       multiSort ||
       multiSortStateProp !== undefined ||
@@ -1119,6 +1123,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }, [
     remoteSort,
     sortProp,
+    sort,
     defaultSort,
     multiSort,
     multiSortStateProp,

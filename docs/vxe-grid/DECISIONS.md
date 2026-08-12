@@ -682,3 +682,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ai-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ai-baseline.md
+
+## 2026-08-12 01:19:52 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ai-adapt.md [ok]: Files changed (15): **Core (framework-free, additive):**; Cleanup of the failed prior attempt: - Resolved a leftover stash-merge conflict in `contracts.test.tsx` (kept upstream's Form contract test; no-op vs HEAD); Verification (all on the final committed tree): | Gate | Result |; Left: - None of the task scope. Pre-existing `IrisTable` complexity warning grows +3 (warning-class, non-blocking, same as pri
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ai-adapt.md
+
+## 2026-08-12 01:25:53 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ai-review.md [ok]: Verdict: **FAIL** — review written to `docs/vxe-grid/batch-ai-review.md`: **Confirmed blocker (medium)** — sort "last-user-action-wins" is documented (baseline, adapt doc, code comment at `Table
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ai-review.md

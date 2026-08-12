@@ -146,4 +146,24 @@ describe('@iris-ui-kit/react IrisTable query input (batch AI, iris 独有)', () 
     expect(names[1]).toContain('Bob')
     expect(names[2]).toContain('Charlie')
   })
+
+  it('a header click takes over from the query sort (last-user-action-wins)', () => {
+    render(<QueryHarness initialQuery="sort by name asc" />)
+    // The clause seeds name asc: Alice, Bob, Charlie.
+    const seeded = bodyNames()
+    expect(seeded[0]).toContain('Alice')
+    expect(seeded[2]).toContain('Charlie')
+    // Clicking the Age header must override the clause (age asc: Charlie, Bob,
+    // Alice) — the internal uncontrolled sort state wins over the query sort.
+    const ageHeader = Array.from(document.querySelectorAll('[data-iris-table-header]')).find((h) =>
+      h.textContent?.includes('Age'),
+    ) as HTMLElement
+    act(() => {
+      fireEvent.click(ageHeader)
+    })
+    const after = bodyNames()
+    expect(after[0]).toContain('Charlie') // age 25
+    expect(after[1]).toContain('Bob') // age 28
+    expect(after[2]).toContain('Alice') // age 32
+  })
 })

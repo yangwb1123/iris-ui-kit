@@ -23,12 +23,14 @@ import { UsersPage } from './pages/UsersPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { WorkspacePage } from './pages/WorkspacePage'
 import { FormBuilderPage } from './pages/FormBuilderPage'
+import { VxeGridExamplePage } from './pages/VxeGridExamplePage'
 
 const pages: Record<string, Component> = {
   dashboard: DashboardPage,
   'all-users': UsersPage,
   settings: SettingsPage,
   'form-builder': FormBuilderPage,
+  'vxe-example': VxeGridExamplePage,
 }
 
 function PageHost(props: { routeKey: string }): JSX.Element {

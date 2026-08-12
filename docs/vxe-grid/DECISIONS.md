@@ -579,3 +579,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ad-gate.md [ok]: Verdict handling: `batch-ab-review.md` = **FAIL with concrete fixes** — but all four findings were already fixed and committed in `8f40aaa; Full gate results: - **`turbo run test typecheck lint build --concurrency=2`: 180/180 tasks ✅**; Commit: - **`e7315204`** — `feat(table): vxe-grid 批 AD——svelte 适配器功能对齐（交互批）` (3 files: DECISIONS.md, batch-ad-adapt.md, batch-ad
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ad-gate.md
+
+## 2026-08-11 16:49:32 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ae-baseline.md [ok]: Key findings from the investigation: **Virtual tree — mostly already works.** The guard `virtualScroll && (!treeMode || !hasDetail)` (Table.tsx L4861) alread
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ae-baseline.md

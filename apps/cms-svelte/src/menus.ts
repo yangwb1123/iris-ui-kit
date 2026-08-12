@@ -8,4 +8,5 @@ import type { NavNode } from '@iris-ui-kit/svelte'
 export const menus: NavNode[] = [
   ...createCmsNavigation({ auditLog: true }),
   { key: 'form-builder', title: 'Form builder', icon: 'edit', order: 7 },
+  { key: 'vxe-example', title: 'VxeGrid Example', icon: 'table', order: 8 },
 ]

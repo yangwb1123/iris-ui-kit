@@ -62,6 +62,7 @@ import UsersPage from './pages/UsersPage.vue'
 import SettingsPage from './pages/SettingsPage.vue'
 import WorkspacePage from './pages/WorkspacePage.vue'
 import FormBuilderPage from './pages/FormBuilderPage.vue'
+import VxeGridExamplePage from './pages/VxeGridExamplePage.vue'
 
 const { skin, setSkin, setMode, getActiveId, availableSkins } = useSkin()
 const t = useTabsNav(tabsNav)
@@ -88,6 +89,7 @@ const pages: Record<string, unknown> = {
   'all-users': UsersPage,
   settings: SettingsPage,
   'form-builder': FormBuilderPage,
+  'vxe-example': VxeGridExamplePage,
 }
 const pageComp = (key: string): unknown =>
   isCmsWorkspaceRoute(key) ? WorkspacePage : (pages[key] ?? DashboardPage)

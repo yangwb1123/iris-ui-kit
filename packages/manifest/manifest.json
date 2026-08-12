@@ -36641,6 +36641,12 @@
           "description": "Enable virtual scrolling for the body."
         },
         {
+          "name": "persistState",
+          "type": "import('./types').IrisTablePersistConfig",
+          "optional": true,
+          "description": "Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'."
+        },
+        {
           "name": "columnVirtualization",
           "type": "boolean",
           "optional": true,
@@ -37386,6 +37392,12 @@
               "description": "Enable virtual scrolling for the body."
             },
             {
+              "name": "persistState",
+              "type": "import('./types').IrisTablePersistConfig",
+              "optional": true,
+              "description": "Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'."
+            },
+            {
               "name": "columnVirtualization",
               "type": "boolean",
               "optional": true,
@@ -37643,6 +37655,9 @@
             "IrisTableMergeCell",
             "IrisTableMergeFooterItem",
             "IrisTablePagerConfig",
+            "IrisTablePersistConfig",
+            "IrisTablePersistPiece",
+            "IrisTablePersistedState",
             "IrisTableProps",
             "IrisTableProxyQueryParams",
             "IrisTableRenderDetail",
@@ -38652,7 +38667,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 123,
+        "propCount": 124,
         "eventCount": 25
       }
     },

@@ -22,7 +22,6 @@ import type {
   IrisTableMergeFooterItem,
   IrisTableFooterSpanMethod,
 } from './types'
-
 /**
  * vxe-grid proxyConfig parity — the server-side data proxy (query slice).
  * When set, `data` is ignored: rows come from `query` (paged), the table
@@ -368,6 +367,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   keyboardNavigation?: boolean
   /** Enable virtual scrolling for the body. */
   virtualScroll?: IrisTableVirtualOptions
+  /** Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'. */
+  persistState?: import('./types').IrisTablePersistConfig
   /** Render only the horizontally-visible columns plus pinned columns and overscan. */
   columnVirtualization?: boolean
   /** Enable rectangular cell-range selection. */

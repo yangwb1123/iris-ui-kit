@@ -35,12 +35,56 @@ export type IrisTableAggregateOp = 'sum' | 'avg' | 'min' | 'max' | 'count'
 export type IrisTableAlign = 'left' | 'center' | 'right'
 
 export interface IrisTableVirtualOptions {
-  /** Per-row height in px (uniform). */
-  itemHeight: number
+  /** Per-row height in px (uniform), or a `(index) => px` function for known
+   * variable heights (batch AG — the iris take on vxe `virtualYConfig` 增强
+   * 模式; the fn receives the virtual PLAN index — memoize it). */
+  itemHeight: number | ((index: number) => number)
   /** Viewport height. Number → px; string → CSS length. */
   height: number | string
   /** Extra rows rendered above and below the viewport. */
   buffer?: number
+}
+
+/** State pieces persistable via `persistState` (batch AG, iris 独有). */
+export type IrisTablePersistPiece =
+  | 'sort'
+  | 'multiSortState'
+  | 'filters'
+  | 'filterValues'
+  | 'columnVisibility'
+  | 'columnOrder'
+  | 'columnWidths'
+  | 'pageSize'
+
+/** One persisted state snapshot (batch AG): the pieces `persistState` loads
+ * and saves, keyed by piece name. Optional keys — a piece only appears when
+ * its value is defined and the piece is included. */
+export interface IrisTablePersistedState {
+  sort?: IrisTableSortState | null
+  multiSortState?: IrisTableSortState[]
+  filters?: Record<string, string>
+  filterValues?: IrisTableFilterValues
+  columnVisibility?: Record<string, boolean>
+  columnOrder?: string[]
+  columnWidths?: IrisTableColumnWidths
+  pageSize?: number
+}
+
+/**
+ * `persistState` configuration (batch AG, iris 独有 — vxe has no built-in
+ * state persistence). Persists view state (sort / filters / column layout /
+ * page size) to a storage adapter so a table remounts where the user left it.
+ * The table is CONTROLLED: restore replays through the change callbacks and
+ * saves serialize the current props on every change.
+ */
+export interface IrisTablePersistConfig {
+  /** Storage adapter (`getItem`/`setItem`; defaults to `localStorage`).
+   * `false` fully disables persistence — no reads, no writes. */
+  storage?: Pick<Storage, 'getItem' | 'setItem'> | false
+  /** Storage key. Default `'iris-table-state'`. */
+  key?: string
+  /** Pieces to persist. Defaults to ALL pieces. */
+  include?: Array<IrisTablePersistPiece>
 }
 
 export interface IrisTableSortState {

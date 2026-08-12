@@ -154,6 +154,7 @@ const TABLE_ROW_CSS = `
 }
 `
 import { useTableSort } from './useTableSort'
+import { usePersistState } from './usePersistState'
 import { TableContextMenu } from './ContextMenu'
 import { TableFilterPanel } from './FilterPanel'
 import type {
@@ -162,6 +163,10 @@ import type {
   IrisTableContextMenuParams,
   IrisTableEditDirtyConfig,
   IrisTableSortDirection,
+  IrisTableFilterValues,
+  IrisTablePersistPiece,
+  IrisTablePersistedState,
+  IrisTableSortState,
 } from './types'
 
 /** Map a vxe-style cell alignment to a flex `justifyContent` value. */
@@ -756,6 +761,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   fnr = false,
   checkboxRange = false,
   virtualScroll,
+  persistState,
   columnVirtualization = false,
   emptyState,
   loading = false,
@@ -899,6 +905,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // to the fresh instance.
   const [, forceRender] = React.useReducer((x: number) => x + 1, 0)
   const hasProxy = proxyConfig !== undefined
+  // Batch AG (persistState): the restored pageSize hooks in HERE — BEFORE the
+  // first request. The mount restore effect runs after this effect, so without
+  // this the first query would fire with the default pageSize (double fetch).
+  // `persistParsedRef` is mirrored from the usePersistState call below during
+  // the same render pass (see the persist block); the one-shot flag is reset
+  // on cleanup so a StrictMode remount / proxy re-add restores again.
+  const persistParsedRef = React.useRef<IrisTablePersistedState | null>(null)
+  const persistPageSizeAppliedRef = React.useRef(false)
   React.useEffect(() => {
     let ctrl = proxyRef.current
     if (!ctrl && hasProxy) {
@@ -906,10 +920,30 @@ export function IrisTable<Row extends Record<string, unknown>>({
       proxyRef.current = ctrl
       forceRender()
     }
-    if (ctrl && proxyConfig?.autoLoad !== false) void ctrl.request()
+    if (ctrl) {
+      // persistState pageSize (batch AG): apply the restored size + notify
+      // BEFORE the default first query. request(partial) applies the params
+      // and fires exactly ONE query — setParams alone would re-request on
+      // its own, double-fetching with the request below. Skipped without
+      // proxyConfig.onPageChange (documented: pageSize is only meaningful
+      // with it) and when nothing was persisted.
+      if (!persistPageSizeAppliedRef.current) {
+        persistPageSizeAppliedRef.current = true
+        const size = persistParsedRef.current?.pageSize
+        if (typeof size === 'number' && size > 0 && proxyConfig?.onPageChange) {
+          proxyConfig.onPageChange(1, size)
+          void ctrl.request({ pageSize: size, page: 1 })
+        } else if (proxyConfig?.autoLoad !== false) {
+          void ctrl.request()
+        }
+      } else if (proxyConfig?.autoLoad !== false) {
+        void ctrl.request()
+      }
+    }
     return () => {
       if (proxyRef.current === ctrl) proxyRef.current = null
       ctrl?.destroy()
+      persistPageSizeAppliedRef.current = false
     }
   }, [hasProxy])
 
@@ -1157,6 +1191,109 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!widthsControlled) setWidthsInternal(next)
     onColumnWidthsChange?.(next)
   }
+
+  // ── persistState (batch AG, iris 独有 — vxe has no built-in persistence) ─
+  // The table is CONTROLLED — every piece is parent-owned through its change
+  // callback — so this hook is a pure LOADS/SAVES coordinator: restore
+  // replays the stored values through the callbacks (only pieces whose
+  // callback exists), saves serialize the CURRENT props on every change. The
+  // snapshot only carries pieces the parent actually owns (callback present)
+  // — what can be restored is what gets saved. `pageSize` is the documented
+  // special case: no callback exists (proxy onPageChange is a notification),
+  // so its restore is applied by the proxy-creation effect above BEFORE the
+  // first query; without a proxy it is skipped entirely.
+  const persistSnapshot = React.useMemo<IrisTablePersistedState | null>(() => {
+    if (!persistState) return null
+    const s: IrisTablePersistedState = {}
+    if (onSortChange) s.sort = sort
+    if (onMultiSortChange && multiSort) s.multiSortState = multiSortState
+    if (onFiltersChange) s.filters = filters
+    if (onFilterValuesChange) s.filterValues = filterValues
+    if (onColumnVisibilityChange) s.columnVisibility = columnVisibility
+    if (onColumnOrderChange) s.columnOrder = columnOrder
+    if (onColumnWidthsChange) s.columnWidths = columnWidths
+    if (proxy) s.pageSize = proxyState.params.pageSize
+    return s
+  }, [
+    persistState,
+    sort,
+    multiSort,
+    multiSortState,
+    filters,
+    filterValues,
+    columnVisibility,
+    columnOrder,
+    columnWidths,
+    proxy,
+    proxyState,
+    onSortChange,
+    onMultiSortChange,
+    onFiltersChange,
+    onFilterValuesChange,
+    onColumnVisibilityChange,
+    onColumnOrderChange,
+    onColumnWidthsChange,
+  ])
+  const restorePersistPiece = React.useCallback(
+    (piece: IrisTablePersistPiece, value: unknown): boolean => {
+      switch (piece) {
+        case 'sort':
+          if (!onSortChange) return false
+          if (value !== null && (typeof value !== 'object' || Array.isArray(value))) return false
+          onSortChange(value as IrisTableSortState | null)
+          return true
+        case 'multiSortState':
+          if (!multiSort || !onMultiSortChange || !Array.isArray(value)) return false
+          onMultiSortChange(value as IrisTableSortState[])
+          return true
+        case 'filters':
+          if (!onFiltersChange || typeof value !== 'object' || value === null) return false
+          onFiltersChange(value as Record<string, string>)
+          return true
+        case 'filterValues':
+          if (!onFilterValuesChange || typeof value !== 'object' || value === null) return false
+          onFilterValuesChange(value as IrisTableFilterValues)
+          return true
+        case 'columnVisibility':
+          if (!onColumnVisibilityChange || typeof value !== 'object' || value === null) return false
+          onColumnVisibilityChange(value as Record<string, boolean>)
+          return true
+        case 'columnOrder':
+          if (!onColumnOrderChange || !Array.isArray(value)) return false
+          onColumnOrderChange(value as string[])
+          return true
+        case 'columnWidths':
+          if (!onColumnWidthsChange || typeof value !== 'object' || value === null) return false
+          onColumnWidthsChange(value as IrisTableColumnWidths)
+          return true
+        case 'pageSize':
+          // Applied by the proxy-creation effect before the first query;
+          // eligible only when a proxy with onPageChange exists (documented).
+          return proxyConfig?.onPageChange !== undefined && typeof value === 'number' && value > 0
+        default:
+          return false
+      }
+    },
+    [
+      multiSort,
+      onSortChange,
+      onMultiSortChange,
+      onFiltersChange,
+      onFilterValuesChange,
+      onColumnVisibilityChange,
+      onColumnOrderChange,
+      onColumnWidthsChange,
+      proxyConfig,
+    ],
+  )
+  // Parse runs during the first render (guarded, idempotent); mirror the
+  // parsed snapshot into the ref the proxy-creation effect reads above.
+  const persistParsed = usePersistState({
+    config: persistState,
+    state: persistSnapshot,
+    restorePiece: restorePersistPiece,
+  })
+  persistParsedRef.current = persistParsed.parsed
 
   // Inline editing: one cell at a time, keyed by `${rowKey}::${colKey}`. The
   // whole draft/validate/coerce session lives in the framework-agnostic

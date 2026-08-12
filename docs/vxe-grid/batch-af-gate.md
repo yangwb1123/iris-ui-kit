@@ -1,39 +1,35 @@
 **Gate PASS — batch AF complete.**
 
-## Verdict
+## Verdict handling
 
-Review (batch-af-review.md) = **FAIL, 3 findings** → all three verified resolved in HEAD (aad577f2 wrap-up already applied fixes):
+Review was **FAIL with 3 findings** — all three verified **already resolved in HEAD** (the wrap-up commit aad577f2 had applied the fixes; I verified each live before gating):
 
-| Finding                                                                                             | Resolution (verified live in this gate)                                                                                                                                                                   |
-| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **P1 stale parity baselines**（8 张 PNG 为 Table.tsx rowDrag/seq 修复前生成，react 4.4% > 0.02 门） | PNG 已在收尾提交按修复后 app 重新生成（19:01）；本 gate 实测四框架 `visual-parity.spec.ts` vxe 块全过：react 2/2 @0.02 · solid 2/2 @0.02 · svelte 2/2 @0.02 · vue 2/2 @0.05（4% 为 vue 已知固有渲染基线） |
-| **P2 prettier 不净**（Table.tsx:4614 / DECISIONS.md:613）                                           | `npx prettier --check packages/react/src/primitives/table/Table.tsx docs/vxe-grid/DECISIONS.md` → clean                                                                                                   |
-| **P3 comparison.md 措辞**（AF 行「core 零改动」与行内 core 改动矛盾）                               | 现行为「改动仅 additive（core 增量缺省字节不变）、manifest 无 diff」                                                                                                                                      |
+| Finding                                          | Verification                                                                                                                                                                                                                       |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P1** stale parity PNGs                         | Ran `visual-parity.spec.ts` vxe blocks live against committed baselines: **react 2/2 @0.02 · solid 2/2 @0.02 · svelte 2/2 @0.02 · vue 2/2 @0.05** (vue's 4% is its known intrinsic baseline). Baselines were regenerated post-fix. |
+| **P2** prettier dirty (Table.tsx / DECISIONS.md) | `npx prettier --check` → clean                                                                                                                                                                                                     |
+| **P3** "core 零改动" wording                     | AF row now reads "改动仅 additive（core 增量缺省字节不变）"                                                                                                                                                                        |
 
 ## Full repo gate — all green
 
-- **turbo `test typecheck lint build`**：`EXIT=0` — **180/180 tasks**（158 cached, 22 executed）
-- **audit**: `No known vulnerabilities found`（0）
-- **gen:manifest + check:manifest**：manifest 重新生成 → **155 components × 4 frameworks**（155 in all 4）、86 tokens、`up to date (2 files)`、无 diff
+- **turbo `test typecheck lint build`**: **180/180 tasks** (158 cached, 22 executed)
+- **audit**: `No known vulnerabilities found` — **0**
+- **gen:manifest + check:manifest**: **155 components × 4 frameworks**, 86 tokens, `up to date (2 files)`, no diff
 
-### Final test counts
+## Final test counts
 
-| Suite  | Tests                               |
-| ------ | ----------------------------------- |
-| react  | **1829**（162 files）               |
-| vue    | 1531（151 files）                   |
-| solid  | 974 + 34 hydration（128 + 1 files） |
-| svelte | 916 + 31 hydration（125 + 1 files） |
-| core   | 1255（81 files）                    |
+| Suite  | Tests                |
+| ------ | -------------------- |
+| core   | **1255** (81 files)  |
+| react  | **1829** (162 files) |
+| vue    | 1531 (151 files)     |
+| solid  | 974 + 34 hydration   |
+| svelte | 916 + 31 hydration   |
 
-### Browser E2E（批 AF 相关，live 实测）
+Browser E2E (batch-AF relevant, live): `vxe-grid.spec.ts` 3/3 per framework ×4, vxe visual parity 8/8. Note: this shared machine (load ~14, many concurrent sessions) caused occasional login timeouts in the full parallel mainline run — every failing spec passed on isolated rerun; not a regression.
 
-- `vxe-grid.spec.ts`：react 3/3 · vue 3/3 · solid 3/3 · svelte 3/3
-- `visual-parity.spec.ts` vxe 块：四框架 2/2 × 4 = 8/8（阈值 react/solid/svelte 0.02、vue 0.05）
-- 说明：本机为共享高负载环境（load ~14，多会话并发），主链路全量并行跑偶发登录页超时（CPU 饥饿）；逐 spec 复跑全部通过，非回归。CI 的 GitHub runner 无此争用。
+## Docs + commit
 
-### Docs updated
-
-- `docs/vxe-grid-comparison.md`：批 AF 行 ✅（四框架 e2e + 视觉 + Excel）；交接注更新为 gate 实测通过
-- `docs/vxe-grid/DECISIONS.md`：追加 gate 阶段记录
-- `docs/vxe-grid/batch-af-gate.md`：本报告
+- `docs/vxe-grid-comparison.md`: batch AF rows marked ✅ (四框架 e2e + 视觉 + Excel), handoff note updated to gate-verified status
+- Added `docs/vxe-grid/batch-af-gate.md` gate report + DECISIONS.md gate entry
+- **Commit**: `035ea48a` — `feat(table): vxe-grid 批 AF——四框架 example E2E + 导出 Excel 样式` (3 files, +45/−1); working tree clean

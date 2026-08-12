@@ -32,6 +32,9 @@ export {
   type IrisTableSpan,
   type IrisTableFilterOption,
   type IrisTableFilterValues,
+  type IrisTablePersistConfig,
+  type IrisTablePersistPiece,
+  type IrisTablePersistedState,
   type IrisTableScrollbarConfig,
   type IrisTableEditDirtyConfig,
 } from './types'

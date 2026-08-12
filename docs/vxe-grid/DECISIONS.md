@@ -622,6 +622,9 @@
 
 ## 2026-08-12 — stage 'gate' — PASS
 
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ah-gate.md [ok]: 批 AH gate：review FAIL（4 条）全修复 + 回归测试。HIGH：cellRange+onCellClick 组合锚点更新移入 handleCellClick（死代码 spread onClick 删除；新测试断言 bar 可见非仅渲染）。MEDIUM：applyViewSnapshot 逐块改经 restorePersistPiece 类型守卫（篡改 {sort:42} 不达回调；测试验证）。LOW：保存哨兵名读时丢弃 + 保存拒绝（哨兵移入 useTableViews 导出）；工具栏 aria-label 独立键 table.range.toolbar（+1 en+zh，批 AH 共 +7）。全仓 gate：turbo 180/180（58 cached，4m24s）· audit 0 · gen:manifest + check:manifest 155×4 / 86 tokens up-to-date 无 diff。react 1877/1877 实测（+4）；vitest 全仓 7621 通过 0 失败；SSR node:test 10 + 桌面 go 3。comparison.md 批 AH 行更新（16+11 新测试、+7 i18n 键、修复注明）+ 测试计数行（react 1877 批 AH +27）。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ah-gate.md
+
 - task /home/u1/iris-ui/docs/vxe-grid/batch-af-gate.md [ok]: 批 AF gate：review 三发现全部核销——P1 基线 PNG 已随收尾提交按修复后 app 重新生成（实测 react/solid/svelte 2/2 @0.02、vue 2/2 @0.05）、P2 prettier 已净（Table.tsx + DECISIONS.md --check 通过）、P3 comparison.md 措辞已改「改动仅 additive」。全仓 gate：turbo 180/180 · audit 0 · manifest 155×4 up-to-date · core 1255 / react 1829 / vue 1531 / solid 974+34 hydration / svelte 916+31 hydration。三端 vxe-grid.spec.ts 3/3 + 四框架 vxe 视觉 parity 8/8 实测通过。本机高负载下主链路全量并行偶发登录超时（CPU 争用），逐 spec 复跑全过，非回归。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-af-gate.md
 
@@ -659,3 +662,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ah-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ah-baseline.md
+
+## 2026-08-11 23:37:28 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ah-adapt.md [ok]: Files changed (17 committed): **New (5):**; Tests added: 23 (14 views + 9 range) → react 1850 → 1873: All spec'd cases covered: save→stored snapshot via same collector; select replays through callbacks (`pageSize` via prox; Verification (all green on the commit): - react `typecheck` ✓ · `test` 1873/1873 ✓ · `lint` 0 errors (1 pre-existing `IrisTable` complexity warning) ✓; Constraints honored: Core framework-free (0 core logic changes — core i18n keys only), react-only, additive (paste/fnr paths untouched), no d; Left over: - `change-budget` soft target exceeded (advisory, non-blocking) — a future split could extract `applyViewSnapshot`/`clea
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ah-adapt.md
+
+## 2026-08-11 23:43:20 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ah-review.md [ok]: Verdict: FAIL (findings 1–2 block; 3–4 low): **Verification (all green):** react test 1873/1873 · typecheck clean · lint 0 errors (1 pre-existing complexity warning)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ah-review.md

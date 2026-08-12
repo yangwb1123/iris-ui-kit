@@ -96,6 +96,7 @@ interface HarnessProps {
   onActiveViewChange?: Mock
   onSortChange?: Mock
   onFiltersChange?: Mock
+  onColumnOrderChange?: Mock
   proxy?: { query: Mock; pageSize?: number; onPageChange?: Mock }
 }
 
@@ -103,9 +104,17 @@ interface HarnessProps {
  * views capture them via the same collector as persistState and replay them
  * through the same change callbacks. */
 function ViewsHarness(props: HarnessProps): React.ReactElement {
-  const { viewsCfg, onActiveViewChange, onSortChange, onFiltersChange, proxy } = props
+  const {
+    viewsCfg,
+    onActiveViewChange,
+    onSortChange,
+    onFiltersChange,
+    onColumnOrderChange,
+    proxy,
+  } = props
   const [sort, setSort] = React.useState<IrisTableSortState | null>(null)
   const [filters, setFilters] = React.useState<Record<string, string>>({})
+  const [columnOrder, setColumnOrder] = React.useState<string[]>([])
   const [pageSize, setPageSize] = React.useState(proxy?.pageSize ?? 10)
   return (
     <IrisTable
@@ -123,6 +132,11 @@ function ViewsHarness(props: HarnessProps): React.ReactElement {
       onFiltersChange={(next) => {
         setFilters(next)
         onFiltersChange?.(next)
+      }}
+      columnOrder={columnOrder}
+      onColumnOrderChange={(next) => {
+        setColumnOrder(next)
+        onColumnOrderChange?.(next)
       }}
       proxyConfig={
         proxy
@@ -166,11 +180,12 @@ describe('@iris-ui-kit/react IrisTable views (batch AH, iris 独有)', () => {
     const stored = lastSaved(storage)
     expect(stored).toHaveLength(1)
     expect(stored[0]!.name).toBe('My View')
-    // Owned channels (sort + filters, wired by the harness) are captured;
-    // unowned ones (visibility/order/widths/pageSize) stay absent.
+    // Owned channels (sort + filters + columnOrder, wired by the harness) are
+    // captured; unowned ones (visibility/widths/pageSize) stay absent.
     expect(stored[0]!.snapshot).toEqual({
       sort: { key: 'name', direction: 'asc' },
       filters: {},
+      columnOrder: [],
     })
     expect(viewNames()).toEqual(['My View'])
     // Saving selects the new view (controlled-only activeKey, not persisted).
@@ -253,6 +268,57 @@ describe('@iris-ui-kit/react IrisTable views (batch AH, iris 独有)', () => {
       expect(viewNames()).toEqual([])
       expect(document.querySelector('[role=table]')).not.toBeNull()
     }
+  })
+
+  it('tampered snapshot pieces never reach the callbacks (per-piece type guards)', () => {
+    // Review finding: applyViewSnapshot re-implemented the gating WITHOUT the
+    // per-piece type guards restorePersistPiece has — a tampered entry like
+    // {snapshot:{sort:42}} landed raw in onSortChange(42). Now every piece
+    // routes through restorePersistPiece: sort must be an object or null,
+    // columnOrder an array, pageSize a positive number.
+    const storage = makeStorage(
+      JSON.stringify([
+        { name: 'Bad', snapshot: { sort: 42, columnOrder: 'nope', pageSize: -3 } },
+        { name: 'Ok', snapshot: { sort: { key: 'name', direction: 'asc' } } },
+      ]),
+    )
+    const onSortChange = vi.fn()
+    const onColumnOrderChange = vi.fn()
+    render(
+      <ViewsHarness
+        viewsCfg={{ storage: storageAdapter(storage) }}
+        onSortChange={onSortChange}
+        onColumnOrderChange={onColumnOrderChange}
+      />,
+    )
+    fireEvent.change(viewsSelect(), { target: { value: 'Bad' } })
+    expect(onSortChange).not.toHaveBeenCalled()
+    expect(onColumnOrderChange).not.toHaveBeenCalled()
+    // A well-formed piece still applies.
+    fireEvent.change(viewsSelect(), { target: { value: 'Ok' } })
+    expect(onSortChange).toHaveBeenLastCalledWith({ key: 'name', direction: 'asc' })
+  })
+
+  it('a view named like the save sentinel is dropped at read and refused at save', () => {
+    // Review finding: a view named __iris-save-view collided with the
+    // toolbar's save-item sentinel and became unselectable.
+    const storage = makeStorage(JSON.stringify([{ name: SAVE_ITEM, snapshot: {} }]))
+    render(<ViewsHarness viewsCfg={{ storage: storageAdapter(storage) }} />)
+    expect(viewNames()).toEqual([])
+    // The save path refuses the sentinel name too (no write, no selection).
+    const onActiveViewChange = vi.fn()
+    cleanup()
+    const s2 = makeStorage()
+    render(
+      <ViewsHarness
+        viewsCfg={{ storage: storageAdapter(s2) }}
+        onActiveViewChange={onActiveViewChange}
+      />,
+    )
+    saveView(SAVE_ITEM)
+    expect(s2.setItem).not.toHaveBeenCalled()
+    expect(viewNames()).toEqual([])
+    expect(onActiveViewChange).not.toHaveBeenCalled()
   })
 
   it('duplicate names upsert (one entry, newest snapshot)', () => {

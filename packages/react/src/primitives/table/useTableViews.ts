@@ -44,6 +44,13 @@ export interface IrisTableViewConfig {
 export const IRIS_TABLE_VIEWS_DEFAULT_KEY = 'iris-table-views'
 
 /**
+ * Sentinel select value that opens the save input — never a real view name.
+ * Views named like the sentinel are dropped at read time and refused at save
+ * time (they would otherwise render unselectable in the toolbar).
+ */
+export const IRIS_TABLE_VIEWS_SAVE_ITEM = '__iris-save-view'
+
+/**
  * Read + parse + sanitize the stored view list. Any failure → null (missing
  * key / corrupt JSON / non-array value are all ignored); entries that are not
  * `{ name: string, snapshot: object }` are dropped individually. The window
@@ -76,6 +83,7 @@ function readViews(config: IrisTableViewConfig | undefined): IrisTableNamedView[
     const name = (entry as Record<string, unknown>).name
     const snapshot = (entry as Record<string, unknown>).snapshot
     if (typeof name !== 'string' || name.trim() === '') continue
+    if (name === IRIS_TABLE_VIEWS_SAVE_ITEM) continue
     if (typeof snapshot !== 'object' || snapshot === null || Array.isArray(snapshot)) continue
     out.push({ name, snapshot: snapshot as IrisTablePersistedState })
   }
@@ -160,7 +168,7 @@ export function useTableViews(options: UseTableViewsOptions): {
   const saveView = React.useCallback(
     (name: string): void => {
       const trimmed = name.trim()
-      if (!trimmed) return
+      if (!trimmed || trimmed === IRIS_TABLE_VIEWS_SAVE_ITEM) return
       const entry: IrisTableNamedView = { name: trimmed, snapshot: snapshotRef.current ?? {} }
       const prev = viewsRef.current
       const existing = prev.findIndex((v) => v.name === trimmed)

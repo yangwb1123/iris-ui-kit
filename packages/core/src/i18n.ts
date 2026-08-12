@@ -126,6 +126,7 @@ export const defaultMessages: I18nMessages = {
   'table.range.copy': 'Copy',
   'table.range.export': 'Export CSV',
   'table.range.clear': 'Clear',
+  'table.range.toolbar': 'Cell range actions',
   'fnr.find': 'Find',
   'fnr.replace': 'Replace',
   'fnr.replaceAll': 'Replace all',

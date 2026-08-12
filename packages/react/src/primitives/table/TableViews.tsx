@@ -1,8 +1,9 @@
 import * as React from 'react'
+import { IRIS_TABLE_VIEWS_SAVE_ITEM } from './useTableViews'
 import type { IrisTableNamedView, IrisTableViewConfig } from './types'
 
-/** Internal select value that opens the save input (never a real view name). */
-const SAVE_ITEM_VALUE = '__iris-save-view'
+/** Alias — the sentinel lives with the views logic (useTableViews). */
+const SAVE_ITEM_VALUE = IRIS_TABLE_VIEWS_SAVE_ITEM
 
 interface TableViewsProps {
   config: IrisTableViewConfig | undefined

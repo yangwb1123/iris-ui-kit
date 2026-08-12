@@ -85,6 +85,29 @@ describe('@iris-ui-kit/react IrisTable range toolbar (batch AH, iris 独有)', (
     expect(bar()).not.toBeNull()
   })
 
+  it('cellRange + onCellClick: the unified click path still anchors the bar', async () => {
+    // Review-finding regression: the cellRange spread onClick was shadowed by
+    // the unified onClick, so with BOTH props the anchor never updated →
+    // useFloating never positioned → the bar rendered visibility:hidden.
+    const onCellClick = vi.fn()
+    render(<IrisTable columns={cols} data={rows} rowKey="id" cellRange onCellClick={onCellClick} />)
+    fireEvent.click(cell(0, 0))
+    expect(onCellClick).toHaveBeenCalledWith(
+      expect.objectContaining({ rowIndex: 0, columnIndex: 0 }),
+    )
+    // The bar must become VISIBLE (a positioned anchor), not just rendered.
+    await waitFor(() => expect(bar()!.style.visibility).not.toBe('hidden'))
+    // Extending through the same path re-anchors it.
+    fireEvent.click(cell(1, 1), { shiftKey: true })
+    await waitFor(() => expect(bar()!.style.visibility).not.toBe('hidden'))
+  })
+
+  it('toolbar aria-label describes the bar, not the first action', () => {
+    render(<IrisTable columns={cols} data={rows} rowKey="id" cellRange />)
+    fireEvent.click(cell(0, 0))
+    expect(bar()?.getAttribute('aria-label')).toBe('Cell range actions')
+  })
+
   it('copy writes the CURRENT range as TSV to the clipboard (no clipConfig needed)', async () => {
     stubClipboard()
     render(<IrisTable columns={cols} data={rows} rowKey="id" cellRange />)

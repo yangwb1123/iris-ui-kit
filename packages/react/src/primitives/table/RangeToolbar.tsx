@@ -80,7 +80,7 @@ export function RangeToolbar({
       ref={barRef}
       role="toolbar"
       data-iris-table-range-toolbar=""
-      aria-label={t('table.range.copy')}
+      aria-label={t('table.range.toolbar')}
       style={{
         ...floatingStyles,
         zIndex: 'var(--iris-z-popover, 1000)',

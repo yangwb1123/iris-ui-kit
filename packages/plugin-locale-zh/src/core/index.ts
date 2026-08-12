@@ -67,6 +67,7 @@ export const zhCNMessages: Record<string, string> = {
   'table.range.copy': '复制',
   'table.range.export': '导出 CSV',
   'table.range.clear': '清除',
+  'table.range.toolbar': '单元格区域操作',
   'fnr.find': '查找',
   'fnr.replace': '替换',
   'fnr.replaceAll': '全部替换',

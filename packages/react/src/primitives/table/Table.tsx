@@ -1309,42 +1309,38 @@ export function IrisTable<Row extends Record<string, unknown>>({
     ],
   )
   // Batch AH (views): apply ONE stored snapshot mid-session through the same
-  // per-piece gating as `restorePersistPiece`. The one deliberate divergence:
-  // `pageSize` — its mount-restore lives in the proxy-creation effect (a
-  // notification, not a callback), so a view apply must REPRODUCE that
-  // sequence (`onPageChange(1, size)` + exactly ONE request) instead of just
-  // declaring eligibility.
+  // per-piece callback gating + TYPE GUARDS as `restorePersistPiece` (a
+  // tampered storage entry can't land raw values in the change callbacks).
+  // The one deliberate divergence: `pageSize` — its mount-restore lives in
+  // the proxy-creation effect (a notification, not a callback), so a view
+  // apply must REPRODUCE that sequence (`onPageChange(1, size)` + exactly ONE
+  // request) instead of just declaring eligibility.
   const applyViewSnapshot = React.useCallback(
     (snapshot: IrisTablePersistedState): void => {
-      if (snapshot.sort !== undefined && onSortChange) onSortChange(snapshot.sort)
-      if (snapshot.multiSortState !== undefined && multiSort && onMultiSortChange)
-        onMultiSortChange(snapshot.multiSortState)
-      if (snapshot.filters !== undefined && onFiltersChange) onFiltersChange(snapshot.filters)
-      if (snapshot.filterValues !== undefined && onFilterValuesChange)
-        onFilterValuesChange(snapshot.filterValues)
-      if (snapshot.columnVisibility !== undefined && onColumnVisibilityChange)
-        onColumnVisibilityChange(snapshot.columnVisibility)
-      if (snapshot.columnOrder !== undefined && onColumnOrderChange)
-        onColumnOrderChange(snapshot.columnOrder)
-      if (snapshot.columnWidths !== undefined && onColumnWidthsChange)
-        onColumnWidthsChange(snapshot.columnWidths)
-      const pageChange = proxyConfig?.onPageChange
-      if (pageChange && typeof snapshot.pageSize === 'number' && snapshot.pageSize > 0) {
-        pageChange(1, snapshot.pageSize)
-        void proxyRef.current?.request({ pageSize: snapshot.pageSize, page: 1 })
+      if (snapshot.sort !== undefined) restorePersistPiece('sort', snapshot.sort)
+      if (snapshot.multiSortState !== undefined)
+        restorePersistPiece('multiSortState', snapshot.multiSortState)
+      if (snapshot.filters !== undefined) restorePersistPiece('filters', snapshot.filters)
+      if (snapshot.filterValues !== undefined)
+        restorePersistPiece('filterValues', snapshot.filterValues)
+      if (snapshot.columnVisibility !== undefined)
+        restorePersistPiece('columnVisibility', snapshot.columnVisibility)
+      if (snapshot.columnOrder !== undefined)
+        restorePersistPiece('columnOrder', snapshot.columnOrder)
+      if (snapshot.columnWidths !== undefined)
+        restorePersistPiece('columnWidths', snapshot.columnWidths)
+      // `restorePersistPiece` only gates pageSize eligibility (the actual
+      // restore lives in the proxy-creation effect); the reproduction stays
+      // here so a view apply issues exactly one request.
+      if (snapshot.pageSize !== undefined && restorePersistPiece('pageSize', snapshot.pageSize)) {
+        const pageChange = proxyConfig?.onPageChange
+        if (pageChange) {
+          pageChange(1, snapshot.pageSize)
+          void proxyRef.current?.request({ pageSize: snapshot.pageSize, page: 1 })
+        }
       }
     },
-    [
-      multiSort,
-      onSortChange,
-      onMultiSortChange,
-      onFiltersChange,
-      onFilterValuesChange,
-      onColumnVisibilityChange,
-      onColumnOrderChange,
-      onColumnWidthsChange,
-      proxyConfig,
-    ],
+    [restorePersistPiece, proxyConfig],
   )
   // Parse runs during the first render (guarded, idempotent); mirror the
   // parsed snapshot into the ref the proxy-creation effect reads above.
@@ -2239,6 +2235,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
     } else if (cellRange) {
       if (e.shiftKey) cellRangeCtrl.extendRange(idx, ci)
       else cellRangeCtrl.startRange(idx, ci)
+      // Batch AH: anchor the floating range toolbar at the new range's first
+      // cell. This is the ONLY anchor-update path when `onCellClick` is also
+      // wired (the cellRange spread onClick below would be shadowed by the
+      // unified onClick → dead code — hence the anchor lives here).
+      updateRangeToolbarAnchor()
     } else if (col.editable && editConfig?.trigger === 'click' && k != null) {
       beginEdit(row, col, k, idx)
     }
@@ -3668,14 +3669,6 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     'data-iris-cell-row': idx,
                     'data-iris-cell-col': ci,
                     'data-iris-cell-selected': isInRange(idx, ci) ? 'true' : undefined,
-                    onClick: (e: React.MouseEvent) => {
-                      if (e.shiftKey) {
-                        cellRangeCtrl.extendRange(idx, ci)
-                      } else {
-                        cellRangeCtrl.startRange(idx, ci)
-                      }
-                      updateRangeToolbarAnchor()
-                    },
                   }
                 : null)}
               {...(fnrHighlighting

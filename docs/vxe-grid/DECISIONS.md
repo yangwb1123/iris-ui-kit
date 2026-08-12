@@ -654,3 +654,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ag-gate.md [ok]: Verdict: Review PASS with 5 non-blocking LOW/INFO findings (all documented, no fixes required).; Gate results (all green): | Gate | Result |; Final test counts: | Suite | Tests |; Docs + commit: - `docs/vxe-grid-comparison.md`: 构建状态 header adds 批 AG; test-count line updated to `react 1850（批 AG +21）` + `manifest 15
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ag-gate.md
+
+## 2026-08-11 23:14:08 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ah-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ah-baseline.md

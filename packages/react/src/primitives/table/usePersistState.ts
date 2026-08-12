@@ -39,8 +39,9 @@ const ALL_PIECES: readonly IrisTablePersistPiece[] = [
 /** Default storage key (vxe has no equivalent — iris 独有 naming). */
 export const IRIS_TABLE_PERSIST_DEFAULT_KEY = 'iris-table-state'
 
-/** SSR-safe default adapter: localStorage when available (guarded). */
-function defaultStorage(): Pick<Storage, 'getItem' | 'setItem'> | null {
+/** SSR-safe default adapter: localStorage when available (guarded). Shared by
+ * `usePersistState` and the views hook (batch AH) — one guard, one truth. */
+export function defaultStorage(): Pick<Storage, 'getItem' | 'setItem'> | null {
   if (typeof window === 'undefined') return null
   try {
     return typeof localStorage !== 'undefined' ? localStorage : null
@@ -146,9 +147,12 @@ export function usePersistState(options: UsePersistStateOptions): {
   // change. A skip-first channel (just restored) keeps its RESTORED value
   // instead of the pre-restore props value — the mount commit never
   // overwrites storage; the whole-object write stays atomic and lossless.
+  // Batch AH: the snapshot memo now also feeds the named-views hook (same
+  // collector) — a views-only table must never serialize into the persist key.
+  const hasConfig = config !== undefined
   const { storage, key, include } = config ?? {}
   React.useEffect(() => {
-    if (storage === false || state === null) return
+    if (!hasConfig || storage === false || state === null) return
     const store = storage ?? defaultStorage()
     if (!store) return
     const included = include ? new Set<IrisTablePersistPiece>(include) : null
@@ -177,7 +181,7 @@ export function usePersistState(options: UsePersistStateOptions): {
     } catch {
       // Quota / security errors must never break the table.
     }
-  }, [state, storage, key, include])
+  }, [state, storage, key, include, hasConfig])
 
   return { parsed: parsedRef.current }
 }

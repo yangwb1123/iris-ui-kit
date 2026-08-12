@@ -36289,7 +36289,6 @@
           "name": "footerAlign",
           "type": "IrisTableAlign",
           "optional": true,
-          "description": "wins over the column's `align`. Applies to summary, footer-method and",
           "enum": [
             "left",
             "center",
@@ -36645,6 +36644,18 @@
           "type": "import('./types').IrisTablePersistConfig",
           "optional": true,
           "description": "Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'."
+        },
+        {
+          "name": "views",
+          "type": "import('./types').IrisTableViewConfig",
+          "optional": true,
+          "description": "Named view presets (batch AH, iris 独有) — toolbar select of saved snapshots."
+        },
+        {
+          "name": "onActiveViewChange",
+          "type": "(key: string | null) => void",
+          "optional": true,
+          "description": "Fired when the active view changes (select / save / delete clears null)."
         },
         {
           "name": "columnVirtualization",
@@ -37040,7 +37051,6 @@
               "name": "footerAlign",
               "type": "IrisTableAlign",
               "optional": true,
-              "description": "wins over the column's `align`. Applies to summary, footer-method and",
               "enum": [
                 "left",
                 "center",
@@ -37398,6 +37408,18 @@
               "description": "Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'."
             },
             {
+              "name": "views",
+              "type": "import('./types').IrisTableViewConfig",
+              "optional": true,
+              "description": "Named view presets (batch AH, iris 独有) — toolbar select of saved snapshots."
+            },
+            {
+              "name": "onActiveViewChange",
+              "type": "(key: string | null) => void",
+              "optional": true,
+              "description": "Fired when the active view changes (select / save / delete clears null)."
+            },
+            {
               "name": "columnVirtualization",
               "type": "boolean",
               "optional": true,
@@ -37600,6 +37622,7 @@
             }
           ],
           "events": [
+            "onActiveViewChange",
             "onCellClick",
             "onCellDblClick",
             "onCellEdit",
@@ -37654,6 +37677,7 @@
             "IrisTableHandle",
             "IrisTableMergeCell",
             "IrisTableMergeFooterItem",
+            "IrisTableNamedView",
             "IrisTablePagerConfig",
             "IrisTablePersistConfig",
             "IrisTablePersistPiece",
@@ -37670,6 +37694,7 @@
             "IrisTableSpan",
             "IrisTableTooltipConfig",
             "IrisTableValidConfig",
+            "IrisTableViewConfig",
             "IrisTableVirtualOptions"
           ]
         },
@@ -38658,6 +38683,7 @@
         "onExpandedRowsChange",
         "onExpandChange",
         "onTreeExpandChange",
+        "onActiveViewChange",
         "onRetry",
         "onDataChange"
       ],
@@ -38667,8 +38693,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 124,
-        "eventCount": 25
+        "propCount": 126,
+        "eventCount": 26
       }
     },
     {

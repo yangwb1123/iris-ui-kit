@@ -57,8 +57,7 @@ export type IrisTablePersistPiece =
   | 'pageSize'
 
 /** One persisted state snapshot (batch AG): the pieces `persistState` loads
- * and saves, keyed by piece name. Optional keys — a piece only appears when
- * its value is defined and the piece is included. */
+ * and saves, keyed by piece name — a piece appears only when defined + included. */
 export interface IrisTablePersistedState {
   sort?: IrisTableSortState | null
   multiSortState?: IrisTableSortState[]
@@ -86,6 +85,8 @@ export interface IrisTablePersistConfig {
   /** Pieces to persist. Defaults to ALL pieces. */
   include?: Array<IrisTablePersistPiece>
 }
+
+export type { IrisTableNamedView, IrisTableViewConfig } from './useTableViews'
 
 export interface IrisTableSortState {
   key: string

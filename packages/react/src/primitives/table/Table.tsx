@@ -49,7 +49,7 @@ import { IrisPagination } from '../pagination'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import type { IrisTableProps, IrisTableProxyConfig } from './props'
 import type { IrisTableHandle } from './types'
-import { exportCsv } from './exportCsv'
+import { downloadCsv, exportCsv } from './exportCsv'
 
 const TABLE_ROW_CSS = `
 [data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover {
@@ -155,8 +155,11 @@ const TABLE_ROW_CSS = `
 `
 import { useTableSort } from './useTableSort'
 import { usePersistState } from './usePersistState'
+import { useTableViews } from './useTableViews'
 import { TableContextMenu } from './ContextMenu'
 import { TableFilterPanel } from './FilterPanel'
+import { TableViews } from './TableViews'
+import { RangeToolbar } from './RangeToolbar'
 import type {
   IrisTableColumn,
   IrisTableColumnWidths,
@@ -538,6 +541,20 @@ function tsvCell(value: unknown): string {
   return TSV_FORMULA_LEAD.test(text) ? `'${text}` : text
 }
 
+// Range CSV export (batch AH): RFC-4180 field quoting + the same OWASP
+// formula neutralization as `tsvCell` / core `toCsv` (a leading = + - @ tab CR
+// is prefixed with a quote so spreadsheets import it as literal text). The
+// range export is HEADERLESS by design — a range is a rectangle of cells, not
+// a table view (baseline fiat).
+const CSV_FORMULA_LEAD = /^[=+\-@\t\r]/
+function csvRangeCell(value: unknown): string {
+  if (value == null) return ''
+  const text = String(value)
+  if (typeof value === 'number' && Number.isFinite(value)) return text
+  const safe = CSV_FORMULA_LEAD.test(text) ? `'${text}` : text
+  return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
+}
+
 /** Read clipboard text; null when unavailable or denied (jsdom: no-op). */
 async function readClipboardText(): Promise<string | null> {
   const nav = navigator as Navigator & { clipboard?: { readText?: () => Promise<string> } }
@@ -762,6 +779,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   checkboxRange = false,
   virtualScroll,
   persistState,
+  views,
+  onActiveViewChange,
   columnVirtualization = false,
   emptyState,
   loading = false,
@@ -1201,9 +1220,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // — what can be restored is what gets saved. `pageSize` is the documented
   // special case: no callback exists (proxy onPageChange is a notification),
   // so its restore is applied by the proxy-creation effect above BEFORE the
-  // first query; without a proxy it is skipped entirely.
+  // first query; without a proxy it is skipped entirely. Batch AH: the SAME
+  // collector feeds the named-views hook (views save the current pieces under
+  // a typed name) — one collector, two consumers.
   const persistSnapshot = React.useMemo<IrisTablePersistedState | null>(() => {
-    if (!persistState) return null
+    if (!persistState && !views) return null
     const s: IrisTablePersistedState = {}
     if (onSortChange) s.sort = sort
     if (onMultiSortChange && multiSort) s.multiSortState = multiSortState
@@ -1216,6 +1237,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     return s
   }, [
     persistState,
+    views,
     sort,
     multiSort,
     multiSortState,
@@ -1286,6 +1308,44 @@ export function IrisTable<Row extends Record<string, unknown>>({
       proxyConfig,
     ],
   )
+  // Batch AH (views): apply ONE stored snapshot mid-session through the same
+  // per-piece gating as `restorePersistPiece`. The one deliberate divergence:
+  // `pageSize` — its mount-restore lives in the proxy-creation effect (a
+  // notification, not a callback), so a view apply must REPRODUCE that
+  // sequence (`onPageChange(1, size)` + exactly ONE request) instead of just
+  // declaring eligibility.
+  const applyViewSnapshot = React.useCallback(
+    (snapshot: IrisTablePersistedState): void => {
+      if (snapshot.sort !== undefined && onSortChange) onSortChange(snapshot.sort)
+      if (snapshot.multiSortState !== undefined && multiSort && onMultiSortChange)
+        onMultiSortChange(snapshot.multiSortState)
+      if (snapshot.filters !== undefined && onFiltersChange) onFiltersChange(snapshot.filters)
+      if (snapshot.filterValues !== undefined && onFilterValuesChange)
+        onFilterValuesChange(snapshot.filterValues)
+      if (snapshot.columnVisibility !== undefined && onColumnVisibilityChange)
+        onColumnVisibilityChange(snapshot.columnVisibility)
+      if (snapshot.columnOrder !== undefined && onColumnOrderChange)
+        onColumnOrderChange(snapshot.columnOrder)
+      if (snapshot.columnWidths !== undefined && onColumnWidthsChange)
+        onColumnWidthsChange(snapshot.columnWidths)
+      const pageChange = proxyConfig?.onPageChange
+      if (pageChange && typeof snapshot.pageSize === 'number' && snapshot.pageSize > 0) {
+        pageChange(1, snapshot.pageSize)
+        void proxyRef.current?.request({ pageSize: snapshot.pageSize, page: 1 })
+      }
+    },
+    [
+      multiSort,
+      onSortChange,
+      onMultiSortChange,
+      onFiltersChange,
+      onFilterValuesChange,
+      onColumnVisibilityChange,
+      onColumnOrderChange,
+      onColumnWidthsChange,
+      proxyConfig,
+    ],
+  )
   // Parse runs during the first render (guarded, idempotent); mirror the
   // parsed snapshot into the ref the proxy-creation effect reads above.
   const persistParsed = usePersistState({
@@ -1294,6 +1354,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
     restorePiece: restorePersistPiece,
   })
   persistParsedRef.current = persistParsed.parsed
+
+  // ── Named view presets (batch AH, iris 独有 — vxe has no equivalent) ────
+  // The toolbar select + inline save input (TableViews) render the hook's
+  // state; snapshots come from the SAME collector as persistState (the memo
+  // above) and apply through the same per-piece callbacks.
+  const tableViews = useTableViews({
+    config: views,
+    snapshot: persistSnapshot,
+    applySnapshot: applyViewSnapshot,
+    activeKey: views?.activeKey,
+    onActiveViewChange,
+  })
 
   // Inline editing: one cell at a time, keyed by `${rowKey}::${colKey}`. The
   // whole draft/validate/coerce session lives in the framework-agnostic
@@ -2781,6 +2853,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     else if (e.key === 'ArrowLeft') nextCol = Math.max(0, nextCol - 1)
     else nextCol = Math.min(leafColumns.length - 1, nextCol + 1)
     cellRangeCtrl.extendRange(nextRow, nextCol)
+    updateRangeToolbarAnchor()
   }
 
   // ── Clipboard batch O (clipConfig): Ctrl/Cmd+C copies the selected range as
@@ -2879,6 +2952,120 @@ export function IrisTable<Row extends Record<string, unknown>>({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [clipConfig, cellRangeCtrl, buildRangeTsv, pasteIntoRange])
+
+  // ── Range floating toolbar (batch AH, iris 独有) ───────────────────────
+  // Visibility derives from the range store: `cellRange` + a live selection
+  // (≥1 cell) → the bar floats ABOVE the first selected cell (virtual anchor
+  // = that cell's LIVE rect, placement top, flip/shift on, portal). It
+  // repositions on scroll via autoUpdate instead of closing (deliberate
+  // divergence from the right-click menu) and hides when the range clears
+  // (Escape / outside click run useDismiss → clearRange). Actions: 复制
+  // reuses the clipConfig TSV builder for the CURRENT range; 导出 CSV
+  // downloads a headerless CSV of the range rectangle (core `downloadCsv`);
+  // 清除 zeroes the range cells through one batched commitRowList.
+  const rangeToolbarAnchorRef = React.useRef<HTMLElement | null>(null)
+  // Remount token: useFloating's autoUpdate does not re-run while `open`
+  // stays true, so every range change remounts the bar at the fresh anchor
+  // (same pattern as contextMenuSeq / filterPanelSeq).
+  const [rangeToolbarSeq, setRangeToolbarSeq] = React.useState(0)
+  const activeRange = React.useMemo(() => {
+    if (!cellRange) return null
+    const { anchor, active } = cellRangeState
+    if (!anchor || !active) return null
+    return {
+      start: {
+        row: Math.min(anchor.row, active.row),
+        col: Math.min(anchor.col, active.col),
+      },
+      end: {
+        row: Math.max(anchor.row, active.row),
+        col: Math.max(anchor.col, active.col),
+      },
+    }
+  }, [cellRange, cellRangeState])
+  const updateRangeToolbarAnchor = React.useCallback((): void => {
+    const range = cellRangeCtrl.getRange()
+    if (!range) {
+      rangeToolbarAnchorRef.current = null
+      return
+    }
+    const { row, col } = range.start
+    // Live-rect closure: getBoundingClientRect is re-read on every autoUpdate
+    // cycle, so the bar tracks the anchor cell through scrolls/resizes.
+    rangeToolbarAnchorRef.current = {
+      getBoundingClientRect: () => {
+        const el = rootRef.current?.querySelector<HTMLElement>(
+          `[data-iris-cell-row="${row}"][data-iris-cell-col="${col}"]`,
+        )
+        const rect = el?.getBoundingClientRect()
+        const base = rect ?? { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 }
+        return {
+          left: base.left,
+          top: base.top,
+          right: base.right,
+          bottom: base.bottom,
+          width: base.width,
+          height: base.height,
+          x: base.left,
+          y: base.top,
+          toJSON() {},
+        }
+      },
+    } as unknown as HTMLElement
+    setRangeToolbarSeq((s) => s + 1)
+  }, [cellRangeCtrl])
+
+  const copyActiveRange = React.useCallback((): void => {
+    const range = cellRangeCtrl.getRange()
+    if (!range) return
+    void writeClipboardText(buildRangeTsv(range))
+  }, [cellRangeCtrl, buildRangeTsv])
+
+  const exportActiveRangeCsv = React.useCallback((): string => {
+    const range = cellRangeCtrl.getRange()
+    if (!range) return ''
+    const body = liveBodyRef.current
+    const cols = liveLeafRef.current
+    const rangeCols = cols.slice(range.start.col, range.end.col + 1)
+    const lines: string[] = []
+    for (let r = range.start.row; r <= range.end.row; r += 1) {
+      const row = body[r]
+      lines.push(
+        rangeCols.map((col) => csvRangeCell(row ? getCellValue(row, col) : null)).join(','),
+      )
+    }
+    return lines.join('\n')
+  }, [cellRangeCtrl])
+
+  const clearActiveRange = React.useCallback((): void => {
+    const range = cellRangeCtrl.getRange()
+    if (!range || !rowKey) return
+    const body = liveBodyRef.current
+    const cols = liveLeafRef.current
+    // Same byKey patch shape as the clipboard paste path: every cell of the
+    // rectangle becomes '' — ONE batched commitRowList.
+    const byKey = new Map<string | number, Record<string, string>>()
+    for (let r = range.start.row; r <= range.end.row; r += 1) {
+      const row = body[r]
+      if (!row) continue
+      const k = rowKeyOf(row)
+      if (k == null) continue
+      const patches: Record<string, string> = {}
+      for (let c = range.start.col; c <= range.end.col; c += 1) {
+        const col = cols[c]
+        if (col) patches[col.key] = ''
+      }
+      byKey.set(k, { ...byKey.get(k), ...patches })
+    }
+    if (byKey.size === 0) return
+    const keyField = rowKey
+    const next = (externalDataRef.current ?? []).map((r) => {
+      const k = (r as Record<string, unknown>)[keyField]
+      const patch = k != null ? byKey.get(k as string | number) : undefined
+      return patch ? { ...r, ...patch } : r
+    })
+    commitRowList(next)
+  }, [cellRangeCtrl, rowKey, commitRowList])
 
   // ── Find & replace (batch O: fnr) — Ctrl/Cmd+F opens the bar (when not
   // editing); matches highlight over bodyData in flat mode (case-insensitive
@@ -3487,6 +3674,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       } else {
                         cellRangeCtrl.startRange(idx, ci)
                       }
+                      updateRangeToolbarAnchor()
                     },
                   }
                 : null)}
@@ -3523,6 +3711,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     ? (e: React.MouseEvent) => {
                         if (e.shiftKey) cellRangeCtrl.extendRange(idx, ci)
                         else cellRangeCtrl.startRange(idx, ci)
+                        updateRangeToolbarAnchor()
                       }
                     : col.editable && editConfig?.trigger === 'click'
                       ? () => beginEdit(row, col, k, idx)
@@ -4182,7 +4371,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           </div>
         </form>
       ) : null}
-      {toolbar && layouts?.toolbar !== 'hidden' ? (
+      {(toolbar || views) && layouts?.toolbar !== 'hidden' ? (
         <div
           data-iris-table-toolbar=""
           style={{
@@ -4205,13 +4394,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
             ...(zoomed ? { zIndex: 'calc(var(--iris-z-popover, 1000) + 1)' } : null),
           }}
         >
-          {toolbar.title ? (
+          {toolbar?.title ? (
             <span style={{ fontWeight: 600, color: 'var(--iris-foreground)' }}>
-              {toolbar.title}
+              {toolbar?.title}
             </span>
           ) : null}
           <div style={{ flex: 1 }} />
-          {toolbar.onRefresh ? (
+          {toolbar?.onRefresh ? (
             <button
               type="button"
               data-iris-table-toolbar-refresh=""
@@ -4233,7 +4422,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               ↻
             </button>
           ) : null}
-          {toolbar.onImport ? (
+          {toolbar?.onImport ? (
             <>
               <input
                 ref={importFileRef}
@@ -4260,7 +4449,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               </button>
             </>
           ) : null}
-          {toolbar.onExport ? (
+          {toolbar?.onExport ? (
             <button
               type="button"
               data-iris-table-toolbar-export=""
@@ -4278,7 +4467,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               ⇩
             </button>
           ) : null}
-          {toolbar.columnSettings && columnVisibility ? (
+          {toolbar?.columnSettings && columnVisibility ? (
             <>
               <button
                 type="button"
@@ -4484,7 +4673,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               {zoomed ? '✕' : '⛶'}
             </button>
           ) : null}
-          {toolbar.buttons && toolbar.buttons.length > 0
+          {toolbar?.buttons && toolbar.buttons.length > 0
             ? toolbar.buttons.map((btn) => (
                 <button
                   key={btn.key}
@@ -4515,6 +4704,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 </button>
               ))
             : null}
+          {views ? (
+            <TableViews
+              config={views}
+              views={tableViews.views}
+              activeKey={tableViews.activeKey}
+              onSelect={tableViews.selectView}
+              onSave={tableViews.saveView}
+              onDelete={tableViews.deleteView}
+              t={t}
+            />
+          ) : null}
         </div>
       ) : null}
       {fnr && fnrOpen ? (
@@ -5195,6 +5395,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
             params={contextMenuState.params}
             onSelect={contextMenu.onSelect}
             onClose={closeContextMenu}
+          />
+        ) : null}
+        {cellRange && activeRange ? (
+          <RangeToolbar
+            key={rangeToolbarSeq}
+            open
+            anchorRef={rangeToolbarAnchorRef}
+            onCopy={copyActiveRange}
+            onExport={() => void downloadCsv('table-range.csv', exportActiveRangeCsv())}
+            onClear={clearActiveRange}
+            onDismiss={() => cellRangeCtrl.clearRange()}
+            t={t}
           />
         ) : null}
         {filterPanelState

@@ -35,6 +35,8 @@ export {
   type IrisTablePersistConfig,
   type IrisTablePersistPiece,
   type IrisTablePersistedState,
+  type IrisTableViewConfig,
+  type IrisTableNamedView,
   type IrisTableScrollbarConfig,
   type IrisTableEditDirtyConfig,
 } from './types'

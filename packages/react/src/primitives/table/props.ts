@@ -46,17 +46,15 @@ export interface IrisTableProxyConfig<Row extends Record<string, unknown>> {
   /** Initial page (1-based). Default 1. */
   defaultPage?: number
   /** Cumulative sequence numbers across pages (batch L): with the table `seq`
-   * prop, the seq cell renders `(page - 1) * pageSize + rowIndex + 1` instead of
-   * `rowIndex + seqStartIndex` (seqStartIndex ignored). `seqMethod` still wins. */
+   * prop, the seq cell renders `(page - 1) * pageSize + rowIndex + 1` instead of `rowIndex + seqStartIndex`. `seqMethod` still wins. */
   seq?: boolean
   /** Fired when the page changes. */
   onPageChange?: (page: number, pageSize: number) => void
 }
 
 /**
- * Search-form configuration (vxe-grid formConfig parity). Renders a field row
- * above the toolbar; submit merges values into the filters (client-side or
- * through the proxy query when `proxyConfig` is set).
+ * Search-form configuration (vxe-grid formConfig parity): a field row above
+ * the toolbar; submit merges values into the filters (client-side or proxy).
  */
 export interface IrisTableFormConfig {
   fields: IrisTableFormField[]
@@ -145,9 +143,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * occupy pattern as `spanMethod`); `rowspan` is inert — each footer row is
    * its own grid container, so `gridRowEnd` cannot cover another row and the
    * later rows' cells must not disappear (mirrors `mergeHeaderCells`).
-   * Applies over the rendered footer stack
-   * in this order: footerMethod rows → summary row → footerData rows
-   * (whichever render); `rowIndex` is 0-based over that stack. `columns` =
+   * Applies over the rendered footer stack in this order: footerMethod rows →
+   * summary row → footerData rows (whichever render); `rowIndex` is 0-based over that stack. `columns` =
    * leaf columns, `data` = the full (sorted + filtered) body rows. Group
    * summary rows are not part of the stack.
    */
@@ -156,8 +153,7 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * the column's `align`, then 'left'. Applies to flat + grouped headers. */
   headerAlign?: IrisTableAlign
   /** Footer/summary cell alignment (vxe footer-align parity): `footerAlign`
-   * wins over the column's `align`. Applies to summary, footer-method and
-   * footer-data cells. */
+   * wins over the column's `align`. Applies to summary, footer-method, footer-data. */
   footerAlign?: IrisTableAlign
   /**
    * Decimal places for summary/footer aggregate values (vxe
@@ -369,6 +365,10 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   virtualScroll?: IrisTableVirtualOptions
   /** Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'. */
   persistState?: import('./types').IrisTablePersistConfig
+  /** Named view presets (batch AH, iris 独有) — toolbar select of saved snapshots. */
+  views?: import('./types').IrisTableViewConfig
+  /** Fired when the active view changes (select / save / delete clears null). */
+  onActiveViewChange?: (key: string | null) => void
   /** Render only the horizontally-visible columns plus pinned columns and overscan. */
   columnVirtualization?: boolean
   /** Enable rectangular cell-range selection. */

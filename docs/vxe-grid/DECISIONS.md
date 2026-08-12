@@ -649,3 +649,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ag-gate.md [ok]: 批 AG gate：review PASS（5 条 LOW/INFO 非阻断，无修复项）。全仓 gate：turbo 180/180（125 cached）· audit 0 · gen:manifest + check:manifest 155×4 / 86 tokens up-to-date 无 diff。react 1850/1850 实测（+21）；core 1255 / vue 1531 / solid 974+34 hydration / svelte 916+31 hydration（沿用 review 对同 commit 实测）。comparison.md 构建状态标题 + 测试计数行更新（react 1850 + manifest 通过）。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ag-gate.md
+
+## 2026-08-11 23:01:13 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ag-gate.md [ok]: Verdict: Review PASS with 5 non-blocking LOW/INFO findings (all documented, no fixes required).; Gate results (all green): | Gate | Result |; Final test counts: | Suite | Tests |; Docs + commit: - `docs/vxe-grid-comparison.md`: 构建状态 header adds 批 AG; test-count line updated to `react 1850（批 AG +21）` + `manifest 15
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ag-gate.md

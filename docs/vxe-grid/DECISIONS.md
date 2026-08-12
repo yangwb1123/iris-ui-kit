@@ -619,3 +619,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-af-review.md [ok]: Verdict: FAIL — 1 blocking finding (P1): **What passes (all verified live):**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-af-review.md
+
+## 2026-08-12 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-af-gate.md [ok]: 批 AF gate：review 三发现全部核销——P1 基线 PNG 已随收尾提交按修复后 app 重新生成（实测 react/solid/svelte 2/2 @0.02、vue 2/2 @0.05）、P2 prettier 已净（Table.tsx + DECISIONS.md --check 通过）、P3 comparison.md 措辞已改「改动仅 additive」。全仓 gate：turbo 180/180 · audit 0 · manifest 155×4 up-to-date · core 1255 / react 1829 / vue 1531 / solid 974+34 hydration / svelte 916+31 hydration。三端 vxe-grid.spec.ts 3/3 + 四框架 vxe 视觉 parity 8/8 实测通过。本机高负载下主链路全量并行偶发登录超时（CPU 争用），逐 spec 复跑全过，非回归。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-af-gate.md

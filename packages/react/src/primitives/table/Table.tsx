@@ -8,6 +8,7 @@ import {
   createCellRange,
   createExpansion,
   createSelectionModel,
+  createUndoStack,
   flattenLeafColumns,
   flattenTree,
   groupRows,
@@ -25,6 +26,7 @@ import {
   type ParsedTableQuery,
   type SelectionModel,
   type TreeRow,
+  type UndoStack,
 } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { IrisInput } from '../input/Input'
@@ -541,6 +543,20 @@ function getCellValue<Row extends Record<string, unknown>>(
   return row[key]
 }
 
+/** Batch AL: structural equality for undo snapshots — same length + same row
+ *  references (the table never mutates rows, so content equality reduces to
+ *  reference equality on the row objects). Skips no-op pushes (re-commits of
+ *  an identical list, and the rowId fallback path where setCellValue cannot
+ *  locate the row) so dead undo steps never accumulate. */
+function sameRowList<Row extends Record<string, unknown>>(a: Row[], b: Row[]): boolean {
+  if (a === b) return true
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false
+  }
+  return true
+}
+
 // ── Clipboard batch O (clipConfig): TSV serialization + safe clipboard ──
 // Cell text for the copy TSV: null → '', numbers verbatim (a typed number
 // cannot carry a formula payload), everything else gets the same OWASP
@@ -810,6 +826,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   cellRange = false,
   clipConfig,
   fnr = false,
+  undo = false,
   checkboxRange = false,
   virtualScroll,
   persistState,
@@ -1041,6 +1058,45 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // commit must see it).
   const liveDataRef = React.useRef<Row[]>(liveData)
   liveDataRef.current = liveData
+  // ── Built-in undo/redo (iris 独有, batch AL) ──────────────────────────
+  // A core createUndoStack stores full row-list snapshots. The stack holds
+  // POST-change states (the core convention — undo() returns the state
+  // before the last mutation, redo() the state after it), so recordUndo
+  // receives the row list that WILL become current: commitRowList passes its
+  // `next`, commitValue passes the setCellValue-computed list (cell/row
+  // edits write back through setLiveData directly and never reach
+  // commitRowList — the second funnel). undo/redo replay through a dedicated
+  // path that flips restoringRef so the replay's commitRowList never
+  // re-pushes (no undo-of-undo). vxe undoRedoHistory parity: external data
+  // re-feeds re-baseline the stack ONLY while it is untouched (no user
+  // mutation yet); once the user has mutated, history stays
+  // interaction-scoped.
+  const undoRef = React.useRef(undo)
+  undoRef.current = undo
+  const restoringRef = React.useRef(false)
+  const undoStackRef = React.useRef<UndoStack<Row[]> | null>(null)
+  if (undoStackRef.current === null) {
+    undoStackRef.current = createUndoStack<Row[]>({
+      maxHistory: 100,
+      initial: [...(data ?? [])],
+      equals: sameRowList,
+    })
+  }
+  const undoStack = undoStackRef.current
+  // The stack is a plain controller (no observable store) — every
+  // push/undo/redo bumps this tick so the toolbar buttons re-render and
+  // re-read canUndo/canRedo. Every mutation also re-renders via setLiveData,
+  // so the tick is belt-and-braces for no-op pushes / undos at the tip.
+  const [, setUndoTick] = React.useState(0)
+  const bumpUndoTick = React.useCallback(() => setUndoTick((n) => n + 1), [])
+  const recordUndo = React.useCallback(
+    (next: Row[]): void => {
+      if (!undoRef.current || restoringRef.current) return
+      undoStack.push([...(next ?? [])])
+      bumpUndoTick()
+    },
+    [undoStack, bumpUndoTick],
+  )
   // Reference of the LAST data the parent actually fed us (updated only by
   // this effect). Internal write-backs (edit commit / row ops) update
   // `externalDataRef` but NOT this, so the effect can distinguish "parent fed
@@ -1052,6 +1108,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
       lastExternalRef.current = next
       externalDataRef.current = next
       setLiveData(next ?? [])
+      // Batch AL: an external re-feed re-baselines the undo stack only while
+      // it is untouched (no user mutation yet) — vxe undoRedoHistory parity.
+      // Once the user has mutated, history stays interaction-scoped.
+      if (undoRef.current && !undoStack.canUndo() && !undoStack.canRedo()) {
+        undoStack.clear()
+        undoStack.push([...(next ?? [])])
+      }
       // Batch K (M2): a NEW data source reference means the parent re-fed the
       // data (or the proxy page changed) — cached lazy-tree children belong to
       // the previous rows. Drop the cache AND the in-flight loading set so
@@ -1598,7 +1661,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
   ): void => {
     const oldValue = getCellValue(ctx.row, ctx.col)
     if (value === oldValue) return
+    // Batch AL: cell/row edit commits bypass commitRowList (they write back
+    // through setLiveData directly), so the POST-change snapshot is recorded
+    // here too — otherwise undo would silently miss every inline edit. The
+    // eager ref sync keeps a following commitValue in the SAME event
+    // (row-mode switchRowEdit commits several columns) snapshotting the true
+    // intermediate list — React defers the setLiveData updaters, so without
+    // it every snapshot in one event would capture the same stale list.
     const k = rowKeyOf(ctx.row, ctx.rowIndex)
+    if (k != null) {
+      const current = externalDataRef.current ?? []
+      const nextList = setCellValue(current, rowKey, k, ctx.col.key, value)
+      recordUndo(nextList)
+      if (nextList !== current) externalDataRef.current = nextList
+    }
     // Batch Q: dirty write-back for editDirtyConfig (cell AND row edit modes
     // both funnel through here).
     if (k != null) trackDirty(k, ctx.col.key, oldValue, value)
@@ -2386,11 +2462,44 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // ── Imperative row ops (vxe-grid insert/remove/setRow parity, batch E) ──
   const onDataChangeRef = React.useRef(onDataChange)
   onDataChangeRef.current = onDataChange
-  const commitRowList = React.useCallback((next: Row[]) => {
-    setLiveData(next)
-    externalDataRef.current = next
-    onDataChangeRef.current?.(next)
-  }, [])
+  const commitRowList = React.useCallback(
+    (next: Row[]) => {
+      recordUndo(next)
+      setLiveData(next)
+      externalDataRef.current = next
+      onDataChangeRef.current?.(next)
+    },
+    [recordUndo],
+  )
+  // Replay a snapshot (undo or redo) through the same write-back channel as
+  // every other mutation — one commitRowList (setLiveData + onDataChange).
+  // restoringRef is flipped around the replay so recordUndo (called inside
+  // commitRowList) is a no-op — history never re-pushes its own replay.
+  // Selection: keys that no longer exist in the restored list are pruned
+  // (mirrors the removeRows/clearSelection pruning pattern); keys that
+  // survive keep their selected state (selection unchanged on undo/redo).
+  const applyUndoSnapshot = React.useCallback(
+    (rows: Row[] | undefined): void => {
+      if (rows == null) return
+      const before = displaySelectionRef.current
+      if (selectable !== 'none' && before.length > 0) {
+        const afterKeys = new Set<string | number>()
+        rows.forEach((r, i) => {
+          const k = rowKeyOf(r, i)
+          if (k != null) afterKeys.add(k)
+        })
+        const vanished = before.filter((k) => !afterKeys.has(k))
+        if (vanished.length > 0) {
+          rebaseToProp()
+          selModel.set(before.filter((k) => !vanished.includes(k)))
+        }
+      }
+      restoringRef.current = true
+      commitRowList(rows)
+      restoringRef.current = false
+    },
+    [commitRowList, rebaseToProp, selModel, selectable],
+  )
   const handleRef = React.useRef<IrisTableHandle<Row> | null>(null)
   handleRef.current = {
     insertRow: (row, index) => {
@@ -3117,6 +3226,49 @@ export function IrisTable<Row extends Record<string, unknown>>({
     },
     [rowKey, commitRowList],
   )
+
+  // ── Built-in undo/redo keyboard (iris 独有, batch AL) ────────────────
+  // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Y (or Ctrl/Cmd+Shift+Z) redoes — a window
+  // listener gated on `undo`, accepting only targets inside the table and
+  // skipping text controls / select editors / an active inline edit session,
+  // mirroring the clipConfig guard. Not while editing: the editor's own
+  // Ctrl+Z semantics win inside an open session.
+  React.useEffect(() => {
+    if (!undo) return
+    const onKey = (e: KeyboardEvent): void => {
+      const target = e.target as HTMLElement | null
+      if (target && !rootRef.current?.contains(target)) return
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.dataset.irisTableEditor !== undefined)
+      )
+        return
+      if (editingTarget !== null || rowEditing !== null) return
+      const mod = e.ctrlKey || e.metaKey
+      if (!mod) return
+      const key = e.key.toLowerCase()
+      if (key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        const prev = undoStack.undo()
+        if (prev !== undefined) {
+          bumpUndoTick()
+          applyUndoSnapshot(prev)
+        }
+      } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
+        e.preventDefault()
+        const next = undoStack.redo()
+        if (next !== undefined) {
+          bumpUndoTick()
+          applyUndoSnapshot(next)
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [undo, editingTarget, rowEditing, undoStack, applyUndoSnapshot, bumpUndoTick])
 
   React.useEffect(() => {
     if (!clipConfig) return
@@ -4395,6 +4547,52 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // Batch-M toolbar action: read once so the closure below stays narrowed
   // (no non-null assertions needed).
   const batchAction = toolbar?.batch
+  // ── Batch edit panel (iris 独有, batch AL) ────────────────────────────
+  // `toolbar.batch.edit` turns the batch button into the built-in panel:
+  // an editable-column select (the SAME `c.editable` gating inline editing
+  // uses) + value input + 应用. Apply = ONE commitRowList that writes the
+  // value into every selected row (paste parity: values stay strings,
+  // editRules are not re-validated, selection untouched); the panel closes
+  // on apply / Escape / outside pointer-down.
+  const [batchEditOpen, setBatchEditOpen] = React.useState(false)
+  const [batchEditColKey, setBatchEditColKey] = React.useState('')
+  const [batchEditValue, setBatchEditValue] = React.useState('')
+  const batchEditCols = React.useMemo(() => leafColumns.filter((c) => c.editable), [leafColumns])
+  const applyBatchEdit = (): void => {
+    const col = batchEditCols.find((c) => c.key === batchEditColKey)
+    if (!col) return
+    const keyField = rowKey
+    const rows = externalDataRef.current ?? []
+    if (!keyField || rows.length === 0) return
+    const keys = new Set(displaySelectionRef.current)
+    const next = rows.map((r) =>
+      keys.has((r as Record<string, unknown>)[keyField] as string | number)
+        ? { ...r, [col.key]: batchEditValue }
+        : r,
+    )
+    commitRowList(next)
+    setBatchEditOpen(false)
+  }
+  // Escape / outside pointer-down close the panel (the trigger button is
+  // excluded — clicking it toggles).
+  React.useEffect(() => {
+    if (!batchEditOpen) return
+    const onDown = (e: PointerEvent): void => {
+      const target = e.target as HTMLElement | null
+      if (target && target.closest('[data-iris-batch-edit-panel], [data-iris-table-toolbar-batch]'))
+        return
+      setBatchEditOpen(false)
+    }
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setBatchEditOpen(false)
+    }
+    window.addEventListener('pointerdown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [batchEditOpen])
   // Fixed height (batch N): any of height/min/max makes the root a vertical
   // scroll container; the injected stylesheet pins the header row. Batch Q:
   // `autoResize` with a positive measure engages the same machinery so the
@@ -4620,7 +4818,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           </div>
         </form>
       ) : null}
-      {(toolbar || views || query !== undefined) && layouts?.toolbar !== 'hidden' ? (
+      {(toolbar || views || query !== undefined || undo) && layouts?.toolbar !== 'hidden' ? (
         <div
           data-iris-table-toolbar=""
           style={{
@@ -4647,6 +4845,60 @@ export function IrisTable<Row extends Record<string, unknown>>({
             <span style={{ fontWeight: 600, color: 'var(--iris-foreground)' }}>
               {toolbar?.title}
             </span>
+          ) : null}
+          {/* Batch AL (iris 独有): built-in undo/redo buttons after the title.
+              Disabled from canUndo/canRedo — the tick state re-reads them on
+              every push/undo/redo (the stack is a plain controller, not an
+              observable store). */}
+          {undo ? (
+            <>
+              <button
+                type="button"
+                data-iris-table-undo=""
+                onClick={() => {
+                  const prev = undoStack.undo()
+                  if (prev !== undefined) {
+                    bumpUndoTick()
+                    applyUndoSnapshot(prev)
+                  }
+                }}
+                disabled={!undoStack.canUndo()}
+                aria-label={t('table.undo')}
+                title={t('table.undo')}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: undoStack.canUndo() ? 'pointer' : 'default',
+                  color: 'var(--iris-muted)',
+                  fontSize: 'var(--iris-font-size-md, 14px)',
+                }}
+              >
+                ↶
+              </button>
+              <button
+                type="button"
+                data-iris-table-redo=""
+                onClick={() => {
+                  const next = undoStack.redo()
+                  if (next !== undefined) {
+                    bumpUndoTick()
+                    applyUndoSnapshot(next)
+                  }
+                }}
+                disabled={!undoStack.canRedo()}
+                aria-label={t('table.redo')}
+                title={t('table.redo')}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: undoStack.canRedo() ? 'pointer' : 'default',
+                  color: 'var(--iris-muted)',
+                  fontSize: 'var(--iris-font-size-md, 14px)',
+                }}
+              >
+                ↷
+              </button>
+            </>
           ) : null}
           {/* Batch AI: the natural-language query input renders after the title
               (left side) whenever the controlled `query` prop is present. The
@@ -4924,7 +5176,22 @@ export function IrisTable<Row extends Record<string, unknown>>({
             <button
               type="button"
               data-iris-table-toolbar-batch=""
-              onClick={() => batchAction.onClick([...displaySelection])}
+              onClick={() => {
+                // Batch AL: `toolbar.batch.edit` opens the built-in batch
+                // edit panel instead of firing the external action (clicking
+                // the trigger again toggles it closed).
+                if (batchEditOpen) {
+                  setBatchEditOpen(false)
+                  return
+                }
+                if (batchAction.edit) {
+                  setBatchEditColKey(batchEditCols[0]?.key ?? '')
+                  setBatchEditValue('')
+                  setBatchEditOpen(true)
+                  return
+                }
+                batchAction.onClick([...displaySelection])
+              }}
               style={{
                 border: 'none',
                 cursor: 'pointer',
@@ -4947,6 +5214,92 @@ export function IrisTable<Row extends Record<string, unknown>>({
               ) : null}
               {batchAction.label}
             </button>
+          ) : null}
+          {batchEditOpen ? (
+            <div
+              data-iris-batch-edit-panel=""
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: '100%',
+                zIndex: 'var(--iris-z-popover, 1000)',
+                background: 'var(--iris-surface-floating, var(--iris-surface))',
+                border: '1px solid var(--iris-border)',
+                borderRadius: 'var(--iris-radius-md, 6px)',
+                boxShadow: 'var(--iris-shadow-lg)',
+                padding: 'var(--iris-space-sm, 12px)',
+                minWidth: 220,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--iris-space-xs, 8px)',
+                fontSize: 'var(--iris-font-size-sm, 13px)',
+              }}
+            >
+              <label
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--iris-space-xxs, 4px)',
+                  color: 'var(--iris-foreground)',
+                }}
+              >
+                {t('table.batchEdit.column')}
+                <select
+                  data-iris-batch-edit-column=""
+                  value={batchEditColKey}
+                  onChange={(e) => setBatchEditColKey(e.target.value)}
+                  aria-label={t('table.batchEdit.column')}
+                  style={{
+                    border: '1px solid var(--iris-border)',
+                    borderRadius: 'var(--iris-radius-sm, 4px)',
+                    background: 'var(--iris-surface)',
+                    color: 'var(--iris-foreground)',
+                    padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                    fontSize: 'var(--iris-font-size-sm, 13px)',
+                    outline: 'none',
+                  }}
+                >
+                  {batchEditCols.map((col) => (
+                    <option key={col.key} value={col.key}>
+                      {col.title ?? col.key}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <input
+                type="text"
+                data-iris-batch-edit-value=""
+                value={batchEditValue}
+                onChange={(e) => setBatchEditValue(e.target.value)}
+                aria-label={t('table.batchEdit.apply')}
+                placeholder={t('table.batchEdit.apply')}
+                style={{
+                  border: '1px solid var(--iris-border)',
+                  borderRadius: 'var(--iris-radius-sm, 4px)',
+                  background: 'var(--iris-surface)',
+                  color: 'var(--iris-foreground)',
+                  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                  fontSize: 'var(--iris-font-size-sm, 13px)',
+                  outline: 'none',
+                }}
+              />
+              <button
+                type="button"
+                data-iris-batch-edit-apply=""
+                onClick={applyBatchEdit}
+                style={{
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: 'var(--iris-primary)',
+                  color: 'var(--iris-primary-foreground)',
+                  fontSize: 'var(--iris-font-size-sm, 13px)',
+                  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+                  borderRadius: 'var(--iris-radius-sm, 4px)',
+                }}
+              >
+                {t('table.batchEdit.apply')}
+              </button>
+            </div>
           ) : null}
           {zoomConfig?.showButton ? (
             <button

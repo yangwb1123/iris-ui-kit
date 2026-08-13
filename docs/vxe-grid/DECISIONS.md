@@ -743,3 +743,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ak-gate.md [ok]: Summary: **Review verdict:** PASS (no blockers; 4 LOW/INFO findings all documented pre-existing boundaries, no code changes requi; Full repo gate: - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks** (4m08s); Final test counts: - **vitest: 7523 passed, 0 failed** — react **1896** (+5 from batch AK), core **1308** (+8), vue 1531, solid 974+34 (SSR; Commits: - **`7fdeda99`** — `feat(table): grid 批 AK——范围粘贴增强 + unique 唯一性规则（编辑闭环）` (gate commit, doc records)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ak-gate.md
+
+## 2026-08-12 19:01:31 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-al-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-al-baseline.md

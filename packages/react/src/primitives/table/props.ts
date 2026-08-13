@@ -228,8 +228,13 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
     onExport?: () => void
     /** Custom action buttons rendered after the built-ins (vxe toolbar buttons parity). */
     buttons?: Array<{ key: string; label: string; onClick: () => void; icon?: string }>
-    /** Batch action (vxe toolbar batch parity, batch M): a primary button rendered after the built-ins while `selectable === 'multi'` and rows are selected; receives the current selection keys. */
-    batch?: { label: string; onClick: (keys: Array<string | number>) => void; icon?: string }
+    /** Batch action (vxe toolbar batch parity, batch M): a primary button rendered after the built-ins while `selectable === 'multi'` and rows are selected; receives the current selection keys. When `edit` is true (iris 独有), the button instead opens the built-in batch edit panel — an editable-column select + value input + 应用: ONE `commitRowList` writes the value into every selected row (selection unchanged, editRules bypassed like paste). */
+    batch?: {
+      label: string
+      onClick: (keys: Array<string | number>) => void
+      icon?: string
+      edit?: boolean
+    }
   }
   /** Zoom overlay (vxe toolbar zoom parity, batch U): when `showButton`, the
    * toolbar renders a toggle (⛶ when not zoomed, ✕ when zoomed) that pins the
@@ -369,6 +374,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   clipConfig?: { copy?: boolean; paste?: boolean }
   /** Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off. */
   fnr?: boolean
+  /** Built-in undo/redo (iris 独有 — vxe has no built-in undoRedoHistory): when enabled, every data mutation (row ops, paste, find&replace, range clear, cell/row edits, batch edit) records the POST-change row list; Ctrl/Cmd+Z undoes and Ctrl/Cmd+Y (or Ctrl/Cmd+Shift+Z) redoes — never while an inline editor is open. The toolbar renders ↶/↷ buttons after the title (disabled from canUndo/canRedo); restores prune selection keys that no longer exist. Additive — default off. */
+  undo?: boolean
   /** Shift-click checkbox range selection (vxe checkboxConfig `isShiftKey`
    * parity, batch G): shift-clicking a row checkbox toggles every
    * checkMethod-eligible row between the last-clicked anchor row and the

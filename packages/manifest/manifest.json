@@ -36694,6 +36694,12 @@
           "description": "Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off."
         },
         {
+          "name": "undo",
+          "type": "boolean",
+          "optional": true,
+          "description": "Built-in undo/redo (iris 独有 — vxe has no built-in undoRedoHistory): when enabled, every data mutation (row ops, paste, find&replace, range clear, cell/row edits, batch edit) records the POST-change row list; Ctrl/Cmd+Z undoes and Ctrl/Cmd+Y (or Ctrl/Cmd+Shift+Z) redoes — never while an inline editor is open. The toolbar renders ↶/↷ buttons after the title (disabled from canUndo/canRedo); restores prune selection keys that no longer exist. Additive — default off."
+        },
+        {
           "name": "checkboxRange",
           "type": "boolean",
           "optional": true,
@@ -37466,6 +37472,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off."
+            },
+            {
+              "name": "undo",
+              "type": "boolean",
+              "optional": true,
+              "description": "Built-in undo/redo (iris 独有 — vxe has no built-in undoRedoHistory): when enabled, every data mutation (row ops, paste, find&replace, range clear, cell/row edits, batch edit) records the POST-change row list; Ctrl/Cmd+Z undoes and Ctrl/Cmd+Y (or Ctrl/Cmd+Shift+Z) redoes — never while an inline editor is open. The toolbar renders ↶/↷ buttons after the title (disabled from canUndo/canRedo); restores prune selection keys that no longer exist. Additive — default off."
             },
             {
               "name": "checkboxRange",
@@ -38719,7 +38731,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 128,
+        "propCount": 129,
         "eventCount": 27
       }
     },

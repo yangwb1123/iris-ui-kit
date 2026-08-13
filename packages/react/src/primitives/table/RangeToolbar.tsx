@@ -157,13 +157,18 @@ export function RangeToolbar({
         type="button"
         data-iris-range-stats=""
         onClick={onToggleStats}
-        aria-expanded={statsOpen}
+        aria-expanded={statsOpen && stats != null && stats.length > 0}
         style={BAR_BUTTON_STYLE}
       >
         {t('table.range.stats')}
       </button>
       {statsOpen && stats && stats.length > 0 ? (
-        <div data-iris-range-stats-panel="" role="table" style={RANGE_STATS_PANEL_STYLE}>
+        <div
+          data-iris-range-stats-panel=""
+          role="table"
+          aria-label={t('table.range.stats')}
+          style={RANGE_STATS_PANEL_STYLE}
+        >
           <div role="row" style={RANGE_STATS_HEADER_STYLE}>
             <div role="columnheader" style={RANGE_STATS_LABEL_STYLE}>
               {t('table.range.statsColumn')}

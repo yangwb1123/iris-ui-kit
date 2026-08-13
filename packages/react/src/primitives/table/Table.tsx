@@ -1350,8 +1350,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // collector (gated on `views`) — persistState's save loop iterates
     // IrisTablePersistPiece and never sees it, so the batch-AG path stays
     // byte-identical. The query is a controlled prop, captured like any other
-    // parent-owned piece and restored FIRST on view apply (see below).
-    if (views && query !== undefined) s.query = query
+    // parent-owned piece and restored FIRST on view apply (see below). An
+    // empty `''` query is inactive (batch-AI convention) and is NOT captured.
+    if (views && query !== undefined && query !== '') s.query = query
     return s
   }, [
     persistState,
@@ -3245,23 +3246,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // key`) so core stays pure over { key }; entries render in range column
   // order with the column title for display.
   const [rangeStatsOpen, setRangeStatsOpen] = React.useState(false)
-  const rangeStatsData = React.useMemo<RangeStatsEntry[] | null>(() => {
-    if (!activeRange) return null
-    const cols = leafColumns.slice(activeRange.start.col, activeRange.end.col + 1)
-    if (cols.length === 0) return null
-    const stats = rangeStats(
-      bodyData,
-      leafColumns.map((col) => ({
-        key: (col.dataIndex ?? col.key) as string,
-        getValue: (row: Row) => getCellValue(row, col),
-      })),
-      activeRange,
-    )
-    return cols.map((col) => {
-      const key = (col.dataIndex ?? col.key) as string
-      return { key, title: col.title ?? key, stats: stats[key] }
-    })
-  }, [activeRange, bodyData, leafColumns])
+  // The per-column stats memo itself lives AFTER `visibleColSet` (below): it
+  // reads the same visible-window skip the cell render uses.
   // Dismissal (Escape / outside pointer-down) also closes the panel — the
   // panel rides the bar's existing useDismiss, and the hoisted open state is
   // reset here so a later range never reopens it unprompted.
@@ -3513,6 +3499,44 @@ export function IrisTable<Row extends Record<string, unknown>>({
     })
     return set
   }, [columnVirtualization, leafColumns, scrollLeft, viewportWidth, resolvedColWidths])
+
+  // ── Range stats material (batch AJ, iris 独有) ─────────────────────
+  // Lives AFTER `visibleColSet` so it can apply the same visible-window skip
+  // the cell render uses. Stats come from the core `rangeStats` material over
+  // the range rectangle of the DISPLAYED rows (`bodyData` — already
+  // query/filtered) and the leaf column list (its index IS the grid column
+  // index). The column key indirection mirrors `getCellValue` (`dataIndex ??
+  // key`) so core stays pure over { key }; entries render in range column
+  // order with the column title for display.
+  const rangeStatsData = React.useMemo<RangeStatsEntry[] | null>(() => {
+    if (!activeRange) return null
+    const cols = leafColumns.slice(activeRange.start.col, activeRange.end.col + 1)
+    if (cols.length === 0) return null
+    const stats = rangeStats(
+      bodyData,
+      leafColumns.map((col) => ({
+        key: (col.dataIndex ?? col.key) as string,
+        getValue: (row: Row) => getCellValue(row, col),
+      })),
+      activeRange,
+    )
+    // Batch AJ review: guard `stats[key]` presence — core returns `{}` when
+    // the row span is fully out of bounds after `bodyData` shrinks (e.g. an
+    // NL query emptying the view), and the panel must never dereference
+    // undefined. When nothing remains the panel hides while `statsOpen` stays
+    // true, so it reappears if the range becomes valid again. Also skip
+    // columns outside the virtual window (`visibleColSet`), matching the cell
+    // render — hidden/scrolled-out columns never appear as stats rows.
+    const entries: RangeStatsEntry[] = []
+    for (let i = 0; i < cols.length; i += 1) {
+      if (visibleColSet && !visibleColSet.has(activeRange.start.col + i)) continue
+      const col = cols[i]!
+      const key = (col.dataIndex ?? col.key) as string
+      const s = stats[key]
+      if (s) entries.push({ key, title: col.title ?? key, stats: s })
+    }
+    return entries.length > 0 ? entries : null
+  }, [activeRange, bodyData, leafColumns, visibleColSet])
 
   // 1-based grid track for a column (after the optional drag/seq/detail/
   // selection tracks), so a rendered cell lands in the right place even when

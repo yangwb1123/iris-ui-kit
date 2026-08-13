@@ -175,6 +175,41 @@ describe('@iris-ui-kit/react IrisTable range stats (batch AJ, iris 独有)', () 
     fireEvent.keyDown(document.body, { key: 'Escape' })
     expect(statsPanel()).toBeNull()
   })
+
+  it('data shrink out of the selected range bounds does not crash the panel (review regression)', () => {
+    // Review HIGH blocker: select range → open 统计 → the view shrinks below
+    // the range (batch-AI NL query fires per keystroke and empties the view) →
+    // core `rangeStats` returns `{}` → the panel dereferenced undefined.
+    const Harness = (): React.ReactElement => {
+      const [data, setData] = React.useState<Row[]>(rows)
+      return (
+        <IrisTable
+          columns={cols}
+          data={data}
+          rowKey="id"
+          cellRange
+          query={data.length > 1 ? '' : 'name = Bob'}
+          onQueryChange={(q) => setData(q === 'name = Bob' ? rows.slice(0, 1) : rows)}
+        />
+      )
+    }
+    render(<Harness />)
+    selectRange(1, 0, 2, 1) // rows 1..2 of 3
+    fireEvent.click(statsButton())
+    expect(statsPanel()).not.toBeNull()
+    // The shrinking query empties bodyData below the range → the panel must
+    // hide (no stats remain), never crash dereferencing undefined stats.
+    fireEvent.change(queryInput(), { target: { value: 'name = Bob' } })
+    expect(statsPanel()).toBeNull()
+    // aria-expanded reflects the hidden panel, not the hoisted open state.
+    expect(statsButton().getAttribute('aria-expanded')).toBe('false')
+    // The bar survives (the range store is intact) until dismissed.
+    expect(bar()).not.toBeNull()
+    // The data can grow back → the panel reappears without re-toggling.
+    fireEvent.change(queryInput(), { target: { value: '' } })
+    expect(statsPanel()).not.toBeNull()
+    expect(statsButton().getAttribute('aria-expanded')).toBe('true')
+  })
 })
 
 describe('@iris-ui-kit/react IrisTable view snapshots carry the query (batch AJ)', () => {

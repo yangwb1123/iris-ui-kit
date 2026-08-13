@@ -702,3 +702,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-aj-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aj-baseline.md
+
+## 2026-08-12 17:23:50 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aj-adapt.md [ok]: Report — iris-ui grid 批 AJ (range stats + query-view linkage): **Commit:** `a1883276` — `feat(table): grid 批 AJ——范围统计 rangeStats + 视图快照携带 query（iris 独有）` (13 files, +658/−20, tree cle; Files changed: | File | Change |; Verification (all pass): - `core test` → **1300 passed** (+8) · `react typecheck` clean · `react test` → **1891 passed** (+7) · `react lint` → **; Constraints honored: Core framework-free (rangeStats has zero framework imports; `grep` clean), react-only, additive only, no dist/tgz/node_m; Left: - `change-budget` soft limits exceeded (13 files / 315 core lines vs 5/300 targets) — advisory, non-blocking; the task's
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aj-adapt.md
+
+## 2026-08-12 17:31:28 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aj-review.md [ok]: Verdict: **FAIL**: Review written to `docs/vxe-grid/batch-aj-review.md`. One confirmed high-severity blocker, everything else green.; Blocker (HIGH): runtime crash on data shrink with open stats panel: Reproduced empirically with two scratch tests (deleted after, tree clean):; Other findings: - **[LOW]** Hidden columns (`columnVisibility`) appear as stats rows — `Table.tsx:3250` doesn't apply the `visibleColSet; Verified PASS: - `rangeStats`semantics match`aggregate` exactly (count = non-null; finite-`Number` only; null for empty numeric subse
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aj-review.md
+
+## 2026-08-13 01:30:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aj-gate.md [ok]: Gate complete — PASS: Review verdict was **FAIL** with one confirmed HIGH blocker; fixes applied, full gate rerun, committed.; Fixes: 1. **HIGH — stats crash on data shrink** — the per-column stats memo now guards `stats[key]` presence (core `rangeStats` returns `{}` when the row span is out of bounds after `bodyData` shrinks, e.g. an NL query emptying the view); entries with no stats are dropped, empty result → panel hides while the hoisted `statsOpen` stays true (reappears when the range is valid again); memo moved after `visibleColSet` (TDZ-safe). 2. **LOW** — same `visibleColSet` skip the cell render uses applied, so virtualized/hidden columns never appear as stats rows. 3. **LOW** — `aria-expanded` reflects actual panel presence; `role="table"` panel got `aria-label` (a11y). 4. **INFO** — empty `''` query no longer captured into view snapshots. 5. **INFO** — `batch-aj-adapt.md` "+8 keys" corrected to "+7".; Regression test in `range-stats-view.test.tsx` (select → 统计 → shrink view below range → no crash, panel hides, `aria-expanded=false`, reappears on re-grow).; Full gate: `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks**; audit **0**; gen:manifest + check:manifest **155×4 / 86 tokens up-to-date**; vitest **7210 passed, 0 failed** — react **1892** (range-stats-view 8/8), core 1300, vue 1531, solid 974+34, svelte 916+31, plugins/tools/apps 532; SSR node:test 7; desktop tauri 2 + wails ok + electron smoke ok.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aj-gate.md

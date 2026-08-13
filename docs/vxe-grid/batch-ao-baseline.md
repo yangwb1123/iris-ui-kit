@@ -1,0 +1,11 @@
+Baseline complete — `/home/u1/iris-ui/docs/vxe-grid/batch-ao-baseline.md` (176 lines). `git status` confirms only the new doc; zero source files touched.
+
+**What the baseline covers** (every claim verified against current code):
+
+**a) Core `evaluateFormula`** — new `packages/core/src/formula.ts`: regex-driven token scan + recursive descent, no `eval`/`Function`. Field names `[A-Za-z_]\w*`, numbers, `+ - * / % ( ) ,`, whitelist SUM/AVG/MIN/MAX/COUNT (uppercase, comma-separated expressions as args). `=` prefix stripped (both forms). Unknown fields → null; div/mod by 0 → null; errors → null, never throws; 512-char / depth-32 bounds. Type coercion: `+` with either side a string → concat, else `Number`; `null` → 0 (Excel empty-cell-as-zero). ~18 core tests listed.
+
+**b) `IrisTableColumn.formula?: string`** — the choke point is `getCellValue` (Table.tsx:573): **every** data consumer already funnels through it (filter 2929–2950, groupBy, suggest, rangeStats, summary 4666, tooltips, cell render 4193, clipboard TSV/CSV, distribution), so routing formula columns there propagates computed values everywhere. New `table/cellValue.ts` helper holds the per-row WeakMap memo (safe under the table's documented immutable-row contract). **Two gaps found and flagged**: the sort paths read row fields directly (`useTableSort.buildSorter` + the `querySortedData` comparator) — both get explicit formula routing; and `exportCsv` → core `toCsv` reads `row[dataIndex]` directly — a shadow-row mapping in the react bridge makes CSV export computed values. Editable is display-only enforced at all 7 entry points (beginEdit 2378, both Tab movers, F2 3283, row-mode + batch-panel editable lists, `data-editable` attr, cursor).
+
+**c) `showCellRefs?: boolean`** — muted `data-iris-cell-ref` letter badge appended after the title span in both header variants (flat `ci` / grouped `colStart-1`, leaf-only), Excel-style bijective A→Z→AA. Row numbers: leading column when `seq || showCellRefs`; seq on → seq IS the row number (no duplicate); the **6 seq track sites** (3105, 3132, 3884, 5746, 5756, 5801) plus body (4067) and flat-header (5911) flip to the combined condition. No i18n needed.
+
+File map: 3 new files, 6 edits, ~31 tests; 12 numbered fiats for gate arbitration (null-as-zero, function semantics, no unary minus, letter ordering, badge placement, memo contract, etc.).

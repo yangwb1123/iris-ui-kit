@@ -36,11 +36,13 @@ import { IrisButton } from '../button/Button'
 import { useStore } from '../../useStore'
 import {
   applyColumnPreset,
+  columnLetter,
   copyText,
   createCellEdit,
   createRemoteTableSource,
   createSortable,
   insertRowInList,
+  memoizedFormulaValue,
   parseCsv,
   removeRowFromList,
   setCellValue,
@@ -574,8 +576,43 @@ function getCellValue<Row extends Record<string, unknown>>(
   row: Row,
   column: IrisTableColumn<Row>,
 ): unknown {
+  // Batch AO formula columns: every data consumer (render, filter, groupBy,
+  // suggest, range stats, summary, tooltips, clipboard, distribution) funnels
+  // through this choke point — the COMPUTED value propagates everywhere.
+  // memoizedFormulaValue caches per (row, formula) under the table's
+  // documented immutable-row contract (new row reference = recompute).
+  if (column.formula) return memoizedFormulaValue(column.formula, row)
   const key = (column.dataIndex ?? column.key) as keyof Row
   return row[key]
+}
+
+/** Batch AO: a formula column is DISPLAY-ONLY even when `editable` — every
+ * editing entry point (inline, row mode, batch panel, data-editable attr,
+ * cursor) reads this same condition. */
+function isEditableColumn<Row extends Record<string, unknown>>(col: IrisTableColumn<Row>): boolean {
+  return !!col.editable && !col.formula
+}
+
+/** CSV export shadow rows (batch AO): core `toCsv` reads `row[dataIndex]`
+ * directly, so formula columns materialize their computed value onto a
+ * shallow copy (original rows untouched — immutable contract). No formula
+ * columns → the input array is returned as-is (reference-preserving). */
+function withComputedFormulaCells<Row extends Record<string, unknown>>(
+  rows: readonly Row[],
+  columns: readonly IrisTableColumn<Row>[],
+): Row[] {
+  const formulaCols = columns.filter((c) => c.formula)
+  if (formulaCols.length === 0) return rows as Row[]
+  return rows.map((row) => {
+    let shadow: Row | null = null
+    for (const col of formulaCols) {
+      const key = (col.dataIndex ?? col.key) as keyof Row
+      const next: Row = shadow ?? { ...row }
+      ;(next as Record<string, unknown>)[key as string] = memoizedFormulaValue(col.formula!, row)
+      shadow = next
+    }
+    return shadow as Row
+  })
 }
 
 /** Batch AL: structural equality for undo snapshots — same length + same row
@@ -879,6 +916,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   errorState,
   onRetry,
   proxyConfig,
+  showCellRefs = false,
   style,
   className,
   ...rest
@@ -893,6 +931,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }, [])
 
   const { t } = useI18n()
+  // Batch AO cell references: `showCellRefs` adds Excel-style A/B/C letter
+  // badges + a leading row-number column. When `seq` is on the seq column IS
+  // the row number — one leading number column either way.
+  const showRowNumbers = seq || showCellRefs
   // Defensive: null/undefined columns → empty array
   const safeColumns = React.useMemo(() => columns ?? [], [columns])
   // Column visibility (vxe columnConfig.visible parity): filter hidden
@@ -1259,6 +1301,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const sortByKey = (col.sortBy ?? col.dataIndex ?? col.key) as keyof Row
     const cmp = (a: Row, b: Row): number => {
       if (col.sorter) return col.sorter(a, b) * dir
+      if (col.formula) {
+        // Batch AO: the parsed `sort by` clause sorts formula columns by the
+        // COMPUTED value (same memoized evaluation as the cell render).
+        let va = memoizedFormulaValue(col.formula, a)
+        let vb = memoizedFormulaValue(col.formula, b)
+        if (col.sortType === 'number') {
+          va = Number(va)
+          vb = Number(vb)
+        } else if (col.sortType === 'string') {
+          va = String(va ?? '')
+          vb = String(vb ?? '')
+        }
+        return compareValues(va, vb) * dir
+      }
       let va: unknown = a[sortByKey]
       let vb: unknown = b[sortByKey]
       if (col.sortType === 'number') {
@@ -1868,7 +1924,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const beginRowEdit = (row: Row, rowIndex: number, focusColKey?: string): void => {
     const k = rowKeyOf(row, rowIndex)
     if (k == null) return
-    const editableCols = leafColumns.filter((c) => c.editable)
+    const editableCols = leafColumns.filter((c) => c.editable && !c.formula)
     if (editableCols.length === 0) return
     pendingNavRef.current = null
     rowEditorRefs.current = new Map()
@@ -1931,7 +1987,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const start = leafColumns.indexOf(col)
     for (let i = start + dir; i >= 0 && i < leafColumns.length; i += dir) {
       const nextCol = leafColumns[i]!
-      if (!nextCol.editable) continue
+      if (!nextCol.editable || nextCol.formula) continue
       focusRowEditor(nextCol.key)
       return
     }
@@ -1973,7 +2029,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const start = leafColumns.indexOf(nav.col)
     for (let i = start + nav.dir; i >= 0 && i < leafColumns.length; i += nav.dir) {
       const nextCol = leafColumns[i]
-      if (!nextCol.editable) continue
+      if (!nextCol.editable || nextCol.formula) continue
       beginEdit(nav.row, nextCol, nav.k, nav.idx)
       return
     }
@@ -2381,7 +2437,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     rowIdent: string | number,
     rowIndex: number,
   ) => {
-    if (!col.editable) return
+    if (!col.editable || col.formula) return
     // Any manual start supersedes a stashed Tab-navigation intent (M1).
     pendingNavRef.current = null
     editCtxRef.current = { row, col, rowIndex }
@@ -2453,7 +2509,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const start = leafColumns.indexOf(ctx.col)
     for (let i = start + dir; i >= 0 && i < leafColumns.length; i += dir) {
       const nextCol = leafColumns[i]!
-      if (!nextCol.editable) continue
+      if (!nextCol.editable || nextCol.formula) continue
       e.preventDefault()
       beginEdit(ctx.row, nextCol, rowKeyOf(ctx.row, ctx.rowIndex), ctx.rowIndex)
       return
@@ -2512,7 +2568,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // that was already committed (session closed) reopens just that column.
       if (rowEditing?.k === k) {
         const id = cellId(k, col.key)
-        if (col.editable && !rowSessionsRef.current.has(id)) {
+        if (col.editable && !col.formula && !rowSessionsRef.current.has(id)) {
           const session = createRowSession(k, col, idx)
           const current = getCellValue(row, col)
           session.startEdit(id, col.key, current == null ? '' : String(current))
@@ -2534,7 +2590,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // wired (the cellRange spread onClick below would be shadowed by the
       // unified onClick → dead code — hence the anchor lives here).
       updateRangeToolbarAnchor()
-    } else if (col.editable && editConfig?.trigger === 'click' && k != null) {
+    } else if (col.editable && !col.formula && editConfig?.trigger === 'click' && k != null) {
       beginEdit(row, col, k, idx)
     }
     onCellClick?.({ row, column: col, rowIndex: idx, columnIndex: ci })
@@ -2666,7 +2722,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // displayColumns (zero flat regression) and grouped mode carries the
     // data-bearing leaves, so the CSV keeps leaf data in both modes.
     getFilteredData: () => [...filteredDataRef.current],
-    exportCurrentViewCsv: () => exportCsv([...filteredDataRef.current], viewColumnsRef.current),
+    exportCurrentViewCsv: () =>
+      exportCsv(
+        withComputedFormulaCells([...filteredDataRef.current], viewColumnsRef.current),
+        viewColumnsRef.current,
+      ),
     getSelection: () => [...displaySelectionRef.current],
     // ── Selection methods (vxe clearCheckboxRow / setAllCheckboxRow(true) /
     // toggleCheckboxRow parity, batch F) ───────────────────────────────────
@@ -3102,7 +3162,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // wrapping the last column onto a second line (react-only vs vue/solid/
     // svelte which all emit these tracks — cross-framework parity fix).
     if (rowDrag) widths.push(`${DRAG_COL_WIDTH}px`)
-    if (seq) widths.push(`${SEQ_COL_WIDTH}px`)
+    if (showRowNumbers) widths.push(`${SEQ_COL_WIDTH}px`)
     if (hasDetail) widths.push(`${EXPAND_COL_WIDTH}px`)
     if (selectable !== 'none') widths.push('40px')
     for (const col of leafColumns) {
@@ -3118,7 +3178,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       else widths.push('minmax(0, 1fr)')
     }
     return widths.join(' ')
-  }, [leafColumns, selectable, columnWidths, hasDetail, seq, rowDrag])
+  }, [leafColumns, selectable, columnWidths, hasDetail, showRowNumbers, rowDrag])
 
   // Sticky offsets for pinned columns: each accumulates the resolved widths of
   // the pinned columns between it and its edge (plus the selection column on
@@ -3129,7 +3189,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       columnWidths[col.key] ?? (typeof col.width === 'number' ? col.width : DEFAULT_PINNED_WIDTH)
     let left =
       (rowDrag ? DRAG_COL_WIDTH : 0) +
-      (seq ? SEQ_COL_WIDTH : 0) +
+      (showRowNumbers ? SEQ_COL_WIDTH : 0) +
       (hasDetail ? EXPAND_COL_WIDTH : 0) +
       (selectable !== 'none' ? SELECTION_COL_WIDTH : 0)
     for (const col of leafColumns) {
@@ -3147,7 +3207,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       }
     }
     return map
-  }, [leafColumns, columnWidths, selectable, hasDetail, seq, rowDrag])
+  }, [leafColumns, columnWidths, selectable, hasDetail, showRowNumbers, rowDrag])
 
   const pinnedStyle = (key: string): React.CSSProperties | null => {
     const p = pinnedOffsets[key]
@@ -3278,7 +3338,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!row || !col) return
     const k = rowKeyOf(row, cell.row)
     if (e.key === 'F2') {
-      if (!col.editable) return
+      if (!col.editable || col.formula) return
       e.preventDefault()
       beginEdit(row, col, k, cell.row)
       return
@@ -3881,7 +3941,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // earlier cells are skipped. Order matches the row's cell order.
   const colTrack = (i: number): number =>
     (rowDrag ? 1 : 0) +
-    (seq ? 1 : 0) +
+    (showRowNumbers ? 1 : 0) +
     (hasDetail ? 1 : 0) +
     (selectable !== 'none' ? 1 : 0) +
     1 +
@@ -4064,10 +4124,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
             </span>
           </div>
         ) : null}
-        {seq ? (
+        {showRowNumbers ? (
           <div
             role="cell"
-            data-iris-table-cell="__seq"
+            data-iris-table-cell={seq ? '__seq' : '__row-ref'}
+            data-iris-row-ref={showCellRefs && !seq ? '' : undefined}
             style={{
               ...baseCellStyle,
               justifyContent: 'center',
@@ -4191,6 +4252,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
             for (let c = 1; c < colspan; c++) spanOccupyRef.current.add(`${idx}:${ci + c}`)
           }
           const raw = getCellValue(row, col)
+          // Batch AO: a formula column is display-only even when `editable` —
+          // one guard extracted so the cell branch stays under the complexity
+          // budget while every editing entry point reads the same condition.
+          const editableLive = isEditableColumn(col)
           const editing = rowMode
             ? rowSessions.has(cellId(k, col.key))
             : cellEdit.isEditing(cellId(k, col.key), col.key)
@@ -4206,7 +4271,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               role="cell"
               data-iris-table-cell={col.key}
               data-iris-table-pinned={col.pinned}
-              data-editable={col.editable ? '' : undefined}
+              data-editable={editableLive ? '' : undefined}
               data-editing={editing ? '' : undefined}
               data-iris-cell-dirty={dirtyInfo.attr}
               title={editing ? undefined : cellTooltip(row, col)}
@@ -4242,14 +4307,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   }
                 : null)}
               onDoubleClick={
-                onCellDblClick || rowMode || col.editable
+                onCellDblClick || rowMode || editableLive
                   ? () => {
                       // Internal behavior first (vxe parity): row mode opens the
                       // row editor, editable columns begin the cell edit — then
                       // the informational event fires for EVERY column (batch T).
                       if (rowMode) {
                         if (k != null) switchRowEdit(row, idx, col.key)
-                      } else if (col.editable) {
+                      } else if (editableLive) {
                         beginEdit(row, col, k, idx)
                       }
                       onCellDblClick?.({ row, column: col, rowIndex: idx, columnIndex: ci })
@@ -4270,7 +4335,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         else cellRangeCtrl.startRange(idx, ci)
                         updateRangeToolbarAnchor()
                       }
-                    : col.editable && editConfig?.trigger === 'click'
+                    : editableLive && editConfig?.trigger === 'click'
                       ? () => beginEdit(row, col, k, idx)
                       : undefined
               }
@@ -4294,7 +4359,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   striped && idx % 2 === 1,
                 ),
                 borderBottom: borderStyle,
-                cursor: col.editable ? 'cell' : cellRange ? 'default' : undefined,
+                cursor: editableLive ? 'cell' : cellRange ? 'default' : undefined,
                 ...(editing ? { padding: '4px 8px' } : null),
                 ...pinnedStyle(col.key),
                 ...(cellStyle?.(row, col, idx) ?? null),
@@ -4715,7 +4780,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const [batchEditOpen, setBatchEditOpen] = React.useState(false)
   const [batchEditColKey, setBatchEditColKey] = React.useState('')
   const [batchEditValue, setBatchEditValue] = React.useState('')
-  const batchEditCols = React.useMemo(() => leafColumns.filter((c) => c.editable), [leafColumns])
+  const batchEditCols = React.useMemo(
+    () => leafColumns.filter((c) => c.editable && !c.formula),
+    [leafColumns],
+  )
   const applyBatchEdit = (): void => {
     const col = batchEditCols.find((c) => c.key === batchEditColKey)
     if (!col) return
@@ -5723,10 +5791,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 style={{ gridColumn: '1', gridRow: '1 / -1' }}
               />
             ) : null}
-            {seq ? (
+            {showRowNumbers ? (
               <div
                 role="columnheader"
-                data-iris-table-header="__seq"
+                data-iris-table-header={seq ? '__seq' : '__row-ref'}
                 style={{
                   gridColumn: String((rowDrag ? 1 : 0) + 1),
                   gridRow: '1 / -1',
@@ -5743,7 +5811,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               <div
                 role="columnheader"
                 style={{
-                  gridColumn: String((rowDrag ? 1 : 0) + (seq ? 1 : 0) + 1),
+                  gridColumn: String((rowDrag ? 1 : 0) + (showRowNumbers ? 1 : 0) + 1),
                   gridRow: '1 / -1',
                 }}
               />
@@ -5753,7 +5821,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 role="columnheader"
                 data-iris-table-header=""
                 style={{
-                  gridColumn: String((rowDrag ? 1 : 0) + (seq ? 1 : 0) + (hasDetail ? 2 : 1)),
+                  gridColumn: String(
+                    (rowDrag ? 1 : 0) + (showRowNumbers ? 1 : 0) + (hasDetail ? 2 : 1),
+                  ),
                   gridRow: '1 / -1',
                   ...baseCellStyle,
                   background: 'var(--iris-surface)',
@@ -5798,7 +5868,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   : undefined
                 const lead =
                   (rowDrag ? 1 : 0) +
-                  (seq ? 1 : 0) +
+                  (showRowNumbers ? 1 : 0) +
                   (hasDetail ? 1 : 0) +
                   (selectable !== 'none' ? 1 : 0)
                 return (
@@ -5857,6 +5927,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       {col.title}
                       {col.titleSuffix}
                     </span>
+                    {showCellRefs && isLeaf ? (
+                      <span
+                        aria-hidden="true"
+                        data-iris-cell-ref=""
+                        style={{
+                          marginInlineStart: 'var(--iris-space-xxs, 4px)',
+                          fontSize: 'var(--iris-font-size-xs, 12px)',
+                          color: 'var(--iris-muted)',
+                          fontWeight: 400,
+                        }}
+                      >
+                        {columnLetter(cell.colStart - 1)}
+                      </span>
+                    ) : null}
                     {sortable ? (
                       <span
                         aria-hidden="true"
@@ -5908,10 +5992,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 }}
               />
             ) : null}
-            {seq ? (
+            {showRowNumbers ? (
               <div
                 role="columnheader"
-                data-iris-table-header="__seq"
+                data-iris-table-header={seq ? '__seq' : '__row-ref'}
                 style={{
                   ...baseCellStyle,
                   background: 'var(--iris-surface)',
@@ -6048,6 +6132,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     {col.title}
                     {col.titleSuffix}
                   </span>
+                  {showCellRefs ? (
+                    <span
+                      aria-hidden="true"
+                      data-iris-cell-ref=""
+                      style={{
+                        marginInlineStart: 'var(--iris-space-xxs, 4px)',
+                        fontSize: 'var(--iris-font-size-xs, 12px)',
+                        color: 'var(--iris-muted)',
+                        fontWeight: 400,
+                      }}
+                    >
+                      {columnLetter(ci)}
+                    </span>
+                  ) : null}
                   {col.sortable ? (
                     <span
                       aria-hidden="true"

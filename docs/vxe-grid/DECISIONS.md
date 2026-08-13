@@ -813,3 +813,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-an-gate.md [ok]: Summary: **Verdict**: `docs/vxe-grid/batch-an-review.md` = **PASS** (3 LOW + 3 INFO findings, all non-blocking)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-an-gate.md
+
+## 2026-08-13 05:41:09 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ao-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ao-baseline.md

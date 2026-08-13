@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { compareValues } from '@iris-ui-kit/core'
+import { compareValues, memoizedFormulaValue } from '@iris-ui-kit/core'
 import type { IrisTableColumn, IrisTableSortState } from './types'
 
 /**
@@ -53,12 +53,26 @@ export interface UseTableSortResult<Row> {
 }
 
 /** Per-column comparator: `col.sorter` or a value-based default (honoring
- * `sortBy` / `sortType`). Shared by the single and multi sort paths. */
+ * `sortBy` / `sortType`). Shared by the single and multi sort paths. Formula
+ * columns (batch AO) sort by the COMPUTED value — the same memoized
+ * evaluation the cell render uses, so the sort order matches what is shown. */
 function buildSorter<Row extends Record<string, unknown>>(
   col: IrisTableColumn<Row>,
 ): (a: Row, b: Row) => number {
   if (col.sorter) return col.sorter
   return (a: Row, b: Row): number => {
+    if (col.formula) {
+      let va = memoizedFormulaValue(col.formula, a)
+      let vb = memoizedFormulaValue(col.formula, b)
+      if (col.sortType === 'number') {
+        va = Number(va)
+        vb = Number(vb)
+      } else if (col.sortType === 'string') {
+        va = String(va ?? '')
+        vb = String(vb ?? '')
+      }
+      return compareValues(va, vb)
+    }
     const key = (col.sortBy ?? col.dataIndex ?? col.key) as keyof Row
     let va = a[key] as unknown
     let vb = b[key] as unknown

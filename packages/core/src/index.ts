@@ -234,6 +234,13 @@ export {
   type ColumnPresetDescriptor,
 } from './column-preset'
 export {
+  evaluateFormula,
+  memoizedFormulaValue,
+  columnLetter,
+  FORMULA_MAX_LENGTH,
+  FORMULA_MAX_DEPTH,
+} from './formula'
+export {
   createColumnState,
   type ColumnDef,
   type ColumnStateManager,

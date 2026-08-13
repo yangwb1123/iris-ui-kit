@@ -177,6 +177,18 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   titleSuffix?: import('react').ReactNode
   /** Path inside the row to read the cell value from. Defaults to `key`. */
   dataIndex?: keyof Row | string
+  /**
+   * Single-line cell formula (batch AO, iris 独有 — vxe has no computed
+   * columns; the closest is a display-only formatter). Evaluated by the core
+   * `evaluateFormula` parser against each row: field refs + `+ - * / %` +
+   * whitelist functions SUM/AVG/MIN/MAX/COUNT (case-insensitive), optional
+   * leading `=`. The COMPUTED value feeds every data consumer — cell render,
+   * sorting, filtering, grouping, summary, range stats, clipboard and CSV
+   * export. Errors / unknown fields → null (empty cell). An `editable`
+   * formula column is DISPLAY-ONLY: inline editing, row mode and batch edit
+   * ignore it. Overrides `dataIndex` / `sortBy`. Leading `=` optional.
+   */
+  formula?: string
   sortable?: boolean
   /** Sort by another field (vxe sort-by parity): the comparator reads this
    * field instead of the column's own value. */

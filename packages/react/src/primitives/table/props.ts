@@ -259,6 +259,16 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   /** Render a leading sequence-number column (vxe-grid seqConfig parity). */
   seq?: boolean
   /**
+   * Excel-style row/column references (batch AO, iris 独有 — vxe seqConfig
+   * shows numbers only, no column letters): muted A/B/C… letter badges
+   * (`data-iris-cell-ref`) after every LEAF header title (A = first leaf;
+   * seq/selection/detail/drag columns are skipped, grouped leaves follow
+   * source order) plus a leading row-number column 1, 2, 3…
+   * (`data-iris-row-ref`). When `seq` is on the seq column IS the row
+   * number — no duplicate column. Additive — default off.
+   */
+  showCellRefs?: boolean
+  /**
    * Cell merge (vxe-grid spanMethod parity): return `{ rowspan, colspan }`
    * for a cell at (rowIndex, columnIndex); both default 1. Values > 1 make
    * the cell span adjacent cells (the spanned cells are skipped).

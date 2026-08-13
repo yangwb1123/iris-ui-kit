@@ -36503,6 +36503,12 @@
           "description": "Render a leading sequence-number column (vxe-grid seqConfig parity)."
         },
         {
+          "name": "showCellRefs",
+          "type": "boolean",
+          "optional": true,
+          "description": "Excel-style row/column references (batch AO, iris 独有 — vxe seqConfig shows numbers only, no column letters): muted A/B/C… letter badges (`data-iris-cell-ref`) after every LEAF header title (A = first leaf; seq/selection/detail/drag columns are skipped, grouped leaves follow source order) plus a leading row-number column 1, 2, 3… (`data-iris-row-ref`). When `seq` is on the seq column IS the row number — no duplicate column. Additive — default off."
+        },
+        {
           "name": "spanMethod",
           "type": "(params: {",
           "optional": true,
@@ -37293,6 +37299,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Render a leading sequence-number column (vxe-grid seqConfig parity)."
+            },
+            {
+              "name": "showCellRefs",
+              "type": "boolean",
+              "optional": true,
+              "description": "Excel-style row/column references (batch AO, iris 独有 — vxe seqConfig shows numbers only, no column letters): muted A/B/C… letter badges (`data-iris-cell-ref`) after every LEAF header title (A = first leaf; seq/selection/detail/drag columns are skipped, grouped leaves follow source order) plus a leading row-number column 1, 2, 3… (`data-iris-row-ref`). When `seq` is on the seq column IS the row number — no duplicate column. Additive — default off."
             },
             {
               "name": "spanMethod",
@@ -38755,7 +38767,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 131,
+        "propCount": 132,
         "eventCount": 27
       }
     },

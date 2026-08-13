@@ -36634,6 +36634,12 @@
           "description": "Enable WAI-ARIA grid keyboard navigation."
         },
         {
+          "name": "tableShortcuts",
+          "type": "boolean",
+          "optional": true,
+          "description": "keys): F2 begins editing the focused cell's column (when editable), Delete/Backspace clears it to `''` — one batched `commitRowList` (undo-covered via the undo funnel). Requires `keyboardNavigation`'s focused-cell state (single-tabstop roving cell focus); without it the shortcuts are inert. While an inline editor is open the editor's own"
+        },
+        {
           "name": "virtualScroll",
           "type": "IrisTableVirtualOptions",
           "optional": true,
@@ -37418,6 +37424,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Enable WAI-ARIA grid keyboard navigation."
+            },
+            {
+              "name": "tableShortcuts",
+              "type": "boolean",
+              "optional": true,
+              "description": "keys): F2 begins editing the focused cell's column (when editable), Delete/Backspace clears it to `''` — one batched `commitRowList` (undo-covered via the undo funnel). Requires `keyboardNavigation`'s focused-cell state (single-tabstop roving cell focus); without it the shortcuts are inert. While an inline editor is open the editor's own"
             },
             {
               "name": "virtualScroll",
@@ -38743,7 +38755,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 130,
+        "propCount": 131,
         "eventCount": 27
       }
     },

@@ -788,3 +788,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-am-gate.md [ok]: Verdict: **PASS** → Full gate green ✅: **Gate runs**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-am-gate.md
+
+## 2026-08-12 22:45:45 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-an-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-an-baseline.md
+
+## 2026-08-12 23:10:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-an-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-an-adapt.md

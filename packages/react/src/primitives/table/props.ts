@@ -349,6 +349,14 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   lazyLoad?: (row: Row, load: (children: Row[]) => void) => void
   /** Enable WAI-ARIA grid keyboard navigation. */
   keyboardNavigation?: boolean
+  /** Batch AN shortcuts (iris 独有 — vxe keyboardConfig has no edit/clear
+   * keys): F2 begins editing the focused cell's column (when editable),
+   * Delete/Backspace clears it to `''` — one batched `commitRowList`
+   * (undo-covered via the undo funnel). Requires `keyboardNavigation`'s
+   * focused-cell state (single-tabstop roving cell focus); without it the
+   * shortcuts are inert. While an inline editor is open the editor's own
+   * keys win. Additive — default off. */
+  tableShortcuts?: boolean
   /** Enable virtual scrolling for the body. */
   virtualScroll?: IrisTableVirtualOptions
   /** Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'. */

@@ -214,6 +214,13 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   editable?: boolean
   /** Editor kind. Default `'text'`. */
   editor?: IrisTableEditor
+  /** Batch AN column preset (iris 独有): fills display defaults from the core
+   * factory — `'money'` (2 decimals + thousands separator, right-aligned,
+   * number editor + numeric editRules), `'progress'` (percent text, right),
+   * `'date'` (String passthrough, left), `'status'` (UPPERCASE text, center).
+   * User fields always win over the preset defaults (defined-fields-only
+   * merge); localized formatting stays the caller's job. */
+  preset?: import('@iris-ui-kit/core').ColumnPreset
   /**
    * Native datalist suggestions while editing (batch AM, iris 独有): `true`
    * builds the option list from the DISTINCT cell values of this column over

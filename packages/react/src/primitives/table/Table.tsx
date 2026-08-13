@@ -35,6 +35,7 @@ import { IrisFormField } from '../form-field/FormField'
 import { IrisButton } from '../button/Button'
 import { useStore } from '../../useStore'
 import {
+  applyColumnPreset,
   copyText,
   createCellEdit,
   createRemoteTableSource,
@@ -858,6 +859,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   getSubRows,
   lazyLoad,
   keyboardNavigation = false,
+  tableShortcuts = false,
   cellRange = false,
   clipConfig,
   fnr = false,
@@ -910,13 +912,33 @@ export function IrisTable<Row extends Record<string, unknown>>({
     return map
   }, [columnOrder])
 
+  // Batch AN column presets (iris 独有): a column with `preset` gets the
+  // preset's display defaults merged in by the core factory — defined-fields-
+  // only, user fields win (a plain spread would let `align: undefined` kill
+  // the default). Recursive over `children` so grouped headers' leaves
+  // inherit; when no column in the tree uses a preset the result IS
+  // `safeColumns` (reference-preserving, byte-identical with the pre-preset
+  // render path). `orderedColumns` (and everything downstream) consumes this.
+  const presetColumns = React.useMemo(() => {
+    const hasPreset = (cols: readonly IrisTableColumn<Row>[]): boolean =>
+      cols.some((c) => c.preset !== undefined || (c.children ? hasPreset(c.children) : false))
+    const applyPreset = (col: IrisTableColumn<Row>): IrisTableColumn<Row> => {
+      const resolved = col.preset ? applyColumnPreset(col, col.preset) : col
+      if (resolved.children && resolved.children.length > 0) {
+        return { ...resolved, children: resolved.children.map(applyPreset) }
+      }
+      return resolved
+    }
+    return hasPreset(safeColumns) ? safeColumns.map(applyPreset) : safeColumns
+  }, [safeColumns])
+
   const orderedColumns = React.useMemo(() => {
-    if (!columnOrder || columnOrder.length === 0) return safeColumns
-    const ordered = safeColumns.filter((c) => columnOrderIndex.has(c.key))
-    const rest = safeColumns.filter((c) => !columnOrderIndex.has(c.key))
+    if (!columnOrder || columnOrder.length === 0) return presetColumns
+    const ordered = presetColumns.filter((c) => columnOrderIndex.has(c.key))
+    const rest = presetColumns.filter((c) => !columnOrderIndex.has(c.key))
     ordered.sort((a, b) => columnOrderIndex.get(a.key)! - columnOrderIndex.get(b.key)!)
     return [...ordered, ...rest]
-  }, [safeColumns, columnOrder, columnOrderIndex])
+  }, [presetColumns, columnOrder, columnOrderIndex])
 
   const displayColumns = React.useMemo(() => {
     let cols = orderedColumns
@@ -3235,6 +3257,38 @@ export function IrisTable<Row extends Record<string, unknown>>({
     else nextCol = Math.min(leafColumns.length - 1, nextCol + 1)
     cellRangeCtrl.extendRange(nextRow, nextCol)
     updateRangeToolbarAnchor()
+  }
+
+  // Batch AN shortcuts (iris 独有, tableShortcuts): F2 begins editing the
+  // focused cell's column (when editable), Delete/Backspace clears the cell
+  // to '' — one batched commitRowList (undo-covered free via the undo
+  // funnel). The focused-cell state is keyboardNavigation's roving focus
+  // (cells only get `data-grid-row`/onFocus there); WITHOUT keyboardNavigation
+  // the shortcuts are inert (documented). While an inline editor is open the
+  // editor's own keys win (the gates below skip). The event TARGET must be a
+  // grid cell — header/editor focus never triggers on a stale cell.
+  const handleTableShortcutKey = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (!tableShortcuts) return
+    if (editTarget.editing !== null || rowEditing !== null) return
+    if ((e.target as HTMLElement).dataset.gridRow === undefined) return
+    const cell = focusedCell
+    if (!cell) return
+    const row = bodyData[cell.row]
+    const col = leafColumns[cell.col]
+    if (!row || !col) return
+    const k = rowKeyOf(row, cell.row)
+    if (e.key === 'F2') {
+      if (!col.editable) return
+      e.preventDefault()
+      beginEdit(row, col, k, cell.row)
+      return
+    }
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault()
+      const current = externalDataRef.current ?? []
+      const next = setCellValue(current, rowKey, k, col.key, '')
+      if (next !== current) commitRowList(next)
+    }
   }
 
   // ── Clipboard batch O (clipConfig): Ctrl/Cmd+C copies the selected range as
@@ -5576,10 +5630,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
         data-iris-no-hover={highlightHoverRow ? undefined : 'true'}
         className={className}
         onKeyDown={
-          keyboardNavigation || cellRange
+          keyboardNavigation || cellRange || tableShortcuts
             ? (e) => {
                 if (keyboardNavigation) handleGridKey(e)
                 if (cellRange) handleCellRangeKey(e)
+                if (tableShortcuts) handleTableShortcutKey(e)
               }
             : undefined
         }

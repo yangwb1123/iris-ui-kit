@@ -798,3 +798,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-an-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-an-adapt.md
+
+## 2026-08-12 23:02:06 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-an-adapt.md [ok]: Report: **Commit:** `aeed28c8` — `feat(table): batch AN column presets + table shortcuts`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-an-adapt.md
+
+## 2026-08-12 23:06:52 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-an-review.md [ok]: Verdict: **PASS** — `docs/vxe-grid/batch-an-review.md`; Checks: **1. Presets — all pass**; Findings (none blocking): 1. **LOW** `Table.tsx:3289` — Delete is a silent no-op for `rowId`-keyed tables (`setCellValue` resolves by `rowKey` fie
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-an-review.md

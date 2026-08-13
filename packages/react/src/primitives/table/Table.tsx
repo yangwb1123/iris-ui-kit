@@ -917,6 +917,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onRetry,
   proxyConfig,
   showCellRefs = false,
+  selectionSummary = false,
   style,
   className,
   ...rest
@@ -2727,6 +2728,21 @@ export function IrisTable<Row extends Record<string, unknown>>({
         withComputedFormulaCells([...filteredDataRef.current], viewColumnsRef.current),
         viewColumnsRef.current,
       ),
+    // Batch AP (iris 独有): export the SELECTED rows — selection keys mapped
+    // through the latest bodyData in bodyData order (the same view the
+    // selection summary uses; cross-page proxy keys absent from the loaded
+    // page are skipped), formula columns materialized on shadow rows, hidden
+    // columns excluded — byte-identical shape to exportCurrentViewCsv. Empty
+    // selection → '' (caller detects via getSelection()).
+    exportSelectionCsv: () => {
+      const selected = new Set(displaySelectionRef.current)
+      const rows = bodyDataRef.current.filter((row, i) => selected.has(rowKeyOf(row, i)))
+      if (rows.length === 0) return ''
+      return exportCsv(
+        withComputedFormulaCells(rows, viewColumnsRef.current),
+        viewColumnsRef.current,
+      )
+    },
     getSelection: () => [...displaySelectionRef.current],
     // ── Selection methods (vxe clearCheckboxRow / setAllCheckboxRow(true) /
     // toggleCheckboxRow parity, batch F) ───────────────────────────────────
@@ -3027,6 +3043,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const filteredDataRef = React.useRef(filteredData)
   filteredDataRef.current = filteredData
   const bodyData = flatTree ? flatTree.map((t) => t.row) : filteredData
+  // Batch AP: mirror the latest body rows for the mount-time handle
+  // (exportSelectionCsv runs against the mount-time closure and must see
+  // post-rerender rows — same pattern as filteredDataRef above).
+  const bodyDataRef = React.useRef(bodyData)
+  bodyDataRef.current = bodyData
 
   // Batch AM: per-column native datalist suggestions (iris 独有). Only
   // `suggest === true` columns are scanned (an explicit array passes through
@@ -5397,6 +5418,72 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 </div>
               ) : null}
             </>
+          ) : null}
+          {selectable === 'multi' && selectionSummary === true && displaySelection.length > 0 ? (
+            <div
+              data-iris-selection-summary=""
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 'var(--iris-space-xxs, 4px)',
+                fontSize: 'var(--iris-font-size-sm, 13px)',
+                color: 'var(--iris-muted)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span>{t('table.selectionSummary', { count: String(displaySelection.length) })}</span>
+              {(() => {
+                const selected = new Set(displaySelection)
+                const selectedRows = bodyData.filter((row, i) => selected.has(rowKeyOf(row, i)))
+                return leafColumns
+                  .filter((col) => col.summary === 'sum')
+                  .map((col) => {
+                    const rawValue = aggregate(selectedRows, (r) => getCellValue(r, col), 'sum')
+                    // Same aggregateAccuracy rounding point as the summary row
+                    // (renderSummaryRow, batch P) — finite numbers only.
+                    const accuracy =
+                      aggregateAccuracy !== undefined &&
+                      aggregateAccuracy >= 0 &&
+                      aggregateAccuracy <= 100
+                        ? aggregateAccuracy
+                        : undefined
+                    const value =
+                      rawValue != null && accuracy !== undefined && Number.isFinite(rawValue)
+                        ? Number(rawValue.toFixed(accuracy))
+                        : rawValue
+                    if (value == null) return null
+                    return (
+                      <span key={col.key}>
+                        · {t('table.selectionSummarySum')} {String(value)}
+                      </span>
+                    )
+                  })
+              })()}
+              <button
+                type="button"
+                data-iris-selection-clear=""
+                onClick={() => {
+                  // The shared clearSelection path (handle parity): re-base on
+                  // the controlled prop, then clear the model.
+                  rebaseToProp()
+                  selModel.clear()
+                }}
+                aria-label={t('table.clearSelection')}
+                title={t('table.clearSelection')}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  color: 'var(--iris-muted)',
+                  fontSize: 'var(--iris-font-size-sm, 13px)',
+                  padding: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}
+              >
+                ✕
+              </button>
+            </div>
           ) : null}
           {selectable === 'multi' && displaySelection.length > 0 && batchAction ? (
             <button

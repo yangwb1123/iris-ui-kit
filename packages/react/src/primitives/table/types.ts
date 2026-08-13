@@ -497,6 +497,12 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   getFilteredData: () => Row[]
   /** Serialize the CURRENT filtered view as CSV (batch W): `exportCsv(getFilteredData(), displayColumns)` — hidden columns excluded (displayColumns drops columnVisibility/visibleMethod hides), formula injection neutralized; returns a plain string without BOM (caller downloads via `downloadCsv`). */
   exportCurrentViewCsv: () => string
+  /** Serialize the SELECTED rows as CSV (batch AP, iris 独有): selected rows
+   * in bodyData order (filtered + sorted + tree-flattened) → the same
+   * `exportCsv` shape as `exportCurrentViewCsv` (formula columns materialized
+   * on shadow rows, hidden columns excluded); empty selection → `''` (caller
+   * detects via `getSelection()`). */
+  exportSelectionCsv: () => string
   /** Current selection keys (vxe getCheckboxRecords parity). */
   getSelection: () => Array<string | number>
   /** Clear every selected row (vxe clearCheckboxRow parity). */

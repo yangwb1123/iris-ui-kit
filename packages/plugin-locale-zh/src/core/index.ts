@@ -166,6 +166,9 @@ export const zhCNMessages: Record<string, string> = {
   'select.empty': '无选项',
   'table.selectAll': '全选',
   'table.selectedCount': '{count} 项已选',
+  'table.selectionSummary': '已选 {count} 行',
+  'table.selectionSummarySum': '合计',
+  'table.clearSelection': '清除选择',
   'table.selectRow': '选择第 {key} 行',
   // transfer
   'transfer.sourceTitle': '可选',

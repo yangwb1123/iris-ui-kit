@@ -386,6 +386,18 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   onQueryChange?: (next: string) => void
   /** Render only the horizontally-visible columns plus pinned columns and overscan. */
   columnVirtualization?: boolean
+  /**
+   * Selection summary (batch AP, iris 独有 — vxe has no parity feature, the
+   * header count is its closest cousin): when `selectable === 'multi'` and
+   * rows are selected, the toolbar renders `已选 N 行`
+   * (`data-iris-selection-summary`, i18n `table.selectionSummary`) plus a
+   * `· 合计 X` per leaf column with `summary === 'sum'` (the SAME aggregate
+   * material + `aggregateAccuracy` rounding + `String(value)` formatting the
+   * summary row uses, computed over the SELECTED rows in bodyData order) and
+   * a clear button (`data-iris-selection-clear`) that runs the shared
+   * `clearSelection` path. Additive — default off.
+   */
+  selectionSummary?: boolean
   /** Enable rectangular cell-range selection. */
   cellRange?: boolean
   /** Clipboard batch (vxe-grid clipboard-config parity, batch O): Ctrl/Cmd+C copies the selected cell range as TSV; Ctrl/Cmd+V pastes TSV text into the range anchor onward (overflow beyond the last row/col is ignored). Requires `cellRange` to have a live selected range; additive — default off. */

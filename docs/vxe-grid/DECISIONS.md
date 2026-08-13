@@ -833,3 +833,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ao-gate.md [ok]: Gate results: | Step | Result |; Final test counts (repo-wide): **7,795 tests passed** across all packages. Key suites:
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ao-gate.md
+
+## 2026-08-13 14:59:22 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ap-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ap-baseline.md

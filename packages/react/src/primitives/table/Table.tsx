@@ -17,6 +17,7 @@ import {
   seedFormValues,
   withSortedChildren,
   nextGridCell,
+  rangeStats,
   type CellRange,
   type CellRangeController,
   type ExpansionModel,
@@ -163,7 +164,7 @@ import { useTableViews } from './useTableViews'
 import { TableContextMenu } from './ContextMenu'
 import { TableFilterPanel } from './FilterPanel'
 import { TableViews } from './TableViews'
-import { RangeToolbar } from './RangeToolbar'
+import { RangeToolbar, type RangeStatsEntry } from './RangeToolbar'
 import type {
   IrisTableColumn,
   IrisTableColumnWidths,
@@ -1345,6 +1346,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (onColumnOrderChange) s.columnOrder = columnOrder
     if (onColumnWidthsChange) s.columnWidths = columnWidths
     if (proxy) s.pageSize = proxyState.params.pageSize
+    // Batch AJ: the query string joins the snapshot ONLY for the named-views
+    // collector (gated on `views`) — persistState's save loop iterates
+    // IrisTablePersistPiece and never sees it, so the batch-AG path stays
+    // byte-identical. The query is a controlled prop, captured like any other
+    // parent-owned piece and restored FIRST on view apply (see below).
+    if (views && query !== undefined) s.query = query
     return s
   }, [
     persistState,
@@ -1366,6 +1373,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     onColumnVisibilityChange,
     onColumnOrderChange,
     onColumnWidthsChange,
+    query,
   ])
   const restorePersistPiece = React.useCallback(
     (piece: IrisTablePersistPiece, value: unknown): boolean => {
@@ -1428,6 +1436,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // request) instead of just declaring eligibility.
   const applyViewSnapshot = React.useCallback(
     (snapshot: IrisTablePersistedState): void => {
+      // Batch AJ: the query string restores FIRST (before any other piece) via
+      // onQueryChange with a typeof-string guard — a tampered snapshot can't
+      // land a non-string in the callback. Legacy views without `query` skip
+      // this entirely and leave the current query untouched.
+      if (snapshot.query !== undefined && typeof snapshot.query === 'string' && onQueryChange) {
+        onQueryChange(snapshot.query)
+      }
       if (snapshot.sort !== undefined) restorePersistPiece('sort', snapshot.sort)
       if (snapshot.multiSortState !== undefined)
         restorePersistPiece('multiSortState', snapshot.multiSortState)
@@ -1451,7 +1466,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         }
       }
     },
-    [restorePersistPiece, proxyConfig],
+    [restorePersistPiece, proxyConfig, onQueryChange],
   )
   // Parse runs during the first render (guarded, idempotent); mirror the
   // parsed snapshot into the ref the proxy-creation effect reads above.
@@ -3218,6 +3233,42 @@ export function IrisTable<Row extends Record<string, unknown>>({
     })
     commitRowList(next)
   }, [cellRangeCtrl, rowKey, commitRowList])
+
+  // ── Range stats (batch AJ, iris 独有) ──────────────────────────────
+  // Panel-open state is hoisted HERE because the bar remounts on every range
+  // change (key={rangeToolbarSeq}): hoisted state survives the remount, so
+  // the panel stays open while its stats recompute for the new range. Stats
+  // come from the core `rangeStats` material over the range rectangle of the
+  // DISPLAYED rows (`bodyData` — already query/filtered) and the leaf column
+  // list (its index IS the grid column index, the same mapping cell rendering
+  // uses). The column key indirection mirrors `getCellValue` (`dataIndex ??
+  // key`) so core stays pure over { key }; entries render in range column
+  // order with the column title for display.
+  const [rangeStatsOpen, setRangeStatsOpen] = React.useState(false)
+  const rangeStatsData = React.useMemo<RangeStatsEntry[] | null>(() => {
+    if (!activeRange) return null
+    const cols = leafColumns.slice(activeRange.start.col, activeRange.end.col + 1)
+    if (cols.length === 0) return null
+    const stats = rangeStats(
+      bodyData,
+      leafColumns.map((col) => ({
+        key: (col.dataIndex ?? col.key) as string,
+        getValue: (row: Row) => getCellValue(row, col),
+      })),
+      activeRange,
+    )
+    return cols.map((col) => {
+      const key = (col.dataIndex ?? col.key) as string
+      return { key, title: col.title ?? key, stats: stats[key] }
+    })
+  }, [activeRange, bodyData, leafColumns])
+  // Dismissal (Escape / outside pointer-down) also closes the panel — the
+  // panel rides the bar's existing useDismiss, and the hoisted open state is
+  // reset here so a later range never reopens it unprompted.
+  const dismissRange = React.useCallback((): void => {
+    cellRangeCtrl.clearRange()
+    setRangeStatsOpen(false)
+  }, [cellRangeCtrl])
 
   // ── Find & replace (batch O: fnr) — Ctrl/Cmd+F opens the bar (when not
   // editing); matches highlight over bodyData in flat mode (case-insensitive
@@ -5593,8 +5644,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
             onCopy={copyActiveRange}
             onExport={() => void downloadCsv('table-range.csv', exportActiveRangeCsv())}
             onClear={clearActiveRange}
-            onDismiss={() => cellRangeCtrl.clearRange()}
+            onDismiss={dismissRange}
             t={t}
+            statsOpen={rangeStatsOpen}
+            onToggleStats={() => setRangeStatsOpen((o) => !o)}
+            stats={rangeStatsData}
           />
         ) : null}
         {filterPanelState

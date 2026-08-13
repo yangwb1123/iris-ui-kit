@@ -23,6 +23,55 @@ export const BASE_CELL_STYLE: React.CSSProperties = {
 
 export const borderStyle = (bordered: boolean): string =>
   bordered ? '1px solid var(--iris-border)' : 'none'
+
+/* Range-stats panel (batch AJ, iris 独有): rendered INSIDE the floating bar
+   container (which is position:absolute via useFloating, so an absolutely
+   positioned child anchors to it) and dropped BELOW the bar with a small
+   gap. Mini table — a header row + one row per range column — so the shared
+   header/row/cell styles are kept here next to the other table styles. */
+export const RANGE_STATS_PANEL_STYLE: React.CSSProperties = {
+  position: 'absolute',
+  top: 'calc(100% + var(--iris-space-xxs, 4px))',
+  left: 0,
+  minWidth: '100%',
+  background: 'var(--iris-surface-floating, var(--iris-surface))',
+  color: 'var(--iris-foreground)',
+  border: '1px solid var(--iris-border)',
+  borderRadius: 'var(--iris-radius-md, 6px)',
+  boxShadow: 'var(--iris-shadow-lg)',
+  padding: 'var(--iris-space-xxs, 4px)',
+  fontSize: 'var(--iris-font-size-sm, 13px)',
+  whiteSpace: 'nowrap',
+}
+
+export const RANGE_STATS_ROW_STYLE: React.CSSProperties = {
+  display: 'flex',
+  gap: 'var(--iris-space-sm, 12px)',
+  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+}
+
+export const RANGE_STATS_HEADER_STYLE: React.CSSProperties = {
+  ...RANGE_STATS_ROW_STYLE,
+  color: 'var(--iris-muted)',
+  fontWeight: 600,
+}
+
+export const RANGE_STATS_ROW_DIVIDER_STYLE: React.CSSProperties = {
+  ...RANGE_STATS_ROW_STYLE,
+  borderTop: '1px solid var(--iris-border)',
+}
+
+export const RANGE_STATS_LABEL_STYLE: React.CSSProperties = {
+  minWidth: 96,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+}
+
+export const RANGE_STATS_VALUE_STYLE: React.CSSProperties = {
+  minWidth: 64,
+  textAlign: 'right',
+}
 export const TABLE_ROW_CSS = `
 [data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover {
   --iris-cell-bg: var(--iris-surface-hover);

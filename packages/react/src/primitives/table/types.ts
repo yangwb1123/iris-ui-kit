@@ -67,6 +67,10 @@ export interface IrisTablePersistedState {
   columnOrder?: string[]
   columnWidths?: IrisTableColumnWidths
   pageSize?: number
+  /** Batch AJ: natural-language query captured by the named-views collector
+   * when `query` is set; restored FIRST via `onQueryChange` on view apply
+   * (persistState path stays byte-identical; legacy views load unchanged). */
+  query?: string
 }
 
 /**
@@ -389,10 +393,7 @@ export interface IrisTableSpan {
   colspan?: number
 }
 
-/**
- * Params delivered to `IrisTableProps.footerSpanMethod` (vxe
- * footer-span-method parity, batch P).
- */
+/** Params delivered to `IrisTableProps.footerSpanMethod` (vxe footer-span-method parity, batch P). */
 export interface IrisTableFooterSpanParams<Row = Record<string, unknown>> {
   /** 0-based row index over the rendered footer stack (footerMethod rows →
    * summary row → footerData rows, whichever render). */
@@ -409,9 +410,7 @@ export type IrisTableFooterSpanMethod<Row = Record<string, unknown>> = (
   params: IrisTableFooterSpanParams<Row>,
 ) => IrisTableSpan | null
 
-/** vxe-grid scrollbarConfig parity (batch Q): `theme: 'thin'` renders 6px
- * webkit scrollbars + Firefox `scrollbar-width: thin` on the root (and its
- * virtual-scroll descendant) via `data-iris-scrollbar-thin`. */
+/** vxe-grid scrollbarConfig parity (batch Q): `theme: 'thin'` → 6px webkit + Firefox `scrollbar-width: thin` via `data-iris-scrollbar-thin`. */
 export type IrisTableScrollbarConfig = { theme?: 'default' | 'thin' }
 
 /** vxe-grid editDirtyConfig parity (batch Q): a committed cell whose value

@@ -728,3 +728,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ak-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ak-baseline.md
+
+## 2026-08-12 18:23:02 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ak-adapt.md [ok]: Report: **Files changed (4 source/docs + 2 tests + 2 batch docs):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ak-adapt.md
+
+## 2026-08-12 18:27:35 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ak-review.md [ok]: 裁决：**PASS**（无阻塞问题；4 条低严重度发现）; 验证命令（全部绿）: | 命令 | 结果 |; 检查点核对: **1. unique 核心语义 — 全部符合基线**; 发现（按严重度）: **1. [低] `edit-rules.ts:116` — `context.rows` 无守卫，与文档化 "no rows → no-op" 不一致**; 备注（非发现）: - `docs/vxe-grid/DECISIONS.md` 与 `batch-ak-adapt.md` 的工作区改动为 runner 阶段记录，非本批代码变更。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ak-review.md

@@ -748,3 +748,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-al-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-al-baseline.md
+
+## 2026-08-12 19:21:33 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-al-adapt.md [ok]: Report: **Files changed (4 source/doc + 1 test + 2 batch docs):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-al-adapt.md
+
+## 2026-08-12 19:28:37 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-al-review.md [ok]: Summary: **Verification run (all required commands):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-al-review.md

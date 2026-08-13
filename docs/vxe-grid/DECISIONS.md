@@ -738,3 +738,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ak-review.md [ok]: 裁决：**PASS**（无阻塞问题；4 条低严重度发现）; 验证命令（全部绿）: | 命令 | 结果 |; 检查点核对: **1. unique 核心语义 — 全部符合基线**; 发现（按严重度）: **1. [低] `edit-rules.ts:116` — `context.rows` 无守卫，与文档化 "no rows → no-op" 不一致**; 备注（非发现）: - `docs/vxe-grid/DECISIONS.md` 与 `batch-ak-adapt.md` 的工作区改动为 runner 阶段记录，非本批代码变更。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ak-review.md
+
+## 2026-08-12 18:36:38 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ak-gate.md [ok]: Summary: **Review verdict:** PASS (no blockers; 4 LOW/INFO findings all documented pre-existing boundaries, no code changes requi; Full repo gate: - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks** (4m08s); Final test counts: - **vitest: 7523 passed, 0 failed** — react **1896** (+5 from batch AK), core **1308** (+8), vue 1531, solid 974+34 (SSR; Commits: - **`7fdeda99`** — `feat(table): grid 批 AK——范围粘贴增强 + unique 唯一性规则（编辑闭环）` (gate commit, doc records)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ak-gate.md

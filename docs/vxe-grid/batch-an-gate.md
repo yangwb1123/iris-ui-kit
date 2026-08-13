@@ -1,29 +1,23 @@
-# Gate Report — batch AN (shortcuts + column presets)
+**Batch AN gate: PASSED** ✅
 
-**Verdict source**: `docs/vxe-grid/batch-an-review.md` — **PASS** (no blocking findings; 3 LOW + 3 INFO non-blocking noted for future batches)
+## Summary
 
-## Commands
+**Verdict**: `docs/vxe-grid/batch-an-review.md` = **PASS** (3 LOW + 3 INFO findings, all non-blocking)
 
-| Step                                                  | Result                                                           |
-| ----------------------------------------------------- | ---------------------------------------------------------------- |
-| `turbo run test typecheck lint build --concurrency=2` | ✅ **180/180 tasks** (55 cached, 4m17s)                          |
-| `pnpm audit`                                          | ✅ **0 vulnerabilities**                                         |
-| `pnpm gen:manifest` + `check:manifest`                | ✅ up to date — 155 components × 4 frameworks (all 4), 86 tokens |
-| Commit                                                | ✅ `a345ae341a0438018dfda187ea076b11066a8281`                    |
+**Full repo gate**:
 
-## Final test counts
+- `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful** (55 cached, 4m17s)
+- `pnpm audit` → **0 known vulnerabilities**
+- `gen:manifest` + `check:manifest` → up to date (**155 components × 4 frameworks**, 86 tokens)
 
-| Suite | Tests           | Files |
-| ----- | --------------- | ----- |
-| core  | **1330 passed** | 85    |
-| react | **1938 passed** | 172   |
+**Final test counts**:
 
-## Review findings status
+- **core: 1330 passed** (85 files)
+- **react: 1938 passed** (172 files)
 
-- 1–3 (LOW: Delete no-op on rowId tables / redundant commits on empty cells / F2 row-mode invisible session) — non-blocking, tracked for a future batch.
-- 4–6 (INFO) — accepted as-is.
+**Commits** (on `main`):
 
-## Notes
+1. `a345ae34` — `feat(table): grid 批 AN——F2/Delete 快捷键 + 列模板预设（DX 增强）` (docs: DECISIONS.md, batch-an-adapt.md, batch-an-review.md)
+2. `937db4e8` — `chore: 批 AN gate 报告` (adds `docs/vxe-grid/batch-an-gate.md`)
 
-- Only docs files were staged beyond the earlier adapt commit: `DECISIONS.md`, `batch-an-adapt.md`, `batch-an-review.md`.
-- `cms-shared#build` emitted the usual "no output files found" turbo warning — non-blocking, pre-existing.
+The three LOW findings (Delete no-op on `rowId`-keyed tables, redundant commits on already-empty cells, F2 row-mode invisible session) are tracked for a future batch; the INFO items are accepted as-is. Working tree clean.

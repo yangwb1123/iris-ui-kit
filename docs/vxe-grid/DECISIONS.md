@@ -808,3 +808,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-an-review.md [ok]: Verdict: **PASS** — `docs/vxe-grid/batch-an-review.md`; Checks: **1. Presets — all pass**; Findings (none blocking): 1. **LOW** `Table.tsx:3289` — Delete is a silent no-op for `rowId`-keyed tables (`setCellValue` resolves by `rowKey` fie
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-an-review.md
+
+## 2026-08-12 23:12:21 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-an-gate.md [ok]: Summary: **Verdict**: `docs/vxe-grid/batch-an-review.md` = **PASS** (3 LOW + 3 INFO findings, all non-blocking)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-an-gate.md

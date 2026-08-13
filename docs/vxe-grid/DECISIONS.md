@@ -818,3 +818,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ao-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ao-baseline.md
+
+## 2026-08-13 06:03:30 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ao-adapt.md [ok]: Report: **Files changed (8 source/test + 4 docs + 2 generated):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ao-adapt.md
+
+## 2026-08-13 06:12:12 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ao-review.md [ok]: Verification results: | Command | Result |; Checklist: 1. **Evaluator — PASS.** Recursive descent with correct precedence/parens/left-assoc; no `eval`/`Function`; every failur; Findings (non-blocking): 1. **[LOW]** `pasteIntoRange` (Table.tsx:3412) / `clearActiveRange` (:3614) write `row[col.key]` for formula columns wit
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ao-review.md

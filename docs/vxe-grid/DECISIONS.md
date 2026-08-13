@@ -838,3 +838,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ap-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ap-baseline.md
+
+## 2026-08-13 15:10:19 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ap-adapt.md [ok]: 完成报告 — batch AP（选择汇总 + 选中行导出）; Files changed (commit `60b3bc5c`, 11 files: 9 modified + 2 new): | File | Change |; Tests added (12, file 302 lines ≤ 500): - **selectionSummary (7)**: defaults off; hides without selection; count + per-sum-column totals over **selected rows on; Gate results: - `--filter @iris-ui-kit/react typecheck` ✅; What is left / notes: - **File count**: prompt capped at "≤4 changed files + tests"; the baseline's own file map required 5 source files + doc
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ap-adapt.md
+
+## 2026-08-13 15:14:29 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ap-review.md [ok]: Summary: Inspected commit `60b3bc5c` against baseline + adapt docs and verified every claim against code.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ap-review.md

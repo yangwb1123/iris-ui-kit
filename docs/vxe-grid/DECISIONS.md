@@ -848,3 +848,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ap-review.md [ok]: Summary: Inspected commit `60b3bc5c` against baseline + adapt docs and verified every claim against code.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ap-review.md
+
+## 2026-08-13 15:27:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ap-gate.md [ok]: Summary: **Verdict:** PASS (inspected commit `60b3bc5c`; all claims verified against code — selection summary gating/count/sums,
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ap-gate.md

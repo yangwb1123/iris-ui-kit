@@ -773,3 +773,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-am-adapt.md [ok]: Report: **Files changed (8 source + 2 tests + 3 docs/config):**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-am-adapt.md
+
+## 2026-08-12 21:55:37 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-am-adapt.md [ok]: Report: **Commit:** `27ff6813` — `feat(table): batch AM edit suggestions + value distribution` (working tree clean)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-am-adapt.md
+
+## 2026-08-12 22:02:25 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-am-review.md [ok]: Verdict: **PASS** — written to `docs/vxe-grid/batch-am-review.md`; What I verified: **Checklist 1 — `suggest`** ✅; Command results: - core test **1317 ✅** · react test **1925 ✅** · typecheck **clean** · lint **0 errors** · `check:manifest` **up to date; Findings (all LOW/INFO): 1. **LOW** `Table.tsx:2350` — `items.push()` mutates the caller-provided context-menu array; use a spread instead.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-am-review.md

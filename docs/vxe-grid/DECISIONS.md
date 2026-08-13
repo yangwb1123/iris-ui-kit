@@ -783,3 +783,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-am-review.md [ok]: Verdict: **PASS** — written to `docs/vxe-grid/batch-am-review.md`; What I verified: **Checklist 1 — `suggest`** ✅; Command results: - core test **1317 ✅** · react test **1925 ✅** · typecheck **clean** · lint **0 errors** · `check:manifest` **up to date; Findings (all LOW/INFO): 1. **LOW** `Table.tsx:2350` — `items.push()` mutates the caller-provided context-menu array; use a spread instead.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-am-review.md
+
+## 2026-08-12 22:17:20 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-am-gate.md [ok]: Verdict: **PASS** → Full gate green ✅: **Gate runs**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-am-gate.md

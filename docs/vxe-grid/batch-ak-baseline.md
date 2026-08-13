@@ -1,0 +1,11 @@
+Baseline written to `/home/u1/iris-ui/docs/vxe-grid/batch-ak-baseline.md` (no source files touched — `git status` shows only the new doc).
+
+**Key findings (verified against the code):**
+
+**a) Range paste** — `pasteIntoRange` (Table.tsx:3053) is currently _clipboard-driven_: it streams TSV from `range.start` (the normalized top-left of the selection, from `createCellRange()`'s `getRange()`) onward and never bounds by the selection size. The design adds an additive rectangle-fill branch: multi-cell selection → fill EXACTLY the selected rectangle (clipboard smaller → top-left fill, rest unchanged; larger → clipped; table-end rows ignored), single-cell selection keeps the batch-O streaming behavior so existing `clip-fnr.test.tsx` paste tests stay green. One byKey patch map + one `commitRowList` (unchanged), values stay strings (unchanged).
+
+**b) `unique` rule** — `EditRule` gains `unique?: boolean` (one line); `validateEditRules`/`validateEditRulesAsync` gain an **additive optional 5th param** `context?: EditRuleContext<Row> { rows, columnKey }` (today's signature `(rules, value, row, collectAll?)` has no row list or column key, which a same-column uniqueness check needs). Check: inside the `!isEmpty` gate, String comparison against other rows' same-column values (reference-skip of the editing row), empty values exempt, fails with `rule.message ?? '值必须唯一'`, missing context = no-op pass. React call sites 1646/1717 thread `{ rows, columnKey }`; Vue/Solid/Svelte parity sites listed.
+
+**Correction flagged**: the task pointed at `table-rows.ts` for `setCellValue` — it actually lives in `cell-edit.ts` (barrel-exported, used by the single-cell edit commit path, **not** the paste path). The baseline documents the real write-back channel.
+
+**Deliverables**: file map (0 new files, ~5 react-scope edits + 3 parity files), ~12 new tests (7 core `edit-rules.test.ts` unique cases, 5 react rectangle-paste cases in `clip-fnr.test.tsx`), and 6 fiats for review — including the additive boundary (single-cell keeps streaming), the first non-Chinese→Chinese default message, paste-bypasses-editRules scope boundary, reference-identity skip, and a pre-existing `dataIndex ?? key` vs `col.key` paste inconsistency.

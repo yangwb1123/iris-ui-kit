@@ -399,6 +399,7 @@ export {
   validateEditRules,
   validateEditRulesAsync,
   type EditRule,
+  type EditRuleContext,
   type EditRules,
 } from './edit-rules'
 export { createUndoStack, type UndoStack, type UndoStackOptions } from './undo'

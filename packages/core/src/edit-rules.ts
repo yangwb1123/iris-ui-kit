@@ -4,7 +4,7 @@
  * A column declares an ordered rule list; each rule validates the draft and
  * returns the first failing message (or all messages with `collectAll`).
  * Rules support sync/async validators and built-in checks:
- *   required / min / max / type (number|string|array) / pattern / validator
+ *   required / min / max / type (number|string|array) / pattern / validator / unique
  *
  * Framework-agnostic — the table adapters bridge it into their edit
  * sessions (IrisTable `editRules` column config + `editConfig`).
@@ -21,6 +21,14 @@ export interface EditRule<Row = unknown> {
   type?: 'number' | 'string' | 'array'
   /** Regex the string value must match (for non-string values, String(v) is tested). */
   pattern?: string | RegExp
+  /**
+   * Field must be unique among the context rows' same-column non-empty values
+   * (batch AK, iris 独有). Needs `validateEditRules`' optional `context`
+   * argument — without it (or with no rows / no columnKey) the rule is a no-op
+   * pass. Empty values are exempt; the editing row itself is skipped by
+   * reference; comparison is String-based.
+   */
+  unique?: boolean
   /** Custom validator — sync (return string|null) or async (resolve string|null). */
   validator?: (
     value: unknown,
@@ -34,6 +42,19 @@ export interface EditRule<Row = unknown> {
 
 export type EditRules<Row = unknown> = EditRule<Row>[]
 
+/**
+ * Data context for row-scoped rules such as `unique`. Passed to
+ * `validateEditRules` / `validateEditRulesAsync` as the optional 5th
+ * argument; when absent (or with no rows / no columnKey) such rules are
+ * skipped (no-op pass), keeping existing callers byte-compatible.
+ */
+export interface EditRuleContext<Row = unknown> {
+  /** The full row list to scan — typically the table's current rows. */
+  rows: Row[]
+  /** The column being validated; rows are indexed by this key. */
+  columnKey: string
+}
+
 export interface EditRuleResult {
   valid: boolean
   /** First failing message (or all messages with collectAll). */
@@ -46,6 +67,7 @@ const DEFAULT_MESSAGES: Record<string, string> = {
   max: 'Value is too large',
   type: 'Value type is invalid',
   pattern: 'Value format is invalid',
+  unique: 'Value must be unique',
 }
 
 function isEmpty(value: unknown): boolean {
@@ -56,7 +78,12 @@ function isEmpty(value: unknown): boolean {
   return false
 }
 
-function validateRule<Row>(rule: EditRule<Row>, value: unknown, row: Row): string | null {
+function validateRule<Row>(
+  rule: EditRule<Row>,
+  value: unknown,
+  row: Row,
+  context?: EditRuleContext<Row>,
+): string | null {
   if (rule.required && isEmpty(value)) {
     return rule.message ?? DEFAULT_MESSAGES.required
   }
@@ -83,6 +110,20 @@ function validateRule<Row>(rule: EditRule<Row>, value: unknown, row: Row): strin
       const re = rule.pattern instanceof RegExp ? rule.pattern : new RegExp(rule.pattern)
       if (!re.test(String(value))) return rule.message ?? DEFAULT_MESSAGES.pattern
     }
+    // Unique (batch AK): String comparison against the context rows' same
+    // column, skipping the editing row by reference identity; empty values on
+    // either side are exempt. No context (or no rows / no columnKey) → skip.
+    if (rule.unique && context && context.columnKey !== undefined && context.rows.length > 0) {
+      const current = String(value)
+      for (const other of context.rows) {
+        if (other === row) continue
+        const otherValue = (other as Record<string, unknown>)[context.columnKey]
+        if (isEmpty(otherValue)) continue
+        if (String(otherValue) === current) {
+          return rule.message ?? DEFAULT_MESSAGES.unique
+        }
+      }
+    }
   }
   if (rule.validator) {
     // Validator handles its own emptiness semantics; run it regardless.
@@ -105,6 +146,7 @@ export function validateEditRules<Row = unknown>(
   value: unknown,
   row: Row,
   collectAll = false,
+  context?: EditRuleContext<Row>,
 ): EditRuleResult {
   if (!rules || rules.length === 0) return { valid: true, messages: [] }
   const messages: string[] = []
@@ -117,7 +159,7 @@ export function validateEditRules<Row = unknown>(
       }
       if (result) messages.push(result as string)
     } else {
-      const message = validateRule({ ...rule, validator: undefined }, value, row)
+      const message = validateRule({ ...rule, validator: undefined }, value, row, context)
       if (message) messages.push(message)
     }
     if (!collectAll && messages.length > 0) break
@@ -134,6 +176,7 @@ export async function validateEditRulesAsync<Row = unknown>(
   value: unknown,
   row: Row,
   collectAll = false,
+  context?: EditRuleContext<Row>,
 ): Promise<EditRuleResult> {
   if (!rules || rules.length === 0) return { valid: true, messages: [] }
   const messages: string[] = []
@@ -142,7 +185,7 @@ export async function validateEditRulesAsync<Row = unknown>(
       const result = await rule.validator(value, row)
       if (result) messages.push(result)
     } else {
-      const message = validateRule({ ...rule, validator: undefined }, value, row)
+      const message = validateRule({ ...rule, validator: undefined }, value, row, context)
       if (message) messages.push(message)
     }
     if (!collectAll && messages.length > 0) break

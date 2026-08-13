@@ -189,6 +189,114 @@ describe('IrisTable clipConfig paste', () => {
   })
 })
 
+// ── clipConfig: rectangle paste (batch AK, iris 独有) ────────────────────
+// A multi-cell selection fills EXACTLY the selected rectangle from its
+// top-left (clipboard smaller → top-left fill, rest unchanged; larger →
+// clipped to the rectangle AND the table bounds). Single-cell keeps the
+// batch-O streaming behavior (pinned by the tests above).
+describe('IrisTable clipConfig rectangle paste', () => {
+  it('fills exactly the selected rectangle from its top-left, one onDataChange', async () => {
+    stubClipboard()
+    clipboardRead.mockResolvedValue('X\tY\nZ\tW')
+    const onDataChange = vi.fn()
+    render(
+      <IrisTable
+        columns={cols}
+        data={rows}
+        rowKey="id"
+        cellRange
+        clipConfig={{}}
+        onDataChange={onDataChange}
+      />,
+    )
+    // Select the 2×2 rectangle (0,0) → (1,1).
+    fireEvent.click(cell(0, 0))
+    fireEvent.click(cell(1, 1), { shiftKey: true })
+    fireEvent.keyDown(root(), { key: 'v', ctrlKey: true })
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1))
+    const next = onDataChange.mock.calls[0]![0] as Row[]
+    expect(next[0]).toMatchObject({ id: 1, name: 'X', age: 'Y' })
+    expect(next[1]).toMatchObject({ id: 2, name: 'Z', age: 'W' })
+    expect(next[2]).toMatchObject({ id: 3, name: 'Bob', age: 28 })
+  })
+
+  it('smaller clipboard fills only the rectangle top-left, rest unchanged', async () => {
+    stubClipboard()
+    clipboardRead.mockResolvedValue('Q')
+    const onDataChange = vi.fn()
+    render(
+      <IrisTable
+        columns={cols}
+        data={rows}
+        rowKey="id"
+        cellRange
+        clipConfig={{}}
+        onDataChange={onDataChange}
+      />,
+    )
+    fireEvent.click(cell(0, 0))
+    fireEvent.click(cell(1, 1), { shiftKey: true })
+    fireEvent.keyDown(root(), { key: 'v', ctrlKey: true })
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1))
+    const next = onDataChange.mock.calls[0]![0] as Row[]
+    expect(next[0]).toMatchObject({ id: 1, name: 'Q', age: 25 })
+    expect(next[1]).toMatchObject({ id: 2, name: 'Alice', age: 32 })
+    expect(next[2]).toMatchObject({ id: 3, name: 'Bob', age: 28 })
+  })
+
+  it('larger clipboard is clipped to the rectangle and table bounds', async () => {
+    stubClipboard()
+    // 3×3 clipboard into a 2×2 rectangle anchored at (1,0): the third line and
+    // the third column must be ignored; row 0 untouched.
+    clipboardRead.mockResolvedValue('P\tQ\tX\nR\tS\tY\nT\tU\tZ')
+    const onDataChange = vi.fn()
+    render(
+      <IrisTable
+        columns={cols}
+        data={rows}
+        rowKey="id"
+        cellRange
+        clipConfig={{}}
+        onDataChange={onDataChange}
+      />,
+    )
+    fireEvent.click(cell(1, 0))
+    fireEvent.click(cell(2, 1), { shiftKey: true })
+    fireEvent.keyDown(root(), { key: 'v', ctrlKey: true })
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1))
+    const next = onDataChange.mock.calls[0]![0] as Row[]
+    expect(next[0]).toMatchObject({ id: 1, name: 'Charlie', age: 25 })
+    expect(next[1]).toMatchObject({ id: 2, name: 'P', age: 'Q' })
+    expect(next[2]).toMatchObject({ id: 3, name: 'R', age: 'S' })
+  })
+
+  it('a single-row multi-column selection does not stream past the rectangle', async () => {
+    stubClipboard()
+    // Anchor (1,0) → (1,1) is a 1×2 multi-cell selection: two clipboard lines
+    // must NOT stream into row 2 (streaming would have written them).
+    clipboardRead.mockResolvedValue('P\tQ\nR\tS')
+    const onDataChange = vi.fn()
+    render(
+      <IrisTable
+        columns={cols}
+        data={rows}
+        rowKey="id"
+        cellRange
+        clipConfig={{}}
+        onDataChange={onDataChange}
+      />,
+    )
+    fireEvent.click(cell(1, 0))
+    fireEvent.click(cell(1, 1), { shiftKey: true })
+    fireEvent.keyDown(root(), { key: 'v', ctrlKey: true })
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1))
+    const next = onDataChange.mock.calls[0]![0] as Row[]
+    expect(next[0]).toMatchObject({ id: 1, name: 'Charlie', age: 25 })
+    expect(next[1]).toMatchObject({ id: 2, name: 'P', age: 'Q' })
+    expect(next[2]).toMatchObject({ id: 3, name: 'Bob', age: 28 })
+  })
+})
+
 // ── fnr: find & replace bar ────────────────────────────────────────────────
 describe('IrisTable fnr bar', () => {
   it('Ctrl+F opens the bar; typing highlights matching cells; Enter steps', () => {

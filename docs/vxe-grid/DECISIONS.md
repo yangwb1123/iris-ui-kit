@@ -723,3 +723,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-aj-gate.md [ok]: Summary: **Review verdict was FAIL** (one HIGH blocker + 2 LOW + 2 INFO). All applied and the full gate reran green.; Fixes: - **HIGH — stats crash on data shrink**: the per-column stats memo (`Table.tsx`) now guards `stats[key]` presence — core; Full gate: - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks** (4m16s); Final test counts: - **vitest: 7210 passed, 0 failed** — react **1892** (was 1891, +1 regression), core 1300, vue 1531, solid 974+34 (SSR),; Commits: - **`996dc8ba`** — `feat(table): grid 批 AJ——区域统计 + 查询视图联动（iris 独有闭环）` (7 files, +192/−21)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aj-gate.md
+
+## 2026-08-12 18:13:14 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ak-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ak-baseline.md

@@ -1643,9 +1643,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // the legacy validate callback stays synchronous for the sync commit
           // path.
           if (ctx.col.editRules && ctx.col.editRules.length > 0) {
-            return validateEditRulesAsync(ctx.col.editRules, draft, ctx.row).then((r) =>
-              r.valid ? null : (r.messages[0] ?? null),
-            )
+            return validateEditRulesAsync(ctx.col.editRules, draft, ctx.row, false, {
+              rows: externalDataRef.current ?? [],
+              columnKey: ctx.col.key,
+            }).then((r) => (r.valid ? null : (r.messages[0] ?? null)))
           }
           if (ctx.col.validate) {
             return ctx.col.validate(coerceValue(ctx.col, draft), ctx.row) ?? null
@@ -1714,9 +1715,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
         const row = currentRowFor(rowIdent)
         if (!row) return null
         if (col.editRules && col.editRules.length > 0) {
-          return validateEditRulesAsync(col.editRules, draft, row).then((r) =>
-            r.valid ? null : (r.messages[0] ?? null),
-          )
+          return validateEditRulesAsync(col.editRules, draft, row, false, {
+            rows: externalDataRef.current ?? [],
+            columnKey: col.key,
+          }).then((r) => (r.valid ? null : (r.messages[0] ?? null)))
         }
         if (col.validate) return col.validate(coerceValueFor(row, col, draft), row) ?? null
         return null
@@ -3058,22 +3060,50 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const body = liveBodyRef.current
       const cols = liveLeafRef.current
       if (body.length === 0 || cols.length === 0) return
-      // Line i / cell j of the clipboard lands at (anchor.row + i, anchor.col + j);
-      // cells beyond the last row/col are ignored. One batched commitRowList.
-      const byKey = new Map<string | number, Record<string, string>>()
       const lines = text.split(/\r?\n/)
-      for (let i = 0; i < lines.length; i += 1) {
-        const rowIdx = range.start.row + i
-        if (rowIdx >= body.length) break
-        const row = body[rowIdx]!
-        const cells = lines[i]!.split('\t')
-        for (let j = 0; j < cells.length; j += 1) {
-          const colIdx = range.start.col + j
-          if (colIdx >= cols.length) break
+      const byKey = new Map<string | number, Record<string, string>>()
+      // Batch AK (iris 独有): a multi-cell selection fills EXACTLY its
+      // rectangle from the top-left — clipboard smaller → top-left fill, the
+      // rest of the rectangle unchanged; larger → clipped to the rectangle
+      // AND the table bounds (out-of-table rows/cols ignored). A single-cell
+      // selection keeps the batch-O streaming behavior (anchor onward), so
+      // existing paste tests stay green. Either way ONE batched commitRowList
+      // and values stay strings.
+      const multiCell = range.end.row > range.start.row || range.end.col > range.start.col
+      if (multiCell) {
+        const lastRow = Math.min(range.end.row, body.length - 1)
+        const lastCol = Math.min(range.end.col, cols.length - 1)
+        for (let r = range.start.row; r <= lastRow; r += 1) {
+          const row = body[r]!
           const k = rowKeyOf(row)
           if (k == null) continue
-          const prev = byKey.get(k)
-          byKey.set(k, { ...prev, [cols[colIdx]!.key]: cells[j]! })
+          const cells = lines[r - range.start.row]
+          if (!cells) continue
+          const values = cells.split('\t')
+          let patch: Record<string, string> | undefined
+          for (let c = range.start.col; c <= lastCol; c += 1) {
+            const value = values[c - range.start.col]
+            if (value === undefined) continue
+            patch = { ...patch, [cols[c]!.key]: value }
+          }
+          if (patch) byKey.set(k, { ...byKey.get(k), ...patch })
+        }
+      } else {
+        // Line i / cell j of the clipboard lands at (anchor.row + i, anchor.col + j);
+        // cells beyond the last row/col are ignored.
+        for (let i = 0; i < lines.length; i += 1) {
+          const rowIdx = range.start.row + i
+          if (rowIdx >= body.length) break
+          const row = body[rowIdx]!
+          const cells = lines[i]!.split('\t')
+          for (let j = 0; j < cells.length; j += 1) {
+            const colIdx = range.start.col + j
+            if (colIdx >= cols.length) break
+            const k = rowKeyOf(row)
+            if (k == null) continue
+            const prev = byKey.get(k)
+            byKey.set(k, { ...prev, [cols[colIdx]!.key]: cells[j]! })
+          }
         }
       }
       if (byKey.size === 0) return

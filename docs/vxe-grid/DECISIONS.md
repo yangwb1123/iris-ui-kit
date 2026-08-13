@@ -828,3 +828,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ao-review.md [ok]: Verification results: | Command | Result |; Checklist: 1. **Evaluator — PASS.** Recursive descent with correct precedence/parens/left-assoc; no `eval`/`Function`; every failur; Findings (non-blocking): 1. **[LOW]** `pasteIntoRange` (Table.tsx:3412) / `clearActiveRange` (:3614) write `row[col.key]` for formula columns wit
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ao-review.md
+
+## 2026-08-13 06:18:30 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ao-gate.md [ok]: Gate results: | Step | Result |; Final test counts (repo-wide): **7,795 tests passed** across all packages. Key suites:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ao-gate.md

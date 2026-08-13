@@ -29,4 +29,4 @@ The review verdict was **FAIL** with one confirmed HIGH blocker; I applied the f
 
 ### Commit
 
-- **`<hash>`** — `feat(table): grid 批 AJ——区域统计 + 查询视图联动（iris 独有闭环）`
+- **`996dc8ba`** — `feat(table): grid 批 AJ——区域统计 + 查询视图联动（iris 独有闭环）` (7 files, +192/−21)

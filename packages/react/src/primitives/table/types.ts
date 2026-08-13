@@ -215,6 +215,13 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   /** Editor kind. Default `'text'`. */
   editor?: IrisTableEditor
   /**
+   * Native datalist suggestions while editing (batch AM, iris 独有): `true`
+   * builds the option list from the DISTINCT cell values of this column over
+   * the current body data (String-coerced, null/'' excluded, sorted, capped at
+   * 50); an explicit array of `string | number` is used verbatim. Text editor
+   * only — the number/select/textarea editors ignore it. */
+  suggest?: boolean | Array<string | number>
+  /**
    * Options for the `'select'` editor (vxe edit-render options parity). A
    * column with `editor: 'select'` renders a native `<select>` while editing;
    * each option commits its TYPED value — a number option commits a number,

@@ -36772,6 +36772,12 @@
           "description": "Right-click context menu (vxe-grid contextMenu parity, batch H). Opens on body leaf cells only — header, seq, selection, expand, summary and footer cells never open it. The menu floats at the cursor (virtual anchor), closes on Escape / outside pointer-down / any scroll, and fires `onSelect` with the clicked item's key and the cell's grid coordinates."
         },
         {
+          "name": "valueDistribution",
+          "type": "boolean",
+          "optional": true,
+          "description": "Value distribution panel (batch AM, iris 独有): when true, the context menu gains a built-in item (key `__iris_distribution`, i18n `table.distribution`) that opens a floating panel counting each distinct value of the CLICKED column over the current body rows — top 20 + a muted \"其余 N 个\" fold — computed by the core `valueDistribution` material over `bodyData` with the `dataIndex ?? key` indirection."
+        },
+        {
           "name": "tableRef",
           "type": "MutableRefObject<IrisTableHandle<Row> | null>",
           "optional": true,
@@ -37550,6 +37556,12 @@
               "type": "{",
               "optional": true,
               "description": "Right-click context menu (vxe-grid contextMenu parity, batch H). Opens on body leaf cells only — header, seq, selection, expand, summary and footer cells never open it. The menu floats at the cursor (virtual anchor), closes on Escape / outside pointer-down / any scroll, and fires `onSelect` with the clicked item's key and the cell's grid coordinates."
+            },
+            {
+              "name": "valueDistribution",
+              "type": "boolean",
+              "optional": true,
+              "description": "Value distribution panel (batch AM, iris 独有): when true, the context menu gains a built-in item (key `__iris_distribution`, i18n `table.distribution`) that opens a floating panel counting each distinct value of the CLICKED column over the current body rows — top 20 + a muted \"其余 N 个\" fold — computed by the core `valueDistribution` material over `bodyData` with the `dataIndex ?? key` indirection."
             },
             {
               "name": "tableRef",
@@ -38731,7 +38743,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 129,
+        "propCount": 130,
         "eventCount": 27
       }
     },

@@ -117,6 +117,8 @@ export const defaultMessages: I18nMessages = {
   'table.filterConfirm': 'Confirm',
   'table.filterClear': 'Clear',
   'table.filter': 'Filter',
+  'table.distribution': 'Value distribution',
+  'table.distribution.others': '{count} more',
   'table.total': 'Total {total}',
   'table.queryPlaceholder': 'Natural-language filter, e.g. age > 25 and role = Test',
   'table.zoomIn': 'Zoom in',

@@ -165,6 +165,7 @@ import { usePersistState } from './usePersistState'
 import { useTableViews } from './useTableViews'
 import { TableContextMenu } from './ContextMenu'
 import { TableFilterPanel } from './FilterPanel'
+import { TableDistributionPanel } from './DistributionPanel'
 import { TableViews } from './TableViews'
 import { RangeToolbar, type RangeStatsEntry } from './RangeToolbar'
 import type {
@@ -245,6 +246,10 @@ interface EditorSurfaceProps<Row extends Record<string, unknown>> {
   /** Row edit mode: fired when the session goes idle (committed) so the
    *  parent can close just this column's editor. */
   onSessionIdle?: () => void
+  /** Per-column native datalist options (batch AM, iris 独有): a map of
+   *  column key → suggestion strings, computed by the parent over the body
+   *  data so this surface stays free of it. Only the text editor consumes it. */
+  suggestOptions?: ReadonlyMap<string, string[]>
 }
 
 /**
@@ -266,6 +271,7 @@ function EditorSurface<Row extends Record<string, unknown>>({
   onCancel,
   focusToken,
   onSessionIdle,
+  suggestOptions,
 }: EditorSurfaceProps<Row>): React.ReactElement {
   const state = useStore(session.store)
   const ref = React.useRef<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(null)
@@ -288,6 +294,19 @@ function EditorSurface<Row extends Record<string, unknown>>({
   const selectOptions = isSelectEditor ? col.editOptions : undefined
   const draft = String(state.draft ?? '')
   const error = state.error
+  // Batch AM: a text editor with suggestions renders a native <datalist>
+  // (`data-iris-edit-suggest`) linked via `list`; the id comes from useId (the
+  // repo's SSR-stable pattern). Only while editing — the surface mounts per session.
+  const suggestId = React.useId()
+  const suggestList = suggestOptions?.get(col.key)
+  // Text editor only: the shared text/number input is the only branch that
+  // consumes the datalist — select (with options) and textarea ignore it.
+  const showSuggest =
+    col.editor !== 'number' &&
+    !(isSelectEditor && selectOptions !== undefined) &&
+    col.editor !== 'textarea' &&
+    suggestList !== undefined &&
+    suggestList.length > 0
   return (
     <>
       {isSelectEditor && selectOptions ? (
@@ -383,6 +402,7 @@ function EditorSurface<Row extends Record<string, unknown>>({
           type={col.editor === 'number' ? 'number' : 'text'}
           value={draft}
           data-iris-table-editor=""
+          list={showSuggest ? suggestId : undefined}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={error && showError ? errorId : undefined}
           onChange={(e) => session.setDraft(e.target.value)}
@@ -411,6 +431,16 @@ function EditorSurface<Row extends Record<string, unknown>>({
           }}
         />
       )}
+      {/* Batch AM: native suggestions for the text editor — a datalist with the
+      column's distinct values (or the explicit array form), id-linked to the
+      input's `list`. Rendered next to the input (datalists are invisible). */}
+      {showSuggest ? (
+        <datalist id={suggestId} data-iris-edit-suggest="">
+          {suggestList.map((opt) => (
+            <option key={opt} value={opt} />
+          ))}
+        </datalist>
+      ) : null}
       {/* validConfig.showMessage=false: validation still blocks the commit and
       aria-invalid stays — only the message element is skipped (vxe ValidConfig
       parity). */}
@@ -438,6 +468,10 @@ const EXPAND_COL_WIDTH = 40
 const SEQ_COL_WIDTH = 60
 const DRAG_COL_WIDTH = 40
 const DEFAULT_PINNED_WIDTH = 140
+/** Reserved context-menu key for the built-in value-distribution item (batch
+ * AM): the table intercepts it at the onSelect wiring, so a user item with
+ * the same key is deduped and the user callback never sees it. */
+const DISTRIBUTION_MENU_KEY = '__iris_distribution'
 
 /** Shared style for the full-width empty / loading / error state rows. */
 const STATE_ROW_STYLE: React.CSSProperties = {
@@ -809,6 +843,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   headerTooltipConfig,
   footerTooltipConfig,
   contextMenu,
+  valueDistribution,
   printable = false,
   seq = false,
   spanMethod,
@@ -2222,6 +2257,31 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const closeContextMenu = React.useCallback(() => {
     setContextMenuState((prev) => (prev ? { ...prev, open: false } : prev))
   }, [])
+  // ── Value distribution panel (batch AM, iris 独有) ────────────────
+  // Opens from the context menu's built-in `__iris_distribution` item; the
+  // panel floats at the SAME virtual cursor anchor the menu used (snapshotted
+  // into its own ref at open time, so a later right-click rebuilding the
+  // menu anchor cannot move an already-open panel). The seq token remounts
+  // the panel per open so its rows re-seed from the current bodyData.
+  const [distributionState, setDistributionState] = React.useState<{
+    open: boolean
+    colKey: string
+    columnTitle: string
+  } | null>(null)
+  const distributionAnchorRef = React.useRef<HTMLElement | null>(null)
+  const [distributionSeq, setDistributionSeq] = React.useState(0)
+  const closeDistribution = React.useCallback(() => {
+    setDistributionState((prev) => (prev ? { ...prev, open: false } : prev))
+  }, [])
+  const openDistribution = (params: IrisTableContextMenuParams<Row>): void => {
+    distributionAnchorRef.current = contextAnchorRef.current
+    setDistributionState({
+      open: true,
+      colKey: (params.column.dataIndex ?? params.column.key) as string,
+      columnTitle: params.column.title ?? params.column.key,
+    })
+    setDistributionSeq((s) => s + 1)
+  }
   // ── Header filter panel (vxe filterConfig parity, batch I) ─────────────
   // One panel at a time, keyed by the column whose trigger was clicked. The
   // anchor is the trigger BUTTON itself (a real DOM node), captured at click
@@ -2282,7 +2342,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
       rowIndex: idx,
       columnIndex: ci,
     }
-    setContextMenuState({ open: true, items: contextMenu.items(params), params })
+    const items = contextMenu.items(params)
+    // Batch AM: with `valueDistribution`, append the built-in item AFTER the
+    // user items; a user item already using the reserved key is left alone
+    // (dedupe guard) so the table never renders it twice.
+    if (valueDistribution && !items.some((i) => i.key === DISTRIBUTION_MENU_KEY)) {
+      items.push({ key: DISTRIBUTION_MENU_KEY, label: t('table.distribution') })
+    }
+    setContextMenuState({ open: true, items, params })
     setContextMenuSeq((s) => s + 1)
   }
 
@@ -2878,6 +2945,41 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const filteredDataRef = React.useRef(filteredData)
   filteredDataRef.current = filteredData
   const bodyData = flatTree ? flatTree.map((t) => t.row) : filteredData
+
+  // Batch AM: per-column native datalist suggestions (iris 独有). Only
+  // `suggest === true` columns are scanned (an explicit array passes through
+  // with zero scan); `true` builds DISTINCT String values from `bodyData`
+  // (null/'' excluded), sorted, capped at 50 — the same indirection
+  // getCellValue uses. Keyed by column key so EditorSurface stays free of
+  // bodyData.
+  const suggestOptions = React.useMemo(() => {
+    const byKey = new Map<string, string[]>()
+    for (const col of leafColumns) {
+      if (col.suggest === undefined) continue
+      if (Array.isArray(col.suggest)) {
+        byKey.set(
+          col.key,
+          col.suggest.map((v) => String(v)),
+        )
+        continue
+      }
+      const seen = new Set<string>()
+      const out: string[] = []
+      for (const row of bodyData) {
+        const raw = getCellValue(row, col)
+        if (raw == null) continue
+        const s = String(raw)
+        if (s === '') continue
+        if (!seen.has(s)) {
+          seen.add(s)
+          out.push(s)
+        }
+      }
+      out.sort()
+      byKey.set(col.key, out.slice(0, 50))
+    }
+    return byKey
+  }, [bodyData, leafColumns])
 
   // Batch M: row grouping (vxe group-config parity) — a render-time
   // composition over `bodyData` (after sort + filter), groups in
@@ -4240,6 +4342,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         onCancel={cancelRowEdit}
                         onSessionIdle={() => onRowSessionIdle(id)}
                         focusToken={rowFocus.colKey === col.key ? rowFocus.seq : 0}
+                        suggestOptions={suggestOptions}
                       />
                     )
                   })()
@@ -4255,6 +4358,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     onCancel={cancelEdit}
                     onSessionIdle={undefined}
                     focusToken={0}
+                    suggestOptions={suggestOptions}
                   />
                 )
               ) : col.render ? (
@@ -6039,8 +6143,25 @@ export function IrisTable<Row extends Record<string, unknown>>({
             anchorRef={contextAnchorRef}
             items={contextMenuState.items}
             params={contextMenuState.params}
-            onSelect={contextMenu.onSelect}
+            onSelect={(key, params) => {
+              // Batch AM: the built-in distribution item never reaches the
+              // user callback — it opens the panel at the menu's anchor.
+              if (key === DISTRIBUTION_MENU_KEY) openDistribution(params)
+              else contextMenu.onSelect(key, params)
+            }}
             onClose={closeContextMenu}
+          />
+        ) : null}
+        {distributionState ? (
+          <TableDistributionPanel
+            key={`distribution-${distributionSeq}`}
+            open={distributionState.open}
+            anchorRef={distributionAnchorRef}
+            columnTitle={distributionState.columnTitle}
+            rows={bodyData}
+            valueKey={distributionState.colKey}
+            onClose={closeDistribution}
+            t={t}
           />
         ) : null}
         {cellRange && activeRange ? (

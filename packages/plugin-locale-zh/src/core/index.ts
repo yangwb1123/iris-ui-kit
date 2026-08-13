@@ -58,6 +58,8 @@ export const zhCNMessages: Record<string, string> = {
   'table.filterConfirm': '确定',
   'table.filterClear': '清除',
   'table.filter': '筛选',
+  'table.distribution': '值分布',
+  'table.distribution.others': '其余 {count} 个',
   'table.total': '共 {total} 条',
   'table.queryPlaceholder': '自然语言筛选，如 age > 25 and role = Test',
   'table.zoomIn': '放大',

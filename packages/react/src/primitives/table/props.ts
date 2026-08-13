@@ -428,6 +428,15 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
     ) => Array<{ key: string; label: string; disabled?: boolean }>
     onSelect: (key: string, params: IrisTableContextMenuParams<Row>) => void
   }
+  /**
+   * Value distribution panel (batch AM, iris 独有): when true, the context
+   * menu gains a built-in item (key `__iris_distribution`, i18n
+   * `table.distribution`) that opens a floating panel counting each distinct
+   * value of the CLICKED column over the current body rows — top 20 + a
+   * muted "其余 N 个" fold — computed by the core `valueDistribution`
+   * material over `bodyData` with the `dataIndex ?? key` indirection.
+   * Requires `contextMenu` to be set (the item appends to its items). */
+  valueDistribution?: boolean
   /** Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity). */
   tableRef?: MutableRefObject<IrisTableHandle<Row> | null>
   /** Fired after any internal row operation / edit write-back, with the new row list. */

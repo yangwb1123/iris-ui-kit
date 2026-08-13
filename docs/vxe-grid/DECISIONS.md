@@ -763,3 +763,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-al-gate.md [ok]: Results: **Review verdict:** PASS (7 findings, all LOW/INFO except F1 MEDIUM on `arch-check:ratchet` — pre-existing red at HEAD~1
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-al-gate.md
+
+## 2026-08-12 21:25:09 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-am-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-am-baseline.md
+
+## 2026-08-12 21:53:43 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-am-adapt.md [ok]: Report: **Files changed (8 source + 2 tests + 3 docs/config):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-am-adapt.md

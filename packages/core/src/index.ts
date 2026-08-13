@@ -183,6 +183,7 @@ export {
   type GroupedViewStore,
 } from './data-view'
 export { rangeStats, type RangeColumnStats, type RangeStatsRange } from './range-stats'
+export { valueDistribution, type ValueDistributionEntry } from './value-distribution'
 export { parseTableQuery, type ParseTableQueryOptions, type ParsedTableQuery } from './query-parser'
 export {
   createSelectionModel,

@@ -26,6 +26,8 @@ filesize:
     - ".qwen/"
   # 豁免文件列表（大而内聚的合法文件，已在 arch-baseline.json 中基线化）
   # test 文件因大量用例行数偏高，Table/Tree 等高复杂度组件因天然内聚性偏高
+  # react table 的 props/types 契约文件（IrisTableProps/IrisTableColumn + 参数接口）
+  # 在 500 行上限边缘（批 AM 达 501/505），与 Table.tsx 同属内聚契约/渲染文件
   exemptions:
     - packages/core/src/store.ts
     - packages/core/src/data-view.ts
@@ -46,6 +48,8 @@ filesize:
     - packages/react/src/contracts.test.tsx
     - packages/react/src/primitives/table/Table.test.tsx
     - packages/react/src/primitives/table/Table.tsx
+    - packages/react/src/primitives/table/props.ts
+    - packages/react/src/primitives/table/types.ts
     - packages/react/src/primitives/tree/Tree.tsx
     - packages/solid/src/contracts.test.tsx
     - packages/solid/src/primitives/table/IrisTable.test.tsx

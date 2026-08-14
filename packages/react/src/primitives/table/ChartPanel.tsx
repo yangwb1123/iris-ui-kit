@@ -88,10 +88,13 @@ interface TableChartPanelProps<Row extends Record<string, unknown>> {
  * design (a mini chart); a muted "共 N 行" note (`table.total`) appears when
  * rows were truncated.
  *
- * Dismissal wiring follows the batch-edit panel precedent (Table.tsx:5025):
- * the column select's listbox is PORTALED to `<body>`, so a press on an
- * option must select instead of closing the panel — the window-bubble
- * listener excludes `[data-iris-select-option]`.
+ * Dismissal wiring follows the batch-edit panel precedent (Table.tsx:5044):
+ * the toolbar trigger is EXCLUDED from the outside-pointer-down close (so a
+ * press on it toggles instead of closing-then-reopening against flushed
+ * state, which would remount the panel and reset selection), and the column
+ * select's listbox is PORTALED to `<body>`, so a press on an option must
+ * select instead of closing the panel — the window-bubble listener excludes
+ * `[data-iris-select-option]`.
  */
 export function TableChartPanel<Row extends Record<string, unknown>>({
   open,
@@ -123,7 +126,12 @@ export function TableChartPanel<Row extends Record<string, unknown>>({
     const onDown = (e: PointerEvent): void => {
       const target = e.target as HTMLElement | null
       if (!target) return
-      if (target.closest('[data-iris-chart-panel], [data-iris-select-option]')) return
+      if (
+        target.closest(
+          '[data-iris-chart-panel], [data-iris-select-option], [data-iris-chart-trigger]',
+        )
+      )
+        return
       onCloseRef.current()
     }
     const onKey = (e: KeyboardEvent): void => {

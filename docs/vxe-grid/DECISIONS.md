@@ -888,3 +888,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ar-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ar-baseline.md
+
+## 2026-08-13 19:47:52 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ar-adapt.md [ok]: Report: **Commit:** `212e8f71` — `feat(table): grid 批 AR——迷你图表预览 chartPreview（iris 独有）`; Files changed (14, +853/−6): **Core (framework-free, additive):**; Verification (all green): - core test: **1364 passed** (+9); What's left: - vue/solid/svelte wiring for `chartPreview` (core material ready; one prop + bridge per adapter, same as prior iris-onl
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ar-adapt.md
+
+## 2026-08-13 19:52:49 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ar-review.md [ok]: Verdict: **FAIL** — 1 functional defect (Medium): Full verdict written to `docs/vxe-grid/batch-ar-review.md`. No source files modified; the temp repro test was removed.; Gates (all run, all green): | Gate | Result |; Checklist: 1. **buildChartData** ✅ — null/undefined→gaps; non-finite dropped; negatives in domain; empty/all-gap→`{0,1}`; flat seri; Findings: 1. **[Medium] ChartPanel.tsx:126 + Table.tsx:5861 — trigger click never closes the panel.** The outside-`pointerdown` ex
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ar-review.md

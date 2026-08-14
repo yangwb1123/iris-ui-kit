@@ -173,6 +173,19 @@ describe('@iris-ui-kit/react IrisTable chartPreview (batch AR, iris 独有)', ()
     expect(panel()).toBeNull()
   })
 
+  it('the trigger toggles: pointerdown must NOT close (else the click reopens against flushed state and remounts, resetting selection); the click closes', () => {
+    render(<IrisTable columns={chartCols} data={rows} rowKey="id" chartPreview />)
+    openPanel()
+    expect(panel()).not.toBeNull()
+    // A real press on the trigger: pointerdown is excluded (batch-edit
+    // precedent), so it must not close the panel.
+    fireEvent.pointerDown(trigger()!)
+    expect(panel()).not.toBeNull()
+    // The click then toggles the panel closed.
+    fireEvent.click(trigger()!)
+    expect(panel()).toBeNull()
+  })
+
   it('dataIndex indirection: numeric detection reads the dataIndex field', () => {
     const aliased = rows.map((r) => ({
       id: r.id,

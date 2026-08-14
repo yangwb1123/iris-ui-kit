@@ -863,3 +863,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-aq-adapt.md [ok]: 完成报告 — batch AQ（拖拽填充 rangeFill）; Files changed (5 files: 3 modified + 2 new): props.ts rangeFill 单行 prop; Table.tsx 模块级纯函数 + fillTarget 状态机 + fillRangeFromHandle 一次 commitRowList + extendRange; styles.ts 句柄/目标样式常量; range-fill.test.tsx 13 新测试; docs/vxe-grid-comparison.md iris 独有 + 批 AQ 行; manifest 重新生成; Gate results: typecheck ✅ / test 1978 ✅ / lint 0 errors ✅ / iris-ui-spec 0 violations ✅ / check:manifest + check:docs-reference ✅
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aq-adapt.md
+
+## 2026-08-13 19:04:45 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aq-adapt.md [ok]: Report — batch AQ (drag fill `rangeFill`) ✅: **Commit `c77a9048`** — `feat(react): add IrisTable drag fill (rangeFill, batch AQ, iris 独有)`; Files changed (10: 4 source+test, 3 docs, 2 generated): | File | Change |; Tests added (13): Handle render (no rangeFill / no range / 6px-token-placement) · press-is-not-a-click (range survives toolbar dismissal) ; Gates: - `typecheck` ✅ · `test` ✅ **1978 passed** (175 files, +13, zero regressions) · `lint` ✅ **0 errors** (1 pre-existing `I; What is left / notes: - **types.ts untouched** — `IrisTableProps` lives in props.ts, so nothing to add there (kept within the 4-file cap).
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aq-adapt.md
+
+## 2026-08-13 19:10:46 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aq-review.md [ok]: Verdict: **FAIL** — 1 functional defect (Medium): Wrote the full verdict to `docs/vxe-grid/batch-aq-review.md`. All source files are untouched; the temporary repro test w; What I verified: **Gates (all run):** react `test` ✅ 1978 passed / `typecheck` ✅ / `lint` ✅ 0 errors (1 pre-existing complexity warning) ; Finding 1 — [Medium] Stale `suppressRangeDismissRef` breaks Escape-clear after a fill drag: `Table.tsx:3845-3863` — the flag is set on handle `pointerdown` and only re-synced on the _next_ `pointerdown` (never on; Finding 2 — [Low/Info] `RANGE_FILL_TARGET_BG` hardcoded rgba fallback: Consistent with existing fnr usages (Table.tsx:773, 4326); token exists, so the fallback is dead in themed contexts. No ; Finding 3 — [Info] AGENTS.md says 154 components, manifest has 155: Pre-existing (verified at `c77a9048^`); AQ added only a prop (133→134), no component. Not a regression.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aq-review.md

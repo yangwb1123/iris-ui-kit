@@ -245,6 +245,35 @@ describe('@iris-ui-kit/react IrisTable drag fill (batch AQ, iris 独有)', () =>
     expect(cell(2, 0).dataset.irisCellSelected).toBeUndefined()
   })
 
+  it('Escape clears the range after a completed fill drag (pointerup re-arms dismissal)', () => {
+    render(<IrisTable columns={cols} data={rows} rowKey="id" cellRange rangeFill />)
+    selectRange(0, 0, 0, 0)
+    const bar = () => document.querySelector('[data-iris-table-range-toolbar]')
+    expect(bar()).not.toBeNull()
+    dragFillTo(2, 0)
+    // Regression (review finding): the handle press's dismiss guard used to
+    // stay armed after the drag, so Escape left the range selected.
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(bar()).toBeNull()
+    expect(cell(0, 0).dataset.irisCellSelected).toBeUndefined()
+    expect(cell(2, 0).dataset.irisCellSelected).toBeUndefined()
+  })
+
+  it('Escape clears the range after a cancelled drag (pointercancel re-arms dismissal)', () => {
+    render(<IrisTable columns={cols} data={rows} rowKey="id" cellRange rangeFill />)
+    selectRange(0, 0, 0, 0)
+    const bar = () => document.querySelector('[data-iris-table-range-toolbar]')
+    expect(bar()).not.toBeNull()
+    const h = handle()!
+    stubPointerAt(cell(2, 0))
+    firePointer(h, 'pointerdown', { button: 0, clientX: 10, clientY: 10, pointerId: 1 })
+    firePointer(h, 'pointermove', { clientX: 50, clientY: 100, pointerId: 1 })
+    firePointer(h, 'pointercancel', { pointerId: 1 })
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(bar()).toBeNull()
+    expect(cell(0, 0).dataset.irisCellSelected).toBeUndefined()
+  })
+
   it('the drag end clamps to the table bounds', () => {
     const onDataChange = vi.fn()
     render(

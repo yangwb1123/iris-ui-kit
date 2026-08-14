@@ -3706,6 +3706,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
 
   const handleRangeFillPointerUp = (): void => {
+    // Batch AQ fix: the drag is over, so the next Escape / outside press must
+    // dismiss the range again (the window-capture pointerdown only re-syncs
+    // the flag on the NEXT handle press, which would otherwise stay stale).
+    suppressRangeDismissRef.current = false
     if (fillTarget === null) return
     const { row, col } = fillTarget
     setFillTarget(null)
@@ -6011,6 +6015,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
           rangeFill
             ? () => {
                 // Aborted drag → drop the target highlight, nothing committed.
+                // Re-arm dismissal too (same stale-flag fix as pointerup).
+                suppressRangeDismissRef.current = false
                 setFillTarget(null)
               }
             : undefined

@@ -48,6 +48,7 @@ export const zhCNMessages: Record<string, string> = {
   'table.error': '数据加载失败',
   'table.retry': '重试',
   'table.refresh': '刷新',
+  'table.freshness': '更新于 {time}',
   'table.columnSettings': '列设置',
   'table.customConfig.search': '搜索列',
   'table.customConfig.reset': '重置',

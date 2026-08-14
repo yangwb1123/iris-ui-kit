@@ -36808,6 +36808,18 @@
           "description": "Mini chart preview (batch AR, iris 独有): when true, the toolbar gains a chart trigger (`data-iris-chart-trigger`) opening a floating panel (`data-iris-chart-panel`) that charts the CURRENT filtered rows: a numeric-column select (columns where `typeof getCellValue(row, col) === 'number'` for some row, or `col.summary === 'sum'`) plus a bar/line kind toggle. The SVG (viewBox 0 0 300 120) is built from the core `buildChartData` material over the first 20 values (a muted \"共 N 行\" note when truncated) — structured JSX only, no SVG strings. Token colors only; Esc / outside / scroll close it. Requires a toolbar render (the gate admits `chartPreview` like `undo`)."
         },
         {
+          "name": "autoRefresh",
+          "type": "{ intervalMs: number }",
+          "optional": true,
+          "description": "set, the table re-queries the proxy every `intervalMs` ms while in proxy mode (non-proxy `data` tables are inert — there is nothing to refetch). Each tick calls the SAME refetch the built-in ↻ button uses — the standard refetch path, so `loading` flips true for the duration of the request (the core source has no silent-refresh option; documented behavior, not suppressed). `intervalMs` ≤ 0 disables the timer (fail-closed). The interval restarts whenever `intervalMs` changes (keyed on the scalar, so an inline object doesn't reset the timer every render) and is cleared on unmount / proxy removal. Additive — default"
+        },
+        {
+          "name": "freshness",
+          "type": "boolean",
+          "optional": true,
+          "description": "when true, the toolbar renders `Updated at HH:MM:SS` (`data-iris-freshness`, i18n `table.freshness`, 24h local `formatClock`) re-stamped on EVERY live-data change — initial arrival, refetch, edit commit, row ops / paste / batch / range clear, undo/redo (everything that funnels through `setLiveData`). Hidden until the first row exists (`liveData.length === 0`). Requires a toolbar render. Additive — default"
+        },
+        {
           "name": "tableRef",
           "type": "MutableRefObject<IrisTableHandle<Row> | null>",
           "optional": true,
@@ -37622,6 +37634,18 @@
               "type": "boolean",
               "optional": true,
               "description": "Mini chart preview (batch AR, iris 独有): when true, the toolbar gains a chart trigger (`data-iris-chart-trigger`) opening a floating panel (`data-iris-chart-panel`) that charts the CURRENT filtered rows: a numeric-column select (columns where `typeof getCellValue(row, col) === 'number'` for some row, or `col.summary === 'sum'`) plus a bar/line kind toggle. The SVG (viewBox 0 0 300 120) is built from the core `buildChartData` material over the first 20 values (a muted \"共 N 行\" note when truncated) — structured JSX only, no SVG strings. Token colors only; Esc / outside / scroll close it. Requires a toolbar render (the gate admits `chartPreview` like `undo`)."
+            },
+            {
+              "name": "autoRefresh",
+              "type": "{ intervalMs: number }",
+              "optional": true,
+              "description": "set, the table re-queries the proxy every `intervalMs` ms while in proxy mode (non-proxy `data` tables are inert — there is nothing to refetch). Each tick calls the SAME refetch the built-in ↻ button uses — the standard refetch path, so `loading` flips true for the duration of the request (the core source has no silent-refresh option; documented behavior, not suppressed). `intervalMs` ≤ 0 disables the timer (fail-closed). The interval restarts whenever `intervalMs` changes (keyed on the scalar, so an inline object doesn't reset the timer every render) and is cleared on unmount / proxy removal. Additive — default"
+            },
+            {
+              "name": "freshness",
+              "type": "boolean",
+              "optional": true,
+              "description": "when true, the toolbar renders `Updated at HH:MM:SS` (`data-iris-freshness`, i18n `table.freshness`, 24h local `formatClock`) re-stamped on EVERY live-data change — initial arrival, refetch, edit commit, row ops / paste / batch / range clear, undo/redo (everything that funnels through `setLiveData`). Hidden until the first row exists (`liveData.length === 0`). Requires a toolbar render. Additive — default"
             },
             {
               "name": "tableRef",
@@ -38803,7 +38827,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 135,
+        "propCount": 137,
         "eventCount": 27
       }
     },

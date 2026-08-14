@@ -9,6 +9,7 @@ import {
   endOfMonth,
   buildMonthMatrix,
   formatLocalISO,
+  formatClock,
   clampDate,
   isOutOfRange,
   getWeekdayNames,
@@ -53,6 +54,16 @@ describe('date helpers', () => {
 
   it('formatLocalISO is local-time YYYY-MM-DD', () => {
     expect(formatLocalISO(new Date(2024, 0, 5))).toBe('2024-01-05')
+  })
+
+  it('formatClock is 24h HH:MM:SS with midnight zero-padded', () => {
+    expect(formatClock(new Date(2026, 0, 1, 0, 0, 0))).toBe('00:00:00')
+    expect(formatClock(new Date(2026, 0, 1, 23, 59, 59))).toBe('23:59:59')
+  })
+
+  it('formatClock pads single-digit hours/minutes/seconds', () => {
+    expect(formatClock(new Date(2026, 0, 1, 9, 5, 30))).toBe('09:05:30')
+    expect(formatClock(new Date(2026, 0, 1, 13, 7, 3))).toBe('13:07:03')
   })
 
   it('clampDate / isOutOfRange', () => {

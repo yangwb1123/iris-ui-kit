@@ -11,6 +11,7 @@ import {
   createUndoStack,
   flattenLeafColumns,
   flattenTree,
+  formatClock,
   groupRows,
   mergeFormFilters,
   matchesRule,
@@ -931,6 +932,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   contextMenu,
   valueDistribution,
   chartPreview,
+  autoRefresh,
+  freshness,
   printable = false,
   seq = false,
   spanMethod,
@@ -1187,6 +1190,23 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
   }, [hasProxy])
 
+  // Batch AS (iris 独有): auto-refresh — proxy mode only, keyed on the SCALAR
+  // intervalMs + proxy presence (an inline autoRefresh object must not reset
+  // the timer on every render). Each tick runs the SAME refetch as the built-in
+  // ↻ button: the standard refetch path flips `loading` true for the request
+  // duration (the core source has no silent option — documented behavior, not
+  // suppressed). intervalMs ≤ 0 is fail-closed (no timer). Cleanup on unmount
+  // and on intervalMs change; the lifecycle cleanup above nulls proxyRef
+  // before this cleanup runs, so a late tick can never hit a destroyed source.
+  const intervalMs = autoRefresh?.intervalMs ?? 0
+  React.useEffect(() => {
+    if (!hasProxy || intervalMs <= 0) return
+    const id = window.setInterval(() => {
+      void proxyRef.current?.refetch()
+    }, intervalMs)
+    return () => window.clearInterval(id)
+  }, [hasProxy, intervalMs])
+
   // Editable write-back (vxe-grid parity): the table owns a live copy of the
   // data so committed edits survive WITHOUT the parent re-feeding `data`.
   // External `data` reference changes still win (controlled mode); in proxy
@@ -1277,6 +1297,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
       lazyEpochRef.current += 1
     }
   }, [proxy, proxyState, data])
+
+  // Batch AS (iris 独有): freshness stamp — every liveData change (initial
+  // arrival via the sync effect above, refetch, edit commits, row ops / paste
+  // / batch / range clear via commitRowList, undo/redo via applyUndoSnapshot)
+  // re-stamps Date.now(); the toolbar renders it through formatClock. The
+  // effect ALSO runs on mount, so the very first data arrival stamps too (in
+  // proxy mode liveData is empty at mount → the stamp stays hidden until rows
+  // exist).
+  const [freshnessAt, setFreshnessAt] = React.useState(0)
+  React.useEffect(() => {
+    if (!freshness) return
+    setFreshnessAt(Date.now())
+  }, [freshness, liveData])
 
   // Sort state managed by useTableSort hook (controlled/uncontrolled, comparator, sorted data).
   const {
@@ -5285,7 +5318,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           </div>
         </form>
       ) : null}
-      {(toolbar || views || query !== undefined || undo || chartPreview) &&
+      {(toolbar || views || query !== undefined || undo || chartPreview || freshness) &&
       layouts?.toolbar !== 'hidden' ? (
         <div
           data-iris-table-toolbar=""
@@ -5312,6 +5345,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
           {toolbar?.title ? (
             <span style={{ fontWeight: 600, color: 'var(--iris-foreground)' }}>
               {toolbar?.title}
+            </span>
+          ) : null}
+          {/* Batch AS (iris 独有): freshness stamp — re-stamped on every live
+              data change (initial arrival, refetch, edits, row ops, undo).
+              Hidden until the first row exists. */}
+          {freshness && liveData.length > 0 ? (
+            <span
+              data-iris-freshness=""
+              style={{
+                fontSize: 'var(--iris-font-size-xs, 12px)',
+                color: 'var(--iris-muted)',
+              }}
+            >
+              {t('table.freshness', { time: formatClock(new Date(freshnessAt)) })}
             </span>
           ) : null}
           {/* Batch AL (iris 独有): built-in undo/redo buttons after the title.

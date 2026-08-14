@@ -289,6 +289,7 @@ export {
   formatMonthYear,
   getWeekdayNames,
   formatLocalISO,
+  formatClock,
   clampDate,
   isOutOfRange,
 } from './date'

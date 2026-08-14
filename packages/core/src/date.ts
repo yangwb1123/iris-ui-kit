@@ -114,6 +114,19 @@ export function formatLocalISO(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
+/**
+ * Local-time 24h `HH:MM:SS` (zero-padded). Deterministic — deliberately not
+ * `Intl.DateTimeFormat` (hour12 / rounding variance across locales), matching
+ * the `formatLocalISO` mold: local time, padStart, no timezone surprises.
+ * Used by the table freshness stamp (batch AS) and any clock display.
+ */
+export function formatClock(date: Date): string {
+  const h = String(date.getHours()).padStart(2, '0')
+  const m = String(date.getMinutes()).padStart(2, '0')
+  const s = String(date.getSeconds()).padStart(2, '0')
+  return `${h}:${m}:${s}`
+}
+
 export function clampDate(date: Date, min?: Date, max?: Date): Date {
   let d = date
   if (min && d < min) d = min

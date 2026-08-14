@@ -110,6 +110,7 @@ export const defaultMessages: I18nMessages = {
   'table.error': 'Failed to load data',
   'table.retry': 'Retry',
   'table.refresh': 'Refresh',
+  'table.freshness': 'Updated at {time}',
   'table.columnSettings': 'Column settings',
   'table.customConfig.search': 'Search columns',
   'table.customConfig.reset': 'Reset',

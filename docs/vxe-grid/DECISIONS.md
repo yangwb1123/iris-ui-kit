@@ -928,3 +928,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-at-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-at-baseline.md
+
+## 2026-08-13 23:34:09 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-at-adapt.md [ok]: Report — batch AT (audit log) ✅: **Commits:** `f3414302` (feat: 14 files) · `3d224333` (chore: adapt 报告); Files changed (4 new + 9 edits + manifest + docs): | File | Change |; Verification (all green): - **core test: 1377 passed** (+11) · **react typecheck: clean** · **react test: 2014 passed** (+9, 0 regressions) · **re; What is left: - vue/solid/svelte wiring for `auditLog` (core material ready; "react only" scope)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-at-adapt.md
+
+## 2026-08-13 23:41:16 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-at-review.md [ok]: Review summary: Inspected both commits (`f3414302` feat + `3d224333` chore) against the baseline and all 5 checklist areas, then ran eve
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-at-review.md

@@ -908,3 +908,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-as-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-as-baseline.md
+
+## 2026-08-13 22:11:30 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-as-adapt.md [ok]: Report — batch AS (autoRefresh + freshness) ✅: **Commits:**; Files changed: | File | Change |; Tests added (12): autoRefresh (7): interval fires refetch · unmount clears · no prop → no timer · intervalMs change restarts · ≤0 fail-clo; Verification (all green): - core test: **1366 passed** (+2) · react typecheck: clean · react test: **2005 passed** (+12, 0 regressions) · react li; What is left: - **vue/solid/svelte wiring** for `autoRefresh`/`freshness` (core material ready; out of scope — "react only")
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-as-adapt.md
+
+## 2026-08-13 22:17:38 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-as-review.md [ok]: Summary: **All verification green**: core test 1366 ✓ · react test 2005 (+12, 0 regressions) ✓ · typecheck clean ✓ · lint 0 error
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-as-review.md

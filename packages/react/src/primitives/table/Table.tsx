@@ -1200,7 +1200,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // before this cleanup runs, so a late tick can never hit a destroyed source.
   const intervalMs = autoRefresh?.intervalMs ?? 0
   React.useEffect(() => {
-    if (!hasProxy || intervalMs <= 0) return
+    // Number.isFinite first: NaN/Infinity fail the `<= 0` guard (`NaN <= 0`
+    // is false), and setInterval(cb, NaN) ≈ 0 ms — a refetch storm.
+    if (!hasProxy || !Number.isFinite(intervalMs) || intervalMs <= 0) return
     const id = window.setInterval(() => {
       void proxyRef.current?.refetch()
     }, intervalMs)
@@ -5350,7 +5352,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           {/* Batch AS (iris 独有): freshness stamp — re-stamped on every live
               data change (initial arrival, refetch, edits, row ops, undo).
               Hidden until the first row exists. */}
-          {freshness && liveData.length > 0 ? (
+          {freshness && freshnessAt > 0 && liveData.length > 0 ? (
             <span
               data-iris-freshness=""
               style={{

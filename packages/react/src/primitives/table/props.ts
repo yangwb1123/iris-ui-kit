@@ -492,7 +492,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * gate admits `chartPreview` like `undo`).
    */
   chartPreview?: boolean
-  /** Auto-refresh (batch AS, iris 独有 — vxe has no interval refresh): when
+  /**
+   * Auto-refresh (batch AS, iris 独有 — vxe has no interval refresh): when
    * set, the table re-queries the proxy every `intervalMs` ms while in proxy
    * mode (non-proxy `data` tables are inert — there is nothing to refetch).
    * Each tick calls the SAME refetch the built-in ↻ button uses — the
@@ -502,16 +503,19 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * (fail-closed). The interval restarts whenever `intervalMs` changes
    * (keyed on the scalar, so an inline object doesn't reset the timer every
    * render) and is cleared on unmount / proxy removal. Additive — default
-   * off. */
+   * off.
+   */
   autoRefresh?: { intervalMs: number }
-  /** Freshness stamp (batch AS, iris 独有 — vxe shows no data-arrival time):
+  /**
+   * Freshness stamp (batch AS, iris 独有 — vxe shows no data-arrival time):
    * when true, the toolbar renders `Updated at HH:MM:SS`
    * (`data-iris-freshness`, i18n `table.freshness`, 24h local `formatClock`)
    * re-stamped on EVERY live-data change — initial arrival, refetch, edit
    * commit, row ops / paste / batch / range clear, undo/redo (everything
    * that funnels through `setLiveData`). Hidden until the first row exists
    * (`liveData.length === 0`). Requires a toolbar render. Additive — default
-   * off. */
+   * off.
+   */
   freshness?: boolean
   /** Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity). */
   tableRef?: MutableRefObject<IrisTableHandle<Row> | null>

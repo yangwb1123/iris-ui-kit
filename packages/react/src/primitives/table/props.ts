@@ -479,6 +479,19 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * material over `bodyData` with the `dataIndex ?? key` indirection.
    * Requires `contextMenu` to be set (the item appends to its items). */
   valueDistribution?: boolean
+  /**
+   * Mini chart preview (batch AR, iris 独有): when true, the toolbar gains a
+   * chart trigger (`data-iris-chart-trigger`) opening a floating panel
+   * (`data-iris-chart-panel`) that charts the CURRENT filtered rows: a
+   * numeric-column select (columns where `typeof getCellValue(row, col) ===
+   * 'number'` for some row, or `col.summary === 'sum'`) plus a bar/line kind
+   * toggle. The SVG (viewBox 0 0 300 120) is built from the core
+   * `buildChartData` material over the first 20 values (a muted "共 N 行"
+   * note when truncated) — structured JSX only, no SVG strings. Token colors
+   * only; Esc / outside / scroll close it. Requires a toolbar render (the
+   * gate admits `chartPreview` like `undo`).
+   */
+  chartPreview?: boolean
   /** Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity). */
   tableRef?: MutableRefObject<IrisTableHandle<Row> | null>
   /** Fired after any internal row operation / edit write-back, with the new row list. */

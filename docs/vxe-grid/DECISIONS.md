@@ -883,3 +883,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-aq-gate.md [ok]: Verdict → Fix: Review `batch-aq-review.md` was **FAIL** (1 Medium: stale `suppressRangeDismissRef` broke Escape-clear after a fill drag; Full gate results: - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful** (1m44s); Test counts: - React: **1980 passed** (175 files, 1978 baseline + 2 new); Commits: - `165b6540` — `feat(table): grid 批 AQ——拖拽填充柄（Excel 式选区填充）` (5 files, +101/−41)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aq-gate.md
+
+## 2026-08-13 19:34:24 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ar-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ar-baseline.md

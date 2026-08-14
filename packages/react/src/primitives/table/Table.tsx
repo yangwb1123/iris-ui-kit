@@ -60,6 +60,7 @@ import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import type { IrisTableProps, IrisTableProxyConfig } from './props'
 import type { IrisTableHandle } from './types'
 import { downloadCsv, exportCsv } from './exportCsv'
+import { TableChartPanel } from './ChartPanel'
 import { RANGE_FILL_HANDLE_STYLE, RANGE_FILL_TARGET_BG } from './styles'
 
 /* Batch AQ drag-fill helpers (module scope): the per-cell fill logic stays
@@ -929,6 +930,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   footerTooltipConfig,
   contextMenu,
   valueDistribution,
+  chartPreview,
   printable = false,
   seq = false,
   spanMethod,
@@ -2160,6 +2162,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
     window.addEventListener('keydown', onWindowKey)
     return () => window.removeEventListener('keydown', onWindowKey)
   }, [zoomed])
+  // ── Batch AR mini chart preview (iris 独有) ─────────────────────
+  // Toolbar trigger + anchor (the trigger button itself — a real DOM node);
+  // the panel floats below it and remounts per open (state re-seeds).
+  const [chartOpen, setChartOpen] = React.useState(false)
+  const chartAnchorRef = React.useRef<HTMLButtonElement | null>(null)
   const importFileRef = React.useRef<HTMLInputElement | null>(null)
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -3091,6 +3098,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const filteredDataRef = React.useRef(filteredData)
   filteredDataRef.current = filteredData
   const bodyData = flatTree ? flatTree.map((t) => t.row) : filteredData
+  // Batch AR mini chart preview (iris 独有): numeric leaf columns for the
+  // chart panel — the two existing signals — a row whose `getCellValue` is a
+  // number (formula columns flow through the choke point) OR a
+  // `summary: 'sum'` column — computed over the CURRENT filtered rows (the
+  // same list the panel charts).
+  const chartNumericColumns = React.useMemo(
+    () =>
+      leafColumns.filter(
+        (col) =>
+          col.summary === 'sum' ||
+          filteredData.some((row) => typeof getCellValue(row, col) === 'number'),
+      ),
+    [leafColumns, filteredData],
+  )
   // Batch AP: mirror the latest body rows for the mount-time handle
   // (exportSelectionCsv runs against the mount-time closure and must see
   // post-rerender rows — same pattern as filteredDataRef above).
@@ -5264,7 +5285,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
           </div>
         </form>
       ) : null}
-      {(toolbar || views || query !== undefined || undo) && layouts?.toolbar !== 'hidden' ? (
+      {(toolbar || views || query !== undefined || undo || chartPreview) &&
+      layouts?.toolbar !== 'hidden' ? (
         <div
           data-iris-table-toolbar=""
           style={{
@@ -5829,6 +5851,25 @@ export function IrisTable<Row extends Record<string, unknown>>({
               title={zoomed ? t('table.zoomOut') : t('table.zoomIn')}
             >
               {zoomed ? '✕' : '⛶'}
+            </button>
+          ) : null}
+          {chartPreview ? (
+            <button
+              ref={chartAnchorRef}
+              type="button"
+              data-iris-chart-trigger=""
+              onClick={() => setChartOpen((v) => !v)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: chartOpen ? 'var(--iris-foreground)' : 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+              }}
+              aria-label={t('table.chart')}
+              title={t('table.chart')}
+            >
+              ▤
             </button>
           ) : null}
           {toolbar?.buttons && toolbar.buttons.length > 0
@@ -6612,6 +6653,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
             rows={bodyData}
             valueKey={distributionState.colKey}
             onClose={closeDistribution}
+            t={t}
+          />
+        ) : null}
+        {chartPreview && chartOpen ? (
+          <TableChartPanel
+            open
+            anchorRef={chartAnchorRef}
+            rows={filteredData}
+            columns={chartNumericColumns}
+            onClose={() => setChartOpen(false)}
             t={t}
           />
         ) : null}

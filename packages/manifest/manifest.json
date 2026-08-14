@@ -36802,6 +36802,12 @@
           "description": "Value distribution panel (batch AM, iris 独有): when true, the context menu gains a built-in item (key `__iris_distribution`, i18n `table.distribution`) that opens a floating panel counting each distinct value of the CLICKED column over the current body rows — top 20 + a muted \"其余 N 个\" fold — computed by the core `valueDistribution` material over `bodyData` with the `dataIndex ?? key` indirection."
         },
         {
+          "name": "chartPreview",
+          "type": "boolean",
+          "optional": true,
+          "description": "Mini chart preview (batch AR, iris 独有): when true, the toolbar gains a chart trigger (`data-iris-chart-trigger`) opening a floating panel (`data-iris-chart-panel`) that charts the CURRENT filtered rows: a numeric-column select (columns where `typeof getCellValue(row, col) === 'number'` for some row, or `col.summary === 'sum'`) plus a bar/line kind toggle. The SVG (viewBox 0 0 300 120) is built from the core `buildChartData` material over the first 20 values (a muted \"共 N 行\" note when truncated) — structured JSX only, no SVG strings. Token colors only; Esc / outside / scroll close it. Requires a toolbar render (the gate admits `chartPreview` like `undo`)."
+        },
+        {
           "name": "tableRef",
           "type": "MutableRefObject<IrisTableHandle<Row> | null>",
           "optional": true,
@@ -37610,6 +37616,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Value distribution panel (batch AM, iris 独有): when true, the context menu gains a built-in item (key `__iris_distribution`, i18n `table.distribution`) that opens a floating panel counting each distinct value of the CLICKED column over the current body rows — top 20 + a muted \"其余 N 个\" fold — computed by the core `valueDistribution` material over `bodyData` with the `dataIndex ?? key` indirection."
+            },
+            {
+              "name": "chartPreview",
+              "type": "boolean",
+              "optional": true,
+              "description": "Mini chart preview (batch AR, iris 独有): when true, the toolbar gains a chart trigger (`data-iris-chart-trigger`) opening a floating panel (`data-iris-chart-panel`) that charts the CURRENT filtered rows: a numeric-column select (columns where `typeof getCellValue(row, col) === 'number'` for some row, or `col.summary === 'sum'`) plus a bar/line kind toggle. The SVG (viewBox 0 0 300 120) is built from the core `buildChartData` material over the first 20 values (a muted \"共 N 行\" note when truncated) — structured JSX only, no SVG strings. Token colors only; Esc / outside / scroll close it. Requires a toolbar render (the gate admits `chartPreview` like `undo`)."
             },
             {
               "name": "tableRef",
@@ -38791,7 +38803,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 134,
+        "propCount": 135,
         "eventCount": 27
       }
     },

@@ -918,3 +918,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-as-review.md [ok]: Summary: **All verification green**: core test 1366 ✓ · react test 2005 (+12, 0 regressions) ✓ · typecheck clean ✓ · lint 0 error
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-as-review.md
+
+## 2026-08-13 22:24:47 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-as-gate.md [ok]: Verdict → Fixes: The review was **PASS with 3 LOW findings** — all concrete, all applied:; Full gate (all green): - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful**; Test counts: - **core: 1366 passed** (87 files); Commits: - `caf25a7f` — `feat(table): grid 批 AS——自动刷新 + 数据新鲜度指示（数据闭环）` (6 files, +72/−42: 2 low fixes + JSDoc + regenerated manif
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-as-gate.md

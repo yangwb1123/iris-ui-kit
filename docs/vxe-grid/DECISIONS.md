@@ -938,3 +938,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-at-review.md [ok]: Review summary: Inspected both commits (`f3414302` feat + `3d224333` chore) against the baseline and all 5 checklist areas, then ran eve
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-at-review.md
+
+## 2026-08-13 23:46:34 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-at-gate.md [ok]: Gate report: **Review verdict:** PASS (`docs/vxe-grid/batch-at-review.md`, no source modifications needed)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-at-gate.md

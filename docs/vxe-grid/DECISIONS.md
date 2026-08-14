@@ -903,3 +903,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ar-gate.md [ok]: Verdict → Fixes: - **[Medium]** `ChartPanel.tsx` — added `[data-iris-chart-trigger]` to the outside-`pointerdown` exclusion (batch-edit p; Full gate (all green): - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful**; Test counts: - core: **1364 passed** (87 files, incl. 10 `chart-data`); Commits: - `a9d2e793` — `feat(table): grid 批 AR——迷你图表预览（自绘 SVG，查询闭环）` (5 files, +107/−5)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ar-gate.md
+
+## 2026-08-13 22:02:18 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-as-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-as-baseline.md

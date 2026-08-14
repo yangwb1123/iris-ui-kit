@@ -400,6 +400,18 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   selectionSummary?: boolean
   /** Enable rectangular cell-range selection. */
   cellRange?: boolean
+  /**
+   * Excel-style drag fill (batch AQ, iris 独有 — vxe has no fill parity):
+   * when `cellRange` has a live selected range (≥1 cell), a fill handle
+   * (`data-iris-range-fill`, 6px primary square at the range's bottom-right
+   * cell) appears; dragging it DOWN or RIGHT cyclically fills the target
+   * rectangle from the source range values (`(r, c)` ← source
+   * `((r - start.row) % rangeRows + start.row, …)`), formula columns and
+   * keyless rows skipped, through ONE batched `commitRowList`, then extends
+   * the range to the drag end (Excel parity). Dragging UP/LEFT is ignored
+   * (the handle only grows the range). Additive — default off.
+   */
+  rangeFill?: boolean
   /** Clipboard batch (vxe-grid clipboard-config parity, batch O): Ctrl/Cmd+C copies the selected cell range as TSV; Ctrl/Cmd+V pastes TSV text into the range anchor onward (overflow beyond the last row/col is ignored). Requires `cellRange` to have a live selected range; additive — default off. */
   clipConfig?: { copy?: boolean; paste?: boolean }
   /** Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off. */

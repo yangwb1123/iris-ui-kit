@@ -72,6 +72,27 @@ export const RANGE_STATS_VALUE_STYLE: React.CSSProperties = {
   minWidth: 64,
   textAlign: 'right',
 }
+
+/* Batch AQ drag fill (iris 独有 — vxe has no fill parity): the 6px primary
+   square rendered inside the range's bottom-right cell (data-iris-range-fill).
+   Positioned right/bottom with a small offset per the batch AQ fiat; the host
+   cell gains position: relative + zIndex 2 so the handle anchors to it and
+   stays above pinned sticky cells (zIndex 1). Pointer-dragging it DOWN/RIGHT
+   cyclically fills the target rectangle and extends the range. */
+export const RANGE_FILL_HANDLE_STYLE: React.CSSProperties = {
+  position: 'absolute',
+  right: 2,
+  bottom: 2,
+  width: 6,
+  height: 6,
+  background: 'var(--iris-primary)',
+  cursor: 'crosshair',
+  zIndex: 3,
+}
+
+/* Batch AQ: cells between the range edge and the drag end (excluding the
+   source range) while the handle is being dragged — token-driven only. */
+export const RANGE_FILL_TARGET_BG = 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
 export const TABLE_ROW_CSS = `
 [data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover {
   --iris-cell-bg: var(--iris-surface-hover);

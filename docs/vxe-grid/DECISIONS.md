@@ -853,3 +853,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ap-gate.md [ok]: Summary: **Verdict:** PASS (inspected commit `60b3bc5c`; all claims verified against code — selection summary gating/count/sums,
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ap-gate.md
+
+## 2026-08-13 18:41:57 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aq-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aq-baseline.md
+
+## 2026-08-13 19:03:31 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aq-adapt.md [ok]: 完成报告 — batch AQ（拖拽填充 rangeFill）; Files changed (5 files: 3 modified + 2 new): props.ts rangeFill 单行 prop; Table.tsx 模块级纯函数 + fillTarget 状态机 + fillRangeFromHandle 一次 commitRowList + extendRange; styles.ts 句柄/目标样式常量; range-fill.test.tsx 13 新测试; docs/vxe-grid-comparison.md iris 独有 + 批 AQ 行; manifest 重新生成; Gate results: typecheck ✅ / test 1978 ✅ / lint 0 errors ✅ / iris-ui-spec 0 violations ✅ / check:manifest + check:docs-reference ✅
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aq-adapt.md

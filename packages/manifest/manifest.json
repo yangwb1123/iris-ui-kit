@@ -36700,6 +36700,12 @@
           "description": "Enable rectangular cell-range selection."
         },
         {
+          "name": "rangeFill",
+          "type": "boolean",
+          "optional": true,
+          "description": "Excel-style drag fill (batch AQ, iris 独有 — vxe has no fill parity): when `cellRange` has a live selected range (≥1 cell), a fill handle (`data-iris-range-fill`, 6px primary square at the range's bottom-right cell) appears; dragging it DOWN or RIGHT cyclically fills the target rectangle from the source range values (`(r, c)` ← source `((r - start.row) % rangeRows + start.row, …)`), formula columns and keyless rows skipped, through ONE batched `commitRowList`, then extends the range to the drag end (Excel parity). Dragging UP/LEFT is ignored (the handle only grows the range). Additive — default off."
+        },
+        {
           "name": "clipConfig",
           "type": "{ copy?: boolean; paste?: boolean }",
           "optional": true,
@@ -37502,6 +37508,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Enable rectangular cell-range selection."
+            },
+            {
+              "name": "rangeFill",
+              "type": "boolean",
+              "optional": true,
+              "description": "Excel-style drag fill (batch AQ, iris 独有 — vxe has no fill parity): when `cellRange` has a live selected range (≥1 cell), a fill handle (`data-iris-range-fill`, 6px primary square at the range's bottom-right cell) appears; dragging it DOWN or RIGHT cyclically fills the target rectangle from the source range values (`(r, c)` ← source `((r - start.row) % rangeRows + start.row, …)`), formula columns and keyless rows skipped, through ONE batched `commitRowList`, then extends the range to the drag end (Excel parity). Dragging UP/LEFT is ignored (the handle only grows the range). Additive — default off."
             },
             {
               "name": "clipConfig",
@@ -38779,7 +38791,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 133,
+        "propCount": 134,
         "eventCount": 27
       }
     },

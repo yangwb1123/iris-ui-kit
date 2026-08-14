@@ -60,6 +60,53 @@ import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import type { IrisTableProps, IrisTableProxyConfig } from './props'
 import type { IrisTableHandle } from './types'
 import { downloadCsv, exportCsv } from './exportCsv'
+import { RANGE_FILL_HANDLE_STYLE, RANGE_FILL_TARGET_BG } from './styles'
+
+/* Batch AQ drag-fill helpers (module scope): the per-cell fill logic stays
+   OUT of the row-render arrow so the eslint complexity budget on that hot
+   callback is untouched. Each helper is a pure function of its inputs. */
+
+/** True when this cell is the range's bottom-right cell hosting the handle. */
+function isRangeFillHandleCell(
+  rangeFill: boolean,
+  range: { end: { row: number; col: number } } | null,
+  idx: number,
+  ci: number,
+): boolean {
+  return rangeFill && range !== null && range.end.row === idx && range.end.col === ci
+}
+
+/** The data-iris-range-fill-target attr value (undefined hides it). */
+function rangeFillTargetAttr(isTarget: boolean): string | undefined {
+  return isTarget ? 'true' : undefined
+}
+
+/** Extra cell style for the fill-handle host (relative + above pinned) and
+ * the drag-target highlight (token-driven background). */
+function rangeFillCellStyle(handleCell: boolean, targetCell: boolean): React.CSSProperties {
+  return {
+    ...(handleCell ? { position: 'relative', zIndex: 2 } : null),
+    ...(targetCell ? { background: RANGE_FILL_TARGET_BG } : null),
+  }
+}
+
+/** The 6px fill handle (data-iris-range-fill), rendered only in the range's
+ * bottom-right cell; pointerdown starts the drag (and stops the cell click). */
+function renderRangeFillHandle(
+  handleCell: boolean,
+  row: number,
+  col: number,
+  onPointerDown: (e: React.PointerEvent, row: number, col: number) => void,
+): React.ReactNode {
+  if (!handleCell) return null
+  return (
+    <span
+      data-iris-range-fill=""
+      onPointerDown={(e) => onPointerDown(e, row, col)}
+      style={RANGE_FILL_HANDLE_STYLE}
+    />
+  )
+}
 
 const TABLE_ROW_CSS = `
 [data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover {
@@ -898,6 +945,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   keyboardNavigation = false,
   tableShortcuts = false,
   cellRange = false,
+  rangeFill = false,
   clipConfig,
   fnr = false,
   undo = false,
@@ -3602,6 +3650,125 @@ export function IrisTable<Row extends Record<string, unknown>>({
     setRangeToolbarSeq((s) => s + 1)
   }, [cellRangeCtrl])
 
+  // ── Drag fill (batch AQ, iris 独有 — vxe has no fill parity) ────────────
+  // The fill handle (data-iris-range-fill) renders inside the range's
+  // bottom-right cell; dragging it DOWN/RIGHT cyclically fills the target
+  // rectangle and extends the range (Excel parity). Dragging UP/LEFT is
+  // ignored — the rectangle only ever grows down/right from the range edge
+  // (max(pointer, range.end) + table-bounds clamp), so a pointer that stays
+  // inside the range (or above/left of its end) yields no target cells.
+  // `fillTarget` holds the drag-end cell while dragging: it drives the
+  // data-iris-range-fill-target highlight, and pointerup commits the cyclic
+  // fill + range extension in one shot. Hit-testing per move goes through
+  // document.elementFromPoint → closest('[data-iris-cell-row][data-iris-cell-col]')
+  // (leaf cells only — seq/selection/detail cells carry no row/col attrs).
+  const [fillTarget, setFillTarget] = React.useState<{ row: number; col: number } | null>(null)
+
+  /** True when (r, c) lies between the range edge and the drag end (exclusive
+   * of the source range) — the highlighted fill-target rectangle. */
+  const isRangeFillTarget = React.useCallback(
+    (r: number, c: number): boolean => {
+      if (fillTarget === null || activeRange === null) return false
+      const endRow = Math.min(Math.max(fillTarget.row, activeRange.end.row), bodyData.length - 1)
+      const endCol = Math.min(Math.max(fillTarget.col, activeRange.end.col), leafColumns.length - 1)
+      if (endRow === activeRange.end.row && endCol === activeRange.end.col) return false
+      if (r < activeRange.start.row || r > endRow) return false
+      if (c < activeRange.start.col || c > endCol) return false
+      if (isInRange(r, c)) return false
+      return true
+    },
+    [fillTarget, activeRange, bodyData.length, leafColumns.length, isInRange],
+  )
+
+  const handleRangeFillPointerDown = (e: React.PointerEvent, row: number, col: number): void => {
+    if (e.button !== 0) return
+    // preventDefault stops the compatibility click → the cell's onClick
+    // (startRange/extendRange) never fires from a handle press.
+    e.preventDefault()
+    e.stopPropagation()
+    try {
+      ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+    } catch {
+      /* jsdom has no real pointer capture */
+    }
+    setFillTarget({ row, col })
+  }
+
+  const handleRangeFillPointerMove = (e: React.PointerEvent): void => {
+    if (fillTarget === null) return
+    const el = document.elementFromPoint(e.clientX, e.clientY)
+    const cellEl = el?.closest('[data-iris-cell-row][data-iris-cell-col]') as HTMLElement | null
+    if (!cellEl) return // outside the body → keep the last resolved drag end
+    const r = Number(cellEl.dataset.irisCellRow)
+    const c = Number(cellEl.dataset.irisCellCol)
+    if (Number.isNaN(r) || Number.isNaN(c)) return
+    setFillTarget((prev) => (prev && prev.row === r && prev.col === c ? prev : { row: r, col: c }))
+  }
+
+  const handleRangeFillPointerUp = (): void => {
+    if (fillTarget === null) return
+    const { row, col } = fillTarget
+    setFillTarget(null)
+    fillRangeFromHandle(row, col)
+  }
+
+  /** Cyclic fill of the down/right-grown rectangle + range extension, all in
+   * ONE commitRowList (undo-covered via the batch AL funnel). No target cells
+   * (no growth, no rowKey, empty table) → no-op. */
+  const fillRangeFromHandle = React.useCallback(
+    (targetRow: number, targetCol: number): void => {
+      const range = cellRangeCtrl.getRange()
+      if (!range || !rowKey) return
+      const body = liveBodyRef.current
+      const cols = liveLeafRef.current
+      if (body.length === 0 || cols.length === 0) return
+      // Down/right-only: the drag end clamps to never shrink the source range.
+      const endRow = Math.min(Math.max(targetRow, range.end.row), body.length - 1)
+      const endCol = Math.min(Math.max(targetCol, range.end.col), cols.length - 1)
+      if (endRow === range.end.row && endCol === range.end.col) return
+      const rangeRows = range.end.row - range.start.row + 1
+      const rangeCols = range.end.col - range.start.col + 1
+      const byKey = new Map<string | number, Record<string, unknown>>()
+      for (let r = range.start.row; r <= endRow; r += 1) {
+        const row = body[r]
+        if (!row) continue
+        const k = rowKeyOf(row)
+        if (k == null) continue
+        for (let c = range.start.col; c <= endCol; c += 1) {
+          // Source-range cells keep their values (nothing to fill there) and
+          // formula columns are display-only everywhere (skip, like paste).
+          if (
+            r >= range.start.row &&
+            r <= range.end.row &&
+            c >= range.start.col &&
+            c <= range.end.col
+          )
+            continue
+          const col = cols[c]
+          if (!col || col.formula) continue
+          const srcRow = body[((r - range.start.row) % rangeRows) + range.start.row]
+          const srcCol = cols[((c - range.start.col) % rangeCols) + range.start.col]
+          if (!srcRow || !srcCol) continue
+          const value = getCellValue(srcRow, srcCol)
+          byKey.set(k, { ...byKey.get(k), [col.key]: value })
+        }
+      }
+      if (byKey.size === 0) return
+      const keyField = rowKey
+      const next = (externalDataRef.current ?? []).map((r) => {
+        const k = (r as Record<string, unknown>)[keyField]
+        const patch = k != null ? byKey.get(k as string | number) : undefined
+        return patch ? { ...r, ...patch } : r
+      })
+      commitRowList(next)
+      // Excel parity: the selection grows to the drag end so the filled cells
+      // become part of the range.
+      cellRangeCtrl.extendRange(endRow, endCol)
+      updateRangeToolbarAnchor()
+    },
+    [cellRangeCtrl, rowKey, commitRowList, updateRangeToolbarAnchor],
+  )
+
   const copyActiveRange = React.useCallback((): void => {
     const range = cellRangeCtrl.getRange()
     if (!range) return
@@ -3671,9 +3838,29 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // panel rides the bar's existing useDismiss, and the hoisted open state is
   // reset here so a later range never reopens it unprompted.
   const dismissRange = React.useCallback((): void => {
+    // Batch AQ: a fill-handle press must never dismiss the bar — its
+    // outside-press would clear the range mid-drag. The window capture-phase
+    // listener below flags handle presses BEFORE the document listener runs.
+    if (suppressRangeDismissRef.current) return
     cellRangeCtrl.clearRange()
     setRangeStatsOpen(false)
   }, [cellRangeCtrl])
+  // Batch AQ: the floating range toolbar's useDismiss listens for outside
+  // pointer-down on DOCUMENT (capture phase) and clears the range. The fill
+  // handle sits outside the bar, so a handle press would clear the range
+  // before the drag starts. A window-capture listener (which runs BEFORE the
+  // document capture listener) flags handle presses so dismissRange skips
+  // them; every pointerdown re-syncs the flag, so it is self-cleaning.
+  const suppressRangeDismissRef = React.useRef(false)
+  React.useEffect(() => {
+    if (!rangeFill) return
+    const onWindowPointerDown = (e: PointerEvent): void => {
+      const target = e.target as HTMLElement | null
+      suppressRangeDismissRef.current = !!target?.closest('[data-iris-range-fill]')
+    }
+    window.addEventListener('pointerdown', onWindowPointerDown, true)
+    return () => window.removeEventListener('pointerdown', onWindowPointerDown, true)
+  }, [rangeFill])
 
   // ── Find & replace (batch O: fnr) — Ctrl/Cmd+F opens the bar (when not
   // editing); matches highlight over bodyData in flat mode (case-insensitive
@@ -4286,6 +4473,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
           const fnrCellKey = `${idx}:${ci}`
           const fnrCellActive = fnrActiveKey === fnrCellKey
           const fnrCellMatched = fnrMatchSet.has(fnrCellKey)
+          // Batch AQ drag fill: the handle renders inside the range's
+          // bottom-right cell; cells between the range edge and the drag end
+          // (excluding the source range) highlight while dragging.
+          const fillHandleCell = isRangeFillHandleCell(rangeFill, activeRange, idx, ci)
+          const fillTargetCell = isRangeFillTarget(idx, ci)
           return (
             <div
               key={col.key}
@@ -4319,6 +4511,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     'data-iris-cell-row': idx,
                     'data-iris-cell-col': ci,
                     'data-iris-cell-selected': isInRange(idx, ci) ? 'true' : undefined,
+                    'data-iris-range-fill-target': rangeFillTargetAttr(fillTargetCell),
                   }
                 : null)}
               {...(fnrHighlighting
@@ -4379,6 +4572,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   cellRange && isInRange(idx, ci),
                   striped && idx % 2 === 1,
                 ),
+                ...rangeFillCellStyle(fillHandleCell, fillTargetCell),
                 borderBottom: borderStyle,
                 cursor: editableLive ? 'cell' : cellRange ? 'default' : undefined,
                 ...(editing ? { padding: '4px 8px' } : null),
@@ -4540,6 +4734,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               ) : (
                 (raw as React.ReactNode)
               )}
+              {renderRangeFillHandle(fillHandleCell, idx, ci, handleRangeFillPointerDown)}
             </div>
           )
         })}
@@ -5794,22 +5989,32 @@ export function IrisTable<Row extends Record<string, unknown>>({
             : undefined
         }
         onPointerMove={
-          rowDrag || columnDrag
+          rowDrag || columnDrag || rangeFill
             ? (e) => {
                 handleRowDragPointerMove(e)
                 handleColDragPointerMove(e)
+                handleRangeFillPointerMove(e)
               }
             : undefined
         }
         onPointerUp={
-          rowDrag || columnDrag
+          rowDrag || columnDrag || rangeFill
             ? () => {
                 handleRowDragPointerUp()
                 handleColDragPointerUp()
+                handleRangeFillPointerUp()
               }
             : undefined
         }
         onPointerLeave={rowDrag ? handleRowDragPointerLeave : undefined}
+        onPointerCancel={
+          rangeFill
+            ? () => {
+                // Aborted drag → drop the target highlight, nothing committed.
+                setFillTarget(null)
+              }
+            : undefined
+        }
         onScroll={
           columnVirtualization
             ? (e) => {

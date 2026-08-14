@@ -898,3 +898,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ar-review.md [ok]: Verdict: **FAIL** — 1 functional defect (Medium): Full verdict written to `docs/vxe-grid/batch-ar-review.md`. No source files modified; the temp repro test was removed.; Gates (all run, all green): | Gate | Result |; Checklist: 1. **buildChartData** ✅ — null/undefined→gaps; non-finite dropped; negatives in domain; empty/all-gap→`{0,1}`; flat seri; Findings: 1. **[Medium] ChartPanel.tsx:126 + Table.tsx:5861 — trigger click never closes the panel.** The outside-`pointerdown` ex
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ar-review.md
+
+## 2026-08-13 20:00:01 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ar-gate.md [ok]: Verdict → Fixes: - **[Medium]** `ChartPanel.tsx` — added `[data-iris-chart-trigger]` to the outside-`pointerdown` exclusion (batch-edit p; Full gate (all green): - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful**; Test counts: - core: **1364 passed** (87 files, incl. 10 `chart-data`); Commits: - `a9d2e793` — `feat(table): grid 批 AR——迷你图表预览（自绘 SVG，查询闭环）` (5 files, +107/−5)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ar-gate.md

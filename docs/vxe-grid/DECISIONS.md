@@ -948,3 +948,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-au-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-au-baseline.md
+
+## 2026-08-14 00:48:58 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-au-adapt.md [ok]: Report — batch AU (compare view) ✅: **Commits:** `db4afc33` (feat) · `7df7ea09` (chore: adapt 报告); Files changed (2 new source + 7 edits + 1 new test + docs + manifest): | File | Change |; Verification (all green): - **core test: 1396 passed** (+19) · **react typecheck: clean** · **react test: 2027 passed** (+13, 0 regressions) · **r; Documented decisions: - **Direction per baseline**: `diffRows(liveData, compareWith, rowKey)` — live rows absent from the snapshot → `data-iri; What is left: - vue/solid/svelte wiring for `compareWith` (core material ready; "react only" scope)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-au-adapt.md
+
+## 2026-08-14 00:55:56 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-au-review.md [ok]: Verdict: PASS — `docs/vxe-grid/batch-au-review.md` written: Reviewed the AU compare-view batch (`db4afc33` + `7df7ea09`) against baseline, re-ran every gate myself, and inspected a
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-au-review.md

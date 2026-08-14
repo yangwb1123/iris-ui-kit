@@ -878,3 +878,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-aq-gate.md [ok]: Verdict FAIL → fixed + full gate. Finding 1 fix (stale `suppressRangeDismissRef` after fill drag): reset in `handleRangeFillPointerUp` + `onPointerCancel`, +2 regression tests (Escape after completed drag / after cancel) — both fail on the unfixed code. Full repo gate `turbo run test typecheck lint build` → **180/180 tasks successful** · `pnpm audit` → 0 known vulnerabilities · `gen:manifest` → 155 components × 4 frameworks + `check:manifest` → up to date · react **1980 passed** (175 files, +2). Commit `165b6540` — `feat(table): grid 批 AQ——拖拽填充柄（Excel 式选区填充）` (5 files, +101/−41). Working tree clean.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aq-gate.md
+
+## 2026-08-13 19:15:34 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aq-gate.md [ok]: Verdict → Fix: Review `batch-aq-review.md` was **FAIL** (1 Medium: stale `suppressRangeDismissRef` broke Escape-clear after a fill drag; Full gate results: - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful** (1m44s); Test counts: - React: **1980 passed** (175 files, 1978 baseline + 2 new); Commits: - `165b6540` — `feat(table): grid 批 AQ——拖拽填充柄（Excel 式选区填充）` (5 files, +101/−41)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aq-gate.md

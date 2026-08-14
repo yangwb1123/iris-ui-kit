@@ -31,6 +31,9 @@ import {
   type UndoStack,
   type AuditLog,
   type AuditLogType,
+  diffRows,
+  type RowDiff,
+  type RowDiffCellChange,
 } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { IrisInput } from '../input/Input'
@@ -988,6 +991,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   autoRefresh,
   freshness,
   auditLog,
+  compareWith,
   printable = false,
   seq = false,
   spanMethod,
@@ -1401,6 +1405,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
   React.useEffect(() => {
     auditRowsRef.current = liveData
   }, [liveData])
+
+  // ── Compare view (iris 独有, batch AU) ────────────────────────────────
+  // A pure diff of the live rows against the `compareWith` snapshot by
+  // rowKey (core diffRows — framework-free). Null when the feature is off
+  // (no compareWith / no rowKey) so every render path stays inert. O(1)
+  // maps keyed by rowKey: the row render reads `status.get(k)`, each cell
+  // reads `cellChanges.get(k)?.get(dataIndex ?? key)`. Direction per the
+  // batch-AU baseline: before = liveData, after = compareWith — so a live
+  // row absent from the snapshot is `removed`, a row in both with differing
+  // cells is `changed`, and the tooltip shows live → snapshot values.
+  const compareDiff = React.useMemo<RowDiff | null>(
+    () => (compareWith && rowKey ? diffRows(liveData, compareWith, rowKey) : null),
+    [liveData, compareWith, rowKey],
+  )
 
   // Sort state managed by useTableSort hook (controlled/uncontrolled, comparator, sorted data).
   const {
@@ -4393,6 +4411,41 @@ export function IrisTable<Row extends Record<string, unknown>>({
     return content === '' ? undefined : content
   }
 
+  // Batch AU: the compare tooltip overrides the tooltipConfig title on
+  // changed cells — the old → new diff is more actionable than the raw value
+  // (documented override: compare wins; tooltipConfig still applies to
+  // unchanged cells). old = live value, new = compareWith snapshot value per
+  // the diff direction above.
+  const compareTitle = (change: RowDiffCellChange): string =>
+    t('table.compare.tooltip', {
+      old: String(change.oldValue ?? ''),
+      new: String(change.newValue ?? ''),
+    })
+
+  // Batch AU: the changed cell for a (rowKey, column) pair — resolved via
+  // the same dataIndex ?? key indirect layer getCellValue uses (kept in its
+  // own helper so the cell render arrow stays under the complexity budget,
+  // same pattern as dirtyCellState).
+  const cellChangeOf = (
+    rowK: string | number,
+    col: IrisTableColumn<Row>,
+  ): RowDiffCellChange | undefined =>
+    compareDiff?.cellChanges.get(rowK)?.get((col.dataIndex ?? col.key) as string)
+
+  // Batch AU: the changed-cell attribute (''-style undefined when unchanged).
+  const compareCellAttr = (change: RowDiffCellChange | undefined): string | undefined =>
+    change ? 'true' : undefined
+
+  // Batch AU: the unified cell title — compare wins on changed cells, the
+  // tooltipConfig path applies otherwise, editing cells stay exempt.
+  const cellTitle = (
+    editing: boolean,
+    change: RowDiffCellChange | undefined,
+    row: Row,
+    col: IrisTableColumn<Row>,
+  ): string | undefined =>
+    editing ? undefined : change ? compareTitle(change) : cellTooltip(row, col)
+
   // Header cell tooltips (vxe header-tooltip-config parity, batch P): a
   // native `title` on flat + grouped header cells; empty content drops the
   // tooltip (same pattern as the body cellTooltip).
@@ -4472,6 +4525,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
         data-iris-table-row-selected={selected ? 'true' : undefined}
         data-iris-row-editing={rowMode && rowEditing?.k === k ? 'true' : undefined}
         data-iris-row-current={currentRowKey === k ? 'true' : undefined}
+        data-iris-row-added={compareDiff?.status.get(k) === 'added' ? 'true' : undefined}
+        data-iris-row-removed={compareDiff?.status.get(k) === 'removed' ? 'true' : undefined}
+        data-iris-row-changed={compareDiff?.status.get(k) === 'changed' ? 'true' : undefined}
         onClick={() => {
           onRowClick?.(row, idx)
           if (onCurrentRowChange && k != null) {
@@ -4654,6 +4710,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // Batch Q (vxe editDirtyConfig parity): dirty flag + rendered
           // marker for this cell (attr, class, relative positioning).
           const dirtyInfo = dirtyCellState(editDirtyConfig, dirtyCellsRef.current, k, col.key)
+          // Batch AU compare view: the changed cell for this (row, column) —
+          // resolved via the same dataIndex ?? key indirect layer getCellValue
+          // uses, so a dataIndex column matches its object key. Formula
+          // columns are computed display values (documented simplification:
+          // their own diffs are not flagged — the referenced fields are).
+          const compareChange = cellChangeOf(k, col)
           const fnrCellKey = `${idx}:${ci}`
           const fnrCellActive = fnrActiveKey === fnrCellKey
           const fnrCellMatched = fnrMatchSet.has(fnrCellKey)
@@ -4671,7 +4733,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
               data-editable={editableLive ? '' : undefined}
               data-editing={editing ? '' : undefined}
               data-iris-cell-dirty={dirtyInfo.attr}
-              title={editing ? undefined : cellTooltip(row, col)}
+              data-iris-cell-changed={compareCellAttr(compareChange)}
+              title={cellTitle(editing, compareChange, row, col)}
               className={
                 [cellClassName?.(row, col, idx), dirtyInfo.dirtyClass].filter(Boolean).join(' ') ||
                 undefined

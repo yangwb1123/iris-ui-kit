@@ -186,6 +186,7 @@ export { rangeStats, type RangeColumnStats, type RangeStatsRange } from './range
 export { valueDistribution, type ValueDistributionEntry } from './value-distribution'
 export { buildChartData, type ChartData } from './chart-data'
 export { parseTableQuery, type ParseTableQueryOptions, type ParsedTableQuery } from './query-parser'
+export { diffRows, type RowDiff, type RowDiffCellChange, type RowDiffKind } from './diff-rows'
 export {
   createSelectionModel,
   type SelectionModel,

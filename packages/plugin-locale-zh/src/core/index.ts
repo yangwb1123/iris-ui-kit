@@ -73,6 +73,7 @@ export const zhCNMessages: Record<string, string> = {
   'table.audit': '操作审计',
   'table.audit.empty': '暂无变更',
   'table.audit.clear': '清空',
+  'table.compare.tooltip': '旧值: {old} → 新值: {new}',
   'table.batchEdit.column': '列',
   'table.batchEdit.apply': '应用',
   'table.views.save': '保存视图',

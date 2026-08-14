@@ -943,3 +943,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-at-gate.md [ok]: Gate report: **Review verdict:** PASS (`docs/vxe-grid/batch-at-review.md`, no source modifications needed)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-at-gate.md
+
+## 2026-08-14 00:31:11 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-au-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-au-baseline.md

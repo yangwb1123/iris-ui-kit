@@ -36826,6 +36826,12 @@
           "description": "Audit log (batch AT, iris 独有 — vxe has no audit trail): when true, every mutation commit appends ONE entry to a bounded (200) ring — inline/row edits, insert/remove row ops, paste, fill, batch edit, undo/redo replay (type hint per site; rowKey + first-changed-cell context from a light diff of the row lists, documented simplification). The toolbar gains an audit trigger (`data-iris-audit-trigger`) opening a floating panel (`data-iris-audit-panel`, like the chart/stats panels — Esc / outside / scroll close) listing newest-first entries (seq + `formatClock` time + type + rowKey + column + muted old→new). `tableRef.getAuditLog()` / `clearAuditLog()` expose the trail programmatically (the seq never resets on clear — audit integrity). Requires a toolbar render (the gate admits `auditLog` like `undo`). Additive — default off."
         },
         {
+          "name": "compareWith",
+          "type": "Row[]",
+          "optional": true,
+          "description": "Compare view (batch AU, iris 独有 — vxe has no compare capability): a snapshot the live rows are diffed against by `rowKey`. Every live row absent from the snapshot renders `data-iris-row-removed`, every live row present in both with ≥1 differing cell renders `data-iris-row-changed` with `data-iris-cell-changed` on the changed cells and a title tooltip `旧值: X → 新值: Y` (old = live value, new = snapshot value) that overrides the tooltipConfig title (compare wins, documented); snapshot- only rows are `added` in the core diff but have no rendered slot — the compare view renders the live dataset (documented). Core `diffRows` is framework-free; the memo is null without `compareWith` or `rowKey` — additive, default off."
+        },
+        {
           "name": "tableRef",
           "type": "MutableRefObject<IrisTableHandle<Row> | null>",
           "optional": true,
@@ -37658,6 +37664,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Audit log (batch AT, iris 独有 — vxe has no audit trail): when true, every mutation commit appends ONE entry to a bounded (200) ring — inline/row edits, insert/remove row ops, paste, fill, batch edit, undo/redo replay (type hint per site; rowKey + first-changed-cell context from a light diff of the row lists, documented simplification). The toolbar gains an audit trigger (`data-iris-audit-trigger`) opening a floating panel (`data-iris-audit-panel`, like the chart/stats panels — Esc / outside / scroll close) listing newest-first entries (seq + `formatClock` time + type + rowKey + column + muted old→new). `tableRef.getAuditLog()` / `clearAuditLog()` expose the trail programmatically (the seq never resets on clear — audit integrity). Requires a toolbar render (the gate admits `auditLog` like `undo`). Additive — default off."
+            },
+            {
+              "name": "compareWith",
+              "type": "Row[]",
+              "optional": true,
+              "description": "Compare view (batch AU, iris 独有 — vxe has no compare capability): a snapshot the live rows are diffed against by `rowKey`. Every live row absent from the snapshot renders `data-iris-row-removed`, every live row present in both with ≥1 differing cell renders `data-iris-row-changed` with `data-iris-cell-changed` on the changed cells and a title tooltip `旧值: X → 新值: Y` (old = live value, new = snapshot value) that overrides the tooltipConfig title (compare wins, documented); snapshot- only rows are `added` in the core diff but have no rendered slot — the compare view renders the live dataset (documented). Core `diffRows` is framework-free; the memo is null without `compareWith` or `rowKey` — additive, default off."
             },
             {
               "name": "tableRef",
@@ -38840,7 +38852,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 138,
+        "propCount": 139,
         "eventCount": 27
       }
     },

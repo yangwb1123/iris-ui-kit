@@ -106,6 +106,25 @@ export const TABLE_ROW_CSS = `
 [data-iris-col-current="true"] {
   --iris-cell-bg: var(--iris-surface-selected);
 }
+/* Compare view (batch AU, iris 独有 — vxe has no compare): added / removed /
+   changed rows tint the FULL row (the background shows through the transparent
+   cells) and feed the shared --iris-cell-bg var for the gutter cells — the
+   same highlight mechanism as hover/selected. Token-only: changed →
+   --iris-surface-selected; added → success tint; removed → danger tint, both
+   via color-mix over the background token (no magic rgba — engines without
+   color-mix fall back to the inherited row background, documented). */
+[data-iris-row-changed="true"] {
+  --iris-cell-bg: var(--iris-surface-selected);
+  background: var(--iris-surface-selected);
+}
+[data-iris-row-added="true"] {
+  --iris-cell-bg: color-mix(in srgb, var(--iris-success) 12%, var(--iris-background));
+  background: color-mix(in srgb, var(--iris-success) 12%, var(--iris-background));
+}
+[data-iris-row-removed="true"] {
+  --iris-cell-bg: color-mix(in srgb, var(--iris-danger) 12%, var(--iris-background));
+  background: color-mix(in srgb, var(--iris-danger) 12%, var(--iris-background));
+}
 /* Fixed height (batch N): the root becomes the scroll container; the header
    row (flat AND grouped variants both carry data-iris-table-row="header") stays
    visible with a sticky position. z-index 2 keeps it above pinned body cells

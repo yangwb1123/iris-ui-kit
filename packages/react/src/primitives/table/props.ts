@@ -532,6 +532,20 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * admits `auditLog` like `undo`). Additive — default off.
    */
   auditLog?: boolean
+  /**
+   * Compare view (batch AU, iris 独有 — vxe has no compare capability): a
+   * snapshot the live rows are diffed against by `rowKey`. Every live row
+   * absent from the snapshot renders `data-iris-row-removed`, every live row
+   * present in both with ≥1 differing cell renders `data-iris-row-changed`
+   * with `data-iris-cell-changed` on the changed cells and a title tooltip
+   * `旧值: X → 新值: Y` (old = live value, new = snapshot value) that
+   * overrides the tooltipConfig title (compare wins, documented); snapshot-
+   * only rows are `added` in the core diff but have no rendered slot — the
+   * compare view renders the live dataset (documented). Core `diffRows` is
+   * framework-free; the memo is null without `compareWith` or `rowKey` —
+   * additive, default off.
+   */
+  compareWith?: Row[]
   /** Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity). */
   tableRef?: MutableRefObject<IrisTableHandle<Row> | null>
   /** Fired after any internal row operation / edit write-back, with the new row list. */

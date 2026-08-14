@@ -958,3 +958,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-au-review.md [ok]: Verdict: PASS — `docs/vxe-grid/batch-au-review.md` written: Reviewed the AU compare-view batch (`db4afc33` + `7df7ea09`) against baseline, re-ran every gate myself, and inspected a
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-au-review.md
+
+## 2026-08-14 01:05:27 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-au-gate.md [ok]: Verdict: `docs/vxe-grid/batch-au-review.md` = **PASS** (2 low / 4 info findings, none blocking). AU code itself was already commi; Gate results: | Check | Result |; Final test counts (fresh `--force` run, 798 files): - **core:** 1396 · **react:** 2027 · **vue:** 1531 · **solid:** 1008 · **svelte:** 947; Commit: ```
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-au-gate.md

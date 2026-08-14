@@ -525,6 +525,32 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   setCurrentRow: (key: string | number) => void
   /** Set the current (highlighted) column (vxe setCurrentColumn parity); no-op without onCurrentColumnChange (or an unknown key). */
   setCurrentColumn: (key: string) => void
+  /** Audit trail snapshot (batch AT, iris 独有): newest-first entries (seq/at/type/rowKey/column/old→new) — an empty array when `auditLog` is off or nothing was committed yet. */
+  getAuditLog: () => ReadonlyArray<IrisTableAuditEntry>
+  /** Wipe every audit entry (batch AT, iris 独有): the seq counter never resets — audit integrity. No-op without `auditLog`. */
+  clearAuditLog: () => void
+}
+
+/**
+ * Audit-trail entry shape (batch AT, iris 独有) — mirrors the core
+ * `AuditLogEntry` contract (the handle returns a snapshot of the controller
+ * ring). Row-level structural changes (insert/remove) carry only `rowKey`.
+ */
+export interface IrisTableAuditEntry {
+  /** Monotonic sequence number (never resets on clear — audit integrity). */
+  seq: number
+  /** Epoch ms when the entry was pushed. */
+  at: number
+  /** Commit kind: edit / insert / remove / paste / batch / fill / undo / redo. */
+  type: 'edit' | 'insert' | 'remove' | 'paste' | 'batch' | 'fill' | 'undo' | 'redo'
+  /** Key of the first changed row (undefined when none could be resolved). */
+  rowKey?: string | number
+  /** Column key of the first changed cell (undefined for row-level ops). */
+  column?: string
+  /** Value before the change. */
+  oldValue?: unknown
+  /** Value after the change. */
+  newValue?: unknown
 }
 
 /** Pager configuration (vxe-grid pagerConfig parity). */

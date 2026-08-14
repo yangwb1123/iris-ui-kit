@@ -517,6 +517,21 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * off.
    */
   freshness?: boolean
+  /**
+   * Audit log (batch AT, iris 独有 — vxe has no audit trail): when true, every
+   * mutation commit appends ONE entry to a bounded (200) ring — inline/row
+   * edits, insert/remove row ops, paste, fill, batch edit, undo/redo replay
+   * (type hint per site; rowKey + first-changed-cell context from a light
+   * diff of the row lists, documented simplification). The toolbar gains an
+   * audit trigger (`data-iris-audit-trigger`) opening a floating panel
+   * (`data-iris-audit-panel`, like the chart/stats panels — Esc / outside /
+   * scroll close) listing newest-first entries (seq + `formatClock` time +
+   * type + rowKey + column + muted old→new). `tableRef.getAuditLog()` /
+   * `clearAuditLog()` expose the trail programmatically (the seq never
+   * resets on clear — audit integrity). Requires a toolbar render (the gate
+   * admits `auditLog` like `undo`). Additive — default off.
+   */
+  auditLog?: boolean
   /** Imperative handle for row ops (vxe-grid edit insert/remove/setRow parity). */
   tableRef?: MutableRefObject<IrisTableHandle<Row> | null>
   /** Fired after any internal row operation / edit write-back, with the new row list. */

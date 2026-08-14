@@ -923,3 +923,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-as-gate.md [ok]: Verdict → Fixes: The review was **PASS with 3 LOW findings** — all concrete, all applied:; Full gate (all green): - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful**; Test counts: - **core: 1366 passed** (87 files); Commits: - `caf25a7f` — `feat(table): grid 批 AS——自动刷新 + 数据新鲜度指示（数据闭环）` (6 files, +72/−42: 2 low fixes + JSDoc + regenerated manif
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-as-gate.md
+
+## 2026-08-13 23:17:45 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-at-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-at-baseline.md

@@ -39,6 +39,7 @@ export {
   type IrisTableNamedView,
   type IrisTableScrollbarConfig,
   type IrisTableEditDirtyConfig,
+  type IrisTableAuditEntry,
 } from './types'
 export { exportCsv, downloadCsv } from './exportCsv'
 export { exportExcel, downloadExcel } from './exportExcel'

@@ -423,4 +423,11 @@ export {
   type EditRules,
 } from './edit-rules'
 export { createUndoStack, type UndoStack, type UndoStackOptions } from './undo'
+export {
+  createAuditLog,
+  type AuditLog,
+  type AuditLogEntry,
+  type AuditLogOptions,
+  type AuditLogType,
+} from './audit-log'
 export { setCellValue } from './cell-edit'

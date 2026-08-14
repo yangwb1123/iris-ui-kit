@@ -9,6 +9,7 @@ import {
   createExpansion,
   createSelectionModel,
   createUndoStack,
+  createAuditLog,
   flattenLeafColumns,
   flattenTree,
   formatClock,
@@ -28,6 +29,8 @@ import {
   type SelectionModel,
   type TreeRow,
   type UndoStack,
+  type AuditLog,
+  type AuditLogType,
 } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { IrisInput } from '../input/Input'
@@ -62,6 +65,7 @@ import type { IrisTableProps, IrisTableProxyConfig } from './props'
 import type { IrisTableHandle } from './types'
 import { downloadCsv, exportCsv } from './exportCsv'
 import { TableChartPanel } from './ChartPanel'
+import { TableAuditPanel } from './AuditPanel'
 import { RANGE_FILL_HANDLE_STYLE, RANGE_FILL_TARGET_BG } from './styles'
 
 /* Batch AQ drag-fill helpers (module scope): the per-cell fill logic stays
@@ -108,6 +112,55 @@ function renderRangeFillHandle(
       style={RANGE_FILL_HANDLE_STYLE}
     />
   )
+}
+
+/**
+ * Light audit diff (batch AT): compare the PREVIOUS row list against the
+ * NEXT and resolve the FIRST changed row + FIRST changed cell, so each
+ * mutation commit records exactly ONE audit entry (keeps the trail readable
+ * and the complexity budget flat).
+ *
+ * Simplifications (documented): the walk is index-based — a reorder reads as
+ * a structural change at the first index whose keys differ; a row that moved
+ * but kept its key reads as a change at its old slot; only the first changed
+ * row/cell is kept, not a full cell-level patch. Structural changes (rows
+ * added/removed at the index, or key-mismatched rows) carry ONLY the rowKey
+ * (no column/old→new — the panel renders those as partial-context rows);
+ * same-key rows walk the union of own enumerable fields and record the first
+ * differing cell.
+ */
+function auditDiff<Row extends Record<string, unknown>>(
+  prev: readonly Row[],
+  next: readonly Row[],
+  resolveKey: (row: Row, index: number) => string | number,
+):
+  | { rowKey?: string | number; column?: string; oldValue?: unknown; newValue?: unknown }
+  | undefined {
+  const len = Math.max(prev.length, next.length)
+  for (let i = 0; i < len; i += 1) {
+    const a = prev[i]
+    const b = next[i]
+    if (a === b) continue
+    if (!a || !b) return { rowKey: a ? resolveKey(a, i) : resolveKey(b!, i) }
+    const ka = resolveKey(a, i)
+    const kb = resolveKey(b, i)
+    if (ka !== kb) {
+      // Structural at this index: prefer the key from the side that shrank
+      // (removed row) / grew (inserted row) — index-0 inserts report the
+      // shifted occupant instead (documented simplification).
+      return { rowKey: prev.length > next.length ? ka : kb }
+    }
+    // Same row — first differing cell across the union of fields.
+    const fields = new Set<string>()
+    Object.keys(a).forEach((f) => fields.add(f))
+    Object.keys(b).forEach((f) => fields.add(f))
+    for (const f of fields) {
+      if (a[f] !== b[f]) {
+        return { rowKey: ka, column: f, oldValue: a[f], newValue: b[f] }
+      }
+    }
+  }
+  return undefined
 }
 
 const TABLE_ROW_CSS = `
@@ -934,6 +987,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   chartPreview,
   autoRefresh,
   freshness,
+  auditLog,
   printable = false,
   seq = false,
   spanMethod,
@@ -1312,6 +1366,41 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!freshness) return
     setFreshnessAt(Date.now())
   }, [freshness, liveData])
+
+  // ── Built-in audit log (iris 独有, batch AT) ───────────────────────────
+  // A core createAuditLog keeps a bounded (200) ring of ONE entry per
+  // mutation commit. Both write-back funnels record: commitRowList (row ops,
+  // paste, fill, range clear, fnr, batch edit, undo/redo replay) diffs the
+  // PREVIOUS row list (auditRowsRef) against `next` via the module-scope
+  // auditDiff helper and pushes the first changed row/cell; commitValue
+  // (inline cell/row edits that bypass commitRowList) pushes the same diff
+  // over its computed nextList. undo/redo replay records type 'undo'/'redo'
+  // — the replay IS a user-visible change and belongs in the trail. The
+  // controller is created once (ref-once, mirroring undoStackRef) and stays
+  // inert unless the `auditLog` prop is on (auditEnabledRef gate).
+  const auditEnabledRef = React.useRef(auditLog)
+  auditEnabledRef.current = auditLog
+  const auditRef = React.useRef<AuditLog | null>(null)
+  if (auditRef.current === null) {
+    auditRef.current = createAuditLog()
+  }
+  const audit = auditRef.current
+  // Previous rows for the light diff. Kept in sync by EVERY write-back
+  // funnel (recordAudit assigns eagerly — React defers the setLiveData
+  // updaters) AND by the live-data effect below (external re-feeds
+  // re-baseline so the next commit diff doesn't read stale rows).
+  const auditRowsRef = React.useRef<Row[]>(liveData)
+  // Ref mirror for commitValue (defined above the recordAudit helper):
+  // assigned every render from the helper's definition site.
+  const recordAuditRef = React.useRef<((next: Row[], type: AuditLogType) => void) | null>(null)
+  // External re-feeds (parent `data` / proxy refetch / undo baseline restore)
+  // move liveData WITHOUT a commit — re-baseline the diff snapshot so the
+  // NEXT user commit doesn't diff against stale rows (the fresh rows become
+  // the new "before"). Commit-driven liveData changes agree with the eager
+  // ref sync inside recordAudit (both hold the committed list).
+  React.useEffect(() => {
+    auditRowsRef.current = liveData
+  }, [liveData])
 
   // Sort state managed by useTableSort hook (controlled/uncontrolled, comparator, sorted data).
   const {
@@ -1872,6 +1961,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const current = externalDataRef.current ?? []
       const nextList = setCellValue(current, rowKey, k, ctx.col.key, value)
       recordUndo(nextList)
+      // Batch AT: record ONE audit entry per inline edit commit (type
+      // 'edit') — the SAME light diff the commitRowList funnel uses, so the
+      // trail stays consistent across both write-back paths.
+      recordAuditRef.current?.(nextList, 'edit')
       if (nextList !== current) externalDataRef.current = nextList
     }
     // Batch Q: dirty write-back for editDirtyConfig (cell AND row edit modes
@@ -2202,6 +2295,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // the panel floats below it and remounts per open (state re-seeds).
   const [chartOpen, setChartOpen] = React.useState(false)
   const chartAnchorRef = React.useRef<HTMLButtonElement | null>(null)
+  // Batch AT: audit panel open state + toolbar trigger anchor (floating like
+  // the chart panel).
+  const [auditOpen, setAuditOpen] = React.useState(false)
+  const auditAnchorRef = React.useRef<HTMLButtonElement | null>(null)
   const importFileRef = React.useRef<HTMLInputElement | null>(null)
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -2638,6 +2735,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
     return (rowId?.(row, rowIndex) ?? rowIndex) as string | number
   }
 
+  // Batch AT: record ONE audit entry per mutation commit. A plain function
+  // (not a useCallback — it closes over rowKeyOf, which is declared just
+  // above, and the stable refs/controller). Exposed to commitValue (defined
+  // earlier in the body) through the recordAuditRef mirror assigned here.
+  const recordAudit = (next: Row[], type: AuditLogType): void => {
+    if (!auditEnabledRef.current) return
+    const entry = auditDiff(auditRowsRef.current, next, (r, i) => rowKeyOf(r, i))
+    if (entry) audit.push({ type, ...entry })
+    // Eager ref sync: a following commit in the SAME event must diff against
+    // the true intermediate list (React defers the setLiveData updaters).
+    auditRowsRef.current = next
+  }
+  recordAuditRef.current = recordAudit
+
   /**
    * Unified cell click: preserves the internal edit/range behavior, then fires
    * the user `onCellClick` (vxe cell-click parity) with full coordinates.
@@ -2699,13 +2810,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const onDataChangeRef = React.useRef(onDataChange)
   onDataChangeRef.current = onDataChange
   const commitRowList = React.useCallback(
-    (next: Row[]) => {
+    (next: Row[], type: AuditLogType = 'edit') => {
       recordUndo(next)
+      // Batch AT: ONE audit entry per commit — the type hint comes from the
+      // mutation site (insert/remove/paste/batch/fill/undo/redo; default
+      // 'edit' covers inline-equivalent writes like updateRow, find-replace,
+      // range clear and the Delete shortcut); rowKey + first changed cell
+      // come from the light diff against the previous rows.
+      recordAudit(next, type)
       setLiveData(next)
       externalDataRef.current = next
       onDataChangeRef.current?.(next)
     },
-    [recordUndo],
+    [recordUndo, recordAudit],
   )
   // Replay a snapshot (undo or redo) through the same write-back channel as
   // every other mutation — one commitRowList (setLiveData + onDataChange).
@@ -2715,7 +2832,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // (mirrors the removeRows/clearSelection pruning pattern); keys that
   // survive keep their selected state (selection unchanged on undo/redo).
   const applyUndoSnapshot = React.useCallback(
-    (rows: Row[] | undefined): void => {
+    (rows: Row[] | undefined, type: AuditLogType = 'undo'): void => {
       if (rows == null) return
       const before = displaySelectionRef.current
       if (selectable !== 'none' && before.length > 0) {
@@ -2731,7 +2848,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         }
       }
       restoringRef.current = true
-      commitRowList(rows)
+      commitRowList(rows, type)
       restoringRef.current = false
     },
     [commitRowList, rebaseToProp, selModel, selectable],
@@ -2739,7 +2856,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const handleRef = React.useRef<IrisTableHandle<Row> | null>(null)
   handleRef.current = {
     insertRow: (row, index) => {
-      commitRowList(insertRowInList(externalDataRef.current ?? [], rowKey, row, index))
+      commitRowList(insertRowInList(externalDataRef.current ?? [], rowKey, row, index), 'insert')
     },
     removeRow: (key) => {
       const rows = externalDataRef.current ?? []
@@ -2750,7 +2867,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           selModel.toggle(key)
         }
         pruneDirtyFor(key)
-        commitRowList(next)
+        commitRowList(next, 'remove')
       }
     },
     removeRows: (keys) => {
@@ -2775,7 +2892,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           if (selectedNow.includes(key)) selModel.toggle(key)
         }
       }
-      commitRowList(rows)
+      commitRowList(rows, 'remove')
     },
     updateRow: (key, patch) => {
       commitRowList(updateRowInList(externalDataRef.current ?? [], rowKey, key, patch))
@@ -2926,6 +3043,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // Mirror the header-click path (setCurrentColumn helper + veto guard).
       const col = leafColumns.find((c) => c.key === key)
       if (col) setCurrentColumn(col)
+    },
+    // Batch AT (iris 独有): audit trail programmatic access — a snapshot
+    // (newest-first entries) and a wipe. Both run against the ref-once
+    // controller; the seq counter never resets on clear (audit integrity).
+    getAuditLog: () => audit.list(),
+    clearAuditLog: () => {
+      audit.clear()
     },
   }
   React.useEffect(() => {
@@ -3563,7 +3687,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         const patch = k != null ? byKey.get(k as string | number) : undefined
         return patch ? { ...r, ...patch } : r
       })
-      commitRowList(next)
+      commitRowList(next, 'paste')
     },
     [rowKey, commitRowList],
   )
@@ -3596,14 +3720,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
         const prev = undoStack.undo()
         if (prev !== undefined) {
           bumpUndoTick()
-          applyUndoSnapshot(prev)
+          applyUndoSnapshot(prev, 'undo')
         }
       } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
         e.preventDefault()
         const next = undoStack.redo()
         if (next !== undefined) {
           bumpUndoTick()
-          applyUndoSnapshot(next)
+          applyUndoSnapshot(next, 'redo')
         }
       }
     }
@@ -3820,7 +3944,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         const patch = k != null ? byKey.get(k as string | number) : undefined
         return patch ? { ...r, ...patch } : r
       })
-      commitRowList(next)
+      commitRowList(next, 'fill')
       // Excel parity: the selection grows to the drag end so the filled cells
       // become part of the range.
       cellRangeCtrl.extendRange(endRow, endCol)
@@ -5072,7 +5196,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         ? { ...r, [col.key]: batchEditValue }
         : r,
     )
-    commitRowList(next)
+    commitRowList(next, 'batch')
     setBatchEditOpen(false)
   }
   // Escape / outside pointer-down close the panel (the trigger button is
@@ -5320,7 +5444,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           </div>
         </form>
       ) : null}
-      {(toolbar || views || query !== undefined || undo || chartPreview || freshness) &&
+      {(toolbar || views || query !== undefined || undo || chartPreview || freshness || auditLog) &&
       layouts?.toolbar !== 'hidden' ? (
         <div
           data-iris-table-toolbar=""
@@ -5376,7 +5500,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   const prev = undoStack.undo()
                   if (prev !== undefined) {
                     bumpUndoTick()
-                    applyUndoSnapshot(prev)
+                    applyUndoSnapshot(prev, 'undo')
                   }
                 }}
                 disabled={!undoStack.canUndo()}
@@ -5399,7 +5523,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   const next = undoStack.redo()
                   if (next !== undefined) {
                     bumpUndoTick()
-                    applyUndoSnapshot(next)
+                    applyUndoSnapshot(next, 'redo')
                   }
                 }}
                 disabled={!undoStack.canRedo()}
@@ -5919,6 +6043,25 @@ export function IrisTable<Row extends Record<string, unknown>>({
               title={t('table.chart')}
             >
               ▤
+            </button>
+          ) : null}
+          {auditLog ? (
+            <button
+              ref={auditAnchorRef}
+              type="button"
+              data-iris-audit-trigger=""
+              onClick={() => setAuditOpen((v) => !v)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: auditOpen ? 'var(--iris-foreground)' : 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+              }}
+              aria-label={t('table.audit')}
+              title={t('table.audit')}
+            >
+              ☰
             </button>
           ) : null}
           {toolbar?.buttons && toolbar.buttons.length > 0
@@ -6712,6 +6855,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
             rows={filteredData}
             columns={chartNumericColumns}
             onClose={() => setChartOpen(false)}
+            t={t}
+          />
+        ) : null}
+        {auditLog && auditOpen ? (
+          <TableAuditPanel
+            open
+            anchorRef={auditAnchorRef}
+            audit={audit}
+            onClear={() => audit.clear()}
+            onClose={() => setAuditOpen(false)}
             t={t}
           />
         ) : null}

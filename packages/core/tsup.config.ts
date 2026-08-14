@@ -11,6 +11,7 @@ export default defineConfig({
     'src/clipboard-history.ts',
     'src/fs.ts',
     'src/undo.ts',
+    'src/audit-log.ts',
   ],
   format: ['esm', 'cjs'],
   dts: true,

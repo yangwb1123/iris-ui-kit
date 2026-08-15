@@ -1577,3 +1577,63 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bw-gate.md [ok]: Review verdict: **PASS** — 核对 `batch-bw-baseline.md` 全部锚点，逐项验实现：无条件内置（无新 prop）、插入点 = 用户项 → 分布? → 摘要? → 复制值 → 清空 → 批注?；复制走 `contextCellText`（mask→formatter→String，与 cellTooltip 同源链）+ 既有三通道 `writeClipboardText`；清空 = setCellValue→commitRowList，与 Delete 快捷键逐字一致；locked/readonly no-op；onSelect 拦截 + 去重守卫；i18n +2 en/zh；4 源码文件、manifest 仅 description 变化（propCount 162/eventCount 30 不变）、vue/solid/svelte 零改动。Gate results: **Full repo gate** 180/180 tasks successful（54 cached）· audit 0 · gen:manifest 155×4 + check:manifest 通过 · comparison doc 已在 adapt 提交（line 78/292/350）。Final test counts: **core 1517/1517** · **react 2344/2344**（+12 context-quick-actions）
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bw-gate.md
+
+## 2026-08-15 15:01:51 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bx-adapt.md [ok]: Batch BX complete — committed `19919b36`: **`feat(table): grid 批 BX——列固定快捷切换（iris 独有）`** — 列头右键菜单内置项：固定左 / 取消固定。; Files changed (4 source + test + docs, 10 files): | File | Change |; Implementation highlights: - **`pinOf(col)` single throat** — controlled `pinnedColumns` map (null overrides static) → internal `pinsInternal` (unc; Verification (all ✅): - core test **1517/1517** · react typecheck **clean** · react test **2361/2361** (+17) · react lint **0 errors** (1 pre-; What is left: - Runner's pending **review/gate** stage (per the established pattern).
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bx-adapt.md
+
+## 2026-08-15 15:10:33 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bx-review.md [ok]: Verdict: FAIL — written to `docs/vxe-grid/batch-bx-review.md`: Reviewed commit `19919b36` against the BX baseline + adapt report. All gates re-run; 2 medium findings on the primary re
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bx-review.md
+
+## 2026-08-15 15:19:02 — stage 'gate' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bx-gate.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bx-gate.md
+
+## 2026-08-15 15:20:15 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-by-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-by-baseline.md
+
+## 2026-08-15 15:21:26 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bz-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bz-baseline.md
+
+## 2026-08-15 15:22:44 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ca-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ca-baseline.md
+
+## 2026-08-15 15:24:01 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cb-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cb-baseline.md
+
+## 2026-08-15 15:25:19 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cc-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cc-baseline.md
+
+## 2026-08-15 15:26:43 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cd-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cd-baseline.md
+
+## 2026-08-15 15:27:56 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ce-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ce-baseline.md
+
+## 2026-08-15 15:29:27 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cf-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cf-baseline.md
+
+## 2026-08-15 15:48:53 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-by-baseline.md [ok]: 核验摘要 (batch BY：展开状态持久化): **设计** — `persistState include` 新增 `'expandedKeys'`，4 个源触点，镜像 pageSize 特例先例：
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-by-baseline.md

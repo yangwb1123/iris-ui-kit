@@ -2641,6 +2641,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // Expandable detail rows: a leading toggle column + a full-width detail panel,
   // driven by the framework-agnostic createExpansion (multiple-open).
   const hasDetail = renderDetail !== undefined
+  // Batch BY: shared expandability probe for the persistState collector AND
+  // restore gate — mirrors `treeMode` (derived later in the flatten-tree
+  // region) so the snapshot logic can live before it. A flat table has no
+  // expansion capability: nothing is saved and a seeded snapshot is inert.
+  const expandableMode = hasDetail || getSubRows !== undefined || lazyLoad !== undefined
   const expansionRef = React.useRef<ExpansionModel | null>(null)
   if (expansionRef.current === null) {
     expansionRef.current = createExpansion({
@@ -2693,7 +2698,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
   )
   const pinOf = React.useCallback(
     (col: IrisTableColumn<Row>): 'left' | 'right' | null => {
-      if (pinsControlled) return pinnedColumns[col.key] ?? null
+      if (pinsControlled)
+        // Absent keys fall back to the column's own declaration — only an
+        // EXPLICIT `null` entry overrides a static `col.pinned` pin (so
+        // `pinnedColumns={{}}` never unpins statically-declared pins).
+        return col.key in pinnedColumns ? pinnedColumns[col.key] : (col.pinned ?? null)
       if (pinsInternal[col.key] !== undefined) return pinsInternal[col.key]
       return col.pinned ?? null
     },
@@ -2727,6 +2736,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (onColumnOrderChange) s.columnOrder = columnOrder
     if (onColumnWidthsChange) s.columnWidths = columnWidths
     if (proxy) s.pageSize = proxyState.params.pageSize
+    // Batch BY: expanded keys (detail panels + tree carets) join the snapshot
+    // only when restorable — an expandable table (renderDetail or tree mode)
+    // WITH the callback (the restore gate below). pageSize's no-proxy skip
+    // is the same precedent: what can't be restored is never saved.
+    if (onExpandedRowsChange && expandableMode) s.expandedKeys = expandedKeys
     // Batch AJ: the query string joins the snapshot ONLY for the named-views
     // collector (gated on `views`) — persistState's save loop iterates
     // IrisTablePersistPiece and never sees it, so the batch-AG path stays
@@ -2756,6 +2770,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
     onColumnOrderChange,
     onColumnWidthsChange,
     query,
+    onExpandedRowsChange,
+    expandableMode,
+    expandedKeys,
   ])
   const restorePersistPiece = React.useCallback(
     (piece: IrisTablePersistPiece, value: unknown): boolean => {
@@ -2789,6 +2806,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
           if (!onColumnWidthsChange || typeof value !== 'object' || value === null) return false
           onColumnWidthsChange(value as IrisTableColumnWidths)
           return true
+        case 'expandedKeys':
+          // Batch BY: FULL-SET restore — a snapshot is the complete expanded
+          // set, so merge (union-only) could never collapse; `set` replaces
+          // wholesale. The model commit fires its onChange →
+          // `onExpandedRowsChange(keys)` — the documented restore channel
+          // (expansion has no controlled prop; the callback is the
+          // parent-owned piece, pageSize's onPageChange precedent). Row keys
+          // are stringified at the model boundary, so raw numeric keys
+          // coerce here. A flat table makes the piece inert (collector never
+          // saves it — a seeded snapshot must not replay either).
+          if (!onExpandedRowsChange || !Array.isArray(value)) return false
+          if (!expandableMode) return false
+          expansion.set(value.map((k) => String(k)))
+          return true
         case 'pageSize':
           // Applied by the proxy-creation effect before the first query;
           // eligible only when a proxy with onPageChange exists (documented).
@@ -2807,6 +2838,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
       onColumnOrderChange,
       onColumnWidthsChange,
       proxyConfig,
+      expansion,
+      expandableMode,
+      onExpandedRowsChange,
     ],
   )
   // Batch AH (views): apply ONE stored snapshot mid-session through the same
@@ -2837,6 +2871,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
         restorePersistPiece('columnOrder', snapshot.columnOrder)
       if (snapshot.columnWidths !== undefined)
         restorePersistPiece('columnWidths', snapshot.columnWidths)
+      // Batch BY: expanded keys restore through the same gate as mount
+      // (onExpandedRowsChange + expandable) — the shared collector now
+      // captures them, so a view apply must replay them symmetrically.
+      if (snapshot.expandedKeys !== undefined)
+        restorePersistPiece('expandedKeys', snapshot.expandedKeys)
       // `restorePersistPiece` only gates pageSize eligibility (the actual
       // restore lives in the proxy-creation effect); the reproduction stays
       // here so a view apply issues exactly one request.

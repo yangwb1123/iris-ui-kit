@@ -55,6 +55,7 @@ export type IrisTablePersistPiece =
   | 'columnOrder'
   | 'columnWidths'
   | 'pageSize'
+  | 'expandedKeys'
 
 /** One persisted state snapshot (batch AG): the pieces `persistState` loads
  * and saves, keyed by piece name — a piece appears only when defined + included. */
@@ -67,6 +68,17 @@ export interface IrisTablePersistedState {
   columnOrder?: string[]
   columnWidths?: IrisTableColumnWidths
   pageSize?: number
+  /** Batch BY: expanded row keys (detail panels + tree carets) captured by
+   * the shared collector when `onExpandedRowsChange` is set and the table
+   * actually expands (renderDetail or tree mode); restored through the
+   * expansion model — `expansion.set` commits and replays
+   * `onExpandedRowsChange(keys)` (expansion has no controlled prop, so the
+   * callback is the parent-owned channel). Row keys are STRINGIFIED at the
+   * model boundary, so the stored array is always strings; the snapshot
+   * accepts raw keys and the restore coerces them. Stale keys (rows not
+   * loaded yet) are fail-inert — the row simply renders expanded when it
+   * arrives. */
+  expandedKeys?: Array<string | number>
   /** Batch AJ: natural-language query captured by the named-views collector
    * when `query` is set; restored FIRST via `onQueryChange` on view apply
    * (persistState path stays byte-identical; legacy views load unchanged). */

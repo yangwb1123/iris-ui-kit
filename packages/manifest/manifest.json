@@ -36428,12 +36428,13 @@
           "name": "pinnedColumns",
           "type": "Record<string, 'left' | 'right' | null>",
           "optional": true,
-          "description": "`'right'` / `null` (unpinned). When set, the map is the ONLY read source for the rendered pin state — a `null` entry overrides a static"
+          "description": "Controlled per-column pin state (batch BX): column key → `'left'` / `'right'` / `null` (unpinned). When set, the map is the ONLY read source for the rendered pin state — an explicit `null` entry overrides a static `col.pinned` declaration (controlled-null-wins); absent keys fall back to the column's own declaration, so `{}` never unpins static pins."
         },
         {
           "name": "onColumnPinnedChange",
           "type": "(key: string, side: 'left' | 'right' | null) => void",
-          "optional": true
+          "optional": true,
+          "description": "Fired on every pin-menu action with the column key and the next side (`null` = unpin), in both controlled and uncontrolled modes (lift-ready)."
         },
         {
           "name": "onRowClick",
@@ -36654,7 +36655,7 @@
           "name": "onExpandedRowsChange",
           "type": "(keys: Array<string | number>) => void",
           "optional": true,
-          "description": "Notified with the expanded row keys whenever they change."
+          "description": "Notified with the expanded row keys whenever they change (batch BY: also the restore channel for `persistState`'s `expandedKeys` piece — the model commit replays this callback)."
         },
         {
           "name": "onExpandChange",
@@ -36737,7 +36738,7 @@
           "name": "persistState",
           "type": "import('./types').IrisTablePersistConfig",
           "optional": true,
-          "description": "Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'."
+          "description": "Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize / expandedKeys on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); expandedKeys (batch BY) needs onExpandedRowsChange + an expandable table (renderDetail or tree) — restored through the expansion model, which replays the callback (full-set replace); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'."
         },
         {
           "name": "views",
@@ -37421,12 +37422,13 @@
               "name": "pinnedColumns",
               "type": "Record<string, 'left' | 'right' | null>",
               "optional": true,
-              "description": "`'right'` / `null` (unpinned). When set, the map is the ONLY read source for the rendered pin state — a `null` entry overrides a static"
+              "description": "Controlled per-column pin state (batch BX): column key → `'left'` / `'right'` / `null` (unpinned). When set, the map is the ONLY read source for the rendered pin state — an explicit `null` entry overrides a static `col.pinned` declaration (controlled-null-wins); absent keys fall back to the column's own declaration, so `{}` never unpins static pins."
             },
             {
               "name": "onColumnPinnedChange",
               "type": "(key: string, side: 'left' | 'right' | null) => void",
-              "optional": true
+              "optional": true,
+              "description": "Fired on every pin-menu action with the column key and the next side (`null` = unpin), in both controlled and uncontrolled modes (lift-ready)."
             },
             {
               "name": "onRowClick",
@@ -37647,7 +37649,7 @@
               "name": "onExpandedRowsChange",
               "type": "(keys: Array<string | number>) => void",
               "optional": true,
-              "description": "Notified with the expanded row keys whenever they change."
+              "description": "Notified with the expanded row keys whenever they change (batch BY: also the restore channel for `persistState`'s `expandedKeys` piece — the model commit replays this callback)."
             },
             {
               "name": "onExpandChange",
@@ -37730,7 +37732,7 @@
               "name": "persistState",
               "type": "import('./types').IrisTablePersistConfig",
               "optional": true,
-              "description": "Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'."
+              "description": "Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize / expandedKeys on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); expandedKeys (batch BY) needs onExpandedRowsChange + an expandable table (renderDetail or tree) — restored through the expansion model, which replays the callback (full-set replace); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'."
             },
             {
               "name": "views",

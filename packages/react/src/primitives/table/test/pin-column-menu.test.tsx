@@ -192,6 +192,62 @@ describe('@iris-ui-kit/react IrisTable header pin menu (batch BX, iris 独有)',
     expect(header('name').style.position).toBe('relative')
   })
 
+  it('controlled `{}` falls back to static pins — absent keys never unpin (BX regression)', () => {
+    const pinnedCols: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name', pinned: 'left', width: 100 },
+      { key: 'age', title: 'Age' },
+    ]
+    const first = render(
+      <IrisTable columns={pinnedCols} data={rows} rowKey="id" columnPinMenu pinnedColumns={{}} />,
+    )
+    // `{}` is an empty OVERRIDE map — every column falls back to its own
+    // declaration, so the static left pin still renders sticky.
+    expect(header('name').getAttribute('data-iris-table-pinned')).toBe('left')
+    expect(header('name').style.position).toBe('sticky')
+    // ...and the menu offers Unpin for the statically-pinned column.
+    openHeaderMenu('name')
+    expect(menuItems().map((i) => i.textContent)).toEqual(['Unpin'])
+    first.unmount()
+    // Explicit null in the SAME map still unpins (controlled-null-wins).
+    render(
+      <IrisTable columns={pinnedCols} data={rows} rowKey="id" pinnedColumns={{ name: null }} />,
+    )
+    expect(header('name').getAttribute('data-iris-table-pinned')).toBeNull()
+  })
+
+  it('static-pinned grouped leaf renders pinned (group cells stay unpinned)', () => {
+    const groupedCols: IrisTableColumn<Row>[] = [
+      {
+        key: 'person',
+        title: 'Person',
+        children: [
+          { key: 'name', title: 'Name', pinned: 'left', width: 100 },
+          { key: 'age', title: 'Age' },
+        ],
+      },
+      { key: 'extra', title: 'Extra' },
+    ]
+    render(<IrisTable columns={groupedCols} data={rows} rowKey="id" />)
+    expect(header('name').getAttribute('data-iris-table-pinned')).toBe('left')
+    expect(header('name').style.position).toBe('sticky')
+    expect(header('person').getAttribute('data-iris-table-pinned')).toBeNull()
+    expect(cell(1, 'name').getAttribute('data-iris-table-pinned')).toBe('left')
+  })
+
+  it('multiple pinned columns accumulate sticky offsets (left edge order)', () => {
+    const pinnedCols: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name', pinned: 'left', width: 100 },
+      { key: 'age', title: 'Age', pinned: 'left', width: 80 },
+      { key: 'extra', title: 'Extra', width: 200 },
+    ]
+    render(<IrisTable columns={pinnedCols} data={rows} rowKey="id" />)
+    expect(header('name').style.left).toBe('0px')
+    expect(header('age').style.left).toBe('100px')
+    expect(header('name').style.position).toBe('sticky')
+    expect(header('age').style.position).toBe('sticky')
+    expect(header('extra').getAttribute('data-iris-table-pinned')).toBeNull()
+  })
+
   it('columnPinMenu off (default): right-clicking a header opens nothing', () => {
     render(<IrisTable columns={cols} data={rows} rowKey="id" />)
     fireEvent.contextMenu(header('name'), { clientX: 120, clientY: 40 })

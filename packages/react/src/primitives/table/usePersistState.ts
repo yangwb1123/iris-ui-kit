@@ -34,6 +34,7 @@ const ALL_PIECES: readonly IrisTablePersistPiece[] = [
   'columnOrder',
   'columnWidths',
   'pageSize',
+  'expandedKeys',
 ]
 
 /** Default storage key (vxe has no equivalent — iris 独有 naming). */

@@ -219,13 +219,18 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * Additive — default off.
    */
   columnPinMenu?: boolean
-  /** Controlled per-column pin state (batch BX): column key → `'left'` /
+  /**
+   * Controlled per-column pin state (batch BX): column key → `'left'` /
    * `'right'` / `null` (unpinned). When set, the map is the ONLY read source
-   * for the rendered pin state — a `null` entry overrides a static
-   * `col.pinned` declaration (controlled-null-wins). */
+   * for the rendered pin state — an explicit `null` entry overrides a static
+   * `col.pinned` declaration (controlled-null-wins); absent keys fall back to
+   * the column's own declaration, so `{}` never unpins static pins.
+   */
   pinnedColumns?: Record<string, 'left' | 'right' | null>
-  /** Fired on every pin-menu action with the column key and the next side
-   * (`null` = unpin), in both controlled and uncontrolled modes (lift-ready). */
+  /**
+   * Fired on every pin-menu action with the column key and the next side
+   * (`null` = unpin), in both controlled and uncontrolled modes (lift-ready).
+   */
   onColumnPinnedChange?: (key: string, side: 'left' | 'right' | null) => void
   /** Called when a data row is clicked. Interactive child controls stop propagation. */
   onRowClick?: (row: Row, rowIndex: number) => void
@@ -390,7 +395,7 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * expandAll parity). One-shot: seeds the expansion model with all tree keys
    * on the first data arrival (proxy pages load async). Default false. */
   expandAll?: boolean
-  /** Notified with the expanded row keys whenever they change. */
+  /** Notified with the expanded row keys whenever they change (batch BY: also the restore channel for `persistState`'s `expandedKeys` piece — the model commit replays this callback). */
   onExpandedRowsChange?: (keys: Array<string | number>) => void
   /** Detail expand toggle (vxe toggle-row-expand parity): `expanded` is the NEW state after the toggle. */
   onExpandChange?: (row: Row, expanded: boolean) => void
@@ -450,7 +455,7 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   virtualScroll?: IrisTableVirtualOptions
   /** Per-row height (batch BN, iris 独有 — vxe row-height is a fixed config value). Number → uniform height (overrides the default AND `virtualScroll.itemHeight` in virtual mode); `(index) => number` → per-row heights — in virtual mode the fn feeds the variable-height virtualizer (virtual PLAN index, prefix-sum offsets, like `virtualScroll.itemHeight`), otherwise each body row gets its inline height (bodyData index). `rowStyle` stays the per-row escape hatch (it wins). */
   rowHeight?: number | ((index: number) => number)
-  /** Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'. */
+  /** Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize / expandedKeys on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); expandedKeys (batch BY) needs onExpandedRowsChange + an expandable table (renderDetail or tree) — restored through the expansion model, which replays the callback (full-set replace); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'. */
   persistState?: import('./types').IrisTablePersistConfig
   /** Named view presets (batch AH, iris 独有) — toolbar select of saved snapshots. */
   views?: import('./types').IrisTableViewConfig

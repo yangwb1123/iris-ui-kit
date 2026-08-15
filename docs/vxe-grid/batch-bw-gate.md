@@ -18,5 +18,5 @@ Gate stage complete for grid 批 BW（右键快捷操作，iris 独有）.
 
 ## Commit
 
-- **`a1177355`** — `feat(table): grid 批 BW——单元格右键快捷操作（iris 独有）` (gate-stage docs delta: DECISIONS stage entries + baseline/adapt/review/gate reports; source was already committed at `f1252651`)
+- **`13132fea`** — `feat(table): grid 批 BW——单元格右键快捷操作（iris 独有）` (gate-stage docs delta: DECISIONS stage entries + baseline/adapt/review/gate reports; source was already committed at `f1252651`)
 - Working tree clean; `.vinxi` excluded per instruction.

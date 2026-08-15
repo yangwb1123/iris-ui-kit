@@ -397,6 +397,17 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * the action keeps its default. Modifiers match exactly: `Ctrl+Shift+Z`
    * redoes, `Alt+Ctrl+Z` is inert. Additive — default off (defaults unchanged). */
   keymap?: Partial<Record<IrisTableKeyAction, string>>
+  /** Batch BH (iris 独有 — vxe group-config has no collapse): controlled set of
+   * collapsed group keys. Keys are `String(cell value)` of the `groupBy` column —
+   * the same identity `data-iris-group-key` carries. When set, the rendered body
+   * only changes after the parent writes the prop back (no optimistic flip).
+   * Inert without `groupBy` / in tree mode. */
+  groupCollapsed?: Array<string | number>
+  /** Default collapsed group keys (uncontrolled mode). */
+  defaultGroupCollapsed?: Array<string | number>
+  /** Fired on every group-header toggle with the next collapsed keys, in BOTH
+   * controlled and uncontrolled modes (lift-ready). */
+  onGroupCollapseChange?: (next: Array<string | number>) => void
   /** Enable virtual scrolling for the body. */
   virtualScroll?: IrisTableVirtualOptions
   /** Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'. */

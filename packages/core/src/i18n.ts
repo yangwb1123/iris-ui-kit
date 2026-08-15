@@ -104,6 +104,8 @@ export const defaultMessages: I18nMessages = {
   'table.selectionSummary': '{count} selected',
   'table.selectionSummarySum': 'sum',
   'table.clearSelection': 'Clear selection',
+  'table.groupCollapse': 'Collapse group',
+  'table.groupExpand': 'Expand group',
   'table.resizeColumn': 'Resize {column}',
   'table.empty': 'No data to display',
   'table.loading': 'Loading…',

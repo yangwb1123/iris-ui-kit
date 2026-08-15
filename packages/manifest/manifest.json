@@ -36664,6 +36664,23 @@
           "description": "built-in shortcut keys. ONE key spec string per action (`Modifier+Key`, case-insensitive; `Ctrl`/`Cmd`/`Meta` share one ctrl-or-meta flag — `Ctrl+C` matches Ctrl OR Cmd). Actions: `edit` (default F2) / `clear` (Delete, Backspace) need `tableShortcuts`; `undo` (Ctrl+Z) / `redo` (Ctrl+Y, Ctrl+Shift+Z) need `undo`; `copy` (Ctrl+C) / `paste` (Ctrl+V) need `clipConfig`; `fill` (Ctrl+D — one-step drag-down) needs `rangeFill` + a live range; `query` (Ctrl+K — focuses the query input) needs the controlled `query`. An override REPLACES that action's bindings wholesale (aliases included); invalid specs (`''` / `'Meta'` / `'Ctrl+'` …) are dropped fail-closed — the action keeps its default. Modifiers match exactly: `Ctrl+Shift+Z`"
         },
         {
+          "name": "groupCollapsed",
+          "type": "Array<string | number>",
+          "optional": true,
+          "description": "collapsed group keys. Keys are `String(cell value)` of the `groupBy` column — the same identity `data-iris-group-key` carries. When set, the rendered body only changes after the parent writes the prop back (no optimistic flip)."
+        },
+        {
+          "name": "defaultGroupCollapsed",
+          "type": "Array<string | number>",
+          "optional": true,
+          "description": "Default collapsed group keys (uncontrolled mode)."
+        },
+        {
+          "name": "onGroupCollapseChange",
+          "type": "(next: Array<string | number>) => void",
+          "optional": true
+        },
+        {
           "name": "virtualScroll",
           "type": "IrisTableVirtualOptions",
           "optional": true,
@@ -37564,6 +37581,23 @@
               "description": "built-in shortcut keys. ONE key spec string per action (`Modifier+Key`, case-insensitive; `Ctrl`/`Cmd`/`Meta` share one ctrl-or-meta flag — `Ctrl+C` matches Ctrl OR Cmd). Actions: `edit` (default F2) / `clear` (Delete, Backspace) need `tableShortcuts`; `undo` (Ctrl+Z) / `redo` (Ctrl+Y, Ctrl+Shift+Z) need `undo`; `copy` (Ctrl+C) / `paste` (Ctrl+V) need `clipConfig`; `fill` (Ctrl+D — one-step drag-down) needs `rangeFill` + a live range; `query` (Ctrl+K — focuses the query input) needs the controlled `query`. An override REPLACES that action's bindings wholesale (aliases included); invalid specs (`''` / `'Meta'` / `'Ctrl+'` …) are dropped fail-closed — the action keeps its default. Modifiers match exactly: `Ctrl+Shift+Z`"
             },
             {
+              "name": "groupCollapsed",
+              "type": "Array<string | number>",
+              "optional": true,
+              "description": "collapsed group keys. Keys are `String(cell value)` of the `groupBy` column — the same identity `data-iris-group-key` carries. When set, the rendered body only changes after the parent writes the prop back (no optimistic flip)."
+            },
+            {
+              "name": "defaultGroupCollapsed",
+              "type": "Array<string | number>",
+              "optional": true,
+              "description": "Default collapsed group keys (uncontrolled mode)."
+            },
+            {
+              "name": "onGroupCollapseChange",
+              "type": "(next: Array<string | number>) => void",
+              "optional": true
+            },
+            {
               "name": "virtualScroll",
               "type": "IrisTableVirtualOptions",
               "optional": true,
@@ -37915,6 +37949,7 @@
             "onExpandedRowsChange",
             "onFilterValuesChange",
             "onFiltersChange",
+            "onGroupCollapseChange",
             "onHeaderClick",
             "onMultiSortChange",
             "onQueryChange",
@@ -38964,6 +38999,7 @@
         "onExpandedRowsChange",
         "onExpandChange",
         "onTreeExpandChange",
+        "onGroupCollapseChange",
         "onActiveViewChange",
         "onQueryChange",
         "onRetry",
@@ -38976,8 +39012,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 149,
-        "eventCount": 28
+        "propCount": 152,
+        "eventCount": 29
       }
     },
     {

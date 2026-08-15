@@ -1410,6 +1410,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   keyboardNavigation = false,
   tableShortcuts = false,
   keymap,
+  groupCollapsed,
+  defaultGroupCollapsed,
+  onGroupCollapseChange,
   cellRange = false,
   rangeFill = false,
   clipConfig,
@@ -3931,6 +3934,31 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // occupies a single itemHeight slot — content taller than the slot scrolls
     // INSIDE the detail cell, so the virtualized body stays uniform-height.
     | { kind: 'detail'; row: Row; rowIndex: number }
+  // Batch BH (iris 独有): group-header collapse state. Uncontrolled: an
+  // internal Set seeded from `defaultGroupCollapsed`. Controlled: derived from
+  // the `groupCollapsed` prop with NO optimistic flip — the rendered body only
+  // changes when the parent writes the prop back (mirrors the selection
+  // controlled pattern). Group keys are `String(cell value)` of the `groupBy`
+  // column — the same identity `data-iris-group-key` carries, so stale keys
+  // are inert no-ops. `toggleGroupCollapse` fires `onGroupCollapseChange` with
+  // the NEXT set in both modes (lift-ready).
+  const [collapsedState, setCollapsedState] = React.useState<Set<string>>(
+    () => new Set((defaultGroupCollapsed ?? []).map((key) => String(key))),
+  )
+  const collapsedSet = React.useMemo(
+    () =>
+      groupCollapsed !== undefined
+        ? new Set(groupCollapsed.map((key) => String(key)))
+        : collapsedState,
+    [groupCollapsed, collapsedState],
+  )
+  const toggleGroupCollapse = (groupKey: string): void => {
+    const next = new Set(collapsedSet)
+    if (next.has(groupKey)) next.delete(groupKey)
+    else next.add(groupKey)
+    if (groupCollapsed === undefined) setCollapsedState(next)
+    onGroupCollapseChange?.([...next])
+  }
   const groupCol = leafColumns.find((c) => c.groupBy)
   const groupPlan = React.useMemo<BodyPlanEntry[] | null>(() => {
     if (!groupCol || treeMode) return null
@@ -3941,11 +3969,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const hasSummary = leafColumns.some((c) => c.summary)
     for (const g of groups) {
       plan.push({ kind: 'group-header', groupKey: g.key, count: g.rows.length })
+      // Collapsed (batch BH): hide the group's rows AND its per-group summary;
+      // the header and its FULL count stay. Skipped rows keep their original
+      // bodyData indices, so seq/striped/span/checkMethod are untouched.
+      if (collapsedSet.has(g.key)) continue
       for (const row of g.rows) plan.push({ kind: 'row', row, rowIndex: indexOf.get(row) ?? 0 })
       if (hasSummary) plan.push({ kind: 'group-summary', groupKey: g.key, rows: g.rows })
     }
     return plan
-  }, [groupCol, bodyData, treeMode, leafColumns])
+  }, [groupCol, bodyData, treeMode, leafColumns, collapsedSet])
 
   // expandAll parity (vxe expand-config.expandAll — one-shot at init): seed the
   // expansion model with every tree key that HAS children, walked from the top
@@ -5778,52 +5810,83 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
 
   // Batch-M group header row (vxe group-config parity): spans every grid
-  // track (`gridColumn: 1 / -1`), shows the group value + row count. In the
-  // virtual path `extraStyle` fills the fixed-height slot.
+  // track (`gridColumn: 1 / -1`), shows the group value + row count. Batch BH
+  // (iris 独有): a native `data-iris-group-toggle` button (▸/▾) collapses the
+  // group — the header keeps its FULL count and `data-iris-group-collapsed`
+  // marks the collapsed state; rows + per-group summary drop out of the plan.
+  // In the virtual path `extraStyle` fills the fixed-height slot.
   const renderGroupHeader = (
     entry: { groupKey: string; count: number },
     extraStyle?: React.CSSProperties,
-  ): React.ReactElement => (
-    <div
-      key={`group:${entry.groupKey}`}
-      role="row"
-      data-iris-group-row=""
-      data-iris-group-key={entry.groupKey}
-      style={{
-        display: 'grid',
-        gridTemplateColumns,
-        background: 'var(--iris-surface)',
-        borderBottom: borderStyle,
-        fontWeight: 600,
-        ...extraStyle,
-      }}
-    >
+  ): React.ReactElement => {
+    const collapsed = collapsedSet.has(entry.groupKey)
+    return (
       <div
-        role="cell"
-        data-iris-group-cell=""
+        key={`group:${entry.groupKey}`}
+        role="row"
+        data-iris-group-row=""
+        data-iris-group-key={entry.groupKey}
+        data-iris-group-collapsed={collapsed ? 'true' : undefined}
         style={{
-          gridColumn: '1 / -1',
-          padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--iris-space-xs, 8px)',
-          fontSize: 'var(--iris-font-size-sm, 13px)',
-          color: 'var(--iris-foreground)',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
+          display: 'grid',
+          gridTemplateColumns,
+          background: 'var(--iris-surface)',
+          borderBottom: borderStyle,
+          fontWeight: 600,
+          ...extraStyle,
         }}
       >
-        <span data-iris-group-value="">{entry.groupKey}</span>
-        <span
-          data-iris-group-count=""
-          style={{ color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-xs, 12px)' }}
+        <div
+          role="cell"
+          data-iris-group-cell=""
+          style={{
+            gridColumn: '1 / -1',
+            padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--iris-space-xs, 8px)',
+            fontSize: 'var(--iris-font-size-sm, 13px)',
+            color: 'var(--iris-foreground)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
         >
-          ({entry.count})
-        </span>
+          <button
+            type="button"
+            data-iris-group-toggle=""
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? t('table.groupExpand') : t('table.groupCollapse')}
+            onClick={() => toggleGroupCollapse(entry.groupKey)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 'var(--iris-space-md, 16px)',
+              height: 'var(--iris-space-md, 16px)',
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--iris-muted)',
+              cursor: 'pointer',
+              fontSize: 'var(--iris-font-size-xs, 12px)',
+              lineHeight: 1,
+              flexShrink: 0,
+            }}
+          >
+            {collapsed ? '▸' : '▾'}
+          </button>
+          <span data-iris-group-value="">{entry.groupKey}</span>
+          <span
+            data-iris-group-count=""
+            style={{ color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-xs, 12px)' }}
+          >
+            ({entry.count})
+          </span>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   // One body entry (data row or its detail wrap), grouped or not: keeps the
   // row's ORIGINAL bodyData index so seq/striped/span/checkMethod semantics

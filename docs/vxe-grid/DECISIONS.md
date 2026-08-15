@@ -1033,3 +1033,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ax-review.md [ok]: Summary: **Verification (all at commit `4e3e1858`):**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ax-review.md
+
+## 2026-08-14 18:05:46 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ax-gate.md [ok]: Summary: **Verdict**: PASS with 3 non-blocking findings → applied all fixes before gating:; Full repo gate: | Check | Result |; Final test counts: - **core: 1417** (91 files); Commits: ```
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ax-gate.md

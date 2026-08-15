@@ -1417,3 +1417,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bp-baseline.md [ok]: 核验摘要（每个锚点对当前代码）: **设计**：`copyFormat?: 'tsv' | 'csv' | 'html'` 作为 `clipConfig`（props.ts:466，现为 `{ copy?: boolean; paste?: boolean }`）内联类型新
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bp-baseline.md
+
+## 2026-08-15 05:08:09 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bp-adapt.md [ok]: 批 BP 完成报告 — 单元格复制格式 `copyFormat`（iris 独有）: **实现**（按 baseline 方案零偏差，纯 additive、core 零改动、react-only）：
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bp-adapt.md
+
+## 2026-08-15 05:13:25 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bp-review.md [ok]: 结论：**PASS**（2 条 LOW 非阻塞发现）: **实测全部通过：**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bp-review.md

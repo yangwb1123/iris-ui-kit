@@ -1317,3 +1317,28 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bk-review.md [ok]: What was verified (all actually run): | Check | Result |; Spec correctness (vs baseline): All items confirmed: location/signature/seed-42/`mulberry32`/row-major draws, all 6 kind semantics, all 6 guards, barrel; Findings (1 LOW + 2 INFO — none violate the spec's enumerated contract): 1. **LOW** — `generate-rows.ts:127` `intBetween`: non-integer number bounds violate the module's own "[min,max]" invaria
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bk-review.md
+
+## 2026-08-15 03:19:43 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bk-gate.md [ok]: Verdict: PASS (1 LOW / 2 INFO, 0 blockers) → gate executed, committed: - **LOW (`intBetween` non-integer bounds)** — fixed: `boundsOf` clamps fractional bounds to enclosing integer range (ceil min / floor max; no-integer range pins to floor(max)); integer-bound behavior byte-unchanged (seed-42 determinism preserved) + 2 regression tests. Gate results (all run): turbo test/typecheck/lint/build **180/180** (one transient ssr-nuxt Nuxt manifest race on first run — clean standalone/rerun), audit 0, gen:manifest + check:manifest up to date 155×4; core 1505/1505 (96 files), react 2194/2194, vue 1531, solid 974+34, svelte 916+31; comparison doc updated (fractional clamp + 30 tests + review-fix note, core 1503→1505). Commit: **`8b6646ba`** — `feat(table): grid 批 BK——测试数据生成（iris 独有）` (8 files, +172/−46; pre-commit prettier/filesize/budget hooks passed)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bk-gate.md
+
+## 2026-08-15 03:19:58 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bk-gate.md [ok]: Report: **Verdict: PASS** (1 LOW / 2 INFO, 0 blockers) → gate executed and committed.; Review LOW fix applied (with review's blessing): - **`boundsOf`** in `packages/core/src/generate-rows.ts`: fractional bounds now clamp to the enclosing integer range (`M; Gate results (all actually run): | Check | Result |; Docs: - `docs/vxe-grid-comparison.md`(iris 独有 section):`generateRows` row gains the fractional-bound clamp semantics + revie; Commit: **`8b6646ba`** — `feat(table): grid 批 BK——测试数据生成（iris 独有）` — 8 files, +172/−46 (pre-commit prettier/filesize/budget hook
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bk-gate.md
+
+## 2026-08-15 03:24:28 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bl-baseline.md [ok]: What's in the baseline: **Exact design** (every anchor verified against current code):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bl-baseline.md
+
+## 2026-08-15 03:36:23 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bl-adapt.md [ok]: Report — 性能面板 `perfStats`（iris 独有）: **Files changed** (4 new + 9 edits, per baseline file map):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bl-adapt.md
+
+## 2026-08-15 03:39:02 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bl-review.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bl-review.md

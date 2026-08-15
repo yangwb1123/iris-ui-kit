@@ -963,3 +963,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-au-gate.md [ok]: Verdict: `docs/vxe-grid/batch-au-review.md` = **PASS** (2 low / 4 info findings, none blocking). AU code itself was already commi; Gate results: | Check | Result |; Final test counts (fresh `--force` run, 798 files): - **core:** 1396 · **react:** 2027 · **vue:** 1531 · **solid:** 1008 · **svelte:** 947; Commit: ```
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-au-gate.md
+
+## 2026-08-14 16:12:57 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-av-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-av-baseline.md
+
+## 2026-08-14 16:40:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-av-adapt.md [ok]: Report — batch AV (spreadsheet grid keyboard) ✅: **Files changed (1 source + 1 new test + 2 docs; manifest no diff)**: `packages/react/.../table/Table.tsx` (module-scope `nextRowMajorCell` + `handleGridKey` extended for Tab/Shift+Tab/Enter + virtual PageUp/PageDown viewport scroll + `pendingGridFocusRef` + frame-poll layout effect; `type GridCell` import) · `packages/react/.../table/keyboard-extra.test.tsx` (**new**, 7 tests, 228 lines) · `apps/docs/components.md` (keyboardNavigation prop row = full key map) · `docs/vxe-grid-comparison.md` (批 AV batch row + 构建状态 + test counts) · manifest regenerated (no API change → no diff). Design decisions: Tab = row-major `nextRowMajorCell` no-wrap clamp (fiat F1); Enter = ArrowDown alias; editing Tab path (batch J) untouched via `data-grid-row` early-return; virtual PageUp/PageDown scroll the `data-iris-virtual-scroll` viewport ±10×itemHeight (root overflow:hidden in pure-virtual — viewport IS the body scroller), non-virtual scrolls root ±10×measured row height; virtual focus lands via rAF-poll layout effect (the window re-renders inside IrisVirtualScroll child — a Table effect alone never re-runs; stale pending dropped). Verification: react typecheck clean · react test **2034 passed** (+7, 0 regressions) · lint **0 errors** (1 pre-existing IrisTable complexity warning) · spec script **0 violations** (1412 files) · prettier clean · gen:manifest 155×4 no diff. What is left: vue/solid/svelte wiring (core unchanged — adapter-only enhancement); review/gate stages per workflow.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-av-adapt.md

@@ -24,6 +24,7 @@ import {
   type CellRange,
   type CellRangeController,
   type ExpansionModel,
+  type GridCell,
   type GridNavKey,
   type ParsedTableQuery,
   type SelectionModel,
@@ -882,6 +883,24 @@ function mergeQueryIntoFilters(
     if (values.length > 0) next[key] = values.join(',')
   }
   return next
+}
+
+/**
+ * Batch AV: row-major Tab navigation (spreadsheet parity). From `current`,
+ * step ±1 cell in row-major order (`(r, c)` → `(r, c+1)` → `(r+1, 0)` …),
+ * stopping at the grid bounds — NO wrap, so Tab from the last cell stays put
+ * instead of silently moving focus off the table (fiat F1). Shared by
+ * Tab / Shift+Tab in the grid keyboard handler.
+ */
+function nextRowMajorCell(
+  current: GridCell,
+  dir: 1 | -1,
+  rowCount: number,
+  colCount: number,
+): GridCell {
+  const index = current.row * colCount + current.col + dir
+  if (index < 0 || index >= rowCount * colCount) return current
+  return { row: Math.floor(index / colCount), col: index % colCount }
 }
 
 /**
@@ -3528,6 +3547,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   // Grid keyboard navigation (opt-in): roving cell focus over the data cells.
   const [focusedCell, setFocusedCell] = React.useState<{ row: number; col: number } | null>(null)
+  // Batch AV: a virtual PageUp/PageDown target row is often outside the
+  // rendered window, so `querySelector` no-ops until the scroll (below)
+  // re-renders the window — the follow-up layout effect re-arms the focus.
+  const pendingGridFocusRef = React.useRef<GridCell | null>(null)
   const GRID_NAV_KEYS = new Set([
     'ArrowUp',
     'ArrowDown',
@@ -3539,24 +3562,98 @@ export function IrisTable<Row extends Record<string, unknown>>({
     'PageDown',
   ])
   const handleGridKey = (e: React.KeyboardEvent<HTMLDivElement>): void => {
-    if (!keyboardNavigation || !GRID_NAV_KEYS.has(e.key)) return
-    // Only navigate from a grid cell — never hijack arrows inside an editing
-    // cell's <input> (which carries no data-grid-row).
+    if (!keyboardNavigation) return
+    // Only navigate from a grid cell — never hijack keys inside an editing
+    // cell's <input> (which carries no data-grid-row). This keeps the batch J
+    // editing Tab path (commit + move to the next editable column) untouched.
     const target = e.target as HTMLElement
     if (target.dataset.gridRow === undefined) return
-    e.preventDefault()
     const current = focusedCell ?? { row: 0, col: 0 }
-    const next = nextGridCell(current, e.key as GridNavKey, {
+    const navOptions = {
       rowCount: bodyData.length,
       colCount: leafColumns.length,
       pageSize: 10,
-    })
+    }
+    let next: GridCell | null = null
+    if (e.key === 'Tab') {
+      // Row-major spreadsheet Tab: next/prev cell, clamped (no wrap) — Tab
+      // from the last cell stays put instead of leaving the table.
+      next = nextRowMajorCell(
+        current,
+        e.shiftKey ? -1 : 1,
+        navOptions.rowCount,
+        navOptions.colCount,
+      )
+    } else if (e.key === 'Enter') {
+      // Spreadsheet Enter: alias of ArrowDown (F2 stays the edit-start key).
+      next = nextGridCell(current, 'ArrowDown', navOptions)
+    } else if (GRID_NAV_KEYS.has(e.key)) {
+      next = nextGridCell(current, e.key as GridNavKey, navOptions)
+    }
+    if (!next) return
+    e.preventDefault()
     setFocusedCell(next)
+    // PageUp/PageDown scroll: virtual tables scroll the `data-iris-virtual-scroll`
+    // viewport ±10 × itemHeight (the root is overflow:hidden in pure-virtual
+    // mode — the viewport is the body scroller; fiat F1), non-virtual tables
+    // scroll the root ±10 × the measured row height. Clamped to the scrollable
+    // range. The focus itself lands via `cell.focus()` below (or the layout
+    // effect once the virtual window re-renders).
+    if (e.key === 'PageUp' || e.key === 'PageDown') {
+      const dir = e.key === 'PageDown' ? 1 : -1
+      const viewport = rootRef.current?.querySelector<HTMLElement>('[data-iris-virtual-scroll]')
+      if (viewport && virtualScroll && bodyData.length > 0) {
+        pendingGridFocusRef.current = next
+        const rowHeight =
+          typeof virtualScroll.itemHeight === 'number'
+            ? virtualScroll.itemHeight
+            : Math.max(1, virtualScroll.itemHeight(Math.min(current.row, bodyData.length - 1)))
+        const max = viewport.scrollHeight - viewport.clientHeight
+        const nextTop = viewport.scrollTop + dir * 10 * rowHeight
+        viewport.scrollTop = max > 0 ? Math.min(Math.max(nextTop, 0), max) : Math.max(nextTop, 0)
+      } else {
+        const rowEl = rootRef.current?.querySelector<HTMLElement>(
+          '[data-iris-table-row]:not([data-iris-table-row="header"])',
+        )
+        const rowHeight = rowEl?.offsetHeight ?? 0
+        if (rowHeight > 0 && rootRef.current) rootRef.current.scrollTop += dir * 10 * rowHeight
+      }
+    }
     const cell = rootRef.current?.querySelector<HTMLElement>(
       `[data-grid-row="${next.row}"][data-grid-col="${next.col}"]`,
     )
     cell?.focus()
   }
+
+  // Batch AV virtual focus follow-up: the virtual window re-renders INSIDE the
+  // IrisVirtualScroll child ~1 frame after the scroll (its own rAF → state →
+  // commit), which does not re-run this Table effect. So poll on animation
+  // frames until the pending cell exists, then focus it (a few frames, bounded;
+  // the rAF is cancelled on re-navigation / unmount). A stale pending (the
+  // user navigated elsewhere first) is dropped.
+  React.useLayoutEffect(() => {
+    const pending = pendingGridFocusRef.current
+    if (!pending) return
+    if (focusedCell && (focusedCell.row !== pending.row || focusedCell.col !== pending.col)) {
+      pendingGridFocusRef.current = null
+      return
+    }
+    let raf = 0
+    const tryFocus = (): void => {
+      if (pendingGridFocusRef.current !== pending) return
+      const cell = rootRef.current?.querySelector<HTMLElement>(
+        `[data-grid-row="${pending.row}"][data-grid-col="${pending.col}"]`,
+      )
+      if (!cell) {
+        raf = requestAnimationFrame(tryFocus)
+        return
+      }
+      pendingGridFocusRef.current = null
+      cell.focus()
+    }
+    raf = requestAnimationFrame(tryFocus)
+    return () => cancelAnimationFrame(raf)
+  }, [focusedCell])
 
   // Cell-range keyboard handler: Shift+Arrow extends the range, Escape clears it.
   const CELL_RANGE_ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])

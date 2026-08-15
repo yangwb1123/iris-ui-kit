@@ -26,7 +26,7 @@ LOW 处置：
 ## Commit
 
 ```
-<COMMIT_HASH> feat(table): grid 批 BS——多列分组（iris 独有）
+9cc25f9f feat(table): grid 批 BS——多列分组（iris 独有）
 ```
 
-includes: comparison.md 计数修正（review LOW 1）+ 本门禁报告 + DECISIONS.md pipeline 记录 + batch stage 记录 + 遗留探针入库。
+includes: comparison.md 计数修正（review LOW 1）+ 本门禁报告 + DECISIONS.md pipeline 记录 + batch stage 记录 + 遗留探针入库。实现本体见批 BS adapt 提交 `982dc909`。

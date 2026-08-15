@@ -3368,17 +3368,24 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // added during one drag — reverse drags shrink the interval but never
   // uncheck), checkMethod-eligible rows only, through
   // `selModel.set([...display, ...add])` (selectAll additive precedent).
-  // Pointer capture on the press cell keeps pointermove/up on the table even
-  // when released outside the root; jsdom lacks capture (try/catch `?.`).
+  // Pointer capture is DEFERRED to the drag start — never on a bare press:
+  // capturing at pointerdown would retarget the pointerup→click onto the
+  // press cell, so a plain click could never reach the checkbox label (its
+  // input is pointerEvents:none) and rows would become un-toggleable with
+  // selectionDrag on. Once the threshold is crossed, capture on the press
+  // cell keeps pointermove/up and the trailing click on the table even when
+  // released outside the root; jsdom lacks capture (try/catch `?.`).
   const selectionDragPendingRef = React.useRef<{ key: string; x: number; y: number } | null>(null)
   const selectionDragAnchorRef = React.useRef<string | null>(null)
   const selectionDragSeenRef = React.useRef<Set<string> | null>(null)
-  // Armed once the threshold is crossed; consumed by the trailing click on
-  // the press cell (shift-click mechanism: preventDefault cancels the
-  // label→input forwarding AND the single-toggle change, so the anchor row —
-  // already checked by the drag — is not toggled twice). Re-armed on every
-  // press, so a drag released outside a selection cell (no trailing click)
-  // never swallows the next plain click.
+  const selectionDragPressCellRef = React.useRef<HTMLElement | null>(null)
+  // Armed once the threshold is crossed; consumed by the trailing click that
+  // pointer capture retargets onto the press cell (under capture the label
+  // never receives that click, so no double-toggle can occur — preventDefault
+  // + consume is belt-and-braces, and in jsdom, which has no capture
+  // retargeting, it also blocks a trailing label→input activation). Cleared
+  // on every press (before the guard) and on pointercancel, so an aborted
+  // drag never swallows the next click.
   const selectionDragSuppressRef = React.useRef(false)
 
   const hitTestSelectionRowKey = (x: number, y: number): string | null => {
@@ -3391,13 +3398,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
     e: React.PointerEvent,
     rowKeyValue: string | number,
   ): void => {
-    if (!selectionDrag || selectable !== 'multi' || e.button !== 0) return
-    try {
-      ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
-    } catch {
-      /* jsdom has no real pointer capture */
-    }
+    // A press on a selection cell clears a stale suppression arm FIRST (before
+    // the guard): an aborted drag's pointercancel fires no trailing click to
+    // consume it, so without this the flag could swallow the next click even
+    // when this press is not a drag press (right button, selectable switched,
+    // or the prop turned off mid-flight).
     selectionDragSuppressRef.current = false
+    if (!selectionDrag || selectable !== 'multi' || e.button !== 0) return
+    // No pointer capture on a bare press (see the refs comment above) — the
+    // press cell is remembered so the drag-start branch can capture on it.
+    selectionDragPressCellRef.current = e.currentTarget as HTMLElement
     selectionDragPendingRef.current = { key: String(rowKeyValue), x: e.clientX, y: e.clientY }
   }
 
@@ -3435,6 +3445,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
       selectionDragAnchorRef.current = pending.key
       selectionDragSeenRef.current = new Set()
       selectionDragSuppressRef.current = true
+      // Drag start: capture the pointer on the press cell NOW — deferred from
+      // pointerdown so a bare press stays a normal click (see the refs
+      // comment). Capture keeps pointermove/up and the trailing click on the
+      // table even when released outside the root; jsdom has no real capture
+      // (try/catch `?.`).
+      try {
+        selectionDragPressCellRef.current?.setPointerCapture?.(e.pointerId)
+      } catch {
+        /* jsdom has no real pointer capture */
+      }
       // Drag start: apply the closed interval [anchor, hover] right away
       // (the anchor row is included; a press alone selects nothing).
       applySelectionDragTo(hitTestSelectionRowKey(e.clientX, e.clientY) ?? pending.key)
@@ -3451,6 +3471,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     selectionDragPendingRef.current = null
     selectionDragAnchorRef.current = null
     selectionDragSeenRef.current = null
+    selectionDragPressCellRef.current = null
     // selectionDragSuppressRef stays armed until the trailing click (or the
     // next press) consumes it.
   }
@@ -6129,13 +6150,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
             onClick={
               checkboxRange || selectionDrag
                 ? (e: React.MouseEvent) => {
-                    // selectionDrag (batch BT): a drag that crossed the
-                    // threshold armed the suppression flag — the trailing
-                    // click after pointerup must not toggle the anchor row a
-                    // second time (the drag already checked it). Same
-                    // mechanism as the shift-click branch below:
-                    // preventDefault cancels the label→input forwarding AND
-                    // the single-toggle change event.
+                    // selectionDrag (batch BT): once the threshold is crossed
+                    // the press cell holds pointer capture, so the trailing
+                    // click after pointerup is retargeted HERE — consuming the
+                    // armed flag. preventDefault is belt-and-braces: under
+                    // capture the label never receives the click anyway, and
+                    // in jsdom (no capture retargeting) it also blocks a
+                    // trailing label→input activation double-toggle.
                     if (selectionDragSuppressRef.current) {
                       selectionDragSuppressRef.current = false
                       e.preventDefault()
@@ -8020,11 +8041,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 suppressRangeDismissRef.current = false
                 setFillTarget(null)
                 // Aborted selection drag: drop the pending press / active
-                // anchor (nothing committed). The stale suppression flag (no
-                // trailing click follows a cancel) is cleared by the next press.
+                // anchor (nothing committed) and clear the suppression arm —
+                // no trailing click follows a cancel, so an armed flag must
+                // not swallow the next click.
+                selectionDragSuppressRef.current = false
                 selectionDragPendingRef.current = null
                 selectionDragAnchorRef.current = null
                 selectionDragSeenRef.current = null
+                selectionDragPressCellRef.current = null
               }
             : undefined
         }

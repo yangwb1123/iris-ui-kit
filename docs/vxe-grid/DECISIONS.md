@@ -1467,3 +1467,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bs-review.md [ok]: Verdict: **PASS** — written to `docs/vxe-grid/batch-bs-review.md`: Reviewed commit `982dc909` against the baseline, inspected the full diff and all 13 new tests, re-ran every gate.; Verification (all independently re-run): - **core test**: 1517/1517 ✅; Checklist results: - **Spec correctness**: all baseline items verified — recursive `groupPlan` builder reusing `groupRows`+`getCellValue`, ; Findings (2 LOW, 1 INFO — none gate-blocking): 1. **LOW (docs)** — `docs/vxe-grid-comparison.md:344` says "react 2280 tests" but actual is **2281** (stale pre-existing
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bs-review.md
+
+## 2026-08-15 06:12:52 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bs-gate.md [ok]: Gate results: | Gate | Result |; Final test counts: - **core: 1517/1517** · **react: 2281/2281**（13 new in `group-multicol.test.tsx`）· vue 1531 · solid 974 + 34 hydration ·; Review LOWs handled: 1. **LOW (docs)** — comparison.md "react 2280" → **2281** (fixed) + annotated the +1 from the BQ-leftover probe `zz-bq-p; Commits: - **`9cc25f9f`** — `feat(table): grid 批 BS——多列分组（iris 独有）` (8 files: comparison.md count fix, gate report, review verdic
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bs-gate.md
+
+## 2026-08-15 06:18:56 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bt-baseline.md [ok]: 核验摘要: **设计** — 新表级 prop `selectionDrag?: boolean`（props.ts:484，`checkboxRange` 后；表级 → propCount 159→160、eventCount 30 不变）。规格「行
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bt-baseline.md
+
+## 2026-08-15 06:32:13 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bt-adapt.md [ok]: Report; Files changed (9 committed): | File | Change |; Implementation (baseline zero-drift): - Press on the `__selection` cell (multi mode) selects **nothing**; pointermove past **4px threshold** starts the drag; Tests added (13): ① 1→4 full interval · ② checkMethod skipped+disabled · ③ plain click toggles (sub-threshold no-op) · ④ trailing click no; Verification — all ✅: - core test **1517/1517** · react typecheck clean · react test **2294/2294** (+13) · react lint **0 errors** (1 pre-exis
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bt-adapt.md
+
+## 2026-08-15 06:39:12 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bt-review.md [ok]: Verdict: **FAIL** — `docs/vxe-grid/batch-bt-review.md` written: Reviewed commit `12addddc` against the baseline, inspected the full diff, re-ran every requested gate, and empirically v; Verification (all independently re-run ✅): - **core test** 1517/1517 · **react test** 2294/2294 (+13 new) · **react typecheck** clean · **react lint** 0 errors (1 ; Findings: 1. **HIGH (gate-blocking)** — `Table.tsx:3394-3401`: `handleSelectionDragPointerDown` calls `setPointerCapture` on **eve
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bt-review.md

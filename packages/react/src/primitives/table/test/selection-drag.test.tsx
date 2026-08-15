@@ -139,16 +139,47 @@ describe('@iris-ui-kit/react IrisTable selectionDrag (batch BT, iris 独有)', (
     expect(rowCheckbox('4').disabled).toBe(true)
   })
 
-  it('③ a plain click still toggles a single row (no drag, no suppression)', () => {
-    render(<IrisTable columns={cols} data={rows} rowKey="id" selectable="multi" selectionDrag />)
-    // Press + sub-threshold move + release — no drag starts, nothing checked.
-    press('1')
-    moveTo('2', 12, 12) // within the 4px threshold
-    release(12, 12)
-    expect(checkedKeys()).toEqual([])
-    // The click (label→input forwarding path) toggles exactly one row.
-    fireEvent.click(rowCheckbox('1'))
-    expect(checkedKeys()).toEqual(['1'])
+  it('③ a plain click still toggles a single row (no drag, no capture, no suppression)', () => {
+    const capture = vi.fn()
+    const proto = HTMLElement.prototype as { setPointerCapture?: (...args: unknown[]) => void }
+    proto.setPointerCapture = capture
+    try {
+      render(<IrisTable columns={cols} data={rows} rowKey="id" selectable="multi" selectionDrag />)
+      // Press + sub-threshold move + release — no drag starts, nothing checked,
+      // and (batch-BT review HIGH) NO pointer capture on the bare press.
+      press('1')
+      expect(capture).not.toHaveBeenCalled()
+      moveTo('2', 12, 12) // within the 4px threshold
+      release(12, 12)
+      expect(checkedKeys()).toEqual([])
+      // The bare click reaches the checkbox LABEL (the only click surface —
+      // the input is pointerEvents:none) and toggles exactly one row.
+      const label = rowEl('1').querySelector('[data-iris-checkbox]') as HTMLElement
+      fireEvent.click(label)
+      expect(checkedKeys()).toEqual(['1'])
+      expect(capture).not.toHaveBeenCalled()
+    } finally {
+      delete proto.setPointerCapture
+    }
+  })
+
+  it('④ pointer capture is deferred to the drag start — never on a bare press', () => {
+    const capture = vi.fn()
+    const proto = HTMLElement.prototype as { setPointerCapture?: (...args: unknown[]) => void }
+    proto.setPointerCapture = capture
+    try {
+      render(<IrisTable columns={cols} data={rows} rowKey="id" selectable="multi" selectionDrag />)
+      const cell = press('1')
+      expect(capture).not.toHaveBeenCalled() // bare press: no capture
+      moveTo('3') // threshold crossed → drag starts → capture the press cell
+      expect(capture).toHaveBeenCalledTimes(1)
+      expect(capture.mock.calls[0]![0]).toBe(1) // pointerId
+      release()
+      fireEvent.click(cell)
+      expect(checkedKeys()).toEqual(['1', '2', '3'])
+    } finally {
+      delete proto.setPointerCapture
+    }
   })
 
   it('④ the trailing click after a drag is suppressed (no double-toggle of the anchor)', () => {
@@ -160,13 +191,26 @@ describe('@iris-ui-kit/react IrisTable selectionDrag (batch BT, iris 独有)', (
     expect(checkedKeys()).toEqual(['1', '2'])
   })
 
-  it('⑤ reverse drag (anchor at row 4, dragging up) checks rows 1–4', () => {
+  it('⑤ pointercancel clears the suppression arm — the next click still toggles', () => {
+    render(<IrisTable columns={cols} data={rows} rowKey="id" selectable="multi" selectionDrag />)
+    press('1')
+    moveTo('3') // threshold crossed → drag starts → arm set
+    expect(checkedKeys()).toEqual(['1', '2', '3'])
+    // Abort the drag — no trailing click follows a cancel (batch-BT review
+    // LOW: the stale arm must not swallow the next click).
+    firePointer(root(), 'pointercancel', { pointerId: 1 })
+    const label4 = rowEl('4').querySelector('[data-iris-checkbox]') as HTMLElement
+    fireEvent.click(label4)
+    expect(checkedKeys()).toEqual(['1', '2', '3', '4'])
+  })
+
+  it('⑥ reverse drag (anchor at row 4, dragging up) checks rows 1–4', () => {
     render(<IrisTable columns={cols} data={rows} rowKey="id" selectable="multi" selectionDrag />)
     dragRange('4', '1')
     expect(checkedKeys()).toEqual(['1', '2', '3', '4'])
   })
 
-  it('⑥ drag is additive — pre-existing selections are retained', () => {
+  it('⑦ drag is additive — pre-existing selections are retained', () => {
     render(<IrisTable columns={cols} data={rows} rowKey="id" selectable="multi" selectionDrag />)
     fireEvent.click(rowCheckbox('1'))
     expect(checkedKeys()).toEqual(['1'])
@@ -174,7 +218,7 @@ describe('@iris-ui-kit/react IrisTable selectionDrag (batch BT, iris 独有)', (
     expect(checkedKeys()).toEqual(['1', '3', '4'])
   })
 
-  it('⑦ shrinking the interval mid-drag never unchecks (monotonic union)', () => {
+  it('⑧ shrinking the interval mid-drag never unchecks (monotonic union)', () => {
     render(<IrisTable columns={cols} data={rows} rowKey="id" selectable="multi" selectionDrag />)
     const cell = press('1')
     moveTo('3') // interval [1,3] → 1,2,3
@@ -185,7 +229,7 @@ describe('@iris-ui-kit/react IrisTable selectionDrag (batch BT, iris 独有)', (
     expect(checkedKeys()).toEqual(['1', '2', '3'])
   })
 
-  it('⑧ without the prop the drag is inert (no press handler, nothing checked)', () => {
+  it('⑨ without the prop the drag is inert (no press handler, nothing checked)', () => {
     render(<IrisTable columns={cols} data={rows} rowKey="id" selectable="multi" />)
     press('1')
     moveTo('4')
@@ -194,7 +238,7 @@ describe('@iris-ui-kit/react IrisTable selectionDrag (batch BT, iris 独有)', (
     expect(checkedKeys()).toEqual([])
   })
 
-  it('⑨ single mode is a no-op — dragging never checks a range', () => {
+  it('⑩ single mode is a no-op — dragging never checks a range', () => {
     render(<IrisTable columns={cols} data={rows} rowKey="id" selectable="single" selectionDrag />)
     press('1')
     moveTo('3')
@@ -203,7 +247,7 @@ describe('@iris-ui-kit/react IrisTable selectionDrag (batch BT, iris 独有)', (
     expect(checkedRadios()).toBe(0)
   })
 
-  it('⑩ controlled mode has no optimistic flip — parent rejects, UI stays empty', () => {
+  it('⑪ controlled mode has no optimistic flip — parent rejects, UI stays empty', () => {
     const onChange = vi.fn()
     render(
       <IrisTable
@@ -226,7 +270,7 @@ describe('@iris-ui-kit/react IrisTable selectionDrag (batch BT, iris 独有)', (
     expect(checkedKeys()).toEqual([])
   })
 
-  it('⑪ tree mode drags across the flattened visible rows', () => {
+  it('⑫ tree mode drags across the flattened visible rows', () => {
     render(
       <IrisTable
         columns={cols}
@@ -243,7 +287,7 @@ describe('@iris-ui-kit/react IrisTable selectionDrag (batch BT, iris 独有)', (
     expect(checkedKeys()).toEqual(['1', '2', '3', '4'])
   })
 
-  it('⑫ a checkMethod-disabled anchor can still start the drag', () => {
+  it('⑬ a checkMethod-disabled anchor can still start the drag', () => {
     render(
       <IrisTable
         columns={cols}
@@ -259,7 +303,7 @@ describe('@iris-ui-kit/react IrisTable selectionDrag (batch BT, iris 独有)', (
     expect(checkedKeys()).toEqual(['2', '3'])
   })
 
-  it('⑬ hovering a non-row area keeps the last applied range', () => {
+  it('⑭ hovering a non-row area keeps the last applied range', () => {
     render(<IrisTable columns={cols} data={rows} rowKey="id" selectable="multi" selectionDrag />)
     const cell = press('1')
     moveTo('2')

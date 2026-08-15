@@ -1552,3 +1552,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-br-review.md [ok]: Summary: **Verified against `batch-br-baseline.md` + commit `1fb5bf54`:**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-br-review.md
+
+## 2026-08-15 08:39:37 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-br-gate.md [ok]: Review verdict: **PASS** — 12/12 baseline fiats verified with dedicated tests; additive-only (9 files, +479/−16); manifest hygiene clean; Gate results: - **Full repo gate** (`turbo run test typecheck lint build --concurrency=2`): **180/180 tasks successful** (54 cached); Final test counts: - **core: 1517/1517** · **react: 2332/2332** (+12 validation-summary); Commit: - **`7b965fdf`** — `feat(table): grid 批 BR——校验统计（iris 独有）` (gate-stage docs delta: DECISIONS stage entries + baseline/ad
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-br-gate.md

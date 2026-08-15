@@ -1023,3 +1023,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ax-adapt.md [ok]: core `matchConditionalStyles` + react `conditionalStyles` 条件格式（iris 独有，批 AX）。文件：`packages/core/src/conditional-styles.ts`（+6 测试）、`packages/core/src/index.ts`（barrel）、`packages/react/src/primitives/table/props.ts`（单行 prop，prettier-ignore 保 manifest 扫描）、`types.ts`（IrisTableConditionalStyle）、`Table.tsx`（conditionalCellStyle 助手 + cellStyle 后 merge）、`conditional-styles.test.tsx`（+8 测试）、`apps/docs/guide/table-conditional-formatting.md`（指南页）。验证：core 1417 测试、react 2053 测试、typecheck/lint 0 错误（1 既有 complexity warning）、spec 0 违规、gen:manifest（141 props）已提交。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ax-adapt.md
+
+## 2026-08-14 17:52:56 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ax-adapt.md [ok]: Report: **Files changed** (4 modified + 6 new + 2 generated, committed in one commit):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ax-adapt.md
+
+## 2026-08-14 17:57:17 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ax-review.md [ok]: Summary: **Verification (all at commit `4e3e1858`):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ax-review.md

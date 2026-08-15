@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, render } from '@testing-library/react'
+import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { matchConditionalStyles } from '@iris-ui-kit/core'
 import { IrisTable } from './Table'
 import type { IrisTableColumn } from './types'
@@ -204,5 +204,37 @@ describe('@iris-ui-kit/react IrisTable conditionalStyles (batch AX, iris 独有)
     // 10*2, 25*2, 40*2, null score → 0*2
     expect(seen).toEqual(expect.arrayContaining([20, 50, 80, 0]))
     expect(cell(1, 'total').style.background).toBe('var(--iris-primary)')
+  })
+
+  it('editing an editable cell keeps the rule style on the cell and the editor is opaque', () => {
+    const editCols: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name', editable: true },
+      { key: 'score', title: 'Score', editable: true, editor: 'number' },
+    ]
+    render(
+      <IrisTable
+        columns={editCols}
+        data={rows}
+        rowKey="id"
+        conditionalStyles={[
+          {
+            column: 'score',
+            when: (row) => (row.score ?? 0) >= 25,
+            style: { background: 'var(--iris-primary)' },
+          },
+        ]}
+      />,
+    )
+    // Matched cell carries the rule style before editing.
+    expect(cell(2, 'score').style.background).toBe('var(--iris-primary)')
+    act(() => {
+      fireEvent.doubleClick(cell(2, 'score'))
+    })
+    const editor = document.querySelector('[data-iris-table-editor]') as HTMLElement | null
+    expect(editor).not.toBeNull()
+    // Editor surface stays opaque (construction unaffected — only padding switches).
+    expect(editor!.style.background).toBe('var(--iris-background)')
+    // The rule style survives on the cell while editing.
+    expect(cell(2, 'score').style.background).toBe('var(--iris-primary)')
   })
 })

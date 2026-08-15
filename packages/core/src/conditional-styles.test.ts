@@ -46,7 +46,7 @@ describe('@iris-ui-kit/core matchConditionalStyles (batch AX, iris 独有)', () 
     const spy: typeof rules = [
       {
         column: 'score',
-        when: (row: Row, value: unknown) => ((called = true), true),
+        when: () => ((called = true), true),
         style: { color: 'red' },
       },
     ]

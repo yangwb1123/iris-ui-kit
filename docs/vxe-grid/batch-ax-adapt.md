@@ -1,37 +1,25 @@
-# batch AX adapt — grid conditional formatting (iris 独有)
+Done. Batch AX (grid conditional formatting) implemented, verified, and committed as `4e3e1858`.
 
-Implement per `/home/u1/iris-ui/docs/vxe-grid/batch-ax-baseline.md` + AGENTS.md.
+## Report
 
-## Files changed (4 modified + new + generated)
+**Files changed** (4 modified + 6 new + 2 generated, committed in one commit):
 
-| File                                                              | Change                                                                                                                                                                  |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/core/src/conditional-styles.ts`                         | NEW: `matchConditionalStyles<Row, Style>` + `ConditionalStyleRule` — pure ordered-rule evaluator, framework-free                                                        |
-| `packages/core/src/conditional-styles.test.ts`                    | NEW: 6 tests (match / column filter + predicate-not-evaluated / multiple merge order / none → `{}` / column-less / input transparency + fresh objects)                  |
-| `packages/core/src/index.ts`                                      | barrel export                                                                                                                                                           |
-| `packages/react/src/primitives/table/props.ts`                    | `conditionalStyles` single-line prop after `cellStyle` (`// prettier-ignore` pinned for the manifest scanner)                                                           |
-| `packages/react/src/primitives/table/types.ts`                    | NEW type `IrisTableConditionalStyle<Row>`                                                                                                                               |
-| `packages/react/src/primitives/table/Table.tsx`                   | module-scope `conditionalCellStyle` helper (F11) + one spread after `cellStyle?.(…)` merge site; `raw` value passed through                                             |
-| `packages/react/src/primitives/table/conditional-styles.test.tsx` | NEW: 8 tests (highlight / column filter / merge order / no-match unchanged / cellStyle-before-rules / dataIndex raw value / formula computed value / core bridge types) |
-| `apps/docs/guide/table-conditional-formatting.md`                 | NEW guide page (token-safe example, core direct-use section)                                                                                                            |
-| `packages/manifest/{manifest.json,llms.txt}`                      | regenerated (IrisTable 141 props, `conditionalStyles` captured)                                                                                                         |
+- Modified: `packages/core/src/index.ts` (barrel export), `packages/react/src/primitives/table/props.ts` (single-line `conditionalStyles` prop after `cellStyle`, `// prettier-ignore`-pinned for the manifest scanner), `.../types.ts` (`IrisTableConditionalStyle<Row>`), `.../Table.tsx` (module-scope `conditionalCellStyle` helper F11 + one spread after the `cellStyle?.(…)` merge site)
+- New: `packages/core/src/conditional-styles.ts` (`matchConditionalStyles<Row, Style>` + `ConditionalStyleRule`, pure ordered-rule evaluator), `packages/core/src/conditional-styles.test.ts` (6 tests), `packages/react/src/primitives/table/conditional-styles.test.tsx` (8 tests), `apps/docs/guide/table-conditional-formatting.md` (iris 独有 guide page, token-safe example), `docs/vxe-grid/batch-ax-adapt.md`, `docs/vxe-grid/DECISIONS.md` entry
+- Generated: `packages/manifest/{manifest.json,llms.txt}` — IrisTable now **141 props**, `conditionalStyles` captured with the full single-line type
 
-## Verify
+**Tests added / counts:**
 
-- `pnpm --filter @iris-ui-kit/core test` → 91 files, **1417 tests** passed (was 1411, +6)
-- `pnpm --filter @iris-ui-kit/react typecheck` → clean
-- `pnpm --filter @iris-ui-kit/react test` → 182 files, **2053 tests** passed (was 2045, +8)
-- `pnpm --filter @iris-ui-kit/react lint` → **0 errors** (1 pre-existing IrisTable complexity warning, verified pre-existing via stash)
-- `iris-ui-spec.py --mode all --json` → **0 violations**
-- `pnpm gen:manifest` + `check:manifest` → up to date; `gen:docs-reference` + `check:docs-reference` → up to date
+| Check                                                                             | Result                                                                                         |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| core test                                                                         | 91 files, **1417 passed** (was 1411, +6)                                                       |
+| react typecheck                                                                   | clean                                                                                          |
+| react test                                                                        | 182 files, **2053 passed** (was 2045, +8)                                                      |
+| react lint                                                                        | **0 errors** (1 pre-existing `IrisTable` complexity warning — verified pre-existing via stash) |
+| `iris-ui-spec.py --mode all`                                                      | **0 violations**                                                                               |
+| `gen:manifest` / `check:manifest` / `gen:docs-reference` / `check:docs-reference` | up to date, committed                                                                          |
+| prettier                                                                          | clean on all changed files                                                                     |
 
-## Design notes
+**Design (per baseline):** rules evaluate inline per visible cell (cost = visibleCells × rules, no memo — virtual scroll bounds it; JSDoc tells callers to memoize the array); merge order `cellStyle` → rules, later matches win on conflicts; `value` is the raw cell value through the batch-AO `getCellValue` choke point (dataIndex ?? key resolved, formula computed); style is `import('react').CSSProperties` and the core `Style` generic makes the react bridge cast-free (no framework types in core); no i18n strings (no en/zh parity gate this batch); no CSS files touched (rule styles use inline `var(--iris-*)` tokens, per the token constraint).
 
-- Cost = visibleCells × rules, inline per cell, no memo (virtual scroll bounds it; JSDoc tells callers to memoize the array).
-- Merge order: `cellStyle` first, conditional rules after → later matching rules win on conflicting keys (same override latitude `cellStyle` already had).
-- `value` is the raw cell value via the batch-AO `getCellValue` choke point (dataIndex ?? key, formula computed) — zero extra reads.
-- No i18n strings this batch (no en/zh parity gate).
-
-## Left
-
-- Gate stage (full repo `turbo run test typecheck lint build` + 27-package checks) per the batch pipeline.
+**What is left:** the pipeline's gate stage — full repo `turbo run test typecheck lint build` plus the 27-package checks, browser E2E/visual regression, and `pnpm bench`, per the batch pipeline (not part of this task).

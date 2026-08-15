@@ -45,6 +45,7 @@ export default defineConfig({
               { text: 'AI-native usage', link: '/guide/ai-native' },
               { text: 'Cross-platform', link: '/guide/cross-platform' },
               { text: 'Registry & marketplace', link: '/guide/registry-marketplace' },
+              { text: 'Table conditional formatting', link: '/guide/table-conditional-formatting' },
             ],
           },
           { text: 'Reference', items: [{ text: 'Components', link: '/components' }] },

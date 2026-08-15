@@ -36339,7 +36339,7 @@
         },
         {
           "name": "conditionalStyles",
-          "type": "Array<{ column?: string; when: (row: Row, value: unknown) => boolean; style: CSSProperties }>",
+          "type": "IrisTableConditionalStyle<Row>[]",
           "optional": true,
           "description": "Conditional cell styles (batch AX, iris 独有): an ordered rule list merged onto matching body cells AFTER `cellStyle` — later matching rules win on conflicting keys. A rule matches when its `column` filter (omitted → every column) equals the cell's column key AND `when(row, value)` is true; `value` is the RAW cell value (dataIndex ?? key resolved, formula columns computed). Rules evaluate inline per visible cell (cost = visibleCells × rules; virtual scroll bounds it — memoize the array in the caller)."
         },
@@ -37191,7 +37191,7 @@
             },
             {
               "name": "conditionalStyles",
-              "type": "Array<{ column?: string; when: (row: Row, value: unknown) => boolean; style: CSSProperties }>",
+              "type": "IrisTableConditionalStyle<Row>[]",
               "optional": true,
               "description": "Conditional cell styles (batch AX, iris 独有): an ordered rule list merged onto matching body cells AFTER `cellStyle` — later matching rules win on conflicting keys. A rule matches when its `column` filter (omitted → every column) equals the cell's column key AND `when(row, value)` is true; `value` is the RAW cell value (dataIndex ?? key resolved, formula columns computed). Rules evaluate inline per visible cell (cost = visibleCells × rules; virtual scroll bounds it — memoize the array in the caller)."
             },
@@ -37843,6 +37843,7 @@
             "IrisTableCellEditEvent",
             "IrisTableColumn",
             "IrisTableColumnWidths",
+            "IrisTableConditionalStyle",
             "IrisTableContextMenuParams",
             "IrisTableCustomConfig",
             "IrisTableEditClosedParams",

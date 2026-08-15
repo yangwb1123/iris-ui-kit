@@ -438,4 +438,10 @@ export {
   type AuditLogOptions,
   type AuditLogType,
 } from './audit-log'
+export {
+  createVersionHistory,
+  type VersionHistory,
+  type VersionHistoryEntry,
+  type VersionHistoryOptions,
+} from './version-history'
 export { setCellValue } from './cell-edit'

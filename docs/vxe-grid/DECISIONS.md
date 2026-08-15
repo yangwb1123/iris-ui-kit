@@ -1082,3 +1082,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-az-gate.md [ok]: Verdict: PASS → full gate executed: | Step | Result |; Final test counts: - **7,991 tests passed** across **806 test files** (0 failed); Notes: - Working tree clean after commit; commit includes `batch-az-adapt.md` + `batch-az-review.md` + DECISIONS.md.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-az-gate.md
+
+## 2026-08-14 19:25:57 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ba-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ba-baseline.md

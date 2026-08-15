@@ -573,6 +573,25 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    */
   auditLog?: boolean
   /**
+   * Version history (batch BA, iris 独有 — vxe has no time-travel): when set,
+   * every row-list commit (`commitRowList` — row ops, paste, fill, range
+   * clear, batch edit, undo/redo replay) pushes the PRE-change rows into a
+   * bounded ring (core `createVersionHistory`, default max 20; `max: 0`
+   * unlimited; `max` read once at mount). The toolbar gains a history trigger
+   * (`data-iris-history-trigger`) opening a floating panel
+   * (`data-iris-history-panel`, like the audit panel — Esc / outside / scroll
+   * close) listing versions newest-first (#index + `formatClock` time + commit
+   * type); clicking an entry restores those rows through the normal write-back
+   * channel (`commitRowList(rows, 'undo')` — auditable and undoable) WITHOUT
+   * pushing a new version. Inline cell/row edits (the `commitValue` funnel)
+   * don't create versions (documented — restore replaces the whole row list,
+   * so row-level commits are the coherent unit). `tableRef.getVersions()`
+   * (lightweight — no rows) / `restoreVersion(index)` expose the ring
+   * programmatically. Requires a toolbar render (the gate admits
+   * `versionHistory` like `undo`). Additive — default off.
+   */
+  versionHistory?: { max?: number }
+  /**
    * Compare view (batch AU, iris 独有 — vxe has no compare capability): a
    * snapshot the live rows are diffed against by `rowKey`. Every live row
    * absent from the snapshot renders `data-iris-row-removed`, every live row

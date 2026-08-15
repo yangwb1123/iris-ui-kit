@@ -561,6 +561,10 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   getAuditLog: () => ReadonlyArray<IrisTableAuditEntry>
   /** Wipe every audit entry (batch AT, iris 独有): the seq counter never resets — audit integrity. No-op without `auditLog`. */
   clearAuditLog: () => void
+  /** Version-history snapshot (batch BA, iris 独有): newest-first LIGHTWEIGHT entries (index/at/type — deliberately WITHOUT rows, so the snapshot stays cheap; `restoreVersion` fetches the rows from the controller) — an empty array when `versionHistory` is off or nothing was committed yet. */
+  getVersions: () => ReadonlyArray<IrisTableVersionEntry>
+  /** Restore the rows captured before the commit with `index` (batch BA, iris 独有): applies them through the normal write-back channel (`commitRowList`, type `'undo'` — auditable and undoable) WITHOUT pushing a new version; no-op for an unknown index (trimmed/cleared) or without `versionHistory`. */
+  restoreVersion: (index: number) => void
 }
 
 /**
@@ -583,6 +587,20 @@ export interface IrisTableAuditEntry {
   oldValue?: unknown
   /** Value after the change. */
   newValue?: unknown
+}
+
+/**
+ * Version-history entry shape (batch BA, iris 独有) — a LIGHTWEIGHT mirror of
+ * the core `VersionHistoryEntry` WITHOUT the rows (the handle snapshot stays
+ * cheap; `restoreVersion(index)` fetches the rows from the controller).
+ */
+export interface IrisTableVersionEntry {
+  /** Monotonic version index (never resets on clear). */
+  index: number
+  /** Epoch ms when the version was pushed. */
+  at: number
+  /** Commit-kind hint: edit / insert / remove / paste / batch / fill / undo / redo. */
+  type: 'edit' | 'insert' | 'remove' | 'paste' | 'batch' | 'fill' | 'undo' | 'redo'
 }
 
 /** Pager configuration (vxe-grid pagerConfig parity). */

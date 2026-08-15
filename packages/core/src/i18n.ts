@@ -136,6 +136,8 @@ export const defaultMessages: I18nMessages = {
   'table.audit': 'Audit log',
   'table.audit.empty': 'No changes yet',
   'table.audit.clear': 'Clear',
+  'table.history': 'Version history',
+  'table.history.empty': 'No versions yet',
   'table.compare.tooltip': 'Old: {old} → New: {new}',
   'table.batchEdit.column': 'Column',
   'table.batchEdit.apply': 'Apply',

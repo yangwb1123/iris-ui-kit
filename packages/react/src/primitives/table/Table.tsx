@@ -10,6 +10,7 @@ import {
   createSelectionModel,
   createUndoStack,
   createAuditLog,
+  createVersionHistory,
   flattenLeafColumns,
   flattenTree,
   formatClock,
@@ -32,6 +33,7 @@ import {
   type UndoStack,
   type AuditLog,
   type AuditLogType,
+  type VersionHistory,
   diffRows,
   type RowDiff,
   type RowDiffCellChange,
@@ -71,6 +73,7 @@ import type { IrisTableHandle } from './types'
 import { downloadCsv, exportCsv, applyCellMask } from './exportCsv'
 import { TableChartPanel } from './ChartPanel'
 import { TableAuditPanel } from './AuditPanel'
+import { TableVersionHistoryPanel } from './VersionHistoryPanel'
 import { CELL_NOTE_STYLE, RANGE_FILL_HANDLE_STYLE, RANGE_FILL_TARGET_BG } from './styles'
 
 /* Batch AQ drag-fill helpers (module scope): the per-cell fill logic stays
@@ -1089,6 +1092,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   autoRefresh,
   freshness,
   auditLog,
+  versionHistory,
   compareWith,
   printable = false,
   seq = false,
@@ -1503,6 +1507,26 @@ export function IrisTable<Row extends Record<string, unknown>>({
   React.useEffect(() => {
     auditRowsRef.current = liveData
   }, [liveData])
+
+  // ── Built-in version history (iris 独有, batch BA) ────────────────────
+  // A core createVersionHistory keeps a bounded (default 20) ring of the
+  // PRE-change row list per row-list commit — the same funnel and type hint
+  // as the batch-AT audit (commitRowList only; commitValue inline edits do
+  // NOT create versions — restore replaces the whole row list, so row-level
+  // commits are the coherent unit, documented). The controller is created
+  // once (ref-once, max from the first render — mirrors auditRef) and stays
+  // inert unless the `versionHistory` prop is on (historyEnabledRef gate).
+  // restoreVersion flips historySuppressRef around its own replay (a
+  // commitRowList with type 'undo'): the replay never pushes a new version,
+  // but it IS audited and undoable — consistent with undo/redo replay.
+  const historyEnabledRef = React.useRef(versionHistory)
+  historyEnabledRef.current = versionHistory
+  const historyRef = React.useRef<VersionHistory<Row> | null>(null)
+  if (historyRef.current === null) {
+    historyRef.current = createVersionHistory<Row>({ max: versionHistory?.max })
+  }
+  const history = historyRef.current
+  const historySuppressRef = React.useRef(false)
 
   // ── Compare view (iris 独有, batch AU) ────────────────────────────────
   // A pure diff of the live rows against the `compareWith` snapshot by
@@ -2415,6 +2439,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // the chart panel).
   const [auditOpen, setAuditOpen] = React.useState(false)
   const auditAnchorRef = React.useRef<HTMLButtonElement | null>(null)
+  // Batch BA: version-history panel open state + toolbar trigger anchor.
+  const [historyOpen, setHistoryOpen] = React.useState(false)
+  const historyAnchorRef = React.useRef<HTMLButtonElement | null>(null)
   const importFileRef = React.useRef<HTMLInputElement | null>(null)
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -2895,6 +2922,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }
   recordAuditRef.current = recordAudit
 
+  // Batch BA: one version per row-list commit — the PRE-change rows (the
+  // exact state a restore returns to) + the same type hint the batch-AT
+  // funnel records. Runs BEFORE recordAudit's eager auditRowsRef sync so the
+  // snapshot holds the true previous rows. commitValue (inline edits) never
+  // reaches here — documented scope (restore replaces the whole row list).
+  const recordHistory = (type: AuditLogType): void => {
+    if (!historyEnabledRef.current) return
+    history.push(auditRowsRef.current, type)
+  }
+
   /**
    * Unified cell click: preserves the internal edit/range behavior, then fires
    * the user `onCellClick` (vxe cell-click parity) with full coordinates.
@@ -2957,6 +2994,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onDataChangeRef.current = onDataChange
   const commitRowList = React.useCallback(
     (next: Row[], type: AuditLogType = 'edit') => {
+      // Batch BA: push the PRE-change rows + the type hint into the version
+      // ring BEFORE recordAudit overwrites the diff snapshot. restoreVersion
+      // flips historySuppressRef so its own replay never pushes a new version
+      // (it IS audited + undoable — consistent with undo/redo replay).
+      if (!historySuppressRef.current) recordHistory(type)
       recordUndo(next)
       // Batch AT: ONE audit entry per commit — the type hint comes from the
       // mutation site (insert/remove/paste/batch/fill/undo/redo; default
@@ -2968,7 +3010,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       externalDataRef.current = next
       onDataChangeRef.current?.(next)
     },
-    [recordUndo, recordAudit],
+    [recordUndo, recordAudit, recordHistory],
   )
   // Replay a snapshot (undo or redo) through the same write-back channel as
   // every other mutation — one commitRowList (setLiveData + onDataChange).
@@ -2999,6 +3041,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
     },
     [commitRowList, rebaseToProp, selModel, selectable],
   )
+  // Batch BA: restore the rows captured before commit `index` through the
+  // normal write-back channel (commitRowList, type 'undo' — auditable +
+  // undoable) while historySuppressRef stops the replay from pushing a new
+  // version. No-op for an unknown index (the ring may have trimmed it).
+  const restoreVersion = (index: number): void => {
+    const entry = history.get(index)
+    if (entry === undefined) return
+    historySuppressRef.current = true
+    commitRowList(entry.rows as Row[], 'undo')
+    historySuppressRef.current = false
+  }
   const handleRef = React.useRef<IrisTableHandle<Row> | null>(null)
   handleRef.current = {
     insertRow: (row, index) => {
@@ -3197,6 +3250,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
     clearAuditLog: () => {
       audit.clear()
     },
+    // Batch BA (iris 独有): version history programmatic access — a
+    // LIGHTWEIGHT (no rows) newest-first snapshot for the caller/panel, and
+    // a time-travel restore through the normal write-back channel as 'undo'
+    // (suppressed from re-pushing; unknown index → no-op).
+    getVersions: () => history.list().map((e) => ({ index: e.index, at: e.at, type: e.type })),
+    restoreVersion,
   }
   React.useEffect(() => {
     if (tableRef) tableRef.current = handleRef.current
@@ -5765,7 +5824,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
           </div>
         </form>
       ) : null}
-      {(toolbar || views || query !== undefined || undo || chartPreview || freshness || auditLog) &&
+      {(toolbar ||
+        views ||
+        query !== undefined ||
+        undo ||
+        chartPreview ||
+        freshness ||
+        auditLog ||
+        versionHistory) &&
       layouts?.toolbar !== 'hidden' ? (
         <div
           data-iris-table-toolbar=""
@@ -6383,6 +6449,25 @@ export function IrisTable<Row extends Record<string, unknown>>({
               title={t('table.audit')}
             >
               ☰
+            </button>
+          ) : null}
+          {versionHistory ? (
+            <button
+              ref={historyAnchorRef}
+              type="button"
+              data-iris-history-trigger=""
+              onClick={() => setHistoryOpen((v) => !v)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: historyOpen ? 'var(--iris-foreground)' : 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+              }}
+              aria-label={t('table.history')}
+              title={t('table.history')}
+            >
+              ⏱
             </button>
           ) : null}
           {toolbar?.buttons && toolbar.buttons.length > 0
@@ -7200,6 +7285,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
             audit={audit}
             onClear={() => audit.clear()}
             onClose={() => setAuditOpen(false)}
+            t={t}
+          />
+        ) : null}
+        {versionHistory && historyOpen ? (
+          <TableVersionHistoryPanel
+            open
+            anchorRef={historyAnchorRef}
+            history={history}
+            onRestore={(index) => {
+              restoreVersion(index)
+              setHistoryOpen(false)
+            }}
+            onClose={() => setHistoryOpen(false)}
             t={t}
           />
         ) : null}

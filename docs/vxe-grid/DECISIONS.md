@@ -1008,3 +1008,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-aw-review.md [ok]: Verification (all run at commit `ef23aaee`): | Check | Result |; Checklist: 1. **summarizeColumn** — branch (≥60% inclusive, tested), rounding (single `.toFixed(1)` point; `Math.round` %), percent; Findings: 1. **HIGH** — `check:docs-reference` fails at the commit: gitignored `apps/docs/components.md` never regenerated with th; Pre-existing (not AW's fault, flagged for gate): `pnpm size` overages (core +0.6KB from AW, already over at HEAD~1), `arch-check:ratchet` (identical violation set at HEA
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aw-review.md
+
+## 2026-08-14 17:32:34 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aw-gate.md [ok]: 修复内容（review 4 项发现）: 1. **HIGH — `check:docs-reference` 失败**：重新生成 gitignored `apps/docs/components.md`（含 `nlSummary` 行，155 组件），check 通过; 全仓 gate: | Check | Result |; 最终测试计数: - **core：1411**（summary.test 15，+2 新对抗测试）; 提交: ```
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aw-gate.md

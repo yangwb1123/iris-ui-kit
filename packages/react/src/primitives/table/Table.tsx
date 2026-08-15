@@ -56,6 +56,7 @@ import {
   matchTableKey,
   memoizedFormulaValue,
   normalizeKeymap,
+  type IrisTableKeymap,
   parseCsv,
   removeRowFromList,
   setCellValue,
@@ -4258,8 +4259,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // begin editing the focused cell's column (when editable) / clear the cell
   // to '' — one batched commitRowList (undo-covered free via the undo
   // funnel). Batch BG: the keys come from `keyBindings` (keymap rebinding),
-  // so `edit: 'F3'` remaps F2 wholesale. The focused-cell state is
-  // keyboardNavigation's roving focus (cells only get
+  // so `edit: 'F3'` remaps F2 wholesale. Modifiers match EXACTLY — the
+  // pre-BG code only read the bare key, so legacy modifier combos
+  // (Shift+Delete, Ctrl+F2, Ctrl+Shift+Backspace, …) are now inert by
+  // design (documented deviation, per the BG baseline). The focused-cell
+  // state is keyboardNavigation's roving focus (cells only get
   // `data-grid-row`/onFocus there); WITHOUT keyboardNavigation the shortcuts
   // are inert (documented). While an inline editor is open the editor's own
   // keys win (the gates below skip). The event TARGET must be a grid cell —
@@ -4399,8 +4403,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // built-in defaults + the `keymap` prop overrides (per-action wholesale,
   // invalid specs fail-closed to the default). Shared by the edit/clear,
   // undo/redo, copy/paste, fill and query handlers below. `queryInputRef`
-  // receives the toolbar query input so Ctrl+K can focus it.
-  const keyBindings = React.useMemo(() => normalizeKeymap(keymap), [keymap])
+  // receives the toolbar query input so Ctrl+K can focus it. Memoized on the
+  // JSON serialization so an inline `keymap={{…}}` literal (a fresh object
+  // identity per render) does not churn `keyBindings` and re-register the
+  // window undo/clip listeners below every render.
+  const keymapJson = React.useMemo(() => JSON.stringify(keymap ?? null), [keymap])
+  const keyBindings = React.useMemo(
+    () =>
+      normalizeKeymap(
+        keymapJson === 'null' ? undefined : (JSON.parse(keymapJson) as IrisTableKeymap),
+      ),
+    [keymapJson],
+  )
   const queryInputRef = React.useRef<HTMLInputElement | null>(null)
 
   // ── Built-in undo/redo keyboard (iris 独有, batch AL) ────────────────
@@ -7097,8 +7111,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 // feature. First-handler-wins: a root handler that already
                 // claimed the key preventDefault'd it, so the fill/query
                 // branches (and, via defaultPrevented, the window undo/clip
-                // listeners) skip.
+                // listeners) skip. Never while an inline editor is open — the
+                // editor's own keys win (mirrors the sibling gates in
+                // handleTableShortcutKey and the undo/clip listeners);
+                // without this, Ctrl+D would fill under an uncommitted draft
+                // and Ctrl+K would steal focus and close the session.
                 if (e.defaultPrevented) return
+                if (editTarget.editing !== null || rowEditing !== null) return
                 if (rangeFill && matchTableKey(e, keyBindings.fill)) {
                   const range = cellRangeCtrl.getRange()
                   if (range) {

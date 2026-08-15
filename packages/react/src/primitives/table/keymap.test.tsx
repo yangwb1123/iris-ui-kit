@@ -149,6 +149,37 @@ describe('@iris-ui-kit/react IrisTable keymap (batch BG, iris 独有)', () => {
     expect(document.activeElement).toBe(queryInput())
   })
 
+  it('editing guard: Ctrl+D / Ctrl+K never run while an inline editor is open', () => {
+    const onDataChange = vi.fn()
+    render(
+      <IrisTable
+        columns={cols}
+        data={rows}
+        rowKey="id"
+        keyboardNavigation
+        tableShortcuts
+        cellRange
+        rangeFill
+        query=""
+        onQueryChange={vi.fn()}
+        onDataChange={onDataChange}
+      />,
+    )
+    // Live range for the fill branch + a focused editable cell (row 0, age).
+    fireEvent.click(cell(0, 0))
+    focusGridCell(0, 1)
+    act(() => fireEvent.keyDown(cellAt(0, 1), { key: 'F2' }))
+    const input = editor()!
+    expect(input).not.toBeNull()
+    // Ctrl+D inside the open editor: must NOT commit a fill under the draft.
+    act(() => fireEvent.keyDown(input, { key: 'd', ctrlKey: true }))
+    expect(onDataChange).not.toHaveBeenCalled()
+    // Ctrl+K inside the open editor: must NOT steal focus / close the session.
+    act(() => fireEvent.keyDown(input, { key: 'k', ctrlKey: true }))
+    expect(document.activeElement).toBe(input)
+    expect(editor()).not.toBeNull()
+  })
+
   it('overrides: edit F3 rebinds F2; clear Delete drops the Backspace alias', () => {
     const onDataChange = vi.fn()
     render(

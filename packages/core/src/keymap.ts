@@ -54,7 +54,9 @@ export interface NormalizedTableKeymap {
   query: readonly TableKeyBinding[]
 }
 
-/** The 8 actions in handler-arbitration order (first match wins). */
+/** The 8 rebindable actions in canonical order (normalization iteration).
+ * Arbitration between handlers is by wiring order (root handlers claim a key
+ * with preventDefault before window listeners see it) — NOT by this array. */
 export const TABLE_KEY_ACTIONS: readonly IrisTableKeyAction[] = [
   'edit',
   'clear',

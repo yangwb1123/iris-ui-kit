@@ -1212,3 +1212,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bg-baseline.md [ok]: What's in the baseline: **Exact design** (every anchor verified against current code):
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bg-baseline.md
+
+## 2026-08-15 00:53:52 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bg-adapt.md [ok]: Report — batch BG: 快捷键自定义 (`keymap`); Files changed (4 source + 2 tests): | File | Change |; Verification (all pass, exact commands): - core test: **1469/1469** (95 files); core typecheck clean; core lint 0 errors; Counts: 22 new tests (12 core + 10 react); 4 changed files + 2 test files (≤4 source constraint met); both test files ≤500 lines; Fiats honored: - New fill/query defaults strictly gated (`rangeFill`+live range; controlled `query`)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bg-adapt.md
+
+## 2026-08-15 01:02:03 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bg-review.md [ok]: Verdict: **FAIL** (1 medium finding, 2 low, 1 nit): **Verification (all run fresh, all green):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bg-review.md

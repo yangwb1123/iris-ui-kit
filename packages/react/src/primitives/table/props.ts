@@ -410,6 +410,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   onGroupCollapseChange?: (next: Array<string | number>) => void
   /** Enable virtual scrolling for the body. */
   virtualScroll?: IrisTableVirtualOptions
+  /** Per-row height (batch BN, iris 独有 — vxe row-height is a fixed config value). Number → uniform height (overrides the default AND `virtualScroll.itemHeight` in virtual mode); `(index) => number` → per-row heights — in virtual mode the fn feeds the variable-height virtualizer (virtual PLAN index, prefix-sum offsets, like `virtualScroll.itemHeight`), otherwise each body row gets its inline height (bodyData index). `rowStyle` stays the per-row escape hatch (it wins). */
+  rowHeight?: number | ((index: number) => number)
   /** Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'. */
   persistState?: import('./types').IrisTablePersistConfig
   /** Named view presets (batch AH, iris 独有) — toolbar select of saved snapshots. */

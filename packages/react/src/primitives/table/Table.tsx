@@ -463,6 +463,20 @@ const notePopoverCellHandlers = (
   }
 }
 
+/** Batch BN: the inline row height for the NON-virtual render path — fixed
+ * form = uniform height, fn form = per-bodyData-index height; undefined when
+ * unset (rows keep their natural content height, byte-identical with the
+ * pre-batch behavior). Module-level so renderBodyEntry's complexity stays
+ * flat; `rowStyle` (merged AFTER extraStyle) remains the per-row escape
+ * hatch. Virtual mode never calls this — slots fill via `height: '100%'`. */
+const rowHeightStyleOf = (
+  rowHeight: number | ((index: number) => number) | undefined,
+  idx: number,
+): React.CSSProperties | undefined =>
+  rowHeight == null
+    ? undefined
+    : { height: typeof rowHeight === 'number' ? rowHeight : rowHeight(idx) }
+
 /** Batch BD collaborative presence (iris 独有 — vxe has no cursor sharing):
  * the entries whose `cellKey` (the canonical `${rowKeyVal}::${colKey}`
  * delimiter) matches this cell — one Map lookup per visible cell, undefined
@@ -1713,6 +1727,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   undo = false,
   checkboxRange = false,
   virtualScroll,
+  rowHeight,
   persistState,
   views,
   onActiveViewChange,
@@ -1732,6 +1747,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
   className,
   ...rest
 }: IrisTableProps<Row>): React.ReactElement {
+  // Batch BN (iris 独有): ONE throat for per-row heights — `rowHeight` wins
+  // over `virtualScroll.itemHeight`; unset = existing behavior byte-identical
+  // (virtual mode falls back to the virtualizer's itemHeight, non-virtual
+  // rows keep natural content height). Consumers: renderBodyEntry (inline
+  // height), IrisVirtualScroll (slot height source) and PageUp/PageDown
+  // (paging step) — all three read this same resolved source.
+  const effectiveRowHeight = rowHeight ?? virtualScroll?.itemHeight
   // Batch BC: scope the external tables for this render — every getCellValue
   // / querySortedData evaluation below runs synchronously during THIS render,
   // and React's render walk is atomic per component (assigned before any
@@ -4607,19 +4629,25 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const viewport = rootRef.current?.querySelector<HTMLElement>('[data-iris-virtual-scroll]')
       if (viewport && virtualScroll && bodyData.length > 0) {
         pendingGridFocusRef.current = next
-        const rowHeight =
-          typeof virtualScroll.itemHeight === 'number'
-            ? virtualScroll.itemHeight
-            : Math.max(1, virtualScroll.itemHeight(Math.min(current.row, bodyData.length - 1)))
+        // Batch BN: PageUp/PageDown reads the SAME resolved row-height source
+        // as the render paths (`rowHeight` wins over `virtualScroll.itemHeight`)
+        // so ±10-row paging matches the rendered row pitch; the fn form uses
+        // the current row's height as the step approximation (batch AV).
+        const stepHeight = effectiveRowHeight ?? virtualScroll.itemHeight
+        const rowStep =
+          typeof stepHeight === 'number'
+            ? stepHeight
+            : Math.max(1, stepHeight(Math.min(current.row, bodyData.length - 1)))
         const max = viewport.scrollHeight - viewport.clientHeight
-        const nextTop = viewport.scrollTop + dir * 10 * rowHeight
+        const nextTop = viewport.scrollTop + dir * 10 * rowStep
         viewport.scrollTop = max > 0 ? Math.min(Math.max(nextTop, 0), max) : Math.max(nextTop, 0)
       } else {
         const rowEl = rootRef.current?.querySelector<HTMLElement>(
           '[data-iris-table-row]:not([data-iris-table-row="header"])',
         )
-        const rowHeight = rowEl?.offsetHeight ?? 0
-        if (rowHeight > 0 && rootRef.current) rootRef.current.scrollTop += dir * 10 * rowHeight
+        const measuredRowHeight = rowEl?.offsetHeight ?? 0
+        if (measuredRowHeight > 0 && rootRef.current)
+          rootRef.current.scrollTop += dir * 10 * measuredRowHeight
       }
     }
     const cell = rootRef.current?.querySelector<HTMLElement>(
@@ -6340,7 +6368,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // are identical to the ungrouped map.
   const renderBodyEntry = (row: Row, idx: number): React.ReactNode => {
     if (spanMethod && idx === 0) spanOccupyRef.current.clear()
-    const main = renderRow(row, idx, undefined, flatTree?.[idx])
+    // Batch BN: the non-virtual path applies `rowHeight` inline on the data
+    // row (fixed = uniform, fn = per-bodyData-index); detail wraps and group
+    // headers keep content height. The virtual path never calls this — slots
+    // fill via `height: '100%'` from the same throat.
+    const main = renderRow(row, idx, rowHeightStyleOf(effectiveRowHeight, idx), flatTree?.[idx])
     if (
       !hasDetail ||
       !isRowExpandable(row, idx) ||
@@ -8202,10 +8234,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // (depth + toggle), with `idx` the absolute row index from the
           // scroller. Expansion toggles change `items.length`; the virtualizer
           // rebuilds on count change and re-clamps the scroll (see
-          // IrisVirtualScroll's re-clamp effect).
+          // IrisVirtualScroll's re-clamp effect). Batch BN: `rowHeight` (when
+          // set) wins over `virtualScroll.itemHeight` as the slot-height
+          // source — number = uniform closed-form window, fn = variable
+          // heights through the core offset tree.
           <IrisVirtualScroll
             items={virtualItems}
-            itemHeight={virtualScroll.itemHeight}
+            itemHeight={effectiveRowHeight ?? virtualScroll.itemHeight}
             height={virtualScroll.height}
             buffer={virtualScroll.buffer}
             keyOf={(item) =>

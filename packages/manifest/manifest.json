@@ -36687,6 +36687,12 @@
           "description": "Enable virtual scrolling for the body."
         },
         {
+          "name": "rowHeight",
+          "type": "number | ((index: number) => number)",
+          "optional": true,
+          "description": "Per-row height (batch BN, iris 独有 — vxe row-height is a fixed config value). Number → uniform height (overrides the default AND `virtualScroll.itemHeight` in virtual mode); `(index) => number` → per-row heights — in virtual mode the fn feeds the variable-height virtualizer (virtual PLAN index, prefix-sum offsets, like `virtualScroll.itemHeight`), otherwise each body row gets its inline height (bodyData index). `rowStyle` stays the per-row escape hatch (it wins)."
+        },
+        {
           "name": "persistState",
           "type": "import('./types').IrisTablePersistConfig",
           "optional": true,
@@ -37614,6 +37620,12 @@
               "type": "IrisTableVirtualOptions",
               "optional": true,
               "description": "Enable virtual scrolling for the body."
+            },
+            {
+              "name": "rowHeight",
+              "type": "number | ((index: number) => number)",
+              "optional": true,
+              "description": "Per-row height (batch BN, iris 独有 — vxe row-height is a fixed config value). Number → uniform height (overrides the default AND `virtualScroll.itemHeight` in virtual mode); `(index) => number` → per-row heights — in virtual mode the fn feeds the variable-height virtualizer (virtual PLAN index, prefix-sum offsets, like `virtualScroll.itemHeight`), otherwise each body row gets its inline height (bodyData index). `rowStyle` stays the per-row escape hatch (it wins)."
             },
             {
               "name": "persistState",
@@ -39036,7 +39048,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 154,
+        "propCount": 155,
         "eventCount": 29
       }
     },

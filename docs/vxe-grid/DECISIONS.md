@@ -988,3 +988,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-av-gate.md [ok]: Summary: Review verdict was **PASS** with 2 concrete LOW fixes — applied both before the gate (they were required: `check:docs-re; Gate results: | Check | Result |; Final test counts: - **react: 2034** (matches review) · core: 1396 · vue: 1531 · solid: 1565 · svelte: 951 · plugins/infra/apps green; Commit: ```
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-av-gate.md
+
+## 2026-08-14 17:01:03 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aw-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aw-baseline.md
+
+## 2026-08-15 01:07:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-aw-adapt.md [ok]: Report — batch AW (NL column summary) ✅: **Files changed (4 new source/test + 8 edits + docs + manifest)**: `packages/core/src/summary.ts` (**new**, `summarizeColumn(values, label)` — numeric ≥60% inclusive → `共 N 个值，范围 min–max，平均 avg，M 个缺失` (min/max/avg numeric-only, one `.toFixed(1)`), else categorical top3 `Math.round` % + `其余 R 个` only R>0, empty → `无数据`) · `packages/core/src/value-distribution.ts` (counting loop extracted to `countDistinctValues`, `valueDistribution` public API byte-identical) · `packages/core/src/summary.test.ts` (**new**, 12 tests) · `packages/core/src/index.ts` + `i18n.ts` (en `table.summary` = `Column summary`) · `packages/plugin-locale-zh/src/core/index.ts` (zh `摘要`, parity test green) · `packages/react/.../table/props.ts` (single-line `nlSummary?: boolean`) · `Table.tsx` (SUMMARY_MENU_KEY + destructure + push after distribution + state/openSummary + onSelect interception + panel render) · `SummaryPanel.tsx` (**new**, distribution-panel clone — useFloating + useDismiss + portal + virtual cursor anchor + capture-scroll, `data-iris-summary-panel`, `--iris-*` only) · `nl-summary.test.tsx` (**new**, 11 tests: core 3 + menu-after-distribution/panel text/categorical panel/no-prop inert/distribution-only/reserved-key dedupe/Esc/dataIndex) · `apps/docs/components.md` (nlSummary row) · `docs/vxe-grid-comparison.md` (iris 独有 row + 批 AW row + 构建状态 + counts) · manifest regenerated (propCount 139→140). Verification: core test **1409 passed** (+12) · react typecheck clean · react test **2045 passed** (+11, 0 regressions) · lint **0 errors** (1 pre-existing IrisTable complexity warning) · spec script **0 violations** (1413 files) · prettier clean · gen:manifest 155×4. What is left: vue/solid/svelte wiring (core material ready; "react only" scope).
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aw-adapt.md

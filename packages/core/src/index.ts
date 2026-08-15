@@ -183,7 +183,12 @@ export {
   type GroupedViewStore,
 } from './data-view'
 export { rangeStats, type RangeColumnStats, type RangeStatsRange } from './range-stats'
-export { valueDistribution, type ValueDistributionEntry } from './value-distribution'
+export {
+  valueDistribution,
+  countDistinctValues,
+  type ValueDistributionEntry,
+} from './value-distribution'
+export { summarizeColumn } from './summary'
 export { buildChartData, type ChartData } from './chart-data'
 export { parseTableQuery, type ParseTableQueryOptions, type ParsedTableQuery } from './query-parser'
 export { diffRows, type RowDiff, type RowDiffCellChange, type RowDiffKind } from './diff-rows'

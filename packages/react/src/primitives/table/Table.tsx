@@ -275,6 +275,7 @@ import { useTableViews } from './useTableViews'
 import { TableContextMenu } from './ContextMenu'
 import { TableFilterPanel } from './FilterPanel'
 import { TableDistributionPanel } from './DistributionPanel'
+import { TableSummaryPanel } from './SummaryPanel'
 import { TableViews } from './TableViews'
 import { RangeToolbar, type RangeStatsEntry } from './RangeToolbar'
 import type {
@@ -581,6 +582,11 @@ const DEFAULT_PINNED_WIDTH = 140
  * AM): the table intercepts it at the onSelect wiring, so a user item with
  * the same key is deduped and the user callback never sees it. */
 const DISTRIBUTION_MENU_KEY = '__iris_distribution'
+/** Reserved context-menu key for the built-in NL-summary item (batch AW):
+ * appended AFTER the distribution item when `nlSummary` is set; the table
+ * intercepts it at the onSelect wiring, so a user item with the same key is
+ * deduped and the user callback never sees it. */
+const SUMMARY_MENU_KEY = '__iris-summary'
 
 /** Shared style for the full-width empty / loading / error state rows. */
 const STATE_ROW_STYLE: React.CSSProperties = {
@@ -1006,6 +1012,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   footerTooltipConfig,
   contextMenu,
   valueDistribution,
+  nlSummary,
   chartPreview,
   autoRefresh,
   freshness,
@@ -2585,6 +2592,30 @@ export function IrisTable<Row extends Record<string, unknown>>({
     })
     setDistributionSeq((s) => s + 1)
   }
+  // ── NL summary panel (batch AW, iris 独有) ─────────────────────────────
+  // Same clone pattern as the distribution panel: the menu's built-in
+  // `__iris-summary` item opens it at the SAME virtual cursor anchor, and the
+  // seq token remounts it per open so its rows re-seed from the current
+  // bodyData.
+  const [summaryState, setSummaryState] = React.useState<{
+    open: boolean
+    colKey: string
+    columnTitle: string
+  } | null>(null)
+  const summaryAnchorRef = React.useRef<HTMLElement | null>(null)
+  const [summarySeq, setSummarySeq] = React.useState(0)
+  const closeSummary = React.useCallback(() => {
+    setSummaryState((prev) => (prev ? { ...prev, open: false } : prev))
+  }, [])
+  const openSummary = (params: IrisTableContextMenuParams<Row>): void => {
+    summaryAnchorRef.current = contextAnchorRef.current
+    setSummaryState({
+      open: true,
+      colKey: (params.column.dataIndex ?? params.column.key) as string,
+      columnTitle: params.column.title ?? params.column.key,
+    })
+    setSummarySeq((s) => s + 1)
+  }
   // ── Header filter panel (vxe filterConfig parity, batch I) ─────────────
   // One panel at a time, keyed by the column whose trigger was clicked. The
   // anchor is the trigger BUTTON itself (a real DOM node), captured at click
@@ -2651,6 +2682,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // (dedupe guard) so the table never renders it twice.
     if (valueDistribution && !items.some((i) => i.key === DISTRIBUTION_MENU_KEY)) {
       items.push({ key: DISTRIBUTION_MENU_KEY, label: t('table.distribution') })
+    }
+    // Batch AW: with `nlSummary`, append the built-in summary item AFTER the
+    // distribution item; a user item already using the reserved key is left
+    // alone (dedupe guard) so the table never renders it twice.
+    if (nlSummary && !items.some((i) => i.key === SUMMARY_MENU_KEY)) {
+      items.push({ key: SUMMARY_MENU_KEY, label: t('table.summary') })
     }
     setContextMenuState({ open: true, items, params })
     setContextMenuSeq((s) => s + 1)
@@ -6998,6 +7035,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
               // Batch AM: the built-in distribution item never reaches the
               // user callback — it opens the panel at the menu's anchor.
               if (key === DISTRIBUTION_MENU_KEY) openDistribution(params)
+              // Batch AW: same interception for the built-in summary item.
+              else if (key === SUMMARY_MENU_KEY) openSummary(params)
               else contextMenu.onSelect(key, params)
             }}
             onClose={closeContextMenu}
@@ -7012,6 +7051,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
             rows={bodyData}
             valueKey={distributionState.colKey}
             onClose={closeDistribution}
+            t={t}
+          />
+        ) : null}
+        {summaryState ? (
+          <TableSummaryPanel
+            key={`summary-${summarySeq}`}
+            open={summaryState.open}
+            anchorRef={summaryAnchorRef}
+            columnTitle={summaryState.columnTitle}
+            rows={bodyData}
+            valueKey={summaryState.colKey}
+            onClose={closeSummary}
             t={t}
           />
         ) : null}

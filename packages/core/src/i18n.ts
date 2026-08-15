@@ -123,6 +123,7 @@ export const defaultMessages: I18nMessages = {
   'table.filter': 'Filter',
   'table.distribution': 'Value distribution',
   'table.distribution.others': '{count} more',
+  'table.summary': 'Column summary',
   'table.total': 'Total {total}',
   'table.chart': 'Chart preview',
   'table.chart.bar': 'Bar',

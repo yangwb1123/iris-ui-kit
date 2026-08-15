@@ -61,6 +61,7 @@ export const zhCNMessages: Record<string, string> = {
   'table.filter': '筛选',
   'table.distribution': '值分布',
   'table.distribution.others': '其余 {count} 个',
+  'table.summary': '摘要',
   'table.total': '共 {total} 条',
   'table.chart': '迷你图表',
   'table.chart.bar': '柱状',

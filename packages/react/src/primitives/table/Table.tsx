@@ -64,6 +64,7 @@ import {
   parseCsv,
   removeRowFromList,
   setCellValue,
+  toCsv,
   toHtml,
   updateRowInList,
   validateEditRulesAsync,
@@ -1211,6 +1212,119 @@ function csvRangeCell(value: unknown): string {
   if (typeof value === 'number' && Number.isFinite(value)) return text
   const safe = CSV_FORMULA_LEAD.test(text) ? `'${text}` : text
   return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
+}
+
+// ── Compare-diff export (batch BV, iris 独有) ───────────────────────────
+// The reserved key of the marker column prefixed to every exported diff row:
+// the English literal added/removed/changed (machine-readable), headed by the
+// i18n `table.compare.diff` title (en `Diff` / zh `差异`).
+const COMPARISON_DIFF_KEY = '__iris_diff'
+
+/**
+ * Build the compare-diff CSV (batch BV, iris 独有 — vxe has no compare
+ * capability, let alone its export): current-view rows whose status is
+ * `removed`/`changed` in VIEW order (the same `filteredData` source as
+ * `exportCurrentViewCsv`), then `compareWith`-only `added` rows at the tail
+ * in SNAPSHOT order (no render slot, batch AU documented). Every row is
+ * prefixed with a marker column (`__iris_diff`) and unchanged rows are
+ * excluded. Changed cells export a `maskedOld → maskedNew` composite — mask
+ * BEFORE composition (the batch AY default mask must never leak a bare value
+ * through the composite; `exportRaw` keeps both sides bare); formula columns
+ * do NOT self-composite (batch AU documented — their own cell diffs are not
+ * reported; the referenced field cells are, and formulas still materialize
+ * from PRISTINE data so a changed input can never leak its composite into a
+ * dependent formula). Serialization shape = `exportCsv`'s: formula columns
+ * materialized on shadow rows, batch AY masks applied, hidden columns
+ * excluded (the caller passes `viewColumnsRef`), RFC-4180 quoting + OWASP
+ * neutralization via core `toCsv`. Feature-off is NOT this function's
+ * concern — the handle gates on the render memo being null.
+ */
+function buildComparisonCsv<Row extends Record<string, unknown>>(
+  rows: readonly Row[],
+  snapshot: readonly Row[],
+  rowKeyField: string,
+  diff: RowDiff,
+  columns: readonly IrisTableColumn<Row>[],
+  formulaTables: FormulaTables | undefined,
+  markerTitle: string,
+): string {
+  // Diff row list: view-order removed/changed + snapshot-order added. Marker
+  // lands on a shadow row (original rows untouched — immutable contract).
+  const out: Row[] = []
+  for (const row of rows) {
+    const key = row[rowKeyField] as string | number | null | undefined
+    if (key == null) continue
+    const kind = diff.status.get(key)
+    if (kind !== 'removed' && kind !== 'changed') continue
+    out.push({ ...row, [COMPARISON_DIFF_KEY]: kind } as Row)
+  }
+  const snapshotByKey = new Map<string | number, Row>()
+  for (const r of snapshot) {
+    const k = r[rowKeyField] as string | number | null | undefined
+    if (k == null) continue
+    snapshotByKey.set(k, r)
+  }
+  for (const key of diff.added) {
+    const row = snapshotByKey.get(key)
+    if (row) out.push({ ...row, [COMPARISON_DIFF_KEY]: 'added' } as Row)
+  }
+  // Formula columns materialize from PRISTINE rows (the composite pass below
+  // overwrites only non-formula changed cells, so no composite ever feeds a
+  // formula). `withComputedFormulaCells` spreads rows, marker preserved.
+  let materialized = withComputedFormulaCells(out, columns, formulaTables)
+  // Batch AY default mask: every masked column (unless `exportRaw`) exports
+  // the masked value. Runs BEFORE the composite pass — a changed cell's
+  // composite then overwrites this field, so the composite is masked-before-
+  // composition and never re-masked by this pass.
+  const maskedCols = columns.filter((c) => c.mask && !c.exportRaw)
+  if (maskedCols.length > 0) {
+    materialized = materialized.map((row) => {
+      let shadow: Row | null = null
+      for (const col of maskedCols) {
+        const key = (typeof col.dataIndex === 'string' ? col.dataIndex : col.key) as keyof Row
+        const next: Row = shadow ?? { ...row }
+        ;(next as Record<string, unknown>)[key as string] = applyCellMask(
+          (row as Record<string, unknown>)[key as string],
+          col,
+        )
+        shadow = next
+      }
+      return shadow as Row
+    })
+  }
+  // Composite pass: changed cells of non-formula columns export
+  // `maskedOld → maskedNew` (`exportRaw` keeps both sides bare). Overwrites
+  // the masked raw value above — the composite itself is never re-masked.
+  const withComposite = materialized.map((row) => {
+    const kind = (row as Record<string, unknown>)[COMPARISON_DIFF_KEY]
+    if (kind !== 'changed') return row
+    const key = (row as Record<string, unknown>)[rowKeyField] as string | number | null | undefined
+    const changes = key == null ? undefined : diff.cellChanges.get(key)
+    if (!changes) return row
+    let shadow: Row | null = null
+    for (const col of columns) {
+      if (col.formula) continue
+      const cellKey = (col.dataIndex ?? col.key) as keyof Row
+      const change = changes.get(cellKey as string)
+      if (!change) continue
+      const oldSide = col.exportRaw ? change.oldValue : applyCellMask(change.oldValue, col)
+      const newSide = col.exportRaw ? change.newValue : applyCellMask(change.newValue, col)
+      const next: Row = shadow ?? { ...row }
+      ;(next as Record<string, unknown>)[cellKey as string] = `${String(oldSide ?? '')} → ${String(
+        newSide ?? '',
+      )}`
+      shadow = next
+    }
+    return (shadow ?? row) as Row
+  })
+  return toCsv(withComposite as readonly Record<string, unknown>[], [
+    { key: COMPARISON_DIFF_KEY, title: markerTitle, dataIndex: COMPARISON_DIFF_KEY },
+    ...columns.map((c) => ({
+      key: c.key,
+      title: c.title,
+      dataIndex: typeof c.dataIndex === 'string' ? c.dataIndex : undefined,
+    })),
+  ])
 }
 
 /** Read clipboard text; null when unavailable or denied (jsdom: no-op). */
@@ -4239,6 +4353,30 @@ export function IrisTable<Row extends Record<string, unknown>>({
         viewColumnsRef.current,
       )
     },
+    // Batch BV (iris 独有): export the DIFF rows of the compare view —
+    // current-view rows marked removed/changed (VIEW order, filteredData —
+    // the same source as exportCurrentViewCsv) + compareWith-only added rows
+    // (SNAPSHOT order, no render slot), each prefixed with a marker column
+    // (`__iris_diff`: added/removed/changed, header = table.compare.diff);
+    // changed cells export `maskedOld → maskedNew` (mask before composition,
+    // exportRaw keeps both sides bare, formula columns do not self-composite).
+    // Feature off (no compareWith / no rowKey — the render memo is null) →
+    // ''; identical snapshots → header only (two states, caller
+    // distinguishes via the memo being non-null).
+    exportComparisonCsv: () => {
+      const diff = compareDiffRef.current
+      const snapshot = compareWithRef.current
+      if (!diff || !snapshot || !rowKeyRef.current) return ''
+      return buildComparisonCsv(
+        filteredDataRef.current,
+        snapshot,
+        rowKeyRef.current,
+        diff,
+        viewColumnsRef.current,
+        formulaTablesRef.current,
+        t('table.compare.diff'),
+      )
+    },
   }
   React.useEffect(() => {
     if (tableRef) tableRef.current = handleRef.current
@@ -4492,6 +4630,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // post-rerender rows — same pattern as filteredDataRef above).
   const bodyDataRef = React.useRef(bodyData)
   bodyDataRef.current = bodyData
+  // Batch BV: mirror the latest compare state for the mount-time handle
+  // (exportComparisonCsv runs on demand, NOT during render — the same
+  // ref-mirror pattern as filteredDataRef/bodyDataRef above; the diff memo
+  // and the props are render-scoped and would go stale in the mount closure).
+  const compareDiffRef = React.useRef<RowDiff | null>(compareDiff)
+  compareDiffRef.current = compareDiff
+  const compareWithRef = React.useRef<Row[] | undefined>(compareWith)
+  compareWithRef.current = compareWith
+  const rowKeyRef = React.useRef<string>(rowKey)
+  rowKeyRef.current = rowKey
 
   // Batch BL: after EVERY commit, sample the render+layout duration from
   // the render-top mark and push the latest snapshot into the perf

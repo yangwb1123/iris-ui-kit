@@ -88,6 +88,7 @@ export const zhCNMessages: Record<string, string> = {
   'table.perf.changes': '变更数',
   'table.perf.empty': '暂无渲染数据',
   'table.compare.tooltip': '旧值: {old} → 新值: {new}',
+  'table.compare.diff': '差异',
   'table.batchEdit.column': '列',
   'table.batchEdit.apply': '应用',
   'table.views.save': '保存视图',

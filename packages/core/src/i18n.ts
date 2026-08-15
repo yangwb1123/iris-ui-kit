@@ -152,6 +152,7 @@ export const defaultMessages: I18nMessages = {
   'table.perf.changes': 'Changes',
   'table.perf.empty': 'No render yet',
   'table.compare.tooltip': 'Old: {old} → New: {new}',
+  'table.compare.diff': 'Diff',
   'table.batchEdit.column': 'Column',
   'table.batchEdit.apply': 'Apply',
   'table.views.save': 'Save view',

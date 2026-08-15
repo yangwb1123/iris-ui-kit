@@ -610,6 +610,8 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   restoreVersion: (index: number) => void
   /** Export the rows captured BEFORE the commit with `index` as CSV (batch BF, iris 独有): the same `exportCsv` shape as `exportCurrentViewCsv` (formula columns materialized on shadow rows, masks applied, hidden columns excluded) — the PRE-change snapshot, NOT the live view; an unknown index (trimmed/cleared) or no `versionHistory` → `''` (caller detects via `getVersions()`). */
   exportVersionCsv: (index: number) => string
+  /** Export the compare-view DIFF rows as CSV (batch BV, iris 独有): current-view rows marked `removed`/`changed` in VIEW order + `compareWith`-only `added` rows in SNAPSHOT order, each prefixed with a marker column (`__iris_diff`, header = i18n `table.compare.diff`); changed cells export a `maskedOld → maskedNew` composite (mask before composition; `exportRaw` keeps both sides bare; formula columns do not self-composite) — same serializer shape as `exportCurrentViewCsv` (formula materialized, masks applied, hidden columns excluded); no `compareWith`/`rowKey` → `''`, identical snapshots → header only. */
+  exportComparisonCsv: () => string
 }
 
 /**

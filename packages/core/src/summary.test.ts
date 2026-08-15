@@ -77,4 +77,18 @@ describe('@iris-ui-kit/core summarizeColumn (batch AW, iris 独有)', () => {
     const s = summarizeColumn(['1', '2', '3', 'N/A'], 'N')
     expect(s).toBe('N：共 4 个值，范围 1.0–3.0，平均 2.0，0 个缺失')
   })
+
+  it('non-finite strings ("Infinity", "NaN") are NOT numeric (would render Infinity ranges)', () => {
+    const s = summarizeColumn(['Infinity', '-Infinity', 'x', 'y'], 'N')
+    // only 0 of 4 is numeric → categorical branch, no Infinity range in output
+    expect(s).toBe('N：25% Infinity，25% -Infinity，25% x，其余 1 个')
+    expect(s).not.toContain('Infinity–')
+  })
+
+  it('very large numeric columns (>100k) do not RangeError (no Math.min(...) spread)', () => {
+    const big: number[] = new Array(200_000)
+    for (let i = 0; i < big.length; i++) big[i] = i
+    const s = summarizeColumn(big, 'Big')
+    expect(s).toBe(`Big：共 200000 个值，范围 0.0–199999.0，平均 99999.5，0 个缺失`)
+  })
 })

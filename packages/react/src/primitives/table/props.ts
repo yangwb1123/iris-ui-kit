@@ -494,13 +494,15 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * one line what a column IS): when true, the context menu gains a built-in
    * item (key `__iris-summary`, i18n `table.summary`) appended AFTER the
    * value-distribution item; selecting it opens a floating panel
-   * (`data-iris-summary-panel`) showing the core `summarizeColumn` natural-
-   * language summary of the clicked column's values over `bodyData` — a
+   * (`data-iris-summary-panel`) showing the core `summarizeColumn`
+   * natural-language summary of the clicked column's values over `bodyData`
+   * — a
    * numeric column gets `共 N 个值，范围 min–max，平均 avg，M 个缺失`, a
    * categorical one its top-3 shares (`,` percentages) + a muted
    * `，其余 R 个` fold. Requires `contextMenu` (pairs naturally with
    * `valueDistribution`); Esc / outside / scroll close it like the
-   * distribution panel. */
+   * distribution panel.
+   */
   nlSummary?: boolean
   /**
    * Mini chart preview (batch AR, iris 独有): when true, the toolbar gains a

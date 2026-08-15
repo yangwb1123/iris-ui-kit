@@ -33,7 +33,7 @@ function isNumericValue(v: unknown): boolean {
   if (typeof v === 'boolean') return false
   if (typeof v === 'string') {
     const s = v.trim()
-    return s !== '' && !Number.isNaN(Number(s))
+    return s !== '' && Number.isFinite(Number(s))
   }
   return false
 }
@@ -54,10 +54,18 @@ export function summarizeColumn(values: readonly unknown[], label: string): stri
   if (nonEmpty.length === 0) return `${label}：无数据`
   const numeric = nonEmpty.filter(isNumericValue)
   if (numeric.length / nonEmpty.length >= 0.6) {
-    const nums = numeric.map((v) => Number(v))
-    const min = Math.min(...nums)
-    const max = Math.max(...nums)
-    const avg = nums.reduce((a, b) => a + b, 0) / nums.length
+    // single-pass min/max — a spread would RangeError on very large
+    // virtual-scroll columns (e.g. 200k rows)
+    let min = Infinity
+    let max = -Infinity
+    let sum = 0
+    for (const v of numeric) {
+      const n = Number(v)
+      if (n < min) min = n
+      if (n > max) max = n
+      sum += n
+    }
+    const avg = sum / numeric.length
     const missing = values.length - nonEmpty.length
     return (
       `${label}：共 ${nonEmpty.length} 个值，` +

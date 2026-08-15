@@ -1,4 +1,4 @@
-Batch BT complete. Committed as **`<commit>`** — `feat(table): vxe-grid 批 BT——行选择拖拽 selectionDrag（iris 独有）`.
+Batch BT complete. Committed as **`12addddc`** — `feat(table): vxe-grid 批 BT——行选择拖拽 selectionDrag（iris 独有）`.
 
 ## Report
 

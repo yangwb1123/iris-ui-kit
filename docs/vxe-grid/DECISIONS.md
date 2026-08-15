@@ -1067,3 +1067,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-az-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-az-baseline.md
+
+## 2026-08-14 19:10:47 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-az-adapt.md [ok]: Report: **Files changed** (4 hand-written + 1 test + 3 generated/bookkeeping):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-az-adapt.md
+
+## 2026-08-14 19:15:19 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-az-review.md [ok]: Verification results: | Command | Result |; Checklist findings: 1. **Key format/precedence/title — PASS**: lookup `annotations[\`${k}::${col.key}\`]`(Table.tsx:357) uses the exact`ce; Findings: - **P2** `batch-az-baseline.md`: committed file is 19 lines but claims "62 lines" and "13 fiats F1–F13 included for gate
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-az-review.md

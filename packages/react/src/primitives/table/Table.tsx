@@ -1661,6 +1661,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onCellEdit,
   onEditStart,
   onEditClosed,
+  editAutosave,
+  onAutosave,
   onSelectAllChange,
   onScroll,
   tableRef,
@@ -2663,6 +2665,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
   onEditStartRef.current = onEditStart
   const onEditClosedRef = React.useRef(onEditClosed)
   onEditClosedRef.current = onEditClosed
+  // Batch BQ (iris 独有): editAutosave — commitValue is captured by the
+  // cellEdit useMemo([]) closure, so the feature switch + callback must be
+  // read through refs (auditEnabledRef same shape).
+  const editAutosaveRef = React.useRef(editAutosave)
+  editAutosaveRef.current = editAutosave
+  const onAutosaveRef = React.useRef(onAutosave)
+  onAutosaveRef.current = onAutosave
   const onSelectAllChangeRef = React.useRef(onSelectAllChange)
   onSelectAllChangeRef.current = onSelectAllChange
   const onScrollRef = React.useRef(onScroll)
@@ -2740,6 +2749,26 @@ export function IrisTable<Row extends Record<string, unknown>>({
   /** Current row object for a row key (row edit mode resolves at commit time). */
   const currentRowFor = (rowIdent: string | number): Row | undefined =>
     liveDataRef.current.find((r, i) => rowKeyOf(r, i) === rowIdent)
+  /** Batch BQ (iris 独有): the post-commit row list payload for onAutosave.
+   *  The eager block already syncs externalDataRef to the next list for
+   *  rowKey rows; rowId rows cannot be found by that field lookup, so this
+   *  mirrors the setLiveData updater's fallback (locate by computed key,
+   *  clone, set). Unreachable without a resolvable key → current list. */
+  const autosaveRows = (
+    ctx: { col: IrisTableColumn<Row> },
+    k: string | number,
+    value: unknown,
+  ): Row[] => {
+    const current = externalDataRef.current ?? []
+    const next = setCellValue(current, rowKey, k, ctx.col.key, value)
+    if (next !== current) return next
+    if (!rowId) return current
+    const at = current.findIndex((r, i) => rowKeyOf(r, i) === k)
+    if (at < 0) return current
+    const viaId = current.slice()
+    viaId[at] = { ...viaId[at]!, [ctx.col.key]: value }
+    return viaId
+  }
   /** Shared commit write-back for cell AND row edit sessions (batch K): the
    *  live data update + onCellEdit fire, skipping no-op commits. `ctx.row` is
    *  the CURRENT row object (row sessions resolve it by key). */
@@ -2800,6 +2829,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
       newValue: value,
       rowIndex: ctx.rowIndex,
     })
+    // Batch BQ (iris 独有): editAutosave — after a successful commit, notify
+    // the parent persistence hook with the post-commit row list. editAutosave
+    // is the feature switch (onAutosave alone is inert); the value ===
+    // oldValue early-return above already filtered no-ops. Row-list write-
+    // backs (paste/fill/FNR/batch ops) never funnel through here.
+    if (editAutosaveRef.current) onAutosaveRef.current?.(autosaveRows(ctx, k, value))
   }
   const cellEdit = React.useMemo(
     () =>

@@ -347,6 +347,10 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   onEditStart?: (params: IrisTableEditStartParams<Row>) => void
   /** Edit close (vxe edit-closed parity, batch V): fired when an edit session ends — `cancelled: false` carries the committed value, `cancelled: true` when Escape discarded it. Cell mode only (see `IrisTableEditClosedParams`). */
   onEditClosed?: (params: IrisTableEditClosedParams<Row>) => void
+  /** Batch BQ (iris 独有): auto-save committed inline edits — after a successful commit, fire `onAutosave` with the post-commit row list (parent persistence hook; orthogonal to `onDataChange`, which inline edits never trigger). `editAutosave` is the feature switch — `onAutosave` alone is inert (keymap precedent). No-op commits (same value), cancelled (Escape) and validation-failed edits never fire; row edit mode fires per committed column. */
+  editAutosave?: boolean
+  /** Batch BQ (iris 独有): parent persistence hook fired by `editAutosave` with the post-commit row list. */
+  onAutosave?: (rows: Row[]) => void
   /** Header select-all toggle (additive — not in vxe's emits, batch V): fired with the PRE-toggle header state and the current selection keys. */
   onSelectAllChange?: (state: boolean | 'indeterminate', selection: Array<string | number>) => void
   /** Root scroll (vxe scroll parity, batch V): `{ scrollTop, scrollLeft }` of the root container; fires in column-virtualization mode and via a native listener otherwise (only meaningful with `height`, else overflow is hidden). */

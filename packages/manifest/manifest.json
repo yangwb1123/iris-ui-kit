@@ -36586,6 +36586,18 @@
           "description": "Edit close (vxe edit-closed parity, batch V): fired when an edit session ends — `cancelled: false` carries the committed value, `cancelled: true` when Escape discarded it. Cell mode only (see `IrisTableEditClosedParams`)."
         },
         {
+          "name": "editAutosave",
+          "type": "boolean",
+          "optional": true,
+          "description": "Batch BQ (iris 独有): auto-save committed inline edits — after a successful commit, fire `onAutosave` with the post-commit row list (parent persistence hook; orthogonal to `onDataChange`, which inline edits never trigger). `editAutosave` is the feature switch — `onAutosave` alone is inert (keymap precedent). No-op commits (same value), cancelled (Escape) and validation-failed edits never fire; row edit mode fires per committed column."
+        },
+        {
+          "name": "onAutosave",
+          "type": "(rows: Row[]) => void",
+          "optional": true,
+          "description": "Batch BQ (iris 独有): parent persistence hook fired by `editAutosave` with the post-commit row list."
+        },
+        {
           "name": "onSelectAllChange",
           "type": "(state: boolean | 'indeterminate', selection: Array<string | number>) => void",
           "optional": true,
@@ -37526,6 +37538,18 @@
               "description": "Edit close (vxe edit-closed parity, batch V): fired when an edit session ends — `cancelled: false` carries the committed value, `cancelled: true` when Escape discarded it. Cell mode only (see `IrisTableEditClosedParams`)."
             },
             {
+              "name": "editAutosave",
+              "type": "boolean",
+              "optional": true,
+              "description": "Batch BQ (iris 独有): auto-save committed inline edits — after a successful commit, fire `onAutosave` with the post-commit row list (parent persistence hook; orthogonal to `onDataChange`, which inline edits never trigger). `editAutosave` is the feature switch — `onAutosave` alone is inert (keymap precedent). No-op commits (same value), cancelled (Escape) and validation-failed edits never fire; row edit mode fires per committed column."
+            },
+            {
+              "name": "onAutosave",
+              "type": "(rows: Row[]) => void",
+              "optional": true,
+              "description": "Batch BQ (iris 独有): parent persistence hook fired by `editAutosave` with the post-commit row list."
+            },
+            {
               "name": "onSelectAllChange",
               "type": "(state: boolean | 'indeterminate', selection: Array<string | number>) => void",
               "optional": true,
@@ -37980,6 +38004,7 @@
           "events": [
             "onActiveViewChange",
             "onAnnotationsChange",
+            "onAutosave",
             "onCellClick",
             "onCellDblClick",
             "onCellEdit",
@@ -39040,6 +39065,7 @@
         "onCellEdit",
         "onEditStart",
         "onEditClosed",
+        "onAutosave",
         "onSelectAllChange",
         "onScroll",
         "onExpandedRowsChange",
@@ -39058,8 +39084,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 156,
-        "eventCount": 29
+        "propCount": 158,
+        "eventCount": 30
       }
     },
     {

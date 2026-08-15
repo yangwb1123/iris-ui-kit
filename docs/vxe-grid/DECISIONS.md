@@ -1427,3 +1427,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bp-review.md [ok]: 结论：**PASS**（2 条 LOW 非阻塞发现）: **实测全部通过：**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bp-review.md
+
+## 2026-08-15 05:27:07 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bp-gate.md [ok]: Review verdict: **PASS**（2 条 LOW 非阻塞发现）— core 1517/1517 · react 2255/2255（+13 copy-format）· lint 0 errors · audit 0 · check:manifest 通过 ; Full repo gate: | 门 | 结果 |; Final test counts: - **core: 1517/1517** · **react: 2255/2255**（含 `copy-format.test.tsx` 13/13）· vue 1531 · solid 974+34 hydration · svelte; Commit: **`44c13c5e`** `feat(table): grid 批 BP——单元格复制格式（iris 独有）`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bp-gate.md
+
+## 2026-08-15 05:30:41 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bq-baseline.md [ok]: 核验摘要: **设计** — `editAutosave?: boolean` + `onAutosave?: (rows: Row[]) => void`（props.ts:349，`onEditClosed` 后编辑组内）。单一咽喉 `commit
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bq-baseline.md

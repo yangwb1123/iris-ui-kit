@@ -135,6 +135,34 @@ export const PRESENCE_LABEL_STYLE: React.CSSProperties = {
   color: 'var(--iris-primary-foreground, #fff)',
   pointerEvents: 'none',
 }
+/* Batch BU table watermark (iris 独有 — vxe has no watermark concept): the
+   rotated tiled text layer rendered INSIDE the table root when `watermark` is
+   set (attr/data mirror the standalone IrisWatermark primitive's tile layout).
+   Absolute inset-0 anchors to the relative root; plain stacking (no z-index
+   on the layer) puts it above static rows / footer / pager but BELOW the
+   sticky header (z 2), pinned columns (z 1) and floating panels. Token-driven:
+   muted color, space-xl gap, font-size-lg tiles. pointer-events/user-select
+   none + aria-hidden make it a pure display layer that never intercepts
+   input or a11y. */
+export const WATERMARK_OVERLAY_STYLE: React.CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  overflow: 'hidden',
+  pointerEvents: 'none',
+  userSelect: 'none',
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignContent: 'flex-start',
+  gap: 'var(--iris-space-xl, 24px)',
+  opacity: 0.15,
+}
+export const WATERMARK_TILE_STYLE: React.CSSProperties = {
+  transform: 'rotate(-22deg)',
+  fontSize: 'var(--iris-font-size-lg, 16px)',
+  color: 'var(--iris-muted)',
+  whiteSpace: 'nowrap',
+  lineHeight: 1,
+}
 export const TABLE_ROW_CSS = `
 [data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover {
   --iris-cell-bg: var(--iris-surface-hover);

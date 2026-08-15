@@ -92,6 +92,8 @@ import {
   PRESENCE_LABEL_STYLE,
   RANGE_FILL_HANDLE_STYLE,
   RANGE_FILL_TARGET_BG,
+  WATERMARK_OVERLAY_STYLE,
+  WATERMARK_TILE_STYLE,
 } from './styles'
 
 /* Batch AQ drag-fill helpers (module scope): the per-cell fill logic stays
@@ -523,6 +525,26 @@ function renderPresenceLabels(entries: IrisTablePresenceEntry[] | undefined): Re
 }
 
 export type { IrisTableProps, IrisTableProxyConfig } from './props'
+
+// ── Batch BU table watermark (iris 独有 — vxe has no watermark) ────────
+// A rotated, tiled text layer rendered INSIDE the table root (not wrapping
+// it — a wrapper would break the fixed-height scroll container and sticky
+// header). Mirror of the standalone IrisWatermark primitive's tile layout
+// (TILE_COUNT + data-iris-watermark(-tile) attrs). Presence-gated at the
+// call site: no prop / empty string → zero nodes.
+const WATERMARK_TILE_COUNT = 72
+
+function renderTableWatermark(text: string): React.ReactNode {
+  return (
+    <div data-iris-watermark="" aria-hidden="true" style={WATERMARK_OVERLAY_STYLE}>
+      {Array.from({ length: WATERMARK_TILE_COUNT }, (_, i) => (
+        <span key={i} data-iris-watermark-tile="" style={WATERMARK_TILE_STYLE}>
+          {text}
+        </span>
+      ))}
+    </div>
+  )
+}
 
 // ── Batch BI column sparkline (iris 独有 — vxe has no sparkline) ───────
 // SVG geometry in viewBox units — 20×8, pure structured JSX (no SVG
@@ -1626,6 +1648,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   highlightHoverRow = true,
   showHeaderOverflow = true,
   showFooterOverflow = true,
+  watermark,
   height,
   minHeight,
   maxHeight,
@@ -8090,6 +8113,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // `...style` — a caller-provided style can still override.
           ...(zIndex !== undefined ? { position: 'relative', zIndex } : null),
           ...style,
+          // Batch BU watermark: the overlay is absolutely positioned, so the
+          // root must be a positioning context — forced AFTER `...style` so a
+          // caller-provided style cannot unanchor the layer (zoom's
+          // position: fixed below still wins when zoomed, so the watermark
+          // rides the fixed overlay as intended).
+          ...(watermark ? { position: 'relative' } : null),
           // Batch U zoom (vxe toolbar zoom parity): the stylesheet pins the
           // root fixed (data-iris-table-zoomed); the inline height: 100%
           // keeps the fixed-height machinery engaged so the sticky header
@@ -8617,6 +8646,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
           footerData rows — whichever render, in that order; footerSpanMethod
           spans across it with a stack-wide 0-based rowIndex. */}
         {renderFooterStack()}
+
+        {/* Batch BU watermark (iris 独有): rotated tiled text over the static
+          rows / footer / pager. Plain stacking (the layer has no z-index)
+          keeps it below the sticky header (z 2), pinned columns (z 1) and the
+          floating panels below; presence-gated so no prop = zero nodes. */}
+        {watermark ? renderTableWatermark(watermark) : null}
 
         {/* Server-side pager (vxe-grid proxyConfig parity): driven by the
           controller's page/pageSize/total; page changes call setParams and

@@ -37051,6 +37051,12 @@
           "description": "Footer overflow (vxe showFooterOverflow parity, batch W): when false, summary / footerMethod / footerData cells switch to `whiteSpace: 'normal'` + `overflow: 'visible'` (text wraps instead of the ellipsis). Default true."
         },
         {
+          "name": "watermark",
+          "type": "string",
+          "optional": true,
+          "description": "Background watermark text (iris 独有 — vxe has no watermark concept): when set, a rotated tiled watermark layer (`data-iris-watermark`, tiles `data-iris-watermark-tile`) overlays the table's static rows / footer / pager — below the sticky header, pinned columns and floating panels. Pure display: `aria-hidden` + `pointer-events: none` + `user-select: none`, token-driven (`--iris-muted` / `--iris-space-xl` / `--iris-font-size-lg`). Empty string hides the layer."
+        },
+        {
           "name": "style",
           "type": "CSSProperties",
           "optional": true
@@ -38013,6 +38019,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Footer overflow (vxe showFooterOverflow parity, batch W): when false, summary / footerMethod / footerData cells switch to `whiteSpace: 'normal'` + `overflow: 'visible'` (text wraps instead of the ellipsis). Default true."
+            },
+            {
+              "name": "watermark",
+              "type": "string",
+              "optional": true,
+              "description": "Background watermark text (iris 独有 — vxe has no watermark concept): when set, a rotated tiled watermark layer (`data-iris-watermark`, tiles `data-iris-watermark-tile`) overlays the table's static rows / footer / pager — below the sticky header, pinned columns and floating panels. Pure display: `aria-hidden` + `pointer-events: none` + `user-select: none`, token-driven (`--iris-muted` / `--iris-space-xl` / `--iris-font-size-lg`). Empty string hides the layer."
             },
             {
               "name": "style",
@@ -39108,7 +39120,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 160,
+        "propCount": 161,
         "eventCount": 30
       }
     },

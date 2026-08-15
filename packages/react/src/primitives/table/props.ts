@@ -784,6 +784,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   showHeaderOverflow?: boolean
   /** Footer overflow (vxe showFooterOverflow parity, batch W): when false, summary / footerMethod / footerData cells switch to `whiteSpace: 'normal'` + `overflow: 'visible'` (text wraps instead of the ellipsis). Default true. */
   showFooterOverflow?: boolean
+  /** Background watermark text (iris 独有 — vxe has no watermark concept): when set, a rotated tiled watermark layer (`data-iris-watermark`, tiles `data-iris-watermark-tile`) overlays the table's static rows / footer / pager — below the sticky header, pinned columns and floating panels. Pure display: `aria-hidden` + `pointer-events: none` + `user-select: none`, token-driven (`--iris-muted` / `--iris-space-xl` / `--iris-font-size-lg`). Empty string hides the layer. */
+  watermark?: string
   style?: CSSProperties
   className?: string
 }

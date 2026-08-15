@@ -137,13 +137,29 @@ export const PRESENCE_LABEL_STYLE: React.CSSProperties = {
 }
 /* Batch BU table watermark (iris 独有 — vxe has no watermark concept): the
    rotated tiled text layer rendered INSIDE the table root when `watermark` is
-   set (attr/data mirror the standalone IrisWatermark primitive's tile layout).
-   Absolute inset-0 anchors to the relative root; plain stacking (no z-index
-   on the layer) puts it above static rows / footer / pager but BELOW the
-   sticky header (z 2), pinned columns (z 1) and floating panels. Token-driven:
-   muted color, space-xl gap, font-size-lg tiles. pointer-events/user-select
-   none + aria-hidden make it a pure display layer that never intercepts
-   input or a11y. */
+   set. DOM shape mirrors the standalone IrisWatermark primitive (wrapper
+   `data-iris-watermark` → overlay `data-iris-watermark-overlay` → tiles
+   `data-iris-watermark-tile`) so a global `[data-iris-watermark]` selector
+   matches one element shape everywhere. The table variant is embedded in the
+   scroll container itself, so the wrapper is a STICKY FIRST CHILD (the root
+   is the scroll container): at the content top its normal position is the
+   scrollport top, so `top: 0; left: 0; height: 100%` pins it to the scroll
+   viewport from scroll 0 — the watermark stays put while rows scroll beneath
+   (absolute inset-0 on the scroll container root — or sticky rendered after
+   the rows — would scroll away with the content). Plain stacking
+   (positioned z-auto) keeps it above static rows / footer / pager but BELOW
+   the sticky header (z 2), pinned columns (z 1) and floating panels.
+   Token-driven: muted color, space-xl gap, font-size-lg tiles.
+   pointer-events/user-select none + aria-hidden make it a pure display layer
+   that never intercepts input or a11y. */
+export const WATERMARK_WRAPPER_STYLE: React.CSSProperties = {
+  position: 'sticky',
+  top: 0,
+  left: 0,
+  height: '100%',
+  pointerEvents: 'none',
+  userSelect: 'none',
+}
 export const WATERMARK_OVERLAY_STYLE: React.CSSProperties = {
   position: 'absolute',
   inset: 0,

@@ -47,6 +47,12 @@ describe('IrisTable watermark (batch BU, iris 独有)', () => {
     )
     const el = container.querySelector('[data-iris-watermark]')
     expect(el).not.toBeNull()
+    // DOM shape mirrors the standalone IrisWatermark primitive: wrapper
+    // `data-iris-watermark` → overlay `data-iris-watermark-overlay` → tiles.
+    const overlay = container.querySelector('[data-iris-watermark-overlay]') as HTMLElement
+    expect(overlay).not.toBeNull()
+    expect(el?.contains(overlay)).toBe(true)
+    expect(overlay.querySelectorAll('[data-iris-watermark-tile]').length).toBe(72)
     // The standalone IrisWatermark precedent's 72-tile layout.
     expect(tiles().length).toBe(72)
     for (const tile of tiles()) {
@@ -59,9 +65,14 @@ describe('IrisTable watermark (batch BU, iris 独有)', () => {
       <IrisTable columns={cols} data={rows} rowKey="id" watermark="SECRET" />,
     )
     const el = container.querySelector('[data-iris-watermark]') as HTMLElement
-    expect(el.getAttribute('aria-hidden')).toBe('true')
+    const overlay = container.querySelector('[data-iris-watermark-overlay]') as HTMLElement
+    // aria-hidden rides the overlay (primitive parity); the sticky wrapper
+    // and overlay are both inert so the layer never intercepts input.
+    expect(overlay.getAttribute('aria-hidden')).toBe('true')
     expect(el.style.pointerEvents).toBe('none')
     expect(el.style.userSelect).toBe('none')
+    expect(overlay.style.pointerEvents).toBe('none')
+    expect(overlay.style.userSelect).toBe('none')
   })
 
   it('tiles rotate -22deg with token color and token size', () => {
@@ -128,15 +139,24 @@ describe('IrisTable watermark (batch BU, iris 独有)', () => {
     }
   })
 
-  it('coexists with fixed height — layer anchors to the scroll container root', () => {
+  it('coexists with fixed height — sticky first-child pins to the scroll viewport', () => {
     const { container } = render(
       <IrisTable columns={cols} data={rows} rowKey="id" watermark="H" height={300} />,
     )
     expect(root().getAttribute('data-iris-table-fixed-height')).toBe('true')
     const el = container.querySelector('[data-iris-watermark]') as HTMLElement
     expect(el).not.toBeNull()
-    expect(el.style.position).toBe('absolute')
-    expect(el.style.inset).toBe('0')
+    // Anchoring strategy (batch-bu-review HIGH fix): the root IS the scroll
+    // container, so the layer must be a STICKY FIRST CHILD — at the content
+    // top its normal position is the scrollport top, so `top: 0; height:
+    // 100%` pins it to the viewport while rows scroll beneath (absolute
+    // inset-0 — or sticky rendered after the rows — would scroll away with
+    // the content).
+    expect(root().firstElementChild).toBe(el)
+    expect(el.style.position).toBe('sticky')
+    expect(el.style.top).toBe('0px')
+    expect(el.style.left).toBe('0px')
+    expect(el.style.height).toBe('100%')
   })
 
   it('layer is pure display — no data mutation, no extra handlers', () => {

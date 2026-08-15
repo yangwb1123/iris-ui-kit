@@ -1487,3 +1487,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bt-review.md [ok]: Verdict: **FAIL** — `docs/vxe-grid/batch-bt-review.md` written: Reviewed commit `12addddc` against the baseline, inspected the full diff, re-ran every requested gate, and empirically v; Verification (all independently re-run ✅): - **core test** 1517/1517 · **react test** 2294/2294 (+13 new) · **react typecheck** clean · **react lint** 0 errors (1 ; Findings: 1. **HIGH (gate-blocking)** — `Table.tsx:3394-3401`: `handleSelectionDragPointerDown` calls `setPointerCapture` on **eve
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bt-review.md
+
+## 2026-08-15 06:46:22 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bt-gate.md [ok]: Verdict: FAIL (1 HIGH + 1 LOW + 1 INFO) — all addressed: **HIGH (gate-blocking)** — `setPointerCapture` was called on every left-button pointerdown, retargeting the subsequent `; Verification: - **Negative checks**: reintroducing capture-on-press fails tests ③/④; removing the pointercancel clear fails ⑤ — all th; Test counts: - **core**: 1517/1517 · **react**: 2296/2296 (+15 selection-drag, was 13); Commit: `4ea223965f2fb8cbba9988a3a7e2b0134cc2f0f9`—`feat(table): grid 批 BT——行选择拖拽范围（iris 独有）` (7 files: Table.tsx, selection-d
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bt-gate.md
+
+## 2026-08-15 06:50:31 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bu-baseline.md [ok]: 核验摘要: **设计** — 新表级 prop `watermark?: string`（props.ts 接口尾，`showFooterOverflow` 后 / `style` 前）：**绝对定位旋转层** `data-iris-watermark
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bu-baseline.md
+
+## 2026-08-15 06:57:54 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bu-adapt.md [ok]: Report: **Batch BU: 表格水印 `watermark`（iris 独有）** — implemented per baseline, zero drift.; Files changed (4 + tests): | File | Change |; Implementation: - Absolute-positioned rotated layer `data-iris-watermark` **embedded in the root** (not wrapping — wrapper would break f; Tests added (10): ① no-prop zero nodes · ② renders text (72 tiles) · ③ aria-hidden + non-interactive · ④ rotate(-22deg) + token color/size; Verification — all ✅: - core test **1517/1517**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bu-adapt.md
+
+## 2026-08-15 07:10:02 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bu-review.md [ok]: Summary: Reviewed commit `d892160d` against `batch-bu-baseline.md`. All static gates pass, but the documented fixed-height behavi
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bu-review.md

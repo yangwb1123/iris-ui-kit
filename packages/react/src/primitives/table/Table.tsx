@@ -3,6 +3,7 @@ import {
   aggregate,
   buildFormValues,
   buildHeaderMatrix,
+  chartDomain,
   computeVirtualRange,
   compareValues,
   createCellRange,
@@ -465,6 +466,130 @@ function renderPresenceLabels(entries: IrisTablePresenceEntry[] | undefined): Re
 }
 
 export type { IrisTableProps, IrisTableProxyConfig } from './props'
+
+// ── Batch BI column sparkline (iris 独有 — vxe has no sparkline) ───────
+// SVG geometry in viewBox units — 20×8, pure structured JSX (no SVG
+// strings, no dangerouslySetInnerHTML), stroke from the primary token
+// (ChartPanel precedent). The series is PER-PREFIX: the cell at filteredData
+// index i charts the column's values over [0..i] INCLUSIVE (the current
+// value is the final point).
+const SPARK_W = 20
+const SPARK_H = 8
+const SPARK_PAD = 1
+
+/** Batch BI render memo shape: filteredData row-identity index + per-column
+ * RAW value arrays (values[i] = the i-th filteredData row's cell value). */
+interface SparklineData<Row extends Record<string, unknown>> {
+  rowIndexOf: Map<Row, number>
+  valuesByKey: Map<string, unknown[]>
+}
+
+/** x of the i-th point (0-based) over `count` points. */
+function sparkX(i: number, count: number): number {
+  if (count <= 1) return SPARK_W / 2
+  return SPARK_PAD + (i / (count - 1)) * (SPARK_W - 2 * SPARK_PAD)
+}
+
+/** y of value `v` within the padded [min, max] domain (never a zero span). */
+function sparkY(v: number, min: number, max: number): number {
+  const span = max - min
+  return SPARK_H - SPARK_PAD - ((v - min) / span) * (SPARK_H - 2 * SPARK_PAD)
+}
+
+/** Contiguous runs of finite points → polyline segments (a null point breaks
+ * the line; each run renders its own polyline — ChartPanel parity). */
+function sparkSegments(
+  points: ReadonlyArray<number | null>,
+  min: number,
+  max: number,
+): Array<Array<[number, number]>> {
+  const segments: Array<Array<[number, number]>> = []
+  let current: Array<[number, number]> | null = null
+  points.forEach((p, i) => {
+    if (p === null) {
+      current = null
+      return
+    }
+    if (current === null) {
+      current = []
+      segments.push(current)
+    }
+    current.push([sparkX(i, points.length), sparkY(p, min, max)])
+  })
+  return segments
+}
+
+/** Batch BI: the per-prefix series for one cell — the sparkline column's
+ * values over filteredData[0..i] INCLUSIVE (current value = final point),
+ * with null/undefined/non-finite values as gaps (buildChartData parity).
+ * null when the memo is off or the row is not in filteredData (fail-inert). */
+function sparklineSeries<Row extends Record<string, unknown>>(
+  memo: SparklineData<Row> | null,
+  row: Row,
+  col: IrisTableColumn<Row>,
+): Array<number | null> | null {
+  if (memo === null) return null
+  const index = memo.rowIndexOf.get(row)
+  if (index === undefined) return null
+  const values = memo.valuesByKey.get(col.key)
+  if (!values) return null
+  return values
+    .slice(0, index + 1)
+    .map((raw) => (typeof raw === 'number' && Number.isFinite(raw) ? raw : null))
+}
+
+/** Batch BI: whether this cell renders a sparkline — the per-cell numeric
+ * gate (raw value must be a finite JS number); the same condition the cell
+ * title uses. Module-level so the cell render's cyclomatic complexity stays
+ * flat (a call costs 0). */
+function sparklineCell<Row extends Record<string, unknown>>(
+  col: IrisTableColumn<Row>,
+  raw: unknown,
+): boolean {
+  return col.sparkline === true && typeof raw === 'number' && Number.isFinite(raw)
+}
+
+/** Batch BI: the 20×8 sparkline SVG for a series — polyline segments (gaps
+ * break the line, ChartPanel parity), a circle dot for a single-point
+ * prefix; stroke `var(--iris-primary)` strokeWidth 1.5 (token — ChartPanel
+ * precedent). `role="img"` + aria-label = the series (the same string the
+ * cell title shows). Zero nodes for a null/empty series. */
+function renderSparkline(series: Array<number | null> | null, colKey: string): React.ReactNode {
+  if (!series || series.length === 0) return null
+  const { min, max } = chartDomain(series)
+  const segments = sparkSegments(series, min, max)
+  return (
+    <svg
+      viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
+      width={SPARK_W}
+      height={SPARK_H}
+      role="img"
+      aria-label={series.map((p) => (p === null ? '' : String(p))).join(', ')}
+      data-iris-sparkline={colKey}
+      style={{ display: 'block', pointerEvents: 'none' }}
+    >
+      {segments.map((seg, s) => (
+        <polyline
+          key={s}
+          points={seg.map(([x, y]) => `${x},${y}`).join(' ')}
+          fill="none"
+          stroke="var(--iris-primary)"
+          strokeWidth={1.5}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      ))}
+      {series.length === 1 && series[0] !== null ? (
+        <circle
+          cx={sparkX(0, 1)}
+          cy={sparkY(series[0], min, max)}
+          r={1.5}
+          fill="var(--iris-primary)"
+        />
+      ) : null}
+    </svg>
+  )
+}
 
 interface EditorSurfaceProps<Row extends Record<string, unknown>> {
   /** The edit session driving this editor (cell mode: the singleton; row
@@ -3876,6 +4001,28 @@ export function IrisTable<Row extends Record<string, unknown>>({
       ),
     [leafColumns, filteredData],
   )
+  // Batch BI column sparkline (iris 独有): one O(n) render memo — the
+  // filteredData row-identity index plus per-column RAW value arrays — so
+  // each visible cell costs one Map lookup + an O(i) prefix slice (O(n²)
+  // worst case accepted; virtual scroll bounds the visible window). The
+  // series follows filteredData (fiat): sort/filter reorder and trim the
+  // prefix; tree expansion and group collapse do NOT truncate it. Lazily
+  // null when no column opts in.
+  const sparklineData = React.useMemo<SparklineData<Row> | null>(() => {
+    if (!leafColumns.some((c) => c.sparkline)) return null
+    const rowIndexOf = new Map<Row, number>()
+    filteredData.forEach((row, i) => rowIndexOf.set(row, i))
+    const valuesByKey = new Map<string, unknown[]>()
+    for (const col of leafColumns) {
+      if (!col.sparkline) continue
+      const values: unknown[] = new Array(filteredData.length)
+      filteredData.forEach((row, i) => {
+        values[i] = getCellValue(row, col)
+      })
+      valuesByKey.set(col.key, values)
+    }
+    return { rowIndexOf, valuesByKey }
+  }, [leafColumns, filteredData])
   // Batch AP: mirror the latest body rows for the mount-time handle
   // (exportSelectionCsv runs against the mount-time closure and must see
   // post-rerender rows — same pattern as filteredDataRef above).
@@ -5193,9 +5340,22 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const compareCellAttr = (change: RowDiffCellChange | undefined): string | undefined =>
     change ? 'true' : undefined
 
+  // Batch BI: the sparkline cell title — the series ("10, 4, 8") when this
+  // cell renders a sparkline (same gate as the SVG), else undefined so the
+  // chain falls through to the tooltip. The series string is the same one
+  // the SVG's aria-label carries.
+  const sparkTitle = (row: Row, col: IrisTableColumn<Row>): string | undefined => {
+    const raw = getCellValue(row, col)
+    if (!sparklineCell(col, raw)) return undefined
+    const series = sparklineSeries(sparklineData, row, col)
+    if (!series) return undefined
+    return series.map((p) => (p === null ? '' : String(p))).join(', ')
+  }
+
   // Batch AU: the unified cell title — the annotation note wins on noted
-  // cells (batch AZ), compare wins on changed cells, the tooltipConfig path
-  // applies otherwise, editing cells stay exempt.
+  // cells (batch AZ), compare wins on changed cells, the sparkline series
+  // wins on sparkline cells (batch BI), the tooltipConfig path applies
+  // otherwise, editing cells stay exempt.
   const cellTitle = (
     editing: boolean,
     note: string | null,
@@ -5209,7 +5369,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         ? note
         : change
           ? compareTitle(change)
-          : cellTooltip(row, col)
+          : (sparkTitle(row, col) ?? cellTooltip(row, col))
 
   // Header cell tooltips (vxe header-tooltip-config parity, batch P): a
   // native `title` on flat + grouped header cells; empty content drops the
@@ -5755,6 +5915,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     suggestOptions={suggestOptions}
                   />
                 )
+              ) : sparklineCell(col, raw) ? (
+                // Batch BI (iris 独有): the per-prefix sparkline wins over
+                // render/html/link/formatter/raw — display-only, mask inert,
+                // editing/copy/export/summary untouched (documented fiat).
+                renderSparkline(sparklineSeries(sparklineData, row, col), col.key)
               ) : col.render ? (
                 col.render(displayValue, row, idx)
               ) : col.html ? (

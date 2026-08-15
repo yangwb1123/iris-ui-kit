@@ -314,6 +314,18 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    * true, `exportCsv`/`exportCurrentViewCsv`/`exportSelectionCsv` and the
    * clipboard TSV skip this column's mask. Display keeps masking. */
   exportRaw?: boolean
+  /**
+   * Render this numeric column's cells as a mini trend line (batch BI, iris
+   * 独有 — vxe has no sparkline): each cell shows a 20×8 SVG polyline of the
+   * column's values over `filteredData[0..i]` INCLUSIVE (the current value is
+   * the final point), so sorting/filtering reorder and trim the series.
+   * Only cells whose RAW value is a finite number render an SVG (non-numeric
+   * cells render nothing); series points coerce like `buildChartData`
+   * (null/non-finite → gap). Wins over `render`/`html`/`link`/`formatter`/
+   * raw; mask, editing, copy/export and summary stay untouched. The cell
+   * `title` shows the series ("10, 4, 8") instead of the tooltip.
+   */
+  sparkline?: boolean
   /** Show a header filter trigger + checkbox panel (vxe filterConfig parity, batch I).
    * Filtering OR-matches the raw `String(value)` against the checked set. */
   filterable?: boolean

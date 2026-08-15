@@ -35,6 +35,33 @@ export interface ChartData {
 }
 
 /**
+ * Compute the numeric domain of a chart series (batch BI, iris 独有 — the
+ * domain half of `buildChartData` extracted so adapters can chart per-prefix
+ * series like the column sparkline with the exact same semantics): min/max
+ * over the FINITE points only; an empty or all-gap series → `{ 0, 1 }`, and
+ * a FLAT series (min === max) is padded by `Math.abs(min) || 1` on both
+ * sides — the exact `dataDomain` padding of plugin-charts — so the
+ * adapter's `(v − min) / (max − min)` pixel mapping can never divide by
+ * zero.
+ */
+export function chartDomain(points: ReadonlyArray<number | null>): { min: number; max: number } {
+  let min: number | null = null
+  let max: number | null = null
+  for (const value of points) {
+    if (value === null) continue
+    if (min === null || value < min) min = value
+    if (max === null || value > max) max = value
+  }
+  if (min === null || max === null) return { min: 0, max: 1 }
+  if (min === max) {
+    // Flat series: `dataDomain` parity padding so (max − min) is never 0.
+    const padding = Math.abs(min) || 1
+    return { min: min - padding, max: max + padding }
+  }
+  return { min, max }
+}
+
+/**
  * Extract one column's chart material over `rows`. Values are coerced with
  * `Number` (numeric strings chart as numbers); rows whose value is
  * `null`/`undefined`/non-finite become gap points. The domain covers only
@@ -45,24 +72,11 @@ export function buildChartData<Row extends Record<string, unknown>>(
   key: string,
 ): ChartData {
   const points: Array<number | null> = []
-  let min: number | null = null
-  let max: number | null = null
   for (const row of rows) {
     const raw = (row as Record<string, unknown>)[key]
     const value = raw == null ? Number.NaN : Number(raw)
-    if (!Number.isFinite(value)) {
-      points.push(null)
-      continue
-    }
-    points.push(value)
-    if (min === null || value < min) min = value
-    if (max === null || value > max) max = value
+    points.push(Number.isFinite(value) ? value : null)
   }
-  if (min === null || max === null) return { points, min: 0, max: 1 }
-  if (min === max) {
-    // Flat series: `dataDomain` parity padding so (max − min) is never 0.
-    const padding = Math.abs(min) || 1
-    return { points, min: min - padding, max: max + padding }
-  }
+  const { min, max } = chartDomain(points)
   return { points, min, max }
 }

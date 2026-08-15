@@ -191,7 +191,7 @@ export {
 export { matchConditionalStyles, type ConditionalStyleRule } from './conditional-styles'
 export { maskValue, type MaskKind } from './mask'
 export { summarizeColumn } from './summary'
-export { buildChartData, type ChartData } from './chart-data'
+export { buildChartData, chartDomain, type ChartData } from './chart-data'
 export { parseTableQuery, type ParseTableQueryOptions, type ParsedTableQuery } from './query-parser'
 export { diffRows, type RowDiff, type RowDiffCellChange, type RowDiffKind } from './diff-rows'
 export {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildChartData } from './chart-data'
+import { buildChartData, chartDomain } from './chart-data'
 
 interface Row extends Record<string, unknown> {
   id: number
@@ -140,5 +140,31 @@ describe('@iris-ui-kit/core buildChartData (batch AR, iris 独有)', () => {
       expect(t).toBeGreaterThanOrEqual(0)
       expect(t).toBeLessThanOrEqual(1)
     }
+  })
+})
+
+describe('@iris-ui-kit/core chartDomain (batch BI, iris 独有)', () => {
+  it('spans the finite values of a mixed series (gaps excluded)', () => {
+    expect(chartDomain([3, null, 7, null, 5])).toEqual({ min: 3, max: 7 })
+  })
+
+  it('empty series → the {0,1} fallback domain', () => {
+    expect(chartDomain([])).toEqual({ min: 0, max: 1 })
+  })
+
+  it('all-gap series → the {0,1} fallback domain', () => {
+    expect(chartDomain([null, null])).toEqual({ min: 0, max: 1 })
+  })
+
+  it('a single value is padded so min < max (never a zero span)', () => {
+    const d = chartDomain([5])
+    expect(d.min).toBe(5 - (Math.abs(5) || 1))
+    expect(d.max).toBe(5 + (Math.abs(5) || 1))
+  })
+
+  it('a flat series is padded by |value| (zero flat pads by 1)', () => {
+    expect(chartDomain([7, 7, 7])).toEqual({ min: 0, max: 14 })
+    expect(chartDomain([0, 0])).toEqual({ min: -1, max: 1 })
+    expect(chartDomain([-4, -4])).toEqual({ min: -8, max: 0 })
   })
 })

@@ -1,24 +1,22 @@
-Gate stage complete. **Review verdict was PASS** (2 × LOW findings, no gate-blocking fixes) → full repo gate green, committed.
+Gate stage complete. Working tree clean.
 
-## Review findings (documented, not fixed — PASS path)
+## Summary
 
-| Finding                                                                                                                                | Severity | Note                                                                                                                                                            |
-| -------------------------------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Masked `rowKey` column breaks composite lookup (composite pass reads post-mask key → changed rows silently lose `old → new` composite) | LOW      | Empirically verified by review probes; edge case (rowKey column also masked + masked values differ). No UI/gate impact; documented for a future hardening batch |
-| Reserved key `__iris_diff` collides with a user column of the same key (duplicate columns + user data overwritten)                     | LOW      | Reserved-key collision; documented in the spec (public doc marks `__iris_diff` as reserved)                                                                     |
+**Review verdict: PASS** (2 × LOW findings — masked-rowKey composite edge + `__iris_diff` reserved-key collision; both documented, not gate-blocking, per PASS path).
 
-## Gate results
+**Gate verification:**
 
-- **Full repo gate**: `env COREPACK_ENABLE_PROJECT_SPEC=0 corepack pnpm turbo run test typecheck lint build --concurrency=2` → **180/180 successful** (64 cached)
-- **Audit**: `audit:security` **0 vulnerabilities**; `audit:tokens` only pre-existing warnings — BV adds zero `var(--iris-*)` (verified: 0 new usages in Table.tsx diff + test file)
-- **Manifest**: `gen:manifest` → 155 components × 4 frameworks, 86 tokens; **no diff** (propCount 161 / eventCount 30 unchanged — handle + i18n both invisible, as baseline predicted) · `check:manifest` up-to-date (2 files)
-- **Comparison doc**: `docs/vxe-grid-comparison.md` iris 独有 section already current at the adapt commit (new `exportComparisonCsv` 独有表行 · compareWith row 批 BV 增量 · 构建状态 +批 BV · 测试计数 2306→2320) — gate re-verified every figure
+- Full repo gate `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful**
+- Audit: security **0 vulnerabilities**; tokens audit only pre-existing warnings (BV adds zero `var(--iris-*)` — verified 0 new usages)
+- `gen:manifest` → 155 components × 4 frameworks, 86 tokens, **no diff** (propCount 161/eventCount 30 unchanged) · `check:manifest` up-to-date
+- `docs/vxe-grid-comparison.md` iris 独有 section already current at adapt commit (`exportComparisonCsv` 独有表行 + 构建状态 + counts) — every figure re-verified against the gate run
 
-## Test counts
+**Final test counts:**
 
-- **core**: 1517/1517 (97 files) · **react**: 2320/2320 (205 files, incl. +14 `export-comparison-csv`)
-- vue 1531 · solid 974 + 34 hydration · svelte 916 + 31 hydration (unchanged, per doc)
+- **core: 1517/1517** (97 files) · **react: 2320/2320** (205 files, incl. +14 `export-comparison-csv`)
+- vue 1531 · solid 974+34 hydration · svelte 916+31 hydration (unchanged)
 
-## Commit
+**Commits:**
 
-**`2ecf1da5a88fcf94930b3e4ff88f1e92be531173`** — `feat(table): grid 批 BV——导出比较（iris 独有）` (gate-stage delta: DECISIONS.md stage entries for BV gate + baseline/review/adapt docs swept in by `git add -A`; source already committed at `30c936d2`)
+- `2ecf1da5a88fcf94930b3e4ff88f1e92be531173` — `feat(table): grid 批 BV——导出比较（iris 独有）` (gate-stage docs delta: DECISIONS stage entries + baseline/review/adapt docs; source was already committed at `30c936d2`)
+- `dcfc6322` — `docs(table): 批 BV gate 报告落 commit hash` (follow-up, BT precedent; includes `batch-bv-gate.md`)

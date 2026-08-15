@@ -1532,3 +1532,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bv-gate.md [ok]: Review verdict **PASS** (2 × LOW findings — masked rowKey column composite lookup edge + `__iris_diff` reserved-key collision, documented, not gate-blocking) → full repo gate run: `turbo run test typecheck lint build --concurrency=2` → **180/180 successful**; audit: security **0 vulnerabilities**, tokens only pre-existing warnings (BV adds zero `var(--iris-*)` — verified 0 new usages); manifest: `gen:manifest` regenerated (155 × 4, propCount 161/eventCount 30, no diff) + `check:manifest` up-to-date; comparison doc iris 独有 section already current at adapt commit (exportComparisonCsv row + 构建状态 + test counts 2306→2320); test counts verified: core **1517/1517** · react **2320/2320** (+14 export-comparison-csv); commit **`2ecf1da5a88fcf94930b3e4ff88f1e92be531173`** — `feat(table): grid 批 BV——导出比较（iris 独有）`
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bv-gate.md
+
+## 2026-08-15 07:59:52 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bv-gate.md [ok]: Summary: **Review verdict: PASS** (2 × LOW findings — masked-rowKey composite edge + `__iris_diff` reserved-key collision; both d
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bv-gate.md
+
+## 2026-08-15 08:07:34 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-br-baseline.md [ok]: 核验摘要: **设计** — 新表级 prop `validationSummary?: boolean`（props.ts `freshness` 后单行 prop）：**editRules 列提交结局账本**——成功 = 提交经 `editRule
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-br-baseline.md
+
+## 2026-08-15 08:27:19 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-br-adapt.md [ok]: Report: **Batch BR: 校验统计 `validationSummary`（iris 独有）** — implemented per baseline, zero drift.; Files changed (4 source + tests + docs, 9 files committed): | File | Change |; Implementation: - **Ledger**: ok = editRules-validated commit that landed (`onCommit` wrapper, cell + row modes); fail = commit rejected; Verification — all ✅: - core test **1517/1517** · react typecheck **clean** · react test **2332/2332** (+12) · react lint **0 errors** (1 pre-; What is left: - Runner's pending review/gate stage (uncommitted `DECISIONS.md`/`batch-bv-gate.md`/`batch-br-baseline.md` are pre-exist
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-br-adapt.md
+
+## 2026-08-15 08:32:54 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-br-review.md [ok]: Summary: **Verified against `batch-br-baseline.md` + commit `1fb5bf54`:**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-br-review.md

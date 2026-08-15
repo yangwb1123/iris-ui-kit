@@ -1182,3 +1182,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-be-review.md [ok]: What was verified (all green): | Check | Result |; Findings: 1. **HIGH — stripes never render (spec's visual marker dead), two independent bugs**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-be-review.md
+
+## 2026-08-15 00:21:39 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-be-gate.md [ok]: Fixes applied: **HIGH — stripes never rendered (visual marker dead, silent)**; Gate results: | Check | Result |; Commit: ```
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-be-gate.md
+
+## 2026-08-15 00:24:23 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bf-baseline.md [ok]: What's in the baseline: **Exact design** (every anchor verified against current code):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bf-baseline.md
+
+## 2026-08-15 00:27:26 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bf-adapt.md [ok]: Report — batch BF: 数据导出时间线 (`exportVersionCsv`): | File | Change |; Files changed (exactly 3, per baseline file map): | File | Change |; Tests added (8, per baseline plan): 1. **导出历史版 core**: `exportVersionCsv(0)` = initial rows after first commit; Verification (all pass): - core test: **1457/1457** (94 files); Constraints honored: - Core framework-free: zero core changes (controller `get` already existed); react-only, additive-only (one new handle m
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bf-adapt.md
+
+## 2026-08-15 00:32:17 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bf-review.md [ok]: Summary: **Spec correctness — ✅.** `exportVersionCsv: (index: number) => string` lands at the exact anchors (types.ts:582 after `; Findings: 1. **[LOW]** Baseline's "locked invariant" (`batch-bf-baseline.md:9`: after `restoreVersion(i)`, `exportVersionCsv(i) ==
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bf-review.md

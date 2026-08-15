@@ -3629,6 +3629,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // (suppressed from re-pushing; unknown index → no-op).
     getVersions: () => history.list().map((e) => ({ index: e.index, at: e.at, type: e.type })),
     restoreVersion,
+    // Batch BF (iris 独有): export the PRE-change snapshot of commit `index`
+    // through the same exportCsv pipeline as exportCurrentViewCsv (formula
+    // columns materialized on shadow rows, masks applied, hidden columns
+    // excluded) — the row source is the version ring, not the live view.
+    // Unknown index (trimmed/cleared) or no versionHistory → '' (caller
+    // detects via getVersions()).
+    exportVersionCsv: (index) => {
+      const entry = history.get(index)
+      if (entry === undefined) return ''
+      return exportCsv(
+        withComputedFormulaCells(entry.rows, viewColumnsRef.current, formulaTablesRef.current),
+        viewColumnsRef.current,
+      )
+    },
   }
   React.useEffect(() => {
     if (tableRef) tableRef.current = handleRef.current

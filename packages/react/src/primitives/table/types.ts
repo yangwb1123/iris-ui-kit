@@ -578,6 +578,8 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   getVersions: () => ReadonlyArray<IrisTableVersionEntry>
   /** Restore the rows captured before the commit with `index` (batch BA, iris 独有): applies them through the normal write-back channel (`commitRowList`, type `'undo'` — auditable and undoable) WITHOUT pushing a new version; no-op for an unknown index (trimmed/cleared) or without `versionHistory`. */
   restoreVersion: (index: number) => void
+  /** Export the rows captured BEFORE the commit with `index` as CSV (batch BF, iris 独有): the same `exportCsv` shape as `exportCurrentViewCsv` (formula columns materialized on shadow rows, masks applied, hidden columns excluded) — the PRE-change snapshot, NOT the live view; an unknown index (trimmed/cleared) or no `versionHistory` → `''` (caller detects via `getVersions()`). */
+  exportVersionCsv: (index: number) => string
 }
 
 /**

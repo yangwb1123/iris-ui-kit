@@ -1,35 +1,32 @@
-Gate complete. Summary:
+Done. Gate stage complete.
 
-## Verdict: PASS → full gate run ✅
+## Verdict: PASS
 
-Review (`batch-bc-review.md`) was **PASS** with 3 findings (1 medium, 2 low) — all **non-blocking**:
-
-1. **Medium** — `buildRangeTsv` copy / `exportActiveRangeCsv` / FNR replaces read `getCellValue` at handler time against the render-scoped module slot; on multi-table pages these use the last-rendered table's tables. Disclosed as a baseline fiat (the fiat's dual-channel rationale covered only the two CSV handles); same 1-line explicit-arg pattern would fix, deferred per fiat disclosure.
-2. **Low** — adapt doc claimed "working tree clean" while DECISIONS.md + adapt doc were dirty (review bookkeeping); included in this gate commit.
-3. **Low** — committed baseline doc is a 15-line summary; the 6 fiats live in the adapt doc, not the baseline — gate arbitrability preserved via the adapt doc's fiat section.
-
-No fixes applied (non-blocking); gate ran as-is.
+Review findings were non-blocking (1 medium disclosed fiat + 2 low docs issues — the duplicate DECISIONS adapt entry was removed during bookkeeping).
 
 ## Gate results
 
-| Check                                 | Result                                                    |
-| ------------------------------------- | --------------------------------------------------------- |
-| `turbo run test typecheck lint build` | **180/180 tasks successful** (4m59s, 55 cached)           |
-| `pnpm audit`                          | **0 vulnerabilities**                                     |
-| `gen:manifest` + `check:manifest`     | 155 components ×4 frameworks, 86 tokens — up to date      |
-| `check:docs-reference`                | up to date (3 files)                                      |
-| Prettier                              | formatted reviewer-produced docs (review/adapt/DECISIONS) |
+| Check                                                 | Result                                               |
+| ----------------------------------------------------- | ---------------------------------------------------- |
+| `turbo run test typecheck lint build --concurrency=2` | **180/180 tasks successful** (4m59s, 55 cached)      |
+| `pnpm audit`                                          | **0 vulnerabilities**                                |
+| `gen:manifest` + `check:manifest`                     | 155 components ×4 frameworks, 86 tokens — up to date |
+| `check:docs-reference`                                | up to date (3 files)                                 |
+
+## Comparison doc
+
+`docs/vxe-grid-comparison.md` iris 独有 section already carried the 批 BC row from adapt (row 57 `formulaTables` entry, batch table row 317, usage snippet, build-status lines 265/321). Verified every figure against the actual gate run — react 2110 / core 1457 / 180/180 / 审计 0 / manifest 155×4 all match; no doc changes needed.
 
 ## Commit
 
 ```
-feat(table): grid 批 BC——跨表引用公式（iris 独有）
+5306de16 feat(table): grid 批 BC——跨表引用公式（iris 独有）
 ```
 
-(includes review verdict + gate/adapt/DECISIONS bookkeeping)
+(4 files, +87/−18: gate record `batch-bc-gate.md`, review verdict, adapt doc + DECISIONS bookkeeping; working tree clean; lint-staged prettier + filesize/budget gates passed)
 
 ## Final test counts
 
-- **react: 2110 passed** (187 files) — batch BC +12 (`formula-tables`)
-- **core: 1457 passed** (94 files) — batch BC +19 (`formula-tables`)
-- Full gate also covered vue/solid/svelte, all 27 packages, and desktop shells (Electron/Tauri/Wails smoke).
+- **core: 1457 passed** (94 files) — 批 BC +19 (`formula-tables`)
+- **react: 2110 passed** (187 files) — 批 BC +12 (`formula-tables`)
+- Full gate also covered vue/solid/svelte, all 27 packages, and Electron/Tauri/Wails desktop shells

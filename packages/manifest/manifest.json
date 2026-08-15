@@ -36814,6 +36814,12 @@
           "description": "Annotation write channel (batch BB, iris 独有): receives the NEXT annotations map on every annotate-panel save — empty text removes the cell's key, non-empty sets it — and on remove (menu item or panel button). The map stays fully controlled: `annotations` remains the read source and the table holds no internal annotation state (same shape and ownership as `onFiltersChange`)."
         },
         {
+          "name": "presence",
+          "type": "IrisTablePresenceEntry[]",
+          "optional": true,
+          "description": "Collaborative-presence cursors (batch BD, iris 独有 — vxe has no cursor sharing): remote participants' selected cells. Each entry draws a 2px colored outline on its cell (`data-iris-presence=\"true\"`, outline in the entry's `color` — first entry wins when several share a cell) plus a corner label with the participant's name (`data-iris-presence-label` with `-id`/`-name`). Pure display: the table holds no collaboration state, so a NEW array reference re-renders while in-place mutation does not (same controlled contract as `data` / `annotations`)."
+        },
+        {
           "name": "headerTooltipConfig",
           "type": "{ content?: (column: IrisTableColumn<Row>) => string }",
           "optional": true,
@@ -37702,6 +37708,12 @@
               "description": "Annotation write channel (batch BB, iris 独有): receives the NEXT annotations map on every annotate-panel save — empty text removes the cell's key, non-empty sets it — and on remove (menu item or panel button). The map stays fully controlled: `annotations` remains the read source and the table holds no internal annotation state (same shape and ownership as `onFiltersChange`)."
             },
             {
+              "name": "presence",
+              "type": "IrisTablePresenceEntry[]",
+              "optional": true,
+              "description": "Collaborative-presence cursors (batch BD, iris 独有 — vxe has no cursor sharing): remote participants' selected cells. Each entry draws a 2px colored outline on its cell (`data-iris-presence=\"true\"`, outline in the entry's `color` — first entry wins when several share a cell) plus a corner label with the participant's name (`data-iris-presence-label` with `-id`/`-name`). Pure display: the table holds no collaboration state, so a NEW array reference re-renders while in-place mutation does not (same controlled contract as `data` / `annotations`)."
+            },
+            {
               "name": "headerTooltipConfig",
               "type": "{ content?: (column: IrisTableColumn<Row>) => string }",
               "optional": true,
@@ -37938,6 +37950,7 @@
             "IrisTablePersistConfig",
             "IrisTablePersistPiece",
             "IrisTablePersistedState",
+            "IrisTablePresenceEntry",
             "IrisTableProps",
             "IrisTableProxyQueryParams",
             "IrisTableRenderDetail",
@@ -38951,7 +38964,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 147,
+        "propCount": 148,
         "eventCount": 28
       }
     },

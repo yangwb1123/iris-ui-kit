@@ -22,6 +22,7 @@ import type {
   IrisTableMergeCell,
   IrisTableMergeFooterItem,
   IrisTableFooterSpanMethod,
+  IrisTablePresenceEntry,
 } from './types'
 /**
  * vxe-grid proxyConfig parity — the server-side data proxy (query slice).
@@ -499,6 +500,17 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * ownership as `onFiltersChange`).
    */
   onAnnotationsChange?: (next: Record<string, string>) => void
+  /**
+   * Collaborative-presence cursors (batch BD, iris 独有 — vxe has no cursor
+   * sharing): remote participants' selected cells. Each entry draws a 2px
+   * colored outline on its cell (`data-iris-presence="true"`, outline in the
+   * entry's `color` — first entry wins when several share a cell) plus a
+   * corner label with the participant's name (`data-iris-presence-label`
+   * with `-id`/`-name`). Pure display: the table holds no collaboration
+   * state, so a NEW array reference re-renders while in-place mutation does
+   * not (same controlled contract as `data` / `annotations`).
+   */
+  presence?: IrisTablePresenceEntry[]
   /** Header cell tooltips (vxe header-tooltip-config parity, batch P): a
    * native `title` on flat + grouped header cells; empty content drops the
    * tooltip. */

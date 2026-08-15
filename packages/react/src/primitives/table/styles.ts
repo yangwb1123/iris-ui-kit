@@ -111,6 +111,30 @@ export const CELL_NOTE_STYLE: React.CSSProperties = {
   height: 6,
   background: 'var(--iris-warning, var(--iris-primary))',
 }
+
+/* Batch BD collaborative presence (iris 独有 — vxe has no cursor sharing):
+   the tiny corner name label rendered inside a presence cell
+   (data-iris-presence). Anchors top-left (logical inset-inline-start mirrors
+   in RTL); the host cell gains position: relative + a 2px outline (the
+   entry's color verbatim — a data color, not a token) from the render.
+   Type/size/spacing are token-driven; the background is the entry's color
+   verbatim (data exception — batch BD fiat 4), the text uses the foreground
+   token with the codebase's existing fallback pattern. Labels are
+   pointer-transparent so they never intercept cell clicks. */
+export const PRESENCE_LABEL_STYLE: React.CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  insetInlineStart: 0,
+  maxWidth: '100%',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  padding: '0 var(--iris-space-xxs, 4px)',
+  fontSize: 'var(--iris-font-size-xs, 12px)',
+  lineHeight: 1.4,
+  color: 'var(--iris-primary-foreground, #fff)',
+  pointerEvents: 'none',
+}
 export const TABLE_ROW_CSS = `
 [data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover {
   --iris-cell-bg: var(--iris-surface-hover);

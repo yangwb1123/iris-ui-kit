@@ -603,4 +603,22 @@ export interface IrisTableVersionEntry {
   type: 'edit' | 'insert' | 'remove' | 'paste' | 'batch' | 'fill' | 'undo' | 'redo'
 }
 
+/**
+ * Collaborative-presence cursor entry (batch BD, iris 独有 — vxe has no
+ * cursor sharing): one remote participant's cursor on a selected cell. Pure
+ * display — the table renders the entry verbatim and owns no collaboration
+ * state or logic. `cellKey` uses the canonical `${rowKeyVal}::${colKey}`
+ * delimiter (the same as `cellId` and the `annotations` map keys).
+ */
+export interface IrisTablePresenceEntry {
+  /** Stable participant id (also surfaced as `data-iris-presence-id`). */
+  id: string
+  /** Participant display name — the text of the cell's corner label. */
+  name: string
+  /** Cursor color, used verbatim: the cell outline + the label background. */
+  color: string
+  /** Target cell: `${rowKeyVal}::${colKey}` (same delimiter as `cellId`). */
+  cellKey: string
+}
+
 /** Pager configuration (vxe-grid pagerConfig parity). */

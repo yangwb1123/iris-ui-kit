@@ -78,7 +78,12 @@ import { useDismiss } from '../../floating/useDismiss'
 import { TableChartPanel } from './ChartPanel'
 import { TableAuditPanel } from './AuditPanel'
 import { TableVersionHistoryPanel } from './VersionHistoryPanel'
-import { CELL_NOTE_STYLE, RANGE_FILL_HANDLE_STYLE, RANGE_FILL_TARGET_BG } from './styles'
+import {
+  CELL_NOTE_STYLE,
+  PRESENCE_LABEL_STYLE,
+  RANGE_FILL_HANDLE_STYLE,
+  RANGE_FILL_TARGET_BG,
+} from './styles'
 
 /* Batch AQ drag-fill helpers (module scope): the per-cell fill logic stays
    OUT of the row-render arrow so the eslint complexity budget on that hot
@@ -292,6 +297,7 @@ import type {
   IrisTableConditionalStyle,
   IrisTableContextMenuParams,
   IrisTableEditDirtyConfig,
+  IrisTablePresenceEntry,
   IrisTableSortDirection,
   IrisTableFilterValues,
   IrisTablePersistPiece,
@@ -388,6 +394,50 @@ const cellNoteState = <Row extends Record<string, unknown>>(
 function renderCellNoteBadge(note: string | null): React.ReactNode {
   if (!note) return null
   return <span aria-hidden="true" data-iris-cell-note-badge="" style={CELL_NOTE_STYLE} />
+}
+
+/** Batch BD collaborative presence (iris 独有 — vxe has no cursor sharing):
+ * the entries whose `cellKey` (the canonical `${rowKeyVal}::${colKey}`
+ * delimiter) matches this cell — one Map lookup per visible cell, undefined
+ * when there is no presence at all. Module-level so the cell render's
+ * cyclomatic complexity stays flat (a call costs 0). */
+const presenceOf = (
+  byCell: ReadonlyMap<string, IrisTablePresenceEntry[]> | null,
+  k: string | number | null,
+  colKey: string,
+): IrisTablePresenceEntry[] | undefined => {
+  if (byCell === null || k == null) return undefined
+  return byCell.get(`${k}::${colKey}`)
+}
+
+/** Batch BD: the cell-level render state — a 2px outline in the FIRST
+ * entry's color (same-cell stacking: first wins) + relative positioning for
+ * the corner labels; null when this cell has no presence (zero nodes). */
+const presenceStyle = (
+  entries: IrisTablePresenceEntry[] | undefined,
+): { outline: string; position: 'relative' } | null =>
+  entries && entries.length > 0
+    ? { outline: `2px solid ${entries[0].color}`, position: 'relative' }
+    : null
+
+/** Batch BD: the corner name labels — one span per entry, cascaded below
+ * each other when several share a cell (first entry on top); zero nodes when
+ * there is no presence on this cell (same pattern as the range fill handle).
+ * Pure display: the label carries the id/name attrs for tests and tooling. */
+function renderPresenceLabels(entries: IrisTablePresenceEntry[] | undefined): React.ReactNode {
+  if (!entries || entries.length === 0) return null
+  return entries.map((e, i) => (
+    <span
+      key={e.id}
+      aria-hidden="true"
+      data-iris-presence-label=""
+      data-iris-presence-id={e.id}
+      data-iris-presence-name={e.name}
+      style={{ ...PRESENCE_LABEL_STYLE, top: i * 14, background: e.color }}
+    >
+      {e.name}
+    </span>
+  ))
 }
 
 export type { IrisTableProps, IrisTableProxyConfig } from './props'
@@ -1267,6 +1317,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   cellNote,
   annotationEditing,
   onAnnotationsChange,
+  presence,
   headerTooltipConfig,
   footerTooltipConfig,
   contextMenu,
@@ -5059,6 +5110,24 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // root being one grid — this keeps columns aligned while letting the virtual
   // scroller absolutely-position rows. `extraStyle` lets the virtual window set
   // a row's height to fill its slot.
+  // Batch BD collaborative presence (iris 独有 — vxe has no cursor sharing):
+  // group the controlled entries by cellKey once per render, so each visible
+  // cell costs a single Map lookup. A NEW `presence` array reference
+  // re-renders (in-place mutation does not — same contract as `data` /
+  // `annotations`). Pure display: no state, store or effect anywhere.
+  const presenceByCell = React.useMemo(
+    () =>
+      presence && presence.length > 0
+        ? presence.reduce((m, e) => {
+            const list = m.get(e.cellKey)
+            if (list) list.push(e)
+            else m.set(e.cellKey, [e])
+            return m
+          }, new Map<string, IrisTablePresenceEntry[]>())
+        : null,
+    [presence],
+  )
+
   const renderRow = (
     row: Row,
     idx: number,
@@ -5283,6 +5352,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // the note case adds position relative so the badge anchors (see
           // CELL_NOTE_STYLE: pinned sticky cells override it, which is fine).
           const noteInfo = cellNoteState(annotations, cellNote, row, col, k)
+          // Batch BD collaborative presence (iris 独有): the entries on this
+          // cell (one Map lookup) — outline (first-wins color) + corner name
+          // labels; null when the cell has no presence (zero nodes).
+          const presenceEntries = presenceOf(presenceByCell, k, col.key)
+          const presenceInfo = presenceStyle(presenceEntries)
           const fnrCellKey = `${idx}:${ci}`
           const fnrCellActive = fnrActiveKey === fnrCellKey
           const fnrCellMatched = fnrMatchSet.has(fnrCellKey)
@@ -5302,6 +5376,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               data-iris-cell-dirty={dirtyInfo.attr}
               data-iris-cell-changed={compareCellAttr(compareChange)}
               data-iris-cell-note={noteInfo.attr}
+              data-iris-presence={presenceInfo ? 'true' : undefined}
               title={cellTitle(editing, noteInfo.note, compareChange, row, col)}
               className={
                 [cellClassName?.(row, col, idx), dirtyInfo.dirtyClass].filter(Boolean).join(' ') ||
@@ -5372,6 +5447,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 ...baseCellStyle,
                 ...dirtyInfo.posStyle,
                 ...noteInfo.posStyle,
+                ...presenceInfo,
                 ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
                 ...(colspan > 1 ? { gridColumnEnd: `span ${colspan}` } : null),
                 ...(rowspan > 1 ? { gridRowEnd: `span ${rowspan}` } : null),
@@ -5558,6 +5634,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               )}
               {renderRangeFillHandle(fillHandleCell, idx, ci, handleRangeFillPointerDown)}
               {renderCellNoteBadge(noteInfo.note)}
+              {renderPresenceLabels(presenceEntries)}
             </div>
           )
         })}

@@ -1142,3 +1142,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bc-gate.md [ok]: Verdict PASS → full gate run. turbo test/typecheck/lint/build **180/180 successful** (4m59s, 55 cached); `pnpm audit` 0 vulnerabilities; gen:manifest + check:manifest up to date (155×4, 86 tokens); check:docs-reference up to date; prettier formatted reviewer docs. No fixes applied (findings non-blocking: medium = range-CSV/FNR handler-time module-slot reads on multi-table pages, disclosed fiat; low = duplicate DECISIONS adapt entry, removed; low = baseline doc 15-line summary, fiats in adapt doc). Final counts: core 1457 (+19), react 2110 (+12).
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bc-gate.md
+
+## 2026-08-14 23:22:59 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bc-gate.md [ok]: Verdict: PASS: Review findings were non-blocking (1 medium disclosed fiat + 2 low docs issues — the duplicate DECISIONS adapt entry was; Gate results: | Check | Result |; Comparison doc: `docs/vxe-grid-comparison.md` iris 独有 section already carried the 批 BC row from adapt (row 57 `formulaTables` entry, bat; Commit: ```; Final test counts: - **core: 1457 passed** (94 files) — 批 BC +19 (`formula-tables`)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bc-gate.md
+
+## 2026-08-14 23:26:26 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bd-baseline.md [ok]: What's in the baseline: **Exact design** (every anchor verified against current code):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bd-baseline.md
+
+## 2026-08-14 23:33:04 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bd-adapt.md [ok]: Report: **Files changed (6 + manifest, additive, react-only, core untouched):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bd-adapt.md
+
+## 2026-08-14 23:36:15 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bd-review.md [ok]: What was checked: **Spec correctness** — every baseline anchor verified against code:; Verification commands: | Check | Result |; Findings (both low, non-blocking): 1. **Label cascade overlap** — `Table.tsx:436`: `top: i*14` vs 16.8px line box → 2.8px overlap on stacked labels; cosmet
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bd-review.md

@@ -1107,3 +1107,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bb-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bb-baseline.md
+
+## 2026-08-14 21:41:50 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bb-adapt.md [ok]: Report: **Files changed** (4 mandated edits + 1 new test + 1 docs + 2 generated + 2 runner bookkeeping):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bb-adapt.md
+
+## 2026-08-14 21:49:28 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bb-review.md [ok]: Verification results (commit `ac8d9acc`): | Check | Result |; Checklist findings: 1. **Menu gating/order/semantics** ✅ — existence = `annotations[cellId(rowKeyOf(row,idx), col.key)]` (same `::` key as t; Findings (all non-functional): 1. **MEDIUM** — `docs/vxe-grid-comparison.md:60/117/330`: usage-snippet fence opened with 4 backticks but closed with `/
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bb-review.md

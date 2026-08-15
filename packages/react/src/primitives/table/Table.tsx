@@ -2916,6 +2916,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const next = { ...(annotations ?? {}) }
     delete next[cellKey]
     onAnnotationsChange(next)
+    // Close is part of the callback path only — without `onAnnotationsChange`
+    // the panel's 删除 button is inert too (save/remove stay symmetric).
+    closeAnnotate()
   }
   // ── Header filter panel (vxe filterConfig parity, batch I) ─────────────
   // One panel at a time, keyed by the column whose trigger was clicked. The
@@ -7502,10 +7505,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             cellKey={annotateState.cellKey}
             current={annotations?.[annotateState.cellKey]}
             onSave={(text) => saveAnnotation(annotateState.cellKey, text)}
-            onRemove={() => {
-              removeAnnotationKey(annotateState.cellKey)
-              closeAnnotate()
-            }}
+            onRemove={() => removeAnnotationKey(annotateState.cellKey)}
             onClose={closeAnnotate}
             t={t}
           />

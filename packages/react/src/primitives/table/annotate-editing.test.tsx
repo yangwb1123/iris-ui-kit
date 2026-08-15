@@ -224,6 +224,13 @@ describe('@iris-ui-kit/react IrisTable annotation editing (batch BB, iris 独有
     })
     fireEvent.click(document.querySelector('[data-iris-annotate-save]')!)
     expect(panel()).not.toBeNull()
+    // The panel's 删除 button is inert too: no crash, panel stays open,
+    // nothing written (close is part of the callback path only).
+    openMenu(1, 'name')
+    fireEvent.click(menuItem('__iris-annotate-edit')!)
+    fireEvent.click(document.querySelector('[data-iris-annotate-remove]')!)
+    expect(panel()).not.toBeNull()
+    expect(cell(1, 'name').getAttribute('data-iris-cell-note')).toBe('true')
     // The menu remove item is inert too.
     openMenu(1, 'name')
     fireEvent.click(menuItem('__iris-annotate-remove')!)

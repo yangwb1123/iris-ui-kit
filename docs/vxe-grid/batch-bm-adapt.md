@@ -1,0 +1,32 @@
+All gates green. Final report:
+
+## 批 BM 完成 — 批注格浮动预览 `notePopover`（iris 独有）
+
+**Commit**: `e17058ee` — `feat(table): grid 批 BM——批注浮动预览 notePopover（iris 独有）`（lint-staged 门通过：5 files / 173 core lines ≤ budget）
+
+### Files changed (committed, 7)
+
+| File                                                        | Δ       | Content                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/react/src/primitives/table/props.ts`              | +7      | `notePopover?: boolean` 单行 prop，位于 `cellNote` 后、`annotationEditing` 前（基线 :504/:506 逐字）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `packages/react/src/primitives/table/Table.tsx`             | +166/−3 | 模块级 `TableNotePopover`（useFloating 虚拟锚点 placement top/offset 8/flip+shift + useDismiss + capture scroll + portal；`data-iris-note-popover`/`-note-cell`、`role="tooltip"`、`pre-wrap`、`pointerEvents:none`；无 seq token 已文档化）；热格 helper `notePopoverCellHandlers`（保持单元格箭头复杂度 70 预算）；hover 状态 `noteHover` + 虚拟锚点（context-menu rect 快照形状逐字，格右上角）置于 annotate 块后；`cellTitle` 第 6 参——**仅注记分支变 undefined**（compare/sparkline/tooltipConfig/编辑豁免零触碰）；格 div 条件 handlers spread（`notePopover && note` 才挂，off 零成本）；渲染于 annotate 面板后 |
+| `packages/react/src/primitives/table/note-popover.test.tsx` | NEW     | 13 tests                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `packages/manifest/{manifest.json,llms.txt}`                | 再生成  | propCount 153→154，`notePopover` 入 IrisTable props，155×4 无 diff                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `docs/vxe-grid-comparison.md`                               | 3 处    | iris 独有表新行（:66 后）、构建状态（:281）、测试计数（:339）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `docs/vxe-grid/batch-bm-baseline.md`                        | NEW     | 基线文件（前序 stage）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+
+### Tests added — 13（规格强制对先）
+
+渲染（hover→气泡+文本+`data-iris-note-cell`、title 置空、角标完好）、关闭 ×4（mouseleave/Esc/外部 pointerdown/滚动）、无 prop 惰性（title 保留）、动态 `cellNote` 喂入、A→B 跟随、pre-wrap、compare-priority（有注记+变更格 title 空→气泡；未注记变更格 compare title 不受触碰）、tooltipConfig 未注记格保留、编辑格仍预览、无注记格零 handlers。
+
+### Verification (all ✅)
+
+- core test: **1517 passed**（零 core 改动）
+- react typecheck ✅ · test **2219 passed**（2206→2219）· lint **0 errors**（1 条既有 `IrisTable` complexity warn，改动前同款）
+- `iris-ui-spec.py --mode all --json` → **0 violations**
+- `gen:manifest` 再生成 + 已提交 · `check:manifest`/`check:docs-reference` up to date · `format:check` 仅 6 个既有 warn
+
+### What's left
+
+- **批 runner 后置**：`batch-bm-adapt.md` 报告 + review/gate 阶段（含 DECISIONS.md 条目——当前工作区仅剩 runner 的 `DECISIONS.md`/`batch-bl-gate.md` 未提交，按先例留给 gate 提交）。
+- **既有仓库状态（非本次引入）**：`pnpm arch-check` 在 HEAD 已红（baseline 自 `d7d281de` 未更新；Table.tsx/props.ts 增长始于更早批次，diff 验证前后失败列表逐项一致）；eslint `IrisTable` complexity warn 为既有类。

@@ -1,28 +1,24 @@
-# Batch BL Gate Report — 性能面板 `perfStats`（iris 独有）
+Gate stage complete. Summary:
 
-**Verdict: PASS** (review: 0 findings, 3 minor observations) → gate executed and committed.
+## Verdict: PASS ✅
 
-## Gate results (all actually run)
+**Review** (`batch-bl-review.md`): PASS — 0 findings, 3 minor observations; all verification commands green.
 
-| Check                                                 | Result                                                                                                                              |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `turbo run test typecheck lint build --concurrency=2` | **180/180 tasks**, exit 0 (4m19s; 54 cached)                                                                                        |
-| `pnpm audit:security`                                 | **0 vulnerabilities** ("No known vulnerabilities found")                                                                            |
-| `pnpm audit:tokens`                                   | **37 warnings = baseline 37** (pre-BL commit `d1fdc657~1` measured identically) — **zero new**, no perf-related tokens              |
-| `gen:manifest` + `check:manifest`                     | up to date — **155×4** (react/vue/solid/svelte), unavailable 0, 86 tokens, **zero diff** (already current in `d1fdc657`)            |
-| Additive / framework-free                             | review-confirmed: core framework-free grep clean, vue/solid/svelte untouched, no dist committed, propCount 152→153 with `perfStats` |
-| Pre-commit hooks                                      | prettier + filesize + change budget passed (4 files, 0 core logic lines)                                                            |
+## Gate results
+
+| Check                                                 | Result                                                                                           |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `turbo run test typecheck lint build --concurrency=2` | **180/180 tasks**, exit 0 (4m19s, 54 cached)                                                     |
+| `audit:security`                                      | **0 vulnerabilities**                                                                            |
+| `audit:tokens`                                        | 37 warnings = baseline 37 (measured at `d1fdc657~1`) — **zero new**, no perf tokens              |
+| `gen:manifest` + `check:manifest`                     | **155×4**, unavailable 0, 86 tokens — up to date, zero diff                                      |
+| Comparison doc                                        | All 3 sites (iris 独有 row · 构建状态 · test-count line) already current in `d1fdc657`, verified |
 
 ## Final test counts
 
-- **core 1517** (批 BL +12, perf-stats) · **react 2206** (批 BL +12, perf-stats) · vue 1531 · solid 974 (+34 hydration) · svelte 916 (+31 hydration)
-- 批 BL 新增 24 tests = core 12 + react 12, matching review-verified counts (incl. both spec-mandatory pairs).
-
-## Docs
-
-- `docs/vxe-grid-comparison.md` — all 3 sites already updated in implementation commit `d1fdc657` (iris 独有 table row 66 · 构建状态 line 281 · test-count line 339); verified present, no further edits needed.
-- `docs/vxe-grid/batch-bl-gate.md` written (this file).
+- **core 1517** (批 BL +12 perf-stats) · **react 2206** (批 BL +12 perf-stats) · vue 1531 · solid 974 (+34 hydration) · svelte 916 (+31 hydration)
+- 批 BL new: **24 tests** = 12 core + 12 react, matching review-verified counts
 
 ## Commit
 
-**`fc18175e`** (amended) — `feat(table): grid 批 BL——性能面板（iris 独有）` — parent `d1fdc657`, fast-forwarded onto `main`.
+**`2607531e`** — `feat(table): grid 批 BL——性能面板（iris 独有）` — on `main` (parent `d1fdc657`; amended once to fold in the gate report `docs/vxe-grid/batch-bl-gate.md`; original `fc18175e` superseded). 5 files, +102/−51. Working tree clean, pre-commit prettier/filesize/budget hooks passed.

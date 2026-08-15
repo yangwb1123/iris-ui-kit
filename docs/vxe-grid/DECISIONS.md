@@ -1342,3 +1342,28 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bl-review.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bl-review.md
+
+## 2026-08-15 03:46:40 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bl-gate.md [ok]: Verdict: PASS ✅: **Review** (`batch-bl-review.md`): PASS — 0 findings, 3 minor observations; all verification commands green.; Gate results: | Check | Result |; Final test counts: - **core 1517** (批 BL +12 perf-stats) · **react 2206** (批 BL +12 perf-stats) · vue 1531 · solid 974 (+34 hydration) · sv; Commit: **`2607531e`** — `feat(table): grid 批 BL——性能面板（iris 独有）` — on `main` (parent `d1fdc657`; amended once to fold in the gat
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bl-gate.md
+
+## 2026-08-15 03:53:16 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bm-baseline.md [ok]: What's in the baseline: **Exact design** (every anchor verified against current code — batch AZ/BB annotation machinery, `useFloating`/`useDismi
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bm-baseline.md
+
+## 2026-08-15 04:13:02 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bm-adapt.md [ok]: 批 BM 完成 — 批注格浮动预览 `notePopover`（iris 独有）: **Commit**: `e17058ee` — `feat(table): grid 批 BM——批注浮动预览 notePopover（iris 独有）`（lint-staged 门通过：5 files / 173 core lines ; Files changed (committed, 7): | File | Δ | Content |; Tests added — 13（规格强制对先）: 渲染（hover→气泡+文本+`data-iris-note-cell`、title 置空、角标完好）、关闭 ×4（mouseleave/Esc/外部 pointerdown/滚动）、无 prop 惰性（title 保留）、动态 `cell; Verification (all ✅): - core test: **1517 passed**（零 core 改动）; What's left: - **批 runner 后置**：`batch-bm-adapt.md`报告 + review/gate 阶段（含 DECISIONS.md 条目——当前工作区仅剩 runner 的`DECISIONS.md`/`batch-bl-g
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bm-adapt.md
+
+## 2026-08-15 04:17:14 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bm-review.md [ok]: 验证命令结果（全部执行）: | 命令 | 结果 |; 规格核对结论: - **Prop**：`notePopover?: boolean` 位置、默认 off、off 字节等价 ✓; 发现: 1. **[LOW] 文档** — `batch-bm-baseline.md` 写 `propCount 152→153`，实际 BL 已先落 153，本次为 `153→154`（manifest 为真相源，正确）。纯基线文档算术错误，不
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bm-review.md
+
+## 2026-08-15 04:40:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bm-gate.md [ok]: Verdict: PASS ✅: **Review** (`batch-bm-review.md`): PASS — 1 LOW (baseline doc arithmetic only) / 2 INFO, 0 blockers.; Gate results: | Check | Result | — turbo 180/180 exit 0 · audit:security 0 vulns · audit:tokens 37 = baseline 37 (parent 2607531e) zero new · gen:manifest + check:manifest 155×4 / 86 tokens up to date · comparison doc 3 sites already current in e17058ee; Final test counts: **core 1517** · **react 2219** (批 BM +13 note-popover) · vue 1531 · solid 974 · svelte 916 — 批 BM new 13 tests
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bm-gate.md

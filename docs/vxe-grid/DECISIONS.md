@@ -1387,3 +1387,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bn-review.md [ok]: Review summary: **Verification run (all green):**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bn-review.md
+
+## 2026-08-15 04:37:36 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bn-gate.md [ok]: ✅ PASS → Gate executed, committed: **Verdict:** PASS (3 non-blocking findings; applied the one doc suggestion)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bn-gate.md
+
+## 2026-08-15 04:41:48 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bo-baseline.md [ok]: What's in the baseline: **Exact design** (every anchor verified against current code — `widthsControlled`/`setColumnWidth` :2453–2464, grid temp
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bo-baseline.md
+
+## 2026-08-15 04:46:40 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bo-adapt.md [ok]: 批 BO 完成报告 — 列宽重置 `columnWidthsReset`（iris 独有）: **Commit**: `59e701c0` — `feat(table): grid 批 BO——列宽重置 columnWidthsReset（iris 独有）`（工作树仅剩 runner 预存条目 + baseline 未跟踪文件，未触; 实现（按 baseline 验证方案，零偏差）: - **Prop** — `props.ts` 在 `onColumnWidthsChange` 之后：`columnWidthsReset?: boolean`（单行 prop，manifest 扫描器卫生达标；无新类型 → 无 type; 测试（10 新，`reset-column-widths.test.tsx` ~220 行 ≤500）: 按钮三态（toolbar 渲染/aria-label+⇔ / 无 prop 缺省 / 无 toolbar 无按钮）· **重置回调**（受控 `{}` 恰一次 / 父应用 `{}` → number-auto-1fr 混合回落）· 非受控（; 验证（全部 ✅）: | 门 | 结果 |; 剩余: - vue/solid/svelte 对齐留待后续批（react-only，批范围如此）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bo-adapt.md
+
+## 2026-08-15 04:49:31 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bo-review.md [ok]: Verification results: | Gate | Result |; Spec correctness — zero deviation from baseline: - `props.ts:198` `columnWidthsReset?: boolean` after `onColumnWidthsChange`, before `onRowClick` ✓; Finding (blocking): 1. **MEDIUM — `docs/vxe-grid-comparison.md:68–70`**: the commit truncated the pre-existing BN row mid-cell (no closing `
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bo-review.md

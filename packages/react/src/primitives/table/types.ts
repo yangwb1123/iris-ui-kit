@@ -447,6 +447,24 @@ export type IrisTableScrollbarConfig = { theme?: 'default' | 'thin' }
 export type IrisTableEditDirtyConfig = { indicator?: boolean; className?: boolean }
 
 /**
+ * One conditional-formatting rule (batch AX, iris 独有 — vxe has no built-in
+ * conditional-formatting engine). Passed via `IrisTableProps.conditionalStyles`:
+ * a rule matches a body cell when its optional `column` filter (omitted →
+ * every column) equals the cell's column key AND `when(row, value)` returns
+ * true — `value` is the RAW cell value (`dataIndex ?? key` resolved, formula
+ * columns computed via `getCellValue`). Matching rules merge in array order
+ * after `cellStyle`; later rules win on conflicting style keys.
+ */
+export interface IrisTableConditionalStyle<Row = Record<string, unknown>> {
+  /** Column key the rule applies to; omitted → every column. */
+  column?: string
+  /** Match predicate: `row` is the full row object, `value` the raw cell value. */
+  when: (row: Row, value: unknown) => boolean
+  /** Inline styles merged onto the body cell when the rule matches. */
+  style: import('react').CSSProperties
+}
+
+/**
  * One footer-merge entry (vxe-grid mergeFooterItems parity, batch R). The
  * coordinate space matches `footerSpanMethod`: `row` is the 0-based index
  * over the rendered footer stack (footerMethod rows → summary row →

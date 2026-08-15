@@ -1013,3 +1013,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-aw-gate.md [ok]: 修复内容（review 4 项发现）: 1. **HIGH — `check:docs-reference` 失败**：重新生成 gitignored `apps/docs/components.md`（含 `nlSummary` 行，155 组件），check 通过; 全仓 gate: | Check | Result |; 最终测试计数: - **core：1411**（summary.test 15，+2 新对抗测试）; 提交: ```
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-aw-gate.md
+
+## 2026-08-14 17:43:35 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ax-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ax-baseline.md
+
+## 2026-08-14 17:55:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ax-adapt.md [ok]: core `matchConditionalStyles` + react `conditionalStyles` 条件格式（iris 独有，批 AX）。文件：`packages/core/src/conditional-styles.ts`（+6 测试）、`packages/core/src/index.ts`（barrel）、`packages/react/src/primitives/table/props.ts`（单行 prop，prettier-ignore 保 manifest 扫描）、`types.ts`（IrisTableConditionalStyle）、`Table.tsx`（conditionalCellStyle 助手 + cellStyle 后 merge）、`conditional-styles.test.tsx`（+8 测试）、`apps/docs/guide/table-conditional-formatting.md`（指南页）。验证：core 1417 测试、react 2053 测试、typecheck/lint 0 错误（1 既有 complexity warning）、spec 0 违规、gen:manifest（141 props）已提交。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ax-adapt.md

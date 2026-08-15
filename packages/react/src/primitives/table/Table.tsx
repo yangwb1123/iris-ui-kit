@@ -35,6 +35,7 @@ import {
   diffRows,
   type RowDiff,
   type RowDiffCellChange,
+  matchConditionalStyles,
 } from '@iris-ui-kit/core'
 import { IrisCheckbox } from '../checkbox/Checkbox'
 import { IrisInput } from '../input/Input'
@@ -281,6 +282,7 @@ import { RangeToolbar, type RangeStatsEntry } from './RangeToolbar'
 import type {
   IrisTableColumn,
   IrisTableColumnWidths,
+  IrisTableConditionalStyle,
   IrisTableContextMenuParams,
   IrisTableEditDirtyConfig,
   IrisTableSortDirection,
@@ -843,6 +845,26 @@ function fnrCellStyle(
   }
 }
 
+/**
+ * Batch AX conditional formatting: fold the ordered rule list into the body
+ * cell's inline style — rules evaluate in array order and later matches win
+ * (the same spread-order latitude `cellStyle` already has). The `value` is
+ * the raw cell value (getCellValue: dataIndex ?? key, formula computed).
+ * Early-returns null when no rules are set; inline per-cell evaluation with
+ * cost = visibleCells × rules (no memo — virtual scroll bounds the cell
+ * count and callers memoize the rules array).
+ */
+function conditionalCellStyle<Row extends Record<string, unknown>>(
+  rules: readonly IrisTableConditionalStyle<Row>[] | undefined,
+  row: Row,
+  columnKey: string,
+  value: unknown,
+): React.CSSProperties | null {
+  if (!rules || rules.length === 0) return null
+  const merged = matchConditionalStyles(rules, row, columnKey, value)
+  return Object.keys(merged).length > 0 ? merged : null
+}
+
 /** Shared inline style for the fnr bar buttons (token-driven only). */
 const FNR_BUTTON_STYLE: React.CSSProperties = {
   border: '1px solid var(--iris-border)',
@@ -969,6 +991,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   footerCellClassName,
   rowStyle,
   cellStyle,
+  conditionalStyles,
   headerCellStyle,
   footerCellStyle,
   onCellClick,
@@ -4966,6 +4989,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 ...(editing ? { padding: '4px 8px' } : null),
                 ...pinnedStyle(col.key),
                 ...(cellStyle?.(row, col, idx) ?? null),
+                ...conditionalCellStyle(conditionalStyles, row, col.key, raw),
               }}
             >
               {treeMeta && ci === 0 ? (

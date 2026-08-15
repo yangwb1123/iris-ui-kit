@@ -160,6 +160,9 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   rowStyle?: (row: Row, rowIndex: number) => CSSProperties
   /** Per-cell inline style hook (vxe cell-style parity). */
   cellStyle?: (row: Row, column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties
+  /** Conditional cell styles (batch AX, iris 独有): an ordered rule list merged onto matching body cells AFTER `cellStyle` — later matching rules win on conflicting keys. A rule matches when its `column` filter (omitted → every column) equals the cell's column key AND `when(row, value)` is true; `value` is the RAW cell value (dataIndex ?? key resolved, formula columns computed). Rules evaluate inline per visible cell (cost = visibleCells × rules; virtual scroll bounds it — memoize the array in the caller). */
+  // prettier-ignore
+  conditionalStyles?: Array<{ column?: string; when: (row: Row, value: unknown) => boolean; style: CSSProperties }>
   /** Per-header-cell inline style hook (vxe header-cell-style parity). */
   headerCellStyle?: (column: IrisTableColumn<Row>) => CSSProperties
   /** Per-footer-cell inline style hook (vxe footer-cell-style parity). */

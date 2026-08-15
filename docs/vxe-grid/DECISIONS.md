@@ -1242,3 +1242,58 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bh-review.md [ok]: PASS — with 2 LOW findings, 0 blockers: **What I verified:**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bh-review.md
+
+## 2026-08-15 01:41:10 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bh-gate.md [ok]: Gate results: | Check | Result |; Fixes applied during gate: 1. **LOW-1 (redundant `ref`)** — `group-collapse.test.tsx`: the select-all test passed both `ref={ref}` (invalid prop on; Doc updates (`docs/vxe-grid-comparison.md`, iris 独有 section): - New capability row: 行分组折叠 `groupCollapsed` (controlled `Set<string>` + `defaultGroupCollapsed` + `onGroupCollapseChang; Commit: ```
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bh-gate.md
+
+## 2026-08-15 01:46:12 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bi-baseline.md [ok]: What's in the baseline: **Exact design** (every anchor verified against current code):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bi-baseline.md
+
+## 2026-08-15 01:56:56 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bi-adapt.md [ok]: Report: **Files changed** (4 source + 2 test + docs, ≤4 source constraint met):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bi-adapt.md
+
+## 2026-08-15 02:01:09 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bi-review.md [ok]: Summary: **Verifications (all fresh, all green):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bi-review.md
+
+## 2026-08-15 02:08:15 — stage 'gate' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bi-gate.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bi-gate.md
+
+## 2026-08-15 02:09:00 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bj-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bj-baseline.md
+
+## 2026-08-15 02:09:37 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bk-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bk-baseline.md
+
+## 2026-08-15 02:10:19 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bl-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bl-baseline.md
+
+## 2026-08-15 02:33:41 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bj-baseline.md [ok]: What's in the baseline: **Exact design** (every anchor verified against current code):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bj-baseline.md
+
+## 2026-08-15 02:45:25 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bj-adapt.md [ok]: Report — grid 批 BJ: 单元格权限 `cellPermission`（iris 独有）; Files changed (4, committed `a60ad3b6`): | File | Change |; Design (per baseline fiats): - **Dynamic** — predicate re-evaluates per render (unlike static `locked`); test proves a row-data change flips the same; Tests added (17): 默认可编辑 dblclick · 只读不可编辑 no-op（无 editor/onEditStart）· 视觉区分（dots vs stripes + 注入样式表 + data-editable 保留）· locked 双设赢 · 行级 p; Verification (all green): - `core test`: **1475/1475** ✓ · `react test`: **2194/2194** (194 files, pre-BJ 2177 + 17) ✓
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bj-adapt.md
+
+## 2026-08-15 02:48:59 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bj-review.md [ok]: Review summary: **Verification (all re-run fresh):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bj-review.md

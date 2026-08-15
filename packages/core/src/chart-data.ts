@@ -48,7 +48,9 @@ export function chartDomain(points: ReadonlyArray<number | null>): { min: number
   let min: number | null = null
   let max: number | null = null
   for (const value of points) {
-    if (value === null) continue
+    // Finite-only, as documented: `null` is not finite, and neither are
+    // NaN/Infinity — a poisoned value must not leak into the domain.
+    if (typeof value !== 'number' || !Number.isFinite(value)) continue
     if (min === null || value < min) min = value
     if (max === null || value > max) max = value
   }

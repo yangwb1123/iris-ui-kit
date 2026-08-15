@@ -67,6 +67,23 @@ describe('IrisTable column sparkline', () => {
     expect(document.querySelectorAll('[data-iris-sparkline="v"]')).toHaveLength(0)
   })
 
+  it('series points coerce like buildChartData (numeric-string prefix)', () => {
+    type Loose = { id: number; v: string | number }
+    const c: IrisTableColumn<Loose>[] = [{ key: 'v', title: 'V', sparkline: true }]
+    const d: Loose[] = [
+      { id: 1, v: '10' },
+      { id: 2, v: 20 },
+      { id: 3, v: '30' },
+    ]
+    render(<IrisTable columns={c} data={d} rowKey="id" />)
+    // Row 2 is a finite JS number → passes the gate; its prefix [10, 20]
+    // coerces the numeric-string '10' into a point (buildChartData parity).
+    expect(sparkSvg(2, 'v')!.getAttribute('aria-label')).toBe('10, 20')
+    expect(sparkSvg(2, 'v')!.querySelectorAll('polyline')).toHaveLength(1)
+    // Row 3 fails the per-cell gate (raw is a string) → no SVG at all.
+    expect(sparkSvg(3, 'v')).toBeNull()
+  })
+
   it('a null cell renders no SVG while numeric siblings still chart', () => {
     type Loose = { id: number; v: number | null }
     const c: IrisTableColumn<Loose>[] = [{ key: 'v', title: 'V', sparkline: true }]

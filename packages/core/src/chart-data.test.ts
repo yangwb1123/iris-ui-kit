@@ -167,4 +167,10 @@ describe('@iris-ui-kit/core chartDomain (batch BI, iris 独有)', () => {
     expect(chartDomain([0, 0])).toEqual({ min: -1, max: 1 })
     expect(chartDomain([-4, -4])).toEqual({ min: -8, max: 0 })
   })
+
+  it('NaN/Infinity never poison the domain (finite-only)', () => {
+    expect(chartDomain([Number.NaN, 5])).toEqual({ min: 0, max: 10 })
+    expect(chartDomain([Infinity, -3, -3])).toEqual({ min: -6, max: 0 })
+    expect(chartDomain([Number.NaN, Number.POSITIVE_INFINITY])).toEqual({ min: 0, max: 1 })
+  })
 })

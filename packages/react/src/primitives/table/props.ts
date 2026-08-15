@@ -1,4 +1,5 @@
 import type { CSSProperties, MutableRefObject, ReactNode } from 'react'
+import type { IrisTableKeyAction } from '@iris-ui-kit/core'
 import type {
   IrisTableCellEditEvent,
   IrisTableEditStartParams,
@@ -382,6 +383,20 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * shortcuts are inert. While an inline editor is open the editor's own
    * keys win. Additive — default off. */
   tableShortcuts?: boolean
+  /** Batch BG (iris 独有 — vxe keyboardConfig has no rebinding): rebind the
+   * built-in shortcut keys. ONE key spec string per action
+   * (`Modifier+Key`, case-insensitive; `Ctrl`/`Cmd`/`Meta` share one
+   * ctrl-or-meta flag — `Ctrl+C` matches Ctrl OR Cmd). Actions:
+   * `edit` (default F2) / `clear` (Delete, Backspace) need `tableShortcuts`;
+   * `undo` (Ctrl+Z) / `redo` (Ctrl+Y, Ctrl+Shift+Z) need `undo`;
+   * `copy` (Ctrl+C) / `paste` (Ctrl+V) need `clipConfig`;
+   * `fill` (Ctrl+D — one-step drag-down) needs `rangeFill` + a live range;
+   * `query` (Ctrl+K — focuses the query input) needs the controlled `query`.
+   * An override REPLACES that action's bindings wholesale (aliases included);
+   * invalid specs (`''` / `'Meta'` / `'Ctrl+'` …) are dropped fail-closed —
+   * the action keeps its default. Modifiers match exactly: `Ctrl+Shift+Z`
+   * redoes, `Alt+Ctrl+Z` is inert. Additive — default off (defaults unchanged). */
+  keymap?: Partial<Record<IrisTableKeyAction, string>>
   /** Enable virtual scrolling for the body. */
   virtualScroll?: IrisTableVirtualOptions
   /** Persist view state across remounts (batch AG, iris 独有 — vxe has no built-in persistence). Loads sort / multiSortState / filters / filterValues / columnVisibility / columnOrder / columnWidths / pageSize on mount (replayed through the matching change callbacks) and saves the CURRENT props on every change (the table is controlled). pageSize is only meaningful with proxyConfig.onPageChange (restored via onPageChange(1, restored) before the first query); storage: false fully disables persistence (no reads, no writes); default key 'iris-table-state'. */

@@ -53,7 +53,9 @@ import {
   createRemoteTableSource,
   createSortable,
   insertRowInList,
+  matchTableKey,
   memoizedFormulaValue,
+  normalizeKeymap,
   parseCsv,
   removeRowFromList,
   setCellValue,
@@ -1406,6 +1408,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   lazyLoad,
   keyboardNavigation = false,
   tableShortcuts = false,
+  keymap,
   cellRange = false,
   rangeFill = false,
   clipConfig,
@@ -4251,14 +4254,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
     updateRangeToolbarAnchor()
   }
 
-  // Batch AN shortcuts (iris 独有, tableShortcuts): F2 begins editing the
-  // focused cell's column (when editable), Delete/Backspace clears the cell
+  // Batch AN shortcuts (iris 独有, tableShortcuts): the edit/clear keys
+  // begin editing the focused cell's column (when editable) / clear the cell
   // to '' — one batched commitRowList (undo-covered free via the undo
-  // funnel). The focused-cell state is keyboardNavigation's roving focus
-  // (cells only get `data-grid-row`/onFocus there); WITHOUT keyboardNavigation
-  // the shortcuts are inert (documented). While an inline editor is open the
-  // editor's own keys win (the gates below skip). The event TARGET must be a
-  // grid cell — header/editor focus never triggers on a stale cell.
+  // funnel). Batch BG: the keys come from `keyBindings` (keymap rebinding),
+  // so `edit: 'F3'` remaps F2 wholesale. The focused-cell state is
+  // keyboardNavigation's roving focus (cells only get
+  // `data-grid-row`/onFocus there); WITHOUT keyboardNavigation the shortcuts
+  // are inert (documented). While an inline editor is open the editor's own
+  // keys win (the gates below skip). The event TARGET must be a grid cell —
+  // header/editor focus never triggers on a stale cell.
   const handleTableShortcutKey = (e: React.KeyboardEvent<HTMLDivElement>): void => {
     if (!tableShortcuts) return
     if (editTarget.editing !== null || rowEditing !== null) return
@@ -4269,13 +4274,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const col = leafColumns[cell.col]
     if (!row || !col) return
     const k = rowKeyOf(row, cell.row)
-    if (e.key === 'F2') {
+    if (matchTableKey(e, keyBindings.edit)) {
       if (!col.editable || col.formula || isCellLocked(row, col)) return
       e.preventDefault()
       beginEdit(row, col, k, cell.row)
       return
     }
-    if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (matchTableKey(e, keyBindings.clear)) {
       e.preventDefault()
       if (isCellLocked(row, col)) return
       const current = externalDataRef.current ?? []
@@ -4390,15 +4395,27 @@ export function IrisTable<Row extends Record<string, unknown>>({
     [rowKey, commitRowList],
   )
 
+  // ── Batch BG keymap (iris 独有): the EFFECTIVE shortcut bindings = the
+  // built-in defaults + the `keymap` prop overrides (per-action wholesale,
+  // invalid specs fail-closed to the default). Shared by the edit/clear,
+  // undo/redo, copy/paste, fill and query handlers below. `queryInputRef`
+  // receives the toolbar query input so Ctrl+K can focus it.
+  const keyBindings = React.useMemo(() => normalizeKeymap(keymap), [keymap])
+  const queryInputRef = React.useRef<HTMLInputElement | null>(null)
+
   // ── Built-in undo/redo keyboard (iris 独有, batch AL) ────────────────
   // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Y (or Ctrl/Cmd+Shift+Z) redoes — a window
   // listener gated on `undo`, accepting only targets inside the table and
   // skipping text controls / select editors / an active inline edit session,
   // mirroring the clipConfig guard. Not while editing: the editor's own
-  // Ctrl+Z semantics win inside an open session.
+  // Ctrl+Z semantics win inside an open session. Batch BG: the bindings come
+  // from `keyBindings` and modifiers match exactly (Alt+Ctrl+Z is inert).
   React.useEffect(() => {
     if (!undo) return
     const onKey = (e: KeyboardEvent): void => {
+      // Batch BG first-handler-wins: an earlier (root) handler that claimed
+      // the key already preventDefault'd it.
+      if (e.defaultPrevented) return
       const target = e.target as HTMLElement | null
       if (target && !rootRef.current?.contains(target)) return
       if (
@@ -4410,17 +4427,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
       )
         return
       if (editingTarget !== null || rowEditing !== null) return
-      const mod = e.ctrlKey || e.metaKey
-      if (!mod) return
-      const key = e.key.toLowerCase()
-      if (key === 'z' && !e.shiftKey) {
+      if (matchTableKey(e, keyBindings.undo)) {
         e.preventDefault()
         const prev = undoStack.undo()
         if (prev !== undefined) {
           bumpUndoTick()
           applyUndoSnapshot(prev, 'undo')
         }
-      } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
+      } else if (matchTableKey(e, keyBindings.redo)) {
         e.preventDefault()
         const next = undoStack.redo()
         if (next !== undefined) {
@@ -4431,11 +4445,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [undo, editingTarget, rowEditing, undoStack, applyUndoSnapshot, bumpUndoTick])
+  }, [undo, editingTarget, rowEditing, undoStack, applyUndoSnapshot, bumpUndoTick, keyBindings])
 
   React.useEffect(() => {
     if (!clipConfig) return
     const onKey = (e: KeyboardEvent): void => {
+      if (e.defaultPrevented) return
       // Never hijack keys outside the table or on text inputs (editors, the
       // fnr bar, external fields) or select editors.
       const target = e.target as HTMLElement | null
@@ -4447,16 +4462,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
           target.dataset.irisTableEditor !== undefined)
       )
         return
-      const mod = e.ctrlKey || e.metaKey
-      const key = e.key.toLowerCase()
-      if (!mod || (key !== 'c' && key !== 'v')) return
       const range = cellRangeCtrl.getRange()
       if (!range) return
-      if (key === 'c') {
+      if (matchTableKey(e, keyBindings.copy)) {
         if (clipConfig.copy === false) return
         e.preventDefault()
         void writeClipboardText(buildRangeTsv(range))
-      } else {
+      } else if (matchTableKey(e, keyBindings.paste)) {
         if (clipConfig.paste === false) return
         e.preventDefault()
         void pasteIntoRange(range)
@@ -4464,7 +4476,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [clipConfig, cellRangeCtrl, buildRangeTsv, pasteIntoRange])
+  }, [clipConfig, cellRangeCtrl, buildRangeTsv, pasteIntoRange, keyBindings])
 
   // ── Range floating toolbar (batch AH, iris 独有) ───────────────────────
   // Visibility derives from the range store: `cellRange` + a live selection
@@ -6391,6 +6403,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               }}
             >
               <input
+                ref={queryInputRef}
                 data-iris-table-query-input=""
                 value={query}
                 onChange={(e) => onQueryChange?.(e.target.value)}
@@ -7072,11 +7085,30 @@ export function IrisTable<Row extends Record<string, unknown>>({
         data-iris-no-hover={highlightHoverRow ? undefined : 'true'}
         className={className}
         onKeyDown={
-          keyboardNavigation || cellRange || tableShortcuts
+          keyboardNavigation || cellRange || tableShortcuts || rangeFill || query !== undefined
             ? (e) => {
                 if (keyboardNavigation) handleGridKey(e)
                 if (cellRange) handleCellRangeKey(e)
                 if (tableShortcuts) handleTableShortcutKey(e)
+                // Batch BG keymap (iris 独有): Ctrl+D fills one step DOWN
+                // through the existing range-fill pipeline (zero new mutation
+                // logic); Ctrl+K focuses the query input. Both strictly gated
+                // on their feature flags — a keymap never enables a disabled
+                // feature. First-handler-wins: a root handler that already
+                // claimed the key preventDefault'd it, so the fill/query
+                // branches (and, via defaultPrevented, the window undo/clip
+                // listeners) skip.
+                if (e.defaultPrevented) return
+                if (rangeFill && matchTableKey(e, keyBindings.fill)) {
+                  const range = cellRangeCtrl.getRange()
+                  if (range) {
+                    e.preventDefault()
+                    fillRangeFromHandle(range.end.row + 1, range.end.col)
+                  }
+                } else if (query !== undefined && matchTableKey(e, keyBindings.query)) {
+                  e.preventDefault()
+                  queryInputRef.current?.focus()
+                }
               }
             : undefined
         }

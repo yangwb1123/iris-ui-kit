@@ -36658,6 +36658,12 @@
           "description": "keys): F2 begins editing the focused cell's column (when editable), Delete/Backspace clears it to `''` — one batched `commitRowList` (undo-covered via the undo funnel). Requires `keyboardNavigation`'s focused-cell state (single-tabstop roving cell focus); without it the shortcuts are inert. While an inline editor is open the editor's own"
         },
         {
+          "name": "keymap",
+          "type": "Partial<Record<IrisTableKeyAction, string>>",
+          "optional": true,
+          "description": "built-in shortcut keys. ONE key spec string per action (`Modifier+Key`, case-insensitive; `Ctrl`/`Cmd`/`Meta` share one ctrl-or-meta flag — `Ctrl+C` matches Ctrl OR Cmd). Actions: `edit` (default F2) / `clear` (Delete, Backspace) need `tableShortcuts`; `undo` (Ctrl+Z) / `redo` (Ctrl+Y, Ctrl+Shift+Z) need `undo`; `copy` (Ctrl+C) / `paste` (Ctrl+V) need `clipConfig`; `fill` (Ctrl+D — one-step drag-down) needs `rangeFill` + a live range; `query` (Ctrl+K — focuses the query input) needs the controlled `query`. An override REPLACES that action's bindings wholesale (aliases included); invalid specs (`''` / `'Meta'` / `'Ctrl+'` …) are dropped fail-closed — the action keeps its default. Modifiers match exactly: `Ctrl+Shift+Z`"
+        },
+        {
           "name": "virtualScroll",
           "type": "IrisTableVirtualOptions",
           "optional": true,
@@ -37550,6 +37556,12 @@
               "type": "boolean",
               "optional": true,
               "description": "keys): F2 begins editing the focused cell's column (when editable), Delete/Backspace clears it to `''` — one batched `commitRowList` (undo-covered via the undo funnel). Requires `keyboardNavigation`'s focused-cell state (single-tabstop roving cell focus); without it the shortcuts are inert. While an inline editor is open the editor's own"
+            },
+            {
+              "name": "keymap",
+              "type": "Partial<Record<IrisTableKeyAction, string>>",
+              "optional": true,
+              "description": "built-in shortcut keys. ONE key spec string per action (`Modifier+Key`, case-insensitive; `Ctrl`/`Cmd`/`Meta` share one ctrl-or-meta flag — `Ctrl+C` matches Ctrl OR Cmd). Actions: `edit` (default F2) / `clear` (Delete, Backspace) need `tableShortcuts`; `undo` (Ctrl+Z) / `redo` (Ctrl+Y, Ctrl+Shift+Z) need `undo`; `copy` (Ctrl+C) / `paste` (Ctrl+V) need `clipConfig`; `fill` (Ctrl+D — one-step drag-down) needs `rangeFill` + a live range; `query` (Ctrl+K — focuses the query input) needs the controlled `query`. An override REPLACES that action's bindings wholesale (aliases included); invalid specs (`''` / `'Meta'` / `'Ctrl+'` …) are dropped fail-closed — the action keeps its default. Modifiers match exactly: `Ctrl+Shift+Z`"
             },
             {
               "name": "virtualScroll",
@@ -38964,7 +38976,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 148,
+        "propCount": 149,
         "eventCount": 28
       }
     },

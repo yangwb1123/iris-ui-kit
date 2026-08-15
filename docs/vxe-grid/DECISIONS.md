@@ -1202,3 +1202,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bf-review.md [ok]: Summary: **Spec correctness — ✅.** `exportVersionCsv: (index: number) => string` lands at the exact anchors (types.ts:582 after `; Findings: 1. **[LOW]** Baseline's "locked invariant" (`batch-bf-baseline.md:9`: after `restoreVersion(i)`, `exportVersionCsv(i) ==
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bf-review.md
+
+## 2026-08-15 00:36:49 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bf-gate.md [ok]: Results: **Gate** (all run fresh): `turbo run test typecheck lint build` → **180/180 tasks successful** · `pnpm audit` → **0 vuln
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bf-gate.md
+
+## 2026-08-15 00:41:46 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bg-baseline.md [ok]: What's in the baseline: **Exact design** (every anchor verified against current code):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bg-baseline.md

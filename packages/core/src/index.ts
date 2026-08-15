@@ -408,6 +408,18 @@ export {
   type KeyboardNavConfig,
   type KeyboardNavAction,
 } from './keyboard-nav'
+export {
+  parseTableKey,
+  normalizeKeymap,
+  matchTableKey,
+  TABLE_KEY_ACTIONS,
+  DEFAULT_TABLE_KEYMAP,
+  type IrisTableKeyAction,
+  type IrisTableKeymap,
+  type TableKeyBinding,
+  type TableKeyEvent,
+  type NormalizedTableKeymap,
+} from './keymap'
 
 // --- Data & resilience foundation primitives (2026-07-16) ---
 export * from './disposable'

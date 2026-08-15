@@ -194,6 +194,7 @@ export { summarizeColumn } from './summary'
 export { buildChartData, chartDomain, type ChartData } from './chart-data'
 export { parseTableQuery, type ParseTableQueryOptions, type ParsedTableQuery } from './query-parser'
 export { diffRows, type RowDiff, type RowDiffCellChange, type RowDiffKind } from './diff-rows'
+export { generateRows, type GenerateRowColumn, type GenerateRowsKind } from './generate-rows'
 export {
   createSelectionModel,
   type SelectionModel,

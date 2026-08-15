@@ -1132,3 +1132,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bc-adapt.md [ok]: Batch BC complete and committed. Cross-table formula refs (`formulaTables`, `=other!col` → first row, fail-closed) — core `!` bang token + `resolveTableField` + 3-arg `evaluateFormula` + nested-WeakMap memo (row, tables, formula) + `FormulaTables` type export; react dual-channel (render module slot + explicit CSV handle args) + `useTableSort` 4th eval point. 19 core + 12 react new tests, propCount 146→147, manifest/docs regenerated, lint 0 errors, spec audit 0 violations.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bc-adapt.md
+
+## 2026-08-14 23:15:42 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bc-review.md [ok]: Verdict: **PASS** (3 findings — 1 medium, 2 low, non-blocking): **What I verified:**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bc-review.md
+
+## 2026-08-15 06:55:00 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bc-gate.md [ok]: Verdict PASS → full gate run. turbo test/typecheck/lint/build **180/180 successful** (4m59s, 55 cached); `pnpm audit` 0 vulnerabilities; gen:manifest + check:manifest up to date (155×4, 86 tokens); check:docs-reference up to date; prettier formatted reviewer docs. No fixes applied (findings non-blocking: medium = range-CSV/FNR handler-time module-slot reads on multi-table pages, disclosed fiat; low = duplicate DECISIONS adapt entry, removed; low = baseline doc 15-line summary, fiats in adapt doc). Final counts: core 1457 (+19), react 2110 (+12).
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bc-gate.md

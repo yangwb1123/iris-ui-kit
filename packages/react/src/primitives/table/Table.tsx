@@ -11,6 +11,7 @@ import {
   createSelectionModel,
   createUndoStack,
   createAuditLog,
+  createPerfStats,
   createVersionHistory,
   flattenLeafColumns,
   flattenTree,
@@ -22,6 +23,7 @@ import {
   seedFormValues,
   withSortedChildren,
   nextGridCell,
+  nowMs,
   rangeStats,
   type CellRange,
   type CellRangeController,
@@ -29,6 +31,7 @@ import {
   type GridCell,
   type GridNavKey,
   type ParsedTableQuery,
+  type PerfStats,
   type SelectionModel,
   type TreeRow,
   type UndoStack,
@@ -82,6 +85,7 @@ import { useDismiss } from '../../floating/useDismiss'
 import { TableChartPanel } from './ChartPanel'
 import { TableAuditPanel } from './AuditPanel'
 import { TableVersionHistoryPanel } from './VersionHistoryPanel'
+import { TablePerfPanel } from './PerfPanel'
 import {
   CELL_NOTE_STYLE,
   PRESENCE_LABEL_STYLE,
@@ -1566,6 +1570,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   autoRefresh,
   freshness,
   auditLog,
+  perfStats,
   versionHistory,
   compareWith,
   formulaTables,
@@ -1630,6 +1635,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
   }, [])
 
   const { t } = useI18n()
+  // Batch BL perf sampling: render-top mark — `nowMs()` (performance.now
+  // with a Date.now fallback for SSR/jsdom). The dependency-less
+  // useLayoutEffect below (after bodyData resolves) measures render + layout
+  // duration from this mark after EVERY commit. Off = zero cost (the effect
+  // gate skips the push; the mark itself is one number store).
+  const perfStartRef = React.useRef(0)
+  perfStartRef.current = nowMs()
   // Batch AO cell references: `showCellRefs` adds Excel-style A/B/C letter
   // badges + a leading row-number column. When `seq` is on the seq column IS
   // the row number — one leading number column either way.
@@ -1992,6 +2004,21 @@ export function IrisTable<Row extends Record<string, unknown>>({
   React.useEffect(() => {
     auditRowsRef.current = liveData
   }, [liveData])
+
+  // ── Built-in performance panel (iris 独有, batch BL) ───────────────────
+  // A core createPerfStats keeps the LATEST render-commit sample (the audit
+  // controller's mold — createPerfStats/auditRef 1:1). Created once
+  // (ref-once) and stays inert unless the `perfStats` prop is on
+  // (perfEnabledRef gate — off = zero cost, no push ever). The sampling
+  // itself lives in a dependency-less useLayoutEffect below (after
+  // bodyData/leafColumns resolve) — see the render-top mark there.
+  const perfEnabledRef = React.useRef(perfStats)
+  perfEnabledRef.current = perfStats
+  const perfRef = React.useRef<PerfStats | null>(null)
+  if (perfRef.current === null) {
+    perfRef.current = createPerfStats()
+  }
+  const perf = perfRef.current
 
   // ── Built-in version history (iris 独有, batch BA) ────────────────────
   // A core createVersionHistory keeps a bounded (default 20) ring of the
@@ -2944,6 +2971,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // Batch BA: version-history panel open state + toolbar trigger anchor.
   const [historyOpen, setHistoryOpen] = React.useState(false)
   const historyAnchorRef = React.useRef<HTMLButtonElement | null>(null)
+  // Batch BL: perf panel open state + toolbar trigger anchor (floating like
+  // the audit/chart panels).
+  const [perfOpen, setPerfOpen] = React.useState(false)
+  const perfAnchorRef = React.useRef<HTMLButtonElement | null>(null)
   const importFileRef = React.useRef<HTMLInputElement | null>(null)
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -4097,6 +4128,24 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // post-rerender rows — same pattern as filteredDataRef above).
   const bodyDataRef = React.useRef(bodyData)
   bodyDataRef.current = bodyData
+
+  // Batch BL: after EVERY commit, sample the render+layout duration from
+  // the render-top mark and push the latest snapshot into the perf
+  // controller (rows = bodyData, columns = leafColumns, changes = audit
+  // depth). Dependency-less on purpose — a fresh capture per commit. The
+  // push only notifies the floating perf panel (a separate portal root via
+  // useSyncExternalStore) — the table NEVER re-renders from its own
+  // measurement (vs. setState-in-effect which would busy-loop). Off = zero
+  // cost (the gate skips the push entirely).
+  React.useLayoutEffect(() => {
+    if (!perfEnabledRef.current) return
+    perf.push({
+      durationMs: nowMs() - perfStartRef.current,
+      rows: bodyData.length,
+      columns: leafColumns.length,
+      changes: audit.depth,
+    })
+  })
 
   // Batch AM: per-column native datalist suggestions (iris 独有). Only
   // `suggest === true` columns are scanned (an explicit array passes through
@@ -6615,6 +6664,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         chartPreview ||
         freshness ||
         auditLog ||
+        perfStats ||
         versionHistory) &&
       layouts?.toolbar !== 'hidden' ? (
         <div
@@ -7253,6 +7303,25 @@ export function IrisTable<Row extends Record<string, unknown>>({
               title={t('table.history')}
             >
               ⏱
+            </button>
+          ) : null}
+          {perfStats ? (
+            <button
+              ref={perfAnchorRef}
+              type="button"
+              data-iris-perf-trigger=""
+              onClick={() => setPerfOpen((v) => !v)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: perfOpen ? 'var(--iris-foreground)' : 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+              }}
+              aria-label={t('table.perf')}
+              title={t('table.perf')}
+            >
+              ⚡
             </button>
           ) : null}
           {toolbar?.buttons && toolbar.buttons.length > 0
@@ -8127,6 +8196,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
               setHistoryOpen(false)
             }}
             onClose={() => setHistoryOpen(false)}
+            t={t}
+          />
+        ) : null}
+        {perfStats && perfOpen ? (
+          <TablePerfPanel
+            open
+            anchorRef={perfAnchorRef}
+            perf={perf}
+            audit={auditLog ? audit : null}
+            onClose={() => setPerfOpen(false)}
             t={t}
           />
         ) : null}

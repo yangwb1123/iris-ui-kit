@@ -12,6 +12,7 @@ export default defineConfig({
     'src/fs.ts',
     'src/undo.ts',
     'src/audit-log.ts',
+    'src/perf-stats.ts',
   ],
   format: ['esm', 'cjs'],
   dts: true,

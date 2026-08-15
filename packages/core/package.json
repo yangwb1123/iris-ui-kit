@@ -57,6 +57,11 @@
       "types": "./dist/audit-log.d.ts",
       "import": "./dist/audit-log.js",
       "require": "./dist/audit-log.cjs"
+    },
+    "./perf-stats": {
+      "types": "./dist/perf-stats.d.ts",
+      "import": "./dist/perf-stats.js",
+      "require": "./dist/perf-stats.cjs"
     }
   },
   "files": [

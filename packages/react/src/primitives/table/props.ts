@@ -637,6 +637,24 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    */
   auditLog?: boolean
   /**
+   * Performance panel (batch BL, iris 独有 — vxe has no perf stats): when
+   * true, every render commit samples `nowMs()` (render-top mark →
+   * dependency-less `useLayoutEffect` run) into a core `createPerfStats`
+   * latest-snapshot controller (`@iris-ui-kit/core/perf-stats` — own
+   * subpath). Duration = render + layout phase, excludes paint
+   * (documented). The toolbar gains a ⚡ trigger (`data-iris-perf-trigger`)
+   * opening a floating panel (`data-iris-perf-panel`, like the audit panel
+   * — Esc / outside / scroll close) showing the last render duration,
+   * row count, leaf-column count and the audit-trail depth — live: the
+   * panel subscribes to BOTH controllers, so `tableRef.clearAuditLog()`
+   * refreshes the changes count in place; `auditLog` off → muted `—`. The
+   * push notifies only the panel (separate portal root) — the table never
+   * re-renders from its own measurement. Requires a toolbar render (the
+   * gate admits `perfStats` like `auditLog`). Off = zero cost. Additive —
+   * default off.
+   */
+  perfStats?: boolean
+  /**
    * Version history (batch BA, iris 独有 — vxe has no time-travel): when set,
    * every row-list commit (`commitRowList` — row ops, paste, fill, range
    * clear, batch edit, undo/redo replay) pushes the PRE-change rows into a

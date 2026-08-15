@@ -458,4 +458,5 @@ export {
   type VersionHistoryEntry,
   type VersionHistoryOptions,
 } from './version-history'
+export { createPerfStats, nowMs, type PerfSample, type PerfStats } from './perf-stats'
 export { setCellValue } from './cell-edit'

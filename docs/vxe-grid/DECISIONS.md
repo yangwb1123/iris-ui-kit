@@ -1437,3 +1437,33 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bq-baseline.md [ok]: 核验摘要: **设计** — `editAutosave?: boolean` + `onAutosave?: (rows: Row[]) => void`（props.ts:349，`onEditClosed` 后编辑组内）。单一咽喉 `commit
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bq-baseline.md
+
+## 2026-08-15 05:39:46 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bq-adapt.md [ok]: 批 BQ 完成报告 — 编辑自动保存 `editAutosave` / `onAutosave`（iris 独有）: Committed as **`c6850f5c`** — `feat(table): vxe-grid 批 BQ——编辑自动保存 editAutosave/onAutosave（iris 独有）`; 实现（baseline 零偏差，纯 additive、core 零改动、react-only、纯回调零 UI/i18n）: **`props.ts`** (+4)：`editAutosave?: boolean`（特性开关）+ `onAutosave?: (rows: Row[]) => void`（父持久化钩子，单行函数 prop），`onEditClosed; 测试（12 用例，338 行 ≤500）: `edit-autosave.test.tsx`（新）— 规格两项打头：①双击→改值→Enter 触发且载荷为新行列表、②有 `onAutosave`无`editAutosave`不触发；+ no-op / 校验失败→随后有效提交 /; 验证（全部 ✅）: | 门 | 结果 |; 文件变更（9 committed）:`props.ts`·`Table.tsx`·`edit-autosave.test.tsx`(新) · `manifest.json`+`llms.txt`（重新生成）· `docs/vxe-grid-comparison.m
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bq-adapt.md
+
+## 2026-08-15 05:45:44 — stage 'review' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bq-review.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bq-review.md
+
+## 2026-08-15 05:46:58 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-br-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-br-baseline.md
+
+## 2026-08-15 05:52:24 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bs-baseline.md [ok]: 核验摘要: **设计** — 新表级 prop `groupBy?: string[]`（props.ts ~:410，`keymap` 后 / `groupCollapsed` 前）：数组元素 = 叶子列 `key`，顺序 = 嵌套层级（`['dep
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bs-baseline.md
+
+## 2026-08-15 06:02:24 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bs-adapt.md [ok]: Report: Table-level `groupBy?: string[]` (iris-only, multi-column nested grouping) per `batch-bs-baseline.md`:; What was implemented: Table-level `groupBy?: string[]` (iris-only, multi-column nested grouping) per `batch-bs-baseline.md`:; Semantics (baseline zero-drift): - Array order = nesting depth; composite keys `v0::v1::…` (`::` = cellId delimiter), level-0 bare (single-col compat); Verification — all ✅: - core test: **1517/1517**; Files changed (9 committed): props.ts · Table.tsx · types.ts · group-multicol.test.tsx (new) · manifest.json + llms.txt (regenerated) · vxe-grid-comp
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bs-adapt.md
+
+## 2026-08-15 06:05:44 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bs-review.md [ok]: Verdict: **PASS** — written to `docs/vxe-grid/batch-bs-review.md`: Reviewed commit `982dc909` against the baseline, inspected the full diff and all 13 new tests, re-ran every gate.; Verification (all independently re-run): - **core test**: 1517/1517 ✅; Checklist results: - **Spec correctness**: all baseline items verified — recursive `groupPlan` builder reusing `groupRows`+`getCellValue`, ; Findings (2 LOW, 1 INFO — none gate-blocking): 1. **LOW (docs)** — `docs/vxe-grid-comparison.md:344` says "react 2280 tests" but actual is **2281** (stale pre-existing
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bs-review.md

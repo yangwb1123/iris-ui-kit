@@ -63,6 +63,8 @@ export const zhCNMessages: Record<string, string> = {
   'table.distribution': '值分布',
   'table.distribution.others': '其余 {count} 个',
   'table.summary': '摘要',
+  'table.copyValue': '复制值',
+  'table.clearCell': '清空',
   'table.annotate': '添加批注',
   'table.annotate.edit': '编辑批注',
   'table.annotate.remove': '删除批注',

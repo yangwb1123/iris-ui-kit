@@ -583,6 +583,17 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * cells never open it. The menu floats at the cursor (virtual anchor),
    * closes on Escape / outside pointer-down / any scroll, and fires `onSelect`
    * with the clicked item's key and the cell's grid coordinates.
+   *
+   * Batch BW (iris 独有): EVERY menu unconditionally gains two built-in quick
+   * actions after the user items (and after the value-distribution / summary
+   * items when those props are on, before the annotate items) — 复制值
+   * (key `__iris-copy-value`, i18n `table.copyValue`, copies the cell's
+   * display text — mask → formatter → String — to the clipboard) and 清空
+   * (key `__iris-clear-cell`, i18n `table.clearCell`, writes the cell to ''
+   * through the same commitRowList funnel as the Delete shortcut — undo /
+   * audit / onDataChange covered; locked/readonly cells no-op). Both keys are
+   * intercepted at the onSelect wiring, so the user callback never sees them;
+   * without a clipboard the copy no-ops safely.
    */
   contextMenu?: {
     items: (

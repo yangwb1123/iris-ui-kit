@@ -946,6 +946,16 @@ const ANNOTATE_EDIT_MENU_KEY = '__iris-annotate-edit'
 /** Reserved context-menu key for the built-in annotate-REMOVE item (batch
  * BB): deletes the cell's annotation directly through `onAnnotationsChange`. */
 const ANNOTATE_REMOVE_MENU_KEY = '__iris-annotate-remove'
+/** Reserved context-menu key for the built-in COPY-VALUE quick action (batch
+ * BW): unconditionally appended on every context menu BEFORE the annotate
+ * items; the table intercepts it at the onSelect wiring, so a user item
+ * with the same key is deduped and the user callback never sees it. */
+const COPY_VALUE_MENU_KEY = '__iris-copy-value'
+/** Reserved context-menu key for the built-in CLEAR-CELL quick action (batch
+ * BW): unconditionally appended on every context menu BEFORE the annotate
+ * items; the table intercepts it at the onSelect wiring, so a user item
+ * with the same key is deduped and the user callback never sees it. */
+const CLEAR_CELL_MENU_KEY = '__iris-clear-cell'
 
 /** Shared style for the full-width empty / loading / error state rows. */
 const STATE_ROW_STYLE: React.CSSProperties = {
@@ -1344,6 +1354,24 @@ async function readClipboardText(): Promise<string | null> {
   } catch {
     return null
   }
+}
+
+/**
+ * Batch BW: the display text of a context-menu cell — `applyCellMask` mask
+ * first, formatter second, `String` coercion (null/undefined → '') — the
+ * SAME display chain as the cell body and `cellTooltip`, so the 复制值 quick
+ * action copies exactly what the user sees.
+ */
+function contextCellText<Row extends Record<string, unknown>>(
+  row: Row,
+  col: IrisTableColumn<Row>,
+): string {
+  const displayValue = applyCellMask(getCellValue(row, col), col)
+  if (col.formatter) {
+    const formatted = col.formatter(displayValue, row)
+    if (typeof formatted === 'string') return formatted
+  }
+  return String(displayValue ?? '')
 }
 
 /**
@@ -3860,6 +3888,23 @@ export function IrisTable<Row extends Record<string, unknown>>({
     delete next[colKey]
     onFilterValuesChange?.(next)
   }
+  // Batch BW: 复制值 — the clicked cell's display text (mask → formatter →
+  // String, the `contextCellText` chain shared with cellTooltip) via the
+  // existing safe clipboard writer (three-channel, no-op when no clipboard).
+  const copyContextValue = (params: IrisTableContextMenuParams<Row>): void => {
+    void writeClipboardText(contextCellText(params.row, params.column))
+  }
+  // Batch BW: 清空 — the clicked cell set to '' through ONE commitRowList
+  // (the SAME funnel as the Delete shortcut: undo/audit/onDataChange
+  // covered); locked/readonly no-op like every other write entry point.
+  const clearContextCell = (params: IrisTableContextMenuParams<Row>): void => {
+    const { row, column, rowIndex } = params
+    if (isCellLocked(row, column) || isCellReadonly(row, column)) return
+    const current = externalDataRef.current ?? []
+    const k = rowKeyOf(row, rowIndex)
+    const next = setCellValue(current, rowKey, k, column.key, '')
+    if (next !== current) commitRowList(next)
+  }
   const handleContextMenu = (
     e: React.MouseEvent,
     row: Row,
@@ -3903,6 +3948,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // alone (dedupe guard) so the table never renders it twice.
     if (nlSummary && !items.some((i) => i.key === SUMMARY_MENU_KEY)) {
       items.push({ key: SUMMARY_MENU_KEY, label: t('table.summary') })
+    }
+    // Batch BW: 复制值 + 清空 are built-in quick actions on EVERY context
+    // menu (unconditional, no new prop) — appended AFTER the summary item,
+    // BEFORE the annotate block; the same dedupe guard as the distribution/
+    // summary items leaves a user item using a reserved key alone, and the
+    // onSelect wiring intercepts the keys so the user callback never sees
+    // them.
+    if (!items.some((i) => i.key === COPY_VALUE_MENU_KEY)) {
+      items.push({ key: COPY_VALUE_MENU_KEY, label: t('table.copyValue') })
+    }
+    if (!items.some((i) => i.key === CLEAR_CELL_MENU_KEY)) {
+      items.push({ key: CLEAR_CELL_MENU_KEY, label: t('table.clearCell') })
     }
     // Batch BB: with `annotationEditing`, append the built-in annotate items
     // AFTER the summary item — 添加批注 on a note-less cell, 编辑批注 +
@@ -8922,7 +8979,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
               else if (key === ANNOTATE_REMOVE_MENU_KEY) {
                 const k = rowKeyOf(params.row, params.rowIndex)
                 removeAnnotationKey(cellId(k, params.column.key))
-              } else contextMenu.onSelect(key, params)
+              } else if (key === COPY_VALUE_MENU_KEY) copyContextValue(params)
+              else if (key === CLEAR_CELL_MENU_KEY) clearContextCell(params)
+              else contextMenu.onSelect(key, params)
             }}
             onClose={closeContextMenu}
           />

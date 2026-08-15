@@ -85,11 +85,14 @@ describe('@iris-ui-kit/react IrisTable annotation editing (batch BB, iris 独有
         }}
       />,
     )
-    // Noted cell → 编辑批注 + 删除批注 AFTER the user items.
+    // Noted cell → 编辑批注 + 删除批注 AFTER the user items and the
+    // batch-BW quick actions.
     openMenu(1, 'name')
     expect(menuItems().map((i) => i.textContent)).toEqual([
       'Edit row',
       'Delete row',
+      'Copy value',
+      'Clear cell',
       'Edit annotation',
       'Remove annotation',
     ])
@@ -101,6 +104,8 @@ describe('@iris-ui-kit/react IrisTable annotation editing (batch BB, iris 独有
     expect(menuItems().map((i) => i.textContent)).toEqual([
       'Edit row',
       'Delete row',
+      'Copy value',
+      'Clear cell',
       'Add annotation',
     ])
     expect(menuItem('__iris-annotate')).not.toBeNull()
@@ -126,12 +131,16 @@ describe('@iris-ui-kit/react IrisTable annotation editing (batch BB, iris 独有
     expect(menuItems().map((i) => i.textContent)).toEqual([
       'Value distribution',
       'Column summary',
+      'Copy value',
+      'Clear cell',
       'Add annotation',
     ])
     openMenu(1, 'name')
     expect(menuItems().map((i) => i.textContent)).toEqual([
       'Value distribution',
       'Column summary',
+      'Copy value',
+      'Clear cell',
       'Edit annotation',
       'Remove annotation',
     ])
@@ -248,7 +257,9 @@ describe('@iris-ui-kit/react IrisTable annotation editing (batch BB, iris 独有
       />,
     )
     openMenu(1, 'name')
-    expect(menuItems().map((i) => i.textContent)).toEqual(['Edit row'])
+    // The annotate items are absent; the batch-BW quick actions remain.
+    expect(menuItems().map((i) => i.textContent)).toEqual(['Edit row', 'Copy value', 'Clear cell'])
+    expect(menuItem('__iris-annotate')).toBeNull()
     fireEvent.click(menuItem('edit')!)
     expect(panel()).toBeNull()
   })
@@ -312,8 +323,14 @@ describe('@iris-ui-kit/react IrisTable annotation editing (batch BB, iris 独有
       />,
     )
     openMenu(1, 'age')
-    expect(menuItems().length).toBe(1)
+    expect(menuItems().length).toBe(3)
     expect(menuItems()[0]!.textContent).toBe('Mine')
+    expect(menuItems()[1]!.getAttribute('data-iris-table-context-menu-item')).toBe(
+      '__iris-copy-value',
+    )
+    expect(menuItems()[2]!.getAttribute('data-iris-table-context-menu-item')).toBe(
+      '__iris-clear-cell',
+    )
     fireEvent.click(menuItems()[0]!)
     expect(panel()).not.toBeNull()
   })

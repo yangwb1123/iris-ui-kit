@@ -85,11 +85,14 @@ describe('@iris-ui-kit/react IrisTable nlSummary (batch AW, iris 独有)', () =>
     renderSummaryTable(vi.fn())
     fireEvent.contextMenu(cell(1, 'score'), { clientX: 120, clientY: 80 })
     const items = contextMenu()!.querySelectorAll('[data-iris-table-context-menu-item]')
-    expect(items.length).toBe(3)
+    expect(items.length).toBe(5)
     expect(items[1]!.textContent).toBe('Value distribution')
     expect(items[1]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris_distribution')
     expect(items[2]!.textContent).toBe('Column summary')
     expect(items[2]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-summary')
+    // Batch BW: the unconditional 复制值 / 清空 quick actions follow.
+    expect(items[3]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-copy-value')
+    expect(items[4]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-clear-cell')
   })
 
   it('selecting the item opens the panel with the summary text (user callback untouched)', () => {
@@ -128,8 +131,11 @@ describe('@iris-ui-kit/react IrisTable nlSummary (batch AW, iris 独有)', () =>
     )
     fireEvent.contextMenu(cell(1, 'name'), { clientX: 10, clientY: 10 })
     const items = contextMenu()!.querySelectorAll('[data-iris-table-context-menu-item]')
-    expect(items.length).toBe(1)
+    expect(items.length).toBe(3)
     expect(items[0]!.textContent).toBe('Edit row')
+    // Batch BW: 复制值 + 清空 are unconditional quick actions.
+    expect(items[1]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-copy-value')
+    expect(items[2]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-clear-cell')
     expect(summaryPanel()).toBeNull()
   })
 
@@ -146,8 +152,10 @@ describe('@iris-ui-kit/react IrisTable nlSummary (batch AW, iris 独有)', () =>
     )
     fireEvent.contextMenu(cell(1, 'name'), { clientX: 10, clientY: 10 })
     const items = contextMenu()!.querySelectorAll('[data-iris-table-context-menu-item]')
-    expect(items.length).toBe(1)
+    expect(items.length).toBe(3)
     expect(items[0]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris_distribution')
+    expect(items[1]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-copy-value')
+    expect(items[2]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-clear-cell')
   })
 
   it('a user item already using the reserved key is not duplicated', () => {
@@ -166,8 +174,9 @@ describe('@iris-ui-kit/react IrisTable nlSummary (batch AW, iris 独有)', () =>
     )
     fireEvent.contextMenu(cell(1, 'name'), { clientX: 10, clientY: 10 })
     const items = contextMenu()!.querySelectorAll('[data-iris-table-context-menu-item]')
-    expect(items.length).toBe(1)
+    expect(items.length).toBe(3)
     expect(items[0]!.textContent).toBe('Mine')
+    expect(items[1]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-copy-value')
     fireEvent.click(items[0]!)
     expect(summaryPanel()).not.toBeNull()
     expect(onSelect).not.toHaveBeenCalled()

@@ -165,9 +165,12 @@ describe('@iris-ui-kit/react IrisTable valueDistribution (batch AM, iris 独有)
     renderDistTable(vi.fn())
     fireEvent.contextMenu(cell(1, 'name'), { clientX: 120, clientY: 80 })
     const items = contextMenu()!.querySelectorAll('[data-iris-table-context-menu-item]')
-    expect(items.length).toBe(3)
+    expect(items.length).toBe(5)
     expect(items[2]!.textContent).toBe('Value distribution')
     expect(items[2]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris_distribution')
+    // Batch BW: the unconditional 复制值 / 清空 quick actions follow.
+    expect(items[3]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-copy-value')
+    expect(items[4]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-clear-cell')
   })
 
   it('without valueDistribution the built-in item is absent', () => {
@@ -182,8 +185,11 @@ describe('@iris-ui-kit/react IrisTable valueDistribution (batch AM, iris 独有)
     )
     fireEvent.contextMenu(cell(1, 'name'), { clientX: 10, clientY: 10 })
     const items = contextMenu()!.querySelectorAll('[data-iris-table-context-menu-item]')
-    expect(items.length).toBe(1)
+    expect(items.length).toBe(3)
     expect(items[0]!.textContent).toBe('Edit row')
+    // Batch BW: 复制值 + 清空 are unconditional quick actions.
+    expect(items[1]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-copy-value')
+    expect(items[2]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-clear-cell')
   })
 
   it('selecting the built-in item opens the panel with count-desc distribution', () => {
@@ -236,9 +242,11 @@ describe('@iris-ui-kit/react IrisTable valueDistribution (batch AM, iris 独有)
     )
     fireEvent.contextMenu(cell(1, 'name'), { clientX: 10, clientY: 10 })
     const items = contextMenu()!.querySelectorAll('[data-iris-table-context-menu-item]')
-    expect(items.length).toBe(1)
-    // The user's own item label wins; the table still routes it to the panel.
+    expect(items.length).toBe(3)
     expect(items[0]!.textContent).toBe('Mine')
+    expect(items[1]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-copy-value')
+    expect(items[2]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-clear-cell')
+    // The user's own item label wins; the table still routes it to the panel.
     fireEvent.click(items[0]!)
     expect(distributionPanel()).not.toBeNull()
     expect(onSelect).not.toHaveBeenCalled()

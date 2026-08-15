@@ -127,6 +127,8 @@ export const defaultMessages: I18nMessages = {
   'table.distribution': 'Value distribution',
   'table.distribution.others': '{count} more',
   'table.summary': 'Column summary',
+  'table.copyValue': 'Copy value',
+  'table.clearCell': 'Clear cell',
   'table.annotate': 'Add annotation',
   'table.annotate.edit': 'Edit annotation',
   'table.annotate.remove': 'Remove annotation',

@@ -222,9 +222,13 @@ describe('@iris-ui-kit/react IrisTable contextMenu (vxe contextMenu parity, batc
     expect(menu!.parentElement).toBe(document.body)
     expect(menu!.getAttribute('role')).toBe('menu')
     const items = menu!.querySelectorAll('[data-iris-table-context-menu-item]')
-    expect(items.length).toBe(2)
+    // Batch BW: the unconditional 复制值 / 清空 quick actions append after
+    // the user items.
+    expect(items.length).toBe(4)
     expect(items[0]!.textContent).toBe('Edit row')
     expect(items[1]!.textContent).toBe('Delete row')
+    expect(items[2]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-copy-value')
+    expect(items[3]!.getAttribute('data-iris-table-context-menu-item')).toBe('__iris-clear-cell')
     // Positioned at the cursor via the virtual anchor.
     await waitFor(() => {
       expect(menu!.style.transform).toContain('translate3d(120px, 80px')

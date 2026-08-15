@@ -1077,3 +1077,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-az-review.md [ok]: Verification results: | Command | Result |; Checklist findings: 1. **Key format/precedence/title — PASS**: lookup `annotations[\`${k}::${col.key}\`]`(Table.tsx:357) uses the exact`ce; Findings: - **P2** `batch-az-baseline.md`: committed file is 19 lines but claims "62 lines" and "13 fiats F1–F13 included for gate
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-az-review.md
+
+## 2026-08-14 19:19:10 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-az-gate.md [ok]: Verdict: PASS → full gate executed: | Step | Result |; Final test counts: - **7,991 tests passed** across **806 test files** (0 failed); Notes: - Working tree clean after commit; commit includes `batch-az-adapt.md` + `batch-az-review.md` + DECISIONS.md.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-az-gate.md

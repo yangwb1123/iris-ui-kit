@@ -113,6 +113,7 @@ export const defaultMessages: I18nMessages = {
   'table.retry': 'Retry',
   'table.refresh': 'Refresh',
   'table.freshness': 'Updated at {time}',
+  'table.validationSummary': 'Passed {ok} · Failed {fail}',
   'table.columnSettings': 'Column settings',
   'table.customConfig.search': 'Search columns',
   'table.customConfig.reset': 'Reset',

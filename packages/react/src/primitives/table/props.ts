@@ -654,6 +654,20 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    */
   freshness?: boolean
   /**
+   * Validation summary (batch BR, iris 独有 — vxe shows no editRules outcome
+   * counts): when true, the toolbar renders a muted commit-outcome ledger
+   * (`data-iris-validation-summary`, i18n `table.validationSummary`, en
+   * `Passed {ok} · Failed {fail}` / zh `通过 {ok} · 失败 {fail}`) for columns
+   * with declarative `editRules`: ok = a commit that passed editRules and
+   * landed (cell and row edit modes), fail = a commit attempt rejected by
+   * editRules. Typing-time validation, legacy `validate` columns, paste/fill/
+   * FNR/batch bypasses and Escape cancels never count. Hidden until at least
+   * one outcome is counted; re-enabling the switch resets the ledger.
+   * Requires a toolbar render (the gate admits `validationSummary` like
+   * `freshness`). Additive — default off.
+   */
+  validationSummary?: boolean
+  /**
    * Audit log (batch AT, iris 独有 — vxe has no audit trail): when true, every
    * mutation commit appends ONE entry to a bounded (200) ring — inline/row
    * edits, insert/remove row ops, paste, fill, batch edit, undo/redo replay

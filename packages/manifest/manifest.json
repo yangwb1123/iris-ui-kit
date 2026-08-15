@@ -36932,6 +36932,12 @@
           "description": "Freshness stamp (batch AS, iris 独有 — vxe shows no data-arrival time): when true, the toolbar renders `Updated at HH:MM:SS` (`data-iris-freshness`, i18n `table.freshness`, 24h local `formatClock`) re-stamped on EVERY live-data change — initial arrival, refetch, edit commit, row ops / paste / batch / range clear, undo/redo (everything that funnels through `setLiveData`). Hidden until the first row exists (`liveData.length === 0`). Requires a toolbar render. Additive — default off."
         },
         {
+          "name": "validationSummary",
+          "type": "boolean",
+          "optional": true,
+          "description": "Validation summary (batch BR, iris 独有 — vxe shows no editRules outcome counts): when true, the toolbar renders a muted commit-outcome ledger (`data-iris-validation-summary`, i18n `table.validationSummary`, en `Passed {ok} · Failed {fail}` / zh `通过 {ok} · 失败 {fail}`) for columns with declarative `editRules`: ok = a commit that passed editRules and landed (cell and row edit modes), fail = a commit attempt rejected by editRules. Typing-time validation, legacy `validate` columns, paste/fill/ FNR/batch bypasses and Escape cancels never count. Hidden until at least one outcome is counted; re-enabling the switch resets the ledger. Requires a toolbar render (the gate admits `validationSummary` like `freshness`). Additive — default off."
+        },
+        {
           "name": "auditLog",
           "type": "boolean",
           "optional": true,
@@ -37900,6 +37906,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Freshness stamp (batch AS, iris 独有 — vxe shows no data-arrival time): when true, the toolbar renders `Updated at HH:MM:SS` (`data-iris-freshness`, i18n `table.freshness`, 24h local `formatClock`) re-stamped on EVERY live-data change — initial arrival, refetch, edit commit, row ops / paste / batch / range clear, undo/redo (everything that funnels through `setLiveData`). Hidden until the first row exists (`liveData.length === 0`). Requires a toolbar render. Additive — default off."
+            },
+            {
+              "name": "validationSummary",
+              "type": "boolean",
+              "optional": true,
+              "description": "Validation summary (batch BR, iris 独有 — vxe shows no editRules outcome counts): when true, the toolbar renders a muted commit-outcome ledger (`data-iris-validation-summary`, i18n `table.validationSummary`, en `Passed {ok} · Failed {fail}` / zh `通过 {ok} · 失败 {fail}`) for columns with declarative `editRules`: ok = a commit that passed editRules and landed (cell and row edit modes), fail = a commit attempt rejected by editRules. Typing-time validation, legacy `validate` columns, paste/fill/ FNR/batch bypasses and Escape cancels never count. Hidden until at least one outcome is counted; re-enabling the switch resets the ledger. Requires a toolbar render (the gate admits `validationSummary` like `freshness`). Additive — default off."
             },
             {
               "name": "auditLog",
@@ -39120,7 +39132,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 161,
+        "propCount": 162,
         "eventCount": 30
       }
     },

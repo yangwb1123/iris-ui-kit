@@ -1101,6 +1101,14 @@ function isCellReadonly<Row extends Record<string, unknown>>(
   return col.cellPermission?.(row, col) === 'readonly'
 }
 
+/** Batch BR (iris 独有): does the column participate in the validation-
+ *  summary ledger? Only declarative `editRules` columns count (legacy
+ *  `validate` columns, paste/fill/FNR/batch bypasses and Escape cancels
+ *  never reach it). Single truth shared by the cell and row commit wrappers. */
+function hasEditRules<Row extends Record<string, unknown>>(col: IrisTableColumn<Row>): boolean {
+  return !!col.editRules && col.editRules.length > 0
+}
+
 /** Batch BE+BJ: locked/readonly cell render material — the data attrs + the
  * dropped cursor, extracted so renderRow stays under the complexity budget.
  * Locked wins visually when both (stripes + not-allowed, no readonly attr);
@@ -1848,6 +1856,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   chartPreview,
   autoRefresh,
   freshness,
+  validationSummary,
   auditLog,
   perfStats,
   versionHistory,
@@ -2986,20 +2995,64 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // backs (paste/fill/FNR/batch ops) never funnel through here.
     if (editAutosaveRef.current) onAutosaveRef.current?.(autosaveRows(ctx, k, value))
   }
+  // Batch BR (iris 独有): validationSummary — editRules commit-outcome
+  // ledger. ok = a commit that passed editRules validation and landed
+  // (counted in the onCommit wrapper, cell and row modes); fail = a commit
+  // attempt rejected by editRules (counted in the validate wrapper's Promise
+  // `.then`). The cellEdit/createRowSession memos run with [] deps, so the
+  // feature switch is read through a ref mirror (editAutosaveRef precedent);
+  // the commit-intent marker distinguishes a REAL commit attempt (set by the
+  // commit wrappers, consumed synchronously by the validate wrapper) from
+  // setDraft typing validation and startEdit seeds — neither ever counts.
+  // Re-enabling the switch resets the ledger (fresh start per session).
+  const [validationCounts, setValidationCounts] = React.useState({ ok: 0, fail: 0 })
+  const validationSummaryRef = React.useRef(validationSummary)
+  validationSummaryRef.current = validationSummary
+  const validationIntentRef = React.useRef(false)
+  React.useEffect(() => {
+    if (validationSummary) setValidationCounts({ ok: 0, fail: 0 })
+  }, [validationSummary])
+  /** Batch BR: mark a commit attempt so the editRules validate wrapper counts
+   *  the outcome — the marker is consumed synchronously inside commitEdit(),
+   *  and cleared again when nothing was actually committed so a stray intent
+   *  can never leak into the next validation (idle commitEdit is a no-op). */
+  const commitWithSummaryIntent = React.useCallback((s: CellEdit): boolean => {
+    validationIntentRef.current = true
+    const ok = s.commitEdit()
+    if (!ok) validationIntentRef.current = false
+    return ok
+  }, [])
+  /** Batch BR: bump one side of the ledger (gated on the feature switch so a
+   *  turned-off table never accumulates invisible counts). Stable — the memo
+   *  closures capture it once and read the switch through the ref mirror. */
+  const bumpValidationCount = React.useCallback((kind: 'ok' | 'fail') => {
+    if (!validationSummaryRef.current) return
+    setValidationCounts((prev) => ({ ...prev, [kind]: prev[kind] + 1 }))
+  }, [])
   const cellEdit = React.useMemo(
     () =>
       createCellEdit({
         validate: (draft, _target) => {
           const ctx = editCtxRef.current
           if (!ctx) return null
+          // Batch BR: consume the commit-intent marker — set by the commit
+          // wrappers immediately before a real commit attempt. setDraft
+          // typing validation and startEdit seeds carry no intent and never
+          // count; the marker is cleared synchronously on the very next
+          // validate invocation, so it cannot leak across calls.
+          const commitIntent = validationIntentRef.current
+          validationIntentRef.current = false
           // Declarative editRules run async (they may contain async validators);
           // the legacy validate callback stays synchronous for the sync commit
           // path.
-          if (ctx.col.editRules && ctx.col.editRules.length > 0) {
+          if (hasEditRules(ctx.col)) {
             return validateEditRulesAsync(ctx.col.editRules, draft, ctx.row, false, {
               rows: externalDataRef.current ?? [],
               columnKey: ctx.col.key,
-            }).then((r) => (r.valid ? null : (r.messages[0] ?? null)))
+            }).then((r) => {
+              if (commitIntent && !r.valid) bumpValidationCount('fail')
+              return r.valid ? null : (r.messages[0] ?? null)
+            })
           }
           if (ctx.col.validate) {
             return ctx.col.validate(coerceValue(ctx.col, draft), ctx.row) ?? null
@@ -3013,6 +3066,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
         onCommit: (_target, value) => {
           const ctx = editCtxRef.current
           if (!ctx) return
+          // Batch BR: a commit that PASSED editRules validation and landed.
+          if (hasEditRules(ctx.col)) bumpValidationCount('ok')
           commitValue(ctx, value)
         },
       }),
@@ -3067,11 +3122,18 @@ export function IrisTable<Row extends Record<string, unknown>>({
       validate: (draft) => {
         const row = currentRowFor(rowIdent)
         if (!row) return null
-        if (col.editRules && col.editRules.length > 0) {
+        // Batch BR: same commit-intent consumption as the cell session — the
+        // row sessions' commit sites (Enter/Tab/row-switch) set the marker.
+        const commitIntent = validationIntentRef.current
+        validationIntentRef.current = false
+        if (hasEditRules(col)) {
           return validateEditRulesAsync(col.editRules, draft, row, false, {
             rows: externalDataRef.current ?? [],
             columnKey: col.key,
-          }).then((r) => (r.valid ? null : (r.messages[0] ?? null)))
+          }).then((r) => {
+            if (commitIntent && !r.valid) bumpValidationCount('fail')
+            return r.valid ? null : (r.messages[0] ?? null)
+          })
         }
         if (col.validate) return col.validate(coerceValueFor(row, col, draft), row) ?? null
         return null
@@ -3082,7 +3144,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
       },
       onCommit: (_target, value) => {
         const row = currentRowFor(rowIdent)
-        if (row) commitValue({ row, col, rowIndex }, value)
+        if (row) {
+          // Batch BR: a row-session commit that PASSED editRules and landed.
+          if (hasEditRules(col)) bumpValidationCount('ok')
+          commitValue({ row, col, rowIndex }, value)
+        }
       },
     })
   const beginRowEdit = (row: Row, rowIndex: number, focusColKey?: string): void => {
@@ -3126,7 +3192,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const switchRowEdit = (row: Row, rowIndex: number, focusColKey?: string): void => {
     if (rowEditing !== null) {
       for (const [, s] of rowSessionsRef.current) {
-        s.commitEdit()
+        commitWithSummaryIntent(s)
         if (s.getError() !== null) return
       }
     }
@@ -3148,7 +3214,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const id = editing ? cellId(editing.k, col.key) : ''
     const session = rowSessionsRef.current.get(id)
     if (session) {
-      session.commitEdit()
+      commitWithSummaryIntent(session)
       if (session.getError() !== null) return
     }
     const start = leafColumns.indexOf(col)
@@ -3888,7 +3954,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       })
   }
   const commitEdit = (): boolean => {
-    const ok = cellEdit.commitEdit()
+    const ok = commitWithSummaryIntent(cellEdit)
     if (ok) {
       // Batch V (vxe edit-closed parity): committed — the store's validated
       // slot holds the coerced committed value (getDraft is cleared).
@@ -3918,7 +3984,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (e.key !== 'Tab') return
     const ctx = editCtxRef.current
     if (!ctx) return
-    if (ctx.col.editRules && ctx.col.editRules.length > 0) {
+    if (hasEditRules(ctx.col)) {
       e.preventDefault()
       pendingNavRef.current = {
         dir,
@@ -3927,7 +3993,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         k: rowKeyOf(ctx.row, ctx.rowIndex),
         idx: ctx.rowIndex,
       }
-      cellEdit.commitEdit()
+      commitWithSummaryIntent(cellEdit)
       return
     }
     if (!commitEdit()) {
@@ -6676,7 +6742,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         showError={validConfig?.showMessage !== false}
                         registerRef={registerRowEditorRef(col.key)}
                         onTab={(e, dir) => moveRowEditOnTab(e, dir, col, row)}
-                        onCommit={() => session.commitEdit()}
+                        onCommit={() => commitWithSummaryIntent(session)}
                         onCancel={cancelRowEdit}
                         onSessionIdle={() => onRowSessionIdle(id)}
                         focusToken={rowFocus.colKey === col.key ? rowFocus.seq : 0}
@@ -7330,6 +7396,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
         undo ||
         chartPreview ||
         freshness ||
+        validationSummary ||
         auditLog ||
         perfStats ||
         versionHistory) &&
@@ -8008,6 +8075,24 @@ export function IrisTable<Row extends Record<string, unknown>>({
             >
               ⚡
             </button>
+          ) : null}
+          {/* Batch BR (iris 独有): validationSummary — muted editRules
+              commit-outcome ledger (ok = passed and landed, fail = rejected).
+              Hidden until at least one outcome is counted; freshness-style
+              token stamp, after the perf trigger and before custom buttons. */}
+          {validationSummary && validationCounts.ok + validationCounts.fail > 0 ? (
+            <span
+              data-iris-validation-summary=""
+              style={{
+                fontSize: 'var(--iris-font-size-xs, 12px)',
+                color: 'var(--iris-muted)',
+              }}
+            >
+              {t('table.validationSummary', {
+                ok: validationCounts.ok,
+                fail: validationCounts.fail,
+              })}
+            </span>
           ) : null}
           {toolbar?.buttons && toolbar.buttons.length > 0
             ? toolbar.buttons.map((btn) => (

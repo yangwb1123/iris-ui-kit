@@ -473,6 +473,30 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * gets `data-iris-cell-note` + a corner badge + the note as its title
    * (beats `tooltipConfig`); a null/'' note renders nothing. */
   cellNote?: (row: Row, column: IrisTableColumn<Row>) => string | null
+  /**
+   * Annotation editing (batch BB, iris 独有 — vxe has no note editing): when
+   * true, the context menu gains built-in items 添加批注 / 编辑批注 / 删除批注
+   * (keys `__iris-annotate` / `__iris-annotate-edit` / `__iris-annotate-remove`,
+   * i18n `table.annotate(.edit/.remove)`) appended AFTER the summary item,
+   * chosen by the clicked cell's existing note (add when none, edit+remove
+   * when one). The add/edit items open a floating annotate panel
+   * (`data-iris-annotate-panel`) — textarea seeded from
+   * `annotations[cellId(rowKey, col.key)]` + 保存 (`data-iris-annotate-save`)
+   * + 删除 (`data-iris-annotate-remove`, only when a note exists); the remove
+   * item deletes the cell's annotation directly. Requires `contextMenu`;
+   * writes flow through `onAnnotationsChange` — without it the items still
+   * show but save/remove are inert (documented).
+   */
+  annotationEditing?: boolean
+  /**
+   * Annotation write channel (batch BB, iris 独有): receives the NEXT
+   * annotations map on every annotate-panel save — empty text removes the
+   * cell's key, non-empty sets it — and on remove (menu item or panel
+   * button). The map stays fully controlled: `annotations` remains the read
+   * source and the table holds no internal annotation state (same shape and
+   * ownership as `onFiltersChange`).
+   */
+  onAnnotationsChange?: (next: Record<string, string>) => void
   /** Header cell tooltips (vxe header-tooltip-config parity, batch P): a
    * native `title` on flat + grouped header cells; empty content drops the
    * tooltip. */

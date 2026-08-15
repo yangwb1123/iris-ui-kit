@@ -71,6 +71,9 @@ import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import type { IrisTableProps, IrisTableProxyConfig } from './props'
 import type { IrisTableHandle } from './types'
 import { downloadCsv, exportCsv, applyCellMask } from './exportCsv'
+import { createPortal } from 'react-dom'
+import { useFloating } from '../../floating/useFloating'
+import { useDismiss } from '../../floating/useDismiss'
 import { TableChartPanel } from './ChartPanel'
 import { TableAuditPanel } from './AuditPanel'
 import { TableVersionHistoryPanel } from './VersionHistoryPanel'
@@ -639,6 +642,16 @@ const DISTRIBUTION_MENU_KEY = '__iris_distribution'
  * intercepts it at the onSelect wiring, so a user item with the same key is
  * deduped and the user callback never sees it. */
 const SUMMARY_MENU_KEY = '__iris-summary'
+/** Reserved context-menu key for the built-in annotate-ADD item (batch BB):
+ * the table intercepts it at the onSelect wiring, so a user item with the
+ * same key is deduped and the user callback never sees it. */
+const ANNOTATE_MENU_KEY = '__iris-annotate'
+/** Reserved context-menu key for the built-in annotate-EDIT item (batch BB):
+ * shown alongside the remove item when the clicked cell already has a note. */
+const ANNOTATE_EDIT_MENU_KEY = '__iris-annotate-edit'
+/** Reserved context-menu key for the built-in annotate-REMOVE item (batch
+ * BB): deletes the cell's annotation directly through `onAnnotationsChange`. */
+const ANNOTATE_REMOVE_MENU_KEY = '__iris-annotate-remove'
 
 /** Shared style for the full-width empty / loading / error state rows. */
 const STATE_ROW_STYLE: React.CSSProperties = {
@@ -927,6 +940,18 @@ const FNR_BUTTON_STYLE: React.CSSProperties = {
   fontFamily: 'inherit',
 }
 
+/** Shared style for the annotate panel action buttons (token-only, batch BB). */
+const ANNOTATE_ACTION_STYLE: React.CSSProperties = {
+  border: '1px solid var(--iris-border)',
+  borderRadius: 'var(--iris-radius-sm, 4px)',
+  background: 'var(--iris-surface)',
+  color: 'var(--iris-foreground)',
+  cursor: 'pointer',
+  padding: 'var(--iris-space-xxs, 4px) var(--iris-space-sm, 12px)',
+  fontSize: 'var(--iris-font-size-sm, 13px)',
+  fontFamily: 'inherit',
+}
+
 /**
  * Batch I: fold the checked filter sets into the query filter map as
  * comma-joined strings (vxe filter-multiple remote serialization parity).
@@ -979,6 +1004,145 @@ function nextRowMajorCell(
   const index = current.row * colCount + current.col + dir
   if (index < 0 || index >= rowCount * colCount) return current
   return { row: Math.floor(index / colCount), col: index % colCount }
+}
+
+/**
+ * Floating annotation editor (batch BB, iris 独有 — vxe has no note
+ * editing). Opens from the context menu's built-in `__iris-annotate` /
+ * `__iris-annotate-edit` items and rides the SAME virtual cursor anchor the
+ * menu used, so it appears exactly where the user right-clicked. Built with
+ * the same building blocks as `TableContextMenu` — `useFloating` +
+ * `useDismiss` + portal — with the same dismissal set (Escape / outside
+ * pointer-down / any scroll).
+ *
+ * The textarea is seeded from `annotations[cellKey]` (`current`); 保存 with
+ * empty text removes the key, non-empty sets it — both routed to the table's
+ * `onAnnotationsChange` channel via `onSave`/`onRemove`. 删除 renders only
+ * when a note exists. Without `onAnnotationsChange` the buttons are inert
+ * (documented — the table never calls them). Every color is a `--iris-*`
+ * token.
+ */
+function TableAnnotatePanel({
+  open,
+  anchorRef,
+  cellKey,
+  current,
+  onSave,
+  onRemove,
+  onClose,
+  t,
+}: {
+  open: boolean
+  anchorRef: React.RefObject<HTMLElement | null>
+  cellKey: string
+  current: string | undefined
+  onSave: (text: string) => void
+  onRemove: () => void
+  onClose: () => void
+  t: (key: string, params?: Record<string, string | number>) => string
+}): React.ReactElement | null {
+  const panelRef = React.useRef<HTMLDivElement | null>(null)
+  const [text, setText] = React.useState(current ?? '')
+
+  const { floatingStyles } = useFloating({
+    anchor: anchorRef,
+    floating: panelRef,
+    open,
+    placement: 'bottom-start',
+    flip: false,
+    shift: false,
+  })
+
+  useDismiss({
+    enabled: open,
+    exclude: [panelRef],
+    onDismiss: onClose,
+  })
+
+  // Scroll anywhere closes the panel (capture phase — nested scrollers count).
+  const onCloseRef = React.useRef(onClose)
+  onCloseRef.current = onClose
+  React.useEffect(() => {
+    if (!open || typeof document === 'undefined') return
+    const onScroll = (): void => onCloseRef.current()
+    document.addEventListener('scroll', onScroll, true)
+    return () => document.removeEventListener('scroll', onScroll, true)
+  }, [open])
+
+  if (!open) return null
+
+  const node = (
+    <div
+      ref={panelRef}
+      role="dialog"
+      aria-label={current ? t('table.annotate.edit') : t('table.annotate')}
+      data-iris-annotate-panel=""
+      data-iris-annotate-cell={cellKey}
+      style={{
+        ...floatingStyles,
+        zIndex: 'var(--iris-z-popover, 1000)',
+        background: 'var(--iris-surface-floating, var(--iris-surface))',
+        color: 'var(--iris-foreground)',
+        border: '1px solid var(--iris-border)',
+        borderRadius: 'var(--iris-radius-md, 6px)',
+        boxShadow: 'var(--iris-shadow-lg)',
+        padding: 'var(--iris-space-xs, 8px)',
+        minWidth: 220,
+        maxWidth: 320,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--iris-space-xs, 8px)',
+        fontSize: 'var(--iris-font-size-sm, 13px)',
+      }}
+    >
+      <textarea
+        data-iris-annotate-input=""
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={3}
+        aria-label={current ? t('table.annotate.edit') : t('table.annotate')}
+        style={{
+          background: 'var(--iris-surface)',
+          color: 'var(--iris-foreground)',
+          border: '1px solid var(--iris-border)',
+          borderRadius: 'var(--iris-radius-sm, 4px)',
+          padding: 'var(--iris-space-xxs, 4px) var(--iris-space-xs, 8px)',
+          font: 'inherit',
+          resize: 'vertical',
+          minHeight: 64,
+        }}
+      />
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: 'var(--iris-space-xs, 8px)',
+        }}
+      >
+        {current ? (
+          <button
+            type="button"
+            data-iris-annotate-remove=""
+            onClick={onRemove}
+            style={{ ...ANNOTATE_ACTION_STYLE, color: 'var(--iris-danger)' }}
+          >
+            {t('table.annotate.remove')}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          data-iris-annotate-save=""
+          onClick={() => onSave(text)}
+          style={ANNOTATE_ACTION_STYLE}
+        >
+          {t('table.annotate.save')}
+        </button>
+      </div>
+    </div>
+  )
+
+  if (typeof document === 'undefined') return null
+  return createPortal(node, document.body)
 }
 
 /**
@@ -1083,6 +1247,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   tooltipConfig,
   annotations,
   cellNote,
+  annotationEditing,
+  onAnnotationsChange,
   headerTooltipConfig,
   footerTooltipConfig,
   contextMenu,
@@ -2715,6 +2881,42 @@ export function IrisTable<Row extends Record<string, unknown>>({
     })
     setSummarySeq((s) => s + 1)
   }
+  // ── Annotation edit panel (batch BB, iris 独有) ───────────────────────
+  // Same clone pattern as the distribution/summary panels: the menu's
+  // built-in `__iris-annotate` / `__iris-annotate-edit` items open it at the
+  // SAME virtual cursor anchor, and the seq token remounts it per open so
+  // the textarea re-seeds from the current `annotations` map. Writes are
+  // fully controlled: save/remove call `onAnnotationsChange` (empty text
+  // removes the key); without the callback they are inert (documented).
+  const [annotateState, setAnnotateState] = React.useState<{
+    open: boolean
+    cellKey: string
+  } | null>(null)
+  const annotateAnchorRef = React.useRef<HTMLElement | null>(null)
+  const [annotateSeq, setAnnotateSeq] = React.useState(0)
+  const closeAnnotate = React.useCallback(() => {
+    setAnnotateState((prev) => (prev ? { ...prev, open: false } : prev))
+  }, [])
+  const openAnnotate = (params: IrisTableContextMenuParams<Row>): void => {
+    annotateAnchorRef.current = contextAnchorRef.current
+    const k = rowKeyOf(params.row, params.rowIndex)
+    setAnnotateState({ open: true, cellKey: cellId(k, params.column.key) })
+    setAnnotateSeq((s) => s + 1)
+  }
+  const saveAnnotation = (cellKey: string, text: string): void => {
+    if (!onAnnotationsChange) return
+    const next = { ...(annotations ?? {}) }
+    if (text.trim() === '') delete next[cellKey]
+    else next[cellKey] = text
+    onAnnotationsChange(next)
+    closeAnnotate()
+  }
+  const removeAnnotationKey = (cellKey: string): void => {
+    if (!onAnnotationsChange) return
+    const next = { ...(annotations ?? {}) }
+    delete next[cellKey]
+    onAnnotationsChange(next)
+  }
   // ── Header filter panel (vxe filterConfig parity, batch I) ─────────────
   // One panel at a time, keyed by the column whose trigger was clicked. The
   // anchor is the trigger BUTTON itself (a real DOM node), captured at click
@@ -2787,6 +2989,23 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // alone (dedupe guard) so the table never renders it twice.
     if (nlSummary && !items.some((i) => i.key === SUMMARY_MENU_KEY)) {
       items.push({ key: SUMMARY_MENU_KEY, label: t('table.summary') })
+    }
+    // Batch BB: with `annotationEditing`, append the built-in annotate items
+    // AFTER the summary item — 添加批注 on a note-less cell, 编辑批注 +
+    // 删除批注 on a noted one (existence = `annotations[cellId(rowKey, key)]`
+    // non-empty); the same dedupe guard as the distribution/summary items.
+    if (annotationEditing) {
+      const cellKey = cellId(rowKeyOf(row, idx), col.key)
+      if (annotations?.[cellKey]) {
+        if (!items.some((i) => i.key === ANNOTATE_EDIT_MENU_KEY)) {
+          items.push({ key: ANNOTATE_EDIT_MENU_KEY, label: t('table.annotate.edit') })
+        }
+        if (!items.some((i) => i.key === ANNOTATE_REMOVE_MENU_KEY)) {
+          items.push({ key: ANNOTATE_REMOVE_MENU_KEY, label: t('table.annotate.remove') })
+        }
+      } else if (!items.some((i) => i.key === ANNOTATE_MENU_KEY)) {
+        items.push({ key: ANNOTATE_MENU_KEY, label: t('table.annotate') })
+      }
     }
     setContextMenuState({ open: true, items, params })
     setContextMenuSeq((s) => s + 1)
@@ -7239,7 +7458,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
               if (key === DISTRIBUTION_MENU_KEY) openDistribution(params)
               // Batch AW: same interception for the built-in summary item.
               else if (key === SUMMARY_MENU_KEY) openSummary(params)
-              else contextMenu.onSelect(key, params)
+              // Batch BB: annotate add/edit open the annotate panel at the
+              // same anchor; the remove item deletes the cell's note.
+              else if (key === ANNOTATE_MENU_KEY || key === ANNOTATE_EDIT_MENU_KEY)
+                openAnnotate(params)
+              else if (key === ANNOTATE_REMOVE_MENU_KEY) {
+                const k = rowKeyOf(params.row, params.rowIndex)
+                removeAnnotationKey(cellId(k, params.column.key))
+              } else contextMenu.onSelect(key, params)
             }}
             onClose={closeContextMenu}
           />
@@ -7265,6 +7491,22 @@ export function IrisTable<Row extends Record<string, unknown>>({
             rows={bodyData}
             valueKey={summaryState.colKey}
             onClose={closeSummary}
+            t={t}
+          />
+        ) : null}
+        {annotateState ? (
+          <TableAnnotatePanel
+            key={`annotate-${annotateSeq}`}
+            open={annotateState.open}
+            anchorRef={annotateAnchorRef}
+            cellKey={annotateState.cellKey}
+            current={annotations?.[annotateState.cellKey]}
+            onSave={(text) => saveAnnotation(annotateState.cellKey, text)}
+            onRemove={() => {
+              removeAnnotationKey(annotateState.cellKey)
+              closeAnnotate()
+            }}
+            onClose={closeAnnotate}
             t={t}
           />
         ) : null}

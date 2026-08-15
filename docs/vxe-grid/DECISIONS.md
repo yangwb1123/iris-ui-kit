@@ -1507,3 +1507,28 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bu-review.md [ok]: Summary: Reviewed commit `d892160d` against `batch-bu-baseline.md`. All static gates pass, but the documented fixed-height behavi
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bu-review.md
+
+## 2026-08-15 07:26:35 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bu-gate.md [ok]: Review fixes (per `batch-bu-review.md`): | Finding | Fix |; Empirical browser verification (Chrome/Playwright, harness removed): 14/14 assertions: after scrolling 1500px the watermark top stays **24→24** (rows moved 3624→2124), fully inside viewport; Gate results: - **Full repo gate**: `turbo run test typecheck lint build --concurrency=2` → **180/180 successful**; Test counts: - **core**: 1517/1517 · **react**: 2306/2306 (incl. 10 watermark tests + vxe-parity spec); Commit: **`9ee0045d342a0595819f7e543d0d46de069d2946`** — `feat(table): grid 批 BU——表格水印（iris 独有）` (10 files: Table.tsx, styles.ts
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bu-gate.md
+
+## 2026-08-15 07:33:36 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bv-baseline.md [ok]: 核验摘要: **设计** — 新 handle 方法 `exportComparisonCsv(): string`（types.ts `IrisTableHandle` + Table.tsx handleRef，`exportVersionCsv`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bv-baseline.md
+
+## 2026-08-15 07:44:08 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bv-adapt.md [ok]: Report: **Batch BV: 导出比较 `exportComparisonCsv`（iris 独有）** — implemented per baseline, zero drift.; Files changed (4 source + tests + docs): | File | Change |; Implementation: - Diff rows = **current view** (`filteredDataRef`, same source as `exportCurrentViewCsv`) rows with status ∈ {removed, c; Verification — all ✅: - core test **1517/1517** · react typecheck **clean** · react test **2320/2320** (+14) · react lint **0 errors** (1 pre-; Left: Runner's pending review/gate stage; vue/solid/svelte alignment deferred (react-only scope — the shared `diffRows` core i
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bv-adapt.md
+
+## 2026-08-15 07:50:39 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bv-review.md [ok]: Summary: **Verification (all pass):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bv-review.md
+
+## 2026-08-15 07:58:35 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bv-gate.md [ok]: Review verdict **PASS** (2 × LOW findings — masked rowKey column composite lookup edge + `__iris_diff` reserved-key collision, documented, not gate-blocking) → full repo gate run: `turbo run test typecheck lint build --concurrency=2` → **180/180 successful**; audit: security **0 vulnerabilities**, tokens only pre-existing warnings (BV adds zero `var(--iris-*)` — verified 0 new usages); manifest: `gen:manifest` regenerated (155 × 4, propCount 161/eventCount 30, no diff) + `check:manifest` up-to-date; comparison doc iris 独有 section already current at adapt commit (exportComparisonCsv row + 构建状态 + test counts 2306→2320); test counts verified: core **1517/1517** · react **2320/2320** (+14 export-comparison-csv); commit **`1800a142e7856e67cba3df9ade2423416df80e78`** — `feat(table): grid 批 BV——导出比较（iris 独有）`
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bv-gate.md

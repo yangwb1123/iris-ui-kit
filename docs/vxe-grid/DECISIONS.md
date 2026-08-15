@@ -1557,3 +1557,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-br-gate.md [ok]: Review verdict: **PASS** — 12/12 baseline fiats verified with dedicated tests; additive-only (9 files, +479/−16); manifest hygiene clean; Gate results: - **Full repo gate** (`turbo run test typecheck lint build --concurrency=2`): **180/180 tasks successful** (54 cached); Final test counts: - **core: 1517/1517** · **react: 2332/2332** (+12 validation-summary); Commit: - **`7b965fdf`** — `feat(table): grid 批 BR——校验统计（iris 独有）` (gate-stage docs delta: DECISIONS stage entries + baseline/ad
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-br-gate.md
+
+## 2026-08-15 13:55:32 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bw-baseline.md [ok]: 核验摘要: **设计** — contextMenu 内置两项快捷操作（spec 原文）：**复制值**（`__iris-copy-value`）+ **清空**（`__iris-clear-cell`），**无条件内置**（无新 prop），插入点
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bw-baseline.md
+
+## 2026-08-15 14:05:30 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bw-adapt.md [ok]: Batch BW complete — committed `f1252651`: **`feat(table): grid 批 BW——右键快捷操作（iris 独有）`** — contextMenu 内置快捷项：复制值 + 清空。; Files changed (4 source + tests + docs, 12 files): | File | Change |; Implementation highlights: - **复制值** (`__iris-copy-value`): copies the cell's display text (mask → formatter → `String`, null → `''`) via the exist; Verification (all ✅): - core test **1517/1517** · react typecheck **clean** · react test **2344/2344** (+12) · react lint **0 errors** (1 pre-; What is left: - Runner's pending **review/gate** stage (uncommitted `DECISIONS.md` / `batch-bw-baseline.md` are runner-managed, per th
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bw-adapt.md
+
+## 2026-08-15 14:09:32 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bw-review.md [ok]: Review summary: **Commit `f1252651`（feat(table): grid 批 BW——右键快捷操作）** — 核对 `batch-bw-baseline.md` 全部锚点，逐项验实现：
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bw-review.md
+
+## 2026-08-15 14:15:20 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bw-gate.md [ok]: Review verdict: **PASS** — 核对 `batch-bw-baseline.md` 全部锚点，逐项验实现：无条件内置（无新 prop）、插入点 = 用户项 → 分布? → 摘要? → 复制值 → 清空 → 批注?；复制走 `contextCellText`（mask→formatter→String，与 cellTooltip 同源链）+ 既有三通道 `writeClipboardText`；清空 = setCellValue→commitRowList，与 Delete 快捷键逐字一致；locked/readonly no-op；onSelect 拦截 + 去重守卫；i18n +2 en/zh；4 源码文件、manifest 仅 description 变化（propCount 162/eventCount 30 不变）、vue/solid/svelte 零改动。Gate results: **Full repo gate** 180/180 tasks successful（54 cached）· audit 0 · gen:manifest 155×4 + check:manifest 通过 · comparison doc 已在 adapt 提交（line 78/292/350）。Final test counts: **core 1517/1517** · **react 2344/2344**（+12 context-quick-actions）
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bw-gate.md

@@ -1731,6 +1731,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   fnr = false,
   undo = false,
   checkboxRange = false,
+  selectionDrag = false,
   virtualScroll,
   rowHeight,
   persistState,
@@ -3354,6 +3355,104 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (rowDrag && rowDragCtrl.getState().activeId !== null) {
       rowDragCtrl.cancel()
     }
+  }
+
+  // Row-selection drag range (batch BT, iris 独有 — vxe has no mouse-drag
+  // checkbox range): pressing the `__selection` cell in multi mode records a
+  // pending press; once the pointer moves past the 4px threshold (row-drag
+  // aligned), the drag starts and every pointermove hit-tests the hovered
+  // row via elementFromPoint → closest('[data-iris-table-row]') (range-fill
+  // precedent — group-header/detail slots carry no such attr and summaries/
+  // footers resolve to no body index → ignored). The applied interval
+  // [anchor, hover] is committed as a MONOTONIC union (rows only ever get
+  // added during one drag — reverse drags shrink the interval but never
+  // uncheck), checkMethod-eligible rows only, through
+  // `selModel.set([...display, ...add])` (selectAll additive precedent).
+  // Pointer capture on the press cell keeps pointermove/up on the table even
+  // when released outside the root; jsdom lacks capture (try/catch `?.`).
+  const selectionDragPendingRef = React.useRef<{ key: string; x: number; y: number } | null>(null)
+  const selectionDragAnchorRef = React.useRef<string | null>(null)
+  const selectionDragSeenRef = React.useRef<Set<string> | null>(null)
+  // Armed once the threshold is crossed; consumed by the trailing click on
+  // the press cell (shift-click mechanism: preventDefault cancels the
+  // label→input forwarding AND the single-toggle change, so the anchor row —
+  // already checked by the drag — is not toggled twice). Re-armed on every
+  // press, so a drag released outside a selection cell (no trailing click)
+  // never swallows the next plain click.
+  const selectionDragSuppressRef = React.useRef(false)
+
+  const hitTestSelectionRowKey = (x: number, y: number): string | null => {
+    if (typeof document === 'undefined' || !document.elementFromPoint) return null
+    const el = document.elementFromPoint(x, y) as Element | null
+    return el?.closest?.('[data-iris-table-row]')?.getAttribute('data-iris-table-row') ?? null
+  }
+
+  const handleSelectionDragPointerDown = (
+    e: React.PointerEvent,
+    rowKeyValue: string | number,
+  ): void => {
+    if (!selectionDrag || selectable !== 'multi' || e.button !== 0) return
+    try {
+      ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+    } catch {
+      /* jsdom has no real pointer capture */
+    }
+    selectionDragSuppressRef.current = false
+    selectionDragPendingRef.current = { key: String(rowKeyValue), x: e.clientX, y: e.clientY }
+  }
+
+  const applySelectionDragTo = (targetKey: string): void => {
+    const anchor = selectionDragAnchorRef.current
+    if (anchor === null) return
+    const rows = bodyDataRef.current
+    const anchorIdx = rows.findIndex((r, i) => String(rowKeyOf(r, i)) === anchor)
+    const targetIdx = rows.findIndex((r, i) => String(rowKeyOf(r, i)) === targetKey)
+    if (anchorIdx < 0 || targetIdx < 0) return
+    const from = Math.min(anchorIdx, targetIdx)
+    const to = Math.max(anchorIdx, targetIdx)
+    const seen = selectionDragSeenRef.current ?? new Set<string>()
+    const add: Array<string | number> = []
+    for (let i = from; i <= to; i += 1) {
+      const row = rows[i]!
+      const key = rowKeyOf(row, i)
+      const keyStr = String(key)
+      if (checkMethod && !checkMethod(row, i)) continue
+      if (seen.has(keyStr)) continue
+      seen.add(keyStr)
+      add.push(key)
+    }
+    if (add.length === 0) return
+    rebaseToProp()
+    selModel.set([...displaySelection, ...add])
+  }
+
+  const handleSelectionDragPointerMove = (e: React.PointerEvent): void => {
+    if (!selectionDrag) return
+    const pending = selectionDragPendingRef.current
+    if (pending) {
+      if (Math.abs(e.clientX - pending.x) < 4 && Math.abs(e.clientY - pending.y) < 4) return
+      selectionDragPendingRef.current = null
+      selectionDragAnchorRef.current = pending.key
+      selectionDragSeenRef.current = new Set()
+      selectionDragSuppressRef.current = true
+      // Drag start: apply the closed interval [anchor, hover] right away
+      // (the anchor row is included; a press alone selects nothing).
+      applySelectionDragTo(hitTestSelectionRowKey(e.clientX, e.clientY) ?? pending.key)
+      return
+    }
+    if (selectionDragAnchorRef.current === null) return
+    const hoverKey = hitTestSelectionRowKey(e.clientX, e.clientY)
+    if (hoverKey === null) return
+    applySelectionDragTo(hoverKey)
+  }
+
+  const handleSelectionDragPointerUp = (): void => {
+    if (!selectionDrag) return
+    selectionDragPendingRef.current = null
+    selectionDragAnchorRef.current = null
+    selectionDragSeenRef.current = null
+    // selectionDragSuppressRef stays armed until the trailing click (or the
+    // next press) consumes it.
   }
 
   React.useEffect(() => {
@@ -6028,21 +6127,38 @@ export function IrisTable<Row extends Record<string, unknown>>({
             role="cell"
             data-iris-table-cell="__selection"
             onClick={
-              checkboxRange
+              checkboxRange || selectionDrag
                 ? (e: React.MouseEvent) => {
+                    // selectionDrag (batch BT): a drag that crossed the
+                    // threshold armed the suppression flag — the trailing
+                    // click after pointerup must not toggle the anchor row a
+                    // second time (the drag already checked it). Same
+                    // mechanism as the shift-click branch below:
+                    // preventDefault cancels the label→input forwarding AND
+                    // the single-toggle change event.
+                    if (selectionDragSuppressRef.current) {
+                      selectionDragSuppressRef.current = false
+                      e.preventDefault()
+                      return
+                    }
                     // vxe checkboxConfig isShiftKey parity: shift-click toggles
                     // the whole range between the anchor and this row. The
                     // label forwards a second click to the <input> —
                     // preventDefault on the original click cancels the
                     // forwarded one AND the single-toggle change event, so the
                     // target row is not toggled twice (the range covers it).
-                    if (e.shiftKey && checkboxAnchorRef.current !== null) {
+                    if (checkboxRange && e.shiftKey && checkboxAnchorRef.current !== null) {
                       e.preventDefault()
                       toggleRowRange(checkboxAnchorRef.current, k)
                     }
                     // Always move the anchor — even without shift.
-                    checkboxAnchorRef.current = k ?? null
+                    if (checkboxRange) checkboxAnchorRef.current = k ?? null
                   }
+                : undefined
+            }
+            onPointerDown={
+              selectionDrag
+                ? (e: React.PointerEvent) => handleSelectionDragPointerDown(e, k ?? idx)
                 : undefined
             }
             style={{
@@ -7876,31 +7992,39 @@ export function IrisTable<Row extends Record<string, unknown>>({
             : undefined
         }
         onPointerMove={
-          rowDrag || columnDrag || rangeFill
+          rowDrag || columnDrag || rangeFill || selectionDrag
             ? (e) => {
                 handleRowDragPointerMove(e)
                 handleColDragPointerMove(e)
                 handleRangeFillPointerMove(e)
+                handleSelectionDragPointerMove(e)
               }
             : undefined
         }
         onPointerUp={
-          rowDrag || columnDrag || rangeFill
+          rowDrag || columnDrag || rangeFill || selectionDrag
             ? () => {
                 handleRowDragPointerUp()
                 handleColDragPointerUp()
                 handleRangeFillPointerUp()
+                handleSelectionDragPointerUp()
               }
             : undefined
         }
         onPointerLeave={rowDrag ? handleRowDragPointerLeave : undefined}
         onPointerCancel={
-          rangeFill
+          rangeFill || selectionDrag
             ? () => {
                 // Aborted drag → drop the target highlight, nothing committed.
                 // Re-arm dismissal too (same stale-flag fix as pointerup).
                 suppressRangeDismissRef.current = false
                 setFillTarget(null)
+                // Aborted selection drag: drop the pending press / active
+                // anchor (nothing committed). The stale suppression flag (no
+                // trailing click follows a cancel) is cleared by the next press.
+                selectionDragPendingRef.current = null
+                selectionDragAnchorRef.current = null
+                selectionDragSeenRef.current = null
               }
             : undefined
         }

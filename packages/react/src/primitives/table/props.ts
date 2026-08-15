@@ -481,6 +481,15 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * target (in body order); a plain click just moves the anchor. The header
    * select-all resets the anchor. Default false. */
   checkboxRange?: boolean
+  /** Row-selection drag range (batch BT, iris 独有 — vxe has no mouse-drag
+   * checkbox range): pressing the row-selection cell in multi mode and
+   * dragging past the 4px threshold continuously checks every
+   * checkMethod-eligible row between the pressed anchor row and the hovered
+   * row (closed interval in body order); checkMethod-disabled rows are
+   * skipped. The applied set only ever grows during one drag (reverse drags
+   * shrink the interval but never uncheck); a plain click still toggles a
+   * single row. Default false. */
+  selectionDrag?: boolean
   /** Empty state node (replaces the row body when `data` is empty). */
   emptyState?: ReactNode
   /** Show the loading state instead of rows. */

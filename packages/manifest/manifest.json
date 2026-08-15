@@ -36794,6 +36794,12 @@
           "description": "parity, batch G): shift-clicking a row checkbox toggles every checkMethod-eligible row between the last-clicked anchor row and the target (in body order); a plain click just moves the anchor. The header"
         },
         {
+          "name": "selectionDrag",
+          "type": "boolean",
+          "optional": true,
+          "description": "checkbox range): pressing the row-selection cell in multi mode and dragging past the 4px threshold continuously checks every checkMethod-eligible row between the pressed anchor row and the hovered row (closed interval in body order); checkMethod-disabled rows are skipped. The applied set only ever grows during one drag (reverse drags shrink the interval but never uncheck); a plain click still toggles a"
+        },
+        {
           "name": "emptyState",
           "type": "ReactNode",
           "optional": true,
@@ -37750,6 +37756,12 @@
               "type": "boolean",
               "optional": true,
               "description": "parity, batch G): shift-clicking a row checkbox toggles every checkMethod-eligible row between the last-clicked anchor row and the target (in body order); a plain click just moves the anchor. The header"
+            },
+            {
+              "name": "selectionDrag",
+              "type": "boolean",
+              "optional": true,
+              "description": "checkbox range): pressing the row-selection cell in multi mode and dragging past the 4px threshold continuously checks every checkMethod-eligible row between the pressed anchor row and the hovered row (closed interval in body order); checkMethod-disabled rows are skipped. The applied set only ever grows during one drag (reverse drags shrink the interval but never uncheck); a plain click still toggles a"
             },
             {
               "name": "emptyState",
@@ -39096,7 +39108,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 159,
+        "propCount": 160,
         "eventCount": 30
       }
     },

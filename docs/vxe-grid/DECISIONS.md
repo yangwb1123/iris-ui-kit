@@ -983,3 +983,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-av-review.md [ok]: Summary: **Spec checks (all verified against code, not just tests):**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-av-review.md
+
+## 2026-08-14 16:40:15 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-av-gate.md [ok]: Summary: Review verdict was **PASS** with 2 concrete LOW fixes — applied both before the gate (they were required: `check:docs-re; Gate results: | Check | Result |; Final test counts: - **react: 2034** (matches review) · core: 1396 · vue: 1531 · solid: 1565 · svelte: 951 · plugins/infra/apps green; Commit: ```
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-av-gate.md

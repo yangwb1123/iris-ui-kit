@@ -195,6 +195,13 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   columnWidths?: IrisTableColumnWidths
   defaultColumnWidths?: IrisTableColumnWidths
   onColumnWidthsChange?: (next: IrisTableColumnWidths) => void
+  /**
+   * Toolbar reset-widths button (iris 独有, batch BO): clicking it calls
+   * `onColumnWidthsChange({})` — the empty map means zero overrides, so every
+   * column falls back to its declared width. Like `zoomConfig`, this prop
+   * alone does not create the toolbar.
+   */
+  columnWidthsReset?: boolean
   /** Called when a data row is clicked. Interactive child controls stop propagation. */
   onRowClick?: (row: Row, rowIndex: number) => void
   /** Row double-click (vxe row-dblclick parity). */

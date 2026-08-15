@@ -137,6 +137,7 @@ export const defaultMessages: I18nMessages = {
   'table.queryPlaceholder': 'Natural-language filter, e.g. age > 25 and role = Test',
   'table.zoomIn': 'Zoom in',
   'table.zoomOut': 'Zoom out',
+  'table.resetColumnWidths': 'Reset column widths',
   'table.undo': 'Undo',
   'table.redo': 'Redo',
   'table.audit': 'Audit log',

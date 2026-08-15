@@ -73,6 +73,7 @@ export const zhCNMessages: Record<string, string> = {
   'table.queryPlaceholder': '自然语言筛选，如 age > 25 and role = Test',
   'table.zoomIn': '放大',
   'table.zoomOut': '退出放大',
+  'table.resetColumnWidths': '重置列宽',
   'table.undo': '撤销',
   'table.redo': '重做',
   'table.audit': '操作审计',

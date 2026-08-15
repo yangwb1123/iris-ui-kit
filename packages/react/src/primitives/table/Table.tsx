@@ -1654,6 +1654,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   columnWidths: columnWidthsProp,
   defaultColumnWidths,
   onColumnWidthsChange,
+  columnWidthsReset,
   onRowClick,
   onRowDblClick,
   onCellEdit,
@@ -2461,6 +2462,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const next = { ...columnWidths, [key]: width }
     if (!widthsControlled) setWidthsInternal(next)
     onColumnWidthsChange?.(next)
+  }
+  // Batch BO (iris 独有): toolbar reset button — the canonical 默认映射 is the
+  // empty map (zero overrides → every render path falls back to the
+  // column-DECLARED width through the existing `??` chain, so no new render
+  // logic exists). Same dual channel as setColumnWidth: uncontrolled mode
+  // clears the internal widths too, the callback fires unconditionally.
+  const resetColumnWidths = () => {
+    if (!widthsControlled) setWidthsInternal({})
+    onColumnWidthsChange?.({})
   }
 
   // ── persistState (batch AG, iris 独有 — vxe has no built-in persistence) ─
@@ -7415,6 +7425,24 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 {t('table.batchEdit.apply')}
               </button>
             </div>
+          ) : null}
+          {columnWidthsReset ? (
+            <button
+              type="button"
+              data-iris-table-toolbar-reset-widths=""
+              onClick={resetColumnWidths}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: 'var(--iris-muted)',
+                fontSize: 'var(--iris-font-size-md, 14px)',
+              }}
+              aria-label={t('table.resetColumnWidths')}
+              title={t('table.resetColumnWidths')}
+            >
+              {'⇔'}
+            </button>
           ) : null}
           {zoomConfig?.showButton ? (
             <button

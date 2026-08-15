@@ -36413,6 +36413,12 @@
           "optional": true
         },
         {
+          "name": "columnWidthsReset",
+          "type": "boolean",
+          "optional": true,
+          "description": "Toolbar reset-widths button (iris 独有, batch BO): clicking it calls `onColumnWidthsChange({})` — the empty map means zero overrides, so every column falls back to its declared width. Like `zoomConfig`, this prop alone does not create the toolbar."
+        },
+        {
           "name": "onRowClick",
           "type": "(row: Row, rowIndex: number) => void",
           "optional": true,
@@ -37346,6 +37352,12 @@
               "name": "onColumnWidthsChange",
               "type": "(next: IrisTableColumnWidths) => void",
               "optional": true
+            },
+            {
+              "name": "columnWidthsReset",
+              "type": "boolean",
+              "optional": true,
+              "description": "Toolbar reset-widths button (iris 独有, batch BO): clicking it calls `onColumnWidthsChange({})` — the empty map means zero overrides, so every column falls back to its declared width. Like `zoomConfig`, this prop alone does not create the toolbar."
             },
             {
               "name": "onRowClick",
@@ -39048,7 +39060,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 155,
+        "propCount": 156,
         "eventCount": 29
       }
     },

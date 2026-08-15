@@ -1097,3 +1097,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ba-review.md [ok]: Summary: All required checks verified against commit `1cc821d0`:
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ba-review.md
+
+## 2026-08-14 19:48:37 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ba-gate.md [ok]: Results: **Review verdict**: PASS (`docs/vxe-grid/batch-ba-review.md`, commit `1cc821d0`; only non-blocking LOW/INFO findings)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ba-gate.md

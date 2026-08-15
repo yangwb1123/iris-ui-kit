@@ -11,7 +11,9 @@
  * in fixed row-major order (row × schema order).
  *
  * Per-kind semantics (`min`/`max` are kind-relative, normalized by swapping
- * when `min > max`; `NaN` bounds fall back to the kind default):
+ * when `min > max`; `NaN` bounds fall back to the kind default; fractional
+ * bounds clamp to the enclosing integer range — `ceil` min / `floor` max —
+ * and a range containing no integer at all pins to `floor(max)`):
  *   - `string`  — lowercase a–z, length in [min, max], default 4..12
  *   - `number`  — integer in [min, max], default 0..1000
  *   - `boolean` — 50/50; min/max ignored
@@ -75,15 +77,25 @@ function mulberry32(seed: number): () => number {
   }
 }
 
-/** `[min, max]` for one column — NaN → default; min > max swapped. */
+/**
+ * `[min, max]` for one column — NaN → default; min > max swapped (on the raw
+ * values); fractional bounds clamp to the enclosing integer range (`ceil`
+ * min / `floor` max) so `intBetween` can never emit outside `[min, max]`
+ * (batch-BK review LOW: probe `min: 0.5, max: 1.5` used to emit 0s and 2s).
+ * A range with no integer inside (e.g. `[1.5, 1.6]`) pins to `floor(max)` —
+ * never empty, never throws.
+ */
 function boundsOf(
   col: GenerateRowColumn,
   kind: Exclude<GenerateRowsKind, 'boolean'>,
 ): [number, number] {
   const [dMin, dMax] = DEFAULTS[kind]
-  const min = typeof col.min === 'number' && Number.isFinite(col.min) ? col.min : dMin
-  const max = typeof col.max === 'number' && Number.isFinite(col.max) ? col.max : dMax
-  return min <= max ? [min, max] : [max, min]
+  const a = typeof col.min === 'number' && Number.isFinite(col.min) ? col.min : dMin
+  const b = typeof col.max === 'number' && Number.isFinite(col.max) ? col.max : dMax
+  const [rawMin, rawMax] = a <= b ? [a, b] : [b, a]
+  const lo = Math.ceil(rawMin)
+  const hi = Math.floor(rawMax)
+  return lo <= hi ? [lo, hi] : [hi, hi]
 }
 
 /** Uniform integer in [min, max] (inclusive), floored — `next` in [0, 1). */

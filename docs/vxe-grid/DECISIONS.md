@@ -1297,3 +1297,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bj-review.md [ok]: Review summary: **Verification (all re-run fresh):**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bj-review.md
+
+## 2026-08-15 03:00:57 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bj-gate.md [ok]: Verdict: PASS (1 MEDIUM / 1 LOW / 1 INFO, 0 blockers) → gate executed, committed: - **MEDIUM (smuggled `sparklineSeries` Number-coercion hunk, no committed test)** — the hunk is the BI-review LOW#1 fix ; Findings disposition: - **MEDIUM (smuggled `sparklineSeries` Number-coercion hunk, no committed test)** — the hunk is the BI-review LOW#1 fix ; Gate results (all forced, no cache): | Check | Result |; Doc updates (`docs/vxe-grid-comparison.md`): - Count line corrected: core 1474→**1475** (批 BI chartDomain +5→+6), 批 BI react +13→+14 with review-fix note; BI capabil; Commit: **`69c4339b`** — `feat(table): grid 批 BJ——单元格权限（iris 独有）` (13 files, +258/−31; pre-commit prettier/filesize/budget hooks
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bj-gate.md
+
+## 2026-08-15 03:03:51 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bk-baseline.md [ok]: What's in the baseline: **Exact design** (every anchor verified against current code):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bk-baseline.md
+
+## 2026-08-15 03:09:03 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bk-adapt.md [ok]: Report — grid 批 BK: 测试数据生成 `generateRows`（iris 独有）: - `0e8f1b24` — `feat(core): grid 批 BK——确定性 mock 数据生成 generateRows（iris 独有）`; Commits: - `0e8f1b24` — `feat(core): grid 批 BK——确定性 mock 数据生成 generateRows（iris 独有）`; Files changed (4 + pipeline docs): | File | Change |; Verification (all green): - **core test** 1503/1503 (96 files, +28) · core typecheck ✓ · core lint **0 errors** (7 pre-existing warnings); Notes: - **One baseline correction**: my first test asserted "adding a schema column doesn't re-randomize earlier columns" — th
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bk-adapt.md
+
+## 2026-08-15 03:12:06 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bk-review.md [ok]: What was verified (all actually run): | Check | Result |; Spec correctness (vs baseline): All items confirmed: location/signature/seed-42/`mulberry32`/row-major draws, all 6 kind semantics, all 6 guards, barrel; Findings (1 LOW + 2 INFO — none violate the spec's enumerated contract): 1. **LOW** — `generate-rows.ts:127` `intBetween`: non-integer number bounds violate the module's own "[min,max]" invaria
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bk-review.md

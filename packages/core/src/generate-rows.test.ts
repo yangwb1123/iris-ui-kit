@@ -82,6 +82,38 @@ describe('@iris-ui-kit/core generateRows (batch BK, iris 独有)', () => {
     }
   })
 
+  it('fractional bounds clamp to the enclosing integer range (never out of [min, max])', () => {
+    // batch-BK review LOW regression: intBetween with fractional bounds used
+    // to emit values outside [min, max] (probe: min 0.5, max 1.5 → 0s and 2s).
+    const probe = generateRows([{ key: 'n', kind: 'number', min: 0.5, max: 1.5 }], 200)
+    for (const row of probe) {
+      expect(Number.isInteger(row.n)).toBe(true)
+      expect(row.n).toBeGreaterThanOrEqual(0.5)
+      expect(row.n).toBeLessThanOrEqual(1.5)
+    }
+    // ceil(min)/floor(max): every integer in [1.2, 5.8] is 2..5.
+    const wide = generateRows([{ key: 'n', kind: 'number', min: 1.2, max: 5.8 }], 200)
+    for (const row of wide) {
+      expect(Number.isInteger(row.n)).toBe(true)
+      expect(row.n).toBeGreaterThanOrEqual(1.2)
+      expect(row.n).toBeLessThanOrEqual(5.8)
+    }
+    // Fractional length bounds behave the same for strings.
+    const str = generateRows([{ key: 's', kind: 'string', min: 2.2, max: 4.9 }], 200)
+    for (const row of str) {
+      const len = (row.s as string).length
+      expect(len).toBeGreaterThanOrEqual(2.2)
+      expect(len).toBeLessThanOrEqual(4.9)
+    }
+  })
+
+  it('bounds with no integer inside pin to floor(max) — never throws, never empty', () => {
+    // [1.5, 1.6] contains no integer: graceful pin, value 1, 20 rows.
+    const rows = generateRows([{ key: 'n', kind: 'number', min: 1.5, max: 1.6 }], 20)
+    expect(rows).toHaveLength(20)
+    for (const row of rows) expect(row.n).toBe(1)
+  })
+
   it('date respects min/max boundaries (min equals max → one day)', () => {
     const ms = Date.UTC(2024, 5, 15)
     const rows = generateRows([{ key: 'd', kind: 'date', min: ms, max: ms }], 10)

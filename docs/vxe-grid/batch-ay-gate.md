@@ -1,25 +1,27 @@
-Gate complete — **PASS**, both review findings fixed, full repo gate green.
+**Gate PASS** — both review findings fixed, full repo gate green.
 
-## Summary
+## Verdict
 
-**Verdict**: FAIL (1 blocking MEDIUM + 1 LOW) → applied all fixes before gating:
+Review was **FAIL** with 1 blocking MEDIUM + 1 LOW. Both applied with regression tests:
 
-1. **MEDIUM (blocking)** — range-toolbar 导出 (`exportActiveRangeCsv`, Table.tsx) exported **raw** masked-column values while the adjacent 复制 button on the same toolbar masked. Now mirrors `buildRangeTsv`: `col.exportRaw ? value : applyCellMask(value, col)` — clipboard TSV and downloaded `table-range.csv` always agree. 2 new range-toolbar tests (mask applies; `exportRaw` opts out).
-2. **LOW** — `exportCsv` shadow-write landed at `row[dataIndex ?? key]`, so a **numeric** `dataIndex` on a masked column wrote to a key the serializer never reads (numeric dataIndex is dropped by the column spec) → masked value silently lost, `toCsv` read the raw value. Shadow write now targets the exact key the serializer reads (`typeof dataIndex === 'string' ? dataIndex : key`). 2 new exportCsv tests (numeric dataIndex keeps the mask; mask resolves through a string dataIndex different from the key) + 1 default/`exportRaw` pair test.
+1. **MEDIUM (blocking)** — range-toolbar 导出 (`exportActiveRangeCsv`, Table.tsx) exported **raw** masked values while the adjacent 复制 button masked. Now mirrors `buildRangeTsv`: `col.exportRaw ? value : applyCellMask(value, col)` — clipboard TSV and `table-range.csv` always agree. +2 range-toolbar tests (mask applies / `exportRaw` opts out).
+2. **LOW** — `exportCsv` shadow-write landed at `row[dataIndex ?? key]`, so a numeric `dataIndex` on a masked column wrote to a key the serializer never reads → mask silently lost. Shadow write now targets exactly what `toCsv` reads (`typeof dataIndex === 'string' ? dataIndex : key`). +3 exportCsv tests.
 
-**Non-source**: none (no CSS tokens, no public API growth — additive fixes only).
-
-## Full repo gate
+## Gate results
 
 | Check                                                 | Result                                           |
 | ----------------------------------------------------- | ------------------------------------------------ |
-| `turbo run test typecheck lint build --concurrency=2` | ✅ 180/180 tasks (64 cached)                     |
-| `audit` (`--audit-level low`)                         | ✅ 0 vulnerabilities                             |
+| `turbo run test typecheck lint build --concurrency=2` | ✅ **180/180 tasks** (64 cached)                 |
+| `audit --audit-level low`                             | ✅ **0 vulnerabilities**                         |
 | `audit:tokens`                                        | ✅ warnings all pre-existing, none from batch AY |
-| `gen:manifest` + `check:manifest`                     | ✅ up to date (155×4)                            |
+| `gen:manifest` + `check:manifest`                     | ✅ up to date (**155×4**, 86 tokens)             |
 
 ## Final test counts
 
-- core: 1424 passed (+7 from batch AY)
-- react: 2070 passed (+16 from batch AY, +5 from this gate's fixes)
-- Full turbo gate: 180/180 tasks successful, 0 failed
+- core: **1424 passed** (+7 batch AY)
+- react: **2070 passed** (+16 batch AY, +5 from gate fixes)
+- Full turbo gate: 180/180 successful, 0 failed
+
+## Commit
+
+**`13a5537a`** `feat(table): grid 批 AY——数据掩码（脱敏列，显示/导出双轨）` — 8 files, +161/−54 (fixes, tests, review + gate docs). Working tree clean; affected tests re-verified post-commit (31/31 pass).

@@ -1,59 +1,27 @@
-# Batch AY (grid data mask) — adapt report
-
-Done. Batch AY (grid data mask) implemented, verified.
+Batch AY (grid data mask) implemented, verified, and committed as `4a5a79fb`.
 
 ## Report
 
-**Files changed** (4 modified + 4 new + 1 generated-config + docs, one commit):
+**Files changed** (4 modified source + 2 new source + 2 test files + 5 docs/config, one commit):
 
-- Modified: `packages/core/src/index.ts` (barrel export of `maskValue`/`MaskKind`), `packages/react/src/primitives/table/types.ts` (single-line `mask`/`exportRaw` props on `IrisTableColumn` — manifest-scanner hygiene), `packages/react/src/primitives/table/Table.tsx` (mask-first display chain + tooltip + `buildRangeTsv` copy path), `packages/react/src/primitives/table/exportCsv.ts` (`applyCellMask` + masked-by-default serializer via the batch-AO shadow-row pattern)
-- New: `packages/core/src/mask.ts` (`maskValue` + `MaskKind`, sensitive precedence email → 11-digit phone → generic ≥6 → short → `''` for null), `packages/core/src/mask.test.ts` (7 tests), `packages/react/src/primitives/table/mask.test.tsx` (11 tests), `apps/docs/guide/table-data-mask.md` (iris 独有 guide page + example snippet)
-- Config/docs: `apps/docs/.vitepress/config.ts` (nav entry), `docs/vxe-grid/DECISIONS.md` (entry)
+| File                                                                                      | Change                                                                                                                                                                                        |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core/src/mask.ts`                                                               | **NEW** — `maskValue(value, 'sensitive')` + `MaskKind`; precedence email (local masked, domain kept) → 11-digit phone (3+4+4) → generic ≥6 (first2+`****`+last2) → short `'****'` → null `''` |
+| `packages/core/src/index.ts`                                                              | barrel export of `maskValue`/`MaskKind`                                                                                                                                                       |
+| `packages/core/src/mask.test.ts`                                                          | **NEW test** — 7 tests (email/phone/generic/short/null/coercion/fail-open)                                                                                                                    |
+| `packages/react/src/primitives/table/types.ts`                                            | single-line `mask?: 'sensitive' \| ((value: unknown) => string)` + `exportRaw?: boolean` on `IrisTableColumn` (manifest-scanner hygiene)                                                      |
+| `packages/react/src/primitives/table/Table.tsx`                                           | mask-first display chain (`render`/`html`/`link`/`formatter`/raw fallback + tooltip all see masked; formatter receives masked string); `buildRangeTsv` copy path masks unless `exportRaw`     |
+| `packages/react/src/primitives/table/exportCsv.ts`                                        | `applyCellMask` shared helper + masked-by-default serializer (batch-AO shadow-row pattern, no core serializer change)                                                                         |
+| `packages/react/src/primitives/table/mask.test.tsx`                                       | **NEW test** — 11 tests (display, custom fn, formatter-sees-mask, tooltip, edit-raw, export default/`exportRaw`, both handle exports, dataIndex+coercion, clipConfig TSV)                     |
+| `apps/docs/guide/table-data-mask.md` + `config.ts` + `DECISIONS.md` + `batch-ay-adapt.md` | iris 独有 guide + example snippet, nav entry, decisions (F1 null→`''`, F10 exportExcel out-of-scope mirror)                                                                                   |
 
 **Tests added / counts:**
 
-| Check                               | Result                                                                                         |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------- |
-| core test                           | 92 files, **1424 passed** (was 1417, +7)                                                       |
-| react typecheck                     | clean                                                                                          |
-| react test                          | 183 files, **2065 passed** (+11 from this batch)                                               |
-| react lint                          | **0 errors** (1 pre-existing `IrisTable` complexity warning — verified pre-existing via stash) |
-| `iris-ui-spec.py --mode all --json` | **0 violations**                                                                               |
-| `gen:manifest`                      | up to date, committed (below)                                                                  |
+- core: **92 files / 1424 passed** (was 1417, **+7**)
+- react: **183 files / 2065 passed** (was 2054 at HEAD, **+11**); typecheck clean; lint **0 errors** (1 pre-existing `IrisTable` complexity warning — verified pre-existing via stash)
+- `iris-ui-spec.py --mode all --json`: **0 violations**
+- `gen:manifest`: regenerated, **up to date** (155 components, no diff — `mask`/`exportRaw` are column-level, not manifest-tracked, per baseline); `check:manifest` + `gen:docs-reference` clean
 
-React mask tests cover: display masked (`'sensitive'`), custom mask function,
-formatter receives the MASKED string (mask-first), tooltip masked, edit shows
-RAW value, `exportCsv` masked by default, `exportRaw` exports raw,
-`exportCurrentViewCsv` masked, `exportSelectionCsv` masked (with a raw column),
-dataIndex-resolved masking + non-string coercion, clipConfig TSV copy masked
-unless `exportRaw`.
+**What is left:** the pipeline's gate stage — full-repo `turbo run test typecheck lint build`, 27-package checks, browser E2E/visual regression, `pnpm bench` (not part of this task).
 
-**Design (per baseline):** core `maskValue(value, 'sensitive')` in new `mask.ts`
-(email local-part masked + domain kept → `/^\d{11}$/` phone 3+4+4 → generic ≥6
-first2+`****`+last2 → short `'****'` → null `''`); `IrisTableColumn.mask`
-applied FIRST in the display chain (all display branches + tooltip see the
-masked value; a `formatter` receives the masked string — documented), editing
-entry points start from `getCellValue` so they stay RAW (zero code change,
-documented only); export masks by default at the single `exportCsv` choke point
-(covers `exportCurrentViewCsv` + `exportSelectionCsv` with zero handle changes),
-`exportRaw` opts a column out; the clipConfig TSV builder applies the same rule.
-
-**Flagged decisions (gate arbitration):**
-
-- **F1 (null → `''`)**: `maskValue` renders null/undefined/empty as `''`,
-  matching core `toCsv`'s empty-cell parity — masked exports never invent
-  filler text for empty cells.
-- **F10 (`exportExcel` one-line mirror)**: `exportExcel` is NOT masked this
-  batch — the task contract scopes export masking to the CSV trio +
-  clipConfig TSV. `exportExcel` remains a raw-value serializer; extending it
-  later is a one-line mirror of the `exportCsv` shadow-row loop.
-- Conditional styles (`when(row, value)`) keep receiving the RAW value — batch
-  AX contract unchanged.
-- Sorting / filtering / grouping / summary / range stats / suggest keep reading
-  the RAW value (display-only mask, matching `formatter`'s documented scope).
-
-**What is left:** the pipeline's gate stage — full repo `turbo run test typecheck
-lint build` plus the 27-package checks, browser E2E/visual regression, `pnpm
-bench`, and `gen:docs-reference` (`components.md` regenerated — this batch adds
-no components, so no change expected), per the batch pipeline (not part of this
-task).
+Notes: editing reads RAW by construction (all three edit entry points start from `String(getCellValue(...))` — zero code change, documented); sorting/filtering/grouping/summary/range-stats/conditional-styles keep raw values (display-only mask, batch AX contract intact). One incident: a stale lint-staged WIP stash from an older feature got popped mid-work — resolved to HEAD's version (Form contract test present and passing) and dropped the orphan.

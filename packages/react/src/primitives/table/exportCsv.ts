@@ -23,8 +23,9 @@ export function applyCellMask<Row extends Record<string, unknown>>(
  *
  * Batch AY: masked-by-default export — a column with `mask` exports the
  * masked value unless it opts out via `exportRaw`. Masking materializes each
- * masked column's value onto a shadow row (`row[dataIndex ?? key]`), the
- * batch-AO shadow-row convention; formula columns are already materialized by
+ * masked column's value onto a shadow row at the key the serializer reads
+ * (string `dataIndex`, else `key`), the batch-AO shadow-row convention;
+ * formula columns are already materialized by
  * `withComputedFormulaCells` before this serializer runs, so the mask applies
  * on top. No masks → the input array is returned as-is (reference-preserving).
  */
@@ -38,7 +39,10 @@ export function exportCsv<Row extends Record<string, unknown>>(
     out = rows.map((row) => {
       let shadow: Row | null = null
       for (const col of maskedCols) {
-        const key = (col.dataIndex ?? col.key) as keyof Row
+        // The serializer reads `row[dataIndex]` for string dataIndex, else
+        // `row[key]` (numeric dataIndex is dropped by exportCsv's spec) — the
+        // shadow write must land on the SAME key or the mask is silently lost.
+        const key = (typeof col.dataIndex === 'string' ? col.dataIndex : col.key) as keyof Row
         const next: Row = shadow ?? { ...row }
         ;(next as Record<string, unknown>)[key as string] = applyCellMask(
           (row as Record<string, unknown>)[key as string],

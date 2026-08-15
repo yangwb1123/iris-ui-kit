@@ -147,6 +147,44 @@ describe('@iris-ui-kit/react IrisTable range toolbar (batch AH, iris 独有)', (
     })
   })
 
+  it('range export masks sensitive columns — same rule as the copy TSV (batch AY review fix)', async () => {
+    const handler = vi.fn()
+    setFileSaveHandler(handler)
+    const maskedCols: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name' },
+      { key: 'age', title: 'Age', mask: 'sensitive' },
+    ]
+    render(<IrisTable columns={maskedCols} data={rows} rowKey="id" cellRange />)
+    selectRange(0, 0, 1, 1)
+    fireEvent.click(document.querySelector('[data-iris-table-range-export]')!)
+    await waitFor(() => expect(handler).toHaveBeenCalled())
+    const BOM = String.fromCharCode(0xfeff)
+    expect(handler).toHaveBeenCalledWith({
+      filename: 'table-range.csv',
+      content: `${BOM}Charlie,****\nAlice,****`,
+      mimeType: 'text/csv;charset=utf-8;',
+    })
+  })
+
+  it('range export honors exportRaw (masked column exported raw)', async () => {
+    const handler = vi.fn()
+    setFileSaveHandler(handler)
+    const rawCols: IrisTableColumn<Row>[] = [
+      { key: 'name', title: 'Name' },
+      { key: 'age', title: 'Age', mask: 'sensitive', exportRaw: true },
+    ]
+    render(<IrisTable columns={rawCols} data={rows} rowKey="id" cellRange />)
+    selectRange(0, 0, 1, 1)
+    fireEvent.click(document.querySelector('[data-iris-table-range-export]')!)
+    await waitFor(() => expect(handler).toHaveBeenCalled())
+    const BOM = String.fromCharCode(0xfeff)
+    expect(handler).toHaveBeenCalledWith({
+      filename: 'table-range.csv',
+      content: `${BOM}Charlie,25\nAlice,32`,
+      mimeType: 'text/csv;charset=utf-8;',
+    })
+  })
+
   it('outside pointer-down dismisses (clears the range → bar hides)', () => {
     render(<IrisTable columns={cols} data={rows} rowKey="id" cellRange />)
     fireEvent.click(cell(0, 0))

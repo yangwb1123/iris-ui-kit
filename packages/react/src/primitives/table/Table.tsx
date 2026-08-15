@@ -4158,7 +4158,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
     for (let r = range.start.row; r <= range.end.row; r += 1) {
       const row = body[r]
       lines.push(
-        rangeCols.map((col) => csvRangeCell(row ? getCellValue(row, col) : null)).join(','),
+        rangeCols
+          .map((col) => {
+            // Batch AY: the range CSV export applies the column mask unless
+            // `exportRaw` opts out — same rule as the copy TSV on this
+            // toolbar, so clipboard and downloaded CSV always agree.
+            const value = row ? getCellValue(row, col) : null
+            return csvRangeCell(col.exportRaw ? value : applyCellMask(value, col))
+          })
+          .join(','),
       )
     }
     return lines.join('\n')

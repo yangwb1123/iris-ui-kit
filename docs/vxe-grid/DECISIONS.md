@@ -1162,3 +1162,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bd-review.md [ok]: What was checked: **Spec correctness** — every baseline anchor verified against code:; Verification commands: | Check | Result |; Findings (both low, non-blocking): 1. **Label cascade overlap** — `Table.tsx:436`: `top: i*14` vs 16.8px line box → 2.8px overlap on stacked labels; cosmet
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bd-review.md
+
+## 2026-08-14 23:40:40 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bd-gate.md [ok]: Verdict: **PASS**: Review found only 2 low non-blocking findings (label cascade `top: i*14` overlap — cosmetic/matches design; `key={e.id}`; Gate results: | Check | Result |; Comparison doc updated (`docs/vxe-grid-comparison.md`): - **iris 独有 table**: new row 协作光标 `presence` — canonical `::` cellKey delimiter, hot-cell render pattern, first-wins out; Commit: ```; Final test counts: - **core: 1457 passed** (94 files) — 批 BD is pure display, zero core diff
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bd-gate.md
+
+## 2026-08-14 23:46:00 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-be-baseline.md [ok]: What's in the baseline: **Exact design** (every anchor verified against current code):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-be-baseline.md
+
+## 2026-08-14 23:59:36 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-be-adapt.md [ok]: Report: **Files changed (3 source + 1 test + adapt doc — additive, react-only, core untouched):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-be-adapt.md
+
+## 2026-08-15 00:06:38 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-be-review.md [ok]: What was verified (all green): | Check | Result |; Findings: 1. **HIGH — stripes never render (spec's visual marker dead), two independent bugs**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-be-review.md

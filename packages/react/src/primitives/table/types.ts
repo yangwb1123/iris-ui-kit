@@ -226,6 +226,19 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
   editable?: boolean
   /** Editor kind. Default `'text'`. */
   editor?: IrisTableEditor
+  /**
+   * Lock this column's cells against editing (batch BE, iris 独有 — vxe has
+   * no cell-lock concept): `true` locks every cell of the column; a
+   * predicate receives the row (and column) and returns whether THAT cell is
+   * locked — a predicate ignoring its column argument is a row-level lock
+   * (both levels share this one field). Locked cells are not editable —
+   * every editing entry point no-ops (dblclick / click trigger / F2 / Tab
+   * nav / row mode / batch edit / paste / fill / range clear / FNR replace /
+   * Delete shortcut) — render with a striped background and
+   * `data-iris-cell-locked="true"`, and stay fully interactive for
+   * selection, copy and export.
+   */
+  locked?: boolean | ((row: Row, column: IrisTableColumn<Row>) => boolean)
   /** Batch AN column preset (iris 独有): fills display defaults from the core
    * factory — `'money'` (2 decimals + thousands separator, right-aligned,
    * number editor + numeric editRules), `'progress'` (percent text, right),

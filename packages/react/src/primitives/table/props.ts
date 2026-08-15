@@ -202,6 +202,31 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * alone does not create the toolbar.
    */
   columnWidthsReset?: boolean
+  /**
+   * Column header pin menu (batch BX, iris 独有 — vxe has no built-in
+   * header pin menu): when true, right-clicking a column HEADER opens a
+   * built-in menu — 固定左 (key `__iris-pin-left`) when the column is not
+   * pinned, 取消固定 (key `__iris-unpin`) when it is pinned left OR right
+   * (the item flips with the column's CURRENT pin state, single and mutually
+   * exclusive — spec has no pin-right action). The menu is fully independent
+   * of `contextMenu` (which only opens on body cells and never on headers):
+   * `columnPinMenu` works with NO `contextMenu` configured, and the two are
+   * separate floating instances — opening one closes the other. Every action
+   * fires `onColumnPinnedChange` in BOTH controlled and uncontrolled modes
+   * (`onColumnWidthsChange` dual-channel precedent, no optimistic flip when
+   * controlled); without `pinnedColumns` the table holds the pin state
+   * internally and the static `col.pinned` declaration seeds the fallback.
+   * Additive — default off.
+   */
+  columnPinMenu?: boolean
+  /** Controlled per-column pin state (batch BX): column key → `'left'` /
+   * `'right'` / `null` (unpinned). When set, the map is the ONLY read source
+   * for the rendered pin state — a `null` entry overrides a static
+   * `col.pinned` declaration (controlled-null-wins). */
+  pinnedColumns?: Record<string, 'left' | 'right' | null>
+  /** Fired on every pin-menu action with the column key and the next side
+   * (`null` = unpin), in both controlled and uncontrolled modes (lift-ready). */
+  onColumnPinnedChange?: (key: string, side: 'left' | 'right' | null) => void
   /** Called when a data row is clicked. Interactive child controls stop propagation. */
   onRowClick?: (row: Row, rowIndex: number) => void
   /** Row double-click (vxe row-dblclick parity). */

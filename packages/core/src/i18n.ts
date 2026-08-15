@@ -129,6 +129,8 @@ export const defaultMessages: I18nMessages = {
   'table.summary': 'Column summary',
   'table.copyValue': 'Copy value',
   'table.clearCell': 'Clear cell',
+  'table.pinLeft': 'Pin left',
+  'table.unpin': 'Unpin',
   'table.annotate': 'Add annotation',
   'table.annotate.edit': 'Edit annotation',
   'table.annotate.remove': 'Remove annotation',

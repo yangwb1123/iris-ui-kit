@@ -956,6 +956,16 @@ const COPY_VALUE_MENU_KEY = '__iris-copy-value'
  * items; the table intercepts it at the onSelect wiring, so a user item
  * with the same key is deduped and the user callback never sees it. */
 const CLEAR_CELL_MENU_KEY = '__iris-clear-cell'
+/** Reserved menu key for the built-in PIN-LEFT item of the column header pin
+ * menu (batch BX, iris 独有 — vxe has no header pin menu): the table
+ * intercepts it at the onSelect wiring, so a user item with the same key is
+ * deduped and the user callback never sees it. */
+const PIN_LEFT_MENU_KEY = '__iris-pin-left'
+/** Reserved menu key for the built-in UNPIN item of the column header pin
+ * menu (batch BX, iris 独有): shown instead of 固定左 when the column is
+ * already pinned (left OR right) — the two items are mutually exclusive
+ * (spec has no pin-right action). */
+const UNPIN_MENU_KEY = '__iris-unpin'
 
 /** Shared style for the full-width empty / loading / error state rows. */
 const STATE_ROW_STYLE: React.CSSProperties = {
@@ -1840,6 +1850,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   defaultColumnWidths,
   onColumnWidthsChange,
   columnWidthsReset,
+  columnPinMenu,
+  pinnedColumns,
+  onColumnPinnedChange,
   onRowClick,
   onRowDblClick,
   onCellEdit,
@@ -2661,6 +2674,34 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const resetColumnWidths = () => {
     if (!widthsControlled) setWidthsInternal({})
     onColumnWidthsChange?.({})
+  }
+
+  // ── Column pin state (batch BX, iris 独有 — vxe has no header pin menu) ─
+  // Dual channel mirroring columnWidths: `pinnedColumns` controlled → the map
+  // is the ONLY read source (a `null` entry overrides a static `col.pinned`
+  // declaration); absent → an internal map holds the pin state, seeded by the
+  // static `col.pinned` declarations via `pinOf`'s fallback. `pinOf` is the
+  // single throat every render path reads (pinnedOffsets, visibleColSet,
+  // body attr, flat + grouped header attrs). `setColumnPinned` flips the
+  // internal map in uncontrolled mode and fires `onColumnPinnedChange`
+  // unconditionally in both channels (`onColumnWidthsChange` precedent) —
+  // controlled mode never optimistically flips (the parent writes the map
+  // back).
+  const pinsControlled = pinnedColumns !== undefined
+  const [pinsInternal, setPinsInternal] = React.useState<Record<string, 'left' | 'right' | null>>(
+    {},
+  )
+  const pinOf = React.useCallback(
+    (col: IrisTableColumn<Row>): 'left' | 'right' | null => {
+      if (pinsControlled) return pinnedColumns[col.key] ?? null
+      if (pinsInternal[col.key] !== undefined) return pinsInternal[col.key]
+      return col.pinned ?? null
+    },
+    [pinsControlled, pinnedColumns, pinsInternal],
+  )
+  const setColumnPinned = (key: string, side: 'left' | 'right' | null): void => {
+    if (!pinsControlled) setPinsInternal((prev) => ({ ...prev, [key]: side }))
+    onColumnPinnedChange?.(key, side)
   }
 
   // ── persistState (batch AG, iris 独有 — vxe has no built-in persistence) ─
@@ -3743,6 +3784,49 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const closeContextMenu = React.useCallback(() => {
     setContextMenuState((prev) => (prev ? { ...prev, open: false } : prev))
   }, [])
+  // ── Column header pin menu (batch BX, iris 独有) ────────────────────────
+  // Fully independent of `contextMenu` (which only opens on body cells): a
+  // header right-click with `columnPinMenu` opens THIS menu at the cursor
+  // (the same virtual-anchor pattern as the context menu), showing ONE
+  // built-in item — 固定左 or 取消固定 per the column's CURRENT pin state
+  // (single + mutually exclusive). The two menus are separate floating
+  // instances: opening one closes the other (exactly one
+  // `data-iris-table-context-menu` in the DOM at a time).
+  const [pinMenuState, setPinMenuState] = React.useState<{
+    open: boolean
+    col: IrisTableColumn<Row>
+  } | null>(null)
+  const pinMenuAnchorRef = React.useRef<HTMLElement | null>(null)
+  const [pinMenuSeq, setPinMenuSeq] = React.useState(0)
+  const closePinMenu = React.useCallback(() => {
+    setPinMenuState((prev) => (prev ? { ...prev, open: false } : prev))
+  }, [])
+  const handleHeaderContextMenu = (e: React.MouseEvent, col: IrisTableColumn<Row>): void => {
+    if (!columnPinMenu) return
+    // Right-click on a header is a menu gesture, never a sort/click — sort
+    // only ever fires from the onClick path (left button); suppress the
+    // browser's native context menu and contain the event.
+    e.preventDefault()
+    e.stopPropagation()
+    // Swap menus: close the body context menu before this one opens.
+    closeContextMenu()
+    // Virtual anchor: zero-size rect at the cursor (context-menu pattern).
+    pinMenuAnchorRef.current = {
+      getBoundingClientRect: () => ({
+        left: e.clientX,
+        top: e.clientY,
+        right: e.clientX,
+        bottom: e.clientY,
+        width: 0,
+        height: 0,
+        x: e.clientX,
+        y: e.clientY,
+        toJSON() {},
+      }),
+    } as unknown as HTMLElement
+    setPinMenuState({ open: true, col })
+    setPinMenuSeq((s) => s + 1)
+  }
   // ── Value distribution panel (batch AM, iris 独有) ────────────────
   // Opens from the context menu's built-in `__iris_distribution` item; the
   // panel floats at the SAME virtual cursor anchor the menu used (snapshotted
@@ -3913,6 +3997,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
     ci: number,
   ): void => {
     if (!contextMenu) return
+    // Swap menus: a body right-click closes the header pin menu (the two are
+    // separate floating instances — batch BX).
+    closePinMenu()
     e.preventDefault()
     // Virtual anchor: zero-size rect at the cursor. The object is rebuilt per
     // open (capturing this event's coordinates) and read by useFloating after
@@ -5039,7 +5126,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       (hasDetail ? EXPAND_COL_WIDTH : 0) +
       (selectable !== 'none' ? SELECTION_COL_WIDTH : 0)
     for (const col of leafColumns) {
-      if (col.pinned === 'left') {
+      if (pinOf(col) === 'left') {
         map[col.key] = { side: 'left', offset: left }
         left += widthOf(col)
       }
@@ -5047,13 +5134,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     let right = 0
     for (let i = leafColumns.length - 1; i >= 0; i -= 1) {
       const col = leafColumns[i]
-      if (col?.pinned === 'right') {
+      if (pinOf(col) === 'right') {
         map[col.key] = { side: 'right', offset: right }
         right += widthOf(col)
       }
     }
     return map
-  }, [leafColumns, columnWidths, selectable, hasDetail, showRowNumbers, rowDrag])
+  }, [leafColumns, columnWidths, selectable, hasDetail, showRowNumbers, rowDrag, pinOf])
 
   const pinnedStyle = (key: string): React.CSSProperties | null => {
     const p = pinnedOffsets[key]
@@ -6072,10 +6159,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const set = new Set<number>()
     for (let i = w.startIndex; i <= w.endIndex; i += 1) set.add(i)
     leafColumns.forEach((col, i) => {
-      if (col.pinned) set.add(i)
+      if (pinOf(col)) set.add(i)
     })
     return set
-  }, [columnVirtualization, leafColumns, scrollLeft, viewportWidth, resolvedColWidths])
+  }, [columnVirtualization, leafColumns, scrollLeft, viewportWidth, resolvedColWidths, pinOf])
 
   // ── Range stats material (batch AJ, iris 独有) ─────────────────────
   // Lives AFTER `visibleColSet` so it can apply the same visible-window skip
@@ -6589,7 +6676,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               key={col.key}
               role="cell"
               data-iris-table-cell={col.key}
-              data-iris-table-pinned={col.pinned}
+              data-iris-table-pinned={pinOf(col)}
               data-editable={editableLive ? '' : undefined}
               data-editing={editing ? '' : undefined}
               data-iris-cell-dirty={dirtyInfo.attr}
@@ -8544,6 +8631,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     role="columnheader"
                     data-iris-table-header={col.key}
                     data-iris-table-header-group={isLeaf ? undefined : ''}
+                    data-iris-table-pinned={isLeaf ? pinOf(col) : undefined}
                     data-iris-col-drag-active={colDragActive === col.key ? 'true' : undefined}
                     data-iris-col-drag-over={colDragOver === col.key ? 'true' : undefined}
                     className={headerCellClassName?.(col)}
@@ -8572,6 +8660,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         : () => onHeaderClick?.(col)
                     }
                     onKeyDown={sortable ? (e) => onHeaderKeyDown(e, col) : undefined}
+                    onContextMenu={
+                      columnPinMenu && isLeaf ? (e) => handleHeaderContextMenu(e, col) : undefined
+                    }
                     style={{
                       gridColumn: `${lead + cell.colStart} / span ${cell.colSpan}`,
                       gridRow: `${cell.level + 1} / span ${cell.rowSpan}`,
@@ -8587,6 +8678,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       fontWeight: 600,
                       userSelect: sortable ? 'none' : 'auto',
                       ...(headerCellStyle?.(col) ?? null),
+                      position: isLeaf ? 'relative' : undefined,
+                      // Pinned leaf header keeps a solid surface bg + sticky
+                      // position (flat-header precedent; group cells never pin).
+                      ...(isLeaf && pinnedStyle(col.key)
+                        ? { ...pinnedStyle(col.key), background: 'var(--iris-surface)' }
+                        : null),
                     }}
                   >
                     <span>
@@ -8754,8 +8851,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
                         }
                   }
                   onKeyDown={col.sortable ? (e) => onHeaderKeyDown(e, col) : undefined}
+                  onContextMenu={columnPinMenu ? (e) => handleHeaderContextMenu(e, col) : undefined}
                   data-iris-table-header={col.key}
-                  data-iris-table-pinned={col.pinned}
+                  data-iris-table-pinned={pinOf(col)}
                   data-iris-col-current={currentColumnKey === col.key ? 'true' : undefined}
                   data-iris-col-drag-active={colDragActive === col.key ? 'true' : undefined}
                   data-iris-col-drag-over={colDragOver === col.key ? 'true' : undefined}
@@ -8984,6 +9082,34 @@ export function IrisTable<Row extends Record<string, unknown>>({
               else contextMenu.onSelect(key, params)
             }}
             onClose={closeContextMenu}
+          />
+        ) : null}
+        {/* Column header pin menu (batch BX, iris 独有): a second, independent
+          floating instance gated by `columnPinMenu` — same TableContextMenu
+          host, virtual cursor anchor, ONE built-in item per the column's
+          CURRENT pin state. Every key is intercepted here (the pin menu has
+          no user items); `setColumnPinned` handles the dual channel. */}
+        {columnPinMenu && pinMenuState ? (
+          <TableContextMenu
+            key={`pin-${pinMenuSeq}`}
+            open={pinMenuState.open}
+            anchorRef={pinMenuAnchorRef}
+            items={
+              pinOf(pinMenuState.col)
+                ? [{ key: UNPIN_MENU_KEY, label: t('table.unpin') }]
+                : [{ key: PIN_LEFT_MENU_KEY, label: t('table.pinLeft') }]
+            }
+            params={{
+              row: undefined as unknown as Row,
+              column: pinMenuState.col,
+              rowIndex: -1,
+              columnIndex: leafColumns.findIndex((c) => c.key === pinMenuState.col.key),
+            }}
+            onSelect={(key) => {
+              if (key === PIN_LEFT_MENU_KEY) setColumnPinned(pinMenuState.col.key, 'left')
+              else if (key === UNPIN_MENU_KEY) setColumnPinned(pinMenuState.col.key, null)
+            }}
+            onClose={closePinMenu}
           />
         ) : null}
         {distributionState ? (

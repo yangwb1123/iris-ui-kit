@@ -65,6 +65,8 @@ export const zhCNMessages: Record<string, string> = {
   'table.summary': '摘要',
   'table.copyValue': '复制值',
   'table.clearCell': '清空',
+  'table.pinLeft': '固定左',
+  'table.unpin': '取消固定',
   'table.annotate': '添加批注',
   'table.annotate.edit': '编辑批注',
   'table.annotate.remove': '删除批注',

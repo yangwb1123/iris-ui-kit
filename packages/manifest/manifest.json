@@ -36419,6 +36419,23 @@
           "description": "Toolbar reset-widths button (iris 独有, batch BO): clicking it calls `onColumnWidthsChange({})` — the empty map means zero overrides, so every column falls back to its declared width. Like `zoomConfig`, this prop alone does not create the toolbar."
         },
         {
+          "name": "columnPinMenu",
+          "type": "boolean",
+          "optional": true,
+          "description": "Column header pin menu (batch BX, iris 独有 — vxe has no built-in header pin menu): when true, right-clicking a column HEADER opens a built-in menu — 固定左 (key `__iris-pin-left`) when the column is not pinned, 取消固定 (key `__iris-unpin`) when it is pinned left OR right (the item flips with the column's CURRENT pin state, single and mutually exclusive — spec has no pin-right action). The menu is fully independent of `contextMenu` (which only opens on body cells and never on headers): `columnPinMenu` works with NO `contextMenu` configured, and the two are separate floating instances — opening one closes the other. Every action fires `onColumnPinnedChange` in BOTH controlled and uncontrolled modes (`onColumnWidthsChange` dual-channel precedent, no optimistic flip when controlled); without `pinnedColumns` the table holds the pin state internally and the static `col.pinned` declaration seeds the fallback. Additive — default off."
+        },
+        {
+          "name": "pinnedColumns",
+          "type": "Record<string, 'left' | 'right' | null>",
+          "optional": true,
+          "description": "`'right'` / `null` (unpinned). When set, the map is the ONLY read source for the rendered pin state — a `null` entry overrides a static"
+        },
+        {
+          "name": "onColumnPinnedChange",
+          "type": "(key: string, side: 'left' | 'right' | null) => void",
+          "optional": true
+        },
+        {
           "name": "onRowClick",
           "type": "(row: Row, rowIndex: number) => void",
           "optional": true,
@@ -37395,6 +37412,23 @@
               "description": "Toolbar reset-widths button (iris 独有, batch BO): clicking it calls `onColumnWidthsChange({})` — the empty map means zero overrides, so every column falls back to its declared width. Like `zoomConfig`, this prop alone does not create the toolbar."
             },
             {
+              "name": "columnPinMenu",
+              "type": "boolean",
+              "optional": true,
+              "description": "Column header pin menu (batch BX, iris 独有 — vxe has no built-in header pin menu): when true, right-clicking a column HEADER opens a built-in menu — 固定左 (key `__iris-pin-left`) when the column is not pinned, 取消固定 (key `__iris-unpin`) when it is pinned left OR right (the item flips with the column's CURRENT pin state, single and mutually exclusive — spec has no pin-right action). The menu is fully independent of `contextMenu` (which only opens on body cells and never on headers): `columnPinMenu` works with NO `contextMenu` configured, and the two are separate floating instances — opening one closes the other. Every action fires `onColumnPinnedChange` in BOTH controlled and uncontrolled modes (`onColumnWidthsChange` dual-channel precedent, no optimistic flip when controlled); without `pinnedColumns` the table holds the pin state internally and the static `col.pinned` declaration seeds the fallback. Additive — default off."
+            },
+            {
+              "name": "pinnedColumns",
+              "type": "Record<string, 'left' | 'right' | null>",
+              "optional": true,
+              "description": "`'right'` / `null` (unpinned). When set, the map is the ONLY read source for the rendered pin state — a `null` entry overrides a static"
+            },
+            {
+              "name": "onColumnPinnedChange",
+              "type": "(key: string, side: 'left' | 'right' | null) => void",
+              "optional": true
+            },
+            {
               "name": "onRowClick",
               "type": "(row: Row, rowIndex: number) => void",
               "optional": true,
@@ -38057,6 +38091,7 @@
             "onCellDblClick",
             "onCellEdit",
             "onColumnOrderChange",
+            "onColumnPinnedChange",
             "onColumnVisibilityChange",
             "onColumnWidthsChange",
             "onCurrentColumnChange",
@@ -39104,6 +39139,7 @@
         "onCellClick",
         "onCellDblClick",
         "onColumnWidthsChange",
+        "onColumnPinnedChange",
         "onRowClick",
         "onRowDblClick",
         "onColumnVisibilityChange",
@@ -39132,8 +39168,8 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 162,
-        "eventCount": 30
+        "propCount": 165,
+        "eventCount": 31
       }
     },
     {

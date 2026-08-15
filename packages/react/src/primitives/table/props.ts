@@ -461,6 +461,18 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * regardless of `showAll` (documented simplification, kept simple and
    * explicit). */
   tooltipConfig?: IrisTableTooltipConfig<Row>
+  /** Cell annotations (iris 独有, batch AZ — vxe has no cell-note concept): a
+   * static map of notes keyed `${rowKey}::${columnKey}` — the same `::`
+   * delimiter as the internal `cellId` (`annotations[cellId(k, col.key)]`).
+   * A noted cell renders a corner badge (`data-iris-cell-note-badge`) + gets
+   * `data-iris-cell-note` + the note as its title (beats `tooltipConfig`);
+   * the dynamic `cellNote` callback wins over this map when both are set. */
+  annotations?: Record<string, string>
+  /** Dynamic per-cell note (iris 独有, batch AZ): computed from the row +
+   * column — wins over the static `annotations` map. With a note the cell
+   * gets `data-iris-cell-note` + a corner badge + the note as its title
+   * (beats `tooltipConfig`); a null/'' note renders nothing. */
+  cellNote?: (row: Row, column: IrisTableColumn<Row>) => string | null
   /** Header cell tooltips (vxe header-tooltip-config parity, batch P): a
    * native `title` on flat + grouped header cells; empty content drops the
    * tooltip. */

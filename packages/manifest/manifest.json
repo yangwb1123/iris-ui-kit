@@ -36784,6 +36784,18 @@
           "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. Truncation gating is not implemented — titles render on every cell regardless of `showAll` (documented simplification, kept simple and"
         },
         {
+          "name": "annotations",
+          "type": "Record<string, string>",
+          "optional": true,
+          "description": "static map of notes keyed `${rowKey}::${columnKey}` — the same `::` delimiter as the internal `cellId` (`annotations[cellId(k, col.key)]`). A noted cell renders a corner badge (`data-iris-cell-note-badge`) + gets `data-iris-cell-note` + the note as its title (beats `tooltipConfig`);"
+        },
+        {
+          "name": "cellNote",
+          "type": "(row: Row, column: IrisTableColumn<Row>) => string | null",
+          "optional": true,
+          "description": "column — wins over the static `annotations` map. With a note the cell gets `data-iris-cell-note` + a corner badge + the note as its title"
+        },
+        {
           "name": "headerTooltipConfig",
           "type": "{ content?: (column: IrisTableColumn<Row>) => string }",
           "optional": true,
@@ -37634,6 +37646,18 @@
               "type": "IrisTableTooltipConfig<Row>",
               "optional": true,
               "description": "native `title` on every body cell, content from the callback or the raw cell value; editing cells are exempt and empty content drops the tooltip. Truncation gating is not implemented — titles render on every cell regardless of `showAll` (documented simplification, kept simple and"
+            },
+            {
+              "name": "annotations",
+              "type": "Record<string, string>",
+              "optional": true,
+              "description": "static map of notes keyed `${rowKey}::${columnKey}` — the same `::` delimiter as the internal `cellId` (`annotations[cellId(k, col.key)]`). A noted cell renders a corner badge (`data-iris-cell-note-badge`) + gets `data-iris-cell-note` + the note as its title (beats `tooltipConfig`);"
+            },
+            {
+              "name": "cellNote",
+              "type": "(row: Row, column: IrisTableColumn<Row>) => string | null",
+              "optional": true,
+              "description": "column — wins over the static `annotations` map. With a note the cell gets `data-iris-cell-note` + a corner badge + the note as its title"
             },
             {
               "name": "headerTooltipConfig",
@@ -38877,7 +38901,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 141,
+        "propCount": 143,
         "eventCount": 27
       }
     },

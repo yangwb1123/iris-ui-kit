@@ -1062,3 +1062,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ay-gate.md [ok]: Verdict: Review was **FAIL** with 1 blocking MEDIUM + 1 LOW. Both applied with regression tests:; Gate results: | Check | Result |; Final test counts: - core: **1424 passed** (+7 batch AY); Commit: **`13a5537a`** `feat(table): grid 批 AY——数据掩码（脱敏列，显示/导出双轨）` — 8 files, +161/−54 (fixes, tests, review + gate docs). Worki
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ay-gate.md
+
+## 2026-08-14 19:02:43 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-az-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-az-baseline.md

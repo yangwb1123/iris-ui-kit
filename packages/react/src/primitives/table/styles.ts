@@ -93,6 +93,24 @@ export const RANGE_FILL_HANDLE_STYLE: React.CSSProperties = {
 /* Batch AQ: cells between the range edge and the drag end (excluding the
    source range) while the handle is being dragged — token-driven only. */
 export const RANGE_FILL_TARGET_BG = 'var(--iris-surface-selected, rgba(99,102,241,0.12))'
+
+/* Batch AZ cell annotations (iris 独有 — vxe has no cell-note concept): the
+   6px corner badge rendered inside a noted body cell (data-iris-cell-note).
+   Absolute top-right (logical inset-inline-end mirrors in RTL); the host
+   cell gains position: relative from the render (note case only), so the
+   badge anchors to the cell box — inside a pinned (position: sticky) cell
+   the sticky box is the containing block and the badge positions against it
+   (pinnedStyle's sticky overrides the relative, which is exactly what we
+   want). Warning token with primary fallback (the codebase's existing
+   token-with-fallback pattern). */
+export const CELL_NOTE_STYLE: React.CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  insetInlineEnd: 0,
+  width: 6,
+  height: 6,
+  background: 'var(--iris-warning, var(--iris-primary))',
+}
 export const TABLE_ROW_CSS = `
 [data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover {
   --iris-cell-bg: var(--iris-surface-hover);

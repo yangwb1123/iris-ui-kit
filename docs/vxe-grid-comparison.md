@@ -51,6 +51,7 @@
 | 比较视图 `compareWith` | vxe 无等价物（vxe 无内置两数据集对比能力）。`compareWith?: Row[]`（默认 off，纯 additive）：core 新纯函数 `diffRows(before, after, rowKeyField)`（`diff-rows.ts`，**框架无关**、零依赖、无副作用）——按 `rowKeyField` 键控分类三种：`added`（仅 after）、`removed`（仅 before）、`changed`（同在且 ≥1 列分歧）；**逐列 `Object.is` 比较**（值同一性，刻意区别于批 AT 审计 diff 的 `!==` 真值比较——NaN≡NaN、+0≠−0 均为文档化语义），变更列按 **after 行自身键序**（再补 before 独有键）；rowKey 为 null/undefined 的行跳过（无键无 diff 身份）。返回 O(1) 查询 `status` Map（rowKey→kind）与嵌套 `cellChanges` Map（rowKey→列键→old→new），另附 `added`/`removed`/`changed` 键数组——19 核心新测试。**react 桥**：`compareWith` 单行 prop + 单 memo `diffRows(liveData, compareWith, rowKey)`（无 `compareWith` 即 null——全路径惰性；方向 per 基线：before=liveData、after=compareWith）：live 行缺于快照 → `data-iris-row-removed`、同在且分歧 → `data-iris-row-changed`（变更格 `data-iris-cell-changed` + title tooltip `旧值: X → 新值: Y`，i18n `table.compare.tooltip` en `Old: {old} → New: {new}` / zh `旧值: {old} → 新值: {new}`；**compare tooltip 覆盖 tooltipConfig**（文档化——diff 比原值更有行动价值），未变更格仍走 tooltipConfig）；列键解析走 `dataIndex ?? key` 同 `getCellValue` 间接层，公式列是计算显示值——自身不标 chang（文档化简化，引用字段格会标）。仅 compareWith 独有的行（`added`）在核心 diff 中报告但**无渲染槽位**（比较视图渲染 live 数据集，文档化）。行背景纯 token：changed → `--iris-surface-selected`、added → `color-mix(in srgb, var(--iris-success) 12%, var(--iris-background))`、removed → `color-mix(in srgb, var(--iris-danger) 12%, var(--iris-background))`（`background` 全行显色 + `--iris-cell-bg` 喂槽位列，与 hover/selected 同一高亮机制；无 color-mix 引擎回落继承背景，文档化）——`props.ts` + `Table.tsx`（memo + 行三 attr + 单元格 attr/title，helper 抽取保持单元格箭头复杂度预算）+ `styles.ts` + `compare.test.tsx` 13 react 新测试。+1 i18n 键（en+zh）。core additive、react-only 桥、其余框架零改动；manifest 已重新生成（propCount 138→139） |
 | 选择汇总 `selectionSummary` | vxe 无等价物（最接近的是表头勾选计数——只显示在表头且无合计）。`selectionSummary?: boolean`（默认 off）：`selectable === 'multi'` 且选中 ≥ 1 时，工具栏在**批量按钮之前**渲染 `data-iris-selection-summary`：`已选 N 行`（i18n `table.selectionSummary`，en `{count} selected` / zh `已选 {count} 行`，与表头 `table.selectedCount` 同款 `{count}` 插值）+ 每个 `summary === 'sum'` 叶列一个 `· 合计 X`（`table.selectionSummarySum`，en `sum` / zh `合计`）——**与汇总行同源材料**（core `data-view/aggregate.ts`，零新 core API）：`aggregate(selectedRows, r => getCellValue(r, col), 'sum')` + 同一 `aggregateAccuracy` 舍入点 + `String(value)` 格式化（`renderSummary` 不参与——工具栏是纯文本）；非 sum op（avg/min/max/count）不渲染。选中行按 **bodyData 序**（筛选+排序+树展平后的显示行）经 `rowKeyOf` 映射，跨页代理键不在当前页则跳过（视图绑定，与汇总行同语义）。清除按钮 `data-iris-selection-clear`（✕，`table.clearSelection` en/zh）走共享 `clearSelection` 路径（`rebaseToProp(); selModel.clear()`——handle 同款）。i18n：`table.selectionSummary`/`table.selectionSummarySum`/`table.clearSelection`（en + zh）。 |
 | 选中行导出 `exportSelectionCsv` | vxe 无内置选中导出（需手动组合 getCheckboxRecords + 导出）。iris 在 `IrisTableHandle` 加 `exportSelectionCsv(): string`：选中行按 **bodyData 序** → `exportCsv(withComputedFormulaCells(rows, displayColumns), displayColumns)`——与 `exportCurrentViewCsv` **字节同形**：公式列影子行物化、隐藏列（columnVisibility/visibleMethod）排除、公式注入中和（OWASP）；空选中 → `''`（调用方用 `getSelection()` 判别）。挂载时 handle 闭包问题沿用 F1 回归模式：新增 `bodyDataRef` 镜像（同 `filteredDataRef`/`viewColumnsRef`），rerender 后仍读最新行。 |
+| 单元格标注 `annotations` / `cellNote` | vxe 无等价物（vxe 的 tooltip 只能显示值本身，无单元格批注概念）。iris 批 AZ 把它做成声明式：**静态表** `annotations?: Record<string, string>` 按 `` `${rowKey}::${columnKey}` `` 键控（与内部 `cellId` 同款 `::` 定界符，查找即 `annotations[cellId(k, col.key)]`，rowKey 缺失回落 idx 同 `rowKeyOf`）；**动态回调** `cellNote?: (row, column) => string \| null` 每格计算——**动态赢静态**（两者同设时 cellNote 优先，文档化；null/'' 注记渲染零节点）。有注记的格：`data-iris-cell-note` 属性 + 右上角 6px 角标 `<span data-iris-cell-note-badge aria-hidden>`（`var(--iris-warning, var(--iris-primary))` 警告色 + primary 回落，token-only；宿主格在注记时才加 `position: relative` 供角标锚定——**固定列**的 `position: sticky` 覆盖 relative，角标仍相对 sticky 格盒定位，文档化；`inset-inline-end` 逻辑属性 RTL 镜像）+ **title = 注记**（优先于 `tooltipConfig`/`cellTooltip`，未注记格保留原 tooltip；编辑中格沿用既有豁免链——title 免设、角标/属性保留）。纯展示层，编辑/排序/筛选/导出均读原始值。`props.ts` + `Table.tsx`（模块级 `cellNoteOf` 单点解析保持单元格箭头复杂度预算）+ `styles.ts`（`CELL_NOTE_STYLE`）+ `annotations.test.tsx` 8 react 新测试。core 零改动、react-only 桥、其余框架零改动；manifest 已重新生成（propCount 140→142） |
 
 用法示例：
 
@@ -81,6 +82,15 @@ const formulaCols = [
 
 // 行列引用：表头 A/B/C… 字母徽标 + 前导行号列（seq 开启时 seq 即行号，不重复）
 <IrisTable columns={formulaCols} data={rows} showCellRefs />
+
+// 单元格标注：静态表按 `${rowKey}::${columnKey}` 键控；cellNote 动态回调赢静态表
+<IrisTable
+  columns={cols}
+  data={rows}
+  rowKey="id"
+  annotations={{ '1::name': 'VIP customer' }} // 角标 + title = 注记（赢过 tooltipConfig）
+  cellNote={(row, col) => (row.age > 30 ? `over 30 (${col.key})` : null)} // 动态优先
+/>
 ```
 
 以下为**有意跳过项（文档化决策，非能力缺口）**：

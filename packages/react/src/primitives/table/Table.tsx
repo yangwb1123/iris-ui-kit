@@ -71,7 +71,7 @@ import type { IrisTableHandle } from './types'
 import { downloadCsv, exportCsv, applyCellMask } from './exportCsv'
 import { TableChartPanel } from './ChartPanel'
 import { TableAuditPanel } from './AuditPanel'
-import { RANGE_FILL_HANDLE_STYLE, RANGE_FILL_TARGET_BG } from './styles'
+import { CELL_NOTE_STYLE, RANGE_FILL_HANDLE_STYLE, RANGE_FILL_TARGET_BG } from './styles'
 
 /* Batch AQ drag-fill helpers (module scope): the per-cell fill logic stays
    OUT of the row-render arrow so the eslint complexity budget on that hot
@@ -334,6 +334,53 @@ const dirtyCellState = (
     dirtyClass: withClass ? 'iris-table-cell-dirty' : undefined,
     posStyle: showDirty ? { position: 'relative' } : null,
   }
+}
+
+/** Batch AZ cell annotation (iris 独有 — vxe has no cell-note concept): the
+ * dynamic `cellNote` callback wins over the static `annotations` map, keyed
+ * `${rowKeyVal}::${colKey}` — the same `::` delimiter as `cellId` (so the
+ * lookup is exactly `annotations[cellId(k, col.key)]`). A null/'' note
+ * renders nothing (no badge, no attr, no title). Module-level so the cell
+ * render's cyclomatic complexity stays flat (a call costs 0). */
+const cellNoteOf = <Row extends Record<string, unknown>>(
+  annotations: Record<string, string> | undefined,
+  cellNote: ((row: Row, column: IrisTableColumn<Row>) => string | null) | undefined,
+  row: Row,
+  col: IrisTableColumn<Row>,
+  k: string | number | null,
+): string | null => {
+  if (cellNote) {
+    const dynamic = cellNote(row, col)
+    if (dynamic != null && dynamic !== '') return dynamic
+  }
+  if (k == null || annotations == null) return null
+  return annotations[`${k}::${col.key}`] ?? null
+}
+
+/** Batch AZ: the per-cell render state derived from the note — attr, the
+ * relative-position style the badge needs, and the note itself (so the cell
+ * arrow's title/attr/badge reads stay complexity-free — one call costs 0). */
+const cellNoteState = <Row extends Record<string, unknown>>(
+  annotations: Record<string, string> | undefined,
+  cellNote: ((row: Row, column: IrisTableColumn<Row>) => string | null) | undefined,
+  row: Row,
+  col: IrisTableColumn<Row>,
+  k: string | number | null,
+): { note: string | null; attr: string | undefined; posStyle: React.CSSProperties | null } => {
+  const note = cellNoteOf(annotations, cellNote, row, col, k)
+  return {
+    note,
+    attr: note ? 'true' : undefined,
+    posStyle: note ? { position: 'relative' } : null,
+  }
+}
+
+/** Batch AZ: the 6px corner badge — zero nodes when there is no note (so
+ * noted cells are the only ones carrying the span; same pattern as the range
+ * fill handle). */
+function renderCellNoteBadge(note: string | null): React.ReactNode {
+  if (!note) return null
+  return <span aria-hidden="true" data-iris-cell-note-badge="" style={CELL_NOTE_STYLE} />
 }
 
 export type { IrisTableProps, IrisTableProxyConfig } from './props'
@@ -1031,6 +1078,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   zoomConfig,
   layouts,
   tooltipConfig,
+  annotations,
+  cellNote,
   headerTooltipConfig,
   footerTooltipConfig,
   contextMenu,
@@ -4617,15 +4666,23 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const compareCellAttr = (change: RowDiffCellChange | undefined): string | undefined =>
     change ? 'true' : undefined
 
-  // Batch AU: the unified cell title — compare wins on changed cells, the
-  // tooltipConfig path applies otherwise, editing cells stay exempt.
+  // Batch AU: the unified cell title — the annotation note wins on noted
+  // cells (batch AZ), compare wins on changed cells, the tooltipConfig path
+  // applies otherwise, editing cells stay exempt.
   const cellTitle = (
     editing: boolean,
+    note: string | null,
     change: RowDiffCellChange | undefined,
     row: Row,
     col: IrisTableColumn<Row>,
   ): string | undefined =>
-    editing ? undefined : change ? compareTitle(change) : cellTooltip(row, col)
+    editing
+      ? undefined
+      : note != null
+        ? note
+        : change
+          ? compareTitle(change)
+          : cellTooltip(row, col)
 
   // Header cell tooltips (vxe header-tooltip-config parity, batch P): a
   // native `title` on flat + grouped header cells; empty content drops the
@@ -4902,6 +4959,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // columns are computed display values (documented simplification:
           // their own diffs are not flagged — the referenced fields are).
           const compareChange = cellChangeOf(k, col)
+          // Batch AZ cell annotations (iris 独有): note = cellNote (dynamic,
+          // wins) ?? annotations[cellId(k, col.key)] — badge, attr and title
+          // all flow from this single resolution (zero nodes when absent);
+          // the note case adds position relative so the badge anchors (see
+          // CELL_NOTE_STYLE: pinned sticky cells override it, which is fine).
+          const noteInfo = cellNoteState(annotations, cellNote, row, col, k)
           const fnrCellKey = `${idx}:${ci}`
           const fnrCellActive = fnrActiveKey === fnrCellKey
           const fnrCellMatched = fnrMatchSet.has(fnrCellKey)
@@ -4920,7 +4983,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
               data-editing={editing ? '' : undefined}
               data-iris-cell-dirty={dirtyInfo.attr}
               data-iris-cell-changed={compareCellAttr(compareChange)}
-              title={cellTitle(editing, compareChange, row, col)}
+              data-iris-cell-note={noteInfo.attr}
+              title={cellTitle(editing, noteInfo.note, compareChange, row, col)}
               className={
                 [cellClassName?.(row, col, idx), dirtyInfo.dirtyClass].filter(Boolean).join(' ') ||
                 undefined
@@ -4989,6 +5053,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               style={{
                 ...baseCellStyle,
                 ...dirtyInfo.posStyle,
+                ...noteInfo.posStyle,
                 ...(visibleColSet ? { gridColumnStart: colTrack(ci) } : null),
                 ...(colspan > 1 ? { gridColumnEnd: `span ${colspan}` } : null),
                 ...(rowspan > 1 ? { gridRowEnd: `span ${rowspan}` } : null),
@@ -5174,6 +5239,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 (displayValue as React.ReactNode)
               )}
               {renderRangeFillHandle(fillHandleCell, idx, ci, handleRangeFillPointerDown)}
+              {renderCellNoteBadge(noteInfo.note)}
             </div>
           )
         })}

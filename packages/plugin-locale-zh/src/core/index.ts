@@ -185,6 +185,8 @@ export const zhCNMessages: Record<string, string> = {
   'table.selectionSummarySum': '合计',
   'table.clearSelection': '清除选择',
   'table.selectRow': '选择第 {key} 行',
+  'table.groupCollapse': '折叠分组',
+  'table.groupExpand': '展开分组',
   // transfer
   'transfer.sourceTitle': '可选',
   'transfer.targetTitle': '已选',

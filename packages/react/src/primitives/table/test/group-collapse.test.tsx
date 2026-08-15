@@ -198,14 +198,13 @@ describe('@iris-ui-kit/react IrisTable group collapse (batch BH, iris 独有)', 
     const ref = { current: null as IrisTableHandle<Row> | null }
     const { container } = render(
       <IrisTable
-        ref={ref}
+        tableRef={ref}
         columns={groupCols}
         data={rows}
         rowKey="id"
         selectable="multi"
         selectionSummary
         toolbar={{ title: 'T' }}
-        tableRef={ref}
       />,
     )
     act(() => fireEvent.click(toggleOf(container, 'Develop')))

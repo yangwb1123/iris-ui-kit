@@ -1222,3 +1222,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bg-review.md [ok]: Verdict: **FAIL** (1 medium finding, 2 low, 1 nit): **Verification (all run fresh, all green):**
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bg-review.md
+
+## 2026-08-15 01:10:16 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bg-gate.md [ok]: Fixes applied (review → code): 1. **[MEDIUM]** `Table.tsx` root onKeyDown: added `if (editTarget.editing !== null || rowEditing !== null) return` befor; Gate results (all run fresh, after fixes): - `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful**; Commits: - **`5e69585d`** `feat(table): grid 批 BG——快捷键自定义（iris 独有）` — 7 files, +114/−38 (source fixes + regression test + docs); Final test counts: - core **1469** · react **2150** (191 files; keymap suite 11 tests incl. editing-guard regression) · vue 1531 · solid 97
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bg-gate.md
+
+## 2026-08-15 01:14:12 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bh-baseline.md [ok]: What's in the baseline: **Exact design** (every anchor verified against current code):
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bh-baseline.md
+
+## 2026-08-15 01:25:30 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bh-adapt.md [ok]: Summary: **Commits**: `f8add631` feat + `9edb533c` adapt report (working tree clean except pre-existing BG-stage entries); Files changed (4 source + 1 test, ≤4 constraint met): | File | Change |; Verification (all pass): - core test: **1469/1469** (95 files); Fiats honored: Hidden = rows+summary, full count stays · true controlled semantics (no optimistic flip) · callback in both modes · coll; Left: - No persisted collapse state (props are additive; `persistState`/`views` don't cover it, per baseline)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bh-adapt.md
+
+## 2026-08-15 01:32:10 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bh-review.md [ok]: PASS — with 2 LOW findings, 0 blockers: **What I verified:**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bh-review.md

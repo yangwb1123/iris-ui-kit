@@ -1,25 +1,27 @@
-Gate stage complete — verdict **FAIL → FIXED → PASS** (all 4 review findings addressed).
+Gate complete — verdict was **FAIL** with 4 findings, all fixed and re-verified.
 
-## Review findings → fixes
+## Fixes applied (review → code)
 
-1. **[MEDIUM] editing guard** (`Table.tsx` root onKeyDown): added `if (editTarget.editing !== null || rowEditing !== null) return` before the fill/query branches (mirrors `handleTableShortcutKey`/undo/clip gates) — Ctrl+D can no longer fill under an uncommitted draft, Ctrl+K no longer steals focus mid-session. **Regression test added** (`keymap.test.tsx` "editing guard: Ctrl+D / Ctrl+K never run while an inline editor is open").
-2. **[LOW] legacy modifier combos under-documented**: `handleTableShortcutKey` comment now documents that exact-match tightening makes Shift+Delete / Ctrl+F2 / Ctrl+Shift+Backspace … inert by design (per BG baseline).
-3. **[LOW] keymap.ts `TABLE_KEY_ACTIONS` comment**: corrected — the array is canonical normalization iteration order, NOT handler arbitration (arbitration is by wiring order / `preventDefault`).
-4. **[NIT] `keyBindings` memo churn**: memoized on the JSON serialization of `keymap` (parse-back), so inline `keymap={{…}}` literals don't re-register the window undo/clip listeners per render. Lint-clean (`exhaustive-deps` satisfied, prettier clean).
+1. **[MEDIUM]** `Table.tsx` root onKeyDown: added `if (editTarget.editing !== null || rowEditing !== null) return` before the fill/query branches, mirroring the sibling gates — Ctrl+D can no longer fill under an uncommitted draft, Ctrl+K no longer steals focus mid-session. **+ regression test** in `keymap.test.tsx` (opens an F2 editor with a live range, asserts no `onDataChange` and focus retention).
+2. **[LOW]** Documented in `handleTableShortcutKey` that exact-match tightening makes legacy combos (Shift+Delete, Ctrl+F2, Ctrl+Shift+Backspace, …) inert by design.
+3. **[LOW]** `keymap.ts` `TABLE_KEY_ACTIONS` comment corrected — canonical iteration order, arbitration is by wiring order.
+4. **[NIT]** `keyBindings` memo now keyed on the JSON serialization of `keymap` (parse-back) — inline `keymap={{…}}` literals no longer churn the window undo/clip listeners per render.
 
-## Results
+## Gate results (all run fresh, after fixes)
 
-**Gate** (all run fresh, after fixes): `turbo run test typecheck lint build` → **180/180 tasks successful** · `pnpm audit` → **0 vulnerabilities** · `gen:manifest` + `check:manifest` → up to date (manifest unchanged — prop surface untouched, internal wiring only; propCount 149, `keymap` react-only) · prettier clean on all touched files.
+- `turbo run test typecheck lint build --concurrency=2` → **180/180 tasks successful**
+- `pnpm audit` → **0 vulnerabilities**
+- `gen:manifest` + `check:manifest` → up to date (prop surface untouched — internal wiring only)
+- prettier clean on all touched files
+- `docs/vxe-grid-comparison.md`「iris 独有」row updated (review fixes + 12+11 test counts)
 
-**Final test counts**: core **1469** · react **2150** (191 files; keymap suite now 11 tests incl. editing-guard regression) · vue 1531 · solid 974 + 34 hydration · svelte 916 + 31 hydration.
+## Commits
 
-**Doc**: `docs/vxe-grid-comparison.md`「iris 独有」row `快捷键自定义 keymap` updated — review fixes documented (editing guard, legacy-combo deviation, stable memo), test count 12+10 → 12+11.
+- **`5e69585d`** `feat(table): grid 批 BG——快捷键自定义（iris 独有）` — 7 files, +114/−38 (source fixes + regression test + docs)
+- **`dcdfdb6e`** `docs(table): grid 批 BG gate report` (`batch-bg-gate.md` per batch pattern)
 
-## Commit
+Working tree clean (`.vinxi` excluded).
 
-```
-5e69585d
-feat(table): grid 批 BG——快捷键自定义（iris 独有）
-```
+## Final test counts
 
-7 files, +114/−38, working tree clean (`.vinxi` excluded).
+- core **1469** · react **2150** (191 files; keymap suite 11 tests incl. editing-guard regression) · vue 1531 · solid 974 + 34 hydration · svelte 916 + 31 hydration

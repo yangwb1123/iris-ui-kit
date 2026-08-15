@@ -1087,3 +1087,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ba-baseline.md [ok]
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ba-baseline.md
+
+## 2026-08-14 19:37:32 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ba-adapt.md [ok]: Files changed (15 — 4 new + 7 mandated edits + 2 generated + 2 runner bookkeeping): | File | Change |; Tests added — 23: - **core `version-history.test.ts` — 14 tests**: empty start · pre-change rows+type+index/at fill · default `edit` · def; Verification: - core test **1438 passed** (+14) · react test **2087 passed** (+9) · typecheck (core + react) clean · react lint **0 er; What is left: - `@iris-ui-kit/core/version-history` **own subpath** (package.json exports + tsup entry) — skipped to stay within the f
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ba-adapt.md
+
+## 2026-08-14 19:41:17 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ba-review.md [ok]: Summary: All required checks verified against commit `1cc821d0`:
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ba-review.md

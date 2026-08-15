@@ -440,6 +440,29 @@ function renderCellNoteBadge(note: string | null): React.ReactNode {
   return <span aria-hidden="true" data-iris-cell-note-badge="" style={CELL_NOTE_STYLE} />
 }
 
+/** Batch BM: the note-popover handlers for a noted cell — null when the
+ * feature is off or the cell has no note (zero cost: no handlers, no
+ * popover). Module-level so the cell render's cyclomatic complexity stays
+ * flat (a call costs 0); the `::` cell key is the same canonical delimiter
+ * as `cellId` / the `annotations` map. mouseleave closes (native-title
+ * semantics); the popover is pointer-events none so it never blocks the
+ * leave. */
+const notePopoverCellHandlers = (
+  notePopover: boolean | undefined,
+  note: string | null,
+  k: string | number,
+  colKey: string,
+  onEnter: (cellKey: string, text: string, el: HTMLElement) => void,
+  onLeave: () => void,
+): { onMouseEnter: (e: React.MouseEvent) => void; onMouseLeave: () => void } | null => {
+  if (!notePopover || !note) return null
+  const cellKey = `${k}::${colKey}`
+  return {
+    onMouseEnter: (e: React.MouseEvent) => onEnter(cellKey, note, e.currentTarget as HTMLElement),
+    onMouseLeave: onLeave,
+  }
+}
+
 /** Batch BD collaborative presence (iris 独有 — vxe has no cursor sharing):
  * the entries whose `cellKey` (the canonical `${rowKeyVal}::${colKey}`
  * delimiter) matches this cell — one Map lookup per visible cell, undefined
@@ -1457,6 +1480,95 @@ function TableAnnotatePanel({
 }
 
 /**
+ * Floating note preview (batch BM, iris 独有 — vxe has no cell-note concept,
+ * and its tooltip can only show the cell value). Hovering a noted cell with
+ * `notePopover` replaces the native `title` on that cell with this popover:
+ * a pure-display tooltip (`role="tooltip"`, pointer-events none so it never
+ * steals hover) anchored to the cell's badge corner via the same virtual
+ * anchor pattern as `TableContextMenu` — useFloating (placement top, offset
+ * 8, flip/shift on) + useDismiss (Escape / outside pointer-down) + capture
+ * scroll close + portal. Content-only: no i18n (the note text is user data).
+ *
+ * No sequence token (unlike the panels): the popover holds no internal state
+ * to re-seed, and cell-to-cell hover moves close-then-reopen through
+ * mouseleave/mouseenter (the popover is pointer-events none, so the pointer
+ * physically leaves the old cell before entering the new one) — autoUpdate
+ * re-runs on the fresh mount.
+ */
+function TableNotePopover({
+  open,
+  anchorRef,
+  cellKey,
+  text,
+  onClose,
+}: {
+  open: boolean
+  anchorRef: React.RefObject<HTMLElement | null>
+  cellKey: string
+  text: string
+  onClose: () => void
+}): React.ReactElement | null {
+  const panelRef = React.useRef<HTMLDivElement | null>(null)
+
+  const { floatingStyles } = useFloating({
+    anchor: anchorRef,
+    floating: panelRef,
+    open,
+    placement: 'top',
+    offset: 8,
+    flip: true,
+    shift: true,
+  })
+
+  useDismiss({
+    enabled: open,
+    exclude: [panelRef],
+    onDismiss: onClose,
+  })
+
+  // Scroll anywhere closes the popover (capture phase — nested scrollers count).
+  const onCloseRef = React.useRef(onClose)
+  onCloseRef.current = onClose
+  React.useEffect(() => {
+    if (!open || typeof document === 'undefined') return
+    const onScroll = (): void => onCloseRef.current()
+    document.addEventListener('scroll', onScroll, true)
+    return () => document.removeEventListener('scroll', onScroll, true)
+  }, [open])
+
+  if (!open) return null
+
+  const node = (
+    <div
+      ref={panelRef}
+      role="tooltip"
+      data-iris-note-popover=""
+      data-iris-note-cell={cellKey}
+      style={{
+        ...floatingStyles,
+        zIndex: 'var(--iris-z-popover, 1000)',
+        background: 'var(--iris-surface-floating, var(--iris-surface))',
+        color: 'var(--iris-foreground)',
+        border: '1px solid var(--iris-border)',
+        borderRadius: 'var(--iris-radius-md, 6px)',
+        boxShadow: 'var(--iris-shadow-lg)',
+        padding: 'var(--iris-space-xs, 8px)',
+        maxWidth: 280,
+        whiteSpace: 'pre-wrap',
+        pointerEvents: 'none',
+        fontSize: 'var(--iris-font-size-sm, 13px)',
+        lineHeight: 1.5,
+      }}
+    >
+      {text}
+    </div>
+  )
+
+  if (typeof document === 'undefined') return null
+  return createPortal(node, document.body)
+}
+
+/**
  * Data-driven table. Renders as a CSS-grid layout (no native `<table>`) so it
  * can support future virtual scroll / column resize uniformly. Wires ARIA
  * roles (`table` / `row` / `columnheader` / `cell`) for screen readers.
@@ -1558,6 +1670,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   tooltipConfig,
   annotations,
   cellNote,
+  notePopover,
   annotationEditing,
   onAnnotationsChange,
   presence,
@@ -3286,6 +3399,34 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // Close is part of the callback path only — without `onAnnotationsChange`
     // the panel's 删除 button is inert too (save/remove stay symmetric).
     closeAnnotate()
+  }
+  // ── Cell note hover popover (batch BM, iris 独有) ──────────────────────
+  // One table-level hover target at a time (the last noted cell the pointer
+  // entered). The anchor is a VIRTUAL element — a zero-size rect snapshot at
+  // the cell's top-right corner (where the badge sits), captured at
+  // mouseenter and read by useFloating after the state update commits
+  // (context-menu precedent, rect-snapshot shape verbatim). mouseleave
+  // closes — native-title semantics — and the popover is pure display
+  // (pointer-events none), so it never blocks the leave. Off = zero cost:
+  // the handlers spread onto cells only when `notePopover && note`.
+  const [noteHover, setNoteHover] = React.useState<{ cellKey: string; text: string } | null>(null)
+  const noteHoverAnchorRef = React.useRef<HTMLElement | null>(null)
+  const closeNotePopover = React.useCallback(() => setNoteHover(null), [])
+  const openNotePopover = (cellKey: string, text: string, el: HTMLElement): void => {
+    const r = el.getBoundingClientRect()
+    noteHoverAnchorRef.current = {
+      getBoundingClientRect: () => ({
+        left: r.right,
+        top: r.top,
+        right: r.right,
+        bottom: r.top,
+        width: 0,
+        height: 0,
+        x: r.right,
+        y: r.top,
+      }),
+    } as unknown as HTMLElement
+    setNoteHover({ cellKey, text })
   }
   // ── Header filter panel (vxe filterConfig parity, batch I) ─────────────
   // One panel at a time, keyed by the column whose trigger was clicked. The
@@ -5473,18 +5614,23 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // Batch AU: the unified cell title — the annotation note wins on noted
   // cells (batch AZ), compare wins on changed cells, the sparkline series
   // wins on sparkline cells (batch BI), the tooltipConfig path applies
-  // otherwise, editing cells stay exempt.
+  // otherwise, editing cells stay exempt. Batch BM: with `notePopover` the
+  // note branch becomes undefined — the floating popover replaces the native
+  // title on noted cells only (all other branches untouched).
   const cellTitle = (
     editing: boolean,
     note: string | null,
     change: RowDiffCellChange | undefined,
     row: Row,
     col: IrisTableColumn<Row>,
+    notePopover: boolean | undefined,
   ): string | undefined =>
     editing
       ? undefined
       : note != null
-        ? note
+        ? notePopover
+          ? undefined
+          : note
         : change
           ? compareTitle(change)
           : (sparkTitle(row, col) ?? cellTooltip(row, col))
@@ -5827,7 +5973,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
               data-iris-cell-locked={lockedRender.lockedAttr}
               data-iris-cell-readonly={lockedRender.readonlyAttr}
               data-iris-presence={presenceInfo ? 'true' : undefined}
-              title={cellTitle(editing, noteInfo.note, compareChange, row, col)}
+              title={cellTitle(editing, noteInfo.note, compareChange, row, col, notePopover)}
               className={
                 [cellClassName?.(row, col, idx), dirtyInfo.dirtyClass].filter(Boolean).join(' ') ||
                 undefined
@@ -5860,6 +6006,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
                     'data-iris-fnr-active': fnrCellActive ? 'true' : undefined,
                   }
                 : null)}
+              {...notePopoverCellHandlers(
+                notePopover,
+                noteInfo.note,
+                k,
+                col.key,
+                openNotePopover,
+                closeNotePopover,
+              )}
               onDoubleClick={
                 onCellDblClick || rowMode || editableLive
                   ? () => {
@@ -8164,6 +8318,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
             onRemove={() => removeAnnotationKey(annotateState.cellKey)}
             onClose={closeAnnotate}
             t={t}
+          />
+        ) : null}
+        {notePopover && noteHover ? (
+          <TableNotePopover
+            open
+            anchorRef={noteHoverAnchorRef}
+            cellKey={noteHover.cellKey}
+            text={noteHover.text}
+            onClose={closeNotePopover}
           />
         ) : null}
         {chartPreview && chartOpen ? (

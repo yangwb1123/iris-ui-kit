@@ -502,6 +502,13 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * gets `data-iris-cell-note` + a corner badge + the note as its title
    * (beats `tooltipConfig`); a null/'' note renders nothing. */
   cellNote?: (row: Row, column: IrisTableColumn<Row>) => string | null
+  /** Hover note preview (batch BM, iris 独有 — vxe has no cell-note concept,
+   * and its tooltip can only show the cell value): with `notePopover`, hovering
+   * a noted cell shows a floating popover (`data-iris-note-popover`, role
+   * tooltip, pure display — pointer-events none) anchored to the cell's badge
+   * corner INSTEAD of the native `title`; Escape / outside pointer-down /
+   * any scroll close it. Content-only: zero i18n / core. */
+  notePopover?: boolean
   /**
    * Annotation editing (batch BB, iris 独有 — vxe has no note editing): when
    * true, the context menu gains built-in items 添加批注 / 编辑批注 / 删除批注

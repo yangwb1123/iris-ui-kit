@@ -36825,6 +36825,12 @@
           "description": "column — wins over the static `annotations` map. With a note the cell gets `data-iris-cell-note` + a corner badge + the note as its title"
         },
         {
+          "name": "notePopover",
+          "type": "boolean",
+          "optional": true,
+          "description": "and its tooltip can only show the cell value): with `notePopover`, hovering a noted cell shows a floating popover (`data-iris-note-popover`, role tooltip, pure display — pointer-events none) anchored to the cell's badge corner INSTEAD of the native `title`; Escape / outside pointer-down /"
+        },
+        {
           "name": "annotationEditing",
           "type": "boolean",
           "optional": true,
@@ -37746,6 +37752,12 @@
               "type": "(row: Row, column: IrisTableColumn<Row>) => string | null",
               "optional": true,
               "description": "column — wins over the static `annotations` map. With a note the cell gets `data-iris-cell-note` + a corner badge + the note as its title"
+            },
+            {
+              "name": "notePopover",
+              "type": "boolean",
+              "optional": true,
+              "description": "and its tooltip can only show the cell value): with `notePopover`, hovering a noted cell shows a floating popover (`data-iris-note-popover`, role tooltip, pure display — pointer-events none) anchored to the cell's badge corner INSTEAD of the native `title`; Escape / outside pointer-down /"
             },
             {
               "name": "annotationEditing",
@@ -39024,7 +39036,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 153,
+        "propCount": 154,
         "eventCount": 29
       }
     },

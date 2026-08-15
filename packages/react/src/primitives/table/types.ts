@@ -287,6 +287,20 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    * keep reading the RAW value. The tooltip defaults to the formatted text when it is
    * a string. */
   formatter?: (value: unknown, row: Row) => import('react').ReactNode
+  /** Mask this column's value for display (batch AY, iris 独有 — vxe has no
+   * built-in masking): `'sensitive'` applies the core `maskValue` sensitive
+   * rule (email → 11-digit phone → generic); a custom function receives the
+   * RAW cell value and returns the masked string. Applied FIRST in the
+   * display chain — `render`/`html`/`link`/`formatter`/tooltip all see the
+   * masked value (a `formatter` receives the masked STRING); inline editing,
+   * validation, sorting, filtering, summary, range stats and conditional
+   * styles keep reading the RAW value. Export/copy mask by default unless
+   * `exportRaw` is set. */
+  mask?: 'sensitive' | ((value: unknown) => string)
+  /** Export/copy the RAW value instead of the masked one (batch AY): when
+   * true, `exportCsv`/`exportCurrentViewCsv`/`exportSelectionCsv` and the
+   * clipboard TSV skip this column's mask. Display keeps masking. */
+  exportRaw?: boolean
   /** Show a header filter trigger + checkbox panel (vxe filterConfig parity, batch I).
    * Filtering OR-matches the raw `String(value)` against the checked set. */
   filterable?: boolean

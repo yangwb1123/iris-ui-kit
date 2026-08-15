@@ -46,6 +46,7 @@ export default defineConfig({
               { text: 'Cross-platform', link: '/guide/cross-platform' },
               { text: 'Registry & marketplace', link: '/guide/registry-marketplace' },
               { text: 'Table conditional formatting', link: '/guide/table-conditional-formatting' },
+              { text: 'Table data mask', link: '/guide/table-data-mask' },
             ],
           },
           { text: 'Reference', items: [{ text: 'Components', link: '/components' }] },

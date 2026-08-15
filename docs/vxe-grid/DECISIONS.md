@@ -1038,3 +1038,12 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-ax-gate.md [ok]: Summary: **Verdict**: PASS with 3 non-blocking findings → applied all fixes before gating:; Full repo gate: | Check | Result |; Final test counts: - **core: 1417** (91 files); Commits: ```
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ax-gate.md
+
+## 2026-08-14 18:22:46 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ay-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-ay-baseline.md
+
+## 2026-08-15 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-ay-adapt.md [ok]: core `maskValue` + react `mask`/`exportRaw` 列脱敏（iris 独有，批 AY）。文件：`packages/core/src/mask.ts`（+7 测试）、`packages/core/src/index.ts`（barrel）、`packages/react/src/primitives/table/types.ts`（单行 `mask`/`exportRaw` prop，manifest 扫描友好）、`Table.tsx`（显示链 mask-first + tooltip + buildRangeTsv）、`exportCsv.ts`（applyCellMask + 导出默认掩码 shadow-row 序列化）、`mask.test.tsx`（+11 测试）、`apps/docs/guide/table-data-mask.md`（指南页）。关键决策：F1 null → `''`（与 toCsv 空单元格对齐）；F10 `exportExcel` 保持原始值（本批范围外，与任务契约一致——导出掩码仅覆盖 CSV 三入口 + clipConfig TSV）；编辑天然读原始值（三入口均 `String(getCellValue(...))`，零代码改动，仅文档化）；条件格式 `when` 仍收原始值（batch AX 契约）。验证：core 1424 测试、react 2065 测试、typecheck/lint 0 错误（1 既有 complexity warning）、spec 0 违规。

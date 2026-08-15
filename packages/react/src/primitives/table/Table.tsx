@@ -68,7 +68,7 @@ import { IrisPagination } from '../pagination'
 import { IrisVirtualScroll } from '../virtual-scroll/VirtualScroll'
 import type { IrisTableProps, IrisTableProxyConfig } from './props'
 import type { IrisTableHandle } from './types'
-import { downloadCsv, exportCsv } from './exportCsv'
+import { downloadCsv, exportCsv, applyCellMask } from './exportCsv'
 import { TableChartPanel } from './ChartPanel'
 import { TableAuditPanel } from './AuditPanel'
 import { RANGE_FILL_HANDLE_STYLE, RANGE_FILL_TARGET_BG } from './styles'
@@ -3801,7 +3801,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const cells: string[] = []
       for (let c = range.start.col; c <= range.end.col; c += 1) {
         const col = cols[c]
-        cells.push(row && col ? tsvCell(getCellValue(row, col)) : '')
+        if (!row || !col) {
+          cells.push('')
+          continue
+        }
+        // Batch AY: the copy TSV applies the column mask unless `exportRaw`
+        // opts out — clipboard and CSV export agree.
+        const value = getCellValue(row, col)
+        cells.push(tsvCell(col.exportRaw ? value : applyCellMask(value, col)))
       }
       lines.push(cells.join('\t'))
     }
@@ -4563,15 +4570,17 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // and explicit).
   const cellTooltip = (row: Row, col: IrisTableColumn<Row>): string | undefined => {
     if (!tooltipConfig) return undefined
-    const raw = getCellValue(row, col)
+    // Batch AY: the tooltip shows the MASKED value (mask first, formatter
+    // second) — same display chain as the cell body.
+    const displayValue = applyCellMask(getCellValue(row, col), col)
     const content = tooltipConfig.content
       ? tooltipConfig.content(row, col)
       : col.formatter
         ? (() => {
-            const formatted = col.formatter(raw, row)
-            return typeof formatted === 'string' ? formatted : String(raw ?? '')
+            const formatted = col.formatter(displayValue, row)
+            return typeof formatted === 'string' ? formatted : String(displayValue ?? '')
           })()
-        : String(raw ?? '')
+        : String(displayValue ?? '')
     return content === '' ? undefined : content
   }
 
@@ -4864,6 +4873,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
             for (let c = 1; c < colspan; c++) spanOccupyRef.current.add(`${idx}:${ci + c}`)
           }
           const raw = getCellValue(row, col)
+          // Batch AY: the display chain reads the MASKED value — mask first,
+          // formatter second. Every display branch below (render/html/link/
+          // formatter/raw fallback) sees the masked value; editing and
+          // validation start from `getCellValue` directly and stay RAW.
+          const displayValue = applyCellMask(raw, col)
           // Batch AO: a formula column is display-only even when `editable` —
           // one guard extracted so the cell branch stays under the complexity
           // budget while every editing entry point reads the same condition.
@@ -5108,20 +5122,22 @@ export function IrisTable<Row extends Record<string, unknown>>({
                   />
                 )
               ) : col.render ? (
-                col.render(raw, row, idx)
+                col.render(displayValue, row, idx)
               ) : col.html ? (
                 <span
                   // vxe type=html parity — opt-in; the caller guarantees the
                   // content is trusted (XSS risk, matching the vxe docs warning).
-                  dangerouslySetInnerHTML={{ __html: String(raw ?? '') }}
+                  dangerouslySetInnerHTML={{ __html: String(displayValue ?? '') }}
                 />
               ) : col.link ? (
                 (() => {
                   // vxe cell link parity (batch L): wraps the formatted/raw text
                   // in an anchor; null/undefined falls through to formatter/raw.
-                  const link = col.link(raw, row)
+                  const link = col.link(displayValue, row)
                   if (!link) {
-                    return col.formatter ? col.formatter(raw, row) : (raw as React.ReactNode)
+                    return col.formatter
+                      ? col.formatter(displayValue, row)
+                      : (displayValue as React.ReactNode)
                   }
                   const href = typeof link === 'string' ? link : link.href
                   const label = typeof link === 'string' ? undefined : link.label
@@ -5135,16 +5151,19 @@ export function IrisTable<Row extends Record<string, unknown>>({
                       onClick={(e) => e.stopPropagation()}
                     >
                       {label ??
-                        (col.formatter ? col.formatter(raw, row) : (raw as React.ReactNode))}
+                        (col.formatter
+                          ? col.formatter(displayValue, row)
+                          : (displayValue as React.ReactNode))}
                     </a>
                   )
                 })()
               ) : col.formatter ? (
                 // vxe formatter parity (batch I): display-only — sorting,
-                // filtering, editing and summary all read the raw value.
-                col.formatter(raw, row)
+                // filtering, editing and summary all read the raw value. The
+                // formatter receives the MASKED value (batch AY: mask first).
+                col.formatter(displayValue, row)
               ) : (
-                (raw as React.ReactNode)
+                (displayValue as React.ReactNode)
               )}
               {renderRangeFillHandle(fillHandleCell, idx, ci, handleRangeFillPointerDown)}
             </div>

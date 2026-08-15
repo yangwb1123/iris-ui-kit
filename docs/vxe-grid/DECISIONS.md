@@ -1117,3 +1117,8 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bb-review.md [ok]: Verification results (commit `ac8d9acc`): | Check | Result |; Checklist findings: 1. **Menu gating/order/semantics** ✅ — existence = `annotations[cellId(rowKeyOf(row,idx), col.key)]` (same `::` key as t; Findings (all non-functional): 1. **MEDIUM** — `docs/vxe-grid-comparison.md:60/117/330`: usage-snippet fence opened with 4 backticks but closed with `/
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bb-review.md
+
+## 2026-08-14 22:00:51 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bb-gate.md [ok]: Verdict: PASS → full gate run ✅: Review (`batch-bb-review.md`) was **PASS** with 3 non-functional findings — I applied all three as quick fixes before th; Gate results: | Check | Result |; Commit: ```; Final test counts: - **react: 2098 passed** (186 files) — batch BB +11 (`annotate-editing`)
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bb-gate.md

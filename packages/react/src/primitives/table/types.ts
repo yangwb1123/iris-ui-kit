@@ -353,7 +353,8 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    * ops as the footer computed over the group's rows) when any column has a
    * `summary` op. Flat mode only — tree mode ignores grouping (fail-closed);
    * proxy mode groups per loaded page. Only the first `groupBy` column drives
-   * the plan. Group headers are collapsible (batch BH, iris 独有): the
+   * the plan — unless the table-level `groupBy?: string[]` (batch BS) is set,
+   * which wins and drives nested multi-column grouping instead. Group headers are collapsible (batch BH, iris 独有): the
    * `data-iris-group-toggle` button collapses the group (rows + per-group
    * summary hidden, header + count stay) via `groupCollapsed` /
    * `defaultGroupCollapsed` / `onGroupCollapseChange`.

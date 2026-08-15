@@ -1721,6 +1721,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   keyboardNavigation = false,
   tableShortcuts = false,
   keymap,
+  groupBy,
   groupCollapsed,
   defaultGroupCollapsed,
   onGroupCollapseChange,
@@ -4401,7 +4402,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // summary entry is appended when any leaf column has a `summary` op (same
   // aggregate ops as the footer, computed over the group's rows).
   type BodyPlanEntry =
-    | { kind: 'group-header'; groupKey: string; count: number }
+    | { kind: 'group-header'; groupKey: string; count: number; depth?: number; value?: string }
     | { kind: 'row'; row: Row; rowIndex: number }
     | { kind: 'group-summary'; groupKey: string; rows: Row[] }
     // One virtual slot per expanded detail panel (batch AE): a `detail` entry
@@ -4433,9 +4434,72 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (groupCollapsed === undefined) setCollapsedState(next)
     onGroupCollapseChange?.([...next])
   }
+  // Batch BS (iris 独有): table-level multi-column grouping. Array elements
+  // are leaf column keys; their ORDER defines the nesting depth. When set it
+  // WINS over any column-level `groupBy: true` flag; unknown keys are dropped
+  // and duplicates keep the first occurrence — an empty resolved list is
+  // inert. When absent, the batch M single-column path below runs byte-
+  // identical (the array's level-0 fallback, so defaultGroupCollapsed etc.
+  // keep their exact key identity). Nested group keys are composite
+  // (`v0::v1::…`, the same `::` delimiter as cellId) so collapse identity
+  // stays unambiguous across parents; level 0 stays a bare value for
+  // single-column compat. A collapsed parent hides its whole subtree.
+  const groupByKeys = React.useMemo<string[] | null>(() => {
+    if (!Array.isArray(groupBy) || groupBy.length === 0) return null
+    const keys: string[] = []
+    const seen = new Set<string>()
+    for (const k of groupBy) {
+      const col = leafColumns.find((c) => c.key === String(k))
+      if (!col || seen.has(col.key)) continue
+      seen.add(col.key)
+      keys.push(col.key)
+    }
+    return keys.length > 0 ? keys : null
+  }, [groupBy, leafColumns])
   const groupCol = leafColumns.find((c) => c.groupBy)
   const groupPlan = React.useMemo<BodyPlanEntry[] | null>(() => {
-    if (!groupCol || treeMode) return null
+    if (treeMode) return null
+    if (groupByKeys) {
+      const indexOf = new Map<Row, number>()
+      bodyData.forEach((r, i) => indexOf.set(r, i))
+      const plan: BodyPlanEntry[] = []
+      const hasSummary = leafColumns.some((c) => c.summary)
+      const cols = groupByKeys
+        .map((k) => leafColumns.find((c) => c.key === k))
+        .filter((c): c is IrisTableColumn<Row> => Boolean(c))
+      const build = (rows: Row[], level: number, prefix: string[]): void => {
+        const col = cols[level]!
+        const groups = groupRows(rows, (row) => String(getCellValue(row, col)))
+        for (const g of groups) {
+          const groupKey = level === 0 ? g.key : [...prefix, g.key].join('::')
+          plan.push({
+            kind: 'group-header',
+            groupKey,
+            count: g.rows.length,
+            depth: level,
+            value: g.key,
+          })
+          // Collapsed (batch BH): hide the group's rows AND its per-group
+          // summary; the header and its FULL count stay. For a parent group
+          // the skip hides the whole subtree (children never render). Skipped
+          // rows keep their original bodyData indices, so seq/striped/span/
+          // checkMethod are untouched.
+          if (collapsedSet.has(groupKey)) continue
+          if (level === cols.length - 1) {
+            for (const row of g.rows)
+              plan.push({ kind: 'row', row, rowIndex: indexOf.get(row) ?? 0 })
+            // group-summary only on the innermost level (same aggregate ops
+            // as the footer, computed over the leaf group's rows).
+            if (hasSummary) plan.push({ kind: 'group-summary', groupKey, rows: g.rows })
+          } else {
+            build(g.rows, level + 1, [...prefix, g.key])
+          }
+        }
+      }
+      build(bodyData, 0, [])
+      return plan
+    }
+    if (!groupCol) return null
     const groups = groupRows(bodyData, (row) => String(getCellValue(row, groupCol)))
     const indexOf = new Map<Row, number>()
     bodyData.forEach((r, i) => indexOf.set(r, i))
@@ -4451,7 +4515,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       if (hasSummary) plan.push({ kind: 'group-summary', groupKey: g.key, rows: g.rows })
     }
     return plan
-  }, [groupCol, bodyData, treeMode, leafColumns, collapsedSet])
+  }, [groupByKeys, groupCol, bodyData, treeMode, leafColumns, collapsedSet])
 
   // expandAll parity (vxe expand-config.expandAll — one-shot at init): seed the
   // expansion model with every tree key that HAS children, walked from the top
@@ -6382,16 +6446,22 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // marks the collapsed state; rows + per-group summary drop out of the plan.
   // In the virtual path `extraStyle` fills the fixed-height slot.
   const renderGroupHeader = (
-    entry: { groupKey: string; count: number },
+    entry: { groupKey: string; count: number; depth?: number; value?: string },
     extraStyle?: React.CSSProperties,
   ): React.ReactElement => {
     const collapsed = collapsedSet.has(entry.groupKey)
+    // Batch BS: nested group headers indent by depth with a token step — the
+    // composite key stays the collapse identity (`data-iris-group-key`), the
+    // displayed value is this level's own. `data-iris-group-depth` carries the
+    // nesting level for tests/consumers.
+    const depth = entry.depth ?? 0
     return (
       <div
         key={`group:${entry.groupKey}`}
         role="row"
         data-iris-group-row=""
         data-iris-group-key={entry.groupKey}
+        data-iris-group-depth={depth}
         data-iris-group-collapsed={collapsed ? 'true' : undefined}
         style={{
           display: 'grid',
@@ -6408,6 +6478,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           style={{
             gridColumn: '1 / -1',
             padding: 'var(--iris-space-xs, 8px) var(--iris-space-sm, 12px)',
+            paddingInlineStart: `calc(var(--iris-space-sm, 12px) + var(--iris-space-sm, 12px) * ${depth})`,
             display: 'flex',
             alignItems: 'center',
             gap: 'var(--iris-space-xs, 8px)',
@@ -6442,7 +6513,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           >
             {collapsed ? '▸' : '▾'}
           </button>
-          <span data-iris-group-value="">{entry.groupKey}</span>
+          <span data-iris-group-value="">{entry.value ?? entry.groupKey}</span>
           <span
             data-iris-group-count=""
             style={{ color: 'var(--iris-muted)', fontSize: 'var(--iris-font-size-xs, 12px)' }}

@@ -2,7 +2,7 @@ All gates green. Final report:
 
 ## 批 BS 完成报告 — 多列分组 `groupBy?: string[]`（iris 独有）
 
-Committed as **`<COMMIT>`** — `feat(table): vxe-grid 批 BS——多列分组 groupBy 数组嵌套（iris 独有）`
+Committed as **`982dc909`** — `feat(table): vxe-grid 批 BS——多列分组 groupBy 数组嵌套（iris 独有）`
 
 ### 实现（baseline 零偏差，纯 additive、core 零改动、react-only、零 i18n/零事件）
 

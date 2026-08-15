@@ -36754,9 +36754,8 @@
         },
         {
           "name": "clipConfig",
-          "type": "{ copy?: boolean; paste?: boolean }",
-          "optional": true,
-          "description": "Clipboard batch (vxe-grid clipboard-config parity, batch O): Ctrl/Cmd+C copies the selected cell range as TSV; Ctrl/Cmd+V pastes TSV text into the range anchor onward (overflow beyond the last row/col is ignored). Requires `cellRange` to have a live selected range; additive — default off."
+          "type": "{ copy?: boolean; paste?: boolean; copyFormat?: 'tsv' | 'csv' | 'html' }",
+          "optional": true
         },
         {
           "name": "fnr",
@@ -37695,9 +37694,8 @@
             },
             {
               "name": "clipConfig",
-              "type": "{ copy?: boolean; paste?: boolean }",
-              "optional": true,
-              "description": "Clipboard batch (vxe-grid clipboard-config parity, batch O): Ctrl/Cmd+C copies the selected cell range as TSV; Ctrl/Cmd+V pastes TSV text into the range anchor onward (overflow beyond the last row/col is ignored). Requires `cellRange` to have a live selected range; additive — default off."
+              "type": "{ copy?: boolean; paste?: boolean; copyFormat?: 'tsv' | 'csv' | 'html' }",
+              "optional": true
             },
             {
               "name": "fnr",

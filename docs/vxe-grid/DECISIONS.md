@@ -1407,3 +1407,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bo-review.md [ok]: Verification results: | Gate | Result |; Spec correctness — zero deviation from baseline: - `props.ts:198` `columnWidthsReset?: boolean` after `onColumnWidthsChange`, before `onRowClick` ✓; Finding (blocking): 1. **MEDIUM — `docs/vxe-grid-comparison.md:68–70`**: the commit truncated the pre-existing BN row mid-cell (no closing `
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bo-review.md
+
+## 2026-08-15 04:56:18 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bo-gate.md [ok]: Review verdict: **FAIL (1 blocking finding)**: commit `59e701c0` truncated the pre-existing BN (`rowHeight`) row mid-cell in `docs/vxe-g; Fix applied: - Restored line 68 to BN's **full original single-line row** (byte-verified verbatim against `94a1ad19:docs/vxe-grid-com; Full repo gate: | Gate | Result |; Final test counts: - **core: 1517/1517** (97 files); Commit: ```
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bo-gate.md
+
+## 2026-08-15 04:59:59 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bp-baseline.md [ok]: 核验摘要（每个锚点对当前代码）: **设计**：`copyFormat?: 'tsv' | 'csv' | 'html'` 作为 `clipConfig`（props.ts:466，现为 `{ copy?: boolean; paste?: boolean }`）内联类型新
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bp-baseline.md

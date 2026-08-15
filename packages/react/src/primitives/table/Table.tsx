@@ -64,6 +64,7 @@ import {
   parseCsv,
   removeRowFromList,
   setCellValue,
+  toHtml,
   updateRowInList,
   validateEditRulesAsync,
   type CellEdit,
@@ -4779,28 +4780,72 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const liveLeafRef = React.useRef(leafColumns)
   liveLeafRef.current = leafColumns
 
-  const buildRangeTsv = React.useCallback((range: CellRange): string => {
-    const body = liveBodyRef.current
-    const cols = liveLeafRef.current
-    const lines: string[] = []
-    for (let r = range.start.row; r <= range.end.row; r += 1) {
-      const row = body[r]
-      const cells: string[] = []
-      for (let c = range.start.col; c <= range.end.col; c += 1) {
-        const col = cols[c]
-        if (!row || !col) {
-          cells.push('')
-          continue
+  // Batch BP (iris 独有): the copy OUTPUT format dispatcher — one throat for
+  // BOTH consumption points (Ctrl/Cmd+C and the range toolbar 复制). Three
+  // serializers, zero new ones: `'tsv'` → `tsvCell`, `'csv'` → `csvRangeCell`
+  // (RFC-4180, headerless range fiat — same serializer as the 导出 CSV
+  // download), `'html'` → core `toHtml` over the range's column subset
+  // (`leafColumns.slice(start.col, end.col + 1)`) with synthesized rows keyed
+  // by the SAME effective read key toHtml uses (string `dataIndex` else
+  // `key` — the exportCsv shadow-row convention verbatim). The column mask
+  // applies identically across all three formats (batch-AY invariant); a
+  // number masked into a string loses toHtml's numeric right-alignment
+  // (fiat). Unset / invalid format fail-closed to the batch-O TSV
+  // (byte-identical, existing copy tests stay green).
+  const buildRangeCopy = React.useCallback(
+    (range: CellRange, format: 'tsv' | 'csv' | 'html'): string => {
+      const body = liveBodyRef.current
+      const cols = liveLeafRef.current
+      if (format === 'html') {
+        const rangeCols = cols.slice(range.start.col, range.end.col + 1)
+        const exportCols = rangeCols.map((col) => ({
+          key: col.key,
+          title: col.title,
+          dataIndex: typeof col.dataIndex === 'string' ? col.dataIndex : undefined,
+        }))
+        const rows: Record<string, unknown>[] = []
+        for (let r = range.start.row; r <= range.end.row; r += 1) {
+          const row = body[r]
+          const out: Record<string, unknown> = {}
+          for (let c = range.start.col; c <= range.end.col; c += 1) {
+            const col = cols[c]
+            if (!row || !col) continue
+            // Batch AY: the copy HTML applies the column mask unless
+            // `exportRaw` opts out — all three copy formats agree.
+            const value = getCellValue(row, col)
+            // The row is keyed by the SAME effective read key toHtml uses
+            // (string `dataIndex` else `key` — exportCsv shadow-row
+            // convention verbatim; a numeric dataIndex falls back to `key`).
+            out[typeof col.dataIndex === 'string' ? col.dataIndex : col.key] = col.exportRaw
+              ? value
+              : applyCellMask(value, col)
+          }
+          rows.push(out)
         }
-        // Batch AY: the copy TSV applies the column mask unless `exportRaw`
-        // opts out — clipboard and CSV export agree.
-        const value = getCellValue(row, col)
-        cells.push(tsvCell(col.exportRaw ? value : applyCellMask(value, col)))
+        return toHtml(rows, exportCols)
       }
-      lines.push(cells.join('\t'))
-    }
-    return lines.join('\n')
-  }, [])
+      const lines: string[] = []
+      for (let r = range.start.row; r <= range.end.row; r += 1) {
+        const row = body[r]
+        const cells: string[] = []
+        for (let c = range.start.col; c <= range.end.col; c += 1) {
+          const col = cols[c]
+          if (!row || !col) {
+            cells.push('')
+            continue
+          }
+          // Batch AY: the copy TSV/CSV applies the column mask unless
+          // `exportRaw` opts out — clipboard and CSV export agree.
+          const value = getCellValue(row, col)
+          const masked = col.exportRaw ? value : applyCellMask(value, col)
+          cells.push(format === 'csv' ? csvRangeCell(masked) : tsvCell(masked))
+        }
+        lines.push(cells.join(format === 'csv' ? ',' : '\t'))
+      }
+      return lines.join('\n')
+    },
+    [],
+  )
 
   const pasteIntoRange = React.useCallback(
     async (range: CellRange): Promise<void> => {
@@ -4957,7 +5002,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       if (matchTableKey(e, keyBindings.copy)) {
         if (clipConfig.copy === false) return
         e.preventDefault()
-        void writeClipboardText(buildRangeTsv(range))
+        void writeClipboardText(buildRangeCopy(range, clipConfig?.copyFormat ?? 'tsv'))
       } else if (matchTableKey(e, keyBindings.paste)) {
         if (clipConfig.paste === false) return
         e.preventDefault()
@@ -4966,7 +5011,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [clipConfig, cellRangeCtrl, buildRangeTsv, pasteIntoRange, keyBindings])
+  }, [clipConfig, cellRangeCtrl, buildRangeCopy, pasteIntoRange, keyBindings])
 
   // ── Range floating toolbar (batch AH, iris 独有) ───────────────────────
   // Visibility derives from the range store: `cellRange` + a live selection
@@ -4975,7 +5020,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // repositions on scroll via autoUpdate instead of closing (deliberate
   // divergence from the right-click menu) and hides when the range clears
   // (Escape / outside click run useDismiss → clearRange). Actions: 复制
-  // reuses the clipConfig TSV builder for the CURRENT range; 导出 CSV
+  // reuses the clipConfig copy builder (batch BP format-aware) for the
+  // CURRENT range; 导出 CSV
   // downloads a headerless CSV of the range rectangle (core `downloadCsv`);
   // 清除 zeroes the range cells through one batched commitRowList.
   const rangeToolbarAnchorRef = React.useRef<HTMLElement | null>(null)
@@ -5156,8 +5202,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const copyActiveRange = React.useCallback((): void => {
     const range = cellRangeCtrl.getRange()
     if (!range) return
-    void writeClipboardText(buildRangeTsv(range))
-  }, [cellRangeCtrl, buildRangeTsv])
+    void writeClipboardText(buildRangeCopy(range, clipConfig?.copyFormat ?? 'tsv'))
+  }, [cellRangeCtrl, buildRangeCopy, clipConfig])
 
   const exportActiveRangeCsv = React.useCallback((): string => {
     const range = cellRangeCtrl.getRange()

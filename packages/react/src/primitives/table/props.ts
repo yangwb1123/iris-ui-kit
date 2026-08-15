@@ -462,8 +462,9 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * (the handle only grows the range). Additive — default off.
    */
   rangeFill?: boolean
-  /** Clipboard batch (vxe-grid clipboard-config parity, batch O): Ctrl/Cmd+C copies the selected cell range as TSV; Ctrl/Cmd+V pastes TSV text into the range anchor onward (overflow beyond the last row/col is ignored). Requires `cellRange` to have a live selected range; additive — default off. */
-  clipConfig?: { copy?: boolean; paste?: boolean }
+  /** Clipboard batch (vxe-grid clipboard-config parity, batch O): Ctrl/Cmd+C copies the selected cell range; Ctrl/Cmd+V pastes TSV text into the range anchor onward (overflow beyond the last row/col is ignored). Requires `cellRange` to have a live selected range; additive — default off.
+   * Batch BP (iris 独有 — vxe clipboard-config has no output-format switch): `copyFormat` selects the copy OUTPUT format for BOTH consumption points (Ctrl/Cmd+C and the range toolbar 复制 button) — `'tsv'` (default, byte-identical to batch O) / `'csv'` (RFC-4180, headerless range fiat like the 导出 CSV download) / `'html'` (a `<table>` fragment via core `toHtml`, with a header row of column titles — the toHtml contract — and the masked cell values, the batch-AY invariant across all three formats). Paste is unaffected — it always reads `\t`-delimited text. Invalid runtime values fail-closed to `'tsv'`. */
+  clipConfig?: { copy?: boolean; paste?: boolean; copyFormat?: 'tsv' | 'csv' | 'html' }
   /** Find & replace (vxe-grid find parity, batch O): Ctrl/Cmd+F (when not editing) opens a find/replace bar above the table; Enter/Shift+Enter step through matches; Esc closes and clears highlights. Matches over bodyData (flat mode), case-insensitive substring. Additive — default off. */
   fnr?: boolean
   /** Built-in undo/redo (iris 独有 — vxe has no built-in undoRedoHistory): when enabled, every data mutation (row ops, paste, find&replace, range clear, cell/row edits, batch edit) records the POST-change row list; Ctrl/Cmd+Z undoes and Ctrl/Cmd+Y (or Ctrl/Cmd+Shift+Z) redoes — never while an inline editor is open. The toolbar renders ↶/↷ buttons after the title (disabled from canUndo/canRedo); restores prune selection keys that no longer exist. Additive — default off. */

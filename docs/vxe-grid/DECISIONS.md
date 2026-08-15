@@ -973,3 +973,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-av-adapt.md [ok]: Report — batch AV (spreadsheet grid keyboard) ✅: **Files changed (1 source + 1 new test + 2 docs; manifest no diff)**: `packages/react/.../table/Table.tsx` (module-scope `nextRowMajorCell` + `handleGridKey` extended for Tab/Shift+Tab/Enter + virtual PageUp/PageDown viewport scroll + `pendingGridFocusRef` + frame-poll layout effect; `type GridCell` import) · `packages/react/.../table/keyboard-extra.test.tsx` (**new**, 7 tests, 228 lines) · `apps/docs/components.md` (keyboardNavigation prop row = full key map) · `docs/vxe-grid-comparison.md` (批 AV batch row + 构建状态 + test counts) · manifest regenerated (no API change → no diff). Design decisions: Tab = row-major `nextRowMajorCell` no-wrap clamp (fiat F1); Enter = ArrowDown alias; editing Tab path (batch J) untouched via `data-grid-row` early-return; virtual PageUp/PageDown scroll the `data-iris-virtual-scroll` viewport ±10×itemHeight (root overflow:hidden in pure-virtual — viewport IS the body scroller), non-virtual scrolls root ±10×measured row height; virtual focus lands via rAF-poll layout effect (the window re-renders inside IrisVirtualScroll child — a Table effect alone never re-runs; stale pending dropped). Verification: react typecheck clean · react test **2034 passed** (+7, 0 regressions) · lint **0 errors** (1 pre-existing IrisTable complexity warning) · spec script **0 violations** (1412 files) · prettier clean · gen:manifest 155×4 no diff. What is left: vue/solid/svelte wiring (core unchanged — adapter-only enhancement); review/gate stages per workflow.
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-av-adapt.md
+
+## 2026-08-14 16:23:47 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-av-adapt.md [ok]: Report: **Commit:** `2517c08b` — `feat(table): grid 批 AV——电子表格键盘（Tab/Shift+Tab 行主序、Enter 下移、PageUp/PageDown 虚拟滚动）`; Files changed (1 source + 1 new test + 3 docs; manifest no diff): | File | Change |; Tests added (7): 1. Tab moves focus right, row-major (`(0,1)` → `(1,0)`), roving tabindex flips; Verification counts: - **react typecheck**: clean; Design notes: - **Editing Tab path (batch J) untouched** — the editor input carries no `data-grid-row`, so the existing early-return l
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-av-adapt.md
+
+## 2026-08-14 16:34:07 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-av-review.md [ok]: Summary: **Spec checks (all verified against code, not just tests):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-av-review.md

@@ -3628,9 +3628,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // Batch AV virtual focus follow-up: the virtual window re-renders INSIDE the
   // IrisVirtualScroll child ~1 frame after the scroll (its own rAF → state →
   // commit), which does not re-run this Table effect. So poll on animation
-  // frames until the pending cell exists, then focus it (a few frames, bounded;
-  // the rAF is cancelled on re-navigation / unmount). A stale pending (the
-  // user navigated elsewhere first) is dropped.
+  // frames until the pending cell exists, then focus it (a few frames, bounded
+  // to MAX_POLL_FRAMES; the rAF is cancelled on re-navigation / unmount). A
+  // stale pending (the user navigated elsewhere first) is dropped.
+  const GRID_FOCUS_MAX_POLL_FRAMES = 30
   React.useLayoutEffect(() => {
     const pending = pendingGridFocusRef.current
     if (!pending) return
@@ -3639,8 +3640,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
       return
     }
     let raf = 0
+    let frames = 0
     const tryFocus = (): void => {
       if (pendingGridFocusRef.current !== pending) return
+      frames += 1
+      if (frames > GRID_FOCUS_MAX_POLL_FRAMES) {
+        pendingGridFocusRef.current = null
+        return
+      }
       const cell = rootRef.current?.querySelector<HTMLElement>(
         `[data-grid-row="${pending.row}"][data-grid-col="${pending.col}"]`,
       )

@@ -357,7 +357,16 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   getSubRows?: (row: Row) => Row[] | undefined
   /** Lazy tree (vxe lazyLoad parity): a row with no `getSubRows` children still renders a caret; the first expand calls this and `load` resolves the children (expanding the row). */
   lazyLoad?: (row: Row, load: (children: Row[]) => void) => void
-  /** Enable WAI-ARIA grid keyboard navigation. */
+  /**
+   * Enable WAI-ARIA grid keyboard navigation (single-tabstop roving cell
+   * focus). Arrow keys move one cell; Home/End jump to the row's first/last
+   * cell; PageUp/PageDown jump 10 rows (clamped; virtual tables also scroll
+   * the viewport ±10 × row height); Tab/Shift+Tab move row-major to the
+   * next/prev cell (clamped at the bounds — no wrap, focus never leaves the
+   * table); Enter is an alias of ArrowDown (F2 stays the edit-start key).
+   * While an inline editor is open the editor's own keys win — Tab commits
+   * and moves to the next editable column (batch J), unchanged.
+   */
   keyboardNavigation?: boolean
   /** Batch AN shortcuts (iris 独有 — vxe keyboardConfig has no edit/clear
    * keys): F2 begins editing the focused cell's column (when editable),

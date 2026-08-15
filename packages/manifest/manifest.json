@@ -36637,7 +36637,7 @@
           "name": "keyboardNavigation",
           "type": "boolean",
           "optional": true,
-          "description": "Enable WAI-ARIA grid keyboard navigation."
+          "description": "Enable WAI-ARIA grid keyboard navigation (single-tabstop roving cell focus). Arrow keys move one cell; Home/End jump to the row's first/last cell; PageUp/PageDown jump 10 rows (clamped; virtual tables also scroll the viewport ±10 × row height); Tab/Shift+Tab move row-major to the next/prev cell (clamped at the bounds — no wrap, focus never leaves the table); Enter is an alias of ArrowDown (F2 stays the edit-start key). While an inline editor is open the editor's own keys win — Tab commits and moves to the next editable column (batch J), unchanged."
         },
         {
           "name": "tableShortcuts",
@@ -37477,7 +37477,7 @@
               "name": "keyboardNavigation",
               "type": "boolean",
               "optional": true,
-              "description": "Enable WAI-ARIA grid keyboard navigation."
+              "description": "Enable WAI-ARIA grid keyboard navigation (single-tabstop roving cell focus). Arrow keys move one cell; Home/End jump to the row's first/last cell; PageUp/PageDown jump 10 rows (clamped; virtual tables also scroll the viewport ±10 × row height); Tab/Shift+Tab move row-major to the next/prev cell (clamped at the bounds — no wrap, focus never leaves the table); Enter is an alias of ArrowDown (F2 stays the edit-start key). While an inline editor is open the editor's own keys win — Tab commits and moves to the next editable column (batch J), unchanged."
             },
             {
               "name": "tableShortcuts",

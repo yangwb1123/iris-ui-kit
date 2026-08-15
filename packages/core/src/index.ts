@@ -248,6 +248,7 @@ export {
   columnLetter,
   FORMULA_MAX_LENGTH,
   FORMULA_MAX_DEPTH,
+  type FormulaTables,
 } from './formula'
 export {
   createColumnState,

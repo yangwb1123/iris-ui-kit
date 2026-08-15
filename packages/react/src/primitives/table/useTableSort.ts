@@ -24,6 +24,8 @@ export interface UseTableSortOptions<Row> {
   defaultMultiSort?: IrisTableSortState[]
   /** Called when the multi-column sort changes. */
   onMultiSortChange?: (next: IrisTableSortState[]) => void
+  /** External table data for cross-table formula refs (batch BC): threaded into formula-column comparators (`=other!col` reads `formulaTables[table][0][field]`). */
+  formulaTables?: Record<string, Row[]>
 }
 
 /**
@@ -58,12 +60,13 @@ export interface UseTableSortResult<Row> {
  * evaluation the cell render uses, so the sort order matches what is shown. */
 function buildSorter<Row extends Record<string, unknown>>(
   col: IrisTableColumn<Row>,
+  formulaTables?: Record<string, Row[]>,
 ): (a: Row, b: Row) => number {
   if (col.sorter) return col.sorter
   return (a: Row, b: Row): number => {
     if (col.formula) {
-      let va = memoizedFormulaValue(col.formula, a)
-      let vb = memoizedFormulaValue(col.formula, b)
+      let va = memoizedFormulaValue(col.formula, a, formulaTables)
+      let vb = memoizedFormulaValue(col.formula, b, formulaTables)
       if (col.sortType === 'number') {
         va = Number(va)
         vb = Number(vb)
@@ -117,6 +120,7 @@ export function useTableSort<Row extends Record<string, unknown>>(
     multiSortState: multiSortStateProp,
     defaultMultiSort,
     onMultiSortChange,
+    formulaTables,
   } = options
 
   // Internal state for uncontrolled mode
@@ -149,8 +153,8 @@ export function useTableSort<Row extends Record<string, unknown>>(
     const col = leafColumns.find((c) => c.key === sortState.key)
     if (!col) return null
     const dir = sortState.direction === 'asc' ? 1 : -1
-    return (a, b) => buildSorter(col)(a, b) * dir
-  }, [leafColumns, sortState])
+    return (a, b) => buildSorter(col, formulaTables)(a, b) * dir
+  }, [leafColumns, sortState, formulaTables])
 
   // Multi comparator: iterate the list, first non-zero comparison wins (stable
   // — ties fall through to the next column, then keep the original order).
@@ -161,7 +165,7 @@ export function useTableSort<Row extends Record<string, unknown>>(
     for (const s of multiSortState) {
       const col = colMap.get(s.key)
       if (!col) continue
-      chain.push({ dir: s.direction === 'asc' ? 1 : -1, sorter: buildSorter(col) })
+      chain.push({ dir: s.direction === 'asc' ? 1 : -1, sorter: buildSorter(col, formulaTables) })
     }
     if (chain.length === 0) return null
     return (a, b) => {
@@ -171,7 +175,7 @@ export function useTableSort<Row extends Record<string, unknown>>(
       }
       return 0
     }
-  }, [leafColumns, multiSortState])
+  }, [leafColumns, multiSortState, formulaTables])
 
   // Sorted data
   const sortedData = React.useMemo(() => {

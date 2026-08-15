@@ -163,6 +163,8 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
   cellStyle?: (row: Row, column: IrisTableColumn<Row>, rowIndex: number) => CSSProperties
   /** Conditional cell styles (batch AX, iris 独有): an ordered rule list merged onto matching body cells AFTER `cellStyle` — later matching rules win on conflicting keys. A rule matches when its `column` filter (omitted → every column) equals the cell's column key AND `when(row, value)` is true; `value` is the RAW cell value (dataIndex ?? key resolved, formula columns computed). Rules evaluate inline per visible cell (cost = visibleCells × rules; virtual scroll bounds it — memoize the array in the caller). */
   conditionalStyles?: IrisTableConditionalStyle<Row>[]
+  /** External table data for cross-table formula refs (batch BC, iris 独有): `=other!col` reads `formulaTables['other'][0]['col']` (the FIRST row of the named table). Missing tables arg / unknown table / EMPTY table / unknown field → the whole formula null (fail-closed); a known nullish field coerces (Excel parity). Immutable contract: pass a NEW object when referenced tables change. */
+  formulaTables?: Record<string, Row[]>
   /** Per-header-cell inline style hook (vxe header-cell-style parity). */
   headerCellStyle?: (column: IrisTableColumn<Row>) => CSSProperties
   /** Per-footer-cell inline style hook (vxe footer-cell-style parity). */

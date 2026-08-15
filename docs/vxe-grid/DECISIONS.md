@@ -1122,3 +1122,13 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bb-gate.md [ok]: Verdict: PASS → full gate run ✅: Review (`batch-bb-review.md`) was **PASS** with 3 non-functional findings — I applied all three as quick fixes before th; Gate results: | Check | Result |; Commit: ```; Final test counts: - **react: 2098 passed** (186 files) — batch BB +11 (`annotate-editing`)
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bb-gate.md
+
+## 2026-08-14 22:54:31 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bc-baseline.md [ok]: Summary: **Baseline written to `/home/u1/iris-ui/docs/vxe-grid/batch-bc-baseline.md` (231 lines). Zero source files touched — `gi
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bc-baseline.md
+
+## 2026-08-15 06:30:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bc-adapt.md [ok]: Batch BC complete and committed. Cross-table formula refs (`formulaTables`, `=other!col` → first row, fail-closed) — core `!` bang token + `resolveTableField` + 3-arg `evaluateFormula` + nested-WeakMap memo (row, tables, formula) + `FormulaTables` type export; react dual-channel (render module slot + explicit CSV handle args) + `useTableSort` 4th eval point. 19 core + 12 react new tests, propCount 146→147, manifest/docs regenerated, lint 0 errors, spec audit 0 violations.
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bc-adapt.md

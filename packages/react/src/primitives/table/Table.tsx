@@ -60,6 +60,7 @@ import {
   updateRowInList,
   validateEditRulesAsync,
   type CellEdit,
+  type FormulaTables,
   type RemoteTableSource,
   type RemoteTableSourceState,
   type SortableRect,
@@ -758,10 +759,22 @@ function getCellValue<Row extends Record<string, unknown>>(
   // through this choke point — the COMPUTED value propagates everywhere.
   // memoizedFormulaValue caches per (row, formula) under the table's
   // documented immutable-row contract (new row reference = recompute).
-  if (column.formula) return memoizedFormulaValue(column.formula, row)
+  // Batch BC: cross-table refs (`=other!col`) read the render-scoped
+  // currentFormulaTables slot — React's synchronous render walk assigns it
+  // before any consumer runs, so multi-table pages stay isolated; the
+  // mount-time CSV export handles pass an explicit argument instead.
+  if (column.formula) return memoizedFormulaValue(column.formula, row, currentFormulaTables)
   const key = (column.dataIndex ?? column.key) as keyof Row
   return row[key]
 }
+
+// Batch BC: external tables for cross-table formula refs. Module slot, NOT a
+// closure — getCellValue is a module-level function shared by ~30 render-time
+// call sites + the querySortedData comparator. Assigned at the top of every
+// IrisTable render (before any useMemo body runs) and read only from
+// synchronous render/effect paths; the on-demand CSV export handles use the
+// formulaTablesRef mirror with an explicit argument (dual-channel, see below).
+let currentFormulaTables: FormulaTables | undefined
 
 /** Batch AO: a formula column is DISPLAY-ONLY even when `editable` — every
  * editing entry point (inline, row mode, batch panel, data-editable attr,
@@ -777,6 +790,7 @@ function isEditableColumn<Row extends Record<string, unknown>>(col: IrisTableCol
 function withComputedFormulaCells<Row extends Record<string, unknown>>(
   rows: readonly Row[],
   columns: readonly IrisTableColumn<Row>[],
+  formulaTables?: FormulaTables,
 ): Row[] {
   const formulaCols = columns.filter((c) => c.formula)
   if (formulaCols.length === 0) return rows as Row[]
@@ -785,7 +799,11 @@ function withComputedFormulaCells<Row extends Record<string, unknown>>(
     for (const col of formulaCols) {
       const key = (col.dataIndex ?? col.key) as keyof Row
       const next: Row = shadow ?? { ...row }
-      ;(next as Record<string, unknown>)[key as string] = memoizedFormulaValue(col.formula!, row)
+      ;(next as Record<string, unknown>)[key as string] = memoizedFormulaValue(
+        col.formula!,
+        row,
+        formulaTables,
+      )
       shadow = next
     }
     return shadow as Row
@@ -1260,6 +1278,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
   auditLog,
   versionHistory,
   compareWith,
+  formulaTables,
   printable = false,
   seq = false,
   spanMethod,
@@ -1301,6 +1320,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
   className,
   ...rest
 }: IrisTableProps<Row>): React.ReactElement {
+  // Batch BC: scope the external tables for this render — every getCellValue
+  // / querySortedData evaluation below runs synchronously during THIS render,
+  // and React's render walk is atomic per component (assigned before any
+  // useMemo body executes; a StrictMode double-render re-assigns idempotently).
+  // On-demand handle calls (CSV export) bypass this slot via formulaTablesRef.
+  currentFormulaTables = formulaTables
   React.useEffect(() => {
     if (typeof document === 'undefined') return
     if (document.getElementById('iris-table-row-styles')) return
@@ -1738,6 +1763,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       // server; the single `sort` param stays the single-column channel.
       if (remoteSort) proxyRef.current?.setParams({ sorts: next })
     },
+    formulaTables,
   })
   // remoteSort parity: the server owns the ordering — never re-sort locally.
   const sortedData = remoteSort ? liveData : localSortedData
@@ -1784,9 +1810,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
       if (col.sorter) return col.sorter(a, b) * dir
       if (col.formula) {
         // Batch AO: the parsed `sort by` clause sorts formula columns by the
-        // COMPUTED value (same memoized evaluation as the cell render).
-        let va = memoizedFormulaValue(col.formula, a)
-        let vb = memoizedFormulaValue(col.formula, b)
+        // COMPUTED value (same memoized evaluation as the cell render);
+        // batch BC: cross-table refs read the render-scoped tables slot.
+        let va = memoizedFormulaValue(col.formula, a, currentFormulaTables)
+        let vb = memoizedFormulaValue(col.formula, b, currentFormulaTables)
         if (col.sortType === 'number') {
           va = Number(va)
           vb = Number(vb)
@@ -3353,7 +3380,11 @@ export function IrisTable<Row extends Record<string, unknown>>({
     getFilteredData: () => [...filteredDataRef.current],
     exportCurrentViewCsv: () =>
       exportCsv(
-        withComputedFormulaCells([...filteredDataRef.current], viewColumnsRef.current),
+        withComputedFormulaCells(
+          [...filteredDataRef.current],
+          viewColumnsRef.current,
+          formulaTablesRef.current,
+        ),
         viewColumnsRef.current,
       ),
     // Batch AP (iris 独有): export the SELECTED rows — selection keys mapped
@@ -3367,7 +3398,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const rows = bodyDataRef.current.filter((row, i) => selected.has(rowKeyOf(row, i)))
       if (rows.length === 0) return ''
       return exportCsv(
-        withComputedFormulaCells(rows, viewColumnsRef.current),
+        withComputedFormulaCells(rows, viewColumnsRef.current, formulaTablesRef.current),
         viewColumnsRef.current,
       )
     },
@@ -3683,6 +3714,12 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // not the mount render's memo).
   const filteredDataRef = React.useRef(filteredData)
   filteredDataRef.current = filteredData
+  // Batch BC: mirror the latest formulaTables for the mount-time handle
+  // (exportCurrentViewCsv / exportSelectionCsv run on demand, NOT during
+  // render — the module slot is render-scoped and would race on multi-table
+  // pages; the handles pass this ref's value explicitly).
+  const formulaTablesRef = React.useRef<FormulaTables | undefined>(formulaTables)
+  formulaTablesRef.current = formulaTables
   const bodyData = flatTree ? flatTree.map((t) => t.row) : filteredData
   // Batch AR mini chart preview (iris 独有): numeric leaf columns for the
   // chart panel — the two existing signals — a row whose `getCellValue` is a

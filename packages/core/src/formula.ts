@@ -10,6 +10,12 @@
  * Syntax (documented contract):
  * - An optional leading `=` is stripped (both `=SUM(a,b)` and `SUM(a,b)`).
  * - Field references: `[A-Za-z_]\w*` — read from the row object.
+ * - Cross-table references (batch BC, iris 独有): `table!field` — reads
+ *   `formulaTables[table][0][field]` (the FIRST row of the named external
+ *   table; `formulaTables` is the optional 3rd argument of `evaluateFormula`).
+ *   Missing tables arg / unknown table / EMPTY table / unknown field → the
+ *   whole formula is null (fail-closed, same contract as unknown fields); a
+ *   KNOWN nullish field value still coerces (Excel parity).
  * - Numbers: `\d+(\.\d+)?`. Operators: `+ - * / %` (`%` = modulo; there is
  *   NO unary minus — `-5` is a parse error). Grouping `( )`, arg list `,`.
  * - Functions: whitelist SUM / AVG / MIN / MAX / COUNT, comma-separated
@@ -39,19 +45,29 @@
 export const FORMULA_MAX_LENGTH = 512
 export const FORMULA_MAX_DEPTH = 32
 
+/**
+ * External table data for cross-table formula references (batch BC):
+ * `formulaTables[table][0][field]` — a table name maps to its rows, and a
+ * `table!field` reference reads the FIRST row's field. Row objects are
+ * treated as IMMUTABLE (same contract as the formula row); pass a NEW
+ * tables object when any referenced table changes.
+ */
+export type FormulaTables = Record<string, readonly Record<string, unknown>[]>
+
 /** Internal error sentinel: distinct from a legit nullish field value. */
 const ERROR = Symbol('formula-error')
 
 type FormulaToken =
   | { type: 'num'; value: number }
   | { type: 'ident'; value: string }
+  | { type: 'bang' }
   | { type: 'op'; value: '+' | '-' | '*' | '/' | '%' }
   | { type: 'lparen' }
   | { type: 'rparen' }
   | { type: 'comma' }
   | { type: 'eof' }
 
-const TOKEN_RE = /[0-9]+(?:\.[0-9]+)?|[A-Za-z_][A-Za-z0-9_]*|[+\-*/%(),]/g
+const TOKEN_RE = /[0-9]+(?:\.[0-9]+)?|[A-Za-z_][A-Za-z0-9_]*|[+\-*/%(),!]/g
 
 /** Whitelist of callable aggregate functions (case-insensitive lookup). */
 const FUNCTION_NAMES = new Set(['SUM', 'AVG', 'MIN', 'MAX', 'COUNT'])
@@ -75,6 +91,7 @@ function tokenize(src: string): FormulaToken[] | null {
     else if (tok === '(') tokens.push({ type: 'lparen' })
     else if (tok === ')') tokens.push({ type: 'rparen' })
     else if (tok === ',') tokens.push({ type: 'comma' })
+    else if (tok === '!') tokens.push({ type: 'bang' })
     else tokens.push({ type: 'op', value: tok as '+' | '-' | '*' | '/' | '%' })
     last = m.index + tok.length
   }
@@ -96,14 +113,39 @@ function toNumber(v: unknown): number | typeof ERROR {
  * values; any error (unknown field, bad token, depth/length bound, div-by-0,
  * NaN arithmetic) produces the ERROR sentinel which the caller maps to null.
  */
+/**
+ * Batch BC: resolve a `table!field` cross-table reference, fail-closed —
+ * missing tables arg / unknown table / EMPTY table / unknown field all
+ * poison the whole formula (ERROR → null). Own-property lookups only (a
+ * prototype hit such as `toString` must NOT read Object.prototype). A
+ * KNOWN nullish field value is returned as-is and coerces downstream
+ * (Excel empty-cell-as-zero parity).
+ */
+function resolveTableField(
+  table: string,
+  field: string,
+  tables: FormulaTables | undefined,
+): unknown {
+  if (tables === undefined) return ERROR
+  if (!Object.prototype.hasOwnProperty.call(tables, table)) return ERROR
+  const rows = tables[table]
+  if (rows == null || rows.length === 0) return ERROR
+  const first: unknown = rows[0]
+  if (typeof first !== 'object' || first === null) return ERROR
+  if (!Object.prototype.hasOwnProperty.call(first, field)) return ERROR
+  return (first as Record<string, unknown>)[field]
+}
+
 class FormulaParser {
   private pos = 0
   private readonly tokens: FormulaToken[]
   private readonly row: Record<string, unknown>
+  private readonly tables: FormulaTables | undefined
 
-  constructor(tokens: FormulaToken[], row: Record<string, unknown>) {
+  constructor(tokens: FormulaToken[], row: Record<string, unknown>, tables?: FormulaTables) {
     this.tokens = tokens
     this.row = row
+    this.tables = tables
   }
 
   peek(): FormulaToken {
@@ -171,6 +213,15 @@ class FormulaParser {
     }
     if (t.type === 'ident') {
       this.next()
+      // Batch BC: `table!field` cross-table reference (fail-closed via
+      // resolveTableField — a bare `!` in any other position is an error).
+      if (this.peek().type === 'bang') {
+        this.next()
+        const fieldTok = this.peek()
+        if (fieldTok.type !== 'ident') return ERROR
+        this.next()
+        return resolveTableField(t.value, fieldTok.value, this.tables)
+      }
       if (this.peek().type === 'lparen') {
         if (!FUNCTION_NAMES.has(t.value.toUpperCase())) return ERROR
         return this.callFunction(t.value.toUpperCase(), level)
@@ -262,16 +313,21 @@ class FormulaParser {
  * Evaluate a single-line cell formula against a row (see module docs for the
  * full syntax/value contract). Returns the computed value — `null` on ANY
  * error (unknown field, syntax error, div/mod by 0, non-finite arithmetic,
- * bounds exceeded) — and NEVER throws.
+ * bounds exceeded) — and NEVER throws. The optional 3rd argument supplies
+ * external table data for `table!field` cross-table references (batch BC).
  */
-export function evaluateFormula(formula: string, row: Record<string, unknown>): unknown {
+export function evaluateFormula(
+  formula: string,
+  row: Record<string, unknown>,
+  formulaTables?: FormulaTables,
+): unknown {
   if (typeof formula !== 'string') return null
   let src = formula.trim()
   if (src.startsWith('=')) src = src.slice(1).trim()
   if (src.length === 0 || src.length > FORMULA_MAX_LENGTH) return null
   const tokens = tokenize(src)
   if (tokens === null) return null
-  const parser = new FormulaParser(tokens, row)
+  const parser = new FormulaParser(tokens, row, formulaTables)
   const value = parser.parseAddSub(0)
   if (value === ERROR || parser.peek().type !== 'eof') return null
   return value
@@ -289,19 +345,35 @@ export function evaluateFormula(formula: string, row: Record<string, unknown>): 
  * row objects). In-place mutation of an already-cached row object would serve
  * stale computed values.
  */
-export function memoizedFormulaValue(formula: string, row: object): unknown {
-  let byFormula = formulaMemo.get(row)
+export function memoizedFormulaValue(
+  formula: string,
+  row: object,
+  formulaTables?: FormulaTables,
+): unknown {
+  // Cache key = (row identity, tables identity, formula): nested WeakMaps so
+  // the tables object participates in the key without ever being retained.
+  // 2-arg calls share a module sentinel slot — byte-compatible with the
+  // pre-BC behavior (no tables → cross-table refs evaluate to null either way).
+  let byTables = formulaMemo.get(row)
+  if (byTables === undefined) {
+    byTables = new WeakMap<object, Map<string, unknown>>()
+    formulaMemo.set(row, byTables)
+  }
+  const tablesKey: object = formulaTables ?? NO_TABLES
+  let byFormula = byTables.get(tablesKey)
   if (byFormula === undefined) {
     byFormula = new Map<string, unknown>()
-    formulaMemo.set(row, byFormula)
+    byTables.set(tablesKey, byFormula)
   }
   if (byFormula.has(formula)) return byFormula.get(formula)
-  const value = evaluateFormula(formula, row as Record<string, unknown>)
+  const value = evaluateFormula(formula, row as Record<string, unknown>, formulaTables)
   byFormula.set(formula, value)
   return value
 }
 
-const formulaMemo = new WeakMap<object, Map<string, unknown>>()
+const formulaMemo = new WeakMap<object, WeakMap<object, Map<string, unknown>>>()
+/** Module sentinel: 2-arg memoizedFormulaValue calls share one "no tables" slot. */
+const NO_TABLES: FormulaTables = {}
 
 /**
  * Excel-style bijective column letter for a 0-based column index:

@@ -239,6 +239,20 @@ export interface IrisTableColumn<Row = Record<string, unknown>> {
    * selection, copy and export.
    */
   locked?: boolean | ((row: Row, column: IrisTableColumn<Row>) => boolean)
+  /**
+   * Cell permission predicate (batch BJ, iris 独有 — vxe has no per-cell
+   * permission concept): return `'readonly'` to make THAT cell read-only
+   * through every editing entry point (dblclick / click trigger / F2 / Tab
+   * nav / row mode / batch edit / paste / fill / range clear / FNR replace /
+   * Delete shortcut); `'editable'` or absent → editable (default). DYNAMIC —
+   * re-evaluated on every render (unlike `locked`, which is a static
+   * declaration): permission follows the current row/column state without a
+   * re-mount. Readonly cells render with a dotted texture and
+   * `data-iris-cell-readonly="true"` (distinct from locked's 45° stripes),
+   * and stay fully interactive for selection, copy and export. When a cell is
+   * both locked and readonly, locked wins visually (stripes + not-allowed).
+   */
+  cellPermission?: (row: Row, column: IrisTableColumn<Row>) => 'readonly' | 'editable'
   /** Batch AN column preset (iris 独有): fills display defaults from the core
    * factory — `'money'` (2 decimals + thousands separator, right-aligned,
    * number editor + numeric editRules), `'progress'` (percent text, right),

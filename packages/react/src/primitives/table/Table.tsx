@@ -194,6 +194,14 @@ function auditDiff<Row extends Record<string, unknown>>(
 const LOCKED_CELL_STRIPE =
   'repeating-linear-gradient(45deg, var(--iris-muted-subtle) 0, var(--iris-muted-subtle) 6px, transparent 6px, transparent 12px)'
 
+/** Batch BJ: the dotted 8pt-grid texture marking a permission-readonly cell —
+ * visually distinct from locked's 45° stripes (dynamic permission vs static
+ * declaration). Same background-image + inline re-assertion pattern as
+ * LOCKED_CELL_STRIPE (a `background` shorthand resets background-image).
+ * Token-driven (--iris-muted-subtle exists in both themes). */
+const READONLY_CELL_DOTS =
+  'radial-gradient(var(--iris-muted-subtle) 1px, transparent 1px) 0 0 / 8px 8px'
+
 const TABLE_ROW_CSS = `
 [data-iris-table]:not([data-iris-no-hover]) [role="row"]:hover {
   --iris-cell-bg: var(--iris-surface-hover);
@@ -265,6 +273,13 @@ const TABLE_ROW_CSS = `
    (see LOCKED_CELL_STRIPE). */
 [data-iris-cell-locked="true"] {
   background-image: ${LOCKED_CELL_STRIPE};
+}
+/* Readonly cells (batch BJ, iris 独有): dotted 8pt texture — DYNAMIC
+   permission (re-evaluated per render) vs locked's static 45° stripes; a
+   cell that is both locked and readonly shows locked (locked wins). Same
+   background-image + inline re-assertion pattern as the locked rule. */
+[data-iris-cell-readonly="true"] {
+  background-image: ${READONLY_CELL_DOTS};
 }
 /* Thin scrollbars (batch Q, vxe scrollbarConfig parity): 6px webkit
    scrollbars + Firefox scrollbar-width; covers the root scroller and the
@@ -533,9 +548,12 @@ function sparklineSeries<Row extends Record<string, unknown>>(
   if (index === undefined) return null
   const values = memo.valuesByKey.get(col.key)
   if (!values) return null
-  return values
-    .slice(0, index + 1)
-    .map((raw) => (typeof raw === 'number' && Number.isFinite(raw) ? raw : null))
+  return values.slice(0, index + 1).map((raw) => {
+    // buildChartData parity: `Number` coercion — a numeric string charts
+    // as a point, null/non-finite becomes a gap.
+    const value = raw == null ? Number.NaN : Number(raw)
+    return Number.isFinite(value) ? value : null
+  })
 }
 
 /** Batch BI: whether this cell renders a sparkline — the per-cell numeric
@@ -994,17 +1012,40 @@ function isCellLocked<Row extends Record<string, unknown>>(
   return typeof col.locked === 'function' ? col.locked(row, col) : col.locked === true
 }
 
-/** Batch BE: locked-cell render material — the data attr + the dropped
- * cursor, extracted so renderRow stays under the complexity budget. Locked
- * wins over the editable cell cursor; range cells keep the default. */
-function lockedCellRender(
+/** Batch BJ: a cell is permission-readonly when the column predicate says so —
+ * `'readonly'` locks editing, absent/`'editable'` → editable (default).
+ * DYNAMIC: unlike `locked` (a static declaration), the predicate re-evaluates
+ * on every render, so permission follows the current row/column state without
+ * a re-mount. Same single-throat contract as isCellLocked — every editing
+ * entry point reads this condition. */
+function isCellReadonly<Row extends Record<string, unknown>>(
+  row: Row,
+  col: IrisTableColumn<Row>,
+): boolean {
+  return col.cellPermission?.(row, col) === 'readonly'
+}
+
+/** Batch BE+BJ: locked/readonly cell render material — the data attrs + the
+ * dropped cursor, extracted so renderRow stays under the complexity budget.
+ * Locked wins visually when both (stripes + not-allowed, no readonly attr);
+ * readonly falls back to the dotted texture + not-allowed (only when the
+ * column is editable — a non-editable readonly cell keeps the default).
+ * Range cells keep the default cursor. */
+function cellPermissionRender(
   locked: boolean,
+  readonly: boolean,
   editable: boolean,
   hasRange: boolean,
-): { attr: 'true' | undefined; cursor: string | undefined; style: React.CSSProperties } {
+): {
+  lockedAttr: 'true' | undefined
+  readonlyAttr: 'true' | undefined
+  cursor: string | undefined
+  style: React.CSSProperties
+} {
   if (locked) {
     return {
-      attr: 'true',
+      lockedAttr: 'true',
+      readonlyAttr: undefined,
       cursor: 'not-allowed',
       // Spread LAST in the cell style so the stripes survive every
       // background shorthand (range-fill/conditional/user cellStyle) —
@@ -1012,8 +1053,17 @@ function lockedCellRender(
       style: { backgroundImage: LOCKED_CELL_STRIPE },
     }
   }
+  if (readonly) {
+    return {
+      lockedAttr: undefined,
+      readonlyAttr: 'true',
+      cursor: editable ? 'not-allowed' : hasRange ? 'default' : undefined,
+      style: { backgroundImage: READONLY_CELL_DOTS },
+    }
+  }
   return {
-    attr: undefined,
+    lockedAttr: undefined,
+    readonlyAttr: undefined,
     cursor: editable ? 'cell' : hasRange ? 'default' : undefined,
     style: {},
   }
@@ -2681,7 +2731,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const k = rowKeyOf(row, rowIndex)
     if (k == null) return
     const editableCols = leafColumns.filter(
-      (c) => c.editable && !c.formula && !isCellLocked(row, c),
+      (c) => c.editable && !c.formula && !isCellLocked(row, c) && !isCellReadonly(row, c),
     )
     if (editableCols.length === 0) return
     pendingNavRef.current = null
@@ -2746,7 +2796,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const start = leafColumns.indexOf(col)
     for (let i = start + dir; i >= 0 && i < leafColumns.length; i += dir) {
       const nextCol = leafColumns[i]!
-      if (!nextCol.editable || nextCol.formula || isCellLocked(row, nextCol)) continue
+      if (
+        !nextCol.editable ||
+        nextCol.formula ||
+        isCellLocked(row, nextCol) ||
+        isCellReadonly(row, nextCol)
+      )
+        continue
       focusRowEditor(nextCol.key)
       return
     }
@@ -2788,7 +2844,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const start = leafColumns.indexOf(nav.col)
     for (let i = start + nav.dir; i >= 0 && i < leafColumns.length; i += nav.dir) {
       const nextCol = leafColumns[i]
-      if (!nextCol.editable || nextCol.formula || isCellLocked(nav.row, nextCol)) continue
+      if (
+        !nextCol.editable ||
+        nextCol.formula ||
+        isCellLocked(nav.row, nextCol) ||
+        isCellReadonly(nav.row, nextCol)
+      )
+        continue
       beginEdit(nav.row, nextCol, nav.k, nav.idx)
       return
     }
@@ -3294,7 +3356,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     rowIdent: string | number,
     rowIndex: number,
   ) => {
-    if (!col.editable || col.formula || isCellLocked(row, col)) return
+    if (!col.editable || col.formula || isCellLocked(row, col) || isCellReadonly(row, col)) return
     // Any manual start supersedes a stashed Tab-navigation intent (M1).
     pendingNavRef.current = null
     editCtxRef.current = { row, col, rowIndex }
@@ -3366,7 +3428,13 @@ export function IrisTable<Row extends Record<string, unknown>>({
     const start = leafColumns.indexOf(ctx.col)
     for (let i = start + dir; i >= 0 && i < leafColumns.length; i += dir) {
       const nextCol = leafColumns[i]!
-      if (!nextCol.editable || nextCol.formula || isCellLocked(ctx.row, nextCol)) continue
+      if (
+        !nextCol.editable ||
+        nextCol.formula ||
+        isCellLocked(ctx.row, nextCol) ||
+        isCellReadonly(ctx.row, nextCol)
+      )
+        continue
       e.preventDefault()
       beginEdit(ctx.row, nextCol, rowKeyOf(ctx.row, ctx.rowIndex), ctx.rowIndex)
       return
@@ -3453,6 +3521,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           col.editable &&
           !col.formula &&
           !isCellLocked(row, col) &&
+          !isCellReadonly(row, col) &&
           !rowSessionsRef.current.has(id)
         ) {
           const session = createRowSession(k, col, idx)
@@ -4458,14 +4527,14 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!row || !col) return
     const k = rowKeyOf(row, cell.row)
     if (matchTableKey(e, keyBindings.edit)) {
-      if (!col.editable || col.formula || isCellLocked(row, col)) return
+      if (!col.editable || col.formula || isCellLocked(row, col) || isCellReadonly(row, col)) return
       e.preventDefault()
       beginEdit(row, col, k, cell.row)
       return
     }
     if (matchTableKey(e, keyBindings.clear)) {
       e.preventDefault()
-      if (isCellLocked(row, col)) return
+      if (isCellLocked(row, col) || isCellReadonly(row, col)) return
       const current = externalDataRef.current ?? []
       const next = setCellValue(current, rowKey, k, col.key, '')
       if (next !== current) commitRowList(next)
@@ -4540,7 +4609,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             const col = cols[c]!
             // Batch BE: locked cells are read-only — the paste skips them
             // (the rest of the rectangle still lands, one batched commit).
-            if (isCellLocked(row, col)) continue
+            if (isCellLocked(row, col) || isCellReadonly(row, col)) continue
             patch = { ...patch, [col.key]: value }
           }
           if (patch) byKey.set(k, { ...byKey.get(k), ...patch })
@@ -4560,7 +4629,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
             if (k == null) continue
             const col = cols[colIdx]!
             // Batch BE: locked cells stay read-only under a single-cell paste.
-            if (isCellLocked(row, col)) continue
+            if (isCellLocked(row, col) || isCellReadonly(row, col)) continue
             const prev = byKey.get(k)
             byKey.set(k, { ...prev, [col.key]: cells[j]! })
           }
@@ -4832,7 +4901,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
           )
             continue
           const col = cols[c]
-          if (!col || col.formula || isCellLocked(row, col)) continue
+          if (!col || col.formula || isCellLocked(row, col) || isCellReadonly(row, col)) continue
           const srcRow = body[((r - range.start.row) % rangeRows) + range.start.row]
           const srcCol = cols[((c - range.start.col) % rangeCols) + range.start.col]
           if (!srcRow || !srcCol) continue
@@ -4903,7 +4972,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       for (let c = range.start.col; c <= range.end.col; c += 1) {
         const col = cols[c]
         // Batch BE: locked cells survive a range clear.
-        if (col && !isCellLocked(row, col)) patches[col.key] = ''
+        if (col && !isCellLocked(row, col) && !isCellReadonly(row, col)) patches[col.key] = ''
       }
       // Batch BE: an all-locked row produces an empty patch — skip it so an
       // all-locked range commits nothing (zero spurious onDataChange/undo/
@@ -5052,7 +5121,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
     if (!col || !row) return
     // Batch BE: locked cells are read-only — FNR replace skips them (FNR
     // FIND still matches them; locking guards writes only).
-    if (isCellLocked(row, col)) return
+    if (isCellLocked(row, col) || isCellReadonly(row, col)) return
     const current = getCellValue(row, col)
     const text = current == null ? '' : String(current)
     const nextText = replaceAllOccurrences(text, fnrQuery, fnrReplace)
@@ -5074,7 +5143,7 @@ export function IrisTable<Row extends Record<string, unknown>>({
       const col = cols[m.col]
       if (!row || !col) continue
       // Batch BE: locked matches stay put under replace-all.
-      if (isCellLocked(row, col)) continue
+      if (isCellLocked(row, col) || isCellReadonly(row, col)) continue
       const current = getCellValue(row, col)
       const text = current == null ? '' : String(current)
       const nextText = replaceAllOccurrences(text, fnrQuery, fnrReplace)
@@ -5655,7 +5724,15 @@ export function IrisTable<Row extends Record<string, unknown>>({
           // Batch BE: locked = read-only cell (attr + cursor). Fail-inert —
           // selection, range, copy/export and FNR find keep working.
           const lockedLive = isCellLocked(row, col)
-          const lockedRender = lockedCellRender(lockedLive, editableLive, !!cellRange)
+          // Batch BJ: permission-readonly — same throat, DYNAMIC (re-evaluated
+          // per render); locked wins visually when both.
+          const readonlyLive = isCellReadonly(row, col)
+          const lockedRender = cellPermissionRender(
+            lockedLive,
+            readonlyLive,
+            editableLive,
+            !!cellRange,
+          )
           const editing = rowMode
             ? rowSessions.has(cellId(k, col.key))
             : cellEdit.isEditing(cellId(k, col.key), col.key)
@@ -5698,7 +5775,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
               data-iris-cell-dirty={dirtyInfo.attr}
               data-iris-cell-changed={compareCellAttr(compareChange)}
               data-iris-cell-note={noteInfo.attr}
-              data-iris-cell-locked={lockedRender.attr}
+              data-iris-cell-locked={lockedRender.lockedAttr}
+              data-iris-cell-readonly={lockedRender.readonlyAttr}
               data-iris-presence={presenceInfo ? 'true' : undefined}
               title={cellTitle(editing, noteInfo.note, compareChange, row, col)}
               className={
@@ -5794,9 +5872,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
                 ...pinnedStyle(col.key),
                 ...(cellStyle?.(row, col, idx) ?? null),
                 ...conditionalCellStyle(conditionalStyles, row, col.key, raw),
-                // Batch BE: re-assert the lock stripes AFTER every background
-                // shorthand above (range-fill/conditional/user) — an inline
-                // `background` shorthand resets background-image.
+                // Batch BE+BJ: re-assert the lock stripes / readonly dots AFTER
+                // every background shorthand above (range-fill/conditional/
+                // user) — an inline `background` shorthand resets
+                // background-image.
                 ...lockedRender.style,
               }}
             >
@@ -6276,8 +6355,10 @@ export function IrisTable<Row extends Record<string, unknown>>({
     let changed = false
     const next = rows.map((r) => {
       const selected = keys.has((r as Record<string, unknown>)[keyField] as string | number)
-      if (selected && !isCellLocked(r, col)) changed = true
-      return selected && !isCellLocked(r, col) ? { ...r, [col.key]: batchEditValue } : r
+      if (selected && !isCellLocked(r, col) && !isCellReadonly(r, col)) changed = true
+      return selected && !isCellLocked(r, col) && !isCellReadonly(r, col)
+        ? { ...r, [col.key]: batchEditValue }
+        : r
     })
     if (changed) commitRowList(next, 'batch')
     setBatchEditOpen(false)

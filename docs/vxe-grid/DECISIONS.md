@@ -1367,3 +1367,23 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-bm-gate.md [ok]: Verdict: PASS ✅: **Review** (`batch-bm-review.md`): PASS — 1 LOW (baseline doc arithmetic only) / 2 INFO, 0 blockers.; Gate results: | Check | Result | — turbo 180/180 exit 0 · audit:security 0 vulns · audit:tokens 37 = baseline 37 (parent 2607531e) zero new · gen:manifest + check:manifest 155×4 / 86 tokens up to date · comparison doc 3 sites already current in e17058ee; Final test counts: **core 1517** · **react 2219** (批 BM +13 note-popover) · vue 1531 · solid 974 · svelte 916 — 批 BM new 13 tests
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bm-gate.md
+
+## 2026-08-15 04:20:45 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bm-gate.md [ok]: Verdict: PASS ✅: **Review** (`batch-bm-review.md`): PASS — 1 LOW (baseline doc arithmetic only, no action) / 2 INFO, 0 blockers. No concr; Gate results: | Check | Result |; Final test counts: - **core 1517**（零 core 改动）· **react 2219**（批 BM +13 note-popover）· vue 1531 · solid 974 · svelte 916; Commit: **`ece45175`** — `feat(table): grid 批 BM——批注浮动预览（iris 独有）` — on `main`（parent `e17058ee`；amended once to fold in the gat
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bm-gate.md
+
+## 2026-08-15 04:24:02 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bn-baseline.md [ok]: What's in the baseline: **Exact design** (every anchor verified against current code — `renderRow`/`renderBodyEntry` signatures, `IrisVirtualScr
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bn-baseline.md
+
+## 2026-08-15 04:29:59 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bn-adapt.md [ok]: 批 BN 完成报告 — 行高自定义 `rowHeight`（iris 独有）: **Commit**: `a9e88cbd` — `feat(table): grid 批 BN——行高自定义 rowHeight（iris 独有）`（工作树仅剩 runner 的预存 `DECISIONS.md`/`batch-bm-ga; 实现（全部按 baseline 验证方案，零偏差）: **Prop** — `props.ts`在`virtualScroll` 之后、`persistState` 之前：`rowHeight?: number | ((index: number) => number)`（单行函数形，ma; 测试（13 新，`row-height.test.tsx`277 行 ≤500）: 规格强制三件套优先：**固定**（非虚拟行 inline height / 虚拟闭式窗口 +`translateY(i*N)`+ spacer）· **函数**（非虚拟逐行`fn(i)`/ 虚拟累计 top = 前缀和 + spac; 文档:`docs/vxe-grid-comparison.md` 三站点：iris 独有表新行（rowHeight，紧跟 notePopover 行后）· 构建状态行追加批 BN · test count 2219→2232; 验证（全部 ✅）: | 门 | 结果 |
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bn-adapt.md
+
+## 2026-08-15 04:32:55 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-bn-review.md [ok]: Review summary: **Verification run (all green):**
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-bn-review.md

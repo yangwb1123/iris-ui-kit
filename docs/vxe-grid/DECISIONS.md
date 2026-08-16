@@ -2207,3 +2207,18 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cv-adapt.md [ok]: Report — 批 CV：冻结边界拖拽（iris 独有）: **Commit**: `HEAD` feat(table): grid 批 CV——冻结边界拖拽（iris 独有）; Files changed (2 source + 1 test + manifest + docs): props.ts pinnedDrag + onPinnedCountChange (propCount 180→182/eventCount 31→32, 单行函数 prop) / Table.tsx destructure + PinnedDragHandle (useDrag + translateX ghost + Arrow ±1 + stopPropagation 防 columnDrag 抢臂) + 2 纯 module helpers (leftPinnedCount/pinnedCountFromBudget) + resolvedColumnWidth + firstRightPinnedIndex/pinnedBoundaryCol memos + commitPinnedCount/resolvePinnedCount + flat/grouped 双分支 + boundary 列 resize 句柄抑制 / pinned-drag.test.tsx 17 tests / manifest regenerated / comparison doc 2 spots; Verification: core 1559/1559（框架无关零改动）, react typecheck clean + 2635/2635 (2618+17), lint 0 errors (1 pre-existing complexity warning), spec 0 violations (1416 files), check:manifest up to date
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cv-adapt.md
+
+## 2026-08-16 08:50:27 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cv-adapt.md [ok]: 批 CV：冻结边界拖拽（iris 独有）— Complete: **Commit**: `77e53bab` `feat(table): grid 批 CV——冻结边界拖拽（iris 独有）` (9 files, +833/−7); Files changed: | File | Change |; Tests added (17): ① handle at boundary (role/line/fail-closed×2) ② drag right adjusts count (attrs + `onPinnedCountChange` once + per-colu; Verification (all green): - **core: 1559/1559** — framework-free invariant intact (zero core changes); What's left: - The boundary width uses the `pinnedOffsets` approximation chain (non-numeric widths → 140px) — documented fiat; a prec
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cv-adapt.md
+
+## 2026-08-16 08:56:10 — stage 'review' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cv-review.md [ok]: Verdict: **FAIL** — 1 medium spec violation + 2 informational; all mechanical gates green: - **Spec correctness** — every delivered mechanic present (8px grip + 2px `--iris-primary` line at boundary cell, transl; What was verified: - **Spec correctness** — every delivered mechanic present (8px grip + 2px `--iris-primary` line at boundary cell, transl; Gates (all run): core test **1559/1559** · react test **2635/2635** · react typecheck clean · react lint **0 errors** (1 complexity warni; Finding 1 (FAIL driver, MEDIUM): `Table.tsx:3572` `resolvePinnedCount` sums **all** left-pinned widths, while `commitPinnedCount` (`:3584`) treats "curre
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cv-review.md
+
+## 2026-08-16 09:03:31 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cv-gate.md [ok]: Gate 完成 — FAIL 已修复并全量复跑：**Verdict**（batch-cv-review.md）: FAIL — 1 medium spec violation + 2 informational；修复 resolvePinnedCount gapped 态前缀预算（Table.tsx resolve 从全部左固定宽改为前导前缀宽，resolve(0) ≡ leftPinnedCount）+ T18 gapped 回归测试（独立 pinned-drag-gapped.test.tsx——filesize 门 pinned-drag.test.tsx 回 493 ≤500；先验：还原旧实现 1 failed/17 passed）；全量门禁 turbo run test typecheck lint build --concurrency=2 **180/180 tasks**（125 cached）· react 2636/2636（2618+18）· core 1559/1559 · vue 1531 · solid 1008 · svelte 947 · 合计 8684 tests · audit **0 vulns** · gen:manifest + check:manifest up to date（182 props/31 events 零 diff）· comparison doc 批 CV 段更新（review 修复 + 18 测试 + react 2636）· commit 见 batch-cv-gate.md。
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cv-gate.md

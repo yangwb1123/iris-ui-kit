@@ -3572,10 +3572,16 @@ export function IrisTable<Row extends Record<string, unknown>>({
   const resolvePinnedCount = React.useCallback(
     (dx: number): number => {
       const widthOf = (col: IrisTableColumn<Row>): number => resolvedColumnWidth(col, columnWidths)
+      // `current` is the leading PREFIX count — the SAME notion commit uses
+      // (leftPinnedCount). In a gapped state [A(left), B(null), C(left)] the
+      // boundary handle sits on C (last left-pinned leaf) but the count is 1;
+      // the budget must start from the PREFIX width only, so resolve(0) ===
+      // current in EVERY state and a no-op drag / arrow press commits nothing
+      // (pinning B + unpinning C on a zero-dx click was the pre-fix bug).
+      const current = leftPinnedCount(leafColumns, pinOf, firstRightPinnedIndex)
       let currentWidth = 0
-      for (let i = 0; i < firstRightPinnedIndex; i += 1) {
-        const col = leafColumns[i]!
-        if (pinOf(col) === 'left') currentWidth += widthOf(col)
+      for (let i = 0; i < current; i += 1) {
+        currentWidth += widthOf(leafColumns[i]!)
       }
       return pinnedCountFromBudget(leafColumns, widthOf, currentWidth + dx, firstRightPinnedIndex)
     },

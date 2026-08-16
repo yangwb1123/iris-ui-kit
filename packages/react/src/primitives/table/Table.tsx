@@ -236,6 +236,21 @@ function previewColumnsFromRows(rows: Record<string, unknown>[] | null): string[
   return Object.keys(rows[0])
 }
 
+/** Batch CZ (iris 独有 — vxe has no locate flash): locate a row's DOM node
+ * by key via the same data attribute the row-drag path uses (flat, tree,
+ * grouped and virtual rows all carry it). The selector is escaped for
+ * attribute values (a raw `"` in a key would otherwise make querySelector
+ * throw); jsdom lacks CSS.escape, so fall back to attribute iteration
+ * there. Shared by scrollToRow and goToRow (extracted from the former). */
+function findTableRowEl(root: HTMLElement, key: string | number): HTMLElement | null {
+  const keyStr = String(key)
+  return typeof CSS !== 'undefined' && CSS.escape
+    ? root.querySelector<HTMLElement>(`[data-iris-table-row="${CSS.escape(keyStr)}"]`)
+    : (Array.from(root.querySelectorAll<HTMLElement>('[data-iris-table-row]')).find(
+        (n) => n.getAttribute('data-iris-table-row') === keyStr,
+      ) ?? null)
+}
+
 /** The copy-flash background — empty object outside the flashed rect so the
  * spread adds nothing (no operators in the hot arrow). */
 function copyFlashCellStyle(
@@ -1418,6 +1433,10 @@ const DEFAULT_PINNED_WIDTH = 140
    stays after a SUCCESSFUL range copy before it clears. Re-copy restarts
    the clock; unmount cleanup below. */
 const COPY_FLASH_MS = 600
+/* Batch CZ goToRow (iris 独有 — vxe has no row-locate flash): how long the
+   `goToRow` row-target highlight stays before the timer removes it.
+   Re-call restarts the clock; unmount cleanup below (copyFlash pattern). */
+const ROW_TARGET_MS = 2000
 /** Reserved context-menu key for the built-in value-distribution item (batch
  * AM): the table intercepts it at the onSelect wiring, so a user item with
  * the same key is deduped and the user callback never sees it. */
@@ -2784,7 +2803,68 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // the row number — one leading number column either way.
   const showRowNumbers = seq || showCellRefs
   // Defensive: null/undefined columns → empty array
+  // Batch CY: `hasDetail` HOISTED above the column memos — the responsive
+  // width model counts the leading detail toggle track (EXPAND_COL_WIDTH)
+  // when detail rows are enabled, mirroring gridTemplateColumns' track
+  // order. The expandable-detail comment lives with createExpansion below.
+  const hasDetail = renderDetail !== undefined
   const safeColumns = React.useMemo(() => columns ?? [], [columns])
+
+  // ── Column width state (batch CV boundary / batch CY responsive, HOISTED
+  // above the column memos so the responsive fit reads the SAME throat every
+  // other render path uses). Dual channel: `columnWidths` controlled → the
+  // map is the ONLY read source; absent → an internal map (seeded by
+  // `defaultColumnWidths`) holds the overrides. `setColumnWidth` flips the
+  // internal map in uncontrolled mode and fires `onColumnWidthsChange`
+  // unconditionally in both channels; `resetColumnWidths` (batch BO) is the
+  // canonical 默认映射 — the empty map makes every `??` fall back to the
+  // column-DECLARED width.
+  const widthsControlled = columnWidthsProp !== undefined
+  const [widthsInternal, setWidthsInternal] = React.useState<IrisTableColumnWidths>(
+    defaultColumnWidths ?? {},
+  )
+  const columnWidths = widthsControlled
+    ? (columnWidthsProp as IrisTableColumnWidths)
+    : widthsInternal
+  const setColumnWidth = (key: string, width: number) => {
+    const next = { ...columnWidths, [key]: width }
+    if (!widthsControlled) setWidthsInternal(next)
+    onColumnWidthsChange?.(next)
+  }
+  const resetColumnWidths = () => {
+    if (!widthsControlled) setWidthsInternal({})
+    onColumnWidthsChange?.({})
+  }
+
+  // ── Column pin state (batch BX, iris 独有 — vxe has no header pin menu;)
+  // HOISTED with the widths so the responsive fit reads the SAME `pinOf`
+  // throat as pinnedOffsets / visibleColSet / header attrs. Dual channel
+  // mirroring columnWidths: `pinnedColumns` controlled → the map is the ONLY
+  // read source (a `null` entry overrides a static `col.pinned` declaration);
+  // absent → an internal map (seeded by the static declarations via
+  // `pinOf`'s fallback). `setColumnPinned` flips the internal map in
+  // uncontrolled mode and fires `onColumnPinnedChange` unconditionally in
+  // both channels — controlled mode never optimistically flips.
+  const pinsControlled = pinnedColumns !== undefined
+  const [pinsInternal, setPinsInternal] = React.useState<Record<string, 'left' | 'right' | null>>(
+    {},
+  )
+  const pinOf = React.useCallback(
+    (col: IrisTableColumn<Row>): 'left' | 'right' | null => {
+      if (pinsControlled)
+        // Absent keys fall back to the column's own declaration — only an
+        // EXPLICIT `null` entry overrides a static `col.pinned` pin (so
+        // `pinnedColumns={{}}` never unpins statically-declared pins).
+        return col.key in pinnedColumns ? pinnedColumns[col.key] : (col.pinned ?? null)
+      if (pinsInternal[col.key] !== undefined) return pinsInternal[col.key]
+      return col.pinned ?? null
+    },
+    [pinsControlled, pinnedColumns, pinsInternal],
+  )
+  const setColumnPinned = (key: string, side: 'left' | 'right' | null): void => {
+    if (!pinsControlled) setPinsInternal((prev) => ({ ...prev, [key]: side }))
+    onColumnPinnedChange?.(key, side)
+  }
   // Column visibility (vxe columnConfig.visible parity): filter hidden
   // columns out of every render path (header, body, summary).
   //
@@ -3520,7 +3600,8 @@ export function IrisTable<Row extends Record<string, unknown>>({
 
   // Expandable detail rows: a leading toggle column + a full-width detail panel,
   // driven by the framework-agnostic createExpansion (multiple-open).
-  const hasDetail = renderDetail !== undefined
+  // (batch CY: the hasDetail declaration itself now lives above the column
+  // memos — the responsive width model reads it there; same value.)
   // Batch BY: shared expandability probe for the persistState collector AND
   // restore gate — mirrors `treeMode` (derived later in the flatten-tree
   // region) so the snapshot logic can live before it. A flat table has no
@@ -3566,59 +3647,9 @@ export function IrisTable<Row extends Record<string, unknown>>({
   // anchor recording on the transition render; the layout effect advances it.
   const prevExpandedKeysRef = React.useRef<string[]>(expandedKeys)
 
-  const widthsControlled = columnWidthsProp !== undefined
-  const [widthsInternal, setWidthsInternal] = React.useState<IrisTableColumnWidths>(
-    defaultColumnWidths ?? {},
-  )
-  const columnWidths = widthsControlled
-    ? (columnWidthsProp as IrisTableColumnWidths)
-    : widthsInternal
-  const setColumnWidth = (key: string, width: number) => {
-    const next = { ...columnWidths, [key]: width }
-    if (!widthsControlled) setWidthsInternal(next)
-    onColumnWidthsChange?.(next)
-  }
-  // Batch BO (iris 独有): toolbar reset button — the canonical 默认映射 is the
-  // empty map (zero overrides → every render path falls back to the
-  // column-DECLARED width through the existing `??` chain, so no new render
-  // logic exists). Same dual channel as setColumnWidth: uncontrolled mode
-  // clears the internal widths too, the callback fires unconditionally.
-  const resetColumnWidths = () => {
-    if (!widthsControlled) setWidthsInternal({})
-    onColumnWidthsChange?.({})
-  }
-
-  // ── Column pin state (batch BX, iris 独有 — vxe has no header pin menu) ─
-  // Dual channel mirroring columnWidths: `pinnedColumns` controlled → the map
-  // is the ONLY read source (a `null` entry overrides a static `col.pinned`
-  // declaration); absent → an internal map holds the pin state, seeded by the
-  // static `col.pinned` declarations via `pinOf`'s fallback. `pinOf` is the
-  // single throat every render path reads (pinnedOffsets, visibleColSet,
-  // body attr, flat + grouped header attrs). `setColumnPinned` flips the
-  // internal map in uncontrolled mode and fires `onColumnPinnedChange`
-  // unconditionally in both channels (`onColumnWidthsChange` precedent) —
-  // controlled mode never optimistically flips (the parent writes the map
-  // back).
-  const pinsControlled = pinnedColumns !== undefined
-  const [pinsInternal, setPinsInternal] = React.useState<Record<string, 'left' | 'right' | null>>(
-    {},
-  )
-  const pinOf = React.useCallback(
-    (col: IrisTableColumn<Row>): 'left' | 'right' | null => {
-      if (pinsControlled)
-        // Absent keys fall back to the column's own declaration — only an
-        // EXPLICIT `null` entry overrides a static `col.pinned` pin (so
-        // `pinnedColumns={{}}` never unpins statically-declared pins).
-        return col.key in pinnedColumns ? pinnedColumns[col.key] : (col.pinned ?? null)
-      if (pinsInternal[col.key] !== undefined) return pinsInternal[col.key]
-      return col.pinned ?? null
-    },
-    [pinsControlled, pinnedColumns, pinsInternal],
-  )
-  const setColumnPinned = (key: string, side: 'left' | 'right' | null): void => {
-    if (!pinsControlled) setPinsInternal((prev) => ({ ...prev, [key]: side }))
-    onColumnPinnedChange?.(key, side)
-  }
+  // Batch CY: the column width + pin state above (near safeColumns) is the
+  // single throat — see the HOISTED blocks; this old site is intentionally
+  // empty so every reader including the responsive fit sees one pinOf.
 
   // ── Pinned-count boundary drag (batch CV, iris 独有 — vxe has no pinned
   // boundary handle): `pinnedDrag` renders a draggable separator at the LAST
@@ -5577,6 +5608,20 @@ export function IrisTable<Row extends Record<string, unknown>>({
     commitRowList(entry.rows as Row[], 'undo')
     historySuppressRef.current = false
   }
+  // Batch CZ goToRow (iris 独有 — vxe has no locate flash): the transient
+  // row-target highlight timer. The handle runs against the MOUNT-time
+  // closure (only refs are read), so this ref is the sole mutable channel —
+  // same pattern as the copy-flash timer; the cleanup below is the unmount
+  // cancel (the DOM node goes away with the table).
+  const rowTargetTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  React.useEffect(() => {
+    return () => {
+      if (rowTargetTimerRef.current !== null) {
+        clearTimeout(rowTargetTimerRef.current)
+        rowTargetTimerRef.current = null
+      }
+    }
+  }, [])
   const handleRef = React.useRef<IrisTableHandle<Row> | null>(null)
   handleRef.current = {
     insertRow: (row, index) => {
@@ -5714,21 +5759,34 @@ export function IrisTable<Row extends Record<string, unknown>>({
     // clearSort / clearFilter / setCurrentRow / setCurrentColumn parity, batch T)
     scrollToRow: (key) => {
       // The row DOM node is located via the same data attribute the row-drag
-      // path uses (flat, tree, grouped and virtual rows all carry it). Guarded
-      // for jsdom, which does not implement scrollIntoView. The selector is
-      // escaped for attribute values (a raw `"` in a key would otherwise make
-      // querySelector throw); jsdom lacks CSS.escape, so fall back to attribute
-      // iteration there.
-      const keyStr = String(key)
+      // path uses (flat, tree, grouped and virtual rows all carry it).
+      // Guarded for jsdom, which does not implement scrollIntoView. Shared
+      // locator with goToRow (batch CZ).
       const root = rootRef.current
       if (!root) return
-      const el =
-        typeof CSS !== 'undefined' && CSS.escape
-          ? root.querySelector<HTMLElement>(`[data-iris-table-row="${CSS.escape(keyStr)}"]`)
-          : Array.from(root.querySelectorAll<HTMLElement>('[data-iris-table-row]')).find(
-              (n) => n.getAttribute('data-iris-table-row') === keyStr,
-            )
-      el?.scrollIntoView?.({ block: 'nearest' })
+      findTableRowEl(root, key)?.scrollIntoView?.({ block: 'nearest' })
+    },
+    goToRow: (key) => {
+      // Batch CZ (iris 独有 — vxe has no locate flash): scroll the row into
+      // view AND flash a transient row-target highlight (`data-iris-row-target`,
+      // removed by the ROW_TARGET_MS timer — copyFlash pattern). Single-target
+      // semantics: the previously targeted row loses the attribute immediately;
+      // re-calling any row restarts the timer. Virtual-window miss / unknown
+      // key → no-op (scrollToRow precedent). Fires NO events (orthogonal to
+      // onCurrentRowChange — setCurrentRow's own channel stays untouched) and
+      // needs no handler to work.
+      const root = rootRef.current
+      if (!root) return
+      const el = findTableRowEl(root, key)
+      if (!el) return
+      el.scrollIntoView?.({ block: 'nearest' })
+      root.querySelector('[data-iris-row-target="true"]')?.removeAttribute('data-iris-row-target')
+      el.setAttribute('data-iris-row-target', 'true')
+      if (rowTargetTimerRef.current !== null) clearTimeout(rowTargetTimerRef.current)
+      rowTargetTimerRef.current = setTimeout(() => {
+        rowTargetTimerRef.current = null
+        el.removeAttribute('data-iris-row-target')
+      }, ROW_TARGET_MS)
     },
     toggleRowExpand: (key) => {
       // Tree mode and detail mode share the single expansion model — both

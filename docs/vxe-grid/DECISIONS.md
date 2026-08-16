@@ -2277,3 +2277,38 @@
 
 - task /home/u1/iris-ui/docs/vxe-grid/batch-cx-gate.md [ok]: Gate 完成 — **Verdict**（batch-cx-review.md）: **PASS** ✅ — 4 LOW findings 全非阻塞（F1 sortBy 不同型翻转 = 显式字段赢设计、F2 date 排序惰性 = baseline fiat、F3 采样侧 cap perf nit one-shot、F4 gitignored components.md 本阶段已再生成），零代码修复；全量门禁 turbo run test typecheck lint build --concurrency=2 **180/180 tasks**（65 cached）· core **1569/1569**（+10）· react **2660/2660**（+12）· vue 1531 · solid 1008 · svelte 947 · **repo total 8718** · audit **0 vulns** · gen:manifest + check:manifest up to date（184 props/32 events 零 diff，ee15bbae 已带）· gen:docs-reference + check:docs-reference up to date（F4 解决，components.md gitignored 不入库）· comparison doc iris 独有节已在 ee15bbae 就位（表第 71 行 + 构建状态段尾）零补充；DECISIONS + adapt 后置段 + review 携带；commit 见 batch-cx-gate.md。
 - evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cx-gate.md
+
+## 2026-08-16 10:45:37 — stage 'gate' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cx-gate.md [ok]: Full gate: | Gate | Result |; Final test counts: - **core: 1569/1569** (1559 + 10 new `column-type.test.ts`, framework-free); Commit: **`6b496ae1`** `feat(table): grid 批 CX——列类型自动检测（iris 独有）` — 4 files, +113/−32, gate bookkeeping only (implementation + m
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cx-gate.md
+
+## 2026-08-16 11:01:36 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cy-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cy-baseline.md
+
+## 2026-08-16 11:22:40 — stage 'adapt' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cy-adapt.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cy-adapt.md
+
+## 2026-08-16 11:24:24 — stage 'baseline' — FAIL
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cz-baseline.md [FAILED: agent exited 1]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cz-baseline.md
+
+## 2026-08-16 12:32:05 — stage 'baseline' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cz-baseline.md [ok]
+- evidence: /home/u1/iris-ui/docs/vxe-grid/batch-cz-baseline.md
+
+## 2026-08-16 13:00:00 — stage 'adapt' — PASS
+
+- task /home/u1/iris-ui/docs/vxe-grid/batch-cz-baseline.md [ok]: 批 CZ：跳到行 `goToRow`（iris 独有）— **Complete ✅** Commit: **`<commit>`** `feat(table): grid 批 CZ——跳到行 goToRow（iris 独有）` — 8 files, +~~/−~~（含批 CY 遗留未提交 dirt 一并入库）; Files changed (3 impl + 1 test + manifest + docs):
+  - `types.ts` +1：`IrisTableHandle.goToRow(key)` 单行成员（`scrollToRow` 后，manifest 零 diff——handle 方法不入计数）
+  - `Table.tsx` 5 触点：模块级 `findTableRowEl`（从 scrollToRow 提取共享定位 helper，转义 + jsdom 回落）、`scrollToRow` 改用 helper（字节回归测试锁定）、新 handle `goToRow`（scrollIntoView nearest + `data-iris-row-target` + `ROW_TARGET_MS=2000` 定时器，copyFlash 模具；单目标：先标行立即清、重呼重启、卸载 effect 清理；未知键/虚拟窗未命中 no-op）、`ROW_TARGET_MS` 常量
+  - `styles.ts` +1 规则：`[data-iris-row-target="true"]` 在 `[data-iris-row-current]` 之后——color-mix `--iris-primary` 18% over `--iris-background`，`--iris-cell-bg` + background 双设，纯 token；源序令瞬态赢 selection 后衰减回
+  - `test/go-to-row.test.tsx` **11 新测试**：spec ① 滚动 nearest ② 高亮 attr ③ 2s 移除；plus 重呼重启 / A→B 单目标 / 未知键 no-op / 引号键（jsdom 属性迭代路径）/ 卸载清理（detached 保留 attr 证明定时器已清）/ 无 handler 正交（不触发 onCurrentRowChange）/ scrollToRow 只滚动不高亮字节回归 / setCurrentRow 不设 target
+  - 修复批 CY 遗留类型/lint 阻断（gate 必需）：缺失 `RESPONSIVE_NARROW_WIDTH` import + 死声明（responsiveWidth/responsiveLeadWidth/responsiveNarrowActive）移除 + 未用 `responsive` 析构移除——props.ts 声明与 core responsive 原样保留（CY retry 从本提交续接）
+  - Verification (all green): core **1580/1580** · react **2671/2671** (+11) · typecheck clean · lint **0 errors**（1 既有 complexity warning）· iris-ui-spec **0 violations** · manifest 重新生成（185 props/32 events，goToRow 零 diff——185 含 CY `responsive` prop）

@@ -302,6 +302,20 @@ export const TABLE_ROW_CSS = `
 [data-iris-row-current="true"] {
   --iris-cell-bg: var(--iris-surface-selected);
 }
+/* Batch CZ goToRow highlight (iris 独有 — vxe has no row-locate flash):
+   IrisTableHandle.goToRow(key) scrolls the row into view and briefly
+   tints it (data-iris-row-target, removed by the 2s timer). color-mix
+   over the background token — the same language as the copy flash / compare
+   rows; sets BOTH the shared --iris-cell-bg (gutter/selection cells) and
+   the full-row background (the background shows through the transparent
+   cells). Source order: this rule sits right after [data-iris-row-current],
+   so while the transient attribute IS present the target tint wins over the
+   current-row selection; when goToRow's timer removes the attribute the row
+   decays back to its persistent state. */
+[data-iris-row-target="true"] {
+  --iris-cell-bg: color-mix(in srgb, var(--iris-primary) 18%, var(--iris-background));
+  background: color-mix(in srgb, var(--iris-primary) 18%, var(--iris-background));
+}
 [data-iris-col-current="true"] {
   --iris-cell-bg: var(--iris-surface-selected);
 }

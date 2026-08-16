@@ -1036,6 +1036,18 @@ export interface IrisTableProps<Row extends Record<string, unknown> = Record<str
    * the effect does nothing. Default false. */
   syncResize?: boolean
   /**
+   * Narrow-width responsive mode (iris 独有 — vxe has no responsive column
+   * behavior): a prop-gated ResizeObserver measures the root; when the
+   * container measures below 480px (strictly — 480 exactly is full width),
+   * the lowest-priority top-level columns are greedily hidden until the
+   * natural width fits (pinned columns survive, at least one column stays),
+   * and — only when columns STILL overflow after collapsing — a horizontal
+   * scroll hint bar (`data-iris-scroll-hint`) + root overflowX auto appear
+   * so no data is unreachable. At/above 480px, without ResizeObserver
+   * (jsdom/SSR) or with the prop off, the render is byte-identical. Default
+   * false. */
+  responsive?: boolean
+  /**
    * Seed the live row list with a COPY of `data` (vxe-grid keepSource
    * parity, batch R): `liveData` initializes to `[...data]` instead of the
    * `data` reference, so mutating the original array after mount cannot

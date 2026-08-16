@@ -623,6 +623,8 @@ export interface IrisTableHandle<Row extends Record<string, unknown> = Record<st
   toggleRowSelection: (key: string | number) => void
   /** Scroll the row with `key` into view (vxe scrollToRow parity); no-op when the row is not rendered. */
   scrollToRow: (key: string | number) => void
+  /** Scroll the row with `key` into view AND flash a transient row highlight (`data-iris-row-target`, cleared after 2s — batch CZ, iris 独有: vxe has no locate flash); a later goToRow replaces the previous target; unknown/unrendered key → no-op (scrollToRow precedent); fires no events and needs no `onCurrentRowChange`. */
+  goToRow: (key: string | number) => void
   /** Toggle a row's expand state (vxe toggleRowExpand parity): tree mode toggles the caret, detail mode the panel; no-op for plain tables. */
   toggleRowExpand: (key: string | number) => void
   /** Clear the active sort (vxe clearSort parity) — single and multi channels. */

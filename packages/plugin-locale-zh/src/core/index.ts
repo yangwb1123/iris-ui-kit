@@ -130,6 +130,7 @@ export const zhCNMessages: Record<string, string> = {
   'table.shortcuts.paste': '粘贴',
   'table.shortcuts.fill': '向下填充',
   'table.shortcuts.query': '筛选查询',
+  'table.scrollHint': '横向滚动查看更多列',
   'fnr.find': '查找',
   'fnr.replace': '替换',
   'fnr.replaceAll': '全部替换',

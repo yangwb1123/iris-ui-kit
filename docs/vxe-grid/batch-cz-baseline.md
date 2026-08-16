@@ -1,0 +1,9 @@
+Baseline complete — written to `/home/u1/iris-ui/docs/vxe-grid/batch-cz-baseline.md` (18 lines), zero source files touched by me (the `M`/`??` entries are pre-existing batch-CY responsive dirt, verified identical in my first `git status`).
+
+**Baseline essence (batch CZ：跳到行 goToRow — iris 独有):**
+
+- **Design**: new handle `goToRow(key)` = scroll + transient highlight. Shared locator helper `findTableRowEl` extracted from `scrollToRow` (`Table.tsx:5749-5765`) → `scrollIntoView({block:'nearest'})` + `data-iris-row-target="true"` on the row node + `ROW_TARGET_MS=2000` timer removal (copyFlash pattern). Single-target semantics (prior target cleared on switch), timer reset on re-call, unmount cleanup. CSS rule after `[data-iris-row-current]` (`styles.ts:304`) — copy-flash token tint on both `--iris-cell-bg` + `background`, source order makes the transient win then decay back.
+- **Anchors verified**: `setCurrentRow` handle `Table.tsx:5799-5806` / `types.ts:632-633`; handle captured once on mount (`:5931`) → closure reads only refs; `copyFlashTimerRef` pattern `:6759-6774`.
+- **Key fiats**: does **not** fire `onCurrentRowChange` (orthogonal; spec tests only 滚动+高亮); virtual-window miss no-op (scrollToRow precedent); header/loading/empty key collision inherited; handle method invisible to manifest → propCount 184 / eventCount 32 zero diff.
+- **Test plan**: new `test/go-to-row.test.tsx`, 11 tests — spec-mandated ① scroll ② highlight ③ 2s removal, plus timer reset / A→B single-target / unknown-key no-op / quoted-key / unmount cleanup / no-handler orthogonality / scrollToRow·setCurrentRow byte-regression. React 2660→2671, core unchanged 1569.
+- **File map**: types.ts +1 · Table.tsx 5 touch points · styles.ts +1 rule · new test file · manifest regen (zero diff) · comparison doc +1 (gate). Zero: core, props.ts, i18n, index.ts, vue/solid/svelte.

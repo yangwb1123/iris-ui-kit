@@ -37169,6 +37169,12 @@
           "description": "Re-measure on content changes (vxe-grid syncResize parity, batch R): when true, `autoResize` is off and NO explicit `height` is set, an effect keyed on data / loading / error / footerData / size / bordered runs the SAME root measure autoResize uses (plus on `visibilitychange`), so the fixed-height machinery tracks content-driven size changes without a ResizeObserver. Same application rules as `autoResize`: with `height` set the explicit height wins and"
         },
         {
+          "name": "responsive",
+          "type": "boolean",
+          "optional": true,
+          "description": "Narrow-width responsive mode (iris 独有 — vxe has no responsive column behavior): a prop-gated ResizeObserver measures the root; when the container measures below 480px (strictly — 480 exactly is full width), the lowest-priority top-level columns are greedily hidden until the natural width fits (pinned columns survive, at least one column stays), and — only when columns STILL overflow after collapsing — a horizontal scroll hint bar (`data-iris-scroll-hint`) + root overflowX auto appear so no data is unreachable. At/above 480px, without ResizeObserver (jsdom/SSR) or with the prop off, the render is byte-identical. Default"
+        },
+        {
           "name": "keepSource",
           "type": "boolean",
           "optional": true,
@@ -38285,6 +38291,12 @@
               "type": "boolean",
               "optional": true,
               "description": "Re-measure on content changes (vxe-grid syncResize parity, batch R): when true, `autoResize` is off and NO explicit `height` is set, an effect keyed on data / loading / error / footerData / size / bordered runs the SAME root measure autoResize uses (plus on `visibilitychange`), so the fixed-height machinery tracks content-driven size changes without a ResizeObserver. Same application rules as `autoResize`: with `height` set the explicit height wins and"
+            },
+            {
+              "name": "responsive",
+              "type": "boolean",
+              "optional": true,
+              "description": "Narrow-width responsive mode (iris 独有 — vxe has no responsive column behavior): a prop-gated ResizeObserver measures the root; when the container measures below 480px (strictly — 480 exactly is full width), the lowest-priority top-level columns are greedily hidden until the natural width fits (pinned columns survive, at least one column stays), and — only when columns STILL overflow after collapsing — a horizontal scroll hint bar (`data-iris-scroll-hint`) + root overflowX auto appear so no data is unreachable. At/above 480px, without ResizeObserver (jsdom/SSR) or with the prop off, the render is byte-identical. Default"
             },
             {
               "name": "keepSource",
@@ -39422,7 +39434,7 @@
         "errorState"
       ],
       "quality": {
-        "propCount": 184,
+        "propCount": 185,
         "eventCount": 32
       }
     },

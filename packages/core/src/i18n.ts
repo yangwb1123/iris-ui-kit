@@ -194,6 +194,7 @@ export const defaultMessages: I18nMessages = {
   'table.shortcuts.paste': 'Paste',
   'table.shortcuts.fill': 'Fill down',
   'table.shortcuts.query': 'Filter query',
+  'table.scrollHint': 'Scroll horizontally for more columns',
   'fnr.find': 'Find',
   'fnr.replace': 'Replace',
   'fnr.replaceAll': 'Replace all',

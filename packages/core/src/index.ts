@@ -253,6 +253,12 @@ export {
 } from './column-preset'
 export { detectColumnType, type DetectedColumnType } from './column-type'
 export {
+  computeResponsiveColumns,
+  RESPONSIVE_NARROW_WIDTH,
+  type ResponsiveColumn,
+  type ComputeResponsiveColumnsOptions,
+} from './responsive'
+export {
   evaluateFormula,
   memoizedFormulaValue,
   columnLetter,
